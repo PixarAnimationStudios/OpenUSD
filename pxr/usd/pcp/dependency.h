@@ -29,9 +29,13 @@
 #include "pxr/usd/pcp/mapFunction.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/declarePtrs.h"
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DECLARE_WEAK_AND_REF_PTRS(PcpLayerStack);
 
 class PcpNodeRef;
 
@@ -124,7 +128,28 @@ struct PcpDependency {
     }
 };
 
-typedef std::vector<PcpDependency> PcpDependencyVector;
+using PcpDependencyVector = std::vector<PcpDependency>;
+
+/// Description of a dependency that has been culled from the corresponding
+/// prim index. Since this dependency does not have a node in the prim index,
+/// this struct stores additional information needed to represent the
+/// dependency.
+struct PcpCulledDependency
+{
+    /// Flag representing the type of dependency.
+    PcpDependencyFlags flags = PcpDependencyTypeNone;
+    /// Layer stack containing the specs the prim index depends on.
+    PcpLayerStackRefPtr layerStack;
+    /// Path of the dependency specs in the layer stack.
+    SdfPath sitePath;
+    /// If relocations applied to the dependency node, this is the
+    /// unrelocated site path. Otherwise, this is empty.
+    SdfPath unrelocatedSitePath;
+    /// The map function that applies to values from the site.
+    PcpMapFunction mapToRoot;
+};
+
+using PcpCulledDependencyVector = std::vector<PcpCulledDependency>;
 
 /// Returns true if this node introduces a dependency in its
 /// PcpPrimIndex, false otherwise.  This is equivalent to

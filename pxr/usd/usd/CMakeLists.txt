@@ -52,6 +52,7 @@ pxr_library(usd
         references
         relationship
         resolveInfo
+        resolveTarget
         resolver
         schemaBase
         schemaRegistry
@@ -132,6 +133,7 @@ pxr_library(usd
         wrapReferences.cpp
         wrapRelationship.cpp
         wrapResolveInfo.cpp
+        wrapResolveTarget.cpp
         wrapSchemaBase.cpp
         wrapSchemaRegistry.cpp
         wrapSpecializes.cpp
@@ -143,6 +145,7 @@ pxr_library(usd
         wrapTokens.cpp
         wrapTimeCode.cpp
         wrapTyped.cpp
+        wrapUsdFileFormat.cpp
         wrapUtils.cpp
         wrapVariantSets.cpp
         wrapVersion.cpp 
@@ -226,6 +229,7 @@ pxr_test_scripts(
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
+    testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPayloads.py
     testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
@@ -233,6 +237,7 @@ pxr_test_scripts(
     testenv/testUsdPrims.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
+    testenv/testUsdResolveTargetPy.py
     testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
     testenv/testUsdSpecializes.py
@@ -406,6 +411,17 @@ pxr_build_test(testUsdSchemaBase
         testenv/testUsdSchemaBase.cpp
 )
 
+pxr_build_test(testUsdResolveTarget
+    LIBRARIES
+        pcp
+        sdf
+        tf
+        usd
+        vt
+    CPPFILES
+        testenv/testUsdResolveTarget.cpp
+)
+
 pxr_build_test(testUsdTimeValueAuthoringCpp
     LIBRARIES
         arch
@@ -535,6 +551,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdResolverChanged
     DEST testUsdResolverChanged
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdResolveTarget.testenv
+    DEST testUsdResolveTarget
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdResolveTarget.testenv
+    DEST testUsdResolveTargetPy
 )
 
 pxr_install_test_dir(
@@ -1001,6 +1027,17 @@ pxr_register_test(testUsdModel
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdResolveTarget
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolveTarget"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdResolveTargetPy
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdResolveTargetPy"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdSpecializes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSpecializes"
@@ -1134,5 +1171,11 @@ pxr_register_test(testUsdZipFile_CPP
 
 pxr_register_test(testUsdUsdzResolver
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzResolver"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdOpaqueAttributes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdOpaqueAttributes"
     EXPECTED_RETURN_CODE 0
 )

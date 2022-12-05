@@ -52,18 +52,6 @@ HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     _containers = { src1, src2, src3 };
 }
 
-bool
-HdOverlayContainerDataSource::Has(const TfToken &name)
-{
-    for (HdContainerDataSourceHandle &c : _containers) {
-        if (c && c->Has(name)) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 TfTokenVector
 HdOverlayContainerDataSource::GetNames()
 {

@@ -35,7 +35,9 @@ def Xform "Cube"
             </Cube/Instancer/Protos/Proto2>,
         ]
 
-        def "Protos"
+        def "Protos" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             rel material:binding = </PreviewSurface>
 

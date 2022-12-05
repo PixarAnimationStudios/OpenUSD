@@ -455,8 +455,6 @@ class TestUsdCreateProperties(unittest.TestCase):
                                                   Sdf.ValueTypeNames.Asset)
                 arrayAsset = foo.CreateAttribute('arrayAsset',
                                                  Sdf.ValueTypeNames.AssetArray)
-                singleAssetQuery = Usd.AttributeQuery(foo, 'singleAsset')
-                arrayAssetQuery = Usd.AttributeQuery(foo, 'arrayAsset')
 
                 relPath = './' + os.path.split(targetFile.name)[1]
                 relPathArray = Sdf.AssetPathArray(42, [relPath])
@@ -465,6 +463,9 @@ class TestUsdCreateProperties(unittest.TestCase):
 
                 singleAsset.Set(relPath)
                 arrayAsset.Set(relPathArray)
+
+                singleAssetQuery = Usd.AttributeQuery(foo, 'singleAsset')
+                arrayAssetQuery = Usd.AttributeQuery(foo, 'arrayAsset')
 
                 singleAssetValue = singleAsset.Get()
                 arrayAssetValue = arrayAsset.Get()
@@ -530,24 +531,37 @@ class TestUsdCreateProperties(unittest.TestCase):
             stage = Usd.Stage.Open(layerB.identifier)
             over = stage.OverridePrim(primPath)
             over.CreateAttribute(propName, Sdf.ValueTypeNames.String)
-            over.GetReferences().AddReference(Sdf.Reference(layerA.identifier, primPath))
+            over.GetReferences().AddReference(
+                Sdf.Reference(layerA.identifier, primPath, 
+                              Sdf.LayerOffset(10.0)))
 
             stage = Usd.Stage.Open(layerC.identifier)
             over = stage.OverridePrim(primPath)
             over.CreateAttribute(propName, Sdf.ValueTypeNames.String)
-            over.GetReferences().AddReference(Sdf.Reference(layerB.identifier, primPath))
-
+            over.GetReferences().AddReference(
+                Sdf.Reference(layerB.identifier, primPath, 
+                              Sdf.LayerOffset(0.0, 2.0)))
             attr = over.GetAttribute(propName)
             expectedPropertyStack = [l.GetPropertyAtPath(propPath) for l in
                                      [layerC, layerB, layerA]]
+            expectedPropertyStackWithLayerOffsets = [
+                (expectedPropertyStack[0], Sdf.LayerOffset()),
+                (expectedPropertyStack[1], Sdf.LayerOffset(0.0, 2.0)),
+                (expectedPropertyStack[2], Sdf.LayerOffset(20.0, 2.0))
+            ]
+
             self.assertEqual(attr.GetPropertyStack(Usd.TimeCode.Default()), 
                                               expectedPropertyStack)
+            self.assertEqual(attr.GetPropertyStackWithLayerOffsets(
+                                 Usd.TimeCode.Default()), 
+                             expectedPropertyStackWithLayerOffsets)
             # ensure that using a non-default time-code gets the same
             # set since clips are not in play here
             self.assertEqual(attr.GetPropertyStack(101.0), 
                                               expectedPropertyStack)
+            self.assertEqual(attr.GetPropertyStackWithLayerOffsets(101.0), 
+                             expectedPropertyStackWithLayerOffsets)
 
-            
     def test_GetPropertyStackWithClips(self):
         clipPath = '/root/fx/test'
         attrName = 'extent'

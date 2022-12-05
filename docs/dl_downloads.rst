@@ -26,6 +26,13 @@ Videos
 .. panels::
    :column: col-lg-4
 
+   `Open Source at Pixar (SIGGRAPH 2022) <https://vimeo.com/752352357>`_
+   ^^^
+
+   .. image:: https://graphics.pixar.com/usd/images/USDOpenSource2022Video.jpg
+      :target: https://vimeo.com/752352357
+
+   ---
    `USD: Building Asset Pipelines <https://vimeo.com/211022588>`_
    ^^^
 
@@ -33,7 +40,7 @@ Videos
       :target: https://vimeo.com/211022588
 
    ---
-   `Open Source at Pixar (2017) <https://vimeo.com/237018208>`_
+   `Open Source at Pixar (SIGGRAPH 2017) <https://vimeo.com/237018208>`_
    ^^^
 
    .. image:: https://graphics.pixar.com/usd/images/USDOpenSource2017Video.png

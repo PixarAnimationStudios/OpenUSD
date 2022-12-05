@@ -97,6 +97,7 @@ _ReadVDBGridsFromAssetBuffer(const std::shared_ptr<ArAsset>& asset)
     std::shared_ptr<const char> bytes = asset->GetBuffer();
     _CharStream charStream(bytes.get(), asset->GetSize());
 
+    openvdb::initialize();
     openvdb::io::Stream vdbStream(charStream);
     return vdbStream.getGrids();
 }

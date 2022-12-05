@@ -45,19 +45,32 @@ HdInstancedBySchema::GetPaths()
         HdInstancedBySchemaTokens->paths);
 }
 
+HdPathArrayDataSourceHandle
+HdInstancedBySchema::GetPrototypeRoots()
+{
+    return _GetTypedDataSource<HdPathArrayDataSource>(
+        HdInstancedBySchemaTokens->prototypeRoots);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdInstancedBySchema::BuildRetained(
-        const HdPathArrayDataSourceHandle &paths
+        const HdPathArrayDataSourceHandle &paths,
+        const HdPathArrayDataSourceHandle &prototypeRoots
 )
 {
-    TfToken names[1];
-    HdDataSourceBaseHandle values[1];
+    TfToken names[2];
+    HdDataSourceBaseHandle values[2];
 
     size_t count = 0;
     if (paths) {
         names[count] = HdInstancedBySchemaTokens->paths;
         values[count++] = paths;
+    }
+
+    if (prototypeRoots) {
+        names[count] = HdInstancedBySchemaTokens->prototypeRoots;
+        values[count++] = prototypeRoots;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -92,11 +105,20 @@ HdInstancedBySchema::Builder::SetPaths(
     return *this;
 }
 
+HdInstancedBySchema::Builder &
+HdInstancedBySchema::Builder::SetPrototypeRoots(
+    const HdPathArrayDataSourceHandle &prototypeRoots)
+{
+    _prototypeRoots = prototypeRoots;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdInstancedBySchema::Builder::Build()
 {
     return HdInstancedBySchema::BuildRetained(
-        _paths
+        _paths,
+        _prototypeRoots
     );
 }
 

@@ -57,9 +57,11 @@ class UsdPrimRange;
 class Usd_PrimData;
 
 class UsdAttribute;
+class UsdEditTarget;
 class UsdRelationship;
 class UsdPayloads;
 class UsdReferences;
+class UsdResolveTarget;
 class UsdSchemaBase;
 class UsdAPISchemaBase;
 class UsdInherits;
@@ -147,7 +149,9 @@ public:
     /// API schemas, and any fallback types defined on the stage for 
     /// unrecognized prim type names. The returned type structure contains the 
     /// "true" schema type used to create this prim's prim definition and answer
-    /// the IsA query. This value is cached and efficient to query.
+    /// the IsA query. This value is cached and efficient to query. The cached
+    /// values are guaranteed to exist for (at least) as long as the prim's
+    /// stage is open.
     /// \sa GetTypeName
     /// \sa GetAppliedSchemas
     /// \sa \ref Usd_OM_FallbackPrimTypes
@@ -180,6 +184,22 @@ public:
     /// opinion wins" semantics.
     USD_API
     SdfPrimSpecHandleVector GetPrimStack() const;
+
+    /// Return all the authored SdfPrimSpecs that may contain opinions for this
+    /// prim in order from strong to weak paired with the cumulative layer 
+    /// offset from the stage's root layer to the layer containing the prim 
+    /// spec.
+    ///
+    /// This behaves exactly the same as UsdPrim::GetPrimStack with the 
+    /// addition of providing the cumulative layer offset of each spec's layer.
+    ///
+    /// \note Use this method for debugging and diagnostic purposes.  It is
+    /// **not** advisable to retain a PrimStack for expedited metadata value
+    /// resolution, since not all metadata resolves with simple "strongest
+    /// opinion wins" semantics.
+    USD_API
+    std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+    GetPrimStackWithLayerOffsets() const;
 
     /// Author an opinion for this Prim's specifier at the current edit
     /// target.
@@ -1647,11 +1667,40 @@ public:
     /// generate a list of sites where clients could make edits to affect this 
     /// prim, or for debugging purposes.
     ///
+    /// For all prims in prototypes, including the prototype prim itself, this
+    /// is the expanded version of the prim index that was chosen to be shared
+    /// with all other instances. Thus, the prim index's path will not be the
+    /// same as the prim's path. Note that this behavior deviates slightly from
+    /// UsdPrim::GetPrimIndex which always returns an empty prim index for the
+    /// prototype prim itself.
+    ///
     /// This function may be relatively slow, since it will recompute the prim
     /// index on every call. Clients should prefer UsdPrim::GetPrimIndex unless 
     /// the additional site information is truly needed.
     USD_API
     PcpPrimIndex ComputeExpandedPrimIndex() const;
+
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider weaker specs up to and including the spec 
+    /// that would be authored for this prim when using the given \p editTarget.
+    ///
+    /// If the edit target would not affect any specs that could contribute to
+    /// this prim, a null resolve target is returned.
+    USD_API
+    UsdResolveTarget MakeResolveTargetUpToEditTarget(
+        const UsdEditTarget &editTarget) const;
+
+    /// Creates and returns a resolve target that, when passed to a 
+    /// UsdAttributeQuery for one of this prim's attributes, causes value 
+    /// resolution to only consider specs that are stronger than the spec 
+    /// that would be authored for this prim when using the given \p editTarget.
+    ///
+    /// If the edit target would not affect any specs that could contribute to
+    /// this prim, a null resolve target is returned.
+    USD_API
+    UsdResolveTarget MakeResolveTargetStrongerThanEditTarget(
+        const UsdEditTarget &editTarget) const;
 
     /// @}
 
@@ -1724,6 +1773,13 @@ private:
     // for testing and debugging purposes.
     const PcpPrimIndex &_GetSourcePrimIndex() const
     { return _Prim()->GetSourcePrimIndex(); }
+
+    // Helper function for MakeResolveTargetUpToEditTarget and 
+    // MakeResolveTargetStrongerThanEditTarget.
+    UsdResolveTarget 
+    _MakeResolveTargetFromEditTarget(
+        const UsdEditTarget &editTarget,
+        bool makeAsStrongerThan) const;
 };
 
 #ifdef doxygen

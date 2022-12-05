@@ -415,10 +415,10 @@ _LoadGrid(const std::string &filePath, std::string const &gridName)
             TRACE_FUNCTION_SCOPE("Opening VDB file");
             try {
                 f.open();
-            } catch (openvdb::IoError e) {
+            } catch (openvdb::IoError const &e) {
                 TF_WARN("Could not open OpenVDB file: %s", e.what());
                 return nullptr;
-            } catch (openvdb::LookupError e) {
+            } catch (openvdb::LookupError const &e) {
                 // Occurs, e.g., when there is an unknown grid type in VDB file
                 TF_WARN("Could not parse OpenVDB file: %s", e.what());
                 return nullptr;

@@ -25,6 +25,7 @@ pxr_library(tf
         anyUniquePtr
         anyWeakPtr
         atomicOfstreamWrapper
+        bigRWMutex
         bitUtils
         debug
         debugNotice
@@ -358,6 +359,7 @@ pxr_build_test(testTf
         testenv/refPtr.cpp
         testenv/registryManager.cpp
         testenv/registryManagerUnload.cpp
+        testenv/rwMutexes.cpp
         testenv/safeOutputFile.cpp
         testenv/scoped.cpp
         testenv/scopeDescription.cpp
@@ -559,6 +561,9 @@ pxr_register_test(TfPreprocessorUtils
 )
 pxr_register_test(TfProbe
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfProbe"
+)
+pxr_register_test(TfRWMutexes
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRWMutexes"
 )
 pxr_register_test(TfRegistryManager
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfRegistryManager"

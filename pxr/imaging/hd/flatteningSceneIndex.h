@@ -53,8 +53,10 @@ public:
     /// Creates a new flattening scene index.
     ///
     static HdFlatteningSceneIndexRefPtr New(
-            const HdSceneIndexBaseRefPtr &inputScene) {
-        return TfCreateRefPtr(new HdFlatteningSceneIndex(inputScene));
+                HdSceneIndexBaseRefPtr const &inputScene,
+                HdContainerDataSourceHandle const &inputArgs = nullptr) {
+        return TfCreateRefPtr(
+            new HdFlatteningSceneIndex(inputScene, inputArgs));
     }
 
     HD_API
@@ -70,7 +72,9 @@ public:
 protected:
 
     HD_API
-    HdFlatteningSceneIndex(const HdSceneIndexBaseRefPtr &inputScene);
+    HdFlatteningSceneIndex(
+        HdSceneIndexBaseRefPtr const &inputScene,
+        HdContainerDataSourceHandle const &inputArgs);
 
     // satisfying HdSingleInputFilteringSceneIndexBase
     void _PrimsAdded(
@@ -85,7 +89,6 @@ protected:
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 private:
-
     // members
     struct _PrimEntry
     {
@@ -95,12 +98,22 @@ private:
     using _PrimEntryTable = SdfPathTable<_PrimEntry>;
     _PrimEntryTable _prims;
 
+    bool _flattenXform;
+    bool _flattenVisibility;
+    bool _flattenPurpose;
+    bool _flattenModel;
+    bool _flattenMaterialBinding;
+    bool _flattenInstancedBy;
+    TfTokenVector _dataSourceNames;
+
     HdContainerDataSourceHandle _identityXform;
     HdContainerDataSourceHandle _identityVis;
     HdContainerDataSourceHandle _identityPurpose;
     HdTokenDataSourceHandle _identityDrawMode;
 
     // methods
+    void _FillPrimsRecursively(const SdfPath &primPath);
+
     void _DirtyHierarchy(
         const SdfPath &primPath,
         const HdDataSourceLocatorSet &dirtyLocators,
@@ -126,7 +139,6 @@ private:
 
         bool PrimDirtied(const HdDataSourceLocatorSet &locators);
 
-        bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
         HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -139,6 +151,10 @@ private:
             const HdContainerDataSourceHandle &model);
         HdTokenDataSourceHandle _GetDrawModeUncached(
             const HdContainerDataSourceHandle &model);
+        HdDataSourceBaseHandle _GetMaterialBinding();
+        HdDataSourceBaseHandle _GetMaterialBindingUncached();
+        HdDataSourceBaseHandle _GetInstancedBy();
+        HdDataSourceBaseHandle _GetInstancedByUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -147,6 +163,13 @@ private:
         HdContainerDataSourceAtomicHandle _computedVisDataSource;
         HdContainerDataSourceAtomicHandle _computedPurposeDataSource;
         HdTokenDataSource::AtomicHandle _computedDrawModeDataSource;
+
+        // Stored as a base rather than a container so we can use cast to
+        // distinguish between a cached value and the absence of a cached value.
+        // Internally, this is set to a retained bool=false data source to 
+        // indicate that no binding is present.
+        HdDataSourceBaseAtomicHandle _computedMaterialBindingDataSource;
+        HdDataSourceBaseAtomicHandle _computedInstancedByDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

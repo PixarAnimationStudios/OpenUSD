@@ -237,36 +237,109 @@ class TestUsdInherits(unittest.TestCase):
 
     def test_GetAllDirectInherits(self):
         for fmt in allFormats:
-            stage = Usd.Stage.CreateInMemory('x.'+fmt, sessionLayer=None)
+            # Layer to hold specs for arcs that will be introduced via 
+            # reference.
+            refLayer = Sdf.Layer.CreateAnonymous('r.'+fmt)
+            refLayer.ImportFromString("""#usda 1.0
+                # Target of a reference arc in the root's /Parent
+                over "PR" (
+                    prepend specializes = </PRS>
+                ) {
+                    over "Child" (
+                        prepend inherits = [
+                            </PRCI>,
+                            </PRCI_NOSPEC>,
+                            </PR/Sibling>
+                        ]
+                    ) {}
+    
+                    over "Sibling" {}
+                }
+    
+                # Target of the specializes arc in PR
+                over "PRS" (
+                    prepend inherits = [
+                        </PRSI>,
+                        </PRSI_NOSPEC>
+                    ]
+                ) {}
+    
+                # Target of a reference arc in an inherited class of root's 
+                # /Parent    
+                over "PIR" (
+                    prepend inherits = [</PIRI>, </PIRI_NOSPEC>]
+                ) {}
+            
+                # Target of a reference arc of root's /Parent/Child
+                over "CR" (
+                    prepend inherits = [</CRI>, </CRI_NOSPEC>]
+                ) {}
+                """)
 
             # Create a simple prim hierarchy, /Parent/Child, then add some arcs.
-            child = stage.DefinePrim('/Parent/Child')
-            parent = child.GetParent()
+            rootLayer = Sdf.Layer.CreateAnonymous('r.'+fmt)
+            rootLayer.ImportFromString("""#usda 1.0
+                def "Parent" (
+                    inherits = </PI>
+                    references = @__REF_LAYER__@</PR>
+                    specializes = </PS>
+                ) {
+                    def "Child" (
+                        inherits = </CI>
+                        references = @__REF_LAYER__@</CR>
+                    ) {}
+                }
 
-            # Create a few other prims to reference and inherit.
-            AI = stage.OverridePrim('/AI/Child')  # ancestral inherit
-            AR = stage.OverridePrim('/AR/Child')  # ancestral reference
-            ARS = stage.OverridePrim('/AR/Sibling') # local inherit
-            ARI = stage.OverridePrim('/ARI')   # ancestrally referenced inherit
-            DR = stage.OverridePrim('/DR')     # direct reference
-            DRI = stage.OverridePrim('/DRI')   # direct referenced inherit
-            DI = stage.OverridePrim('/DI')     # direct inherit
+                # Inherited by /Parent
+                over "PI" (
+                    prepend references = @__REF_LAYER__@</PIR>
+                    prepend specializes = </PIS>
+                ) {}
 
-            parent.GetReferences().AddInternalReference('/AR')
-            parent.GetInherits().AddInherit('/AI')
-            AR.GetInherits().AddInherit('/ARI')
-            AR.GetInherits().AddInherit('/AR/Sibling')
-            child.GetInherits().AddInherit('/DI')
-            child.GetReferences().AddInternalReference('/DR')
-            DR.GetInherits().AddInherit('/DRI')
+                # Target of specializes in PI which is inherited by /Parent
+                over "PIS" (
+                    prepend inherits = </PISI>
+                ) {}
+
+                # Target of inherits in PIS 
+                over "PISI" {}
+
+                # Target of specializes in /Parent
+                over "PS" (
+                    prepend inherits = </PSI>
+                ) {}
+
+                # Target of inherits in PS which is specialized by /Parent
+                over "PSI" {}
+
+                # Inherited by /Parent/Child
+                over "CI" {}
+
+                # Specs for implied inherit targets introduced in by references
+                # to the refLayer.
+                over "PRCI" {}
+                over "PRSI" {}
+                over "CRI" {}
+                over "PIRI" {
+                    over "Child" {}
+                }
+                """.replace("__REF_LAYER__", refLayer.identifier))
+
+            stage = Usd.Stage.Open(rootLayer, sessionLayer=None)
+
+            parent = stage.GetPrimAtPath('/Parent')
+            child = stage.GetPrimAtPath('/Parent/Child')
 
             # Now check that the direct inherits are what we expect.
             self.assertEqual(parent.GetInherits().GetAllDirectInherits(),
-                             [Sdf.Path(path) for path in ['/AI']])
+                [Sdf.Path(path) for path in [
+                    '/PI', '/PIRI', '/PIRI_NOSPEC', '/PISI', '/PRSI',
+                    '/PRSI_NOSPEC', '/PSI']])
 
             self.assertEqual(child.GetInherits().GetAllDirectInherits(),
-                             [Sdf.Path(path) for path in ['/DI', '/DRI', '/ARI',
-                                                          '/Parent/Sibling']])
+                [Sdf.Path(path) for path in [
+                    '/CI', '/CRI', '/CRI_NOSPEC', '/PRCI', '/PRCI_NOSPEC',
+                    '/Parent/Sibling']])
 
     def test_ListPosition(self):
         for fmt in allFormats:

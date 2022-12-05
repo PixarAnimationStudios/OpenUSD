@@ -15,6 +15,18 @@ if (PXR_ENABLE_HDF5_SUPPORT)
    list(APPEND optionalIncludeDirs ${HDF5_INCLUDE_DIRS})
 endif()
 
+# Use the import targets set by Imath's package config
+if (Imath_FOUND)
+    set(__ALEMBIC_IMATH_LIBS "Imath::Imath")
+else()
+    set(__ALEMBIC_IMATH_INCLUDES ${OPENEXR_INCLUDE_DIRS})
+    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Half_LIBRARY})
+    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Imath_LIBRARY})
+    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_Iex_LIBRARY})
+    LIST(APPEND __ALEMBIC_IMATH_LIBS ${OPENEXR_IexMath_LIBRARY})
+endif()
+
+
 pxr_plugin(usdAbc
     LIBRARIES
         tf
@@ -23,15 +35,12 @@ pxr_plugin(usdAbc
         usd
         usdGeom
         ${ALEMBIC_LIBRARIES}
-        ${OPENEXR_Half_LIBRARY} 
-        ${OPENEXR_Imath_LIBRARY} 
-        ${OPENEXR_Iex_LIBRARY} 
-        ${OPENEXR_IexMath_LIBRARY}
+        ${__ALEMBIC_IMATH_LIBS}
         ${optionalLibs}
 
     INCLUDE_DIRS
         ${ALEMBIC_INCLUDE_DIR}
-        ${OPENEXR_INCLUDE_DIRS}
+        ${__ALEMBIC_IMATH_INCLUDES}
         ${optionalIncludeDirs}
 
     PRIVATE_CLASSES
@@ -76,6 +85,7 @@ pxr_test_scripts(
     testenv/testUsdAbcUvReadWrite.py
     testenv/testUsdAbcUvReadWrite_OldEncoding.py
     testenv/testUsdAbcSDFArguments.py
+    testenv/testUsdAbcXformPrimCollapsing.py
 )
 
 pxr_install_test_dir(
@@ -161,6 +171,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdAbcSDFArguments
     DEST testUsdAbcSDFArguments
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdAbcXformPrimCollapsing
+    DEST testUsdAbcXformPrimCollapsing
 )
 
 pxr_register_test(testUsdAbcAlembicData
@@ -289,5 +304,11 @@ pxr_register_test(testUsdAbcUvReadWrite_OldEncoding
 pxr_register_test(testUsdAbcSDFArguments
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcSDFArguments"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdAbcXformPrimCollapsing
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdAbcXformPrimCollapsing"
     EXPECTED_RETURN_CODE 0
 )

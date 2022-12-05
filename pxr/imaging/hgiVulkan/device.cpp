@@ -224,6 +224,16 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME);
     }
 
+    // Allow use of built-in shader barycentrics.
+    if (IsSupportedExtension(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
+        extensions.push_back(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    }
+
+    // Allow use of shader draw parameters.
+    if (IsSupportedExtension(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
+    }
+
     // This extension is needed to allow the viewport to be flipped in Y so that
     // shaders and vertex data can remain the same between opengl and vulkan.
     extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
@@ -250,10 +260,17 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         _capabilities->vkDeviceFeatures.shaderClipDistance;
     features.features.tessellationShader =
         _capabilities->vkDeviceFeatures.tessellationShader;
+    features.features.depthClamp =
+        _capabilities->vkDeviceFeatures.depthClamp;
+    features.features.shaderFloat64 =
+        _capabilities->vkDeviceFeatures.shaderFloat64;
 
     // Needed to write to storage buffers from vertex shader (eg. GPU culling).
     features.features.vertexPipelineStoresAndAtomics =
         _capabilities->vkDeviceFeatures.vertexPipelineStoresAndAtomics;
+    // Needed to write to storage buffers from fragment shader (eg. OIT).
+    features.features.fragmentStoresAndAtomics =
+        _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
 
     #if !defined(VK_USE_PLATFORM_MACOS_MVK)
         // Needed for buffer address feature

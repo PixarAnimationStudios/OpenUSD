@@ -29,9 +29,26 @@
 #include "Riley.h"
 #include "RixShadingUtils.h"
 
+#include "pxr/base/gf/math.h"
+#include "pxr/base/tf/envSetting.h"
+
+#include <cmath>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static const RtUString _us_main_cam_projection("main_cam_projection");
+
+// PxrPerspective does not support lens distortion (k1, k2, ...).
+//
+// However, neither PxrProjection and PxrCamera are quite ready yet for
+// hdPrman. We eventually want to use PxrCamera but some features still
+// need to be ported to PxrProjection and then back-ported to the PxrCamera
+// in RenderMan 24.
+//
+TF_DEFINE_ENV_SETTING(HD_PRMAN_SUPPORT_LENS_DISTORTION, false,
+                      "Switches camera shader from PxrPerspective to "
+                      "PxrProjection/PxrCamera so that lens distortion "
+                      "parametrers are supported.");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
@@ -117,13 +134,10 @@ HdPrman_CameraContext::IsInvalid() const
 
 ///////////////////////////////////////////////////////////////////////////////
 //
-// Screen window space: imagine a plane at unit distance (*) in front
-// of the camera (and parallel to the camera). Coordinates with
-// respect to screen window space are measured in this plane with the
-// y-Axis pointing up. Such coordinates parameterize rays from the
-// camera.
-// (*) This is a simplification achieved by fixing RenderMan's FOV to be
-// 90 degrees.
+// Screen window space: imagine a plane at in front of the camera (and parallel
+// to the camera) with coordinates such that the square [-1,1]^2 spans a pyramid
+// with angle being the (horizontal) FOV. This is the screen window space and is
+// used to parametrize the rays from the camera.
 //
 // Image space: coordinates of the pixels in the rendered image with the top
 // left pixel having coordinate (0,0), i.e., y-down.
@@ -133,7 +147,6 @@ HdPrman_CameraContext::IsInvalid() const
 // We want to map the screen window space to the image space such that the
 // conformed camera frustum from the scene delegate maps to the display window
 // of the CameraUtilFraming. This is achieved by the following code.
-//
 //
 // Compute screen window for given camera.
 //
@@ -152,11 +165,14 @@ _GetScreenWindow(const HdCamera * const cam)
         return filmbackPlane;
     }
 
-    if (cam->GetFocalLength() == 0.0f) {
+    if (cam->GetFocalLength() == 0.0f || cam->GetHorizontalAperture() == 0.0f) {
         return filmbackPlane;
     }
 
-    return filmbackPlane / double(cam->GetFocalLength());
+    // Note that for perspective projection and with no horizontal aperture,
+    // our screen widndow's x-coordinate are in [-1, 1].
+    // Divide by appropriate factor to get to this.
+    return filmbackPlane / double(0.5 * cam->GetHorizontalAperture());
 }
 
 // Compute the screen window we need to give to RenderMan. This screen
@@ -244,66 +260,129 @@ static
 const RtUString&
 _ComputeProjectionShader(const HdCamera::Projection projection)
 {
-    static const RtUString us_PxrPerspective("PxrPerspective");
+    // Switch this to PxrCamera once it is ready in RenderMan.
+    static const RtUString us_PxrCamera(
+        TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)
+            ? "PxrProjection"
+            : "PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
 
     switch (projection) {
     case HdCamera::Perspective:
-        return us_PxrPerspective;
+        return us_PxrCamera;
     case HdCamera::Orthographic:
         return us_PxrOrthographic;
     }
 
     // Make compiler happy.
-    return us_PxrPerspective;
+    return us_PxrCamera;
 }
 
-// Compute parameters for the camera riley::ShadingNode.
-static
+// Compute parameters for the camera riley::ShadingNode for perspective camera
 RtParamList
-_ComputeNodeParams(const HdCamera * const camera)
+_ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
 {
     RtParamList result;
 
-    // Following parameters can be set on the projection shader:
-    // fov (currently unhandled)
-    // fovEnd (currently unhandled)
-    // fStop
-    // focalLength
-    // focalDistance
-    // RenderMan defines disabled DOF as fStop=inf not zero
+    static const RtUString us_lensType("lensType");
+    // lensType values in PxrProjection.
+    constexpr int lensTypeLensWarp = 2;
 
-    float fStop = RI_INFINITY;
-    const float cameraFStop = camera->GetFStop();
-    if (cameraFStop > 0.0) {
-        fStop = cameraFStop;
+    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
+        // Pick a PxrProjection lens type that supports depth of field
+        // and lens distortion.
+        result.SetInteger(us_lensType, lensTypeLensWarp);
     }
-    result.SetFloat(RixStr.k_fStop, fStop);
 
-    // Do not use the initial value 0 which we get if the scene delegate
-    // did not provide a focal length.
+    // FOV settings.
     const float focalLength = camera->GetFocalLength();
     if (focalLength > 0) {
         result.SetFloat(RixStr.k_focalLength, focalLength);
-    }
-
-    // Similar for focus distance.
-    const float focusDistance = camera->GetFocusDistance();
-    if (focusDistance > 0) {
-        result.SetFloat(RixStr.k_focalDistance, focusDistance);
-    }
-
-    if (camera->GetProjection() == HdCamera::Perspective) {
-        // TODO: For lens distortion to be correct, we might
-        // need to set a different FOV and adjust the screenwindow
-        // accordingly.
-        // For now, lens distortion parameters are not passed through
-        // hdPrman anyway.
-        //
+        const float r = camera->GetHorizontalAperture() / focalLength;
+        const float fov = 2.0f * GfRadiansToDegrees(std::atan(0.5f * r));
+        result.SetFloat(RixStr.k_fov, fov);
+    } else {
+        // If focal length is bogus, don't set it.
+        // Fallback to sane FOV.
         result.SetFloat(RixStr.k_fov, 90.0f);
     }
 
+    // Depth of field settings.
+    const float focusDistance = camera->GetFocusDistance();
+    if (focusDistance > 0.0f) {
+        result.SetFloat(RixStr.k_focalDistance, focusDistance);
+    } else {
+        // If value is bogus, set to sane value.
+        result.SetFloat(RixStr.k_focalDistance, 1000.0f);
+    }
+
+    const float fStop = camera->GetFStop();
+    if (fStop > 0.0f && focusDistance > 0.0f) {
+        result.SetFloat(RixStr.k_fStop, fStop);
+    } else {
+        // If values are bogus, disable depth of field by setting
+        // ininie f-Stop and a sane value for focalDistance.
+        result.SetFloat(RixStr.k_fStop, RI_INFINITY);
+    }
+
+    // Not setting fov frame begin/end - thus we do not support motion blur
+    // due to changing FOV.
+
+    // Some of these names might need to change when switching to PxrCamera.
+    static const RtUString us_lensK1("lensK1");
+    static const RtUString us_lensK2("lensK2");
+    static const RtUString us_distortionCtr("distortionCtr");
+    static const RtUString us_lensSqueeze("lensSqueeze");
+    static const RtUString us_lensAsymmetry("lensAsymmetry");
+    static const RtUString us_lensScale("lensScale");
+
+    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
+        result.SetFloat(
+            us_lensK1,
+            camera->GetLensDistortionK1());
+        result.SetFloat(
+            us_lensK2,
+            camera->GetLensDistortionK2());
+        result.SetFloatArray(
+            us_distortionCtr,
+            camera->GetLensDistortionCenter().data(),
+            2);
+        result.SetFloat(
+            us_lensSqueeze,
+            camera->GetLensDistortionAnaSq());
+        result.SetFloatArray(
+            us_lensAsymmetry,
+            camera->GetLensDistortionAsym().data(),
+            2);
+        result.SetFloat(
+            us_lensScale,
+            camera->GetLensDistortionScale());
+    }
+
     return result;
+}
+
+// Compute parameters for the camera riley::ShadingNode for orthographic camera
+RtParamList
+_ComputeOrthographicNodeParams(const HdPrmanCamera * const camera)
+{
+    return {};
+}
+
+// Compute parameters for the camera riley::ShadingNode
+static
+RtParamList
+_ComputeNodeParams(const HdPrmanCamera * const camera)
+{
+    switch(camera->GetProjection()) {
+    case HdCamera::Perspective:
+        return _ComputePerspectiveNodeParams(camera);
+    case HdCamera::Orthographic:
+        return _ComputeOrthographicNodeParams(camera);
+    }
+
+    // Make compiler happy
+    return _ComputePerspectiveNodeParams(camera);
 }
 
 // Compute params given to Riley::ModifyCamera
@@ -740,7 +819,8 @@ HdPrman_CameraContext::Begin(riley::Riley * const riley)
     const riley::Transform transform = { 1, matrix, zerotime };
         
     _cameraId = riley->CreateCamera(
-        riley::UserId::DefaultId(),
+        riley::UserId(
+            stats::AddDataLocation(name.CStr()).GetValue()),
         name,
         node,
         transform,

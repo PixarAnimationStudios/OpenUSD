@@ -20,6 +20,7 @@ pxr_library(hgi
         graphicsCmdsDesc
         graphicsPipeline
         hgi
+        indirectCommandEncoder
         resourceBindings
         sampler
         shaderFunction

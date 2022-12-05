@@ -61,6 +61,7 @@ public:
     /// Prepare draw commands and apply view frustum culling for this batch.
     HDST_API
     void PrepareDraw(
+        HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 

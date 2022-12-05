@@ -51,12 +51,6 @@ TfDiagnosticBase::TfDiagnosticBase(
         _codeString = TfSafeString(codeString);
 }
 
-string
-TfDiagnosticBase::GetPrettyPrintString() const
-{
-    return _commentary;
-}
-
 bool
 TfDiagnosticBase::IsFatal() const
 {

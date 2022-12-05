@@ -46,7 +46,7 @@ class PcpNodeRef_ChildrenReverseIterator;
 class PcpErrorBase;
 typedef std::shared_ptr<PcpErrorBase> PcpErrorBasePtr;
 
-TF_DECLARE_WEAK_PTRS(PcpPrimIndex_Graph);
+TF_DECLARE_REF_PTRS(PcpPrimIndex_Graph);
 
 /// \class PcpNodeRef
 ///
@@ -102,7 +102,9 @@ public:
     };
 
     /// Returns the graph that this node belongs to.
-    PcpPrimIndex_GraphPtr GetOwningGraph() const;
+    PcpPrimIndex_Graph *GetOwningGraph() const {
+        return _graph;
+    }
 
     /// Returns a value that uniquely identifies this node.
     PCP_API
@@ -139,7 +141,7 @@ public:
     /// \p subtree connected to this node via \p arc.
     PCP_API
     PcpNodeRef InsertChildSubgraph(
-        const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+        const PcpPrimIndex_GraphRefPtr& subgraph, const PcpArc& arc,
         PcpErrorBasePtr *error);
 
     /// Returns the immediate origin node for this node. The origin node
@@ -220,7 +222,10 @@ public:
     PCP_API
     bool IsRootNode() const;
 
-    /// Returns true if this node is due to an ancestral opinion.
+    /// Get/set whether this node was introduced by being copied from its
+    /// namespace ancestor, or directly by an arc at this level of namespace.
+    PCP_API
+    void SetIsDueToAncestor(bool isDueToAncestor);
     PCP_API
     bool IsDueToAncestor() const;
 
@@ -297,8 +302,8 @@ private:
 
     size_t _GetNodeIndex() const { return _nodeIdx; }
 
-    size_t _GetParentIndex() const;
-    size_t _GetOriginIndex() const;
+    inline size_t _GetParentIndex() const;
+    inline size_t _GetOriginIndex() const;
 
 private: // Data
     PcpPrimIndex_Graph* _graph;

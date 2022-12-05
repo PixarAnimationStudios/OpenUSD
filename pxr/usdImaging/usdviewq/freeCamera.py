@@ -39,6 +39,7 @@ class FreeCamera(QtCore.QObject):
     # its viewed content changes.  For instance, to compute the value
     # to supply for setClosestVisibleDistFromPoint()
     signalFrustumChanged = QtCore.Signal()
+    signalFrustumSettingsChanged = QtCore.Signal()
 
     defaultNear = 1
     defaultFar = 2000000
@@ -514,6 +515,7 @@ class FreeCamera(QtCore.QObject):
         else:
             self._camera.projection = Gf.Camera.Perspective
         self.signalFrustumChanged.emit()
+        self.signalFrustumSettingsChanged.emit()
 
     @property
     def fov(self):
@@ -535,6 +537,7 @@ class FreeCamera(QtCore.QObject):
             self._camera.SetOrthographicFromAspectRatioAndSize(
                 self._camera.aspectRatio, value, Gf.Camera.FOVVertical)
         self.signalFrustumChanged.emit()
+        self.signalFrustumSettingsChanged.emit()
 
     @property
     def aspectRatio(self):
@@ -553,6 +556,7 @@ class FreeCamera(QtCore.QObject):
     def horizontalAperture(self, value):
         self._camera.horizontalAperture = value
         self.signalFrustumChanged.emit()
+        self.signalFrustumSettingsChanged.emit()
 
     @property
     def verticalAperture(self):
@@ -562,6 +566,7 @@ class FreeCamera(QtCore.QObject):
     def verticalAperture(self, value):
         self._camera.verticalAperture = value
         self.signalFrustumChanged.emit()
+        self.signalFrustumSettingsChanged.emit()
     
     @property
     def focalLength(self):
@@ -571,6 +576,7 @@ class FreeCamera(QtCore.QObject):
     def focalLength(self, value):
         self._camera.focalLength = value
         self.signalFrustumChanged.emit()
+        self.signalFrustumSettingsChanged.emit()
 
     @property
     def near(self):

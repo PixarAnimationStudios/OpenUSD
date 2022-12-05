@@ -27,7 +27,9 @@ def Volume "volume"
     }
 }
 
-def Cube "cube"
+def Cube "cube" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     rel material:binding = </materials/usdpreviewsurface1>
     double size = 2

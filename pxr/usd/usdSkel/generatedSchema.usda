@@ -304,6 +304,10 @@ class "SkelBindingAPI" (
         *jointWeights* must match that of *jointIndices*. See UsdGeomPrimvar
         for more information on interpolation and elementSize."""
     )
+    uniform token primvars:skel:skinningMethod = "classicLinear" (
+        allowedTokens = ["classicLinear", "dualQuaternion"]
+        doc = "The skinningMethod specifies the skinning method for the prim."
+    )
     rel skel:animationSource (
         doc = """Animation source to be bound to Skeleton primitives at or
         beneath the location at which this property is defined.

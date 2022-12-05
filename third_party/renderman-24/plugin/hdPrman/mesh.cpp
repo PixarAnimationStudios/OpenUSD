@@ -51,7 +51,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((displacementBoundSphere, "displacementbound:sphere")) 
+    ((displacementBoundSphere, "displacementbound:sphere"))
 );
 
 HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id)
@@ -167,10 +167,7 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         *primType = RixStr.k_Ri_SubdivisionMesh;
         primvars.SetString(RixStr.k_Ri_scheme, RixStr.k_bilinear);
     }
-
-    if (IsDoubleSided(sceneDelegate)) {
-        primvars.SetInteger(RixStr.k_Ri_Sides, 2);
-    }
+  
     // Orientation, aka winding order.
     // Because PRMan uses a left-handed coordinate system, and USD/Hydra
     // use a right-handed coordinate system, the meaning of orientation

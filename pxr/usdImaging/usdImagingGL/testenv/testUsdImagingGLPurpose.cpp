@@ -97,11 +97,6 @@ int main(int argc, char *argv[])
     UsdImagingGLEngineSharedPtr engine;
     SdfPathVector excludedPaths;
 
-    if (UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cout << "Using HD Renderer.\n";
-    } else {
-        std::cout << "Using Reference Renderer.\n";
-    }
     engine.reset(
         new UsdImagingGLEngine(stage->GetPseudoRoot().GetPath(), 
                 excludedPaths));

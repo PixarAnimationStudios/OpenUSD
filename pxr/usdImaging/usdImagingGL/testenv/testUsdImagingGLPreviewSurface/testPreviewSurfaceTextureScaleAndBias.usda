@@ -6,7 +6,10 @@
     upAxis = "Z"
 )
 
-class Mesh "Plane" {
+class Mesh "Plane" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     float3[] extent = [(-2, 0, -2), (2, 0, 2)]
     int[] faceVertexCounts = [4]
     int[] faceVertexIndices = [0, 1, 2, 3]

@@ -43,6 +43,9 @@ class UsdImagingConeAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
 
+    // Number of radial segments on a circular cross-section of the cone.
+    static constexpr size_t numRadial = 10;
+
     UsdImagingConeAdapter()
         : UsdImagingGprimAdapter()
     {}
@@ -54,19 +57,22 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    TfTokenVector GetImagingSubprims() override;
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
 
     USDIMAGING_API
-    TfToken GetImagingSubprimType(TfToken const& subprim) override;
+    TfToken GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim) override;
 
     USDIMAGING_API
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
-            UsdPrim const& prim,
-            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals) override;
 
     USDIMAGING_API
     HdDataSourceLocatorSet InvalidateImagingSubprim(
+        UsdPrim const& prim,
         TfToken const& subprim,
         TfTokenVector const& properties) override;
 
@@ -116,15 +122,6 @@ public:
     VtValue GetPoints(
         UsdPrim const& prim,
         UsdTimeCode time) const override;
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim, 
-                                 UsdTimeCode time);
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 };
 
 

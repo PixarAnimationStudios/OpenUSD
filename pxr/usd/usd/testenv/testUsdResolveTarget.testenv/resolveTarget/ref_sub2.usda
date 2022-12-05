@@ -1,0 +1,18 @@
+#usda 1.0
+(
+)
+
+def Xform "RefParent"
+{
+    def Sphere "RefChild"
+    {
+        float foo = 1
+        float radius = 1
+        int var.timeSamples = {
+            1: 1
+        } 
+
+        int bar = 1
+    }
+}
+

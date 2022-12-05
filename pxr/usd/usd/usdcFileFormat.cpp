@@ -68,7 +68,18 @@ UsdUsdcFileFormat::~UsdUsdcFileFormat()
 SdfAbstractDataRefPtr
 UsdUsdcFileFormat::InitData(const FileFormatArguments& args) const
 {
-    auto newData = new Usd_CrateData();
+    auto newData = new Usd_CrateData(/* detached = */ false);
+
+    // The pseudo-root spec must always exist in a layer's SdfData, so
+    // add it here.
+    newData->CreateSpec(SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot);
+    return TfCreateRefPtr(newData);
+}
+
+SdfAbstractDataRefPtr
+UsdUsdcFileFormat::_InitDetachedData(const FileFormatArguments& args) const
+{
+    auto newData = new Usd_CrateData(/* detached = */ true);
 
     // The pseudo-root spec must always exist in a layer's SdfData, so
     // add it here.
@@ -95,17 +106,30 @@ UsdUsdcFileFormat::Read(SdfLayer* layer,
                         bool metadataOnly) const
 {
     TRACE_FUNCTION();
-    return _ReadHelper(layer, resolvedPath, metadataOnly);
+    return _ReadHelper(layer, resolvedPath, metadataOnly,
+                       /* detached = */ false);
+}
+
+bool
+UsdUsdcFileFormat::_ReadDetached(
+    SdfLayer* layer,
+    const std::string& resolvedPath,
+    bool metadataOnly) const
+{
+    TRACE_FUNCTION();
+    return _ReadHelper(layer, resolvedPath, metadataOnly, 
+                       /* detached = */ true);
 }
 
 bool
 UsdUsdcFileFormat::_ReadFromAsset(SdfLayer* layer,
                                   const string& resolvedPath,
                                   const std::shared_ptr<ArAsset>& asset,
-                                  bool metadataOnly) const
+                                  bool metadataOnly,
+                                  bool detached) const
 {
     TRACE_FUNCTION();
-    return _ReadHelper(layer, resolvedPath, metadataOnly, asset);
+    return _ReadHelper(layer, resolvedPath, metadataOnly, asset, detached);
 }
 
 template <class ...Args>

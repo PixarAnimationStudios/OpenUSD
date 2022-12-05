@@ -5,23 +5,47 @@
     upAxis = "Z"
 )
 
+def DomeLight "Light"
+{
+    asset inputs:texture:file = @lightGray.png@
+}
+
 def Xform "Cube"
 {
     custom matrix4d xformOp:transform = ( (0.7, 0.5, 0.5, 0), (-0.7, 0.5, 0.5, 0), (0, -0.7, 0.7, 0), (0, 0, 0, 1) )
     uniform token[] xformOpOrder = ["xformOp:transform"]
 
-    def Cube "geom"
+    def Cube "geom" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
-        custom rel material:binding = </Cube/Shaders/lambert1>
+        custom rel material:binding = </Cube/Shaders/Blue>
     }
 
     def Scope "Shaders"
     {
-        def Look "lambert1"
+        def Material "Blue"
         {
-            custom color3f displayColor = (0, 0, 1)
-            custom rel riLook:bxdf
-            add rel riLook:bxdf = </Cube/Shaders/lambert1>
+            token outputs:surface.connect = </Cube/Shaders/Blue/PreviewSurface.outputs:surface>
+
+            def Shader "PreviewSurface"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 0, 1)
+                float inputs:clearcoat = 0
+                float inputs:clearcoatRoughness = 1
+                float inputs:displacement = 0
+                color3f inputs:emissiveColor = (0, 0, 0)
+                float inputs:ior = 1.5
+                float inputs:metallic = 0.1
+                float3 inputs:normal = (0, 0, 1)
+                float inputs:occlusion = 1
+                float inputs:opacity = 1
+                float inputs:roughness = 0.5
+                color3f inputs:specularColor = (0, 0, 0.5)
+                int inputs:useSpecularWorkflow = 0
+                token outputs:surface
+            }
         }
     }
 }

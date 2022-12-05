@@ -53,6 +53,7 @@ public:
         bool isAbstract;
         bool isInPrototype;
         bool isInstance;
+        bool supportsGuides;
         bool supportsDrawMode;
         bool isVisibilityInherited;
         bool visVaries;

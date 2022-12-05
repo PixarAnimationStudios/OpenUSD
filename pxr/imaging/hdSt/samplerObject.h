@@ -144,8 +144,15 @@ public:
         return _texelsSampler;
     }
 
+    /// The GPU sampler object for the layout texture.
+    ///
+    const HgiSamplerHandle &GetLayoutSampler() const {
+        return _layoutSampler;
+    }
+
 private:
     HgiSamplerHandle _texelsSampler;
+    HgiSamplerHandle _layoutSampler;
 };
 
 /// \class HdStUdimSamplerObject
@@ -169,8 +176,15 @@ public:
         return _texelsSampler;
     }
 
+    /// The GPU sampler object for the layout texture.
+    ///
+    const HgiSamplerHandle &GetLayoutSampler() const {
+        return _layoutSampler;
+    }
+
 private:
     HgiSamplerHandle _texelsSampler;
+    HgiSamplerHandle _layoutSampler;
 };
 
 template<HdTextureType textureType>

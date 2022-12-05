@@ -89,5 +89,8 @@ wrapRenderParams()
         .def_readwrite("ocioView", &Params::ocioView)
         .def_readwrite("ocioColorSpace", &Params::ocioColorSpace)
         .def_readwrite("ocioLook", &Params::ocioLook)
+        .def_readwrite("bboxes", &Params::bboxes)
+        .def_readwrite("bboxLineColor", &Params::bboxLineColor)
+        .def_readwrite("bboxLineDashSize", &Params::bboxLineDashSize)
         ;
 }

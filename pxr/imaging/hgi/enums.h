@@ -71,6 +71,10 @@ using HgiBits = uint32_t;
 ///   Supports Metal tessellation shaders</li>
 /// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
 ///   The device requires workaround for base primitive offset</li>
+/// <li>HgiDeviceCapabilitiesBitsPrimitiveIdEmulation:
+///   The device requires workaround for primitive id</li>
+/// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
+///   Indirect command buffers are supported</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -90,7 +94,9 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
     HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
     HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
-    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
+    HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
+    HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 16,
+    HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
 };
 
 using HgiDeviceCapabilities = HgiBits;

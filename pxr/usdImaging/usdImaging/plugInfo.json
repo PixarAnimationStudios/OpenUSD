@@ -50,6 +50,11 @@
                         "isInternal": true,
                         "primTypeName": "Capsule"
                     },
+                    "UsdImagingCollectionAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "CollectionAPI"
+                    },
                     "UsdImagingConeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -90,6 +95,11 @@
                         "isInternal": true,
                         "primTypeName": "Material"
                     },
+                    "UsdImagingMaterialBindingAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "MaterialBindingAPI"
+                    },
                     "UsdImagingMeshAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -110,6 +120,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "NurbsPatch"
+                    },
+                    "UsdImagingPlaneAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "Plane"
                     },
                     "UsdImagingPointsAdapter": {
                         "bases": [
@@ -161,6 +178,13 @@
                         "isInternal": true,
                         "primTypeName": "LightAPI",
                         "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdImagingLightAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "LightAPI"
                     },
                     "UsdImagingLightFilterAdapter": {
                         "bases": [

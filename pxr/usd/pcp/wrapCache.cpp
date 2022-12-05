@@ -267,6 +267,9 @@ wrapCache()
                                     return_value_policy<return_by_value>()))
 
         .def("ComputeLayerStack", &_ComputeLayerStack)
+        .def("HasRootLayerStack",
+             (bool (PcpCache::*)(PcpLayerStackPtr const &) const)
+             &PcpCache::HasRootLayerStack)
         .def("UsesLayerStack", &PcpCache::UsesLayerStack)
         .def("ComputePrimIndex", &_ComputePrimIndex)
         .def("FindPrimIndex", &_FindPrimIndex)

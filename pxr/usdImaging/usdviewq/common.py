@@ -175,10 +175,10 @@ class ColorCorrectionModes(ConstantsGroup):
 
 class PickModes(ConstantsGroup):
     # Pick modes
-    PRIMS = "Prims"
-    MODELS = "Models"
-    INSTANCES = "Instances"
-    PROTOTYPES = "Prototypes"
+    PRIMS = "Select Prims"
+    MODELS = "Select Models"
+    INSTANCES = "Select Instances"
+    PROTOTYPES = "Select Prototypes"
 
 class SelectionHighlightModes(ConstantsGroup):
     # Selection highlight modes
@@ -283,18 +283,18 @@ def GetShortStringForValue(prop, val):
     if val is None:
         return ''
     
-    from .scalarTypes import GetScalarTypeFromAttr
-    scalarType, isArray = GetScalarTypeFromAttr(prop)
+    valType = Sdf.GetValueTypeNameForValue(val)
     result = ''
-    if isArray and not isinstance(val, Sdf.ValueBlock):
+    if valType.isArray and not isinstance(val, Sdf.ValueBlock):
         def arrayToStr(a):
             from itertools import chain
             elems = a if len(a) <= 6 else chain(a[:3], ['...'], a[-3:])
             return '[' + ', '.join(map(str, elems)) + ']'
         if val is not None and len(val):
-            result = "%s[%d]: %s" % (scalarType, len(val), arrayToStr(val))
+            result = "%s[%d]: %s" % (
+                valType.scalarType, len(val), arrayToStr(val))
         else:
-            result = "%s[]" % scalarType
+            result = "%s[]" % valType.scalarType
     else:
         result = str(val)
 
@@ -353,56 +353,144 @@ def GetPropertyColor(prop, frame, hasValue=None, hasAuthoredValue=None,
 
 # Gathers information about a layer used as a subLayer, including its
 # position in the layerStack hierarchy.
-class SubLayerInfo(object):
-    def __init__(self, sublayer, offset, containingLayer, prefix):
-        self.layer = sublayer
-        self.offset = offset
-        self.parentLayer = containingLayer
-        self._prefix = prefix
+class LayerInfo(object):
+    def __init__(self, identifier, realPath, offset, stage, 
+                 timeCodesPerSecond=None, isMuted=False, depth=0):
+        self._identifier = identifier
+        self._realPath = realPath
+        self._offset = offset
+        self._stage = stage
+        self._timeCodesPerSecond = timeCodesPerSecond
+        self._isMuted = isMuted
+        self._depth = depth
 
+    @classmethod
+    def FromLayer(cls, layer, stage, offset, depth=0):
+        return cls(layer.identifier, layer.realPath, offset, stage,
+                   timeCodesPerSecond=layer.timeCodesPerSecond,
+                   depth=depth)
+
+    @classmethod
+    def FromMutedLayerIdentifier(cls, identifier, parentLayer, stage, depth=0):
+        realPath = ''
+        try:
+            resolver = Ar.GetResolver()
+            with Ar.ResolverContextBinder(stage.GetPathResolverContext()):
+                realPath = resolver.Resolve(resolver.CreateIdentifier(
+                    identifier, parentLayer.resolvedPath)).GetPathString()
+        except Exception as e:
+            PrintWarning('Failed to resolve identifier {} '
+                         .format(identifier), e)
+            realPath = 'unknown'
+
+        return cls(identifier, realPath, Sdf.LayerOffset(), stage, 
+                   isMuted=True, depth=depth)
+
+    def GetIdentifier(self):
+        return self._identifier
+
+    def GetRealPath(self):
+        return self._realPath
+            
+    def IsMuted(self):
+        return self._isMuted
+
+    def GetOffset(self):
+        return self._offset
+    
     def GetOffsetString(self):
-        o = self.offset.offset
-        s = self.offset.scale
-        if o == 0:
-            if s == 1:
-                return ""
-            else:
-                return str.format("(scale = {})", s)
-        elif s == 1:
-            return str.format("(offset = {})", o)
+        if self._offset == None:
+            return '-'
+        if self._offset.IsIdentity():
+            return ""
         else:
-            return str.format("(offset = {0}; scale = {1})", o, s)
+            return "{} , {}".format(self._offset.offset, self._offset.scale)
+
+    def GetOffsetTooltipString(self):
+        if self._offset == None:
+            return '-'
+        if self._offset.IsIdentity():
+            return ""
+        toolTips = ["<b>Layer Offset</b> (from stage root)",
+                    "<b>offset:</b> {}".format(self._offset.offset),
+                    "<b>scale:</b> {}".format(self._offset.scale)]
+        # Display info about automatic time scaling if the layer's tcps is known
+        # and doesn't match the stage's tcps.
+        if self._timeCodesPerSecond:
+            stageTcps = self._stage.GetTimeCodesPerSecond()
+            if self._timeCodesPerSecond != stageTcps:
+                toolTips.append("Includes timeCodesPerSecond auto-scaling: "
+                                "{} (stage) / {} (layer)".format(
+                    stageTcps, self._timeCodesPerSecond))
+        return "<br>".join(toolTips)
+
+    def GetToolTipString(self):
+        return "<b>identifier:</b> @%s@ <br> <b>resolved path:</b> %s" % \
+            (self.GetIdentifier(), self.GetRealPath())
 
     def GetHierarchicalDisplayString(self):
-        return self._prefix + self.layer.GetDisplayName()
+        return ('    '*self._depth + 
+            Sdf.Layer.GetDisplayNameFromIdentifier(self._identifier))
 
-def _AddSubLayers(layer, layerOffset, prefix, parentLayer, layers):
-    offsets = layer.subLayerOffsets
-    layers.append(SubLayerInfo(layer, layerOffset, parentLayer, prefix))
-    for i, l in enumerate(layer.subLayerPaths):
-        offset = offsets[i] if offsets is not None and len(offsets) > i else Sdf.LayerOffset()
-        subLayer = Sdf.Layer.FindRelativeToLayer(layer, l)
-        # Due to an unfortunate behavior of the Pixar studio resolver,
-        # FindRelativeToLayer() may fail to resolve certain paths.  We will
-        # remove this extra Find() call as soon as we can retire the behavior;
-        # in the meantime, the extra call does not hurt (but should not, in
-        # general, be necessary)
-        if not subLayer:
-            subLayer = Sdf.Layer.Find(l)
-
-        if subLayer:
-            # This gives a 'tree'-ish presentation, but it looks sad in
-            # a QTableWidget.  Just use spaces for now
-            # addedPrefix = "|-- " if parentLayer is None else "|    "
-            addedPrefix = "     "
-            _AddSubLayers(subLayer, offset, addedPrefix + prefix, layer, layers)
-        else:
-            print("Could not find layer " + l)
-
-def GetRootLayerStackInfo(layer):
-    layers = []
-    _AddSubLayers(layer, Sdf.LayerOffset(), "", None, layers)
+def _AddLayerTree(stage, layerTree, depth=0):
+    layers = [LayerInfo.FromLayer(
+        layerTree.layer, stage, layerTree.offset, depth)]
+    for child in layerTree.childTrees:
+        layers.extend(_AddLayerTree(stage, child, depth=depth + 1))
     return layers
+
+def _AddLayerTreeWithMutedSubLayers(stage, layerTree, depth=0):
+
+    layers = [LayerInfo.FromLayer(
+        layerTree.layer, stage, layerTree.offset, depth)]
+
+    # The layer tree from the layer stack has all of the fully composed layer
+    # offsets, but will not have any of the muted layers. The sublayer paths of
+    # layer will still contain any muted layers but will not have the composed
+    # layer offsets that the layer tree provides. So in order to show the muted
+    # layers in the correct sublayer position, we go through the sublayer paths
+    # parsing either the muted layer or a layer stack tree subtree.
+    # 
+    # XXX: It would be nice if we could get this whole layer stack tree with
+    # muted layers and composed offsets without having to cross reference two
+    # different APIs. 
+    childTrees = layerTree.childTrees
+    subLayerPaths = layerTree.layer.subLayerPaths
+    childTreeIter = iter(layerTree.childTrees)
+    numMutedLayers = 0
+    for subLayerPath in subLayerPaths:
+        if stage.IsLayerMuted(subLayerPath):
+            # The sublayer path is muted so add muted layer by path. We don't 
+            # recurse on sublayers for muted layers.
+            layers.append(LayerInfo.FromMutedLayerIdentifier(
+                subLayerPath, layerTree.layer, stage, depth=depth+1))
+            numMutedLayers = numMutedLayers + 1
+        else:
+            # Otherwise we expect the unmuted sublayer to be the next child
+            # tree in the layer stack tree so we recursively add it.
+            layers.extend(_AddLayerTreeWithMutedSubLayers(
+                stage, next(childTreeIter), depth=depth + 1))
+
+    # Since we're relying on the correspondence between the unmuted sublayer 
+    # paths and the child layer stack trees, report an error if the total number
+    # of muted layers and child trees don't match up so we can track if it 
+    # becomes an issue.
+    if numMutedLayers + len(childTrees) != len(subLayerPaths):
+        print("CODING ERROR: Encountered an unexpected number of muted "
+              "sublayers of layer {}. The root layer stack may be "
+              "incorrect in the layer stack view".format(
+              layerTree.layer.identifier))
+
+    return layers
+
+def GetRootLayerStackInfo(stage):
+    primIndex = stage.GetPseudoRoot().GetPrimIndex()
+    layerStack = primIndex.rootNode.layerStack
+
+    if layerStack.mutedLayers:
+        return _AddLayerTreeWithMutedSubLayers(stage, layerStack.layerTree)
+    else:
+        return _AddLayerTree(stage, layerStack.layerTree)
 
 def PrettyFormatSize(sz):
     k = 1024
@@ -425,23 +513,52 @@ def PrettyFormatSize(sz):
 
 class Timer(object):
     """Use as a context object with python's "with" statement, like so:
-       with Timer() as t:
+       with Timer("do some stuff", printTiming=True):
            doSomeStuff()
-       t.PrintTime("did some stuff")
+
+       If you want to defer printing timing information, one way to do so is as
+       follows:
+       with Timer("do some stuff") as t:
+           doSomeStuff()
+       if wantToPrintTime:
+           t.PrintTime()
     """
+    def __init__(self, label, printTiming=False):
+        self._printTiming = printTiming
+        self._ittUtilTaskEnd = lambda : None
+        self._label = label
+        self._isValid = False
+
     def __enter__(self):
         self._stopwatch = Tf.Stopwatch()
         self._stopwatch.Start()
+        self._isValid = True
         self.interval = 0
+        # Annotate for performance tools if we're in the Pixar environment.
+        # Silently skip this if the IttUtil module is not available.
+        try:
+            from pixar import IttUtil
+            self._ittUtilTaskEnd = IttUtil.TaskEnd
+            IttUtil.TaskBegin(self._label)
+        except ImportError:
+            pass
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, excType, excVal, excTB):
         self._stopwatch.Stop()
         self.interval = self._stopwatch.seconds
+        # Annotate for performance tools if we're in the Pixar environment
+        self._ittUtilTaskEnd()
+        # Only report if we are valid and exiting cleanly (i.e. no exception).
+        if self._printTiming and excType is None:
+            self.PrintTime()
 
-    def PrintTime(self, action):
-        print("Time to %s: %2.6fs" % (action, self.interval))
+    def Invalidate(self):
+        self._isValid = False
 
+    def PrintTime(self):
+        if self._isValid:
+            print("Time to %s: %2.6fs" % (self._label, self.interval))
 
 class BusyContext(object):
     """When used as a context object with python's "with" statement,

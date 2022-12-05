@@ -285,6 +285,7 @@ _imageLayoutFormatTable[HgiFormatCount][2] =
 void
 HgiGLConversions::GetFormat(
         HgiFormat inFormat,
+        HgiTextureUsage inUsage,
         GLenum *outFormat, 
         GLenum *outType, 
         GLenum *outInternalFormat)
@@ -305,14 +306,25 @@ HgiGLConversions::GetFormat(
     }
 
     const _FormatDesc &desc = FORMAT_DESC[inFormat];
+    const bool depthTarget = inUsage & HgiTextureUsageBitsDepthTarget;
     if (outFormat) {
-        *outFormat = desc.format;
+        if (depthTarget && inFormat == HgiFormatFloat32) {
+            *outFormat = GL_DEPTH_COMPONENT;
+        }
+        else {
+            *outFormat = desc.format;
+        }
     }
     if (outType) {
         *outType = desc.type;
     }
     if (outInternalFormat) {
-        *outInternalFormat = desc.internalFormat;
+        if (depthTarget && inFormat == HgiFormatFloat32) {
+            *outInternalFormat = GL_DEPTH_COMPONENT32F;
+        }
+        else {
+            *outInternalFormat = desc.internalFormat;
+        }
     }
 }
 

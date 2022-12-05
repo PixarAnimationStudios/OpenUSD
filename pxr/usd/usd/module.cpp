@@ -50,6 +50,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdPrimFlags);
     TF_WRAP(UsdPrimTypeInfo);
     TF_WRAP(UsdReferences);
+    TF_WRAP(UsdResolveTarget);
     TF_WRAP(UsdSchemaRegistry);
     TF_WRAP(UsdSpecializes);
     TF_WRAP(UsdPrimRange);
@@ -76,6 +77,7 @@ TF_WRAP_MODULE
     TF_WRAP(UsdAttributeQuery);
     TF_WRAP(UsdCollectionMembershipQuery);
     TF_WRAP(UsdCrateInfo);
+    TF_WRAP(UsdFileFormat);
     TF_WRAP(UsdResolveInfo);
     TF_WRAP(Version);
     TF_WRAP(UsdZipFile);

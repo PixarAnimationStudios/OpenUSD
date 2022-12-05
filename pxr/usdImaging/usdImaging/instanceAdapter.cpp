@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
@@ -361,23 +362,21 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // edits to the proto root).
         index->AddDependency(instancerPath, instancerPrim.GetPrototype());
 
-        // Mark this instancer as having a TrackVariability queued, since
-        // we automatically queue it in InsertInstancer.
-        instancerData.refreshVariability = true;
+        // Mark this instancer as having TrackVariability/UpdateForTime queued,
+        // since we automatically queue them in InsertInstancer.
+        instancerData.refresh = true;
     }
 
-    // Add an entry to the instancer data for the given instance. Keep
-    // the vector sorted for faster lookups during change processing.
-    std::vector<SdfPath>& instancePaths = instancerData.instancePaths;
-    std::vector<SdfPath>::iterator it = std::lower_bound(
-        instancePaths.begin(), instancePaths.end(), instancePath);
+    // Add an entry to the instancer data for the given instance.
+    SdfPathSet& instancePaths = instancerData.instancePaths;
+    SdfPathSet::iterator it = instancePaths.find(instancePath);
 
     // We may repopulate instances we've already seen during change
     // processing when nested instances are involved. Rather than do
     // some complicated filtering in ProcessPrimResync to avoid this,
     // we just silently ignore duplicate instances here.
     if (it == instancePaths.end() || *it != instancePath) {
-        instancePaths.insert(it, instancePath);
+        instancePaths.insert(instancePath);
 
         TF_DEBUG(USDIMAGING_INSTANCER).Msg(
             "[Add Instance NI] <%s>  %s\n",
@@ -454,15 +453,15 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 index->AddDependency(depInstancerPath, prim);
             }
 
-            // Ask hydra to do a full refresh on this instancer.
             index->MarkInstancerDirty(depInstancerPath,
                     HdChangeTracker::DirtyPrimvar |
                     HdChangeTracker::DirtyInstanceIndex);
 
-            // Tell UsdImaging to re-run TrackVariability.
-            if (!depInstancerData.refreshVariability) {
-                depInstancerData.refreshVariability = true;
-                index->Refresh(depInstancerPath);
+            // Ask hydra to do a full refresh on this instancer.
+            if (!depInstancerData.refresh) {
+                depInstancerData.refresh = true;
+                index->RequestTrackVariability(depInstancerPath);
+                index->RequestUpdateForTime(depInstancerPath);
             }
         }
 
@@ -570,7 +569,9 @@ UsdImagingInstanceAdapter::TrackVariability(UsdPrim const& prim,
             *timeVaryingBits |= HdChangeTracker::DirtyInstanceIndex;
         }
 
-        instrData->refreshVariability = false;
+        // We can clear the "refresh" bit here since by the time
+        // TrackVariability is run, we're done populating new instances.
+        instrData->refresh = false;
     }
 }
 
@@ -1255,7 +1256,7 @@ UsdImagingInstanceAdapter::UpdateForTime(UsdPrim const& prim,
                                              &val, time)) {
                     _MergePrimvar(&primvarDescCache->GetPrimvars(cachePath),
                                   ipv.name, HdInterpolationInstance,
-                                  _UsdToHdRole(ipv.type.GetRole()));
+                                  UsdImagingUsdToHdRole(ipv.type.GetRole()));
                 }
             }
         }
@@ -1404,6 +1405,12 @@ UsdImagingInstanceAdapter::MarkDirty(UsdPrim const& prim,
         }
     } else if (TfMapLookupPtr(_instancerData, prim.GetPath()) != nullptr) {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 
@@ -2111,8 +2118,10 @@ UsdImagingInstanceAdapter::_ResyncInstancer(SdfPath const& instancerPath,
         index->RemoveInstancer(instancerPath);
     }
 
-    // Keep a copy of the instancer's instances so we can repopulate them below.
-    const SdfPathVector instancePaths = instIt->second.instancePaths;
+    // Swap out the instancepPaths. They're going to be deleted anyways.
+    SdfPathSet instancePaths;
+    std::swap(instancePaths, instIt->second.instancePaths);
+    
 
     // Remove local instancer data.
     _instancerData.erase(instIt);
@@ -2427,13 +2436,16 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathsFn
 {
     _GetScenePrimPathsFn(
         const UsdImagingInstanceAdapter* adapter_,
-        const std::vector<int> &instanceIndices_,
-        const SdfPath &protoPath_)
+        const std::vector<int>& instanceIndices_,
+        const int minIndex_,
+        SdfPathVector& result_,
+        const SdfPath& protoPath_)
         : adapter(adapter_)
         , protoPath(protoPath_)
+        , instanceIndices(instanceIndices_)
+        , minIndex(minIndex_)
+        , result(result_)
     {
-        instanceIndices.insert(
-            instanceIndices_.begin(), instanceIndices_.end());
     }
 
     void Initialize(size_t numInstances)
@@ -2446,7 +2458,20 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathsFn
         // If this iteration is the right instance index, compose all the USD
         // prototype paths together to get the instance proxy path.  Include the
         // proto path (of the child prim), if one was provided.
-        if (instanceIndices.find(instanceIdx) != instanceIndices.end()) {
+
+        ptrdiff_t instanceIdxShifted = instanceIdx - minIndex;
+
+        // bail out, first requested index not reached
+        if (instanceIdxShifted < 0) {
+            return true;
+        }
+
+        // stop enumeration once the max index has been reached
+        if (size_t(instanceIdxShifted) >= instanceIndices.size()) {
+            return false;
+        }
+
+        if (instanceIndices[instanceIdxShifted] != std::numeric_limits<int>::max()) {
             SdfPathVector instanceChain;
             // To get the correct prim-in-prototype, we need to add the
             // prototype path to the instance chain.  However, there's a case in
@@ -2462,19 +2487,17 @@ struct UsdImagingInstanceAdapter::_GetScenePrimPathsFn
             for (UsdPrim const& prim : instanceContext) {
                 instanceChain.push_back(prim.GetPath());
             }
-            primPaths.emplace(instanceIdx,
-                adapter->_GetPrimPathFromInstancerChain(instanceChain));
-            // We can stop iterating when we've found a prim path for each
-            // instance index.
-            return primPaths.size() != instanceIndices.size();
+            
+            result[instanceIndices[instanceIdxShifted]] = adapter->_GetPrimPathFromInstancerChain(instanceChain);
         }
         return true;
     }
 
     const UsdImagingInstanceAdapter* adapter;
     const SdfPath& protoPath;
-    std::set<int> instanceIndices;
-    std::map<int, SdfPath> primPaths;
+    const std::vector<int>& instanceIndices;
+    const int minIndex;
+    SdfPathVector& result;
 };
 
 /* virtual */
@@ -2518,18 +2541,55 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
         // invisible instances).
         VtIntArray indices = _ComputeInstanceMap(instancerPrim, *instrData, 
             _GetTimeWithOffset(0.0));
-        std::vector<int> remappedIndices;
-
-        remappedIndices.reserve(instanceIndices.size());
-        for (size_t i = 0; i < instanceIndices.size(); i++)
-            remappedIndices.push_back(indices[instanceIndices[i]]);
 
         SdfPathVector result;
-        result.reserve(instanceIndices.size());
-        _GetScenePrimPathsFn primPathsFn(this, remappedIndices, proto.path);
-        _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
-        for (size_t i = 0; i < remappedIndices.size(); i++)
-            result.push_back(primPathsFn.primPaths[remappedIndices[i]]);
+
+        if (!instanceIndices.empty()) {
+            int minIdx = std::numeric_limits<int>::max();
+            int maxIdx = 0;
+            int validIndices = 0;
+
+            // determine the min/max index to determine how many bits have to be
+            // allocated in the requestIndicesMap.
+            for (size_t i = 0; i < instanceIndices.size(); i++) {
+                const size_t instanceIndex =
+                    static_cast<size_t>(instanceIndices[i]);
+
+                // skip invalid indices
+                if (instanceIndex < indices.size()) {
+                    int remappedIndex = indices[instanceIndex];
+                    minIdx = std::min(minIdx, remappedIndex);
+                    maxIdx = std::max(maxIdx, remappedIndex);
+                    ++validIndices;
+                }
+            }
+
+            // at least one index was valid, get the prim paths
+            if (validIndices > 0) {
+                // For each valid requested index provide a mapping into the result vector
+                // Indices in the map set to std::numeric_limits<int>::max()
+                // are not being requested.
+                std::vector<int> requestedIndicesMap(
+                    maxIdx - minIdx + 1, std::numeric_limits<int>::max());
+
+                // set bits for all valid requested indices to true
+                for (size_t i = 0; i < instanceIndices.size(); i++) {
+                    const size_t instanceIndex =
+                        static_cast<size_t>(instanceIndices[i]);
+
+                    // skip invalid indices
+                    if (instanceIndex < indices.size()) {
+                        int remappedIndex = indices[instanceIndex];
+                        requestedIndicesMap[remappedIndex - minIdx] = i;
+                    }
+                }
+
+                result.resize(validIndices);
+                _GetScenePrimPathsFn primPathsFn(
+                    this, requestedIndicesMap, minIdx, result, proto.path);
+                _RunForAllInstancesToDraw(instancerPrim, &primPathsFn);
+            }
+        }
         return result;
     } else {
 
@@ -2548,12 +2608,32 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
         }
 
         SdfPathVector result;
-        result.reserve(instanceIndices.size());
-        _GetScenePrimPathsFn primPathsFn(this, instanceIndices,
-            SdfPath::EmptyPath());
-        _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathsFn);
-        for (size_t i = 0; i < instanceIndices.size(); i++)
-            result.push_back(primPathsFn.primPaths[instanceIndices[i]]);
+
+        if (!instanceIndices.empty()) {
+            int minIdx = std::numeric_limits<int>::max();
+            int maxIdx = 0;
+
+            // determine the requested index range
+            for (size_t i = 0; i < instanceIndices.size(); i++) {
+                int idx = instanceIndices[i];
+                minIdx = std::min(minIdx, idx);
+                maxIdx = std::max(maxIdx, idx);
+            }
+
+            // for each requested index provide a mapping into the result vector
+            std::vector<int> requestedIndicesMap(
+                maxIdx - minIdx + 1, std::numeric_limits<int>::max());
+
+            // set bits for all requested indices to true
+            for (size_t i = 0; i < instanceIndices.size(); i++) {
+                requestedIndicesMap[instanceIndices[i]] = i;
+            }
+
+            result.resize(instanceIndices.size());
+            _GetScenePrimPathsFn primPathsFn(this,
+                requestedIndicesMap, minIdx, result, SdfPath::EmptyPath());
+            _RunForAllInstancesToDraw(_GetPrim(*instancerPath), &primPathsFn);
+        }
         return result;
     }
 

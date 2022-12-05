@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/imaging/hgiMetal/api.h"
+#include "pxr/imaging/hgiMetal/stepFunctions.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include <cstdint>
 
@@ -35,8 +36,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 struct HgiGraphicsCmdsDesc;
-class HgiMetalGraphicsPipeline;
 class HgiMetalResourceBindings;
+class HgiMetalGraphicsPipeline;
 
 /// \class HgiMetalGraphicsCmds
 ///
@@ -70,9 +71,7 @@ public:
 
     HGIMETAL_API
     void BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets) override;
+        HgiVertexBufferBindingVector const &bindings) override;
 
     HGIMETAL_API
     void Draw(
@@ -119,6 +118,9 @@ public:
     HGIMETAL_API
     void EnableParallelEncoder(bool enable);
 
+    // Needs to be accessible from the Metal IndirectCommandEncoder
+    id<MTLRenderCommandEncoder> GetEncoder(uint32_t encoderIndex = 0);
+
 protected:
     friend class HgiMetal;
 
@@ -136,80 +138,18 @@ private:
     HgiMetalGraphicsCmds(const HgiMetalGraphicsCmds&) = delete;
 
     uint32_t _GetNumEncoders();
-    id<MTLRenderCommandEncoder> _GetEncoder(uint32_t encoderIndex = 0);
     void _SetNumberParallelEncoders(uint32_t numEncoders);
     void _SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder);
     mutable std::mutex _encoderLock;
     
     void _CreateArgumentBuffer();
     void _SyncArgumentBuffer();
-
-    // We implement multi-draw indirect commands on Metal by encoding
-    // separate draw commands for each draw.
-    //
-    // Some aspects of drawing command primitive input assembly work
-    // differently on Metal than other graphics APIs. There are two
-    // concerns that we need to account for while processing a buffer
-    // with multiple indirect draw commands.
-    //
-    // 1) Metal does not support a vertex attrib divisor, so in order to
-    // have vertex attributes which advance once per draw command we use
-    // a constant vertex buffer step function and advance the vertex buffer
-    // binding offset explicitly by executing setVertexBufferOffset for
-    // the vertex buffers associated with "perDrawCommand" vertex attributes.
-    //
-    // 2) Metal does not support a base vertex offset for control point
-    // vertex attributes when drawing patches. It is inconvenient and
-    // expensive to encode a distinct controlPointIndex buffer for each
-    // draw that shares a patch topology. Instead, we use a per patch
-    // control point vertex buffer step function, and explicitly advance
-    // the vertex buffer binding offset by executing setVertexBufferOffset
-    // for the vertex buffers associated with "perPatchControlPoint"
-    // vertex attributes.
-
-    struct _VertexBufferStepFunctionDesc
-    {
-        _VertexBufferStepFunctionDesc(
-                uint32_t bindingIndex,
-                uint32_t byteOffset,
-                uint32_t vertexStride)
-            : bindingIndex(bindingIndex)
-            , byteOffset(byteOffset)
-            , vertexStride(vertexStride)
-            { }
-        uint32_t bindingIndex;
-        uint32_t byteOffset;
-        uint32_t vertexStride;
-    };
-    
-    using _StepFunctionDescVector = std::vector<_VertexBufferStepFunctionDesc>;
-    
-    _StepFunctionDescVector _vertexBufferStepFunctionDescs;
-    _StepFunctionDescVector _patchBaseVertexBufferStepFunctionDescs;
-
-    void _InitVertexBufferStepFunction(HgiGraphicsPipeline const * pipeline);
-    void _BindVertexBufferStepFunction(uint32_t byteOffset,
-                                       uint32_t bindingIndex);
-
-    void _SetVertexBufferStepFunctionOffsets(
-        id<MTLRenderCommandEncoder> encoder,
-        uint32_t baseInstance);
-
-    void _SetPatchBaseVertexBufferStepFunctionOffsets(
-        id<MTLRenderCommandEncoder> encoder,
-        uint32_t baseVertex);
+    void _VegaIndirectFix();
 
     struct CachedEncoderState {
         CachedEncoderState();
 
         void ResetCachedEncoderState();
-        
-        // This is based on the size aclocated for HgiMetalArgumentOffsetBufferVS->FS
-        // But ideally we'd pick it up from a common header
-        #define MAX_METAL_VERTEX_BUFFER_BINDINGS 64
-        
-        void AddVertexBinding(
-            uint32_t bindingIndex, id<MTLBuffer> buffer, uint32_t byteOffset);
         
         MTLViewport viewport;
         MTLScissorRect scissorRect;
@@ -217,13 +157,7 @@ private:
         HgiMetalResourceBindings* resourceBindings;
         HgiMetalGraphicsPipeline* graphicsPipeline;
         id<MTLBuffer> argumentBuffer;
-        
-        struct {
-            id<MTLBuffer> vertexBuffer;
-            uint32_t      byteOffset;
-        } VertexBufferBindingDesc[MAX_METAL_VERTEX_BUFFER_BINDINGS];
-        
-        uint32_t numVertexBufferBindings;
+        HgiVertexBufferBindingVector vertexBindings;
     } _CachedEncState;
     
     HgiMetal* _hgi;
@@ -234,6 +168,7 @@ private:
     HgiGraphicsCmdsDesc _descriptor;
     HgiPrimitiveType _primitiveType;
     uint32_t _primitiveIndexSize;
+    uint32_t _drawBufferBindingIndex;
     NSString* _debugLabel;
     bool _hasWork;
     bool _viewportSet;
@@ -241,6 +176,7 @@ private:
     bool _enableParallelEncoder;
     bool _primitiveTypeChanged;
     uint32 _maxNumEncoders;
+    HgiMetalStepFunctions _stepFunctions;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

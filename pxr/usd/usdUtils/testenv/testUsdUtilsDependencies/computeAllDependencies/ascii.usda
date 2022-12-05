@@ -16,7 +16,7 @@ def "foo" (
         asset meta_a_2 = @./meta_a_nonexist.usd@
         asset[] meta_b = [@./meta_b.usd@, @./meta_nonexist.usd@]
     }
-    payload = [@./payload_a.usd@, @./payload_nonexist.usd@]
+    payload = [@./payload_a.usd@, @./payload_nonexist.usd@, </LocalPayload>]
     variantSets = "standin"
 )
 {
@@ -27,7 +27,8 @@ def "foo" (
     def "bar" (
         references = [
             @./ref_a.usd@,
-            @./ref_nonexist.usd@
+            @./ref_nonexist.usd@,
+            </LocalReference>
         ]
         clips = {
             dictionary default = {

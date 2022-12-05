@@ -127,12 +127,10 @@ HgiGLGraphicsCmds::SetConstantValues(
 
 void
 HgiGLGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
     _ops.push_back( 
-        HgiGLOps::BindVertexBuffers(firstBinding, vertexBuffers, byteOffsets) );
+        HgiGLOps::BindVertexBuffers(bindings) );
 }
 
 void

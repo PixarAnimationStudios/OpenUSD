@@ -46,6 +46,13 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
     const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
 
+    // Prman natively supports various quadric primitives (including cone,
+    // cylinder and sphere), generating them such that they are rotationally
+    // symmetric about the Z axis. To support other spine axes, configure the
+    // scene index to overload the transform to account for the change of basis.
+    // For unsupported primitives such as capsules and cubes, generate the
+    // mesh instead.
+    // 
     HdDataSourceBaseHandle const axisToTransformSrc =
         HdRetainedTypedSampledDataSource<TfToken>::New(
             HdsiImplicitSurfaceSceneIndexTokens->axisToTransform);
@@ -57,8 +64,9 @@ TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
         HdRetainedContainerDataSource::New(
             HdPrimTypeTokens->cone, axisToTransformSrc,
             HdPrimTypeTokens->cylinder, axisToTransformSrc,
+            // HdSphereSchema doesn't specify an axis, so it can be omitted.
             HdPrimTypeTokens->cube, toMeshSrc,
-            HdPrimTypeTokens->capsule, toMeshSrc);            
+            HdPrimTypeTokens->capsule, toMeshSrc);
 
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
         _pluginDisplayName,

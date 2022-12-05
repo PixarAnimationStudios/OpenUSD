@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/pointInstancerAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePointInstancer.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
@@ -72,6 +73,53 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingPointInstancerAdapter::~UsdImagingPointInstancerAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingPointInstancerAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+
+TfToken
+UsdImagingPointInstancerAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->instancer;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPointInstancerAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointInstancerPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPointInstancerAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointInstancerPrim::Invalidate(
+            prim, subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool
@@ -874,6 +922,12 @@ UsdImagingPointInstancerAdapter::MarkDirty(UsdPrim const& prim,
         proto.adapter->MarkDirty(prim, cachePath, dirty, index);
     } else {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 

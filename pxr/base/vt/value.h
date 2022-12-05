@@ -246,6 +246,7 @@ class VtValue
     protected:
         constexpr _TypeInfo(const std::type_info &ti,
                             const std::type_info &elementTi,
+                            int knownTypeIndex,
                             bool isArray,
                             bool isHashable,
                             bool isProxy,
@@ -271,6 +272,7 @@ class VtValue
                             _GetProxiedAsVtValueFunc getProxiedAsVtValue)
             : typeInfo(ti)
             , elementTypeInfo(elementTi)
+            , knownTypeIndex(knownTypeIndex)
             , isProxy(isProxy)
             , isArray(isArray)
             , isHashable(isHashable)
@@ -363,6 +365,7 @@ class VtValue
 
         const std::type_info &typeInfo;
         const std::type_info &elementTypeInfo;
+        int knownTypeIndex;
         bool isProxy;
         bool isArray;
         bool isHashable;
@@ -581,6 +584,7 @@ class VtValue
         constexpr _TypeInfoImpl()
             : _TypeInfo(typeid(T),
                         _ArrayHelper<T>::GetElementTypeid(),
+                        VtGetKnownValueTypeIndex<T>(),
                         VtIsArray<T>::value,
                         VtIsHashable<T>(),
                         IsProxy,
@@ -1070,11 +1074,28 @@ public:
     /// Return the type name of the held typeid.
     VT_API std::string GetTypeName() const;
 
+    /// Return VtKnownValueTypeIndex<T> for the held type T.  If this value
+    /// holds a proxy type, resolve the proxy and return the proxied type's
+    /// index.  If this value is empty or holds a type that is not 'known',
+    /// return -1.
+    int GetKnownValueTypeIndex() const {
+        if (ARCH_UNLIKELY(_IsProxy())) {
+            return _info->GetProxiedAsVtValue(
+                _storage).GetKnownValueTypeIndex();
+        }
+        return _info.GetLiteral() ? _info->knownTypeIndex : -1;
+    }
+
     /// Returns a const reference to the held object if the held object
     /// is of type \a T.  Invokes undefined behavior otherwise.  This is the
     /// fastest \a Get() method to use after a successful \a IsHolding() check.
     template <class T>
-    T const &UncheckedGet() const { return _Get<T>(); }
+    T const &UncheckedGet() const & { return _Get<T>(); }
+
+    /// \overload In case *this is an rvalue, move the held value out and return
+    /// by value.
+    template <class T>
+    T UncheckedGet() && { return UncheckedRemove<T>(); }
 
     /// Returns a const reference to the held object if the held object
     /// is of type \a T.  Issues an error and returns a const reference to a
@@ -1085,7 +1106,7 @@ public:
     /// The default implementation of the default value factory produces a
     /// value-initialized T.
     template <class T>
-    T const &Get() const {
+    T const &Get() const & {
         typedef Vt_DefaultValueFactory<T> Factory;
 
         // In the unlikely case that the types don't match, we obtain a default
@@ -1097,6 +1118,22 @@ public:
 
         return _Get<T>();
     }
+
+    /// \overload In case *this is an rvalue, move the held value out and return
+    /// by value.
+    template <class T>
+    T Get() && {
+        typedef Vt_DefaultValueFactory<T> Factory;
+
+        // In the unlikely case that the types don't match, we obtain a default
+        // value to return and issue an error via _FailGet.
+        if (ARCH_UNLIKELY(!IsHolding<T>())) {
+            return *(static_cast<T const *>(
+                         _FailGet(Factory::Invoke, typeid(T))));
+        }
+
+        return UncheckedRemove<T>();
+    }    
 
     /// Return a copy of the held object if the held object is of type T.
     /// Return a copy of the default value \a def otherwise.  Note that this
@@ -1428,17 +1465,6 @@ private:
 
 #ifndef doxygen
 
-/// Make a default value.  VtValue uses this to create values to be returned
-/// from failed calls to \a Get.  Clients may specialize this for their own
-/// types.
-template <class T>
-struct Vt_DefaultValueFactory {
-    /// This function *must* return an object of type \a T.
-    static Vt_DefaultValueHolder Invoke() {
-        return Vt_DefaultValueHolder::Create<T>();
-    }
-};
-
 struct Vt_ValueShapeDataAccess {
     static const Vt_ShapeData* _GetShapeData(const VtValue& value) {
         return value._GetShapeData();
@@ -1449,15 +1475,27 @@ struct Vt_ValueShapeDataAccess {
     }
 };
 
+/// Make a default value.  VtValue uses this to create values to be returned
+/// from failed calls to \a Get.  Clients may specialize this for their own
+/// types.
+template <class T>
+struct Vt_DefaultValueFactory {
+    static Vt_DefaultValueHolder Invoke();
+};
+
+template <class T>
+inline Vt_DefaultValueHolder
+Vt_DefaultValueFactory<T>::Invoke() {
+    return Vt_DefaultValueHolder::Create<T>();
+}
+
 // For performance reasons, the default constructors for vectors,
 // matrices, and quaternions do *not* initialize the data of the
 // object.  This greatly improves the performance of creating large
-// arrays of objects.  However, boost::value_initialized<T>() no
-// longer fills the memory of the object with 0 bytes before invoking
-// the constructor so we started getting errors complaining about
-// uninitialized values.  So, we now use VtZero to construct zeroed
-// out vectors, matrices, and quaternions by explicitly instantiating
-// the factory for these types. 
+// arrays of objects.  However, for consistency and to avoid
+// errors complaining about uninitialized values, we use VtZero
+// to construct zeroed out vectors, matrices, and quaternions by
+// explicitly instantiating the factory for these types. 
 //
 #define _VT_DECLARE_ZERO_VALUE_FACTORY(r, unused, elem)                 \
 template <>                                                             \
@@ -1479,14 +1517,26 @@ BOOST_PP_SEQ_FOR_EACH(_VT_DECLARE_ZERO_VALUE_FACTORY,
 
 template <>
 inline const VtValue&
-VtValue::Get<VtValue>() const {
+VtValue::Get<VtValue>() const & {
     return *this;
 }
 
 template <>
+inline VtValue
+VtValue::Get<VtValue>() && {
+    return std::move(*this);
+}
+
+template <>
 inline const VtValue&
-VtValue::UncheckedGet<VtValue>() const {
+VtValue::UncheckedGet<VtValue>() const & {
     return *this;
+}
+
+template <>
+inline VtValue
+VtValue::UncheckedGet<VtValue>() && {
+    return std::move(*this);
 }
 
 template <>

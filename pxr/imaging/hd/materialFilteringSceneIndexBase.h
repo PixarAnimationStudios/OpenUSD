@@ -53,6 +53,9 @@ public:
     using FilteringFnc =
         std::function<void(HdMaterialNetworkInterface *)>;
 
+    HD_API
+    FilteringFnc GetFilteringFunction() const;
+
 protected:
     virtual FilteringFnc _GetFilteringFunction() const = 0;
 

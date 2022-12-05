@@ -41,7 +41,9 @@ kind = "component"
 
     def Xform "Geom"
     {
-        def Sphere "Sphere"
+        def Sphere "Sphere" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             float3[] extent = [(-1, -1, -1), (1, 1, 1)]
             color3f[] primvars:mydisplayColor = [(0.0, 1.0, 0.0)]

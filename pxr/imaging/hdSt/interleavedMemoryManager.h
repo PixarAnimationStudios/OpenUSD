@@ -248,11 +248,11 @@ protected:
         }
 
         /// Returns the stride.
-        int GetStride() const {
+        size_t GetStride() const {
             return _stride;
         }
         
-        int GetElementStride() const {
+        size_t GetElementStride() const {
             return _elementStride;
         }
 
@@ -300,7 +300,7 @@ protected:
         HdStInterleavedMemoryManager* _manager;
         HdStResourceRegistry* const _resourceRegistry;
         bool _needsCompaction;
-        int _stride;
+        size_t _stride;
         int _bufferOffsetAlignment;  // ranged binding offset alignment
         size_t _maxSize;             // maximum size of single buffer
 

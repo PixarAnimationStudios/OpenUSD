@@ -1849,6 +1849,30 @@ struct TestCase<VtArray<GfQuath> >
     }
 };
 
+template <>
+struct TestCase<SdfOpaqueValue>
+{
+    static void AddTestCase(const UsdPrim& prim)
+    {
+        prim.CreateAttribute(TfToken("testOpaque"), SdfValueTypeNames->Opaque);
+    }
+
+    // UsdAttribute::Get always returns false for opaque-valued attributes
+    // (because you can't author a value on them), so it never does any
+    // interpolation, so we don't need to test anything here.
+    static void TestLinearInterpolation(const UsdPrim& prim) {}
+    static void TestHeldInterpolation(const UsdPrim& prim) {}
+};
+
+template <>
+struct TestCase<VtArray<SdfOpaqueValue>>
+{
+    // We don't support shaped opaque attributes.
+    static void AddTestCase(const UsdPrim& prim) {}
+    static void TestLinearInterpolation(const UsdPrim& prim) {}
+    static void TestHeldInterpolation(const UsdPrim& prim) {}
+};
+
 
 // ------------------------------------------------------------
 
@@ -1922,7 +1946,7 @@ TestInterpolation(const string &layerIdent)
     // value type is added without a corresponding TestCase<T> added,
     // this test won't compile. If a value type is removed, this
     // check will fail at runtime.
-    static const size_t numTestCasesExpected = 31;
+    static const size_t numTestCasesExpected = 32;
     const size_t numTestCasesAdded = AddTestCasesToPrim(testPrim);
     TF_VERIFY(numTestCasesAdded == numTestCasesExpected,
               "Expected %zd cases, got %zu.",

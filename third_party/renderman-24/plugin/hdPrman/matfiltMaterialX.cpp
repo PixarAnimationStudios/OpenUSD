@@ -52,6 +52,7 @@
 
 #ifdef PXR_OSL_SUPPORT_ENABLED
 #include <OSL/oslcomp.h>
+#include <OSL/oslversion.h>
 #include <fstream>
 #endif
 
@@ -66,13 +67,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Hydra MaterialX Node Types
     (ND_standard_surface_surfaceshader)
     (ND_UsdPreviewSurface_surfaceshader)
+    (ND_displacement_float)
 
     // MaterialX - OSL Adapter Node names
     ((SS_Adapter, "StandardSurfaceParameters"))
     ((USD_Adapter, "UsdPreviewSurfaceParameters"))
+    ((Displacement_Adapter, "DisplacementParameters"))
 
-    // HdPrman Surface Terminal Node
+    // HdPrman Terminal Nodes
     (PxrSurface)
+    (PxrDisplace)
 
     // Texture Coordinate Tokens
     (ND_geompropvalue_vector2)
@@ -222,10 +226,30 @@ _GetAdapterNodeType(TfToken const &hdNodeType)
     else if (hdNodeType == _tokens->ND_UsdPreviewSurface_surfaceshader) {
         return _tokens->USD_Adapter;
     } 
+    else if (hdNodeType == _tokens->ND_displacement_float) {
+        return _tokens->Displacement_Adapter;
+    }
     else {
         TF_WARN("Unsupported Node Type '%s'", hdNodeType.GetText());
         return TfToken();
     }
+}
+
+// Convert terminal MaterialX shader type to corresponding rman material type.
+static TfToken
+_GetTerminalShaderType(TfToken const &hdNodeType)
+{
+    return (hdNodeType == _tokens->ND_displacement_float) ?
+            _tokens->PxrDisplace : _tokens->PxrSurface;    
+}
+
+// Convert terminal MaterialX shader type to corresponding connection name
+static TfToken
+_GetTerminalConnectionName(TfToken const &hdNodeType)
+{
+    return (hdNodeType == _tokens->ND_displacement_float) ?
+            HdMaterialTerminalTokens->displacement :
+            HdMaterialTerminalTokens->surface;
 }
 
 // Convert the TfToken associated with the input parameters to the Standard
@@ -301,20 +325,42 @@ _CompileOslSource(
         .Msg("--------- MaterialX Generated Shader '%s' ----------\n%s"
              "---------------------------\n\n", name.c_str(), oslSource.c_str());
 
-    // Include the filepath to the MaterialX OSL directory (stdlib/osl)
+    // Include the filepath to the MaterialX OSL directory containing mx_funcs.h
     std::vector<std::string> oslArgs;
     oslArgs.reserve(searchPaths.size());
-    const mx::FilePath stdlibOslPath = "stdlib/osl";
+#if MATERIALX_MAJOR_VERSION == 1 && \
+    MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 3
+    static const mx::FilePath stdlibOslPath = "stdlib/osl";
+#else 
+    // MaterialX v1.38.4 restructured the OSL files and moved mx_funcs.h
+    static const mx::FilePath stdlibOslPath = "stdlib/genosl/include"; 
+#endif
     for (mx::FilePath const &path : searchPaths) {
         const mx::FilePath fullPath = path/stdlibOslPath;
         oslArgs.push_back(fullPath.exists() ? "-I" + fullPath.asString()
                                             : "-I" + path.asString());
     }
 
+#if MATERIALX_MAJOR_VERSION == 1 && \
+    MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 3
+    // Nothing
+#else
+    // MaterialX 1.38.4 removed its copy of stdosl.h and other OSL headers
+    // and requires it to be included from the OSL installation itself.
+    oslArgs.push_back(std::string("-I") + OSL_SHADER_INSTALL_DIR);
+#endif
+
     // Compile oslSource
     std::string oslCompiledSource;
     OSL::OSLCompiler oslCompiler;
     oslCompiler.compile_buffer(oslSource, oslCompiledSource, oslArgs);
+    if (oslCompiledSource.empty()) {
+        TF_WARN("Unable to compile MaterialX Osl shader for the '%s' "
+                "MaterialX node\n", name.substr(0, name.size()-6).c_str());
+        return mx::EMPTY_STRING;
+    }
 
     // Save compiled shader
     std::string compiledFilePath = ArchMakeTmpFileName("MX." + name, ".oso");
@@ -330,7 +376,7 @@ _CompileOslSource(
         fclose(compiledShader);
         return compiledFilePath;
     }
-#else        
+#else
     TF_WARN("Unable to compile MaterialX generated Osl shader, enable OSL "
             "support for full MaterialX support in HdPrman.\n");
     return mx::EMPTY_STRING;
@@ -370,11 +416,11 @@ _UpdateNetwork(
     HdMaterialNetworkInterface *netInterface,
     TfToken const &terminalNodeName,
     mx::DocumentPtr const &mxDoc,
-    mx::FileSearchPath const &searchPath)
+    mx::FileSearchPath const &searchPath,
+    std::set<TfToken> nodesToKeep,
+    std::set<TfToken> nodesToRemove)
 {
     // Gather the nodeGraph nodes
-    std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
-    std::set<TfToken> nodesToRemove; // nodes further removed from the terminal
     std::set<TfToken> visitedNodeNames;
 
     TfTokenVector terminalConnectionNames =
@@ -482,33 +528,27 @@ _UpdateNetwork(
             _DeleteAllParameters(netInterface, upstreamNodeName);
         }
     }
-
-    // Remove the nodes not directly connected to the terminal
-    for (const TfToken& nodeName: nodesToRemove) {
-        // As long as the node is not also directly connected to the terminal
-        if (nodesToKeep.find(nodeName) == nodesToKeep.end()) {
-            netInterface->DeleteNode(nodeName);
-        }
-    }
 }
 
 // Transform the original terminalNode with an Adapter Node which connects to a
-// new PxrSurface Node that becomes the surfaceTerminal
+// new PxrSurface or PxrDisplace Node that becomes the surfaceTerminal
 // node in the hdNetwork.
 static void 
 _TransformTerminalNode(
     HdMaterialNetworkInterface *netInterface,
     TfToken const &terminalNodeName)
 {
-    // Create a SdrShaderNodes for the Adapter and PxrSurface Nodes.
-    TfToken adapterType = _GetAdapterNodeType(
-                            netInterface->GetNodeType(terminalNodeName));
+    // Create a SdrShaderNode for the Adapter and PxrSurface/PxrDisplace Nodes.
+    TfToken const nodeType = netInterface->GetNodeType(terminalNodeName);
+    TfToken const adapterType = _GetAdapterNodeType( nodeType );
+    TfToken const shaderType = _GetTerminalShaderType( nodeType );
+    TfToken const terminalToken = _GetTerminalConnectionName( nodeType );
 
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr const sdrAdapter = 
         sdrRegistry.GetShaderNodeByIdentifier(adapterType, {_tokens->OSL});
-    SdrShaderNodeConstPtr const sdrPxrSurface = 
-        sdrRegistry.GetShaderNodeByIdentifier(_tokens->PxrSurface, 
+    SdrShaderNodeConstPtr const sdrShader = 
+        sdrRegistry.GetShaderNodeByIdentifier(shaderType,
                                               {_tokens->RmanCpp});
     if (!sdrAdapter) {
         TF_WARN("No sdrAdater node of type '%s'", adapterType.GetText());
@@ -516,7 +556,7 @@ _TransformTerminalNode(
     }
 
     // Transform the terminalNode with the appropriate Adapter Node, which
-    // translates the MaterialX parameters into PxrSurface Node inputs.
+    // translates the MaterialX parameters into PxrSurface/PxrDisplace inputs.
     netInterface->SetNodeType(terminalNodeName, adapterType);
     if (adapterType != _tokens->USD_Adapter) {
         // Update the TfTokens associated with the input parameters to the
@@ -536,34 +576,34 @@ _TransformTerminalNode(
         }
     }
     
-    // Create a PxrSurface material node
-    TfToken pxrSurfaceNodeName =
-        TfToken(terminalNodeName.GetString() + "_PxrSurface");
-    netInterface->SetNodeType(pxrSurfaceNodeName, _tokens->PxrSurface);
+    // Create a RenderMan material node (ie. PxrSurface or PxrDisplace)
+    TfToken rmanShaderNodeName =
+        TfToken(terminalNodeName.GetString() + "_" + shaderType.GetString());
+    netInterface->SetNodeType(rmanShaderNodeName, shaderType);
 
-    // Connect the PxrSurface inputs to the Adapter's outputs
-    for (const auto& inParamName: sdrPxrSurface->GetInputNames()) {
+    // Connect the RenderMan material inputs to the Adapter's outputs
+    for (const auto& inParamName: sdrShader->GetInputNames()) {
 
-        if (sdrPxrSurface->GetShaderInput(inParamName)) {
+        if (sdrShader->GetShaderInput(inParamName)) {
 
             // Convert the parameter name to the "xxxOut" format
             TfToken adapterOutParam = TfToken(inParamName.GetString() + "Out");
             
-            // If the PxrSurface Input is an Adapter node output add the
-            // inputConnection to the PxrSurface Node
+            // If the shader Input is an Adapter node output add the
+            // inputConnection to the shader Node
             // Note: not every input has a corresponding output
             if (sdrAdapter->GetShaderOutput(adapterOutParam)) {
                 netInterface->SetNodeInputConnection(
-                    pxrSurfaceNodeName, inParamName, 
+                    rmanShaderNodeName, inParamName, 
                     { {terminalNodeName, adapterOutParam} });
             }
         }
     }
 
-    // Update the network terminals so that the terminal Node is the PxrSurface
+    // Update the network terminals so that the terminal Node is the RenderMan
     // Node instead of the Adapter Node (previously the mtlx terminal node)
     netInterface->SetTerminalConnection(
-        HdMaterialTerminalTokens->surface, { pxrSurfaceNodeName, TfToken() });
+        terminalToken, { rmanShaderNodeName, TfToken() });
 }
 
 // Get the Hydra equivalent for the given MaterialX input value
@@ -764,60 +804,79 @@ MatfiltMaterialX(
         return;
     }
 
-    // Check presence of surface terminal
-    const HdMaterialNetworkInterface::InputConnectionResult res =
-        netInterface->GetTerminalConnection(HdMaterialTerminalTokens->surface);
-    if (!res.first) { // "surface" terminal absent
-        return;
+    static const std::vector<TfToken> supportedTerminalTokens = {
+        HdMaterialTerminalTokens->surface,
+        HdMaterialTerminalTokens->displacement
+    };
+
+    std::set<TfToken> nodesToKeep;   // nodes directly connected to the terminal
+    std::set<TfToken> nodesToRemove; // nodes further removed from the terminal
+
+    for( auto terminalName : supportedTerminalTokens ) {
+
+        // Check presence of terminal
+        const HdMaterialNetworkInterface::InputConnectionResult res =
+            netInterface->GetTerminalConnection(terminalName);
+        if (!res.first) { // terminal absent
+            return;
+        }
+        const TfToken &terminalNodeName = res.second.upstreamNodeName;
+        const TfToken terminalNodeType =
+            netInterface->GetNodeType(terminalNodeName);
+
+        // Check if the node connected to the terminal is a MaterialX node
+        SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+        const SdrShaderNodeConstPtr mtlxSdrNode = 
+            sdrRegistry.GetShaderNodeByIdentifierAndType(terminalNodeType, 
+                                                         _tokens->mtlx);
+        if (!mtlxSdrNode) {
+            return;
+        }
+
+        TfTokenVector cNames =
+            netInterface->GetNodeInputConnectionNames(terminalNodeName);
+        // If we have a nodegraph (i.e., input into the terminal node)...
+        if (!cNames.empty()) {
+            // Load Standard Libraries/setup SearchPaths (for mxDoc and
+            // mxShaderGen)
+            mx::FilePathVec libraryFolders;
+            mx::FileSearchPath searchPath = HdMtlxSearchPaths();
+            mx::DocumentPtr stdLibraries = mx::createDocument();
+            mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+
+            // Create the MaterialX Document from the material network
+            HdMtlxTexturePrimvarData hdMtlxData;
+            mx::DocumentPtr mxDoc =
+                HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
+                    netInterface, terminalNodeName, cNames,
+                    stdLibraries, &hdMtlxData);
+
+            _UpdateTextureNodes(netInterface, hdMtlxData.hdTextureNodes, mxDoc);
+
+            // Remove the material and shader nodes from the MaterialX Document
+            // (since we need to use PxrSurface as the closure instead of the 
+            // MaterialX surfaceshader node)
+            SdfPath materialPath = netInterface->GetMaterialPrimPath();
+            mxDoc->removeNode("SR_" + materialPath.GetName());  // Shader Node
+            mxDoc->removeNode(materialPath.GetName());          // Material Node
+
+            // Update nodes directly connected to the terminal node with 
+            // MX generated shaders that capture the rest of the nodegraph
+            _UpdateNetwork(netInterface, terminalNodeName, mxDoc, searchPath,
+                           nodesToKeep, nodesToRemove);
+        }
+
+        // Convert the terminal node to an AdapterNode + PxrSurfaceNode
+        _TransformTerminalNode(netInterface, terminalNodeName);
     }
-    const TfToken &terminalNodeName = res.second.upstreamNodeName;
-    const TfToken terminalNodeType =
-        netInterface->GetNodeType(terminalNodeName);
-    
-    // Check if the node connected to the terminal is a MaterialX node
-    SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
-    const SdrShaderNodeConstPtr mtlxSdrNode = 
-        sdrRegistry.GetShaderNodeByIdentifierAndType(terminalNodeType, 
-                                                     _tokens->mtlx);
-    if (!mtlxSdrNode) {
-        return;
+
+    // Remove the nodes not directly connected to the terminal
+    for (const TfToken& nodeName: nodesToRemove) {
+        // As long as the node is not also directly connected to the terminal
+        if (nodesToKeep.find(nodeName) == nodesToKeep.end()) {
+            netInterface->DeleteNode(nodeName);
+        }
     }
-
-    TfTokenVector cNames =
-        netInterface->GetNodeInputConnectionNames(terminalNodeName);
-    // If we have a nodegraph (i.e., input into the terminal node)...
-    if (!cNames.empty()) {
-        // Load Standard Libraries/setup SearchPaths (for mxDoc and
-        // mxShaderGen)
-        mx::FilePathVec libraryFolders;
-        mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-        mx::DocumentPtr stdLibraries = mx::createDocument();
-        mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
-
-        // Create the MaterialX Document from the material network
-        std::set<SdfPath> hdTextureNodePaths;
-        mx::StringMap mxHdTextureMap; // Store Mx-Hd texture counterparts 
-        mx::DocumentPtr mxDoc =
-            HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
-                netInterface, terminalNodeName, cNames,
-                stdLibraries, &hdTextureNodePaths, &mxHdTextureMap);
-        
-        _UpdateTextureNodes(netInterface, hdTextureNodePaths, mxDoc);
-
-        // Remove the material and shader nodes from the MaterialX Document
-        // (since we need to use PxrSurface as the closure instead of the 
-        // MaterialX surfaceshader node)
-        SdfPath materialPath = netInterface->GetMaterialPrimPath();
-        mxDoc->removeNode("SR_" + materialPath.GetName());  // Shader Node
-        mxDoc->removeNode(materialPath.GetName());          // Material Node
-
-        // Update nodes directly connected to the terminal node with 
-        // MX generated shaders that capture the rest of the nodegraph
-        _UpdateNetwork(netInterface, terminalNodeName, mxDoc, searchPath);
-    }
-
-    // Convert the terminal node to an AdapterNode + PxrSurfaceNode
-    _TransformTerminalNode(netInterface, terminalNodeName);
 }
 
 void

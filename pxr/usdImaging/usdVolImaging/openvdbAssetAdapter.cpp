@@ -42,13 +42,15 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdImagingOpenVDBAssetAdapter::~UsdImagingOpenVDBAssetAdapter() = default;
 
 TfTokenVector
-UsdImagingOpenVDBAssetAdapter::GetImagingSubprims()
+UsdImagingOpenVDBAssetAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingOpenVDBAssetAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingOpenVDBAssetAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return UsdVolImagingTokens->openvdbAsset;
@@ -58,8 +60,8 @@ UsdImagingOpenVDBAssetAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingOpenVDBAssetAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {

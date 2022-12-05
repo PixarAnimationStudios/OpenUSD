@@ -76,7 +76,20 @@
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
+#include "pxr/base/tf/staticData.h"
+
+#include <unordered_map>
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+using _SToBMap = std::unordered_map<TfToken,
+    HdDirtyBitsTranslator::LocatorSetToDirtyBitsFnc, TfHash>;
+
+using _BToSMap = std::unordered_map<TfToken,
+    HdDirtyBitsTranslator::DirtyBitsToLocatorSetFnc, TfHash>;
+
+static TfStaticData<_SToBMap> Hd_SPrimSToBFncs;
+static TfStaticData<_BToSMap> Hd_SPrimBToSFncs;
 
 /*static*/
 void
@@ -108,6 +121,10 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdChangeTracker::DirtyPrimvar) {
             set->append(HdCapsuleSchema::GetDefaultLocator());
         }
+    }
+
+    if (bits & HdChangeTracker::DirtyCategories) {
+        set->append(HdCategoriesSchema::GetDefaultLocator());
     }
 
     if (primType == HdPrimTypeTokens->cone) {
@@ -255,16 +272,8 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdLight::DirtyResource) {
             set->append(HdMaterialSchema::GetDefaultLocator());
         }
-        // XXX: Right now, primvars don't seem to have a dirty bit, so
-        //      group them with params...
         if (bits & HdLight::DirtyParams) {
             set->append(HdPrimvarsSchema::GetDefaultLocator());
-        }
-        // XXX: Some delegates seems to be sending light visibility
-        //      changes on the child guide mesh instead of here. So,
-        //      for now, let's consider dirty light params to include
-        //      light visibility
-        if (bits & (HdChangeTracker::DirtyVisibility | HdLight::DirtyParams)) {
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
@@ -298,10 +307,19 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdChangeTracker::DirtyParams) {
             set->append(HdSampleFilterSchema::GetDefaultLocator());
         }
+        if (bits & HdChangeTracker::DirtyVisibility) {
+            set->append(HdVisibilitySchema::GetDefaultLocator());
+        }
     } else {
-        // unknown prim type, use AllDirty for anything
-        if (bits) {
-            set->append(HdDataSourceLocator());
+        const auto fncIt = Hd_SPrimBToSFncs->find(primType);
+        if (fncIt == Hd_SPrimBToSFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (bits) {
+                set->append(HdDataSourceLocator());
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(bits, set);
         }
     }
 }
@@ -463,6 +481,12 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
         if (_FindLocator(HdCapsuleSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyPrimvar;
         }
+    }
+
+    // Locator (*): categories
+
+    if (_FindLocator(HdCategoriesSchema::GetDefaultLocator(), end, &it)) {
+        bits |= HdChangeTracker::DirtyCategories;
     }
 
     if (primType == HdPrimTypeTokens->cone) {
@@ -706,7 +730,7 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdLight::DirtyParams;
         }
         if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyVisibility | HdLight::DirtyParams;
+            bits |= HdLight::DirtyParams;
         }
         if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyTransform;
@@ -761,10 +785,19 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         if (_FindLocator(HdSampleFilterSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyParams;
         }
+        if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyVisibility;
+        }
     } else {
-        // unknown prim type, use AllDirty for anything
-        if (_FindLocator(HdDataSourceLocator(), end, &it)) {
-            bits |= HdChangeTracker::AllDirty;
+        const auto fncIt = Hd_SPrimSToBFncs->find(primType);
+        if (fncIt == Hd_SPrimSToBFncs->end()) {
+            // unknown prim type, use AllDirty for anything
+            if (_FindLocator(HdDataSourceLocator(), end, &it)) {
+                bits |= HdChangeTracker::AllDirty;
+            }
+        } else {
+            // call custom handler registered for this type
+            fncIt->second(set, &bits);
         }
     }
 
@@ -846,6 +879,17 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
     }
 
     return bits;
+}
+
+/*static*/
+void
+HdDirtyBitsTranslator::RegisterTranslatorsForCustomSprimType(
+    TfToken const& primType,
+    LocatorSetToDirtyBitsFnc sToBFnc,
+    DirtyBitsToLocatorSetFnc bToSFnc)
+{
+    Hd_SPrimSToBFncs->insert({primType, sToBFnc});
+    Hd_SPrimBToSFncs->insert({primType, bToSFnc});
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

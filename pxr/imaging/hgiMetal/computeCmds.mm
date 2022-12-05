@@ -55,7 +55,7 @@ void
 HgiMetalComputeCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this, false);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
@@ -207,6 +207,13 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     _argumentBuffer = nil;
 
     return submittedWork;
+}
+
+HGIMETAL_API
+id<MTLComputeCommandEncoder> HgiMetalComputeCmds::GetEncoder()
+{
+    _CreateEncoder();
+    return _encoder;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

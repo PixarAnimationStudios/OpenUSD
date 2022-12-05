@@ -69,7 +69,7 @@ public:
     void DidChangeLayerResolvedPath(const SdfLayerHandle &layer);
     void DidChangeField(const SdfLayerHandle &layer,
                         const SdfPath & path, const TfToken &field,
-                        const VtValue & oldValue, const VtValue & newValue );
+                        VtValue && oldValue, const VtValue & newValue );
     void DidChangeAttributeTimeSamples(const SdfLayerHandle &layer,
                                        const SdfPath &attrPath);
 

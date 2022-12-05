@@ -202,9 +202,13 @@ class MyCustomPrim "MyCustomPrim" (
     # These listed applied API schemas will be built-in to this schema type.
     prepend apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
 )  {
-    # Example of a default value override for a theoretical property defined in 
+    # Example of a fallback value override for a theoretical property defined in 
     # the API schema instance "ExampleMultiApplyAPI:foo"
-    bool exampleMulti:foo:boolAttr = true
+    bool exampleMulti:foo:boolAttr = true (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    }
 }
 
 # Example of a single-apply API schema with built-in applied API schemas
@@ -215,11 +219,15 @@ class "MyCustomAPI" (
     # will always be applied when this schema is applied.
     prepend apiSchemas = ["ExampleSingleApplyAPI", "ExampleMultiApplyAPI:foo"]
 )  {
-    # Example of a default value override for a theoretical property defined in 
+    # Example of a fallback value override for a theoretical property defined in 
     # the API schema instance "ExampleMultiApplyAPI:foo". This schema will be
     # stronger when applied than its built-in API schemas and this default value
     # will be used for the added property.
-    bool exampleMulti:foo:boolAttr = true
+    bool exampleMulti:foo:boolAttr = true (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    }
 }
 
 # Example of a multiple-apply API schema with built-in applied API schemas
@@ -241,7 +249,9 @@ class "MyCustomMultiApplyAPI" (
 )  {
     # Example attribute. It will have the full name 
     # myCustomProp:<instanceName>:boolAttr when applied.
-    bool boolAttr = true
+    bool boolAttr = true (
+        doc = "Multiple apply schema attribute example"
+    )
 }
 
 \endcode
@@ -397,6 +407,92 @@ property type of an existing prim type schema property, all opinions on that
 property from the authored API schemas are ignored and the prim type schema's 
 property is used.
 
+\subsection Usd_APISchemaPropertyOverride API schema property overrides
+
+Sometimes when an IsA or an API schema includes another API schema as a
+built-in, it may also want to alter one or more of the built-in schema's
+properties to give the property a more reasonable fallback value or change some
+other metadata on the property like its documentation or its _allowedTokens_. 
+But we don't want the schema to have to fully redefine the property when it only
+wants to sparsely override the metadata it cares about. In order to enable this
+behavior we allow a schema to explicitly tag a property as an _API schema
+override_.
+
+A schema property that is declared as an API schema override does not define 
+the property in that schema. Instead it behaves as an _over_ for a property
+with the same name that may be defined by any of its included built-in API
+schemas. This is different than the standard behavior when included API schemas
+define the same property (without specifying an override) as in that case, the
+strongest schema's property wins and completely stomps over the same property
+from any weaker schema (as specified in \ref Usd_APISchemaStrengthOrdering).
+
+API schema overrides can be declared for both IsA and applied API schemas in the
+source schema files through adding 
+\code bool apiSchemaOverride = true \endcode
+to the \ref Usd_CustomizingPerProperty "customData of the property". When the 
+\ref UsdSchemaRegistry "schema registry" is populated, any properties declared
+as API schema overrides will be composed over the defined property from the
+schema's built-in API schemas if a property with that name is indeed defined in
+one of the built-in schemas. If no property with the name exists in the included
+API schemas, the API schema override property is ignored.
+
+An example of a common use case for this are schemas that include instances of 
+\ref UsdCollectionAPI "CollectionAPI" and want to only change the fallback for
+\ref UsdCollectionAPI::GetIncludeRootAttr "includeRoot" or 
+\ref UsdCollectionAPI::GetExpansionRuleAttr "expansionRule", e.g.:
+\code
+class "MyCustomAPI" (
+    prepend apiSchemas = ["CollectionAPI:myColl"]
+) {
+    # Override CollectionAPI:myColl to set the fallback for includeRoot to true
+    # instead of using CollectionAPI's normal fallback of false.
+    uniform bool collection:myColl:includeRoot = 1 (
+        customData = {
+            bool apiSchemaOverride = true
+        }
+    )
+}
+\endcode
+
+Because we treat auto-apply API schemas as an extension of the built-in API
+schemas included in a schema, API schema override properties can also be used
+to sparsely override properties defined in auto-apply API schemas. Since 
+auto-apply schemas will typically be defined in plugins, API schema override 
+properties are a convenient way to allow a schema to override a property that it
+expects to come from an auto-apply API schema without defining the property 
+itself when the auto-apply API schema is not present (like when the auto-apply
+API schema's plugin isn't included).
+
+There are some limitations to how API schema override properties can be used:
+1. Any property declared as an API schema override **must have the exact same 
+   type and variability** (uniform vs variable) of the property it ends up 
+   overriding. The property type consists of whether the property is an 
+   attribute or a relationship and, if the property is an attribute, the type
+   name (int, float, color3f, etc.) of the attribute. Any API schema property
+   overrides that do not conform to the underlying property type and variability
+   are ignored.
+
+2. API schema override properties are only resolved when generating the static
+   \ref UsdPrimDefinition "prim definitions" for registered IsA and applied API
+   schema types in the schema registry. All "dangling overrides" are thrown away
+   which means they cannot be used to override a prim's built-in schema 
+   properties when an API schema is authored in scene description to apply to
+   prim.
+
+3. API schema property overrides only apply to the properties defined by API 
+   schemas directly or indirectly included by the schema defining the override
+   itself. What this means is that if you have a schema "A" that includes two 
+   built-in API schemas "B" and "C", property overrides declared in "A" will 
+   affect properties defined in both "B" and "C" (as well as properties defined 
+   in any API schemas "B" and "C" include). However, property overrides declared
+   in "B" will **not** affect any of the properties defined in "C" (and schemas 
+   included by "C") and vice versa.
+
+Note that API schema property overrides are specific to overriding properties
+from built-in API schemas and do not apply to overriding properties via schema
+inheritance. This is because schema properties always sparsely compose via 
+class inheritance during schema generation so no specification is necessary.
+
 \section Usd_SchemaCodeGeneration Schema Code Generation
 
 Simply run the ```usdGenSchema``` command to generate code in the current 
@@ -535,6 +631,28 @@ Here's a short description of each datum in the global customData dictionary:
  	will be camelCased to "namespacePrefixAttrName" irrespective of
  	useLiteralIdentifier being set or not.
  
+\section Codeless_Schemas Codeless Schemas
+
+By default ```usdGenSchema``` generates C++ and Python code, providing
+appropriate APIs. Clients also have an option of not generating any code by
+setting the \em skipCodeGeneration metadata to True for a given schema, hence 
+generating **only generatedSchema.usda and plugInfo.json** which are the only 
+essential products for runtime schema registration.
+
+Since codeless schemas do not provide any code, clients do not need to recompile
+USD to use or update these schemas. This "dynamic" nature of codeless schemas 
+is the primary motivation behind using codeless schemas. 
+Also, for the same reasons, clients will have to use basic USD level APIs to 
+query prims and attributes associated with the codeless schemas. This also means
+codeless schemas concept can not be used for any schema which requires custom
+code.
+
+The usdRiPxr schema domain that ships with USD is an example of a codeless 
+schema domain. These are usd schemas generated using renderman shader 
+definitions (args files) using the Sdr library. ```usdgenschemafromsdr``` is the
+utility which generates schema.usda, generatedSchema.usda and plugInfo.json for
+the usdRiPxr schema domain.
+
 \section Usd_PerClassProperties Customizing Per-Class Properties
 
 \code
@@ -672,6 +790,11 @@ dictionary:
     Custom should be used sparingly, primarily as a tool for API migration
     Given the performance expectations of Get, it is NOT appropriate to 
     add complicated validation logic in this method.
+  - \b apiSchemaOverride - If this boolean value is set to true, it indicates
+    this property is an 
+    \ref Usd_APISchemaPropertyOverride "API schema override". Additionally, no
+    accessor API will be generated for this property, as if the property had
+    set 'apiName' to the empty string. 
 
 \section Usd_ExampleSchema Example Schema Classes
 

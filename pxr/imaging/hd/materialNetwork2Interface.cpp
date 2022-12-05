@@ -93,6 +93,19 @@ HdMaterialNetwork2Interface::GetNodeType(const TfToken &nodeName) const
 }
 
 TfTokenVector
+HdMaterialNetwork2Interface::GetNodeTypeInfoKeys(const TfToken& nodeName) const
+{
+    return {};
+}
+
+VtValue
+HdMaterialNetwork2Interface::GetNodeTypeInfoValue(
+    const TfToken& nodeName, const TfToken& key) const
+{
+    return VtValue();
+}
+
+TfTokenVector
 HdMaterialNetwork2Interface::GetAuthoredNodeParameterNames(
     const TfToken &nodeName) const
 {

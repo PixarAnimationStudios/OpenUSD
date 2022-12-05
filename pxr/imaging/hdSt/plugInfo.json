@@ -15,6 +15,24 @@
                         "priority": 0,
                         "displayName": "Storm Dependency Forwarding Scene Index"
                     },
+                    "HdSt_MaterialBindingResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to resolve material bindings."
+                    },
+                    "HdSt_NodeIdentifierResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset."
+                    },
+                    "HdSt_TerminalsResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "GL",
+                        "priority": 0,
+                        "displayName": "Scene Index to resolve terminal names."
+                    },
                     "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",

@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/mesh.h"
@@ -58,13 +59,15 @@ UsdImagingMeshAdapter::~UsdImagingMeshAdapter()
 }
 
 TfTokenVector
-UsdImagingMeshAdapter::GetImagingSubprims()
+UsdImagingMeshAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingMeshAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingMeshAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->mesh;
@@ -74,8 +77,8 @@ UsdImagingMeshAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingMeshAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -290,7 +293,7 @@ UsdImagingMeshAdapter::UpdateForTime(UsdPrim const& prim,
                 if (mesh.GetNormalsAttr().Get(&normals, time)) {
                     _MergePrimvar(&primvars,
                         UsdGeomTokens->normals,
-                        _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+                        UsdImagingUsdToHdInterpolation(mesh.GetNormalsInterpolation()),
                         HdPrimvarRoleTokens->normal);
                 } else {
                     _RemovePrimvar(&primvars, UsdGeomTokens->normals);
@@ -344,7 +347,7 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
         UsdGeomPointBased pb(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(pb.GetNormalsInterpolation()),
+            UsdImagingUsdToHdInterpolation(pb.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     if (propertyName == UsdImagingTokens->primvarsNormals) {
@@ -357,7 +360,7 @@ UsdImagingMeshAdapter::ProcessPropertyChange(UsdPrim const& prim,
         UsdGeomMesh mesh(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(mesh.GetNormalsInterpolation()),
+            UsdImagingUsdToHdInterpolation(mesh.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     // Handle prefixed primvars that use special dirty bits.

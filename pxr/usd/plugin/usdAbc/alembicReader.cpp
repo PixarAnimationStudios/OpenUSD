@@ -3682,10 +3682,10 @@ _ReadPrim(
     // Handle non-instances.
     _ReaderContext::Prim* instance = nullptr;
     if (!context.IsInstance(object)) {
-        // Combine geom with parent if parent is a transform.  There are
-        // several cases where we want to bail out and, rather than use a
-        // huge if statement or deep if nesting, we'll use do/while and
-        // break to do it.
+        // Combine geom with parent if parent is a transform with only a single
+        // child. There are several cases where we want to bail out and, rather
+        // than use a huge if statement or deep if nesting, we'll use do/while
+        // and break to do it.
         do {
             if (!TfGetEnvSetting(USD_ABC_XFORM_PRIM_COLLAPSE)) {
                 // Transform collapse is specified as unwanted behavior
@@ -3704,6 +3704,11 @@ _ReadPrim(
 
             // The parent must not be the root of an instance.
             if (context.IsInstance(parent)) {
+                break;
+            }
+
+            // The parent must not have more than this one object as a child.
+            if (parent.getNumChildren() > 1u) {
                 break;
             }
 

@@ -75,8 +75,75 @@ static inline HANDLE _FileToWinHANDLE(FILE *file)
 FILE* ArchOpenFile(char const* fileName, char const* mode)
 {
 #if defined(ARCH_OS_WINDOWS)
-    return _wfopen(ArchWindowsUtf8ToUtf16(fileName).c_str(),
-                   ArchWindowsUtf8ToUtf16(mode).c_str());
+    bool hasPlus = strchr(mode, '+') != nullptr;
+    bool hasB = strchr(mode, 'b') != nullptr;
+
+    // Allow other processes to read/write/delete the file.  This emulates the
+    // unix-like behavior, which our code is primarily accustomed to.
+    DWORD shareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE;
+    DWORD flagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+
+    DWORD desiredAccess;
+    DWORD creationDisposition;
+    int openFlags
+        = (hasB ? _O_BINARY : _O_TEXT)
+        | (hasPlus ? _O_RDWR : _O_RDONLY);
+    const char modeChar = mode[0];
+    if (modeChar == 'r') {
+        desiredAccess = GENERIC_READ | (hasPlus ? GENERIC_WRITE : 0);
+        creationDisposition = OPEN_EXISTING;
+    }
+    else if (modeChar == 'w') {
+        desiredAccess = GENERIC_WRITE | (hasPlus ? GENERIC_READ : 0);
+        creationDisposition = CREATE_ALWAYS;
+        openFlags |= _O_CREAT | _O_TRUNC;
+    }
+    else if (modeChar == 'a') {
+        // The GENERIC_WRITE - FILE_WRITE_DATA produces write permissions to all
+        // attributes, etc, but only APPEND permissions for file content.
+        desiredAccess =
+            (GENERIC_WRITE & ~FILE_WRITE_DATA) | (hasPlus ? GENERIC_READ : 0);
+        creationDisposition = OPEN_ALWAYS;
+        openFlags |= _O_CREAT | _O_APPEND;
+    }
+    else {
+        // invalid mode.
+        return nullptr;
+    }
+
+    // Call CreateFileW.
+    HANDLE hfile = CreateFileW(
+        ArchWindowsUtf8ToUtf16(fileName).c_str(),
+        desiredAccess,
+        shareMode,
+        /* securityAttributes=*/nullptr,
+        creationDisposition,
+        flagsAndAttributes,
+        /* templateFile=*/NULL);
+
+    if (hfile == INVALID_HANDLE_VALUE) {
+        // Failed to CreateFileW.
+        return nullptr;
+    }
+
+    // According to Win32 docs, a successful call to _open_osfhandle transfers
+    // ownership of hfile to the C runtime file descriptor, so a later _close()
+    // is sufficient to clean up.  There's no need to call CloseHandle().
+    int osfHandle = _open_osfhandle((intptr_t)hfile, openFlags);
+    if (osfHandle == -1) { 
+        CloseHandle(hfile);
+        return nullptr;
+    }
+
+    // According to Win32 docs, a successful call to _fdopen transfers ownership
+    // of the osfHandle to the FILE stream, so a later fclose() is sufficient to
+    // clean up.  There's no need to call _close.
+    FILE *filePtr = _fdopen(osfHandle, mode);
+    if (!filePtr) {
+        _close(osfHandle);
+    }
+
+    return filePtr;
 #else
     return fopen(fileName, mode);
 #endif

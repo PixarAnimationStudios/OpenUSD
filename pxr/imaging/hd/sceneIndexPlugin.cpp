@@ -56,7 +56,7 @@ HdSceneIndexPlugin::_AppendSceneIndex(
 
 
 HdSceneIndexBaseRefPtr
-HdSceneIndexPlugin:: AppendSceneIndex(
+HdSceneIndexPlugin::AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {

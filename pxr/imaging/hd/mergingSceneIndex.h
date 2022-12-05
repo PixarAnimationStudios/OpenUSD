@@ -88,6 +88,12 @@ private:
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
+    void _FillAddedEntriesRecursively(
+        const HdSceneIndexBaseRefPtr &newSceneIndex,
+        const SdfPath &primPath,
+        HdSceneIndexObserver::AddedPrimEntries * const addedEntries);
+
+
     friend class _Observer;
 
     class _Observer : public HdSceneIndexObserver

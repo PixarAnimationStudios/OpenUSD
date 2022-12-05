@@ -53,11 +53,19 @@ _NewDrawBatch(HdStDrawItemInstance *drawItemInstance,
     HgiCapabilities const *hgiCapabilities =
         resourceRegistry->GetHgi()->GetCapabilities();
 
-    // We don't want or need frustum culling of our fullscreen triangle.
+    // Since we're just drawing a single full-screen triangle
+    // we don't want frustum culling or indirect command encoding.
+    bool const allowGpuFrustumCulling = false;
+    bool const allowIndirectCommandEncoding = false;
     if (HdSt_PipelineDrawBatch::IsEnabled(hgiCapabilities)) {
-        return std::make_shared<HdSt_PipelineDrawBatch>(drawItemInstance,false);
+        return std::make_shared<HdSt_PipelineDrawBatch>(
+                drawItemInstance,
+                allowGpuFrustumCulling,
+                allowIndirectCommandEncoding);
     } else {
-        return std::make_shared<HdSt_IndirectDrawBatch>(drawItemInstance,false);
+        return std::make_shared<HdSt_IndirectDrawBatch>(
+                drawItemInstance,
+                allowGpuFrustumCulling);
     }
 }
 
@@ -154,7 +162,7 @@ HdSt_ImageShaderRenderPass::_Execute(
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _drawBatch->PrepareDraw(stRenderPassState, resourceRegistry);
+    _drawBatch->PrepareDraw(nullptr, stRenderPassState, resourceRegistry);
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
@@ -163,6 +171,9 @@ HdSt_ImageShaderRenderPass::_Execute(
     if (!TF_VERIFY(gfxCmds)) {
         return;
     }
+
+    const GfVec4i viewport = stRenderPassState->ComputeViewport(desc);
+    gfxCmds->SetViewport(viewport);
 
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();

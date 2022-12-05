@@ -102,7 +102,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (enableTinyPrimCulling)                     \
     (volumeRaymarchingStepSize)                 \
     (volumeRaymarchingStepSizeLighting)         \
-    (volumeMaxTextureMemoryPerField)
+    (volumeMaxTextureMemoryPerField)            \
+    (maxLights)
 
 // Material tags help bucket prims into different queues for draw submission.
 // The tags supported by Storm are:

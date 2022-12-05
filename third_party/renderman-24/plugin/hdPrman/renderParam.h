@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
+#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
@@ -38,6 +39,10 @@
 #include <mutex>
 
 class RixRiCtl;
+
+namespace stats {
+class Session;
+};
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -70,7 +75,8 @@ public:
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
     RtParamList
-    ConvertAttributes(HdSceneDelegate *sceneDelegate, SdfPath const& id);
+    ConvertAttributes(HdSceneDelegate *sceneDelegate,
+        SdfPath const& id, bool isGeometry);
 
     // A vector of Riley coordinate system id's.
     using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;
@@ -279,18 +285,23 @@ public:
     }
 
     // Riley Data from the Sample Filter Prim
-    void AddSampleFilter(SdfPath const& path, riley::ShadingNode const& node);
+    void AddSampleFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::SampleFilterList GetSampleFilterList();
 
 private:
+    void _CreateStatsSession();
     void _CreateRiley(const std::string &rileyVariant, 
         const std::string &xpuVariant);
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
-    void _CreateSampleFilters();
-
+    
     void _DestroyRiley();
+    void _DestroyStatsSession();
 
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
@@ -310,6 +321,9 @@ private:
 
     // Xcpt Handler
     HdPrman_Xcpt _xcpt;
+
+    // Roz stats session
+    stats::Session *_statsSession;
 
     // Riley instance.
     riley::Riley *_riley;

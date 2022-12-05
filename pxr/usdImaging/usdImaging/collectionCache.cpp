@@ -39,11 +39,13 @@ _IsQueryTrivial(UsdCollectionAPI::MembershipQuery const& query)
 }
 
 void
-UsdImaging_CollectionCache::_MarkCollectionContentDirty(UsdStageWeakPtr const& stage, 
+UsdImaging_CollectionCache::_MarkCollectionContentDirty(
+    UsdStageWeakPtr const& stage, 
     UsdCollectionAPI::MembershipQuery const& query)
 {
     SdfPathSet linkedPaths = UsdComputeIncludedPathsFromCollection(query, stage);
-    std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), linkedPaths.begin(), linkedPaths.end(),
+    std::merge(_dirtyPaths.begin(), _dirtyPaths.end(), 
+        linkedPaths.begin(), linkedPaths.end(),
         std::inserter(_dirtyPaths, _dirtyPaths.begin()));
 }
 
@@ -90,14 +92,15 @@ UsdImaging_CollectionCache::UpdateCollection(UsdCollectionAPI const& c)
     _idForPath[path] = id;
 
     _MarkCollectionContentDirty(stage, query);
-    // Also add the light in the dirty set for it to be marked as collection dirty
     _dirtyPaths.insert(c.GetPrim().GetPath());
 
     return changed;
 }
 
 size_t
-UsdImaging_CollectionCache::RemoveCollection(UsdStageWeakPtr const& stage, SdfPath const& collectionPath)
+UsdImaging_CollectionCache::RemoveCollection(
+    UsdStageWeakPtr const& stage, 
+    SdfPath const& collectionPath)
 {
     std::lock_guard<std::mutex> lock(_mutex);
 

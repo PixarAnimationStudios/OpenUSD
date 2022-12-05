@@ -351,6 +351,25 @@ HdSt_TextureTestDriver::HdSt_TextureTestDriver() :
     _CreateVertexBufferDescriptor();
 }
 
+HdSt_TextureTestDriver::~HdSt_TextureTestDriver()
+{
+    if (_vertexBuffer) {
+        _hgi->DestroyBuffer(&_vertexBuffer);
+    }
+    if (_indexBuffer) {
+        _hgi->DestroyBuffer(&_indexBuffer);
+    }
+    if (_shaderProgram) {
+        _DestroyShaderProgram();
+    }
+    if (_resourceBindings) {
+        _hgi->DestroyResourceBindings(&_resourceBindings);
+    }
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+}
+
 void
 HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst, 
                              HgiTextureHandle const &inputTexture,
@@ -381,7 +400,7 @@ HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst,
     gfxCmds->PushDebugGroup("Debug HdSt_TextureTestDriver");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     gfxCmds->SetViewport(viewport);
     gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
         _constantsData.size(), _constantsData.data());
@@ -585,6 +604,7 @@ HdSt_TextureTestDriver::_CreateTextureBindings(
         HgiTextureBindDesc texBindDesc;
         texBindDesc.bindingIndex = 0;
         texBindDesc.stageUsage = HgiShaderStageFragment;
+        texBindDesc.writable = false;
         texBindDesc.textures.push_back(textureHandle);
         if (samplerHandle) {
             texBindDesc.samplers.push_back(samplerHandle);

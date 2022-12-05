@@ -72,6 +72,20 @@ UsdContrivedPublicMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name
     return UsdContrivedPublicMultipleApplyAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdContrivedPublicMultipleApplyAPI>
+UsdContrivedPublicMultipleApplyAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdContrivedPublicMultipleApplyAPI> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 

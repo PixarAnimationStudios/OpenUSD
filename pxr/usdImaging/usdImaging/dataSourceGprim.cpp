@@ -54,18 +54,7 @@ void
 UsdImagingDataSourceGprim::_AddCustomPrimvar(
         const TfToken &primvarName, const TfToken &attrName)
 {
-    _customPrimvarMapping.emplace_back(primvarName, attrName);
-}
-
-bool
-UsdImagingDataSourceGprim::Has(const TfToken& name)
-{
-    if (name == HdPrimvarsSchemaTokens->primvars) {
-        return true;
-    }
-    // XXX: See "GetNames()" for some stuff we're missing...
-
-    return UsdImagingDataSourcePrim::Has(name);
+    _customPrimvarMappings.emplace_back(primvarName, attrName);
 }
 
 TfTokenVector 
@@ -94,8 +83,9 @@ UsdImagingDataSourceGprim::Get(const TfToken & name)
         if (!primvars) {
             primvars = UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
+                _GetUsdPrim(),
                 UsdGeomPrimvarsAPI(_GetUsdPrim()),
-                _customPrimvarMapping,
+                _customPrimvarMappings,
                 _GetStageGlobals());
             UsdImagingDataSourcePrimvars::AtomicStore(_primvars, primvars);
         }

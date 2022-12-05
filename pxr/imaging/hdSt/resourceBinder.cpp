@@ -669,8 +669,7 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             shaderFallbackLocation++)]
                     = MetaData::ShaderParameterAccessor(glName, 
                                                         /*type=*/glType);
-            }
-            else if (param.IsTexture()) {
+            } else if (param.IsTexture()) {
                 if (param.textureType == HdTextureType::Ptex) {
                     // ptex texture
                     HdBinding texelBinding = bindless
@@ -686,7 +685,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied);
+                            /*isPremultiplied=*/param.isPremultiplied,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     _bindingMap[name] = texelBinding; // used for non-bindless
 
                     HdBinding layoutBinding = bindless
@@ -722,7 +722,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
                             /*type=*/glType,
                             /*swizzle=*/glSwizzle,
                             /*inPrimvars=*/param.samplerCoords,
-                            /*isPremultiplied=*/param.isPremultiplied);
+                            /*isPremultiplied=*/param.isPremultiplied,
+                            /*processTextureFallbackValue=*/isMaterialShader);
                     // used for non-bindless
                     _bindingMap[param.name] = textureBinding;
 
@@ -994,6 +995,7 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
         HgiShaderStageVertex | HgiShaderStageFragment |
         HgiShaderStagePostTessellationVertex;
     HgiBufferBindDesc desc;
+    desc.writable = true;
 
     switch (binding.GetType()) {
     case HdBinding::SSBO:
@@ -1004,6 +1006,7 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
         desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
         desc.resourceType = HgiBindResourceTypeStorageBuffer;
         desc.stageUsage = stageUsage;
+        desc.writable = false;
         bindingsDesc->buffers.push_back(desc);
         break;
     case HdBinding::UBO:
@@ -1015,6 +1018,7 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
         desc.bindingIndex = static_cast<uint32_t>(binding.GetLocation());
         desc.resourceType = HgiBindResourceTypeUniformBuffer;
         desc.stageUsage = stageUsage;
+        desc.writable = false;
         bindingsDesc->buffers.push_back(desc);
         break;
     default:
@@ -1121,8 +1125,9 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
         HgiShaderStagePostTessellationVertex;
     texelDesc.textures = { texelTexture };
     texelDesc.samplers = { texelSampler };
-    texelDesc.resourceType = HgiBindResourceTypeSampledImage;
+    texelDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     texelDesc.bindingIndex = binding.GetTextureUnit();
+    texelDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(texelDesc));
 }
 
@@ -1132,9 +1137,11 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
     TfToken const & name,
     HgiSamplerHandle const & texelSampler,
     HgiTextureHandle const & texelTexture,
+    HgiSamplerHandle const & layoutSampler,
     HgiTextureHandle const & layoutTexture) const
 {
-    if (!texelSampler.Get() || !texelTexture.Get() || !layoutTexture.Get()) {
+    if (!texelSampler.Get() || !texelTexture.Get() || !layoutSampler.Get() ||
+        !layoutTexture.Get()) {
         return;
     }
 
@@ -1142,10 +1149,12 @@ HdSt_ResourceBinder::GetTextureWithLayoutBindingDesc(
 
     HdBinding const layoutBinding = GetBinding(_ConcatLayout(name));
     HgiTextureBindDesc layoutDesc;
+    layoutDesc.stageUsage = HgiShaderStageFragment;
     layoutDesc.textures = { layoutTexture };
-    layoutDesc.samplers = { };
-    layoutDesc.resourceType = HgiBindResourceTypeSampledImage;
+    layoutDesc.samplers = { layoutSampler };
+    layoutDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
     layoutDesc.bindingIndex = layoutBinding.GetTextureUnit();
+    layoutDesc.writable = false;
     bindingsDesc->textures.push_back(std::move(layoutDesc));
 }
 

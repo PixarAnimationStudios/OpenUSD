@@ -508,16 +508,19 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
 
     HdMeshSchema meshSchema = 
         HdMeshSchema::GetFromParent(prim.dataSource);
-    if (!meshSchema.IsDefined()) {
-        return false;
+    if (meshSchema.IsDefined()) {
+        HdBoolDataSourceHandle doubleSidedDs = meshSchema.GetDoubleSided();
+        if (doubleSidedDs) {
+            return doubleSidedDs->GetTypedValue(0.0f);
+        }
+    } else if (prim.primType == HdPrimTypeTokens->basisCurves) {
+        // TODO: We assume all basis curves are double-sided in Hydra. This is
+        //       inconsistent with the USD schema, which allows sidedness to be
+        //       declared on the USD gprim. Note however that sidedness only 
+        //       affects basis curves with authored normals (i.e., ribbons).
+        return true;
     }
-
-    HdBoolDataSourceHandle doubleSidedDs = meshSchema.GetDoubleSided();
-    if (!doubleSidedDs) {
-        return false;
-    }
-
-    return doubleSidedDs->GetTypedValue(0.0f);
+    return false;
 }
 
 GfRange3d
@@ -895,6 +898,7 @@ void
 _Walk(
     const SdfPath & nodePath, 
     const HdContainerDataSourceHandle & nodesDS,
+    const TfTokenVector &renderContexts,
     std::unordered_set<SdfPath, SdfPath::Hash> * visitedSet,
     HdMaterialNetwork * netHd)
 {
@@ -905,17 +909,40 @@ _Walk(
     visitedSet->insert(nodePath);
 
     TfToken nodePathTk(nodePath.GetToken());
-    if (!nodesDS->Has(nodePathTk)){ 
-        return;
-    }
 
     HdDataSourceBaseHandle nodeDS = nodesDS->Get(nodePathTk);
     HdMaterialNodeSchema nodeSchema(HdContainerDataSource::Cast(nodeDS));
     if (!nodeSchema.IsDefined()) {
         return;
     }
-    
-    const TfToken nodeId = nodeSchema.GetNodeIdentifier()->GetTypedValue(0);
+
+    TfToken nodeId;
+    if (HdTokenDataSourceHandle idDs = nodeSchema.GetNodeIdentifier()) {
+        nodeId = idDs->GetTypedValue(0);
+    }
+
+    // check for render-specific contexts
+    if (!renderContexts.empty()) {
+        if (HdContainerDataSourceHandle idsDs =
+                nodeSchema.GetRenderContextNodeIdentifiers()) {
+            for (const TfToken &name : renderContexts) {
+                
+                if (name.IsEmpty() && !nodeId.IsEmpty()) {
+                    break;
+                }
+                if (HdTokenDataSourceHandle ds = HdTokenDataSource::Cast(
+                        idsDs->Get(name))) {
+
+                    const TfToken v = ds->GetTypedValue(0);
+                    if (!v.IsEmpty()) {
+                        nodeId = v;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
     HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
 
@@ -941,7 +968,8 @@ _Walk(
                 TfToken p = connSchema.GetUpstreamNodePath()->GetTypedValue(0);
                 TfToken n = 
                     connSchema.GetUpstreamNodeOutputName()->GetTypedValue(0);
-                _Walk(SdfPath(p.GetString()), nodesDS, visitedSet, netHd);
+                _Walk(SdfPath(p.GetString()), nodesDS, renderContexts,
+                        visitedSet, netHd);
 
                 HdMaterialRelationship r;
                 r.inputId = SdfPath(p.GetString()); 
@@ -996,6 +1024,25 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         return VtValue();
     }
 
+
+    // Some legacy render delegates may require all shading nodes
+    // to be included regardless of whether they are reachable via
+    // a terminal. While 100% accuracy in emulation would require that
+    // behavior to be enabled by default, it is generally not desireable
+    // as it leads to a lot of unnecessary data duplication across 
+    // terminals.
+    // 
+    // A renderer which wants this behavior can configure its networks
+    // with an "includeDisconnectedNodes" data source.
+    bool includeDisconnectedNodes = false;
+    if (matDS) {
+        static const TfToken key("includeDisconnectedNodes");
+        if (HdBoolDataSourceHandle ds = HdBoolDataSource::Cast(
+                matDS->Get(key))) {
+            includeDisconnectedNodes = ds->GetTypedValue(0.0f);
+        }
+    }
+
     // Convert HdDataSource with material data to HdMaterialNetworkMap
     HdMaterialNetworkMap matHd;
 
@@ -1022,11 +1069,52 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         SdfPath path(pathTk.GetString());
         matHd.terminals.push_back(path);
 
+
+        TfTokenVector renderContexts =
+            GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts();
+
+
         // Continue walking the network
         HdMaterialNetwork & netHd = matHd.map[name];
-        _Walk(path, nodesDS, &visitedNodes, &netHd);
+        _Walk(path, nodesDS, renderContexts, &visitedNodes, &netHd);
+
+        // see "includeDisconnectedNodes" above
+        if (includeDisconnectedNodes && nodesDS) {
+            for (const TfToken &nodeName : nodesDS->GetNames()) {
+                _Walk(SdfPath(nodeName.GetString()),
+                    nodesDS, renderContexts, &visitedNodes, &netHd);
+            }
+        }
     }
     return VtValue(matHd);
+}
+
+static
+TfTokenVector
+_ToTokenVector(const std::vector<std::string> &strings)
+{
+    TfTokenVector tokens;
+    tokens.reserve(strings.size());
+    for (const std::string &s : strings) {
+        tokens.emplace_back(s);
+    }
+    return tokens;
+}
+
+// If paramName has no ":", return empty locator.
+// Otherwise, split about ":" to create locator.
+static
+HdDataSourceLocator
+_ParamNameToLocator(TfToken const &paramName)
+{
+    if (paramName.GetString().find(':') == std::string::npos) {
+        return HdDataSourceLocator::EmptyLocator();
+    }
+
+    const TfTokenVector parts = _ToTokenVector(
+        TfStringTokenize(paramName.GetString(), ":"));
+    
+    return HdDataSourceLocator(parts.size(), parts.data());
 }
 
 VtValue
@@ -1048,6 +1136,29 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
+    // If paramName has a ":", say, "foo:bar", we translate to
+    // a data source locator here and check whether there is a data source
+    // at HdDataSourceLocator{"camera", "foo", "bar"} for the prim in the
+    // scene index.
+    const HdDataSourceLocator locator = _ParamNameToLocator(paramName);
+    if (!locator.IsEmpty()) {
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(
+                    HdContainerDataSource::Get(camera, locator))) {
+            return ds->GetValue(0.0f);
+        }
+        // If there was no nested data source for the data source locator
+        // we constructed, fall through to query for "foo:bar".
+        //
+        // This covers the case where emulation is active and we have
+        // another HdSceneDelegate that was added to the HdRenderIndex.
+        // We want to call GetCameraParamValue on that other scene
+        // delegate with the same paramName that we were given (through
+        // a HdLegacyPrimSceneIndex (feeding directly or indirectly
+        // into the _inputSceneIndex) and the
+        // Hd_DataSourceLegacyCameraParamValue data source).
+    }
+
     TfToken cameraSchemaToken = paramName;
     if (paramName == HdCameraTokens->clipPlanes) {
         cameraSchemaToken = HdCameraSchemaTokens->clippingPlanes;
@@ -1060,7 +1171,7 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
         return VtValue();
     }
 
-    VtValue value = valueDs->GetValue(0);
+    const VtValue value = valueDs->GetValue(0);
     // Smooth out some incompatibilities between scene delegate and
     // datasource schemas...
     if (paramName == HdCameraSchemaTokens->projection) {
@@ -1093,6 +1204,62 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     }
 }
 
+// Render delegates which retrieve light params (such as "intensity") via 
+// GetLightParamValue rather than from a light's material resource need to be
+// mapped back to the "material" data source for cases when the data is not
+// provided by a legacy scene delegate. Because filtering scene indices may
+// be modifying the "material" data source value, this mapping can happen only
+// when adapting to legacy render delegates.
+static
+VtValue
+_GetLightParamValueFromMaterial(
+    const HdContainerDataSourceHandle &primDataSource,
+    TfToken const &paramName)
+{
+
+    // these appear with "light" data source but are not expected to be within
+    // a light's shader within a material data source
+    if (paramName == HdTokens->filters
+            || paramName == HdTokens->lightLink
+            || paramName == HdTokens->shadowLink
+            || paramName == HdTokens->lightFilterLink
+            || paramName == HdTokens->isLight) {
+        return VtValue();
+    }
+
+    if (auto mat = HdMaterialSchema::GetFromParent(primDataSource)) {
+        HdMaterialNetworkSchema network(mat.GetMaterialNetwork());
+        if (HdContainerDataSourceHandle terminals = network.GetTerminals()) {
+            if (HdMaterialConnectionSchema connection =
+                    HdMaterialConnectionSchema(
+                        HdContainerDataSource::Cast(
+                            terminals->Get(HdLightSchemaTokens->light)))) {
+                if (HdTokenDataSourceHandle nodeNameDs =
+                        connection.GetUpstreamNodePath()) {
+                     if (HdContainerDataSourceHandle nodes =
+                            network.GetNodes()) {
+                        if (HdContainerDataSourceHandle params =
+                                HdMaterialNodeSchema(
+                                    HdContainerDataSource::Cast(
+                                        nodes->Get(
+                                            nodeNameDs->GetTypedValue(0.0f)))
+                                                ).GetParameters()) {
+
+                            if (auto param = HdSampledDataSource::Cast(
+                                    params->Get(paramName))) {
+
+                                return param->GetValue(0.0f);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return VtValue();
+}
+
 VtValue
 HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         SdfPath const &id, TfToken const &paramName)
@@ -1104,23 +1271,27 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         return VtValue();
     }
 
+    // Prioritize retrieving light parameters from the material and fallback
+    // on "light" data source.
+    VtValue result = _GetLightParamValueFromMaterial(prim.dataSource, paramName);
+
+    if (!result.IsEmpty()) {
+        return result;
+    }
+
     HdContainerDataSourceHandle light =
         HdContainerDataSource::Cast(
             prim.dataSource->Get(HdLightSchemaTokens->light));
-    if (!light) {
-        return VtValue();
+    if (light) {
+        HdSampledDataSourceHandle valueDs = HdSampledDataSource::Cast(
+                light->Get(paramName));
+        if (valueDs) {
+            result = valueDs->GetValue(0);
+        }
     }
 
-    HdSampledDataSourceHandle valueDs =
-        HdSampledDataSource::Cast(
-            light->Get(paramName));
-    if (!valueDs) {
-        return VtValue();
-    }
-
-    return valueDs->GetValue(0);
+    return result;
 }
-
 
 static VtValue
 _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
@@ -1438,12 +1609,10 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle drawTarget =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdPrimTypeTokens->drawTarget))) {
-            if (drawTarget->Has(key)) {
-                if (HdSampledDataSourceHandle valueDs =
-                        HdSampledDataSource::Cast(drawTarget->Get(key))) {
-                    return valueDs->GetValue(0.0f);
-                } 
-            }
+            if (HdSampledDataSourceHandle valueDs =
+                    HdSampledDataSource::Cast(drawTarget->Get(key))) {
+                return valueDs->GetValue(0.0f);
+            } 
         }
 
         return VtValue();
@@ -1474,11 +1643,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(
                         HdRenderBufferSchemaTokens->renderBuffer))) {
-            if (renderBuffer->Has(key)) {
-                if (HdSampledDataSourceHandle valueDs =
-                        HdSampledDataSource::Cast(renderBuffer->Get(key))) {
-                    return valueDs->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueDs =
+                    HdSampledDataSource::Cast(renderBuffer->Get(key))) {
+                return valueDs->GetValue(0);
             }
         }
 
@@ -1502,11 +1669,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle cubeSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCubeSchemaTokens->cube))) {
-            if (cubeSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(cubeSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(cubeSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1515,11 +1680,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle sphereSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdSphereSchemaTokens->sphere))) {
-            if (sphereSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(sphereSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(sphereSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1528,11 +1691,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle cylinderSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCylinderSchemaTokens->cylinder))) {
-            if (cylinderSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(cylinderSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1541,11 +1702,9 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle coneSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdConeSchemaTokens->cone))) {
-            if (coneSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(coneSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(coneSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
@@ -1554,19 +1713,17 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         if (HdContainerDataSourceHandle capsuleSrc =
                 HdContainerDataSource::Cast(
                     prim.dataSource->Get(HdCapsuleSchemaTokens->capsule))) {
-            if (capsuleSrc->Has(key)) {
-                if (HdSampledDataSourceHandle valueSrc =
-                        HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
-                    return valueSrc->GetValue(0);
-                }
+            if (HdSampledDataSourceHandle valueSrc =
+                    HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
+                return valueSrc->GetValue(0);
             }
         }
     }
 
     // "primvars" use of Get()
-    if (HdContainerDataSource::Cast(prim.dataSource)->Has(
-            HdPrimvarsSchemaTokens->primvars)) {
-        return _GetPrimvar(id, key, nullptr);
+    if (HdPrimvarsSchema primvars =
+            HdPrimvarsSchema::GetFromParent(prim.dataSource)) {
+        return _GetPrimvar(primvars.GetContainer(), key, nullptr);
     }
 
     // Fallback for unknown prim conventions provided by emulated scene
@@ -1604,8 +1761,21 @@ HdSceneIndexAdapterSceneDelegate::_GetPrimvar(SdfPath const &id,
         return VtValue();
     }
 
-    if (HdPrimvarsSchema primvars = HdPrimvarsSchema::GetFromParent(
-            prim.dataSource)) {
+    return _GetPrimvar(
+        HdPrimvarsSchema::GetFromParent(prim.dataSource).GetContainer(),
+            key, outIndices);
+
+    return VtValue();
+}
+
+VtValue
+HdSceneIndexAdapterSceneDelegate::_GetPrimvar(
+        const HdContainerDataSourceHandle &primvarsDataSource,
+        TfToken const &key,
+        VtIntArray *outIndices)
+{
+    HdPrimvarsSchema primvars(primvarsDataSource);
+    if (primvars) {
         if (HdPrimvarSchema primvar = primvars.GetPrimvar(key)) {
             
             if (outIndices) {
@@ -1710,7 +1880,7 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
@@ -1816,7 +1986,7 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         matrixSource->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);
@@ -2050,7 +2220,7 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     //
     // If the input prim is a datasource prim, we need some sensible default
     // here...  For now, we pass [0,0] to turn off multisampling.
-    if (prim.dataSource->Has(HdSceneIndexEmulationTokens->sceneDelegate)) {
+    if (prim.dataSource->Get(HdSceneIndexEmulationTokens->sceneDelegate)) {
         valueDs->GetContributingSampleTimesForInterval(
                 std::numeric_limits<float>::lowest(),
                 std::numeric_limits<float>::max(), &times);

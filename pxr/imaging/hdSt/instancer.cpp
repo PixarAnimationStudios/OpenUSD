@@ -31,6 +31,8 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -69,6 +71,10 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
 
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        std::static_pointer_cast<HdStResourceRegistry>(
+        sceneDelegate->GetRenderIndex().GetResourceRegistry());
+
     // Reset _instancePrimvarNumElements, in case the number of instances
     // is varying.
     _instancePrimvarNumElements= 0;
@@ -82,8 +88,14 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
                 // Explicitly invoke the c'tor taking a
                 // VtArray<GfMatrix4d> to ensure we properly convert to
                 // the appropriate floating-point matrix type.
+                HgiCapabilities const * capabilities =
+                    resourceRegistry->GetHgi()->GetCapabilities();
+                bool const doublesSupported = capabilities->IsSet(
+                    HgiDeviceCapabilitiesBitsShaderDoublePrecision);
                 source.reset(new HdVtBufferSource(primvar.name,
-                            value.UncheckedGet<VtArray<GfMatrix4d> >()));
+                            value.UncheckedGet<VtArray<GfMatrix4d>>(),
+                            1,
+                            doublesSupported));
             }
             else {
                 source.reset(new HdVtBufferSource(primvar.name, value));
@@ -139,10 +151,6 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         
         HdBufferSpecVector bufferSpecs;
         HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
-
-        HdStResourceRegistrySharedPtr const& resourceRegistry =
-            std::static_pointer_cast<HdStResourceRegistry>(
-            sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
         // Update local primvar range.
         _instancePrimvarRange =

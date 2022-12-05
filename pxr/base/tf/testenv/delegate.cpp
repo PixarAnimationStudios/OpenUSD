@@ -82,7 +82,6 @@ Test_TfDelegateAddRemove() {
     TestDelegateWrapper testDelegateWrapper(&testDelegate);
     TF_STATUS("."); 
     TF_WARN(".");
-    TF_FATAL_ERROR(".");
 
     // Add a second delegate
     {
@@ -90,13 +89,11 @@ Test_TfDelegateAddRemove() {
         TestDelegateWrapper testDelegateWrapper2(&testDelegate2);
         TF_STATUS("."); 
         TF_WARN(".");
-        TF_FATAL_ERROR(".");
     }
     
     // Second delegate is gone bc its out of scope now
     TF_STATUS(".");
     TF_WARN(".");
-    TF_FATAL_ERROR(".");
 
     return true;
 }

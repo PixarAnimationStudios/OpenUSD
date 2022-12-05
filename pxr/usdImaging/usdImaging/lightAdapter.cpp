@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/materialParamUtils.h"
@@ -55,6 +56,29 @@ bool UsdImagingLightAdapter::IsEnabledSceneLights() {
 
 UsdImagingLightAdapter::~UsdImagingLightAdapter() 
 {
+}
+
+HdContainerDataSourceHandle
+UsdImagingLightAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::New(
+            prim.GetPath(), prim, stageGlobals);
+    }
+
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingLightAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties)
+{
+    return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
 }
 
 bool

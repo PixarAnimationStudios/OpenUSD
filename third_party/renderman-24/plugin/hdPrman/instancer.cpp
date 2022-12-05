@@ -312,6 +312,15 @@ HdPrmanInstancer::GetInstancePrimvars(
             const char *strippedName = entry.first.GetText();
             strippedName += strlen(riAttrPrefix);
             name = RtUString(strippedName);
+
+            // ri:attributes and primvars:ri:attributes primvars end up having
+            // the same name, potentially causing collisions in the primvar list.
+            // When both ri:attributes and primvar:ri:attributes versions of 
+            // the same primvars exist, the primvar:ri:attributes version should
+            // win out.
+            if (attrs.HasParam(name)) {
+                continue;
+            }
         } else if (!strncmp(entry.first.GetText(), primVarsRiAttrPrefix,
                             strlen(primVarsRiAttrPrefix))) {
             const char *strippedName = entry.first.GetText();
@@ -342,8 +351,11 @@ HdPrmanInstancer::GetInstancePrimvars(
                 attrs.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
             } else if (primvar.role == HdPrimvarRoleTokens->normal) {
                 attrs.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
-            } else {
+            } else if (primvar.role == HdPrimvarRoleTokens->vector) {
                 attrs.SetVector(name, RtVector3(v[0], v[1], v[2]));
+            } else {
+                attrs.SetFloatArray(
+                    name, reinterpret_cast<const float*>(v.data()), 3);
             }
         } else if (val.IsHolding<VtArray<GfVec4f>>()) {
             const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();

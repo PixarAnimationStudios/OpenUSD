@@ -34,6 +34,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -182,11 +183,27 @@ GetConstructorEntries(
     return result;
 }
 
+using AddImageQueue =
+    std::vector<std::pair<const struct mach_header*, intptr_t>>;
+
+static
+AddImageQueue*&
+GetAddImageQueue()
+{
+    static AddImageQueue* queue = nullptr;
+    return queue;
+}
+
 // Execute constructor entries in a shared library in priority order.
 static
 void
 AddImage(const struct mach_header* mh, intptr_t slide)
 {
+    if (AddImageQueue* queue = GetAddImageQueue()) {
+        queue->emplace_back(mh, slide);
+        return;
+    }
+
     const auto entries = GetConstructorEntries(mh, slide, "__DATA", "pxrctor");
 
     // Execute in priority order.
@@ -222,7 +239,29 @@ RemoveImage(const struct mach_header* mh, intptr_t slide)
 __attribute__((used, constructor)) \
 static void InstallDyldCallbacks()
 {
+    // _dyld_register_func_for_add_image will immediately invoke AddImage
+    // on all libraries that are currently loaded, which will execute all
+    // constructor functions in these libraries. Per Apple, it is currently
+    // unsafe for these functions to call dlopen to load other libraries.
+    // This puts a macOS-specific burden on downstream code to avoid doing
+    // so, which is not always possible. For example, crashes were observed
+    // on macOS 12 due to a constructor function using a TBB container,
+    // which internally dlopen'd tbbmalloc.
+    //
+    // To avoid this issue, we defer the execution of the constructor
+    // functions in currently-loaded libraries until after the call to
+    // _dyld_register_func_for_add_image completes. This issue does
+    // *not* occur when AddImage is called on libraries that are
+    // loaded afterwards, so we only have to do the deferral here.
+    AddImageQueue queue;
+    GetAddImageQueue() = &queue;
     _dyld_register_func_for_add_image(AddImage);
+    GetAddImageQueue() = nullptr;
+
+    for (const auto& entry : queue) {
+        AddImage(entry.first, entry.second);
+    }    
+
     _dyld_register_func_for_remove_image(RemoveImage);
 }
 

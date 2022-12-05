@@ -237,7 +237,7 @@ HgiVulkanCommandQueue::GetVulkanGraphicsQueue() const
 
 /* Single threaded */
 void
-HgiVulkanCommandQueue::ResetConsumedCommandBuffers()
+HgiVulkanCommandQueue::ResetConsumedCommandBuffers(HgiSubmitWaitType wait)
 {
     // Lock the command pool map from concurrent access since we may insert.
     std::lock_guard<std::mutex> guard(_commandPoolsMutex);
@@ -246,7 +246,7 @@ HgiVulkanCommandQueue::ResetConsumedCommandBuffers()
     for (auto it : _commandPools) {
         HgiVulkan_CommandPool* pool = it.second;
         for (HgiVulkanCommandBuffer* cb : pool->commandBuffers) {
-            if (cb->ResetIfConsumedByGPU()) {
+            if (cb->ResetIfConsumedByGPU(wait)) {
                 _SetInflightBit(cb->GetInflightId(), /*enabled*/ false);
             }
         }
@@ -296,11 +296,11 @@ HgiVulkanCommandQueue::_SetInflightBit(uint8_t id, bool enabled)
     if (enabled) {
         // Spin if bit was already enabled. This means we have reached our max
         // of 64 command buffers and must wait until it becomes available.
-        expect &= ~(1<<id);
+        expect &= ~(1ULL<<id);
         while (!_inflightBits.compare_exchange_weak(
             expect, expect | (1ULL<<id))) 
         {
-            expect &= ~(1<<id);
+            expect &= ~(1ULL<<id);
         }
     } else {
         while (!_inflightBits.compare_exchange_weak(

@@ -175,6 +175,52 @@ HdDataSourceMaterialNetworkInterface::GetNodeType(
     return TfToken();
 }
 
+HdContainerDataSourceHandle
+HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
+{
+    if (HdContainerDataSourceHandle node = _GetNode(nodeName)) {
+        return HdContainerDataSource::Cast(
+                node->Get(HdMaterialNodeSchemaTokens->renderContextNodeIdentifiers));
+    }
+    return nullptr;
+}
+
+TfTokenVector
+HdDataSourceMaterialNetworkInterface::GetNodeTypeInfoKeys(
+    const TfToken& nodeName) const
+{
+    static const std::string infoNamespacePrefix("info:");
+
+    TfTokenVector ret;
+    if (HdContainerDataSourceHandle nodeTypeInfo
+        = _GetNodeTypeInfo(nodeName)) {
+        for (const TfToken& name : nodeTypeInfo->GetNames()) {
+            const std::string& nameStr = name.GetString();
+            if (!TfStringStartsWith(nameStr, infoNamespacePrefix)) {
+                continue;
+            }
+            const std::string nameWithoutInfo
+                = nameStr.substr(infoNamespacePrefix.size());
+            ret.push_back(TfToken(nameWithoutInfo));
+        }
+    }
+    return ret;
+}
+
+VtValue
+HdDataSourceMaterialNetworkInterface::GetNodeTypeInfoValue(
+    const TfToken& nodeName, const TfToken& key) const
+{
+    if (HdContainerDataSourceHandle nodeTypeInfo = _GetNodeTypeInfo(nodeName)) {
+        if (HdSampledDataSourceHandle value
+            = HdSampledDataSource::Cast(nodeTypeInfo->Get(TfToken(
+                        TfStringPrintf("info:%s", key.GetText()))))) {
+            return value->GetValue(0.f);
+        }
+    }
+    return VtValue();
+}
+
 TfTokenVector
 HdDataSourceMaterialNetworkInterface::GetAuthoredNodeParameterNames(
     const TfToken &nodeName) const
@@ -228,7 +274,7 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterValue(
                 HdSampledDataSource::Cast(it->second)) {
             return sds->GetValue(0.0f);
         } else {
-            // overriden with nullptr data source means deletion
+            // overridden with nullptr data source means deletion
             return VtValue();
         }
     }

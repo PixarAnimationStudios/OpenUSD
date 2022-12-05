@@ -109,12 +109,26 @@ public:
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
+    SdfAbstractDataRefPtr _InitDetachedData(
+        const FileFormatArguments& args) const override;
+
+    bool _ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const override;
+
 private:
     UsdUsdFileFormat();
     virtual ~UsdUsdFileFormat();
     
     static SdfFileFormatConstPtr 
     _GetUnderlyingFileFormatForLayer(const SdfLayer& layer);
+
+    template <bool Detached>
+    bool _ReadHelper(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

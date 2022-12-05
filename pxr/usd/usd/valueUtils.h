@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/types.h"
 
+#include "pxr/base/gf/interval.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -182,6 +183,24 @@ Usd_QueryTimeSample(
     double time, Usd_InterpolatorBase* interpolator, T* result)
 {
     return layer->QueryTimeSample(path, time, result);
+}
+
+/// Appends time samples from \p samples in the given \p interval to
+/// \p output.
+inline void
+Usd_CopyTimeSamplesInInterval(
+    const std::set<double>& samples, const GfInterval& interval,
+    std::vector<double>* output)
+{
+    const std::set<double>::iterator samplesBegin = interval.IsMinOpen() ?
+        samples.upper_bound(interval.GetMin()) : 
+        samples.lower_bound(interval.GetMin());
+
+    const std::set<double>::iterator samplesEnd = interval.IsMaxOpen() ?
+        samples.lower_bound(interval.GetMax()) :
+        samples.upper_bound(interval.GetMax());
+
+    output->insert(output->end(), samplesBegin, samplesEnd);
 }
 
 /// Merges sample times in \p additionalTimeSamples into the vector pointed to 

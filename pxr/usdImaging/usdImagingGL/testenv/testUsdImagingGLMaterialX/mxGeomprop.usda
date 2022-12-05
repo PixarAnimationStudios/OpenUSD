@@ -11,7 +11,9 @@ def Scope "MaterialX" (
 {
 }
  
-def Sphere "ball1"
+def Sphere "ball1" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
  	rel material:binding = </MaterialX/Materials/USD_Gold>
  	color3f[] primvars:vertexColor2 = [(0.1, 0.5, 0.8)] (interpolation = "constant")

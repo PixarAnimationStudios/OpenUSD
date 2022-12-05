@@ -7,7 +7,7 @@ if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
         message(FATAL_ERROR "Compiler does not support 64-bit builds. "
                 "If you are using Visual Studio, make sure you are in the "
                 "x64 command prompt and have specified the Win64 cmake "
-                "generator (e.g., -G \"Visual Studio 14 2015 Win64\")")
+                "generator (e.g., -G \"Visual Studio 15 2017 Win64\")")
     else()
         message(FATAL_ERROR "Compiler does not support 64-bit builds.")
     endif()
@@ -54,6 +54,10 @@ if (PXR_BUILD_PRMAN_PLUGIN)
         message(FATAL_ERROR "No RenderMan plugin available for "
                 "RenderMan ${RENDERMAN_VERSION_MAJOR}")
     endif()
+endif()
+
+if (PXR_BUILD_TESTS)
+    pxr_tests_prologue()
 endif()
 
 if (PXR_BUILD_DOCUMENTATION)

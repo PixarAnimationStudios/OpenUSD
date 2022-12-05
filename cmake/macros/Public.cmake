@@ -311,7 +311,7 @@ function(pxr_library NAME)
             endif()
         endif()
 
-        set(prefix "${PXR_LIB_PREFIX}")
+        _get_library_prefix(prefix)
         if(args_TYPE STREQUAL "STATIC")
             set(suffix ${CMAKE_STATIC_LIBRARY_SUFFIX})
         else()
@@ -723,12 +723,6 @@ function(pxr_register_test TEST_NAME)
         foreach(compareFile ${bt_DIFF_COMPARE})
             set(testWrapperCmd ${testWrapperCmd} --diff-compare=${compareFile})
         endforeach()
-
-        # For now the baseline directory is assumed by convention from the test
-        # name. There may eventually be cases where we'd want to specify it by
-        # an argument though.
-        set(baselineDir ${testenvDir}/baseline)
-        set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
     endif()
 
     if (bt_IMAGE_DIFF_COMPARE)
@@ -736,12 +730,6 @@ function(pxr_register_test TEST_NAME)
             foreach (compareFile ${bt_IMAGE_DIFF_COMPARE})
                 set(testWrapperCmd ${testWrapperCmd} --image-diff-compare=${compareFile})
             endforeach ()
-
-            # For now the baseline directory is assumed by convention from the test
-            # name. There may eventually be cases where we'd want to specify it by
-            # an argument though.
-            set(baselineDir ${testenvDir}/baseline)
-            set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
 
             if (bt_WARN)
                 set(testWrapperCmd ${testWrapperCmd} --warn=${bt_WARN})
@@ -776,6 +764,21 @@ function(pxr_register_test TEST_NAME)
             get_filename_component(IMAGE_DIFF_TOOL_PATH ${IMAGE_DIFF_TOOL} DIRECTORY)
             set(testWrapperCmd ${testWrapperCmd} --post-path=${IMAGE_DIFF_TOOL_PATH})
         endif()
+    endif()
+
+    if (bt_DIFF_COMPARE OR bt_IMAGE_DIFF_COMPARE)
+        # Common settings we only want to set once if either is used
+
+        # For now the baseline directory is assumed by convention from the test
+        # name. There may eventually be cases where we'd want to specify it by
+        # an argument though.
+        set(baselineDir ${testenvDir}/baseline)
+        set(testWrapperCmd ${testWrapperCmd} --baseline-dir=${baselineDir})
+
+        # <PXR_CTEST_RUN_ID> will be set by CTestCustom.cmake, and then
+        # expanded by testWrapper.py
+        set(failuresDir ${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<PXR_CTEST_RUN_ID>/${TEST_NAME})
+        set(testWrapperCmd ${testWrapperCmd} --failures-dir=${failuresDir})
     endif()
 
     if (bt_CLEAN_OUTPUT)
@@ -993,15 +996,17 @@ function(pxr_toplevel_prologue)
             # Our shared library.
             add_library(usd_ms SHARED "${CMAKE_CURRENT_BINARY_DIR}/usd_ms.cpp")
             _get_folder("" folder)
+            _get_library_prefix(libPrefix)
             set_target_properties(usd_ms
                 PROPERTIES
                     FOLDER "${folder}"
-                    PREFIX "${PXR_LIB_PREFIX}"
-                    IMPORT_PREFIX "${PXR_LIB_PREFIX}"
+                    PREFIX "${libPrefix}"
+                    IMPORT_PREFIX "${libPrefix}"
             )
             _get_install_dir("lib" libInstallPrefix)
             install(
                 TARGETS usd_ms
+                EXPORT pxrTargets
                 LIBRARY DESTINATION ${libInstallPrefix}
                 ARCHIVE DESTINATION ${libInstallPrefix}
                 RUNTIME DESTINATION ${libInstallPrefix}
@@ -1037,20 +1042,21 @@ function(pxr_toplevel_epilogue)
         # that we carefully avoid adding the usd_m target itself by using
         # TARGET_FILE.  Linking the usd_m target would link usd_m and
         # everything it links to.
+        
         if(MSVC)
             target_link_libraries(usd_ms
                 PRIVATE
-                    -WHOLEARCHIVE:$<TARGET_FILE:usd_m>
+                    -WHOLEARCHIVE:$<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
         elseif(CMAKE_COMPILER_IS_GNUCXX)
             target_link_libraries(usd_ms
                 PRIVATE
-                    -Wl,--whole-archive $<TARGET_FILE:usd_m> -Wl,--no-whole-archive
+                    -Wl,--whole-archive $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>> -Wl,--no-whole-archive
             )
         elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
             target_link_libraries(usd_ms
                 PRIVATE
-                    -Wl,-force_load $<TARGET_FILE:usd_m>
+                    -Wl,-force_load $<BUILD_INTERFACE:$<TARGET_FILE:usd_m>>
             )
         endif()
 
@@ -1063,16 +1069,16 @@ function(pxr_toplevel_epilogue)
         # usd_m target.
         target_compile_definitions(usd_ms
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_COMPILE_DEFINITIONS>>
         )
         target_include_directories(usd_ms
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_INCLUDE_DIRECTORIES>>
         )
         target_include_directories(usd_ms
             SYSTEM
             PUBLIC
-                $<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
+                $<BUILD_INTERFACE:$<TARGET_PROPERTY:usd_m,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>>
         )
         foreach(lib ${PXR_OBJECT_LIBS})
             get_property(libs TARGET ${lib} PROPERTY INTERFACE_LINK_LIBRARIES)
@@ -1132,12 +1138,13 @@ function(pxr_monolithic_epilogue)
     add_library(usd_m STATIC "${CMAKE_CURRENT_BINARY_DIR}/usd_m.cpp" ${objects})
 
     _get_folder("" folder)
+    _get_library_prefix(libPrefix)
     set_target_properties(usd_m
         PROPERTIES
             FOLDER "${folder}"
             POSITION_INDEPENDENT_CODE ON
-            PREFIX "${PXR_LIB_PREFIX}"
-            IMPORT_PREFIX "${PXR_LIB_PREFIX}"
+            PREFIX "${libPrefix}"
+            IMPORT_PREFIX "${libPrefix}"
     )
 
     # Adding $<TARGET_OBJECTS:foo> will not bring along compile
@@ -1233,3 +1240,19 @@ function(pxr_core_epilogue)
         set(_building_core FALSE PARENT_SCOPE)
     endif()
 endfunction() # pxr_core_epilogue
+
+function(pxr_tests_prologue)
+    add_custom_target(
+        test_setup
+        ALL
+        DEPENDS "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+    )
+    add_custom_command(
+        OUTPUT "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+        COMMAND ${CMAKE_COMMAND} -E copy
+            "${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults/CTestCustom.cmake"
+            "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults/CTestCustom.cmake"
+        COMMENT "Copying CTestCustom.cmake"
+    )
+endfunction() # pxr_tests_prologue

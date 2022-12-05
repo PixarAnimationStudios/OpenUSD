@@ -84,7 +84,8 @@ HdRenderIndex::IsSceneIndexEmulationEnabled()
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
     HdDriverVector const& drivers)
-    : _renderDelegate(renderDelegate)
+    : _noticeBatchingDepth(0)
+    , _renderDelegate(renderDelegate)
     , _drivers(drivers)
     , _rprimDirtyList(*this)
 {
@@ -159,6 +160,10 @@ HdRenderIndex::~HdRenderIndex()
     }
 
     _DestroyFallbackPrims();
+
+    if (_noticeBatchingDepth != 0) {
+        TF_CODING_ERROR("Imbalanced batch begin/end calls");
+    }
 }
 
 HdRenderIndex*
@@ -176,8 +181,8 @@ HdRenderIndex::New(
 
 void
 HdRenderIndex::InsertSceneIndex(
-        HdSceneIndexBaseRefPtr inputSceneIndex,
-        SdfPath const& scenePathPrefix)
+    const HdSceneIndexBaseRefPtr &inputScene,
+    SdfPath const& scenePathPrefix)
 {
     if (!_IsEnabledSceneIndexEmulation()) {
         TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
@@ -185,23 +190,63 @@ HdRenderIndex::InsertSceneIndex(
         return;
     }
 
+    HdSceneIndexBaseRefPtr resolvedScene = inputScene;
     if (scenePathPrefix != SdfPath::AbsoluteRootPath()) {
-        inputSceneIndex = HdPrefixingSceneIndex::New(
-                inputSceneIndex, scenePathPrefix);
+        resolvedScene = HdPrefixingSceneIndex::New(
+            inputScene, scenePathPrefix);
     }
     _mergingSceneIndex->AddInputScene(
-            inputSceneIndex, scenePathPrefix);
+        resolvedScene, scenePathPrefix);
+}
+
+static
+HdSceneIndexBaseRefPtr
+_GetInputScene(const HdPrefixingSceneIndexRefPtr &prefixingScene)
+{
+    const std::vector<HdSceneIndexBaseRefPtr> inputScenes =
+        prefixingScene->GetInputScenes();
+    if (inputScenes.size() == 1) {
+        return inputScenes[0];
+    }
+    TF_CODING_ERROR("Expected exactly one scene index from "
+                    "HdPrefixingSceneIndex::GetInputScenes");
+    return TfNullPtr;
 }
 
 void
 HdRenderIndex::RemoveSceneIndex(
-        HdSceneIndexBaseRefPtr inputSceneIndex)
+    const HdSceneIndexBaseRefPtr &inputScene)
 {
     if (!_IsEnabledSceneIndexEmulation()) {
         return;
     }
 
-    _mergingSceneIndex->RemoveInputScene(inputSceneIndex);
+    const std::vector<HdSceneIndexBaseRefPtr> resolvedScenes =
+        _mergingSceneIndex->GetInputScenes();
+
+    // Case that given scene index was added by InsertSceneIndex with
+    // scenePathPrefix = "/". We find it just by going over the
+    // input scenes of _mergingSceneIndex.
+    for (HdSceneIndexBaseRefPtr const &resolvedScene : resolvedScenes) {
+        if (inputScene == resolvedScene) {
+            _mergingSceneIndex->RemoveInputScene(resolvedScene);
+            return;
+        }
+    }
+    
+    // Case that given scene index was added by InsertSceneIndex with
+    // non-trivial scenePathPrefix. We need to find the HdPrefixingSceneIndex
+    // among the input scenes of _mergingSceneIndex that was constructed
+    // from the given scene index.
+    for (HdSceneIndexBaseRefPtr const &resolvedScene : resolvedScenes) {
+        if (HdPrefixingSceneIndexRefPtr const prefixingScene =
+                TfDynamic_cast<HdPrefixingSceneIndexRefPtr>(resolvedScene)) {
+            if (inputScene == _GetInputScene(prefixingScene)) {
+                _mergingSceneIndex->RemoveInputScene(resolvedScene);
+                    return;
+            }
+        }
+    }
 }
 
 void
@@ -729,7 +774,10 @@ void
 HdRenderIndex::SceneIndexEmulationNoticeBatchBegin()
 {
     if (_emulationNoticeBatchingSceneIndex) {
-        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+        if (_noticeBatchingDepth == 0) {
+            _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(true);
+        }
+        ++_noticeBatchingDepth;
     }
 }
 
@@ -737,7 +785,15 @@ void
 HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
 {
     if (_emulationNoticeBatchingSceneIndex) {
-        _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+        if (_noticeBatchingDepth > 0) {
+            --_noticeBatchingDepth;
+
+            if (_noticeBatchingDepth == 0) {
+                _emulationNoticeBatchingSceneIndex->SetBatchingEnabled(false);
+            }
+        } else {
+            TF_CODING_ERROR("Imbalanced batch begin/end calls");
+        }
     }
 }
 
@@ -1853,7 +1909,7 @@ HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
             // responsible for inserting the prim at the specified id.
             // Emulation must provide the same value -- even if it could
             // potentially expose the scene without downstream scene index
-            // motifications -- or some application assumptions will fail.
+            // notifications -- or some application assumptions will fail.
             // No known render delegates make use of this call.
             HdSceneIndexPrim prim = _emulationSceneIndex->GetPrim(id);
             if (prim.dataSource) {

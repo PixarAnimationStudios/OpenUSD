@@ -277,6 +277,10 @@ _GetShaderPropertyTypeAndArraySize(
                typeName == SdfValueTypeNames->Color3fArray) {
         return std::make_pair(SdrPropertyTypes->Color,
                               _GetArraySize(defaultValue));
+    } else if (typeName == SdfValueTypeNames->Color4f || 
+               typeName == SdfValueTypeNames->Color4fArray) {
+        return std::make_pair(SdrPropertyTypes->Color4,
+                              _GetArraySize(defaultValue));
     } else if (typeName == SdfValueTypeNames->Point3f || 
                typeName == SdfValueTypeNames->Point3fArray) {
         return std::make_pair(SdrPropertyTypes->Point,

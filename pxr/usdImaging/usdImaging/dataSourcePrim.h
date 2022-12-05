@@ -46,12 +46,6 @@ class UsdImagingDataSourceVisibility : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceVisibility);
 
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'visibility' only.
-    bool Has(const TfToken &name) override;
-
     /// Returns the names contained in this data source.
     ///
     /// This class only returns 'visibility'.
@@ -92,12 +86,6 @@ class UsdImagingDataSourcePurpose : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePurpose);
-
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'purpose' only.
-    bool Has(const TfToken &name) override;
 
     /// Returns the names contained in this data source.
     ///
@@ -180,12 +168,6 @@ class UsdImagingDataSourceExtent : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceExtent);
-
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'min' and 'max' only.
-    bool Has(const TfToken &name) override;
 
     /// Returns the names contained in this datasource.
     ///
@@ -336,13 +318,6 @@ class UsdImagingDataSourceXform : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceXform);
 
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    /// 
-    /// This class returns \c true for 'matrix' and 'resetXformStack' only.
-    ///
-    bool Has(const TfToken &name) override;
-
     /// Returns the names contained in this data source.
     ///
     /// This class only returns 'matrix' and 'resetXformStack'.
@@ -388,10 +363,6 @@ class UsdImagingDataSourceModel : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceModel);
-
-    /// Returns true if name matches an attribute in UsdImagingModelSchema.
-    ///
-    bool Has(const TfToken &name) override;
 
     /// Return attribute names of UsdImagingModelSchema.
     ///
@@ -448,12 +419,6 @@ class UsdImagingDataSourcePrim : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrim);
 
-    /// Returns whether or not this data source can return a meaningful 
-    /// data source for \p name.
-    ///
-    USDIMAGING_API
-    bool Has(const TfToken &name) override;
-
     /// Returns the names for which this data source can return meaningful
     /// results.
     ///
@@ -469,7 +434,9 @@ public:
     /// the USD properties in \p properties change.
     USDIMAGING_API
     static HdDataSourceLocatorSet Invalidate(
-            const TfToken &subprim, const TfTokenVector &properties);
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.

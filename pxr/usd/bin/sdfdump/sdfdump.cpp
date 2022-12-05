@@ -25,10 +25,12 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/vsnprintf.h"
+#include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/patternMatcher.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/scopeDescription.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <boost/program_options.hpp>
@@ -517,14 +519,31 @@ main(int argc, char const *argv[])
     params.fullArrays = fullArrays;
     params.timeTolerance = timeTolerance;
 
+    // If malloc tags is enabled, keep layers alive so we can report per-layer
+    // allocations properly.
+    std::vector<SdfLayerRefPtr> keepAlive;
+    bool mallocTagsEnabled = TfMallocTag::IsInitialized();
+    
     for (auto const &file: inputFiles) {
         TF_DESCRIBE_SCOPE("Opening layer @%s@", file.c_str());
+        TfAutoMallocTag tag(TfStringPrintf("Opening layer @%s@", file.c_str()));
         auto layer = SdfLayer::FindOrOpen(file);
         if (!layer) {
             Err("failed to open layer <%s>", file.c_str());
             continue;
         }
         Report(layer, params);
+        if (mallocTagsEnabled) {
+            keepAlive.push_back(std::move(layer));
+        }
+    }
+
+    if (mallocTagsEnabled) {
+        printf("MaxTotalBytes allocated: %zu\n",
+               TfMallocTag::GetMaxTotalBytes());
+        TfMallocTag::CallTree callTree;
+        TfMallocTag::GetCallTree(&callTree);
+        callTree.Report(std::cout);
     }
     
     return 0;

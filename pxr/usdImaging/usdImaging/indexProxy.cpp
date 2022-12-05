@@ -25,7 +25,16 @@
 
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(USDIMAGING_LEGACY_UPDATE_FOR_TIME, 0,
+        "Run UpdateForTime every time any prim is marked dirty (legacy behavior)");
+static bool _LegacyUpdateForTime() {
+    static bool _v = TfGetEnvSetting(USDIMAGING_LEGACY_UPDATE_FOR_TIME) == 0;
+    return _v;
+}
 
 UsdImagingDelegate::_HdPrimInfo*
 UsdImagingIndexProxy::_AddHdPrimInfo(SdfPath const &cachePath,
@@ -297,9 +306,15 @@ UsdImagingIndexProxy::Repopulate(SdfPath const& usdPath)
 }
 
 void
-UsdImagingIndexProxy::Refresh(SdfPath const& cachePath)
+UsdImagingIndexProxy::RequestTrackVariability(SdfPath const& cachePath)
 {
     _AddTask(cachePath);
+}
+
+void
+UsdImagingIndexProxy::RequestUpdateForTime(SdfPath const& cachePath)
+{
+    _delegate->_dirtyCachePaths.insert(cachePath);
 }
 
 void
@@ -326,7 +341,9 @@ UsdImagingIndexProxy::MarkRprimDirty(SdfPath const& cachePath,
         _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
-        _delegate->_dirtyCachePaths.insert(cachePath);
+        if (_LegacyUpdateForTime()) {
+            _delegate->_dirtyCachePaths.insert(cachePath);
+        }
     }
 
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
@@ -342,7 +359,9 @@ UsdImagingIndexProxy::MarkSprimDirty(SdfPath const& cachePath,
         _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
-        _delegate->_dirtyCachePaths.insert(cachePath);
+        if (_LegacyUpdateForTime()) {
+            _delegate->_dirtyCachePaths.insert(cachePath);
+        }
     }
 
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
@@ -358,7 +377,9 @@ UsdImagingIndexProxy::MarkBprimDirty(SdfPath const& cachePath,
         _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
-        _delegate->_dirtyCachePaths.insert(cachePath);
+        if (_LegacyUpdateForTime()) {
+            _delegate->_dirtyCachePaths.insert(cachePath);
+        }
     }
 
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();
@@ -374,7 +395,9 @@ UsdImagingIndexProxy::MarkInstancerDirty(SdfPath const& cachePath,
         _delegate->_GetHdPrimInfo(cachePath);
     if (TF_VERIFY(primInfo, "%s", cachePath.GetText())) {
         primInfo->dirtyBits |= dirtyBits;
-        _delegate->_dirtyCachePaths.insert(cachePath);
+        if (_LegacyUpdateForTime()) {
+            _delegate->_dirtyCachePaths.insert(cachePath);
+        }
     }
 
     HdChangeTracker &tracker = _delegate->GetRenderIndex().GetChangeTracker();

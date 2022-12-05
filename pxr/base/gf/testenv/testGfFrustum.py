@@ -234,6 +234,19 @@ class TestGfFrustum(unittest.TestCase):
         self.assertTrue(Gf.IsClose(narrowF.window.min, Gf.Vec2d(-0.3, -0.2), 0.0001))
         self.assertTrue(Gf.IsClose(narrowF.window.max, Gf.Vec2d(0.3, 0.2), 0.0001))
 
+        narrowF = f.ComputeNarrowedFrustum(Gf.Vec3d(.1, .2, -5), Gf.Vec2d(0.1, 0.1))
+        self.assertTrue(Gf.IsClose(narrowF.window.min, Gf.Vec2d(-0.2, 0.0), 0.0001))
+        self.assertTrue(Gf.IsClose(narrowF.window.max, Gf.Vec2d(0.4, 0.4), 0.0001))
+
+        f.projectionType = f.Perspective
+        narrowF = f.ComputeNarrowedFrustum(Gf.Vec3d(0, 0, -1), Gf.Vec2d(0.1, 0.1))
+        self.assertTrue(Gf.IsClose(narrowF.window.min, Gf.Vec2d(-0.3, -0.2), 0.0001))
+        self.assertTrue(Gf.IsClose(narrowF.window.max, Gf.Vec2d(0.3, 0.2), 0.0001))
+
+        narrowF = f.ComputeNarrowedFrustum(Gf.Vec3d(.1, .2, -5), Gf.Vec2d(0.1, 0.1))
+        self.assertTrue(Gf.IsClose(narrowF.window.min, Gf.Vec2d(-0.28, -0.16), 0.0001))
+        self.assertTrue(Gf.IsClose(narrowF.window.max, Gf.Vec2d(0.32, 0.24), 0.0001))
+
         # Given a point behind the eye should get the same frustum back
         narrowF = f.ComputeNarrowedFrustum(Gf.Vec3d(0, 0, 1), Gf.Vec2d(0.1, 0.1))
         self.assertTrue(Gf.IsClose(narrowF.window.min, Gf.Vec2d(-3.0,-2.0), 0.0001))

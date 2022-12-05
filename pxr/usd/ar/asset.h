@@ -92,6 +92,16 @@ public:
     AR_API
     virtual std::pair<FILE*, size_t> GetFileUnsafe() const = 0;
 
+    /// Returns an ArAsset with the contents of this asset detached from
+    /// from this asset's serialized data. External changes to the serialized
+    /// data must not have any effect on the ArAsset returned by this function.
+    ///
+    /// The default implementation returns a new instance of an ArInMemoryAsset
+    /// that reads the entire contents of this asset into a heap-allocated
+    /// buffer.
+    AR_API
+    virtual std::shared_ptr<ArAsset> GetDetachedAsset() const;
+
 protected:
     AR_API
     ArAsset();

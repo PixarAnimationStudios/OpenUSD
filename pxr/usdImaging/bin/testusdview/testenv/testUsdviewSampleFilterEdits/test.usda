@@ -7,7 +7,9 @@ def Scope "World"
 {
     float xyz = 123
 
-    def Cube "GroundPlane"
+    def Cube "GroundPlane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/Grid>
         double xformOp:rotateY = -90
@@ -15,7 +17,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateY"]
     }
 
-    def Cube "Cube"
+    def Cube "Cube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/Red>
         color3f[] primvars:displayColor = [(0.8763, 0.2168, 0.2168)]
@@ -24,7 +28,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Cone "Cone"
+    def Cone "Cone" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         token axis = "Y"
         double height = 1.2
@@ -35,7 +41,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "LargeSphere"
+    def Sphere "LargeSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/White>
         double radius = 2
@@ -43,7 +51,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "GlowSphere"
+    def Sphere "GlowSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/Glow>
         double radius = 0.6
@@ -51,7 +61,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "DiffuseSphere"
+    def Sphere "DiffuseSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/Gray>
         double radius = 0.5
@@ -59,7 +71,9 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "ReflSphere"
+    def Sphere "ReflSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material/Chrome>
         double radius = 0.5

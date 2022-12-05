@@ -276,9 +276,10 @@ public:
     /// quickly rule out field names that aren't required (and thus don't need
     /// special handling).
     inline bool IsRequiredFieldName(const TfToken &fieldName) const {
-        for (size_t i = 0; i != _requiredFieldNames.size(); ++i) {
-            if (_requiredFieldNames[i] == fieldName)
+        for (TfToken const &fname: _requiredFieldNames) {
+            if (fname == fieldName) {
                 return true;
+            }
         }
         return false;
     }

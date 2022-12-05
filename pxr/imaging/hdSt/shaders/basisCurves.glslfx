@@ -548,7 +548,7 @@ void main()
     float x = projMat[0][0];
     float w = position.z * projMat[2][3] + projMat[3][3];
     float viewportSizeX = GetViewport().z;
-    float worldToPixelWidth = (viewportSizeX * 0.5) * (x / w);
+    float worldToPixelWidth = abs((viewportSizeX * 0.5) * (x / w));
 
 #ifdef HD_HAS_screenSpaceWidths
     if (HdGet_screenSpaceWidths()) {

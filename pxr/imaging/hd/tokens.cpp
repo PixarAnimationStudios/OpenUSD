@@ -47,6 +47,10 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialTerminalTokens, HD_MATERIAL_TERMINAL_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdOptionTokens, HD_OPTION_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_RPRIMTYPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_SPRIMTYPE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_BPRIMTYPE_TOKENS);
+
 TF_DEFINE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_PRIMTYPE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_PRIMVAR_ROLE_TOKENS);
@@ -78,7 +82,8 @@ bool HdPrimTypeIsLight(TfToken const& primType)
             primType == HdPrimTypeTokens->light ||
             primType == HdPrimTypeTokens->pluginLight ||
             primType == HdPrimTypeTokens->rectLight ||
-            primType == HdPrimTypeTokens->sphereLight);
+            primType == HdPrimTypeTokens->sphereLight ||
+            primType == HdPrimTypeTokens->meshLight);
 }
 
 TfToken HdAovTokensMakePrimvar(TfToken const& primvar)

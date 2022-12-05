@@ -53,13 +53,15 @@ UsdImagingVolumeAdapter::~UsdImagingVolumeAdapter()
 }
 
 TfTokenVector
-UsdImagingVolumeAdapter::GetImagingSubprims()
+UsdImagingVolumeAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingVolumeAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingVolumeAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->volume;
@@ -69,8 +71,8 @@ UsdImagingVolumeAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingVolumeAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -80,6 +82,20 @@ UsdImagingVolumeAdapter::GetImagingSubprimData(
             stageGlobals);
     }
     return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingVolumeAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceVolumePrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
 }
 
 bool

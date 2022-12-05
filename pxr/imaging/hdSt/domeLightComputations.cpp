@@ -151,9 +151,11 @@ HdSt_DomeLightComputationGPU::Execute(
                 computeDesc.computeDescriptor.localSize = 
                     GfVec3i(localSize, localSize, 1);
 
-                HgiShaderFunctionAddTexture(&computeDesc, "inTexture");
+                HgiShaderFunctionAddTexture(&computeDesc, "inTexture",
+                    /*bindIndex = */0);
                 HgiShaderFunctionAddWritableTexture(&computeDesc, "outTexture",
-                    2, HgiFormatFloat16Vec4);
+                    /*bindIndex = */1, /*dimensions = */2, 
+                    HgiFormatFloat16Vec4);
                 if (hasUniforms) {
                     HgiShaderFunctionAddConstantParam(
                         &computeDesc, "inRoughness", HdStTokens->_float);
@@ -238,6 +240,7 @@ HdSt_DomeLightComputationGPU::Execute(
     HgiTextureBindDesc texBind0;
     texBind0.bindingIndex = 0;
     texBind0.stageUsage = HgiShaderStageCompute;
+    texBind0.writable = false;
     texBind0.textures.push_back(srcTextureName);
     texBind0.samplers.push_back(srcSamplerName);
     texBind0.resourceType = HgiBindResourceTypeCombinedSamplerImage;
@@ -246,6 +249,7 @@ HdSt_DomeLightComputationGPU::Execute(
     HgiTextureBindDesc texBind1;
     texBind1.bindingIndex = 1;
     texBind1.stageUsage = HgiShaderStageCompute;
+    texBind1.writable = true;
     texBind1.textures.push_back(dstTextureView->GetViewTexture());
     texBind1.samplers.push_back(srcSamplerName);
     texBind1.resourceType = HgiBindResourceTypeStorageImage;

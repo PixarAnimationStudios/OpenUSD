@@ -133,6 +133,12 @@ public:
     static UsdContrivedPublicMultipleApplyAPI
     Get(const UsdPrim &prim, const TfToken &name);
 
+    /// Return a vector of all named instances of UsdContrivedPublicMultipleApplyAPI on the 
+    /// given \p prim.
+    USDCONTRIVED_API
+    static std::vector<UsdContrivedPublicMultipleApplyAPI>
+    GetAll(const UsdPrim &prim);
+
     /// Checks if the given name \p baseName is the base name of a property
     /// of PublicMultipleApplyAPI.
     USDCONTRIVED_API

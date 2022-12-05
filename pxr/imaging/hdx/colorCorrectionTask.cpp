@@ -259,10 +259,10 @@ HdxColorCorrectionTask::_CreateShaderResources()
     HgiShaderFunctionAddStageInput(
         &fragDesc, "uvOut", "vec2");
     HgiShaderFunctionAddTexture(
-        &fragDesc, "colorIn");
+        &fragDesc, "colorIn", /*bindIndex = */0);
     if (useOCIO) {
         HgiShaderFunctionAddTexture(
-            &fragDesc, "Lut3DIn", 3);
+            &fragDesc, "Lut3DIn", /*bindIndex = */1, /*dimensions = */3);
     }
     HgiShaderFunctionAddStageOutput(
         &fragDesc, "hd_FragColor", "vec4", "color");
@@ -348,6 +348,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
     HgiTextureBindDesc texBind0;
     texBind0.bindingIndex = 0;
     texBind0.stageUsage = HgiShaderStageFragment;
+    texBind0.writable = false;
     texBind0.textures.push_back(aovTexture);
     texBind0.samplers.push_back(_sampler);
     resourceDesc.textures.push_back(std::move(texBind0));
@@ -356,6 +357,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
         HgiTextureBindDesc texBind1;
         texBind1.bindingIndex = 1;
         texBind1.stageUsage = HgiShaderStageFragment;
+        texBind1.writable = false;
         texBind1.textures.push_back(_texture3dLUT);
         texBind1.samplers.push_back(_sampler);
         resourceDesc.textures.push_back(std::move(texBind1));
@@ -487,7 +489,7 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->PushDebugGroup("ColorCorrection");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);

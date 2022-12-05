@@ -1,0 +1,42 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestSdfTargetFileFormatBase": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ]
+                    },
+                    "TestSdfTargetFileFormat_A": {
+                        "bases": [
+                            "TestSdfTargetFileFormatBase"
+                        ],
+                        "extensions": [
+                            "test_target_format"
+                        ],
+                        "formatId": "test_target_format_A",
+                        "primary": true,
+                        "target": "A"
+                    },
+                    "TestSdfTargetFileFormat_B": {
+                        "bases": [
+                            "TestSdfTargetFileFormatBase"
+                        ],
+                        "extensions": [
+                            "test_target_format"
+                        ],
+                        "formatId": "test_target_format_B",
+                        "primary": false,
+                        "target": "B"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestSdfTargetFileFormat",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

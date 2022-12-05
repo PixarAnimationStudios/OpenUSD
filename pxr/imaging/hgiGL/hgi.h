@@ -164,6 +164,9 @@ public:
     HgiGLCapabilities const* GetCapabilities() const override;
 
     HGIGL_API
+    HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const override;
+
+    HGIGL_API
     void StartFrame() override;
 
     HGIGL_API

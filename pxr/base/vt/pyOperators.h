@@ -25,9 +25,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 
-// See the description in vt/operators.h for a better understanding regarding
-// the purpose and usage of macros defined below.
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // -------------------------------------------------------------------------

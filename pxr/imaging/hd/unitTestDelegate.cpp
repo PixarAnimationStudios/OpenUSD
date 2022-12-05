@@ -236,6 +236,22 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
 }
 
 void
+HdUnitTestDelegate::SetMeshCullStyle(
+    SdfPath const &id, HdCullStyle const &cullStyle)
+{
+    auto it = _meshes.find(id);
+    if (it != _meshes.end()) {
+        if (it->second.cullStyle != cullStyle) {
+            it->second.cullStyle = cullStyle;
+            HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkRprimDirty(id, HdChangeTracker::DirtyCullStyle);
+        }
+    } else {
+        TF_WARN("Could not find mesh Rprim named %s. \n", id.GetText());
+    }
+}
+
+void
 HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
@@ -765,7 +781,7 @@ HdUnitTestDelegate::GetBasisCurvesTopology(SdfPath const& id)
     // Need to implement testing support for basis curves
     return HdBasisCurvesTopology(curve.type,
                                  curve.basis,
-                                 HdTokens->nonperiodic,
+                                 curve.wrap,
                                  curve.curveVertexCounts,
                                  curve.curveIndices);
 }
@@ -824,6 +840,16 @@ HdUnitTestDelegate::GetDisplayStyle(SdfPath const& id)
     }
     // returns fallback refinelevel
     return HdDisplayStyle(_refineLevel);
+}
+
+/*virtual*/
+HdCullStyle 
+HdUnitTestDelegate::GetCullStyle(SdfPath const& id)
+{
+    if (_meshes.find(id) != _meshes.end()) {
+        return _meshes[id].cullStyle;
+    }
+    return HdCullStyleDontCare;
 }
 
 /*virtual*/
@@ -1647,6 +1673,21 @@ HdUnitTestDelegate::AddCurves(
         VtValue(1.0f), HdInterpolationConstant,
         width, widthInterp,
         instancerId);
+}
+
+void
+HdUnitTestDelegate::SetCurveWrapMode(
+    SdfPath const &id, TfToken const &wrap)
+{
+    if (_curves.find(id) != _curves.end()) {
+        if (_curves[id].wrap != wrap) {
+            _curves[id].wrap = wrap;
+            HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkRprimDirty(id, HdChangeTracker::DirtyTopology);
+        }
+    } else {
+        TF_WARN("Could not find Rprim named %s.\n", id.GetText());
+    }
 }
 
 void

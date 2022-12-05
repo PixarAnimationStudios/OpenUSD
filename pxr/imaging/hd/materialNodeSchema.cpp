@@ -59,16 +59,24 @@ HdMaterialNodeSchema::GetNodeIdentifier()
         HdMaterialNodeSchemaTokens->nodeIdentifier);
 }
 
+HdContainerDataSourceHandle
+HdMaterialNodeSchema::GetRenderContextNodeIdentifiers()
+{
+    return _GetTypedDataSource<HdContainerDataSource>(
+        HdMaterialNodeSchemaTokens->renderContextNodeIdentifiers);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialNodeSchema::BuildRetained(
         const HdContainerDataSourceHandle &parameters,
         const HdContainerDataSourceHandle &inputConnections,
-        const HdTokenDataSourceHandle &nodeIdentifier
+        const HdTokenDataSourceHandle &nodeIdentifier,
+        const HdContainerDataSourceHandle &renderContextNodeIdentifiers
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken names[4];
+    HdDataSourceBaseHandle values[4];
 
     size_t count = 0;
     if (parameters) {
@@ -84,6 +92,11 @@ HdMaterialNodeSchema::BuildRetained(
     if (nodeIdentifier) {
         names[count] = HdMaterialNodeSchemaTokens->nodeIdentifier;
         values[count++] = nodeIdentifier;
+    }
+
+    if (renderContextNodeIdentifiers) {
+        names[count] = HdMaterialNodeSchemaTokens->renderContextNodeIdentifiers;
+        values[count++] = renderContextNodeIdentifiers;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -114,13 +127,22 @@ HdMaterialNodeSchema::Builder::SetNodeIdentifier(
     return *this;
 }
 
+HdMaterialNodeSchema::Builder &
+HdMaterialNodeSchema::Builder::SetRenderContextNodeIdentifiers(
+    const HdContainerDataSourceHandle &renderContextNodeIdentifiers)
+{
+    _renderContextNodeIdentifiers = renderContextNodeIdentifiers;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialNodeSchema::Builder::Build()
 {
     return HdMaterialNodeSchema::BuildRetained(
         _parameters,
         _inputConnections,
-        _nodeIdentifier
+        _nodeIdentifier,
+        _renderContextNodeIdentifiers
     );
 }
 

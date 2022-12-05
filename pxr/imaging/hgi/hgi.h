@@ -48,6 +48,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
+class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
@@ -294,6 +295,12 @@ public:
     /// Thread safety: This call is thread safe.
     HGI_API
     virtual HgiCapabilities const* GetCapabilities() const = 0;
+
+    /// Returns the device-specific indirect command buffer encoder
+    /// or nullptr if not supported.
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    virtual HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const = 0;
 
     /// Optionally called by client app at the start of a new rendering frame.
     /// We can't rely on StartFrame for anything important, because it is up to

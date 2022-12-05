@@ -137,6 +137,23 @@ UsdRenderSettings::CreateMaterialBindingPurposesAttr(VtValue const &defaultValue
                        writeSparsely);
 }
 
+UsdAttribute
+UsdRenderSettings::GetRenderingColorSpaceAttr() const
+{
+    return GetPrim().GetAttribute(UsdRenderTokens->renderingColorSpace);
+}
+
+UsdAttribute
+UsdRenderSettings::CreateRenderingColorSpaceAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdRenderTokens->renderingColorSpace,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdRenderSettings::GetProductsRel() const
 {
@@ -169,6 +186,7 @@ UsdRenderSettings::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdRenderTokens->includedPurposes,
         UsdRenderTokens->materialBindingPurposes,
+        UsdRenderTokens->renderingColorSpace,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

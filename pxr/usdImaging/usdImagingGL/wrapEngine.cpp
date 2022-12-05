@@ -115,18 +115,12 @@ void wrapEngine()
             .def("SetRenderViewport", &UsdImagingGLEngine::SetRenderViewport)
             .def("SetCameraPath", &UsdImagingGLEngine::SetCameraPath)
             .def("SetCameraState", &UsdImagingGLEngine::SetCameraState)
-            .def("SetLightingStateFromOpenGL",
-                    &UsdImagingGLEngine::SetLightingStateFromOpenGL)
             .def("SetLightingState", &_SetLightingState)
-            .def("SetCameraStateFromOpenGL", 
-                    &UsdImagingGLEngine::SetCameraStateFromOpenGL)
             .def("SetSelected", &UsdImagingGLEngine::SetSelected)
             .def("ClearSelected", &UsdImagingGLEngine::ClearSelected)
             .def("AddSelected", &UsdImagingGLEngine::AddSelected)
             .def("SetSelectionColor", &UsdImagingGLEngine::SetSelectionColor)
             .def("TestIntersection", &_TestIntersection)
-            .def("IsHydraEnabled", &UsdImagingGLEngine::IsHydraEnabled)
-                .staticmethod("IsHydraEnabled")
             .def("IsConverged", &UsdImagingGLEngine::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGLEngine::GetRendererPlugins,
                  return_value_policy< TfPySequenceToList >())

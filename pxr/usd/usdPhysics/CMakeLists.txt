@@ -3,7 +3,6 @@ set(PXR_PACKAGE usdPhysics)
 
 pxr_library(usdPhysics
     LIBRARIES
-        js
         tf
         plug
         vt
@@ -92,6 +91,7 @@ pxr_library(usdPhysics
 pxr_test_scripts(
     testenv/testUsdPhysicsMetrics.py
     testenv/testUsdPhysicsRigidBodyAPI.py
+    testenv/testUsdPhysicsCollisionGroupAPI.py
 )
 
 pxr_register_test(testUsdPhysicsMetrics
@@ -106,3 +106,8 @@ pxr_register_test(testUsdPhysicsRigidBodyAPI
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdPhysicsCollisionGroupAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPhysicsCollisionGroupAPI"
+    EXPECTED_RETURN_CODE 0
+)

@@ -28,7 +28,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 UsdShadeTokensType::UsdShadeTokensType() :
     allPurpose("", TfToken::Immortal),
     bindMaterialAs("bindMaterialAs", TfToken::Immortal),
-    coordSys("coordSys:", TfToken::Immortal),
+    coordSys("coordSys", TfToken::Immortal),
+    coordSys_MultipleApplyTemplate_Binding("coordSys:__INSTANCE_NAME__:binding", TfToken::Immortal),
     displacement("displacement", TfToken::Immortal),
     fallbackStrength("fallbackStrength", TfToken::Immortal),
     full("full", TfToken::Immortal),
@@ -60,6 +61,7 @@ UsdShadeTokensType::UsdShadeTokensType() :
         allPurpose,
         bindMaterialAs,
         coordSys,
+        coordSys_MultipleApplyTemplate_Binding,
         displacement,
         fallbackStrength,
         full,

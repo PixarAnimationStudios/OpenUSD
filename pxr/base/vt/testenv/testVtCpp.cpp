@@ -29,6 +29,7 @@
 #include "pxr/base/vt/streamOut.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/functions.h"
+#include "pxr/base/vt/visitValue.h"
 
 #include "pxr/base/gf/matrix2f.h"
 #include "pxr/base/gf/matrix2d.h"
@@ -47,12 +48,22 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
 
+#include "pxr/base/gf/dualQuath.h"
+#include "pxr/base/gf/dualQuatf.h"
+#include "pxr/base/gf/dualQuatd.h"
+
+#include "pxr/base/gf/quaternion.h"
+#include "pxr/base/gf/quath.h"
+#include "pxr/base/gf/quatf.h"
+#include "pxr/base/gf/quatd.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/span.h"
@@ -63,10 +74,12 @@
 #include <boost/scoped_ptr.hpp>
 
 #include <cstdio>
+#include <cmath>
 #include <iterator>
 #include <iostream>
 #include <limits>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using std::string;
@@ -78,7 +91,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static void die(const std::string &msg) {
     TF_FATAL_ERROR("ERROR: %s failed.", msg.c_str());
 }
-
 
 static void testArray() {
 
@@ -1465,6 +1477,24 @@ static void testValue() {
         m.Clear();
     }
 
+#define _VT_TEST_ZERO_VALUE(r, unused, elem)                            \
+    {                                                                   \
+        VtValue empty;                                                  \
+        TfErrorMark m;                                                  \
+        TF_AXIOM(empty.Get<VT_TYPE(elem)>() == VtZero<VT_TYPE(elem)>());\
+        TF_AXIOM(!m.IsClean());                                         \
+        m.Clear();                                                      \
+    }
+    
+    BOOST_PP_SEQ_FOR_EACH(_VT_TEST_ZERO_VALUE,
+        unused, 
+        VT_VEC_VALUE_TYPES
+        VT_MATRIX_VALUE_TYPES
+        VT_QUATERNION_VALUE_TYPES
+        VT_DUALQUATERNION_VALUE_TYPES);
+
+#undef _VT_TEST_ZERO_VALUE
+
     {
         VtValue d(1.234);
         TfErrorMark m;
@@ -1657,6 +1687,85 @@ testCombinedVtValueProxies()
     TF_AXIOM(eproxy.IsHolding<_TypedProxy<double>>());
 }
 
+struct Stringify
+{
+    std::string operator()(int x) const {
+        return TfStringPrintf("int: %d", x);
+    };
+
+    std::string operator()(double x) const {
+        return TfStringPrintf("double: %.2f", x);
+    }
+
+    std::string operator()(std::string const &str) const {
+        return TfStringPrintf("string: '%s'", str.c_str());
+    };
+
+    template <class T>
+    std::string operator()(VtArray<T> const &arr) const {
+        return TfStringPrintf("array: sz=%zu", arr.size());
+    }
+    
+    std::string operator()(VtValue const &unknown) const {
+        return "unknown type";
+    }
+};
+
+struct RoundOrMinusOne
+{
+    int operator()(int x) const { return x; }
+
+    int operator()(double x) const { return static_cast<int>(rint(x)); }
+
+    int operator()(VtValue const &val) const { return -1; }
+};
+
+struct GetArraySize
+{
+    template <class T>
+    size_t operator()(VtArray<T> const &array) const {
+        return array.size();
+    }
+
+    size_t operator()(VtValue const &val) const {
+        return ~0;
+    }
+};
+
+static void
+testVisitValue()
+{
+    VtValue iv(123);
+    VtValue dv(1.23);
+    VtValue fv(2.34f);
+    VtValue hv(GfHalf(3.45));
+    VtValue sv(std::string("hello"));
+    VtValue av(VtArray<float>(123));
+    VtValue ov(std::vector<float>(123));
+
+    TF_AXIOM(VtVisitValue(iv, Stringify()) == "int: 123");
+    TF_AXIOM(VtVisitValue(dv, Stringify()) == "double: 1.23");
+    TF_AXIOM(VtVisitValue(fv, Stringify()) == "double: 2.34");
+    TF_AXIOM(VtVisitValue(hv, Stringify()) == "double: 3.45");
+    TF_AXIOM(VtVisitValue(sv, Stringify()) == "string: 'hello'");
+    TF_AXIOM(VtVisitValue(av, Stringify()) == "array: sz=123");
+    TF_AXIOM(VtVisitValue(ov, Stringify()) == "unknown type");
+    
+    TF_AXIOM(VtVisitValue(iv, RoundOrMinusOne()) == 123);
+    TF_AXIOM(VtVisitValue(dv, RoundOrMinusOne()) == 1);
+    TF_AXIOM(VtVisitValue(fv, RoundOrMinusOne()) == 2);
+    TF_AXIOM(VtVisitValue(hv, RoundOrMinusOne()) == 3);
+    TF_AXIOM(VtVisitValue(sv, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(av, RoundOrMinusOne()) == -1);
+    TF_AXIOM(VtVisitValue(ov, RoundOrMinusOne()) == -1);
+    
+    TF_AXIOM(VtVisitValue(av, GetArraySize()) == 123);
+    TF_AXIOM(VtVisitValue(iv, GetArraySize()) == size_t(~0));
+    TF_AXIOM(VtVisitValue(
+                 VtValue(VtArray<GfVec3d>(234)), GetArraySize()) == 234);
+
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1673,6 +1782,8 @@ int main(int argc, char *argv[])
     testTypedVtValueProxy();
     testErasedVtValueProxy();
     testCombinedVtValueProxies();
+
+    testVisitValue();
 
     printf("Test SUCCEEDED\n");
 

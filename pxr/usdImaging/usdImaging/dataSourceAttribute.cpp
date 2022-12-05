@@ -49,33 +49,51 @@ HdSampledDataSourceHandle _FactoryImpl(
             usdAttrQuery, stageGlobals, sceneIndexPath, timeVaryingFlagLocator);
 }
 
-_FactoryMap _CreateFactoryMap()
+static _FactoryMap _CreateFactoryMap()
 {
     _FactoryMap map;
 
-    map[SdfValueTypeNames->Bool] = _FactoryImpl<bool>;
-    map[SdfValueTypeNames->Int] = _FactoryImpl<int>;
-    map[SdfValueTypeNames->Float] = _FactoryImpl<float>;
-    map[SdfValueTypeNames->Double] = _FactoryImpl<double>;
-    map[SdfValueTypeNames->Color3f] = _FactoryImpl<GfVec3f>;
-    map[SdfValueTypeNames->Float2] = _FactoryImpl<GfVec2f>;
-    map[SdfValueTypeNames->Float3] = _FactoryImpl<GfVec3f>;
-    map[SdfValueTypeNames->Point3f] = _FactoryImpl<GfVec3f>;
-    map[SdfValueTypeNames->Normal3f] = _FactoryImpl<GfVec3f>;
-    map[SdfValueTypeNames->Matrix4d] = _FactoryImpl<GfMatrix4d>;
-    map[SdfValueTypeNames->String] = _FactoryImpl<std::string>;
-    map[SdfValueTypeNames->IntArray] = _FactoryImpl<VtArray<int>>;
-    map[SdfValueTypeNames->FloatArray] = _FactoryImpl<VtArray<float>>;
-    map[SdfValueTypeNames->Color3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
-    map[SdfValueTypeNames->Float3Array] = _FactoryImpl<VtArray<GfVec3f>>;
-    map[SdfValueTypeNames->Point3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
-    map[SdfValueTypeNames->Normal3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
-    map[SdfValueTypeNames->Matrix4dArray] = _FactoryImpl<VtArray<GfMatrix4d>>;
-    map[SdfValueTypeNames->Float2Array] = _FactoryImpl<VtArray<GfVec2f>>;
-    map[SdfValueTypeNames->Float4Array] = _FactoryImpl<VtArray<GfVec4f>>;
-    map[SdfValueTypeNames->StringArray] = _FactoryImpl<VtArray<std::string>>;
-    map[SdfValueTypeNames->Token] = _FactoryImpl<TfToken>;
     map[SdfValueTypeNames->Asset] = _FactoryImpl<SdfAssetPath>;
+    map[SdfValueTypeNames->Bool] = _FactoryImpl<bool>;
+    map[SdfValueTypeNames->Color3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
+    map[SdfValueTypeNames->Color3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->Double] = _FactoryImpl<double>;
+    map[SdfValueTypeNames->Float2Array] = _FactoryImpl<VtArray<GfVec2f>>;
+    map[SdfValueTypeNames->Float2] = _FactoryImpl<GfVec2f>;
+    map[SdfValueTypeNames->Float3Array] = _FactoryImpl<VtArray<GfVec3f>>;
+    map[SdfValueTypeNames->Float3] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->Float4Array] = _FactoryImpl<VtArray<GfVec4f>>;
+    map[SdfValueTypeNames->FloatArray] = _FactoryImpl<VtArray<float>>;
+    map[SdfValueTypeNames->Float] = _FactoryImpl<float>;
+    map[SdfValueTypeNames->IntArray] = _FactoryImpl<VtArray<int>>;
+    map[SdfValueTypeNames->Int] = _FactoryImpl<int>;
+    map[SdfValueTypeNames->Matrix4dArray] = _FactoryImpl<VtArray<GfMatrix4d>>;
+    map[SdfValueTypeNames->Matrix4d] = _FactoryImpl<GfMatrix4d>;
+    map[SdfValueTypeNames->Normal3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
+    map[SdfValueTypeNames->Normal3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->Point3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
+    map[SdfValueTypeNames->Point3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->StringArray] = _FactoryImpl<VtArray<std::string>>;
+    map[SdfValueTypeNames->String] = _FactoryImpl<std::string>;
+    map[SdfValueTypeNames->TexCoord2dArray] = _FactoryImpl<VtArray<GfVec2d>>;
+    map[SdfValueTypeNames->TexCoord2d] = _FactoryImpl<GfVec2d>;
+    map[SdfValueTypeNames->TexCoord2fArray] = _FactoryImpl<VtArray<GfVec2f>>;
+    map[SdfValueTypeNames->TexCoord2f] = _FactoryImpl<GfVec2f>;
+    map[SdfValueTypeNames->TexCoord2hArray] = _FactoryImpl<VtArray<GfVec2h>>;
+    map[SdfValueTypeNames->TexCoord2h] = _FactoryImpl<GfVec2h>;
+    map[SdfValueTypeNames->TexCoord3dArray] = _FactoryImpl<VtArray<GfVec3d>>;
+    map[SdfValueTypeNames->TexCoord3d] = _FactoryImpl<GfVec3d>;
+    map[SdfValueTypeNames->TexCoord3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
+    map[SdfValueTypeNames->TexCoord3f] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->TexCoord3hArray] = _FactoryImpl<VtArray<GfVec3h>>;
+    map[SdfValueTypeNames->TexCoord3h] = _FactoryImpl<GfVec3h>;
+    map[SdfValueTypeNames->Token] = _FactoryImpl<TfToken>;
+    map[SdfValueTypeNames->Quath] = _FactoryImpl<GfQuath>;
+    map[SdfValueTypeNames->QuathArray] = _FactoryImpl<VtArray<GfQuath>>;
+    map[SdfValueTypeNames->Quatf] = _FactoryImpl<GfQuatf>;
+    map[SdfValueTypeNames->QuatfArray] = _FactoryImpl<VtArray<GfQuatf>>;
+    map[SdfValueTypeNames->Quatd] = _FactoryImpl<GfQuatd>;
+    map[SdfValueTypeNames->QuatdArray] = _FactoryImpl<VtArray<GfQuatd>>;
 
     return map;
 }
@@ -95,7 +113,7 @@ UsdImagingDataSourceAttributeNew(
 
     static const _FactoryMap _factoryMap = _CreateFactoryMap();
 
-    _FactoryMap::const_iterator i = _factoryMap.find(
+    const _FactoryMap::const_iterator i = _factoryMap.find(
             usdAttrQuery.GetAttribute().GetTypeName());
     if (i != _factoryMap.end()) {
         _DataSourceFactory factory = i->second;

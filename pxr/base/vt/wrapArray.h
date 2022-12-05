@@ -122,7 +122,7 @@ getitem_slice(VtArray<T> const &self, slice idx)
         result[i] = *range.start;
         return object(result);
     }
-    catch (std::invalid_argument) {
+    catch (std::invalid_argument const &) {
         return object();
     }
 }
@@ -180,7 +180,7 @@ setArraySlice(VtArray<T> &self, slice idx, object value, bool tile = false)
         T* data = self.data();
         range = idx.get_indices(data, data + self.size());
     }
-    catch (std::invalid_argument) {
+    catch (std::invalid_argument const &) {
         // Do nothing
         return;
     }

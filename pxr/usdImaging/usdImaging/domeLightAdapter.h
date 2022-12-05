@@ -50,6 +50,19 @@ public:
     USDIMAGING_API
     virtual ~UsdImagingDomeLightAdapter();
 
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
+
+    USDIMAGING_API
+    TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim)
+        override;
+
+    // ---------------------------------------------------------------------- //
+
     USDIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,

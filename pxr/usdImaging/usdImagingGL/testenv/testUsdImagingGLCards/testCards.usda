@@ -94,7 +94,6 @@ def Xform "World" (
 
         def Sphere "MySphere" (
             kind = "component"
-            prepend apiSchemas = ["GeomModelAPI"]
         )
         {
             float3[] extent = [(-1, -1, -1), (1, 1, 1)]

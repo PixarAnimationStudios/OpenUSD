@@ -16,6 +16,7 @@
 
 def Xform "Mesh" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Mesh "Prim"
@@ -45,6 +46,7 @@ def Xform "Mesh" (
 
 def Xform "Curve" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def BasisCurves "Prim"
@@ -70,6 +72,7 @@ def Xform "Curve" (
 
 def Xform "Points" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Points "Prim" (
@@ -91,8 +94,27 @@ def Xform "Points" (
     }
 }
 
+def Xform "Volume" (
+    active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    def Volume "Volume" (
+        customData = {
+            bool zUp = 1
+        }
+    )
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        float3 primvars:emissionColor = (0, 0.3, 0) (
+            interpolation = "constant"
+        )
+    }
+}
+
 def Xform "Cube" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Cube "Prim"
@@ -105,6 +127,7 @@ def Xform "Cube" (
 
 def Xform "Cone" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Cone "Prim"
@@ -114,6 +137,7 @@ def Xform "Cone" (
 
 def Xform "Sphere" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Sphere "Prim"
@@ -123,6 +147,7 @@ def Xform "Sphere" (
 
 def Xform "Capsule" (
     active = false
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Capsule "Prim"
@@ -217,6 +242,27 @@ def Xform "Parent" (
                 uniform token info:id = "HwPtexTexture_1"
                 uniform asset inputs:file = @test.ptx@
                 float3 outputs:color
+            }
+        }
+
+        def Material "VolumeMat"
+        {
+            token outputs:volume.connect = </Parent/Materials/VolumeMat/Volume.outputs:volume>
+            
+            def Shader "Volume"
+            {
+                uniform asset info:glslfx:sourceAsset = @volumeShaderParameter.glslfx@
+                uniform token info:implementationSource = "sourceAsset"
+                float3 inputs:emissionColor.connect = </Parent/Materials/VolumeMat/Primvar.outputs:result>
+
+                token outputs:volume
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float"
+                string inputs:varname = "emissionColor"
+                float outputs:result
             }
         }
     }
@@ -360,6 +406,21 @@ def Xform "Parent" (
             custom double3 xformOp:scale = (2, 2, 2)
             custom double3 xformOp:translate = (0, -1, 4)
             uniform token[] xformOpOrder = ["xformOp:scale", "xformOp:translate"]
+        }
+    }
+
+
+    def Scope "Volumes"
+    {
+        def "Volume" (
+            active = true
+            instanceable = true
+            references = </Volume>
+        )
+        {
+            rel material:binding = </Parent/Materials/VolumeMat>
+            custom double3 xformOp:translate = (-8.5, 0, 4.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
         }
     }
 

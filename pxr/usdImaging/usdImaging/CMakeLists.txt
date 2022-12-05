@@ -9,6 +9,7 @@ pxr_library(usdImaging
         trace
         vt
         work
+        geomUtil
         hd
         pxOsd
         sdf
@@ -31,7 +32,9 @@ pxr_library(usdImaging
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
+        dataSourceMaterial
         dataSourceMesh
+        dataSourcePointInstancer
         dataSourcePoints
         dataSourcePrim
         dataSourcePrimvars
@@ -43,13 +46,16 @@ pxr_library(usdImaging
         indexProxy
         materialParamUtils
         modelSchema
+        primvarUtils
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
         tokens
+        apiSchemaAdapter
         basisCurvesAdapter
         capsuleAdapter
         cameraAdapter
+        collectionAPIAdapter
         coneAdapter
         coordSysAdapter
         cubeAdapter
@@ -65,11 +71,15 @@ pxr_library(usdImaging
         implicitSurfaceMeshUtils
         instanceAdapter
         lightAdapter
+        lightAPIAdapter
         lightFilterAdapter
         materialAdapter
+        materialBindingAPIAdapter
         meshAdapter
         nurbsCurvesAdapter
         nurbsPatchAdapter
+        piPrototypePropagatingSceneIndex
+        planeAdapter
         pluginLightAdapter
         pluginLightFilterAdapter
         pointsAdapter
@@ -77,16 +87,23 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        prototypePruningSceneIndex
         rectLightAdapter
         renderSettingsAdapter
+        rerootingSceneIndex
         sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
         volumeAdapter
 
+    PRIVATE_CLASSES
+        sceneIndexPrimView
+        piPrototypeSceneIndex
+
     PUBLIC_HEADERS
         api.h
+        dataSourceSchemaBased.h
         unitTestHelper.h
         version.h
 

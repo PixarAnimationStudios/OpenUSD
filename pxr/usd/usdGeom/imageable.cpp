@@ -176,6 +176,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdGeom/visibilityAPI.h"
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -226,21 +227,10 @@ UsdGeomImageable::GetPurposeVisibilityAttr(
     if (purpose == UsdGeomTokens->default_) {
         return GetVisibilityAttr();
     }
-    if (purpose == UsdGeomTokens->guide) {
-        return GetPrim().GetAttribute(UsdGeomTokens->guideVisibility);
-    }
-    if (purpose == UsdGeomTokens->proxy) {
-        return GetPrim().GetAttribute(UsdGeomTokens->proxyVisibility);
-    }
-    if (purpose == UsdGeomTokens->render) {
-        return GetPrim().GetAttribute(UsdGeomTokens->renderVisibility);
-    }
 
-    TF_CODING_ERROR(
-        "Unexpected purpose '%s' getting purpose visibility attribute for "
-        "<%s>.",
-        purpose.GetText(),
-        GetPrim().GetPath().GetText());
+    if (UsdGeomVisibilityAPI visAPI = UsdGeomVisibilityAPI(GetPrim())) {
+        return visAPI.GetPurposeVisibilityAttr(purpose);        
+    }
     return {};
 }
 
@@ -255,12 +245,12 @@ _ComputePurposeVisibility(
     if (const UsdGeomImageable ip = UsdGeomImageable(prim)) {
         TfToken localVis;
         const UsdAttribute attr = ip.GetPurposeVisibilityAttr(purpose);
-        if (attr.HasAuthoredValue() && attr.Get(&localVis, time)) {
+        if (attr && attr.HasAuthoredValue() && attr.Get(&localVis, time)) {
             return localVis;
         }
     }
 
-    // Otherwise, we inherit purpose visibiliy from the parent.
+    // Otherwise, we inherit purpose visibility from the parent.
     if (const UsdPrim parent = prim.GetParent()) {
         return _ComputePurposeVisibility(parent, purpose, time);
     }

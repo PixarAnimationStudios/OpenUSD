@@ -26,27 +26,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-Hd_ExtComputationContextInternal::Hd_ExtComputationContextInternal()
+HdExtComputationContextInternal::HdExtComputationContextInternal()
  : HdExtComputationContext()
  , m_inputs()
  , m_outputs()
  , m_compuationError(false){
 }
 
-Hd_ExtComputationContextInternal::~Hd_ExtComputationContextInternal()
+HdExtComputationContextInternal::~HdExtComputationContextInternal()
 {
 }
 
 
 void
-Hd_ExtComputationContextInternal::SetInputValue(const TfToken &name,
+HdExtComputationContextInternal::SetInputValue(const TfToken &name,
                                                  const VtValue &input)
 {
     m_inputs.emplace(name, input);
 }
 
 bool
-Hd_ExtComputationContextInternal::GetOutputValue(const TfToken &name,
+HdExtComputationContextInternal::GetOutputValue(const TfToken &name,
                                                  VtValue *output) const
 {
     ValueMap::const_iterator it = m_outputs.find(name);
@@ -62,21 +62,21 @@ Hd_ExtComputationContextInternal::GetOutputValue(const TfToken &name,
 }
 
 bool
-Hd_ExtComputationContextInternal::HasComputationError()
+HdExtComputationContextInternal::HasComputationError()
 {
     return m_compuationError;
 }
 
 
 void
-Hd_ExtComputationContextInternal::RaiseComputationError()
+HdExtComputationContextInternal::RaiseComputationError()
 {
     m_compuationError = true;
 }
 
 
 const VtValue &
-Hd_ExtComputationContextInternal::GetInputValue(const TfToken &name) const
+HdExtComputationContextInternal::GetInputValue(const TfToken &name) const
 {
     ValueMap::const_iterator it = m_inputs.find(name);
 
@@ -91,7 +91,7 @@ Hd_ExtComputationContextInternal::GetInputValue(const TfToken &name) const
 }
 
 const VtValue *
-Hd_ExtComputationContextInternal::GetOptionalInputValuePtr(
+HdExtComputationContextInternal::GetOptionalInputValuePtr(
                                                       const TfToken &name) const
 {
     ValueMap::const_iterator it = m_inputs.find(name);
@@ -104,7 +104,7 @@ Hd_ExtComputationContextInternal::GetOptionalInputValuePtr(
 }
 
 void
-Hd_ExtComputationContextInternal::SetOutputValue(const TfToken &name,
+HdExtComputationContextInternal::SetOutputValue(const TfToken &name,
                                         const VtValue &input)
 {
     m_outputs.emplace(name, input);

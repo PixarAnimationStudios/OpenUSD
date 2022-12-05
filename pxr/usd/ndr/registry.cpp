@@ -353,6 +353,20 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
     SetExtraDiscoveryPlugins(std::move(discoveryPlugins));
 }
 
+void NdrRegistry::AddDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult)
+{
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    _AddDiscoveryResultNoLock(std::move(discoveryResult));
+}
+
+void NdrRegistry::AddDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult)
+{
+    // Explicitly create a copy, otherwise this method will recurse
+    // into itself.
+    NdrNodeDiscoveryResult result = discoveryResult;
+    AddDiscoveryResult(std::move(result));
+}
+
 void
 NdrRegistry::SetExtraParserPlugins(const std::vector<TfType>& pluginTypes)
 {
@@ -947,8 +961,17 @@ NdrRegistry::_InstantiateParserPlugins(
     const std::string disabledPluginsStr = TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
     const std::set<std::string> disabledPlugins = TfStringTokenizeToSet(disabledPluginsStr, ",");
 
+    // Ensure this list is in a consistent order to ensure stable behavior.
+    // TfType's operator< is not stable across runs, so we sort based on
+    // typename instead.
+    std::vector<TfType> orderedPluginTypes {parserPluginTypes.begin(), parserPluginTypes.end()};
+    std::sort(orderedPluginTypes.begin(), orderedPluginTypes.end(),
+        [](const TfType& a, const TfType& b) {
+            return a.GetTypeName() < b.GetTypeName();
+        });
+
     // Instantiate any parser plugins that were found
-    for (const TfType& parserPluginType : parserPluginTypes) {
+    for (const TfType& parserPluginType : orderedPluginTypes) {
         const std::string& pluginName = parserPluginType.GetTypeName();
         if (disabledPlugins.find(pluginName) != disabledPlugins.end()) {
             TF_DEBUG(NDR_DISCOVERY).Msg(

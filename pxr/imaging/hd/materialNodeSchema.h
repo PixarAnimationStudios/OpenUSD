@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (parameters) \
     (inputConnections) \
     (nodeIdentifier) \
+    (renderContextNodeIdentifiers) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialNodeSchemaTokens, HD_API,
     HDMATERIALNODE_SCHEMA_TOKENS);
@@ -58,8 +59,24 @@ public:
     HdContainerDataSourceHandle GetParameters();
     HD_API
     HdContainerDataSourceHandle GetInputConnections();
+
+    // This identifies the shader the node represents. The
+    // renderContextNodeIdentifier container can store alternative values for
+    // this. A consumer which is interested in a specific render context
+    // should check for that token within renderContextNodeIdentifiers and
+    // fall back on this value in its absence.
     HD_API
     HdTokenDataSourceHandle GetNodeIdentifier();
+
+    // A shading node can hold a nodeIdentifier value for multiple render
+    // contexts at once. This allows multiple renderer target representations
+    // to coexist in the same renderable scene. The contents of this
+    // container are alternate possible values for nodeIdentifier. A consumer
+    // which is interested in a specific render context should check for that
+    // token within this container and fall back on nodeIdentifier in its
+    // absence.
+    HD_API
+    HdContainerDataSourceHandle GetRenderContextNodeIdentifiers();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -73,7 +90,8 @@ public:
     BuildRetained(
         const HdContainerDataSourceHandle &parameters,
         const HdContainerDataSourceHandle &inputConnections,
-        const HdTokenDataSourceHandle &nodeIdentifier
+        const HdTokenDataSourceHandle &nodeIdentifier,
+        const HdContainerDataSourceHandle &renderContextNodeIdentifiers
     );
 
     /// \class HdMaterialNodeSchema::Builder
@@ -94,6 +112,9 @@ public:
         HD_API
         Builder &SetNodeIdentifier(
             const HdTokenDataSourceHandle &nodeIdentifier);
+        HD_API
+        Builder &SetRenderContextNodeIdentifiers(
+            const HdContainerDataSourceHandle &renderContextNodeIdentifiers);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -103,6 +124,7 @@ public:
         HdContainerDataSourceHandle _parameters;
         HdContainerDataSourceHandle _inputConnections;
         HdTokenDataSourceHandle _nodeIdentifier;
+        HdContainerDataSourceHandle _renderContextNodeIdentifiers;
     };
 
 };

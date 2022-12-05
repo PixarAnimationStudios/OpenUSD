@@ -43,6 +43,24 @@ UsdImagingRectLightAdapter::~UsdImagingRectLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingRectLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingRectLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->rectLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingRectLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

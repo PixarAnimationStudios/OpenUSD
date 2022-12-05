@@ -700,8 +700,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     if (bits & DirtyParams) {
         if (!_lightFilterPaths.empty()) {
             for (SdfPath const & filterPath : _lightFilterPaths) {
-                changeTracker.RemoveSprimSprimDependency(
-                    filterPath, id);
+                changeTracker.RemoveSprimSprimDependency(filterPath, id);
             }
         }
         clearFilterPaths = true;
@@ -737,7 +736,18 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::ShadingNode &lightNode = lightNodes.back();
 
     // Attributes.
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id);
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, false);
+
+    // Check if the dome light should be camera visible
+    if (lightNode.name == us_PxrDomeLight) {
+        const bool domeLightCamVis = sceneDelegate->GetRenderIndex().
+            GetRenderDelegate()->GetRenderSetting<bool>(
+                HdRenderSettingsTokens->domeLightCameraVisibility,
+                true);
+        if (!domeLightCamVis) {
+            attrs.SetInteger(RixStr.k_visibility_camera, 0);
+        }
+    }
 
     // Light linking
     {
@@ -746,7 +756,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         if (val.IsHolding<TfToken>()) {
             _lightLink = val.UncheckedGet<TfToken>();
         }
-        
+
         if (!_lightLink.IsEmpty()) {
             param->IncrementLightLinkCount(_lightLink);
             // For lights to link geometry, the lights must
@@ -756,7 +766,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                             RtUString(_lightLink.GetText()));
             TF_DEBUG(HDPRMAN_LIGHT_LINKING)
                 .Msg("HdPrman: Light <%s> grouping membership \"%s\"\n",
-                        id.GetText(), _lightLink.GetText());
+                     id.GetText(), _lightLink.GetText());
         } else {
             // Default light group
             attrs.SetString(RixStr.k_grouping_membership, us_default);
@@ -803,7 +813,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // TODO: portals
 
     _shaderId = riley->CreateLightShader(
-        riley::UserId::DefaultId(),
+        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
         {static_cast<uint32_t>(lightNodes.size()), lightNodes.data()},
         {static_cast<uint32_t>(filterNodes.size()), filterNodes.data()});
 
@@ -903,7 +913,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     riley::CoordinateSystemList const coordsysList = {
                              unsigned(coordsysIds.size()), coordsysIds.data()};
     _instanceId = riley->CreateLightInstance(
-        riley::UserId::DefaultId(),
+        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
         riley::GeometryPrototypeId::InvalidId(), // no group
         riley::GeometryPrototypeId::InvalidId(), // no geo
         riley::MaterialId::InvalidId(), // no material

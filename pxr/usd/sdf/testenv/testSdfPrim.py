@@ -120,7 +120,17 @@ class TestSdfPrim(unittest.TestCase):
         self.assertTrue(("/Root/source2", "/Root/target2") in prim.relocates.items())
         self.assertTrue(("/Root/source3", "/Root/target3") in prim.relocates.items())
 
+    def test_InertSpecRemoval(self):
+        layer = Sdf.Layer.CreateAnonymous()
 
+        # Create a prim hierarchy with only empty overs.
+        Sdf.CreatePrimInLayer(layer, "/InertSubtree/Is/Inert")
+        del layer.GetPrimAtPath("/").nameChildren["InertSubtree"]
+
+        # Create a variant set with only empty variants.
+        Sdf.CreatePrimInLayer(layer, "/InertVariants{v=a}")
+        Sdf.CreatePrimInLayer(layer, "/InertVariants{v=b}")
+        del layer.GetPrimAtPath("/InertVariants").variantSets["v"]
 
 if __name__ == "__main__":
     unittest.main()

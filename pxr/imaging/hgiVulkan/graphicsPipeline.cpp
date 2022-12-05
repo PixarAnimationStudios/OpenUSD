@@ -156,11 +156,11 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     rasterState.rasterizerDiscardEnable = !ras.rasterizerEnabled;
     rasterState.depthClampEnable = ras.depthClampEnabled;
 
+    VkPipelineRasterizationConservativeStateCreateInfoEXT 
+        conservativeRasterState = {};
     if (device->GetDeviceCapabilities().IsSet(
         HgiDeviceCapabilitiesBitsConservativeRaster) &&
         ras.conservativeRaster) {
-        VkPipelineRasterizationConservativeStateCreateInfoEXT 
-            conservativeRasterState = {};
         conservativeRasterState.sType = 
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT;
         conservativeRasterState.conservativeRasterizationMode = 
@@ -530,7 +530,8 @@ _ProcessAttachment(
     VkAttachmentDescription2* vkAttachDesc,
     VkAttachmentReference2* vkRef)
 {
-    bool isDepthAttachment = attachment.usage & HgiTextureUsageBitsDepthTarget;
+    bool const isDepthAttachment = 
+        attachment.usage & HgiTextureUsageBitsDepthTarget;
     //
     // Reference
     //
@@ -558,7 +559,8 @@ _ProcessAttachment(
     vkAttachDesc->pNext = nullptr;
     vkAttachDesc->finalLayout = layout;
     vkAttachDesc->flags = 0;
-    vkAttachDesc->format = HgiVulkanConversions::GetFormat(attachment.format);
+    vkAttachDesc->format = HgiVulkanConversions::GetFormat(
+        attachment.format, isDepthAttachment);
     vkAttachDesc->initialLayout = layout;
     vkAttachDesc->loadOp = HgiVulkanConversions::GetLoadOp(attachment.loadOp);
     vkAttachDesc->samples = HgiVulkanConversions::GetSampleCount(sampleCount);
@@ -671,9 +673,9 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     subpassDesc.pResolveAttachments = vkColorResolveReferences.data();
     subpassDesc.pDepthStencilAttachment= hasDepth ? &vkDepthReference : nullptr;
 
+    VkSubpassDescriptionDepthStencilResolveKHR depthResolve =
+        {VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR};
     if (hasDepthResolve) {
-        VkSubpassDescriptionDepthStencilResolveKHR depthResolve =
-            {VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR};
         depthResolve.pDepthStencilResolveAttachment = &vkDepthResolveReference;
         depthResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
         depthResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE;

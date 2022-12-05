@@ -224,6 +224,7 @@ public:
     //
     // NOTE: optional arguments are in service of unit testing to provide
     //       insight in to what was removed.
+    HD_API
     void RemoveDeletedEntries(
         SdfPathVector *removedAffectedPrimPaths = nullptr,
         SdfPathVector *removedDependedOnPrimPaths = nullptr);

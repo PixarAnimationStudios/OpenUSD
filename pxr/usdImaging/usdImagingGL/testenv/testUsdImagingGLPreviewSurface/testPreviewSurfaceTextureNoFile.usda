@@ -15,6 +15,7 @@ over "Collections" (
 }
 
 def Scope "Scene" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
     kind = "component"
 )
 {

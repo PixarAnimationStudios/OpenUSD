@@ -42,6 +42,23 @@ UsdImagingDomeLightAdapter::~UsdImagingDomeLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingDomeLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingDomeLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim, TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->domeLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingDomeLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

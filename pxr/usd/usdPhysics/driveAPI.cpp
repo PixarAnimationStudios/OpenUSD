@@ -72,6 +72,20 @@ UsdPhysicsDriveAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdPhysicsDriveAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdPhysicsDriveAPI>
+UsdPhysicsDriveAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdPhysicsDriveAPI> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 

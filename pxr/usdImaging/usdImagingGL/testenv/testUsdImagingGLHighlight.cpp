@@ -48,6 +48,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/imaging/glf/simpleLightingContext.h"
 
 #include <iomanip>
 #include <iostream>
@@ -99,13 +100,7 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
 
-    if (UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cout << "Using HD Renderer.\n";
-        _sharedId = SdfPath("/Shared");
-    } else {
-        std::cout << "Using Reference Renderer.\n";
-        _sharedId = SdfPath::AbsoluteRootPath();
-    }
+    _sharedId = SdfPath("/Shared");
     _engine.reset(new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(),
                                    excludedPaths,
                                    SdfPathVector(), // invisedPrimPaths
@@ -274,12 +269,15 @@ My_TestGLDrawing::Draw()
     _engine->SetCameraState(_viewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
+    _engine->SetRendererAov(GetRendererAov());
+
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting =  IsEnabledTestLighting();
     params.complexity = _GetComplexity();
     params.cullStyle = GetCullStyle();
     params.highlight = true;
+    params.clearColor = GetClearColor();
 
     glViewport(0, 0, width, height);
 
@@ -293,7 +291,9 @@ My_TestGLDrawing::Draw()
 
 
     if(IsEnabledTestLighting()) {
-        _engine->SetLightingStateFromOpenGL();
+        GlfSimpleLightingContextRefPtr lightingContext = GlfSimpleLightingContext::New();
+        lightingContext->SetStateFromOpenGL();
+        _engine->SetLightingState(lightingContext);
     }
 
     if (!GetClipPlanes().empty()) {

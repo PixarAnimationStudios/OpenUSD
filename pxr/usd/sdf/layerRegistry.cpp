@@ -197,14 +197,16 @@ Sdf_LayerRegistry::Find(
         // found the layer via the identifier, attempt to look up the
         // layer by repository path.
         const bool isRepositoryPath = resolver.IsRepositoryPath(assetPath);
-        if (!foundLayer && isRepositoryPath)
-            foundLayer = FindByRepositoryPath(layerPath);
+        if (!foundLayer && isRepositoryPath) {
+            foundLayer = _FindByRepositoryPath(layerPath);
+        }
 
         // If the layer has not yet been found, this may be some other
         // form of path that requires path resolution and lookup in the
         // real path index in order to locate.
-        if (!foundLayer)
-            foundLayer = FindByRealPath(layerPath, resolvedPath);
+        if (!foundLayer) {
+            foundLayer = _FindByRealPath(layerPath, resolvedPath);
+        }
     }
 
     TF_DEBUG(SDF_LAYER).Msg(
@@ -238,7 +240,7 @@ Sdf_LayerRegistry::FindByIdentifier(
 }
 
 SdfLayerHandle
-Sdf_LayerRegistry::FindByRepositoryPath(
+Sdf_LayerRegistry::_FindByRepositoryPath(
     const string& layerPath) const
 {
     TRACE_FUNCTION();
@@ -255,7 +257,7 @@ Sdf_LayerRegistry::FindByRepositoryPath(
         foundLayer = *repoPathIt;
 
     TF_DEBUG(SDF_LAYER).Msg(
-        "Sdf_LayerRegistry::FindByRepositoryPath('%s') => %s\n",
+        "Sdf_LayerRegistry::_FindByRepositoryPath('%s') => %s\n",
         layerPath.c_str(),
         foundLayer ? "Found" : "Not Found");
 
@@ -263,7 +265,7 @@ Sdf_LayerRegistry::FindByRepositoryPath(
 }
 
 SdfLayerHandle
-Sdf_LayerRegistry::FindByRealPath(
+Sdf_LayerRegistry::_FindByRealPath(
     const string& layerPath,
     const string& resolvedPath) const
 {
@@ -294,7 +296,7 @@ Sdf_LayerRegistry::FindByRealPath(
             }
 
             TF_DEBUG(SDF_LAYER).Msg(
-                "Sdf_LayerRegistry::FindByRealPath('%s'): "
+                "Sdf_LayerRegistry::_FindByRealPath('%s'): "
                 "Failed to compute real path: %s\n",
                 layerPath.c_str(), TfStringJoin(errors, ", ").c_str());
 
@@ -310,7 +312,7 @@ Sdf_LayerRegistry::FindByRealPath(
         foundLayer = *realPathIt;
 
     TF_DEBUG(SDF_LAYER).Msg(
-        "Sdf_LayerRegistry::FindByRealPath('%s') => %s\n",
+        "Sdf_LayerRegistry::_FindByRealPath('%s') => %s\n",
         searchPath.c_str(),
         foundLayer ? "Found" : "Not Found");
 

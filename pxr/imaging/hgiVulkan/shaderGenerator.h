@@ -52,6 +52,9 @@ public:
     HGIVULKAN_API
     HgiVulkanShaderSectionUniquePtrVector* GetShaderSections();
 
+    template<typename SectionType, typename ...T>
+    SectionType *CreateShaderSection(T && ...t);
+
 protected:
     HGIVULKAN_API
     void _Execute(std::ostream &ss) override;
@@ -62,6 +65,10 @@ private:
     HgiVulkanShaderGenerator(const HgiVulkanShaderGenerator&) = delete;
 
     void _WriteVersion(std::ostream &ss);
+
+    void _WriteExtensions(std::ostream &ss);
+    
+    void _WriteMacros(std::ostream &ss);
 
     void _WriteConstantParams(
         const HgiShaderFunctionParamDescVector &parameters);
@@ -74,12 +81,16 @@ private:
     void _WriteInOuts(
         const HgiShaderFunctionParamDescVector &parameters,
         const std::string &qualifier);
+    void _WriteInOutBlocks(
+        const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
+        const std::string &qualifier);
     
     HgiVulkanShaderSectionUniquePtrVector _shaderSections;
     Hgi const *_hgi;
-    uint32_t _bindIndex;
+    uint32_t _textureBindIndexStart;
+    uint32_t _inLocationIndex;
+    uint32_t _outLocationIndex;
     std::vector<std::string> _shaderLayoutAttributes;
-    std::string _version;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

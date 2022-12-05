@@ -138,7 +138,9 @@ def Scope "Prototypes"(
     active=false
     )
 {
-    def Sphere "Sphere"
+    def Sphere "Sphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
 

@@ -25,10 +25,10 @@
 
 #include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/geomUtil/coneMeshGenerator.h"
 #include "pxr/imaging/hd/coneSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
@@ -58,13 +58,15 @@ UsdImagingConeAdapter::~UsdImagingConeAdapter()
 }
 
 TfTokenVector
-UsdImagingConeAdapter::GetImagingSubprims()
+UsdImagingConeAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingConeAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingConeAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->cone;
@@ -74,8 +76,8 @@ UsdImagingConeAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingConeAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -89,11 +91,12 @@ UsdImagingConeAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingConeAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
         TfToken const& subprim,
         TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::Invalidate(subprim, properties);
+        return _PrimSource::Invalidate(prim, subprim, properties);
     }
     
     return HdDataSourceLocatorSet();
@@ -166,12 +169,9 @@ VtValue
 UsdImagingConeAdapter::GetPoints(UsdPrim const& prim,
                                  UsdTimeCode time) const
 {
-    return GetMeshPoints(prim, time);
-}
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
 
-static GfMatrix4d
-_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
-{
     UsdGeomCone cone(prim);
 
     double height = 2.0;
@@ -190,30 +190,26 @@ _GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
             prim.GetPath().GetText());
     }
 
-    return UsdImagingGenerateConeOrCylinderTransform(height, radius, axis);
-}
+    // The cone point generator computes points such that the "rings" of the
+    // cone lie on a plane parallel to the XY plane, with the Z-axis being
+    // the "spine" of the cone. These need to be transformed to the right
+    // basis when a different spine axis is used.
+    const GfMatrix4d basis = UsdImagingGprimAdapter::GetImplicitBasis(axis);
 
-/*static*/
-VtValue
-UsdImagingConeAdapter::GetMeshPoints(UsdPrim const& prim,
-                                     UsdTimeCode time)
-{
-    // Return scaled points (and not that of a unit geometry)
-    VtVec3fArray points = UsdImagingGetUnitConeMeshPoints();
-    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
-    for (GfVec3f& pt : points) {
-        pt = scale.Transform(pt);
-    }
+    const size_t numPoints =
+        GeomUtilConeMeshGenerator::ComputeNumPoints(numRadial);
+
+    VtVec3fArray points(numPoints);
+        
+    GeomUtilConeMeshGenerator::GeneratePoints(
+        points.begin(),
+        numRadial,
+        radius,
+        height,
+        &basis
+    );
 
     return VtValue(points);
-}
-
-/*static*/
-VtValue
-UsdImagingConeAdapter::GetMeshTopology()
-{
-    // Topology is constant and identical for all cones.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitConeMeshTopology()));
 }
 
 /*virtual*/ 
@@ -224,7 +220,13 @@ UsdImagingConeAdapter::GetTopology(UsdPrim const& prim,
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    return GetMeshTopology();
+
+    // All cones share the same topology.
+    static const HdMeshTopology topology =
+        HdMeshTopology(GeomUtilConeMeshGenerator::GenerateTopology(
+                            numRadial));
+
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

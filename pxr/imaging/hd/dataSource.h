@@ -104,11 +104,6 @@ class HdContainerDataSource : public HdDataSourceBase
 public:
     HD_DECLARE_DATASOURCE_ABSTRACT(HdContainerDataSource);
 
-    /// Returns \c true if the container has a child datasource of the given
-    /// name, in which case \p Get(name) is expected to be non-null. This call
-    /// is expected to be threadsafe.
-    virtual bool Has(const TfToken &name) = 0;
-
     /// Returns the list of names for which \p Get(...) is expected to return
     /// a non-null value. This call is expected to be threadsafe.
     virtual TfTokenVector GetNames() = 0;
@@ -240,13 +235,17 @@ HdGetMergedContributingSampleTimesForInterval(
     std::vector<HdSampledDataSource::Time> * outSampleTimes);
 
 /// Print a datasource to a stream, for debugging/testing.
-void HdDebugPrintDataSource(
+HD_API
+void
+HdDebugPrintDataSource(
     std::ostream &,
     HdDataSourceBaseHandle,
     int indentLevel = 0);
 
 /// Print a datasource to stdout, for debugging/testing
-void HdDebugPrintDataSource(HdDataSourceBaseHandle, int indentLevel = 0);
+HD_API
+void
+HdDebugPrintDataSource(HdDataSourceBaseHandle, int indentLevel = 0);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

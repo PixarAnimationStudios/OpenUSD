@@ -47,6 +47,7 @@ This table lists the fundamental data types supported by USD.
 | string           | std::string   | stl string                                       |
 | token            | TfToken       | interned string with fast comparison and hashing |
 | asset            | SdfAssetPath  | represents a resolvable path to another asset    |
+| opaque           | SdfOpaqueValue| represents a value that can't be serialized      |
 | matrix2d         | GfMatrix2d    | 2x2 matrix of doubles                            |
 | matrix3d         | GfMatrix3d    | 3x3 matrix of doubles                            |
 | matrix4d         | GfMatrix4d    | 4x4 matrix of doubles                            |
@@ -100,7 +101,8 @@ are also provided in SdfValueTypeNames
 | texCoord2f        | Vec2f           | TextureCoordinate | 2D uv texture coordinate 
 | texCoord3h        | Vec3h           | TextureCoordinate | 3D uvw texture coordinate 
 | texCoord3d        | Vec3d           | TextureCoordinate | 3D uvw texture coordinate 
-| texCoord3f        | Vec3f           | TextureCoordinate | 3D uvw texture coordinate 
+| texCoord3f        | Vec3f           | TextureCoordinate | 3D uvw texture coordinate
+| group             | SdfOpaqueValue  | Group             | used as a grouping mechanism for sibling attributes
 
 The following exist for historical/internal reasons, 
 but we expect to eliminate them prior to open-sourcing.

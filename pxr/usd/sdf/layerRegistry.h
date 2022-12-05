@@ -74,22 +74,23 @@ public:
     /// with the \p layerPath as provided.
     SdfLayerHandle FindByIdentifier(const std::string& layerPath) const;
 
-    /// Returns a layer from the registry, consulting the by_repository_path index
-    /// with the \p layerPath as provided.
-    SdfLayerHandle FindByRepositoryPath(const std::string& layerPath) const;
-
-    /// Returns a layer from the registry, consulting the by_real_path index.
-    /// If \p layerPath is an absolute file system path, the index is searched
-    /// using the input path. Otherwise, \p layerPath is resolved and the
-    /// resulting path is used to search the index.
-    SdfLayerHandle FindByRealPath(
-        const std::string& layerPath,
-        const std::string& resolvedPath=std::string()) const;
-
     /// Returns all valid layers held in the registry as a set.
     SdfLayerHandleSet GetLayers() const;
 
 private:
+    
+    // Returns a layer from the registry, consulting the by_repository_path
+    // index with the \p layerPath as provided.
+    SdfLayerHandle _FindByRepositoryPath(const std::string& layerPath) const;
+    
+    // Returns a layer from the registry, consulting the by_real_path index.  If
+    // \p layerPath is an absolute file system path, the index is searched using
+    // the input path. Otherwise, \p layerPath is resolved and the resulting
+    // path is used to search the index.
+    SdfLayerHandle _FindByRealPath(
+        const std::string& layerPath,
+        const std::string& resolvedPath=std::string()) const;
+    
     // Index tags.
     struct by_identity {};
     struct by_identifier {};

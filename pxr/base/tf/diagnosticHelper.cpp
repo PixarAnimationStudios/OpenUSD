@@ -37,7 +37,7 @@ using std::string;
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper functions for posting an error with TF_ERROR.
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -45,19 +45,18 @@ Tf_PostErrorHelper(
 {
     TfDiagnosticMgr::ErrorHelper(context, code,
                                  TfEnum::GetName(code).c_str()).Post(msg);
-    return false;
 }
 
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     TfDiagnosticType code,
     const std::string &msg)
 {
-    return Tf_PostErrorHelper(context, TfEnum(code), msg);
+    Tf_PostErrorHelper(context, TfEnum(code), msg);
 }
 
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -67,10 +66,9 @@ Tf_PostErrorHelper(
     va_start(ap, fmt);
     Tf_PostErrorHelper(context, code, TfVStringPrintf(fmt, ap));
     va_end(ap);
-    return false;
 }
 
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     TfDiagnosticType code,
@@ -80,10 +78,9 @@ Tf_PostErrorHelper(
     va_start(ap, fmt);
     Tf_PostErrorHelper(context, code, TfVStringPrintf(fmt, ap));
     va_end(ap);
-    return false;
 }
 
-bool
+void
 Tf_PostQuietlyErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -91,10 +88,9 @@ Tf_PostQuietlyErrorHelper(
 {
     TfDiagnosticMgr::ErrorHelper(context, code,
                                  TfEnum::GetName(code).c_str()).PostQuietly(msg);
-    return false;
 }
 
-bool
+void
 Tf_PostQuietlyErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -103,10 +99,9 @@ Tf_PostQuietlyErrorHelper(
 {
     TfDiagnosticMgr::ErrorHelper(context, code,
                                  TfEnum::GetName(code).c_str()).PostQuietly(msg, info);
-    return false;
 }
 
-bool
+void
 Tf_PostQuietlyErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -116,10 +111,9 @@ Tf_PostQuietlyErrorHelper(
     va_start(ap, fmt);
     Tf_PostQuietlyErrorHelper(context, code, TfVStringPrintf(fmt, ap));
     va_end(ap);
-    return false;
 }
 
-bool
+void
 Tf_PostQuietlyErrorHelper(
     const TfCallContext &context,
     const TfEnum &code,
@@ -130,10 +124,9 @@ Tf_PostQuietlyErrorHelper(
     va_start(ap, fmt);
     Tf_PostQuietlyErrorHelper(context, code, info, TfVStringPrintf(fmt, ap));
     va_end(ap);
-    return false;
 }
 
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     const TfDiagnosticInfo &info,
@@ -142,10 +135,9 @@ Tf_PostErrorHelper(
 {
     TfDiagnosticMgr::ErrorHelper(context, code,
                                  TfEnum::GetName(code).c_str()).PostWithInfo(msg, info);
-    return false;
 }
 
-bool
+void
 Tf_PostErrorHelper(
     const TfCallContext &context,
     const TfDiagnosticInfo &info,
@@ -156,7 +148,6 @@ Tf_PostErrorHelper(
     Tf_PostErrorHelper(context, info,
                        code, TfVStringPrintf(fmt, ap));
     va_end(ap);
-    return false;
 }
 
 // Helper functions for posting a warning with TF_WARN without a diagnostic code

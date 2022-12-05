@@ -31,15 +31,12 @@ class VariantComboBox(QtWidgets.QComboBox):
         self.prim = prim
         self.variantSetName = variantSetName
 
-    def updateVariantSelection(self, index, printTiming):
+    def updateVariantSelection(self, index, timer):
         variantSet = self.prim.GetVariantSet(self.variantSetName)
         currentVariantSelection = variantSet.GetVariantSelection()
         newVariantSelection = str(self.currentText())
         if currentVariantSelection != newVariantSelection:
-            with Timer() as t:
+            with timer("change variantSet %s to %s" %
+                       (variantSet.GetName(), newVariantSelection)):
                 variantSet.SetVariantSelection(newVariantSelection)
-            if printTiming:
-                t.PrintTime("change variantSet %s to %s" %
-                            (variantSet.GetName(), newVariantSelection))
-
 

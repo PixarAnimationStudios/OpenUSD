@@ -1,0 +1,25 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestSdfStreamingFileFormat": {
+                        "bases": [
+                            "SdfFileFormat"
+                        ],
+                        "extensions": [
+                            "test_streaming_format"
+                        ],
+                        "formatId": "test_streaming_format",
+                        "primary": true
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestSdfStreamingFileFormat",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

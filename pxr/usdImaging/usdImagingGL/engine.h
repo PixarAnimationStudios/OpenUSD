@@ -71,7 +71,6 @@ class UsdPrim;
 class HdRenderIndex;
 class HdxTaskController;
 class UsdImagingDelegate;
-class UsdImagingGLLegacyEngine;
 class UsdImagingStageSceneIndex;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
@@ -86,34 +85,32 @@ class UsdImagingGLEngine
 public:
 
     // ---------------------------------------------------------------------
-    /// \name Global State
-    /// @{
-    // ---------------------------------------------------------------------
-
-    /// Returns true if Hydra is enabled for GL drawing.
-    USDIMAGINGGL_API
-    static bool IsHydraEnabled();
-
-    /// @}
-
-    // ---------------------------------------------------------------------
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
 
-    /// A HdDriver, containing the Hgi of your choice, can be optionally passed
+    /// An HdDriver, containing the Hgi of your choice, can be optionally passed
     /// in during construction. This can be helpful if you application creates
     /// multiple UsdImagingGLEngine that wish to use the same HdDriver / Hgi.
+    /// The \p rendererPluginId argument indicates the renderer plugin that
+    /// Hyrda should use. If the empty token is passed in, a default renderer
+    /// plugin will be chosen depending on the value of \p gpuEnabled.
+    /// The \p gpuEnabled argument determines if this instance will allow Hydra
+    /// to use the GPU to produce images.
     USDIMAGINGGL_API
-    UsdImagingGLEngine(const HdDriver& driver = HdDriver());
+    UsdImagingGLEngine(const HdDriver& driver = HdDriver(),
+                       const TfToken& rendererPluginId = TfToken(),
+                       bool gpuEnabled = true);
 
     USDIMAGINGGL_API
     UsdImagingGLEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
-                       const SdfPathVector& invisedPaths=SdfPathVector(),
+                       const SdfPathVector& invisedPaths = SdfPathVector(),
                        const SdfPath& sceneDelegateID =
                                         SdfPath::AbsoluteRootPath(),
-                       const HdDriver& driver = HdDriver());
+                       const HdDriver& driver = HdDriver(),
+                       const TfToken& rendererPluginId = TfToken(),
+                       bool gpuEnabled = true);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -221,22 +218,12 @@ public:
     void SetCameraState(const GfMatrix4d& viewMatrix,
                         const GfMatrix4d& projectionMatrix);
 
-    /// Helper function to extract camera and viewport state from opengl and
-    /// then call SetCameraState and SetRenderViewport
-    USDIMAGINGGL_API
-    void SetCameraStateFromOpenGL();
-
     /// @}
 
     // ---------------------------------------------------------------------
     /// \name Light State
     /// @{
     // ---------------------------------------------------------------------
-    
-    /// Helper function to extract lighting state from opengl and then
-    /// call SetLights.
-    USDIMAGINGGL_API
-    void SetLightingStateFromOpenGL();
 
     /// Copy lighting state from another lighting context.
     USDIMAGINGGL_API
@@ -341,6 +328,10 @@ public:
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
     static std::string GetRendererDisplayName(TfToken const &id);
+
+    /// Return if the GPU is enabled and can be used for any rendering tasks.
+    USDIMAGINGGL_API
+    bool GetGPUEnabled() const;
 
     /// Return the id of the currently used renderer plugin.
     USDIMAGINGGL_API
@@ -547,6 +538,17 @@ protected:
     USDIMAGINGGL_API
     void _PrepareRender(const UsdImagingGLRenderParams& params);
 
+    USDIMAGINGGL_API
+    void _UpdateDomeLightCameraVisibility();
+
+    using BBoxVector = std::vector<GfBBox3d>;
+
+    USDIMAGINGGL_API
+    void _SetBBoxParams(
+        const BBoxVector& bboxes,
+        const GfVec4f& bboxLineColor,
+        float bboxLineDashSize);
+
     // Create a hydra collection given root paths and render params.
     // Returns true if the collection was updated.
     USDIMAGINGGL_API
@@ -591,9 +593,6 @@ protected:
     HdxTaskController *_GetTaskController() const;
 
     USDIMAGINGGL_API
-    bool _IsUsingLegacyImpl() const;
-
-    USDIMAGINGGL_API
     HdSelectionSharedPtr _GetSelection() const;
 
 protected:
@@ -609,6 +608,7 @@ protected:
     VtValue _userFramebuffer;
 
 protected:
+    bool _gpuEnabled;
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
@@ -624,18 +624,12 @@ protected:
 
     // Data we want to live across render plugin switches:
     GfVec4f _selectionColor;
+    bool _domeLightCameraVisibility;
 
     SdfPath _rootPath;
     SdfPathVector _excludedPrimPaths;
     SdfPathVector _invisedPrimPaths;
     bool _isPopulated;
-
-    // An implementation of much of the engine functionality that doesn't
-    // invoke any of the advanced Hydra features.  It is kept around for 
-    // backwards compatibility, but it's deprecated and scheduled for deletion.
-    // When we use the legacy code, this pointer is non-null and most of the
-    // rest of this class isn't used; when we use hydra, this pointer is null.
-    std::unique_ptr<UsdImagingGLLegacyEngine> _legacyImpl;
 
 private:
     void _DestroyHydraObjects();

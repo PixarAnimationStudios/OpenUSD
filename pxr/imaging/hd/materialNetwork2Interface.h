@@ -60,6 +60,13 @@ public:
     TfToken GetNodeType(const TfToken &nodeName) const override;
 
     HD_API
+    TfTokenVector GetNodeTypeInfoKeys(const TfToken& nodeName) const override;
+
+    HD_API
+    VtValue GetNodeTypeInfoValue(
+        const TfToken& nodeName, const TfToken& key) const override;
+
+    HD_API
     TfTokenVector GetAuthoredNodeParameterNames(
         const TfToken &nodeName) const override;
     

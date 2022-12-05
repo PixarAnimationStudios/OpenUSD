@@ -43,35 +43,54 @@ class UsdImagingDataSourcePrimvars : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimvars);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    struct CustomPrimvarMapping {
+        CustomPrimvarMapping(
+            const TfToken &primvarName,
+            const TfToken &usdAttrName,
+            const TfToken &interpolation = TfToken())
+          : primvarName(primvarName)
+          , usdAttrName(usdAttrName)
+            , interpolation(interpolation)
+        { }
+
+        TfToken primvarName;
+        TfToken usdAttrName;
+        TfToken interpolation;
+    };
 
     // This map is passed to the constructor to specify non-"primvars:"
     // attributes to include as primvars (e.g., "points" and "normals").
     // The first token is the datasource name, and the second the USD name.
-    using CustomPrimvarMapping = std::vector<std::pair<TfToken, TfToken>>;
+    using CustomPrimvarMappings = std::vector<CustomPrimvarMapping>;
 
 private:
     UsdImagingDataSourcePrimvars(
             const SdfPath &sceneIndexPath,
+            UsdPrim const &usdPrim,
             UsdGeomPrimvarsAPI usdPrimvars,
-            const CustomPrimvarMapping &customPrimvarMapping,
+            const CustomPrimvarMappings &customPrimvarMappings,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
-
-    TfToken _GetCustomPrimvarInterpolation(const UsdAttributeQuery &attrQuery);
+    static TfToken _GetPrefixedName(const TfToken &name);
 
     // Path of the owning prim.
     SdfPath _sceneIndexPath;
+
+    UsdPrim _usdPrim;
 
     // Stage globals handle.
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 
     // Maps to custom & namespace-enumerated primvars, populated at
     // construction time...
-    using _CustomPrimvarsMap = std::map<TfToken, UsdAttributeQuery>;
+    using _CustomPrimvarsMap =
+        std::map<TfToken,
+                 std::pair<UsdAttributeQuery,
+                           TfToken /* forced interpolation */>>;
     _CustomPrimvarsMap _customPrimvars;
     using _NamespacedPrimvarsMap = std::map<TfToken, UsdGeomPrimvar>;
     _NamespacedPrimvarsMap _namespacedPrimvars;
@@ -98,7 +117,6 @@ class UsdImagingDataSourcePrimvar : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimvar);
 
-    bool Has(const TfToken & name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken & name) override;
 

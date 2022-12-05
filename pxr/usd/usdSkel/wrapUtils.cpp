@@ -209,6 +209,39 @@ _NonInterleavedSkinTransformLBS(const Matrix4& geomBindTransform,
 }
 
 
+template <typename Matrix4>
+Matrix4
+_InterleavedSkinTransform(const TfToken& skinningMethod,
+                          const Matrix4& geomBindTransform,
+                          TfSpan<const Matrix4> jointXforms,
+                          TfSpan<const GfVec2f> influences)
+{
+    Matrix4 xform;
+    if (!UsdSkelSkinTransform(skinningMethod, geomBindTransform, jointXforms,
+                              influences, &xform)) {
+        xform = geomBindTransform;
+    }
+    return xform;
+}
+
+
+template <typename Matrix4>
+Matrix4
+_NonInterleavedSkinTransform(const TfToken& skinningMethod,
+                             const Matrix4& geomBindTransform,
+                             TfSpan<const Matrix4> jointXforms,
+                             TfSpan<const int> jointIndices,
+                             TfSpan<const float> jointWeights)
+{
+    Matrix4 xform;
+    if (!UsdSkelSkinTransform(skinningMethod, geomBindTransform, jointXforms,
+                              jointIndices, jointWeights, &xform)) {
+        xform = geomBindTransform;
+    }
+    return xform;
+}
+
+
 template <class Matrix3, class Matrix4>
 void _WrapUtilsT()
 {
@@ -269,6 +302,33 @@ void _WrapUtilsT()
          arg("points"),
          arg("inSerial")=true));
 
+    def("SkinPoints",
+        static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
+                             TfSpan<const int>, TfSpan<const float>,
+                             int, TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinPoints),
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights"),
+         arg("numInfluencesPerPoint"),
+         arg("points"),
+         arg("inSerial")=true));
+
+    def("SkinPoints",
+        static_cast<bool (*)(const TfToken&, const Matrix4&, TfSpan<const Matrix4>,
+                             TfSpan<const GfVec2f>, int,
+                             TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinPoints),
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences"),
+         arg("numInfluencesPerPoint"),
+         arg("points"),
+         arg("inSerial")=true));
+
 
 
     def("SkinNormalsLBS",
@@ -296,6 +356,34 @@ void _WrapUtilsT()
          arg("normals"),
          arg("inSerial")=true));
 
+    def("SkinNormals",
+        static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
+                             TfSpan<const int>, TfSpan<const float>,
+                             int, TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinNormals),
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights"),
+         arg("numInfluencesPerPoint"),
+         arg("normals"),
+         arg("inSerial")=true));
+
+    def("SkinNormals",
+        static_cast<bool (*)(const TfToken&, const Matrix3&, TfSpan<const Matrix3>,
+                             TfSpan<const GfVec2f>, int,
+                             TfSpan<GfVec3f>, bool)>(
+                                 &UsdSkelSkinNormals),
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences"),
+         arg("numInfluencesPerPoint"),
+         arg("normals"),
+         arg("inSerial")=true));
+
+
     def("SkinTransformLBS", &_InterleavedSkinTransformLBS<Matrix4>,
         (arg("geomBindTransform"),
          arg("jointXforms"),
@@ -303,6 +391,19 @@ void _WrapUtilsT()
 
     def("SkinTransformLBS", &_NonInterleavedSkinTransformLBS<Matrix4>,
         (arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("jointIndices"),
+         arg("jointWeights")));
+
+    def("SkinTransform", &_InterleavedSkinTransform<Matrix4>,
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
+         arg("jointXforms"),
+         arg("influences")));
+
+    def("SkinTransform", &_NonInterleavedSkinTransform<Matrix4>,
+        (arg("skinningMethod"),
+         arg("geomBindTransform"),
          arg("jointXforms"),
          arg("jointIndices"),
          arg("jointWeights")));

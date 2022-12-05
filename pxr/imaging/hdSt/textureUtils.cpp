@@ -47,6 +47,26 @@ _OpaqueAlpha() {
 
 template<typename T>
 void
+_ConvertRGToRGBA(
+    const void * const src,
+    const size_t numTexels,
+    void * const dst)
+{
+    TRACE_FUNCTION();
+
+    const T * const typedSrc = reinterpret_cast<const T*>(src);
+    T * const typedDst = reinterpret_cast<T*>(dst);
+
+    for (size_t i = 0; i < numTexels; i++) {
+        typedDst[4 * i + 0] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 1] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 2] = typedSrc[2 * i + 0];
+        typedDst[4 * i + 3] = typedSrc[2 * i + 1];
+    }
+}
+
+template<typename T>
+void
 _ConvertRGBToRGBA(
     const void * const src,
     const size_t numTexels,
@@ -177,7 +197,7 @@ _GetHgiFormatAndConversion(
         case HioFormatUNorm8:
             return { HgiFormatUNorm8, nullptr };
         case HioFormatUNorm8Vec2:
-            return { HgiFormatUNorm8Vec2, nullptr };
+            return { HgiFormatUNorm8Vec4, _ConvertRGToRGBA<unsigned char> };
         case HioFormatUNorm8Vec3:
             // RGB (24bit) is not supported on MTL, so we need to
             // always convert it.
@@ -255,7 +275,7 @@ _GetHgiFormatAndConversion(
         case HioFormatUInt16:
             return { HgiFormatUInt16, nullptr };
         case HioFormatUInt16Vec2:
-            return { HgiFormatUInt16Vec2, nullptr };
+            return { HgiFormatUInt16Vec4, _ConvertRGToRGBA<uint16_t> };
         case HioFormatUInt16Vec3:
             // HgiFormatUInt16Vec3 exists but maps to MTLPixelFormatInvalid
             // on Metal because there is no corresponding pixel format in
