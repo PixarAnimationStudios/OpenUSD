@@ -16,8 +16,6 @@ import sys
 sys.path.append(os.path.abspath("./_ext"))
 # sys.path.insert(0, os.path.abspath('.'))
 
-# -- Dev Configure -----------------------------------
-
 # -- Utilities ---------------------------------------------------------------
 
 def GetUSDVersion():
