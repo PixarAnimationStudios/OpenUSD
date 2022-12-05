@@ -18,16 +18,6 @@ sys.path.append(os.path.abspath("./_ext"))
 
 # -- Dev Configure -----------------------------------
 
-import subprocess
-files = ["spec_usdc"]
-for f in files:
-    f = os.path.join(os.path.dirname(__file__), f+".rst")
-    if not os.path.exists(f):
-        raise IOError("Path does not exist: "+f)
-
-    subprocess.call(["touch", f])
-
-
 # -- Utilities ---------------------------------------------------------------
 
 def GetUSDVersion():
