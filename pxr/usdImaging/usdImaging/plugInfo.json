@@ -69,6 +69,11 @@
                         "isInternal": true,
                         "primTypeName": "coordSys"
                     },
+                    "UsdImagingCoordSysAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "CoordSysAPI"
+                    },
                     "UsdImagingCubeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"

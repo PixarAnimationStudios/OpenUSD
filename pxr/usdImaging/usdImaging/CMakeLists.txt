@@ -58,6 +58,7 @@ pxr_library(usdImaging
         collectionAPIAdapter
         coneAdapter
         coordSysAdapter
+        coordSysAPIAdapter
         cubeAdapter
         cylinderAdapter
         cylinderLightAdapter
