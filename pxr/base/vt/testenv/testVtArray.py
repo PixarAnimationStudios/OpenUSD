@@ -361,7 +361,8 @@ class TestVtArray(unittest.TestCase):
 
     # The test is disabled for py2 because array in py2 doesn't support old py2
     # buffer protocol.
-    @unittest.skipIf(sys.version_info.major == 2)
+    @unittest.skipIf(sys.version_info.major == 2,
+            "Array in py2 doesn't support old py2 buffer protocol")
     def test_LargeBuffer(self):
         '''VtArray can be created from a buffer with item count
            greater than maxint'''
