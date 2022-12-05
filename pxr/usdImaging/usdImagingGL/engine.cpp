@@ -659,13 +659,6 @@ UsdImagingGLEngine::TestIntersection(
         return false;
     }
 
-    if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): picking support
-        return false;
-    }
-
-    TF_VERIFY(_sceneDelegate);
-
     PrepareBatch(root, params);
 
     // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
@@ -708,10 +701,19 @@ UsdImagingGLEngine::TestIntersection(
         *outHitNormal = hit.worldSpaceHitNormal;
     }
 
-    hit.objectId = _sceneDelegate->GetScenePrimPath(
-        hit.objectId, hit.instanceIndex, outInstancerContext);
-    hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
-        hit.instancerId).GetAbsoluteRootOrPrimPath();
+    if (_sceneDelegate) {
+        hit.objectId = _sceneDelegate->GetScenePrimPath(
+            hit.objectId, hit.instanceIndex, outInstancerContext);
+        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+            hit.instancerId).GetAbsoluteRootOrPrimPath();
+    } else {
+        const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
+            _renderIndex.get(), hit);
+        const SdfPath usdPath = info.GetFullPath();
+        if (!usdPath.IsEmpty()) {
+            hit.objectId = usdPath;
+        }
+    }
 
     if (outHitPrimPath) {
         *outHitPrimPath = hit.objectId;

@@ -398,6 +398,33 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceModel);
 // ----------------------------------------------------------------------------
 
 ///
+/// \class UsdImagingDataSourcePrimOrigin
+///
+/// Data source to access the underlying UsdPrim.
+///
+class UsdImagingDataSourcePrimOrigin : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimOrigin);
+
+    TfTokenVector GetNames() override;
+
+    /// Get(UsdImagingTokens->usdPrim) returns a data source containing
+    /// the underyling UsdPrim.
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    UsdImagingDataSourcePrimOrigin(const UsdPrim &usdPrim);
+
+private:
+    UsdPrim _usdPrim;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimOrigin);
+
+// ----------------------------------------------------------------------------
+
+///
 /// \class UsdImagingDataSourcePrim
 ///
 /// Data source representing a basic USD prim. This class is meant to check for

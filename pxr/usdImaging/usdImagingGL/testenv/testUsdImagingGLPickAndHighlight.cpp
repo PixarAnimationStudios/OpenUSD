@@ -48,6 +48,7 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
+#include "pxr/base/tf/getenv.h"
 
 #include <iomanip>
 #include <iostream>
@@ -69,6 +70,10 @@ struct OutHit {
 static bool
 _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
 {
+    static const bool skipInstancerDetails = TfGetenvBool(
+        "USD_IMAGING_GL_PICK_TEST_SKIP_INSTANCER_DETAILS",
+        false);
+
     double const epsilon = 1e-6;
     return GfIsClose(lhs.outHitPoint[0], rhs.outHitPoint[0], epsilon) &&
            GfIsClose(lhs.outHitPoint[1], rhs.outHitPoint[1], epsilon) &&
@@ -77,8 +82,9 @@ _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
            GfIsClose(lhs.outHitNormal[1], rhs.outHitNormal[1], epsilon) &&
            GfIsClose(lhs.outHitNormal[2], rhs.outHitNormal[2], epsilon) &&
            lhs.outHitPrimPath == rhs.outHitPrimPath &&
-           lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
-           lhs.outHitInstanceIndex == rhs.outHitInstanceIndex;
+           (skipInstancerDetails ||
+            (lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
+             lhs.outHitInstanceIndex == rhs.outHitInstanceIndex));
 }
 
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {

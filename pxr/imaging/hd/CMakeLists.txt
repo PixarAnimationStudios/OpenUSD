@@ -116,6 +116,7 @@ pxr_library(hd
         prefixingSceneIndex
         primDataSourceOverlayCache
         primGather
+        primOriginSchema
         primTypeIndex
         primvarSchema
         primvarsSchema

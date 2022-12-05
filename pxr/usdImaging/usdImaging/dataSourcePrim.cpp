@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -500,6 +501,71 @@ UsdImagingDataSourceModel::Get(const TfToken &name)
 
 // ----------------------------------------------------------------------------
 
+UsdImagingDataSourcePrimOrigin::UsdImagingDataSourcePrimOrigin(
+        const UsdPrim &usdPrim)
+  : _usdPrim(usdPrim)
+{
+}
+
+TfTokenVector
+UsdImagingDataSourcePrimOrigin::GetNames()
+{
+    return {
+        HdPrimOriginSchemaTokens->scenePath
+    };
+}
+
+// If prim, say /__Prototype_1/MyXform/MySphere is inside a Usd
+// Prototype (here /__Prototype_1), return the path relative to
+// the prototype root (here MyXform/MySphere).
+// If prim is not inside a Usd Prototype, just return (absolute) prim path.
+//
+// Assumes that all Usd prototype roots are children of the pseudo root.
+//
+static
+SdfPath
+_ComputePrototypeRelativePath(const UsdPrim &prim)
+{
+    const SdfPath path = prim.GetPath();
+
+    const SdfPathVector prefixes = path.GetPrefixes();
+    if (prefixes.empty()) {
+        return path;
+    }
+
+    // Get path of potential prototype containing the prim.
+    const SdfPath prototypePath = prefixes[0];
+    UsdPrim prototype = prim.GetStage()->GetPrimAtPath(prototypePath);
+    if (!prototype) {
+        return path;
+    }
+    if (!prototype.IsPrototype()) {
+        return path;
+    }
+    return path.MakeRelativePath(prototypePath);
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourcePrimOrigin::Get(const TfToken &name)
+{ 
+    if (name == HdPrimOriginSchemaTokens->scenePath) {
+        if (!_usdPrim) {
+            return nullptr;
+        }
+
+        using OriginPath = HdPrimOriginSchema::OriginPath;
+        using DataSource = HdRetainedTypedSampledDataSource<OriginPath>;
+        return
+            DataSource::New(
+                OriginPath(
+                    _ComputePrototypeRelativePath(_usdPrim)));
+    }
+
+    return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
 UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
@@ -543,9 +609,8 @@ UsdImagingDataSourcePrim::GetNames()
     if (_GetUsdPrim().IsPrototype()) {
         vec.push_back(UsdImagingNativeInstancingTokens->isUsdPrototype);
     }
-
     vec.push_back(UsdImagingSpecifierTokens->usdSpecifier);
-
+    vec.push_back(HdPrimOriginSchemaTokens->primOrigin);
     return vec;
 }
 
@@ -652,8 +717,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
         return UsdImagingDataSourceModel::New(
             model, _sceneIndexPath, _GetStageGlobals());
-    }
-    else if (name == UsdImagingNativeInstancingTokens->usdPrototypePath) {
+    } else if (name == UsdImagingNativeInstancingTokens->usdPrototypePath) {
         if (!_GetUsdPrim().IsInstance()) {
             return nullptr;
         }
@@ -670,6 +734,9 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         return HdRetainedTypedSampledDataSource<bool>::New(true);
     } else if (name == UsdImagingSpecifierTokens->usdSpecifier) {
         return _SpecifierToDataSource(_GetUsdPrim().GetSpecifier());
+    } else if (name == HdPrimOriginSchemaTokens->primOrigin) {
+        return UsdImagingDataSourcePrimOrigin::New(
+            _GetUsdPrim());
     }
     return nullptr;
 }
