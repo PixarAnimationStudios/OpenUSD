@@ -39,19 +39,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((riVolume, "ri:volume"))
 );
 
-void
-MatfiltResolveTerminals(
-    const SdfPath& networkId,
-    HdMaterialNetwork2& network,
-    const std::map<TfToken, VtValue>& contextValues,
-    const NdrTokenVec& shaderTypePriority,
-    std::vector<std::string>* outputErrorMessages)
-{
-    HdMaterialNetwork2Interface interface(networkId, &network);
-    HdsiTerminalsResolvingSceneIndex::ResolveTerminals(
-        &interface, MatfiltResolveTerminalsGetTerminalMappings());
-}
-
 const std::map<TfToken, TfToken>&
 MatfiltResolveTerminalsGetTerminalMappings()
 {
