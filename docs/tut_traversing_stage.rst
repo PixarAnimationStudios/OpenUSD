@@ -26,30 +26,36 @@ folder to a working directory and make its contents writable.
    The simplest place to start is with :python:`Usd.Stage.Traverse()`; a
    generator which yields prims from the stage in depth-first-traversal order.
 
-   >>> [x for x in usdviewApi.stage.Traverse()]
-   [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>),
-    Usd.Prim(</refSphere2>), Usd.Prim(</refSphere2/world>)]
+   .. code-block:: pycon 
+
+      >>> [x for x in usdviewApi.stage.Traverse()]
+      [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>),
+       Usd.Prim(</refSphere2>), Usd.Prim(</refSphere2/world>)]
 
    You can filter as you would any other Python generator:
    
-   >>> [x for x in usdviewApi.stage.Traverse() if UsdGeom.Sphere(x)]
-   [Usd.Prim(</refSphere/world>), Usd.Prim(</refSphere2/world>)]
+   .. code-block:: pycon
+
+      >>> [x for x in usdviewApi.stage.Traverse() if UsdGeom.Sphere(x)]
+      [Usd.Prim(</refSphere/world>), Usd.Prim(</refSphere2/world>)]
 
 #. For more involved traversals, the :python:`Usd.PrimRange()` exposes pre- and
    post-order prim visitations.
 
-   >>> primIter = iter(Usd.PrimRange.PreAndPostVisit(usdviewApi.stage.GetPseudoRoot()))
-   >>> for x in primIter: print(x, primIter.IsPostVisit())
-   Usd.Prim(</>) False
-   Usd.Prim(</refSphere>) False
-   Usd.Prim(</refSphere/world>) False
-   Usd.Prim(</refSphere/world>) True
-   Usd.Prim(</refSphere>) True
-   Usd.Prim(</refSphere2>) False
-   Usd.Prim(</refSphere2/world>) False
-   Usd.Prim(</refSphere2/world>) True
-   Usd.Prim(</refSphere2>) True
-   Usd.Prim(</>) True
+   .. code-block:: pycon
+
+      >>> primIter = iter(Usd.PrimRange.PreAndPostVisit(usdviewApi.stage.GetPseudoRoot()))
+      >>> for x in primIter: print(x, primIter.IsPostVisit())
+      Usd.Prim(</>) False
+      Usd.Prim(</refSphere>) False
+      Usd.Prim(</refSphere/world>) False
+      Usd.Prim(</refSphere/world>) True
+      Usd.Prim(</refSphere>) True
+      Usd.Prim(</refSphere2>) False
+      Usd.Prim(</refSphere2/world>) False
+      Usd.Prim(</refSphere2/world>) True
+      Usd.Prim(</refSphere2>) True
+      Usd.Prim(</>) True
 
 #. :python:`Usd.PrimRange` also makes prim-flag predicates available. In fact,
    :python:`Usd.Stage.Traverse()` is really a convenience method that performs
@@ -92,17 +98,21 @@ folder to a working directory and make its contents writable.
    Now :code:`Traverse()` will not visit refSphere2 or any of its namespace
    children, and renderers do not draw it.
 
-   >>> [x for x in usdviewApi.stage.Traverse()]
-   [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>)]
+   .. code-block:: pycon
+
+      >>> [x for x in usdviewApi.stage.Traverse()]
+      [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>)]
 
    While we can still see refSphere2 as an inactive prim on the stage, its
    children no longer have any presence in the composed scenegraph. We can use
    :code:`TraverseAll()` to get an iterator with no predicates applied to
    verify this.
 
-   >>> [x for x in usdviewApi.stage.TraverseAll()]
-   [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>),
-    Usd.Prim(</refSphere2>)]
+   .. code-block:: pycon
+
+      >>> [x for x in usdviewApi.stage.TraverseAll()]
+      [Usd.Prim(</refSphere>), Usd.Prim(</refSphere/world>),
+       Usd.Prim(</refSphere2>)]
 
        
 

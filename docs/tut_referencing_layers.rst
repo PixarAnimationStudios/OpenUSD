@@ -26,7 +26,7 @@ will use as our starting point and all the code for this exercise is in the
       hello = stage.GetPrimAtPath('/hello')
       stage.SetDefaultPrim(hello)
       UsdGeom.XformCommonAPI(hello).SetTranslate((4, 5, 6))
-      print stage.GetRootLayer().ExportToString()
+      print(stage.GetRootLayer().ExportToString())
       stage.GetRootLayer().Save()
 
    produces
@@ -58,7 +58,7 @@ will use as our starting point and all the code for this exercise is in the
 
       refStage = Usd.Stage.CreateNew('RefExample.usda')
       refSphere = refStage.OverridePrim('/refSphere')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
 
    produces
 
@@ -85,7 +85,7 @@ will use as our starting point and all the code for this exercise is in the
    .. code-block:: python
 
       refSphere.GetReferences().AddReference('./HelloWorld.usda')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    produces
@@ -139,7 +139,7 @@ will use as our starting point and all the code for this exercise is in the
 
       refXform = UsdGeom.Xformable(refSphere)
       refXform.SetXformOpOrder([])
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
 
    produces
 
@@ -179,12 +179,12 @@ will use as our starting point and all the code for this exercise is in the
 
       refSphere2 = refStage.OverridePrim('/refSphere2')
       refSphere2.GetReferences().AddReference('./HelloWorld.usda')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    produces
 
-   .. code-block:: python
+   .. code-block:: usd
 
       #usda 1.0
 
@@ -213,7 +213,7 @@ will use as our starting point and all the code for this exercise is in the
 
       overSphere = UsdGeom.Sphere.Get(refStage, '/refSphere2/world')
       overSphere.GetDisplayColorAttr().Set( [(1, 0, 0)] )
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    Note that we don't need to call OverridePrim again because
@@ -265,7 +265,7 @@ will use as our starting point and all the code for this exercise is in the
 
    .. code-block:: python
 
-      print refStage.ExportToString()
+      print(refStage.ExportToString())
 
    .. code-block:: usd
                        
