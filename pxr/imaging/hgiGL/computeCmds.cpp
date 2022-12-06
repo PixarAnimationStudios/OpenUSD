@@ -135,9 +135,9 @@ HgiGLComputeCmds::PopDebugGroup()
 }
 
 void
-HgiGLComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiGLComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
-    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+    _ops.push_back( HgiGLOps::InsertMemoryBarrier(barrier) );
 }
 
 bool

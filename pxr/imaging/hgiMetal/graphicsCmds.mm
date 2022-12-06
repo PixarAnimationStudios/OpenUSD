@@ -812,7 +812,7 @@ HgiMetalGraphicsCmds::PopDebugGroup()
 }
 
 void
-HgiMetalGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
     

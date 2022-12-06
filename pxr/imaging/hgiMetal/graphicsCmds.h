@@ -113,7 +113,7 @@ public:
     void PopDebugGroup() override;
 
     HGIMETAL_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
     
     HGIMETAL_API
     void EnableParallelEncoder(bool enable);

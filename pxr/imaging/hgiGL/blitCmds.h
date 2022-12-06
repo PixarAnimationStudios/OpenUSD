@@ -76,7 +76,7 @@ public:
     void FillBuffer(HgiBufferHandle const& buffer, uint8_t value) override;
 
     HGIGL_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
 protected:
     friend class HgiGL;
