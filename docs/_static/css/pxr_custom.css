@@ -103,6 +103,12 @@ div.usd-tutorial-admonition > p {
   column-count: 4;
 }
 
+.threecolumn {
+  -webkit-column-count: 3; /* Chrome, Safari, Opera */
+  -moz-column-count: 3; /* Firefox */
+  column-count: 3;
+}
+
 .twocolumn {
   -webkit-column-count: 2; /* Chrome, Safari, Opera */
   -moz-column-count: 2; /* Firefox */
