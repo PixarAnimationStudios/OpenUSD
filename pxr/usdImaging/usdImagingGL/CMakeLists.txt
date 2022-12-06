@@ -1112,7 +1112,8 @@ pxr_register_test(testUsdImagingGLBasisCurvesWithScale
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 1.1 -offscreen -lighting -stage curve-scales-flat.usd -write testUsdImagingGLBasisCurvesWithScale.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasisCurvesWithScale_1.1.png
-    FAIL_PERCENT 30
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesWithScale
@@ -1122,7 +1123,8 @@ pxr_register_test(testUsdImagingGLBasisCurvesWithNormals
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexities 1.1 -frameAll -offscreen -lighting -stage curve-authored-normals.usd -write testUsdImagingGLBasisCurvesWithNormals.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasisCurvesWithNormals_1.1.png
-    FAIL_PERCENT 3
+    FAIL .05
+    FAIL_PERCENT .03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLBasisCurvesWithNormals
@@ -3870,7 +3872,7 @@ pxr_register_test(testUsdImagingGLPrimvarProcessing
 )
 
 pxr_register_test(testUsdImagingGLComposite
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -times 0 1 2 -stage moving_cubes.usda -camera /main_cam -clearOnce -rendererAov color -write testUsdImagingGLComposite.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -times 0 1 2 -stage moving_cubes.usda -camera /main_cam -presentComposite -rendererAov color -write testUsdImagingGLComposite.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLComposite_000.png
         testUsdImagingGLComposite_001.png
@@ -4082,6 +4084,7 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Low
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.0 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Low.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLGeomSubsets_Low.png
+    FAIL 1
     FAIL_PERCENT 2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -4093,6 +4096,7 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Medium
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.1 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Medium.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLGeomSubsets_Medium.png
+    FAIL 1
     FAIL_PERCENT 2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -4114,6 +4118,7 @@ pxr_register_test(testUsdImagingGLGeomSubsets_Quadrangulated
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Quadrangulated.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLGeomSubsets_Quadrangulated.png
+    FAIL 1
     FAIL_PERCENT 2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -4371,6 +4376,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage basicDrawing/shaders.usd -frameAll -write testUsdImagingGLBasicDrawing_shaders.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLBasicDrawing_shaders.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4383,6 +4389,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage basicDrawing/shaders_bindings.usd -frameAll -write testUsdImagingGLBasicDrawing_shadersBindings.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLBasicDrawing_shadersBindings.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4395,6 +4402,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -offscreen -stage basicDrawing/shaders-relative.usd -frameAll -write testUsdImagingGLBasicDrawing_shadersRelative.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLBasicDrawing_shadersRelative.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4409,6 +4417,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
             testUsdImagingGLBasicDrawing_shadersAnim_001.png
             testUsdImagingGLBasicDrawing_shadersAnim_002.png
             testUsdImagingGLBasicDrawing_shadersAnim_003.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4421,6 +4430,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.1 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_Adaptive.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLGeomSubsets_Adaptive.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4433,6 +4443,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.2 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_High.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLGeomSubsets_High.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4444,6 +4455,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.3 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLGeomSubsets.usda -write testUsdImagingGLGeomSubsets_VeryHigh.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLGeomSubsets_VeryHigh.png
+        FAIL 1
         FAIL_PERCENT 1
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -4478,7 +4490,7 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance3.usda -write testUsdImagingGLInstancing_instance3.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLInstancing_instance3.png
-        FAIL 0.01
+        FAIL 0.02
         FAIL_PERCENT 0.005
         WARN 0.02
         WARN_PERCENT 0.0025
