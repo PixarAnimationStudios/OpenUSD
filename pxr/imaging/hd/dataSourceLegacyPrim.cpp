@@ -86,6 +86,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
+    (materialSyncMode)
 
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
@@ -1281,6 +1282,10 @@ public:
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
             HdTokens->isLight,
+            _tokens->materialSyncMode,  // Part of UsdLux but not yet hydra
+                                        // here just so you can see it in the
+                                        // browser coming from legacy scene
+                                        // delegates.
         };
         return result;
     }
