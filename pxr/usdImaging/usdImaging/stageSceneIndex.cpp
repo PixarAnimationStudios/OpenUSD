@@ -28,6 +28,7 @@
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
 #include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
+#include "pxr/usdImaging/usdImaging/dataSourceStage.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -410,6 +411,10 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
         return s_emptyPrim;
     }
 
+    if (path.IsAbsoluteRootPath()) {
+        return { TfToken(), UsdImagingDataSourceStage::New(_stage) };
+    }
+
     const SdfPath primPath = path.GetPrimPath();
 
     UsdPrim prim = _stage->GetPrimAtPath(primPath);
@@ -428,7 +433,11 @@ UsdImagingStageSceneIndex::GetPrim(const SdfPath &path) const
     const TfToken imagingType =
         _GetImagingSubprimType(adapters, prim, subprim);
 
-    return {imagingType, _GetImagingSubprimData(adapters, prim, subprim)};
+    HdSceneIndexPrim sceneIndexPrim {
+        imagingType, _GetImagingSubprimData(adapters, prim, subprim)
+    };
+
+    return sceneIndexPrim;
 }
 
 // ---------------------------------------------------------------------------
@@ -560,6 +569,9 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
     UsdPrimRange range(subtreeRoot, _GetTraversalPredicate());
     for (UsdPrim prim : range) {
         if (prim.IsPseudoRoot()) {
+            // XXX for now, we have to make sure the prim at the absolute root
+            // path is "added"
+            addedPrims.emplace_back(SdfPath::AbsoluteRootPath(), TfToken());
             continue;
         }
 

@@ -11,6 +11,7 @@ pxr_library(usdImaging
         work
         geomUtil
         hd
+        hdar
         pxOsd
         sdf
         usd
@@ -39,6 +40,7 @@ pxr_library(usdImaging
         dataSourcePrim
         dataSourcePrimvars
         dataSourceRelationship
+        dataSourceStage
         dataSourceStageGlobals
         dataSourceVolume
         debugCodes
