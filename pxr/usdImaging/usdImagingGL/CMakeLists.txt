@@ -1399,19 +1399,21 @@ pxr_register_test(testUsdImagingGLPickAndHighlight
     TESTENV testUsdImagingGLPickAndHighlight
 )
 
-pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLPickAndHighlight_000.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLPickAndHighlight_SceneIndex
-    ENV
-        USD_IMAGING_GL_PICK_TEST_SKIP_INSTANCER_DETAILS=true
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
-)
+# This test requires native instancing support for scene indices.
+# Disabling for now.
+# pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
+#     IMAGE_DIFF_COMPARE
+#         testUsdImagingGLPickAndHighlight_000.png
+#     FAIL 1
+#     FAIL_PERCENT 1
+#     PERCEPTUAL
+#     EXPECTED_RETURN_CODE 0
+#     TESTENV testUsdImagingGLPickAndHighlight_SceneIndex
+#     ENV
+#         USD_IMAGING_GL_PICK_TEST_SKIP_INSTANCER_DETAILS=true
+#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+# )
 
 pxr_register_test(testUsdImagingGLHighlight
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLHighlight.png"
