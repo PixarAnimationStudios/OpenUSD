@@ -1,0 +1,53 @@
+--- src/CLI11.hpp	2022-10-31 20:58:18.000000000 -0700
++++ CLI11.h	2022-12-05 17:51:27.406748000 -0800
+@@ -31,6 +31,14 @@
+ // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
++// This header is not meant to be included in a .h file, to guard against
++// conflicts if a program includes their own CLI11 header and then transitively
++// includes this header.
++#ifdef PXR_CLI11_H
++#error This file should only be included once in any given source (.cpp) file.
++#endif
++#define PXR_CLI11_H
++
+ #pragma once
+ 
+ // Standard combined includes:
+@@ -57,6 +65,13 @@
+ #include <fstream>
+ #include <tuple>
+ 
++#include "pxr/pxr.h"
++
++// Guard against possible conflicts if this header is included in the
++// same file as another CLI11 header.
++#ifdef CLI11_VERSION
++#error This file cannot be included alongside a different CLI11 header.
++#endif
+ 
+ #define CLI11_VERSION_MAJOR 2
+ #define CLI11_VERSION_MINOR 3
+@@ -168,7 +183,13 @@
+ #include <sys/types.h>
+ #endif
+ 
++// Isolate symbols from other translation units that may have included their
++// own copy of CLI11 by wrapping in the pxr namespace as well as a secondary
++// hard-coded namespace. The latter is needed in case the outer pxr namespace
++// has been disabled.
++PXR_NAMESPACE_OPEN_SCOPE
+ 
++namespace pxr_CLI {
+ 
+ namespace CLI {
+ 
+@@ -9635,3 +9656,7 @@
+ 
+ 
+ } // namespace CLI
++
++} // namespace pxr_CLI
++
++PXR_NAMESPACE_CLOSE_SCOPE

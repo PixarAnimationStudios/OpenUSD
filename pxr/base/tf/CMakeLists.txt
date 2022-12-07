@@ -130,6 +130,7 @@ pxr_library(tf
         instantiateSingleton.h
         instantiateStacked.h
         instantiateType.h
+        pxrCLI11/CLI11.h
         pxrTslRobinMap/robin_growth_policy.h
         pxrTslRobinMap/robin_hash.h
         pxrTslRobinMap/robin_map.h
