@@ -13,7 +13,9 @@ body, .rst-content {
     font-family: var(--serif);
 }
 
-
+h4 {
+    font-weight: 650;
+}
 
 .bolditalic {
   font-weight: bold;
