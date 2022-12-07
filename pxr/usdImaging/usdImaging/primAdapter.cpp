@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -120,6 +121,10 @@ UsdImagingPrimAdapter::InvalidateImagingSubprim(
         TfToken const& subprim,
         TfTokenVector const& properties)
 {
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    }
+
     return HdDataSourceLocatorSet();
 }
 

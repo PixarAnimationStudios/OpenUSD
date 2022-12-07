@@ -217,4 +217,48 @@ UsdImagingDataSourceMeshPrim::Get(const TfToken & name)
     }
 }
 
+/*static*/
+HdDataSourceLocatorSet
+UsdImagingDataSourceMeshPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet locators;
+
+    for (const TfToken &propertyName : properties) {
+        if (propertyName == UsdGeomTokens->subdivisionScheme) {
+            locators.insert(HdMeshSchema::GetSubdivisionSchemeLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->faceVertexCounts ||
+                propertyName == UsdGeomTokens->faceVertexIndices ||
+                propertyName == UsdGeomTokens->holeIndices ||
+                propertyName == UsdGeomTokens->orientation) {
+            locators.insert(HdMeshSchema::GetTopologyLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->interpolateBoundary ||
+                propertyName == UsdGeomTokens->faceVaryingLinearInterpolation ||
+                propertyName == UsdGeomTokens->triangleSubdivisionRule ||
+                propertyName == UsdGeomTokens->creaseIndices ||
+                propertyName == UsdGeomTokens->creaseLengths ||
+                propertyName == UsdGeomTokens->creaseSharpnesses ||
+                propertyName == UsdGeomTokens->cornerIndices ||
+                propertyName == UsdGeomTokens->cornerSharpnesses) {
+            // XXX UsdGeomTokens->creaseMethod, when we add support for that.
+            locators.insert(HdMeshSchema::GetSubdivisionTagsLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->doubleSided)  {
+            locators.insert(HdMeshSchema::GetDoubleSidedLocator());
+        }
+    }
+
+    // Give base classes a chance to invalidate.
+    locators.insert(
+        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
+    return locators;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

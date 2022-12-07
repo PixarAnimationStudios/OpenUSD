@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -573,6 +574,7 @@ UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
     : _sceneIndexPath(sceneIndexPath)
     , _usdPrim(usdPrim)
     , _stageGlobals(stageGlobals)
+    , _primvars(nullptr)
 {
 }
 
@@ -611,6 +613,8 @@ UsdImagingDataSourcePrim::GetNames()
     }
     vec.push_back(UsdImagingSpecifierTokens->usdSpecifier);
     vec.push_back(HdPrimOriginSchemaTokens->primOrigin);
+    vec.push_back(HdPrimvarsSchemaTokens->primvars);
+
     return vec;
 }
 
@@ -671,6 +675,17 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         } else {
             return nullptr;
         }
+    } else if (name == HdPrimvarsSchemaTokens->primvars) {
+        auto primvars = UsdImagingDataSourcePrimvars::AtomicLoad(_primvars);
+        if (!primvars) {
+            primvars = UsdImagingDataSourcePrimvars::New(
+                _GetSceneIndexPath(),
+                _GetUsdPrim(),
+                UsdGeomPrimvarsAPI(_GetUsdPrim()),
+                _GetStageGlobals());
+            UsdImagingDataSourcePrimvars::AtomicStore(_primvars, primvars);
+        }
+        return primvars;
     } else if (name == HdVisibilitySchemaTokens->visibility) {
         UsdGeomImageable imageable(_GetUsdPrim());
         if (!imageable) {
@@ -743,8 +758,9 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
 
 /*static*/ HdDataSourceLocatorSet
 UsdImagingDataSourcePrim::Invalidate(
-        UsdPrim const& prim, const TfToken &subprim, 
-            const TfTokenVector &properties)
+        UsdPrim const& prim,
+        const TfToken &subprim, 
+        const TfTokenVector &properties)
 {
     HdDataSourceLocatorSet locators;
 

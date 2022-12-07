@@ -35,6 +35,7 @@
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -501,6 +502,8 @@ private:
     const SdfPath _sceneIndexPath;
     UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
+
+    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrim);

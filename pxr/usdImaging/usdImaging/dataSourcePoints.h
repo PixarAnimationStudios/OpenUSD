@@ -41,6 +41,15 @@ class UsdImagingDataSourcePointsPrim : public UsdImagingDataSourceGprim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointsPrim);
 
+    USDIMAGING_API
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
+
 private:
     UsdImagingDataSourcePointsPrim(
         const SdfPath &sceneIndexPath,

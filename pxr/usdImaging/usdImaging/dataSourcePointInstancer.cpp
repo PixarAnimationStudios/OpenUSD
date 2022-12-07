@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/instancerTopologySchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 
@@ -173,9 +174,10 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
                 UsdGeomPointInstancer(_GetUsdPrim()),
                 _GetStageGlobals());
     } else if (name == HdPrimvarsSchemaTokens->primvars) {
+
         // Note that we are not yet handling velocities, accelerations
         // and angularVelocities.
-        static const UsdImagingDataSourcePrimvars::CustomPrimvarMappings
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
             customPrimvarMappings =
                 {
                     { HdInstancerTokens->translate,
@@ -192,17 +194,22 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
                     }
                 };
 
-        auto primvars = UsdImagingDataSourcePrimvars::AtomicLoad(_primvars);
-        if (!primvars) {
-            primvars = UsdImagingDataSourcePrimvars::New(
+        HdContainerDataSourceHandle basePvs = HdContainerDataSource::Cast(
+            UsdImagingDataSourcePrim::Get(name));
+
+        HdContainerDataSourceHandle customPvs =
+            UsdImagingDataSourceCustomPrimvars::New(
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
-                UsdGeomPrimvarsAPI(_GetUsdPrim()),
                 customPrimvarMappings,
                 _GetStageGlobals());
-            UsdImagingDataSourcePrimvars::AtomicStore(_primvars, primvars);
+
+        if (basePvs) {
+            return HdOverlayContainerDataSource::New(basePvs, customPvs);
+        } else {
+            return customPvs;
         }
-        return primvars;
+
     } else {
         return UsdImagingDataSourcePrim::Get(name);
     }

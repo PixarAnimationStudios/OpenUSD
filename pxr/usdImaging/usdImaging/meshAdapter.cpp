@@ -90,6 +90,15 @@ UsdImagingMeshAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingMeshAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return UsdImagingDataSourceMeshPrim::Invalidate(prim, subprim, properties);
+}
+
 bool
 UsdImagingMeshAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
@@ -530,5 +539,6 @@ UsdImagingMeshAdapter::Get(UsdPrim const& prim,
 
     return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
 }
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
