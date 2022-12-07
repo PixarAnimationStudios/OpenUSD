@@ -480,7 +480,7 @@ UsdImagingStageSceneIndex::GetChildPrimPaths(
     for (const TfToken &subprim :
             _GetImagingSubprims(prim, _AdapterSetLookup(prim))){
         if (!subprim.IsEmpty()) {
-            result.push_back(primPath.AppendChild(subprim));
+            result.push_back(primPath.AppendProperty(subprim));
         }
     }
 
@@ -584,7 +584,7 @@ void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
 
         for (TfToken const& subprim : subprims) {
             const SdfPath subpath =
-                subprim.IsEmpty() ? primPath : primPath.AppendChild(subprim);
+                subprim.IsEmpty() ? primPath : primPath.AppendProperty(subprim);
 
             addedPrims.emplace_back(subpath,
                 _GetImagingSubprimType(adapters, prim, subprim));
@@ -780,7 +780,7 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
                     _usdPrimsToResync.push_back(primPath);
                 } else {
                     SdfPath const subpath = subprim.IsEmpty()
-                        ? primPath : primPath.AppendChild(subprim);
+                        ? primPath : primPath.AppendProperty(subprim);
                     dirtiedPrims.emplace_back(subpath, dirtyLocators);
                 }
 
