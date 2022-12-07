@@ -1777,10 +1777,10 @@ HdxTaskController::_SetBuiltInLightingState(
             _delegate.SetParameter(
                 _lightIds[i], HdTokens->transform, lights[i].GetTransform());
 
-            if (light.IsDomeLight()) {
+            if (lights[i].IsDomeLight()) {
                 _delegate.SetParameter(
                     _lightIds[i], HdLightTokens->textureFile,
-                    _GetDomeLightTexture(light));
+                    _GetDomeLightTexture(lights[i]));
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                 _lightIds[i], HdLight::DirtyParams | HdLight::DirtyTransform);
