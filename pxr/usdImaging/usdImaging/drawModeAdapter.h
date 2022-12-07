@@ -21,30 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_ADAPTER_H
-#define PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_ADAPTER_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_ADAPTER_H
+#define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_ADAPTER_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImagingGL/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class UsdImagingGLDrawModeAdapter
+/// \class UsdImagingDrawModeAdapter
 ///
 /// Delegate support for the drawMode attribute on UsdGeomModelAPI.
 ///
-class UsdImagingGLDrawModeAdapter : public UsdImagingPrimAdapter
+class UsdImagingDrawModeAdapter : public UsdImagingPrimAdapter
 {
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
-    USDIMAGINGGL_API
-    UsdImagingGLDrawModeAdapter();
+    USDIMAGING_API
+    UsdImagingDrawModeAdapter();
 
-    USDIMAGINGGL_API
-    ~UsdImagingGLDrawModeAdapter() override;
+    USDIMAGING_API
+    ~UsdImagingDrawModeAdapter() override;
 
     /// Called to populate the RenderIndex for this UsdPrim. The adapter is
     /// expected to create one or more Rprims in the render index using the
@@ -70,14 +70,14 @@ public:
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //
     
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void TrackVariability(UsdPrim const& prim,
                           SdfPath const& cachePath,
                           HdDirtyBits* timeVaryingBits,
                           UsdImagingInstancerContext const* 
                                       instancerContext = NULL) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void UpdateForTime(UsdPrim const& prim,
                        SdfPath const& cachePath, 
                        UsdTimeCode time,
@@ -89,38 +89,38 @@ public:
     /// \name Change Processing 
     // ---------------------------------------------------------------------- //
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath, 
                                       TfToken const& property) override;
 
     // Note: Resync/Remove are overridden so that we can resync/remove the
     // material and cards rprim together, since they are populated together.
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void ProcessPrimResync(SdfPath const& cachePath,
                            UsdImagingIndexProxy* index) override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void ProcessPrimRemoval(SdfPath const& cachePath,
                             UsdImagingIndexProxy* index) override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void MarkDirty(UsdPrim const& prim,
                    SdfPath const& cachePath,
                    HdDirtyBits dirty,
                    UsdImagingIndexProxy* index) override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void MarkTransformDirty(UsdPrim const& prim,
                             SdfPath const& cachePath,
                             UsdImagingIndexProxy* index) override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void MarkVisibilityDirty(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              UsdImagingIndexProxy* index) override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void MarkMaterialDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            UsdImagingIndexProxy* index) override;
@@ -129,40 +129,40 @@ public:
     /// \name Data access
     // ---------------------------------------------------------------------- //
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
                 UsdTimeCode time,
                 VtIntArray *outIndices) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     HdCullStyle GetCullStyle(UsdPrim const& prim,
                              SdfPath const& cachePath,
                              UsdTimeCode time) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     VtValue GetTopology(UsdPrim const& prim,
                         SdfPath const& cachePath,
                         UsdTimeCode time) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     GfRange3d GetExtent(UsdPrim const& prim, 
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     bool GetDoubleSided(UsdPrim const& prim, 
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     GfMatrix4d GetTransform(UsdPrim const& prim, 
                             SdfPath const& cachePath,
                             UsdTimeCode time,
                             bool ignoreRootTransform = false) const override;
 
-    USDIMAGINGGL_API
+    USDIMAGING_API
     SdfPath GetMaterialId(UsdPrim const& prim, 
                         SdfPath const& cachePath, 
                         UsdTimeCode time) const override;
@@ -173,7 +173,7 @@ public:
                                 UsdTimeCode time) const override;
   
 protected:
-    USDIMAGINGGL_API
+    USDIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;
 
@@ -255,4 +255,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_ADAPTER_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_ADAPTER_H

@@ -20,19 +20,19 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-#ifndef PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_SCENE_INDEX_H
-#define PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_SCENE_INDEX_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_SCENE_INDEX_H
+#define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_SCENE_INDEX_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImagingGL/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using UsdImagingGL_DrawModeStandinSharedPtr =
-    std::shared_ptr<class UsdImagingGL_DrawModeStandin>;
+using UsdImaging_DrawModeStandinSharedPtr =
+    std::shared_ptr<class UsdImaging_DrawModeStandin>;
 
-TF_DECLARE_REF_PTRS(UsdImagingGLDrawModeSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingDrawModeSceneIndex);
 
 /// A scene index replacing geometry based on the draw mode.
 ///
@@ -48,28 +48,28 @@ TF_DECLARE_REF_PTRS(UsdImagingGLDrawModeSceneIndex);
 /// Using a UsdPreviewSurface instead (so that it works accross different
 /// renderers) probably requires breaking up the geometry into several pieces.
 ///
-class UsdImagingGLDrawModeSceneIndex : public HdSingleInputFilteringSceneIndexBase
+class UsdImagingDrawModeSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
 public:
     /// inputArgs unused for now. In the future, we might use it to say that
     /// we want to break up the geometry and use UsdPreviewSurface to work
     /// across different renderers.
     /// 
-    USDIMAGINGGL_API
-    static UsdImagingGLDrawModeSceneIndexRefPtr
+    USDIMAGING_API
+    static UsdImagingDrawModeSceneIndexRefPtr
     New(const HdSceneIndexBaseRefPtr &inputSceneIndex,
         const HdContainerDataSourceHandle &inputArgs);
 
-    USDIMAGINGGL_API
-    ~UsdImagingGLDrawModeSceneIndex() override;
+    USDIMAGING_API
+    ~UsdImagingDrawModeSceneIndex() override;
     
-    USDIMAGINGGL_API
+    USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
-    USDIMAGINGGL_API
+    USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
-    UsdImagingGLDrawModeSceneIndex(
+    UsdImagingDrawModeSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex,
         const HdContainerDataSourceHandle &inputArgs);
 
@@ -104,7 +104,7 @@ private:
     // For prims with non-default drawmode, store a DrawModeStandin object
     // that can be queried for the stand-in geometry.
     // No path in the map is a prefix of any other path in the map.
-    std::map<SdfPath, UsdImagingGL_DrawModeStandinSharedPtr> _prims;
+    std::map<SdfPath, UsdImaging_DrawModeStandinSharedPtr> _prims;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

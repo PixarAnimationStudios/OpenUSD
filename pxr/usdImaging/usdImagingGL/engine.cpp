@@ -24,9 +24,8 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
-
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
@@ -956,7 +955,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
     if (_GetUseSceneIndices()) {
         _sceneIndex = UsdImagingStageSceneIndex::New();
         _renderIndex->InsertSceneIndex(
-            UsdImagingGLDrawModeSceneIndex::New(
+            UsdImagingDrawModeSceneIndex::New(
                 HdFlatteningSceneIndex::New(
                     UsdImagingPiPrototypePropagatingSceneIndex::New(
                         UsdImagingPrototypePruningSceneIndex::New(

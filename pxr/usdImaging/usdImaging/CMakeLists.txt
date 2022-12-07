@@ -12,6 +12,7 @@ pxr_library(usdImaging
         geomUtil
         hd
         hdar
+        hio
         pxOsd
         sdf
         usd
@@ -45,6 +46,8 @@ pxr_library(usdImaging
         dataSourceVolume
         debugCodes
         delegate
+        drawModeAdapter
+        drawModeSceneIndex
         indexProxy
         materialParamUtils
         modelSchema
@@ -102,6 +105,7 @@ pxr_library(usdImaging
         volumeAdapter
 
     PRIVATE_CLASSES
+        drawModeStandin
         sceneIndexPrimView
         piPrototypeSceneIndex
 

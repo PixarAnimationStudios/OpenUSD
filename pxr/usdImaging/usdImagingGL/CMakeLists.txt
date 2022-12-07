@@ -40,8 +40,6 @@ pxr_library(usdImagingGL
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        drawModeAdapter
-        drawModeSceneIndex
         engine
         renderParams
 
@@ -49,9 +47,6 @@ pxr_library(usdImagingGL
         api.h
         rendererSettings.h
         version.h
-
-    PRIVATE_CLASSES
-        drawModeStandin
 
     PRIVATE_HEADERS
         unitTestGLDrawing.h

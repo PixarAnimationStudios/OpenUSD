@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#include "pxr/usdImaging/usdImagingGL/drawModeStandin.h"
+#include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -62,25 +62,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////////////////////////
 ///
-/// UsdImagingGL_DrawModeStandin implementation
+/// UsdImaging_DrawModeStandin implementation
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
 const HdSceneIndexPrim &
-UsdImagingGL_DrawModeStandin::GetPrim() const
+UsdImaging_DrawModeStandin::GetPrim() const
 {
     static HdSceneIndexPrim empty{ TfToken(), nullptr };
     return empty;
 }
 
 HdSceneIndexPrim
-UsdImagingGL_DrawModeStandin::GetChildPrim(const TfToken &name) const
+UsdImaging_DrawModeStandin::GetChildPrim(const TfToken &name) const
 {
     return { _GetChildPrimType(name), _GetChildPrimSource(name) };
 }
 
 SdfPathVector
-UsdImagingGL_DrawModeStandin::GetChildPrimPaths() const
+UsdImaging_DrawModeStandin::GetChildPrimPaths() const
 {
     const TfTokenVector &childNames = _GetChildNames();
     SdfPathVector result;
@@ -92,7 +92,7 @@ UsdImagingGL_DrawModeStandin::GetChildPrimPaths() const
 }
 
 void
-UsdImagingGL_DrawModeStandin::ComputePrimAddedEntries(
+UsdImaging_DrawModeStandin::ComputePrimAddedEntries(
     HdSceneIndexObserver::AddedPrimEntries * entries) const
 {
     entries->push_back({_path, TfToken()});
@@ -614,12 +614,12 @@ private:
 /// Stand-in consisting of a basis curves prim called boundsCurves showing the edges
 /// of the box defined by extent.
 ///
-class _BoundsStandin : public UsdImagingGL_DrawModeStandin
+class _BoundsStandin : public UsdImaging_DrawModeStandin
 {
 public:
     _BoundsStandin(const SdfPath &path,
              const HdContainerDataSourceHandle &primSource)
-      : UsdImagingGL_DrawModeStandin(path, primSource)
+      : UsdImaging_DrawModeStandin(path, primSource)
     {
     }
 
@@ -832,12 +832,12 @@ private:
 /// Stand-in consisting of a basis curves prim called originCurves showing three
 /// perpendicular lines of unit length starting from the origin of the prim.
 ///
-class _OriginStandin : public UsdImagingGL_DrawModeStandin
+class _OriginStandin : public UsdImaging_DrawModeStandin
 {
 public:
     _OriginStandin(const SdfPath &path,
                    const HdContainerDataSourceHandle &primSource)
-      : UsdImagingGL_DrawModeStandin(path, primSource)
+      : UsdImaging_DrawModeStandin(path, primSource)
     {
     }
 
@@ -1913,12 +1913,12 @@ _ComputeMaterialColorInputLocators()
 };
 
 
-class _CardsStandin : public UsdImagingGL_DrawModeStandin
+class _CardsStandin : public UsdImaging_DrawModeStandin
 {
 public:
     _CardsStandin(const SdfPath &path,
              const HdContainerDataSourceHandle &primSource)
-      : UsdImagingGL_DrawModeStandin(path, primSource)
+      : UsdImaging_DrawModeStandin(path, primSource)
       , _dataCache(std::make_shared<_CardsDataCache>(path, primSource))
     {
     }
@@ -2031,8 +2031,8 @@ private:
 ///
 ///////////////////////////////////////////////////////////////////////////////
 
-UsdImagingGL_DrawModeStandinSharedPtr
-UsdImagingGL_GetDrawModeStandin(const TfToken &drawMode,
+UsdImaging_DrawModeStandinSharedPtr
+UsdImaging_GetDrawModeStandin(const TfToken &drawMode,
                                 const SdfPath &path,
                                 const HdContainerDataSourceHandle &primSource)
 {

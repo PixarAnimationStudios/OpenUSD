@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImagingGL/drawModeStandin.h"
+#include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 
@@ -30,27 +30,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdImagingGLDrawModeSceneIndexRefPtr
-UsdImagingGLDrawModeSceneIndex::New(
+UsdImagingDrawModeSceneIndexRefPtr
+UsdImagingDrawModeSceneIndex::New(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     const HdContainerDataSourceHandle &inputArgs)
 {
     return TfCreateRefPtr(
-        new UsdImagingGLDrawModeSceneIndex(
+        new UsdImagingDrawModeSceneIndex(
             inputSceneIndex, inputArgs));
 }
 
-UsdImagingGLDrawModeSceneIndex::UsdImagingGLDrawModeSceneIndex(
+UsdImagingDrawModeSceneIndex::UsdImagingDrawModeSceneIndex(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     const HdContainerDataSourceHandle &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 {
 }
 
-UsdImagingGLDrawModeSceneIndex::~UsdImagingGLDrawModeSceneIndex() = default;
+UsdImagingDrawModeSceneIndex::~UsdImagingDrawModeSceneIndex() = default;
 
 HdSceneIndexPrim
-UsdImagingGLDrawModeSceneIndex::GetPrim(
+UsdImagingDrawModeSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
     TRACE_FUNCTION();
@@ -78,7 +78,7 @@ UsdImagingGLDrawModeSceneIndex::GetPrim(
 }
 
 SdfPathVector
-UsdImagingGLDrawModeSceneIndex::GetChildPrimPaths(
+UsdImagingDrawModeSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     TRACE_FUNCTION();
@@ -106,7 +106,7 @@ UsdImagingGLDrawModeSceneIndex::GetChildPrimPaths(
 }
 
 void
-UsdImagingGLDrawModeSceneIndex::_DeleteSubtree(const SdfPath &path)
+UsdImagingDrawModeSceneIndex::_DeleteSubtree(const SdfPath &path)
 {
     auto it = _prims.lower_bound(path);
     while (it != _prims.end() && it->first.HasPrefix(path)) {
@@ -149,12 +149,12 @@ void
 _RefreshDrawModeStandin(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     const SdfPath &path,
-    UsdImagingGL_DrawModeStandinSharedPtr *standin,
+    UsdImaging_DrawModeStandinSharedPtr *standin,
     HdSceneIndexObserver::RemovedPrimEntries *removedEntries,
     HdSceneIndexObserver::AddedPrimEntries *addedEntries)
 {
-    UsdImagingGL_DrawModeStandinSharedPtr newStandin =
-        UsdImagingGL_GetDrawModeStandin(
+    UsdImaging_DrawModeStandinSharedPtr newStandin =
+        UsdImaging_GetDrawModeStandin(
             (*standin)->GetDrawMode(),
             path,  
             inputSceneIndex->GetPrim(path).dataSource);
@@ -172,7 +172,7 @@ _RefreshDrawModeStandin(
 }
 
 bool
-UsdImagingGLDrawModeSceneIndex::_HasDrawModeAncestor(
+UsdImagingDrawModeSceneIndex::_HasDrawModeAncestor(
     const SdfPath &path)
 {
     if (_prims.empty()) {
@@ -198,14 +198,14 @@ UsdImagingGLDrawModeSceneIndex::_HasDrawModeAncestor(
 // Called from _PrimsDirtied on main-thread so we have enough stack space
 // to just recurse.
 void
-UsdImagingGLDrawModeSceneIndex::_RecursePrims(
+UsdImagingDrawModeSceneIndex::_RecursePrims(
     const TfToken &mode,
     const SdfPath &path,
     const HdSceneIndexPrim &prim,
     HdSceneIndexObserver::AddedPrimEntries *entries)
 {
-    if (UsdImagingGL_DrawModeStandinSharedPtr standin =
-            UsdImagingGL_GetDrawModeStandin(mode, path, prim.dataSource)) {
+    if (UsdImaging_DrawModeStandinSharedPtr standin =
+            UsdImaging_GetDrawModeStandin(mode, path, prim.dataSource)) {
         // The prim needs to be replaced by stand-in geometry.
         // Send added entries for stand-in geometry.
         standin->ComputePrimAddedEntries(entries);
@@ -223,7 +223,7 @@ UsdImagingGLDrawModeSceneIndex::_RecursePrims(
 }
 
 void
-UsdImagingGLDrawModeSceneIndex::_PrimsAdded(
+UsdImagingDrawModeSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
@@ -243,8 +243,8 @@ UsdImagingGLDrawModeSceneIndex::_PrimsAdded(
         const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
         const TfToken drawMode = _GetDrawMode(prim);
 
-        if (UsdImagingGL_DrawModeStandinSharedPtr standin =
-                UsdImagingGL_GetDrawModeStandin(
+        if (UsdImaging_DrawModeStandinSharedPtr standin =
+                UsdImaging_GetDrawModeStandin(
                     drawMode, path, prim.dataSource)) {
             // The prim needs to be replaced by stand-in geometry.
             standin->ComputePrimAddedEntries(&newEntries);
@@ -259,7 +259,7 @@ UsdImagingGLDrawModeSceneIndex::_PrimsAdded(
 }
 
 void
-UsdImagingGLDrawModeSceneIndex::_PrimsRemoved(
+UsdImagingDrawModeSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
@@ -280,7 +280,7 @@ UsdImagingGLDrawModeSceneIndex::_PrimsRemoved(
 }
 
 void
-UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
+UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
@@ -325,8 +325,8 @@ UsdImagingGLDrawModeSceneIndex::_PrimsDirtied(
             const auto it = _prims.find(path);
             if (it == _prims.end()) {
                 // Prim used to have default draw mode.
-                if (UsdImagingGL_DrawModeStandinSharedPtr standin =
-                        UsdImagingGL_GetDrawModeStandin(
+                if (UsdImaging_DrawModeStandinSharedPtr standin =
+                        UsdImaging_GetDrawModeStandin(
                             drawMode, path, prim.dataSource)) {
                     // Prim now has non-default draw mode and we need to use
                     // stand-in geometry.

@@ -21,21 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#ifndef PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_STANDIN_H
-#define PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_STANDIN_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
+#define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImagingGL/api.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImagingGL_DrawModeStandin
+/// \class UsdImaging_DrawModeStandin
 ///
 /// Provides stand-in geometry for a prim with non-default draw mode.
 ///
-class UsdImagingGL_DrawModeStandin
+class UsdImaging_DrawModeStandin
 {
 public:
     virtual TfToken GetDrawMode() const = 0;
@@ -65,7 +65,7 @@ protected:
     virtual TfToken _GetChildPrimType(const TfToken &name) const = 0;
     virtual HdContainerDataSourceHandle _GetChildPrimSource(const TfToken &name) const = 0;
 
-    UsdImagingGL_DrawModeStandin(
+    UsdImaging_DrawModeStandin(
         const SdfPath &path,
         const HdContainerDataSourceHandle &primSource)
       : _path(path)
@@ -78,18 +78,18 @@ protected:
     HdContainerDataSourceHandle const _primSource;
 };
 
-using UsdImagingGL_DrawModeStandinSharedPtr =
-    std::shared_ptr<UsdImagingGL_DrawModeStandin>;
+using UsdImaging_DrawModeStandinSharedPtr =
+    std::shared_ptr<UsdImaging_DrawModeStandin>;
 
 /// Given a draw mode and the path and data source for a prim (from the input scene index
-/// to the UsdImagingGLDrawModeSceneIndex), return the stand-in geometry or nullptr
+/// to the UsdImagingDrawModeSceneIndex), return the stand-in geometry or nullptr
 /// (if draw mode is default or invalid).
 ///
-UsdImagingGL_DrawModeStandinSharedPtr
-UsdImagingGL_GetDrawModeStandin(const TfToken &drawMode,
+UsdImaging_DrawModeStandinSharedPtr
+UsdImaging_GetDrawModeStandin(const TfToken &drawMode,
                                 const SdfPath &path,
                                 const HdContainerDataSourceHandle &primSource);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_IMAGING_GL_DRAW_MODE_STANDIN_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
