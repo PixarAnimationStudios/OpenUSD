@@ -108,7 +108,7 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
             faceVertexCounts.push_back(face.size());
             for (int p = face.pointsBegin; p != face.pointsEnd; ++p) {
                 faceVertexIndices.push_back(objPoints[p].vertIndex);
-                faceUVIndices.push_back(objPoints[p].uvIndex);
+                if (objPoints[p].uvIndex >= 0) faceUVIndices.push_back(objPoints[p].uvIndex);
             }
         }
 
@@ -116,11 +116,19 @@ UsdObjTranslateObjToUsd(const UsdObjStream &objStream)
         mesh.GetFaceVertexCountsAttr().Set(faceVertexCounts);
         mesh.GetFaceVertexIndicesAttr().Set(faceVertexIndices);
 
-        UsdGeomPrimvar uvPrimVar = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
-            TfToken("uv"), SdfValueTypeNames->TexCoord2fArray,
-            UsdGeomTokens->faceVarying);
-        uvPrimVar.GetAttr().Set(usdUVs);
-        uvPrimVar.CreateIndicesAttr().Set(faceUVIndices);
+        // Create a primvar for the UVs if stored in the obj data. Note that
+        // it's valid in this layer for the UV mapping to not be fully defined
+        // in the obj data. For example, this layer may just provide the texture
+        // coordinates and another layer the indexing, or vice versa.
+        if (usdUVs.size() || faceUVIndices.size()) {
+          UsdGeomPrimvar uvPrimVar = UsdGeomPrimvarsAPI(mesh).CreatePrimvar(
+              TfToken("uv"), SdfValueTypeNames->TexCoord2fArray,
+              UsdGeomTokens->faceVarying);
+          if (usdUVs.size())
+            uvPrimVar.GetAttr().Set(usdUVs);
+          if (faceUVIndices.size())
+            uvPrimVar.CreateIndicesAttr().Set(faceUVIndices); // indexed
+        }
 
         // Set extent.
         mesh.GetExtentAttr().Set(extentArray);
