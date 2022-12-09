@@ -301,7 +301,7 @@ pxr_build_test(testSdfPathTable
 pxr_build_test(testSdfPathThreading
     LIBRARIES
         sdf
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        tf
     CPPFILES
         testenv/testSdfPathThreading.cpp
 )
