@@ -780,7 +780,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             'threading=multi', 
             'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
-            '--with-program_options',
             '--with-regex'
         ]
 
