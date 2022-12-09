@@ -1149,6 +1149,24 @@ UsdImagingDelegate::ApplyPendingUpdates()
     }
 }
 
+using PathRange = UsdNotice::ObjectsChanged::PathRange;
+
+// Helper function to check if a path entry has attribute connection did change
+// notice
+bool
+_HasConnectionChanged(const SdfPath &path, const PathRange &pathRange)
+{
+    PathRange::const_iterator itr = pathRange.find(path);
+    if (itr != pathRange.end()) {
+        for (const SdfChangeList::Entry *entry : itr.base()->second) {
+            if (entry->flags.didChangeAttributeConnection) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 void 
 UsdImagingDelegate::_OnUsdObjectsChanged(
     UsdNotice::ObjectsChanged const& notice,
@@ -1160,35 +1178,45 @@ UsdImagingDelegate::_OnUsdObjectsChanged(
                             "from stage with root layer @%s@\n",
                         sender->GetRootLayer()->GetIdentifier().c_str());
 
-    using PathRange = UsdNotice::ObjectsChanged::PathRange;
+    // If there was a connection changed inside a shade graph, this also
+    // requires dumping all cached data since we need to rebuild the shader.
 
     // These paths are subtree-roots representing entire subtrees that may have
     // changed. In this case, we must dump all cached data below these points
     // and repopulate those trees.
     const PathRange pathsToResync = notice.GetResyncedPaths();
-    _usdPathsToResync.insert(_usdPathsToResync.end(), 
-                          pathsToResync.begin(), pathsToResync.end());
-    
+    for (const auto& path : pathsToResync) {
+        if (path.IsPrimPropertyPath() && 
+                _HasConnectionChanged(path, pathsToResync)) {
+            // Resync the prim path instead of the property path:
+            _usdPathsToResync.emplace_back(path.GetPrimPath());
+        } else {
+            _usdPathsToResync.emplace_back(path);
+        }
+    }
+
     // These paths represent objects which have been modified in a 
     // non-structural way, for example setting a value. These paths may be paths
     // to prims or properties, in which case we should sparsely invalidate
     // cached data associated with the path.
     const PathRange pathsToUpdate = notice.GetChangedInfoOnlyPaths();
-    for (PathRange::const_iterator it = pathsToUpdate.begin(); 
-         it != pathsToUpdate.end(); ++it) {
-        if (it->IsAbsoluteRootOrPrimPath()) {
+    for (const auto &path : pathsToUpdate) {
+        if (path.IsAbsoluteRootOrPrimPath()) {
             // Ignore all changes to prims that have not changed any field
             // values, since these changes cannot affect any composed values 
             // consumed by the adapters.
-            const TfTokenVector changedFields = it.GetChangedFields();
+            const TfTokenVector changedFields = notice.GetChangedFields(path);
             if (!changedFields.empty()) {
-                TfTokenVector& changedPrimInfoFields = _usdPathsToUpdate[*it];
-                changedPrimInfoFields.insert(
-                    changedPrimInfoFields.end(),
-                    changedFields.begin(), changedFields.end());
+                TfTokenVector &changedPrimInfoFields = _usdPathsToUpdate[path];
+                changedPrimInfoFields.insert(changedPrimInfoFields.end(),
+                        changedFields.begin(), changedFields.end());
             }
-        } else if (it->IsPropertyPath()) {
-            _usdPathsToUpdate.emplace(*it, TfTokenVector());
+        } else if (path.IsPropertyPath()) {
+            _usdPathsToUpdate.emplace(path, TfTokenVector());
+            if (_HasConnectionChanged(path, pathsToUpdate)) {
+                // Resync the prim path as well:
+                _usdPathsToResync.emplace_back(path.GetPrimPath());
+            }
         }
     }
 
