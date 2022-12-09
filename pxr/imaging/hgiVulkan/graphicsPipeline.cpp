@@ -97,6 +97,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
 
     std::vector<VkVertexInputBindingDescription> vertBufs;
     std::vector<VkVertexInputAttributeDescription> vertAttrs;
+    std::vector<VkVertexInputBindingDivisorDescriptionEXT> vertBindingDivisors;
 
     for (HgiVertexBufferDesc const& vbo : desc.vertexBuffers) {
         for (HgiVertexAttributeDesc const& va : vbo.vertexAttributes) {
@@ -111,9 +112,30 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
         VkVertexInputBindingDescription vib;
         vib.binding = vbo.bindingIndex;
         vib.stride = vbo.vertexStride;
-        vib.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        
+        if (vbo.vertexStepFunction ==
+            HgiVertexBufferStepFunctionPerDrawCommand) {
+            // Set the divisor such that the attribute index will advance only 
+            // according to the base instance at the start of each draw in a 
+            // multi-draw command.
+            vib.inputRate = VK_VERTEX_INPUT_RATE_INSTANCE;
+    
+            VkVertexInputBindingDivisorDescriptionEXT vibDivisor;
+            vibDivisor.binding = vbo.bindingIndex;
+            vibDivisor.divisor = _device->GetDeviceCapabilities().
+                vkVertexAttributeDivisorProperties.maxVertexAttribDivisor;
+            vertBindingDivisors.push_back(std::move(vibDivisor));
+        } else {
+            vib.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        }
         vertBufs.push_back(std::move(vib));
     }
+
+    VkPipelineVertexInputDivisorStateCreateInfoEXT vertexInputDivisor =
+        {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_EXT};
+    vertexInputDivisor.pVertexBindingDivisors = vertBindingDivisors.data();
+    vertexInputDivisor.vertexBindingDivisorCount =
+        (uint32_t) vertBindingDivisors.size();
 
     VkPipelineVertexInputStateCreateInfo vertexInput =
         {VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO};
@@ -121,6 +143,8 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     vertexInput.vertexAttributeDescriptionCount = (uint32_t) vertAttrs.size();
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
+    vertexInput.pNext = &vertexInputDivisor;
+    
     pipeCreateInfo.pVertexInputState = &vertexInput;
 
     //

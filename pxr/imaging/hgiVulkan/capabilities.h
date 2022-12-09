@@ -55,9 +55,14 @@ public:
 
     bool supportsTimeStamps;
     VkPhysicalDeviceProperties vkDeviceProperties;
+    VkPhysicalDeviceProperties2 vkDeviceProperties2;
+    VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT
+        vkVertexAttributeDivisorProperties;
     VkPhysicalDeviceFeatures vkDeviceFeatures;
     VkPhysicalDeviceFeatures2 vkDeviceFeatures2;
     VkPhysicalDeviceDescriptorIndexingFeaturesEXT vkIndexingFeatures;
+    VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
+        vkVertexAttributeDivisorFeatures;
     VkPhysicalDeviceMemoryProperties vkMemoryProperties;
 };
 

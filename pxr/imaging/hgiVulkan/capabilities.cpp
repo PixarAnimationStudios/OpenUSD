@@ -57,13 +57,28 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkGetPhysicalDeviceFeatures(physicalDevice, &vkDeviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkMemoryProperties);
 
+    // Vertex attribute divisor properties ext
+    vkVertexAttributeDivisorProperties.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
+    vkVertexAttributeDivisorProperties.pNext = nullptr;
+        
+    vkDeviceProperties2.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    vkDeviceProperties2.properties = vkDeviceProperties;
+    vkDeviceProperties2.pNext = &vkVertexAttributeDivisorProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &vkDeviceProperties2);
+
+    // Vertex attribute divisor features ext
+    vkVertexAttributeDivisorFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
+    vkVertexAttributeDivisorFeatures.pNext = nullptr;
+
     // Indexing features ext for resource bindings
-    vkIndexingFeatures.pNext = nullptr;
     vkIndexingFeatures.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+    vkIndexingFeatures.pNext = &vkVertexAttributeDivisorFeatures;
 
     // Query device features
-    vkDeviceFeatures2.pNext = nullptr;
     vkDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
     vkDeviceFeatures2.pNext = &vkIndexingFeatures;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &vkDeviceFeatures2);
@@ -74,6 +89,9 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
             vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
             vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
     #endif
+
+    TF_VERIFY(
+        vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor);
 
     if (HgiVulkanIsDebugEnabled()) {
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);
