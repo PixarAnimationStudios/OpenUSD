@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,43 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H
-#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H
-
-#include "pxr/pxr.h"
-#include "hdPrman/gprim.h"
-#include "pxr/imaging/hd/mesh.h"
-
-#include "Riley.h"
+#include "hdPrman/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_Mesh final : public HdPrman_Gprim<HdMesh>
-{
-public:
-    using BASE = HdPrman_Gprim<HdMesh>;
-
-    HF_MALLOC_TAG_NEW("new HdPrman_Mesh");
-
-    HdPrman_Mesh(SdfPath const& id, const bool isMeshLight);
-
-    HdDirtyBits GetInitialDirtyBitsMask() const override;
-
-protected:
-    RtPrimVarList
-    _ConvertGeometry(HdPrman_RenderParam *renderParam,
-                     HdSceneDelegate *sceneDelegate,
-                     const SdfPath &id,
-                     RtUString *primType,
-                     std::vector<HdGeomSubset> *geomSubsets) override;
-
-    bool _PrototypeOnly();
-
-
-private:
-    bool _isMeshLight;
-};
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanTokens, HD_PRMAN_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MESH_H

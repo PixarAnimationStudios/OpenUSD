@@ -98,6 +98,7 @@ pxr_plugin(${PXR_PACKAGE}
         rixStrings
         sampleFilter
         sphere
+        tokens
         volume
         xcpt
         ${optionalPublicClasses}

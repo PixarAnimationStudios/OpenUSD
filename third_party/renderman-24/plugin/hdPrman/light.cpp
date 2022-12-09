@@ -23,6 +23,7 @@
 //
 #include "hdPrman/light.h"
 #include "hdPrman/material.h"
+#include "hdPrman/mesh.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/rixStrings.h"
@@ -60,6 +61,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((lightGroup,                   "inputs:ri:light:lightGroup"))
     ((colorMapGamma,                "inputs:ri:light:colorMapGamma"))
     ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
+
+    ((meshLightSourceMesh,          "sourceMesh"))
 );
 
 TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, true,
@@ -185,6 +188,7 @@ _PopulateNodeFromLightParams(HdSceneDelegate *sceneDelegate,
     static const RtUString us_PxrCylinderLight("PxrCylinderLight");
     static const RtUString us_PxrSphereLight("PxrSphereLight");
     static const RtUString us_PxrDistantLight("PxrDistantLight");
+    static const RtUString us_PxrMeshLight("PxrMeshLight");
     static const RtUString us_angleExtent("angleExtent");
     static const RtUString us_lightColorMap("lightColorMap");
     static const RtUString us_default("default");
@@ -201,6 +205,7 @@ _PopulateNodeFromLightParams(HdSceneDelegate *sceneDelegate,
     static const RtUString us_lightGroup("lightGroup");
     static const RtUString us_colorMapGamma("colorMapGamma");
     static const RtUString us_colorMapSaturation("colorMapSaturation");
+    static const RtUString us_textureColor("textureColor");    
 
     lightNodes->push_back({
         riley::ShadingNode::Type::k_Light, // type
@@ -481,6 +486,8 @@ _PopulateNodeFromLightParams(HdSceneDelegate *sceneDelegate,
         lightNode.name = us_PxrCylinderLight;
     } else if (hdLightType == HdPrimTypeTokens->sphereLight) {
         lightNode.name = us_PxrSphereLight;
+    } else if (hdLightType == HdPrimTypeTokens->meshLight) {
+        lightNode.name = us_PxrMeshLight;
     } else if (hdLightType == HdPrimTypeTokens->distantLight) {
         lightNode.name = us_PxrDistantLight;
         VtValue angle =
@@ -682,15 +689,102 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_PxrCylinderLight("PxrCylinderLight");
     static const RtUString us_PxrSphereLight("PxrSphereLight");
     static const RtUString us_PxrDistantLight("PxrDistantLight");
+    static const RtUString us_PxrMeshLight("PxrMeshLight");
     static const RtUString us_shadowSubset("shadowSubset");
     static const RtUString us_default("default");
 
-    HdPrman_RenderParam * const param =
-        static_cast<HdPrman_RenderParam*>(renderParam);
-
-    riley::Riley *const riley = param->AcquireRiley();
 
     SdfPath id = GetId();
+
+    // Set default riley args.
+    riley::GeometryPrototypeId geometryPrototypeId = 
+        riley::GeometryPrototypeId::InvalidId();
+    riley::MaterialId instanceMaterialId = 
+        riley::MaterialId::InvalidId();
+
+    HdPrman_RenderParam * const param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
+
+    // Early mesh light tests. See if the geometry prototype exists (yet).
+    // Sprims get created before rprims, but for mesh lights we *need* the
+    // source mesh rprim, since that's our geometry prototype. If it hasn't
+    // yet been created, we return early. In that case, the light is still 
+    // marked as "dirty", so this will run again.
+    const VtValue sourceMesh = sceneDelegate->GetLightParamValue(id, 
+            _tokens->meshLightSourceMesh);
+
+    if (sourceMesh.IsHolding<SdfPath>()) {
+
+        const SdfPath sourceMeshPath = sourceMesh.UncheckedGet<SdfPath>();
+        const HdRprim *rprim = 
+                sceneDelegate->GetRenderIndex().GetRprim(sourceMeshPath);
+
+        if (!rprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.
+            return;            
+        }
+
+        auto mesh = static_cast<const HdPrman_Mesh*>(rprim);
+        std::vector<riley::GeometryPrototypeId> prototypeIds = 
+                mesh->GetPrototypeIds();
+
+        if (prototypeIds.empty()) {
+            TF_WARN("Could not find prototype for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Light stays dirty.
+            return;
+        }
+
+        // Find geometry prototype id.
+        for (const auto &protoTypeId: prototypeIds) {
+            if (protoTypeId != riley::GeometryPrototypeId::InvalidId()) {
+                geometryPrototypeId = protoTypeId;
+                break;
+            }
+        }
+
+        // Find instance material id.
+        const SdfPath materialPath = sceneDelegate->GetMaterialId(
+                sourceMeshPath);
+        if (materialPath == SdfPath()) {
+            // Leave the light "dirty" and return.
+            return;
+        } 
+        const HdSprim *sprim = 
+                sceneDelegate->GetRenderIndex().GetSprim(
+                        HdSprimTypeTokens->material,
+                        materialPath);
+        if (!sprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.            
+            return;
+        }
+        auto hdPrmanMaterial = static_cast<const HdPrmanMaterial*>(sprim);
+        instanceMaterialId = hdPrmanMaterial->GetMaterialId();
+
+        if (instanceMaterialId == riley::MaterialId::InvalidId()) {
+            TF_WARN("Could not find material for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Stay dirty. Return.
+            return;
+        }
+
+        // Note: If we've returned early, we'll need to revisit this light 
+        // once the other prims have been processed. This will continue 
+        // until we succeed (and "bits" is marked "clean", which happens 
+        // below). In the meshlight case, we're synthesizing the 
+        // dependencies, so we know we'll succeed quickly. However, misuse 
+        // of this code might result in a loop.
+
+        // TODO: Dependency tracking here?
+    }
+
+    riley::Riley *const riley = param->AcquireRiley();
 
     HdChangeTracker& changeTracker = 
         sceneDelegate->GetRenderIndex().GetChangeTracker();
@@ -812,6 +906,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
     // TODO: portals
 
+    // Create the light shader.
     _shaderId = riley->CreateLightShader(
         riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
         {static_cast<uint32_t>(lightNodes.size()), lightNodes.data()},
@@ -872,6 +967,10 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         if (radius.IsHolding<float>()) {
             geomScale *= radius.UncheckedGet<float>() / 0.5;
         }
+    } else if (lightNode.name == us_PxrMeshLight) {
+        // Our mesh light geom is a duplicate. It should not be camera 
+        // visible.
+        attrs.SetInteger(RixStr.k_visibility_camera, 0);
     }
 
     geomMat.SetScale(geomScale);
@@ -915,14 +1014,16 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     _instanceId = riley->CreateLightInstance(
         riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
         riley::GeometryPrototypeId::InvalidId(), // no group
-        riley::GeometryPrototypeId::InvalidId(), // no geo
-        riley::MaterialId::InvalidId(), // no material
+        geometryPrototypeId, // No geo id, unless this is a mesh light.
+        instanceMaterialId, // No material id, unless this is a mesh light.
         _shaderId,
         coordsysList,
         xform,
         attrs);
 
-    *dirtyBits = HdChangeTracker::Clean;
+    if (dirtyBits) {
+        *dirtyBits = HdChangeTracker::Clean;
+    }
 }
 
 /* virtual */

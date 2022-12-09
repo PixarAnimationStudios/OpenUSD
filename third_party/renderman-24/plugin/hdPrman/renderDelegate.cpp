@@ -43,6 +43,7 @@
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
 #include "hdPrman/resourceRegistry.h"
+#include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
 
 #include "pxr/imaging/hd/bprim.h"
@@ -86,6 +87,9 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
     HdPrimTypeTokens->volume,
+
+    // New type, specific to mesh light source geom.
+    HdPrmanTokens->meshLightSourceGeom,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -100,6 +104,7 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
+    HdPrimTypeTokens->meshLight,
     HdPrimTypeTokens->pluginLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
@@ -305,8 +310,12 @@ HdRprim *
 HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId)
 {
-    if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdPrman_Mesh(rprimId);
+    bool isMeshLight = false;
+    if (typeId == HdPrmanTokens->meshLightSourceGeom) {
+        isMeshLight = true;
+        return new HdPrman_Mesh(rprimId, isMeshLight);
+    } else if (typeId == HdPrimTypeTokens->mesh) {
+        return new HdPrman_Mesh(rprimId, isMeshLight);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
     } if (typeId == HdPrimTypeTokens->cone) {
@@ -352,6 +361,7 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->meshLight ||
                typeId == HdPrimTypeTokens->pluginLight) {
         sprim = new HdPrmanLight(sprimId, typeId);
 
@@ -395,6 +405,7 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->meshLight ||
                typeId == HdPrimTypeTokens->pluginLight) {
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {

@@ -54,9 +54,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((displacementBoundSphere, "displacementbound:sphere"))
 );
 
-HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id)
+HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
+    , _isMeshLight(isMeshLight)
 {
+}
+
+bool
+HdPrman_Mesh::_PrototypeOnly()
+{
+    return _isMeshLight;
 }
 
 HdDirtyBits
