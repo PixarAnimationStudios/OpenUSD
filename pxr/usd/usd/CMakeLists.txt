@@ -381,7 +381,6 @@ pxr_build_test(testUsdStageThreading
         work
         sdf
         usd
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
     CPPFILES
         testenv/testUsdStageThreading.cpp
 )
