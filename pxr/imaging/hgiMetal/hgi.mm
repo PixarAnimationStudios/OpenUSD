@@ -168,9 +168,9 @@ HgiMetal::CreateGraphicsCmds(
 }
 
 HgiComputeCmdsUniquePtr
-HgiMetal::CreateComputeCmds()
+HgiMetal::CreateComputeCmds(HgiComputeDispatch dispatchMethod)
 {
-    HgiComputeCmds* computeCmds = new HgiMetalComputeCmds(this);
+    HgiComputeCmds* computeCmds = new HgiMetalComputeCmds(this, dispatchMethod);
     if (!_currentCmds) {
         _currentCmds = computeCmds;
     }

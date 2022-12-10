@@ -732,7 +732,6 @@ HgiMetalBufferShaderSection::VisitScopeConstructorDeclarations(
     if (_unused) return false;
 
     if (!_writable) {
-        ss << "const ";
         ss << "constant ";
     } else {
         ss << "device ";

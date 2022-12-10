@@ -92,7 +92,8 @@ public:
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIGL_API
-    HgiComputeCmdsUniquePtr CreateComputeCmds() override;
+    HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial) override;
 
     HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;

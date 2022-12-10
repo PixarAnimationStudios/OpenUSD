@@ -300,7 +300,7 @@ HgiMetalResourceBindings::BindResources(
     [computeEncoder setBuffer:argBuffer
                        offset:HgiMetalArgumentOffsetConstants
                       atIndex:HgiMetalArgumentIndexConstants];
-  }
+}
 
 void HgiMetalResourceBindings::SetConstantValues(
     id<MTLBuffer> argumentBuffer,
