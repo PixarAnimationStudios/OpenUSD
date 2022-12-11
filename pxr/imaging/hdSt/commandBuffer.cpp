@@ -22,13 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#if defined(ARCH_OS_WINDOWS)
-// On Windows, MemoryBarrier is defined to __faststorefence, so we have to
-// remove it here so that it can be called on HgiComputeCmds.
-// https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
-#undef MemoryBarrier
-#endif
-
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -60,8 +53,14 @@
 #include <functional>
 #include <unordered_map>
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(ARCH_OS_WINDOWS)
+// On Windows, MemoryBarrier is defined to __faststorefence, so we have to
+// remove it here so that it can be called on HgiComputeCmds.
+// https://learn.microsoft.com/en-us/windows/win32/api/winnt/nf-winnt-memorybarrier
+#undef MemoryBarrier
+#endif
 
+PXR_NAMESPACE_OPEN_SCOPE
 
 HdStCommandBuffer::HdStCommandBuffer()
     : _visibleSize(0)
