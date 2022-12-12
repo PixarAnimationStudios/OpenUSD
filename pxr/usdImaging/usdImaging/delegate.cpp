@@ -1586,7 +1586,8 @@ UsdImagingDelegate::_RefreshUsdObject(
             _ResyncUsdPrim(usdPrimPath, cache, proxy, true);
             resyncNeeded = true;
 
-        } else if (usdPrim && usdPrim.IsA<UsdShadeShader>()) {
+        } else if (usdPrim && (usdPrim.IsA<UsdShadeShader>() ||
+                               usdPrim.IsA<UsdShadeNodeGraph>())) {
             // Shader edits get forwarded to parent material.
             while (usdPrim && !usdPrim.IsA<UsdShadeMaterial>()) {
                 usdPrim = usdPrim.GetParent();
