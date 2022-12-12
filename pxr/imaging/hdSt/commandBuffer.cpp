@@ -60,6 +60,7 @@
 #undef MemoryBarrier
 #endif
 
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStCommandBuffer::HdStCommandBuffer()
