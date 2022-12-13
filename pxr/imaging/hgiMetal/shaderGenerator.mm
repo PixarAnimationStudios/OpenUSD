@@ -606,7 +606,6 @@ ShaderStageData::ShaderStageData(
             generator,
             descriptor.shaderStage,
             false))
-
     , _payload(
        AccumulatePayload(
            descriptor.payloadMembers,

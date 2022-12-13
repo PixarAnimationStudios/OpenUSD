@@ -391,6 +391,9 @@ HgiShaderFunctionAddPayloadMember(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.arraySize = std::to_string(arraySize);
+    if (arraySize < 1) {
+        paramDesc.arraySize = "";
+    }
     paramDesc.isPointerToValue = false;
     desc->payloadMembers.push_back(std::move(paramDesc));
 }

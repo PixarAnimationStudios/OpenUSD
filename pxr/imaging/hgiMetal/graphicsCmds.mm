@@ -713,7 +713,8 @@ HgiMetalGraphicsCmds::DrawIndexedMesh(
     uint32_t indexBufferByteOffset,
     uint32_t baseVertex,
     uint32_t instanceCount,
-    uint32_t baseInstance)
+    uint32_t baseInstance,
+    uint32_t drawIndex)
 {
     _SyncArgumentBuffer();
 
@@ -724,16 +725,50 @@ HgiMetalGraphicsCmds::DrawIndexedMesh(
 
     id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
-    
+    //This is just a temp thing
+    //const uint32_t indicesPerMesh = 1024;
     int numObjectsX = 1;
+    //int numObjectsX = 2;
     int numObjectsY = 1;
     int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, numObjectsZ) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(8, 1, 1)];
+    // TODO make the size based on the draw index count
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawIndex+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
     
     
     _hasWork = true;
 }
+
+void
+HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
+    HgiBufferHandle const& indexBuffer,
+    uint32_t drawCount,
+    uint32_t indexBufferByteOffset,
+    uint32_t baseVertex,
+    uint32_t instanceCount,
+    uint32_t baseInstance,
+    uint32_t drawIndex)
+{
+    _SyncArgumentBuffer();
+
+    HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
+
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
+        
+    //This is just a temp thing
+    //const uint32_t indicesPerMesh = 1024;
+    int numObjectsX = 1;
+    //int numObjectsX = 2;
+    int numObjectsY = 1;
+    int numObjectsZ = 1;
+    _CachedEncState.useMeshShaders = true;
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawCount+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
+    _hasWork = true;
+}
+
 
 void
 HgiMetalGraphicsCmds::DrawIndexedIndirect(

@@ -1043,6 +1043,10 @@ _BindingState::GetBindingsForDrawing(
     binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
+    
+    if (geometricShader->GetUseMeshShaders()) {
+        binder.GetBufferArrayBindingDesc(bindingsDesc, vertexBar);
+    }
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
         HdStBufferArrayRangeSharedPtr shaderBar =
@@ -1285,8 +1289,19 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         bool const useMeshShaders =
         _drawItemInstances[0]->GetDrawItem()->
                 GetGeometricShader()->GetUseMeshShaders();
+        if (useMeshShaders) {
+            // bind destination buffer
+            // (using entire buffer bind to start from offset=0)
+            //todo improve so only in mesh obj
+            state.binder.GetBufferBindingDesc(
+                    &bindingsDesc,
+                    TfToken("drawCullInput"),
+                    _dispatchBuffer->GetEntireResource(),
+                    _dispatchBuffer->GetEntireResource()->GetOffset());
+        }
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
+
         gfxCmds->BindResources(resourceBindings, useMeshShaders);
 
         HgiVertexBufferBindingVector bindings;
@@ -1296,12 +1311,12 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         // Drawing can be either direct or indirect. For either case,
         // the drawing batch and drawing program are prepared to resolve
         // drawing coordinate state indirectly, i.e. from buffer data.
-        bool const drawIndirect = false;
+        bool const drawIndirect = true;
 
         if (drawIndirect) {
-            _ExecuteDrawIndirect(gfxCmds, state.indexBar);
+            _ExecuteDrawIndirect(gfxCmds, state.indexBar, psoHandle);
         } else {
-            _ExecuteDrawImmediate(gfxCmds, state.indexBar);
+            _ExecuteDrawImmediate(gfxCmds, state.indexBar, psoHandle);
         }
 
         hgi->DestroyResourceBindings(&resourceBindings);
@@ -1314,13 +1329,18 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
     HgiGraphicsCmds * gfxCmds,
-    HdStBufferArrayRangeSharedPtr const & indexBar)
+    HdStBufferArrayRangeSharedPtr const & indexBar,
+                                             HgiGraphicsPipelineHandle psoHandle)
 {
     TRACE_FUNCTION();
 
     HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     if (!TF_VERIFY(paramBuffer)) return;
+
+    bool const useMeshShaders =
+            _drawItemInstances[0]->GetDrawItem()->
+                    GetGeometricShader()->GetUseMeshShaders();
 
     if (!_useDrawIndexed) {
         gfxCmds->DrawIndirect(
@@ -1330,24 +1350,68 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             paramBuffer->GetStride());
     } else {
         HdStBufferResourceSharedPtr indexBuffer =
-            indexBar->GetResource(HdTokens->indices);
+                indexBar->GetResource(HdTokens->indices);
         if (!TF_VERIFY(indexBuffer)) return;
+        if (useMeshShaders) {
+            struct Uniforms {
+                GfVec2f drawRangeNDC;
+                uint32_t drawIndexCount;
+                uint32_t drawCommandNumUints;
+                uint32_t baseIndex;
+                uint32_t baseVertex;
+                uint32_t instanceCount;
+                uint32_t baseInstance;
+                uint32_t drawCommandIndexInput;
+                uint32_t drawCoord0Offset;
+                uint32_t drawCoord1Offset;
+                uint32_t drawCoord2Offset;
+                uint32_t drawCoordIOffset;      // Unused in non-instanced culling.
+            };
 
+            if (useMeshShaders) {
+                // set instanced cull parameters
+                Uniforms cullParams;
+                cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+                cullParams.drawIndexCount = 0;
+                cullParams.baseIndex = 0;
+                cullParams.baseVertex = 0;
+                cullParams.instanceCount = 0;
+                cullParams.baseInstance = 0;
+                cullParams.drawCoord0Offset = uint32_t(_drawCoord0Offset);
+                cullParams.drawCoord1Offset = uint32_t(_drawCoord1Offset);
+                cullParams.drawCoord2Offset = uint32_t(_drawCoord2Offset);
+                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
+
+                gfxCmds->SetConstantValues(
+                        psoHandle, 0, 27,
+                        sizeof(Uniforms), &cullParams);
+            }
+            gfxCmds->DrawIndexedMeshIndirect(
+                    indexBuffer->GetHandle(),
+                    _dispatchBuffer->GetCount(),
+                    0,
+                    0,
+                    0,
+                    0,
+                    0);
+        } else {
         gfxCmds->DrawIndexedIndirect(
-            indexBuffer->GetHandle(),
-            paramBuffer->GetHandle(),
-            paramBuffer->GetOffset(),
-            _dispatchBuffer->GetCount(),
-            paramBuffer->GetStride(),
-            _drawCommandBuffer,
-            _patchBaseVertexByteOffset);
+                indexBuffer->GetHandle(),
+                paramBuffer->GetHandle(),
+                paramBuffer->GetOffset(),
+                _dispatchBuffer->GetCount(),
+                paramBuffer->GetStride(),
+                _drawCommandBuffer,
+                _patchBaseVertexByteOffset);
+        }
     }
 }
 
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
     HgiGraphicsCmds * gfxCmds,
-    HdStBufferArrayRangeSharedPtr const & indexBar)
+    HdStBufferArrayRangeSharedPtr const & indexBar,
+    HgiGraphicsPipelineHandle psoHandle)
 {
     TRACE_FUNCTION();
 
@@ -1390,13 +1454,47 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
 
             if (cmd->common.count && cmd->common.instanceCount) {
                 if (useMeshShaders) {
+                    struct Uniforms {
+                        GfVec2f drawRangeNDC;
+                        uint32_t drawIndexCount;
+                        uint32_t drawCommandNumUints;
+                        uint32_t baseIndex;
+                        uint32_t baseVertex;
+                        uint32_t instanceCount;
+                        uint32_t baseInstance;
+                        uint32_t drawCommandIndexInput;
+                        uint32_t drawCoord0Offset;
+                        uint32_t drawCoord1Offset;
+                        uint32_t drawCoord2Offset;
+                        uint32_t drawCoordIOffset;      // Unused in non-instanced culling.
+                    };
+                    
+                    if (useMeshShaders) {
+                        // set instanced cull parameters
+                        Uniforms cullParams;
+                        cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+                        cullParams.drawIndexCount = uint32_t(cmd->common.count);
+                        cullParams.baseIndex = uint32_t(cmd->common.baseIndex);
+                        cullParams.baseVertex = uint32_t(cmd->common.baseVertex);
+                        cullParams.instanceCount = uint32_t(cmd->common.instanceCount);
+                        cullParams.baseInstance = uint32_t(cmd->common.baseInstance);
+                        cullParams.drawCoord0Offset = uint32_t(_drawCoord0Offset);
+                        cullParams.drawCoord1Offset = uint32_t(_drawCoord1Offset);
+                        cullParams.drawCoord2Offset = uint32_t(_drawCoord2Offset);
+                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
+
+                        gfxCmds->SetConstantValues(
+                            psoHandle, 0, 27,
+                            sizeof(Uniforms), &cullParams);
+                    }
                     gfxCmds->DrawIndexedMesh(
                         indexBuffer->GetHandle(),
                         cmd->common.count,
                         indexBufferByteOffset,
-                        cmd->metalPatch.baseVertex,
-                        cmd->metalPatch.instanceCount,
-                        cmd->metalPatch.baseInstance);
+                        cmd->common.baseVertex,
+                        cmd->common.instanceCount,
+                        cmd->common.baseInstance,
+                        i);
                 } else {
                     if (useMetalTessellation) {
                         gfxCmds->DrawIndexed(

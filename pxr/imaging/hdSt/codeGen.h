@@ -182,7 +182,7 @@ private:
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
     std::stringstream _procPTCS, _procPTVSDecl, _procPTVSIn, _procPTVSOut;
     std::stringstream _procMOS, _procMOSDecl, _procMSDecl, _procMSIn, _procMSOut;
-    std::stringstream _osdFS, _osdPTCS, _osdPTVS;
+    std::stringstream _osdFS, _osdPTCS, _osdPTVS, _osdMS;
 
     // resource buckets
     using ElementVector = HdSt_ResourceLayout::ElementVector;

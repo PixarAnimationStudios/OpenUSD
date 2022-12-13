@@ -311,8 +311,41 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     uint8_t msIndex = 0;
 
     if (useMeshShading) {
+        MS[msIndex++] = _tokens->instancing;
+        if (ptvsGeometricNormals) {
+            MS[msIndex++] = _tokens->normalsGeometryFlat;
+        } else {
+            MS[msIndex++] = _tokens->normalsGeometryNoFlat;
+        }
+
+        // Now handle the vs style normals
+        if (normalsSource == NormalSourceFlat) {
+            MS[msIndex++] = _tokens->normalsFlat;
+        }
+        else if (normalsSource == NormalSourceSmooth) {
+            MS[msIndex++] = _tokens->normalsSmooth;
+        } else if (vsSceneNormals) {
+            MS[msIndex++] = _tokens->normalsScene;
+        } else if (gsSceneNormals && isPrimTypePatches) {
+            MS[msIndex++] = _tokens->normalsScenePatches;
+        } else {
+            MS[msIndex++] = _tokens->normalsPass;
+        }
+        
+        if (hasCustomDisplacement) {
+            MS[msIndex++] = _tokens->customDisplacementGS;
+        } else {
+            MS[msIndex++] = _tokens->noCustomDisplacementGS;
+        }
+        
         MOS[mosIndex++] = _tokens->mainMOS;
-        MS[msIndex++] = _tokens->mainTriangleMS;
+        if (isPrimTypeQuads) {
+            TF_CODING_ERROR("Quad prims not supported yet");
+        } else if (isPrimTypeTris) {
+            MS[msIndex++] = _tokens->mainTriangleMS;
+        } else {
+            TF_CODING_ERROR("Unsupported meshlet primitive type");
+        }
     }
 
     // post tess vertex shader vertex steps

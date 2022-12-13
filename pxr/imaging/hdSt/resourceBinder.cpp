@@ -887,6 +887,18 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     // Add custom bindings.
     // Don't need to sanitize the name used, since these are internally
     // generated.
+    
+    if (useMeshShaders) {
+        auto name = TfToken("drawCullInput");
+        HdBinding cullInput = locator.GetBinding(vertexAttrBindingType, name);
+        _bindingMap[name] = cullInput;
+        MetaData::BindingDeclaration b(name,
+            TfToken("uint"),
+             cullInput,
+            false);
+        metaDataOut->customBindings.push_back(b);
+    }
+    
     TF_FOR_ALL (it, customBindings) {
         if (it->IsInterleavedBufferArray()) {
             // Interleaved resource, only need a single binding point
