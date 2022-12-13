@@ -101,4 +101,15 @@ void wrapDependencies()
     bp::def("ModifyAssetPaths", &UsdUtilsModifyAssetPaths,
         (bp::arg("layer"), bp::arg("modifyFn")));
 
+    bp::def("IsUdimIdentifier", UsdUtilsIsUdimIdentifier,
+            (bp::arg("identifier")));
+
+    bp::def("GetUdimFiles", UsdUtilsGetUdimFiles,
+            (bp::arg("udimPath"),
+             bp::arg("layer")));
+
+    bp::def("ResolveUdimPath", UsdUtilsResolveUdimPath,
+            (bp::arg("udimPath"),
+             bp::arg("layer")));
+
 }

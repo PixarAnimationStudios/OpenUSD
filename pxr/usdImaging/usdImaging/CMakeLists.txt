@@ -20,6 +20,7 @@ pxr_library(usdImaging
         usdLux
         usdRender
         usdShade
+        usdUtils
         usdVol
         ar
         ${TBB_tbb_LIBRARY}

@@ -78,6 +78,11 @@ enum class _ReferenceTypesToInclude {
     All              
 };
 
+static const char UDIM_PATTERN[] = "<UDIM>";
+static const int UDIM_START_TILE = 1001;
+static const int UDIM_END_TILE = 1100;
+static const std::string::size_type UDIM_TILE_NUMBER_LENGTH = 4;
+
 class _FileAnalyzer {
 public:
     // The asset remapping function's signature. 
@@ -692,8 +697,31 @@ public:
             auto &fileAnalyzer = destFilePathAndAnalyzer.second;
 
             if (!fileAnalyzer.GetLayer()) {
-                _fileCopyMap.emplace_back(fileAnalyzer.GetFilePath(),
-                                          destFilePath);
+                const std::string srcFilePath = fileAnalyzer.GetFilePath();
+                if (UsdUtilsIsUdimIdentifier(srcFilePath)) {
+                    // Since the source path should already be pre-resolved,
+                    // a proper layer doesn't have to be provided
+                    std::vector<std::string> udimPaths = 
+                        UsdUtilsGetUdimFiles(srcFilePath, SdfLayerHandle());
+
+                    for (auto &udimPath : udimPaths) {
+                        // Find the UDIM numbers to sub
+                        const std::string::size_type right = udimPath.rfind(".");
+                        const std::string::size_type left = 
+                                right - UDIM_TILE_NUMBER_LENGTH;
+
+                        // Using assumption that UsdUtilsResolveUdimPath
+                        // guarantees <UDIM> is in the resolved path
+                        const std::string destUdimPath = TfStringReplace(
+                            destFilePath, UDIM_PATTERN, 
+                                udimPath.substr(left, right-left));
+
+                        _fileCopyMap.emplace_back(udimPath, destUdimPath);
+                    }
+                } else {
+                    _fileCopyMap.emplace_back(srcFilePath, destFilePath);
+                }
+
                 continue;
             }
 
@@ -719,11 +747,18 @@ public:
                     ref = ArSplitPackageRelativePathOuter(ref).first;
                 }
 
-                const std::string refAssetPath = 
-                    SdfComputeAssetPathRelativeToLayer(
-                        fileAnalyzer.GetLayer(), ref);
+                std::string refAssetPath = 
+                        SdfComputeAssetPathRelativeToLayer(
+                            fileAnalyzer.GetLayer(), ref);
+                std::string resolvedRefFilePath;
 
-                std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                // Specially handle UDIM paths
+                if (UsdUtilsIsUdimIdentifier(ref)) {
+                    resolvedRefFilePath = UsdUtilsResolveUdimPath(
+                        ref, fileAnalyzer.GetLayer());
+                } else {
+                    resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                }
 
                 if (resolvedRefFilePath.empty()) {
                     TF_WARN("Failed to resolve reference @%s@ with computed "
@@ -1344,6 +1379,141 @@ UsdUtilsModifyAssetPaths(
             return modifyFn(assetPath);
         }
     );
+}
+
+// Split a udim file path such as /someDir/myFile.<UDIM>.exr into a
+// prefix (/someDir/myFile.) and suffix (.exr).
+//
+// We might support other patterns such as /someDir/myFile._MAPID_.exr
+// in the future.
+static
+std::pair<std::string, std::string>
+_SplitUdimPattern(const std::string &path)
+{
+    static const std::vector<std::string> patterns = { UDIM_PATTERN };
+
+    for (const std::string &pattern : patterns) {
+        const std::string::size_type pos = path.find(pattern);
+        if (pos != std::string::npos) {
+            return { path.substr(0, pos), path.substr(pos + pattern.size()) };
+        }
+    }
+
+    return { std::string(), std::string() };
+}
+
+// Given the prefix (e.g., /someDir/myImage.) and suffix (e.g., .exr),
+// add integer between them and try to resolve
+static
+std::vector<std::string>
+_ResolveUdimPath(
+    const std::string &udimPath,
+    SdfLayerHandle const &layer, 
+    bool stopAtFirst=false)
+{
+    TRACE_FUNCTION();
+
+    std::vector<std::string> paths;
+
+    // Check for bookends, and exit early if it's not a UDIM path
+    const std::pair<std::string, std::string>
+        splitPath = _SplitUdimPattern(udimPath);
+    if (splitPath.first.empty() && splitPath.second.empty()) {
+        return paths;
+    }
+
+    ArResolver& resolver = ArGetResolver();
+    
+    for (int i = UDIM_START_TILE; i < UDIM_END_TILE; i++) {
+        // Fill in integer
+        std::string path =
+            splitPath.first + std::to_string(i) + splitPath.second;
+        if (layer) {
+            // Deal with layer-relative paths.
+            path = SdfComputeAssetPathRelativeToLayer(layer, path);
+        }
+        // Resolve. Unlike the non-UDIM case, we do not resolve symlinks
+        // here to handle the case where the symlinks follow the UDIM
+        // naming pattern but the files that are linked do not. We'll
+        // let whoever consumes the pattern determine if they want to
+        // resolve symlinks themselves.
+        path = resolver.Resolve(path);
+        if (!path.empty()) {
+            paths.push_back(path);
+
+            if (stopAtFirst) {
+                return paths;
+            }
+        }
+    }
+    return paths;
+}
+
+bool
+UsdUtilsIsUdimIdentifier(const std::string &identifier)
+{
+    const std::pair<std::string, std::string> 
+        splitPath = _SplitUdimPattern(identifier);
+    return !(splitPath.first.empty() && splitPath.second.empty());
+}
+
+std::vector<std::string>
+UsdUtilsGetUdimFiles(
+    const std::string &udimPath,
+    const SdfLayerHandle& layer)
+{
+    return _ResolveUdimPath(udimPath, layer);
+}
+
+std::string 
+UsdUtilsResolveUdimPath(
+    const std::string &udimPath,
+    const SdfLayerHandle& layer)
+{
+    // Return empty if passed path is a non-UDIM path or just doesn't resolve as a UDIM
+    std::vector<std::string> udimPaths = 
+        _ResolveUdimPath(udimPath, layer, true);
+    if (udimPaths.empty()) {
+        return std::string();
+    }
+    
+    // Just need first tile to verify and then revert to <UDIM>
+    std::string firstTilePackage;
+    std::string firstTilePath = udimPaths[0];
+
+    // If the resolved path of the first tile is located in a packaged asset,
+    // like /foo/bar/baz.usdz[myImage.0001.exr], we need to separate the
+    // paths to restore the "<UDIM>" prefix to the image filename in the
+    // code below, then join the path back togther before we return.
+    if (ArIsPackageRelativePath(firstTilePath)) {
+        std::tie(firstTilePackage, firstTilePath) =
+            ArSplitPackageRelativePathInner(firstTilePath);
+    }
+
+    // Construct the file path /filePath/myImage.<UDIM>.exr by using
+    // the first part from the first resolved tile, "<UDIM>" and the
+    // suffix.
+    const std::string &suffix = "." + TfGetExtension(udimPath);
+
+    // Sanity check that the part after <UDIM> did not change.
+    if (!TfStringEndsWith(firstTilePath, suffix)) {
+        TF_WARN(
+            "Resolution of first udim tile gave ambigious result. "
+            "First tile for '%s' is '%s'.",
+            udimPath.c_str(), firstTilePath.c_str());
+        return std::string();
+    }
+
+    // Length of the part /filePath/myImage.<UDIM>.exr.
+    const std::string::size_type prefixLength =
+        firstTilePath.size() - suffix.size() - UDIM_TILE_NUMBER_LENGTH;
+
+    firstTilePath = 
+        firstTilePath.substr(0, prefixLength) + UDIM_PATTERN + suffix;
+
+    return firstTilePackage.empty() ? 
+        firstTilePath : 
+        ArJoinPackageRelativePath(firstTilePackage, firstTilePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

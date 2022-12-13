@@ -179,6 +179,32 @@ void UsdUtilsModifyAssetPaths(
         const SdfLayerHandle& layer,
         const UsdUtilsModifyAssetPathFn& modifyFn);
 
+/// Checks if \p identifier contains a UDIM token. Currently only "<UDIM>" is
+/// supported, but other patterns such as "_MAPID_" may be supported in the future.
+USDUTILS_API
+bool
+UsdUtilsIsUdimIdentifier(const std::string &identifier);
+
+/// Retrieves all UDIM tiles matching \p udimPath. The path is first anchored with
+/// the passed \p layer if needed, then the function attempts to resolve all possible
+/// UDIM numbers in the path, returning all successfully resolved paths.
+USDUTILS_API
+std::vector<std::string>
+UsdUtilsGetUdimFiles(
+    const std::string &udimPath,
+    const SdfLayerHandle& layer);
+
+/// Resolves a \p udimPath containing a UDIM token. The path is first
+/// anchored with the passed \p layer if needed, then the function attempts to
+/// resolve any possible UDIM tiles. If any exist, the resolved path is returned
+/// with "<UDIM>" subsituted back in. If no resolves succeed or \p udimPath does
+/// not contain a UDIM token, an empty string is returned.
+USDUTILS_API
+std::string 
+UsdUtilsResolveUdimPath(
+    const std::string &udimPath,
+    const SdfLayerHandle& layer);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_USD_UTILS_DEPENDENCIES_H
