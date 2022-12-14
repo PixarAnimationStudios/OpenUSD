@@ -1233,7 +1233,10 @@ HgiMetalShaderStageEntryPoint::_Init(
         generator->CreateShaderSection<
         HgiMetalStructTypeDeclarationShaderSection>(
                     "VertexOut",
-                    stageOutputs);
+                    stageOutputs,
+                    "",
+                    "",
+                    false);
         generator->CreateShaderSection<HgiMetalStageOutputMeshShaderSection>(structTypeSection);
     }
     else {
@@ -1688,49 +1691,6 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         ss << ")";
     }
     ss << ";\n";
-    const char *longString = R""""(
-    const float3 box[8] = {
-                {-0.5, -0.5, -0.5}, {0.5, -0.5, -0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {-0.5, -0.5, 0.5}, {0.5, -0.5, 0.5}, {-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}
-            };
-            
-            const int indices[36] = {0, 4, 6, 0, 6, 2, 0, 1, 5, 0, 5, 4, 4, 5, 7, 4, 7, 6, 3, 7, 5, 3, 5, 1, 6, 7, 3, 6, 3, 2, 2, 3, 1, 2, 1, 0};
-
-        uint32_t vertexCount = 8;
-        uint32_t primitiveCount = 12;
-        if (hd_LocalIndexID < 8) {
-            mesh.set_primitive_count(12);
-
-            //MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-            //MAT4 transform = HdGet_transform();
-
-            VertexOut vertexOut;
-            PrimOut primOut;
-            float3 point = box[hd_LocalIndexID];
-            //vec3 point = vec3(1.0, 1.0, 1.0);
-                matrix_float4x4 mat2 = matrix_float4x4(
-                {0.513, 0.0, 0.0, 0.0},
-                {0.000, 0.866, 0.0, 0.0},
-                {0.0, 0.0, -0.5, -0.5},
-                {0.0, 0.0, 0.543, 1.543});
-        
-            mat4 mat = mat4(bufferBindings->renderPassState.worldToViewMatrix);
-            vertexOut.position = mat * vec4(point.x, point.y, point.z, 1.0);
-            mesh.set_vertex(hd_LocalIndexID, vertexOut);
-        }
-
-        if (hd_LocalIndexID < primitiveCount) {
-            PrimOut primOut;
-            //p.color = payload.color;
-            mesh.set_primitive(hd_LocalIndexID, primOut);
-
-            // Set the output indices.
-            uint i = (hd_LocalIndexID) * 3;
-            mesh.set_index(i+0, indices[i]);
-            mesh.set_index(i+1, indices[i+1]);
-            mesh.set_index(i+2, indices[i+2]);
-        })"""";
-    if (_descriptor.shaderStage == HgiShaderStageMeshlet)
-        //ss << longString;
 
     // Execute all code that hooks into the entry point function
     ss << "\n// //////// Entry Point Function Executions ////////\n";

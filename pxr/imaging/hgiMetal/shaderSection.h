@@ -73,6 +73,9 @@ public:
     /// either exists
     HGIMETAL_API
     void WriteAttributesWithIndex(std::ostream& ss) const;
+
+    HGIMETAL_API
+    void WriteAttributesOnlyWithoutIndex(std::ostream& ss) const;
     
     HgiMetalShaderSection(
         const std::string &identifier,
@@ -364,7 +367,8 @@ public:
         const HgiMetalShaderSectionPtrVector &members,
         const std::string &templateWrapper = std::string(),
         const std::string &templateWrapperParameters
-                            = std::string());
+                            = std::string(),
+        const bool useAttributes = true);
 
     HGIMETAL_API
     void WriteType(std::ostream &ss) const override;
@@ -388,6 +392,7 @@ private:
     const HgiMetalShaderSectionPtrVector _members;
     const std::string _templateWrapper;
     const std::string _templateWrapperParameters;
+    const bool _useAttributes;
 };
 
 /// \class HgiMetalStructInstanceShaderSection

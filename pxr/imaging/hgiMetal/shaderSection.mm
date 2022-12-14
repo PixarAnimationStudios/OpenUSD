@@ -115,6 +115,36 @@ HgiMetalShaderSection::WriteAttributesWithIndex(std::ostream& ss) const
     }
 }
 
+void
+HgiMetalShaderSection::WriteAttributesOnlyWithoutIndex(std::ostream& ss) const
+{
+    const HgiShaderSectionAttributeVector &att = GetAttributes();
+    HgiShaderSectionAttributeVector attributes;
+    for (size_t i = 0; i < att.size(); i++) {
+        const HgiShaderSectionAttribute &a = att[i];
+        if (a.identifier.find("user") == std::string::npos) {
+            attributes.push_back(a);
+        }
+    }
+    if (attributes.size() > 0) {
+        ss << "[[";
+    }
+    for (size_t i = 0; i < attributes.size(); i++) {
+        if (i > 0) {
+            ss << ", ";
+        }
+        
+        const HgiShaderSectionAttribute &a = attributes[i];
+        ss << a.identifier;
+        if (!a.index.empty()) {
+            ss << "(" << a.index << ")";
+        }
+    }
+    if (attributes.size() > 0) {
+        ss << "]]";
+    }
+}
+
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
     const std::string &identifier,
     const std::string &type,
@@ -893,11 +923,13 @@ HgiMetalStructTypeDeclarationShaderSection::HgiMetalStructTypeDeclarationShaderS
     const std::string &identifier,
     const HgiMetalShaderSectionPtrVector &members,
     const std::string &templateWrapper,
-    const std::string &templateWrapperParameters)
+    const std::string &templateWrapperParameters,
+    const bool useAttributes)
   : HgiMetalShaderSection(identifier)
   , _members(members)
   , _templateWrapper(templateWrapper)
   , _templateWrapperParameters(templateWrapperParameters)
+  , _useAttributes(useAttributes)
 {
 }
 
@@ -918,9 +950,11 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
     for (HgiMetalShaderSection* member : _members) {
         member->WriteParameter(ss);
         if (!member->HasBlockInstanceIdentifier()) {
-            member->WriteAttributesWithIndex(ss);
-        } else {
-            
+            if (_useAttributes) {
+                member->WriteAttributesWithIndex(ss);
+            } else {
+                member->WriteAttributesOnlyWithoutIndex(ss);
+            }
         }
         member->WriteArraySize(ss);
         ss << ";\n";
@@ -1160,7 +1194,10 @@ HgiMetalParameterMeshInputShaderSection::VisitGlobalMemberDeclarations(
     ss << "struct VertexOut {\n";
     
     for (auto &member : GetStructTypeDeclaration()->GetMembers()) {
-        member->WriteParameter(ss);
+        //member->WriteParameter(ss);
+        member->WriteType(ss);
+        ss << " ";
+        member->WriteIdentifier(ss);
         ss << ";\n";
     }
     ss << "};\n";

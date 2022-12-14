@@ -673,7 +673,6 @@ _ResourceGenerator::_GenerateHgiResources(
                     }
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 } else {
-                    if (shaderStage != HdShaderTokens->fragmentShader) {
                         HgiShaderFunctionParamDesc param;
                         param.nameInShader = element.name;
                         param.type = element.dataType;
@@ -683,7 +682,6 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.arraySize = element.arraySize;
                         param.isPointerToValue = false;
                         HgiShaderFunctionAddStageInput(funcDesc, param);
-                    }
                 }
             } else if (element.inOut == InOut::STAGE_OUT) {
                 if (shaderStage == HdShaderTokens->fragmentShader) {
@@ -3784,6 +3782,40 @@ _GetDrawingCoord(std::stringstream &ss,
        << "}\n";
 }
 
+static void
+_GetDrawingCoordMS(std::stringstream &ss,
+                 std::vector<std::string> const &drawingCoordParams,
+                 int const instanceIndexWidth,
+                 char const *inputPrefix,
+                 char const *inArraySize,
+                 char const *primitiveCoordOffset)
+{
+    ss << "hd_drawingCoord GetDrawingCoord() { \n"
+       << "  hd_drawingCoord dc; \n";
+    if (!drawingCoordParams.empty()) {
+        for (std::string const & param : drawingCoordParams) {
+            ss << "  dc." << param
+            << " = vertexOut." << inputPrefix << param << inArraySize << ";\n";
+        }
+        for(int i = 0; i < instanceIndexWidth; ++i) {
+            ss << "  dc.instanceIndex[" << std::to_string(i) << "]"
+            << " = vertexOut." << inputPrefix
+            << "instanceIndexI" << std::to_string(i) << inArraySize << ";\n";
+        }
+        for(int i = 0; i < instanceIndexWidth-1; ++i) {
+            ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
+            << " = vertexOut." << inputPrefix
+            << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
+        }
+        if (primitiveCoordOffset) {
+            ss << "  dc.primitiveCoord"
+            << primitiveCoordOffset << ";\n";
+        }
+    }
+    ss << "  return dc; \n"
+       << "}\n";
+}
+
 // Helper function to generate drawingCoord interstage processing.
 static void
 _ProcessDrawingCoord(std::stringstream &ss,
@@ -4401,8 +4433,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     } else {
         // from VS/PTVS
         //TODO Thor revert
-        std::vector<std::string> mockParams = std::vector<std::string>();
-        _GetDrawingCoord(_genFS, mockParams, instanceIndexWidth,
+        _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
                 "vs_dc_", "", " += GetPrimitiveID()");
     }
 }
@@ -5139,7 +5170,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
             "ptvs_pv_" + name.GetString() + "[localIndex]", dataType);
 
         _EmitStageAccessor(accessorsMS, name,
-           "(" +name.GetString() + " + baseVertex)[localIndex + baseIndex]", dataType);
+           "(" +name.GetString() + " + baseVertex)[localIndex]", dataType);
         //_EmitStageAccessor(accessorsMS, TfToken(name.GetString() + "_raw"),
         //   name.GetString() + "[localIndex + base_vertex]", dataType);
 

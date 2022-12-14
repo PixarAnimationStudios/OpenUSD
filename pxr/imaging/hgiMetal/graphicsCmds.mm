@@ -733,7 +733,7 @@ HgiMetalGraphicsCmds::DrawIndexedMesh(
     int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
     // TODO make the size based on the draw index count
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawIndex+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawIndex+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(1, 1, 1)];
     
     
     _hasWork = true;

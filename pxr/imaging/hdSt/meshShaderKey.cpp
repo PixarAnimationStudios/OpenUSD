@@ -339,7 +339,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         }
         
         MOS[mosIndex++] = _tokens->mainMOS;
-        if (isPrimTypeQuads) {
+        if (isPrimTypeQuads || isPrimTypeTriQuads) {
             TF_CODING_ERROR("Quad prims not supported yet");
         } else if (isPrimTypeTris) {
             MS[msIndex++] = _tokens->mainTriangleMS;

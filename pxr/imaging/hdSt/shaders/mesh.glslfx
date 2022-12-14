@@ -311,25 +311,25 @@ void main(void)
 -- layout Mesh.MeshObject.Main
 [
 ["uniform block", "Uniforms", "ulocCullParams",
-["vec2", "drawRangeNDC"],
-["uint", "drawIndexCount"],
-["uint", "drawCommandNumUints"],
-["uint", "baseIndex"],
-["uint", "baseVertex"],
-["uint", "instanceCount"],
-["uint", "baseInstance"],
-["uint", "drawCommandIndexInput"],
-["uint", "drawCoord0Offset"],
-["uint", "drawCoord1Offset"],
-["uint", "drawCoord2Offset"],
-["uint", "drawCoordIOffset"]
+    ["vec2", "drawRangeNDC"],
+    ["uint", "drawIndexCount"],
+    ["uint", "drawCommandNumUints"],
+    ["uint", "baseIndex"],
+    ["uint", "baseVertex"],
+    ["uint", "instanceCount"],
+    ["uint", "baseInstance"],
+    ["uint", "drawCommandIndexInput"],
+    ["uint", "drawCoord0Offset"],
+    ["uint", "drawCoord1Offset"],
+    ["uint", "drawCoord2Offset"],
+    ["uint", "drawCoordIOffset"]
 ]
 ]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.MeshObject.Main
 
-        uint g_drawCommandIndex;
+uint g_drawCommandIndex;
 
 int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
 {
@@ -338,7 +338,7 @@ int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
 uint offset = g_drawCommandIndex * drawCommandNumUints;
 
 offset += (coordIndex == 0) ? drawCoord0Offset :
-(coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
+          (coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
 
 return int(drawCullInput[offset + fieldIndex]);
 }
@@ -421,25 +421,25 @@ void main(void)
 ["vec3", "Neye"]
 ],
 ["uniform block", "Uniforms", "ulocCullParams",
-["vec2", "drawRangeNDC"],
-["uint", "drawIndexCount"],
-["uint", "drawCommandNumUints"],
-["uint", "baseI"],
-["uint", "baseV"],
-["uint", "instanceCount"],
-["uint", "baseInstance"],
-["uint", "drawCommandIndexInput"],
-["uint", "drawCoord0Offset"],
-["uint", "drawCoord1Offset"],
-["uint", "drawCoord2Offset"],
-["uint", "drawCoordIOffset"]
+    ["vec2", "drawRangeNDC"],
+    ["uint", "drawIndexCount"],
+    ["uint", "drawCommandNumUints"],
+    ["uint", "baseI"],
+    ["uint", "baseV"],
+    ["uint", "instanceCount"],
+    ["uint", "baseInstance"],
+    ["uint", "drawCommandIndexInput"],
+    ["uint", "drawCoord0Offset"],
+    ["uint", "drawCoord1Offset"],
+    ["uint", "drawCoord2Offset"],
+    ["uint", "drawCoordIOffset"]
 ]
 ]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Meshlet.Triangle
 
-        vec4 GetPatchCoord(int index)
+vec4 GetPatchCoord(int index)
 {
     vec2 uv[3];
     uv[0] = vec2(0, 0); // (0, 0, 1);
@@ -450,7 +450,6 @@ void main(void)
     return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
-
 int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
 {
 // TODO Thor get the offset correct
@@ -458,7 +457,7 @@ int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
 uint offset = payload.drawCommandIndexPayload * payload.drawCommandNumUintLocal;
 //TODO have the drawcoord offset come from the mesh object shader
 offset += (coordIndex == 0) ? drawCoord0Offset :
-(coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
+          (coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
 
 return int(drawCullInput[offset + fieldIndex]);
 }
@@ -467,60 +466,60 @@ return int(drawCullInput[offset + fieldIndex]);
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
 FORWARD_DECL(void ProcessPointId(int));
-uint32_t vertex_id;
-uint32_t primitive_id;
-uint32_t gl_InstanceID;
-uint32_t baseVertex;
-uint32_t baseIndex;
+    uint32_t vertex_id;
+    uint32_t primitive_id;
+    uint32_t gl_InstanceID;
+    uint32_t baseVertex;
+    uint32_t baseIndex;
 void main(void) {
 
-    baseVertex = payload.baseVertex;
-    baseIndex = payload.baseIndex/3;
-    //instanceID is baseInstance
-    gl_InstanceID = payload.instanceID + hd_LocalInvocationID.x;
-    drawIndexCount = payload.indexRange.y - payload.indexRange.x;
-    uint32_t primitiveCount = drawIndexCount/3;
-    mesh.set_primitive_count(drawIndexCount);
-    if (hd_LocalIndexID < drawIndexCount) {
-        vertex_id = hd_LocalIndexID;
-        //primitive id is gibberish
-        primitive_id = hd_LocalIndexID/3;
-        VertexOut vertexOut;
-        ProcessPrimvarsIn();
+        baseVertex = payload.baseVertex;
+        baseIndex = payload.baseIndex/3;
+        //instanceID is baseInstance
+        gl_InstanceID = payload.instanceID + hd_LocalInvocationID.x;
+        drawIndexCount = payload.indexRange.y - payload.indexRange.x;
+        uint32_t primitiveCount = drawIndexCount/3;
+        mesh.set_primitive_count(drawIndexCount);
+        if (hd_LocalIndexID < drawIndexCount) {
+            vertex_id = hd_LocalIndexID;
+            //primitive id is gibberish
+            primitive_id = hd_LocalIndexID/3;
+            VertexOut vertexOut;
+            ProcessPrimvarsIn();
 
-        MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-        PrimOut primOut;
-        float4 point = float4(HdGet_points(hd_LocalIndexID).x, HdGet_points(hd_LocalIndexID).y, HdGet_points(hd_LocalIndexID).z, 1.0f);
+            MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+            PrimOut primOut;
+            float4 point = float4(HdGet_points(hd_LocalIndexID).x, HdGet_points(hd_LocalIndexID).y, HdGet_points(hd_LocalIndexID).z, 1.0f);
 
-        bool isFlipped = IsFlipped();
-        vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
-        int spl = ((hd_LocalIndexID) - (hd_LocalIndexID) % 3);
-        vec4 point0 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl).x, HdGet_points(spl).y, HdGet_points(spl).z,1.0);
-        vec4 point1 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl+1).x, HdGet_points(spl+1).y, HdGet_points(spl+1).z,1.0);
-        vec4 point2 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl+2).x, HdGet_points(spl+2).y, HdGet_points(spl+2).z,1.0);
+            bool isFlipped = IsFlipped();
+            vec3 Neye0 = isFlipped ? -GetNormal(vec3(0),0) : GetNormal(vec3(0),0);
+            int spl = ((hd_LocalIndexID) - (hd_LocalIndexID) % 3);
+            vec4 point0 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl).x, HdGet_points(spl).y, HdGet_points(spl).z,1.0);
+            vec4 point1 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl+1).x, HdGet_points(spl+1).y, HdGet_points(spl+1).z,1.0);
+            vec4 point2 = GetWorldToViewMatrix() * transform * vec4(HdGet_points(spl+2).x, HdGet_points(spl+2).y, HdGet_points(spl+2).z,1.0);
 
-        Neye0 = GetTriGeometryNormal(Neye0, point0, point1, point2, isFlipped);
-        //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
+            Neye0 = GetTriGeometryNormal(Neye0, point0, point1, point2, isFlipped);
+            //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
 
-        vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+            vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
-        vertexOut.Neye = Neye0; // normalized
+    	    vertexOut.Neye = Neye0; // normalized
 
-        vertexOut.position = vec4(HdGet_projectionMatrix() * vertexOut.Peye);
-        ProcessPrimvarsOut(vertexOut);
-        mesh.set_vertex(hd_LocalIndexID, vertexOut);
-    }
+    	    vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
+            ProcessPrimvarsOut(vertexOut);
+            mesh.set_vertex(hd_LocalIndexID, vertexOut);
+        }
 
-    if (hd_LocalIndexID < primitiveCount) {
-        PrimOut primOut;
-        mesh.set_primitive(hd_LocalIndexID, primOut);
+        if (hd_LocalIndexID < primitiveCount) {
+            PrimOut primOut;
+            mesh.set_primitive(hd_LocalIndexID, primOut);
 
-        // Set the output indices.
-        uint i = (hd_LocalIndexID) * 3;
-        mesh.set_index(i+0, (indices + (baseIndex))[hd_LocalIndexID].x);
-        mesh.set_index(i+1, (indices + (baseIndex))[hd_LocalIndexID].y);
-        mesh.set_index(i+2, (indices + (baseIndex))[hd_LocalIndexID].z);
-    }
+            // Set the output indices.
+            uint i = (hd_LocalIndexID) * 3;
+            mesh.set_index(i+0, (indices + (baseIndex/3))[hd_LocalIndexID].x);
+            mesh.set_index(i+1, (indices + (baseIndex/3))[hd_LocalIndexID].y);
+            mesh.set_index(i+2, (indices + (baseIndex/3))[hd_LocalIndexID].z);
+        }
 }
 /*
 ProcessPrimvarsIn();
