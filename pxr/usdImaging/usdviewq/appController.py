@@ -2216,7 +2216,7 @@ class AppController(QtCore.QObject):
             # search, which on large scenes would be a big performance
             # hit, so we do it this way instead
             displayName = prim.GetDisplayName()
-            if displayName is not None and displayName != "":
+            if displayName:
                 return matchLambda(displayName)
             else:
                 return matchLambda(prim.GetName())

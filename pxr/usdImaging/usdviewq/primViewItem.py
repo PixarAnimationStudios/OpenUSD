@@ -263,7 +263,7 @@ class PrimViewItem(QtWidgets.QTreeWidgetItem):
         
             # tooltip should always show both name and display name
             toolTip = toolTip + "<br>Name: " + self.name
-            if self.displayName != "":
+            if self.displayName:
                 toolTip = toolTip + "<br>Display Name: " + self.displayName
 
             if self.hasArcs:

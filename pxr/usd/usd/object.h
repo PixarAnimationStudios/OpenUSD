@@ -626,13 +626,13 @@ public:
     USD_API
     bool HasAuthoredDocumentation() const;
 
-    /// Return this property's display name (metadata).  This returns the
+    /// Return this objects's display name (metadata).  This returns the
     /// empty string if no display name has been set.
     /// \sa SetDisplayName()
     USD_API
     std::string GetDisplayName() const;
 
-    /// Sets this property's display name (metadata).  Returns true on success.
+    /// Sets this objects's display name (metadata).  Returns true on success.
     ///
     /// DisplayName is meant to be a descriptive label, not necessarily an
     /// alternate identifier; therefore there is no restriction on which
@@ -640,7 +640,7 @@ public:
     USD_API
     bool SetDisplayName(const std::string& name) const;
 
-    /// Clears this property's display name (metadata) in the current EditTarget
+    /// Clears this objects's display name (metadata) in the current EditTarget
     /// (only).  Returns true on success.
     USD_API
     bool ClearDisplayName() const;
