@@ -765,7 +765,7 @@ HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
     int numObjectsY = 1;
     int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawCount+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawCount) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
     _hasWork = true;
 }
 

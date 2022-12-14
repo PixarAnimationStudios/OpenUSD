@@ -3814,6 +3814,35 @@ _ProcessDrawingCoord(std::stringstream &ss,
     }
 }
 
+static void
+_ProcessDrawingCoordMS(std::stringstream &ss,
+                     std::vector<std::string> const &drawingCoordParams,
+                     int const instanceIndexWidth,
+                     char const *outputPrefix,
+                     char const *outArraySize,
+                     char const *primitiveCoordOffset)
+{
+    ss << "  hd_drawingCoord dc = GetDrawingCoord();\n";
+    for (std::string const & param : drawingCoordParams) {
+        ss << "  vertexOut." << outputPrefix << param << outArraySize
+           << " = " << "dc." << param << ";\n";
+    }
+    for(int i = 0; i < instanceIndexWidth; ++i) {
+        std::string const index = std::to_string(i);
+        ss << "  vertexOut." << outputPrefix << "instanceIndexI" << index << outArraySize
+           << " = " << "dc.instanceIndex[" << index << "]" << ";\n";
+    }
+    for(int i = 0; i < instanceIndexWidth-1; ++i) {
+        std::string const index = std::to_string(i);
+        ss << "  vertexOut." << outputPrefix << "instanceCoordsI" << index << outArraySize
+           << " = " << "dc.instanceCoords[" << index << "]" << ";\n";
+    }
+    if (primitiveCoordOffset) {
+        ss << "  vertexOut." << outputPrefix << "primitiveCoord" << outArraySize
+           << primitiveCoordOffset << ";\n";
+    }
+}
+
 void
 HdSt_CodeGen::_GenerateDrawingCoord(
     bool const shaderDrawParametersEnabled,
@@ -4328,8 +4357,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _ProcessDrawingCoord(_procPTVSOut, drawingCoordParams, instanceIndexWidth,
                          "vs_dc_", "", " -= patch_id");
 
-    _ProcessDrawingCoord(_procMSOut, drawingCoordParams, instanceIndexWidth,
-                         "vs_dc_", "", " -= vertex_id");
+    _ProcessDrawingCoordMS(_procMSOut, drawingCoordParams, instanceIndexWidth,
+                         "vs_dc_", "", nullptr);
 
     // TCS from VS
     if (_hasTCS) {

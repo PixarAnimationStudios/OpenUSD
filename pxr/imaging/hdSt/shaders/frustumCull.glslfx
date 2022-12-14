@@ -305,7 +305,6 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- layout ViewFrustumCull.Compute
-
 [
     ["uniform block", "Uniforms", "ulocCullParams",
         ["mat4", "cullMatrix"],
