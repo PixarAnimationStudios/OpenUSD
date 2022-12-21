@@ -758,14 +758,8 @@ HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
 
     id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
-    //This is just a temp thing
-    //const uint32_t indicesPerMesh = 1024;
-    int numObjectsX = 1;
-    //int numObjectsX = 2;
-    int numObjectsY = 1;
-    int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, 1) threadsPerObjectThreadgroup:MTLSizeMake(drawCount, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(drawCount, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
     _hasWork = true;
 }
 
