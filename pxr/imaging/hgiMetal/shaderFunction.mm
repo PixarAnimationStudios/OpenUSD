@@ -69,7 +69,7 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         };
         
         std::string input = std::string(shaderCode);
-        std::ofstream out("/Users/ecosystemadmin/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
+        std::ofstream out("/Users/thor/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
         out << input;
         out.close();
         counter++;

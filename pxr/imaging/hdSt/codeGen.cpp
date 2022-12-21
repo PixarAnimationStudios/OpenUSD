@@ -2576,7 +2576,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         mosDesc.stageInputs.push_back(std::move(paramDesc));
         
-        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexRange", "uint2");
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexRange", "uint2", 512);
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandIndexPayload", "uint");
@@ -2600,13 +2600,20 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             &mosDesc, "hd_LocalInvocationID", "uvec3",
             HgiShaderKeywordTokens->hdLocalInvocationID);
         
+        
+        HgiShaderFunctionAddStageInput(
+            &mosDesc, "hd_threadId", "uvec3",
+            HgiShaderKeywordTokens->hdThreadID);
+        
+        
         HgiShaderFunctionAddStageInput(
             &mosDesc, "hd_LocalIndexID", "uint",
             HgiShaderKeywordTokens->hdLocalIndexID);
         
         
         //TODO Thor something better than this
-        mosDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1;
+        mosDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 512;
+        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshGrid = 128;
         mosDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         
         if (!glslProgram->CompileShader(mosDesc)) {
@@ -2630,9 +2637,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Triangle :
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 126;
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 64;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
-        HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2");
+        HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 512);
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandIndexPayload", "uint");

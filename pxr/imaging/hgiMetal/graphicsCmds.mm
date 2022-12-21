@@ -733,7 +733,7 @@ HgiMetalGraphicsCmds::DrawIndexedMesh(
     int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
     // TODO make the size based on the draw index count
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawIndex+1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(1, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawIndex+1) threadsPerObjectThreadgroup:MTLSizeMake(1 , 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
     
     
     _hasWork = true;
@@ -765,8 +765,66 @@ HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
     int numObjectsY = 1;
     int numObjectsZ = 1;
     _CachedEncState.useMeshShaders = true;
-    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, drawCount) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(126, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(numObjectsX, numObjectsY, 1) threadsPerObjectThreadgroup:MTLSizeMake(drawCount, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
     _hasWork = true;
+}
+
+void
+HgiMetalGraphicsCmds::DrawIndexedMeshIndirect2(
+    HgiBufferHandle const& indexBuffer,
+    HgiBufferHandle const& drawParameterBuffer,
+    uint32_t drawBufferByteOffset,
+    uint32_t drawCount,
+    uint32_t stride,
+    std::vector<uint32_t> const& drawParameterBufferUInt32,
+    uint32_t patchBaseVertexByteOffset)
+{
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+    id<MTLBuffer> drawBufferId =
+        static_cast<HgiMetalBuffer*>(drawParameterBuffer.Get())->GetBufferId();
+    id<MTLBuffer> indexBufferId =
+        static_cast<HgiMetalBuffer*>(indexBuffer.Get())->GetBufferId();
+
+    _SyncArgumentBuffer();
+    static const uint32_t _drawCallsPerThread = 256;
+    const uint32_t numEncoders = std::min(
+                                 std::max(drawCount / _drawCallsPerThread, 1U),
+                                 _maxNumEncoders);
+    const uint32_t normalCount = drawCount / numEncoders;
+    const uint32_t finalCount = normalCount
+                              + (drawCount - normalCount * numEncoders);
+
+    _SetNumberParallelEncoders(numEncoders);
+
+    WorkWithScopedParallelism([&]() {
+        WorkDispatcher wd;
+        
+        for (uint32_t i = 0; i < numEncoders; ++i) {
+            const uint32_t encoderOffset = normalCount * i;
+            // If this is the last encoder then ensure that we have all prims.
+            const uint32_t encoderCount = (i == numEncoders - 1)
+                                        ? finalCount : normalCount;
+            wd.Run([&, i, encoderOffset, encoderCount]() {
+                id<MTLRenderCommandEncoder> encoder = GetEncoder(i);
+                {
+                    for (uint32_t offset = encoderOffset;
+                         offset < encoderOffset + encoderCount;
+                         ++offset) {
+                        //_stepFunctions.SetVertexBufferOffsets(encoder, offset);
+
+                        const uint32_t bufferOffset = drawBufferByteOffset
+                                                    + (offset * stride);
+                        //use index 26 as a taken index for constant offset into the buffer
+                        [encoder setMeshBytes:&offset length:sizeof(uint32_t) atIndex:26];
+                        _CachedEncState.useMeshShaders = true;
+                        //for the time being, set to 1024
+                        [encoder drawMeshThreadgroups:MTLSizeMake(1024, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
+                    }
+                }
+            });
+        }
+    });
 }
 
 

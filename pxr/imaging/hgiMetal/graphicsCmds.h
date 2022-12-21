@@ -117,6 +117,17 @@ public:
             uint32_t drawIndex) override;
 
     HGIMETAL_API
+    void
+    DrawIndexedMeshIndirect2(
+            HgiBufferHandle const& indexBuffer,
+            HgiBufferHandle const& drawParameterBuffer,
+            uint32_t drawBufferByteOffset,
+            uint32_t drawCount,
+            uint32_t stride,
+            std::vector<uint32_t> const& drawParameterBufferUInt32,
+            uint32_t patchBaseVertexByteOffset) override;
+
+    HGIMETAL_API
     void DrawIndexedIndirect(
         HgiBufferHandle const& indexBuffer,
         HgiBufferHandle const& drawParameterBuffer,
