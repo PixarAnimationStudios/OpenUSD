@@ -378,16 +378,17 @@ void main(void)
 {
 
     const uint32_t indicesPerMesh = 64;
-    const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalIndexID);
+    const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
     uint maxIndex = (indexCount / indicesPerMesh)+1;
+    const uint maxMaxIndex = 450;
+    maxIndex = min(maxIndex, maxMaxIndex);
 
 
-
-    g_drawCommandIndex = hd_LocalIndexID;
-    uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalIndexID);
-    uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalIndexID);
-    uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalIndexID);
-    uint baseInstance = GetDrawingField(baseInstanceOffset, hd_LocalIndexID);
+    g_drawCommandIndex = hd_LocalInvocationID.x;
+    uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
+    uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
+    uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
+    uint baseInstance = GetDrawingField(baseInstanceOffset, hd_LocalInvocationID.x);
 
 
     for (uint i = 0; i < maxIndex; i++) {
@@ -400,12 +401,12 @@ void main(void)
     payload.baseIndex = baseIndex;
     uint instance = 0;
     payload.instanceID = baseInstance + instance;
-    payload.drawCommandIndexPayload = hd_LocalIndexID;
+    payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
     payload.drawCommandNumUintLocal = drawCommandNumUints;
     // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.
 
     //This should never go over 1024 -> need better upstream detection
-    const uint maxZ = 512;
+    const uint maxZ = 450;
     uint z = min(maxIndex, maxZ);
     meshGridProperties->set_threadgroups_per_grid(uint3(z, 1, 1));
 }
