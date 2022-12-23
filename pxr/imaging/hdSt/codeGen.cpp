@@ -2576,7 +2576,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         mosDesc.stageInputs.push_back(std::move(paramDesc));
         
-        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexRange", "uint2", 450);
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandIndexPayload", "uint");
@@ -2637,9 +2637,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Triangle :
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 64;
+        //should be a power of 3 and 2
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 60;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
-        HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 450);
+        HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandIndexPayload", "uint");

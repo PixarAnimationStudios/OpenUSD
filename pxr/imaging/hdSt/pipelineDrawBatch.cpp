@@ -1218,7 +1218,7 @@ _GetDrawPipeline(
                                                   state.geometricShader);
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
-        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 64;
+        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 60;
         pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = 512;
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
