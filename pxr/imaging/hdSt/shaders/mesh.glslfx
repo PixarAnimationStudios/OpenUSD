@@ -400,7 +400,7 @@ void main(void)
     payload.baseVertex = baseVertex;
     payload.baseIndex = baseIndex;
     uint instance = 0;
-    payload.instanceID = baseInstance + instance;
+    payload.baseInstance = baseInstance;
     payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
     payload.drawCommandNumUintLocal = drawCommandNumUints;
     // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.

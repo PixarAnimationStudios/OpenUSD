@@ -2581,7 +2581,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandIndexPayload", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandNumUintLocal", "uint");
-        HgiShaderFunctionAddPayloadMember(&mosDesc, "instanceID", "uint");
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "baseInstance", "uint");
         
         /*
         HgiShaderFunctionAddBuffer(
@@ -2638,14 +2638,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
         //should be a power of 3 and 2
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 60;
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1024;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandIndexPayload", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandNumUintLocal", "uint");
-        HgiShaderFunctionAddPayloadMember(&msDesc, "instanceID", "uint");
+        HgiShaderFunctionAddPayloadMember(&msDesc, "baseInstance", "uint");
         resourceGen._GenerateHgiResources(&msDesc,
                                           HdShaderTokens->meshletShader, _resAttrib, _metaData);
         resourceGen._GenerateHgiResources(&msDesc,
@@ -4156,7 +4156,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         _genMS << "int g_instanceID;          // Set from calling code.\n"
                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
                 << "int GetInstanceIndexCoord() {\n"
-                << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
+                << "return GetDrawingCoordField(1, 1) + gl_InstanceID * HD_INSTANCE_INDEX_WIDTH;\n"
                 << "}\n";
         
         _genCS << "int g_instanceID;          // Set from calling code.\n"
@@ -4207,6 +4207,15 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex");
+            _EmitAccessor(_genMOS, _metaData.culledInstanceIndexArrayBinding.name,
+                          _metaData.culledInstanceIndexArrayBinding.dataType,
+                          _metaData.culledInstanceIndexArrayBinding.binding,
+                          "GetInstanceIndexCoord()+localIndex");
+            
+            _EmitAccessor(_genMS, _metaData.culledInstanceIndexArrayBinding.name,
+                          _metaData.culledInstanceIndexArrayBinding.dataType,
+                          _metaData.culledInstanceIndexArrayBinding.binding,
+                          "GetInstanceIndexCoord()+localIndex");
 
             genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
                     << "  int offset = GetInstanceIndexCoord();\n"
@@ -4226,12 +4235,13 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
         _genCS << "hd_instanceIndex GetInstanceIndex() {"
                << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
-
+        /*
         _genMOS << "hd_instanceIndex GetInstanceIndex() {"
                 << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
 
         _genMS << "hd_instanceIndex GetInstanceIndex() {"
                << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
+         */
     }
 
     if (!_hasCS) {
@@ -4257,6 +4267,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
     _genVS   << genAttr.str();
     _genPTVS << genAttr.str();
+    _genMOS << genAttr.str();
+    _genMS << genAttr.str();
 
     _genVS   << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
              << "  dc.modelCoord              = drawingCoord0.x;\n"
