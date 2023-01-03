@@ -619,11 +619,6 @@ void evaluate(float u, float v, REF(thread, vec4) position,
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Cubic.Patch
-struct Coeffs
-{
-  vec4 basis;
-  vec4 tangent_basis;
-};
 
 FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
