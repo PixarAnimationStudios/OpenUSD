@@ -888,11 +888,11 @@ TfType::Declare(const string &typeName,
         if (newBases.empty()) {
             if (haveBases.empty()) {
                 // If we don't have any bases yet, add the root type.
-                t._AddBases(TypeVector(1, GetRoot()), &errorsToEmit);
+                t._AddBasesNoLock(TypeVector(1, GetRoot()), &errorsToEmit);
             }
         } else {
             // Otherwise, add the new bases.
-            t._AddBases(newBases, &errorsToEmit);
+            t._AddBasesNoLock(newBases, &errorsToEmit);
         }
 
         if (definitionCallback) {
@@ -960,11 +960,11 @@ TfType::_DefineCppType(const std::type_info & typeInfo,
     r.SetTypeInfo(_info, typeInfo, sizeofType, isPodType, isEnumType);
 }
 
+// Callers must hold registry write lock.
 void
-TfType::_AddBases(
+TfType::_AddBasesNoLock(
     const TypeVector &newBases, vector<string> *errorsToEmit) const
 {
-    // Callers must hold _info write lock.
     TypeVector &haveBases = _info->baseTypes;
 
     // Also we check that all previously-declared bases are included and make 
