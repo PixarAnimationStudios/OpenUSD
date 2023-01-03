@@ -1766,6 +1766,46 @@ testVisitValue()
 
 }
 
+template <typename T>
+static void
+AssertIsHoldingKnownType(const VtValue &val)
+{
+    switch (val.GetKnownValueTypeIndex()) {
+    case VtGetKnownValueTypeIndex<T>():
+        break;
+    default:
+        TF_FATAL_ERROR("Expected %s (index=%d); got index %d",
+                       ArchGetDemangled<T>().c_str(),
+                       VtGetKnownValueTypeIndex<T>(),
+                       val.GetKnownValueTypeIndex());
+    }
+}
+
+struct TypeNotKnownToVt {};
+
+static void
+testKnownValueTypeIndex()
+{
+    VtValue iv(123);
+    VtValue dv(1.23);
+    VtValue fv(2.34f);
+    VtValue hv(GfHalf(3.45));
+    VtValue sv(std::string("hello"));
+    VtValue av(VtArray<float>(123));
+
+    AssertIsHoldingKnownType<int>(iv);
+    AssertIsHoldingKnownType<double>(dv);
+    AssertIsHoldingKnownType<float>(fv);
+    AssertIsHoldingKnownType<GfHalf>(hv);
+    AssertIsHoldingKnownType<std::string>(sv);
+    AssertIsHoldingKnownType<VtArray<float>>(av);
+
+    TF_AXIOM(VtIsKnownValueType<int>());
+    TF_AXIOM(VtIsKnownValueType<VtArray<GfVec3d>>());
+    TF_AXIOM(!VtIsKnownValueType<void>());
+    TF_AXIOM(!VtIsKnownValueType<TypeNotKnownToVt>());
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1784,6 +1824,7 @@ int main(int argc, char *argv[])
     testCombinedVtValueProxies();
 
     testVisitValue();
+    testKnownValueTypeIndex();
 
     printf("Test SUCCEEDED\n");
 
