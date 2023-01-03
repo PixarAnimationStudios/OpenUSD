@@ -51,11 +51,9 @@ find_package(Boost REQUIRED)
 # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
 # is enabled by default for boost version 1.70 and above. If a user explicitly 
 # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70")
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
-    if (Boost_NO_BOOST_CMAKE)
-        message(STATUS "Disabling boost-provided cmake config")
-    endif()
+option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
+if (Boost_NO_BOOST_CMAKE)
+    message(STATUS "Disabling boost-provided cmake config")
 endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
@@ -97,30 +95,22 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(Boost_USE_DEBUG_PYTHON ON)
     endif()
 
-    if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67")
-        # As of boost 1.67 the boost_python component name includes the
-        # associated Python version (e.g. python27, python36). 
-        # XXX: After boost 1.73, boost provided config files should be able to 
-        # work without specifying a python version!
-        # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
+    # As of boost 1.67 the boost_python component name includes the
+    # associated Python version (e.g. python27, python36). 
+    # XXX: After boost 1.73, boost provided config files should be able to 
+    # work without specifying a python version!
+    # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
 
-        # Find the component under the versioned name and then set the generic
-        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-        # logic in each library's CMakeLists.txt.
-        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-        find_package(Boost
-            COMPONENTS
-                python${python_version_nodot}
-            REQUIRED
-        )
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-    else()
-        find_package(Boost
-            COMPONENTS
-                python
-            REQUIRED
-        )
-    endif()
+    # Find the component under the versioned name and then set the generic
+    # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
+    # logic in each library's CMakeLists.txt.
+    set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
+    find_package(Boost
+        COMPONENTS
+	    python${python_version_nodot}
+        REQUIRED
+    )
+    set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
 
     # --Jinja2
     find_package(Jinja2)
