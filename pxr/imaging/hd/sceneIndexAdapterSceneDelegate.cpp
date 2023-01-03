@@ -1687,7 +1687,7 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
 
     // renderSettings usd of Get().
     if (prim.primType == HdPrimTypeTokens->renderSettings) {
-        _GetRenderSettings(prim, key);
+        return _GetRenderSettings(prim, key);
     }
 
     // sampleFilter usd of Get().
