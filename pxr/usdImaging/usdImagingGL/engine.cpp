@@ -27,9 +27,10 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
+#include "pxr/imaging/hd/materialBindingSchema.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -952,17 +953,27 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        _stageSceneIndex =
+        // The native prototype propagating scene index does a lot of
+        // the flattening before inserting copies of the the prototypes
+        // into the scene index. However, the resolved material for a prim
+        // coming from a USD prototype can depend on the prim ancestors of
+        // a corresponding instance. So we need to do one final resolve here.
+        static const HdContainerDataSourceHandle flatteningInputArgs =
+            HdRetainedContainerDataSource::New(
+                HdMaterialBindingSchemaTokens->materialBinding,
+                HdRetainedTypedSampledDataSource<bool>::New(true));
+
+        _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New();
 
         _sceneIndex =
-            UsdImagingPrototypePruningSceneIndex::New(_stageSceneIndex);
-
-        _sceneIndex =
             UsdImagingPiPrototypePropagatingSceneIndex::New(_sceneIndex);
+        
+        _sceneIndex =
+            UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
-            HdFlatteningSceneIndex::New(_sceneIndex);
+            HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
 
         _sceneIndex =
             UsdImagingDrawModeSceneIndex::New(_sceneIndex,

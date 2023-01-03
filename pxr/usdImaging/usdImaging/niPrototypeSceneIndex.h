@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_IMAGING_PROTOTYPE_PRUNING_SCENE_INDEX_H
-#define PXR_USD_IMAGING_USD_IMAGING_PROTOTYPE_PRUNING_SCENE_INDEX_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_SCENE_INDEX_H
+#define PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_SCENE_INDEX_H
 
 #include "pxr/usdImaging/usdImaging/api.h"
 
@@ -30,24 +30,34 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_REF_PTRS(UsdImagingPrototypePruningSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 
-// Removes all prototypes (immediate children of the pseudo root with
-// the data source isUsdPrototype  at returning true) from the scene index.
-//
-// Intended to be used on the UsdImagingStageSceneIndex.
-//
-class UsdImagingPrototypePruningSceneIndex final
+/// \class UsdImaging_NiPrototypeSceneIndex
+///
+/// A scene index that prepares prim in a Usd prototype
+/// (e.g. /__Prototype_1) to be instanced by an instancer
+/// created by the UsdImaging_InstanceAggregationSceneIndex.
+///
+/// It forces an empty type on all prims that are instances
+/// (that is prims with non-trivial usdPrototypePath).
+/// The reason is: an instance in usd can have a type such as
+/// sphere, yet we do not want to see this sphere in the render.
+///
+/// It also adds an instanced by data source with
+/// instancedBy:paths being / and instancedBy:prototypeRoot being
+/// the given prototype root. These are only added if they are not
+/// already present. That way, point instancers and prototypes within
+/// native prototypes are handled correctly.
+///
+class UsdImaging_NiPrototypeSceneIndex
             : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    static UsdImagingPrototypePruningSceneIndexRefPtr New(
-        HdSceneIndexBaseRefPtr const &inputSceneIndex)
-    {
-        return TfCreateRefPtr(
-            new UsdImagingPrototypePruningSceneIndex(
-                inputSceneIndex));
-    }
+    USDIMAGING_API
+    static
+    UsdImaging_NiPrototypeSceneIndexRefPtr
+    New(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        const SdfPath &prototypeRoot);
 
     USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
@@ -57,23 +67,23 @@ public:
 
 protected:
     void _PrimsAdded(
-        const HdSceneIndexBase &sender,
+        const HdSceneIndexBase&,
         const HdSceneIndexObserver::AddedPrimEntries &entries) override;
-
     void _PrimsDirtied(
-        const HdSceneIndexBase &sender,
+        const HdSceneIndexBase&,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
-
     void _PrimsRemoved(
-        const HdSceneIndexBase &sender,
+        const HdSceneIndexBase&,
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
 
 private:
-    USDIMAGING_API
-    UsdImagingPrototypePruningSceneIndex(
-        HdSceneIndexBaseRefPtr const &inputSceneIndex);
+    UsdImaging_NiPrototypeSceneIndex(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        const SdfPath &prototypeRoot);
 
-    SdfPathSet _prototypes;
+    HdContainerDataSourceHandle const _underlaySource;
+
+    const SdfPath _prototypeRoot;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

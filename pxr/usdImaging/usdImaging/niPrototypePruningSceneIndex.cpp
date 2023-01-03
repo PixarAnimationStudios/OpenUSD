@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -118,8 +118,8 @@ private:
 
 }
 
-UsdImagingPrototypePruningSceneIndex::
-UsdImagingPrototypePruningSceneIndex(
+UsdImaging_NiPrototypePruningSceneIndex::
+UsdImaging_NiPrototypePruningSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 {
@@ -132,7 +132,7 @@ UsdImagingPrototypePruningSceneIndex(
 }
 
 HdSceneIndexPrim
-UsdImagingPrototypePruningSceneIndex::GetPrim(
+UsdImaging_NiPrototypePruningSceneIndex::GetPrim(
     const SdfPath &primPath) const
 {
     if (_ContainsPrefixOfPath(_prototypes, primPath)) {
@@ -143,7 +143,7 @@ UsdImagingPrototypePruningSceneIndex::GetPrim(
 }
 
 SdfPathVector
-UsdImagingPrototypePruningSceneIndex::GetChildPrimPaths(
+UsdImaging_NiPrototypePruningSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
     if (_prototypes.empty()) {
@@ -170,7 +170,7 @@ UsdImagingPrototypePruningSceneIndex::GetChildPrimPaths(
 }
 
 void
-UsdImagingPrototypePruningSceneIndex::_PrimsAdded(
+UsdImaging_NiPrototypePruningSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
@@ -193,7 +193,7 @@ UsdImagingPrototypePruningSceneIndex::_PrimsAdded(
 }
 
 void
-UsdImagingPrototypePruningSceneIndex::_PrimsDirtied(
+UsdImaging_NiPrototypePruningSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
@@ -212,7 +212,7 @@ UsdImagingPrototypePruningSceneIndex::_PrimsDirtied(
 }
 
 void
-UsdImagingPrototypePruningSceneIndex::_PrimsRemoved(
+UsdImaging_NiPrototypePruningSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {

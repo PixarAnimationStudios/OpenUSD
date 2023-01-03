@@ -83,6 +83,7 @@ pxr_library(usdImaging
         materialAdapter
         materialBindingAPIAdapter
         meshAdapter
+        niPrototypePropagatingSceneIndex
         nurbsCurvesAdapter
         nurbsPatchAdapter
         piPrototypePropagatingSceneIndex
@@ -94,7 +95,6 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
-        prototypePruningSceneIndex
         rectLightAdapter
         renderSettingsAdapter
         rerootingSceneIndex
@@ -106,6 +106,9 @@ pxr_library(usdImaging
 
     PRIVATE_CLASSES
         drawModeStandin
+        niInstanceAggregationSceneIndex
+        niPrototypePruningSceneIndex
+        niPrototypeSceneIndex
         sceneIndexPrimView
         piPrototypeSceneIndex
 

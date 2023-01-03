@@ -69,7 +69,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USDIMAGING_NATIVE_INSTANCING_TOKENS \
     (usdPrototypePath)                      \
-    (isUsdPrototype)
+    (isUsdPrototype)                        \
+    ((prototypesScope, "__Usd_Prototypes"))
 
 TF_DECLARE_PUBLIC_TOKENS(
     UsdImagingTokens,
