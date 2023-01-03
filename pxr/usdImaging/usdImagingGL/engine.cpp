@@ -144,8 +144,6 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
-    , _sceneIndex(nullptr)
-    , _sceneDelegate(nullptr)
 {
     if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver &&
         _hgiDriver.driver.IsHolding<Hgi*>()) {
@@ -170,6 +168,7 @@ UsdImagingGLEngine::_DestroyHydraObjects()
     if (_GetUseSceneIndices()) {
         if (_renderIndex && _sceneIndex) {
             _renderIndex->RemoveSceneIndex(_sceneIndex);
+            _stageSceneIndex = nullptr;
             _sceneIndex = nullptr;
         }
     } else {
@@ -204,9 +203,9 @@ UsdImagingGLEngine::PrepareBatch(
     if (_CanPrepare(root)) {
         if (!_isPopulated) {
             if (_GetUseSceneIndices()) {
-                TF_VERIFY(_sceneIndex);
-                _sceneIndex->SetStage(root.GetStage());
-                _sceneIndex->Populate();
+                TF_VERIFY(_stageSceneIndex);
+                _stageSceneIndex->SetStage(root.GetStage());
+                _stageSceneIndex->Populate();
 
                 // XXX(USD-7113): Add pruning based on _rootPath,
                 // _excludedPrimPaths
@@ -231,7 +230,7 @@ UsdImagingGLEngine::PrepareBatch(
 
         // SetTime will only react if time actually changes.
         if (_GetUseSceneIndices()) {
-            _sceneIndex->SetTime(params.frame);
+            _stageSceneIndex->SetTime(params.frame);
         } else {
             _sceneDelegate->SetTime(params.frame);
         }
@@ -953,15 +952,23 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        _sceneIndex = UsdImagingStageSceneIndex::New();
-        _renderIndex->InsertSceneIndex(
-            UsdImagingDrawModeSceneIndex::New(
-                HdFlatteningSceneIndex::New(
-                    UsdImagingPiPrototypePropagatingSceneIndex::New(
-                        UsdImagingPrototypePruningSceneIndex::New(
-                            _sceneIndex))),
-                /* inputArgs = */ nullptr),
-            _sceneDelegateId);
+        _stageSceneIndex =
+            UsdImagingStageSceneIndex::New();
+
+        _sceneIndex =
+            UsdImagingPrototypePruningSceneIndex::New(_stageSceneIndex);
+
+        _sceneIndex =
+            UsdImagingPiPrototypePropagatingSceneIndex::New(_sceneIndex);
+
+        _sceneIndex =
+            HdFlatteningSceneIndex::New(_sceneIndex);
+
+        _sceneIndex =
+            UsdImagingDrawModeSceneIndex::New(_sceneIndex,
+                                              /* inputArgs = */ nullptr);
+
+        _renderIndex->InsertSceneIndex(_sceneIndex, _sceneDelegateId);
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(
                 _renderIndex.get(), _sceneDelegateId);
@@ -1375,7 +1382,7 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): fallback refine level
-        _sceneIndex->ApplyPendingUpdates();
+        _stageSceneIndex->ApplyPendingUpdates();
     } else {
         // Set the fallback refine level; if this changes from the
         // existing value, all prim refine levels will be dirtied.
