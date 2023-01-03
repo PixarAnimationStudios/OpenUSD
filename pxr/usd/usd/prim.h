@@ -571,6 +571,69 @@ public:
 
     /// @}
 
+    /// \name IsInFamily
+    ///
+    /// @{
+
+    /// Return true if the prim's schema type is or inherits from the schema 
+    /// type of any version of the schemas in the given \p schemaFamily.
+    USD_API
+    bool IsInFamily(const TfToken &schemaFamily) const;
+
+    /// Return true if the prim's schema type, is or inherits from the schema 
+    /// type of any schema in the given \p schemaFamily that matches the version
+    /// filter provided by \p schemaVersion and \p versionPolicy.
+    USD_API
+    bool IsInFamily(
+        const TfToken &schemaFamily,
+        UsdSchemaVersion schemaVersion,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Overload for convenience of 
+    /// \ref IsInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "IsInFamily"
+    /// that finds a registered schema for the C++ schema class \p SchemaType 
+    /// and uses that schema's family and version.
+    template <typename SchemaType>
+    bool IsInFamily(
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const {
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
+                      "Provided type must derive UsdSchemaBase.");
+        return IsInFamily(TfType::Find<SchemaType>(), versionPolicy);
+    };
+
+    /// Overload for convenience of 
+    /// \ref IsInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "IsInFamily"
+    /// that finds a registered schema for the given \p schemaType and uses that
+    /// schema's family and version.
+    USD_API
+    bool IsInFamily(
+        const TfType &schemaType,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Overload for convenience of 
+    /// \ref IsInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "IsInFamily"
+    /// that parses the schema family and version to use from the given 
+    /// \p schemaIdentifier.
+    ///
+    /// Note that the schema identifier is not required to be a registered
+    /// schema as it only parsed to get what its family and version would be 
+    /// See UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier.
+    USD_API
+    bool IsInFamily(
+        const TfToken &schemaIdentifier,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Return true if the prim's schema type, is or inherits from the schema 
+    /// type of any version the schema in the given \p schemaFamily and if so,
+    /// populates \p schemaVersion with the version of the schema that this 
+    /// prim \ref IsA.
+    USD_API
+    bool GetVersionIfIsInFamily(
+        const TfToken &schemaFamily,
+        UsdSchemaVersion *schemaVersion) const;
+
+    /// @}
+
     /// \name HasAPI
     ///
     /// __Using HasAPI in C++__
@@ -691,6 +754,170 @@ public:
     bool HasAPI(const TfToken& schemaFamily,
                 UsdSchemaVersion schemaVersion,
                 const TfToken& instanceName) const;
+
+    /// @}
+
+    /// \name HasAPIInFamily
+    ///
+    /// @{
+
+    /// Return true if the prim has an applied API schema that is any version of 
+    /// the schemas in the given \p schemaFamily.
+    /// 
+    /// This function will consider both single-apply and multiple-apply API 
+    /// schemas in the schema family. For the multiple-apply API schemas, this
+    /// will return true if any instance of one of the schemas has been applied.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaFamily) const;
+
+    /// Return true if the prim has a specific instance \p instanceName of an
+    /// applied multiple-apply API schema that is any version the schemas in
+    /// the given \p schemaFamily.
+    /// 
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaFamily,
+        const TfToken &instanceName) const;
+
+    /// Return true if the prim has an applied API schema that is a schema in  
+    /// the given \p schemaFamily that matches the version filter provided by 
+    /// \p schemaVersion and \p versionPolicy.
+    /// 
+    /// This function will consider both single-apply and multiple-apply API 
+    /// schemas in the schema family. For the multiple-apply API schemas, this
+    /// will return true if any instance of one of the filter-passing schemas
+    /// has been applied.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaFamily,
+        UsdSchemaVersion schemaVersion,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Return true if the prim has a specific instance \p instanceName of an 
+    /// applied multiple-apply API schema in the given \p schemaFamily that 
+    /// matches the version filter provided by \p schemaVersion and 
+    /// \p versionPolicy.
+    /// 
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaFamily,
+        UsdSchemaVersion schemaVersion,
+        UsdSchemaRegistry::VersionPolicy versionPolicy,
+        const TfToken &instanceName) const;
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "HasAPIInFamily"
+    /// that finds a registered schema for the C++ schema class \p SchemaType 
+    /// and uses that schema's family and version.
+    template <typename SchemaType>
+    bool HasAPIInFamily(
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const {
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
+                      "Provided type must derive UsdSchemaBase.");
+        return HasAPIInFamily(
+            TfType::Find<SchemaType>(), versionPolicy);
+    };
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy, const TfToken &) const "HasAPIInFamily"
+    /// that finds a registered schema for the C++ schema class \p SchemaType 
+    /// and uses that schema's family and version.
+    template <typename SchemaType>
+    bool HasAPIInFamily(
+        UsdSchemaRegistry::VersionPolicy versionPolicy,
+        const TfToken &instanceName) const {
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
+                      "Provided type must derive UsdSchemaBase.");
+        return HasAPIInFamily(
+            TfType::Find<SchemaType>(), versionPolicy, instanceName);
+    };
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "HasAPIInFamily"
+    /// that finds a registered schema for the given \p schemaType and uses that
+    /// schema's family and version.
+    USD_API
+    bool HasAPIInFamily(
+        const TfType &schemaType,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy, const TfToken &) const "HasAPIInFamily"
+    /// that finds a registered schema for the given \p schemaType and uses that
+    /// schema's family and version.
+    USD_API
+    bool HasAPIInFamily(
+        const TfType &schemaType,
+        UsdSchemaRegistry::VersionPolicy versionPolicy,
+        const TfToken &instanceName) const;
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy) const "HasAPIInFamily"
+    /// that parses the schema family and version to use from the given 
+    /// \p schemaIdentifier.
+    ///
+    /// Note that the schema identifier is not required to be a registered
+    /// schema as it only parsed to get what its family and version would be 
+    /// See UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaIdentifier,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const;
+
+    /// Overload for convenience of 
+    /// \ref HasAPIInFamily(const TfToken&, UsdSchemaVersion, UsdSchemaRegistry::VersionPolicy, const TfToken &) const "HasAPIInFamily"
+    /// that parses the schema family and version to use from the given 
+    /// \p schemaIdentifier.
+    ///
+    /// Note that the schema identifier is not required to be a registered
+    /// schema as it only parsed to get what its family and version would be 
+    /// See UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier.
+    USD_API
+    bool HasAPIInFamily(
+        const TfToken &schemaIdentifier,
+        UsdSchemaRegistry::VersionPolicy versionPolicy,
+        const TfToken &instanceName) const;
+
+    /// Return true if the prim has an applied API schema that is any version 
+    /// the schemas in the given \p schemaFamily and if so, populates 
+    /// \p schemaVersion with the version of the schema that this prim 
+    /// \ref HasAPI.
+    ///
+    /// This function will consider both single-apply and multiple-apply API 
+    /// schemas in the schema family. For the multiple-apply API schemas is a 
+    /// this will return true if any instance of one of the schemas has been 
+    /// applied.
+    ///
+    /// Note that if more than one version of the schemas in \p schemaFamily
+    /// are applied to this prim, the highest version number of these schemas 
+    /// will be populated in \p schemaVersion.
+    USD_API
+    bool
+    GetVersionIfHasAPIInFamily(
+        const TfToken &schemaFamily,
+        UsdSchemaVersion *schemaVersion) const;
+
+    /// Return true if the prim has a specific instance \p instanceName of an
+    /// applied multiple-apply API schema that is any version the schemas in
+    /// the given \p schemaFamily and if so, populates \p schemaVersion with the
+    /// version of the schema that this prim 
+    /// \ref HasAPI(const TfToken &) const "HasAPI".
+    ///
+    /// \p instanceName must be non-empty, otherwise it is a coding error.
+    ///
+    /// Note that if more than one version of the schemas in \p schemaFamily
+    /// is multiple-apply and applied to this prim with the given 
+    /// \p instanceName, the highest version number of these schemas will be 
+    /// populated in \p schemaVersion.
+    USD_API
+    bool
+    GetVersionIfHasAPIInFamily(
+        const TfToken &schemaFamily,
+        const TfToken &instanceName,
+        UsdSchemaVersion *schemaVersion) const;
 
     /// @}
 

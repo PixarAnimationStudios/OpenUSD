@@ -25,6 +25,9 @@
 import os, unittest
 from pxr import Plug, Usd, Tf
 
+# Map the version policy enum to reduce text clutter.
+VersionPolicy = Usd.SchemaRegistry.VersionPolicy
+
 class TestUsdSchemaRegistry(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -70,7 +73,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         assert(not cls.MultiApiVersion0Type.isUnknown)
         assert(not cls.MultiApiVersion1Type.isUnknown)
         assert(not cls.MultiApiVersion2Type.isUnknown)
-
 
     def test_ParseFamilyAndVersion(self):
         """Tests the parsing of family and version values from schema 
@@ -241,84 +243,84 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 0, 
-                Usd.SchemaRegistry.VersionPolicy.All),
+                VersionPolicy.All),
             [expectedVersion2Info, expectedVersion1Info, expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 1,
-                Usd.SchemaRegistry.VersionPolicy.All),
+                VersionPolicy.All),
             [expectedVersion2Info, expectedVersion1Info, expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
-                'TestBasicVersioned', 2, Usd.SchemaRegistry.VersionPolicy.All),
+                'TestBasicVersioned', 2, VersionPolicy.All),
             [expectedVersion2Info, expectedVersion1Info, expectedVersion0Info])
 
         # Find filtered schemas in a family: VersionPolicy = GreaterThan
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 0,
-                Usd.SchemaRegistry.VersionPolicy.GreaterThan),
+                VersionPolicy.GreaterThan),
             [expectedVersion2Info, expectedVersion1Info, ])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 1,
-                Usd.SchemaRegistry.VersionPolicy.GreaterThan),
+                VersionPolicy.GreaterThan),
             [expectedVersion2Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 2,
-                Usd.SchemaRegistry.VersionPolicy.GreaterThan),
+                VersionPolicy.GreaterThan),
             [])
 
         # Find filtered schemas in a family: VersionPolicy = GreaterThanOrEqual
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 0,
-                Usd.SchemaRegistry.VersionPolicy.GreaterThanOrEqual),
+                VersionPolicy.GreaterThanOrEqual),
             [expectedVersion2Info, expectedVersion1Info, expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 1,
-                Usd.SchemaRegistry.VersionPolicy.GreaterThanOrEqual),
+                VersionPolicy.GreaterThanOrEqual),
             [expectedVersion2Info, expectedVersion1Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 2, 
-                Usd.SchemaRegistry.VersionPolicy.GreaterThanOrEqual),
+                VersionPolicy.GreaterThanOrEqual),
             [expectedVersion2Info])
 
         # Find filtered schemas in a family: VersionPolicy = LessThan
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 0, 
-                Usd.SchemaRegistry.VersionPolicy.LessThan),
+                VersionPolicy.LessThan),
             [])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 1, 
-                Usd.SchemaRegistry.VersionPolicy.LessThan),
+                VersionPolicy.LessThan),
             [expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 2,
-                Usd.SchemaRegistry.VersionPolicy.LessThan),
+                VersionPolicy.LessThan),
             [expectedVersion1Info, expectedVersion0Info])
 
         # Find filtered schemas in a family: VersionPolicy = LessThanOrEqual
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 0,
-                Usd.SchemaRegistry.VersionPolicy.LessThanOrEqual),
+                VersionPolicy.LessThanOrEqual),
             [expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 1,
-                Usd.SchemaRegistry.VersionPolicy.LessThanOrEqual),
+                VersionPolicy.LessThanOrEqual),
             [expectedVersion1Info, expectedVersion0Info])
         _VerifySchemaInfoList(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 'TestBasicVersioned', 2,
-                Usd.SchemaRegistry.VersionPolicy.LessThanOrEqual),
+                VersionPolicy.LessThanOrEqual),
             [expectedVersion2Info, expectedVersion1Info, expectedVersion0Info])
     
         # Edge cases:
@@ -339,7 +341,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(
             Usd.SchemaRegistry.FindSchemaInfosInFamily(
                 validVersionedIdentifier, 0, 
-                Usd.SchemaRegistry.VersionPolicy.All), 
+                VersionPolicy.All), 
             [])
 
     def test_PrimIsA(self):
@@ -403,20 +405,198 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             self.assertFalse(prim.IsA(schemaInfo["family"], 
                                       schemaInfo["version"]))
 
-        # For each prim verify that all IsA calls return true for the schema
-        # inputs related to its type and false for the schema inputs that are 
-        # not.
+        def _VerifyIsInFamily(prim, schemaInfo, versionPolicy):
+            # By TfType
+            self.assertTrue(prim.IsInFamily(
+                schemaInfo["type"], versionPolicy))
+            # By Identifier
+            self.assertTrue(prim.IsInFamily(
+                schemaInfo["identifier"], versionPolicy))
+            # By Family and Version
+            self.assertTrue(prim.IsInFamily(
+                schemaInfo["family"], schemaInfo["version"], versionPolicy))
+
+        def _VerifyNotIsInFamily(prim, schemaInfo, versionPolicy):
+            # By TfType
+            self.assertFalse(prim.IsInFamily(
+                schemaInfo["type"], versionPolicy))
+            # By Identifier
+            self.assertFalse(prim.IsInFamily(
+                schemaInfo["identifier"], versionPolicy))
+            # By Family and Version
+            self.assertFalse(prim.IsInFamily(
+                schemaInfo["family"], schemaInfo["version"], versionPolicy))
+
+        # Prim0 IsA version 0 of "TestBasicVersioned". Verify IsA calls with
+        # each schema version
         _VerifyIsA(primV0, expectedVersion0Info)
         _VerifyNotIsA(primV0, expectedVersion1Info)
         _VerifyNotIsA(primV0, expectedVersion2Info)
 
+        # Verify prim0 "is any version" in schema family "TestBasicVersioned"
+        # and that its version is returned as 0
+        self.assertTrue(primV0.IsInFamily("TestBasicVersioned"))
+        self.assertEqual(
+            primV0.GetVersionIfIsInFamily("TestBasicVersioned"), 0)
+
+        # Verify the results of calling IsInFamily with each version 
+        # policy filter for each schema version.
+        _VerifyIsInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.All)
+
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThan)
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThan)
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        _VerifyIsInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        _VerifyNotIsInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.LessThan)
+        _VerifyIsInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.LessThan)
+        _VerifyIsInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.LessThan)
+
+        _VerifyIsInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        _VerifyIsInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        _VerifyIsInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Prim1 IsA version 1 of "TestBasicVersioned". Verify IsA calls with
+        # each schema version
         _VerifyNotIsA(primV1, expectedVersion0Info)
         _VerifyIsA(primV1, expectedVersion1Info)
         _VerifyNotIsA(primV1, expectedVersion2Info)
 
+        # Verify prim1 "is any version" in schema family "TestBasicVersioned" 
+        # and that its version is returned as 1
+        self.assertTrue(primV1.IsInFamily("TestBasicVersioned"))
+        self.assertEqual(
+            primV1.GetVersionIfIsInFamily("TestBasicVersioned"), 1)
+
+        # Verify the results of calling IsInFamily with each version 
+        # policy filter for each schema version.
+        _VerifyIsInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.All)
+
+        _VerifyIsInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThan)
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThan)
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        _VerifyIsInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyIsInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.LessThan)
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.LessThan)
+        _VerifyIsInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.LessThan)
+
+        _VerifyNotIsInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        _VerifyIsInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        _VerifyIsInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Prim2 IsA version 2 of "TestBasicVersioned". Verify IsA calls with
+        # each schema version
         _VerifyNotIsA(primV2, expectedVersion0Info)
         _VerifyNotIsA(primV2, expectedVersion1Info)
         _VerifyIsA(primV2, expectedVersion2Info)
+
+        # Verify prim2 "is any version" in schema family "TestBasicVersioned"
+        # and that its version is returned as 2
+        self.assertTrue(primV2.IsInFamily("TestBasicVersioned"))
+        self.assertEqual(
+            primV2.GetVersionIfIsInFamily("TestBasicVersioned"), 2)
+
+        # Verify the results of calling IsInFamily with each version 
+        # policy filter for each schema version.
+        _VerifyIsInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.All)
+        _VerifyIsInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.All)
+
+        _VerifyIsInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThan)
+        _VerifyIsInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThan)
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        _VerifyIsInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyIsInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        _VerifyIsInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.LessThan)
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.LessThan)
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.LessThan)
+
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        _VerifyNotIsInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        _VerifyIsInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Verify calls to IsInFamily with a version that doesn't 
+        # itself exist but is from a valid schema family.
+
+        # Version 3 of "TestBasicVersioned" does not exist and none of the 
+        # prims "IsA" TestBasicVersioned_3
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestBasicVersioned_3"))
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestBasicVersioned", 3))
+        self.assertFalse(primV2.IsA("TestBasicVersioned", 3))
+        self.assertFalse(primV2.IsA("TestBasicVersioned_3"))
+
+        # However, "TestBasicVersioned_3" can still be used to query about
+        # IsInFamily; the prims are versions in the same schema family
+        # that are less than version 3
+        self.assertTrue(primV2.IsInFamily(
+            "TestBasicVersioned", 3, VersionPolicy.LessThan))
+        self.assertFalse(primV2.IsInFamily(
+            "TestBasicVersioned", 3, VersionPolicy.GreaterThanOrEqual))
+        self.assertTrue(primV2.IsInFamily(
+            "TestBasicVersioned_3", VersionPolicy.LessThan))
+        self.assertFalse(primV2.IsInFamily(
+            "TestBasicVersioned_3", VersionPolicy.GreaterThanOrEqual))
 
     # Verifies that a prim HasAPI, using all three input types, for the schema 
     # specified in schemaInfo.
@@ -463,6 +643,64 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertFalse(prim.HasAPI(schemaInfo["family"], 
                                     schemaInfo["version"], instanceName))
 
+    # Verifies that a prim HasAPIInFamily, using all three input 
+    # types, for the schema specified in schemaInfo.
+    def _VerifyHasAPIInFamily(self, prim, schemaInfo, versionPolicy):
+        # By TfType
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["type"], versionPolicy))
+        # By Identifier
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["identifier"], versionPolicy))
+        # By Family and Version
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["family"], schemaInfo["version"], versionPolicy))
+
+    # Verifies that a prim does NOT HasAPIInFamily, using all three
+    # input types, for the schema specified in schemaInfo.
+    def _VerifyNotHasAPIInFamily(
+            self, prim, schemaInfo, versionPolicy):
+        # By TfType
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["type"], versionPolicy))
+        # By Identifier
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["identifier"], versionPolicy))
+        # By Family and Version
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["family"], schemaInfo["version"], versionPolicy))
+
+    # Verifies that a prim HasAPIInFamily with the specified instance
+    # name, using all three input types, for the schema specified in schemaInfo.
+    def _VerifyHasAPIInFamilyInstance(
+            self, prim, schemaInfo, versionPolicy, instanceName):
+        # By TfType
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["type"], versionPolicy, instanceName))
+        # By Identifier
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["identifier"], versionPolicy, instanceName))
+        # By Family and Version
+        self.assertTrue(prim.HasAPIInFamily(
+            schemaInfo["family"], schemaInfo["version"], versionPolicy, 
+            instanceName))
+
+    # Verifies that a prim does NOT HasAPIInFamily with the specified
+    # instance name, using all three input types, for the schema specified in
+    # schemaInfo.
+    def _VerifyNotHasAPIInFamilyInstance(
+            self, prim, schemaInfo, versionPolicy, instanceName):
+        # By TfType
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["type"], versionPolicy, instanceName))
+        # By Identifier
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["identifier"], versionPolicy, instanceName))
+        # By Family and Version
+        self.assertFalse(prim.HasAPIInFamily(
+            schemaInfo["family"], schemaInfo["version"], versionPolicy, 
+            instanceName))
+
     def test_PrimHasAPI_SingleApply(self):
         """Tests all Usd.Prim API for querying if a prim 'HasAPI' with 
            versioned single-apply API schemas"""        
@@ -506,20 +744,179 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         primV1.ApplyAPI(self.SingleApiVersion1Type)
         primV2.ApplyAPI(self.SingleApiVersion2Type)
 
-        # For each prim verify that all HasAPI calls return true for the schema
-        # inputs related to its applied API type and false for the schema inputs
-        # that are not.
+        # Prim0 HasAPI version 0 of "TestVersionedSingleApplyAPI" (and not any 
+        # of the other versions). Verify HasAPI calls with each schema version.
         self._VerifyHasAPI(primV0, expectedVersion0Info)
         self._VerifyNotHasAPI(primV0, expectedVersion1Info)
         self._VerifyNotHasAPI(primV0, expectedVersion2Info)
 
+        # Verify prim0 "has any API version" in schema family 
+        # "TestVersionedSingleApplyAPI" and that its version is returned as 0
+        self.assertTrue(
+            primV0.HasAPIInFamily("TestVersionedSingleApplyAPI"))
+        self.assertEqual(primV0.GetVersionIfHasAPIInFamily(
+            "TestVersionedSingleApplyAPI"), 0)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.All)
+
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThan)
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThan)
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        self._VerifyNotHasAPIInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.LessThan)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.LessThan)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.LessThan)
+
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV0, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Prim1 HasAPI version 1 of "TestVersionedSingleApplyAPI" (and not any 
+        # of the other versions). Verify HasAPI calls with each schema version.
         self._VerifyNotHasAPI(primV1, expectedVersion0Info)
         self._VerifyHasAPI(primV1, expectedVersion1Info)
         self._VerifyNotHasAPI(primV1, expectedVersion2Info)
 
+        # Verify prim1 "has any API version" in schema family 
+        # "TestVersionedSingleApplyAPI" and that its version is returned as 1
+        self.assertTrue(
+            primV1.HasAPIInFamily("TestVersionedSingleApplyAPI"))
+        self.assertEqual(primV1.GetVersionIfHasAPIInFamily(
+            "TestVersionedSingleApplyAPI"), 1)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.All)
+
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThan)
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThan)
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.LessThan)
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.LessThan)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.LessThan)
+
+        self._VerifyNotHasAPIInFamily(
+            primV1, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV1, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Prim2 HasAPI version 2 of "TestVersionedSingleApplyAPI" (and not any 
+        # of the other versions). Verify HasAPI calls with each schema version.
         self._VerifyNotHasAPI(primV2, expectedVersion0Info)
         self._VerifyNotHasAPI(primV2, expectedVersion1Info)
         self._VerifyHasAPI(primV2, expectedVersion2Info)
+
+        # Verify prim2 "has any API version" in schema family 
+        # "TestVersionedSingleApplyAPI" and that its version is returned as 2
+        self.assertTrue(
+            primV2.HasAPIInFamily("TestVersionedSingleApplyAPI"))
+        self.assertEqual(primV2.GetVersionIfHasAPIInFamily(
+            "TestVersionedSingleApplyAPI"), 2)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.All)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.All)
+
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThan)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThan)
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThan)
+
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual)
+
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.LessThan)
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.LessThan)
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.LessThan)
+
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion0Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyNotHasAPIInFamily(
+            primV2, expectedVersion1Info, VersionPolicy.LessThanOrEqual)
+        self._VerifyHasAPIInFamily(
+            primV2, expectedVersion2Info, VersionPolicy.LessThanOrEqual)
+
+        # Verify calls to HasAPIInFamily with a version that doesn't 
+        # itself exist but is from a valid schema family.
+
+        # Version 3 of "TestVersionedSingleApplyAPI" does not exist and none of
+        # the prims "HasAPI" TestVersionedSingleApplyAPI_3
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestVersionedSingleApplyAPI_3"))
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestVersionedSingleApplyAPI", 3))
+        self.assertFalse(primV2.HasAPI("TestVersionedSingleApplyAPI", 3))
+        self.assertFalse(primV2.HasAPI("TestVersionedSingleApplyAPI_3"))
+
+        # However, "TestVersionedSingleApplyAPI_3" can still be used to query
+        # about HasAPIInFamily; the prims have applied APIs that are
+        # versions in the same schema family that are less than version 3
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedSingleApplyAPI", 3, VersionPolicy.LessThan))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedSingleApplyAPI", 3, VersionPolicy.GreaterThanOrEqual))
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedSingleApplyAPI_3", VersionPolicy.LessThan))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedSingleApplyAPI_3", VersionPolicy.GreaterThanOrEqual))
 
     def test_PrimHasAPI_MultiApply(self):
         """Tests all Usd.Prim API for querying if a prim 'HasAPI' with 
@@ -573,8 +970,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(primV1.ApplyAPI(self.MultiApiVersion1Type, "bar"))
         self.assertTrue(primV2.ApplyAPI(self.MultiApiVersion0Type, "bar"))
 
-        # Helper for verifying all inputs HasAPI and the expected return values
-        # around the instance for the given schema it is expected to have
+        # Helper for verifying all inputs to HasAPI produce the expected return 
+        # values given the instances for the given schema it is expected to have
         def _VerifyHasAPIInstances(prim, schemaInfo, expectedHasInstanceNames):
             # Verify the return value for all calls to HasAPI without a 
             # specified instance name. We expect these to return true iff we
@@ -592,26 +989,325 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 self._VerifyNotHasAPIInstance(prim, schemaInfo, "foo")
 
             # Verify all calls to HasAPI "bar" return true iff we expect the
-            # prim to have a "foo" instance of the schema.
+            # prim to have a "bar" instance of the schema.
             if "bar" in expectedHasInstanceNames:
                 self._VerifyHasAPIInstance(prim, schemaInfo, "bar")
             else:
                 self._VerifyNotHasAPIInstance(prim, schemaInfo, "bar")
 
-        # For each prim verify that all HasAPI calls return true for the schema
-        # inputs related to the applied API schema instances it was applied with
-        # and false for everything else.
+        # Helper for verifying all inputs to HasAPIInFamily produce 
+        # the expected return values given the instances for the given schema it
+        # is expected to have
+        def _VerifyHasAPIInFamilyInstances(
+                prim, schemaInfo, versionPolicy, expectedHasInstanceNames):
+            # Verify the return value for all calls to HasAPIInFamily
+            # without a specified instance name. We expect these to return true
+            # iff we expect the prim to have any instances of the schema.
+            if expectedHasInstanceNames:
+                self._VerifyHasAPIInFamily(
+                    prim, schemaInfo, versionPolicy)
+            else:
+                self._VerifyNotHasAPIInFamily(
+                    prim, schemaInfo, versionPolicy)
+            
+            # Verify all calls to HasAPIInFamily "foo" return true iff
+            # we expect the# prim to have a "foo" instance of the schema.
+            if "foo" in expectedHasInstanceNames:
+                self._VerifyHasAPIInFamilyInstance(
+                    prim, schemaInfo, versionPolicy, "foo")
+            else:
+                self._VerifyNotHasAPIInFamilyInstance(
+                    prim, schemaInfo, versionPolicy, "foo")
+
+            # Verify all calls to HasAPIInFamily "bar" return true iff
+            # we expect the prim to have a "bar" instance of the schema.
+            if "bar" in expectedHasInstanceNames:
+                self._VerifyHasAPIInFamilyInstance(
+                    prim, schemaInfo, versionPolicy, "bar")
+            else:
+                self._VerifyNotHasAPIInFamilyInstance(
+                    prim, schemaInfo, versionPolicy, "bar")
+
+        # Prim0 HasAPI version 0 of "TestVersionedMultiApplyAPI" with instance 
+        # "foo" and version 2 of the same schema family with instance "bar". 
+        # Verify HasAPI calls for these combinations of instance name and schema
+        # version.
         _VerifyHasAPIInstances(primV0, expectedVersion0Info, ["foo"])
         _VerifyHasAPIInstances(primV0, expectedVersion1Info, [])
         _VerifyHasAPIInstances(primV0, expectedVersion2Info, ["bar"])
 
+        # Verify prim0 "has any API version" with instance "foo" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 0
+        self.assertTrue(primV0.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"))
+        self.assertEqual(primV0.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"), 0)
+        # Verify prim0 "has any API version" with instance "bar" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 2
+        self.assertTrue(primV0.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"))
+        self.assertEqual(primV0.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"), 2)
+        # Verify prim0 "has any API version" with any instance in schema family 
+        # "TestVersionedMultiApplyAPI". The "foo" and "bar" instances are 
+        # different so the version for any instance is the latest version which
+        # in this case is 2.
+        self.assertTrue(primV0.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI"))
+        self.assertEqual(primV0.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI"), 2)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion0Info, VersionPolicy.All, 
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion1Info, VersionPolicy.All,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion2Info, VersionPolicy.All,
+            ["foo", "bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThan, 
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThan, 
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThan, 
+            [])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual, 
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual,
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual,
+            ["bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion0Info, VersionPolicy.LessThan,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion1Info, VersionPolicy.LessThan,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion2Info, VersionPolicy.LessThan,
+            ["foo"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion0Info, VersionPolicy.LessThanOrEqual,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion1Info, VersionPolicy.LessThanOrEqual,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV0, expectedVersion2Info, VersionPolicy.LessThanOrEqual,
+            ["foo", "bar"])
+
+        # Prim1 HasAPI version 1 of "TestVersionedMultiApplyAPI" with instance 
+        # "foo" and instance "bar". Verify HasAPI calls for these combinations 
+        # of instance name and schema version.
         _VerifyHasAPIInstances(primV1, expectedVersion0Info, [])
         _VerifyHasAPIInstances(primV1, expectedVersion1Info, ["foo", "bar"])
         _VerifyHasAPIInstances(primV1, expectedVersion2Info, [])
 
+        # Verify prim1 "has any API version" with instance "foo" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 1
+        self.assertTrue(primV1.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"))
+        self.assertEqual(primV1.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"), 1)
+        # Verify prim1 "has any API version" with instance "bar" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 1
+        self.assertTrue(primV1.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"))
+        self.assertEqual(primV1.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"), 1)
+        # Verify prim1 "has any API version" with any instance in schema family 
+        # "TestVersionedMultiApplyAPI". The "foo" and "bar" instances are 
+        # the same so the version for any instance is the shared version 1.
+        self.assertTrue(primV1.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI"))
+        self.assertEqual(primV1.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI"), 1)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion0Info, VersionPolicy.All, 
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion1Info, VersionPolicy.All, 
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion2Info, VersionPolicy.All,
+            ["foo", "bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThan,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThan,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThan,
+            [])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual,
+            [])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion0Info, VersionPolicy.LessThan,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion1Info, VersionPolicy.LessThan,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion2Info, VersionPolicy.LessThan,
+            ["foo", "bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion0Info, VersionPolicy.LessThanOrEqual,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion1Info, VersionPolicy.LessThanOrEqual,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV1, expectedVersion2Info, VersionPolicy.LessThanOrEqual,
+            ["foo", "bar"])
+
+        # Prim2 HasAPI version 2 of "TestVersionedMultiApplyAPI" with instance 
+        # "foo" and version 0 of the same schema family with instance "bar". 
+        # Verify HasAPI calls for these combinations of instance name and schema
+        # version.
         _VerifyHasAPIInstances(primV2, expectedVersion0Info, ["bar"])
         _VerifyHasAPIInstances(primV2, expectedVersion1Info, [])
         _VerifyHasAPIInstances(primV2, expectedVersion2Info, ["foo"])
+
+        # Verify prim2 "has any API version" with instance "foo" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 2
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"))
+        self.assertEqual(primV2.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "foo"), 2)
+        # Verify prim2 "has any API version" with instance "bar" in schema
+        # family "TestVersionedMultiApplyAPI" and that its version is returned
+        # as 0
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"))
+        self.assertEqual(primV2.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI", "bar"), 0)
+        # Verify prim2 "has any API version" with any instance in schema family 
+        # "TestVersionedMultiApplyAPI". The "foo" and "bar" instances are 
+        # different so the version for any instance is the latest version which
+        # in this case is 2.
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI"))
+        self.assertEqual(primV2.GetVersionIfHasAPIInFamily(
+            "TestVersionedMultiApplyAPI"), 2)
+
+        # Verify the results of calling HasAPIInFamily with each 
+        # version policy filter for each schema version.
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion0Info, VersionPolicy.All, ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion1Info, VersionPolicy.All, ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion2Info, VersionPolicy.All, ["foo", "bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThan,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThan,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThan,
+            [])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion0Info, VersionPolicy.GreaterThanOrEqual,
+            ["foo", "bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion1Info, VersionPolicy.GreaterThanOrEqual,
+            ["foo"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion2Info, VersionPolicy.GreaterThanOrEqual,
+            ["foo"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion0Info, VersionPolicy.LessThan,
+            [])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion1Info, VersionPolicy.LessThan,
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion2Info, VersionPolicy.LessThan,
+            ["bar"])
+
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion0Info, VersionPolicy.LessThanOrEqual,
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion1Info, VersionPolicy.LessThanOrEqual,
+            ["bar"])
+        _VerifyHasAPIInFamilyInstances(
+            primV2, expectedVersion2Info, VersionPolicy.LessThanOrEqual,
+            ["foo", "bar"])
+
+        # Verify calls to HasAPIInFamily with a version that doesn't 
+        # itself exist but is from a valid schema family.
+
+        # Version 3 of "TestVersionedMultiApplyAPI" does not exist and none of
+        # the prims "HasAPI" TestVersionedMultiApplyAPI_3
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestVersionedMultiApplyAPI_3"))
+        self.assertFalse(
+            Usd.SchemaRegistry.FindSchemaInfo("TestVersionedMultiApplyAPI", 3))
+        self.assertFalse(primV2.HasAPI("TestVersionedMultiApplyAPI", 3))
+        self.assertFalse(primV2.HasAPI("TestVersionedMultiApplyAPI_3"))
+
+        # However, "TestVersionedMultiApplyAPI_3" can still be used to query
+        # about HasAPIInFamily; the prims have applied APIs that are
+        # versions in the same schema family that are less than version 3
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", 3, VersionPolicy.LessThan))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", 3, VersionPolicy.GreaterThanOrEqual))
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI_3", VersionPolicy.LessThan))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI_3", VersionPolicy.GreaterThanOrEqual))
+
+        # This also works when supplying HasAPIInFamily with a
+        # specific instance name.
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", 3, VersionPolicy.LessThan, "foo"))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI", 3, VersionPolicy.GreaterThanOrEqual,
+             "foo"))
+        self.assertTrue(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI_3", VersionPolicy.LessThan, "foo"))
+        self.assertFalse(primV2.HasAPIInFamily(
+            "TestVersionedMultiApplyAPI_3", VersionPolicy.GreaterThanOrEqual,
+             "foo"))
 
     def test_ApplyRemoveAPI(self):
         """Tests all Usd.Prim API for applying and removing API schema with 

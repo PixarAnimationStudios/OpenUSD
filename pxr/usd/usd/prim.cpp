@@ -107,6 +107,136 @@ UsdPrim::IsA(const TfToken& schemaFamily,
     return _IsA(schemaFamily, schemaVersion);
 }
 
+// Helper implementations for wrapping UsdSchemaRegistry's 
+// FindSchemaInfosInFamily with all possible inputs to the 
+// IsAny/HasAnyAPI#VersionInFamily functions.
+static
+const std::vector<const UsdSchemaRegistry::SchemaInfo *> &
+_FindSchemaInfosInFamily(const TfToken &schemaFamily)
+{
+    return UsdSchemaRegistry::FindSchemaInfosInFamily(schemaFamily);
+}
+
+static 
+std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_FindSchemaInfosInFamily(
+    const TfToken &schemaFamily, 
+    UsdSchemaVersion schemaVersion, 
+    UsdSchemaRegistry::VersionPolicy versionPolicy)
+{
+    return UsdSchemaRegistry::FindSchemaInfosInFamily(
+        schemaFamily, schemaVersion, versionPolicy);
+}
+
+static 
+std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_FindSchemaInfosInFamily(
+    const TfType& schemaType,
+    UsdSchemaRegistry::VersionPolicy versionPolicy)
+{
+    // Use the family and version of the type's schema to find schemas the 
+    // schemas in the family.
+    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+        UsdSchemaRegistry::FindSchemaInfo(schemaType);
+    if (!schemaInfo) {
+        return {};
+    }
+    return _FindSchemaInfosInFamily(
+        schemaInfo->family, schemaInfo->version, versionPolicy);
+}
+
+static 
+std::vector<const UsdSchemaRegistry::SchemaInfo *>
+_FindSchemaInfosInFamily(
+    const TfToken& schemaIdentifier,
+    UsdSchemaRegistry::VersionPolicy versionPolicy)
+{
+    // First try to use the family and version of the identifiers's schema to 
+    // find schemas the schemas in the family. This will typically be faster
+    // than parsing the identifier itself.
+    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+        UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier);
+    if (schemaInfo) {
+        return _FindSchemaInfosInFamily(
+            schemaInfo->family, schemaInfo->version, versionPolicy);
+    }
+
+    // If we didn't find a registered schema for the identifier, then we parse 
+    // it into its family and version to find the schemas.
+    const auto familyAndVersion = 
+        UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
+            schemaIdentifier);
+    return _FindSchemaInfosInFamily(
+        familyAndVersion.first, familyAndVersion.second, versionPolicy);
+}
+
+// The implementation of IsInFamily for all input combinations.
+// Finds all matching schemas in a schema family using the findInFamily 
+// arguments and returns the first schema info that prim.IsA would return true
+// for.
+template <typename... FindInFamilyArgs>
+static
+const UsdSchemaRegistry::SchemaInfo *
+_GetFirstSchemaInFamilyPrimIsA(
+    const UsdPrim &prim, const FindInFamilyArgs &... findInFamilyArgs) 
+{
+    const TfType &primSchemaType = prim.GetPrimTypeInfo().GetSchemaType();
+    for (const auto &schemaInfo : 
+            _FindSchemaInfosInFamily(findInFamilyArgs...)) {
+        if (primSchemaType.IsA(schemaInfo->type)) {
+            return schemaInfo;
+        }
+    }
+    return nullptr;
+}
+
+bool 
+UsdPrim::IsInFamily(const TfToken& schemaFamily) const
+{
+    return _GetFirstSchemaInFamilyPrimIsA(*this, schemaFamily);
+}
+
+bool
+UsdPrim::IsInFamily(
+    const TfToken& schemaFamily,
+    UsdSchemaVersion schemaVersion,
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimIsA(
+        *this, schemaFamily, schemaVersion, versionPolicy);
+}
+
+bool
+UsdPrim::IsInFamily(
+    const TfType& schemaType, 
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimIsA(
+        *this, schemaType, versionPolicy);
+}
+
+bool
+UsdPrim::IsInFamily(
+    const TfToken& schemaIdentifier,
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimIsA(
+        *this, schemaIdentifier, versionPolicy);
+}             
+
+bool 
+UsdPrim::GetVersionIfIsInFamily(
+    const TfToken& schemaFamily,
+    UsdSchemaVersion *schemaVersion) const
+{
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            _GetFirstSchemaInFamilyPrimIsA(*this, schemaFamily)) {
+        *schemaVersion = schemaInfo->version;
+        return true;
+    }
+    return false;
+}
+
 static bool
 _IsSchemaInAppliedSchemas(
     const TfTokenVector &appliedSchemas,
@@ -241,6 +371,164 @@ UsdPrim::HasAPI(const TfToken& schemaFamily,
 {
     return _HasAPIInstance(instanceName, schemaFamily, schemaVersion);
 }
+
+// The implementation of HasAPIInFamily (without an instance name) for
+// all input combinations. Finds all matching schemas in a schema family using
+// the findInFamily arguments and returns the first schema info that prim.HasAPI
+// would return true for.
+template <typename... FindInFamilyArgs>
+static
+const UsdSchemaRegistry::SchemaInfo *
+_GetFirstSchemaInFamilyPrimHasAPI(
+    const UsdPrim &prim, const FindInFamilyArgs &... findInFamilyArgs) 
+{
+    const TfTokenVector appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return nullptr;
+    }
+
+    for (const auto &schemaInfo : 
+            _FindSchemaInfosInFamily(findInFamilyArgs...)) {
+        if (_IsSchemaInAppliedSchemas(appliedSchemas, *schemaInfo)) {
+            return schemaInfo;
+        }
+    }
+    return nullptr;
+}
+
+// The implementation of HasAPIInFamily (with an instance name) for
+// all input combinations. Finds all matching schemas in a schema family using
+// the findInFamily arguments and returns the first schema info that 
+// prim.HasAPI(instanceName) would return true for.
+template <typename... FindInFamilyArgs>
+static
+const UsdSchemaRegistry::SchemaInfo *
+_GetFirstSchemaInFamilyPrimHasAPIInstance(
+    const UsdPrim &prim, 
+    const TfToken& instanceName, 
+    const FindInFamilyArgs &... findInFamilyArgs) 
+{
+    if (instanceName.IsEmpty()) {
+        TF_CODING_ERROR("Instance name must be non-empty");
+        return nullptr;
+    }
+
+    const TfTokenVector appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return nullptr;
+    }
+
+    for (const auto &schemaInfo : 
+            _FindSchemaInfosInFamily(findInFamilyArgs...)) {
+        if (_IsSchemaInstanceInAppliedSchemas(
+                appliedSchemas, *schemaInfo, instanceName)) {
+            return schemaInfo;
+        }
+    }
+    return nullptr;
+}
+
+bool 
+UsdPrim::HasAPIInFamily(const TfToken& schemaFamily) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPI(*this, schemaFamily);
+}
+
+USD_API
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfToken& schemaFamily, const TfToken& instanceName) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPIInstance(
+        *this, instanceName, schemaFamily);
+}
+
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfToken& schemaFamily,
+    UsdSchemaVersion schemaVersion,
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPI(
+        *this, schemaFamily, schemaVersion, versionPolicy);
+}
+
+USD_API
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfToken& schemaFamily,
+    UsdSchemaVersion schemaVersion,
+    UsdSchemaRegistry::VersionPolicy versionPolicy,
+    const TfToken& instanceName) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPIInstance(
+        *this, instanceName, schemaFamily, schemaVersion, versionPolicy);
+}
+
+bool
+UsdPrim::HasAPIInFamily(
+    const TfType& schemaType,
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPI(*this, schemaType, versionPolicy);
+}
+
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfType& schemaType,
+    UsdSchemaRegistry::VersionPolicy versionPolicy,
+    const TfToken& instanceName) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPIInstance(
+        *this, instanceName, schemaType, versionPolicy);
+}
+
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfToken& schemaIdentifier,
+    UsdSchemaRegistry::VersionPolicy versionPolicy) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPI(
+        *this, schemaIdentifier, versionPolicy);
+}
+
+bool 
+UsdPrim::HasAPIInFamily(
+    const TfToken& schemaIdentifier,
+    UsdSchemaRegistry::VersionPolicy versionPolicy,
+    const TfToken& instanceName) const
+{
+    return _GetFirstSchemaInFamilyPrimHasAPIInstance(
+        *this, instanceName, schemaIdentifier, versionPolicy);
+}
+
+bool
+UsdPrim::GetVersionIfHasAPIInFamily(
+    const TfToken &schemaFamily,
+    UsdSchemaVersion *schemaVersion) const
+{
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+            _GetFirstSchemaInFamilyPrimHasAPI(*this, schemaFamily)) {
+        *schemaVersion = schemaInfo->version;
+        return true;
+    }
+    return false;
+}
+
+bool
+UsdPrim::GetVersionIfHasAPIInFamily(
+    const TfToken &schemaFamily,
+    const TfToken &instanceName,
+    UsdSchemaVersion *schemaVersion) const
+{
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+            _GetFirstSchemaInFamilyPrimHasAPIInstance(
+                *this, instanceName, schemaFamily)) {
+        *schemaVersion = schemaInfo->version;
+        return true;
+    }
+    return false;
+}                             
 
 // Helpers for getting the strings for use in messages and errors for each of
 // supported schema function input types.

@@ -164,6 +164,42 @@ _UnsafeGetStageForTesting(UsdObject const &obj)
     return obj.GetStage();
 }
 
+static object
+_WrapGetVersionIfIsInFamily(
+    const UsdPrim &prim, const TfToken &schemaFamily) 
+{
+    UsdSchemaVersion version;
+    if (prim.GetVersionIfIsInFamily(schemaFamily, &version)) {
+        return object(version);
+    }
+    return object();
+}
+
+static object
+_WrapGetVersionIfHasAPIInFamily_1(
+    const UsdPrim &prim, const TfToken &schemaFamily) 
+{
+    UsdSchemaVersion version;
+    if (prim.GetVersionIfHasAPIInFamily(schemaFamily, &version)) {
+        return object(version);
+    }
+    return object();
+}
+
+static object
+_WrapGetVersionIfHasAPIInFamily_2(
+    const UsdPrim &prim, const TfToken &schemaFamily, 
+    const TfToken &instanceName) 
+{
+    UsdSchemaVersion version;
+    if (prim.GetVersionIfHasAPIInFamily(
+            schemaFamily, instanceName, &version)) {
+        return object(version);
+    }
+    return object();
+}
+
+
 } // anonymous namespace 
 
 void wrapUsdPrim()
@@ -277,6 +313,34 @@ void wrapUsdPrim()
             (arg("schemaFamily"),
              arg("version")))
 
+        .def("IsInFamily",
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::IsInFamily, 
+            (arg("schemaFamily")))
+        .def("IsInFamily",
+            (bool (UsdPrim::*)(const TfToken&, 
+                               UsdSchemaVersion, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::IsInFamily, 
+            (arg("schemaFamily"),
+             arg("version"), 
+             arg("versionPolicy")))
+        .def("IsInFamily",
+            (bool (UsdPrim::*)(const TfType&, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::IsInFamily, 
+            (arg("schemaType"), 
+             arg("versionPolicy")))
+        .def("IsInFamily",
+            (bool (UsdPrim::*)(const TfToken&, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::IsInFamily, 
+            (arg("schemaIdentifier"), 
+             arg("versionPolicy")))
+
+        .def("GetVersionIfIsInFamily",
+             &_WrapGetVersionIfIsInFamily)
+
         .def("HasAPI", 
             (bool (UsdPrim::*)(const TfType&) const)
             &UsdPrim::HasAPI,
@@ -302,6 +366,56 @@ void wrapUsdPrim()
                                const TfToken&) const)
             &UsdPrim::HasAPI,
             (arg("schemaFamily"), arg("schemaVersion"), arg("instanceName")))
+
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfType&, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaType"), 
+             arg("versionPolicy")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfType&, 
+                               UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaType"), 
+             arg("versionPolicy"), arg("instanceName")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaFamily")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&, const TfToken&) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaFamily"), arg("instanceName")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaFamily"), arg("schemaVersion"), 
+             arg("versionPolicy")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&, UsdSchemaVersion,
+                               UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaFamily"), arg("schemaVersion"), 
+             arg("versionPolicy"), arg("instanceName")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&, 
+                               UsdSchemaRegistry::VersionPolicy) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaIdentifier"), 
+             arg("versionPolicy")))
+        .def("HasAPIInFamily", 
+            (bool (UsdPrim::*)(const TfToken&, 
+                               UsdSchemaRegistry::VersionPolicy, const TfToken&) const)
+            &UsdPrim::HasAPIInFamily,
+            (arg("schemaIdentifier"), 
+             arg("versionPolicy"), arg("instanceName")))
+
+        .def("GetVersionIfHasAPIInFamily", 
+             &_WrapGetVersionIfHasAPIInFamily_1)
+        .def("GetVersionIfHasAPIInFamily", 
+             &_WrapGetVersionIfHasAPIInFamily_2)
 
         .def("CanApplyAPI", 
             +[](const UsdPrim& prim, const TfType &schemaType) {
