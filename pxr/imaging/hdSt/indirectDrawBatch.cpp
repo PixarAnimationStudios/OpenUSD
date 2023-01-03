@@ -52,6 +52,8 @@
 
 #include "pxr/imaging/glf/diagnostic.h"
 
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"

@@ -51,6 +51,8 @@
 #include "pxr/imaging/hgi/indirectCommandEncoder.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
