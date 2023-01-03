@@ -30,5 +30,7 @@ pxr_library(usdProc
         generatedSchema.usda
         schema.usda:usdProc/schema.usda
 
+    DOXYGEN_FILES
+        overview.dox
 
 )
