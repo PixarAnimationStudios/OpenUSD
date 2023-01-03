@@ -172,7 +172,7 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         //
         // Point Colors
         //
-        const VtVec4fArray ptColors = sel->GetSelectedPointColors();
+        const VtVec4fArray ptColors = sel->GetSelectedPointColors(renderIndex);
         hdStResourceRegistry->AddSource(
             _selPointColorsBar,
             std::make_shared<HdVtBufferSource>(

@@ -150,6 +150,8 @@ pxr_library(hd
         sceneIndexPluginRegistry
         schema
         selection
+        selectionSchema
+        selectionsSchema
         smoothNormals
         sortedIds
         sphereSchema
@@ -166,6 +168,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        vectorSchema
         vertexAdjacency
         visibilitySchema
         volume

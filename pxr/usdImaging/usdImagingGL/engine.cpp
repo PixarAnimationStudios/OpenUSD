@@ -26,6 +26,7 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
@@ -170,6 +171,7 @@ UsdImagingGLEngine::_DestroyHydraObjects()
         if (_renderIndex && _sceneIndex) {
             _renderIndex->RemoveSceneIndex(_sceneIndex);
             _stageSceneIndex = nullptr;
+            _selectionSceneIndex = nullptr;
             _sceneIndex = nullptr;
         }
     } else {
@@ -555,7 +557,11 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): selection support
+        _selectionSceneIndex->ClearSelection();
+
+        for (const SdfPath &path : paths) {
+            _selectionSceneIndex->AddSelection(path);
+        }
         return;
     }
 
@@ -585,6 +591,11 @@ UsdImagingGLEngine::ClearSelected()
         return;
     }
 
+    if (_GetUseSceneIndices()) {
+        _selectionSceneIndex->ClearSelection();
+        return;
+    }
+    
     TF_VERIFY(_selTracker);
 
     _selTracker->SetSelection(std::make_shared<HdSelection>());
@@ -608,7 +619,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): selection support
+        _selectionSceneIndex->AddSelection(path);
         return;
     }
 
@@ -971,6 +982,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
         
         _sceneIndex =
             UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
+
+        _sceneIndex = _selectionSceneIndex =
+            UsdImagingSelectionSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
             HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);

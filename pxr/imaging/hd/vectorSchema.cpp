@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,17 +21,33 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDX_VERSION_H
-#define PXR_IMAGING_HDX_VERSION_H
 
-// 1  -> 2 : split HdxRenderSetupTask out of HdxRenderTask
-// 2  -> 3 : move simpleLightingShader to Hdx.
-// 3  -> 4 : move camera and light to Hdx.
-// 4  -> 5 : move drawTarget to Hdx.
-// 5  -> 6 : change HdxShadowMatrixComputation signature.
-// 6  -> 7 : make HdxShadowMatrixComputationSharedPtr std::shared_ptr instead of boost::shared_ptr
-// 7  -> 8 : added another HdxShadowMatrixComputation signature.
-// 8  -> 9 : added render index as argument to HdxSelectionTracker::GetSelectedPointColors.
-#define HDX_API_VERSION  8
+#include "pxr/imaging/hd/vectorSchema.h"
 
-#endif // PXR_IMAGING_HDX_VERSION_H
+PXR_NAMESPACE_OPEN_SCOPE
+
+HdVectorDataSourceHandle
+HdVectorSchema::GetVector()
+{
+    return _vector;
+}
+
+bool
+HdVectorSchema::IsDefined() const
+{
+    if (_vector) {
+        return true;
+    }
+    return false;
+}
+
+size_t
+HdVectorSchema::GetNumElements() const
+{
+    if (_vector) {
+        return _vector->GetNumElements();
+    }
+    return 0;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

@@ -55,6 +55,7 @@ pxr_library(usdImaging
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
+        selectionSceneIndex
         tokens
         apiSchemaAdapter
         basisCurvesAdapter
