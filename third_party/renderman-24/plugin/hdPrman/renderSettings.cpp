@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/renderSettings.h"
-
 #include "hdPrman/renderParam.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -36,24 +35,28 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
-HdPrman_RenderSettings::HdPrman_RenderSettings(
-    SdfPath const& id)
-    : HdBprim(id)
+HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
+    : HdRenderSettings(id)
 {
 }
+
+HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
 
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
 }
 
-void HdPrman_RenderSettings::Sync(
+void HdPrman_RenderSettings::_Sync(
     HdSceneDelegate *sceneDelegate,
     HdRenderParam *renderParam,
-    HdDirtyBits *dirtyBits)
+    const HdDirtyBits *dirtyBits)
 {
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
+        // XXX For the time-being, continue to pull sample and display filters
+        //     from the scene delegate via Get. This will be updated to use
+        //     _params instead.
         {
             const VtValue filterPaths = sceneDelegate->Get(GetId(),
                 _tokens->outputsRiSampleFilters);
@@ -69,14 +72,6 @@ void HdPrman_RenderSettings::Sync(
                 filterPaths.GetWithDefault<SdfPathVector>());
         }
     }
-
-    *dirtyBits = HdChangeTracker::Clean;
-}
-
-HdDirtyBits HdPrman_RenderSettings::GetInitialDirtyBitsMask() const
-{
-    int mask = HdChangeTracker::Clean | HdChangeTracker::DirtyParams;
-    return (HdDirtyBits)mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

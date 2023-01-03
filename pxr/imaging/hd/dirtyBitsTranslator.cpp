@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderSettings.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
@@ -384,7 +385,7 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdRenderBufferSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        if (bits & HdChangeTracker::DirtyParams) {
+        if (bits & HdRenderSettings::DirtyParams) {
             set->append(HdRenderSettingsSchema::GetDefaultLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
@@ -885,7 +886,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
         if (_FindLocator(HdRenderSettingsSchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyParams;
+            bits |= HdRenderSettings::DirtyParams;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

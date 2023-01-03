@@ -130,6 +130,7 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderSettings
         renderSettingsSchema
         renderThread
         repr
