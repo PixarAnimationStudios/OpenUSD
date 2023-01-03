@@ -771,7 +771,7 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
 
         // For prims represented by an ancestor, we don't want to repopulate
         // (as they wouldn't have been populated in the first place) but instead
-        // convert to an empty property name dirtying to handled in
+        // convert to an empty property name dirtying to be handled in
         // ApplyPendingUpdates. Do not worry about redundant property
         // invalidation in that case.
         UsdImagingPrimAdapterSharedPtr primAdapter;
@@ -781,15 +781,16 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
                     UsdImagingPrimAdapter::RepresentedByAncestor) {
             _PrimAdapterPair ancestor = _FindResponsibleAncestor(prim);
             if (ancestor.second) {
-                TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Skipping "
-                    "repopulation of prim represented by ancestor<%s>\n",
+                TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                    "Invalidating <%s> due to resync of descendant <%s>\n",
+                        ancestor.first.GetPrimPath().GetText(),
                         _usdPrimsToResync[i].GetText());
                 _usdPropertiesToUpdate[_usdPrimsToResync[i]] = {TfToken()};
                 continue;
             }
         }
 
-        TF_DEBUG(USDIMAGING_POPULATION).Msg("[Population] Removing <%s>\n",
+        TF_DEBUG(USDIMAGING_CHANGES).Msg("[Population] Repopulating <%s>\n",
                 _usdPrimsToResync[i].GetText());
         _SendPrimsRemoved({_usdPrimsToResync[i]});
         _Populate(prim);
