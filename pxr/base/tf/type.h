@@ -690,7 +690,8 @@ private:
 
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    bool _IsAImpl(TfType queryType) const;
+    // Callers must hold at least a read lock on the type registry's mutex.
+    bool _IsAImplNoLock(TfType queryType) const;
 
     typedef void *(*_CastFunction)(void *, bool derivedToBase);
 
