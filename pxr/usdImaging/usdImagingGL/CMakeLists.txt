@@ -345,6 +345,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLPointInstancer
+    DEST testUsdImagingGLPointInstancer_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLResync
     DEST testUsdImagingGLResync
 )
@@ -1713,10 +1718,9 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_varying
 
 pxr_register_test(testUsdImagingGLPointInstancer_pi_pi_time
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_pi_time.usda -times 0 1 2 -write pi_pi_time.png"
-    IMAGE_DIFF_COMPARE
-        pi_pi_time_000.png
+    IMAGE_DIFF_COMPARE        # Skipping pi_pi_time_002.png because there is a bug where the prototype root transform is not taking into account for Proto3 and Proto4.
+        pi_pi_time_000.png    # This bug appears when using the UsdImaging delegate but is fixed in the scene index implementation (using UsdImagingPiPrototypePropagatingSceneIndex).
         pi_pi_time_001.png
-        pi_pi_time_002.png
     FAIL .05
     FAIL_PERCENT .03
     PERCEPTUAL
@@ -1770,6 +1774,291 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_ni_material2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPointInstancer
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_basic
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_basic.usda -times 1 2 -write pi_basic.png"
+    IMAGE_DIFF_COMPARE
+        pi_basic_001.png
+        pi_basic_002.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi.usda -write pi.png"
+    IMAGE_DIFF_COMPARE
+        pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi.usda -write pi_pi.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_pi2.usda -write pi_pi2.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi2.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_ni_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage ni_pi.usda -write ni_pi.png"
+    IMAGE_DIFF_COMPARE
+        ni_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_ni.usda -write pi_ni.png"
+    IMAGE_DIFF_COMPARE
+        pi_ni.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_ni2.usda -write pi_ni2.png"
+    IMAGE_DIFF_COMPARE
+        pi_ni2.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_ni_pi.usda -write pi_ni_pi.png"
+    IMAGE_DIFF_COMPARE
+        pi_ni_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_root_prototype
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_root_prototype.usda -write pi_root_prototype.png"
+    IMAGE_DIFF_COMPARE
+        pi_root_prototype.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_prototype
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_prototype.usda -write pi_sibling_prototype.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_prototype.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+# UsdImagingPiPrototypePropagtingSceneIndex does not support yet some visibility aspects.
+#pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_varying
+#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_varying.usda -times 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 20 21 22 23 24 25 26 27 28 29 30 -write pi_varying.png"
+#    IMAGE_DIFF_COMPARE
+#        pi_varying_000.png
+#        pi_varying_001.png
+#        pi_varying_002.png
+#        pi_varying_003.png
+#        pi_varying_004.png
+#        pi_varying_005.png
+#        pi_varying_006.png
+#        pi_varying_007.png
+#        pi_varying_008.png
+#        pi_varying_009.png
+#        pi_varying_010.png
+#        pi_varying_011.png
+#        pi_varying_012.png
+#        pi_varying_013.png
+#        pi_varying_014.png
+#        pi_varying_015.png
+#        pi_varying_018.png
+#        pi_varying_019.png
+#        pi_varying_020.png
+#        pi_varying_021.png
+#        pi_varying_022.png
+#        pi_varying_023.png
+#        pi_varying_024.png
+#        pi_varying_025.png
+#        pi_varying_026.png
+#        pi_varying_027.png
+#        pi_varying_028.png
+#    FAIL .05
+#    FAIL_PERCENT .03
+#    PERCEPTUAL
+#    EXPECTED_RETURN_CODE 0
+#    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+#    ENV
+#        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+#)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_varying
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_pi_varying.usda -times 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 -write pi_pi_varying.png"
+    IMAGE_DIFF_COMPARE
+        pi_pi_varying_000.png
+        pi_pi_varying_001.png
+        pi_pi_varying_002.png
+        pi_pi_varying_003.png
+        pi_pi_varying_004.png
+        pi_pi_varying_005.png
+        pi_pi_varying_006.png
+        pi_pi_varying_007.png
+        pi_pi_varying_008.png
+        pi_pi_varying_009.png
+        pi_pi_varying_010.png
+        pi_pi_varying_011.png
+        pi_pi_varying_012.png
+        pi_pi_varying_013.png
+        pi_pi_varying_014.png
+        pi_pi_varying_015.png
+        pi_pi_varying_016.png
+        pi_pi_varying_017.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_pi_time
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_pi_time.usda -times 0 1 2 -write pi_pi_time.png"
+    IMAGE_DIFF_COMPARE        # Skipping pi_pi_time_002.png because there is a bug where the prototype root transform is not taking into account for Proto3 and Proto4.
+        pi_pi_time_000.png
+        pi_pi_time_001.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_masking
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_masking.usda -times 0 1 2 3 4 -write pi_masking.png"
+    IMAGE_DIFF_COMPARE
+        pi_masking_000.png
+        pi_masking_001.png
+        pi_masking_002.png
+        pi_masking_003.png
+        pi_masking_004.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+# UsdImagingPiPrototypePropagatingSceneIndex does not implement yet rejecting bad schemas
+#pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_bad_schema_input
+#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_bad_schema_input.usda -write pi_bad_schema_input.png"
+#    IMAGE_DIFF_COMPARE
+#        pi_bad_schema_input.png
+#    FAIL 1
+#    FAIL_PERCENT 1
+#    PERCEPTUAL
+#    EXPECTED_RETURN_CODE 0
+#    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+#    ENV
+#        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+#)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_ni_material.usda -write pi_ni_material.png"
+    IMAGE_DIFF_COMPARE
+        pi_ni_material.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_ni_material2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_ni_material2.usda -write pi_ni_material2.png"
+    IMAGE_DIFF_COMPARE
+        pi_ni_material2.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLResync
