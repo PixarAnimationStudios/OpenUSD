@@ -937,30 +937,11 @@ void
 UsdImagingDelegate::_GatherDependencies(SdfPath const& subtree,
                                         SdfPathVector *affectedCachePaths)
 {
-    HD_TRACE_FUNCTION();
-
     if (affectedCachePaths == nullptr) {
         return;
     }
 
-    const auto it = _flattenedDependenciesCacheMap.find(subtree);
-    if (it != _flattenedDependenciesCacheMap.end()) {
-        (*affectedCachePaths) = it->second;
-        return;
-    }
-
-    _CacheDependencies(subtree, affectedCachePaths);
-}
-
-void
-UsdImagingDelegate::_CacheDependencies(SdfPath const& subtree,
-                                       SdfPathVector *affectedCachePaths)
-{
     HD_TRACE_FUNCTION();
-
-    if (affectedCachePaths == nullptr) {
-        return;
-    }
 
     // Binary search for the first path in the subtree.
     _DependencyMap::const_iterator start =
@@ -995,7 +976,34 @@ UsdImagingDelegate::_CacheDependencies(SdfPath const& subtree,
     // usd dependencies within subtree.
     std::sort(affectedPaths.begin(), affectedPaths.end());
     std::unique_copy(affectedPaths.begin(), affectedPaths.end(),
-            std::back_inserter(*affectedCachePaths));
+                     std::back_inserter(*affectedCachePaths));
+}
+
+void
+UsdImagingDelegate::_GatherDependencies(
+    SdfPath const& subtree,
+    _FlattenedDependenciesCacheMap const &cache,
+    SdfPathVector *affectedCachePaths)
+{
+    if (affectedCachePaths == nullptr) {
+        return;
+    }
+
+    const auto it = cache.find(subtree);
+    if (it != cache.end()) {
+        TF_DEBUG(USDIMAGING_CHANGES).Msg(
+            "[_GatherDependencies] Found entry in flattened cache for %s with "
+            "%lu paths\n", subtree.GetText(), it->second.size());
+
+        *affectedCachePaths = it->second;
+        return;
+    }
+
+    TF_DEBUG(USDIMAGING_CHANGES).Msg(
+        "[_GatherDependencies] No entry in flattened cache for %s\n ",
+        subtree.GetText());
+
+    _GatherDependencies(subtree, affectedCachePaths);
 }
 
 void
@@ -1024,7 +1032,6 @@ UsdImagingDelegate::ApplyPendingUpdates()
     _pointInstancerIndicesCache.Clear();
     _nonlinearSampleCountCache.Clear();
     _blurScaleCache.Clear();
-    _flattenedDependenciesCacheMap.clear();
 
     UsdImagingDelegate::_Worker worker(this);
     UsdImagingIndexProxy indexProxy(this, &worker);
@@ -1044,10 +1051,22 @@ UsdImagingDelegate::ApplyPendingUpdates()
                          });
         _usdPathsToResync.clear();
 
-        // Pre-cache dependencies in parallel
+        // Pre-cache USD subtree to Hydra prim cache paths in parallel.
+        // This avoids redundant serial calls to _GatherDependencies during
+        // Resync and Refresh handling below.
+        // Note: We don't use the same cache for the "update" processing that
+        //       follows because we process removals from the resync/refresh
+        //       handling that may result in the cache being out-of-sync with
+        //       the _dependencyInfo map.
+        //
+        _FlattenedDependenciesCacheMap resyncDependenciesCache;
         WorkDispatcher resyncPathsCacheDispatcher;
-        for (const auto& usdPath: usdPathsToResync) {
-            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+        for (const SdfPath& usdPath : usdPathsToResync) {
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                "[usdPathsToResync] Updating cache map for %s\n",
+                usdPath.GetText());
+            auto pair = resyncDependenciesCache.insert(
+                std::make_pair(usdPath, SdfPathVector()));
             if (!pair.second) {
                 // No insertion happened, path has been inserted
                 continue;
@@ -1055,7 +1074,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
             auto& affectedCachePaths = pair.first->second;
             resyncPathsCacheDispatcher.Run(
                 [this, &usdPath, &affectedCachePaths]() {
-                    _CacheDependencies(usdPath, &affectedCachePaths);
+                    _GatherDependencies(usdPath, &affectedCachePaths);
             });
         }
         resyncPathsCacheDispatcher.Wait();
@@ -1063,15 +1082,17 @@ UsdImagingDelegate::ApplyPendingUpdates()
         for (SdfPath const& usdPath: usdPathsToResync) {
             if (usdPath.IsPropertyPath()) {
                 _RefreshUsdObject(usdPath, TfTokenVector(),
+                                  resyncDependenciesCache,
                                   &indexProxy, &allTrackedVariabilityPaths);
             } else if (usdPath.IsTargetPath()) {
                 // TargetPaths are their own path type, when they change, resync
                 // the relationship at which they're rooted; i.e. per-target
                 // invalidation is not supported.
                 _RefreshUsdObject(usdPath.GetParentPath(), TfTokenVector(),
+                                  resyncDependenciesCache,
                                   &indexProxy, &allTrackedVariabilityPaths);
             } else if (usdPath.IsAbsoluteRootOrPrimPath()) {
-                _ResyncUsdPrim(usdPath, &indexProxy);
+                _ResyncUsdPrim(usdPath, resyncDependenciesCache, &indexProxy);
             } else {
                 TF_WARN("Unexpected path type to resync: <%s>",
                         usdPath.GetText());
@@ -1087,11 +1108,17 @@ UsdImagingDelegate::ApplyPendingUpdates()
         _PathsToUpdateMap usdPathsToUpdate;
         std::swap(usdPathsToUpdate, _usdPathsToUpdate);
 
-        // Pre-cache dependencies in parallel
+        // Pre-cache dependencies in parallel. See earlier note.
         WorkDispatcher updatePathsCacheDispatcher;
+        _FlattenedDependenciesCacheMap updateDependenciesCache;
+
         for (const auto& pathIt: usdPathsToUpdate) {
             const auto& usdPath = pathIt.first;
-            auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
+            TF_DEBUG(USDIMAGING_CHANGES).Msg(
+                "[usdPathsToUpdate] Updating cache map for %s\n",
+                usdPath.GetText());
+            auto pair = updateDependenciesCache.insert(
+                std::make_pair(usdPath, SdfPathVector()));
             if (!pair.second) {
                 // No insertion happened, path has been inserted
                 continue;
@@ -1099,7 +1126,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
             auto& affectedCachePaths = pair.first->second;
             updatePathsCacheDispatcher.Run(
                 [this, &usdPath, &affectedCachePaths]() {
-                    _CacheDependencies(usdPath, &affectedCachePaths);
+                    _GatherDependencies(usdPath, &affectedCachePaths);
             });
         }
         updatePathsCacheDispatcher.Wait();
@@ -1111,13 +1138,21 @@ UsdImagingDelegate::ApplyPendingUpdates()
             if (usdPath.IsPropertyPath() || usdPath.IsAbsoluteRootOrPrimPath()){
                 // Note that changedPrimInfoFields will be empty if the
                 // path is a property path.
-                _RefreshUsdObject(usdPath, changedPrimInfoFields,
-                                  &indexProxy, &allTrackedVariabilityPaths);
+                const bool resyncNeeded = 
+                    _RefreshUsdObject(usdPath, changedPrimInfoFields,
+                        updateDependenciesCache,
+                        &indexProxy, &allTrackedVariabilityPaths);
 
                 // If any objects were removed as a result of the refresh (if it
                 // internally decided to resync), they must be ejected now,
                 // before the next call to _RefreshObject.
-                indexProxy._ProcessRemovals();
+                if (resyncNeeded) {
+                    indexProxy._ProcessRemovals();
+
+                    // Clear the cache since it'd be out-of-sync with the
+                    // _dependencyInfo map.
+                    updateDependenciesCache.clear();
+                }
             } else {
                 TF_RUNTIME_ERROR("Unexpected path type to update: <%s>",
                         usdPath.GetText());
@@ -1247,9 +1282,11 @@ bool _IsCoordSysAdapter(const UsdImagingPrimAdapterSharedPtr &adapter)
 }
 
 void 
-UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath, 
-                                   UsdImagingIndexProxy* proxy,
-                                   bool repopulateFromRoot) 
+UsdImagingDelegate::_ResyncUsdPrim(
+    SdfPath const& usdPath,
+    _FlattenedDependenciesCacheMap const &cache,
+    UsdImagingIndexProxy* proxy,
+    bool repopulateFromRoot) 
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1366,7 +1403,7 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     // resync affected prims individually. If we do this, we also need to walk 
     // the subtree and check for new prims.
     SdfPathVector affectedCachePaths;
-    _GatherDependencies(usdPath, &affectedCachePaths);
+    _GatherDependencies(usdPath, cache, &affectedCachePaths);
     if (affectedCachePaths.size() > 0) {
         for (SdfPath const& affectedCachePath : affectedCachePaths) {
 
@@ -1463,11 +1500,13 @@ UsdImagingDelegate::_ResyncUsdPrim(SdfPath const& usdPath,
     }
 }
 
-void 
-UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath, 
-                                      TfTokenVector const& changedInfoFields,
-                                      UsdImagingIndexProxy* proxy,
-                                      SdfPathSet* allTrackedVariabilityPaths) 
+bool 
+UsdImagingDelegate::_RefreshUsdObject(
+    SdfPath const& usdPath, 
+    TfTokenVector const& changedInfoFields,
+    _FlattenedDependenciesCacheMap const &cache,
+    UsdImagingIndexProxy* proxy,
+    SdfPathSet* allTrackedVariabilityPaths) 
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1475,6 +1514,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
     TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: %s %s\n",
             usdPath.GetText(), TfStringify(changedInfoFields).c_str());
 
+    bool resyncNeeded = false;
     SdfPathVector affectedCachePaths;
 
     if (usdPath.IsAbsoluteRootOrPrimPath()) {
@@ -1498,8 +1538,8 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         if (attrName == UsdGeomTokens->modelDrawMode ||
             attrName == UsdGeomTokens->modelApplyDrawMode ||
             UsdShadeMaterialBindingAPI::CanContainPropertyName(attrName)) {
-            _ResyncUsdPrim(usdPrimPath, proxy, true);
-            return;
+            _ResyncUsdPrim(usdPrimPath, cache, proxy, true);
+            resyncNeeded = true;
         }
 
         // If we're sync'ing a non-inherited property on a parent prim, we 
@@ -1508,13 +1548,13 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
         
         // XXX: We must always scan for prefixed children, due to rprim fan-out 
         // from plugins (such as the PointInstancer).
-        if (attrName == UsdGeomTokens->visibility ||
+        else if (attrName == UsdGeomTokens->visibility ||
             attrName == UsdGeomTokens->purpose ||
             attrName == UsdGeomTokens->motionNonlinearSampleCount ||
             UsdGeomXformable::IsTransformationAffectedByAttrNamed(attrName)) {
             // Because these are inherited attributes, we must update all
             // children.
-            _GatherDependencies(usdPrimPath, &affectedCachePaths);
+            _GatherDependencies(usdPrimPath, cache, &affectedCachePaths);
         } else if (UsdGeomPrimvarsAPI::CanContainPropertyName(attrName)) {
             // Primvars can be inherited, so we need to invalidate everything
             // downstream.  Technically, only constant primvars on non-leaf
@@ -1522,7 +1562,7 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             // if (e.g.) the primvar has been blocked, and calling
             // _GatherDependencies on a leaf prim won't invoke any extra work
             // vs the equal_range below...
-            _GatherDependencies(usdPrimPath, &affectedCachePaths);
+            _GatherDependencies(usdPrimPath, cache, &affectedCachePaths);
         } else if (UsdCollectionAPI::CanContainPropertyName(attrName)) {
             // XXX Performance: Collections used for material bindings
             // can refer to prims at arbitrary locations in the scene.
@@ -1543,8 +1583,9 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             TF_DEBUG(USDIMAGING_CHANGES).Msg("[Refresh Object]: "
                 "HdCoordSys bindings affected for %s\n", usdPath.GetText());
             // Coordinate system bindings apply to all descendent gprims.
-            _ResyncUsdPrim(usdPrimPath, proxy, true);
-            return;
+            _ResyncUsdPrim(usdPrimPath, cache, proxy, true);
+            resyncNeeded = true;
+
         } else if (usdPrim && usdPrim.IsA<UsdShadeShader>()) {
             // Shader edits get forwarded to parent material.
             while (usdPrim && !usdPrim.IsA<UsdShadeMaterial>()) {
@@ -1638,10 +1679,13 @@ UsdImagingDelegate::_RefreshUsdObject(SdfPath const& usdPath,
             } else {
                 // If we want to resync the hydra prim, generate a fake resync
                 // notice for the usd prim in its primInfo.
-                _ResyncUsdPrim(primInfo->usdPrim.GetPath(), proxy);
+                _ResyncUsdPrim(primInfo->usdPrim.GetPath(), cache, proxy);
+                resyncNeeded = true;
             }
         }
     }
+
+    return resyncNeeded;
 }
 
 // -------------------------------------------------------------------------- //
