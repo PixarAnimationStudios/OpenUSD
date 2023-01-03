@@ -172,6 +172,14 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
                 ss << "  return gl_BaseVertex;\n";
             }
             ss << "}\n";
+
+            ss << "int HgiGetBaseInstance() {\n";
+            if (glslVersion < 460) { // use ARB extension
+                ss << "  return gl_BaseInstanceARB;\n";
+            } else {
+                ss << "  return gl_BaseInstance;\n";
+            }
+            ss << "}\n";
         }
     }
 
@@ -198,9 +206,6 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
     ss << "\n"
         << "#define HGI_HAS_DOUBLE_TYPE 1\n"
         << "\n";
-
-    // Define platform independent baseInstance as 0
-    ss << "#define gl_BaseInstance 0\n";
 }
 
 void
@@ -329,7 +334,7 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
         { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
         { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
-        { HgiShaderKeywordTokens->hdBaseInstance, "gl_BaseInstance"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "HgiGetBaseInstance()"},
         { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
@@ -361,6 +366,11 @@ HgiVulkanShaderGenerator::_WriteInOuts(
                         param.type,
                         keyword->second);
                 } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
                     CreateShaderSection<HgiVulkanKeywordShaderSection>(
                         paramName,
                         param.type,

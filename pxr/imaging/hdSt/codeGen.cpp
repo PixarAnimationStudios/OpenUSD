@@ -2215,6 +2215,9 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         HgiShaderFunctionAddStageInput(
             &desc, "hd_InstanceID", "uint",
             HgiShaderKeywordTokens->hdInstanceID);
+        HgiShaderFunctionAddStageInput(
+            &desc, "hd_BaseInstance", "uint",
+            HgiShaderKeywordTokens->hdBaseInstance);
     
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
@@ -2371,7 +2374,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             &vsDesc, "hd_InstanceID", "uint",
             HgiShaderKeywordTokens->hdInstanceID);
         HgiShaderFunctionAddStageInput(
-            &vsDesc, "gl_BaseInstance", "uint",
+            &vsDesc, "hd_BaseInstance", "uint",
             HgiShaderKeywordTokens->hdBaseInstance);
         HgiShaderFunctionAddStageInput(
             &vsDesc, "gl_BaseVertex", "uint",
@@ -2568,7 +2571,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         // builtins
 
         HgiShaderFunctionAddStageInput(
-            &ptvsDesc, "gl_BaseInstance", "uint",
+            &ptvsDesc, "hd_BaseInstance", "uint",
             HgiShaderKeywordTokens->hdBaseInstance);
         HgiShaderFunctionAddStageInput(
             &ptvsDesc, "patch_id", "uint",
@@ -3909,8 +3912,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     genAttr << "int GetBaseVertexOffset() {\n";
     if (shaderDrawParametersEnabled) {
         genAttr << "  return HgiGetBaseVertex();\n";
-    }
-    else {
+    } else {
         genAttr << "  return GetDrawingCoord().vertexCoord;\n";
     }
     genAttr << "}\n";
@@ -3932,13 +3934,13 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         /// Otherwise, GetInstanceIndex() looks up culledInstanceIndices.
 
         _genVS << "int GetInstanceIndexCoord() {\n"
-               << "  return drawingCoord1.y + (int(hd_InstanceID) - "
-               << "gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
+               << "  return drawingCoord1.y + int(hd_InstanceID - "
+               << "hd_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
                << "}\n";
         
         _genPTVS << "int GetInstanceIndexCoord() {\n"
-               << "  return drawingCoord1[0].y + (int(hd_InstanceID) - "
-               << "gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
+               << "  return drawingCoord1[0].y + int(hd_InstanceID - "
+               << "hd_BaseInstance) * HD_INSTANCE_INDEX_WIDTH; \n"
                << "}\n";
 
         if (_geometricShader->IsFrustumCullingPass()) {
@@ -3969,7 +3971,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                           "GetInstanceIndexCoord()+localIndex");
 
             genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
-                    << "  int offset = GetInstanceIndexCoord();\n"
                     << "  hd_instanceIndex r;\n"
                     << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
                     << "    r.indices[i] = HdGet_culledInstanceIndices(/*localIndex=*/i);\n"

@@ -60,6 +60,7 @@ public:
         vkVertexAttributeDivisorProperties;
     VkPhysicalDeviceFeatures vkDeviceFeatures;
     VkPhysicalDeviceFeatures2 vkDeviceFeatures2;
+    VkPhysicalDeviceVulkan11Features vkVulkan11Features;
     VkPhysicalDeviceDescriptorIndexingFeaturesEXT vkIndexingFeatures;
     VkPhysicalDeviceVertexAttributeDivisorFeaturesEXT
         vkVertexAttributeDivisorFeatures;

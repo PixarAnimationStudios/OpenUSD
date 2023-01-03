@@ -233,9 +233,6 @@ HgiGLShaderGenerator::_WriteMacros(std::ostream &ss)
     ss << "\n"
         << "#define HGI_HAS_DOUBLE_TYPE 1\n"
         << "\n";
-
-    // Define platform independent baseInstance as 0
-    ss << "#define gl_BaseInstance 0\n";
 }
 
 void
@@ -364,7 +361,7 @@ HgiGLShaderGenerator::_WriteInOuts(
         { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
         { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
         { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
-        { HgiShaderKeywordTokens->hdBaseInstance, "gl_BaseInstance"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "0"},
         { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
         { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
         { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
@@ -396,6 +393,11 @@ HgiGLShaderGenerator::_WriteInOuts(
                         param.type,
                         keyword->second);
                 } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
+                    CreateShaderSection<HgiGLKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
                     CreateShaderSection<HgiGLKeywordShaderSection>(
                         paramName,
                         param.type,
