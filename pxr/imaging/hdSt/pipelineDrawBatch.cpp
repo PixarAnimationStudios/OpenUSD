@@ -78,7 +78,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 );
 
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING,false,
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING, true,
                       "Enable pipeline draw batching GPU frustum culling");
 
 HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
