@@ -46,9 +46,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
+    {
     typedef UsdImagingMaterialAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
+    }
+
+    {
+    typedef UsdImagingShaderAdapter Adapter;
+    TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
+    t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
+    }
+
 }
 
 UsdImagingMaterialAdapter::~UsdImagingMaterialAdapter()
@@ -122,12 +131,30 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprim(
         }
     }
 
-    // TODO: Account for changes to the shading node descendants.
-    //       This will be paired with population pruning awareness.
+    return result;
+}
+
+HdDataSourceLocatorSet
+UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    HdDataSourceLocatorSet result;
+
+    //TODO, Invalidating whole material until we figure out an efficient
+    //      way to determine which render context this node is in (if any)
+    result.insert(HdMaterialSchema::GetDefaultLocator());
 
     return result;
 }
 
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingMaterialAdapter::GetPopulationMode()
+{
+    return RepresentsSelfAndDescendents;
+}
 
 bool
 UsdImagingMaterialAdapter::IsSupported(UsdImagingIndexProxy const* index) const

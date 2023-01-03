@@ -128,6 +128,25 @@ UsdImagingPrimAdapter::InvalidateImagingSubprim(
     return HdDataSourceLocatorSet();
 }
 
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingPrimAdapter::GetPopulationMode()
+{
+    return RepresentsSelf;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+}
+
+// ----------------------------------------------------------------------------
+
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)

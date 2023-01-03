@@ -98,6 +98,7 @@ pxr_library(usdImaging
         primvarDescCache
         rectLightAdapter
         renderSettingsAdapter
+        representedByAncestorPrimAdapter
         rerootingSceneIndex
         sampleFilterAdapter
         sphereAdapter
