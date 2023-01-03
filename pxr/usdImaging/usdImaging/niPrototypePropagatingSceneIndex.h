@@ -114,9 +114,9 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///                               srcPrefix = /__PrototypeRoot1
 ///                               dstPrefix = /__PrototypeRoot1
 ///                                 * inputSceneIndex
-///                        * UsdImaging_NiInstanceAggregationSceneIndex 
-///                             * HdFlatteningSceneIndex
-///                                 [... as just above]
+///                     * UsdImaging_NiInstanceAggregationSceneIndex 
+///                         * HdFlatteningSceneIndex
+///                             [... as just above]
 ///
 /// UsdImagingNiPrototypePropagatingSceneIndex
 ///
