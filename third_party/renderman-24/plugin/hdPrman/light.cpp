@@ -968,9 +968,13 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
             geomScale *= radius.UncheckedGet<float>() / 0.5;
         }
     } else if (lightNode.name == us_PxrMeshLight) {
-        // Our mesh light geom is a duplicate. It should not be camera 
-        // visible.
+        // Our mesh light geom should not be visible, and should be one-sided, 
+        // to match the existing Katana behavior.
         attrs.SetInteger(RixStr.k_visibility_camera, 0);
+        attrs.SetInteger(RixStr.k_visibility_transmission, 0);
+        attrs.SetInteger(RixStr.k_visibility_indirect, 0);
+        // Note: In Xpu, this may be "sides", not "Sides".
+        attrs.SetInteger(RixStr.k_Sides, 1);
     }
 
     geomMat.SetScale(geomScale);
