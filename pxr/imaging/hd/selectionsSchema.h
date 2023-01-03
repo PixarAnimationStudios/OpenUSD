@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 
 #include "pxr/imaging/hd/vectorSchema.h" 
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -43,20 +44,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdSelectionsSchemaTokens, HD_API,
 
 //-----------------------------------------------------------------------------
 
-class HdSelectionsSchema : public HdVectorSchema
+class HdSelectionsSchema : public HdSchemaBasedVectorSchema<HdSelectionSchema>
 {
 public:
     HdSelectionsSchema(HdVectorDataSourceHandle const &vector)
-      : HdVectorSchema(vector) {}
-
-    HD_API
-    static HdVectorDataSourceHandle
-    BuildRetained(
-        size_t count,
-        HdDataSourceBaseHandle *values);
-
-    HD_API
-    HdSelectionSchema GetSelection(size_t element) const;
+      : HdSchemaBasedVectorSchema(vector) {}
 
     /// Retrieves a vector data source with the schema's default name token
     /// "selections" from the parent vector and constructs a

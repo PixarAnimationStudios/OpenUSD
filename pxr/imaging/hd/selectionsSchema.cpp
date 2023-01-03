@@ -32,23 +32,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PUBLIC_TOKENS(HdSelectionsSchemaTokens,
     HDSELECTIONS_SCHEMA_TOKENS);
 
-HdSelectionSchema
-HdSelectionsSchema::GetSelection(const size_t element) const
-{
-    return
-        HdSelectionSchema(
-            _GetTypedDataSource<HdContainerDataSource>(element));
-}
-
-/*static*/
-HdVectorDataSourceHandle
-HdSelectionsSchema::BuildRetained(
-    size_t count,
-    HdDataSourceBaseHandle *values)
-{
-    return HdRetainedSmallVectorDataSource::New(count, values);
-}
-
 /*static*/
 HdSelectionsSchema
 HdSelectionsSchema::GetFromParent(

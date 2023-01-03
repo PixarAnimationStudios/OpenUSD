@@ -118,7 +118,7 @@ HdxSelectionSceneIndexObserver::_ComputeSelection()
         const size_t n = selectionsSchema.GetNumElements();
         for (size_t i = 0; i < n; ++i) {
             HdSelectionSchema selectionSchema =
-                selectionsSchema.GetSelection(i);
+                selectionsSchema.GetElement(i);
             if (HdBoolDataSourceHandle const ds =
                             selectionSchema.GetFullySelected()) {
                 if (ds->GetTypedValue(0.0f)) {

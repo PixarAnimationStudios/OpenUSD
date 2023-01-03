@@ -24,7 +24,18 @@
 
 #include "pxr/imaging/hd/vectorSchema.h"
 
+#include "pxr/imaging/hd/retainedDataSource.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+/*static*/
+HdVectorDataSourceHandle
+HdVectorSchema::BuildRetained(
+    size_t count,
+    HdDataSourceBaseHandle *values)
+{
+    return HdRetainedSmallVectorDataSource::New(count, values);
+}
 
 HdVectorDataSourceHandle
 HdVectorSchema::GetVector()
