@@ -72,6 +72,26 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
     }
 }
 
+static
+bool
+_IsEnabledFrustumCullCPU(HgiCapabilities const * const capabilities)
+{
+    if (TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING)) {
+        return false;
+    }
+
+    const bool multiDrawIndirectEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+
+    const bool gpuFrustumCullingEnabled =
+        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
+            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
+            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+
+    // Enable CPU Frustum culling only when GPU frustum culling is not enabled.
+    return !(multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
+}
+
 void
 HdStCommandBuffer::PrepareDraw(
     HgiGraphicsCmds *gfxCmds,
@@ -84,9 +104,28 @@ HdStCommandBuffer::PrepareDraw(
     HdStResourceRegistrySharedPtr const& resourceRegistry =
         std::dynamic_pointer_cast<HdStResourceRegistry>(
         renderIndex->GetResourceRegistry());
-    TF_VERIFY(resourceRegistry);
+    if (!TF_VERIFY(resourceRegistry)) {
+        return;
+    }
 
-    _FrustumCull(renderPassState, renderIndex);
+    Hgi const * const hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const * const capabilities = hgi->GetCapabilities();
+
+    if (_IsEnabledFrustumCullCPU(capabilities)) {    
+        const bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
+
+        if (!freezeCulling) {
+            _FrustumCullCPU(renderPassState->GetCullMatrix());
+        }
+
+        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CPU CULLED: %zu drawItems\n",
+                                          GetCulledSize());
+    } else {
+        // Since culling state is stored across renders,
+        // we need to update all items visible state
+        HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
+        SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
+    }
 
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
@@ -365,53 +404,6 @@ HdStCommandBuffer::SyncDrawItemVisibility(unsigned visChangeCount)
 
     // Mark visible state as clean;
     _visChangeCount = visChangeCount;
-}
-
-void
-HdStCommandBuffer::_FrustumCull(
-    HdStRenderPassStateSharedPtr const &renderPassState,
-    HdRenderIndex const *renderIndex)
-{
-    // Downcast the resource registry
-    HdStResourceRegistrySharedPtr const& resourceRegistry =
-        std::dynamic_pointer_cast<HdStResourceRegistry>(
-        renderIndex->GetResourceRegistry());
-    TF_VERIFY(resourceRegistry);
-
-    Hgi *hgi = resourceRegistry->GetHgi();
-    HgiCapabilities const *capabilities = hgi->GetCapabilities();
-
-    const bool multiDrawIndirectEnabled =
-        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
-
-    const bool gpuFrustumCullingEnabled =
-        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
-            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
-            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
-
-    const bool skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
-           (multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
-
-    const bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
-
-    if (skipCulling) {    
-        HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
-        // Since culling state is stored across renders,
-        // we need to update all items visible state
-        SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
-
-        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: skipped\n");
-    }
-    else {
-        if (!freezeCulling) {
-            _FrustumCullCPU(renderPassState->GetCullMatrix());
-        }
-
-        if (TfDebug::IsEnabled(HD_DRAWITEMS_CULLED)) {
-            TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n",
-                                              GetCulledSize());
-        }
-    }
 }
 
 void

@@ -120,10 +120,7 @@ public:
 private:
     void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
     
-    /// Cull drawItemInstances based on renderPassState view frustum cull matrix
-    void _FrustumCull(HdStRenderPassStateSharedPtr const &renderPassState,
-                      HdRenderIndex const *renderIndex);
-
+    /// Cull drawItemInstances based on view frustum cull matrix
     void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
