@@ -857,7 +857,7 @@ def InstallBoost_Helper(context, force, buildArgs):
                 b2_settings.append("toolset=msvc-14.3")
             elif IsVisualStudio2019OrGreater():
                 b2_settings.append("toolset=msvc-14.2")
-            else IsVisualStudio2017OrGreater():
+            elif IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
 
         if MacOS():
