@@ -81,8 +81,6 @@ public:
     /// Construct a mutex, initially unlocked.
     TF_API TfBigRWMutex();
 
-    friend struct ScopedLock;
-
     /// Scoped lock utility class.  API modeled after
     /// tbb::spin_rw_mutex::scoped_lock.
     struct ScopedLock {

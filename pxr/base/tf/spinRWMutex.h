@@ -74,8 +74,6 @@ public:
     /// Construct a mutex, initially unlocked.
     TfSpinRWMutex() : _lockState(0) {}
 
-    friend struct ScopedLock;
-
     /// Scoped lock utility class.  API modeled roughly after
     /// tbb::spin_rw_mutex::scoped_lock.
     struct ScopedLock {
