@@ -1692,7 +1692,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
         // Make sure the reset-pass memory writes
         // are visible to the culling shader pass.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
         // Perform Culling Pass
         cullParamsInstanced.resetPass = 0;
@@ -1708,7 +1708,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
         // Make sure culling memory writes are
         // visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     } else {
         // set cull parameters
         Uniforms cullParams;
@@ -1724,7 +1724,7 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1, 0);
 
         // Make sure culling memory writes are visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     }
 
     cullGfxCmds->PopDebugGroup();

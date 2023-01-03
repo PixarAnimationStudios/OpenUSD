@@ -101,7 +101,7 @@ public:
     /// Inserts a barrier so that data written to memory by commands before
     /// the barrier is available to commands after the barrier.
     HGIVULKAN_API
-    void MemoryBarrier(HgiMemoryBarrier barrier);
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier);
 
     /// Returns the id that uniquely identifies this command buffer amongst
     /// all in-flight command buffers.

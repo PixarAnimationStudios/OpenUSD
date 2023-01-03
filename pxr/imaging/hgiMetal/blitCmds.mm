@@ -455,7 +455,7 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 }
 
 void
-HgiMetalBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
     // Do nothing. All blit encoder work will be visible to next encoder.

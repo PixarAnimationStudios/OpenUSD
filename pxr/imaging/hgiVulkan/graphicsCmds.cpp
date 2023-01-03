@@ -338,10 +338,10 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
 }
 
 void
-HgiVulkanGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 HgiVulkanCommandBuffer*

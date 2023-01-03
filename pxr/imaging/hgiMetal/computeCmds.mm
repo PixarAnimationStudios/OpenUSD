@@ -163,7 +163,7 @@ HgiMetalComputeCmds::PopDebugGroup()
 }
 
 void
-HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
         _CreateEncoder();

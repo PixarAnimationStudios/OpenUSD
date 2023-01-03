@@ -69,7 +69,7 @@ public:
     void Dispatch(int dimX, int dimY) override;
 
     HGIVULKAN_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
 protected:
     friend class HgiVulkan;

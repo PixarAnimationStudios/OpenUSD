@@ -210,10 +210,10 @@ HgiVulkanComputeCmds::_BindResources()
 }
 
 void
-HgiVulkanComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 void
