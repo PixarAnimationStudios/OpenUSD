@@ -1025,9 +1025,14 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.PatchCoord
+-- layout Mesh.Fragment.PatchCoord
 
-in vec4 gsPatchCoord;
+[
+    ["in", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord
 
 vec4 GetInterpolatedPatchCoord()
 {
