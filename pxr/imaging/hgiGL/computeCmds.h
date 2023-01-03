@@ -33,6 +33,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HgiComputeCmdsDesc;
+
 /// \class HgiGLComputeCmds
 ///
 /// OpenGL implementation of HgiComputeCmds.
@@ -68,11 +70,14 @@ public:
     HGIGL_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIGL_API
+    HgiComputeDispatch GetDispatchMethod() const override;
+
 protected:
     friend class HgiGL;
 
     HGIGL_API
-    HgiGLComputeCmds(HgiGLDevice* device);
+    HgiGLComputeCmds(HgiGLDevice* device, HgiComputeCmdsDesc const& desc);
 
     HGIGL_API
     bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;

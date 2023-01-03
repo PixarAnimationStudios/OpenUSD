@@ -94,6 +94,10 @@ public:
     HGI_API
     virtual void InsertMemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
+    /// Returns the dispatch method for this encoder.
+    HGI_API
+    virtual HgiComputeDispatch GetDispatchMethod() const = 0;
+
 protected:
     HGI_API
     HgiComputeCmds();

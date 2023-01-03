@@ -1478,7 +1478,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     
     HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
-    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds();
+    HgiComputeCmds *computeCmds =
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
 
     if (!_useDrawIndexed) {
         _indirectCommands = encoder->EncodeDraw(
@@ -1557,7 +1558,8 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
                          sizeof(Uniforms));
     HgiComputePipelineHandle psoHandle = *pso.get();
 
-    HgiComputeCmds* computeCmds = resourceRegistry->GetGlobalComputeCmds();
+    HgiComputeCmds* computeCmds =
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
     computeCmds->PushDebugGroup("FrustumCulling Cmds");
 
     HgiResourceBindingsDesc bindingsDesc;

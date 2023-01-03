@@ -32,6 +32,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HgiComputeCmdsDesc;
 class HgiVulkan;
 class HgiVulkanCommandBuffer;
 
@@ -71,11 +72,14 @@ public:
     HGIVULKAN_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIVULKAN_API
+    HgiComputeDispatch GetDispatchMethod() const override;
+
 protected:
     friend class HgiVulkan;
 
     HGIVULKAN_API
-    HgiVulkanComputeCmds(HgiVulkan* hgi);
+    HgiVulkanComputeCmds(HgiVulkan* hgi, HgiComputeCmdsDesc const& desc);
 
     HGIVULKAN_API
     bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;

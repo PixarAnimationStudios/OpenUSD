@@ -134,7 +134,8 @@ HdStCommandBuffer::PrepareDraw(
 
     // Once all the prepare work is done, add a memory barrier before the next
     // stage.
-    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds();
+    HgiComputeCmds *computeCmds =
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
 
     computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 

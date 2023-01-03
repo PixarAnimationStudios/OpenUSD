@@ -34,7 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
+HgiMetalComputeCmds::HgiMetalComputeCmds(
+    HgiMetal* hgi,
+    HgiComputeCmdsDesc const& desc)
     : HgiComputeCmds()
     , _hgi(hgi)
     , _pipelineState(nullptr)
@@ -42,6 +44,8 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
     , _argumentBuffer(nil)
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
+    , _hasWork(false)
+    , _dispatchMethod(desc.dispatchMethod)
 {
     _CreateEncoder();
 }
@@ -60,7 +64,12 @@ HgiMetalComputeCmds::_CreateEncoder()
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
         }
-        _encoder = [_commandBuffer computeCommandEncoder];
+        MTLDispatchType dispatchType =
+            (_dispatchMethod == HgiComputeDispatchConcurrent)
+                ? MTLDispatchTypeConcurrent
+                : MTLDispatchTypeSerial;
+        _encoder = [_commandBuffer
+                        computeCommandEncoderWithDispatchType:dispatchType];
     }
 }
 
@@ -171,6 +180,12 @@ HgiMetalComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
                                 MTLBarrierScopeTextures;
         [_encoder memoryBarrierWithScope:scope];
     }
+}
+
+HgiComputeDispatch
+HgiMetalComputeCmds::GetDispatchMethod() const
+{
+    return _dispatchMethod;
 }
 
 bool

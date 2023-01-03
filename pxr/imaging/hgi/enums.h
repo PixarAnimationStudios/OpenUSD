@@ -808,6 +808,23 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeArrayTexture
 };
 
+/// \enum HgiComputeDispatch
+///
+/// Specifies the dispatch method for compute encoders.
+///
+/// <ul>
+/// <li>HgiComputeDispatchSerial:
+///   Kernels are dispatched serially.</li>
+/// <li>HgiComputeDispatchConcurrent:
+///   Kernels are dispatched concurrently, if supported by the API</li>
+/// </ul>
+///
+enum HgiComputeDispatch
+{
+    HgiComputeDispatchSerial = 0,
+    HgiComputeDispatchConcurrent
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif
