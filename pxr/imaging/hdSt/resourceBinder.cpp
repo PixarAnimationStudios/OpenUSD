@@ -188,12 +188,14 @@ _TokenContainsString(const TfToken &token, const std::string &string)
 }
 
 void
-HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
-                                   HdStShaderCodeSharedPtrVector const &shaders,
-                                   HdSt_ResourceBinder::MetaData *metaDataOut,
-                                   bool instanceDraw,
-                                   HdBindingRequestVector const &customBindings,
-                                   HgiCapabilities const *capabilities)
+HdSt_ResourceBinder::ResolveBindings(
+    HdStDrawItem const *drawItem,
+    HdStShaderCodeSharedPtrVector const &shaders,
+    HdSt_ResourceBinder::MetaData *metaDataOut,
+    HdSt_ResourceBinder::MetaData::DrawingCoordBufferBinding const &dcBinding,
+    bool instanceDraw,
+    HdBindingRequestVector const &customBindings,
+    HgiCapabilities const *capabilities)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -216,6 +218,8 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
     } else {
         structBufferBindingType = HdBinding::SSBO;             // 4.3
     }
+
+    metaDataOut->drawingCoordBufferBinding = dcBinding;
 
     HdBinding::Type drawingCoordBindingType =
         instanceDraw

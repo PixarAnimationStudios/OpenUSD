@@ -341,6 +341,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     _resourceBinder.ResolveBindings(drawItem,
                                     shaders,
                                     codeGen.GetMetaData(),
+                                    _drawingCoordBufferBinding,
                                     instanceDraw,
                                     customBindings,
                                     resourceRegistry->GetHgi()->

@@ -183,6 +183,7 @@ private:
     ElementVector _resFS;
     ElementVector _resPTCS;
     ElementVector _resPTVS;
+    ElementVector _resCS;
 
     ElementVector _resInterstage;
 
