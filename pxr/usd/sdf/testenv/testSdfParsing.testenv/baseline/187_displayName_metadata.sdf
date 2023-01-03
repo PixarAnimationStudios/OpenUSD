@@ -7,7 +7,9 @@
 
 class MfScope "Rig"
 {
-    def MfScope "Leg"
+    def MfScope "Leg" (
+        displayName = "Foo"
+    )
     {
         custom rel foo = </Rig/Leg.kneeFB> (
             displayName = "Lfoo"

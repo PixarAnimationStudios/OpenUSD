@@ -986,6 +986,9 @@ class AppController(QtCore.QObject):
             self._ui.actionShow_Abstract_Prims.triggered.connect(
                 self._toggleShowAbstractPrims)
 
+            self._ui.actionShow_Prim_DisplayName.triggered.connect(
+                self._toggleShowPrimDisplayName)
+
             # Since setting column visibility is probably not a common
             # operation, it's actually good to have Columns at the end.
             self._ui.menuShow.addSeparator()
@@ -2176,6 +2179,55 @@ class AppController(QtCore.QObject):
 
     # Prim/Attribute search functionality =====================================
 
+    def _isMatch(self, pattern, isRegex, prim, useDisplayName):
+        """
+        Determines if the given prim has a name that matches the
+        given pattern.  If useDisplayName is True, the match
+        will be performed on the prim's display name (if authored)
+        and on the prim's name (if not).  When useDisplayName is False,
+        the match is always performed against the prim's name.
+
+        Args:
+            pattern (str): The pattern to use to match the name.  Pattern
+                           is either a sequence of characters or a regex
+                           expression.  If it is a regex expression, the
+                           isRegex parameter should be set to True.
+            isRegex (bool): True if the given pattern is a regex expression
+                            or False if just a sequence of characters.
+            prim (object): A python facing UsdPrim object on whose properties
+                           should be matched by pattern.
+            useDisplayName (bool): True if the pattern match should be against
+                                   the displayName of the prim or False if
+                                   against the name of the prim.  If this value is True
+                                   displayName will only be matched if it is authored,
+                                   otherwise the name of the prim will be used.
+
+        Returns:
+            True if the pattern matches the specified prim content, False otherwise. 
+        """
+        if isRegex:
+            matchLambda = re.compile(pattern, re.IGNORECASE).search
+        else:
+            pattern = pattern.lower()
+            matchLambda = lambda x: pattern in x.lower()
+
+        if useDisplayName:
+            # typically we would check prim.HasAuthoredDisplayName()
+            # rather than getting the display name and checking
+            # against the empty string, but HasAuthoredDisplayName
+            # does about the same amount of work of GetDisplayName
+            # so we'd be paying twice the price for each prim
+            # search, which on large scenes would be a big performance
+            # hit, so we do it this way instead
+            displayName = prim.GetDisplayName()
+            if displayName:
+                return matchLambda(displayName)
+            else:
+                return matchLambda(prim.GetName())
+        else:
+            return matchLambda(prim.GetName())
+
+
     def _findPrims(self, pattern, useRegex=True):
         """Search the Usd Stage for matching prims
         """
@@ -2183,22 +2235,18 @@ class AppController(QtCore.QObject):
         # down to simple search, as it's faster
         if useRegex and re.match("^[0-9_A-Za-z]+$", pattern):
             useRegex = False
-        if useRegex:
-            isMatch = re.compile(pattern, re.IGNORECASE).search
-        else:
-            pattern = pattern.lower()
-            isMatch = lambda x: pattern in x.lower()
 
         matches = [prim.GetPath() for prim
-                   in Usd.PrimRange.Stage(self._dataModel.stage,
-                                             self._displayPredicate)
-                   if isMatch(prim.GetName())]
+                    in Usd.PrimRange.Stage(self._dataModel.stage, self._displayPredicate)
+                    if self._isMatch(pattern, useRegex, prim, 
+                    self._dataModel.viewSettings.showPrimDisplayNames)]
 
         if self._dataModel.viewSettings.showAllPrototypePrims:
             for prototype in self._dataModel.stage.GetPrototypes():
                 matches += [prim.GetPath() for prim
-                            in Usd.PrimRange(prototype, self._displayPredicate)
-                            if isMatch(prim.GetName())]
+                        in Usd.PrimRange(prototype, self._displayPredicate)
+                        if self._isMatch(pattern, useRegex, prim,
+                        self._dataModel.viewSettings.showPrimDisplayNames)]
 
         return matches
 
@@ -3198,6 +3246,11 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.showAbstractPrims = (
             self._ui.actionShow_Abstract_Prims.isChecked())
         self._dataModel.selection.removeAbstractPrims()
+        self._resetPrimView()
+
+    def _toggleShowPrimDisplayName(self):
+        self._dataModel.viewSettings.showPrimDisplayNames = (
+            self._ui.actionShow_Prim_DisplayName.isChecked())
         self._resetPrimView()
 
     def _toggleRolloverPrimInfo(self):
@@ -5244,6 +5297,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.showUndefinedPrims)
         self._ui.actionShow_Abstract_Prims.setChecked(
             self._dataModel.viewSettings.showAbstractPrims)
+        self._ui.actionShow_Prim_DisplayName.setChecked(
+            self._dataModel.viewSettings.showPrimDisplayNames)
 
     def _refreshRedrawOnScrub(self):
         self._ui.redrawOnScrub.setChecked(

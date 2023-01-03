@@ -260,6 +260,11 @@ void wrapUsdObject()
         .def("ClearDocumentation", &UsdObject::ClearDocumentation)
         .def("HasAuthoredDocumentation", &UsdObject::HasAuthoredDocumentation)
 
+        .def("GetDisplayName", &UsdObject::GetDisplayName)
+        .def("SetDisplayName", &UsdObject::SetDisplayName, arg("name"))
+        .def("ClearDisplayName", &UsdObject::ClearDisplayName)
+        .def("HasAuthoredDisplayName", &UsdObject::HasAuthoredDisplayName)
+
         .def("GetNamespaceDelimiter", &UsdObject::GetNamespaceDelimiter)
         .staticmethod("GetNamespaceDelimiter")
 

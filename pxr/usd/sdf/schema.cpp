@@ -875,6 +875,8 @@ SdfSchemaBase::_RegisterStandardFields()
                        SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->DisplayGroupOrder,
                        SdfMetadataDisplayGroupTokens->core)
+        .MetadataField(SdfFieldKeys->DisplayName,
+                       SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->Documentation,
                        SdfMetadataDisplayGroupTokens->core)
         .MetadataField(SdfFieldKeys->Hidden,
