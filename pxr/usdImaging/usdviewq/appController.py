@@ -4309,6 +4309,7 @@ class AppController(QtCore.QObject):
                 ] )
 
             # attributes for selection:
+            item.stage = self._dataModel.stage
             item.layer = layer
             item.spec = spec
             item.identifier = layer.identifier
