@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/computeCmds.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -130,6 +131,18 @@ HdStCommandBuffer::PrepareDraw(
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+
+    // Once all the prepare work is done, add a memory barrier before the next
+    // stage.
+    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds();
+
+    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+
+    for (auto const& batch : _drawBatches) {
+        batch->EncodeDraw(renderPassState, resourceRegistry);
+    }
+
+    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
     //
     // Compute work that was set up for indirect command buffers and frustum

@@ -68,13 +68,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (constantPrimvars)
 
     (dispatchBuffer)
+    (drawCullInput)
 
-    (drawCommandIndex)
     (drawIndirect)
     (drawIndirectCull)
     (drawIndirectResult)
-
-    (instanceCountInput)
 
     (ulocCullParams)
 );
@@ -107,6 +105,7 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _allowIndirectCommandEncoding(allowIndirectCommandEncoding)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
+    , _drawCoordOffset(0)
     , _patchBaseVertexByteOffset(0)
 {
     _Init(drawItemInstance);
@@ -489,57 +488,6 @@ _AddDrawResourceViews(HdStDispatchBufferSharedPtr const & dispatchBuffer,
     }
 }
 
-void
-_AddInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
-                              _DrawCommandTraits const & traits)
-{
-    // cull indirect command
-    cullInput->AddBufferResourceView(
-        HdTokens->drawDispatch, {HdTypeInt32, 1},
-        traits.cullCount_offset);
-    // cull drawing coord 0
-    cullInput->AddBufferResourceView(
-        HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
-        traits.drawingCoord0_offset);
-    // cull drawing coord 1
-    cullInput->AddBufferResourceView(
-        // see the comment above
-        HdTokens->drawingCoord1, {HdTypeInt32Vec2, 1},
-        traits.drawingCoord1_offset);
-    // cull instance drawing coord
-    if (traits.instancerNumLevels > 0) {
-        cullInput->AddBufferResourceView(
-            HdTokens->drawingCoordI, {HdTypeInt32, traits.instancerNumLevels},
-            traits.drawingCoordI_offset);
-    }
-    // cull draw index
-    cullInput->AddBufferResourceView(
-        _tokens->drawCommandIndex, {HdTypeInt32, 1},
-        traits.baseInstance_offset);
-}
-
-void
-_AddNonInstanceCullResourceViews(HdStDispatchBufferSharedPtr const & cullInput,
-                                 _DrawCommandTraits const & traits)
-{
-    // cull indirect command
-    cullInput->AddBufferResourceView(
-        HdTokens->drawDispatch, {HdTypeInt32, 1},
-        traits.count_offset);
-    // cull drawing coord 0
-    cullInput->AddBufferResourceView(
-        HdTokens->drawingCoord0, {HdTypeInt32Vec4, 1},
-        traits.drawingCoord0_offset);
-    // cull draw index
-    cullInput->AddBufferResourceView(
-        _tokens->drawCommandIndex, {HdTypeInt32, 1},
-        traits.baseInstance_offset);
-    // cull instance count input
-    cullInput->AddBufferResourceView(
-        _tokens->instanceCountInput, {HdTypeInt32, 1},
-        traits.instanceCount_offset);
-}
-
 HdBufferArrayRangeSharedPtr
 _GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
 {
@@ -850,6 +798,9 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     _instanceCountOffset = traits.instanceCount_offset/sizeof(uint32_t);
     _cullInstanceCountOffset = traits.cullInstanceCount_offset/sizeof(uint32_t);
 
+    // cache the offset needed for compute culling.
+    _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
+
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
 
@@ -875,13 +826,6 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirectCull,
                                                      numDrawItemInstances,
                                                      traits.numUInt32);
-
-        // add culling resource views
-        if (_useInstanceCulling) {
-            _AddInstanceCullResourceViews(_dispatchBufferCullInput, traits);
-        } else {
-            _AddNonInstanceCullResourceViews(_dispatchBufferCullInput, traits);
-        }
 
         // copy data
         _dispatchBufferCullInput->CopyData(_drawCommandBuffer);
@@ -988,7 +932,22 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         _dispatchBuffer->CopyData(_drawCommandBuffer);
         _drawCommandBufferDirty = false;
     }
-    
+
+    if (_useGpuCulling) {
+        // Ignore passed in gfxCmds for now since GPU frustum culling
+        // may still require multiple command buffer submissions.
+        _ExecuteFrustumCull(updateBufferData,
+                            renderPassState, resourceRegistry);
+    }
+}
+
+void
+HdSt_PipelineDrawBatch::EncodeDraw(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    if (_HasNothingToDraw()) return;
+
     Hgi *hgi = resourceRegistry->GetHgi();
     HgiCapabilities const *capabilities = hgi->GetCapabilities();
 
@@ -1002,13 +961,6 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     _indirectCommands.reset();
     if (drawICB) {
         _PrepareIndirectCommandBuffer(renderPassState, resourceRegistry);
-    }
-
-    if (_useGpuCulling) {
-        // Ignore passed in gfxCmds for now since GPU frustum culling
-        // may still require multiple command buffer submissions.
-        _ExecuteFrustumCull(updateBufferData,
-                            renderPassState, resourceRegistry);
     }
 }
 
@@ -1454,7 +1406,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
 ////////////////////////////////////////////////////////////
 
 static
-HgiGraphicsPipelineSharedPtr
+HgiComputePipelineSharedPtr
 _GetCullPipeline(
     HdStResourceRegistrySharedPtr const & resourceRegistry,
     _BindingState const & state,
@@ -1465,28 +1417,23 @@ _GetCullPipeline(
                                         state.glslProgram->GetProgram();
     uint64_t const hash = reinterpret_cast<uint64_t>(programHandle.Get());
 
-    HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
-        resourceRegistry->RegisterGraphicsPipeline(hash);
+    HdInstance<HgiComputePipelineSharedPtr> pipelineInstance =
+        resourceRegistry->RegisterComputePipeline(hash);
 
     if (pipelineInstance.IsFirstInstance()) {
         // Create a points primitive, vertex shader only pipeline that uses
         // a uniform block data for the 'cullParams' in the shader.
-        HgiGraphicsPipelineDesc pipeDesc;
-        pipeDesc.shaderConstantsDesc.stageUsage = HgiShaderStageVertex;
+        HgiComputePipelineDesc pipeDesc;
+        pipeDesc.debugName = "FrustumCulling";
+        pipeDesc.shaderProgram = programHandle;
         pipeDesc.shaderConstantsDesc.byteSize = byteSizeUniforms;
-        pipeDesc.depthState.depthTestEnabled = false;
-        pipeDesc.depthState.depthWriteEnabled = false;
-        pipeDesc.primitiveType = HgiPrimitiveTypePointList;
-        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
-        pipeDesc.rasterizationState.rasterizerEnabled = false;
-
-        pipeDesc.vertexBuffers = _GetVertexBuffersForViewTransformation(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
-        HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
+        HgiComputePipelineSharedPtr pipe =
+            std::make_shared<HgiComputePipelineHandle>(
+                hgi->CreateComputePipeline(pipeDesc));
 
-        pipelineInstance.SetValue(
-            std::make_shared<HgiGraphicsPipelineHandle>(pso));
+        pipelineInstance.SetValue(pipe);
     }
 
     return pipelineInstance.GetValue();
@@ -1581,12 +1528,8 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         _dispatchBufferCullInput->CopyData(_drawCommandBuffer);
     }
 
-    _CullingProgram cullingProgram = _GetCullingProgram(resourceRegistry);
-    if (!TF_VERIFY(cullingProgram.IsValid())) return;
-
-    HdStBufferResourceSharedPtr cullCommandBuffer =
-        _dispatchBufferCullInput->GetResource(HdTokens->drawDispatch);
-    if (!TF_VERIFY(cullCommandBuffer)) return;
+    _CreateCullingProgram(resourceRegistry);
+    if (!TF_VERIFY(_cullingProgram.IsValid())) return;
 
     struct Uniforms {
         GfMatrix4f cullMatrix;
@@ -1594,45 +1537,28 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
         uint32_t drawCommandNumUints;
     };
 
-    struct UniformsInstanced {
-        GfMatrix4f cullMatrix;
-        GfVec2f drawRangeNDC;
-        uint32_t drawCommandNumUints;
-        int32_t resetPass;
-    };
-
-    // We perform frustum culling on the GPU with the rasterizer disabled,
-    // stomping the instanceCount of each drawing command in the
-    // dispatch buffer to 0 for primitives that are culled, skipping
-    // over other elements.
+    // We perform frustum culling in a compute shader, stomping the
+    // instanceCount of each drawing command in the dispatch buffer to 0 for
+    // primitives that are culled, skipping over other elements.
 
     _BindingState state(
             _drawItemInstances.front()->GetDrawItem(),
             _dispatchBufferCullInput,
-            cullingProgram.GetBinder(),
-            cullingProgram.GetGLSLProgram(),
-            cullingProgram.GetComposedShaders(),
-            cullingProgram.GetGeometricShader());
+            _cullingProgram.GetBinder(),
+            _cullingProgram.GetGLSLProgram(),
+            _cullingProgram.GetComposedShaders(),
+            _cullingProgram.GetGeometricShader());
 
     Hgi * hgi = resourceRegistry->GetHgi();
 
-    HgiGraphicsPipelineSharedPtr const & pso =
+    HgiComputePipelineSharedPtr const & pso =
         _GetCullPipeline(resourceRegistry,
                          state,
-                         _useInstanceCulling
-                             ? sizeof(UniformsInstanced)
-                             : sizeof(Uniforms));
-    HgiGraphicsPipelineHandle psoHandle = *pso.get();
+                         sizeof(Uniforms));
+    HgiComputePipelineHandle psoHandle = *pso.get();
 
-    // GfxCmds has no attachment since it is a vertex only shader.
-    HgiGraphicsCmdsDesc gfxDesc;
-    HgiGraphicsCmdsUniquePtr cullGfxCmds = hgi->CreateGraphicsCmds(gfxDesc);
-    if (_useInstanceCulling) {
-        cullGfxCmds->PushDebugGroup("GPU frustum culling (instanced)");
-    } else {
-        cullGfxCmds->PushDebugGroup("GPU frustum culling (non-instanced)");
-    }
-    cullGfxCmds->BindPipeline(psoHandle);
+    HgiComputeCmds* computeCmds = resourceRegistry->GetGlobalComputeCmds();
+    computeCmds->PushDebugGroup("FrustumCulling Cmds");
 
     HgiResourceBindingsDesc bindingsDesc;
     state.GetBindingsForViewTransformation(&bindingsDesc);
@@ -1655,80 +1581,46 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             _dispatchBuffer->GetEntireResource(),
             _dispatchBuffer->GetEntireResource()->GetOffset());
 
+    // bind the read-only copy of the destination buffer for input.
+    state.binder.GetBufferBindingDesc(
+            &bindingsDesc,
+            _tokens->drawCullInput,
+            _dispatchBufferCullInput->GetEntireResource(),
+            _dispatchBufferCullInput->GetEntireResource()->GetOffset());
+
+    // HdSt_ResourceBinder::GetBufferBindingDesc() sets state usage
+    // to all graphics pipeline stages. Instead we have to set all the
+    // buffer stage usage to Compute.
+    for (HgiBufferBindDesc & bufDesc : bindingsDesc.buffers) {
+        bufDesc.stageUsage = HgiShaderStageCompute;
+        bufDesc.writable = true;
+    }
+
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
-    cullGfxCmds->BindResources(resourceBindings);
 
-    HgiVertexBufferBindingVector bindings;
-    _GetVertexBufferBindingsForViewTransformation(&bindings, state);
-    cullGfxCmds->BindVertexBuffers(bindings);
+    computeCmds->BindResources(resourceBindings);
+    computeCmds->BindPipeline(psoHandle);
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
 
-    // Get the bind index for the 'cullParams' uniform block
-    HdBinding binding = state.binder.GetBinding(_tokens->ulocCullParams);
-    int bindLoc = binding.GetLocation();
+    HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
+        GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
 
-    if (_useInstanceCulling) {
-        // set instanced cull parameters
-        UniformsInstanced cullParamsInstanced;
-        cullParamsInstanced.drawCommandNumUints =
-                _dispatchBuffer->GetCommandNumUints();
-        cullParamsInstanced.cullMatrix = cullMatrix;
-        cullParamsInstanced.drawRangeNDC = drawRangeNdc;
+    // set instanced cull parameters
+    Uniforms cullParams;
+    cullParams.cullMatrix = cullMatrix;
+    cullParams.drawRangeNDC = drawRangeNdc;
+    cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
 
-        // Reset Pass
-        cullParamsInstanced.resetPass = 1;
-        cullGfxCmds->SetConstantValues(
-            psoHandle, HgiShaderStageVertex,
-            bindLoc, sizeof(UniformsInstanced), &cullParamsInstanced);
+    computeCmds->SetConstantValues(
+        psoHandle, 0,
+        sizeof(Uniforms), &cullParams);
 
-        cullGfxCmds->DrawIndirect(
-            cullCommandBuffer->GetHandle(),
-            cullCommandBuffer->GetOffset(),
-            _dispatchBufferCullInput->GetCount(),
-            cullCommandBuffer->GetStride());
-
-        // Make sure the reset-pass memory writes
-        // are visible to the culling shader pass.
-        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
-
-        // Perform Culling Pass
-        cullParamsInstanced.resetPass = 0;
-        cullGfxCmds->SetConstantValues(
-            psoHandle, HgiShaderStageVertex,
-            bindLoc, sizeof(UniformsInstanced), &cullParamsInstanced);
-
-        cullGfxCmds->DrawIndirect(
-            cullCommandBuffer->GetHandle(),
-            cullCommandBuffer->GetOffset(),
-            _dispatchBufferCullInput->GetCount(),
-            cullCommandBuffer->GetStride());
-
-        // Make sure culling memory writes are
-        // visible to execute draw.
-        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
-    } else {
-        // set cull parameters
-        Uniforms cullParams;
-        cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-        cullParams.cullMatrix = cullMatrix;
-        cullParams.drawRangeNDC = drawRangeNdc;
-
-        // Perform Culling
-        cullGfxCmds->SetConstantValues(
-            psoHandle, HgiShaderStageVertex,
-            bindLoc, sizeof(Uniforms), &cullParams);
-
-        cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1, 0);
-
-        // Make sure culling memory writes are visible to execute draw.
-        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
-    }
-
-    cullGfxCmds->PopDebugGroup();
-    hgi->SubmitCmds(cullGfxCmds.get());
+    int const inputCount = _dispatchBufferCullInput->GetCount();
+    computeCmds->Dispatch(inputCount, 1);
+    computeCmds->PopDebugGroup();
 
     if (IsEnabledGPUCountVisibleInstances()) {
         _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
@@ -1840,27 +1732,34 @@ HdSt_PipelineDrawBatch::_EndGPUCountVisibleInstances(
     *result = count;
 }
 
-HdSt_PipelineDrawBatch::_CullingProgram &
-HdSt_PipelineDrawBatch::_GetCullingProgram(
+void
+HdSt_PipelineDrawBatch::_CreateCullingProgram(
     HdStResourceRegistrySharedPtr const & resourceRegistry)
 {
     if (!_cullingProgram.GetGLSLProgram() || _dirtyCullingProgram) {
-        // create a culling shader key
-        HdSt_CullingShaderKey shaderKey(_useInstanceCulling,
+        // Create a culling compute shader key
+        HdSt_CullingComputeShaderKey shaderKey(_useInstanceCulling,
             _useTinyPrimCulling,
             IsEnabledGPUCountVisibleInstances());
+
+        // access the drawing coord from the drawCullInput buffer
+        _CullingProgram::DrawingCoordBufferBinding drawingCoordBufferBinding{
+            _tokens->drawCullInput,
+            uint32_t(_drawCoordOffset),
+            uint32_t(_dispatchBuffer->GetCommandNumUints()),
+        };
 
         // sharing the culling geometric shader for the same configuration.
         HdSt_GeometricShaderSharedPtr cullShader =
             HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+        _cullingProgram.SetDrawingCoordBufferBinding(drawingCoordBufferBinding);
         _cullingProgram.SetGeometricShader(cullShader);
 
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
-                                       resourceRegistry);
+                                      resourceRegistry);
 
         _dirtyCullingProgram = false;
     }
-    return _cullingProgram;
 }
 
 void
@@ -1896,20 +1795,8 @@ HdSt_PipelineDrawBatch::_CullingProgram::_GetCustomBindings(
                                   _tokens->dispatchBuffer));
     customBindings->push_back(HdBindingRequest(HdBinding::UBO,
                                   _tokens->ulocCullParams));
-
-    if (_useInstanceCulling) {
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX_INSTANCE,
-                _tokens->drawCommandIndex));
-    } else {
-        // non-instance culling
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX,
-                _tokens->drawCommandIndex));
-        customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX,
-                _tokens->instanceCountInput));
-    }
+    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+                                  _tokens->drawCullInput));
 
     // set instanceDraw true if instanceCulling is enabled.
     // this value will be used to determine if glVertexAttribDivisor needs to

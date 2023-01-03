@@ -95,6 +95,11 @@ public:
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
+    /// Encode drawing commands for this batch.
+    virtual void EncodeDraw(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
