@@ -57,7 +57,7 @@ if (Boost_NO_BOOST_CMAKE)
 endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
-    # --Python.
+    # 1--Python.
     macro(setup_python_package package)
         find_package(${package} COMPONENTS Interpreter Development REQUIRED)
 
@@ -93,6 +93,11 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
 
     if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
+    endif()
+
+    # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
+    if(WIN32)
+	set(Boost_COMPILER "-vc143;-vc142;-vc141")
     endif()
 
     # As of boost 1.67 the boost_python component name includes the
