@@ -380,8 +380,11 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             }
         }
 
-        const int locationIndex = in_qualifier ? _inLocationIndex++ :
-            _outLocationIndex++;
+        // If a location has been specified then add it to the attributes.
+        const int32_t locationIndex =
+            param.location >= 0
+            ? param.location
+            : (in_qualifier ? _inLocationIndex++ : _outLocationIndex++);
 
         const HgiShaderSectionAttributeVector attrs {
             HgiShaderSectionAttribute{
