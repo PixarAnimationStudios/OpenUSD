@@ -1089,7 +1089,7 @@ UsdImagingDelegate::ApplyPendingUpdates()
 
         // Pre-cache dependencies in parallel
         WorkDispatcher updatePathsCacheDispatcher;
-        for (auto pathIt: usdPathsToUpdate) {
+        for (const auto& pathIt: usdPathsToUpdate) {
             const auto& usdPath = pathIt.first;
             auto pair = _flattenedDependenciesCacheMap.insert(std::make_pair(usdPath, SdfPathVector()));
             if (!pair.second) {
