@@ -421,13 +421,16 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         }
     }
 
-     // topology visibility
-    HdBinding topologyVisibilityBinding =
+    if (HdBufferArrayRangeSharedPtr topVisBar_ =
+        drawItem->GetTopologyVisibilityRange()) {
+        
+        // topology visibility
+        HdBinding topologyVisibilityBinding =
                 locator.GetBinding(structBufferBindingType,
                                    /*debugName*/_tokens->topologyVisibility);
 
-    if (HdBufferArrayRangeSharedPtr topVisBar_ =
-        drawItem->GetTopologyVisibilityRange()) {
+        // topology visibility is interleaved into single struct.
+        _bindingMap[_tokens->topologyVisibility] = topologyVisibilityBinding;
 
         HdStBufferArrayRangeSharedPtr topVisBar =
             std::static_pointer_cast<HdStBufferArrayRange>(topVisBar_);
@@ -448,9 +451,6 @@ HdSt_ResourceBinder::ResolveBindings(HdStDrawItem const *drawItem,
         metaDataOut->topologyVisibilityData.insert(
             std::make_pair(topologyVisibilityBinding, sblock));
     }
-
-     // topology visibility is interleaved into single struct.
-    _bindingMap[_tokens->topologyVisibility] = topologyVisibilityBinding;
 
     // element primvar (per-face, per-line)
     if (HdBufferArrayRangeSharedPtr elementBar_ =
