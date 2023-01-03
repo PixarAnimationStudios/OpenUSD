@@ -123,6 +123,8 @@ public:
         const std::string &identifier,
         const std::string &typeName,
         const HgiInterpolationType interpolation,
+        const HgiSamplingType sampling,
+        const HgiStorageType storage,
         const HgiShaderSectionAttributeVector &attributes,
         const std::string &storageQualifier,
         const std::string &defaultValue = std::string(),
@@ -146,6 +148,8 @@ private:
 
     std::string _typeName;
     HgiInterpolationType _interpolation;
+    HgiSamplingType _sampling;
+    HgiStorageType _storage;
 };
 
 /// \class HgiVulkanBlockShaderSection

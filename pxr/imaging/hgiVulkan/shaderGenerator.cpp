@@ -84,6 +84,47 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
             "local_size_y = " + std::to_string(workSizeY) + ", "
             "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
         );
+    } else if (descriptor.shaderStage == HgiShaderStageTessellationControl) {
+        _shaderLayoutAttributes.emplace_back(
+            "layout (vertices = " +
+                descriptor.tessellationDescriptor.numVertsPerPatchOut +
+                ") out;\n");
+    } else if (descriptor.shaderStage == HgiShaderStageTessellationEval) {
+        if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Triangles) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles) in;\n");
+        } else if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Quads) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (quads) in;\n");
+        } else if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Isolines) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (isolines) in;\n");
+        }
+        if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::Equal) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (equal_spacing) in;\n");
+        } else if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::FractionalEven) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (fractional_even_spacing) in;\n");
+        } else if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::FractionalOdd) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (fractional_odd_spacing) in;\n");
+        }
+        if (descriptor.tessellationDescriptor.ordering ==
+                HgiShaderFunctionTessellationDesc::Ordering::CW) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (cw) in;\n");
+        } else if (descriptor.tessellationDescriptor.ordering ==
+                HgiShaderFunctionTessellationDesc::Ordering::CCW) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (ccw) in;\n");
+        }
     } else if (descriptor.shaderStage == HgiShaderStageGeometry) {
         if (descriptor.geometryDescriptor.inPrimitiveType ==
             HgiShaderFunctionGeometryDesc::InPrimitiveType::Points) {
@@ -395,6 +436,8 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             paramName,
             param.type,
             param.interpolation,
+            param.sampling,
+            param.storage,
             attrs,
             qualifier,
             std::string(),
@@ -422,6 +465,8 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
                     member.name,
                     member.type,
                     HgiInterpolationDefault,
+                    HgiSamplingDefault,
+                    HgiStorageDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,
                     std::string(),

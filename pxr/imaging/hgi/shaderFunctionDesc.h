@@ -150,6 +150,10 @@ bool operator!=(
 ///   Optionally specify an index for interstage parameters.</li>
 /// <li>interpolation:
 ///   Optionally specify the interpolation: Default, Flat or NoPerspective.</li>
+/// <li>sampling:
+///   Optionally specify the sampling: Default, Centroid or Sample.</li>
+/// <li>storage:
+///   Optionally specify the storage type: Default, Patch.</li>
 /// <li>role:
 ///   Optionally a role can be specified, like position, uv, color.</li>
 /// <li>arraySize:
@@ -166,6 +170,8 @@ struct HgiShaderFunctionParamDesc
     int32_t location;
     int32_t interstageSlot;
     HgiInterpolationType interpolation;
+    HgiSamplingType sampling;
+    HgiStorageType storage;
     std::string role;
     std::string arraySize;
 };
@@ -283,6 +289,10 @@ bool operator!=(
 /// <ul>
 /// <li>patchType:
 ///   The type of patch</li>
+/// <li>spacing
+///   The spacing used by the tessellation primitive generator</li>
+/// <li>ordering
+///   The ordering used by the tessellation primitive generator</li>
 /// <li>numVertsInPerPatch:
 ///   The number of vertices in per patch</li>
 /// <li>numVertsOutPerPatch:
@@ -291,13 +301,17 @@ bool operator!=(
 ///
 struct HgiShaderFunctionTessellationDesc
 {
-    enum class PatchType { Quad, Triangle };
+    enum class PatchType { Triangles, Quads, Isolines };
+    enum class Spacing { Equal, FractionalEven, FractionalOdd };
+    enum class Ordering { CW, CCW };
     HGI_API
     HgiShaderFunctionTessellationDesc();
 
-    PatchType patchType = PatchType::Triangle;
-    uint32_t numVertsPerPatchIn = 3;
-    uint32_t numVertsPerPatchOut = 3;
+    PatchType patchType;
+    Spacing spacing;
+    Ordering ordering;
+    std::string numVertsPerPatchIn;
+    std::string numVertsPerPatchOut;
 };
 
 HGI_API

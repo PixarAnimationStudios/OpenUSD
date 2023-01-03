@@ -52,6 +52,8 @@ HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc()
   : location(-1)
   , interstageSlot(-1)
   , interpolation(HgiInterpolationDefault)
+  , sampling(HgiSamplingDefault)
+  , storage(HgiStorageDefault)
 {
 }
 
@@ -61,7 +63,13 @@ HgiShaderFunctionParamBlockDesc::HgiShaderFunctionParamBlockDesc()
 }
 
 HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
-= default;
+  : patchType(PatchType::Triangles)
+  , spacing(Spacing::Equal)
+  , ordering(Ordering::CCW)
+  , numVertsPerPatchIn("3")
+  , numVertsPerPatchOut("3")
+{
+}
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
@@ -169,6 +177,8 @@ bool operator==(
            lhs.location == rhs.location &&
            lhs.interstageSlot == rhs.interstageSlot &&
            lhs.interpolation == rhs.interpolation &&
+           lhs.sampling == rhs.sampling &&
+           lhs.storage == rhs.storage &&
            lhs.role == rhs.role &&
            lhs.arraySize == rhs.arraySize;
 }
@@ -232,8 +242,10 @@ bool operator==(
         const HgiShaderFunctionTessellationDesc& rhs)
 {
     return lhs.patchType == rhs.patchType &&
-    lhs.numVertsPerPatchIn == rhs.numVertsPerPatchIn &&
-    lhs.numVertsPerPatchOut == rhs.numVertsPerPatchOut;
+           lhs.spacing == rhs.spacing &&
+           lhs.ordering == rhs.ordering &&
+           lhs.numVertsPerPatchIn == rhs.numVertsPerPatchIn &&
+           lhs.numVertsPerPatchOut == rhs.numVertsPerPatchOut;
 }
 
 bool operator!=(
