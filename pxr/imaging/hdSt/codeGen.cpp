@@ -4337,7 +4337,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.modelCoord              = GetDrawingCoordField(0, 0);\n"
              << "  dc.constantCoord           = GetDrawingCoordField(0, 1);\n"
              << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
-             << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3);\n"
+             << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3) + primitive_id;\n"
              << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
              << "  dc.shaderCoord             = GetDrawingCoordField(1, 1);\n"
              << "  dc.vertexCoord             = GetDrawingCoordField(1, 2);\n"
