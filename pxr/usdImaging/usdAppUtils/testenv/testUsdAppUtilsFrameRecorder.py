@@ -99,9 +99,10 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
         Tests recording a single frame.
         """
         outputImagePath = os.path.abspath('AnimCube.png')
+        outputAOV = 'color'
         self.assertTrue(
             self._frameRecorder.Record(self._stage, self._usdCamera,
-                Usd.TimeCode.EarliestTime(), outputImagePath))
+                Usd.TimeCode.EarliestTime(), outputImagePath, outputAOV))
 
     def testRecordMultipleFrames(self):
         """
@@ -110,12 +111,13 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
         outputImagePath = os.path.abspath('AnimCube.#.png')
         outputImagePath = UsdAppUtils.framesArgs.ConvertFramePlaceholderToFloatSpec(
             outputImagePath)
+        outputAOV = 'color'
 
         frameSpecIter = UsdAppUtils.framesArgs.FrameSpecIterator('1,5,10')
         for timeCode in frameSpecIter:
             self.assertTrue(
                 self._frameRecorder.Record(self._stage, self._usdCamera,
-                    timeCode, outputImagePath.format(frame=timeCode.GetValue())))
+                    timeCode, outputImagePath.format(frame=timeCode.GetValue()), outputAOV))
 
 
 if __name__ == "__main__":

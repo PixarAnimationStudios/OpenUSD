@@ -56,6 +56,7 @@ wrapFrameRecorder()
             (arg("stage"),
              arg("usdCamera"),
              arg("timeCode"),
-             arg("outputImagePath")))
+             arg("outputImagePath"),
+             arg("outputAOV")))
     ;
 }

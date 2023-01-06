@@ -153,6 +153,10 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--outputAOV', '-a', action='store', type=str,
+        default='color', choices=['color', 'depth', 'primId'],
+        help=('Select an AOV for rendering (default=%(default)s)'))
+
     args = parser.parse_args()
 
     UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
@@ -204,8 +208,9 @@ def main():
     for timeCode in args.frames:
         _Msg('Recording time code: %s' % timeCode)
         outputImagePath = args.outputImagePath.format(frame=timeCode.GetValue())
+        outputAOV = args.outputAOV
         try:
-            frameRecorder.Record(usdStage, usdCamera, timeCode, outputImagePath)
+            frameRecorder.Record(usdStage, usdCamera, timeCode, outputImagePath, outputAOV)
         except Tf.ErrorException as e:
 
             _Err("Recording aborted due to the following failure at time code "

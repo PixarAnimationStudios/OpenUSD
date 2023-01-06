@@ -280,7 +280,8 @@ UsdAppUtilsFrameRecorder::Record(
         const UsdStagePtr& stage,
         const UsdGeomCamera& usdCamera,
         const UsdTimeCode timeCode,
-        const std::string& outputImagePath)
+        const std::string& outputImagePath, 
+        const std::string& outputAOV)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
@@ -319,7 +320,13 @@ UsdAppUtilsFrameRecorder::Record(
     const GfFrustum frustum = gfCamera.GetFrustum();
     const GfVec3d cameraPos = frustum.GetPosition();
 
-    _imagingEngine.SetRendererAov(HdAovTokens->color);
+    TfToken aov = TfToken::Find(outputAOV);
+    if (aov == TfToken()) {
+      TF_WARN("Missing AOV. Defaulting to 'color' AOV.");
+      _imagingEngine.SetRendererAov(HdAovTokens->color);  // Defaults to 'color' AOV.
+    } else {
+      _imagingEngine.SetRendererAov(aov);
+    }
 
     _imagingEngine.SetCameraState(
         frustum.ComputeViewMatrix(),
