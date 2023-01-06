@@ -341,6 +341,14 @@ public:
             return _materialPurpose;
         }
 
+        /// Returns true if there is a material bound.  
+        ///
+        /// Note, GetMaterialPath() could be empty, which would indicate that no
+        /// material should be bound (and nothing should be inherited).
+        bool IsBound() const {
+            return _isBound;
+        }
+
     private:
         // The path to the material that is bound to.
         SdfPath _materialPath; 
@@ -350,6 +358,10 @@ public:
 
         // The purpose of the material binding.
         TfToken _materialPurpose;
+
+        // Store if there was a binding here.  This allows us to distinguish if
+        // a direct binding is purposefully empty.
+        bool _isBound;
     };
 
     /// \class CollectionBinding 
@@ -565,6 +577,8 @@ public:
     /// Unbinds the direct binding for the given material purpose 
     /// (\p materialPurpose) on this prim. It accomplishes this by blocking
     /// the targets of the binding relationship in the current edit target.
+    ///
+    /// This does not remove the UsdShadeMaterialBindingAPI schema application.
     USDSHADE_API
     bool UnbindDirectBinding(
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose) const;
@@ -577,6 +591,8 @@ public:
     /// If a binding was created without specifying a \p bindingName, then
     /// the correct \p bindingName to use for unbinding is the instance name
     /// of the targetted collection.
+    ///
+    /// This does not remove the UsdShadeMaterialBindingAPI schema application.
     USDSHADE_API
     bool UnbindCollectionBinding(
         const TfToken &bindingName, 

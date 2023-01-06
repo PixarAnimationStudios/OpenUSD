@@ -239,13 +239,15 @@ _GetMaterialPurpose(const UsdRelationship &bindingRel)
 UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
     const UsdRelationship &directBindingRel):
     _bindingRel(directBindingRel),
-    _materialPurpose(_GetMaterialPurpose(directBindingRel))
+    _materialPurpose(_GetMaterialPurpose(directBindingRel)),
+    _isBound(false)
 {
     SdfPathVector targetPaths;
     _bindingRel.GetForwardedTargets(&targetPaths);
     if (targetPaths.size() == 1 && 
         targetPaths.front().IsPrimPath()) {
         _materialPath = targetPaths.front();
+        _isBound = true;
     }
 }
 
