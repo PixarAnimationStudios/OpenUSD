@@ -707,7 +707,7 @@ elif Windows():
     # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
     # this version for all older Visual Studio versions as well.
     # boost 1.78 is required for Visual Studio 2022.
-    if VisualStudio2022OrGreater():
+    if IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
         BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
     else:
