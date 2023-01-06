@@ -183,6 +183,7 @@ pxr_library(hd
         dataSourceTypeDefs.h
         driver.h
         materialNetworkInterface.h
+        vectorSchemaTypeDefs.h
         version.h
 
     PRIVATE_CLASSES
