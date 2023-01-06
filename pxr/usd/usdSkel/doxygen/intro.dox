@@ -69,7 +69,7 @@ common terminology:
 - **Binding**:
   
   An encoding of the binding of a _Skeleton_ to a geometry hierarchy,
-  describing which geometric primitves the _Skeleton_ deforms (if any),
+  describing which geometric primitives the _Skeleton_ deforms (if any),
   and how.
 
 - \anchor UsdSkel_Term_JointInfluences **Joint Influences**:
@@ -146,7 +146,7 @@ The _World Space_ transform of a joint is computed as:
 \endcode
 
 Where _skelLocalToWorldTransform_ is the world space transform of the Skeleton
-primtiive.
+primitive.
     
 
 \section UsdSkel_PointSkinning Skinning a Point (Linear Blend Skinning)

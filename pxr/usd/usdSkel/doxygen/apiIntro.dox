@@ -11,7 +11,7 @@ Given a scene that contains a UsdSkelSkeleton, a consuming application is free
 to access that primitive and reason about its structure on its own, if it
 chooses to do so. But UsdSkel also provides a more convenient API for querying
 data on a Skeleton: UsdSkelSkeletonQuery. A UsdSkelSkeletonQuery is created
-through a UsdSkelCache, using a UsdSkelSkeleton primtivive, as in the following
+through a UsdSkelCache, using a UsdSkelSkeleton primitive, as in the following
 example:
 
 - C++:
@@ -558,7 +558,7 @@ which is necessary when accessing skinning queries.
 Passing the predicate produced by UsdTraverseInstanceProxies() ensures that
 instanced, skinnable prims are populated on the cache. If there is no need
 to consider instanced primitives, then a predicate that does not traverse
-instance proxies -- such as UsdPrimDefaultPredicae -- may be used instead.
+instance proxies -- such as UsdPrimDefaultPredicate -- may be used instead.
 
 The SkelRoot that encapsulates a primitive can be found using UsdSkelRoot::Find.
 If no SkelRoot is found, that means that the primitive is not encapsulated
@@ -675,7 +675,7 @@ influences are automatically expanded out to define per-point influences.
 Another restriction encountered in some applications is that they have a limit
 on the number of influences that may be specified per point. We do not feel
 that it is appropriate to enforce such application-specific limitations on
-the storage encoding, so UsdSkel has defines no limit on the number of
+the storage encoding, so UsdSkel defines no limit on the number of
 influences.
 
 However, UsdSkel does provide utility methods to allow influence arrays to be

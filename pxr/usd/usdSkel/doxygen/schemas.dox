@@ -251,7 +251,7 @@ def "Model" (
 
 When a _skel:animationSource_ property is defined, it is "inherited" down
 namespace, onto any _Skeleton_ primitive beneath it. So in the above example,
-`</Model/Skel>` will be affected by the SkelAnimation at `</Model/Anim>`.
+`</Model/Skel>` will be affected by the SkelAnimation at `</Anim>`.
 
 There are a couple reasons why data is separated in this manner:
 - Encoding animation separately means that different schemes can be developed
