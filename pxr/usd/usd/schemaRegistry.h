@@ -492,7 +492,8 @@ public:
     const UsdPrimDefinition* FindConcretePrimDefinition(
         const TfToken &typeName) const {
         const auto it = _concreteTypedPrimDefinitions.find(typeName);
-        return it != _concreteTypedPrimDefinitions.end() ? it->second.get() : nullptr;
+        return it != _concreteTypedPrimDefinitions.end() ? 
+            it->second.get() : nullptr;
     }
 
     /// Finds the prim definition for the given \p typeName token if 
@@ -500,17 +501,9 @@ public:
     /// it is not.
     const UsdPrimDefinition *FindAppliedAPIPrimDefinition(
         const TfToken &typeName) const {
-        // Check the single apply API schemas first then check for multiple
-        // apply schemas. This function will most often be used to find a 
-        // single apply schema's prim definition as the prim definitions for
-        // multiple apply schemas aren't generally useful.
         const auto it = _appliedAPIPrimDefinitions.find(typeName);
-        if (it != _appliedAPIPrimDefinitions.end()) {
-            return it->second.get();
-        }
-        const auto multiIt = _multiApplyAPIPrimDefinitions.find(typeName);
-        return multiIt != _multiApplyAPIPrimDefinitions.end() ? 
-            multiIt->second : nullptr;
+        return it != _appliedAPIPrimDefinitions.end() ?
+            it->second.primDef.get() : nullptr;
     }
 
     /// Returns the empty prim definition.
@@ -547,38 +540,32 @@ private:
 
     UsdSchemaRegistry();
 
-    // For the given full API schema name (which may be "type:instance" for 
-    // multiple apply API schemas), finds and returns the prim definition for 
-    // the API schema type. If the API schema is an instance of a multiple 
-    // apply API, the instance name will be set in instanceName.
-    const UsdPrimDefinition *_FindAPIPrimDefinitionByFullName(
-        const TfToken &apiSchemaName, 
-        TfToken *instanceName) const;
+    using _FamilyAndInstanceToVersionMap = 
+        std::unordered_map<std::pair<TfToken, TfToken>, UsdSchemaVersion, TfHash>;
 
     void _ComposeAPISchemasIntoPrimDefinition(
         UsdPrimDefinition *primDef, 
-        const TfTokenVector &appliedAPISchemas) const;
+        const TfTokenVector &appliedAPISchemas,
+        _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions,
+        bool allowDupes = false) const;
 
     // Private class for helping initialize the schema registry. Defined 
     // entirely in the implementation. Declared here for private access to the
     // registry.
     class _SchemaDefInitHelper;
 
-    using _TypeNameToPrimDefinitionMap = std::unordered_map<
-        TfToken, const std::unique_ptr<UsdPrimDefinition>, TfToken::HashFunctor>;
-
     SdfLayerRefPtr _schematics;
 
-    _TypeNameToPrimDefinitionMap _concreteTypedPrimDefinitions;
-    _TypeNameToPrimDefinitionMap _appliedAPIPrimDefinitions;
+    std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
+         TfHash> _concreteTypedPrimDefinitions;
 
-    // This is a mapping from multiple apply API schema name (e.g. 
-    // "CollectionAPI") to the template prim definition stored for it in
-    // _appliedAPIPrimDefinitions as the template prim definition is actually 
-    // mapped to its template name (e.g. "CollectionAPI:__INSTANCE_NAME__") in
-    // that map.
-    std::unordered_map<TfToken, const UsdPrimDefinition *, TfToken::HashFunctor> 
-        _multiApplyAPIPrimDefinitions;
+    struct _APISchemaDefinitionInfo {
+        std::unique_ptr<UsdPrimDefinition> primDef;
+        bool applyExpectsInstanceName;
+    };
+    std::unordered_map<TfToken, const _APISchemaDefinitionInfo, TfHash> 
+        _appliedAPIPrimDefinitions;
+
     UsdPrimDefinition *_emptyPrimDefinition;
 
     VtDictionary _fallbackPrimTypes;

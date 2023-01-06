@@ -336,8 +336,22 @@ private:
     USD_API
     void _ComposePropertiesFromPrimDef(
         const UsdPrimDefinition &weakerPrimDef, 
-        bool useWeakerPropertyForTypeConflict,
-        const std::string &instanceName = "");
+        bool useWeakerPropertyForTypeConflict = false);
+
+    USD_API
+    void _ComposePropertiesFromPrimDefInstance(
+        const UsdPrimDefinition &weakerPrimDef, 
+        const std::string &instanceName);
+
+    using _FamilyAndInstanceToVersionMap = 
+        std::unordered_map<std::pair<TfToken, TfToken>, UsdSchemaVersion, TfHash>;
+
+    USD_API
+    bool _ComposeWeakerAPIPrimDefinition(
+        const UsdPrimDefinition &apiPrimDef,
+        const TfToken &instanceName,
+        _FamilyAndInstanceToVersionMap *alreadyAppliedSchemaFamilyVersions,
+        bool allowDupes = false);
 
     // Path to the prim in the schematics for this prim definition.
     SdfPath _schematicsPrimPath;
