@@ -4156,7 +4156,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         _genMS << "int g_instanceID;          // Set from calling code.\n"
                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
                 << "int GetInstanceIndexCoord() {\n"
-                << "return GetDrawingCoordField(1, 1) + gl_InstanceID * HD_INSTANCE_INDEX_WIDTH;\n"
+                << "return GetDrawingCoordField(1, 1) + (hd_LocalInvocationID.y) * HD_INSTANCE_INDEX_WIDTH;\n"
                 << "}\n";
         
         _genCS << "int g_instanceID;          // Set from calling code.\n"
@@ -4218,13 +4218,12 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                           "GetInstanceIndexCoord()+localIndex");
 
             genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
-                    << "  int offset = GetInstanceIndexCoord();\n"
-                    << "  hd_instanceIndex r;\n"
-                    << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                    << "    r.indices[i] = HdGet_culledInstanceIndices(/*localIndex=*/i);\n"
-                    << "  return r;\n"
-                    << "}\n";
-        }
+                            << "  hd_instanceIndex r;\n"
+                            << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
+                            << "    r.indices[i] = culledInstanceIndices[/*localIndex=*/i];\n"
+                            << "  return r;\n"
+                            << "}\n";
+    }
     } else {
         genAttr << "hd_instanceIndex GetInstanceIndex() {"
              << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
@@ -4305,8 +4304,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
              << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3);\n"
              << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
-             << "  dc.shaderCoord             = GetDrawingCoordField(1, 1);\n"
-             << "  dc.vertexCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
              << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
              << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
@@ -4322,8 +4321,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
              << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3);\n"
              << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
-             << "  dc.shaderCoord             = GetDrawingCoordField(1, 1);\n"
-             << "  dc.vertexCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
              << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
              << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
@@ -4339,8 +4338,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
              << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3) + primitive_id;\n"
              << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
-             << "  dc.shaderCoord             = GetDrawingCoordField(1, 1);\n"
-             << "  dc.vertexCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
+             << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
              << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
              << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";

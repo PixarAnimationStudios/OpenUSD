@@ -254,6 +254,7 @@ bool
 HdStMesh::IsEnabledPackedNormals()
 {
     static bool enabled = (TfGetEnvSetting(HD_ENABLE_PACKED_NORMALS) == 1);
+    return false;
     return enabled;
 }
 
