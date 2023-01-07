@@ -51,7 +51,10 @@ public:
     HdExtComputationPrimvarsSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
+    HD_API
     TfTokenVector GetExtComputationPrimvarNames();
+
+    HD_API
     HdExtComputationPrimvarSchema GetPrimvar(const TfToken &name);
 
 

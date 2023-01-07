@@ -71,7 +71,7 @@ public:
     
     HGIMETAL_API
     HgiComputeCmdsUniquePtr CreateComputeCmds(
-        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial) override;
+        HgiComputeCmdsDesc const& desc) override;
 
     HGIMETAL_API
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;

@@ -286,6 +286,25 @@ public:
         };
 
         // -------------------------------------------------------------------
+        // for accessing drawingCoord directly from a buffer
+        struct DrawingCoordBufferBinding {
+            DrawingCoordBufferBinding()
+                : bufferName()
+                , offset(0)
+                , stride(0) { }
+            DrawingCoordBufferBinding(TfToken const &bufferName,
+                                      uint32_t offset,
+                                      uint32_t stride)
+                : bufferName(bufferName)
+                , offset(offset)
+                , stride(stride) { }
+            TfToken bufferName;
+            uint32_t offset;
+            uint32_t stride;
+        };
+        DrawingCoordBufferBinding drawingCoordBufferBinding;
+
+        // -------------------------------------------------------------------
 
         StructBlockBinding constantData;
         StructBlockBinding shaderData;
@@ -329,6 +348,7 @@ public:
     void ResolveBindings(HdStDrawItem const *drawItem,
                          HdStShaderCodeSharedPtrVector const &shaders,
                          MetaData *metaDataOut,
+                         MetaData::DrawingCoordBufferBinding const &dcBinding,
                          bool instanceDraw,
                          HdBindingRequestVector const &customBindings,
                          HgiCapabilities const *capabilities);
@@ -390,6 +410,7 @@ public:
                 TfToken const & name,
                 HgiSamplerHandle const & texelSampler,
                 HgiTextureHandle const & texelTexture,
+                HgiSamplerHandle const & layoutSampler,
                 HgiTextureHandle const & layoutTexture) const;
 
     ////////////////////////////////////////////////////////////

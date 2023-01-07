@@ -155,8 +155,7 @@ def ExtractUsdzPackage(usdzFile, extractDir, recurse, verbose, force):
         return False
 
     def _ExtractZip(zipFile, extractedDir, recurse, verbose):
-        usdzArchive = zipfile.ZipFile(zipFile)
-        with usdzArchive:
+        with zipfile.ZipFile(zipFile) as usdzArchive:
             if verbose:
                 _Print("Extracting usdz file \'%s\' to \'%s\'" \
                         %(zipFile, extractedDir))
@@ -237,12 +236,10 @@ class UsdzAssetIterator(object):
                     "exception was thrown: (%s)" %(",".join(filesToAdd), \
                             self.usdzFile, e))
         finally:
-            if self._tmpDir:
-                shutil.rmtree(self._tmpDir)
-            else:
-                shutil.rmtree(self.extractDir)
+            # Make sure context is not on the directory being removed
+            os.chdir(os.path.dirname(self.extractDir))
+            shutil.rmtree(self.extractDir)
 
-    @contextmanager
     def UsdAssets(self):
         """
         Generator for UsdAssets respecting nested usdz assets.
@@ -262,13 +259,15 @@ class UsdzAssetIterator(object):
                 # Create another UsdzAssetIterator to handle nested usdz package
                 with UsdzAssetIterator(extractedFile, self.verbose,
                         self.extractDir) as nestedUsdz:
-                            yield nestedUsdz.UsdAssets()
+                        # On python3.5+ we can use "yield from" instead of
+                        # iterating on the nested yield's results
+                        for nestedUsdAsset in nestedUsdz.UsdAssets():
+                            yield nestedUsdAsset
             else:
                 if self.verbose:
                     _Print("Iterating usd asset: %s" %extractedFile)
                 yield extractedFile 
 
-    @contextmanager
     def AllAssets(self):
         """
         Generator for all assets packed in the usdz package, respecting nested
@@ -286,7 +285,10 @@ class UsdzAssetIterator(object):
                     _Print("Iterating nested usdz asset: %s" %extractedFile)
                 with UsdzAssetIterator(extractedFile, self.verbose,
                         self.extractDir) as nestedUsdz:
-                            yield nestedUsdz.AllAssets()
+                            # On python3.5+ we can use "yield from" instead of
+                            # iterating on the nested yield's results
+                            for nestedAllAsset in nestedUsdz.AllAssets():
+                                yield nestedAllAsset
             else:
                 if self.verbose:
                     _Print("Iterating usd asset: %s" %extractedFile)

@@ -40,14 +40,21 @@ def _AllowedUsdzExtensions():
 def _AllowedUsdExtensions():
     return [".usd", ".usda", ".usdc"]
 
-def _FixLayer(usdLayer):
+def _FixUsdAsset(usdAsset):
+    # we scope the SdfLayer access inside this function so that callers can be 
+    # assured the layer has been released when the function returns.
+    usdLayer = Sdf.Layer.FindOrOpen(usdAsset)
     if not usdLayer:
-        return
+        return False
     usdLayerFixer = UsdUtils.FixBrokenPixarSchemas(usdLayer)
     usdLayerFixer.FixupMaterialBindingAPI()
     usdLayerFixer.FixupSkelBindingAPI()
     usdLayerFixer.FixupUpAxis()
-    return usdLayerFixer.IsLayerUpdated()
+    usdLayerFixer.FixupCoordSysAPI()
+    if usdLayerFixer.IsLayerUpdated():
+        usdLayer.Save()
+        return True
+    return False
 
 def _ValidateFileNames(inputFile, backupFile, isUsdzFile):
     allowedUsdzExtensions = _AllowedUsdzExtensions()
@@ -99,35 +106,29 @@ def main():
 
     success = False
 
-    usdLayer = Sdf.Layer.FindOrOpen(inputFile)
-    if not usdLayer:
-        _Err("Input layer ('%s') doesn't exist." %(inputFile))
+    if not os.path.exists(inputFile):
+        _Err("Input file ('%s') doesn't exist." %(inputFile))
         return 0
 
+    currentWorkingDir = os.getcwd()
     if isUsdzFile:
         shutil.copyfile(inputFile, backupFile)
-        currentWorkingDir = os.getcwd()
         # UsdzAssetIterator will make sure to extract and pack when done!
         with UsdUtils.UsdzAssetIterator(inputFile, args.verbose) as usdAssetItr:
             # Generators for usdAssets giving us recursive lazy access to 
             # usdAssets within the usdz package for applying fixes.
-            with usdAssetItr.UsdAssets() as assets:
-                if assets:
-                    for usdAsset in assets.gen:
-                        usdAssetLayer = Sdf.Layer.FindOrOpen(usdAsset)
-                        if (_FixLayer(usdAssetLayer)):
-                            usdAssetLayer.Save()
-                            success = True
-        if not success:
-            _Err("Unable to fix or no fixes required for usdz package '%s'." \
-                    %inputFile)
-            os.chdir(currentWorkingDir)
-            shutil.move(backupFile, inputFile)
+            for usdAsset in usdAssetItr.UsdAssets():
+                if usdAsset:
+                    success |= _FixUsdAsset(usdAsset)
     else:
-        success = _FixLayer(usdLayer)
-        if success:
-            shutil.copyfile(inputFile, backupFile)
-            usdLayer.Save()
+        shutil.copyfile(inputFile, backupFile)
+        success = _FixUsdAsset(inputFile)
+
+    if not success:
+        _Err("Unable to fix or no fixes required for input layer '%s'." \
+                %inputFile)
+        os.chdir(currentWorkingDir)
+        shutil.move(backupFile, inputFile)
 
 if __name__ == '__main__':
     sys.exit(main())

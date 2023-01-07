@@ -116,9 +116,10 @@ HgiGL::CreateBlitCmds()
 }
 
 HgiComputeCmdsUniquePtr
-HgiGL::CreateComputeCmds(HgiComputeDispatch dispatchMethod)
+HgiGL::CreateComputeCmds(
+    HgiComputeCmdsDesc const& desc)
 {
-    HgiGLComputeCmds* cmds(new HgiGLComputeCmds(_device));
+    HgiGLComputeCmds* cmds(new HgiGLComputeCmds(_device, desc));
     return HgiComputeCmdsUniquePtr(cmds);
 }
 

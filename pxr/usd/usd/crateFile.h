@@ -324,125 +324,161 @@ private:
         bool hasOwnership = false;
     };
 
-    // This structure pulls together the underlying ArchConstFileMapping
-    // representing the memory-mapped file plus all the information we need to
-    // support "zero-copy" arrays where we create VtArray instances that point
-    // directly into mapped memory.  It gets complicated because the
-    // external-facing SdfLayer semantics are strict value semantics.  In
-    // particular, we need to support the case where a client gets a VtArray out
-    // of a .usdc file, then destroys the layer object, and even mutates the
-    // file on disk, and the fetched array has to behave correctly.
-    struct _FileMapping {
+    class _FileMapping {
+        
+        // This helper structure pulls together the underlying
+        // ArchConstFileMapping representing the memory-mapped file plus all the
+        // information we need to support "zero-copy" arrays where we create
+        // VtArray instances that point directly into mapped memory.  It gets
+        // complicated because the external-facing SdfLayer semantics are strict
+        // value semantics.  In particular, we need to support the case where a
+        // client gets a VtArray out of a .usdc file, then destroys the layer
+        // object, and even mutates the file on disk, and the fetched array has
+        // to behave correctly.
+        class _Impl {
+            friend class _FileMapping;
 
-        // This is a foreign data source for VtArray that refers into a
-        // memory-mapped region, and shares in the lifetime of the mapping.
-        struct ZeroCopySource : public Vt_ArrayForeignDataSource {
-            explicit ZeroCopySource(
-                CrateFile::_FileMapping *m, void const *addr, size_t numBytes);
-
-            // XXX --------------------------------
-            // Hack for tbb bug -- types in tbb::concurrent_unordered_set
-            // must be copy constructible until version 2017 update 1.  Remove
-            // this once we're on or past that version of tbb.
-            ZeroCopySource(ZeroCopySource const &other)
-                : Vt_ArrayForeignDataSource(other._detachedFn, other._refCount)
-                , _mapping(other._mapping)
-                , _addr(other._addr)
-                , _numBytes(other._numBytes)
-                {}
-            // XXX --------------------------------
+            // This is a foreign data source for VtArray that refers into a
+            // memory-mapped region, and shares in the lifetime of the mapping.
+            struct ZeroCopySource : public Vt_ArrayForeignDataSource {
+                explicit ZeroCopySource(_Impl *m,
+                                        void const *addr,
+                                        size_t numBytes);
+                
+                bool operator==(ZeroCopySource const &other) const;
+                bool operator!=(ZeroCopySource const &other) const {
+                    return !(*this == other);
+                }
+                friend size_t tbb_hasher(ZeroCopySource const &z) {
+                    size_t seed = reinterpret_cast<uintptr_t>(z._addr);
+                    boost::hash_combine(seed, z._numBytes);
+                    return seed;
+                }
+                
+                // Return true if the refcount is nonzero.
+                bool IsInUse() const { return _refCount; }
+                
+                // Increment count and return true if it went from 0 to 1.
+                bool NewRef() {
+                    return _refCount.fetch_add(
+                        1, std::memory_order_relaxed) == 0;
+                }
+                
+                // Return the address this source refers to.
+                void const *GetAddr() const { return _addr; }
+                
+                // Return the number of bytes this source refers to.
+                size_t GetNumBytes() const { return _numBytes; }
+                
+            private:
+                // Callback for VtArray foreign data source.
+                static void _Detached(Vt_ArrayForeignDataSource *selfBase);
+                
+                _Impl *_mapping;
+                void const *_addr;
+                size_t _numBytes;
+            };
+            friend struct ZeroCopySource;
             
-            bool operator==(ZeroCopySource const &other) const;
-            bool operator!=(ZeroCopySource const &other) const {
-                return !(*this == other);
-            }
-            friend size_t tbb_hasher(ZeroCopySource const &z) {
-                size_t seed = reinterpret_cast<uintptr_t>(z._addr);
-                boost::hash_combine(seed, z._numBytes);
-                return seed;
-            }
-
-            // Return true if the refcount is nonzero.
-            bool IsInUse() const { return _refCount; }
-
-            // Increment count and return true if it went from 0 to 1.
-            bool NewRef() {
-                return _refCount.fetch_add(1, std::memory_order_relaxed) == 0;
-            }
-
-            // Return the address this source refers to.
-            void const *GetAddr() const { return _addr; }
+            _Impl() : _refCount(0) {};
             
-            // Return the number of bytes this source refers to.
-            size_t GetNumBytes() const { return _numBytes; }
+            explicit _Impl(ArchConstFileMapping &&mapping,
+                           int64_t offset, int64_t length)
+                : _refCount(0)
+                , _mapping(std::move(mapping))
+                , _start(_mapping.get() + offset)
+                , _length(length == -1 ?
+                          ArchGetFileMappingLength(_mapping) : length) {}
             
-        private:
-            // Callback for VtArray foreign data source.
-            static void _Detached(Vt_ArrayForeignDataSource *selfBase);
-
-            _FileMapping *_mapping;
-            void const *_addr;
-            size_t _numBytes;
+            // Add an an externally referenced page range.
+            Vt_ArrayForeignDataSource *
+            _AddRangeReference(void const *addr, size_t numBytes);
+            
+            // Set memory protection to read / copy-on-write and then
+            // "silent-store" to touch outstanding page ranges to detach them in
+            // the copy-on-write sense from their file backing and make them
+            // swap-backed.  No new page ranges can be added once this is
+            // invoked.  (i.e. a cratefile dtor cannot run concurrently with
+            // other code reading/writing the file.)
+            void _DetachReferencedRanges();
+            
+            // This class is managed by a combination of boost::intrusive_ptr
+            // and manual reference counting -- see explicit calls to
+            // intrusive_ptr_add_ref/release in the .cpp file.
+            friend inline void
+            intrusive_ptr_add_ref(_Impl const *m) {
+                m->_refCount.fetch_add(1, std::memory_order_relaxed);
+            }
+            friend inline void
+            intrusive_ptr_release(_Impl const *m) {
+                if (m->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
+                    std::atomic_thread_fence(std::memory_order_acquire);
+                    delete m;
+                }
+            }
+            
+            mutable std::atomic<size_t> _refCount { 0 };
+            ArchConstFileMapping _mapping;
+            char const *_start;
+            int64_t _length;
+            tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
         };
-        friend struct ZeroCopySource;
-        
-        _FileMapping() : _refCount(0) {};
 
-        explicit _FileMapping(ArchConstFileMapping mapping, int64_t offset=0,
-                              int64_t length=-1)
-            : _refCount(0)
-            , _mapping(std::move(mapping))
-            , _start(_mapping.get() + offset)
-            , _length(length == -1 ?
-                      ArchGetFileMappingLength(_mapping) : length) {}
-
-        ~_FileMapping();
+    public:
+        // Default constructor leaves _FileMapping "null".
+        _FileMapping() noexcept = default;
         
-        // Add an an externally referenced page range.
-        ZeroCopySource *
-        AddRangeReference(void const *addr, size_t numBytes);
+        // Construct with new mapping.
+        explicit _FileMapping(ArchConstFileMapping &&mapping,
+                              int64_t offset=0, int64_t length=-1) noexcept
+            : _impl(new _Impl(std::move(mapping), offset, length)) {}
+
+        _FileMapping(_FileMapping &&other) noexcept
+            : _impl(std::move(other._impl)) {
+            other._impl = nullptr;
+        }
+        
+        _FileMapping &operator=(_FileMapping &&other) noexcept {
+            if (this != std::addressof(other)) {
+                _impl = std::move(other._impl);
+                other._impl = nullptr;
+            }
+            return *this;
+        }
+
+        ~_FileMapping() { Reset(); }
+
+        void Reset() {
+            // When a cratefile instance drops its mapping, it needs to detach
+            // referenced ranges.
+            if (_impl) {
+                _impl->_DetachReferencedRanges();
+                _impl.reset();
+            }
+        }
+
+        explicit operator bool() const noexcept {
+            return static_cast<bool>(_impl);
+        }
 
         // Return the start address of the mapped file content.  Note that due
         // to having usdc files embedded into other files (like usdz files) the
         // map start address is NOT guaranteed to be page-aligned.
-        const char *GetMapStart() const { return _start; }
+        const char *GetMapStart() const { return _impl->_start; }
 
         // Return the length of the relevant content range in the mapping.
-        size_t GetLength() const { return _length; }
+        size_t GetLength() const { return _impl->_length; }
+
+        // Add an an externally referenced page range.
+        Vt_ArrayForeignDataSource *
+        AddRangeReference(void const *addr, size_t numBytes) {
+            return _impl->_AddRangeReference(addr, numBytes);
+        }
 
     private:
-        friend class CrateFile;
-
-        // Set memory protection to read / copy-on-write and then "silent-store"
-        // to touch outstanding page ranges to detach them in the copy-on-write
-        // sense from their file backing and make them swap-backed.  No new page
-        // ranges can be added once this is invoked.  (i.e. a cratefile dtor
-        // cannot run concurrently with other code reading/writing the file.)
-        void _DetachReferencedRanges();
-
-        // This class is managed by a combination of boost::intrusive_ptr and
-        // manual reference counting -- see explicit calls to
-        // intrusive_ptr_add_ref/release in the .cpp file.
-        friend inline void
-        intrusive_ptr_add_ref(_FileMapping const *m) {
-            m->_refCount.fetch_add(1, std::memory_order_relaxed);
-        }
-        friend inline void
-        intrusive_ptr_release(_FileMapping const *m) {
-            if (m->_refCount.fetch_sub(1, std::memory_order_release) == 1) {
-                std::atomic_thread_fence(std::memory_order_acquire);
-                delete m;
-            }
-        }
-
-        mutable std::atomic<size_t> _refCount { 0 };
-        ArchConstFileMapping _mapping;
-        char const *_start;
-        int64_t _length;
-        tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
+        boost::intrusive_ptr<_Impl> _impl;
     };
-    using _FileMappingIPtr = boost::intrusive_ptr<_FileMapping>;
-
+    
     ////////////////////////////////////////////////////////////////////////
 
     // _BootStrap structure.  Appears at start of file, houses version, file
@@ -806,7 +842,7 @@ private:
 
     explicit CrateFile(Options opt);
     CrateFile(string const &assetPath, string const &fileName,
-              _FileMappingIPtr mapStart, ArAssetSharedPtr const &asset);
+              _FileMapping &&mapping, ArAssetSharedPtr const &asset);
     CrateFile(string const &assetPath, string const &fileName,
               _FileRange &&inputFile, ArAssetSharedPtr const &asset);
     CrateFile(string const &assetPath, ArAssetSharedPtr const &asset,
@@ -819,9 +855,9 @@ private:
     void _InitPread();
     void _InitAsset();
 
-    static _FileMappingIPtr
+    static _FileMapping
     _MmapFile(char const *fileName, FILE *file);
-    static _FileMappingIPtr
+    static _FileMapping
     _MmapAsset(char const *fileName, ArAssetSharedPtr const &asset);
 
     class _Writer;
@@ -1041,7 +1077,7 @@ private:
     // both _mmapSrc and _preadSrc are null, we read data from the _assetSrc via
     // ArAsset::Read().  If all three are null then this structure was not
     // populated from an asset.
-    _FileMappingIPtr _mmapSrc;
+    _FileMapping _mmapSrc;
     _FileRange _preadSrc;
 
     ArAssetSharedPtr _assetSrc;

@@ -234,17 +234,26 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         extensions.push_back(VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME);
     }
 
+    // Allow use of vertex attribute divisors.
+    if (IsSupportedExtension(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME)) {
+        extensions.push_back(VK_EXT_VERTEX_ATTRIBUTE_DIVISOR_EXTENSION_NAME);
+    }
+
     // This extension is needed to allow the viewport to be flipped in Y so that
     // shaders and vertex data can remain the same between opengl and vulkan.
     extensions.push_back(VK_KHR_MAINTENANCE1_EXTENSION_NAME);
 
     // Enabling certain features may incure a performance hit
     // (e.g. robustBufferAccess), so only enable the features we will use.
+    VkPhysicalDeviceVulkan11Features vulkan11Features =
+        {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+    vulkan11Features.pNext = _capabilities->vkVulkan11Features.pNext;
+    vulkan11Features.shaderDrawParameters =
+        _capabilities->vkVulkan11Features.shaderDrawParameters;
+
     VkPhysicalDeviceFeatures2 features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-
-    //extension features
-    features.pNext = _capabilities->vkDeviceFeatures2.pNext;
+    features.pNext = &vulkan11Features;
 
     features.features.multiDrawIndirect =
         _capabilities->vkDeviceFeatures.multiDrawIndirect;
@@ -260,10 +269,17 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
         _capabilities->vkDeviceFeatures.shaderClipDistance;
     features.features.tessellationShader =
         _capabilities->vkDeviceFeatures.tessellationShader;
+    features.features.depthClamp =
+        _capabilities->vkDeviceFeatures.depthClamp;
+    features.features.shaderFloat64 =
+        _capabilities->vkDeviceFeatures.shaderFloat64;
 
     // Needed to write to storage buffers from vertex shader (eg. GPU culling).
     features.features.vertexPipelineStoresAndAtomics =
         _capabilities->vkDeviceFeatures.vertexPipelineStoresAndAtomics;
+    // Needed to write to storage buffers from fragment shader (eg. OIT).
+    features.features.fragmentStoresAndAtomics =
+        _capabilities->vkDeviceFeatures.fragmentStoresAndAtomics;
 
     #if !defined(VK_USE_PLATFORM_MACOS_MVK)
         // Needed for buffer address feature

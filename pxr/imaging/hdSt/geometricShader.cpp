@@ -172,6 +172,9 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             primIndexSize = 12;
             break;
+        case PrimitiveType::PRIM_COMPUTE:
+            primIndexSize = 0;
+            break;
     }
 
     return primIndexSize;
@@ -233,6 +236,9 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             numPrimVerts = 4;
             break;
+        case PrimitiveType::PRIM_COMPUTE:
+            numPrimVerts = 0;
+            break;
     }
 
     return numPrimVerts;
@@ -277,6 +283,9 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             primitiveType = HgiPrimitiveTypePatchList;
+            break;
+        case PrimitiveType::PRIM_COMPUTE:
+            primitiveType = HgiPrimitiveTypePointList;
             break;
     }
 

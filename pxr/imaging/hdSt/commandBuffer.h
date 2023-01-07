@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <memory>
@@ -122,9 +120,8 @@ public:
 private:
     void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
     
-    /// Cull drawItemInstances based on renderPassState view and projection matrix
-    void _FrustumCull(HdStRenderPassStateSharedPtr const &renderPassState,
-                      HdRenderIndex const *renderIndex);
+    /// Cull drawItemInstances based on view frustum cull matrix
+    void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 
     void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 

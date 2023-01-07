@@ -36,21 +36,6 @@ UsdImagingDataSourceSubdivisionTags::UsdImagingDataSourceSubdivisionTags(
 {
 }
 
-
-bool
-UsdImagingDataSourceSubdivisionTags::Has(const TfToken &name)
-{
-    return
-        name == HdSubdivisionTagsSchemaTokens->faceVaryingLinearInterpolation ||
-        name == HdSubdivisionTagsSchemaTokens->interpolateBoundary ||
-        name == HdSubdivisionTagsSchemaTokens->triangleSubdivisionRule ||
-        name == HdSubdivisionTagsSchemaTokens->cornerIndices ||
-        name == HdSubdivisionTagsSchemaTokens->cornerSharpnesses ||
-        name == HdSubdivisionTagsSchemaTokens->creaseIndices ||
-        name == HdSubdivisionTagsSchemaTokens->creaseLengths ||
-        name == HdSubdivisionTagsSchemaTokens->creaseSharpnesses;
-}
-
 TfTokenVector
 UsdImagingDataSourceSubdivisionTags::GetNames()
 {
@@ -110,17 +95,6 @@ UsdImagingDataSourceMeshTopology::UsdImagingDataSourceMeshTopology(
 {
 }
 
-
-bool
-UsdImagingDataSourceMeshTopology::Has(const TfToken &name)
-{
-    return
-        name == HdMeshTopologySchemaTokens->faceVertexCounts ||
-        name == HdMeshTopologySchemaTokens->faceVertexIndices ||
-        name == HdMeshTopologySchemaTokens->holeIndices ||
-        name == HdMeshTopologySchemaTokens->orientation;
-}
-
 TfTokenVector
 UsdImagingDataSourceMeshTopology::GetNames()
 {
@@ -172,17 +146,6 @@ UsdImagingDataSourceMesh::UsdImagingDataSourceMesh(
 {
 }
 
-bool
-UsdImagingDataSourceMesh::Has(const TfToken &name)
-{
-    return
-        name == HdMeshSchemaTokens->topology ||
-        name == HdMeshSchemaTokens->subdivisionScheme ||
-        name == HdMeshSchemaTokens->doubleSided ||
-        name == HdMeshSchemaTokens->subdivisionTags;
-    // XXX: TODO geomsubsets
-}
-
 TfTokenVector
 UsdImagingDataSourceMesh::GetNames()
 {
@@ -232,16 +195,6 @@ UsdImagingDataSourceMeshPrim::UsdImagingDataSourceMeshPrim(
     // Note: DataSourceGprim handles the special PointBased primvars for us.
 }
 
-bool 
-UsdImagingDataSourceMeshPrim::Has(const TfToken& name)
-{
-    if (name == HdMeshSchemaTokens->mesh) {
-        return true;
-    }
-
-    return UsdImagingDataSourceGprim::Has(name);
-}
-
 TfTokenVector 
 UsdImagingDataSourceMeshPrim::GetNames()
 {
@@ -262,6 +215,50 @@ UsdImagingDataSourceMeshPrim::Get(const TfToken & name)
     } else {
         return UsdImagingDataSourceGprim::Get(name);
     }
+}
+
+/*static*/
+HdDataSourceLocatorSet
+UsdImagingDataSourceMeshPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet locators;
+
+    for (const TfToken &propertyName : properties) {
+        if (propertyName == UsdGeomTokens->subdivisionScheme) {
+            locators.insert(HdMeshSchema::GetSubdivisionSchemeLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->faceVertexCounts ||
+                propertyName == UsdGeomTokens->faceVertexIndices ||
+                propertyName == UsdGeomTokens->holeIndices ||
+                propertyName == UsdGeomTokens->orientation) {
+            locators.insert(HdMeshSchema::GetTopologyLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->interpolateBoundary ||
+                propertyName == UsdGeomTokens->faceVaryingLinearInterpolation ||
+                propertyName == UsdGeomTokens->triangleSubdivisionRule ||
+                propertyName == UsdGeomTokens->creaseIndices ||
+                propertyName == UsdGeomTokens->creaseLengths ||
+                propertyName == UsdGeomTokens->creaseSharpnesses ||
+                propertyName == UsdGeomTokens->cornerIndices ||
+                propertyName == UsdGeomTokens->cornerSharpnesses) {
+            // XXX UsdGeomTokens->creaseMethod, when we add support for that.
+            locators.insert(HdMeshSchema::GetSubdivisionTagsLocator());
+        }
+
+        if (propertyName == UsdGeomTokens->doubleSided)  {
+            locators.insert(HdMeshSchema::GetDoubleSidedLocator());
+        }
+    }
+
+    // Give base classes a chance to invalidate.
+    locators.insert(
+        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
+    return locators;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

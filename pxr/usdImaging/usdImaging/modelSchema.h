@@ -57,7 +57,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (box) \
     (fromTexture) \
 
-TF_DECLARE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens, HD_API,
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens, USDIMAGING_API,
     USDIMAGINGMODEL_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------

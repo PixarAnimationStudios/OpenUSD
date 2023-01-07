@@ -56,6 +56,7 @@ pxr_library(hdx
         presentTask
         renderTask
         renderSetupTask
+        selectionSceneIndexObserver
         selectionTask
         selectionTracker
         shadowTask

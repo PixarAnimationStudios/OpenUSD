@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -95,8 +93,6 @@ private:
     double _time;
 };
 
-GLuint vao;
-
 static
 UsdStageRefPtr
 _CreateStage(std::string const& primName) {
@@ -117,10 +113,6 @@ _CreateStage(std::string const& primName) {
 void
 My_TestGLDrawing::InitTest()
 {
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
-
     WorkSetMaximumConcurrencyLimit();
 
     HdPerfLog& perfLog = HdPerfLog::GetInstance();
@@ -176,11 +168,6 @@ My_TestGLDrawing::InitTest()
             _batchIndex->HasRprim(path),
             "Failed to find <%s> in the render index.",
             path.GetText());
-    }
-
-    if(IsEnabledTestLighting()) {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
     }
 
     _translate[0] = 0.0;
@@ -243,17 +230,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     params.enableLighting =  IsEnabledTestLighting();
     params.cullStyle = GetCullStyle();
-
-    glViewport(0, 0, width, height);
-
-    GLfloat clearColor[4] = { .25f, .25f, 0.25f, 1.0f };
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-
-    GLfloat clearDepth[1] = { 1.0f };
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
-    glEnable(GL_DEPTH_TEST);
-
+    params.clearColor = GetClearColor();
 
     if(IsEnabledTestLighting()) {
         GlfSimpleLightingContextRefPtr lightingContext = GlfSimpleLightingContext::New();

@@ -41,12 +41,6 @@ PcpNodeRef::operator<(const PcpNodeRef& rhs) const
     return _graph < rhs._graph;
 }
 
-PcpPrimIndex_GraphPtr 
-PcpNodeRef::GetOwningGraph() const
-{
-    return TfCreateWeakPtr(_graph);
-}
-
 void* 
 PcpNodeRef::GetUniqueIdentifier() const
 {
@@ -55,7 +49,7 @@ PcpNodeRef::GetUniqueIdentifier() const
 
 PcpNodeRef
 PcpNodeRef::InsertChildSubgraph(
-    const PcpPrimIndex_GraphPtr& subgraph, const PcpArc& arc,
+    const PcpPrimIndex_GraphRefPtr &subgraph, const PcpArc &arc,
     PcpErrorBasePtr *error)
 {
     return _graph->InsertChildSubgraph(*this, subgraph, arc, error);

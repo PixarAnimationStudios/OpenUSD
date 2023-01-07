@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/vt/value.h"
 #include <string>
 
@@ -55,6 +56,18 @@ public:
     /// asset resolver implementation.
     VtValue resolverInfo;
 };
+
+template <class HashState>
+void TfHashAppend(HashState& h, const ArAssetInfo& info)
+{
+    h.Append(info.version, info.assetName, info.repoPath, info.resolverInfo);
+}
+
+inline
+size_t hash_value(const ArAssetInfo& info)
+{
+    return TfHash()(info);
+}
 
 /// \relates ArAssetInfo
 inline

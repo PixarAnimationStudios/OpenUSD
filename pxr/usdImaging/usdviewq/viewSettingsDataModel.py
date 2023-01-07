@@ -195,6 +195,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
 
         self._showUndefinedPrims = self.stateProperty("showUndefinedPrims", default=False)
         self._showAbstractPrims = self.stateProperty("showAbstractPrims", default=False)
+        self._showPrimDisplayNames = self.stateProperty("showPrimDisplayNames", default=True)
         self._rolloverPrimInfo = self.stateProperty("rolloverPrimInfo", default=False)
         self._displayCameraOracles = self.stateProperty("cameraOracles", default=False)
         self._cameraMaskMode = self.stateProperty("cameraMaskMode", default=CameraMaskModes.NONE)
@@ -259,6 +260,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["showAllMasterPrims"] = self._showAllPrototypePrims
         state["showUndefinedPrims"] = self._showUndefinedPrims
         state["showAbstractPrims"] = self._showAbstractPrims
+        state["showPrimDisplayNames"] = self._showPrimDisplayNames
         state["rolloverPrimInfo"] = self._rolloverPrimInfo
         state["cameraOracles"] = self._displayCameraOracles
         state["cameraMaskMode"] = self._cameraMaskMode
@@ -634,6 +636,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @invisibleViewSetting
     def showAbstractPrims(self, value):
         self._showAbstractPrims = value
+
+    @property
+    def showPrimDisplayNames(self):
+        return self._showPrimDisplayNames
+
+    @showPrimDisplayNames.setter
+    @invisibleViewSetting
+    def showPrimDisplayNames(self, value):
+        self._showPrimDisplayNames = value
 
     @property
     def rolloverPrimInfo(self):

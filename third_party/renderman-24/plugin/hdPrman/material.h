@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/material.h"
-#include "hdPrman/matfiltFilterChain.h"
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -64,16 +63,6 @@ public:
 
     /// Return the static list of tokens supported.
     static TfTokenVector const& GetShaderSourceTypes();
-
-    /// Get material filtering chain.
-    static MatfiltFilterChain GetFilterChain();
-
-    /// Set material filtering chain.
-    static void SetFilterChain(MatfiltFilterChain const& chain);
-
-    /// Returns whether it's possible and preferred to use scene indices
-    /// in place of matfilt callbacks
-    static bool GetUseSceneIndexForMatfilt();
 
     /// Return the material network after filtering.
     HdMaterialNetwork2 const& GetMaterialNetwork() const;

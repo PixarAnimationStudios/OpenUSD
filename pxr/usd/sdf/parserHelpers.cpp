@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/opaqueValue.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/gf/half.h"
@@ -294,6 +295,13 @@ MakeScalarValueImpl(
     *out = vars[index++].Get<SdfAssetPath>();
 }
 
+inline void
+MakeScalarValueImpl(
+    SdfOpaqueValue *out, vector<Value> const &vars, size_t &index) {
+    TF_CODING_ERROR("Found authored opinion for opaque attribute");
+    throw boost::bad_get();
+}
+
 template <typename T>
 inline VtValue
 MakeScalarValueTemplate(vector<unsigned int> const &,
@@ -403,6 +411,9 @@ TF_MAKE_STATIC_DATA(_ValueFactoryMap, _valueFactories) {
     builder.add<std::string>(SdfValueTypeNames->String);
     builder.add<TfToken>(SdfValueTypeNames->Token);
     builder.add<SdfAssetPath>(SdfValueTypeNames->Asset);
+    builder.add<SdfOpaqueValue>(SdfValueTypeNames->Opaque);
+    builder.add<SdfOpaqueValue>(SdfValueTypeNames->Group);
+
     builder.add<GfVec2i>(SdfValueTypeNames->Int2);
     builder.add<GfVec2h>(SdfValueTypeNames->Half2);
     builder.add<GfVec2f>(SdfValueTypeNames->Float2);

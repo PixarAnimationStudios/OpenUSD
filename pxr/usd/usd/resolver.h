@@ -65,7 +65,7 @@ public:
     /// non-inert nodes in the index.
     USD_API
     explicit Usd_Resolver(
-        const UsdResolveTarget &resolveTarget, 
+        const UsdResolveTarget *resolveTarget, 
         bool skipEmptyNodes = true);
 
     /// Returns true when there is a current Node and Layer.
@@ -118,13 +118,6 @@ public:
         return *_curLayer;
     }
 
-    /// Returns the index of the current layer in the current node's layer 
-    /// stack for a valid resolver.
-    ///
-    /// The behavior is undefined if the resolver is not valid.
-    USD_API
-    size_t GetLayerStackIndex() const;
-
     /// Returns a translated path for the current PcpNode and Layer for a valid
     /// resolver.
     ///
@@ -158,10 +151,9 @@ private:
 
     PcpNodeIterator _curNode;
     PcpNodeIterator _endNode;
-    PcpNodeIterator _stopAtNode;
     SdfLayerRefPtrVector::const_iterator _curLayer;
     SdfLayerRefPtrVector::const_iterator _endLayer;
-    SdfLayerRefPtrVector::const_iterator _stopAtLayer;
+    const UsdResolveTarget *_resolveTarget;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

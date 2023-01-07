@@ -93,7 +93,7 @@ public:
 
     HGIGL_API
     HgiComputeCmdsUniquePtr CreateComputeCmds(
-        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial) override;
+        HgiComputeCmdsDesc const& desc) override;
 
     HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;

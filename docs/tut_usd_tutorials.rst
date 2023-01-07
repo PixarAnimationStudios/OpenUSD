@@ -17,7 +17,9 @@ Environment Setup
 
 These tutorials use USD's built-in Python bindings almost exclusively, and some
 programs in the :doc:`toolset` rely on one another.  So please set the following
-environment variables to successfully complete the tutorials.
+environment variables to successfully complete the tutorials. Make sure to use 
+the Python interpreter corresponding to the version used to build USD. These 
+tutorials assume the interpreter is named "python".
 
 +---------------------+------------+----------------------------------------+
 |Variable             |Meaning     |Value                                   |

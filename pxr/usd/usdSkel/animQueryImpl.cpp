@@ -77,10 +77,8 @@ public:
 
     bool GetJointTransformAttributes(
              std::vector<UsdAttribute>* attrs) const override;
-
+    
     bool JointTransformsMightBeTimeVarying() const override;
-
-    bool JointScalesMightBeNonIdentity() const override;
 
     bool GetBlendShapeWeightTimeSamples(
              const GfInterval& interval,
@@ -210,39 +208,6 @@ UsdSkel_SkelAnimationQueryImpl::JointTransformsMightBeTimeVarying() const
     return _translations.ValueMightBeTimeVarying() ||
            _rotations.ValueMightBeTimeVarying() ||
            _scales.ValueMightBeTimeVarying();
-}
-
-
-bool
-UsdSkel_SkelAnimationQueryImpl::JointScalesMightBeNonIdentity() const
-{
-    if (_scales.ValueMightBeTimeVarying()) {
-        std::vector<double> times;
-        if (_scales.GetTimeSamples(&times)) {
-            for (const double &time : times) {
-                VtArray<GfVec3h> scalesVal;
-                if (_scales.Get(&scalesVal, UsdTimeCode(time))) {
-                    for (size_t i = 0; i < scalesVal.size(); ++i) {
-                        for (size_t j = 0; j < 3; ++j) {
-                            if (scalesVal[i][j] != 1.0)
-                                return true;
-                        }
-                    }
-                }
-            }
-        }
-    } else if (_scales.HasValue()) {
-        VtArray<GfVec3h> scalesVal;
-        if (_scales.Get(&scalesVal, UsdTimeCode(0))) {
-            for (size_t i = 0; i < scalesVal.size(); ++i) {
-                for (size_t j = 0; j < 3; ++j) {
-                    if (scalesVal[i][j] != 1.0)
-                        return true;
-                }
-            }
-        }
-    }
-    return false;
 }
 
 

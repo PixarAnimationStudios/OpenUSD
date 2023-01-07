@@ -51,6 +51,8 @@
 #include "pxr/imaging/hgi/indirectCommandEncoder.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -103,6 +105,7 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _allowIndirectCommandEncoding(allowIndirectCommandEncoding)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
+    , _drawCoordOffset(0)
     , _patchBaseVertexByteOffset(0)
     , _drawCoord0Offset(0)
     , _drawCoord1Offset(0)
@@ -799,10 +802,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     _cullInstanceCountOffset = traits.cullInstanceCount_offset/sizeof(uint32_t);
 
     // cache the offset needed for compute culling.
-    _drawCoord0Offset = traits.drawingCoord0_offset / sizeof(uint32_t);
-    _drawCoord1Offset = traits.drawingCoord1_offset / sizeof(uint32_t);
-    _drawCoord2Offset = traits.drawingCoord2_offset / sizeof(uint32_t);
-    _drawCoordIOffset = traits.drawingCoordI_offset / sizeof(uint32_t);
+    _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
 
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
@@ -936,21 +936,21 @@ HdSt_PipelineDrawBatch::PrepareDraw(
         _drawCommandBufferDirty = false;
     }
 
-
     if (_useGpuCulling) {
         // Ignore passed in gfxCmds for now since GPU frustum culling
         // may still require multiple command buffer submissions.
         _ExecuteFrustumCull(updateBufferData,
                             renderPassState, resourceRegistry);
     }
- 
 }
 
 void
-HdSt_PipelineDrawBatch::BeforeDraw(
+HdSt_PipelineDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry)
-{   
+{
+    if (_HasNothingToDraw()) return;
+
     Hgi *hgi = resourceRegistry->GetHgi();
     HgiCapabilities const *capabilities = hgi->GetCapabilities();
 
@@ -1349,7 +1349,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             paramBuffer->GetStride());
     } else {
         HdStBufferResourceSharedPtr indexBuffer =
-                indexBar->GetResource(HdTokens->indices);
+            indexBar->GetResource(HdTokens->indices);
         if (!TF_VERIFY(indexBuffer)) return;
         if (useMeshShaders) {
             struct Uniforms {
@@ -1395,14 +1395,14 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                     0);
         } else {
         gfxCmds->DrawIndexedIndirect(
-                indexBuffer->GetHandle(),
-                paramBuffer->GetHandle(),
-                paramBuffer->GetOffset(),
-                _dispatchBuffer->GetCount(),
-                paramBuffer->GetStride(),
-                _drawCommandBuffer,
-                _patchBaseVertexByteOffset);
-        }
+            indexBuffer->GetHandle(),
+            paramBuffer->GetHandle(),
+            paramBuffer->GetOffset(),
+            _dispatchBuffer->GetCount(),
+            paramBuffer->GetStride(),
+            _drawCommandBuffer,
+            _patchBaseVertexByteOffset);
+    }
     }
 }
 
@@ -1495,26 +1495,26 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         cmd->common.baseInstance,
                         i);
                 } else {
-                    if (useMetalTessellation) {
-                        gfxCmds->DrawIndexed(
-                            indexBuffer->GetHandle(),
-                            cmd->metalPatch.patchCount,
-                            indexBufferByteOffset,
-                            cmd->metalPatch.baseVertex,
-                            cmd->metalPatch.instanceCount,
-                            cmd->metalPatch.baseInstance);
-                    } else {
-                        gfxCmds->DrawIndexed(
-                            indexBuffer->GetHandle(),
-                            cmd->common.count,
-                            indexBufferByteOffset,
-                            cmd->common.baseVertex,
-                            cmd->common.instanceCount,
-                            cmd->common.baseInstance);
-                    }
+                if (useMetalTessellation) {
+                    gfxCmds->DrawIndexed(
+                        indexBuffer->GetHandle(),
+                        cmd->metalPatch.patchCount,
+                        indexBufferByteOffset,
+                        cmd->metalPatch.baseVertex,
+                        cmd->metalPatch.instanceCount,
+                        cmd->metalPatch.baseInstance);
+                } else {
+                    gfxCmds->DrawIndexed(
+                        indexBuffer->GetHandle(),
+                        cmd->common.count,
+                        indexBufferByteOffset,
+                        cmd->common.baseVertex,
+                        cmd->common.instanceCount,
+                        cmd->common.baseInstance);
                 }
             }
         }
+    }
     }
 }
 
@@ -1595,8 +1595,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     
     HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
-    HgiComputeCmds *computeCmds = resourceRegistry->GetGlobalComputeCmds(
-        HgiComputeDispatchConcurrent);
+    HgiComputeCmds *computeCmds =
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
 
     if (!_useDrawIndexed) {
         _indirectCommands = encoder->EncodeDraw(
@@ -1703,20 +1703,22 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
             _tokens->dispatchBuffer,
             _dispatchBuffer->GetEntireResource(),
             _dispatchBuffer->GetEntireResource()->GetOffset());
-    
+
     // bind the read-only copy of the destination buffer for input.
     state.binder.GetBufferBindingDesc(
             &bindingsDesc,
             _tokens->drawCullInput,
             _dispatchBufferCullInput->GetEntireResource(),
             _dispatchBufferCullInput->GetEntireResource()->GetOffset());
-    
-    // HdSt_ResourceBinder::GetBufferBindingDesc() sets everything to
-    // (VS | FS | TS), so we have to set all the buffer stage usage to Compute
-    TF_FOR_ALL(iter, bindingsDesc.buffers) {
-        iter->stageUsage = HgiShaderStageCompute;
+
+    // HdSt_ResourceBinder::GetBufferBindingDesc() sets state usage
+    // to all graphics pipeline stages. Instead we have to set all the
+    // buffer stage usage to Compute.
+    for (HgiBufferBindDesc & bufDesc : bindingsDesc.buffers) {
+        bufDesc.stageUsage = HgiShaderStageCompute;
+        bufDesc.writable = true;
     }
-    
+
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
 
@@ -1725,27 +1727,21 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
     GfMatrix4f const &cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
-    
+
     HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
-    
-    // set instanced cull parameters
-    Uniforms cullParams;
-    cullParams.dummyVertexOffset = GfVec4i(0);
-    cullParams.drawCommandNumUints =
-            _dispatchBuffer->GetCommandNumUints();
-    cullParams.cullMatrix = cullMatrix;
-    cullParams.drawRangeNDC = drawRangeNdc;
-    cullParams.drawCoord0Offset = uint32_t(_drawCoord0Offset);
-    cullParams.drawCoord1Offset = uint32_t(_drawCoord1Offset);
-    cullParams.drawCoord2Offset = uint32_t(_drawCoord2Offset);
-    cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
+
+        // set instanced cull parameters
+        Uniforms cullParams;
+        cullParams.cullMatrix = cullMatrix;
+        cullParams.drawRangeNDC = drawRangeNdc;
+    cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
 
     computeCmds->SetConstantValues(
         psoHandle, 0,
         sizeof(Uniforms), &cullParams);
-    
-    int inputCount = _dispatchBufferCullInput->GetCount();
+
+    int const inputCount = _dispatchBufferCullInput->GetCount();
     computeCmds->Dispatch(inputCount, 1);
     computeCmds->PopDebugGroup();
 
@@ -1869,9 +1865,17 @@ HdSt_PipelineDrawBatch::_CreateCullingProgram(
             _useTinyPrimCulling,
             IsEnabledGPUCountVisibleInstances());
 
+        // access the drawing coord from the drawCullInput buffer
+        _CullingProgram::DrawingCoordBufferBinding drawingCoordBufferBinding{
+            _tokens->drawCullInput,
+            uint32_t(_drawCoordOffset),
+            uint32_t(_dispatchBuffer->GetCommandNumUints()),
+        };
+
         // sharing the culling geometric shader for the same configuration.
         HdSt_GeometricShaderSharedPtr cullShader =
             HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
+        _cullingProgram.SetDrawingCoordBufferBinding(drawingCoordBufferBinding);
         _cullingProgram.SetGeometricShader(cullShader);
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
                                        resourceRegistry);

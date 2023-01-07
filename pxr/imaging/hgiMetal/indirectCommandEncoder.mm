@@ -405,6 +405,8 @@ HgiMetalIndirectCommandEncoder::_GetFunction(
                                            error:&error];
         
         _functions.resize(6);
+        [options release];
+        options = nil;
         
         if (!_library) {
             NSString *errStr = [error localizedDescription];
@@ -505,6 +507,8 @@ HgiMetalIndirectCommandEncoder::_AllocateCommandBuffer(uint32_t drawCount)
             [_device newIndirectCommandBufferWithDescriptor:descriptor
                                             maxCommandCount:roundedSize
                                                     options:MTLResourceStorageModePrivate];
+        [descriptor release];
+        descriptor = nil;
     }
 
     return commandBuffer;

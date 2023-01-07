@@ -26,6 +26,7 @@
 
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/base/tf/stringUtils.h"
 
 #include <atomic>
@@ -34,13 +35,12 @@
 #include <mutex>
 #include <thread>
 
-#include <boost/program_options.hpp>
 
 using std::string;
 using std::vector;
-namespace boost_po = boost::program_options;
 
 PXR_NAMESPACE_USING_DIRECTIVE
+using namespace pxr_CLI;
 
 static unsigned int randomSeed;
 static size_t numThreads;
@@ -193,32 +193,15 @@ static TfStopwatch _DoPathOperations()
 int main(int argc, char const **argv)
 {
     // Set up arguments and their defaults
-    boost_po::options_description desc("Options");
-    desc.add_options()
+    CLI::App app("Tests SdfPath threading", "testSdfPathThreading");
+    app.add_option("--seed", randomSeed, "Random seed")
+        ->default_val(time(NULL));
+    app.add_option("--numThreads", numThreads, "Number of threads to use")
+        ->default_val(std::thread::hardware_concurrency());
+    app.add_option("--msec", msecsToRun, "Milliseconds to run")
+        ->default_val(2000);
 
-        ("seed",
-        boost_po::value<unsigned int>(&randomSeed)->default_value(time(NULL)),
-        "Random seed")
-
-        ("numThreads", 
-        boost_po::value<size_t>(&numThreads)->default_value(
-            std::thread::hardware_concurrency()), 
-        "Number of threads to use")
-
-        ("msec", 
-        boost_po::value<size_t>(&msecsToRun)->default_value(2000),
-        "Milliseconds to run")
-    ;
-
-    boost_po::variables_map vm;
-    try {
-        boost_po::store(boost_po::parse_command_line(argc, argv, desc), vm);
-        boost_po::notify(vm);
-    } catch (const boost_po::error &e) {
-        fprintf(stderr, "%s\n", e.what());
-        fprintf(stderr, "%s\n", TfStringify(desc).c_str());
-        exit(1);
-    }
+    CLI11_PARSE(app, argc, argv);
 
     // Initialize. 
     srand(randomSeed);

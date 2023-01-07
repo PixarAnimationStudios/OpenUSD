@@ -206,6 +206,48 @@ void TestGetTargetsAndConnections()
     }
 }
 
+static void
+_CheckNoSpecForOpaqueValues(const std::string &formatExtension)
+{
+    printf("%s %s\n", TF_FUNC_NAME().c_str(), formatExtension.c_str());
+
+    const UsdStageRefPtr stage =
+        UsdStage::CreateNew("test_opaque_values." + formatExtension);
+    const SdfLayerHandle layer = stage->GetRootLayer();
+
+    const UsdPrim prim = stage->DefinePrim(SdfPath("/Prim"));
+    const UsdAttribute attr = prim.CreateAttribute(
+        TfToken("attr"), SdfValueTypeNames->Opaque);
+
+    TF_AXIOM(!attr.HasAuthoredValue());
+
+    layer->SetField(
+        SdfPath("/Prim.attr"),
+        SdfFieldKeys->Default,
+        SdfOpaqueValue());
+    // We've set a default value, so this should return true.
+    TF_AXIOM(attr.HasAuthoredValue());
+
+    {
+        TfErrorMark mark;
+        mark.SetMark();
+        layer->Save();
+        // Should have emitted an error about trying to author an opaque value.
+        TF_AXIOM(!mark.IsClean());
+    }
+
+    // Once we reload the layer from disk, that authored opinion should be gone.
+    layer->Reload(/* force = */ true);
+    TF_AXIOM(!attr.HasAuthoredValue());
+}
+
+void
+TestOpaqueValueFileIO()
+{
+    _CheckNoSpecForOpaqueValues("usda");
+    _CheckNoSpecForOpaqueValues("usdc");
+}
+
 }
 
 int 
@@ -213,5 +255,6 @@ main(int argc, char** argv)
 {
     TestTargetSpecs();
     TestGetTargetsAndConnections();
+    TestOpaqueValueFileIO();
     return 0;
 }

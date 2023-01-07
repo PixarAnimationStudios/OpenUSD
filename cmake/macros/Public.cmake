@@ -197,6 +197,7 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     _pxr_init_rpath(rpath "${installDir}")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     _pxr_install_rpath(rpath ${BIN_NAME})
 
     _pxr_target_link_libraries(${BIN_NAME}

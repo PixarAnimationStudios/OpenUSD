@@ -215,9 +215,15 @@ public:
     /// \p callback is called for every item in all operation vectors.  If the 
     /// returned key is empty then the key is removed, otherwise it's replaced 
     /// with the returned key.
+    /// 
+    /// If \p removeDuplicates is \c true and \p callback returns a key that was
+    /// previously returned for the current operation vector being processed,
+    /// the returned key will be removed.
     ///
     /// Returns true if a change was made, false otherwise.
-    SDF_API bool ModifyOperations(const ModifyCallback& callback);
+    SDF_API
+    bool ModifyOperations(const ModifyCallback& callback,
+                          bool removeDuplicates = false);
 
     /// Replaces the items in the specified operation vector in the range
     /// (index, index + n] with the given \p newItems. If \p newItems is empty

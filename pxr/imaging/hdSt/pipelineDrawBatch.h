@@ -68,9 +68,9 @@ public:
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
-    /// Do the final preparation before the draw.
+    /// Encode drawing commands for this batch.
     HDST_API
-    void BeforeDraw(
+    void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
@@ -193,6 +193,7 @@ private:
 
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;
+    size_t _drawCoordOffset;
     size_t _patchBaseVertexByteOffset;
     size_t _drawCoord0Offset;
     size_t _drawCoord1Offset;

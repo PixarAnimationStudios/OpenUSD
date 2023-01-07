@@ -238,7 +238,7 @@ HgiVulkanCommandBuffer::GetDevice() const
 }
 
 void
-HgiVulkanCommandBuffer::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanCommandBuffer::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     if (!_vkCommandBuffer) {
         return;

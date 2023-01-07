@@ -22,11 +22,14 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/dataSourceBasisCurves.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
 #include "pxr/usd/usdGeom/basisCurves.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -40,16 +43,6 @@ UsdImagingDataSourceBasisCurvesTopology
     , _usdBasisCurves(usdBasisCurves)
     , _stageGlobals(stageGlobals)
 {
-}
-
-bool
-UsdImagingDataSourceBasisCurvesTopology::Has(const TfToken &name)
-{
-    return
-        name == HdBasisCurvesTopologySchemaTokens->curveVertexCounts ||
-        name == HdBasisCurvesTopologySchemaTokens->basis ||
-        name == HdBasisCurvesTopologySchemaTokens->type ||
-        name == HdBasisCurvesTopologySchemaTokens->wrap;
 }
 
 TfTokenVector
@@ -97,14 +90,6 @@ UsdImagingDataSourceBasisCurves::UsdImagingDataSourceBasisCurves(
 {
 }
 
-bool
-UsdImagingDataSourceBasisCurves::Has(const TfToken &name)
-{
-    return
-        name == HdBasisCurvesSchemaTokens->topology;
-    // XXX: TODO geomsubsets
-}
-
 TfTokenVector
 UsdImagingDataSourceBasisCurves::GetNames()
 {
@@ -131,20 +116,6 @@ UsdImagingDataSourceBasisCurvesPrim::UsdImagingDataSourceBasisCurvesPrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
     : UsdImagingDataSourceGprim(sceneIndexPath, usdPrim, stageGlobals)
 {
-    // Note: DataSourceGprim handles the special PointBased primvars for us,
-    // but we need to add "widths" which is defined on UsdGeomCurves.
-    _AddCustomPrimvar(HdTokens->widths, UsdGeomTokens->widths);
-}
-
-bool 
-UsdImagingDataSourceBasisCurvesPrim::Has(
-    const TfToken &name)
-{
-    if (name == HdBasisCurvesSchemaTokens->basisCurves) {
-        return true;
-    }
-
-    return UsdImagingDataSourceGprim::Has(name);
 }
 
 TfTokenVector 
@@ -156,6 +127,18 @@ UsdImagingDataSourceBasisCurvesPrim::GetNames()
     return result;
 }
 
+
+static
+const UsdImagingDataSourceCustomPrimvars::Mappings &
+_GetCustomPrimvarMappings(const UsdPrim &usdPrim)
+{
+    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
+        {HdTokens->widths, HdTokens->widths},
+    };
+
+    return mappings;
+}
+
 HdDataSourceBaseHandle 
 UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
 {
@@ -164,9 +147,67 @@ UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
                 _GetSceneIndexPath(),
                 UsdGeomBasisCurves(_GetUsdPrim()),
                 _GetStageGlobals());
-    } else {
-        return UsdImagingDataSourceGprim::Get(name);
     }
+
+    HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
+    if (name == HdPrimvarsSchemaTokens->primvars) {
+
+        HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
+        HdContainerDataSourceHandle customPvs =
+            UsdImagingDataSourceCustomPrimvars::New(
+                _GetSceneIndexPath(),
+                _GetUsdPrim(),
+                _GetCustomPrimvarMappings(_GetUsdPrim()),
+                _GetStageGlobals());
+
+        if (HdContainerDataSourceHandle basePvs =
+                HdContainerDataSource::Cast(result)) {
+            result = HdOverlayContainerDataSource::New(basePvs, customPvs);
+        } else {
+            result = customPvs;
+        }
+    }
+
+    return result;
+}
+
+/*static*/
+HdDataSourceLocatorSet
+UsdImagingDataSourceBasisCurvesPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet result;
+
+    if (subprim.IsEmpty()) {
+        result = UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties);
+
+        if (subprim.IsEmpty()) {
+            result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
+                properties, _GetCustomPrimvarMappings(prim)));
+        }
+
+        for (const TfToken &propertyName : properties) {
+            if (propertyName == UsdGeomTokens->curveVertexCounts) {
+                result.insert(HdBasisCurvesTopologySchema::GetDefaultLocator()
+                    .Append(
+                        HdBasisCurvesTopologySchemaTokens->curveVertexCounts));
+            } else if (propertyName == UsdGeomTokens->type) {
+                result.insert(HdBasisCurvesTopologySchema::GetDefaultLocator()
+                    .Append(HdBasisCurvesTopologySchemaTokens->type));
+            } else if (propertyName == UsdGeomTokens->basis) {
+                result.insert(HdBasisCurvesTopologySchema::GetDefaultLocator()
+                    .Append(HdBasisCurvesTopologySchemaTokens->basis));
+            } else if (propertyName == UsdGeomTokens->wrap) {
+                result.insert(HdBasisCurvesTopologySchema::GetDefaultLocator()
+                    .Append(HdBasisCurvesTopologySchemaTokens->wrap));
+            }
+        }
+    }
+
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

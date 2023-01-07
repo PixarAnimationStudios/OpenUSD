@@ -1,0 +1,75 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Scope "UsdMaterialX" {
+    def Sphere "MxUsdMetallicWorkflow_01" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Metallic_Workflow_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-4.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdMetallicWorkflow_02" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Metallic_Workflow_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdSpecWorkflow_03" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Spec_Workflow_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (1.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdSpecWorkflow_04" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Spec_Workflow_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (4.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Scope "Materials" {
+    def Material "MaterialX" (
+        references = [
+            @./mtlxFiles/workflowMaterials.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" {
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 25
+        float inputs:intensity = 5
+        Vec3f xformOp:translate = (0, -50, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Camera "Camera" {
+    double3 xformOp:translate = (0, 0, 30)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

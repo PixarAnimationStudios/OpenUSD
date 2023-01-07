@@ -23,6 +23,7 @@
 //
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/api.h"
+#include "pxr/imaging/hgiVulkan/conversions.h"
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/shaderCompiler.h"
@@ -198,6 +199,14 @@ HgiVulkanGatherDescriptorSetInfo(
     return infos;
 }
 
+static bool
+_IsDescriptorTextureType(VkDescriptorType descType) {
+    return (descType == VK_DESCRIPTOR_TYPE_SAMPLER ||
+            descType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+            descType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ||
+            descType == VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+}
+
 VkDescriptorSetLayoutVector
 HgiVulkanMakeDescriptorSetLayouts(
     HgiVulkanDevice* device,
@@ -240,9 +249,26 @@ HgiVulkanMakeDescriptorSetLayouts(
                     dst = &trg.bindings.back();
                 }
 
-                // If a vertex module and a fragment module access the same
-                // resource, we need to merge the stageFlags.
-                dst->stageFlags |= bi.stageFlags;
+                // These need to match the shader stages used when creating the
+                // VkDescriptorSetLayout in HgiVulkanResourceBindings.
+                if (dst->stageFlags != HgiVulkanConversions::GetShaderStages(
+                    HgiShaderStageCompute)) {
+                    
+                    if (_IsDescriptorTextureType(dst->descriptorType)) {
+                        dst->stageFlags = 
+                            HgiVulkanConversions::GetShaderStages(
+                                HgiShaderStageGeometry |
+                                HgiShaderStageFragment);
+                    } else {
+                        dst->stageFlags = 
+                            HgiVulkanConversions::GetShaderStages(
+                                HgiShaderStageVertex |
+                                HgiShaderStageTessellationControl |
+                                HgiShaderStageTessellationEval |
+                                HgiShaderStageGeometry | 
+                                HgiShaderStageFragment);
+                    }
+                }
             }
         }
     }

@@ -46,6 +46,10 @@ class TestSdfFileFormat(unittest.TestCase):
         self.assertTrue(sdfFileFormatWithArgs)
         self.assertEqual(sdfFileFormatWithArgs.GetFileExtensions(), ['sdf'])
 
+        self.assertEqual(Sdf.FileFormat.FindByExtension('SDF'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('Sdf'), sdfFileFormat)
+        self.assertEqual(Sdf.FileFormat.FindByExtension('sDF'), sdfFileFormat)
+
         # GetFileExtension
         self.assertEqual(Sdf.FileFormat.GetFileExtension('foo.sdf'), 'sdf')
         self.assertEqual(Sdf.FileFormat.GetFileExtension('/something/bar/foo.sdf'), 'sdf')

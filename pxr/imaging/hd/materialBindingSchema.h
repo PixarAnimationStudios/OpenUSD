@@ -58,7 +58,10 @@ public:
         TfToken *names,
         HdDataSourceBaseHandle *values);
 
+    HD_API
     HdPathDataSourceHandle GetMaterialBinding();
+
+    HD_API
     HdPathDataSourceHandle GetMaterialBinding(TfToken const &purpose);
 
 

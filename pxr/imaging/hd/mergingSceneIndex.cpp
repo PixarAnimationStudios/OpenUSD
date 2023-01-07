@@ -34,17 +34,78 @@ HdMergingSceneIndex::HdMergingSceneIndex()
 }
 
 void
+HdMergingSceneIndex::
+_FillAddedEntriesRecursively(
+    const HdSceneIndexBaseRefPtr &sceneIndex,
+    const SdfPath &primPath,
+    HdSceneIndexObserver::AddedPrimEntries * const addedEntries)
+{
+    // Old scene indices might have a prim of different type at the given path,
+    // so we need to query the merging scene index itself here.
+    const TfToken resolvedPrimType = GetPrim(primPath).primType;
+
+    addedEntries->emplace_back(primPath, resolvedPrimType);
+    for (const SdfPath &childPath : sceneIndex->GetChildPrimPaths(primPath)) {
+        _FillAddedEntriesRecursively(sceneIndex, childPath, addedEntries);
+    }
+}
+
+static
+bool
+_Contains(const SdfPath &path, const SdfPathVector &v)
+{
+    return std::find(v.begin(), v.end(), path) != v.end();
+}
+
+static
+bool
+_HasPrim(HdSceneIndexBase * const sceneIndex, const SdfPath &path)
+{
+    return _Contains(path, sceneIndex->GetChildPrimPaths(path.GetParentPath()));
+}
+
+void
 HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
-    // XXX: Note: when scenes are added, we don't generate PrimsAdded;
-    // the caller is responsible for notifying the downstream scene indices of
-    // any previously populated prims.
-    if (inputScene) {
-        _inputs.emplace_back(inputScene, activeInputSceneRoot);
-        inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+    if (!inputScene) {
+        return;
     }
+    
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
+    if (_IsObserved()) {
+        // Before adding the new scene index, check for which prefixes
+        // of the activeInputSceneRoot another scene index was giving
+        // a prim already.
+        // If no other scene index was giving a prim for a prefix,
+        // send message that prim with empty type was added.
+        //
+        const SdfPathVector prefixes = activeInputSceneRoot.GetPrefixes();
+        size_t i = 0;
+        // Add 1 to skip the activeInputSceneRoot itself.
+        for ( ; i + 1 < prefixes.size(); i++) {
+            if (!_HasPrim(this, prefixes[i])) {
+                break;
+            }
+        }
+        // For this and all following prefixes, add empty prim.
+        for ( ; i + 1 < prefixes.size(); i++) {
+            addedEntries.emplace_back(prefixes[i], TfToken());
+        }
+    }
+
+    _inputs.emplace_back(inputScene, activeInputSceneRoot);
+    inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+
+    if (!_IsObserved()) {
+        return;
+    }
+
+    _FillAddedEntriesRecursively(
+        inputScene, activeInputSceneRoot, &addedEntries);
+
+    _SendPrimsAdded(addedEntries);
 }
 
 void
@@ -221,33 +282,22 @@ HdMergingSceneIndex::_PrimsAdded(
                 continue;
             }
 
-            // If the primType is not empty and the first contributing data
-            // source is the sender, we don't need to query the type from
-            // any input.
-            if (get_pointer(inputEntry.sceneIndex) == &sender
-                    && !entry.primType.IsEmpty()) {
-                break;
-            }
-
-            // Get the type from the contributing input to see if it should be
-            // altered or omitted.
-
+            // Avoid calling GetPrim to get the prim type on scene index
+            // when the scene index is the sender.
             const TfToken primType =
-                inputEntry.sceneIndex->GetPrim(entry.primPath).primType;
+                get_pointer(inputEntry.sceneIndex) == &sender
+                ? entry.primType
+                : inputEntry.sceneIndex->GetPrim(entry.primPath).primType;
+            
+            // If the primType is not empty, use it.
+            // Break so that we stop after the first contributing data source.
             if (!primType.IsEmpty()) {
                 resolvedPrimType = primType;
                 break;
             }
         }
 
-        bool replaceEntry = false;
-        if (!resolvedPrimType.IsEmpty()) {
-            if (resolvedPrimType != entry.primType) {
-                replaceEntry = true;
-            }
-        }
-
-        if (replaceEntry) {
+        if (resolvedPrimType != entry.primType) {
             if (filteredEntries.empty()) {
                 // copy up to this entry
                 filteredEntries.reserve(entries.size());

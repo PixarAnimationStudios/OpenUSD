@@ -43,13 +43,14 @@ UsdImagingDiskLightAdapter::~UsdImagingDiskLightAdapter()
 }
 
 TfTokenVector
-UsdImagingDiskLightAdapter::GetImagingSubprims()
+UsdImagingDiskLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingDiskLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingDiskLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim, TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->diskLight;

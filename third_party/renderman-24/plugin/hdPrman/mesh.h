@@ -39,7 +39,7 @@ public:
 
     HF_MALLOC_TAG_NEW("new HdPrman_Mesh");
 
-    HdPrman_Mesh(SdfPath const& id);
+    HdPrman_Mesh(SdfPath const& id, const bool isMeshLight);
 
     HdDirtyBits GetInitialDirtyBitsMask() const override;
 
@@ -50,6 +50,12 @@ protected:
                      const SdfPath &id,
                      RtUString *primType,
                      std::vector<HdGeomSubset> *geomSubsets) override;
+
+    bool _PrototypeOnly();
+
+
+private:
+    bool _isMeshLight;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

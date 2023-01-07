@@ -305,15 +305,12 @@ void main()
 
 --- --------------------------------------------------------------------------
 -- layout ViewFrustumCull.Compute
+
 [
     ["uniform block", "Uniforms", "ulocCullParams",
         ["mat4", "cullMatrix"],
         ["vec2", "drawRangeNDC"],
-        ["uint", "drawCommandNumUints"],
-        ["uint", "drawCoord0Offset"],
-        ["uint", "drawCoord1Offset"],
-        ["uint", "drawCoord2Offset"],
-        ["uint", "drawCoordIOffset"]
+        ["uint", "drawCommandNumUints"]
     ],
     ["buffer readOnly", "DrawCullInput", "drawCullInput",
         ["uint", "drawCullInput", "[]"]
@@ -331,21 +328,9 @@ MAT4 GetCullMatrix()
     return MAT4(cullMatrix);
 }
 
-uint g_drawCommandIndex;
-
-int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
-{   
-    uint offset = g_drawCommandIndex * drawCommandNumUints;
-
-    offset += (coordIndex == 0) ? drawCoord0Offset : 
-              (coordIndex == 1) ? drawCoord1Offset : drawCoord2Offset;
-
-    return int(drawCullInput[offset + fieldIndex]);
-}
-
 void compute(int drawCommandIndex)
 {
-    g_drawCommandIndex = drawCommandIndex;
+    SetDrawIndex(drawCommandIndex, 0);
 
     // instanceCountOffset is a relative offset in drawcommand struct.
     // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
@@ -361,7 +346,7 @@ void compute(int drawCommandIndex)
         toClip, localMin, localMax, drawRangeNDC);
 
     // Compute the index to the 'instanceCount' struct member in drawCommands.
-    uint instanceIndex = uint(drawCommandIndex) * 
+    uint instanceIndex = uint(drawCommandIndex) *
         drawCommandNumUints + instanceCountOffset;
 
     // Set the resulting instance count to 0 if the primitive is culled
@@ -379,11 +364,7 @@ void compute(int drawCommandIndex)
     ["uniform block", "Uniforms", "ulocCullParams",
         ["mat4", "cullMatrix"],
         ["vec2", "drawRangeNDC"],
-        ["uint", "drawCommandNumUints"],
-        ["uint", "drawCoord0Offset"],
-        ["uint", "drawCoord1Offset"],
-        ["uint", "drawCoord2Offset"],
-        ["uint", "drawCoordIOffset"]
+        ["uint", "drawCommandNumUints"]
     ],
     ["buffer readOnly", "DrawCullInput", "drawCullInput",
         ["uint", "drawCullInput", "[]"]
@@ -401,43 +382,29 @@ MAT4 GetCullMatrix()
     return MAT4(cullMatrix);
 }
 
-uint g_drawCommandIndex;
-
-// drawCoordI is coordIndex 3
-int GetDrawingCoordField(uint coordIndex, uint fieldIndex)
-{   
-    uint offset = g_drawCommandIndex * drawCommandNumUints;
-
-    offset += (coordIndex == 0) ? drawCoord0Offset : 
-              (coordIndex == 1) ? drawCoord1Offset :
-              (coordIndex == 2) ? drawCoord2Offset : drawCoordIOffset;
-
-    return int(drawCullInput[offset + fieldIndex]);
-}
-
-
 void compute(int drawCommandIndex)
 {
-    g_drawCommandIndex = uint(drawCommandIndex);
+    SetDrawIndex(drawCommandIndex, 0);
 
     // instanceCountOffset is a relative offset in drawcommand struct.
     // it's a second entry in both DrawArraysCommand and DrawElementsCommand.
     const uint instanceCountOffset = 1;
 
-    uint offset = drawCommandIndex * drawCommandNumUints;
+    const uint instanceCountBufferOffset =
+        drawCommandIndex * drawCommandNumUints + instanceCountOffset;
 
-    const uint instanceCount = drawCullInput[offset + instanceCountOffset];
- 
+    const uint instanceCount = drawCullInput[instanceCountBufferOffset];
+
     vec4 localMin = HdGet_bboxLocalMin();
     vec4 localMax = HdGet_bboxLocalMax();
     MAT4 transform = HdGet_transform();
 
     // Reset the instance count.
-    drawCommands[offset + instanceCountOffset] = 0;
+    drawCommands[instanceCountBufferOffset] = 0;
 
     for (int i = 0; i < instanceCount; ++i)
     {
-        g_instanceID = i;
+        SetDrawIndex(drawCommandIndex, i);
 
         MAT4 toClip = GetCullMatrix() * ApplyInstanceTransform(transform);
 
@@ -447,9 +414,9 @@ void compute(int drawCommandIndex)
         if (isVisible) {
             // Increment the instance count and store instanceIndex to
             // culledInstanceIndices.
-            uint id = drawCommands[offset + instanceCountOffset];
-            
-            drawCommands[offset + instanceCountOffset] += 1;
+            uint id = drawCommands[instanceCountBufferOffset];
+
+            drawCommands[instanceCountBufferOffset] += 1;
 
             SetCulledInstanceIndex(id);
             FrustumCullCountVisibleInstances(1);

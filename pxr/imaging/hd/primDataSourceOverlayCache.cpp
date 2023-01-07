@@ -24,6 +24,7 @@
 #include "primDataSourceOverlayCache.h"
 
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/work/utils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -152,33 +153,6 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::PrimDirtied(
     }
 }
 
-bool
-HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Has(
-    const TfToken &name)
-{
-    if (ARCH_UNLIKELY(!_inputDataSource)) {
-        return false;
-    }
-
-    auto cache = _cache.lock();
-    if (TF_VERIFY(cache)) {
-        const auto it = cache->_overlayTopology.find(name);
-        if (it != cache->_overlayTopology.end()) {
-            if (it->second.dependenciesOptional) {
-                return true;
-            }
-            for (const auto &loc : it->second.onPrim) {
-                if (!_inputDataSource->Has(loc.GetFirstElement())) {
-                    return false;
-                }
-            }
-            return false;
-        }
-    }
-
-    return _inputDataSource->Has(name);
-}
-
 TfTokenVector
 HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::GetNames()
 {
@@ -189,6 +163,7 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::GetNames()
     }
 
     TfTokenVector names = _inputDataSource->GetNames();
+    TfDenseHashSet<TfToken, TfHash> namesAtStart(names.begin(), names.end());
 
     auto cache = _cache.lock();
     if (TF_VERIFY(cache)) {
@@ -200,7 +175,8 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::GetNames()
                 continue;
             }
             for (const auto &loc : overlay.second.onPrim) {
-                if (_inputDataSource->Has(loc.GetFirstElement())) {
+                if (namesAtStart.find(loc.GetFirstElement())
+                        != namesAtStart.end()) {
                     names.push_back(overlay.first);
                     sortMe = true;
                     break;
@@ -239,7 +215,7 @@ HdPrimDataSourceOverlayCache::_HdPrimDataSourceOverlay::Get(
             // map, it hasn't been computed... First, check for dependencies.
             if (!topoIt->second.dependenciesOptional) {
                 for (const auto &loc : topoIt->second.onPrim) {
-                    if (!_inputDataSource->Has(loc.GetFirstElement())) {
+                    if (!_inputDataSource->Get(loc.GetFirstElement())) {
                         _overlayMap.insert(std::make_pair(name, nullptr));
                         return nullptr;
                     }

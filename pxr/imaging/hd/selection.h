@@ -49,7 +49,8 @@ using HdSelectionSharedPtr = std::shared_ptr<class HdSelection>;
 /// It current supports active and rollover selection modes, and may be
 /// inherited for customization.
 ///
-class HdSelection {
+class HdSelection
+{
 public:
     /// Selection modes allow differentiation in selection highlight behavior.
     enum HighlightMode {
@@ -58,8 +59,6 @@ public:
         
         HighlightModeCount
     };
-
-    HdSelection() = default;
 
     HD_API
     virtual ~HdSelection();
@@ -142,6 +141,12 @@ public:
     HD_API
     bool IsEmpty() const;
 
+    HD_API
+    static
+    HdSelectionSharedPtr Merge(
+        HdSelectionSharedPtr const &,
+        HdSelectionSharedPtr const &);
+
 private:
     void _AddPoints(HighlightMode const &mode,
                     SdfPath const &renderIndexPath,
@@ -152,8 +157,8 @@ private:
                                        SdfPathVector *paths) const;
 
 protected:
-    typedef std::unordered_map<SdfPath, PrimSelectionState, SdfPath::Hash>
-        _PrimSelectionStateMap;
+    using _PrimSelectionStateMap =
+        std::unordered_map<SdfPath, PrimSelectionState, SdfPath::Hash>;
     // Keep track of selection per selection mode.
     _PrimSelectionStateMap _selMap[HighlightModeCount];
 

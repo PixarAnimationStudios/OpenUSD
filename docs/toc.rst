@@ -10,6 +10,7 @@
    Terms and Concepts <glossary>
    Tutorials <tut_usd_tutorials>
    dl_downloads
+   usd_products
 
 .. toctree::
    :hidden:

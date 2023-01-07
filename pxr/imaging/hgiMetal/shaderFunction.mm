@@ -84,6 +84,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             _errors = [err UTF8String];
         }
 
+        [options release];
+        options = nil;
+
         NSString *entryPoint = nullptr;
         switch (_descriptor.shaderStage) {
             case HgiShaderStageVertex:

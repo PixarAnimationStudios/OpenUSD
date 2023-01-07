@@ -33,7 +33,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiVulkanComputeCmds::HgiVulkanComputeCmds(HgiVulkan* hgi)
+HgiVulkanComputeCmds::HgiVulkanComputeCmds(
+    HgiVulkan* hgi,
+    HgiComputeCmdsDesc const&)
     : HgiComputeCmds()
     , _hgi(hgi)
     , _commandBuffer(nullptr)
@@ -210,10 +212,16 @@ HgiVulkanComputeCmds::_BindResources()
 }
 
 void
-HgiVulkanComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
+}
+
+HgiComputeDispatch
+HgiVulkanComputeCmds::GetDispatchMethod() const
+{
+    return HgiComputeDispatchSerial;
 }
 
 void

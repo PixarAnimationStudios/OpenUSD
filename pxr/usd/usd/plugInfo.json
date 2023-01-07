@@ -67,11 +67,20 @@
                         ], 
                         "schemaKind": "nonAppliedAPI"
                     }, 
-                    "UsdSchemaBase": {}, 
+                    "UsdSchemaBase": {
+                        "alias": {
+                            "UsdSchemaBase": "SchemaBase"
+                        }, 
+                        "schemaKind": "abstractBase"
+                    }, 
                     "UsdTyped": {
+                        "alias": {
+                            "UsdSchemaBase": "Typed"
+                        }, 
                         "bases": [
                             "UsdSchemaBase"
-                        ]
+                        ], 
+                        "schemaKind": "abstractBase"
                     }, 
                     "UsdUsdFileFormat": {
                         "bases": [

@@ -46,15 +46,6 @@ public:
     , _fnc(fnc)
     {}
 
-    bool
-    Has(const TfToken &name) override
-    {
-        if (_input) {
-            return _input->Has(name);
-        }
-        return false;
-    }
-
     TfTokenVector
     GetNames() override
     {
@@ -103,15 +94,6 @@ public:
     , _input(input)
     , _primPath(primPath)
     {}
-
-    bool
-    Has(const TfToken &name) override
-    {
-        if (_input) {
-            return _input->Has(name);
-        }
-        return false;
-    }
 
     TfTokenVector
     GetNames() override

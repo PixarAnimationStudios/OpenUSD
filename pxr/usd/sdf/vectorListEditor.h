@@ -273,7 +273,7 @@ Sdf_VectorListEditor<TP, FST>::ModifyItemEdits(const ModifyCallback& cb)
     valueListOp.ModifyOperations(
         [this, &cb](const value_type &t) {
             return _ModifyCallbackHelper(cb, _GetTypePolicy(), t);
-        });
+        }, /* removeDuplicates = */ true);
 
     _UpdateFieldData(valueListOp.GetItems(_op));
 }

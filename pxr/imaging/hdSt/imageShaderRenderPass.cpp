@@ -172,6 +172,9 @@ HdSt_ImageShaderRenderPass::_Execute(
         return;
     }
 
+    const GfVec4i viewport = stRenderPassState->ComputeViewport(desc);
+    gfxCmds->SetViewport(viewport);
+
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();
 

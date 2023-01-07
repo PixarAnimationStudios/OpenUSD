@@ -149,7 +149,7 @@ public:
         uint32_t patchBaseVertexByteOffset) override;
 
     HGIGL_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
 protected:
     friend class HgiGL;

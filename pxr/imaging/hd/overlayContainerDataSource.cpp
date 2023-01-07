@@ -28,6 +28,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdOverlayContainerDataSource::HdOverlayContainerDataSource(
+    std::initializer_list<HdContainerDataSourceHandle> sources)
+    : _containers(sources.begin(), sources.end())
+{
+}
+
+HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     size_t count,
     HdContainerDataSourceHandle *containers)
 {
@@ -50,18 +56,6 @@ HdOverlayContainerDataSource::HdOverlayContainerDataSource(
     const HdContainerDataSourceHandle &src3)
 {
     _containers = { src1, src2, src3 };
-}
-
-bool
-HdOverlayContainerDataSource::Has(const TfToken &name)
-{
-    for (HdContainerDataSourceHandle &c : _containers) {
-        if (c && c->Has(name)) {
-            return true;
-        }
-    }
-
-    return false;
 }
 
 TfTokenVector

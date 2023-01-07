@@ -112,6 +112,8 @@ HdPrman_SampleFilter::Sync(
 
     if (*dirtyBits & HdChangeTracker::DirtyParams) {
         // Only Create the SampleFilter if connected to the RenderSettings
+        // Note that this works because the RenderSettings, being a Bprim,
+        // always gets synced before the SampleFilter Sprim.
         SdfPathVector connectedFilters = param->GetConnectedSampleFilterPaths();
         if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
             != connectedFilters.end()) {
@@ -126,6 +128,8 @@ HdPrman_SampleFilter::Sync(
             }
         }
     } 
+    // the _CreateRmanSampleFilter() call above regenerates the filter network,
+    // so if DirtyParams was set there's nothing left to do for DirtyVisibility.
     else if (*dirtyBits & HdChangeTracker::DirtyVisibility) {
         param->CreateSampleFilterNetwork(sceneDelegate);
     }

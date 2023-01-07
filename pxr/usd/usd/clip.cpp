@@ -104,7 +104,11 @@ Usd_Clip::Usd_Clip(
     const std::shared_ptr<TimeMappings> &timeMapping)
     : sourceLayerStack(clipSourceLayerStack)
     , sourcePrimPath(clipSourcePrimPath)
-    , sourceLayerIndex(clipSourceLayerIndex)
+    , sourceLayer(
+        TF_VERIFY(clipSourceLayerIndex 
+                      < clipSourceLayerStack->GetLayers().size()) ?
+            SdfLayerHandle(clipSourceLayerStack->GetLayers()[clipSourceLayerIndex]) :
+            SdfLayerHandle())
     , assetPath(clipAssetPath)
     , primPath(clipPrimPath)
     , authoredStartTime(clipAuthoredStartTime)
@@ -119,12 +123,11 @@ Usd_Clip::Usd_Clip(
     // This is important for change processing. Clip layers will be kept
     // alive during change processing, so any clips that are reconstructed
     // will have the opportunity to reuse the already-opened layer.
-    if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
+    if (sourceLayer) {
         const ArResolverContextBinder binder(
             sourceLayerStack->GetIdentifier().pathResolverContext);
         _layer = SdfLayer::FindRelativeToLayer(
-            sourceLayerStack->GetLayers()[sourceLayerIndex],
-            assetPath.GetAssetPath());
+            sourceLayer, assetPath.GetAssetPath());
     }
 
     _hasLayer = (bool)_layer;
@@ -737,12 +740,11 @@ Usd_Clip::_GetLayerForClip() const
 
     SdfLayerRefPtr layer;
 
-    if (TF_VERIFY(sourceLayerIndex < sourceLayerStack->GetLayers().size())) {
+    if (TF_VERIFY(sourceLayer)) {
         const ArResolverContextBinder binder(
             sourceLayerStack->GetIdentifier().pathResolverContext);
         layer = SdfLayer::FindOrOpenRelativeToLayer(
-            sourceLayerStack->GetLayers()[sourceLayerIndex],
-            assetPath.GetAssetPath());
+            sourceLayer, assetPath.GetAssetPath());
     }
 
     if (!layer) {

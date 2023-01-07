@@ -43,6 +43,9 @@ SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 
 class UsdPrimDefinition;
 
+/// Schema versions are specified as a single unsigned integer value.
+using UsdSchemaVersion = unsigned int;
+
 /// \class UsdSchemaRegistry
 ///
 /// Singleton registry that provides access to schema type information and
@@ -64,10 +67,148 @@ class UsdPrimDefinition;
 ///
 class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
 public:
+    /// Structure that holds the information about a schema that is registered
+    /// with the schema registry.
+    struct SchemaInfo {
+
+        /// The schema's identifier which is how the schema type is referred to
+        /// in scene description and is also the key used to look up the 
+        /// schema's prim definition.
+        TfToken identifier;
+
+        /// The schema's type as registered with the TfType registry. This will
+        /// correspond to the C++ class of the schema if a class was generated
+        /// for it.
+        TfType type;
+
+        /// The name of the family of schema's which the schema is a version
+        /// of. This is the same as the schema identifier with the version 
+        /// suffix removed (or exactly the same as the schema identifier in the
+        /// case of version 0 of a schema which will not have a version suffix.)
+        TfToken family;
+
+        /// The version number of the schema within its schema family.
+        UsdSchemaVersion version;
+
+        /// The schema's kind: ConcreteTyped, SingleApplyAPI, etc.
+        UsdSchemaKind kind;
+    };
+
     USD_API
     static UsdSchemaRegistry& GetInstance() {
         return TfSingleton<UsdSchemaRegistry>::GetInstance();
     }
+
+    /// Creates the schema identifier that would be used to define a schema of
+    /// the given \p schemaFamily with the given \p schemaVersion.
+    ///
+    /// If the provided schema version is zero, the returned identifier will
+    /// be the schema family itself. For all other versions, the returned 
+    /// identifier will be the family followed by an underscore and the version
+    /// number.
+    ///
+    /// If \p schemaFamily is not an 
+    /// \ref IsAllowedSchemaFamily "allowed schema family", this function will
+    /// append the appropriate version suffix, but the returned identifier will
+    /// not be an \ref IsAllowedSchemaIdentifier "allowed schema identifier".
+    USD_API
+    static TfToken
+    MakeSchemaIdentifierForFamilyAndVersion(
+        const TfToken &schemaFamily, 
+        UsdSchemaVersion schemaVersion);
+
+    /// Parses and returns the schema family and version values from the given 
+    /// \p schemaIdentifier.
+    ///
+    /// A schema identifier's version is indicated by a suffix consisting of an
+    /// underscore followed by a positive integer which is its version. The
+    /// schema family is the string before this suffix. If the identifier does
+    /// not have a suffix matching this pattern, then the schema version is zero
+    /// and the schema family is the identifier itself.
+    ///
+    /// For example:
+    /// Identifier "FooAPI_1" returns ("FooAPI", 1)
+    /// Identifier "FooAPI" returns ("FooAPI", 0)
+    ///
+    /// Note that this function only parses what the schema family and version
+    /// would be for the given schema identifier and does not require that 
+    /// \p schemaIdentifier be a registered schema itself or even an 
+    /// \ref IsAllowedSchemaIdentifier "allowed schema identifier".
+    USD_API
+    static std::pair<TfToken, UsdSchemaVersion> 
+    ParseSchemaFamilyAndVersionFromIdentifier(const TfToken &schemaIdentifier);
+
+    /// Returns whether the given \p schemaFamily is an allowed schema family
+    /// name.
+    ///
+    /// A schema family is allowed if it's a 
+    /// \ref SdfPath::IsValidIdentifier "valid identifier" 
+    /// and does not itself contain a 
+    /// \ref ParseSchemaFamilyAndVersionFromIdentifier "version suffix".
+    USD_API
+    static bool
+    IsAllowedSchemaFamily(const TfToken &schemaFamily);
+
+    /// Returns whether the given \p schemaIdentifier is an allowed schema 
+    /// identifier.
+    ///
+    /// A schema identifier is allowed if it can be  
+    /// \ref ParseSchemaFamilyAndVersionFromIdentifier "parsed" into a 
+    /// \ref IsAllowedSchemaFamily "allowed schema family" and schema version
+    /// and it is the identifier that would be 
+    /// \ref MakeSchemaIdentifierForFamilyAndVersion "created" from that parsed
+    /// family and version.
+    USD_API
+    static bool
+    IsAllowedSchemaIdentifier(const TfToken &schemaIdentifier);
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// given \p schemaType. Returns null if no registered schema with the 
+    /// schema type exists.
+    USD_API
+    static const SchemaInfo *
+    FindSchemaInfo(const TfType &schemaType);
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// given \p schemaIdentifier. Returns null if no registered schema with the 
+    /// schema identifier exists.
+    USD_API
+    static const SchemaInfo *
+    FindSchemaInfo(const TfToken &schemaIdentifier);
+
+    /// Finds and returns the schema info for a registered schema in the 
+    /// given \p schemaFamily with the given \p schemaVersion. Returns null if 
+    /// no registered schema in the schema family with the given version exists.
+    USD_API
+    static const SchemaInfo *
+    FindSchemaInfo(const TfToken &schemaFamily, UsdSchemaVersion schemaVersion);
+
+    /// A policy for filtering by schema version when querying for schemas in a
+    /// particular schema family.
+    enum class VersionPolicy {
+        All,
+        GreaterThan,
+        GreaterThanOrEqual,
+        LessThan,
+        LessThanOrEqual
+    };
+
+    /// Finds all schemas in the given \p schemaFamily and returns their
+    /// their schema info ordered from highest version to lowest version.
+    USD_API
+    static const std::vector<const SchemaInfo *> &
+    FindSchemaInfosInFamily(
+        const TfToken &schemaFamily);
+
+    /// Finds all schemas in the given \p schemaFamily, filtered according to 
+    /// the given \p schemaVersion and \p versionPolicy, and returns their
+    /// their schema info ordered from highest version to lowest version.
+    USD_API
+    static std::vector<const SchemaInfo *>
+    FindSchemaInfosInFamily(
+        const TfToken &schemaFamily, 
+        UsdSchemaVersion schemaVersion, 
+        VersionPolicy versionPolicy);
 
     /// Return the type name in the USD schema for prims or API schemas of the 
     /// given registered \p schemaType.

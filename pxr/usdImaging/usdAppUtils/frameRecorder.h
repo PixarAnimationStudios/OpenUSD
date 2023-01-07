@@ -51,12 +51,20 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// particular UsdTimeCode. The images generated will be effectively the same
 /// as what you would see in the viewer in usdview.
 ///
-/// Note that it is assumed that an OpenGL context has already been setup.
+/// Note that it is assumed that an OpenGL context has already been setup if
+/// the UsdAppUtilsFrameRecorder instance is created with the GPU enabled.
 class UsdAppUtilsFrameRecorder
 {
 public:
+    /// The \p rendererPluginId argument indicates the renderer plugin that
+    /// Hyrda should use. If the empty token is passed in, a default renderer
+    /// plugin will be chosen depending on the value of \p gpuEnabled.
+    /// The \p gpuEnabled argument determines if the UsdAppUtilsFrameRecorder
+    /// instance will allow Hydra to use the GPU to produce images.
     USDAPPUTILS_API
-    UsdAppUtilsFrameRecorder();
+    UsdAppUtilsFrameRecorder(
+        const TfToken& rendererPluginId = TfToken(),
+        bool gpuEnabled = true);
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -65,6 +73,9 @@ public:
     }
 
     /// Sets the Hydra renderer plugin to be used for recording.
+    ///
+    /// Note that the renderer plugins that may be set will be restricted if
+    /// this UsdAppUtilsFrameRecorder instance has disabled the GPU.
     bool SetRendererPlugin(const TfToken& id) {
         return _imagingEngine.SetRendererPlugin(id);
     }
@@ -93,9 +104,8 @@ public:
     /// Sets the color correction mode to be used for recording.
     ///
     /// By default, color correction is disabled.
-    void SetColorCorrectionMode(const TfToken& colorCorrectionMode) {
-        _colorCorrectionMode = colorCorrectionMode;
-    }
+    USDAPPUTILS_API
+    void SetColorCorrectionMode(const TfToken& colorCorrectionMode);
 
     /// Sets the UsdGeomImageable purposes to be used for rendering
     ///

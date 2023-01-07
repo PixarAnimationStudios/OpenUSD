@@ -29,6 +29,7 @@ HgiShaderFunctionTextureDesc::HgiShaderFunctionTextureDesc()
   : dimensions(2)
   , format(HgiFormatInvalid)
   , textureType(HgiShaderTextureTypeTexture)
+  , bindIndex(0)
   , arraySize(0)
   , writable(false)
 {
@@ -51,6 +52,8 @@ HgiShaderFunctionParamDesc::HgiShaderFunctionParamDesc()
   : location(-1)
   , interstageSlot(-1)
   , interpolation(HgiInterpolationDefault)
+  , sampling(HgiSamplingDefault)
+  , storage(HgiStorageDefault)
 {
 }
 
@@ -60,7 +63,13 @@ HgiShaderFunctionParamBlockDesc::HgiShaderFunctionParamBlockDesc()
 }
 
 HgiShaderFunctionTessellationDesc::HgiShaderFunctionTessellationDesc()
-= default;
+  : patchType(PatchType::Triangles)
+  , spacing(Spacing::Equal)
+  , ordering(Ordering::CCW)
+  , numVertsPerPatchIn("3")
+  , numVertsPerPatchOut("3")
+{
+}
 
 HgiShaderFunctionDesc::HgiShaderFunctionDesc() 
   : shaderStage(0)
@@ -71,8 +80,10 @@ HgiShaderFunctionDesc::HgiShaderFunctionDesc()
   , constantParams()
   , stageInputs()
   , stageOutputs()
-  , tessellationDescriptor()
   , computeDescriptor()
+  , tessellationDescriptor()
+  , geometryDescriptor()
+  , fragmentDescriptor()
 {
 }
 
@@ -95,6 +106,28 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+HgiShaderFunctionGeometryDesc::HgiShaderFunctionGeometryDesc() 
+  : inPrimitiveType(InPrimitiveType::Triangles)
+  , outPrimitiveType(OutPrimitiveType::TriangleStrip)
+  , outMaxVertices("3")
+{
+}
+
+bool operator==(
+    const HgiShaderFunctionGeometryDesc& lhs,
+    const HgiShaderFunctionGeometryDesc& rhs)
+{
+    return lhs.inPrimitiveType == rhs.inPrimitiveType &&
+           lhs.outPrimitiveType == rhs.outPrimitiveType &&
+           lhs.outMaxVertices == rhs.outMaxVertices;
+}
+
+bool operator!=(
+    const HgiShaderFunctionGeometryDesc& lhs,
+    const HgiShaderFunctionGeometryDesc& rhs)
+{
+    return !(lhs == rhs);
+}
 
 HgiShaderFunctionFragmentDesc::HgiShaderFunctionFragmentDesc()
     : earlyFragmentTests(false)
@@ -144,6 +177,8 @@ bool operator==(
            lhs.location == rhs.location &&
            lhs.interstageSlot == rhs.interstageSlot &&
            lhs.interpolation == rhs.interpolation &&
+           lhs.sampling == rhs.sampling &&
+           lhs.storage == rhs.storage &&
            lhs.role == rhs.role &&
            lhs.arraySize == rhs.arraySize;
 }
@@ -207,8 +242,10 @@ bool operator==(
         const HgiShaderFunctionTessellationDesc& rhs)
 {
     return lhs.patchType == rhs.patchType &&
-    lhs.numVertsPerPatchIn == rhs.numVertsPerPatchIn &&
-    lhs.numVertsPerPatchOut == rhs.numVertsPerPatchOut;
+           lhs.spacing == rhs.spacing &&
+           lhs.ordering == rhs.ordering &&
+           lhs.numVertsPerPatchIn == rhs.numVertsPerPatchIn &&
+           lhs.numVertsPerPatchOut == rhs.numVertsPerPatchOut;
 }
 
 bool operator!=(
@@ -234,6 +271,7 @@ bool operator==(
            lhs.stageOutputs == rhs.stageOutputs &&
            lhs.computeDescriptor == rhs.computeDescriptor &&
            lhs.tessellationDescriptor == rhs.tessellationDescriptor &&
+           lhs.geometryDescriptor == rhs.geometryDescriptor &&
            lhs.fragmentDescriptor == rhs.fragmentDescriptor;
 }
 
@@ -248,12 +286,14 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;
@@ -268,12 +308,14 @@ HgiShaderFunctionAddArrayOfTextures(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t arraySize,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;
@@ -287,12 +329,14 @@ void
 HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex /* = 0 */,
     const uint32_t dimensions /* = 2 */,
     const HgiFormat &format /* = HgiFormatFloat32Vec4*/,
     const HgiShaderTextureType textureType /* = HgiShaderTextureTypeTexture */)
 {
     HgiShaderFunctionTextureDesc texDesc;
     texDesc.nameInShader = nameInShader;
+    texDesc.bindIndex = bindIndex;
     texDesc.dimensions = dimensions;
     texDesc.format = format;
     texDesc.textureType = textureType;

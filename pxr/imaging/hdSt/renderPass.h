@@ -29,8 +29,6 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hd/renderPass.h"
 
-#include <unordered_map>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;

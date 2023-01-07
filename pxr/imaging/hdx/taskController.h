@@ -57,7 +57,8 @@ class HdxTaskController final
 public:
     HDX_API
     HdxTaskController(HdRenderIndex *renderIndex,
-                      SdfPath const& controllerId);
+                      SdfPath const& controllerId,
+                      bool gpuEnabled = true);
     HDX_API
     ~HdxTaskController();
 
@@ -277,6 +278,7 @@ private:
 
     HdRenderIndex *_index;
     SdfPath const _controllerId;
+    bool _gpuEnabled;
 
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.

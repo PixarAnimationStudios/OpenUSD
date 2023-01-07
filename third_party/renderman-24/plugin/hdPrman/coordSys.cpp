@@ -88,7 +88,7 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
         RtParamList attrs;
         // The coordSys name is the final component of the id,
         // after stripping namespaces.
-        RtUString coordSysName(SdfPath::StripNamespace(id.GetName()).c_str());
+        RtUString coordSysName(GetName().GetText());
         attrs.SetString(RixStr.k_name, coordSysName);
         if (_coordSysId != riley::CoordinateSystemId::InvalidId()) {
             riley->ModifyCoordinateSystem(_coordSysId, &xform, &attrs);

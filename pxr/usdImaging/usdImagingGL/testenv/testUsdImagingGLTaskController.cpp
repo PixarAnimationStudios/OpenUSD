@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
@@ -34,9 +33,6 @@
 #include "pxr/base/gf/vec3d.h"
 
 #include "pxr/imaging/garch/glDebugWindow.h"
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
@@ -73,22 +69,6 @@ int main(int argc, char *argv[])
     // prepare GL context
     GarchGLDebugWindow window("UsdImagingGL Test", width, height);
     window.Init();
-    GarchGLApiLoad();
-
-    // wrap into GlfGLContext so that GlfDrawTarget works
-    GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
-    GlfContextCaps::InitInstance();
-
-    // prep DrawTarget
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(width, height));
-    drawTarget->Bind();
-    drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    drawTarget->AddAttachment("depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
-                              GL_DEPTH24_STENCIL8);
-    drawTarget->Unbind();
-
-    GLfloat clearColor[4] = { 1.0f, .5f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
 
     // open stage
     UsdStageRefPtr stage = UsdStage::Open(stageFilePath);
@@ -97,13 +77,11 @@ int main(int argc, char *argv[])
 
     // Initialize UsdImagingGLEnging
     UsdImagingGLEngineSharedPtr engine;
-    if (!UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cerr << "Couldn't initialize hydra" << std::endl;
-        exit(-1);
-    }
     SdfPathVector excludedPaths;
     engine.reset(new UsdImagingGLEngine(
         stage->GetPseudoRoot().GetPath(), excludedPaths));
+
+    engine->SetRendererAov(HdAovTokens->color);
 
     // Extent hints are sometimes authored as an optimization to avoid
     // computing bounds, they are particularly useful for some tests where
@@ -175,33 +153,24 @@ int main(int argc, char *argv[])
 
     // --------------------------------------------------------------------
     // draw.
-    drawTarget->Bind();
     GfVec4d viewport(0, 0, width, height);
     engine->SetCameraState(modelViewMatrix, projMatrix);
     engine->SetRenderViewport(viewport);
-
-    glViewport(0, 0, width, height);
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    glEnable(GL_DEPTH_TEST);
 
     // Render #1 - DomeLight created in lightingContext
     UsdImagingGLRenderParams params;
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     params.enableLighting = true;
     params.complexity = 1.3;
+    params.clearColor = GfVec4f{ 1.0f, .5f, 0.1f, 1.0f };
 
     engine->SetLightingState(lightingContext);
     engine->Render(stage->GetPseudoRoot(), params);
 
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", "initialDome.png");
-    drawTarget->Bind();
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, "initialDome.png");
 
     // Render #2 - Rotated transform on domelight in lightingContext
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     GfVec3d upAxis = (zUpStage) ? GfVec3d(0,0,1) : GfVec3d(0,1,0);
     GfMatrix4d rotMatrix = GfMatrix4d().SetRotate(GfRotation(upAxis, 90.0));
     lights.at(0).SetTransform(lights.at(0).GetTransform() * rotMatrix);
@@ -210,8 +179,8 @@ int main(int argc, char *argv[])
     engine->SetLightingState(lightingContext);
     engine->Render(stage->GetPseudoRoot(), params);
     
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", "rotatedDome.png");
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, "rotatedDome.png");
 
     return EXIT_SUCCESS;
 }

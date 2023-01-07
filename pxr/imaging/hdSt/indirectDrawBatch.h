@@ -65,9 +65,9 @@ public:
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) override;
 
-    /// Do the final preparation before the draw.
+    /// Encode drawing commands for this batch.
     HDST_API
-    void BeforeDraw(
+    void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 

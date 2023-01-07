@@ -176,8 +176,10 @@ HdxRenderSetupTask::SyncParams(HdSceneDelegate* delegate,
 
         if (HdStRenderPassState * const hdStRenderPassState =
                     dynamic_cast<HdStRenderPassState*>(renderPassState.get())) {
+
+            // Don't enable multisample for id renders.
             hdStRenderPassState->SetUseAovMultiSample(
-                params.useAovMultiSample);
+                params.useAovMultiSample && !params.enableIdRender);
             hdStRenderPassState->SetResolveAovMultiSample(
                 params.resolveAovMultiSample);
             

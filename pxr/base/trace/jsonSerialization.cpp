@@ -81,8 +81,7 @@ ReturnType _JsGetValue(const JsObject& js, const std::string& key) {
 static TraceEvent::TimeStamp
 _MicrosecondsToTicks(double us)
 {
-    return static_cast<TraceEvent::TimeStamp>(
-        us*1000.0 / ArchGetNanosecondsPerTick());
+    return static_cast<TraceEvent::TimeStamp>(ArchSecondsToTicks(us/1.0e6));
 }
 
 static double

@@ -39,12 +39,6 @@ UsdImagingDataSourceVolumeFieldBindings
 {
 }
 
-bool
-UsdImagingDataSourceVolumeFieldBindings::Has(const TfToken &name)
-{
-    return _usdVolume.HasFieldRelationship(name);
-}
-
 TfTokenVector
 UsdImagingDataSourceVolumeFieldBindings::GetNames()
 {
@@ -84,17 +78,6 @@ UsdImagingDataSourceVolumePrim::UsdImagingDataSourceVolumePrim(
 {
 }
 
-bool 
-UsdImagingDataSourceVolumePrim::Has(
-    const TfToken &name)
-{
-    if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
-        return true;
-    }
-
-    return UsdImagingDataSourceGprim::Has(name);
-}
-
 TfTokenVector 
 UsdImagingDataSourceVolumePrim::GetNames()
 {
@@ -117,10 +100,12 @@ UsdImagingDataSourceVolumePrim::Get(const TfToken &name)
 
 HdDataSourceLocatorSet
 UsdImagingDataSourceVolumePrim::Invalidate(
-    const TfToken &subprim, const TfTokenVector &properties)
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
 {
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourceGprim::Invalidate(subprim, properties);
+        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
 
     static const std::string fieldPrefix =
         UsdVolTokens->field.GetString() + ":";

@@ -42,6 +42,7 @@ TF_WRAP_MODULE
     TF_WRAP( LayerTree );
     TF_WRAP( NamespaceEdit );
     TF_WRAP( Notice );
+    TF_WRAP( OpaqueValue );
     TF_WRAP( Path );
     TF_WRAP( Payload );
     TF_WRAP( Reference );

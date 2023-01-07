@@ -25,24 +25,24 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RENDER_SETTINGS_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/bprim.h"
+#include "pxr/imaging/hd/renderSettings.h"
 
 #include "Riley.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdPrman_RenderSettings : public HdBprim
+class HdPrman_RenderSettings final : public HdRenderSettings
 {
 public:
     HdPrman_RenderSettings(SdfPath const& id);
 
-    void Sync(HdSceneDelegate *sceneDelegate,
-              HdRenderParam *renderParam,
-              HdDirtyBits *dirtyBits) override;
+    ~HdPrman_RenderSettings() override;
 
     void Finalize(HdRenderParam *renderParam) override;
 
-    HdDirtyBits GetInitialDirtyBitsMask() const override;
+    void _Sync(HdSceneDelegate *sceneDelegate,
+               HdRenderParam *renderParam,
+               const HdDirtyBits *dirtyBits) override;
 };
 
 

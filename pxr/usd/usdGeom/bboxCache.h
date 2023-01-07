@@ -484,6 +484,15 @@ private:
         // The cached bboxes for the various values of purpose token.
         _PurposeToBBoxMap bboxes;
 
+        // Queries for attributes that need to be re-computed at each
+        // time for this entry. This will be invalid for non-varying entries.
+        boost::shared_array<UsdAttributeQuery> queries;
+
+        // Computed purpose info of the prim that's associated with the entry.
+        // This data includes the prim's actual computed purpose as well as
+        // whether this purpose is inheritable by child prims.
+        UsdGeomImageable::PurposeInfo purposeInfo;
+
         // True when data in the entry is valid.
         bool isComplete;
 
@@ -492,15 +501,6 @@ private:
 
         // True when the entry is visible.
         bool isIncluded;
-
-        // Computed purpose info of the prim that's associated with the entry.
-        // This data includes the prim's actual computed purpose as well as
-        // whether this purpose is inheritable by child prims.
-        UsdGeomImageable::PurposeInfo purposeInfo;
-
-        // Queries for attributes that need to be re-computed at each
-        // time for this entry. This will be invalid for non-varying entries.
-        boost::shared_array<UsdAttributeQuery> queries;
     };
 
     // Returns the cache entry for the given \p prim if one already exists.

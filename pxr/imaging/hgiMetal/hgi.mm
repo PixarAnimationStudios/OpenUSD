@@ -130,11 +130,15 @@ HgiMetal::~HgiMetal()
     [_captureScopeFullFrame release];
     [_commandQueue release];
     [_argEncoderBuffer release];
+    [_argEncoderSampler release];
     [_argEncoderTexture release];
     
-    while(_freeArgBuffers.size()) {
-        [_freeArgBuffers.top() release];
-        _freeArgBuffers.pop();
+    {
+        std::lock_guard<std::mutex> lock(_freeArgMutex);
+        while(_freeArgBuffers.size()) {
+            [_freeArgBuffers.top() release];
+            _freeArgBuffers.pop();
+        }
     }
 }
 
@@ -164,9 +168,10 @@ HgiMetal::CreateGraphicsCmds(
 }
 
 HgiComputeCmdsUniquePtr
-HgiMetal::CreateComputeCmds(HgiComputeDispatch dispatchMethod)
+HgiMetal::CreateComputeCmds(
+    HgiComputeCmdsDesc const& desc)
 {
-    HgiComputeCmds* computeCmds = new HgiMetalComputeCmds(this, dispatchMethod);
+    HgiComputeCmds* computeCmds = new HgiMetalComputeCmds(this, desc);
     if (!_currentCmds) {
         _currentCmds = computeCmds;
     }

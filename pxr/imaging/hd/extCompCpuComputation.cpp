@@ -160,7 +160,7 @@ HdExtCompCpuComputation::Resolve()
      }
 
 
-    Hd_ExtComputationContextInternal context;
+    HdExtComputationContextInternal context;
 
     for (size_t inputNum = 0; inputNum < numInputs; ++inputNum) {
         const Hd_ExtCompInputSourceSharedPtr &input = _inputs[inputNum];

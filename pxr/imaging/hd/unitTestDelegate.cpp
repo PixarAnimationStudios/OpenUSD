@@ -236,6 +236,22 @@ HdUnitTestDelegate::AddMesh(SdfPath const &id,
 }
 
 void
+HdUnitTestDelegate::SetMeshCullStyle(
+    SdfPath const &id, HdCullStyle const &cullStyle)
+{
+    auto it = _meshes.find(id);
+    if (it != _meshes.end()) {
+        if (it->second.cullStyle != cullStyle) {
+            it->second.cullStyle = cullStyle;
+            HdChangeTracker& tracker = GetRenderIndex().GetChangeTracker();
+            tracker.MarkRprimDirty(id, HdChangeTracker::DirtyCullStyle);
+        }
+    } else {
+        TF_WARN("Could not find mesh Rprim named %s. \n", id.GetText());
+    }
+}
+
+void
 HdUnitTestDelegate::AddBasisCurves(SdfPath const &id,
                                     VtVec3fArray const &points,
                                     VtIntArray const &curveVertexCounts,
@@ -824,6 +840,16 @@ HdUnitTestDelegate::GetDisplayStyle(SdfPath const& id)
     }
     // returns fallback refinelevel
     return HdDisplayStyle(_refineLevel);
+}
+
+/*virtual*/
+HdCullStyle 
+HdUnitTestDelegate::GetCullStyle(SdfPath const& id)
+{
+    if (_meshes.find(id) != _meshes.end()) {
+        return _meshes[id].cullStyle;
+    }
+    return HdCullStyleDontCare;
 }
 
 /*virtual*/

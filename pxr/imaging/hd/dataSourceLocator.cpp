@@ -289,23 +289,13 @@ HdDataSourceLocator::operator<(const HdDataSourceLocator &rhs) const
 
 //-----------------------------------------------------------------------------
 
-HdDataSourceLocatorSet::HdDataSourceLocatorSet(
-    const HdDataSourceLocator &locator)
+void
+HdDataSourceLocatorSet::_Normalize()
 {
-    _locators.push_back(locator);
-}
-
-HdDataSourceLocatorSet::HdDataSourceLocatorSet(
-    const std::initializer_list<const HdDataSourceLocator> &l)
-{
-    _locators.insert(_locators.end(), l.begin(), l.end());
-
     if (_locators.size() < 2) {
         return;
     }
 
-    // Since the initializer list comes in unsorted, we need to sort and
-    // uniqueify it.
     std::sort(_locators.begin(), _locators.end());
 
     for (size_t i = 1; i < _locators.size(); ) {
@@ -315,6 +305,21 @@ HdDataSourceLocatorSet::HdDataSourceLocatorSet(
             ++i;
         }
     }
+}
+
+HdDataSourceLocatorSet::HdDataSourceLocatorSet(
+    const HdDataSourceLocator &locator)
+  : _locators{locator}
+{
+}
+
+HdDataSourceLocatorSet::HdDataSourceLocatorSet(
+    const std::initializer_list<const HdDataSourceLocator> &l)
+  : _locators(l.begin(), l.end())
+{
+    // Since the initializer list comes in unsorted, we need to sort and
+    // uniquify it.
+    _Normalize();
 }
 
 static bool
@@ -590,20 +595,6 @@ HdDataSourceLocatorSet::ReplacePrefix(
         return *this;
     }
 
-    auto sortAndUniquifyLocators = [](_Locators *pLocators) {
-
-        _Locators &locators = *pLocators;
-        std::sort(locators.begin(), locators.end());
-
-        for (size_t i = 1; i < locators.size(); ) {
-            if (locators[i].Intersects(locators[i-1])) {
-                locators.erase(locators.begin() + i);
-            } else {
-                ++i;
-            }
-        }
-    };
-
     // Note: See _binarySearchCutoff in Intersects.
     constexpr size_t _binarySearchCutoff = 5;
 
@@ -615,8 +606,7 @@ HdDataSourceLocatorSet::ReplacePrefix(
             l = l.ReplacePrefix(oldPrefix, newPrefix);
         }
 
-        sortAndUniquifyLocators(&locators);
-
+        result._Normalize();
         return result;
     }
 
@@ -664,10 +654,8 @@ HdDataSourceLocatorSet::ReplacePrefix(
                 }
             }
 
-            // Since we've edited in-place, sort and uniquify the locators.
-            // XXX We could be smarter in the range that is sorted by factoring
-            //     lower and upper bounds with the new prefix.
-            sortAndUniquifyLocators(&locators);
+            result._Normalize();
+
             return result;
         }
         // Otherwise, there's nothing to do since no element in the set

@@ -40,6 +40,7 @@ public:
     HdPrman_GprimBase() = default;
     virtual ~HdPrman_GprimBase() = 0;
     void UpdateInstanceVisibility(bool vis, riley::Riley *riley ) const;
+    std::vector<riley::GeometryPrototypeId> GetPrototypeIds() const;
 
 protected:
     std::vector<riley::GeometryPrototypeId> _prototypeIds;

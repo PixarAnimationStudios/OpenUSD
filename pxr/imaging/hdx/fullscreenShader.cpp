@@ -65,6 +65,8 @@ HdxFullscreenShader::HdxFullscreenShader(
   , _srcAlphaBlendFactor(HgiBlendFactorZero)
   , _dstAlphaBlendFactor(HgiBlendFactorZero)
   , _alphaBlendOp(HgiBlendOpAdd)
+  , _attachmentLoadOp(HgiAttachmentLoadOpDontCare)
+  , _attachmentStoreOp(HgiAttachmentStoreOpStore)
 {
     if (_debugName.empty()) {
         _debugName = "HdxFullscreenShader";
@@ -246,6 +248,25 @@ HdxFullscreenShader::SetBlendState(
     _srcAlphaBlendFactor = srcAlphaBlendFactor;
     _dstAlphaBlendFactor = dstAlphaBlendFactor;
     _alphaBlendOp = alphaBlendOp;
+}
+
+void
+HdxFullscreenShader::SetAttachmentLoadStoreOp(
+    HgiAttachmentLoadOp attachmentLoadOp,
+    HgiAttachmentStoreOp attachmentStoreOp)
+{
+    if (_attachmentLoadOp == attachmentLoadOp &&
+        _attachmentStoreOp == attachmentStoreOp) 
+    {
+        return;
+    }
+
+    if (_pipeline) {
+        _hgi->DestroyGraphicsPipeline(&_pipeline);
+    }
+
+    _attachmentLoadOp = attachmentLoadOp;
+    _attachmentStoreOp = attachmentStoreOp;
 }
 
 void
@@ -450,8 +471,8 @@ HdxFullscreenShader::_CreatePipeline(
 
     // Setup attachments
     _attachment0.blendEnabled = _blendingEnabled;
-    _attachment0.loadOp = HgiAttachmentLoadOpDontCare;
-    _attachment0.storeOp = HgiAttachmentStoreOpStore;
+    _attachment0.loadOp = _attachmentLoadOp;
+    _attachment0.storeOp = _attachmentStoreOp;
     _attachment0.srcColorBlendFactor = _srcColorBlendFactor;
     _attachment0.dstColorBlendFactor = _dstColorBlendFactor;
     _attachment0.colorBlendOp = _colorBlendOp;
@@ -638,11 +659,11 @@ HdxFullscreenShader::_Draw(
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "hd_FragDepth", "float", "depth(any)");
         HgiShaderFunctionAddTexture(
-            &fragDesc, "colorIn");
+            &fragDesc, "colorIn", /*bindIndex = */0);
 
         if(depthAware) {
             HgiShaderFunctionAddTexture(
-                &fragDesc, "depth");
+                &fragDesc, "depth", /*bindIndex = */1);
         }
         
         SetProgram(HdxPackageFullscreenShader(),

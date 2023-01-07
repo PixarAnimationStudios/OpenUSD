@@ -32,6 +32,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
+#include "pxr/usd/sdf/opaqueValue.h"
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 
@@ -353,7 +354,8 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
     ((TimeCode,   timecode,   SdfTimeCode,    ()    )) \
     ((String,     string,     std::string,    ()    )) \
     ((Token,      token,      TfToken,        ()    )) \
-    ((Asset,      asset,      SdfAssetPath,   ()    ))
+    ((Asset,      asset,      SdfAssetPath,   ()    )) \
+    ((Opaque,     opaque,     SdfOpaqueValue, ()    ))
 
 #define _SDF_DIMENSIONED_VALUE_TYPES                   \
     ((Matrix2d,   matrix2d,   GfMatrix2d,     (2,2) )) \
@@ -440,6 +442,7 @@ SdfConvertToValidMetadataDictionary(VtDictionary *dict, std::string *errMsg);
     (PointIndex)                                \
     (EdgeIndex)                                 \
     (FaceIndex)                                 \
+    (Group)                                     \
     (TextureCoordinate)
 
 TF_DECLARE_PUBLIC_TOKENS(SdfValueRoleNames, SDF_API, SDF_VALUE_ROLE_NAME_TOKENS);
@@ -538,6 +541,8 @@ public:
     SdfValueTypeName Frame4d;
     SdfValueTypeName TexCoord2h, TexCoord2f, TexCoord2d;
     SdfValueTypeName TexCoord3h, TexCoord3f, TexCoord3d;
+    SdfValueTypeName Opaque;
+    SdfValueTypeName Group;
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;

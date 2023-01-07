@@ -39,6 +39,7 @@
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/computeCmdsDesc.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -717,21 +718,24 @@ HdStResourceRegistry::GetGlobalBlitCmds()
 HgiComputeCmds*
 HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod)
 {
-    // If the HGI device isn't capable of concurrent dispatch then only specify
-    // serial.
-    bool const computeConcurrentDispatch = _hgi->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsConcurrentDispatch);
+    // If the HGI device isn't capable of concurrent dispatch then
+    // only specify serial.
+    bool const concurrentDispatchSupported =
+        _hgi->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsConcurrentDispatch);
+    if (!concurrentDispatchSupported) {
+        dispatchMethod = HgiComputeDispatchSerial;
+    }
 
-    dispatchMethod = (computeConcurrentDispatch)
-                   ? dispatchMethod : HgiComputeDispatchSerial;
+    if (_computeCmds && _computeCmds->GetDispatchMethod() != dispatchMethod) {
+        SubmitComputeWork();
+        _computeCmds.reset();
+    }
 
     if (!_computeCmds) {
-        _computeCmds = _hgi->CreateComputeCmds(dispatchMethod);
-    }
-    else if (_computeCmds->GetDispatchMethod() != dispatchMethod)
-    {
-        SubmitComputeWork();
-        _computeCmds = _hgi->CreateComputeCmds(dispatchMethod);
+        HgiComputeCmdsDesc desc;
+        desc.dispatchMethod = dispatchMethod;
+        _computeCmds = _hgi->CreateComputeCmds(desc);
     }
 
     return _computeCmds.get();
@@ -960,7 +964,7 @@ HdStResourceRegistry::_Commit()
 
         // Make sure the writes are visible to computations that follow
         if (_blitCmds) {
-            _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+            _blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
         }
         SubmitBlitWork();
     }
@@ -987,11 +991,11 @@ HdStResourceRegistry::_Commit()
             // We must ensure that shader writes are visible to computations
             // in the next queue by setting a memory barrier.
             if (_blitCmds) {
-                _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                _blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
                 SubmitBlitWork();
             }
             if (_computeCmds) {
-                _computeCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                _computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
                 SubmitComputeWork();
             }
         }

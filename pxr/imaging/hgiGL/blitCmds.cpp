@@ -119,9 +119,9 @@ HgiGLBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 }
 
 void
-HgiGLBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiGLBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
-    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+    _ops.push_back( HgiGLOps::InsertMemoryBarrier(barrier) );
 }
 
 bool

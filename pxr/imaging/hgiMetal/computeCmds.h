@@ -34,6 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+struct HgiComputeCmdsDesc;
 class HgiMetalComputePipeline;
 
 /// \class HgiMetalGraphicsCmds
@@ -69,7 +70,7 @@ public:
     void PopDebugGroup() override;
 
     HGIMETAL_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
     HGIMETAL_API
     HgiComputeDispatch GetDispatchMethod() const override;
@@ -81,7 +82,7 @@ protected:
     friend class HgiMetal;
 
     HGIMETAL_API
-    HgiMetalComputeCmds(HgiMetal* hgi, HgiComputeDispatch dispatchMethod);
+    HgiMetalComputeCmds(HgiMetal* hgi, HgiComputeCmdsDesc const& desc);
 
     HGIMETAL_API
     bool _Submit(Hgi* hgi, HgiSubmitWaitType wait) override;

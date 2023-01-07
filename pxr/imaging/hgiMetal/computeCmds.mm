@@ -34,7 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi, HgiComputeDispatch dispatchMethod)
+HgiMetalComputeCmds::HgiMetalComputeCmds(
+    HgiMetal* hgi,
+    HgiComputeCmdsDesc const& desc)
     : HgiComputeCmds()
     , _hgi(hgi)
     , _pipelineState(nullptr)
@@ -43,7 +45,7 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi, HgiComputeDispatch dispa
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
     , _hasWork(false)
-    , _dispatchMethod(dispatchMethod)
+    , _dispatchMethod(desc.dispatchMethod)
 {
     _CreateEncoder();
 }
@@ -62,9 +64,12 @@ HgiMetalComputeCmds::_CreateEncoder()
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
         }
-        MTLDispatchType dispatchType = (_dispatchMethod == HgiComputeDispatchConcurrent)
-            ? MTLDispatchTypeConcurrent : MTLDispatchTypeSerial;
-        _encoder = [_commandBuffer computeCommandEncoderWithDispatchType:dispatchType];
+        MTLDispatchType dispatchType =
+            (_dispatchMethod == HgiComputeDispatchConcurrent)
+                ? MTLDispatchTypeConcurrent
+                : MTLDispatchTypeSerial;
+        _encoder = [_commandBuffer
+                        computeCommandEncoderWithDispatchType:dispatchType];
     }
 }
 
@@ -167,7 +172,7 @@ HgiMetalComputeCmds::PopDebugGroup()
 }
 
 void
-HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
         _CreateEncoder();

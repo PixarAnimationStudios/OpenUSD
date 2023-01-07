@@ -497,10 +497,10 @@ HgiVulkanBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 }
 
 void
-HgiVulkanBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 HgiVulkanCommandBuffer*

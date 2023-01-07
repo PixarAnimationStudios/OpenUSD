@@ -58,13 +58,15 @@ UsdImagingSphereAdapter::~UsdImagingSphereAdapter()
 }
 
 TfTokenVector
-UsdImagingSphereAdapter::GetImagingSubprims()
+UsdImagingSphereAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingSphereAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingSphereAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->sphere;
@@ -74,8 +76,8 @@ UsdImagingSphereAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingSphereAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -89,11 +91,12 @@ UsdImagingSphereAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingSphereAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
         TfToken const& subprim,
         TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::Invalidate(subprim, properties);
+        return _PrimSource::Invalidate(prim, subprim,properties);
     }
     
     return HdDataSourceLocatorSet();

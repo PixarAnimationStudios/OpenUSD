@@ -63,8 +63,14 @@ public:
     bool IsShowGuides() const { return _showGuides; }
     bool IsShowRender() const { return _showRender; }
     bool IsShowProxy() const { return _showProxy; }
-    bool ShouldClearOnce() const { return _clearOnce; }
+
+    // We use a client created presentation output (framebuffer) when
+    // testing present output, otherwise we output AOV images directly.
+    bool PresentComposite() const { return _presentComposite; }
     bool PresentDisabled() const { return _presentDisabled; }
+    bool IsEnabledTestPresentOutput() const {
+        return PresentComposite() || PresentDisabled();
+    }
 
     UsdImagingGLDrawMode GetDrawMode() const { return _drawMode; }
 
@@ -95,7 +101,16 @@ public:
     virtual void MouseMove(int x, int y, int modKeys);
     virtual void KeyRelease(int key);
 
-    bool WriteToFile(std::string const & attachment, std::string const & filename) const;
+    // Write an output image from the specified AOV or from the client
+    // created presentation output when present output testing is enabled.
+    bool WriteToFile(UsdImagingGLEngine *engine,
+                     TfToken const &aovName,
+                     std::string const &filename);
+
+    // Helper method to write an output image from the specified AOV.
+    static bool WriteAovToFile(UsdImagingGLEngine *engine,
+                               TfToken const &aovName,
+                               std::string const &filename);
 
 protected:
     float _GetComplexity() const { return _complexity; }
@@ -157,7 +172,7 @@ private:
     bool _showGuides;
     bool _showRender;
     bool _showProxy;
-    bool _clearOnce;
+    bool _presentComposite;
     bool _presentDisabled;
 };
 

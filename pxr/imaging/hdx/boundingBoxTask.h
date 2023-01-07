@@ -28,8 +28,6 @@
 
 #include "pxr/base/gf/matrix4f.h"
 
-#include "pxr/imaging/cameraUtil/framing.h"
-
 #include "pxr/imaging/hdx/api.h"
 #include "pxr/imaging/hdx/task.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -48,6 +46,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdStRenderPassState;
+
 /// \class HdxBoundingBoxTaskParams
 ///
 /// BoundingBoxTask parameters.
@@ -62,10 +62,6 @@ struct HdxBoundingBoxTaskParams
         , bboxes()
         , color(1)
         , dashSize(3)
-        , cameraId()
-        , framing()
-        , overrideWindowPolicy{false, CameraUtilFit}
-        , viewport()
         {}
 
     TfToken aovName;
@@ -74,12 +70,6 @@ struct HdxBoundingBoxTaskParams
     BBoxVector bboxes;
     GfVec4f color;
     float dashSize;
-
-    // Data needed for the camera
-    SdfPath cameraId;
-    CameraUtilFraming framing;
-    std::pair<bool, CameraUtilConformWindowPolicy> overrideWindowPolicy;
-    GfVec4d viewport;
 };
 
 /// \class HdxBoundingBoxTask
@@ -131,17 +121,20 @@ private:
         const HgiTextureHandle& depthTexture);
 
     // Utility to get the view and projection matrix from the camera.
-    GfMatrix4d _ComputeViewProjectionMatrix() const;
+    GfMatrix4d _ComputeViewProjectionMatrix(
+        const HdStRenderPassState& hdStRenderPassState) const;
 
     // Utility to set the shader constants for drawing.
     void _UpdateShaderConstants(
         HgiGraphicsCmds* gfxCmds,
-        const GfVec4i& gfxViewport);
+        const GfVec4i& gfxViewport,
+        const HdStRenderPassState& hdStRenderPassState);
 
     // Create and submit the draw commands.
     void _DrawBBoxes(
         const HgiTextureHandle& colorTexture,
-        const HgiTextureHandle& depthTexture);
+        const HgiTextureHandle& depthTexture,
+        const HdStRenderPassState& hdStRenderPassState);
 
     // Destroy shader program and the shader functions it holds.
     void _DestroyShaderProgram();
@@ -160,7 +153,6 @@ private:
     HgiGraphicsPipelineHandle _pipeline;
 
     HdxBoundingBoxTaskParams _params;
-    const HdCamera* _camera;
 };
 
 // VtValue requirements

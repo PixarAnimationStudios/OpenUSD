@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdSceneDelegate;
 
+using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdStRenderPassStateSharedPtr = std::shared_ptr<class HdStRenderPassState>;
 
 using HdSt_ImageShaderRenderPassSharedPtr =
@@ -106,11 +107,17 @@ private:
         GfVec2i const& screenSize);
 
     GfVec2i _ComputeScreenSize(
-        HdTaskContext *ctx,
+        HdTaskContext* ctx,
         HdRenderIndex* renderIndex) const;
 
-    const HdRenderPassAovBindingVector &_GetAovBindings(
-        HdTaskContext *ctx) const;
+    const HdRenderPassAovBindingVector& _GetAovBindings(
+        HdTaskContext* ctx) const;
+
+    void _UpdateCameraFraming(
+        HdTaskContext* ctx);
+
+    HdRenderPassStateSharedPtr _GetContextRenderPassState(
+        HdTaskContext* ctx) const;
 
     HdSt_ImageShaderRenderPassSharedPtr _renderPass;
     HdStRenderPassStateSharedPtr _renderPassState;

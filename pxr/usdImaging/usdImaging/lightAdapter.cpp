@@ -60,8 +60,8 @@ UsdImagingLightAdapter::~UsdImagingLightAdapter()
 
 HdContainerDataSourceHandle
 UsdImagingLightAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -74,10 +74,11 @@ UsdImagingLightAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingLightAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfTokenVector const& properties)
 {
-    return UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+    return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
 }
 
 bool

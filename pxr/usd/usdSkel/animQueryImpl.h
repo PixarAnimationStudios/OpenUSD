@@ -80,10 +80,8 @@ public:
    
     virtual bool
     GetJointTransformAttributes(std::vector<UsdAttribute>* attrs) const = 0;
-
+   
     virtual bool JointTransformsMightBeTimeVarying() const = 0;
-
-    virtual bool JointScalesMightBeNonIdentity() const = 0;
 
     virtual bool
     ComputeBlendShapeWeights(VtFloatArray* weights,

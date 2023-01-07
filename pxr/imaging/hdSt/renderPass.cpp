@@ -25,21 +25,17 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
-#include "pxr/imaging/hdSt/indirectDrawBatch.h"
-#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -180,11 +176,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     gfxCmds->PushDebugGroup(passName.c_str());
 
-    gfxCmds->SetViewport(
-        stRenderPassState->ComputeViewport(
-            desc,
-            /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
-
+    gfxCmds->SetViewport(stRenderPassState->ComputeViewport(desc));
 
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();
