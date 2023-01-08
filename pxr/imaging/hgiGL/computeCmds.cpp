@@ -148,12 +148,6 @@ HgiGLComputeCmds::GetDispatchMethod() const
     return HgiComputeDispatchSerial;
 }
 
-HgiComputeDispatch
-HgiGLComputeCmds::GetDispatchMethod() const
-{
-    return HgiComputeDispatchSerial;
-}
-
 bool
 HgiGLComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {

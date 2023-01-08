@@ -233,13 +233,6 @@ HdSt_ShaderKey::GetCS() const
 }
 
 /*virtual*/
-TfToken const*
-HdSt_ShaderKey::GetCS() const
-{
-    return nullptr;
-}
-
-/*virtual*/
 bool
 HdSt_ShaderKey::IsFrustumCullingPass() const
 {

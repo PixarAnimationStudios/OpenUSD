@@ -33,23 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \enum HgiComputeDispatch
-///
-/// Specifies the dispatch method for compute encoders.
-///
-/// <ul>
-/// <li>HgiComputeDispatchSerial:
-///   Kernels are dispatched serially.</li>
-/// <li>HgiComputeDispatchConcurrent:
-///   Kernels are dispatched concurrently, if supported by the API</li>
-/// </ul>
-///
-enum HgiComputeDispatch
-{
-    HgiComputeDispatchSerial = 0,
-    HgiComputeDispatchConcurrent
-};
-
 using HgiComputeCmdsUniquePtr = std::unique_ptr<class HgiComputeCmds>;
 
 
@@ -110,10 +93,6 @@ public:
     /// the barrier is available to commands after the barrier.
     HGI_API
     virtual void InsertMemoryBarrier(HgiMemoryBarrier barrier) = 0;
-
-    /// Returns the dispatch method for this encoder.
-    HGI_API
-    virtual HgiComputeDispatch GetDispatchMethod() const = 0;
 
     /// Returns the dispatch method for this encoder.
     HGI_API

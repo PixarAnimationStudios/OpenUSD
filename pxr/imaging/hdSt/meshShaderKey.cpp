@@ -305,7 +305,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =
-        hasBuiltinBarycentrics || useMetalTessellation;
+        hasBuiltinBarycentrics || useMetalTessellation || useMeshShading;
 
     uint8_t mosIndex = 0;
     uint8_t msIndex = 0;

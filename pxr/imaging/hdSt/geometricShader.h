@@ -134,10 +134,6 @@ public:
         return primType == PrimitiveType::PRIM_COMPUTE;
     }
 
-    static inline bool IsPrimTypeCompute(PrimitiveType primType) {
-        return primType == PrimitiveType::PRIM_COMPUTE;
-    }
-
     // Face-varying patch type
     enum class FvarPatchType { 
         PATCH_COARSE_TRIANGLES,  

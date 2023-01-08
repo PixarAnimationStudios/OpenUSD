@@ -4033,7 +4033,6 @@ _GetDrawingCoord(std::stringstream &ss,
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
-    if (!drawingCoordParams.empty()) {
     for (std::string const & param : drawingCoordParams) {
         ss << "  dc." << param
            << " = " << inputPrefix << param << inArraySize << ";\n";
@@ -4052,7 +4051,6 @@ _GetDrawingCoord(std::stringstream &ss,
         ss << "  dc.primitiveCoord"
            << primitiveCoordOffset << ";\n";
     }
-    }
     ss << "  return dc; \n"
        << "}\n";
 }
@@ -4067,7 +4065,6 @@ _GetDrawingCoordMS(std::stringstream &ss,
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
-    if (!drawingCoordParams.empty()) {
         for (std::string const & param : drawingCoordParams) {
             ss << "  dc." << param
             << " = vertexOut." << inputPrefix << param << inArraySize << ";\n";
@@ -4086,7 +4083,6 @@ _GetDrawingCoordMS(std::stringstream &ss,
             ss << "  dc.primitiveCoord"
             << primitiveCoordOffset << ";\n";
         }
-    }
     ss << "  return dc; \n"
        << "}\n";
 }
@@ -4310,7 +4306,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                 /*arraySize=*/std::max(1, _metaData.instancerNumLevels), _hasMOS);
         }
     }
-    }
 
     std::stringstream primitiveID;
 
@@ -4461,6 +4456,18 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "  return GetBaseInstanceIndexCoord() +"
                << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
                << "}\n";
+        
+        _genMOS << "int g_instanceID;          // Set from calling code.\n"
+                       << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
+                       << "int GetInstanceIndexCoord() {\n"
+                       << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
+                       << "}\n";
+
+                _genMS << "int g_instanceID;          // Set from calling code.\n"
+                        << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
+                        << "int GetInstanceIndexCoord() {\n"
+                        << "return GetDrawingCoordField(1, 1) + (hd_LocalInvocationID.y) * HD_INSTANCE_INDEX_WIDTH;\n"
+                        << "}\n";
 
         _genCS << "int GetBaseInstanceIndexCoord() {\n"
                << "  return GetDrawingCoordField(5);\n"
@@ -4476,59 +4483,29 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "}\n";
 
         if (_geometricShader->IsFrustumCullingPass()) {
-            // for frustum culling:  use instanceIndices.
-            char const *instanceIndexAccessors =
-                "hd_instanceIndex GetInstanceIndex() {\n"
-                "  int offset = GetInstanceIndexCoord();\n"
-                "  hd_instanceIndex r;\n"
-                "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                "    r.indices[i] = instanceIndices[offset+i];\n"
-                "  return r;\n"
-                "}\n"
+                    // for frustum culling:  use instanceIndices.
+                    char const *instanceIndexAccessors =
+                        "hd_instanceIndex GetInstanceIndex() {\n"
+                        "  int offset = GetInstanceIndexCoord();\n"
+                        "  hd_instanceIndex r;\n"
+                        "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
+                        "    r.indices[i] = instanceIndices[offset+i];\n"
+                        "  return r;\n"
+                        "}\n"
 
-                "void SetCulledInstanceIndex(uint instanceID) {\n"
-                "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                "    culledInstanceIndices[GetBaseInstanceIndexCoord()"
-                " + instanceID*HD_INSTANCE_INDEX_WIDTH + i]"
-                "        = instanceIndices[GetBaseInstanceIndexCoord()"
-                " + GetCurrentInstance()*HD_INSTANCE_INDEX_WIDTH + i];\n"
-                "}\n";
-        _genMOS << "int g_instanceID;          // Set from calling code.\n"
-               << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-               << "int GetInstanceIndexCoord() {\n"
-               << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
-               << "}\n";
+                        "void SetCulledInstanceIndex(uint instanceID) {\n"
+                        "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
+                        "    culledInstanceIndices[GetBaseInstanceIndexCoord()"
+                        " + instanceID*HD_INSTANCE_INDEX_WIDTH + i]"
+                        "        = instanceIndices[GetBaseInstanceIndexCoord()"
+                        " + GetCurrentInstance()*HD_INSTANCE_INDEX_WIDTH + i];\n"
+                        "}\n";
 
-            genAttr << instanceIndexAccessors;
-        _genMS << "int g_instanceID;          // Set from calling code.\n"
-                << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-                << "int GetInstanceIndexCoord() {\n"
-                << "return GetDrawingCoordField(1, 1) + (hd_LocalInvocationID.y) * HD_INSTANCE_INDEX_WIDTH;\n"
-                << "}\n";
-        
-        _genCS << "int g_instanceID;          // Set from calling code.\n"
-               << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-               << "int GetInstanceIndexCoord() {\n"
-               << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
-               << "}\n";
+                    genAttr << instanceIndexAccessors;
 
-            _genCS << instanceIndexAccessors;
+                    _genCS << instanceIndexAccessors;
 
-        if (_geometricShader->IsFrustumCullingPass()) {
-            // for frustum culling:  use instanceIndices.
-            genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
-                    << "  int offset = GetInstanceIndexCoord();\n"
-                    << "  hd_instanceIndex r;\n"
-                    << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                    << "    r.indices[i] = instanceIndices[offset+i];\n"
-                    << "  return r;\n"
-                    << "}\n";
-            genAttr << "void SetCulledInstanceIndex(uint instanceID) {\n"
-                    << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                    << "    culledInstanceIndices[drawingCoord1.y + instanceID*HD_INSTANCE_INDEX_WIDTH+i]"
-                    << "        = instanceIndices[drawingCoord1.y + gl_InstanceID*HD_INSTANCE_INDEX_WIDTH+i];\n"
-                    << "}\n";
-        } else {
+            } else {
             // for drawing:  use culledInstanceIndices.
             _EmitAccessor(_genVS, _metaData.culledInstanceIndexArrayBinding.name,
                           _metaData.culledInstanceIndexArrayBinding.dataType,
@@ -4558,6 +4535,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     } else {
         genAttr << "hd_instanceIndex GetInstanceIndex() {"
              << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
+        _genCS << "hd_instanceIndex GetInstanceIndex() {"
+                       << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
         if (_geometricShader->IsFrustumCullingPass()) {
             genAttr << "void SetCulledInstanceIndex(uint instance) "
                     "{ /*no-op*/ }\n";
@@ -4565,27 +4544,27 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     }
 
     if (!_hasCS) {
-    for (std::string const & param : drawingCoordParams) {
-        TfToken const drawingCoordParamName("dc_" + param);
-        _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
-                              /*name=*/drawingCoordParamName,
-                              /*dataType=*/_tokens->_int);
-    }
-    for (int i = 0; i < instanceIndexWidth; ++i) {
-        TfToken const name(TfStringPrintf("dc_instanceIndexI%d", i));
-        _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
-                              /*name=*/name,
-                              /*dataType=*/_tokens->_int);
-    }
-    for (int i = 0; i < instanceIndexWidth; ++i) {
-        TfToken const name(TfStringPrintf("dc_instanceCoordsI%d", i));
-        _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
-                              /*name=*/name,
-                              /*dataType=*/_tokens->_int);
-    }
+        for (std::string const & param : drawingCoordParams) {
+            TfToken const drawingCoordParamName("dc_" + param);
+            _AddInterstageElement(&_resInterstage,
+                                      HdSt_ResourceLayout::InOut::NONE,
+                                  /*name=*/drawingCoordParamName,
+                                  /*dataType=*/_tokens->_int);
+        }
+        for (int i = 0; i < instanceIndexWidth; ++i) {
+            TfToken const name(TfStringPrintf("dc_instanceIndexI%d", i));
+            _AddInterstageElement(&_resInterstage,
+                                      HdSt_ResourceLayout::InOut::NONE,
+                                  /*name=*/name,
+                                  /*dataType=*/_tokens->_int);
+        }
+        for (int i = 0; i < instanceIndexWidth; ++i) {
+            TfToken const name(TfStringPrintf("dc_instanceCoordsI%d", i));
+            _AddInterstageElement(&_resInterstage,
+                                      HdSt_ResourceLayout::InOut::NONE,
+                                  /*name=*/name,
+                                  /*dataType=*/_tokens->_int);
+        }
     }
 
     _genVS   << genAttr.str();
@@ -4616,6 +4595,64 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.topologyVisibilityCoord = drawingCoord2[0].x;\n"
              << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
+    
+    _genCS   << "// Compute shaders read the drawCommands buffer directly.\n"
+                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "  hd_drawingCoord dc;\n"
+                 << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
+                 << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
+                 << "  dc.elementCoord            = GetDrawingCoordField(2);\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(3);\n"
+                 << "  dc.fvarCoord               = GetDrawingCoordField(4);\n"
+                 << "  dc.shaderCoord             = GetDrawingCoordField(6);\n"
+                 << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
+                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
+                 << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
+                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
+
+        for(int i = 0; i < instanceIndexWidth; ++i) {
+            std::string const index = std::to_string(i);
+            _genVS   << "  dc.instanceIndex[" << index << "]"
+                     << " = r.indices[" << index << "];\n";
+            _genPTVS << "  dc.instanceIndex[" << index << "]"
+                     << " = r.indices[" << index << "];\n";
+            _genCS   << "  dc.instanceIndex[" << index << "]"
+                     << " = r.indices[" << index << "];\n";
+        }
+    
+    _genMOS  << "// Compute shaders read the drawCommands buffer directly.\n"
+                 << "// GetDrawingCoordField() needs to be implemented by the\n"
+                 << "// kernel by offsetting by the thread ID.\n"
+                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
+                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "  hd_drawingCoord dc;\n"
+                 << "  dc.modelCoord              = GetDrawingCoordField(0, 0);\n"
+                 << "  dc.constantCoord           = GetDrawingCoordField(0, 1);\n"
+                 << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3);\n"
+                 << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
+                 << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
+                 << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
+                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
+                 << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
+                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
+
+        _genMS   << "// Compute shaders read the drawCommands buffer directly.\n"
+                 << "// GetDrawingCoordField() needs to be implemented by the\n"
+                 << "// kernel by offsetting by the thread ID.\n"
+                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
+                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "  hd_drawingCoord dc;\n"
+                 << "  dc.modelCoord              = GetDrawingCoordField(0, 0);\n"
+                 << "  dc.constantCoord           = GetDrawingCoordField(0, 1);\n"
+                 << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3) + primitive_id;\n"
+                 << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
+                 << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
+                 << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
+                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
+                 << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
+                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
     for(int i = 0; i < instanceIndexWidth; ++i) {
         std::string const index = std::to_string(i);
@@ -4637,6 +4674,14 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genVS   << "  return dc;\n"
              << "}\n";
     _genPTVS << "  return dc;\n"
+             << "}\n";
+    _genCS   << "  return dc;\n"
+                 << "}\n";
+    
+    _genMS   << "  return dc;\n"
+                 << "}\n";
+
+    _genMOS   << "  return dc;\n"
              << "}\n";
 
     // note: GL spec says tessellation input array size must be equal to

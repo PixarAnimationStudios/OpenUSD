@@ -73,9 +73,6 @@ public:
     HGIGL_API
     HgiComputeDispatch GetDispatchMethod() const override;
 
-    HGIGL_API
-    HgiComputeDispatch GetDispatchMethod() const override;
-
 protected:
     friend class HgiGL;
 

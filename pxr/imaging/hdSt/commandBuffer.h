@@ -123,8 +123,6 @@ private:
     /// Cull drawItemInstances based on view frustum cull matrix
     void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 
-    void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
-
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;
     HdSt_DrawBatchSharedPtrVector _drawBatches;

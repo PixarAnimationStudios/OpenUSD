@@ -476,6 +476,7 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> payloadMembers;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
+    HgiShaderFunctionComputeDesc computeDescriptor;
     HgiShaderFunctionMeshDesc meshDescriptor;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionGeometryDesc geometryDescriptor;
