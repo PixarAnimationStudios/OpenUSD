@@ -301,7 +301,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     useMetalTessellation = false;
 
-    bool useMeshShading = true;
+    bool useMeshShading = !isPrimTypePoints;
 
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =

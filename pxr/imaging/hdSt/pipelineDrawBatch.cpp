@@ -175,7 +175,7 @@ HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling()
     // Allow GPU frustum culling for PipelineDrawBatch to be disabled even
     // when other GPU frustum culling is enabled. Both switches must be true
     // for PipelineDrawBatch to use GPU frustum culling.
-    return true;
+    return false;
 }
 
 /* static */
@@ -1360,10 +1360,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 uint32_t instanceCount;
                 uint32_t baseInstance;
                 uint32_t drawCommandIndexInput;
-                uint32_t drawCoord0Offset;
-                uint32_t drawCoord1Offset;
-                uint32_t drawCoord2Offset;
-                uint32_t drawCoordIOffset;      // Unused in non-instanced culling.
+                uint32_t drawCoordOffset;
             };
 
             if (useMeshShaders) {
@@ -1375,10 +1372,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 cullParams.baseVertex = 0;
                 cullParams.instanceCount = 0;
                 cullParams.baseInstance = 0;
-                cullParams.drawCoord0Offset = uint32_t(_drawCoord0Offset);
-                cullParams.drawCoord1Offset = uint32_t(_drawCoord1Offset);
-                cullParams.drawCoord2Offset = uint32_t(_drawCoord2Offset);
-                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
+                cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
 
                 gfxCmds->SetConstantValues(
                         psoHandle, 0, 27,
@@ -1461,10 +1455,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         uint32_t instanceCount;
                         uint32_t baseInstance;
                         uint32_t drawCommandIndexInput;
-                        uint32_t drawCoord0Offset;
-                        uint32_t drawCoord1Offset;
-                        uint32_t drawCoord2Offset;
-                        uint32_t drawCoordIOffset;      // Unused in non-instanced culling.
+                        uint32_t drawCoordOffset;
                     };
                     
                     if (useMeshShaders) {
@@ -1476,10 +1467,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         cullParams.baseVertex = uint32_t(cmd->common.baseVertex);
                         cullParams.instanceCount = uint32_t(cmd->common.instanceCount);
                         cullParams.baseInstance = uint32_t(cmd->common.baseInstance);
-                        cullParams.drawCoord0Offset = uint32_t(_drawCoord0Offset);
-                        cullParams.drawCoord1Offset = uint32_t(_drawCoord1Offset);
-                        cullParams.drawCoord2Offset = uint32_t(_drawCoord2Offset);
-                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
+                        cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
 
                         gfxCmds->SetConstantValues(
                             psoHandle, 0, 27,

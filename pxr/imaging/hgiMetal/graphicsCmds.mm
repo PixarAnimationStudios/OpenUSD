@@ -813,7 +813,7 @@ HgiMetalGraphicsCmds::DrawIndexedMeshIndirect2(
                         [encoder setMeshBytes:&offset length:sizeof(uint32_t) atIndex:26];
                         _CachedEncState.useMeshShaders = true;
                         //for the time being, set to 1024
-                        [encoder drawMeshThreadgroups:MTLSizeMake(1024, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
+                        [encoder drawMeshThreadgroups:MTLSizeMake(2048, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(64, 1, 1)];
                     }
                 }
             });

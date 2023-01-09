@@ -4418,6 +4418,88 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "}\n";
     }
 
+    if(_hasMOS) {
+        _genMOS << "int GetDrawIndexoffset() {\n"
+        << "  const int drawIndexOffset = "
+        << "drawCoordOffset"
+        << ";\n"
+        << "return drawIndexOffset;\n"
+        << "}\n";
+        
+        _genMOS << "int GetDrawIndexStride() {\n"
+        << "  const int drawIndexStride = "
+        << "drawCommandNumUints"
+        << ";\n"
+        << "return drawIndexStride;\n"
+        << "}\n";
+        
+        _genMOS << "struct hd_DrawIndex {\n"
+        << "  int drawId;\n"
+        << "  int instanceId;\n"
+        << "} hd_drawIndex;\n\n"
+        
+        << "void SetDrawIndex(int drawId, int instanceId) {\n"
+        << "  hd_drawIndex.drawId = drawId;\n"
+        << "  hd_drawIndex.instanceId = instanceId;\n"
+        << "}\n\n"
+        
+        << "int GetDrawingCoordField(int offset) {\n"
+        << "  const int drawIndexOffset = "
+        << "drawCoordOffset"
+        << ";\n"
+        
+        << "  const int drawIndexStride = "
+        << "drawCommandNumUints"
+        << ";\n"
+        
+        << "  const int base = "
+        << "hd_drawIndex.drawId * drawIndexStride + drawIndexOffset;\n"
+        << "  return int("
+        << "drawCullInput"
+        << "[base + offset]);\n"
+        << "}\n";
+        
+        _genMS << "int GetDrawIndexoffset() {\n"
+        << "  const int drawIndexOffset = "
+        << "drawCoordOffset"
+        << ";\n"
+        << "return payload.drawCommandNumUintLocal;\n"
+        << "}\n";
+        
+        _genMS << "int GetDrawIndexStride() {\n"
+        << "  const int drawIndexStride = "
+        << "payload.drawCommandNumUintLocal"
+        << ";\n"
+        << "return drawIndexStride;\n"
+        << "}\n";
+        
+        _genMS << "struct hd_DrawIndex {\n"
+        << "  int drawId;\n"
+        << "  int instanceId;\n"
+        << "} hd_drawIndex;\n\n"
+        
+        << "void SetDrawIndex(int drawId, int instanceId) {\n"
+        << "  hd_drawIndex.drawId = drawId;\n"
+        << "  hd_drawIndex.instanceId = instanceId;\n"
+        << "}\n\n"
+        
+        << "int GetDrawingCoordField(int offset) {\n"
+        << "  const int drawIndexOffset = "
+        << "drawCoordOffset"
+        << ";\n"
+        
+        << "  const int drawIndexStride = "
+        << "payload.drawCommandNumUintLocal"
+        << ";\n"
+        
+        << "  const int base = "
+        << "payload.drawCommandIndexPayload * drawIndexStride + drawIndexOffset;\n"
+        << "  return int("
+        << "drawCullInput"
+        << "[base + offset]);\n"
+        << "}\n";
+    }
+
     if (_metaData.instanceIndexArrayBinding.binding.IsValid()) {
         // << layout (location=x) uniform (int|ivec[234]) *instanceIndices;
         _EmitDeclaration(&_resCommon, _metaData.instanceIndexArrayBinding);
@@ -4457,24 +4539,45 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
                << "}\n";
         
+        _genMOS << "int GetBaseInstanceIndexCoord() {\n"
+               << "  return GetDrawingCoordField(5);\n"
+               << "}\n"
+
+                << "int GetCurrentInstance() {\n"
+                << "  return int(hd_drawIndex.instanceId);\n"
+                << "}\n"
+
+               << "int GetInstanceIndexCoord() {\n"
+               << "  return GetBaseInstanceIndexCoord() + "
+               << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
+               << "}\n";
+        /*
         _genMOS << "int g_instanceID;          // Set from calling code.\n"
                        << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
                        << "int GetInstanceIndexCoord() {\n"
                        << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
                        << "}\n";
-
-                _genMS << "int g_instanceID;          // Set from calling code.\n"
-                        << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-                        << "int GetInstanceIndexCoord() {\n"
-                        << "return GetDrawingCoordField(1, 1) + (hd_LocalInvocationID.y) * HD_INSTANCE_INDEX_WIDTH;\n"
-                        << "}\n";
+         */
 
         _genCS << "int GetBaseInstanceIndexCoord() {\n"
                << "  return GetDrawingCoordField(5);\n"
                << "}\n"
 
+                << "int GetCurrentInstance() {\n"
+                << "  return int(hd_drawIndex.instanceId);\n"
+                << "}\n"
+
+               << "int GetInstanceIndexCoord() {\n"
+               << "  return GetBaseInstanceIndexCoord() + "
+               << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
+               << "}\n";
+        
+        _genMS << "int GetBaseInstanceIndexCoord() {\n"
+               << "  return GetDrawingCoordField(5);\n"
+               << "}\n"
+
                << "int GetCurrentInstance() {\n"
-               << "  return hd_drawIndex.instanceId;\n"
+               << "  return gl_InstanceID - gl_BaseInstance;\n"
                << "}\n"
 
                << "int GetInstanceIndexCoord() {\n"
@@ -4609,6 +4712,34 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
                  << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
                  << "  hd_instanceIndex r = GetInstanceIndex();\n";
+    
+    _genMOS   << "// Compute shaders read the drawCommands buffer directly.\n"
+                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "  hd_drawingCoord dc;\n"
+                 << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
+                 << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
+                 << "  dc.elementCoord            = GetDrawingCoordField(2);\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(3);\n"
+                 << "  dc.fvarCoord               = GetDrawingCoordField(4);\n"
+                 << "  dc.shaderCoord             = GetDrawingCoordField(6);\n"
+                 << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
+                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
+                 << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
+                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
+    
+    _genMS   << "// Compute shaders read the drawCommands buffer directly.\n"
+                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "  hd_drawingCoord dc;\n"
+                 << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
+                 << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
+                 << "  dc.elementCoord            = GetDrawingCoordField(2);\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(3) + primitive_id;\n"
+                 << "  dc.fvarCoord               = GetDrawingCoordField(4);\n"
+                 << "  dc.shaderCoord             = GetDrawingCoordField(6);\n"
+                 << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
+                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
+                 << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
+                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
         for(int i = 0; i < instanceIndexWidth; ++i) {
             std::string const index = std::to_string(i);
@@ -4618,47 +4749,21 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                      << " = r.indices[" << index << "];\n";
             _genCS   << "  dc.instanceIndex[" << index << "]"
                      << " = r.indices[" << index << "];\n";
+            _genMOS   << "  dc.instanceIndex[" << index << "]"
+                     << " = r.indices[" << index << "];\n";
+            _genMS   << "  dc.instanceIndex[" << index << "]"
+                     << " = r.indices[" << index << "];\n";
         }
-    
-    _genMOS  << "// Compute shaders read the drawCommands buffer directly.\n"
-                 << "// GetDrawingCoordField() needs to be implemented by the\n"
-                 << "// kernel by offsetting by the thread ID.\n"
-                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-                 << "hd_drawingCoord GetDrawingCoord() {\n"
-                 << "  hd_drawingCoord dc;\n"
-                 << "  dc.modelCoord              = GetDrawingCoordField(0, 0);\n"
-                 << "  dc.constantCoord           = GetDrawingCoordField(0, 1);\n"
-                 << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
-                 << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3);\n"
-                 << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
-                 << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
-                 << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
-                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
-                 << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
-                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
-
-        _genMS   << "// Compute shaders read the drawCommands buffer directly.\n"
-                 << "// GetDrawingCoordField() needs to be implemented by the\n"
-                 << "// kernel by offsetting by the thread ID.\n"
-                 << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-                 << "hd_drawingCoord GetDrawingCoord() {\n"
-                 << "  hd_drawingCoord dc;\n"
-                 << "  dc.modelCoord              = GetDrawingCoordField(0, 0);\n"
-                 << "  dc.constantCoord           = GetDrawingCoordField(0, 1);\n"
-                 << "  dc.elementCoord            = GetDrawingCoordField(0, 2);\n"
-                 << "  dc.primitiveCoord          = GetDrawingCoordField(0, 3) + primitive_id;\n"
-                 << "  dc.fvarCoord               = GetDrawingCoordField(1, 0);\n"
-                 << "  dc.shaderCoord             = GetDrawingCoordField(1, 2);\n"
-                 << "  dc.vertexCoord             = GetDrawingCoordField(1, 3);\n"
-                 << "  dc.topologyVisibilityCoord = GetDrawingCoordField(2, 0);\n"
-                 << "  dc.varyingCoord            = GetDrawingCoordField(2, 1);\n"
-                 << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
     for(int i = 0; i < instanceIndexWidth; ++i) {
         std::string const index = std::to_string(i);
         _genVS   << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
         _genPTVS << "  dc.instanceIndex[" << index << "]"
+                 << " = r.indices[" << index << "];\n";
+        _genMOS << "  dc.instanceIndex[" << index << "]"
+                 << " = r.indices[" << index << "];\n";
+        _genMS << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
     }
     for(int i = 0; i < instanceIndexWidth-1; ++i) {
@@ -4668,6 +4773,12 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genPTVS << "  dc.instanceCoords[" << index << "]"
                  << " = drawingCoordI" << index << "[0]"
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        _genMOS   << "  dc.instanceCoords[" << index << "]"
+                 << " = drawingCoordI" << index << ""
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        _genMS   << "  dc.instanceCoords[" << index << "]"
+                 << " = drawingCoordI" << index << ""
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
     }
 
@@ -4700,7 +4811,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                          "vs_dc_", "", " -= patch_id");
 
     _ProcessDrawingCoordMS(_procMSOut, drawingCoordParams, instanceIndexWidth,
-                         "vs_dc_", "", nullptr);
+                         "vs_dc_", "", " -= primitive_id");
 
     // TCS from VS
     if (_hasTCS) {
