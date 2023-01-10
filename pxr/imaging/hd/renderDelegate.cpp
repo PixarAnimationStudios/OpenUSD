@@ -108,6 +108,13 @@ HdRenderDelegate::GetMaterialRenderContexts() const
     return {GetMaterialNetworkSelector()};
 }
 
+TfTokenVector
+HdRenderDelegate::GetRenderSettingsNamespaces() const
+{
+    return TfTokenVector();
+}
+
+
 bool
 HdRenderDelegate::IsPrimvarFilteringNeeded() const
 {
