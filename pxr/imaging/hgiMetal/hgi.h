@@ -227,7 +227,11 @@ private:
     id<MTLArgumentEncoder> _argEncoderBuffer;
     id<MTLArgumentEncoder> _argEncoderSampler;
     id<MTLArgumentEncoder> _argEncoderTexture;
-    std::stack<id<MTLBuffer>> _freeArgBuffers;
+    
+    using FreeArgStack = std::stack<id<MTLBuffer>>;
+    using ActiveArgBuffers = std::vector<id<MTLBuffer>>;
+    FreeArgStack _freeArgBuffers;
+    std::shared_ptr<ActiveArgBuffers> _activeArgBuffers;
     std::mutex _freeArgMutex;
 
     HgiCmds* _currentCmds;
