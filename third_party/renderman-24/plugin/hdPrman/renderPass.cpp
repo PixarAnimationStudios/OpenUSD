@@ -73,8 +73,12 @@ HdPrman_RenderPass::IsConverged() const
     return _converged;
 }
 
+namespace {
+
+using RenderProducts = VtArray<HdRenderSettingsMap>;
+
 // Return the seconds between now and then.
-static double
+double
 _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
 {
     std::chrono::duration<double> diff;
@@ -83,7 +87,7 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     return(diff.count());
 }
 
-static void
+void
 _Blit(HdPrmanFramebuffer * const framebuffer,
       HdRenderPassAovBindingVector const &aovBindings,
       const bool converged)
@@ -116,7 +120,6 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     }
 }
 
-static
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding& aov,
                  const HdRenderIndex * const renderIndex)
@@ -132,7 +135,6 @@ _GetRenderBuffer(const HdRenderPassAovBinding& aov,
                 aov.renderBufferId));
 }
 
-static
 bool
 _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
                      const HdRenderIndex * const renderIndex,
@@ -153,7 +155,6 @@ _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
     return false;
 }
 
-static
 bool
 _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 {
@@ -166,6 +167,17 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
         integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString();
 }
 
+bool
+_HasRenderProducts( const RenderProducts& renderProducts)
+{
+    for (const auto &renderProduct : renderProducts) {
+        if (!renderProduct.empty()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Update visibility settings of riley instances for the active render tags.
 //
 // The render pass's _Execute method takes a list of renderTags,
@@ -176,7 +188,6 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 // to deal with this, but they only do when they first become visible.
 // After that tag based visibility is a per-pass problem.
 
-static
 void
 _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
                              HdRenderIndex *index,
@@ -199,6 +210,8 @@ _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
         }
     }
 }
+
+} // end anonymous namespace
 
 void
 HdPrman_RenderPass::_Execute(
@@ -299,9 +312,20 @@ HdPrman_RenderPass::_Execute(
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
+    const RenderProducts& renderProducts =
+        renderDelegate->GetRenderSetting<RenderProducts>(
+            HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
+    const bool hasProducts = _HasRenderProducts(renderProducts);
+
     const int lastVersion = _renderParam->GetLastSettingsVersion();
 
-    if (aovBindings.empty()) {
+    if (hasProducts) {
+        // Code path for Solaris render products
+        int frame =
+            renderDelegate->GetRenderSetting<int>(
+                HdPrmanRenderSettingsTokens->houdiniFrame, 1);
+        _renderParam->CreateRenderViewFromProducts(renderProducts, frame);
+    } else if (aovBindings.empty()) {
         // When there are no AOV-bindings, use render spec from
         // render settings to create render view.
 

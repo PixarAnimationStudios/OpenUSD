@@ -78,6 +78,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens,
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
     HDPRMAN_INTEGRATOR_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderProductTokens,
+    HDPRMAN_RENDER_PRODUCT_TOKENS);
+
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanAovSettingsTokens,
+    HDPRMAN_AOV_SETTINGS_TOKENS);
+
+
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->cone,
@@ -132,6 +139,33 @@ _ToLower(const std::string &s)
     return result;
 }
 
+static
+std::vector<std::string>
+_GetExtraArgs(const HdRenderSettingsMap &settingsMap)
+{
+    std::string extraArgs;
+
+    auto it = settingsMap.find(HdPrmanRenderSettingsTokens->batchCommandLine);
+    if (it != settingsMap.end()) {
+        // husk's --delegate-options arg allows users to pass an arbitrary
+        // string of args which we pass along to PRManBegin.
+        if (it->second.IsHolding<VtArray<std::string>>()) {
+            const VtArray<std::string>& v =
+                it->second.UncheckedGet<VtArray<std::string>>();
+            for (VtArray<std::string>::const_iterator i = v.cbegin();
+                 i != v.cend(); ++i) {
+                if (*i == "--delegate-options") {
+                    ++i;
+                    if(i != v.cend()) {
+                        extraArgs = *i;
+                    }
+                }
+            }
+        }
+    }
+    return TfStringTokenize(extraArgs, " ");
+}
+
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
@@ -145,7 +179,7 @@ HdPrmanRenderDelegate::HdPrmanRenderDelegate(
         HdPrmanRenderSettingsTokens->xpuDevices, std::string());
 
     _renderParam = std::make_unique<HdPrman_RenderParam>(
-        rileyVariant, xpuDevices);
+        rileyVariant, xpuDevices, _GetExtraArgs(settingsMap));
 
     _Initialize();
 }
