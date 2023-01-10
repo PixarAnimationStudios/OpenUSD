@@ -736,23 +736,19 @@ def InstallBoost_Helper(context, force, buildArgs):
         bootstrapCmd = '{bootstrap} --prefix="{instDir}"'.format(
             bootstrap=bootstrap, instDir=context.instDir)
 
-        macOSArchitecture = ""
         macOSArch = ""
 
         if MacOS():
             if apple_utils.GetTargetArch(context) == \
                         apple_utils.TARGET_X86:
-                macOSArchitecture = "architecture=x86"
                 macOSArch = "-arch {0}".format(apple_utils.TARGET_X86)
             elif apple_utils.GetTargetArch(context) == \
                         apple_utils.GetTargetArmArch():
-                macOSArchitecture = "architecture=arm"
                 macOSArch = "-arch {0}".format(
                         apple_utils.GetTargetArmArch())
             elif context.targetUniversal:
                 (primaryArch, secondaryArch) = \
                         apple_utils.GetTargetArchPair(context)
-                macOSArchitecture = "architecture=combined"
                 macOSArch="-arch {0} -arch {1}".format(
                         primaryArch, secondaryArch)
 
@@ -864,10 +860,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
-
-            # Specify target for macOS cross-compilation.
-            if macOSArchitecture:
-                b2_settings.append(macOSArchitecture)
 
             if macOSArch:
                 b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
