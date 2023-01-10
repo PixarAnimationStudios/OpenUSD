@@ -69,7 +69,7 @@ struct UsdVolTokensType {
     /// \brief "Color"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken color;
+    const TfToken Color;
     /// \brief "double2"
     /// 
     /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
@@ -173,15 +173,15 @@ struct UsdVolTokensType {
     /// \brief "None"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr(), Default value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken none;
+    const TfToken None_;
     /// \brief "Normal"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken normal;
+    const TfToken Normal;
     /// \brief "Point"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken point;
+    const TfToken Point;
     /// \brief "quatd"
     /// 
     /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
@@ -205,7 +205,7 @@ struct UsdVolTokensType {
     /// \brief "Vector"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken vector;
+    const TfToken Vector;
     /// \brief "vectorDataRoleHint"
     /// 
     /// UsdVolFieldAsset
