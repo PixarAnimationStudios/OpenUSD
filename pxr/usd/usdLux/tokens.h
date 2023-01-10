@@ -97,19 +97,19 @@ struct UsdLuxTokensType {
     /// \brief "CylinderLight"
     /// 
     /// Default value for UsdLuxCylinderLight schema attribute light:shaderId
-    const TfToken cylinderLight;
+    const TfToken CylinderLight;
     /// \brief "DiskLight"
     /// 
     /// Default value for UsdLuxDiskLight schema attribute light:shaderId
-    const TfToken diskLight;
+    const TfToken DiskLight;
     /// \brief "DistantLight"
     /// 
     /// Default value for UsdLuxDistantLight schema attribute light:shaderId
-    const TfToken distantLight;
+    const TfToken DistantLight;
     /// \brief "DomeLight"
     /// 
     /// Default value for UsdLuxDomeLight schema attribute light:shaderId
-    const TfToken domeLight;
+    const TfToken DomeLight;
     /// \brief "extent"
     /// 
     /// UsdLuxPortalLight
@@ -125,7 +125,7 @@ struct UsdLuxTokensType {
     /// \brief "GeometryLight"
     /// 
     /// Default value for UsdLuxGeometryLight schema attribute light:shaderId
-    const TfToken geometryLight;
+    const TfToken GeometryLight;
     /// \brief "guideRadius"
     /// 
     /// UsdLuxDomeLight
@@ -285,7 +285,7 @@ struct UsdLuxTokensType {
     /// \brief "MeshLight"
     /// 
     /// Default value for UsdLuxMeshLightAPI schema attribute light:shaderId
-    const TfToken meshLight;
+    const TfToken MeshLight;
     /// \brief "mirroredBall"
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr()
@@ -301,7 +301,7 @@ struct UsdLuxTokensType {
     /// \brief "PortalLight"
     /// 
     /// Default value for UsdLuxPortalLight schema attribute light:shaderId
-    const TfToken portalLight;
+    const TfToken PortalLight;
     /// \brief "portals"
     /// 
     /// UsdLuxDomeLight
@@ -309,7 +309,7 @@ struct UsdLuxTokensType {
     /// \brief "RectLight"
     /// 
     /// Default value for UsdLuxRectLight schema attribute light:shaderId
-    const TfToken rectLight;
+    const TfToken RectLight;
     /// \brief "shadowLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent shadow-linking of a prim with an applied UsdLuxLightAPI. 
@@ -317,7 +317,7 @@ struct UsdLuxTokensType {
     /// \brief "SphereLight"
     /// 
     /// Default value for UsdLuxSphereLight schema attribute light:shaderId
-    const TfToken sphereLight;
+    const TfToken SphereLight;
     /// \brief "treatAsLine"
     /// 
     /// UsdLuxCylinderLight
@@ -329,7 +329,7 @@ struct UsdLuxTokensType {
     /// \brief "VolumeLight"
     /// 
     /// Default value for UsdLuxVolumeLightAPI schema attribute light:shaderId
-    const TfToken volumeLight;
+    const TfToken VolumeLight;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };
