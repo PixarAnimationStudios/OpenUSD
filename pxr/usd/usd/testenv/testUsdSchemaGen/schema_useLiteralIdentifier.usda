@@ -12,7 +12,7 @@ over "GLOBAL" (
         string libraryPath      = "pxr/usd/usdContrived"
         # string libraryPrefix  = "Usd"
         # string tokensPrefix   = "Usd"
-        bool useLiteralIdentifier = 1
+        bool useLiteralIdentifier = 0
         dictionary libraryTokens = {
             dictionary libraryToken1 = {}
             dictionary libraryToken2 = {

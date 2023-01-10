@@ -10,6 +10,7 @@ over "GLOBAL" (
     customData = {
         string libraryName = "usdVol"
         string libraryPath = "pxr/usd/usdVol"
+        bool useLiteralIdentifier = 0
 	dictionary libraryTokens = {
             dictionary field = {
                 string doc = """This is the namespace prefix used to 

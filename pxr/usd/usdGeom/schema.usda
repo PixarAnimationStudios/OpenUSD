@@ -12,6 +12,7 @@ over "GLOBAL" (
         string libraryPath           = "pxr/usd/usdGeom"
         # string libraryPrefix       = "UsdGeom"
         # string tokensPrefix        = "UsdGeom"
+        bool useLiteralIdentifier = 0
         dictionary libraryTokens = {
             dictionary interpolation = {
                 string doc = """UsdGeomPrimvar - How a Primvar interpolates

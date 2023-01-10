@@ -31,11 +31,13 @@ generated that will compile and work with USD Core successfully:
     
     * Must specify the libraryName as layer metadata.
     * Schema typenames must be unique across all libraries.
-    * Attribute names and tokens should be camelCased valid identifiers.
-      However, useLiteralIdentifier can be provided to use literals as-is. Any
-      invalid token will be converted using TfMakeValidIdentifier. 
+    * Property names should be camelCased valid identifiers. 
+    * All other tokens should be valid identifiers. Any invalid token will be
+      converted using TfMakeValidIdentifier. If useLiteralIdentifier is set to
+      false, all tokens will be converted to camelCased (if not already) just
+      like property names.
     * usd/schema.usda must exist in the LayerStack, not necessarily as a 
-        directly subLayer.
+      direct subLayer.
 """
 
 from __future__ import print_function
@@ -237,13 +239,11 @@ def _SkipCodeGenForLayer(layer):
         return False
 
 def _UseLiteralIdentifierForLayer(layer):
-    """ Return whether the layer specifies literalIdentifier metadata, and hence
-    opting in for using literal identifiers instead of the default camelCase
-    identifier."""
-    try:
-        return _GetLibMetadata(layer).get('useLiteralIdentifier', False)
-    except:
-        return False
+    """ Return whether the layer specifies useLiteralIdentifier metadata and 
+    sets it to false, and hence is opting out of using literal identifiers in
+    the generated tokens structs to instead use the old style of forced
+    camelCase identifiers."""
+    return _GetLibMetadata(layer).get('useLiteralIdentifier', True)
 
 def _SkipCodeGenForSchemaLib(stage):
     """ Return whether the stage has a layer that specifies that code generation

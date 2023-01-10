@@ -10,6 +10,7 @@ over "GLOBAL" (
     customData = {
         string libraryName      = "usdLux"
         string libraryPath      = "pxr/usd/usdLux"
+        bool useLiteralIdentifier = 0
         dictionary libraryTokens = {
             dictionary lightLink = {
                 string doc = """

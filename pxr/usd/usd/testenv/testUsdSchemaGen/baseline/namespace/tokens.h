@@ -553,31 +553,31 @@ struct UsdContrivedTokensType {
     /// \brief "VariableTokenAllowed1"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-    const TfToken variableTokenAllowed1;
+    const TfToken VariableTokenAllowed1;
     /// \brief "VariableTokenAllowed2"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-    const TfToken variableTokenAllowed2;
+    const TfToken VariableTokenAllowed2;
     /// \brief "VariableTokenAllowed<3>"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenAttr()
-    const TfToken variableTokenAllowed3;
+    const TfToken VariableTokenAllowed_3_;
     /// \brief "VariableTokenArrayAllowed1"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenArrayAttr()
-    const TfToken variableTokenArrayAllowed1;
+    const TfToken VariableTokenArrayAllowed1;
     /// \brief "VariableTokenArrayAllowed2"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenArrayAttr()
-    const TfToken variableTokenArrayAllowed2;
+    const TfToken VariableTokenArrayAllowed2;
     /// \brief "VariableTokenArrayAllowed<3>"
     /// 
     /// Possible value for UsdContrivedBase::GetMyVaryingTokenArrayAttr()
-    const TfToken variableTokenArrayAllowed3;
+    const TfToken VariableTokenArrayAllowed_3_;
     /// \brief "VariableTokenDefault"
     /// 
     /// Default value for UsdContrivedBase::GetMyVaryingTokenAttr()
-    const TfToken variableTokenDefault;
+    const TfToken VariableTokenDefault;
     /// \brief "vector3d"
     /// 
     /// UsdContrivedBase
