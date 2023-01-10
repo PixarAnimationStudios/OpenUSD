@@ -960,7 +960,11 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(
+                self._onDomeLightClicked)
+
+            self._ui.actionSkydomeVisible.triggered[bool].connect(
+                self._onSkydomeVisibleClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -2575,6 +2579,10 @@ class AppController(QtCore.QObject):
     def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.domeLightEnabled = checked
+    
+    def _onSkydomeVisibleClicked(self, checked=None):
+        if self._stageView and checked is not None:
+            self._dataModel.viewSettings.skydomeVisible = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -5228,6 +5236,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.ambientLightOnly)
         self._ui.actionDomeLight.setChecked(
             self._dataModel.viewSettings.domeLightEnabled)
+        self._ui.actionSkydomeVisible.setChecked(
+            self._dataModel.viewSettings.skydomeVisible)
 
     def _refreshClearColorsMenu(self):
         clearColorText = self._dataModel.viewSettings.clearColorText
