@@ -1,0 +1,360 @@
+#usda 1.0
+
+(
+    startFrame = 1
+    endFrame = 40
+    upAxis = "Y"
+)
+
+
+def Xform "Linear" {
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (-600, 9, 0)
+	
+	custom matrix4d xformOp:transform = ( (3.5, 0, 0, 0), (0, 3.5, 0, 0), (0, 0, 3.5, 0), (-1700, 2200, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+	
+    def Scope "Tubes"{
+        def BasisCurves "ConstantWidth1" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, 0, 0), (0, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth2" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -300, 0), (500, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth3" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(500, -300, 0), (500, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth4" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(500, 0, 0), (0, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+
+        def BasisCurves "ConstantWidth5" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -320, 0), (0, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth6" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(0, -620, 0), (500, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth7" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(500, -620, 0), (500, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth8" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(500, -320, 0), (0, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+
+        def BasisCurves "ConstantWidth9" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(510, -320, 0), (510, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth10" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(510, -620, 0), (1010, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth11" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1010, -620, 0), (1010, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth12" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1010, -320, 0), (510, -320, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+
+        def BasisCurves "ConstantWidth13" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(510, 0, 0), (510, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth14" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(510, -300, 0), (1010, -300, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth15" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1010, -300, 0), (1010, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth16" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(1010, 0, 0), (510, 0, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+        }
+        def BasisCurves "ConstantWidth17" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(660, -320, 0), (660, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+        }
+        def BasisCurves "ConstantWidth18" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(830, -320, 0), (830, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+        }
+        def BasisCurves "ConstantWidth19" (){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform token type = "linear"
+            int[] curveVertexCounts = [2]
+            point3f[] points = [(940, -320, 0), (940, -620, 0)]
+            float[] widths = [.5] (interpolation = "constant") 
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+        }
+    }
+}
+
+def Xform "Text1" {	
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0, 9, 0)
+	
+    custom matrix4d xformOp:transform = ( (3.5, 0, 0, 0), (0, 3.5, 0, 0), (0, 0, 3.5, 0), (-1700, 2200, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+	
+    def Scope "Text11"{
+        def MarkupText "TextA" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (3, 0, 0)
+
+            uniform string markupString = "\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The paragraph is left aligned. The line space is 30 and type is exactly. \\N\\P\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The paragraph is right aligned.\\P\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The paragraph is center aligned.\\P\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The paragraph is justify aligned.\\P\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The paragraph is distributed aligned.\\P\\fArial|b0|i0|p34|c0;\\H20;\\c65300;If you format a document with columns (as in some newsletter layouts), the text will automatically flow from one column to the other. You can insert your own column breaks for more control over the document format. The line space is 0.5 and type is multiple. \\PTabstops:\tLeft Tab\tRight Tab\tCenter Tab\n\tL Tab\tR Tab\tC Tab\\PDecimals:\t12.334\t0.412\t7788\n\t0.455\tN/A\t14.55\n\t.77\t62.3\t92.53.9"
+            uniform token markupLanguage = "mtext"
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            rel textStyle:binding = </StyleA>
+            rel columnStyle:binding = [
+                </columnA>,
+                </columnB>,
+                </columnC>,
+                </columnD>,
+            ]
+            rel paragraphStyle:binding = [
+                </paragraphA>,
+                </paragraphB>,
+                </paragraphC>,
+                </paragraphD>,
+                </paragraphE>,
+                </paragraphF>,
+                </paragraphG>,
+                </paragraphH>,
+            ]
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+    }
+}
+
+def TextStyle "StyleA" {
+    uniform string typeface = "Times New Roman"
+    uniform int textHeight = 20
+}
+
+def ColumnStyle "columnA" {
+    uniform float columnWidth = 500
+    uniform float columnHeight = 300
+    uniform float2 offset = (0.0, 0.0)
+}
+
+def ColumnStyle "columnB" {
+    uniform float columnWidth = 500
+    uniform float columnHeight = 300
+    uniform float2 offset = (0.0, -320.0)
+}
+
+def ColumnStyle "columnC" {
+    uniform float columnWidth = 500
+    uniform float columnHeight = 300
+    uniform float2 offset = (510.0, 0.0)
+}
+
+def ColumnStyle "columnD" {
+    uniform float columnWidth = 500
+    uniform float columnHeight = 300
+    uniform float2 offset = (510.0, -320.0)
+}
+
+def ParagraphStyle "paragraphA" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 0.0
+    uniform token lineSpaceType = "exactly"
+    uniform float lineSpace = 30.0
+}
+
+def ParagraphStyle "paragraphB" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 0.0
+    uniform token paragraphAlignment = "right"
+}
+
+def ParagraphStyle "paragraphC" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 0.0
+    uniform token paragraphAlignment = "center"
+}
+
+def ParagraphStyle "paragraphD" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 20.0
+    uniform token paragraphAlignment = "justify"
+}
+
+def ParagraphStyle "paragraphE" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 20.0
+    uniform token paragraphAlignment = "distributed"
+}
+
+def ParagraphStyle "paragraphF" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 20.0
+    uniform float paragraphSpace = 0.0
+    uniform token lineSpaceType = "multiple"
+    uniform float lineSpace = 0.5
+}
+
+def ParagraphStyle "paragraphG" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 0.0
+    uniform float paragraphSpace = 0.0
+    uniform float[] tabStopPositions = [150.0, 320.0, 430.0]
+    uniform token[] tabStopTypes = ["leftTab", "rightTab", "centerTab"]
+}
+
+def ParagraphStyle "paragraphH" {
+    uniform float leftIndent = 0.0
+    uniform float rightIndent = 0.0
+    uniform float firstLineIndent = 0.0
+    uniform float paragraphSpace = 0.0
+    uniform float[] tabStopPositions = [150.0, 320.0, 430.0]
+    uniform token[] tabStopTypes = ["decimalTab", "decimalTab", "decimalTab"]
+}
+
+def Material "TextRender"
+{
+    token outputs:surface.connect = </TextRender/TextShader.outputs:surface>
+
+    def Shader "TextShader"
+    {
+        uniform token info:id = "SampleTextRendererSurface"
+        token outputs:surface
+    }
+}

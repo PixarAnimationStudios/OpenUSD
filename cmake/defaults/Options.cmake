@@ -54,6 +54,11 @@ option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
 
+option(PXR_ENABLE_TEXT_SUPPORT "Enable Text support" ON)
+if (UNIX AND NOT APPLE)
+    set(PXR_ENABLE_TEXT_SUPPORT "OFF")
+endif()
+
 # Determine GFX api
 # Metal only valid on Apple platforms
 set(pxr_enable_metal "OFF")

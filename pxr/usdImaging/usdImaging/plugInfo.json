@@ -315,6 +315,20 @@
                         ],
                         "isInternal": true,
                         "apiSchemaName": "GeomModelAPI"
+                    },
+                    "UsdImagingSimpleTextAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "SimpleText"
+                    },
+                    "UsdImagingMarkupTextAdapter": {
+                        "bases": [
+                            "UsdImagingGprimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "MarkupText"
                     }
                 }
             },

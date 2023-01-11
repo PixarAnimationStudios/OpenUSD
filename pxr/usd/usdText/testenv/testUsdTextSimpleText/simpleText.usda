@@ -1,0 +1,54 @@
+#usda 1.0
+
+def SimpleText "TextA" (
+    prepend apiSchemas = ["TextStyleAPI"]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (-300, 60, 0)
+
+    string textData = "The quick brown fox"
+    color3f[] primvars:displayColor = [(1, 1, 0)]
+    rel textStyle:binding = </StyleA>
+    uniform string renderer = "texture"
+}
+def SimpleText "TextB" (
+    prepend apiSchemas = ["TextStyleAPI"]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (-300, -40, 0)
+
+    string textData = "jumps over the"
+    color3f[] primvars:displayColor = [(1, 0, 1)]
+    rel textStyle:binding = </StyleB>
+    uniform string renderer = "curve"
+
+    uniform int primvars:cameraFacing = 1
+}
+
+def SimpleText "TextC" (
+    prepend apiSchemas = ["TextStyleAPI"]
+){
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (-300, -140, 0)
+
+    string textData = "lazy dog"
+    color3f[] primvars:displayColor = [(0, 1, 1)]
+    rel textStyle:binding = </StyleB>
+    
+    uniform int primvars:cameraFacing = 1
+}
+
+
+def TextStyle "StyleA" {
+    string typeface = "Times New Roman"
+    int textHeight = 100
+    bool bold = 1
+    string overlineType = "normal"
+}
+
+def TextStyle "StyleB" {
+    string typeface = "Arial"
+    int textHeight = 70
+    bool italic = 1
+    string underlineType = "normal"
+}

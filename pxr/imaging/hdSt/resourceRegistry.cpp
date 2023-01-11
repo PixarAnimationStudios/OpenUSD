@@ -601,6 +601,21 @@ HdStResourceRegistry::RegisterBasisCurvesTopology(
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
+HdInstance<HdSt_SimpleTextTopologySharedPtr>
+HdStResourceRegistry::RegisterSimpleTextTopology(
+    HdInstance<HdSt_SimpleTextTopologySharedPtr>::ID id)
+{
+    return _Register(id, _simpleTextTopologyRegistry,
+        HdPerfTokens->instSimpleTextTopology);
+}
+HdInstance<HdSt_MarkupTextTopologySharedPtr>
+HdStResourceRegistry::RegisterMarkupTextTopology(
+    HdInstance<HdSt_MarkupTextTopologySharedPtr>::ID id)
+{
+    return _Register(id, _markupTextTopologyRegistry,
+        HdPerfTokens->instMarkupTextTopology);
+}
+
 HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
 HdStResourceRegistry::RegisterVertexAdjacencyBuilder(
         HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id)
@@ -623,6 +638,21 @@ HdStResourceRegistry::RegisterBasisCurvesIndexRange(
 {
     return _Register(id, _basisCurvesTopologyIndexRangeRegistry[name],
                      HdPerfTokens->instBasisCurvesTopologyRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterSimpleTextIndexRange(
+    HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _simpleTextTopologyIndexRangeRegistry[name],
+        HdPerfTokens->instSimpleTextTopologyRange);
+}
+HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterMarkupTextIndexRange(
+    HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _markupTextTopologyIndexRangeRegistry[name],
+        HdPerfTokens->instMarkupTextTopologyRange);
 }
 
 HdInstance<HdBufferArrayRangeSharedPtr>
@@ -1079,6 +1109,17 @@ HdStResourceRegistry::_GarbageCollect()
         HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopology, count);
     }
 
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    {
+        size_t count = _simpleTextTopologyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instSimpleTextTopology, count);
+    }
+    {
+        size_t count = _markupTextTopologyRegistry.GarbageCollect();
+        HD_PERF_COUNTER_SET(HdPerfTokens->instMarkupTextTopology, count);
+    }
+#endif
+
     {
         size_t count = _vertexAdjacencyBuilderRegistry.GarbageCollect();
         HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
@@ -1099,6 +1140,23 @@ HdStResourceRegistry::_GarbageCollect()
         }
         HD_PERF_COUNTER_SET(HdPerfTokens->instBasisCurvesTopologyRange, count);
     }
+
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    {
+        size_t count = 0;
+        for (auto & it : _simpleTextTopologyIndexRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instSimpleTextTopologyRange, count);
+    }
+    {
+        size_t count = 0;
+        for (auto & it : _markupTextTopologyIndexRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instMarkupTextTopologyRange, count);
+    }
+#endif
 
     {
         size_t count = _primvarRangeRegistry.GarbageCollect();

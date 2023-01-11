@@ -777,6 +777,7 @@ _ResourceGenerator::_GenerateHgiResources(
                 HgiShaderFunctionParamBlockDesc::Member paramMember;
                 paramMember.name = member.name;
                 paramMember.type = _ConvertBoolType(member.dataType);
+                paramMember.qualifiers = member.qualifiers;
                 paramBlock.members.push_back(paramMember);
             }
             if (element.inOut == InOut::STAGE_IN) {
@@ -1030,8 +1031,12 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << element.aggregateName << " {\n";
                 for (auto const & member : element.members) {
-                    str << "    " << member.dataType << " "
-                                        << member.name;
+                    str << "    ";
+                    // Only check flat qualifier, because the Element class also only check flat.
+                    if (member.qualifiers == _tokens->flat) {
+                        str << "flat ";
+                    }
+                    str << member.dataType << " " << member.name;
                     if (member.arraySize.IsEmpty()) {
                         str << ";\n";
                     } else {

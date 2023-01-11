@@ -1,2 +1,7 @@
 add_subdirectory(usdShaders)
 add_subdirectory(sdrGlslfx)
+if (PXR_ENABLE_TEXT_SUPPORT)
+    add_subdirectory(CommonText)
+    add_subdirectory(CommonParser)
+    add_subdirectory(SampleTextRenderer)
+endif ()

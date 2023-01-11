@@ -1,0 +1,26 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "SampleTextRendererDiscoveryPlugin" : {
+                        "bases": ["NdrDiscoveryPlugin"],
+                        "displayName": "USD-based text shaders definition discovery plugin."
+                    },
+                    
+                    "UsdImagingSampleTextRenderer": {
+                        "bases": [ "UsdImagingTextRenderer" ]
+                    }
+                },
+                # Allow SampleTextRenderer/shaders to be accessible by hio/glslfx.cpp's 
+                #   ShaderResourceRegistry
+                "ShaderResources": "shaders"
+            },
+            "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
+            "Name": "SampleTextRenderer",
+            "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

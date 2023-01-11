@@ -28,8 +28,14 @@
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/usdImaging/usdImaging/markupParser.h"
+#endif
 #include "pxr/usdImaging/usdImaging/materialAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/usdImaging/usdImaging/text.h"
+#endif
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurves.h"
@@ -62,6 +68,9 @@
 #include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 
+#include "pxr/usd/usdText/columnStyleAPI.h"
+#include "pxr/usd/usdText/textStyleAPI.h"
+#include "pxr/usd/usdText/paragraphStyleAPI.h"
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -1541,6 +1550,7 @@ UsdImagingDelegate::_RefreshUsdObject(
 
     bool resyncNeeded = false;
     SdfPathVector affectedCachePaths;
+    TfToken propertyName;
 
     if (usdPath.IsAbsoluteRootOrPrimPath()) {
         auto range = _dependencyInfo.equal_range(usdPath);
@@ -1553,6 +1563,7 @@ UsdImagingDelegate::_RefreshUsdObject(
     } else if (usdPath.IsPropertyPath()) {
         SdfPath const& usdPrimPath = usdPath.GetPrimPath();
         TfToken const& attrName = usdPath.GetNameToken();
+        propertyName = attrName;
         UsdPrim usdPrim = _stage->GetPrimAtPath(usdPrimPath);
 
         // If either model:drawMode or model:applyDrawMode changes, we need to
@@ -1610,8 +1621,58 @@ UsdImagingDelegate::_RefreshUsdObject(
             // Coordinate system bindings apply to all descendent gprims.
             _ResyncUsdPrim(usdPrimPath, cache, proxy, true);
             resyncNeeded = true;
-
-        } else if (usdPrim && (usdPrim.IsA<UsdShadeShader>() || 
+        }
+        else if (usdPrim && usdPrim.IsA<UsdTextTextStyle>()) {
+            // Find the text prims that have a binding to the specified textstyle.
+            // Multiple text prims can bind to the same textstyle.
+            std::pair<UsdTextTextStyleAPI::TextStyleBindingCache::iterator, 
+                UsdTextTextStyleAPI::TextStyleBindingCache::iterator>
+                pathPair;  
+            if (UsdTextTextStyleAPI::FindBindedText(usdPrimPath, pathPair))
+            {
+                // Modify the property name so that it is prefixed by textstyle.
+                propertyName = TfToken(HdTextTokens->textStyle.GetString() + propertyName.GetString());
+                // Add the path of the text prim to the affectedcache.
+                for (auto iter = pathPair.first; iter != pathPair.second; iter++)
+                {
+                    affectedCachePaths.push_back(iter->second);
+                }
+            }
+        }
+        else if (usdPrim && usdPrim.IsA<UsdTextParagraphStyle>()) {
+            // Find the text prims that have a binding to the specified paragraphStyle.
+            // Multiple text prims can bind to the same paragraphStyle.
+            std::pair<UsdTextParagraphStyleAPI::ParagraphStyleBindingCache::iterator,
+                UsdTextParagraphStyleAPI::ParagraphStyleBindingCache::iterator>
+                pathPair;
+            if (UsdTextParagraphStyleAPI::FindBindedText(usdPrimPath, pathPair))
+            {
+                // Modify the property name so that it is prefixed by paragraphStyle.
+                propertyName = TfToken(HdTextTokens->paragraphStyle.GetString() + propertyName.GetString());
+                // Add the path of the text prim to the affectedcache.
+                for (auto iter = pathPair.first; iter != pathPair.second; iter++)
+                {
+                    affectedCachePaths.push_back(iter->second);
+                }
+            }
+        }
+        else if (usdPrim && usdPrim.IsA<UsdTextColumnStyle>()) {
+            // Find the text prims that have a binding to the specified columnstyle.
+            // Multiple text prims can bind to the same columnstyle.
+            std::pair<UsdTextColumnStyleAPI::ColumnStyleBindingCache::iterator,
+                UsdTextColumnStyleAPI::ColumnStyleBindingCache::iterator>
+                pathPair;
+            if (UsdTextColumnStyleAPI::FindBindedText(usdPrimPath, pathPair))
+            {
+                // Modify the property name so that it is prefixed by columnstyle.
+                propertyName = TfToken(HdTextTokens->columnStyle.GetString() + propertyName.GetString());
+                // Add the path of the text prim to the affectedcache.
+                for (auto iter = pathPair.first; iter != pathPair.second; iter++)
+                {
+                    affectedCachePaths.push_back(iter->second);
+                }
+            }
+       } else if (usdPrim && (usdPrim.IsA<UsdShadeShader>() || 
                                usdPrim.IsA<UsdShadeNodeGraph>())) {
             // Shader edits get forwarded to parent material. Note if the
             // material is native instanced, we need to stop the traversal
@@ -1680,7 +1741,7 @@ UsdImagingDelegate::_RefreshUsdObject(
                     primInfo->usdPrim, affectedCachePath, changedInfoFields);
             } else if (usdPath.IsPropertyPath()) {
                 dirtyBits = adapter->ProcessPropertyChange(
-                    primInfo->usdPrim, affectedCachePath, usdPath.GetNameToken());
+                    primInfo->usdPrim, affectedCachePath, propertyName);
             } else {
                 TF_VERIFY(false, "Unexpected path: <%s>", usdPath.GetText());
             }
@@ -1992,6 +2053,57 @@ UsdImagingDelegate::GetBasisCurvesTopology(SdfPath const& id)
     }
 
     return HdBasisCurvesTopology();
+}
+
+/*virtual*/
+HdSimpleTextTopology
+UsdImagingDelegate::GetSimpleTextTopology(SdfPath const& id)
+{
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        VtValue topology = primInfo->adapter->GetTopology(
+            primInfo->usdPrim,
+            cachePath,
+            _time);
+        if (topology.IsHolding<HdSimpleTextTopology>()) {
+            return topology.Get<HdSimpleTextTopology>();
+        }
+    }
+
+    return HdSimpleTextTopology();
+#else
+    return HdSceneDelegate::GetSimpleTextTopology(id);
+#endif
+}
+/*virtual*/
+HdMarkupTextTopology
+UsdImagingDelegate::GetMarkupTextTopology(SdfPath const& id)
+{
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (TF_VERIFY(primInfo)) {
+        VtValue topology = primInfo->adapter->GetTopology(
+            primInfo->usdPrim,
+            cachePath,
+            _time);
+        if (topology.IsHolding<HdMarkupTextTopology>()) {
+            return topology.Get<HdMarkupTextTopology>();
+        }
+    }
+
+    return HdMarkupTextTopology();
+#else
+    return HdSceneDelegate::GetMarkupTextTopology(id);
+#endif
 }
 
 /*virtual*/

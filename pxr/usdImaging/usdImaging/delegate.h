@@ -288,6 +288,12 @@ public:
     USDIMAGING_API
     virtual HdBasisCurvesTopology GetBasisCurvesTopology(SdfPath const& id) 
         override;
+    USDIMAGING_API
+    virtual HdSimpleTextTopology GetSimpleTextTopology(SdfPath const& id)
+        override;
+    USDIMAGING_API
+    virtual HdMarkupTextTopology GetMarkupTextTopology(SdfPath const& id)
+        override;
     typedef PxOsdSubdivTags SubdivTags;
 
     // XXX: animated subdiv tags are not currently supported

@@ -348,6 +348,12 @@ if (PXR_BUILD_ANIMX_TESTS)
     find_package(AnimX REQUIRED)
 endif()
 
+# --TextSystem
+if(PXR_ENABLE_TEXT_SUPPORT)
+    find_package(FreeType REQUIRED)
+    add_definitions(-DPXR_TEXTSYSTEM_SUPPORT_ENABLED)
+endif()
+
 # ----------------------------------------------
 
 # Try and find Imath or fallback to OpenEXR

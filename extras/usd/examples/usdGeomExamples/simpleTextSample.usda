@@ -1,0 +1,132 @@
+#usda 1.0
+
+(
+    upAxis = "Y"
+)
+
+
+def Xform "Text1" {
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+    float3 xformOp:translate = (0, 0, -100)
+    def Scope "Text11"{
+        def SimpleText "TextA" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, 60, 0)
+
+            uniform string textData = "The quick brown fox"
+            color3f[] primvars:displayColor = [(1, 1, 0)]
+            rel textStyle:binding = </StyleA>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+        def SimpleText "TextB" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, -40, 0)
+
+            uniform string textData = "jumps over the"
+            color3f[] primvars:displayColor = [(1, 0, 1)]
+            rel textStyle:binding = </StyleB>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+
+        def SimpleText "TextC" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, -140, 0)
+
+            uniform string textData = "lazy dog"
+            color3f[] primvars:displayColor = [(0, 1, 1)]
+            rel textStyle:binding = </StyleB>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+        def SimpleText "TextD" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, -240, 0)
+
+            uniform string textData = "The quick brown fox"
+            color3f[] primvars:displayColor = [(1, 0, 0)]
+            rel textStyle:binding = </StyleA>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+        def SimpleText "TextE" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, -340, 0)
+
+            uniform string textData = "jumps over the"
+            color3f[] primvars:displayColor = [(0, 0, 1)]
+            rel textStyle:binding = </StyleC>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+
+        def SimpleText "TextF" (
+            prepend apiSchemas = ["TextStyleAPI"]
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        ){
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+            float3 xformOp:translate = (-300, -440, 0)
+
+            uniform string textData = "lazy dog"
+            color3f[] primvars:displayColor = [(0, 1, 0)]
+            rel textStyle:binding = </StyleD>
+            rel material:binding = </TextRender>
+            uniform string renderer = "SampleTextRenderer"
+        }
+    }
+}
+
+def TextStyle "StyleA" {
+    uniform string typeface = "Times New Roman"
+    uniform int textHeight = 100
+    uniform bool bold = 1
+    uniform string overlineType = "normal"
+}
+
+def TextStyle "StyleB" {
+    uniform string typeface = "Arial"
+    uniform int textHeight = 70
+    uniform bool italic = 1
+    uniform string underlineType = "normal"
+}
+
+def TextStyle "StyleC" {
+    uniform string typeface = "Calibri"
+    uniform int textHeight = 100
+    uniform float charSpacing = 2.0
+    uniform string strikethroughType = "normal"
+}
+
+def TextStyle "StyleD" {
+    uniform string typeface = "Consolas"
+    uniform int textHeight = 70
+    uniform float textWidthFactor = 1.5
+    uniform string strikethroughType = "doubleLines"
+}
+
+def Material "TextRender"
+{
+    token outputs:surface.connect = </TextRender/TextShader.outputs:surface>
+
+    def Shader "TextShader"
+    {
+        uniform token info:id = "SampleTextRendererSurface"
+        token outputs:surface
+    }
+}

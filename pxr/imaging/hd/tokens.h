@@ -110,6 +110,9 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (subdivTags)                                \
     (taskState)                                 \
     (taskParams)                                \
+    (textColor)                                 \
+    (textCoord)                                 \
+    (textOpacity)                               \
     (topology)                                  \
     (topologyVisibility)                        \
     (totalItemCount)                            \
@@ -119,6 +122,9 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (visibility)                                \
     (widths)                                    \
     (isLight)                                   \
+    (linePoints)                                \
+    (lineColors)                                \
+    (lineOpacities)                             \
                                                 \
     /* Legacy tokens. */                        \
                                                 \
@@ -195,13 +201,18 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (garbageCollectedSsbo)                      \
     (garbageCollectedUbo)                       \
     (garbageCollectedVbo)                       \
+    (markupTextTopology)                        \
     (gpuMemoryUsed)                             \
     (instBasisCurvesTopology)                   \
     (instBasisCurvesTopologyRange)              \
     (instExtComputationDataRange)               \
+    (instMarkupTextTopology)                    \
+    (instMarkupTextTopologyRange)               \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
     (instPrimvarRange)                          \
+    (instSimpleTextTopology)                    \
+    (instSimpleTextTopologyRange)               \
     (instVertexAdjacency)                       \
     (meshTopology)                              \
     (nonUniformSize)                            \
@@ -211,6 +222,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (quadrangulateFaceVarying)                  \
     (quadrangulatedVerts)                       \
     (rebuildBatches)                            \
+    (simpleTextTopology)                        \
     (singleBufferSize)                          \
     (ssboSize)                                  \
     (skipInvisibleRprimSync)                    \
@@ -284,7 +296,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     ((universal, ""))
 
 #define HD_OPTION_TOKENS                        \
-    (parallelRprimSync)                        
+    (parallelRprimSync)                    
 
 #define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
@@ -302,6 +314,8 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (points)                                    \
     (sphere)                                    \
     (volume)                                    \
+    (simpleText)                                \
+    (markupText)                                \
     (model)
 
 #define HD_SPRIMTYPE_TOKENS                     \
@@ -475,7 +489,12 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (shaderFile)
 
 #define HD_SCENE_INDEX_EMULATION_TOKENS               \
-    (sceneDelegate)                                   \
+    (sceneDelegate)                                   
+
+#define HD_TEXT_TOKENS                                \
+    (textStyle)                                       \
+    (columnStyle)                                     \
+    (paragraphStyle)
 
 TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
@@ -505,6 +524,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API,
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdTextTokens, HD_API, HD_TEXT_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

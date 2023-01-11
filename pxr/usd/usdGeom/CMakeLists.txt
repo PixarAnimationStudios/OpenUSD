@@ -59,7 +59,7 @@ pxr_library(usdGeom
         xformable
         xformOp
         xformCommonAPI
-        
+
     PUBLIC_HEADERS
         api.h
 
@@ -403,4 +403,5 @@ pxr_register_test(testUsdGeomImageable
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdGeomImageable"
     EXPECTED_RETURN_CODE 0
 )
+
 

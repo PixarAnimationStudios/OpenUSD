@@ -1145,7 +1145,8 @@ def InstallPNG(context, force, buildArgs):
         if MacOS() and apple_utils.IsTargetArm(context):
             # Ensure libpng's build doesn't erroneously activate inappropriate
             # Neon extensions
-            macArgs = ["-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\""]
+            macArgs = ["-DPNG_SHARED=OFF",
+                       "-DCMAKE_C_FLAGS=\"-DPNG_ARM_NEON_OPT=0\""]
 
             if context.targetUniversal:
                 PatchFile("scripts/genout.cmake.in",
@@ -1368,6 +1369,28 @@ def InstallOpenSubdiv(context, force, buildArgs):
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
 
+############################################################
+# FreeType
+
+FREETYPE_URL = "https://git.savannah.nongnu.org/cgit/freetype/freetype2.git/snapshot/freetype2-VER-2-13-0.zip"
+
+def InstallFreeType(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(FREETYPE_URL, context, force)):
+        extraArgs = [
+            '-DCMAKE_POSITION_INDEPENDENT_CODE=ON',
+            '-DFT_DISABLE_BZIP2=ON',
+            '-DFT_DISABLE_BROTLI=ON',
+            '-DFT_DISABLE_HARFBUZZ=ON',
+            '-DBUILD_SHARED_LIBS=ON',
+        ]
+
+        # Add on any user-specified extra arguments.
+        extraArgs += buildArgs
+
+        RunCMake(context, force, extraArgs)
+        
+FREETYPE = Dependency("FreeType", InstallFreeType, 
+                        "include/freetype2/freetype/freetype.h")
 ############################################################
 # PyOpenGL
 
@@ -1711,6 +1734,11 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
+        if context.buildTextSystem:
+            extraArgs.append('-DPXR_ENABLE_TEXT_SUPPORT=ON')
+        else:
+            extraArgs.append('-DPXR_ENABLE_TEXT_SUPPORT=OFF')
+
         if context.buildMayapyTests:
             extraArgs.append('-DPXR_BUILD_MAYAPY_TESTS=ON')
             extraArgs.append('-DMAYAPY_LOCATION="{mayapyLocation}"'
@@ -2053,6 +2081,14 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Disable MaterialX support")
 
+group = parser.add_argument_group(title="TextSystem Plugin Options")
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--textsystem", dest="build_textsystem", action="store_true", 
+                      default=True,
+                      help="Build TextSystem plugin for USD (default)")
+subgroup.add_argument("--no-textsystem", dest="build_textsystem", action="store_false",
+                      help="Do not build TextSystem plugin for USD")
+
 group = parser.add_argument_group(title="Spline Test Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--mayapy-tests",
@@ -2220,6 +2256,9 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
+        # - TextSystem Plugin
+        self.buildTextSystem = args.build_textsystem    
+
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
         self.mayapyLocation = args.mayapy_location
@@ -2279,6 +2318,9 @@ if context.buildImaging:
         requiredDependencies += [PTEX]
 
     requiredDependencies += [OPENSUBDIV]
+
+    if context.buildTextSystem:
+        requiredDependencies += [ZLIB, PNG, FREETYPE]
 
     if context.enableOpenVDB:
         requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
@@ -2487,6 +2529,7 @@ summaryMsg += """\
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
+    TextSystem Plugin           {buildTextSystem}
 
   Dependencies                  {dependencies}"""
 
@@ -2547,6 +2590,7 @@ summaryMsg = summaryMsg.format(
     buildAlembic=("On" if context.buildAlembic else "Off"),
     buildDraco=("On" if context.buildDraco else "Off"),
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
+    buildTextSystem=("On" if context.buildTextSystem else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
     enableHDF5=("On" if context.enableHDF5 else "Off"))

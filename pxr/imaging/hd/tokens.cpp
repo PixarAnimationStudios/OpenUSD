@@ -78,6 +78,8 @@ TF_DEFINE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_RESOURCE_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, 
     HD_SCENE_INDEX_EMULATION_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdTextTokens, HD_TEXT_TOKENS);
+
 bool HdPrimTypeIsGprim(TfToken const& primType)
 {
     return (primType == HdPrimTypeTokens->mesh ||

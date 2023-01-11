@@ -161,10 +161,12 @@ if (${PXR_HEADLESS_TEST_MODE})
     return()
 endif()
 
+
 if (APPLE)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
     return()
 endif()
+
 
 if (WIN32)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")

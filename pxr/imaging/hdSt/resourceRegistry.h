@@ -62,6 +62,13 @@ using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
 using HdSt_BasisCurvesTopologySharedPtr =
     std::shared_ptr<class HdSt_BasisCurvesTopology>;
 
+class HdSt_SimpleTextTopology;
+class HdSt_MarkupTextTopology;
+using HdSt_SimpleTextTopologySharedPtr =
+    std::shared_ptr<class HdSt_SimpleTextTopology>;
+using HdSt_MarkupTextTopologySharedPtr =
+    std::shared_ptr<class HdSt_MarkupTextTopology>;
+
 using HdStShaderCodePtr =
     std::weak_ptr<class HdStShaderCode>;
 using HdSt_GeometricShaderSharedPtr =
@@ -371,6 +378,15 @@ public:
         HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id);
 
     HDST_API
+    HdInstance<HdSt_SimpleTextTopologySharedPtr>
+    RegisterSimpleTextTopology(
+        HdInstance<HdSt_SimpleTextTopologySharedPtr>::ID id);
+    HDST_API
+    HdInstance<HdSt_MarkupTextTopologySharedPtr>
+    RegisterMarkupTextTopology(
+        HdInstance<HdSt_MarkupTextTopologySharedPtr>::ID id);
+
+    HDST_API
     HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
     RegisterVertexAdjacencyBuilder(
         HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id);
@@ -388,6 +404,15 @@ public:
     HdInstance<HdBufferArrayRangeSharedPtr>
     RegisterBasisCurvesIndexRange(
        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
+
+    HDST_API
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterSimpleTextIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
+    HDST_API
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterMarkupTextIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
 
     /// Primvar array range instancing
     /// Returns the HdInstance pointing to shared HdBufferArrayRange,
@@ -651,6 +676,13 @@ private:
     HdInstanceRegistry<HdSt_BasisCurvesTopologySharedPtr>
         _basisCurvesTopologyRegistry;
 
+    // Register SimpleText topology.
+    HdInstanceRegistry<HdSt_SimpleTextTopologySharedPtr>
+        _simpleTextTopologyRegistry;
+    // Register MarkupText topology.
+    HdInstanceRegistry<HdSt_MarkupTextTopologySharedPtr>
+        _markupTextTopologyRegistry;
+
     // Register vertex adjacency.
     HdInstanceRegistry<HdSt_VertexAdjacencyBuilderSharedPtr>
         _vertexAdjacencyBuilderRegistry;
@@ -665,6 +697,8 @@ private:
 
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
+    _TopologyIndexRangeInstanceRegMap _simpleTextTopologyIndexRangeRegistry;
+    _TopologyIndexRangeInstanceRegMap _markupTextTopologyIndexRangeRegistry;
 
     // Register shared primvar buffers.
     HdInstanceRegistry<HdBufferArrayRangeSharedPtr>

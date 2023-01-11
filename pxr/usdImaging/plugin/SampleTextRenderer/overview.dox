@@ -1,0 +1,22 @@
+/*!
+\page SampleTextRenderer_page_front SampleTextRenderer :  Definitions and Implementations of Sample Text Render Shader Nodes
+\if ( PIXAR_MFB_BUILD )
+\mainpage SampleTextRenderer : Definitions and Implementations of Sample Text Render Shader Nodes
+\publicLib
+\endif
+
+\section SampleTextRenderer_overview Overview
+This library houses the definitions and implementations for all the current 
+(and future) "Usd*" shader nodes, eg. SampleTextRendererSurface etc.
+
+The definitions are represented by a UsdShade-based shader definition file. 
+See \ref UsdShadeShaderDefinition. It currently only contains "glslfx" 
+implementations for the hydra GL backend. In the (not-too-distant) future, it 
+will contain "oso" files that provide OSL implementations of the Usd* shaders.
+
+In addition to shader definitions and implementations, this library also provide
+an implementation of UsdImagingTextRenderer. The renderer will receive the
+control points of the glyph, and generate the geometry and texture coordinate
+for the character.
+
+*/

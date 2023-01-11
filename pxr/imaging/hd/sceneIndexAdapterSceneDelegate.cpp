@@ -62,6 +62,10 @@
 #include "pxr/imaging/hd/extComputationPrimvarsSchema.h"
 #include "pxr/imaging/hd/extComputationSchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/markupTextSchema.h"
+#include "pxr/imaging/hd/markupTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
 #include "pxr/imaging/hd/imageShaderSchema.h"
@@ -88,6 +92,10 @@
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+#include "pxr/imaging/hd/simpleTextSchema.h"
+#include "pxr/imaging/hd/simpleTextTopologySchema.h"
+#endif
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
@@ -781,6 +789,99 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
     }
 
     return result;
+}
+
+HdSimpleTextTopology
+HdSceneIndexAdapterSceneDelegate::GetSimpleTextTopology(SdfPath const &id)
+{
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+
+    // Get the simpleText schema.
+    HdSimpleTextSchema simpleTextSchema =
+        HdSimpleTextSchema::GetFromParent(prim.dataSource);
+
+    // Get the topology schema.
+    HdSimpleTextTopologySchema stTopologySchema =
+        simpleTextSchema.GetTopology();
+
+    if (!stTopologySchema.IsDefined()) {
+        return HdSimpleTextTopology();
+    }
+
+    // Get the pointCount.
+    HdIntDataSourceHandle pointCountDataSource =
+        stTopologySchema.GetPointCount();
+
+    if (!pointCountDataSource) {
+        return HdSimpleTextTopology();
+    }
+
+    // Get the decorationCount.
+    HdIntDataSourceHandle decorationCountDataSource =
+        stTopologySchema.GetDecorationCount();
+
+    if (!decorationCountDataSource) {
+        return HdSimpleTextTopology();
+    }
+
+    // Create the topology.
+    HdSimpleTextTopology result(
+        pointCountDataSource->GetTypedValue(0.0f),
+        decorationCountDataSource->GetTypedValue(0.0f));
+
+    return result;
+#else
+    return HdSceneDelegate::GetSimpleTextTopology(id);
+#endif
+}
+
+HdMarkupTextTopology
+HdSceneIndexAdapterSceneDelegate::GetMarkupTextTopology(SdfPath const &id)
+{
+#ifdef PXR_TEXTSYSTEM_SUPPORT_ENABLED
+    TRACE_FUNCTION();
+    HF_MALLOC_TAG_FUNCTION();
+    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+
+    // Get the markupText schema.
+    HdMarkupTextSchema markupTextSchema =
+        HdMarkupTextSchema::GetFromParent(prim.dataSource);
+
+    // Get the topology schema.
+    HdMarkupTextTopologySchema gtTopologySchema =
+        markupTextSchema.GetTopology();
+
+    if (!gtTopologySchema.IsDefined()) {
+        return HdMarkupTextTopology();
+    }
+
+    // Get the pointCount.
+    HdIntDataSourceHandle pointCountDataSource =
+        gtTopologySchema.GetPointCount();
+
+    if (!pointCountDataSource) {
+        return HdMarkupTextTopology();
+    }
+    // Get the decorationCount.
+    HdIntDataSourceHandle decorationCountDataSource =
+        gtTopologySchema.GetDecorationCount();
+
+    if (!decorationCountDataSource) {
+        return HdMarkupTextTopology();
+    }
+
+    // Create the topology.
+    HdMarkupTextTopology result(
+        pointCountDataSource->GetTypedValue(0.0f),
+        decorationCountDataSource->GetTypedValue(0.0f));
+
+    return result;
+#else
+    return HdSceneDelegate::GetMarkupTextTopology(id);
+#endif
 }
 
 VtArray<TfToken>

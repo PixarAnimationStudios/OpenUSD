@@ -2,6 +2,18 @@ set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hd)
 
 set(optionalPublicClasses "")
+if (PXR_ENABLE_TEXT_SUPPORT)
+    list(APPEND optionalPublicClasses 
+        simpleText 
+        simpleTextTopology 
+        simpleTextSchema 
+        simpleTextTopologySchema
+        markupText 
+        markupTextTopology 
+        markupTextSchema 
+        markupTextTopologySchema
+        )
+endif()
 
 pxr_library(hd
     LIBRARIES
@@ -200,6 +212,8 @@ pxr_library(hd
         volumeFieldSchema
         vtBufferSource
         xformSchema
+        ${optionalPublicClasses}
+
 
     PUBLIC_HEADERS
         api.h

@@ -1,6 +1,15 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdImaging)
 
+set(optionalLibraries "")
+set(optionalIncludeDirs "")
+set(optionalPublicClasses "")
+set(optionalPublicHeaders "")
+if (PXR_ENABLE_TEXT_SUPPORT)
+    list(APPEND optionalPublicClasses simpleTextAdapter markupTextAdapter text textRegistry textRenderer textRendererRegistry textRun markupParser markupParserRegistry)
+    list(APPEND optionalPublicHeaders markupText.h textBlock.h textColor.h textLine.h textParagraph.h textRawGlyph.h textStyle.h textStyleChange.h)
+endif()
+
 pxr_library(usdImaging
     LIBRARIES
         gf
@@ -20,12 +29,15 @@ pxr_library(usdImaging
         usdLux
         usdRender
         usdShade
+        usdText
         usdVol
         ar
         ${TBB_tbb_LIBRARY}
+        ${optionalLibraries}
 
     INCLUDE_DIRS
         ${TBB_INCLUDE_DIRS}
+        ${optionalIncludeDirs}
 
     PUBLIC_CLASSES
         adapterRegistry
@@ -134,6 +146,7 @@ pxr_library(usdImaging
         tetMeshAdapter
         textureUtils
         volumeAdapter
+        ${optionalPublicClasses}
 
     PRIVATE_CLASSES
         adapterManager
@@ -149,6 +162,7 @@ pxr_library(usdImaging
         types.h
         unitTestHelper.h
         version.h
+        ${optionalPublicHeaders}
 
     PRIVATE_HEADERS
         dataSourceImplicits-Impl.h

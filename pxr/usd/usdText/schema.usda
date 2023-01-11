@@ -1,0 +1,347 @@
+#usda 1.0
+(
+    "This file describes the USD Shader schemata for code generation."
+    subLayers = [
+        @usd/schema.usda@,
+        @usdGeom/schema.usda@
+    ]
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "usdText"
+        string libraryPath      = "pxr/usd/usdText"
+        dictionary libraryTokens = {
+        }
+    }
+)
+{
+}
+
+
+class TextStyle "TextStyle" (
+    inherits = </Typed>
+    doc = """Class for single line single style text."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform string typeface (
+        doc = """The typeface."""
+    )
+
+    uniform bool bold = false (
+        doc = """Bold."""
+    )
+
+    uniform bool italic = false (
+        doc = """Italic."""
+    )    
+
+    uniform int weight = 0 (
+        doc = """Weight."""
+    )    
+
+    uniform int textHeight (
+        doc = """Size."""
+    )
+
+    uniform float textWidthFactor = 1.0 (
+        doc = """WidthFactor."""
+    )
+
+    #obliqueAngle
+    uniform float obliqueAngle = 0.0 (
+        doc = """The oblique."""
+    )
+
+    #Charspacing
+    uniform float charSpacing = 1.0 (
+        doc = """The charspacing."""
+    )
+
+    #UnderlineType
+    uniform string underlineType = "none" (
+        allowedTokens = ["none", "normal"]
+        doc = """The UnderlineType."""
+    )
+
+    #OverlineType
+    uniform string overlineType = "none" (
+        allowedTokens = ["none", "normal"]
+        doc = """The OverlineType."""
+    )
+
+    #StrikethroughType
+    uniform string strikethroughType = "none" (
+        allowedTokens = ["none", "normal", "doubleLines"]
+        doc = """The StrikethroughType."""
+    )
+}
+
+class TextLayout "TextLayout" (
+    inherits = </Typed>
+    doc = """Class for decorated single line single style text."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform token direction = "defaultDir" (
+        allowedTokens = ["defaultDir", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the text."""
+    )
+}
+
+class ColumnStyle "ColumnStyle" (
+    inherits = </Typed>
+    doc = """Class for style of a column."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform float columnWidth = 0.0 (
+        doc = """The width of the column."""
+    )
+    uniform float columnHeight = 0.0 (
+        doc = """The height of the column."""
+    )
+    uniform float2 offset = (0.0, 0.0) (
+        doc = """The 2D offset from the position of the text primitive."""
+    )
+    uniform float4 margins = (0.0, 0.0, 0.0, 0.0) (
+        doc = """The margins at the four direction. The order is left margin, right margin,
+        top margin and bottom margin."""
+    )
+    uniform token blockAlignment = "top" (
+        allowedTokens = ["top", "center", "bottom"]
+        doc = """The text alignment in the block."""
+    )
+    uniform token direction = "defaultDir" (
+        allowedTokens = ["defaultDir", "leftToRight", "rightToLeft", "topToBottom", "bottomToTop"]
+        doc = """The direction of the text in the block. "leftToRight" and "rightToLeft" are valid only when 
+                 linesFlowDirection is "topToBottom" or "bottomToTop". "topToBottom" and "bottomToTop" are
+                 valid only when linesFlowDirection is "leftToRight" or "rightToLeft"."""
+    )
+    uniform token linesFlowDirection = "topToBottom" (
+        allowedTokens = ["topToBottom", "bottomToTop", "leftToRight", "rightToLeft"]
+        doc = """The direction that the lines flow."""
+    )
+}
+
+class ParagraphStyle "ParagraphStyle" (
+    inherits = </Typed>
+    doc = """Class for style of a paragraph."""
+    customData = {
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    uniform float firstLineIndent = 0.0 (
+        doc = """The left indent in the first line."""
+    )
+    uniform float leftIndent = 0.0 (
+        doc = """The left indent in a normal line."""
+    )
+    uniform float rightIndent = 0.0 (
+        doc = """The right indent in each line."""
+    )
+    uniform float paragraphSpace = 0.0 (
+        doc = """The space after the paragraph."""
+    )
+    uniform token paragraphAlignment = "left" (
+        allowedTokens = ["left", "right", "center", "justify", "distributed"]
+        doc = """The text alignment in the paragraph."""
+    )
+    uniform float[] tabStopPositions (
+        doc = """The positions for each tabstop."""
+    )
+    uniform token[] tabStopTypes (
+        allowedTokens = ["leftTab", "rightTab", "centerTab", "decimalTab"]
+        doc = """The tabstop types."""
+    )
+    uniform float lineSpace = 0.0 (
+        doc = """The space between lines."""
+    )
+    uniform token lineSpaceType = "atLeast" (
+        allowedTokens = ["exactly", "atLeast", "multiple"]
+        doc = """The type of the lineSpace value."""
+    )
+}
+
+
+class "TextStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/textStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary textStyle = {
+                string value = "textStyle"
+                string doc = """.
+                """
+            }
+            dictionary textStyleBinding = {
+                string value = "textStyle:binding"
+                string doc = """.
+                """
+            }
+        }
+    }
+) {
+}
+
+class "ColumnStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/columnStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary columnStyle = {
+                string value = "columnStyle"
+                string doc = """.
+                """
+            }
+            dictionary columnStyleBinding = {
+                string value = "columnStyle:binding"
+                string doc = """.
+                """
+            }
+        }
+    }
+) {
+}
+
+class "ParagraphStyleAPI"
+(
+    inherits = </APISchemaBase>
+    doc = """.""" 
+    customData = {
+        string extraIncludes = """
+#include "pxr/usd/usdText/paragraphStyle.h"
+#include <tbb/concurrent_unordered_map.h>
+        """
+        token apiSchemaType = "singleApply"
+        dictionary schemaTokens = {
+            dictionary paragraphStyle = {
+                string value = "paragraphStyle"
+                string doc = """.
+                """
+            }
+            dictionary paragraphStyleBinding = {
+                string value = "paragraphStyle:binding"
+                string doc = """.
+                """
+            }
+        }
+    }
+) {
+}
+
+class SimpleText "SimpleText" (
+    doc = """Class for single line single style text."""
+    
+    inherits = </Gprim>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+        string extraIncludes ="""
+#include <utility>
+#include "pxr/usd/usdText/textStyle.h"
+#include "pxr/usd/usdText/textLayout.h"
+        """
+    }
+) {
+    # textData
+    uniform string textData (
+        doc = """The text string data."""
+    )
+
+    uniform color3f primvars:backgroundColor (
+        customData = {
+            string apiName = "backgroundColor"
+        }
+        doc = """Background color for the text."""
+    )
+    uniform float primvars:backgroundOpacity = 0.0 (
+        customData = {
+            string apiName = "backgroundOpacity"
+        }
+        doc = """Background opacity for the text."""
+    )
+    uniform token primvars:textMetricsUnit = "worldUnit" (
+        customData = {
+            string apiName = "textMetricsUnit"
+        }
+        allowedTokens = ["worldUnit", "publishingPoint", "pixel"]
+        doc = """The unit for the text related metrics, such as the unit of textHeight."""
+    )
+    uniform string renderer = "" (
+        doc = """The id of the textRenderer."""
+    )
+}
+
+class MarkupText "MarkupText" (
+    doc = """Class for multiple lines or multiple styles text."""
+    
+    inherits = </Gprim>
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+        string extraIncludes ="""
+#include <utility>
+        """
+    }
+) {
+    # markupString
+    uniform string markupString (
+        doc = """The markup string data."""
+    )
+
+    # markupLanguage
+    uniform token markupLanguage = "noMarkup" (
+        allowedTokens = ["noMarkup", "mtext"]
+        doc = """The markup language."""
+    )
+
+    uniform color3f primvars:backgroundColor (
+        customData = {
+            string apiName = "backgroundColor"
+        }
+        doc = """Background color for the text."""
+    )
+    uniform float primvars:backgroundOpacity = 0.0 (
+        customData = {
+            string apiName = "backgroundOpacity"
+        }
+        doc = """Background opacity for the text."""
+    )
+    uniform token primvars:textMetricsUnit = "worldUnit" (
+        customData = {
+            string apiName = "textMetricsUnit"
+        }
+        allowedTokens = ["worldUnit", "publishingPoint", "pixel"]
+        doc = """The unit for the text related metrics, such as the unit of textHeight."""
+    )
+    uniform string renderer = "" (
+        doc = """The id of the textRenderer."""
+    )
+}
