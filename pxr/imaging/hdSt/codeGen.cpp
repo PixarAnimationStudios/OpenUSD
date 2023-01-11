@@ -1983,7 +1983,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
 
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvarsIn() {\n";
-    _procMSIn  << "void ProcessPrimvarsIn() {\n";
+    _procMSIn  << "void ProcessPrimvarsIn(int index) {\n";
     _procMSOut << "void ProcessPrimvarsOut(thread VertexOut &vertexOut) {\n";
 
     _procTCS << "void ProcessPrimvarsOut() {\n";
@@ -4778,7 +4778,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << " = drawingCoordI" << index << ""
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genMS   << "  dc.instanceCoords[" << index << "]"
-                 << " = drawingCoordI" << index << ""
+                 << " = GetDrawingCoordField(10 +" << index <<")"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
     }
 
@@ -5621,7 +5621,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                      << name << "[i2], ptvs_pv_"
                      << name << "[i3], basis);\n";
 
-        _procMSIn  << "    ms_ms_" << name << " = HdGet_" << name << "(hd_LocalIndexID);\n";
+        _procMSIn  << "    ms_ms_" << name << " = HdGet_" << name << "(index);\n";
     }
 
     /*

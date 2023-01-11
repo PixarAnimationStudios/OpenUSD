@@ -802,6 +802,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     // cache the offset needed for compute culling.
     _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
+    _drawCoordIOffset = traits.drawingCoordI_offset / sizeof(uint32_t);
 
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
@@ -1355,24 +1356,16 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 GfVec2f drawRangeNDC;
                 uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
-                uint32_t baseIndex;
-                uint32_t baseVertex;
-                uint32_t instanceCount;
-                uint32_t baseInstance;
-                uint32_t drawCommandIndexInput;
                 uint32_t drawCoordOffset;
+                uint32_t drawCoordIOffset;
             };
 
             if (useMeshShaders) {
                 // set instanced cull parameters
                 Uniforms cullParams;
                 cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-                cullParams.drawIndexCount = 0;
-                cullParams.baseIndex = 0;
-                cullParams.baseVertex = 0;
-                cullParams.instanceCount = 0;
-                cullParams.baseInstance = 0;
                 cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
+                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                 gfxCmds->SetConstantValues(
                         psoHandle, 0, 27,
@@ -1450,24 +1443,16 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         GfVec2f drawRangeNDC;
                         uint32_t drawIndexCount;
                         uint32_t drawCommandNumUints;
-                        uint32_t baseIndex;
-                        uint32_t baseVertex;
-                        uint32_t instanceCount;
-                        uint32_t baseInstance;
-                        uint32_t drawCommandIndexInput;
                         uint32_t drawCoordOffset;
+                        uint32_t drawCoordIOffset;
                     };
                     
                     if (useMeshShaders) {
                         // set instanced cull parameters
                         Uniforms cullParams;
                         cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-                        cullParams.drawIndexCount = uint32_t(cmd->common.count);
-                        cullParams.baseIndex = uint32_t(cmd->common.baseIndex);
-                        cullParams.baseVertex = uint32_t(cmd->common.baseVertex);
-                        cullParams.instanceCount = uint32_t(cmd->common.instanceCount);
-                        cullParams.baseInstance = uint32_t(cmd->common.baseInstance);
                         cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
+                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                         gfxCmds->SetConstantValues(
                             psoHandle, 0, 27,
