@@ -66,17 +66,23 @@ _GetInputValueVector(InputValue const & input)
 }
 
 // e.g. ["vec4", "Peye"]
+// e.g. ["float", "length", "3"] The member is a float array with 3 elements.
+// e.g. ["vec3", "color", "", "flat"] The member type is vec3, and there is no interpolation across the face.
 MemberVector
 _ParseMembers(InputValueVector const & input, int fromElement)
 {
     MemberVector result;
     for (auto const & inputValue : input) {
         InputValueVector memberInput = _GetInputValueVector(inputValue);
-        if (memberInput.size() != 2 && memberInput.size() != 3) continue;
+        if (memberInput.size() != 2 && memberInput.size() != 3 && memberInput.size() != 4) continue;
         result.emplace_back(/*dataType=*/_Token(memberInput[0]),
                             /*name=*/_Token(memberInput[1]));
-        if (input.size() == 3) {
-            result.back().arraySize = _Token(input[2]);
+        if (memberInput.size() == 3) {
+            result.back().arraySize = _Token(memberInput[2]);
+        }
+        // The support for member qualifiers.
+        if (memberInput.size() == 4) {
+            result.back().qualifiers = _Token(memberInput[3]);
         }
     }
     return result;

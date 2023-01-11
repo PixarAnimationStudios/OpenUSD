@@ -37,6 +37,27 @@ TF_DEFINE_PRIVATE_TOKENS(
     (textureBindings)
 );
 
+
+// Convert the qualifiers to the interpolation string in MSL.
+std::string _GetInterpolationString(std::string const & qualifiers)
+{
+    if (qualifiers == "flat") {
+        return qualifiers;
+    }
+    else if(qualifiers == "noperspective") {
+        return "center_no_perspective";
+    }
+    else if(qualifiers == "centroid") {
+        return "centroid_perspective";
+    }
+    else if(qualifiers == "sample") {
+        return "sample_perspective";
+    }
+    else {
+        return "";
+    }
+}
+
 template<typename SectionType, typename ...T>
 SectionType *
 HgiMetalShaderGenerator::CreateShaderSection(T && ...t)
@@ -648,6 +669,8 @@ ShaderStageData::AccumulateParams(
     HgiShaderStage stage,
     bool iterateAttrs)
 {
+    // Currently we don't add qualifiers for function parameters.
+    const static std::string emptyQualifiers("");
     HgiMetalShaderSectionPtrVector stageShaderSections;
     //only some roles have an index
     if(!iterateAttrs) {
@@ -683,14 +706,37 @@ ShaderStageData::AccumulateParams(
 
             switch (p.interpolation) {
             case HgiInterpolationDefault:
+                switch (p.sampling) {
+                case HgiSamplingDefault:
+                    break;
+                case HgiSamplingCentroid:
+                    attributes.push_back(
+                        HgiShaderSectionAttribute{"centeroid_perspective", ""});
+                    break;
+                case HgiSamplingSample:
+                    attributes.push_back(
+                        HgiShaderSectionAttribute{"sample_perspective", ""});
+                    break;
+                }
                 break;
             case HgiInterpolationFlat:
                 attributes.push_back(
                     HgiShaderSectionAttribute{"flat", ""});
                 break;
             case HgiInterpolationNoPerspective:
-                attributes.push_back(
-                    HgiShaderSectionAttribute{"center_no_perspective", ""});
+                switch (p.sampling) {
+                case HgiSamplingDefault:
+                    attributes.push_back(
+                        HgiShaderSectionAttribute{"center_no_perspective", ""});
+                case HgiSamplingCentroid:
+                    attributes.push_back(
+                        HgiShaderSectionAttribute{"centeroid_no_perspective", ""});
+                    break;
+                case HgiSamplingSample:
+                    attributes.push_back(
+                        HgiShaderSectionAttribute{"sample_no_perspective", ""});
+                    break;
+                }
                 break;
             }
 
@@ -699,6 +745,7 @@ ShaderStageData::AccumulateParams(
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
+                        emptyQualifiers,
                         attributes,
                         p.arraySize);
             stageShaderSections.push_back(section);
@@ -723,6 +770,7 @@ ShaderStageData::AccumulateParams(
                     HgiMetalMemberShaderSection>(
                         p.nameInShader,
                         p.type,
+                        emptyQualifiers,
                         attributes,
                         p.arraySize);
             stageShaderSections.push_back(section);
@@ -754,6 +802,7 @@ ShaderStageData::AccumulateParamBlocks(
                         HgiMetalMemberShaderSection>(
                             m.name,
                             m.type,
+                            _GetInterpolationString(m.qualifiers),
                             attributes,
                             std::string(),
                             p.instanceName);
@@ -1357,12 +1406,15 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
   : HgiShaderGenerator(descriptor)
   , _generatorShaderSections(_BuildShaderStageEntryPoints(descriptor))
 {
+    // Currently we don't add qualifiers for global uniforms.
+    const static std::string emptyQualifiers("");
     for (const auto &member: descriptor.stageGlobalMembers) {
         HgiShaderSectionAttributeVector attrs;
         CreateShaderSection<
             HgiMetalMemberShaderSection>(
                 member.nameInShader,
                 member.type,
+                emptyQualifiers,
                 attrs,
                 member.arraySize);
     }

@@ -766,6 +766,7 @@ _ResourceGenerator::_GenerateHgiResources(
                 HgiShaderFunctionParamBlockDesc::Member paramMember;
                 paramMember.name = member.name;
                 paramMember.type = _ConvertBoolType(member.dataType);
+                paramMember.qualifiers = member.qualifiers;
                 paramBlock.members.push_back(paramMember);
             }
             if (element.inOut == InOut::STAGE_IN) {
@@ -1018,8 +1019,20 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << element.aggregateName << " {\n";
                 for (auto const & member : element.members) {
-                    str << "    " << member.dataType << " "
-                                        << member.name;
+                    str << "    ";
+                    if (member.qualifiers == _tokens->flat) {
+                        str << "flat ";
+                    }
+                    else if (member.qualifiers == _tokens->noperspective) {
+                        str << "noperspective ";
+                    }
+                    else if (member.qualifiers == _tokens->centroid) {
+                        str << "centroid ";
+                    }
+                    else if (member.qualifiers == _tokens->sample) {
+                        str << "sample ";
+                    }
+                    str << member.dataType << " " << member.name;
                     if (member.arraySize.IsEmpty()) {
                         str << ";\n";
                     } else {

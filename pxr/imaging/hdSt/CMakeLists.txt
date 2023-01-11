@@ -207,6 +207,7 @@ pxr_library(hdSt
         shaders/visibility.glslfx
         shaders/volume.glslfx
         textures/fallbackBlackDomeLight.png
+        testenv/testHdstQualifiers/testQualifiers.glslfx
 
     DOXYGEN_FILES
         overview.dox
@@ -221,5 +222,26 @@ pxr_build_test(testHdStBasicDrawing
         glf
     CPPFILES
         testenv/testHdStBasicDrawing.cpp
+)
+endif()
+
+if (WIN32 OR APPLE)
+pxr_install_test_dir(
+    SRC testenv/testHdStQualifiers
+    DEST testHdStQualifiers
+)
+
+pxr_build_test(testHdStQualifiers
+    LIBRARIES
+        hdSt
+        hd
+        garch
+        glf
+    CPPFILES
+        testenv/testHdStQualifiers.cpp
+)
+
+pxr_register_test(testHdStQualifiers
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStQualifiers --offscreen --flatQF FlatMember --nopersQF NoPerspectiveMember --centroidQF CentroidMember --sampleQF SampleMember"
 )
 endif()

@@ -107,7 +107,8 @@ public:
     struct Member {
         Member(TfToken const & dataType,
                TfToken const & name,
-               TfToken const & arraySize = TfToken())
+               TfToken const & arraySize = TfToken(),
+               TfToken qualifiers = TfToken())
             : dataType(dataType)
             , name(name)
             , arraySize(arraySize)
@@ -115,6 +116,7 @@ public:
         TfToken dataType;
         TfToken name;
         TfToken arraySize;
+        TfToken qualifiers;
     };
     using MemberVector = std::vector<Member>;
 
