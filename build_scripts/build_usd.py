@@ -1338,10 +1338,15 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 
 ############################################################
 # OpenColorIO
-
-OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+OCIO_VERSION_1 = "1.1.0"
+OCIO_VERSION_2 = "2.1.2"
 
 def InstallOpenColorIO(context, force, buildArgs):
+    if context.versionOCIO == 2:
+        OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v{version}.zip".format(version=OCIO_VERSION_2)
+    else:
+        OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v{version}.zip".format(version=OCIO_VERSION_1)
+
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
         extraArgs = ['-DOCIO_BUILD_TRUELIGHT=OFF',
                      '-DOCIO_BUILD_APPS=OFF',
@@ -1350,7 +1355,8 @@ def InstallOpenColorIO(context, force, buildArgs):
                      '-DOCIO_BUILD_TESTS=OFF',
                      '-DOCIO_BUILD_PYGLUE=OFF',
                      '-DOCIO_BUILD_JNIGLUE=OFF',
-                     '-DOCIO_STATIC_JNIGLUE=OFF']
+                     '-DOCIO_STATIC_JNIGLUE=OFF',
+                     '-DOCIO_USE_OPENEXR_HALF=ON']
 
         # OpenImageIO v1.1.0 fails to build on Windows with the RelWithDebInfo
         # build type because it doesn't set up the correct properties for the
@@ -1359,24 +1365,6 @@ def InstallOpenColorIO(context, force, buildArgs):
             PatchFile("CMakeLists.txt",
                       [("IMPORTED_LOCATION_RELEASE", 
                         "IMPORTED_LOCATION_RELWITHDEBINFO")])
-
-        # When building for Apple Silicon we need to make sure that
-        # the correct build architecture is specified for OCIO and
-        # and for TinyXML and YAML.
-        if MacOS():
-            targetArch = apple_utils.GetTargetArch(context)
-
-            PatchFile("CMakeLists.txt",
-                    [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
-                    'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
-                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
-                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=targetArch)),
-                    ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
-                    'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
-                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
-                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=targetArch)),
-                    ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
-                     'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=targetArch))])
 
         # The OCIO build treats all warnings as errors but several come up
         # on various platforms, including:
@@ -1397,10 +1385,6 @@ def InstallOpenColorIO(context, force, buildArgs):
             extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
 
         if MacOS():
-            PatchFile("src/core/Config.cpp",
-                       [("cacheidnocontext_ = cacheidnocontext_;",
-                         "cacheidnocontext_ = rhs.cacheidnocontext_;")])
-
             extraArgs.append('-DCMAKE_CXX_FLAGS="-Wno-unused-function'
                              ' -Wno-unused-const-variable'
                              ' -Wno-unused-private-field"')
@@ -2077,6 +2061,13 @@ subgroup.add_argument("--opencolorio", dest="build_ocio", action="store_true",
 subgroup.add_argument("--no-opencolorio", dest="build_ocio", action="store_false",
                       help="Do not build OpenColorIO plugin for USD (default)")
 
+OCIO_DEFAULT_VERSION = 1 if Linux() else 2
+
+group.add_argument("--opencolorio-version", dest="version_ocio",
+                   default=OCIO_DEFAULT_VERSION, type=int, choices=[1, 2],
+                   help=("Build OpenColorIO plugin for USD. "
+                         "(default: {})".format(OCIO_DEFAULT_VERSION)))
+
 group = parser.add_argument_group(title="Alembic Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--alembic", dest="build_alembic", action="store_true", 
@@ -2235,6 +2226,8 @@ class InstallContext:
         self.buildOIIO = args.build_oiio or (self.buildUsdImaging
                                              and self.buildTests)
         self.buildOCIO = args.build_ocio
+        self.versionOCIO = args.version_ocio
+
 
         # - Alembic Plugin
         self.buildAlembic = args.build_alembic
@@ -2472,7 +2465,8 @@ summaryMsg += """\
       Ptex support:             {enablePtex}
       OpenVDB support:          {enableOpenVDB}
       OpenImageIO support:      {buildOIIO} 
-      OpenColorIO support:      {buildOCIO} 
+      OpenColorIO support:      {buildOCIO}
+      OpenColorIO version:      {versionOCIO}
       PRMan support:            {buildPrman}
     UsdImaging                  {buildUsdImaging}
       usdview:                  {buildUsdview}
@@ -2534,6 +2528,7 @@ summaryMsg = summaryMsg.format(
     enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
     buildOIIO=("On" if context.buildOIIO else "Off"),
     buildOCIO=("On" if context.buildOCIO else "Off"),
+    versionOCIO=(OCIO_VERSION_2 if (context.versionOCIO == 2) else OCIO_VERSION_1),
     buildPrman=("On" if context.buildPrman else "Off"),
     buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
     buildUsdview=("On" if context.buildUsdview else "Off"),

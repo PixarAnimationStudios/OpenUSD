@@ -21,7 +21,7 @@ Our test machines have the following software versions installed
 | Intel TBB     | 2019 Update 6        | 2018 Update 1, 2019 Update 6 | 2019 Update 6                  |
 | OpenSubdiv    | 3.5.0                | 3.5.0                        | 3.5.0                          |
 | OpenImageIO   | 2.1.16.0             | 2.3.15.0                     | 2.1.16.0                       |
-| OpenColorIO   | 1.1.0                | 1.1.0                        | 1.1.0                          |
+| OpenColorIO   | 1.1.0 (default)      | 2.1.2                        | 2.1.2                          |
 | OSL           | 1.10.9               |                              |                                |
 | Ptex          | 2.3.2                | 2.1.33                       | 2.1.33                         |
 | Qt for Python | PySide2 5.14.1       | PySide6 6.3.1                | PySide2 5.14.1                 |
