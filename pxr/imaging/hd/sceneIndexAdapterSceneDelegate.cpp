@@ -34,6 +34,8 @@
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/base/arch/vsnprintf.h"
+
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dirtyBitsTranslator.h"
@@ -136,9 +138,14 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
 , _cachedDirtyBits(0)
 , _cachedPrimType()
 {
+
+    std::string registeredName = ArchStringPrintf(
+        "HdSceneIndexAdapterSceneDelegate scene: %s@%p",
+            delegateID.GetString().c_str(),
+            (void *) parentIndex);
+
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
-        "HdSceneIndexAdapterSceneDelegate scene: " + delegateID.GetString(),
-            inputSceneIndex);
+        registeredName, inputSceneIndex);
 
     // XXX: note that we will likely want to move this to the Has-A observer
     // pattern we're using now...
