@@ -43,7 +43,7 @@ TfSetenv(const std::string & name, const std::string & value)
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    if (ArchSetEnv(name.c_str(), value.c_str(), /* overwrite */ true)) {
+    if (ArchSetEnv(name, value, /* overwrite */ true)) {
         return true;
     }
 
@@ -60,7 +60,7 @@ TfUnsetenv(const std::string & name)
     }
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    if (ArchRemoveEnv(name.c_str())) {
+    if (ArchRemoveEnv(name)) {
         return true;
     }
 

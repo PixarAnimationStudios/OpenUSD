@@ -101,7 +101,7 @@ Tf_HasAttribute(
     }
 
     // Read symlinks until we find the real file.
-    return Tf_HasAttribute(TfReadLink(path.c_str()), resolveSymlinks,
+    return Tf_HasAttribute(TfReadLink(path), resolveSymlinks,
                            attribute, expected);
 }
 
@@ -523,7 +523,7 @@ Tf_WalkDirsRec(
     if (followLinks) {
         for (const auto& name : symlinknames) {
             ArchStatType st;
-            if (Tf_Stat(string(dirpath + "/" + name).c_str(),
+            if (Tf_Stat(string(dirpath + "/" + name),
                     /* resolveSymlinks */ true, &st)) {
                 if (S_ISDIR(st.st_mode)) {
                     Tf_FileId fileId(st);
