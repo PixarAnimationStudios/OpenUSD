@@ -738,8 +738,8 @@ Arch_InitTmpDir()
     // On Windows, let GetTempPath use the standard env vars, not our own.
     int sizeOfPath = GetTempPathW(MAX_PATH - 1, tmpPath);
     if (sizeOfPath > MAX_PATH || sizeOfPath == 0) {
-        ARCH_ERROR("Call to GetTempPath failed.");
         _TmpDir = ".";
+        ARCH_ERROR("Call to GetTempPath failed.");
         return;
     }
 
