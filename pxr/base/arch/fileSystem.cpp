@@ -557,8 +557,9 @@ ArchGetFileName(FILE *file)
     static constexpr DWORD bufSize =
         sizeof(FILE_NAME_INFO) + sizeof(WCHAR) * 4096;
     HANDLE hfile = _FileToWinHANDLE(file);
-    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
     string result;
+    auto fileNameInfo = reinterpret_cast<PFILE_NAME_INFO>(malloc(bufSize));
+    if (!fileNameInfo) return result;
     if (GetFileInformationByHandleEx(
             hfile, FileNameInfo, static_cast<void *>(fileNameInfo), bufSize)) {
         size_t outSize = WideCharToMultiByte(
