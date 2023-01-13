@@ -330,7 +330,11 @@ _FindVersionDelimiter(const std::string &idString)
     if (!std::isdigit(idString[delim])) {
         return std::string::npos;
     }
-    while (--delim >= 0) {
+
+    constexpr size_t maxDelimiterIndex = std::numeric_limits<size_t>::max();
+
+    // Till reach defined unsigned underflow.
+    while (--delim != maxDelimiterIndex) {
         if (idString[delim] == versionDelimiter) {
             return delim;
         }
