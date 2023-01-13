@@ -36,9 +36,8 @@ def _setLights(appController, ambientChecked, domeChecked, domeCamVis):
     appController._ui.actionDomeLight.setChecked(domeChecked)
     appController._onDomeLightClicked(domeChecked)
 
-    # This will trigger a call to _stageView.updateGL()
-    appController._stageView.SetRendererSetting(
-        "domeLightCameraVisibility", domeCamVis)
+    appController._ui.actionDomeLightTexturesVisible.setChecked(domeCamVis)
+    appController._onDomeLightTexturesVisibleClicked(domeCamVis)
 
 # Test with only the camera light.
 def _testCameraLight(appController):

@@ -960,7 +960,11 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(
+                self._onDomeLightClicked)
+
+            self._ui.actionDomeLightTexturesVisible.triggered[bool].connect(
+                self._onDomeLightTexturesVisibleClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -2575,6 +2579,10 @@ class AppController(QtCore.QObject):
     def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.domeLightEnabled = checked
+    
+    def _onDomeLightTexturesVisibleClicked(self, checked=None):
+        if self._stageView and checked is not None:
+            self._dataModel.viewSettings.domeLightTexturesVisible = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -5280,6 +5288,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(
             self._dataModel.viewSettings.cullBackfaces)
+        self._ui.actionDomeLightTexturesVisible.setChecked(
+            self._dataModel.viewSettings.domeLightTexturesVisible)
         self._ui.actionAuto_Compute_Clipping_Planes.setChecked(
             self._dataModel.viewSettings.autoComputeClippingPlanes)
 
