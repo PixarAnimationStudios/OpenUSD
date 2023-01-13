@@ -1127,7 +1127,7 @@ int ArchFileAccess(const char* path, int mode)
     }
 
     // Get the SECURITY_DESCRIPTOR.
-    std::unique_ptr<unsigned char[]> buffer(new unsigned char[length]);
+    std::unique_ptr<unsigned char[]> buffer = std::make_unique<unsigned char[]>(length);
     PSECURITY_DESCRIPTOR security = (PSECURITY_DESCRIPTOR)buffer.get();
     if (!GetFileSecurityW(
             wpath.c_str(), securityInfo, security, length, &length)) {
@@ -1231,8 +1231,8 @@ std::string ArchReadLink(const char* path)
     if (handle == INVALID_HANDLE_VALUE)
         return std::string();
 
-    std::unique_ptr<unsigned char[]> buffer(new
-                               unsigned char[MAX_REPARSE_DATA_SIZE]);
+    std::unique_ptr<unsigned char[]> buffer =
+        std::make_unique<unsigned char[]>(MAX_REPARSE_DATA_SIZE);
     REPARSE_DATA_BUFFER* reparse = (REPARSE_DATA_BUFFER*)buffer.get();
 
     if (!DeviceIoControl(handle, FSCTL_GET_REPARSE_POINT, NULL, 0, reparse,
@@ -1247,7 +1247,8 @@ std::string ArchReadLink(const char* path)
             const size_t length =
                 reparse->SymbolicLinkReparseBuffer.PrintNameLength /
                                                                 sizeof(WCHAR);
-            std::unique_ptr<WCHAR[]> reparsePath(new WCHAR[length + 1]);
+            std::unique_ptr<WCHAR[]> reparsePath =
+                std::make_unique<WCHAR[]>(length + 1);
             wcsncpy(reparsePath.get(),
               &reparse->SymbolicLinkReparseBuffer.PathBuffer[
               reparse->SymbolicLinkReparseBuffer.PrintNameOffset / sizeof(WCHAR)
@@ -1281,7 +1282,7 @@ std::string ArchReadLink(const char* path)
             const size_t length =
                 reparse->MountPointReparseBuffer.PrintNameLength /
                                                                 sizeof(WCHAR);
-            std::unique_ptr<WCHAR[]> reparsePath(new WCHAR[length + 1]);
+            std::unique_ptr<WCHAR[]> reparsePath = std::make_unique<WCHAR[]>(length + 1);
             wcsncpy(reparsePath.get(),
               &reparse->MountPointReparseBuffer.PathBuffer[
               reparse->MountPointReparseBuffer.PrintNameOffset / sizeof(WCHAR)
