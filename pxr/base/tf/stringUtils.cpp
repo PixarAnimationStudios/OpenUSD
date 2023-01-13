@@ -505,7 +505,7 @@ TfStringTokenizeToSet(string const &src, const char* delimiters)
     // Construct strings from the segments and insert them into the result.
     set<string> ret;
     for (size_t i = 0; i != segments.size(); ++i)
-        ret.insert(string(segments[i].first, segments[i].second));
+        ret.emplace(string(segments[i].first, segments[i].second));
 
     return ret;
 }

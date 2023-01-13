@@ -234,7 +234,7 @@ private:
         } else {
             // No entry present, add a new entry.
             TfAutoMallocTag noname("TfToken");
-            _RepPtr rep = &(*_sets[setNum].insert(TfToken::_Rep(s)).first);
+            _RepPtr rep = &(*_sets[setNum].emplace(TfToken::_Rep(s)).first);
             rep->_isCounted = !makeImmortal;
             rep->_setNum = setNum;
             rep->_compareCode = _ComputeCompareCode(rep->_cstr);

@@ -360,7 +360,7 @@ Tf_RegistryManagerImpl::AddRegistrationFunction(
     TF_AXIOM(active.identifier);
 
     active.registrationFunctions[typeName].
-        push_back(_RegistrationValue(func, active.identifier));
+        emplace_back(func, active.identifier);
 }
 
 bool

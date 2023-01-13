@@ -204,7 +204,7 @@ Tf_MallocTagStringMatchTable::SetMatchList(const std::string& matchList)
     _matchStrings.clear();
     std::vector<std::string> items = TfStringTokenize(matchList, ",\t\n");
     TF_FOR_ALL(i, items) {
-        _matchStrings.push_back(_MatchString(TfStringTrim(*i, " ")));
+        _matchStrings.emplace_back(TfStringTrim(*i, " "));
     }
 }
 

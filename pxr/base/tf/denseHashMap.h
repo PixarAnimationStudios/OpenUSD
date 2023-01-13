@@ -402,7 +402,7 @@ public:
         }
 
         // Insert at end and create table if necessary.
-        _vec().push_back(_InternalValueType(v.first, v.second));
+        _vec().emplace_back(_InternalValueType(v.first, v.second));
         _CreateTableIfNeeded();
 
         return insert_result(std::prev(end()), true);
