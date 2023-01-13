@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/bprim.h"
 
+#include "pxr/base/vt/dictionary.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
@@ -36,6 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 struct HdRenderSettingsParams
 {
+    VtDictionary namespacedSettings; // 'UsdRenderSpec::extraSettings'
 };
 
 ///
@@ -123,6 +126,16 @@ private:
     bool _active;
     HdRenderSettingsParams _params;
 };
+
+// VtValue requirements
+HD_API
+std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& pv);
+HD_API
+bool operator==(const HdRenderSettingsParams& lhs, 
+                const HdRenderSettingsParams& rhs);
+HD_API
+bool operator!=(const HdRenderSettingsParams& lhs, 
+                const HdRenderSettingsParams& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -69,7 +69,6 @@ HdRenderSettings::Sync(
 
         const VtValue vParams = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->params);
-
         if (vParams.IsHolding<HdRenderSettingsParams>()) {
             _params = vParams.UncheckedGet<HdRenderSettingsParams>();
         }
@@ -95,5 +94,28 @@ HdRenderSettings::_Sync(
 {
     // no-op
 }
+
+// -------------------------------------------------------------------------- //
+// VtValue Requirements
+// -------------------------------------------------------------------------- //
+
+std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& pv)
+{
+    out << "HdRenderSettingsParams Params: (...) " ;
+    return out;
+}
+
+bool operator==(const HdRenderSettingsParams& lhs, 
+                const HdRenderSettingsParams& rhs) 
+{
+    return lhs.namespacedSettings == rhs.namespacedSettings;
+}
+
+bool operator!=(const HdRenderSettingsParams& lhs, 
+                const HdRenderSettingsParams& rhs) 
+{
+    return !(lhs == rhs);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

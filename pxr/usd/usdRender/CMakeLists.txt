@@ -7,6 +7,7 @@ pxr_library(usdRender
         tf
         usd
         usdGeom
+        usdShade
 
     PUBLIC_CLASSES
         denoisePass

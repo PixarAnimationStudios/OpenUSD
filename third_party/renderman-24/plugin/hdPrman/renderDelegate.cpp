@@ -64,6 +64,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
     (field3dAsset)
+    (ri)
+    ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
     (prmanParams) /* XXX currently duplicated whereever used as to not yet */
                  /* establish a formal convention */
@@ -542,18 +544,16 @@ HdPrmanRenderDelegate::GetMaterialBindingPurpose() const
 TfToken
 HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 {
-    static const TfToken ri("ri");
-    return ri;
+    return _tokens->ri;
 }
 #else
 TfTokenVector
 HdPrmanRenderDelegate::GetMaterialRenderContexts() const
 {
-    static const TfToken ri("ri");
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    return {ri, _tokens->mtlxRenderContext};
+    return {_tokens->ri, _tokens->mtlxRenderContext};
 #else
-    return {ri};
+    return {_tokens->ri};
 #endif
 }
 #endif
@@ -563,6 +563,14 @@ HdPrmanRenderDelegate::GetShaderSourceTypes() const
 {
     return HdPrmanMaterial::GetShaderSourceTypes();
 }
+
+#if HD_API_VERSION > 46
+TfTokenVector
+HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
+{
+    return {_tokens->ri, _tokens->outputsRi};
+}
+#endif
 
 void
 HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key, 

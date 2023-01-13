@@ -27,7 +27,12 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/base/gf/vec4f.h"
+
+#include "pxr/usd/usdRender/spec.h"
+#include "pxr/usd/usdRender/settings.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -162,12 +167,12 @@ UsdImagingRenderSettingsAdapter::Get(
     if (prim.HasAttribute(key)) {
         UsdAttribute const &attr = prim.GetAttribute(key);
 
-        // Only return authored attribute values and UsdShadeConnectableAPI
-        // connections
+        // Only return authored values
         VtValue value;
         if (attr.HasAuthoredValue() && attr.Get(&value, time)) {
             return value;
         }
+        // Return UsdShadeConnectableAPI connections as a VtValue(SdfPathVector)
         if (UsdShadeOutput::IsOutput(attr)) {
             UsdShadeAttributeVector targets =
                 UsdShadeUtils::GetValueProducingAttributes(
@@ -179,6 +184,17 @@ UsdImagingRenderSettingsAdapter::Get(
             return VtValue(outputs);
         }
         return value;
+    }
+
+    // Use the UsdRenderSpec to populate and return the HdRenderSettingsParams
+    if (key == HdRenderSettingsPrimTokens->params) {
+
+        const UsdRenderSpec renderSpec = UsdRenderComputeSpec(
+            UsdRenderSettings(prim), time, _GetRenderSettingsNamespaces());
+
+        HdRenderSettingsParams rsParams;
+        rsParams.namespacedSettings = renderSpec.extraSettings;
+        return VtValue(rsParams);
     }
 
     TF_CODING_ERROR(

@@ -328,7 +328,8 @@ int main(int argc, char *argv[])
     UsdRenderSpec renderSpec;
     if (settings) {
         // If we found USD settings, read those.
-        renderSpec = UsdRenderComputeSpec(settings, frameNum, {"ri:"});
+        TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
+        renderSpec = UsdRenderComputeSpec(settings, frameNum, prmanNamespaces);
     } else {
         // Otherwise, provide a built-in render specification.
         renderSpec = {

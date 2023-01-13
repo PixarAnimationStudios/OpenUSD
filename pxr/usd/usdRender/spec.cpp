@@ -26,12 +26,13 @@
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdShade/output.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _ReadExtraSettings(UsdPrim const& prim, VtDictionary *extraSettings,
-                   std::vector<std::string> const& namespaces)
+                   TfTokenVector const& namespaces)
 {
     std::vector<UsdAttribute> attrs = prim.GetAuthoredAttributes();
     for (UsdAttribute attr: attrs) {
@@ -55,6 +56,16 @@ _ReadExtraSettings(UsdPrim const& prim, VtDictionary *extraSettings,
         VtValue val;
         if (attr.Get(&val)) {
             (*extraSettings)[attr.GetName()] = val;
+        }
+        else if (UsdShadeOutput::IsOutput(attr)) {
+            UsdShadeAttributeVector targets =
+                UsdShadeUtils::GetValueProducingAttributes(
+                    UsdShadeOutput(attr));
+            SdfPathVector outputs;
+            for (auto const& output : targets) {
+                outputs.push_back(output.GetPrimPath());
+            }
+            (*extraSettings)[attr.GetName()] = VtValue(outputs);
         }
     }
 }
@@ -153,7 +164,7 @@ UsdRenderSpec
 UsdRenderComputeSpec(
     UsdRenderSettings const& settings,
     UsdTimeCode time,
-    std::vector<std::string> const& extraNamespaces)
+    TfTokenVector const& extraNamespaces)
 {
     UsdRenderSpec rd;
     UsdPrim prim = settings.GetPrim();

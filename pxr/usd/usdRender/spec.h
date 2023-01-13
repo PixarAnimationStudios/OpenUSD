@@ -121,7 +121,7 @@ USDRENDER_API
 UsdRenderSpec
 UsdRenderComputeSpec(UsdRenderSettings const& settings,
                      UsdTimeCode time,
-                     std::vector<std::string> const& namespaces);
+                     TfTokenVector const& namespaces);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

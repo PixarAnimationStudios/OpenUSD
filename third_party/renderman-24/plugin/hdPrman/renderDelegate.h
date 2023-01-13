@@ -171,6 +171,11 @@ public:
     HDPRMAN_API 
     TfTokenVector GetShaderSourceTypes() const override;
 
+#if HD_API_VERSION > 46
+    HDPRMAN_API 
+    TfTokenVector GetRenderSettingsNamespaces() const override;
+#endif
+
     HDPRMAN_API 
     void SetRenderSetting(TfToken const &key, VtValue const &value) override;
 
