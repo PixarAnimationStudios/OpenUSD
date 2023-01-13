@@ -39,14 +39,13 @@ TfDiagnosticBase::TfDiagnosticBase(
     TfEnum code, const char* codeString,
     TfCallContext const &context, const string& commentary,
     TfDiagnosticInfo info, bool quiet)
-    : _context(context)
+    : _context(context),
+      _commentary(commentary),
+      _code(code),
+      _codeString(TfEnum::GetName(code)),
+      _info(info),
+      _quiet(quiet)
 {
-    _commentary = commentary;
-    _code = code;
-    _codeString = TfEnum::GetName(code);
-    _info = info;
-    _quiet = quiet;
-    
     if (_codeString.empty())
         _codeString = TfSafeString(codeString);
 }
