@@ -344,7 +344,7 @@ Arch_MeasureExecutionTime(uint64_t maxMicroseconds, bool *reachedConsensus,
         for (int i = 0; i != NumSamples/10; ++i) {
             sampleTimes[i] = measureSample();
         }
-    } while (limitTimer.GetElapsedTicks() < maxTicks);
+    }
 
     // Unable to obtain consensus.  Take best median we saw.
     if (reachedConsensus) {
