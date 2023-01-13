@@ -104,10 +104,9 @@ struct _InputHandler : public rj::BaseReaderHandler<rj::UTF8<>, _InputHandler>
 
         JsObject object;
         for (size_t i = 0; i < memberCount; ++i) {
-            object.insert(
-                std::make_pair(
-                    std::move(keys[kstart + i]),
-                    std::move(values[vstart + i])));
+            object.emplace(
+                std::move(keys[kstart + i]),
+                std::move(values[vstart + i]));
         }
 
         keys.resize(kstart);
