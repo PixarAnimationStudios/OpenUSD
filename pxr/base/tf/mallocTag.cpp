@@ -1352,7 +1352,7 @@ _PrintMallocCallSites(
     // Use a map to sort by allocation size.
     map<size_t, const string *> map;
     TF_FOR_ALL(csi, callSites) {
-        map.insert(make_pair(csi->nBytes, &csi->name));
+        map.emplace(csi->nBytes, &csi->name);
     }
 
     // XXX:cleanup We should pass in maxNameWidth.

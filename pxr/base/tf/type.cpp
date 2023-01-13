@@ -171,7 +171,7 @@ struct TfType::_TypeInfo : boost::noncopyable
             }
         }
         // need to add a new func.
-        castFuncs.push_back(std::make_pair(&baseType, func));
+        castFuncs.emplace_back(&baseType, func);
     }
 
     // Caller must hold at least a read lock on mutex.

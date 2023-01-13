@@ -443,7 +443,7 @@ void _TokenizeToSegments(string const &src, char const *delimiters,
             continue;
         // have a token until the next delimiter.
         // push back a new segment, but we only know the begin point yet.
-        segments.push_back(make_pair(c, c));
+        segments.emplace_back(c, c);
         for (++c; c != end; ++c)
             if (IS_DELIMITER(*c))
                 break;
@@ -473,12 +473,12 @@ TfStringSplit(string const &src, string const &separator)
         pos = src.find(separator, from);
         if (pos == string::npos)
             break;
-        split.push_back(src.substr(from, pos-from));
+        split.emplace_back(src.substr(from, pos-from));
         from = pos + separator.size();
     }
 
     // Also add the 'last' substring
-    split.push_back(src.substr(from));
+    split.emplace_back(src.substr(from));
 
     return split;
 }

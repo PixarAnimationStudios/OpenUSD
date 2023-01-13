@@ -310,7 +310,7 @@ Tf_NoticeRegistry::_Deliver(const TfNotice &n, const TfType &type,
             if (!deliverer->_IsMarkedForRemoval()) {
                 deliverer->_Deactivate();
                 deliverer->_MarkForRemoval();
-                _deadEntries.push_back(TfCreateWeakPtr(deliverer));
+                _deadEntries.emplace_back(TfCreateWeakPtr(deliverer));
             }
         }
         ++i;
