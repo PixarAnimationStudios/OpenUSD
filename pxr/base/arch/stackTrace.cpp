@@ -1527,7 +1527,7 @@ Arch_GetStackTrace(const vector<uintptr_t> &frames,
         if (skipUnknownFrames && symbolic == "<unknown>") {
             continue;
         }
-        rv.push_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
+        rv.emplace_back(ArchStringPrintf(" #%-3i 0x%016lx in %s",
                                          n++, frames[i], symbolic.c_str()));
     }
 
