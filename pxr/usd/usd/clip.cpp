@@ -86,7 +86,8 @@ operator<<(std::ostream& out, const Usd_ClipRefPtr& clip)
 // ------------------------------------------------------------
 
 Usd_Clip::Usd_Clip()
-    : startTime(0)
+    : authoredStartTime(0)
+    , startTime(0)
     , endTime(0)
     , _hasLayer(false)
 { 
