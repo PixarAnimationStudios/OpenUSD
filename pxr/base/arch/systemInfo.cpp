@@ -89,10 +89,7 @@ _DynamicSizedRead(
     const std::function<bool(char*, size_t*)>& callback)
 {
     // Make a buffer for the data.
-    // We use an explicit deleter to work around libc++ bug.
-    // See https://llvm.org/bugs/show_bug.cgi?id=18350.
-    std::unique_ptr<char, std::default_delete<char[]> > buffer;
-    buffer.reset(new char[initialSize]);
+    std::unique_ptr<char[]> buffer = std::make_unique<char[]>(initialSize);
 
     // Repeatedly invoke the callback with our buffer until it's big enough.
     size_t size = initialSize;
