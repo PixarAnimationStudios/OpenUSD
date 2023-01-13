@@ -1031,7 +1031,7 @@ private:
     struct _SpecData {
         _SpecData() = default;
         explicit _SpecData(Usd_EmptySharedTagType) noexcept
-            : fields(Usd_EmptySharedTag) {}
+            : fields(Usd_EmptySharedTag), specType(SdfSpecTypeUnknown) {}
         inline void DetachIfNotUnique() { fields.MakeUnique(); }
 
         friend inline void swap(_SpecData &l, _SpecData &r) {
