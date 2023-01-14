@@ -551,6 +551,12 @@ _ResolveParameter(
         if (value.IsHolding<T>()) {
             return value.UncheckedGet<T>();
         }
+        else if (value.CanCast<T>())
+        {
+            VtValue castResult = value;
+            castResult.Cast<T>();
+            return castResult.UncheckedGet<T>();
+        }
     }
 
     // Then fallback to SdrNode.
@@ -560,6 +566,12 @@ _ResolveParameter(
             const VtValue &value = input->GetDefaultValue();
             if (value.IsHolding<T>()) {
                 return value.UncheckedGet<T>();
+            }
+            else if (value.CanCast<T>())
+            {
+                VtValue castResult = value;
+                castResult.Cast<T>();
+                return castResult.UncheckedGet<T>();
             }
         }
     }
