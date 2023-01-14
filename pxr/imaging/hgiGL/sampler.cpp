@@ -61,26 +61,34 @@ HgiGLSampler::HgiGLSampler(HgiSamplerDesc const& desc)
         GL_TEXTURE_WRAP_R,
         HgiGLConversions::GetSamplerAddressMode(desc.addressModeW));
 
+    GLenum minFilter =
+        HgiGLConversions::GetMinFilter(desc.minFilter, desc.mipFilter);
     glSamplerParameteri(
         _samplerId,
-        GL_TEXTURE_MIN_FILTER,
-        HgiGLConversions::GetMinFilter(desc.minFilter, desc.mipFilter));
+        GL_TEXTURE_MIN_FILTER, 
+        minFilter);
 
+    GLenum magFilter =
+        HgiGLConversions::GetMagFilter(desc.magFilter);
     glSamplerParameteri(
         _samplerId,
-        GL_TEXTURE_MAG_FILTER,
-        HgiGLConversions::GetMagFilter(desc.magFilter));
+        GL_TEXTURE_MAG_FILTER, 
+        magFilter);
 
     glSamplerParameterfv(
         _samplerId,
         GL_TEXTURE_BORDER_COLOR,
         HgiGLConversions::GetBorderColor(desc.borderColor).GetArray());
 
-    static const float maxAnisotropy = 16.0;
-    glSamplerParameterf(
-        _samplerId,
-        GL_TEXTURE_MAX_ANISOTROPY_EXT,
-        maxAnisotropy);
+    if (minFilter != GL_NEAREST && magFilter != GL_NEAREST)
+    {
+        // If the filter is nearest, we will not set GL_TEXTURE_MAX_ANISOTROPY_EXT.
+        static const float maxAnisotropy = 16.0;
+        glSamplerParameterf(
+            _samplerId,
+            GL_TEXTURE_MAX_ANISOTROPY_EXT,
+            maxAnisotropy);
+    }
 
     glSamplerParameteri(
         _samplerId, 
