@@ -56,12 +56,13 @@ UsdCrateInfo::GetSummaryStats() const
         TF_CODING_ERROR("Invalid UsdCrateInfo object");
     }
     else {
-        stats.numSpecs = _impl->crateFile->GetSpecs().size();
-        stats.numUniquePaths = _impl->crateFile->GetPaths().size();
-        stats.numUniqueTokens = _impl->crateFile->GetTokens().size();
-        stats.numUniqueStrings = _impl->crateFile->GetStrings().size();
-        stats.numUniqueFields = _impl->crateFile->GetFields().size();
-        stats.numUniqueFieldSets = _impl->crateFile->GetNumUniqueFieldSets();
+        const std::unique_ptr<CrateFile> &crateFile = _impl->crateFile;
+        stats.numSpecs = crateFile->GetSpecs().size();
+        stats.numUniquePaths = crateFile->GetPaths().size();
+        stats.numUniqueTokens = crateFile->GetTokens().size();
+        stats.numUniqueStrings = crateFile->GetStrings().size();
+        stats.numUniqueFields = crateFile->GetFields().size();
+        stats.numUniqueFieldSets = crateFile->GetNumUniqueFieldSets();
     }
     return stats;
 }
