@@ -104,6 +104,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (hasIntelGPU) {
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     }
+    if (hasIos && !barycentrics) {
+        _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
+    }
 #if defined(ARCH_OS_OSX)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;

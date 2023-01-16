@@ -2570,14 +2570,31 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.generatedShaderCodeOut = &_fsSource;
 
         // builtins
-
+        TfToken baryAttribute = HgiShaderKeywordTokens->hdBaryCoordNoPerspNV;
+        #if defined(ARCH_OS_IOS)
+        const HgiCapabilities *capabilities = registry->GetHgi()->GetCapabilities();
+        const bool builtinBarycentricsEnabled =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (!builtinBarycentricsEnabled) {
+            baryAttribute = TfToken();
+        }
+        #endif
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
-            HgiShaderKeywordTokens->hdBaryCoordNoPerspNV);
-
+            baryAttribute);
+        
+        
+        TfToken primIdAttribute = HgiShaderKeywordTokens->hdPrimitiveID;
+        #if defined(ARCH_OS_IOS)
+        const bool requiresPrimitiveIdEmulation =
+             capabilities->IsSet(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation);
+        if (requiresPrimitiveIdEmulation) {
+            primIdAttribute = TfToken();
+        }
+        #endif
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
+            primIdAttribute);
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
