@@ -31,6 +31,7 @@ import unittest
 import sys, math
 from pxr import Gf, Vt
 
+
 class TestVtArray(unittest.TestCase):
 
     def test_Constructors(self):

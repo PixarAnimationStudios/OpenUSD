@@ -34,7 +34,6 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/iterator/iterator_adaptor.hpp>
 
 #include <initializer_list>
@@ -273,7 +272,7 @@ public:
         if (dict.empty())
             return 0;
         // Otherwise hash the map.
-        return boost::hash_value(*dict._dictMap);
+        return TfHash()(*dict._dictMap);
     }
 
     /// Inserts a range into the \p VtDictionary. 

@@ -1519,6 +1519,9 @@ static void
 testValueHash()
 {
     static_assert(VtIsHashable<int>(), "");
+    static_assert(VtIsHashable<double>());
+    static_assert(VtIsHashable<GfVec3f>());
+    static_assert(VtIsHashable<std::string>());
     static_assert(!VtIsHashable<_Unhashable>(), "");
 
     VtValue vHashable{1};
@@ -1541,6 +1544,20 @@ testValueHash()
         vUnhashable.GetHash();
         TF_AXIOM(!m.IsClean());
         m.Clear();
+    }
+}
+
+static void
+testArrayHash()
+{
+    // Validate hash collisions for slices of the full container
+    VtArray<int> array = {1, 2, 3, 4, 5, 10, 100};
+    std::set<size_t> previousHashes;
+    while (true){
+        const size_t hash = TfHash()(array);
+        TF_AXIOM(previousHashes.find(hash) == previousHashes.end());
+        if (array.empty()) break;
+        array.pop_back();
     }
 }
 
@@ -1819,6 +1836,7 @@ int main(int argc, char *argv[])
 
     testValue();
     testValueHash();
+    testArrayHash();
     testTypedVtValueProxy();
     testErasedVtValueProxy();
     testCombinedVtValueProxies();
