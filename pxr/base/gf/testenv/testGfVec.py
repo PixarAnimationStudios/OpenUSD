@@ -287,6 +287,12 @@ class TestGfVec(unittest.TestCase):
             #
             v[:2] = [None, None]
 
+    def HashTest(self, Vec):
+        v1 = Vec()
+        SetVec(v1, [12, 1, 2, -4])
+        self.assertEqual(hash(v1), hash(v1))
+        self.assertEqual(hash(v1), hash(Vec(v1)))
+
     def MethodsTest(self, Vec):
         v1 = Vec()
         v2 = Vec()
@@ -544,6 +550,7 @@ class TestGfVec(unittest.TestCase):
             self.ConstructorsTest( Vec )
             self.OperatorsTest( Vec )
             self.MethodsTest( Vec )
+            self.HashTest( Vec )
 
 
     def test_TupleToVec(self):

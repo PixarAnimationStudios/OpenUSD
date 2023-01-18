@@ -166,6 +166,10 @@ static GfRotation __itruediv__(GfRotation &self, double value)
 
 } // anonymous namespace 
 
+static size_t __hash__(GfRotation const &self) {
+    return TfHash()(self);
+}
+
 void wrapRotation()
 {    
     typedef GfRotation This;
@@ -176,6 +180,7 @@ void wrapRotation()
         .def(init<const GfQuaternion &>())
         .def(init<const GfQuatd &>())
         .def(init<const GfVec3d &, const GfVec3d &>())
+        .def(init<const GfRotation &>())
 
         .def( TfTypePythonClass() )
 
@@ -258,7 +263,8 @@ void wrapRotation()
 #endif
 
        .def("__repr__", _Repr)
-        
+       .def("__hash__", __hash__)
+
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();

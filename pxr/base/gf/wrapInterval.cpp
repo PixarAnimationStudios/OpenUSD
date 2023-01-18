@@ -68,6 +68,7 @@ void wrapInterval()
         .def(init<double, double>(
                  "Create a closed interval representing the range [v1,v2]."))
         .def(init<double, double, bool, bool>("Create the interval."))
+        .def(init<This>())
 
         .def( TfTypePythonClass() )
 
