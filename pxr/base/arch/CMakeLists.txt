@@ -171,7 +171,7 @@ if (PXR_BUILD_TESTS AND WIN32)
     # place that .pdbs will be searched for, other than the baked-in absolute
     # path in the windows binary
     install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/testArchStackTrace.pdb
+        FILES $<TARGET_PDB_FILE:testArchStackTrace>
         DESTINATION tests/ctest/testArchStackTrace
         CONFIGURATIONS Debug RelWithDebInfo
     )
