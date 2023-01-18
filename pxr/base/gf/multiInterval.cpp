@@ -52,10 +52,7 @@ GfMultiInterval::GfMultiInterval(const std::vector<GfInterval> &intervals)
 size_t
 GfMultiInterval::Hash() const
 {
-    size_t h = 0;
-    for (auto const &i: _set)
-        boost::hash_combine(h, i);
-    return h;
+    return TfHash()(_set);
 }
 
 GfInterval
