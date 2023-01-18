@@ -112,5 +112,24 @@ class TestGfRect2i(unittest.TestCase):
 
         self.assertTrue(len(str(Gf.Rect2i())))
 
+    def test_Hash(self):
+        r = Gf.Rect2i(
+            Gf.Vec2i(1, 2),
+            Gf.Vec2i(10, 20)
+        )
+
+        self.assertEqual(hash(r), hash(r))
+        self.assertEqual(hash(r), hash(Gf.Rect2i(r)))
+
+        # Trivial transformations should not produce collisions
+        self.assertNotEqual(
+            hash(r),
+            hash(Gf.Rect2i(r.GetMin() + Gf.Vec2i(3, 1), r.GetMax()))
+        )
+        self.assertNotEqual(
+            hash(r),
+            hash(Gf.Rect2i(r.GetMin(), r.GetMax() + Gf.Vec2i(3, 1)))
+        )
+
 if __name__ == '__main__':
     unittest.main()

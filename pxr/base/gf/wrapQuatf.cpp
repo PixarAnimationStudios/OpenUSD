@@ -69,6 +69,10 @@ static GfQuatf& __itruediv__(GfQuatf &self, float value)
     return self /= value;
 }
 
+static size_t __hash__(GfQuatf const &self) {
+    return TfHash()(self);
+}
+
 // Zero-initialized default ctor for python.
 static GfQuatf *__init__() { return new GfQuatf(0); }
 
@@ -155,7 +159,7 @@ void wrapQuatf()
         .def(float() * self)
         .def(self / float())
         .def("__repr__", __repr__)
-
+        .def("__hash__", __hash__)
         ;
 
     implicitly_convertible<GfQuath, GfQuatf>();

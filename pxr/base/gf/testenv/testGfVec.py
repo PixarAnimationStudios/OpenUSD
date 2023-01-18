@@ -287,6 +287,24 @@ class TestGfVec(unittest.TestCase):
             #
             v[:2] = [None, None]
 
+    def HashTest(self, Vec):
+        v1 = Vec()
+        SetVec(v1, [12, 1, 2, -4])
+        self.assertEqual(hash(v1), hash(v1))
+        self.assertEqual(hash(v1), hash(Vec(v1)))
+
+        # Trivial transformations should not produce collisions
+        self.assertNotEqual(hash(v1), hash(-1 * v1))
+        self.assertNotEqual(hash(v1), hash(10 * v1))
+
+        # Ensure that all components are considered in the hash
+        hashes = [hash(v1)]
+        for i in range(v1.dimension):
+            permuted = Vec(v1)
+            permuted[i] = permuted[i] * -1
+            hashes.append(hash(permuted))
+        self.assertCountEqual(hashes, set(hashes))
+
     def MethodsTest(self, Vec):
         v1 = Vec()
         v2 = Vec()
@@ -544,6 +562,7 @@ class TestGfVec(unittest.TestCase):
             self.ConstructorsTest( Vec )
             self.OperatorsTest( Vec )
             self.MethodsTest( Vec )
+            self.HashTest( Vec )
 
 
     def test_TupleToVec(self):

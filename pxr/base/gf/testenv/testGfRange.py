@@ -321,6 +321,24 @@ class TestGfRange(unittest.TestCase):
             self.assertEqual(Rangef.GetIntersection(r1f, r2f), Ranged(v1d, v4d))
             self.assertEqual(Ranged.GetIntersection(r1d, r2d), Rangef(v1f, v4f))
 
+    def test_Hash(self):
+        for RangeType, ValueType in self.Ranges:
+            r = RangeType(
+                makeValue(ValueType, [-1.0, -2.0, -3.0, -4.0]),
+                makeValue(ValueType, [4.0, 3.0, 2.0, 1.0])
+            )
+            self.assertEqual(hash(r), hash(r))
+            self.assertEqual(hash(r), hash(RangeType(r)))
+
+            # Trivial transformations should not produce collisions
+            self.assertNotEqual(
+                hash(r),
+                hash(RangeType(r.GetMin() * 0.5, r.GetMax()))
+            )
+            self.assertNotEqual(
+                hash(r),
+                hash(RangeType(r.GetMin(), r.GetMax() * 0.5))
+            )
 
 if __name__ == '__main__':
     unittest.main()

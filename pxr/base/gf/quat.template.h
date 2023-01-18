@@ -39,8 +39,7 @@
 {% if SCL == 'GfHalf' -%}
 #include "pxr/base/gf/half.h"
 {% endif %}
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -165,9 +164,7 @@ class {{ QUAT }}
 
     /// Hash.
     friend inline size_t hash_value(const {{ QUAT }} &q) {
-        size_t h = boost::hash<ScalarType>()(q.GetReal());
-        boost::hash_combine(h, q.GetImaginary());
-        return h;
+        return TfHash::Combine(q.GetReal(), q.GetImaginary());
     }
 
     /// Component-wise negation.

@@ -208,5 +208,18 @@ class TestGfDualQuaternion(unittest.TestCase):
                             Gf.IsClose(dq.Transform(vec3Type(0,1,0)), vec3Type(-0.4,-0.333333,-0.133333), closeVal) and
                             Gf.IsClose(dq.Transform(vec3Type(0,0,1)), vec3Type(0.2,0.666667,-0.933333), closeVal))
 
+    def test_Hash(self):
+        for DualQuatType, QuatType, Vec3Type, _ in testClasses:
+            dq = DualQuatType(
+                QuatType(1.0, Vec3Type(2.0, 3.0, 4.0)),
+                QuatType(2.0, Vec3Type(3.0, 4.0, 5.0))
+            )
+            self.assertEqual(hash(dq), hash(dq))
+            self.assertEqual(hash(dq), hash(DualQuatType(dq)))
+
+            # Trivial transformations should not produce collisions
+            self.assertNotEqual(hash(dq), hash(DualQuatType(dq.real * -1.0, dq.dual)))
+            self.assertNotEqual(hash(dq), hash(DualQuatType(dq.real, dq.dual * -1.0)))
+
 if __name__ == '__main__':
     unittest.main()

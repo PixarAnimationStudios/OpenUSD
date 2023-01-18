@@ -269,5 +269,41 @@ class TestGfInterval(unittest.TestCase):
 
         self.assertTrue(len(str(Gf.Interval())), ("str"))
 
+    def test_Hash(self):
+        interval = Gf.Interval(-1.5, 2.0, True, False)
+        self.assertEqual(hash(interval), hash(interval))
+        self.assertEqual(hash(interval), hash(Gf.Interval(interval)))
+
+        self.assertNotEqual(
+            hash(interval),
+            hash(
+                Gf.Interval(interval.GetMin() + 0.5, interval.GetMax(),
+                            interval.IsMinClosed(), interval.IsMaxClosed())
+            )
+        )
+        self.assertNotEqual(
+            hash(interval),
+            hash(
+                Gf.Interval(interval.GetMin(), interval.GetMax() + 0.5,
+                            interval.IsMinClosed(), interval.IsMaxClosed())
+            )
+        )
+        self.assertNotEqual(
+            hash(interval),
+            hash(
+                Gf.Interval(interval.GetMin(), interval.GetMax(),
+                            not interval.IsMinClosed(), interval.IsMaxClosed())
+            )
+        )
+        self.assertNotEqual(
+            hash(interval),
+            hash(
+                Gf.Interval(interval.GetMin(), interval.GetMax(),
+                            interval.IsMinClosed(), not interval.IsMaxClosed())
+            )
+        )
+
+
+
 if __name__ == '__main__':
     unittest.main()

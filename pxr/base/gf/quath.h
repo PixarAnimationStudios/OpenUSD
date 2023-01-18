@@ -37,8 +37,7 @@
 #include "pxr/base/gf/vec3h.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/half.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -164,9 +163,7 @@ class GfQuath
 
     /// Hash.
     friend inline size_t hash_value(const GfQuath &q) {
-        size_t h = boost::hash<ScalarType>()(q.GetReal());
-        boost::hash_combine(h, q.GetImaginary());
-        return h;
+        return TfHash::Combine(q.GetReal(), q.GetImaginary());
     }
 
     /// Component-wise negation.

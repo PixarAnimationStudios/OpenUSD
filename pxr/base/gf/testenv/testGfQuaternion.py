@@ -225,5 +225,16 @@ class TestGfQuaternion(unittest.TestCase):
             self.assertTrue(Gf.IsClose(r1, vec3Type(0.0, 1.0, 0.0), closeVal) and
                             Gf.IsClose(r1, r2, closeVal))
 
+    def test_Hash(self):
+        for QuatType, Vec3Type, _ in testClasses:
+            q = QuatType(1.0, Vec3Type(2.0, 3.0, 4.0))
+            self.assertEqual(hash(q), hash(q))
+            self.assertEqual(hash(q), hash(QuatType(q)))
+
+            # Trivial transformations should not produce collisions
+            self.assertNotEqual(hash(q), hash(QuatType(q.GetReal() * -1.0, q.GetImaginary())))
+            self.assertNotEqual(hash(q), hash(QuatType(q.GetReal(), q.GetImaginary() * -1.0)))
+
+
 if __name__ == '__main__':
     unittest.main()

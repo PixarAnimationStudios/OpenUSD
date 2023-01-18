@@ -816,5 +816,33 @@ class TestGfMatrix(unittest.TestCase):
         with self.assertRaises(excType):
             int(Gf.Matrix3f(3))
 
+    def test_Hash(self):
+        MatrixTypes = [
+            Gf.Matrix2d,
+            Gf.Matrix2f,
+            Gf.Matrix3d,
+            Gf.Matrix3f,
+            Gf.Matrix4d,
+            Gf.Matrix4f
+        ]
+
+        for MatrixType in MatrixTypes:
+            m  = MatrixType(*(i * 2.0 for i in range(1, 1 + MatrixType.dimension[0] * MatrixType.dimension[1])))
+            self.assertEqual(hash(m), hash(m))
+            self.assertEqual(hash(m), hash(MatrixType(m)))
+
+            # Trivial transformations should not produce collisions
+            self.assertNotEqual(hash(m), hash(-1 * m))
+            self.assertNotEqual(hash(m), hash(10 * m))
+
+            hashes = [hash(m)]
+            for i in range(m.dimension[0]):
+                for j in range(m.dimension[1]):
+                    permuted = MatrixType(m)
+                    permuted[i, j] = permuted[i, j] * -1.0
+                    hashes.append(hash(permuted))
+            self.assertCountEqual(hashes, set(hashes))
+
+
 if __name__ == '__main__':
     unittest.main()

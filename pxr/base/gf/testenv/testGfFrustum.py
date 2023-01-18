@@ -408,7 +408,39 @@ class TestGfFrustum(unittest.TestCase):
             self.assertTrue(
                 Gf.IsClose(corners[i], (results[i] + results[i+4]) / 2.0,
                            0.0001))
-        
+
+    def test_Hash(self):
+        frustum = Gf.Frustum(
+                Gf.Vec3d(1.0, 2.0, 3.0),
+                Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 90.0),
+                Gf.Range2d(Gf.Vec2d(-0.5, 0.5), Gf.Vec2d(-1.0, 1.0)),
+                Gf.Range1d(1.0, 1000.0),
+                Gf.Frustum.Perspective,
+                10.0
+        )
+
+        self.assertEqual(hash(frustum), hash(frustum))
+        self.assertEqual(hash(frustum), hash(Gf.Frustum(frustum)))
+
+        # Ensure that permutations to individual fields don't result in a hash collision
+        permuted_position = Gf.Frustum(frustum)
+        permuted_position.SetPosition(permuted_position.GetPosition() * -1.0)
+        permuted_rotation = Gf.Frustum(frustum)
+        permuted_rotation.SetRotation(permuted_rotation.GetRotation() * -1.0)
+        permuted_window = Gf.Frustum(frustum)
+        permuted_window.SetWindow(permuted_window.GetWindow() * 0.5)
+        permuted_near_far = Gf.Frustum(frustum)
+        permuted_near_far.SetNearFar(permuted_near_far.GetNearFar() * 0.5)
+        permuted_projection_type = Gf.Frustum(frustum)
+        permuted_projection_type.SetProjectionType(Gf.Frustum.Orthographic)
+        permuted_view_distance = Gf.Frustum(frustum)
+        permuted_view_distance.SetViewDistance(permuted_view_distance.GetViewDistance() * -1.0)
+
+        hashes = [hash(f) for f in (
+            frustum, permuted_position, permuted_rotation, permuted_window, permuted_near_far,
+            permuted_projection_type, permuted_view_distance)
+        ]
+        self.assertCountEqual(hashes, set(hashes))
 
 if __name__ == '__main__':
     unittest.main()
