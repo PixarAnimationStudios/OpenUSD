@@ -25,7 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pyWrapContext.h"
-
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -55,6 +55,16 @@ public:
     virtual TfTokenVector GetNodeNames() const  = 0;
     virtual TfToken GetNodeType(const TfToken &nodeName) const = 0;
 
+    /// Node type info is a collection of data related to the node type, often
+    /// used to determine the node type.
+    ///
+    /// For now, we only have getters for this, as we aren't really intending on
+    /// mutating this in any filter.
+    virtual TfTokenVector
+    GetNodeTypeInfoKeys(const TfToken& nodeName) const = 0;
+    virtual VtValue
+    GetNodeTypeInfoValue(const TfToken& nodeName, const TfToken& key) const = 0;
+
     virtual TfTokenVector GetAuthoredNodeParameterNames(
         const TfToken &nodeName) const = 0;
     

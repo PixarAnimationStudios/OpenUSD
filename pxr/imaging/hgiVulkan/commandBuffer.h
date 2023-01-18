@@ -93,8 +93,10 @@ public:
     /// 'not reset' means it is still inflight or that it was previously reset.
     /// When the command buffer was reset the 'CompletedHandler' fns will have
     /// been executed in case of GPU->CPU read back cmds.
+    // If wait = HgiSubmitWaitTypeWaitUntilCompleted, the function will wait 
+    // for the command buffer to be consumed before continuing.
     HGIVULKAN_API
-    bool ResetIfConsumedByGPU();
+    bool ResetIfConsumedByGPU(HgiSubmitWaitType wait);
 
     /// Inserts a barrier so that data written to memory by commands before
     /// the barrier is available to commands after the barrier.

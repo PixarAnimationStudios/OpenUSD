@@ -102,6 +102,30 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/* static */
+TfTokenVector
+UsdAPISchemaBase::_GetMultipleApplyInstanceNames(const UsdPrim &prim,
+                                                 const TfType &schemaType)
+{
+    TfTokenVector instanceNames;
+
+    auto appliedSchemas = prim.GetAppliedSchemas();
+    if (appliedSchemas.empty()) {
+        return instanceNames;
+    }
+    
+    TfToken schemaTypeName = UsdSchemaRegistry::GetAPISchemaTypeName(schemaType);
+
+    for (const auto &appliedSchema : appliedSchemas) {
+        std::pair<TfToken, TfToken> typeNameAndInstance =
+                UsdSchemaRegistry::GetTypeNameAndInstance(appliedSchema);
+        if (typeNameAndInstance.first == schemaTypeName) {
+            instanceNames.emplace_back(typeNameAndInstance.second);
+        }
+    }
+    
+    return instanceNames;
+}
 
 /* virtual */
 bool 

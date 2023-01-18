@@ -52,6 +52,8 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 
+#include "pxr/imaging/hgi/capabilities.h"
+
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/hash.h"
@@ -680,13 +682,19 @@ HdStPopulateConstantPrimvars(
         const GfMatrix4d transform = delegate->GetTransform(id);
         sharedData->bounds.SetMatrix(transform); // for CPU frustum culling
 
-        sources.push_back(
-            std::make_shared<HdVtBufferSource>(
-                HdTokens->transform, transform));
+        HgiCapabilities const * capabilities =
+            hdStResourceRegistry->GetHgi()->GetCapabilities();
+        bool const doublesSupported = capabilities->IsSet(
+            HgiDeviceCapabilitiesBitsShaderDoublePrecision);
 
         sources.push_back(
             std::make_shared<HdVtBufferSource>(
-                HdTokens->transformInverse, transform.GetInverse()));
+                HdTokens->transform, transform, doublesSupported));
+
+        sources.push_back(
+            std::make_shared<HdVtBufferSource>(
+                HdTokens->transformInverse, transform.GetInverse(),
+                doublesSupported));
 
         bool leftHanded = transform.IsLeftHanded();
 
@@ -707,12 +715,14 @@ HdStPopulateConstantPrimvars(
                 std::make_shared<HdVtBufferSource>(
                     HdInstancerTokens->instancerTransform,
                     rootTransforms,
-                    rootTransforms.size()));
+                    rootTransforms.size(),
+                    doublesSupported));
             sources.push_back(
                 std::make_shared<HdVtBufferSource>(
                     HdInstancerTokens->instancerTransformInverse,
                     rootInverseTransforms,
-                    rootInverseTransforms.size()));
+                    rootInverseTransforms.size(),
+                    doublesSupported));
 
             // XXX: It might be worth to consider to have isFlipped
             // for non-instanced prims as well. It can improve

@@ -126,7 +126,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
     // primIndices stores the curve index that generated each line segment.
     std::vector<int> primIndices;
     const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
-    bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
+    const bool periodic = _topology->GetCurveWrap() == HdTokens->periodic;
     int vertexIndex = 0; // Index of next vertex to emit
     int curveIndex = 0;  // Index of next curve to emit
     // For each curve
@@ -146,7 +146,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
             }
             v0 = v1;
         }
-        if(wrap) {
+        if (periodic) {
             indices.push_back(GfVec2i(v0, firstVert));
             primIndices.push_back(curveIndex);
         }
@@ -192,11 +192,12 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
 {
+    HD_TRACE_FUNCTION();
 
     /* 
     Here's a diagram of what's happening in this code:
 
-    For open (non periodic, wrap = false) curves:
+    For open (non periodic) curves:
 
       bezier (vStep = 3)
       0------1------2------3------4------5------6 (vertex index)
@@ -211,12 +212,31 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
                     [======= seg2 =======]
                            [======= seg3 =======]
 
+    For pinned (non periodic) curves:
+      indices with a trailing quote (') are added
 
-    For closed (periodic, wrap = true) curves:
+      bspline (vStep = 1)
+      
+      0'-----0'-----0------1------2------3------4------4'-----4' (vertex index)
+      [======= seg0 =======]
+             [======= seg1 =======]
+                    [======= seg2 =======]
+                           [======= seg3 =======]
+                                  [======= seg4 =======]
+                                         [======= seg5 =======]
+
+      catmullRom (vStep = 1)
+      0'-----0------1------2------3------4------4' (vertex index)
+      [======= seg0 =======]
+             [======= seg1 =======]
+                    [======= seg2 =======]
+                           [======= seg3 =======]
+
+    For closed (periodic) curves:
 
        periodic bezier (vStep = 3)
        0------1------2------3------4------5------0 (vertex index)
-       [======= seg0 =======]
+       [======= seg0 =======]                      
                             [======= seg1 =======]
 
 
@@ -234,7 +254,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
     std::vector<int> primIndices;
 
     const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
-    bool wrap = _topology->GetCurveWrap() == HdTokens->periodic;
+    const bool periodic = _topology->GetCurveWrap() == HdTokens->periodic;
     int vStep;
     TfToken basis = _topology->GetCurveBasis();
     if(basis == HdTokens->bezier) {
@@ -244,37 +264,90 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
         vStep = 1;
     }
 
+    // The "pinned" wrap mode is relevant only to bspline and catmull-rom
+    // curves to make the interpolated curve begin and end at the first and last
+    // control vertices respectively.
+    // Instead of computing the phantom points using reflection such that
+    // p[-1] = 2 * p[0] - p[1] and p[n] = 2 * p[n-1] - p[n-2],
+    // we simply repeat the start and end points (once for catmull-rom and twice
+    // for bspline) to generate additional segment(s) at the start and end of
+    // each curve. This simplifies the implementation considerably by avoiding 
+    // expansion of authored primvar data and factoring it when computing the 
+    // topology index buffer.
+    //
+    const bool pinned = (_topology->GetCurveWrap() == HdTokens->pinned) &&
+                        (vStep == 1);
+
+    auto addPinnedSegment =
+        [&](int startIndex, int curveIndex, int cvCount, bool start) {
+
+            // Triplicate the start/end vertex for bspline and duplicate for
+            // catmull-rom. This generates 2 segments each at the start and end
+            // of each curve for bspline and 1 for catmull-rom curves.
+            if (start) {
+                const int &v0 = startIndex;
+                const int endIndex = v0 + cvCount;
+                const int v1 = std::min(v0 + 1, endIndex);
+                const int v2 = std::min(v0 + 2, endIndex);
+
+                if (basis == HdTokens->bSpline) {
+                    indices.push_back(GfVec4i(v0, v0, v0, v1));
+                    primIndices.push_back(curveIndex);
+                }
+
+                indices.push_back(GfVec4i(v0, v0, v1, v2));
+                primIndices.push_back(curveIndex);
+
+            } else {
+                GfVec4i const &lastSeg = indices.back();
+                const int &vn  = lastSeg[3];
+                const int &vn1 = lastSeg[2];
+                const int &vn2 = lastSeg[1];
+                indices.push_back(GfVec4i(vn2, vn1, vn, vn));
+                primIndices.push_back(curveIndex);
+
+                if (basis == HdTokens->bSpline) {
+                    indices.push_back(GfVec4i(vn1, vn, vn, vn));
+                    primIndices.push_back(curveIndex);
+                }
+            }
+        };
+
     int vertexIndex = 0;
     int curveIndex = 0;
     TF_FOR_ALL(itCounts, vertexCounts) {
-        int count = *itCounts;
-        // The first segment always eats up 4 verts, not just vstep, so to
-        // compensate, we break at count - 3.
-        int numSegs;
+        const int count = *itCounts;
 
         // If we're closing the curve, make sure that we have enough
         // segments to wrap all the way back to the beginning.
-        if (wrap) {
-            numSegs = count / vStep;
-        } else {
-            numSegs = ((count - 4) / vStep) + 1;
+        // Note that the value calculated  does _not_ account for the additional
+        // segments for pinned (non-periodic) curves.
+        const int numSegs = periodic? count / vStep : ((count - 4) / vStep) + 1;
+
+        if (pinned) {
+            addPinnedSegment(vertexIndex, curveIndex, count, /*start =*/ true);
         }
 
-        for(int i = 0;i < numSegs; ++i) {
+        for (int i = 0;i < numSegs; ++i) {
 
             // Set up curve segments based on curve basis
             GfVec4i seg;
             int offset = i*vStep;
-            for(int v = 0;v < 4; ++v) {
+            for (int v = 0; v < 4; ++v) {
                 // If there are not enough verts to round out the segment
                 // just repeat the last vert.
-                seg[v] = wrap 
+                seg[v] = periodic 
                     ? vertexIndex + ((offset + v) % count)
                     : vertexIndex + std::min(offset + v, (count -1));
             }
             indices.push_back(seg);
             primIndices.push_back(curveIndex);
         }
+
+        if (pinned) {
+            addPinnedSegment(vertexIndex, curveIndex, count, /*start =*/ false);
+        }
+
         vertexIndex += count;
         curveIndex++;
     }

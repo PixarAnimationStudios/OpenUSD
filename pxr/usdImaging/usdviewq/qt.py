@@ -43,13 +43,16 @@ PySideModule = GetPySideModule()
 if PySideModule == 'PySide':
     from PySide import QtCore, QtGui, QtOpenGL
     from PySide import QtGui as QtWidgets
+    from PySide import QtGui as QtActionWidgets
+    from PySide.QtOpenGL import QGLWidget as QGLWidget
+    from PySide.QtOpenGL import QGLFormat as QGLFormat
 
     # Patch missing functions to make PySide look like PySide2
     if not hasattr(QtGui.QApplication, 'devicePixelRatio'):
         QtGui.QApplication.devicePixelRatio = lambda self: 1
 
-    if not hasattr(QtOpenGL.QGLWidget, 'devicePixelRatioF'):
-        QtOpenGL.QGLWidget.devicePixelRatioF = lambda self: 1.0
+    if not hasattr(QGLWidget, 'devicePixelRatioF'):
+        QGLWidget.devicePixelRatioF = lambda self: 1.0
 
     if not hasattr(QtWidgets.QHeaderView, 'setSectionResizeMode'):
         QtWidgets.QHeaderView.setSectionResizeMode = \
@@ -71,13 +74,107 @@ if PySideModule == 'PySide':
     if not hasattr(QtCore, 'QStringListModel'):
         QtCore.QStringListModel = QtGui.QStringListModel
 
+    def isContextInitialised(self):
+        return self.context().initialized()
+    
+    QGLWidget.isContextInitialised = isContextInitialised
+
+    def bindTexture(self, qimage):
+        from OpenGL import GL
+        tex = self.bindTexture(qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
+                               QtOpenGL.QGLContext.NoBindOption)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+
+        return tex
+
+    def releaseTexture(self, tex):
+        from OpenGL import GL
+        GL.glDeleteTextures(tex)
+
+    QGLWidget.BindTexture = bindTexture
+    QGLWidget.ReleaseTexture = releaseTexture
+
+    def initQGLWidget(self, glFormat, parent):
+        QGLWidget.__init__(self, glFormat, parent)
+
+    QGLWidget.InitQGLWidget = initQGLWidget
+
 elif PySideModule == 'PySide2':
     from PySide2 import QtCore, QtGui, QtWidgets, QtOpenGL
+    from PySide2.QtOpenGL import QGLWidget as QGLWidget
+    from PySide2.QtOpenGL import QGLFormat as QGLFormat
+    from PySide2 import QtWidgets as QtActionWidgets
     
     # Older versions still have QtGui.QStringListModel - this
     # is apparently a bug:
     #    https://bugreports.qt.io/browse/PYSIDE-614
     if not hasattr(QtCore, 'QStringListModel'):
         QtCore.QStringListModel = QtGui.QStringListModel
+
+    def isContextInitialised(self):
+        return self.context().initialized()
+    
+    QGLWidget.isContextInitialised = isContextInitialised
+
+    def bindTexture(self, qimage):
+        from OpenGL import GL
+        tex = self.bindTexture(qimage, GL.GL_TEXTURE_2D, GL.GL_RGBA,
+                               QtOpenGL.QGLContext.NoBindOption)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, tex)
+
+        return tex
+
+    def releaseTexture(self, tex):
+        from OpenGL import GL
+        GL.glDeleteTextures(tex)
+
+    QGLWidget.BindTexture = bindTexture
+    QGLWidget.ReleaseTexture = releaseTexture
+
+    def initQGLWidget(self, glFormat, parent):
+        QGLWidget.__init__(self, glFormat, parent)
+
+    QGLWidget.InitQGLWidget = initQGLWidget
+
+elif PySideModule == 'PySide6':
+    from PySide6 import QtCore, QtGui, QtWidgets, QtOpenGL
+    from PySide6.QtOpenGLWidgets import QOpenGLWidget as QGLWidget
+    from PySide6.QtGui import QSurfaceFormat as QGLFormat
+    from PySide6 import QtGui as QtActionWidgets
+
+    if not hasattr(QtCore.Qt, 'MatchRegExp'):
+        QtCore.Qt.MatchRegExp = QtCore.Qt.MatchRegularExpression
+
+    def isContextInitialised(self):
+        return True
+
+    QGLWidget.isContextInitialised = isContextInitialised
+
+    QGLWidget.updateGL = QGLWidget.update
+
+    if not hasattr(QGLWidget, 'grabFrameBuffer'):
+        QGLWidget.grabFrameBuffer = QGLWidget.grabFramebuffer
+
+    def bindTexture(self, qimage):
+        tex = QtOpenGL.QOpenGLTexture(qimage)
+        tex.bind()
+        return tex
+
+    def releaseTexture(self, tex):
+        tex.release()
+        tex.destroy()
+
+    QGLWidget.BindTexture = bindTexture
+    QGLWidget.ReleaseTexture = releaseTexture
+
+    if not hasattr(QGLFormat, 'setSampleBuffers'):
+        QGLFormat.setSampleBuffers = lambda self, _: None
+
+    def initQGLWidget(self, glFormat, parent):
+        QGLWidget.__init__(self)
+        self.setFormat(glFormat)
+
+    QGLWidget.InitQGLWidget = initQGLWidget
+
 else:
     raise ImportError('Unrecognized PySide module "{}"'.format(PySideModule))

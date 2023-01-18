@@ -31,6 +31,7 @@
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/regex.h"
 #include "pxr/base/arch/systemInfo.h"
+#include "pxr/base/arch/virtualMemory.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"
@@ -88,6 +89,7 @@
 
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <tuple>
 #include <type_traits>
 
@@ -476,7 +478,7 @@ CrateFile::_FileMapping::~_FileMapping()
 }
 
 CrateFile::_FileMapping::ZeroCopySource *
-CrateFile::_FileMapping::AddRangeReference(void *addr, size_t numBytes)
+CrateFile::_FileMapping::AddRangeReference(void const *addr, size_t numBytes)
 {
     auto iresult = _outstandingRanges.emplace(this, addr, numBytes);
     // If we take the source's count from 0 -> 1, add a reference to the
@@ -522,15 +524,26 @@ CrateFile::_FileMapping::_DetachReferencedRanges()
             int64_t pageStart = addrAsInt / CRATE_PAGESIZE;
             int64_t pageEnd =
                 ((addrAsInt + zeroCopy.GetNumBytes() - 1) / CRATE_PAGESIZE) + 1;
-            TouchPages(reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE),
-                       pageEnd - pageStart);
+            // Make the memory range read/copy-on-write.
+            char *startAddr =
+                reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE);
+            if (ArchSetMemoryProtection(
+                    startAddr, (pageEnd-pageStart) * CRATE_PAGESIZE,
+                    ArchProtectReadWriteCopy)) {
+                TouchPages(reinterpret_cast<char *>(pageStart * CRATE_PAGESIZE),
+                           pageEnd - pageStart);
+            }
+            else {
+                TF_WARN("could not set address range permissions to "
+                        "copy-on-write");
+            }
         }
     }
 }
 
 CrateFile::_FileMapping::ZeroCopySource::ZeroCopySource(
     CrateFile::_FileMapping *m,
-    void *addr, size_t numBytes)
+    void const *addr, size_t numBytes)
     : Vt_ArrayForeignDataSource(_Detached)
     , _mapping(m)
     , _addr(addr)
@@ -633,9 +646,9 @@ struct _MmapStream {
     }
 
     Vt_ArrayForeignDataSource *
-    CreateZeroCopyDataSource(void *addr, size_t numBytes) {
+    CreateZeroCopyDataSource(void const *addr, size_t numBytes) {
         char const *mapStart = _mapping->GetMapStart();
-        char const *chAddr = static_cast<char *>(addr);
+        char const *chAddr = static_cast<char const *>(addr);
         size_t mapLen = _mapping->GetLength();
         bool inRange = mapStart <= chAddr &&
             (chAddr + numBytes) <= (mapStart + mapLen);
@@ -651,12 +664,12 @@ struct _MmapStream {
         return _mapping->AddRangeReference(addr, numBytes);
     }
 
-    inline void *TellMemoryAddress() const {
+    inline void const *TellMemoryAddress() const {
         return _cur;
     }
     
 private:
-    char *_cur;
+    char const *_cur;
     FileMappingPtr _mapping;
     char *_debugPageMap;
     int _prefetchKB;
@@ -1816,12 +1829,14 @@ _ReadUncompressedArray(
         // pass addRef=false here, because CreateZeroCopyDataSource does that
         // already -- it needs to know if it's taken the count from 0 to 1 or
         // not.
-        void *addr = reader.src.TellMemoryAddress();
+        void const *addr = reader.src.TellMemoryAddress();
 
         if (Vt_ArrayForeignDataSource *foreignSrc =
             reader.src.CreateZeroCopyDataSource(addr, numBytes)) {
             *out = VtArray<T>(
-                foreignSrc, static_cast<T *>(addr), size, /*addRef=*/false);
+                foreignSrc,
+                static_cast<T *>(const_cast<void *>(addr)),
+                size, /*addRef=*/false);
         }
         else {
             // In case of error, return an empty array.
@@ -2106,12 +2121,18 @@ CrateFile::CanRead(string const &assetPath, ArAssetSharedPtr const &asset)
 
 /* static */
 std::unique_ptr<CrateFile>
-CrateFile::CreateNew()
+CrateFile::CreateNew(bool detached)
 {
     const bool useMmap = 
         !TfGetEnvSetting(USDC_USE_ASSET) &&
         !TfGetenvBool("USDC_USE_PREAD", false);
-    return std::unique_ptr<CrateFile>(new CrateFile(useMmap));
+
+    const Options opt = 
+        detached ? Options::Detached :
+        useMmap ? Options::UseMmap :
+        Options::Default;
+    
+    return std::unique_ptr<CrateFile>(new CrateFile(opt));
 }
 
 /* static */
@@ -2122,7 +2143,7 @@ CrateFile::_MmapAsset(char const *assetPath, ArAssetSharedPtr const &asset)
     std::tie(file, offset) = asset->GetFileUnsafe();
     std::string errMsg;
     auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadWrite(file, &errMsg),
+        new _FileMapping(ArchMapFileReadOnly(file, &errMsg),
                          offset, asset->GetSize()));
     if (!mapping->GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map asset '%s'%s%s", assetPath,
@@ -2139,7 +2160,7 @@ CrateFile::_MmapFile(char const *fileName, FILE *file)
 {
     std::string errMsg;
     auto mapping = _FileMappingIPtr(
-        new _FileMapping(ArchMapFileReadWrite(file, &errMsg)));
+        new _FileMapping(ArchMapFileReadOnly(file, &errMsg)));
     if (!mapping->GetMapStart()) {
         TF_RUNTIME_ERROR("Couldn't map file '%s'%s%s", fileName,
                          !errMsg.empty() ? ": " : "",
@@ -2151,19 +2172,29 @@ CrateFile::_MmapFile(char const *fileName, FILE *file)
 
 /* static */
 std::unique_ptr<CrateFile>
-CrateFile::Open(string const &assetPath)
+CrateFile::Open(string const &assetPath,
+                bool detached)
 {
     TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
     return Open(
-        assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)));
+        assetPath, ArGetResolver().OpenAsset(ArResolvedPath(assetPath)),
+        detached);
 }
 
 std::unique_ptr<CrateFile>
-CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
+CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &srcAsset,
+                bool detached)
 {
     TfAutoMallocTag tag2("Usd_CrateFile::CrateFile::Open");
 
     std::unique_ptr<CrateFile> result;
+
+    ArAssetSharedPtr detachedAsset;
+    if (detached && srcAsset) {
+        detachedAsset = srcAsset->GetDetachedAsset();
+    }
+
+    const ArAssetSharedPtr& asset = detached ? detachedAsset : srcAsset;
 
     if (!asset) {
         TF_RUNTIME_ERROR("Failed to open asset '%s'", assetPath.c_str());
@@ -2195,7 +2226,7 @@ CrateFile::Open(string const &assetPath, ArAssetSharedPtr const &asset)
 
     if (!result) {
         // With no underlying FILE *, we'll go through ArAsset::Read() directly.
-        result.reset(new CrateFile(assetPath, asset));
+        result.reset(new CrateFile(assetPath, asset, detached));
     }
     
     // If the resulting CrateFile has no asset path, reading failed.
@@ -2232,8 +2263,9 @@ CrateFile::GetFileVersionToken() const
     return TfToken(Version(_boot).AsString());
 }
 
-CrateFile::CrateFile(bool useMmap)
-    : _useMmap(useMmap)
+CrateFile::CrateFile(Options opt)
+    : _detached(opt == Options::Detached)
+    , _useMmap(opt == Options::UseMmap)
 {
     _DoAllTypeRegistrations();
 }
@@ -2241,6 +2273,7 @@ CrateFile::CrateFile(bool useMmap)
 CrateFile::CrateFile(string const &assetPath, string const &fileName,
                      _FileMappingIPtr mapping, ArAssetSharedPtr const &asset)
     : _mmapSrc(std::move(mapping))
+    , _detached(false)
     , _assetPath(assetPath)
     , _fileReadFrom(fileName)
     , _useMmap(true)
@@ -2304,6 +2337,7 @@ CrateFile::CrateFile(string const &assetPath, string const &fileName,
                      _FileRange &&inputFile, ArAssetSharedPtr const &asset)
     : _preadSrc(std::move(inputFile))
     , _assetSrc(asset)
+    , _detached(false)
     , _assetPath(assetPath)
     , _fileReadFrom(fileName)
     , _useMmap(false)
@@ -2334,8 +2368,10 @@ CrateFile::_InitPread()
                    rangeLength, ArchFileAdviceNormal);
 }
 
-CrateFile::CrateFile(string const &assetPath, ArAssetSharedPtr const &asset)
+CrateFile::CrateFile(string const &assetPath, ArAssetSharedPtr const &asset,
+                     bool detached)
     : _assetSrc(asset)
+    , _detached(detached)
     , _assetPath(assetPath)
     , _useMmap(false)
 {
@@ -2508,6 +2544,10 @@ CrateFile::Packer::Close()
     // Reset so we can read values from the newly written asset.
     // See CrateFile::Open.
     auto asset = ArGetResolver().OpenAsset(ArResolvedPath(_crate->_assetPath));
+    if (asset && _crate->IsDetached()) {
+        asset = asset->GetDetachedAsset();
+    }
+
     if (!asset) {
         return false;
     }
@@ -3362,6 +3402,68 @@ CrateFile::_ReadSpecs(Reader reader)
             }
         }
     }
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED 
+    // Spec sanity checks, in "prefer-safety-over-speed" mode.
+
+    pxr_tsl::robin_set<SdfPath, SdfPath::Hash> seenPaths;
+
+    std::vector<std::string> messages;
+    
+    for (Spec &spec: _specs) {
+        // Check for valid-looking specs (no empty paths, no repeated paths,
+        // valid SdfSpecType enum values...)
+        SdfPath const &specPath = GetPath(spec.pathIndex);
+        if (specPath.IsEmpty()) {
+            messages.push_back(
+                TfStringPrintf("spec at index %zu has empty path",
+                               std::distance(&_specs.front(), &spec))); 
+            // Mark for removal. 
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+        if (spec.specType == SdfSpecTypeUnknown ||
+            spec.specType >= SdfNumSpecTypes) {
+            messages.push_back(
+                TfStringPrintf("spec <%s> has %s",
+                               specPath.GetAsString().c_str(),
+                               spec.specType == SdfSpecTypeUnknown ?
+                               "unknown spec type" :
+                               TfStringPrintf("invalid spec type value %d",
+                                              spec.specType).c_str()));
+            // Mark for removal.
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+        if (!seenPaths.insert(specPath).second) {
+            messages.push_back(
+                TfStringPrintf("spec <%s> repeated",
+                               specPath.GetAsString().c_str()));
+            // Mark for removal.
+            spec.specType = SdfSpecTypeUnknown;
+            continue;
+        }
+    }
+
+    if (!messages.empty()) {
+        // Remove everything with specType == Unknown -- any failed tests above
+        // set specs that failed to have this spec type.
+        _specs.erase(
+            std::remove_if(_specs.begin(), _specs.end(),
+                           [](Spec const &s) {
+                               return s.specType == SdfSpecTypeUnknown;
+                           }),
+            _specs.end());
+
+        // Sort and unique the messages, then emit a warning.
+        std::sort(messages.begin(), messages.end(), TfDictionaryLessThan());
+        messages.erase(std::unique(messages.begin(), messages.end()),
+                       messages.end());
+        TF_RUNTIME_ERROR(
+            "Corrupt asset @%s@ - ignoring invalid specs: %s.",
+            _assetPath.c_str(), TfStringJoin(messages, ", ").c_str());
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 }
 
 template <class Reader>

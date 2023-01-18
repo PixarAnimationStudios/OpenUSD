@@ -43,6 +43,11 @@ class UsdImagingCapsuleAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
 
+    // Number of radial segments on a circular cross-section of the capsule.
+    static constexpr size_t numRadial = 10;
+    // Number of divisions along the spine axis for each hemispherical cap.
+    static constexpr size_t numCapAxial = 4;
+
     UsdImagingCapsuleAdapter()
         : UsdImagingGprimAdapter()
     {}
@@ -116,13 +121,6 @@ public:
     VtValue GetPoints(
         UsdPrim const& prim,
         UsdTimeCode time) const override;
-
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim, 
-                                 UsdTimeCode time);
-    
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 };
 
 

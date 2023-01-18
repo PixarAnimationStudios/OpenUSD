@@ -140,6 +140,12 @@ public:
     static UsdPhysicsLimitAPI
     Get(const UsdPrim &prim, const TfToken &name);
 
+    /// Return a vector of all named instances of UsdPhysicsLimitAPI on the 
+    /// given \p prim.
+    USDPHYSICS_API
+    static std::vector<UsdPhysicsLimitAPI>
+    GetAll(const UsdPrim &prim);
+
     /// Checks if the given name \p baseName is the base name of a property
     /// of PhysicsLimitAPI.
     USDPHYSICS_API

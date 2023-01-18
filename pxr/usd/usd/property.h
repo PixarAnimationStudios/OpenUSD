@@ -86,6 +86,24 @@ public:
     SdfPropertySpecHandleVector GetPropertyStack(
         UsdTimeCode time = UsdTimeCode::Default()) const;
 
+    /// Returns a strength-ordered list of property specs that provide
+    /// opinions for this property paired with the cumulative layer offset from
+    /// the stage's root layer to the layer containing the property spec.
+    ///
+    /// This behaves exactly the same as UsdProperty::GetPropertyStack with the 
+    /// addition of providing the cumulative layer offset of each spec's layer.
+    ///
+    /// \note The results returned by this method are meant for debugging
+    /// and diagnostic purposes.  It is **not** advisable to retain a 
+    /// PropertyStack for the purposes of expedited value resolution for 
+    /// properties, since the makeup of an attribute's PropertyStack may
+    /// itself be time-varying.  To expedite repeated value resolution of
+    /// attributes, you should instead retain a \c UsdAttributeQuery .
+    USD_API
+    std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+    GetPropertyStackWithLayerOffsets(
+        UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// Return this property's name with all namespace prefixes removed,
     /// i.e. the last component of the return value of GetName()
     ///

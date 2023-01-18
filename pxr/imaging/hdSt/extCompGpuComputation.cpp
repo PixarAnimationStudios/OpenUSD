@@ -40,7 +40,6 @@
 #include "pxr/imaging/hgi/computePipeline.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/tokens.h"
-#include "pxr/imaging/glf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 
 #include <limits>
@@ -51,12 +50,14 @@ static void
 _AppendResourceBindings(
     HgiResourceBindingsDesc* resourceDesc,
     HgiBufferHandle const& buffer,
-    uint32_t location)
+    uint32_t location,
+    bool writable)
 {
     HgiBufferBindDesc bufBind;
     bufBind.bindingIndex = location;
     bufBind.resourceType = HgiBindResourceTypeStorageBuffer;
     bufBind.stageUsage = HgiShaderStageCompute;
+    bufBind.writable = writable;
     bufBind.offsets.push_back(0);
     bufBind.buffers.push_back(buffer);
     resourceDesc->buffers.push_back(std::move(bufBind));
@@ -235,7 +236,8 @@ HdStExtCompGpuComputation::Execute(
                 TF_VERIFY(buffer->GetHandle())) {
                 _AppendResourceBindings(&resourceDesc,
                                         buffer->GetHandle(),
-                                        binding.GetLocation());
+                                        binding.GetLocation(),
+                                        /*writable=*/true);
             }
         }
 
@@ -253,7 +255,8 @@ HdStExtCompGpuComputation::Execute(
                 if (TF_VERIFY(binding.IsValid())) {
                     _AppendResourceBindings(&resourceDesc,
                                             buffer->GetHandle(),
-                                            binding.GetLocation());
+                                            binding.GetLocation(),
+                                            /*writable=*/false);
                 }
             }
         }
@@ -265,9 +268,9 @@ HdStExtCompGpuComputation::Execute(
         resourceBindingsInstance.SetValue(rb);
     }
 
-    HgiResourceBindingsSharedPtr const& resourceBindindsPtr =
+    HgiResourceBindingsSharedPtr const& resourceBindingsPtr =
         resourceBindingsInstance.GetValue();
-    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindingsPtr.get();
 
     HgiComputeCmds* computeCmds = hdStResourceRegistry->GetGlobalComputeCmds();
 

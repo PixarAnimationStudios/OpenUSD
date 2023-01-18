@@ -135,7 +135,7 @@ Tutorial
 
 #. Here is the result in usdview.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706056/565776849.png
+   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706056/FinalResult_usdview.png
    
    The camera automatically frames the geometry, but we can see that the sphere
    is larger than in the last tutorial by inspecting its attributes in the

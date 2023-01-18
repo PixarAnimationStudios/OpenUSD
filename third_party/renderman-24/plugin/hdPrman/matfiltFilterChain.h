@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// order.
 enum MatfiltOrder
 {
-    Start = 100,
+    Start = 0,
     ConnectionResolve = 100, // vstruct
     NodeTranslation = 110, // matx, preview surface
     End = 200,

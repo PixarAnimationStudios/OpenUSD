@@ -83,6 +83,16 @@ ArResolvedPath Sdf_ComputeFilePath(
 bool Sdf_CanWriteLayerToPath(
     const ArResolvedPath& resolvedPath);
 
+/// Compute the modification timestamp for the given \p layer.
+VtValue Sdf_ComputeLayerModificationTimestamp(
+    const SdfLayer& layer);
+
+/// Compute the modification timestamps for the external asset dependencies
+/// for \p layer. Returns a dictionary of resolved external asset dependency
+/// paths to the timestamp for each asset.
+VtDictionary Sdf_ComputeExternalAssetModificationTimestamps(
+    const SdfLayer& layer);
+
 /// Returns a newly allocated Sdf_AssetInfo struct with fields computed using
 /// the specified \p identifier and \p filePath. If \p fileVersion is
 /// specified, it is used over the discovered revision of the file. It is the

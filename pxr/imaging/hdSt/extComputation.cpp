@@ -34,8 +34,6 @@
 
 #include "pxr/imaging/hgi/capabilities.h"
 
-#include "pxr/base/gf/matrix4f.h"
-
 #include "pxr/base/arch/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -89,24 +87,6 @@ _AllocateComputationDataRange(
     return inputRange;
 }
 
-static
-HdBufferSourceSharedPtr
-_GetBufferSource(TfToken const &inputName,
-                 VtValue const &inputValue,
-                 size_t arraySize,
-                 bool const convertToFloat)
-{
-    // We should probably expand this to handle other types, but
-    // the initial use case for this conversion is to deal with
-    // transform matrices passed to skinning computations.
-    if (convertToFloat && inputValue.IsHolding<GfMatrix4d>()) {
-        VtValue const floatValue(GfMatrix4f(inputValue.Get<GfMatrix4d>()));
-        return std::make_shared<HdVtBufferSource>(inputName, floatValue, 1);
-    }
-
-    return std::make_shared<HdVtBufferSource>(inputName, inputValue, arraySize);
-}
-
 void
 HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
                          HdRenderParam   *renderParam,
@@ -142,8 +122,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
 
     HgiCapabilities const * capabilities =
         resourceRegistry->GetHgi()->GetCapabilities();
-    bool const convertToFloat =
-        !capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
+    bool const doublesSupported =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
 
     HdBufferSourceSharedPtrVector inputs;
     for (TfToken const & inputName: GetSceneInputNames()) {
@@ -152,7 +132,8 @@ HdStExtComputation::Sync(HdSceneDelegate *sceneDelegate,
         size_t arraySize =
             inputValue.IsArrayValued() ? inputValue.GetArraySize() : 1;
         HdBufferSourceSharedPtr const inputSource =
-            _GetBufferSource(inputName, inputValue, arraySize, convertToFloat);
+            std::make_shared<HdVtBufferSource>(inputName, inputValue,
+                arraySize, doublesSupported);
         if (inputSource->IsValid()) {
             inputs.push_back(inputSource);
         } else {

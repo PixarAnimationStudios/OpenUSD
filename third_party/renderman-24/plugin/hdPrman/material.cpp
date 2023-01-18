@@ -26,6 +26,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltFilterChain.h"
+#include "hdPrman/matfiltResolveTerminals.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -49,7 +50,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT, false,
+TF_DEFINE_ENV_SETTING(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT, true,
                       "Use scene indices rather than matfilt callbacks.");
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -80,6 +81,7 @@ HdPrmanMaterial::GetShaderSourceTypes()
 
 TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
     *_filterChain = {
+        MatfiltResolveTerminals,
         MatfiltConvertPreviewMaterial,
         MatfiltResolveVstructs,
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
@@ -551,20 +553,27 @@ _ConvertNodes(
                         connEntry.first.data());
                 continue;
             }
-            if (!upstreamProp) {
+            TfToken propType = downstreamProp->GetType();
+            // In the case of terminals there is no upstream output name
+            // since the whole node is referenced as a whole
+            if (!upstreamProp && propType != SdrPropertyTypes->Terminal) {
                 TF_WARN("Unknown upstream property %s",
                         e.upstreamOutputName.data());
                 continue;
             }
             // Prman syntax for parameter references is "handle:param".
             RtUString name(downstreamProp->GetImplementationName().c_str());
-            RtUString inputRef(
-                               (e.upstreamNode.GetString()+":"
-                                + upstreamProp->GetImplementationName().c_str())
-                               .c_str());
+            RtUString inputRef;
+            if (!upstreamProp) {
+                inputRef = RtUString(e.upstreamNode.GetString().c_str());
+            } else {
+                inputRef = RtUString(
+                    (e.upstreamNode.GetString()+":"
+                    + upstreamProp->GetImplementationName().c_str())
+                    .c_str());
+            }
 
             // Establish the Riley connection.
-            TfToken propType = downstreamProp->GetType();
             if (propType == SdrPropertyTypes->Color) {
                 sn.params.SetColorReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Vector) {
@@ -581,6 +590,8 @@ _ConvertNodes(
                 sn.params.SetStringReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Struct) {
                 sn.params.SetStructReference(name, inputRef);
+            } else if (propType == SdrPropertyTypes->Terminal) {
+                sn.params.SetBxdfReference(name, inputRef);
             } else {
                 TF_WARN("Unknown type '%s' for property '%s' "
                         "on shader '%s' at %s; ignoring.",

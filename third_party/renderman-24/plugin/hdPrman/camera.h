@@ -64,8 +64,40 @@ public:
         return _sampleXforms;
     }
 
+    float GetLensDistortionK1() const {
+        return _lensDistortionK1;
+    }
+
+    float GetLensDistortionK2() const {
+        return _lensDistortionK2;
+    }
+
+    const GfVec2f &GetLensDistortionCenter() const {
+        return _lensDistortionCenter;
+    }
+
+    float GetLensDistortionAnaSq() const {
+        return _lensDistortionAnaSq;
+    }
+
+    const GfVec2f &GetLensDistortionAsym() const {
+        return _lensDistortionAsym;
+    }
+
+    float GetLensDistortionScale() const {
+        return _lensDistortionScale;
+    }
+    
+
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
+
+    float _lensDistortionK1;
+    float _lensDistortionK2;
+    GfVec2f _lensDistortionCenter;
+    float _lensDistortionAnaSq;
+    GfVec2f _lensDistortionAsym;
+    float _lensDistortionScale;
 };
 
 

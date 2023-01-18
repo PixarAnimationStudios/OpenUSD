@@ -12,7 +12,9 @@ def Xform "AnimCube" (
 {
     def Xform "Geom"
     {
-        def Mesh "Cube"
+        def Mesh "Cube" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             float3[] extent.timeSamples = {
                 1: [(-0.5, -0.5, -0.5), (0.5, 0.5, 0.5)],

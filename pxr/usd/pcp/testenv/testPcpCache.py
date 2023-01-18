@@ -39,6 +39,9 @@ class TestPcpCache(unittest.TestCase):
         self.assertTrue(pcpCache)
         pcpCache.GetUsedLayers()
 
+        ls = pcpCache.layerStack
+        self.assertTrue(pcpCache.HasRootLayerStack(ls))
+
         # Create a PcpCache with a file format target, ensuring that layers
         # without the correct target will be marked invalid during composition.
         pcpCache = Pcp.Cache(lsi, fileFormatTarget='sdf')

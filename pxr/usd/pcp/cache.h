@@ -127,6 +127,18 @@ public:
     PCP_API
     PcpLayerStackPtr GetLayerStack() const;
 
+    /// Return true if this cache's root layer stack is \p layerStack, false
+    /// otherwise.  This is functionally equivalent to comparing against the
+    /// result of GetLayerStack(), but does not require constructing a TfWeakPtr
+    /// or any refcount operations.
+    bool HasRootLayerStack(PcpLayerStackRefPtr const &layerStack) const {
+        return layerStack == _layerStack;
+    }
+
+    /// \overload
+    PCP_API
+    bool HasRootLayerStack(PcpLayerStackPtr const &layerStack) const;
+
     /// Return true if the cache is configured in Usd mode.
     PCP_API
     bool IsUsd() const;

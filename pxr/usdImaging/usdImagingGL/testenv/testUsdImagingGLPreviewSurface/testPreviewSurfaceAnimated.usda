@@ -57,7 +57,9 @@ def Xform "Scene" (
 
     def Xform "Geom"
     {
-        def Mesh "Plane"
+        def Mesh "Plane" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             float3[] extent = [(-2, -2, -2), (2, 2, 2)]
             int[] faceVertexCounts = [4]

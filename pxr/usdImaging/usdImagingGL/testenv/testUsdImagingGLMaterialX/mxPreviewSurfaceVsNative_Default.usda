@@ -3,13 +3,19 @@
     upAxis = "Z"
 )
 def Scope "MaterialX_Default" {
-    def Sphere "MxUsdDefault" {
+    def Sphere "MxUsdDefault" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/MaterialX/Materials/USD_Default>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, 1.5, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
-    def Sphere "MxUsdDefault_Rough" {
+    def Sphere "MxUsdDefault_Rough" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/MaterialX/Materials/USD_Default_Rough>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-1.5, 0, -1.5, 1) )
@@ -17,13 +23,19 @@ def Scope "MaterialX_Default" {
     }
 }
 def Scope "UsdNative_Default" {
-    def Sphere "UsdDefault" {
+    def Sphere "UsdDefault" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/USD_Default>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, 1.5, 1) )
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
-    def Sphere "UsdDefault_Rough" {
+    def Sphere "UsdDefault_Rough" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         rel material:binding = </Materials/USD_Default_Rough>
         color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
         matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (1.5, 0, -1.5, 1) )

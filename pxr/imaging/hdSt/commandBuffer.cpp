@@ -76,14 +76,21 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
 
 void
 HdStCommandBuffer::PrepareDraw(
+    HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
     HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
 
     for (auto const& batch : _drawBatches) {
-        batch->PrepareDraw(renderPassState, resourceRegistry);
+        batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+
+    //
+    // Compute work that was set up for indirect command buffers and frustum
+    // culling in the batch preparation is submitted to device.
+    //
+    resourceRegistry->SubmitComputeWork();
 }
 
 void
@@ -108,6 +115,7 @@ HdStCommandBuffer::ExecuteDraw(
     for (auto const& batch : _drawBatches) {
         batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());
 }
 

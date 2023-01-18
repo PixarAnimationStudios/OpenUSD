@@ -61,7 +61,9 @@ def Xform "Volume" (
     double3 xformOp:translate = (2, -2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
-    def Volume "Volume"
+    def Volume "Volume" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>
@@ -71,6 +73,7 @@ def Xform "Volume" (
     }
 
     def Mesh "TranslucentGeometry" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
         doc = "A shadeless semi-transparent green rectangle in front of the volume."
     )
     {

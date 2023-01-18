@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-struct MxHdInfo;
+struct HdSt_MxShaderGenInfo;
 
 /// \class HdStMaterialXShaderGen
 ///
@@ -39,9 +39,10 @@ struct MxHdInfo;
 class HdStMaterialXShaderGen : public MaterialX::GlslShaderGenerator
 {
 public:
-    HdStMaterialXShaderGen(MxHdInfo const& mxHdInfo);
+    HdStMaterialXShaderGen(HdSt_MxShaderGenInfo const& mxHdInfo);
 
-    static MaterialX::ShaderGeneratorPtr create(MxHdInfo const& mxHdInfo) {
+    static MaterialX::ShaderGeneratorPtr create(
+            HdSt_MxShaderGenInfo const& mxHdInfo) {
         return std::make_shared<HdStMaterialXShaderGen>(mxHdInfo); 
     }
 
@@ -116,6 +117,7 @@ private:
     // MaterialX values.
     MaterialX::StringMap _mxHdTextureMap;
     MaterialX::StringMap _mxHdPrimvarMap;
+    MaterialX::StringMap _mxHdPrimvarDefaultValueMap;
     std::string _defaultTexcoordName;
     std::string _materialTag;
     bool _bindlessTexturesEnabled;

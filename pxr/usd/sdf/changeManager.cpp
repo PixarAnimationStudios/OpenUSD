@@ -67,24 +67,25 @@ Sdf_ChangeManager::_SendNoticesForChangeList( const SdfLayerHandle & layer,
         SdfNotice::LayerDirtinessChanged().Send(layer);
     }
 
-    const SdfChangeList::EntryList & entryList = changeList.GetEntryList();
-    TF_FOR_ALL(pathChanges, entryList) {
-        const SdfPath & path = pathChanges->first;
-        const SdfChangeList::Entry & entry = pathChanges->second;
+    const SdfChangeList::const_iterator layerEntry = 
+        changeList.FindEntry(SdfPath::AbsoluteRootPath());
+    if (layerEntry != changeList.end()) {
+        const SdfChangeList::Entry& entry = layerEntry->second;
 
-        TF_FOR_ALL(it, entry.infoChanged) {
-            if (path == SdfPath::AbsoluteRootPath())
-                SdfNotice::LayerInfoDidChange(it->first).Send(layer);
+        for (const auto& keyAndChange : entry.infoChanged) {
+            SdfNotice::LayerInfoDidChange(keyAndChange.first).Send(layer);
         }
 
         if (entry.flags.didChangeIdentifier) {
             SdfNotice::LayerIdentifierDidChange(
                 entry.oldIdentifier, layer->GetIdentifier()).Send(layer);
         }
-        if (entry.flags.didReplaceContent)
+        if (entry.flags.didReplaceContent) {
             SdfNotice::LayerDidReplaceContent().Send(layer);
-        if (entry.flags.didReloadContent)
+        }
+        if (entry.flags.didReloadContent) {
             SdfNotice::LayerDidReloadContent().Send(layer);
+        }
     }
 }
 
@@ -271,9 +272,10 @@ _IsOrderChangeOnly(const VtValue & oldVal, const VtValue & newVal )
 }
 
 void
-Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
-                                const SdfPath & path, const TfToken &field,
-                                const VtValue & oldVal, const VtValue & newVal )
+Sdf_ChangeManager::DidChangeField(
+    const SdfLayerHandle &layer,
+    const SdfPath & path, const TfToken &field,
+    VtValue && oldVal, const VtValue & newVal )
 {
     if (!layer->_ShouldNotify())
         return;
@@ -290,7 +292,8 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
 
     if (field == FieldKeys->Default) {
         // Special case default first, since it's a commonly set field.
-        _GetListFor(changes, layer).DidChangeInfo(path, field, oldVal, newVal);
+        _GetListFor(changes, layer).DidChangeInfo(
+            path, field, std::move(oldVal), newVal);
     }
     else if (field == FieldKeys->Variability ||
              field == FieldKeys->Custom ||
@@ -303,7 +306,7 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         // change notification API.
         if (!oldVal.IsEmpty() && !newVal.IsEmpty()) {
             _GetListFor(changes, layer)
-                .DidChangeInfo(path, field, oldVal, newVal);
+                .DidChangeInfo(path, field, std::move(oldVal), newVal);
         }
     }
     else if (field == FieldKeys->PrimOrder) {
@@ -440,7 +443,7 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
                 _GetListFor(changes, layer).GetEntry(path);
             if (!entry.flags.didAddNonInertPrim) {
                 _GetListFor(changes, layer)
-                    .DidChangeInfo(path, field, oldVal, newVal);
+                    .DidChangeInfo(path, field, std::move(oldVal), newVal);
             }
         }
         else {
@@ -452,7 +455,7 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
                 !oldVal.Get<TfToken>().IsEmpty() &&
                 !newVal.Get<TfToken>().IsEmpty()) {
                 _GetListFor(changes, layer)
-                    .DidChangeInfo(path, field, oldVal, newVal);
+                    .DidChangeInfo(path, field, std::move(oldVal), newVal);
             }
         }
     } 
@@ -461,7 +464,7 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         // Changing TCPS.  If the old or new value is empty, the effective old
         // or new value is the value of FPS, if there is one.  See
         // SdfLayer::GetTimeCodesPerSecond.
-        const VtValue oldTcps = (
+        VtValue oldTcps = (
             !oldVal.IsEmpty() ? oldVal :
             layer->GetField(path, FieldKeys->FramesPerSecond));
         const VtValue newTcps = (
@@ -469,20 +472,21 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
             layer->GetField(path, FieldKeys->FramesPerSecond));
 
         _GetListFor(changes, layer).DidChangeInfo(
-            path, FieldKeys->TimeCodesPerSecond, oldTcps, newTcps);
+            path, FieldKeys->TimeCodesPerSecond, std::move(oldTcps), newTcps);
     }
     else if (field == FieldKeys->FramesPerSecond &&
             TF_VERIFY(path == SdfPath::AbsoluteRootPath())) {
         // Announce the change to FPS itself.
         SdfChangeList &list = _GetListFor(changes, layer);
-        list.DidChangeInfo(path, FieldKeys->FramesPerSecond, oldVal, newVal);
+        list.DidChangeInfo(
+            path, FieldKeys->FramesPerSecond, VtValue(oldVal), newVal);
 
         // If the layer doesn't have a value for TCPS, announce a change to TCPS
         // also, since FPS serves as a dynamic fallback for TCPS.  See
         // SdfLayer::GetTimeCodesPerSecond.
         if (!layer->HasField(path, FieldKeys->TimeCodesPerSecond)) {
             list.DidChangeInfo(
-                path, FieldKeys->TimeCodesPerSecond, oldVal, newVal);
+                path, FieldKeys->TimeCodesPerSecond, std::move(oldVal), newVal);
         }
     }
     else if (field == ChildrenKeys->ConnectionChildren       ||
@@ -503,7 +507,7 @@ Sdf_ChangeManager::DidChangeField(const SdfLayerHandle &layer,
         // If this is problematic, we'll need to filter them down to the known
         // set.
         _GetListFor(changes, layer)
-            .DidChangeInfo(path, field, oldVal, newVal);
+            .DidChangeInfo(path, field, std::move(oldVal), newVal);
     }
 }
 

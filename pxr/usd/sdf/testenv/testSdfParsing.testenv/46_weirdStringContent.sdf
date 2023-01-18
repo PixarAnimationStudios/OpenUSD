@@ -8,8 +8,8 @@
 def MfScope "foo"
 {
     custom string s0 = " \" \' ' "
-    custom string s1 = " \\" \\' \" \' ' "
-    custom string s2 = ' \\" \\' \" \' " '
+    custom string s1 = " \\\" \\' \" \' ' "
+    custom string s2 = ' \\" \\\' \" \' " '
     custom string s3 = "a b \\"
     custom string s4 = 'a b \\'
     custom string s5 = "'a'"
@@ -33,4 +33,7 @@ def MfScope "foo"
     custom string s19 = "aɪ kæn iːt glɑːs ænd ɪt dɐz nɒt hɜːt miː"
     custom string s20 = "Можам да јадам стакло, а не ме штета"
     custom string s21 = "ನನಗೆ ಹಾನಿ ಆಗದೆ, ನಾನು ಗಜನ್ನು ತಿನಬಹುದು"
+    custom string s23 = """\
+Testing multiline string \
+And another line."""
 }

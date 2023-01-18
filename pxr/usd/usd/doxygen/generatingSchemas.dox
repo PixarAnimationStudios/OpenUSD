@@ -631,6 +631,28 @@ Here's a short description of each datum in the global customData dictionary:
  	will be camelCased to "namespacePrefixAttrName" irrespective of
  	useLiteralIdentifier being set or not.
  
+\section Codeless_Schemas Codeless Schemas
+
+By default ```usdGenSchema``` generates C++ and Python code, providing
+appropriate APIs. Clients also have an option of not generating any code by
+setting the \em skipCodeGeneration metadata to True for a given schema, hence 
+generating **only generatedSchema.usda and plugInfo.json** which are the only 
+essential products for runtime schema registration.
+
+Since codeless schemas do not provide any code, clients do not need to recompile
+USD to use or update these schemas. This "dynamic" nature of codeless schemas 
+is the primary motivation behind using codeless schemas. 
+Also, for the same reasons, clients will have to use basic USD level APIs to 
+query prims and attributes associated with the codeless schemas. This also means
+codeless schemas concept can not be used for any schema which requires custom
+code.
+
+The usdRiPxr schema domain that ships with USD is an example of a codeless 
+schema domain. These are usd schemas generated using renderman shader 
+definitions (args files) using the Sdr library. ```usdgenschemafromsdr``` is the
+utility which generates schema.usda, generatedSchema.usda and plugInfo.json for
+the usdRiPxr schema domain.
+
 \section Usd_PerClassProperties Customizing Per-Class Properties
 
 \code

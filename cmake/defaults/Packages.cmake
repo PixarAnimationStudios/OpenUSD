@@ -37,12 +37,9 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# Set up a version string for comparisons. This is available
-# as Boost_VERSION_STRING in CMake 3.14+
 # Find Boost package before getting any boost specific components as we need to
 # disable boost-provided cmake config, based on the boost version found.
 find_package(Boost REQUIRED)
-set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
@@ -54,7 +51,7 @@ set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_
 # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
 # is enabled by default for boost version 1.70 and above. If a user explicitly 
 # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-if (${boost_version_string} VERSION_GREATER_EQUAL "1.70")
+if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70")
     option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
     if (Boost_NO_BOOST_CMAKE)
         message(STATUS "Disabling boost-provided cmake config")
@@ -81,7 +78,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(PYTHON_LIBRARIES "")
     endif()
 
-    if (${boost_version_string} VERSION_GREATER_EQUAL "1.67")
+    if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67")
         # As of boost 1.67 the boost_python component name includes the
         # associated Python version (e.g. python27, python36). 
         # XXX: After boost 1.73, boost provided config files should be able to 
@@ -187,7 +184,7 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
         if (OIIO_idiff_BINARY)
@@ -215,7 +212,7 @@ if (PXR_BUILD_IMAGING)
     if (PXR_ENABLE_VULKAN_SUPPORT)
         if (EXISTS $ENV{VULKAN_SDK})
             # Prioritize the VULKAN_SDK includes and packages before any system
-            # installed headers. This is to prevent linking against older SDKs 
+            # installed headers. This is to prevent linking against older SDKs
             # that may be installed by the OS.
             # XXX This is fixed in cmake 3.18+
             include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib)
@@ -256,7 +253,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -285,7 +282,7 @@ endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)
     find_package(Alembic REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     if (PXR_ENABLE_HDF5_SUPPORT)
         find_package(HDF5 REQUIRED
             COMPONENTS
@@ -306,10 +303,21 @@ endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
 # ----------------------------------------------
+
+# Try and find Imath or fallback to OpenEXR
+# Use ImathConfig.cmake, 
+# Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
+if(REQUIRES_Imath)
+    find_package(Imath CONFIG)
+    if (NOT Imath_FOUND)
+        MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
+        find_package(OpenEXR REQUIRED)
+    endif()
+endif()
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")

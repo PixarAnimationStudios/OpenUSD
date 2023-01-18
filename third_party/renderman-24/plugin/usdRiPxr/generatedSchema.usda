@@ -627,6 +627,20 @@ class "PxrOptionsAPI"
                 "variance-v22" uses the relative variance computation of RenderMan 22 and older.
             '''
     )
+    point3f ri:hider:bakebboxmax = (1e30, 1e30, 1e30) (
+        displayGroup = "Baking"
+        displayName = "Baking bbox max"
+        doc = """
+                Bounding box max for baking 3D point clouds.  In world space.
+            """
+    )
+    point3f ri:hider:bakebboxmin = (-1e30, -1e30, -1e30) (
+        displayGroup = "Baking"
+        displayName = "Baking bbox min"
+        doc = """
+                Bounding box min for baking 3D point clouds.  In world space.
+            """
+    )
     token ri:hider:bakemode = "pattern" (
         allowedTokens = ["pattern", "integrator", "all"]
         displayGroup = "Baking"
@@ -813,6 +827,35 @@ class "PxrOptionsAPI"
                 stratification of the samples, this is not quite as good as if you had
                 rendered a single image with 256 consecutive samples.  However, it
                 is still better than rendering a single image with only 64 samples.
+            """
+    )
+    int ri:hider:samplestride = 1 (
+        displayGroup = "Common"
+        displayName = "Sample Stride"
+        doc = """
+                This facilitates rendering several images in parallel (with the same 
+                aamplestride but different sampleoffset) and then combine them 
+                incrementally during interactive rendering.  Default value is 1.
+
+                With non-adaptive sampling:
+                Let's say you render four images with 256 samples each, with
+                samplestride 4 and sampleoffsets 0, 1, 2, and 3.  If you combine those
+                four images, you'll get exactly the same image as if you had rendered
+                a single image with 1024 samples, and during incremental/interactive
+                rendering you'll get the benefit of best use of the stratified
+                progressive sample sequences.  If you can \"assemble\" images with
+                samples 0-3, 4-7, 8-12, etc during interactive rendering, you've
+                got the benefits of faster rendering without jumping to high samples
+                early on.
+
+                With adaptive sampling:
+                Let's say you again render four images, each with \"maxsamples\" 256,
+                with samplestride 4 and sampleoffsets 0, 1, 2, and 3.  This time with
+                adaptive sampling (PixelVariance > 0).  Since each of the four images
+                is more noisy than the combined image, the adaptive sampling will use
+                more samples before deciding that the image error is acceptable than
+                if it had been rendered as a single image.  So the PixelVariance 
+                setting may need to be adjusted.
             """
     )
     token ri:hider:type = "raytrace" (
@@ -1309,6 +1352,15 @@ class "PxrPrimvarsAPI"
                 Coordinate space of dice:minlength.
             """
     )
+    float primvars:ri:dice:offscreenmultiplier = -1 (
+        displayGroup = "Dicing"
+        displayName = "Dice Off Screen Multiplier"
+        doc = """
+                Dicing rate multiplier for objects outside the viewing frustum. If a value
+                less than zero is specified, the value from the Option with the same name 
+                will be used instead.
+            """
+    )
     token primvars:ri:dice:offscreenstrategy = "viewfrustumdistance" (
         allowedTokens = ["viewfrustumdistance", "worlddistance", "objectdistance", "planarprojection"]
         displayGroup = "Dicing"
@@ -1564,6 +1616,16 @@ class "PxrPrimvarsAPI"
                 rendered if the integrator explicitly uses that named
                 aggregate, or if a surface shader such as PxrSurface
                 binds the named aggregate to its interior.
+            """
+    )
+    bool primvars:ri:volume:aggregaterespectvisibility = 0 (
+        displayGroup = "Volume"
+        displayName = "Aggregate Respect Visibility"
+        doc = """
+                If set to 1, standard visibility attributes will be respected by
+                the volume if it is part of an aggregate. If set to 0, the visibility 
+                attributes will be ignored and only the integrator visibility settings
+                will apply.
             """
     )
     bool primvars:ri:volume:dsominmax (
@@ -2472,6 +2534,17 @@ class "PxrCylinderLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Refine"
@@ -2551,6 +2624,17 @@ class "PxrCylinderLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface. 
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -2608,6 +2692,17 @@ class "PxrDiskLightAPI"
         displayName = "Manifold Walk Exclude Group"
         doc = """
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -2687,6 +2782,17 @@ class "PxrDiskLightAPI"
                 msApproxContribution: The color of the contribution of light from multi-scattering approximation.
                 Controls how much the light bleed contributes to the brightness of volumes illuminated by this light.
                 Has no effect if msApprox is set to 0.
+            """
+    )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:thinShadow = 1 (
@@ -2877,7 +2983,7 @@ class "PxrDomeLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -3322,6 +3428,17 @@ class "PxrMeshLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic path.
             """
     )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     float inputs:ri:light:importanceMultiplier = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -3377,6 +3494,17 @@ class "PxrMeshLightAPI"
                 msApproxContribution: The color of the contribution of light from multi-scattering approximation.
                 Controls how much the light bleed contributes to the brightness of volumes illuminated by this light.
                 Has no effect if msApprox is set to 0.
+            """
+    )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:thinShadow = 1 (
@@ -3438,7 +3566,7 @@ class "PxrPortalLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -3602,7 +3730,7 @@ class "PxrRectLightAPI"
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
             """
     )
-    vector3f inputs:ri:light:colorMapGamma = (1, 1, 1) (
+    float3 inputs:ri:light:colorMapGamma = (1, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Basic"
         displayName = "Map Gamma"
@@ -3616,6 +3744,17 @@ class "PxrRectLightAPI"
         displayName = "Map Saturation"
         doc = """
                 colorMapSaturation: Adjust the texture's saturation.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -3698,6 +3837,17 @@ class "PxrRectLightAPI"
                 Has no effect if msApprox is set to 0.
             """
     )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface. 
+                Note that this value will not apply to lights as seen from the camera.
+            """
+    )
     bool inputs:ri:light:thinShadow = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
@@ -3755,6 +3905,17 @@ class "PxrSphereLightAPI"
         displayName = "Manifold Walk Caustics Exclude Group"
         doc = """
                 Specifies the exclude shadow subset for manifold walk. Will be used to prevent occlusion during the search of caustic paths.
+            """
+    )
+    float inputs:ri:light:diffuseNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Diffuse Near Dist"
+        doc = """
+                diffuseNearDist: Near distance between the point with diffuse shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a diffuse surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:emissionFocusNormalize = 0 (
@@ -3834,6 +3995,17 @@ class "PxrSphereLightAPI"
                 msApproxContribution: The color of the contribution of light from multi-scattering approximation.
                 Controls how much the light bleed contributes to the brightness of volumes illuminated by this light.
                 Has no effect if msApprox is set to 0.
+            """
+    )
+    float inputs:ri:light:specularNearDist = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Refine"
+        displayName = "Specular Near Dist"
+        doc = """
+                specularNearDist: Near distance between the point with specular shading being illuminated 
+                and the light at which the sample doesn't get brighter. This may help you 
+                avoid hot spots and sampling issues where a light is near a specular surface.
+                Note that this value will not apply to lights as seen from the camera.
             """
     )
     bool inputs:ri:light:thinShadow = 1 (
@@ -5488,7 +5660,7 @@ class PxrCamera "PxrCamera" (
         at the same time.
       """
     )
-    vector3f inputs:ri:enhance = (0, 0, 1) (
+    float3 inputs:ri:enhance = (0, 0, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Advanced"
         displayName = "Enhancement"
@@ -7457,7 +7629,7 @@ Required AOVs:
         doc = """ During dilate sort, weighting
       """
     )
-    vector3f inputs:ri:HSV_Dark = (0, 1, 0) (
+    float3 inputs:ri:HSV_Dark = (0, 1, 0) (
         connectability = "interfaceOnly"
         displayGroup = "Line Color"
         displayName = "HSV Dark"
@@ -7465,7 +7637,7 @@ Required AOVs:
           HSV
       """
     )
-    vector3f inputs:ri:HSV_Light = (0, 1, 1) (
+    float3 inputs:ri:HSV_Light = (0, 1, 1) (
         connectability = "interfaceOnly"
         displayGroup = "Line Color"
         displayName = "HSV Light"

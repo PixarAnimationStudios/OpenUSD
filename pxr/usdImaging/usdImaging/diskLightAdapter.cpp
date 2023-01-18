@@ -42,6 +42,22 @@ UsdImagingDiskLightAdapter::~UsdImagingDiskLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingDiskLightAdapter::GetImagingSubprims()
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingDiskLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->diskLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingDiskLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

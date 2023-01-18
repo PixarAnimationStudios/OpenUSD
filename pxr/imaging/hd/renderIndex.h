@@ -358,12 +358,12 @@ public:
     // ---------------------------------------------------------------------- //
     HD_API
     void InsertSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex,
+            const HdSceneIndexBaseRefPtr &inputScene,
             SdfPath const& scenePathPrefix);
 
     HD_API
     void RemoveSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex);
+            const HdSceneIndexBaseRefPtr &inputScene);
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate
@@ -395,19 +395,16 @@ public:
     /// invalidations to be consolidated into vectorized batches. Calling this
     /// will cause subsequent notices to be be queued.
     /// 
-    /// NOTE: This does not currently track any nested state. Repeated calls
-    ///       prior to a corresponding SceneIndexEmulationNoticeBatchEnd will
-    ///       have no effect.
+    /// NOTE: This tracks depth internally and is safe to call in nested 
+    ///       contexts. It is not safe to call from multiple threads, though.
     HD_API
     void SceneIndexEmulationNoticeBatchBegin();
 
     /// Flushes any queued scene index observer notices and disables further
     /// queueing.
     ///
-    /// NOTE: This does not currently track any nested state. Calling this
-    ///       will immediately flush and disable queueing regardless of the
-    ///       number of times SceneIndexEmulationNoticeBatchBegin is called
-    ///       prior.
+    /// NOTE: This tracks depth internally and is safe to call in nested 
+    ///       contexts. It is not safe to call from multiple threads, though.
     HD_API
     void SceneIndexEmulationNoticeBatchEnd();
 
@@ -498,6 +495,8 @@ private:
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
     HdNoticeBatchingSceneIndexRefPtr _emulationNoticeBatchingSceneIndex;
+    unsigned int _noticeBatchingDepth;
+
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;

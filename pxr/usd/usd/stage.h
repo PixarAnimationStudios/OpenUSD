@@ -74,6 +74,7 @@ class Usd_InstanceCache;
 class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
 class UsdResolveInfo;
+class UsdResolveTarget;
 class Usd_Resolver;
 class UsdPrim;
 class UsdPrimRange;
@@ -1633,6 +1634,16 @@ private:
     SdfPropertySpecHandleVector
     _GetPropertyStack(const UsdProperty &prop, UsdTimeCode time) const;
 
+    std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+    _GetPropertyStackWithLayerOffsets(
+        const UsdProperty &prop, UsdTimeCode time) const;
+
+    static SdfPrimSpecHandleVector 
+    _GetPrimStack(const UsdPrim &prim);
+
+    static std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
+    _GetPrimStackWithLayerOffsets(const UsdPrim &prim);
+
     SdfPropertySpecHandle
     _GetSchemaPropertySpec(const UsdPrim &prim, const TfToken &propName) const;
 
@@ -2081,21 +2092,66 @@ private:
                          UsdResolveInfo *resolveInfo,
                          const UsdTimeCode *time = nullptr) const;
 
+    void _GetResolveInfoWithResolveTarget(
+        const UsdAttribute &attr, 
+        const UsdResolveTarget &resolveTarget,
+        UsdResolveInfo *resolveInfo,
+        const UsdTimeCode *time = nullptr) const;
+
     template <class T> struct _ExtraResolveInfo;
 
+    // Gets the value resolve info for the given attribute. If time is provided,
+    // the resolve info is evaluated for that specific time (which may be 
+    // default). Otherwise, if time is null, the resolve info is evaluated for
+    // "any numeric time" and will not populate values in extraInfo that 
+    // require a specific time to be evaluated.
     template <class T>
     void _GetResolveInfo(const UsdAttribute &attr, 
                          UsdResolveInfo *resolveInfo,
                          const UsdTimeCode *time = nullptr,
                          _ExtraResolveInfo<T> *extraInfo = nullptr) const;
 
+    // Gets the value resolve info for the given attribute using the given 
+    // resolve target. If time is provided, the resolve info is evaluated for 
+    // that specific time (which may be default). Otherwise, if time is null, 
+    // the resolve info is evaluated for "any numeric time" and will not 
+    // populate values in extraInfo that require a specific time to be 
+    // evaluated.
+    template <class T>
+    void _GetResolveInfoWithResolveTarget(
+        const UsdAttribute &attr, 
+        const UsdResolveTarget &resolveTarget,
+        UsdResolveInfo *resolveInfo,
+        const UsdTimeCode *time = nullptr,
+        _ExtraResolveInfo<T> *extraInfo = nullptr) const;
+
+    // Shared implementation function for _GetResolveInfo and 
+    // _GetResolveInfoWithResolveTarget. The only difference between how these
+    // two functions behave is in how they create the Usd_Resolver used for 
+    // iterating over nodes and layers, thus they provide this implementation
+    // with the needed MakeUsdResolverFn to create the Usd_Resolver.
+    template <class T, class MakeUsdResolverFn>
+    void _GetResolveInfoImpl(const UsdAttribute &attr, 
+                         UsdResolveInfo *resolveInfo,
+                         const UsdTimeCode *time,
+                         _ExtraResolveInfo<T> *extraInfo,
+                         const MakeUsdResolverFn &makeUsdResolveFn) const;
+
     template <class T> struct _ResolveInfoResolver;
     struct _PropertyStackResolver;
 
-    template <class Resolver>
-    void _GetResolvedValueImpl(const UsdProperty &prop,
-                               Resolver *resolver,
-                               const UsdTimeCode *time = nullptr) const;
+    template <class Resolver, class MakeUsdResolverFn>
+    void _GetResolvedValueAtDefaultImpl(
+        const UsdProperty &prop,
+        Resolver *resolver,
+        const MakeUsdResolverFn &makeUsdResolverFn) const;
+
+    template <class Resolver, class MakeUsdResolverFn>
+    void _GetResolvedValueAtTimeImpl(
+        const UsdProperty &prop,
+        Resolver *resolver,
+        const double *time,
+        const MakeUsdResolverFn &makeUsdResolverFn) const;
 
     bool _GetValue(UsdTimeCode time, const UsdAttribute &attr, 
                    VtValue* result) const;
@@ -2131,6 +2187,11 @@ private:
                                       UsdTimeCode time, const UsdAttribute &attr,
                                       Usd_InterpolatorBase* interpolator,
                                       T* value) const;
+
+    template <class T>
+    bool _GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
+                                             const UsdAttribute &attr,
+                                             T* value) const;
 
     // --------------------------------------------------------------------- //
     // Specialized Time Sample I/O

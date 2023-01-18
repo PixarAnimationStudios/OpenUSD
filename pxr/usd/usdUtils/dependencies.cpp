@@ -328,7 +328,13 @@ _FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
     } else {
         for (SdfPayload const& payload:
              primSpec->GetPayloadList().GetAddedOrExplicitItems()) {
-            _ProcessDependency(payload.GetAssetPath(), _DepType::Payload);
+
+            // If the asset path is empty this is a local payload. We can ignore
+            // these since they refer to the same layer where the payload was
+            // authored.
+            if (!payload.GetAssetPath().empty()) {
+                _ProcessDependency(payload.GetAssetPath(), _DepType::Payload);
+            }
         }
     }
 }
@@ -522,9 +528,15 @@ _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
             &_FileAnalyzer::_RemapRefOrPayload<SdfReference,
             _DepType::Reference>, this, std::placeholders::_1));
     } else {
-        for (SdfReference const& reference:
+        for (SdfReference const& ref:
             primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
-            _ProcessDependency(reference.GetAssetPath(), _DepType::Reference);
+
+            // If the asset path is empty this is a local reference. We can
+            // ignore these since they refer to the same layer where the
+            // reference was authored.
+            if (!ref.GetAssetPath().empty()) {
+                _ProcessDependency(ref.GetAssetPath(), _DepType::Reference);
+            }
         }
     }
 }
@@ -689,8 +701,8 @@ public:
                 }
 
                 const std::string refAssetPath = 
-                        SdfComputeAssetPathRelativeToLayer(
-                            fileAnalyzer.GetLayer(), ref);
+                    SdfComputeAssetPathRelativeToLayer(
+                        fileAnalyzer.GetLayer(), ref);
 
                 std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
 

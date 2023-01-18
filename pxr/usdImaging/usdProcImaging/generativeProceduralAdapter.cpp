@@ -247,6 +247,12 @@ UsdProcImagingGenerativeProceduralAdapter::MarkDirty(
     UsdImagingIndexProxy* index)
 {
     index->MarkRprimDirty(cachePath, dirty);
+
+    // On DirtyPrimvar, we need to re-run UpdateForTime to check for new
+    // primvars that may have been added by an edit.
+    if (dirty & HdChangeTracker::DirtyPrimvar) {
+        index->RequestUpdateForTime(cachePath);
+    }
 }
 
 void

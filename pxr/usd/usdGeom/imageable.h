@@ -347,10 +347,13 @@ public:
     /// for the given \p purpose.
     ///
     /// For "default" purpose, return the overall *visibility* attribute.
-    /// Otherwise, return *guideVisibility*, *proxyVisibility*, or
-    /// *renderVisibility*.
+    /// For "guide", "proxy", or "render" purpose, return *guideVisibility*,
+    /// *proxyVisibility*, or *renderVisibility* if UsdGeomVisibilityAPI is
+    /// applied to the prim. If UsdGeomvVisibiltyAPI is not applied, an
+    /// empty attribute is returned for purposes other than default.
     ///
-    /// \sa UsdGeomVisibilityAPI
+    /// \sa UsdGeomVisibilityAPI::Apply
+    /// \sa UsdGeomVisibilityAPI::GetPurposeVisibilityAttr
     USDGEOM_API
     UsdAttribute GetPurposeVisibilityAttr(
         const TfToken &purpose = UsdGeomTokens->default_) const;

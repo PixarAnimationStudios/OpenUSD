@@ -36,15 +36,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Storing MaterialX-Hydra counterparts and other Hydra specific information
-struct MxHdInfo {
-    MxHdInfo() 
+struct HdSt_MxShaderGenInfo {
+    HdSt_MxShaderGenInfo() 
         : textureMap(MaterialX::StringMap()), 
           primvarMap(MaterialX::StringMap()), 
+          primvarDefaultValueMap(MaterialX::StringMap()), 
           defaultTexcoordName("st"),
           materialTag(HdStMaterialTagTokens->defaultMaterialTag.GetString()),
           bindlessTexturesEnabled(false) {}
     MaterialX::StringMap textureMap;
     MaterialX::StringMap primvarMap;
+    MaterialX::StringMap primvarDefaultValueMap;
     std::string defaultTexcoordName;
     std::string materialTag;
     bool bindlessTexturesEnabled;
@@ -58,13 +60,13 @@ void HdSt_ApplyMaterialXFilter(
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
     HdSt_MaterialParamVector* materialParams,
-    bool const bindlessTexturesEnabled);
+    HdStResourceRegistry *resourceRegistry);
 
 // Generates the glsfx shader for the given MaterialX Document
 MaterialX::ShaderPtr HdSt_GenMaterialXShader(
     MaterialX::DocumentPtr const& mxDoc,
     MaterialX::FileSearchPath const& searchPath,
-    MxHdInfo const& mxHdInfo=MxHdInfo());
+    HdSt_MxShaderGenInfo const& mxHdInfo=HdSt_MxShaderGenInfo());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -623,9 +623,13 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             resourceRegistry->GetHgi()->GetCapabilities()->
                 IsSet(HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
+        bool const hasMetalTessellation =
+            resourceRegistry->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+
         HdSt_MeshTopologySharedPtr topology =
             HdSt_MeshTopology::New(meshTopology, refineLevel, refineMode,
-                hasBuiltinBarycentrics
+                (hasBuiltinBarycentrics || hasMetalTessellation)
                     ? HdSt_MeshTopology::QuadsTriangulated
                     : HdSt_MeshTopology::QuadsUntriangulated);
         

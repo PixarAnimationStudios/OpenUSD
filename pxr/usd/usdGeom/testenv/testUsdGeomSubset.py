@@ -29,12 +29,11 @@ from __future__ import print_function
 from pxr import Usd, UsdGeom, Vt, Sdf
 import unittest
 
-testFile = "Sphere.usda"
-stage = Usd.Stage.Open(testFile)
-sphere = stage.GetPrimAtPath("/Sphere/pSphere1")
-
 class testUsdGeomSubset(unittest.TestCase):
     def test_SubsetRetrievalAndValidity(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/pSphere1")
         geom = UsdGeom.Imageable(sphere)
         self.assertTrue(geom)
     
@@ -75,6 +74,9 @@ class testUsdGeomSubset(unittest.TestCase):
             self.assertTrue(len(reason) > 0)
 
     def test_CreateGeomSubset(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/pSphere1")
         geom = UsdGeom.Imageable(sphere)
         self.assertTrue(geom)
 
@@ -174,6 +176,32 @@ class testUsdGeomSubset(unittest.TestCase):
         self.assertTrue(invalidSubset)
         self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([invalidSubset], 5), 
                          Vt.IntArray([3,4]))
+
+    # Test gathering of prim's geom subsets when prim's parent tree includes 
+    # a not-defined parent prim e.g. PointInstancer with Prototype prim using
+    # specifier "over"
+    def test_PointInstancer(self):
+        testFile = "PointInstancer.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath(
+            "/Sphere/PointInstancers/Prototypes/pSphere1")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+    
+        materialBindSubsets = UsdGeom.Subset.GetGeomSubsets(geom, 
+            elementType=UsdGeom.Tokens.face,
+            familyName='materialBind')
+        self.assertEqual(len(materialBindSubsets), 3)
+        
+        self.assertEqual(UsdGeom.Tokens.partition, 
+            UsdGeom.Subset.GetFamilyType(geom, 'materialBind'))
+
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(materialBindSubsets, 
+            elementCount=16, familyType=UsdGeom.Tokens.partition)
+
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
+            UsdGeom.Tokens.face, familyName='materialBind')
+        self.assertTrue(valid)
 
 if __name__ == "__main__":
     unittest.main()

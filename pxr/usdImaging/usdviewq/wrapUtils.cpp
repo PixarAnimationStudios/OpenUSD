@@ -55,6 +55,7 @@ _GetPrimInfo(UsdPrim const &prim, UsdTimeCode time)
                                      info.isAbstract,
                                      info.isInPrototype,
                                      info.isInstance,
+                                     info.supportsGuides,
                                      info.supportsDrawMode,
                                      info.isVisibilityInherited,
                                      info.visVaries,

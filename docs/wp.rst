@@ -13,6 +13,7 @@ Proposals
    wp_connectable_nodes
    wp_render_settings
    wp_rigid_body_physics
+   wp_stage_variables
    wp_usdaudio
    wp_usdshade
 

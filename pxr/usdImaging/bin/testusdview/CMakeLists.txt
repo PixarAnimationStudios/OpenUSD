@@ -29,6 +29,26 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers1
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers3
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewDetachedLayers
+    DEST testUsdviewDetachedLayers4
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewFileArguments
     DEST testUsdviewFileArguments1
 )
@@ -314,11 +334,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdviewLegacyImpl
-    DEST testUsdviewLegacyImpl
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdviewOIT
     DEST testUsdviewOIT
 )
@@ -346,22 +361,52 @@ pxr_register_test(testUsdviewAlive
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdviewDetachedLayers1
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_1.py --norender --detachLayers root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_2.py --norender --detachLayersInclude 'foo,with spaces' root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers3
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_3.py --norender --detachLayers --detachLayersExclude 'foo,with spaces' root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewDetachedLayers4
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testDetachedLayers_4.py --norender root.usd"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdviewFileArguments1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usda"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments2
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usd"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments3
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testValidFileArg.py test.usdc"
     EXPECTED_RETURN_CODE 0
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments4
@@ -370,6 +415,8 @@ pxr_register_test(testUsdviewFileArguments4
     STDERR_REDIRECT py_test_out
     DIFF_COMPARE py_test_out
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments5
@@ -379,6 +426,8 @@ pxr_register_test(testUsdviewFileArguments5
     STDERR_REDIRECT invalidSyntax_test_out
     DIFF_COMPARE invalidSyntax_test_out
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments6
@@ -387,6 +436,8 @@ pxr_register_test(testUsdviewFileArguments6
     STDERR_REDIRECT txt_test_out
     DIFF_COMPARE txt_test_out
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewFileArguments7
@@ -395,36 +446,48 @@ pxr_register_test(testUsdviewFileArguments7
     STDERR_REDIRECT missing_test_out
     DIFF_COMPARE missing_test_out
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewWrapper1
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback.py"
     EXPECTED_RETURN_CODE 2
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewWrapper2
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_1.py test.usda"
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewWrapper3
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_2.py test.usda"
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewWrapper4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testCallback_Invalid_3.py test.usda"
     EXPECTED_RETURN_CODE 1
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewWrapper5
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview test.usda"
     EXPECTED_RETURN_CODE 2
+    ENV
+        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
 pxr_register_test(testUsdviewPrimPathBar
@@ -941,20 +1004,6 @@ pxr_register_test(testUsdviewAdditive
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )
-
-# This test is disabled because of failures on some platforms.
-#
-# pxr_register_test(testUsdviewLegacyImpl
-#     PYTHON
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewLegacyImpl.py test.usda"
-#     IMAGE_DIFF_COMPARE
-#         perspective.png
-#         ortho.png
-#     FAIL 1
-#     FAIL_PERCENT 0.000031
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-# )
 
 pxr_register_test(testUsdviewVariantSelection
     PYTHON

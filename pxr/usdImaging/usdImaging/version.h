@@ -48,8 +48,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 14 - Added HdInstancerContext to GetScenePrimPath.
 // Version 15 - CanPopulateMaster renamed to CanPopulateUsdInstance.
 // Version 16 - InsertRprim/InsertInstancer no longer take an instancer path.
+// Version 17 - RequestTrackVariability/RequestUpdateForTime, and UpdateForTime
+//              no longer automatically called.
+// Version 18 - Geom subsets accessed via UsdImagingDelegate::GetMeshTopology()
+//              will now have correctly prefixed index paths for id and 
+//              materialId.
 
-#define USD_IMAGING_API_VERSION 16
+#define USD_IMAGING_API_VERSION 18
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

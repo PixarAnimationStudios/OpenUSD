@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
+#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
@@ -149,7 +150,25 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         GetRenderIndex()->GetResourceRegistry());
     TF_VERIFY(resourceRegistry);
 
-    _cmdBuffer.PrepareDraw(stRenderPassState, resourceRegistry);
+    // Create graphics work to handle the prepare steps.
+    // This does not have any AOVs since it only writes intermediate buffers.
+    HgiGraphicsCmdsUniquePtr prepareGfxCmds =
+        _hgi->CreateGraphicsCmds(HgiGraphicsCmdsDesc());
+    if (!TF_VERIFY(prepareGfxCmds)) {
+        return;
+    }
+
+    HdRprimCollection const &collection = GetRprimCollection();
+    std::string prepareName = "HdSt_RenderPass: Prepare " +
+        collection.GetMaterialTag().GetString();
+
+    prepareGfxCmds->PushDebugGroup(prepareName.c_str());
+
+    _cmdBuffer.PrepareDraw(prepareGfxCmds.get(),
+                           stRenderPassState, resourceRegistry);
+
+    prepareGfxCmds->PopDebugGroup();
+    _hgi->SubmitCmds(prepareGfxCmds.get());
 
     // Create graphics work to render into aovs.
     const HgiGraphicsCmdsDesc desc =
@@ -159,7 +178,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
         return;
     }
 
-    HdRprimCollection const &collection = GetRprimCollection();
     std::string passName = "HdSt_RenderPass: " +
         collection.GetMaterialTag().GetString();
 
@@ -367,14 +385,19 @@ HdSt_RenderPass::_FrustumCullCPU(
     // to be consistent with GPU culling.
 
     HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
+    HgiCapabilities const *capabilities = _hgi->GetCapabilities();
 
-    const bool multiDrawIndirectEnabled = _hgi->
-        GetCapabilities()->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+    const bool multiDrawIndirectEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+
+    const bool gpuFrustumCullingEnabled =
+        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
+            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
+            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
 
     const bool
        skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
-           (multiDrawIndirectEnabled
-               && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling());
+           (multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
     bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
 
     if(skipCulling) {

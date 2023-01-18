@@ -16,6 +16,7 @@ over "Collections" (
 
 def Scope "Scene" (
     kind = "component"
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     rel material:binding:collection:preview:MainMaterial = [

@@ -75,7 +75,8 @@ public:
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
     RtParamList
-    ConvertAttributes(HdSceneDelegate *sceneDelegate, SdfPath const& id);
+    ConvertAttributes(HdSceneDelegate *sceneDelegate,
+        SdfPath const& id, bool isGeometry);
 
     // A vector of Riley coordinate system id's.
     using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;

@@ -198,7 +198,10 @@ management and analysis of composed scenes, USD provides an `AssetInfo
 <#usdglossary-assetinfo>`_ schema. The text :filename:`.usda` format 
 uses a special syntax for asset-valued strings to make them easily
 differentiable from ordinary strings, using the "@" symbol instead of quotes to
-delimit their values. See `AssetInfo <#usdglossary-assetinfo>`_ for an example.
+delimit their values, or "@@@" as delimiter if the asset path itself contains
+the "@" character. If an asset path must contain the string "@@@" then it
+should be singly escaped, as "\\@@@". See `AssetInfo
+<#usdglossary-assetinfo>`_ for examples of both forms.
 
 .. _usdglossary-assetinfo:
 
@@ -270,7 +273,9 @@ A continuation of the example above that illustrates `assemblies
        kind = "assembly"
    )
    {
-       # Possibly deep namespace hierarchy of prims, with references to other assets
+       # Example of an asset that embeds the '@', and so must be delimited
+       # with the "@@@" form
+       asset primvars:texture = @@@body_decal.exr@v3@@@
    }
 
 .. _usdglossary-assetresolution:

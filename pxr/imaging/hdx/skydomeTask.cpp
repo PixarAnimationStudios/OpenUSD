@@ -33,7 +33,9 @@
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
+
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -49,6 +51,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxSkydomeTask::HdxSkydomeTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxTask(id)
     , _setupTask()
+    , _settingsVersion(0)
+    , _skydomeVisibility(true)
 {
 }
 
@@ -95,6 +99,18 @@ HdxSkydomeTask::Prepare(HdTaskContext* ctx, HdRenderIndex* renderIndex)
     if (_setupTask) {
         _setupTask->Prepare(ctx, renderIndex);
     }
+
+    const HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
+    const unsigned int currentSettingsVersion =
+        renderDelegate->GetRenderSettingsVersion();
+    if (_settingsVersion != currentSettingsVersion) {
+        _settingsVersion = currentSettingsVersion;
+        _skydomeVisibility = renderDelegate->
+            GetRenderSetting<bool>(
+                HdRenderSettingsTokens->domeLightCameraVisibility,
+                true);
+    }
+
     _renderIndex = renderIndex;
 }
 
@@ -114,26 +130,32 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     HgiGraphicsCmdsDesc gfxCmdsDesc = 
         hdStRenderPassState->MakeGraphicsCmdsDesc(_renderIndex);
 
-    // Get the Domelight's transformation matrix from the lighting Context
+    // If the skydome is visible by the camera, get the Domelight's
+    // transformation matrix from the lighting Context
     bool haveDomeLight = false;
     GfMatrix4f lightTransform(1);
-    GlfSimpleLightingContextRefPtr lightingContext;
-    if (_GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext)){
+    if (_skydomeVisibility) {
+        GlfSimpleLightingContextRefPtr lightingContext;
+        if (_GetTaskContextData(ctx, HdxTokens->lightingContext,
+                                &lightingContext)) {
 
-        GlfSimpleLightVector const& lights = lightingContext->GetLights();
-        for (int i = 0; i < lightingContext->GetNumLightsUsed(); ++i) {
+            GlfSimpleLightVector const& lights = lightingContext->GetLights();
+            for (int i = 0; i < lightingContext->GetNumLightsUsed(); ++i) {
 
-            GlfSimpleLight const &light = lights[i]; 
-            if (light.IsDomeLight()) {
-                lightTransform = GfMatrix4f(light.GetTransform().GetInverse());
-                haveDomeLight = true;
-                break;
+                GlfSimpleLight const &light = lights[i]; 
+                if (light.IsDomeLight()) {
+                    lightTransform = GfMatrix4f(
+                        light.GetTransform().GetInverse());
+                    haveDomeLight = true;
+                    break;
+                }
             }
         }
     }
 
-    // Without a domelight/skydomeTexture, clear the AOVs
-    if (!haveDomeLight || !_GetSkydomeTexture(ctx)) {
+    // If the skydome is not camera visible or there is no
+    // domelight/skydomeTexture, clear the AOVs
+    if (!_skydomeVisibility || !haveDomeLight || !_GetSkydomeTexture(ctx)) {
         _GetHgi()->SubmitCmds(_GetHgi()->CreateGraphicsCmds(gfxCmdsDesc).get());
         return;
     }

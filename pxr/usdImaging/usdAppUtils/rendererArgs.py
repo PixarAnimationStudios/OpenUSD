@@ -22,8 +22,6 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-HYDRA_DISABLED_OPTION_STRING = "HydraDisabled"
-
 def GetAllPluginArguments():
     """
     Returns argument strings for all the renderer plugins available.
@@ -48,7 +46,7 @@ def GetPluginIdFromArgument(argumentString):
     return None
 
 
-def AddCmdlineArgs(argsParser, altHelpText='', allowHydraDisabled=False):
+def AddCmdlineArgs(argsParser, altHelpText=''):
     """
     Adds Hydra renderer-related command line arguments to argsParser.
 
@@ -63,8 +61,6 @@ def AddCmdlineArgs(argsParser, altHelpText='', allowHydraDisabled=False):
             'Hydra renderer plugin to use when generating images')
 
     renderers = GetAllPluginArguments()
-    if allowHydraDisabled:
-        renderers.append(HYDRA_DISABLED_OPTION_STRING)
 
     argsParser.add_argument('--renderer', '-r', action='store',
         dest='rendererPlugin',

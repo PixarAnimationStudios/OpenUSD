@@ -32,8 +32,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrman_ImplicitSurfaceSceneIndexPlugin
 ///
-/// Plugin adds a scene index turning implicit surfaces into mesh's that
-/// Storm can consume. For now, only cube's are supported.
+/// Prman scene index plugin that configures the implicit surface scene index to
+/// generate meshes for implicit surfaces that aren't natively supported by
+/// Prman, and overload the transform (to account for different spine axes) for
+/// natively supported quadrics.
 ///
 class HdPrman_ImplicitSurfaceSceneIndexPlugin : public HdSceneIndexPlugin
 {

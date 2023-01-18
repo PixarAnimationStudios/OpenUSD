@@ -131,6 +131,34 @@ Sdf_ComputeFilePath(
     return resolvedPath;
 }
 
+VtValue
+Sdf_ComputeLayerModificationTimestamp(
+    const SdfLayer& layer)
+{
+    std::string layerPath, args;
+    Sdf_SplitIdentifier(layer.GetIdentifier(), &layerPath, &args);
+
+    return VtValue(ArGetResolver().GetModificationTimestamp(
+        layerPath, layer.GetResolvedPath()));
+}
+
+VtDictionary
+Sdf_ComputeExternalAssetModificationTimestamps(
+    const SdfLayer& layer)
+{
+    VtDictionary result;
+    std::set<std::string> externalAssetDependencies = 
+        layer.GetExternalAssetDependencies();
+    for (const std::string& resolvedPath : externalAssetDependencies) {
+        // Get the modification timestamp for the path. Note that external
+        // asset dependencies only returns resolved paths so pass the same
+        // path for both params.
+        result[resolvedPath] = ArGetResolver().GetModificationTimestamp(
+            resolvedPath, ArResolvedPath(resolvedPath));
+    }
+    return result;
+}
+
 Sdf_AssetInfo*
 Sdf_ComputeAssetInfoFromIdentifier(
     const string& identifier,

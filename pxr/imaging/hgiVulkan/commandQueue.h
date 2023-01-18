@@ -108,7 +108,8 @@ public:
     /// Thread safety: This call is not thread safe. This function should be
     /// called once from main thread while no other threads are recording.
     HGIVULKAN_API
-    void ResetConsumedCommandBuffers();
+    void ResetConsumedCommandBuffers(
+        HgiSubmitWaitType wait = HgiSubmitWaitTypeNoWait);
 
 private:
     HgiVulkanCommandQueue() = delete;

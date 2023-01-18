@@ -144,9 +144,12 @@ pxr_library(hdSt
         imageShaderShaderKey
         indirectDrawBatch
         materialNetworkShader
+        materialBindingResolvingSceneIndexPlugin
         materialParam
         meshShaderKey
         meshTopology 
+        nodeIdentifierResolvingSceneIndex
+        nodeIdentifierResolvingSceneIndexPlugin
         pipelineDrawBatch
         pointsShaderKey
         quadrangulate
@@ -154,6 +157,7 @@ pxr_library(hdSt
         resourceLayout
         shaderKey
         subdivision
+        terminalsResolvingSceneIndexPlugin
         triangulate
         unitTestHelper
         volumeShader

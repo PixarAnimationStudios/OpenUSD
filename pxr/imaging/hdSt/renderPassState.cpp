@@ -303,7 +303,9 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
-    if (!hdStResourceRegistry->GetHgi()->GetCapabilities()->IsSet(
+    HgiCapabilities const * capabilities =
+        hdStResourceRegistry->GetHgi()->GetCapabilities();
+    if (!capabilities->IsSet(
         HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne)) {
         // Different backends use different clip space depth ranges. The
         // codebase generally assumes an OpenGL-style depth of [-1, 1] when
@@ -314,20 +316,26 @@ HdStRenderPassState::Prepare(
         depthAdjustmentMat[3][2] = 0.5;
         projMatrix = projMatrix * depthAdjustmentMat;
     }
+    bool const doublesSupported = capabilities->IsSet(
+        HgiDeviceCapabilitiesBitsShaderDoublePrecision);
 
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->worldToViewMatrix,
-            worldToViewMatrix),
+            worldToViewMatrix,
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->worldToViewInverseMatrix,
-            worldToViewMatrix.GetInverse()),
+            worldToViewMatrix.GetInverse(),
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->projectionMatrix,
-            projMatrix),
+            projMatrix,
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->imageToWorldMatrix,
-            GetImageToWorldMatrix()),
+            GetImageToWorldMatrix(),
+            doublesSupported),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(

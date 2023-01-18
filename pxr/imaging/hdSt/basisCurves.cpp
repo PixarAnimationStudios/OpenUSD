@@ -786,10 +786,10 @@ void ProcessVertexOrVaryingPrimvar(
             id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2f>(
-            id, name, interpolation, value, topology, sources, GfVec2f(1, 0));             
+            id, name, interpolation, value, topology, sources, GfVec2f(1, 0));
     } else if (value.IsHolding<VtVec3fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3f>(
-            id, name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));   
+            id, name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));
     } else if (value.IsHolding<VtVec4fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4f>(
             id, name, interpolation, value, topology, sources, GfVec4f(1, 0, 0, 1)); 
@@ -798,13 +798,13 @@ void ProcessVertexOrVaryingPrimvar(
             id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2d>(
-            id, name, interpolation, value, topology, sources, GfVec2d(1, 0));            
+            id, name, interpolation, value, topology, sources, GfVec2d(1, 0));
     } else if (value.IsHolding<VtVec3dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3d>(
             id, name, interpolation, value, topology, sources, GfVec3d(1, 0, 0));
     } else if (value.IsHolding<VtVec4dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4d>(
-            id, name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));                
+            id, name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));
     } else if (value.IsHolding<VtIntArray>()) {
         AddVertexOrVaryingPrimvarSource<int>(
             id, name, interpolation, value, topology, sources, 1); 

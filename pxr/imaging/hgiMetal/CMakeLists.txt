@@ -30,7 +30,7 @@ pxr_library(hgiMetal
         graphicsCmds.h
         graphicsPipeline.h
         hgi.h
-
+        indirectCommandEncoder.h
         resourceBindings.h
         sampler.h
         shaderFunction.h
@@ -54,6 +54,7 @@ pxr_library(hgiMetal
         graphicsCmds.mm
         graphicsPipeline.mm
         hgi.mm
+        indirectCommandEncoder.mm
         resourceBindings.mm
         sampler.mm
         shaderFunction.mm

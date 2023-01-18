@@ -195,25 +195,14 @@ public:
         bool useBindlessHandles,
         bool doublesSupported)
     {
-        VtValue matrixVal;
-        if (doublesSupported) {
-            matrixVal = VtValue(texture.GetSamplingTransform());
-        } else {
-            GfMatrix4d dmatrix = texture.GetSamplingTransform();
-            GfMatrix4f fmatrix(
-                dmatrix[0][0], dmatrix[0][1], dmatrix[0][2], dmatrix[0][3],
-                dmatrix[1][0], dmatrix[1][1], dmatrix[1][2], dmatrix[1][3],
-                dmatrix[2][0], dmatrix[2][1], dmatrix[2][2], dmatrix[2][3],
-                dmatrix[3][0], dmatrix[3][1], dmatrix[3][2], dmatrix[3][3]);
-            matrixVal = VtValue(fmatrix);
-        }
-
         sources->push_back(
             std::make_shared<HdVtBufferSource>(
                 _Concat(
                     name,
                     HdSt_ResourceBindingSuffixTokens->samplingTransform),
-                matrixVal));
+                VtValue(texture.GetSamplingTransform()),
+                1,
+                doublesSupported));
 
         if (useBindlessHandles) {
             sources->push_back(

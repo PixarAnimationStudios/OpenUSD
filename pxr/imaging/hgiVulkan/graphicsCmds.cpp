@@ -209,22 +209,21 @@ HgiVulkanGraphicsCmds::SetConstantValues(
 
 void
 HgiVulkanGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
     // Delay until the pipeline is set and the render pass has begun.
     _pendingUpdates.push_back(
-        [this, firstBinding, vertexBuffers, byteOffsets] {
+        [this, bindings] {
         std::vector<VkBuffer> buffers;
         std::vector<VkDeviceSize> bufferOffsets;
 
-        for (HgiBufferHandle bufHandle : vertexBuffers) {
-            HgiVulkanBuffer* buf=static_cast<HgiVulkanBuffer*>(bufHandle.Get());
+        for (HgiVertexBufferBinding const &binding : bindings) {
+            HgiVulkanBuffer* buf =
+                static_cast<HgiVulkanBuffer*>(binding.buffer.Get());
             VkBuffer vkBuf = buf->GetVulkanBuffer();
             if (vkBuf) {
                 buffers.push_back(vkBuf);
-                bufferOffsets.push_back(0);
+                bufferOffsets.push_back(binding.byteOffset);
             }
         }
 

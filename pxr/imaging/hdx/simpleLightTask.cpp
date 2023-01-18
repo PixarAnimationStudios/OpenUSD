@@ -57,7 +57,10 @@ HdxSimpleLightTask::HdxSimpleLightTask(
   , _lightIds()
   , _lightIncludePaths()
   , _lightExcludePaths()
-  , _numLights(0)
+  , _numLightIds(0)
+  , _maxLights(16)
+  , _sprimIndexVersion(0)
+  , _settingsVersion(0)
   , _lightingShader(std::make_shared<HdStSimpleLightingShader>())
   , _enableShadows(false)
   , _viewport(0.0f, 0.0f, 0.0f, 0.0f)
@@ -110,7 +113,10 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         std::dynamic_pointer_cast<HdStLightingShader>(_lightingShader);
 
     HdRenderIndex &renderIndex = delegate->GetRenderIndex();
+    HdChangeTracker &tracker = renderIndex.GetChangeTracker();
+    HdRenderDelegate *renderDelegate = renderIndex.GetRenderDelegate();
 
+    // Update params if needed.
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
         HdxSimpleLightTaskParams params;
         if (!_GetTaskParams(delegate, &params)) {
@@ -128,6 +134,47 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         //      more formal material plumbing.
         _material = params.material;
         _sceneAmbient = params.sceneAmbient;
+    }
+
+    static const TfTokenVector lightTypes = 
+        {HdPrimTypeTokens->domeLight,
+         HdPrimTypeTokens->simpleLight,
+         HdPrimTypeTokens->sphereLight,
+         HdPrimTypeTokens->rectLight,
+         HdPrimTypeTokens->diskLight,
+         HdPrimTypeTokens->cylinderLight,
+         HdPrimTypeTokens->distantLight};
+
+    bool verifyNumLights = false;
+
+    // Update _lightIds if the params or the set of render index sprims changed.
+    if (((*dirtyBits) & HdChangeTracker::DirtyParams) ||
+        (tracker.GetSprimIndexVersion() != _sprimIndexVersion)) {
+
+        // Extract all light paths for each type of light
+        _lightIds.clear();
+        _numLightIds = _AppendLightsOfType(renderIndex, lightTypes,
+                _lightIncludePaths,
+                _lightExcludePaths,
+                &_lightIds);
+
+        _sprimIndexVersion = tracker.GetSprimIndexVersion();
+        verifyNumLights = true;
+    }
+
+    // Update _maxLights if necessary.
+    if (renderDelegate->GetRenderSettingsVersion() != _settingsVersion) {
+        _maxLights = size_t(
+            renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
+                HdStRenderSettingsTokens->maxLights, 16));
+        _settingsVersion = renderDelegate->GetRenderSettingsVersion();
+        verifyNumLights = true;
+    }
+
+    // Only emit the warning if the comparands changed.
+    if (verifyNumLights && (_numLightIds > _maxLights)) {
+        TF_WARN("Hydra Storm supports up to %zu lights, truncating the "
+                "%zu found lights to this max.", _maxLights, _numLightIds);
     }
 
     const HdCamera *camera = static_cast<const HdCamera *>(
@@ -154,35 +201,11 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     GfMatrix4d const  viewMatrix = camera->GetTransform().GetInverse();
     GfMatrix4d const& viewInverseMatrix = camera->GetTransform();
     GfMatrix4d const  projectionMatrix = camera->ComputeProjectionMatrix();
-    // Extract the camera window policy to adjust the frustum correctly for
+    // XXX: Extract the camera window policy to adjust the frustum correctly for
     // lights that have shadows.
 
     // Unique identifier for lights with shadows
     int shadowIndex = -1;
-
-    // Extract all light paths for each type of light
-    static const TfTokenVector lightTypes = 
-        {HdPrimTypeTokens->domeLight,
-            HdPrimTypeTokens->simpleLight,
-            HdPrimTypeTokens->sphereLight,
-            HdPrimTypeTokens->rectLight,
-            HdPrimTypeTokens->diskLight,
-            HdPrimTypeTokens->cylinderLight,
-            HdPrimTypeTokens->distantLight};
-    _lightIds.clear();
-    _numLights = _AppendLightsOfType(renderIndex, lightTypes,
-                        _lightIncludePaths,
-                        _lightExcludePaths,
-                        &_lightIds);
-
-    const size_t maxLights = size_t(
-        renderIndex.GetRenderDelegate()->GetRenderSetting<int>(
-            HdStRenderSettingsTokens->maxLights, 16));
-
-    if (_numLights > (size_t)maxLights) {
-        TF_WARN("Hydra supports up to %zu lights, truncating the %zu found "
-                "lights to this max.", maxLights, _numLights);
-    }
 
     // We rebuild the lights array every time, but avoid reallocating
     // the array every frame as this was showing up as a significant portion
@@ -190,17 +213,20 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
     //
     // clear() is guaranteed by spec to not change the capacity of the
     // vector.
+
+    size_t targetCapacity = std::min(_numLightIds, _maxLights);
+
     _glfSimpleLights.clear();
-    if (_numLights != _glfSimpleLights.capacity()) {
+    if (targetCapacity != _glfSimpleLights.capacity()) {
         // We don't just want to reserve here as we want to try and
         // recover memory if the number of lights shrinks.
 
         _glfSimpleLights.shrink_to_fit();
-        _glfSimpleLights.reserve(_numLights);
+        _glfSimpleLights.reserve(targetCapacity);
     }
 
     std::vector<GfVec2i> shadowMapResolutions;
-    shadowMapResolutions.reserve(_numLights);
+    shadowMapResolutions.reserve(targetCapacity);
 
     // Loop over the lightTypes vector so we always add the built-in light  
     // types (dome and simple lights) first. This way if the scene has more  
@@ -213,7 +239,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         for (SdfPath const &lightPath : lightPathsIt->second) {
 
             // Stop adding lights if we're at the light limit.
-            if (_glfSimpleLights.size() >= maxLights) {
+            if (_glfSimpleLights.size() >= _maxLights) {
                 break;
             }
 
@@ -295,17 +321,14 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
             _glfSimpleLights.push_back(std::move(glfl));
         }
         // Stop adding lights if we're at the light limit.
-        if (_glfSimpleLights.size() >= maxLights) {
+        if (_glfSimpleLights.size() >= _maxLights) {
             break;
         }
     }
 
-    // In case there is a mismatch, conform _numLights to this array size.
-    _numLights = _glfSimpleLights.size();
+    TF_VERIFY(_glfSimpleLights.size() <= _maxLights);
 
-    TF_VERIFY(_numLights <= maxLights);
-
-    lightingContext->SetUseLighting(_numLights > 0);
+    lightingContext->SetUseLighting(!_glfSimpleLights.empty());
     lightingContext->SetLights(_glfSimpleLights);
     lightingContext->SetCamera(viewMatrix, projectionMatrix);
     // XXX: compatibility hack for passing some unit tests until we have
@@ -321,13 +344,8 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
         shadows->SetShadowMapResolutions(shadowMapResolutions);
 
         if (shadowIndex > -1) {
-            for (size_t lightId = 0; lightId < _numLights; ++lightId) {
-                if (lightId >= _glfSimpleLights.size()) {
-                    TF_CODING_ERROR(
-                        "lightId %zu >= _glfSimpleLights.size() %zu", 
-                        lightId, _glfSimpleLights.size());
-                    continue;
-                }
+            for (size_t lightId = 0; lightId < _glfSimpleLights.size();
+                 ++lightId) {
                 if (!_glfSimpleLights[lightId].HasShadow()) {
                     continue;
                 }

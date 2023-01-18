@@ -33,6 +33,7 @@
 #include <boost/noncopyable.hpp>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/concurrent_queue.h>
+#include <mutex>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE

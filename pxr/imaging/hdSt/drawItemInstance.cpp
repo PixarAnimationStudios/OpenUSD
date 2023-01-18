@@ -43,9 +43,11 @@ HdStDrawItemInstance::~HdStDrawItemInstance()
 void
 HdStDrawItemInstance::SetVisible(bool visible)
 {
-    _visible = visible;
-    if(_batch) {
-        _batch->DrawItemInstanceChanged(this);
+    if (_visible != visible) {
+        _visible = visible;
+        if (_batch) {
+            _batch->DrawItemInstanceChanged(this);
+        }
     }
 }
 

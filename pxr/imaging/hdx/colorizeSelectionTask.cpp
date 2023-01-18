@@ -258,6 +258,12 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
             HgiBlendFactorZero,
             HgiBlendFactorOne,
             HgiBlendOpAdd);
+            
+        // Use LoadOpLoad because we want to blend the selection color onto
+        // the previous contents of the render target. 
+        _compositor->SetAttachmentLoadStoreOp(
+            HgiAttachmentLoadOpLoad,
+            HgiAttachmentStoreOpStore);
     }
 
     _compositor->Draw(aovTexture, /*no depth*/HgiTextureHandle());

@@ -57,7 +57,9 @@ def Xform "Model" (
     references = </MeshProto>
 )
 {
-    def "Mesh"
+    def "Mesh" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material>
         double xformOp:rotateX = 0

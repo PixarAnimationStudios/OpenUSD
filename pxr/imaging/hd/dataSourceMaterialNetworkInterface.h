@@ -1,4 +1,3 @@
-
 //
 // Copyright 2021 Pixar
 //
@@ -62,6 +61,12 @@ public:
 
     HD_API
     TfToken GetNodeType(const TfToken &nodeName) const override;
+
+    HD_API
+    TfTokenVector GetNodeTypeInfoKeys(const TfToken& nodeName) const override;
+    HD_API
+    VtValue GetNodeTypeInfoValue(
+        const TfToken& nodeName, const TfToken& value) const override;
 
     HD_API
     TfTokenVector GetAuthoredNodeParameterNames(
@@ -131,6 +136,9 @@ public:
     HdContainerDataSourceHandle Finish();
 
 private:
+    HdContainerDataSourceHandle _GetNodeTypeInfo(
+            const TfToken& nodeName) const;
+
     using _OverrideMap =
         std::unordered_map<HdDataSourceLocator, HdDataSourceBaseHandle,
             TfHash>;

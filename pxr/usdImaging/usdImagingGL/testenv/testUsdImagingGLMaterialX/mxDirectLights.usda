@@ -2,7 +2,10 @@
 (
     upAxis = "Z"
 )
-def Sphere "mxSphere" {
+def Sphere "mxSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     rel material:binding = </Materials/MaterialX/Materials/Default_White>
     color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
 }

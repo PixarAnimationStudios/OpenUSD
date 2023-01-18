@@ -34,6 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Chosen to be at the top of the range of indexs to not interfere
 /// with the vertex attributes.
 enum HgiMetalArgumentIndex {
+    HgiMetalArgumentIndexICB = 26,
     HgiMetalArgumentIndexConstants = 27,
     HgiMetalArgumentIndexSamplers = 28,
     HgiMetalArgumentIndexTextures = 29,

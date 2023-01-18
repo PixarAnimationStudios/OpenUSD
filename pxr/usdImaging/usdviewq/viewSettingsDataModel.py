@@ -30,8 +30,8 @@ from .common import (RenderModes, ColorCorrectionModes, PickModes,
                      SelectionHighlightModes, CameraMaskModes, 
                      PrintWarning)
 
-from . import settings2
-from .settings2 import StateSource
+from . import settings
+from .settings import StateSource
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
 from .freeCamera import FreeCamera
 from .common import ClearColors, HighlightColors
@@ -401,9 +401,21 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         else:
             self._freeCameraAspect = value
 
-    @freeCameraViewSetting
     def _frustumChanged(self):
+        """
+        Needed when updating any camera setting (including movements). Will not
+        update the property viewer.
+        """
+        self.signalFreeCameraSettingChanged.emit()
+
+    def _frustumSettingsChanged(self):
+        """
+        Needed when updating specific camera settings (e.g., aperture). See
+        _updateFreeCameraData for the full list of dependent settings. Will
+        update the property viewer.
+        """
         self._updateFreeCameraData()
+        self.signalSettingChanged.emit()
 
     def _updateFreeCameraData(self):
         '''Updates member variables with the current free camera view settings.
@@ -806,9 +818,14 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         if self._freeCamera:
             self._freeCamera.signalFrustumChanged.disconnect(
                 self._frustumChanged)
+            self._freeCamera.signalFrustumSettingsChanged.disconnect(
+                self._frustumSettingsChanged)
         self._freeCamera = value
         if self._freeCamera:
-            self._freeCamera.signalFrustumChanged.connect(self._frustumChanged)
+            self._freeCamera.signalFrustumChanged.connect(
+                self._frustumChanged)
+            self._freeCamera.signalFrustumSettingsChanged.connect(
+                self._frustumSettingsChanged)
             self._updateFreeCameraData()
 
     @property

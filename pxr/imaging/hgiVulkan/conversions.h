@@ -42,7 +42,7 @@ class HgiVulkanConversions final
 {
 public:
     HGIVULKAN_API
-    static VkFormat GetFormat(HgiFormat inFormat);
+    static VkFormat GetFormat(HgiFormat inFormat, bool depthFormat = false);
 
     HGIVULKAN_API
     static HgiFormat GetFormat(VkFormat inFormat);

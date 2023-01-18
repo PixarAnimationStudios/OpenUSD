@@ -28,8 +28,7 @@
 #include "pxr/usd/sdf/allowed.h"
 #include "pxr/usd/sdf/spec.h"
 
-#include <boost/noncopyable.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -89,7 +88,7 @@ protected:
 };
 
 template <class T>
-boost::shared_ptr<Sdf_MapEditor<T> > 
+std::unique_ptr<Sdf_MapEditor<T> > 
 Sdf_CreateMapEditor(const SdfSpecHandle& owner, const TfToken& field);
 
 PXR_NAMESPACE_CLOSE_SCOPE

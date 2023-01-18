@@ -90,7 +90,9 @@ def Scope "Prototypes" (
             uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
         }
 
-        def Volume "Volume"
+        def Volume "Volume" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             float3[] extent = [(-1, -1, -1), (1, 1, 1)]
             rel material:binding:preview = </Prototypes/SphereAndVolume/EllipsoidalVolumeMaterial>
@@ -238,7 +240,9 @@ def Xform "StackedVolumes" (
     double3 xformOp:translate = (2, -2, 0)
     uniform token[] xformOpOrder = ["xformOp:translate"]
 
-    def Volume "Volume1"
+    def Volume "Volume1" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>
@@ -247,7 +251,9 @@ def Xform "StackedVolumes" (
         token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
     }
 
-    def Volume "Volume2"
+    def Volume "Volume2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>
@@ -256,7 +262,9 @@ def Xform "StackedVolumes" (
         token[] xformOpOrder = ["xformOp:translate", "xformOp:scale"]
     }
 
-    def Volume "Volume3"
+    def Volume "Volume3" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>
@@ -269,7 +277,9 @@ def Xform "StackedVolumes" (
         doc = "A shadeless semi-transparent green rectangle intersecting one volume."
     )
     {
-        def Mesh "Rectangle"
+        def Mesh "Rectangle" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             int[] faceVertexCounts = [4]
             int[] faceVertexIndices = [0, 1, 2, 3]
@@ -299,13 +309,17 @@ over "Master" (
     instancable = true
 )
 {
-    def Volume "Volume1"
+    def Volume "Volume1" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>
     }
 
-    def Volume "Volume2"
+    def Volume "Volume2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(0, 0, -1), (2, 2, 1)]
         rel material:binding:preview = </EllipsoidalVolumeMaterial>

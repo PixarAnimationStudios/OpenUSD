@@ -588,7 +588,7 @@ QComboBox::drop-down {
 /* Add border around the 4 main panels (prim browser,
  * stage view, attribute inspector, attribute editor)
  */
-#primFrame, #glFrame {
+#primFrame, #renderFrame {
     border-top: 2px solid rgb(32, 32, 32);
 }
 
@@ -600,7 +600,7 @@ QComboBox::drop-down {
     border-left: 2px solid rgb(32, 32, 32);
 }
 
-#glFrame, #propertyInspectorFrame {
+#renderFrame, #propertyInspectorFrame {
     border-right: 2px solid rgb(32, 32, 32);
 }
 

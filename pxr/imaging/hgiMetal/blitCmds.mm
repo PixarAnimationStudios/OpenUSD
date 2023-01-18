@@ -192,31 +192,68 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
 {
     HgiMetalTexture* dstTexture = static_cast<HgiMetalTexture*>(
         copyOp.gpuDestinationTexture.Get());
-    HgiTextureDesc const& texDesc = dstTexture->GetDescriptor();
+    id<MTLTexture> dstTextureId = dstTexture->GetTextureId();
+    HgiTextureDesc const& dstTexDesc = dstTexture->GetDescriptor();
 
-    const size_t width = texDesc.dimensions[0];
-    const size_t height = texDesc.dimensions[1];
-    const size_t depth = texDesc.dimensions[2];
+    const size_t width = dstTexDesc.dimensions[0];
+    const size_t height = dstTexDesc.dimensions[1];
+    const size_t depth = dstTexDesc.dimensions[2];
 
-    bool isTexArray = texDesc.layerCount>1;
+    // Depth, stencil, depth-stencil, and multisample textures must be
+    // allocated with MTLStorageModePrivate, which should not be used with
+    // replaceRegion. We create a temporary, non-private texture to fill with
+    // the cpu texture data, then blit the data from that texture to our
+    // private destination texture.
+
+    // Create texture descriptor to describe the temp texture.
+    MTLTextureDescriptor* mtlDesc;
+    MTLPixelFormat mtlFormat = HgiMetalConversions::GetPixelFormat(
+        dstTexDesc.format, HgiTextureUsageBitsShaderRead);
+    mtlDesc = [MTLTextureDescriptor
+         texture2DDescriptorWithPixelFormat:mtlFormat
+                                      width:width
+                                     height:height
+                                  mipmapped:NO];
+    
+    mtlDesc.mipmapLevelCount = dstTexDesc.mipLevels;
+    mtlDesc.arrayLength = dstTexDesc.layerCount;
+    mtlDesc.resourceOptions = MTLResourceStorageModeManaged;
+    mtlDesc.sampleCount = 1;
+    if (dstTexDesc.type == HgiTextureType3D) {
+        mtlDesc.depth = depth;
+        mtlDesc.textureType = MTLTextureType3D;
+    } else if (dstTexDesc.type == HgiTextureType2DArray) {
+        mtlDesc.textureType = MTLTextureType2DArray;
+    } else if (dstTexDesc.type == HgiTextureType1D) {
+        mtlDesc.textureType = MTLTextureType1D;
+    } else if (dstTexDesc.type == HgiTextureType1DArray) {
+        mtlDesc.textureType = MTLTextureType1DArray;
+    }
+    mtlDesc.usage = MTLTextureUsageShaderRead;
+
+    // Create temp texture and fill with initial data.
+    id<MTLTexture> tempTextureId =
+        [_hgi->GetPrimaryDevice() newTextureWithDescriptor:mtlDesc];
+
+    const bool isTexArray = dstTexDesc.layerCount>1;
 
     GfVec3i const& offsets = copyOp.destinationTexelOffset;
     int depthOffset = isTexArray ? 0 : offsets[2];
-    if (texDesc.type == HgiTextureType1D) {
-        [dstTexture->GetTextureId()
+    if (dstTexDesc.type == HgiTextureType1D) {
+        [tempTextureId
             replaceRegion:MTLRegionMake1D(offsets[0], width)
               mipmapLevel:copyOp.mipLevel
                 withBytes:copyOp.cpuSourceBuffer
               bytesPerRow:copyOp.bufferByteSize];
-    } else if (texDesc.type == HgiTextureType2D) {
-        [dstTexture->GetTextureId()
+    } else if (dstTexDesc.type == HgiTextureType2D) {
+        [tempTextureId
             replaceRegion:MTLRegionMake2D(
                 offsets[0], offsets[1], width, height)
               mipmapLevel:copyOp.mipLevel
                 withBytes:copyOp.cpuSourceBuffer
               bytesPerRow:copyOp.bufferByteSize / height];
     } else {
-        [dstTexture->GetTextureId()
+        [tempTextureId
             replaceRegion:MTLRegionMake3D(
                 offsets[0], offsets[1], depthOffset, width, height, depth)
               mipmapLevel:copyOp.mipLevel 
@@ -225,6 +262,27 @@ HgiMetalBlitCmds::CopyTextureCpuToGpu(
               bytesPerRow:copyOp.bufferByteSize / height / width
             bytesPerImage:copyOp.bufferByteSize / depth];
     }
+
+    // Blit data from temp texture to destination texture.
+    id<MTLCommandBuffer> commandBuffer = [_hgi->GetQueue() commandBuffer];
+    id<MTLBlitCommandEncoder> blitCommandEncoder =
+        [commandBuffer blitCommandEncoder];
+    int sliceCount = 1;
+    if (dstTexDesc.type == HgiTextureType1DArray ||
+        dstTexDesc.type == HgiTextureType2DArray) {
+        sliceCount = dstTexDesc.layerCount;
+    }
+    [blitCommandEncoder copyFromTexture:tempTextureId
+                            sourceSlice:0
+                            sourceLevel:copyOp.mipLevel
+                              toTexture:dstTextureId
+                       destinationSlice:0
+                       destinationLevel:copyOp.mipLevel
+                             sliceCount:sliceCount
+                             levelCount:1];
+    [blitCommandEncoder endEncoding];
+    [commandBuffer commit];
+    [tempTextureId release];
 }
 
 void

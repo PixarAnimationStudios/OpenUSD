@@ -134,8 +134,24 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // --(BEGIN CUSTOM CODE)--
 
 #include "pxr/base/work/loops.h"
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX: The default here is being changed to warnOnMissingAPI instead of strict,
+// to give some buffer of couple of USD releases for external clients to update 
+// their assets. 
+TF_DEFINE_ENV_SETTING(USD_SHADE_MATERIAL_BINDING_API_CHECK, "warnOnMissingAPI",
+        "When querying material bindings on a prim, this environment variable"
+        "controls if an early return will happen if the prim has "
+        "MaterialBindingAPI applied or not. Current (temp) default is "
+        "'warnOnMissingAPI', which warns when API schema is not applied and "
+        "material binding is provided. Default behavior will be updated to "
+        "'strict' (in some future USD release), to do an early return if "
+        "MaterialBindingAPI is not applied. Otherwise depending on if the value "
+        "of the environment variable is 'warnOnMissingAPI' or 'allowMissingAPI'"
+        "will allow bindings to be queried with or without warnings "
+        "respectively.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -144,6 +160,10 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((materialBindingCollectionFull, "material:binding:collection:full"))
     ((materialBindingCollectionPreview, "material:binding:collection:preview"))
+    // token values for USD_SHADE_MATERIAL_BINDING_API_CHECK
+    (strict)
+    (allowMissingAPI)
+    (warnOnMissingAPI)
 );
 
 static 
@@ -232,7 +252,7 @@ UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
 UsdShadeMaterial
 UsdShadeMaterialBindingAPI::DirectBinding::GetMaterial() const
 {
-    if (!_materialPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_materialPath.IsEmpty()) {
         return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
                 _materialPath));
     }
@@ -291,7 +311,7 @@ UsdShadeMaterialBindingAPI::CollectionBinding::CollectionBinding(
 UsdShadeMaterial
 UsdShadeMaterialBindingAPI::CollectionBinding::GetMaterial() const
 {
-    if (!_materialPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_materialPath.IsEmpty()) {
         return UsdShadeMaterial(_bindingRel.GetStage()->GetPrimAtPath(
                 _materialPath));
     }
@@ -301,11 +321,21 @@ UsdShadeMaterialBindingAPI::CollectionBinding::GetMaterial() const
 UsdCollectionAPI
 UsdShadeMaterialBindingAPI::CollectionBinding::GetCollection() const
 {
-    if (!_collectionPath.IsEmpty()) {
+    if (_bindingRel.GetPrim() && !_collectionPath.IsEmpty()) {
         return UsdCollectionAPI::GetCollection(_bindingRel.GetStage(),
                                                _collectionPath);
     }
     return UsdCollectionAPI(); 
+}
+
+/* static */
+bool
+UsdShadeMaterialBindingAPI::CollectionBinding::IsCollectionBindingRel(
+        const UsdRelationship &bindingRel)
+{
+    return TfStringStartsWith(bindingRel.GetName(),
+            SdfPath::JoinIdentifier(UsdShadeTokens->materialBinding,
+                UsdTokens->collection));
 }
 
 
@@ -574,6 +604,29 @@ _GetCollectionBindingPropertyNames(
 UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
     const UsdPrim &prim, const TfToken &materialPurpose)
 {
+    auto MaterialBindingAPIChecker = []() {
+        // 0: strict
+        // 1: warnOnMissingAPI
+        // 2: allowMissingAPI
+        const std::string usdShadeMaterialBindingAPI = 
+            TfGetEnvSetting(USD_SHADE_MATERIAL_BINDING_API_CHECK);
+        return (usdShadeMaterialBindingAPI == _tokens->strict.GetString()) ? 0 : 
+            (usdShadeMaterialBindingAPI == 
+                _tokens->warnOnMissingAPI.GetString()) ? 1 :
+            (usdShadeMaterialBindingAPI == 
+                _tokens->allowMissingAPI.GetString()) ? 2 : 0;
+    };
+    static const int materialBindingAPICheck = MaterialBindingAPIChecker();
+
+    const bool materialBindingAPIApplied = 
+        prim.HasAPI<UsdShadeMaterialBindingAPI>();
+
+    // Return if MaterialBindingAPI is not applied on the prim and
+    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to default "strict" option
+    if (materialBindingAPICheck == 0 && !materialBindingAPIApplied) {
+        return;
+    }
+
     // These are the properties we need to consider when looking for 
     // bindings (both direct and collection-based) at the prim itself 
     // and each ancestor prim.
@@ -599,10 +652,10 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         directBinding.reset(new DirectBinding(directBindingRel));
     }
 
-    // If there is no restricted purpose direct binding, look for an
-    // all-purpose direct-binding.
+    // If there is no restricted purpose direct binding or an empty material
+    // path on the direct binding, look for an all-purpose direct-binding.
     if (materialPurpose != UsdShadeTokens->allPurpose && 
-        (!directBinding || !directBinding->GetMaterial())) {
+        (!directBinding || directBinding->GetMaterialPath().IsEmpty())) {
 
         // This may not be necessary if a specific purpose collection-binding 
         // already includes the prim for which the resolved binding is being 
@@ -617,8 +670,8 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         }
     }
 
-    // If the direct-binding points to an invalid material then clear it.
-    if (directBinding && !directBinding->GetMaterial()) {
+    // If the direct-binding points to an empty material path then clear it.
+    if (directBinding && directBinding->GetMaterialPath().IsEmpty()) {
         directBinding.release();
     }
 
@@ -644,6 +697,17 @@ UsdShadeMaterialBindingAPI::BindingsAtPrim::BindingsAtPrim(
         allPurposeCollBindings = 
             bindingAPI._GetCollectionBindings(collBindingPropertyNames);
     }
+
+    // Conditional warning if material bindings are found when
+    // USD_SHADE_MATERIAL_BINDING_API_CHECK is set to warnOnMissingAPI (1)
+    if (materialBindingAPICheck == 1 && !materialBindingAPIApplied &&
+        (directBinding || 
+        !restrictedPurposeCollBindings.empty() || 
+        !allPurposeCollBindings.empty())) {
+        TF_WARN("Found material bindings on prim at path (%s) but "
+                "MaterialBindingAPI is not applied on the prim", 
+                prim.GetPath().GetAsString().c_str());
+    }
 }
 
 /* static */
@@ -652,6 +716,23 @@ UsdShadeMaterialBindingAPI::GetMaterialPurposes()
 {
     return { UsdShadeTokens->allPurpose, UsdShadeTokens->preview, 
              UsdShadeTokens->full };
+}
+
+/* static */
+const SdfPath
+UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel(
+        const UsdRelationship &bindingRel)
+{
+    if (!bindingRel) {
+        return SdfPath();
+    }
+
+    SdfPathVector targetPaths;
+    bindingRel.GetForwardedTargets(&targetPaths);
+
+    return 
+        UsdShadeMaterialBindingAPI::CollectionBinding::IsCollectionBindingRel(
+                bindingRel) ? targetPaths[1] : targetPaths[0];
 }
 
 UsdShadeMaterial 
@@ -666,6 +747,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
         return UsdShadeMaterial();
     }
 
+
     TRACE_FUNCTION();
 
     std::vector<TfToken> materialPurposes{materialPurpose};
@@ -675,6 +757,7 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 
     for (auto const & purpose : materialPurposes) {
         UsdShadeMaterial boundMaterial;
+        bool hasValidTargetPath = false;
         UsdRelationship winningBindingRel;
 
         for (UsdPrim p = GetPrim(); !p.IsPseudoRoot(); p = p.GetParent()) {
@@ -699,15 +782,18 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 
             const DirectBindingPtr &directBindingPtr = 
                     bindingsAtP.directBinding;
+
             if (directBindingPtr && 
                 directBindingPtr->GetMaterialPurpose() == purpose) 
             {
                 const UsdRelationship &directBindingRel = 
                         directBindingPtr->GetBindingRel();
-                if (!boundMaterial || 
+                if (!hasValidTargetPath || 
                     (GetMaterialBindingStrength(directBindingRel) == 
                      UsdShadeTokens->strongerThanDescendants))
                 {
+                    hasValidTargetPath = 
+                        !directBindingPtr->GetMaterialPath().IsEmpty();
                     boundMaterial = directBindingPtr->GetMaterial();
                     winningBindingRel = directBindingRel;
                 }
@@ -750,10 +836,13 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
                     // If the collection binding is on the prim itself and if 
                     // the prim is included in the collection, the collection-based
                     // binding is considered to be stronger than the direct binding.
-                    if (!boundMaterial || 
-                        (boundMaterial && winningBindingRel.GetPrim() == p) ||
+                    if (!hasValidTargetPath || 
+                        (hasValidTargetPath && 
+                             winningBindingRel.GetPrim() == p) ||
                         (GetMaterialBindingStrength(collBindingRel) == 
                             UsdShadeTokens->strongerThanDescendants)) {
+                        hasValidTargetPath = 
+                            !collBinding.GetMaterialPath().IsEmpty();
                         boundMaterial = collBinding.GetMaterial();
                         winningBindingRel = collBindingRel;
 
@@ -766,11 +855,19 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
         }
 
         // The first "purpose" with a valid binding wins.
-        if (boundMaterial) {
+        if (hasValidTargetPath) {
             if (bindingRel) {
                 *bindingRel = winningBindingRel;
             }
 
+            // Make sure the bound material is a UsdShadeMaterial, ie:
+            // - it exists on the stage as a UsdShadeMaterial
+            // This is to make sure any non-material type target on the 
+            // bindingRel is not returned as the boundMaterial!
+            if (boundMaterial.GetPrim()) {
+                return (boundMaterial.GetPrim().IsA<UsdShadeMaterial>()) ?
+                    boundMaterial : UsdShadeMaterial();
+            }
             return boundMaterial;
         }
     }

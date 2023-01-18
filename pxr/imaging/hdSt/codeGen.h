@@ -133,7 +133,8 @@ public:
 private:
     void _GenerateDrawingCoord(
         bool const shaderDrawParametersEnabled,
-        bool const requiresBasePrimitiveOffset);
+        bool const requiresBasePrimitiveOffset,
+        bool const requiresPrimitiveIdEmulation);
     void _GenerateConstantPrimvar();
     void _GenerateInstancePrimvar();
     void _GenerateElementPrimvar();

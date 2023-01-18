@@ -86,6 +86,65 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_PrefixingSceneIndexPathArrayDataSource
+    : public HdTypedSampledDataSource<VtArray<SdfPath>>
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_PrefixingSceneIndexPathArrayDataSource)
+
+    Hd_PrefixingSceneIndexPathArrayDataSource(
+            const SdfPath &prefix,
+            HdPathArrayDataSourceHandle inputDataSource)
+        : _prefix(prefix)
+        , _inputDataSource(inputDataSource)
+    {
+    }
+
+    VtValue GetValue(Time shutterOffset) override
+    {
+        return VtValue(GetTypedValue(shutterOffset));
+    }
+
+    bool GetContributingSampleTimesForInterval(
+        Time startTime, Time endTime,
+        std::vector<Time> *outSampleTimes) override
+    {
+        if (_inputDataSource) {
+            return _inputDataSource->GetContributingSampleTimesForInterval(
+                    startTime, endTime, outSampleTimes);
+        }
+
+        return false;
+    }
+
+    VtArray<SdfPath> GetTypedValue(Time shutterOffset) override
+    {
+        if (!_inputDataSource) {
+            return VtArray<SdfPath>();
+        }
+
+        VtArray<SdfPath> result =
+            _inputDataSource->GetTypedValue(shutterOffset);
+
+        // cases in which this will not require altering the result are less
+        // common so we acknowledge that this will trigger copy-on-write.
+        for (SdfPath &path : result) {
+            if (path.IsAbsolutePath()) {
+                path = path.ReplacePrefix(SdfPath::AbsoluteRootPath(), _prefix);
+            }
+        }
+
+        return result;
+    }
+
+private:
+
+    const SdfPath _prefix;
+    const HdPathArrayDataSourceHandle _inputDataSource;
+};
+
+// ----------------------------------------------------------------------------
+
 class Hd_PrefixingSceneIndexContainerDataSource : public HdContainerDataSource
 {
 public:
@@ -136,6 +195,13 @@ public:
 
                 return Hd_PrefixingSceneIndexPathDataSource::New(
                         _prefix, childPathDataSource);
+            }
+
+            if (auto childPathArrayDataSource =
+                    HdTypedSampledDataSource<VtArray<SdfPath>>::Cast(
+                        childSource)) {
+                return Hd_PrefixingSceneIndexPathArrayDataSource::New(
+                        _prefix, childPathArrayDataSource);
             }
 
             return childSource;

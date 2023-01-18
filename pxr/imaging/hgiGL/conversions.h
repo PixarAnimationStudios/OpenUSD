@@ -46,6 +46,7 @@ public:
     HGIGL_API
     static void GetFormat(
         HgiFormat inFormat,
+        HgiTextureUsage inUsage,
         GLenum *outFormat,
         GLenum *outType,
         GLenum *outInternalFormat = nullptr);

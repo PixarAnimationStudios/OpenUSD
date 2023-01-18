@@ -604,6 +604,7 @@ HdSt_TextureTestDriver::_CreateTextureBindings(
         HgiTextureBindDesc texBindDesc;
         texBindDesc.bindingIndex = 0;
         texBindDesc.stageUsage = HgiShaderStageFragment;
+        texBindDesc.writable = false;
         texBindDesc.textures.push_back(textureHandle);
         if (samplerHandle) {
             texBindDesc.samplers.push_back(samplerHandle);

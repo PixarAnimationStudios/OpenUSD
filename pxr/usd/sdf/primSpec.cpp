@@ -682,10 +682,9 @@ SdfPrimSpec::ClearReferenceList()
 SdfVariantSetNamesProxy
 SdfPrimSpec::GetVariantSetNameList() const
 {
-    boost::shared_ptr<Sdf_ListEditor<SdfNameKeyPolicy> > editor( 
-            new Sdf_ListOpListEditor<SdfNameKeyPolicy>( 
-                SdfCreateHandle(this), SdfFieldKeys->VariantSetNames));
-    return SdfVariantSetNamesProxy(editor);
+    return SdfVariantSetNamesProxy(
+        std::make_unique<Sdf_ListOpListEditor<SdfNameKeyPolicy>>(
+            SdfCreateHandle(this), SdfFieldKeys->VariantSetNames));
 }
 
 bool

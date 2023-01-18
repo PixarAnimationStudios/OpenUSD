@@ -28,6 +28,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/prim.h"
 #include "pxr/usd/usd/attribute.h"
+#include "pxr/usd/usd/attributeQuery.h"
 
 #include "pxr/base/tf/debug.h"
 
@@ -74,9 +75,11 @@ TestTemplates()
     // --------------------------------------------------------------------- //
     VtVec3dArray vtVecOut(1);
     VtVec3dArray vtVecIn;
+    VtVec3dArray queryVtVecIn;    
     std::string tmp;
 
     VtValue value;
+    VtValue queryValue;
 
     // ===================================================================== //
     // TEST READING METADATA
@@ -102,7 +105,7 @@ TestTemplates()
     TF_VERIFY(value.IsHolding<bool>(),
               "Metadata -- VtValue: not holding bool%s",
               propPath.c_str());
-   TF_VERIFY(value.Get<bool>(),
+    TF_VERIFY(value.Get<bool>(),
               "Metadata -- VtValue: value was not true %s",
               propPath.c_str());
 
@@ -155,7 +158,19 @@ TestTemplates()
     TF_VERIFY(value.IsHolding<VtVec3dArray>(),
               "VtValue: not holding VtVec3dArray %s",
               propPath.c_str());
-   TF_VERIFY(value.Get<VtVec3dArray>()[0] == vtVecOut[0],
+    TF_VERIFY(value.Get<VtVec3dArray>()[0] == vtVecOut[0],
+              "VtValue: VtVec3d[0] does not match %s",
+              propPath.c_str());
+
+    // Verify the result using a UsdAttributeQuery.
+    TF_VERIFY(UsdAttributeQuery(attr).Get(&queryValue),
+              "VtValue: Failed to get property value at %s using "
+              "UsdAttributeQuery",
+              propPath.c_str());
+    TF_VERIFY(queryValue.IsHolding<VtVec3dArray>(),
+              "VtValue: not holding VtVec3dArray %s",
+              propPath.c_str());
+    TF_VERIFY(queryValue.Get<VtVec3dArray>()[0] == vtVecOut[0],
               "VtValue: VtVec3d[0] does not match %s",
               propPath.c_str());
 
@@ -180,6 +195,36 @@ TestTemplates()
               propPath.c_str());
     TF_VERIFY(vtVecIn[0] == vtVecOut[0],
               "VtArray: VtVec3d[0] does not match %s",
+              propPath.c_str());
+
+    // Verify the result using a UsdAttributeQuery.
+    TF_VERIFY(UsdAttributeQuery(attr).Get(&queryVtVecIn),
+              "VtArray: Failed to get property value at %s using "
+              "UsdAttributeQuery",
+              propPath.c_str());
+    TF_VERIFY(queryVtVecIn[0] == vtVecOut[0],
+              "VtArray: VtVec3d[0] does not match %s",
+              propPath.c_str());
+
+    // Attempt to get the value using the wrong type (int) to verify this fails
+    // gracefully. Test this both at default and a numeric time and using both
+    // UsdAttribute API and UsdAttributeQuery API.
+    int wrongTypeValue = 0;
+    TF_VERIFY(!attr.Get(&wrongTypeValue),
+              "Int: Expected failure getting property value (time = default) "
+              "at %s with incorrect type",
+              propPath.c_str());
+    TF_VERIFY(!attr.Get(&wrongTypeValue, 1.0),
+              "Int: Expected failure getting property value (time = 1.0) "
+              "at %s with incorrect type",
+              propPath.c_str());
+    TF_VERIFY(!UsdAttributeQuery(attr).Get(&wrongTypeValue),
+              "Int: Expected failure getting property value (time = default) "
+              "at %s with incorrect type using UsdAttributeQuery",
+              propPath.c_str());
+    TF_VERIFY(!UsdAttributeQuery(attr).Get(&wrongTypeValue, 1.0),
+              "Int: Expected failure getting property value (time = 1.0) "
+              "at %s with incorrect type using UsdAttributeQuery",
               propPath.c_str());
 
     // --------------------------------------------------------------------- //
