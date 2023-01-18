@@ -33,6 +33,8 @@
 
 #include <cstring>
 #include <string>
+#include <set>
+#include <map>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -94,6 +96,24 @@ TfHashAppend(HashState &h, std::vector<T> const &vec)
     h.AppendContiguous(vec.data(), vec.size());
 }
 
+// Support std::set
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState& h, std::set<T> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
+// Support std::map
+// NOTE: Supporting std::unordered_map is complicated because the traveral
+// order is not guaranteed
+template <class HashState, class Key, class Value, class Compare>
+inline void
+TfHashAppend(HashState& h, std::map<Key, Value, Compare> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
 // Support for hashing std::string.
 template <class HashState>
 inline void
@@ -149,16 +169,14 @@ inline void TfHashAppend(HashState &h, TfCStrHashWrapper hcstr)
 }
 
 // Implementation detail: dispatch based on hash capability: Try TfHashAppend
-// first, otherwise try hash_value.  We'd like to otherwise try std::hash<T>,
-// but std::hash<> is not SFINAE-friendly until c++17 and this code needs to
-// support c++14 currently.  We rely on a combination of expression SFINAE and
+// first, then try hash_value, and lastly try std::hash.
+//
+// We rely on a combination of expression SFINAE and
 // establishing preferred order by passing a 0 constant and having the overloads
 // take int (highest priority), long (next priority) and '...' (lowest
 // priority).
 
-// std::hash version, attempted last.  Consider adding when we move to
-// C++17 or newer.
-/*
+// std::hash version, attempted last.
 template <class HashState, class T>
 inline auto Tf_HashImpl(HashState &h, T &&obj, ...)
     -> decltype(std::hash<typename std::decay<T>::type>()(
@@ -167,7 +185,7 @@ inline auto Tf_HashImpl(HashState &h, T &&obj, ...)
     TfHashAppend(
         h, std::hash<typename std::decay<T>::type>()(std::forward<T>(obj)));
 }
-*/
+
 
 // hash_value, attempted second.
 template <class HashState, class T>
@@ -380,9 +398,8 @@ private:
 /// some STL types and types in Tf.  TfHash uses three methods to attempt to
 /// hash a passed object.  First, TfHash tries to call TfHashAppend() on its
 /// argument.  This is the primary customization point for TfHash.  If that is
-/// not viable, TfHash makes an unqualified call to hash_value().  We would like
-/// TfHash to try to use std::hash<T> next, but std::hash<T> is not
-/// SFINAE-friendly until c++17, and this code needs to support c++14.
+/// not viable, TfHash makes an unqualified call to hash_value().  Lastly, TfHash
+/// uses std::hash.
 ///
 /// The best way to add TfHash support for user-defined types is to provide a
 /// function overload like the following.
@@ -431,6 +448,7 @@ private:
 ///   \li const void*
 ///   \li types that provide overloads for TfHashAppend
 ///   \li types that provide overloads for hash_value
+///   \li types that provide overloads for std::hash
 ///
 /// The \c TfHash class can be used to instantiate a \c TfHashMap with \c string
 /// keys as follows:

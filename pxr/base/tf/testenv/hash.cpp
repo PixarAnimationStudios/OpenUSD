@@ -28,6 +28,7 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakPtr.h"
+#include "pxr/base/tf/hash.h"
 
 // We're getting rid of our dependency on boost::hash -- this code is left
 // commented for testing purposes, for now (6/2020).
@@ -294,6 +295,12 @@ Test_TfHash()
     std::vector<int> vint = {1, 2, 3, 4, 5};
     printf("hash(vector<int>): %zu\n", h(vint));
 
+    std::set<int> sint = {1, 2, 3, 4, 5};
+    printf("hash(set<int>): %zu\n", h(sint));
+
+    std::map<int, uint> mint = {{-1, 1}, {2, 3}, {-4, 5}};
+    printf("hash(map<int, uint>): %zu\n", h(mint));
+
     std::pair<int, float> intfloat = {1, 2.34};
     printf("hash(pair<int, float>): %zu\n", h(intfloat));
 
@@ -305,6 +312,9 @@ Test_TfHash()
 
     printf("combine hash of the 3: %zu\n",
            TfHash::Combine(vint, intfloat, vp));
+
+    // Validate support for std::hash
+    printf("hash(type_index): %zu\n", h(std::type_index(typeid(int))));
 
     TfHasher tfh;
     //BoostHasher bh;
