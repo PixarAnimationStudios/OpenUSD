@@ -27,12 +27,12 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/functional/hash_fwd.hpp>
 #include <boost/mpl/or.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -431,11 +431,7 @@ template <template <class> class X, class T>
 inline size_t
 hash_value(TfWeakPtrFacade<X, T> const &ptr)
 {
-    // Make the boost::hash type depend on T so that we don't have to always
-    // include boost/functional/hash.hpp in this header for the definition of
-    // boost::hash.
-    auto uniqueId = ptr.GetUniqueIdentifier();
-    return boost::hash<decltype(uniqueId)>()(uniqueId);
+    return TfHash()(ptr);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

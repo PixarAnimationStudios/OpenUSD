@@ -33,6 +33,9 @@
 
 #include <cstring>
 #include <string>
+#include <map>
+#include <set>
+#include <typeindex>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -92,6 +95,35 @@ inline void
 TfHashAppend(HashState &h, std::vector<T> const &vec)
 {
     h.AppendContiguous(vec.data(), vec.size());
+}
+
+// Support std::set.
+// NOTE: Supporting std::unordered_set is complicated because the traversal
+// order is not guaranteed
+template <class HashState, class T, class Compare>
+inline void
+TfHashAppend(HashState& h, std::set<T, Compare> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
+// Support std::map.
+// NOTE: Supporting std::unordered_map is complicated because the traversal
+// order is not guaranteed
+template <class HashState, class Key, class Value, class Compare>
+inline void
+TfHashAppend(HashState& h, std::map<Key, Value, Compare> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
+// Support std::type_index.  When TfHash support for std::hash is enabled,
+// this explicit specialization will no longer be necessary.
+template <class HashState>
+inline void
+TfHashAppend(HashState& h, std::type_index const &type_index)
+{
+    return h.Append(type_index.hash_code());
 }
 
 // Support for hashing std::string.
