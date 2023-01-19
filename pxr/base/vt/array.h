@@ -913,7 +913,7 @@ TfHashAppend(HashState &h, VtArray<T> const &array)
 template <class ELEM>
 typename std::enable_if<VtIsHashable<ELEM>(), size_t>::type
 hash_value(VtArray<ELEM> const &array) {
-    return pxr::TfHash()(array);
+    return TfHash()(array);
 }
 
 // Specialize traits so others can figure out that VtArray is an array.
