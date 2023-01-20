@@ -767,7 +767,7 @@ struct _PerThreadPrimPathCache
         size_t h = childName.Hash();
         uint32_t parentAsInt;
         memcpy(&parentAsInt, &parent, sizeof(uint32_t));
-        boost::hash_combine(h, parentAsInt >> 8);
+        h = TfHash::Combine(h, parentAsInt >> 8);
         unsigned index = (h & (Size-1));
 
         for (unsigned probe = 0; probe != Probes; ++probe) {
