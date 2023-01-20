@@ -30,6 +30,8 @@
 #include <typeinfo>
 #include <utility>
 
+// #include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Vt_HashDetail {
@@ -37,6 +39,7 @@ namespace Vt_HashDetail {
 // Issue a coding error when we attempt to hash a t.
 VT_API void _IssueUnimplementedHashError(std::type_info const &t);
 
+// A constexpr function that determines hashability.
 template <class T, class = decltype(TfHash()(std::declval<T>()))>
 constexpr bool _IsHashable(long) { return true; }
 template <class T>
