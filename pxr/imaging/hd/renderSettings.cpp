@@ -99,9 +99,13 @@ HdRenderSettings::_Sync(
 // VtValue Requirements
 // -------------------------------------------------------------------------- //
 
-std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& pv)
+std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& rs)
 {
-    out << "HdRenderSettingsParams Params: (...) " ;
+    out << "HdRenderSettingsParams: \n"
+        << "    namespacedSettings: \n";
+    for (const auto &settings : rs.namespacedSettings) {
+        out << "      - " << settings.first << "\n";
+    }
     return out;
 }
 
