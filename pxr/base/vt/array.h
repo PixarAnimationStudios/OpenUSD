@@ -903,7 +903,8 @@ class VtArray : public Vt_ArrayBase {
     extern template class VtArray< VT_TYPE(elem) >;
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
-template <class HashState, class T>
+template <class HashState, class T,
+          std::enable_if_t<VtIsHashable<T>(), bool> = true>
 inline void
 TfHashAppend(HashState &h, VtArray<T> const &array)
 {
