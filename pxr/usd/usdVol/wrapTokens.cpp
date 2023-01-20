@@ -101,4 +101,9 @@ void wrapUsdVolTokens()
     _AddToken(cls, "unknown", UsdVolTokens->unknown);
     _AddToken(cls, "Vector", UsdVolTokens->Vector);
     _AddToken(cls, "vectorDataRoleHint", UsdVolTokens->vectorDataRoleHint);
+    _AddToken(cls, "Field3DAsset", UsdVolTokens->Field3DAsset);
+    _AddToken(cls, "FieldAsset", UsdVolTokens->FieldAsset);
+    _AddToken(cls, "FieldBase", UsdVolTokens->FieldBase);
+    _AddToken(cls, "OpenVDBAsset", UsdVolTokens->OpenVDBAsset);
+    _AddToken(cls, "Volume", UsdVolTokens->Volume);
 }

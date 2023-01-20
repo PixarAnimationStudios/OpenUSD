@@ -356,7 +356,7 @@ struct UsdContrivedTokensType {
     const TfToken namespacedProperty;
     /// \brief "newToken"
     /// 
-    /// Default value for UsdContrivedDerived::GetJustDefaultAttr()
+    /// Fallback value for UsdContrivedDerived::GetJustDefaultAttr()
     const TfToken newToken;
     /// \brief "normal3d"
     /// 
@@ -460,7 +460,7 @@ struct UsdContrivedTokensType {
     const TfToken stringArray;
     /// \brief "temp"
     /// 
-    /// UsdContrivedTestHairman
+    /// UsdContrivedTestHairman, UsdContrivedTestHairman_1, UsdContrivedTestNoVersion0_2
     const TfToken temp;
     /// \brief "test"
     /// 
@@ -492,7 +492,7 @@ struct UsdContrivedTokensType {
     const TfToken testo_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "token"
     /// 
-    /// Default value for UsdContrivedBase::GetTokenAttr(), UsdContrivedBase
+    /// UsdContrivedBase, Fallback value for UsdContrivedBase::GetTokenAttr()
     const TfToken token;
     /// \brief "tokenArray"
     /// 
@@ -552,7 +552,7 @@ struct UsdContrivedTokensType {
     const TfToken variableTokenArrayAllowed3;
     /// \brief "VariableTokenDefault"
     /// 
-    /// Default value for UsdContrivedBase::GetMyVaryingTokenAttr()
+    /// Fallback value for UsdContrivedBase::GetMyVaryingTokenAttr()
     const TfToken variableTokenDefault;
     /// \brief "vector3d"
     /// 
@@ -578,6 +578,54 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedBase
     const TfToken vector3hArray;
+    /// \brief "Base"
+    /// 
+    /// Schema identifer and family for UsdContrivedBase
+    const TfToken Base;
+    /// \brief "Derived"
+    /// 
+    /// Schema identifer and family for UsdContrivedDerived
+    const TfToken Derived;
+    /// \brief "DerivedNonAppliedAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedDerivedNonAppliedAPI
+    const TfToken DerivedNonAppliedAPI;
+    /// \brief "EmptyMultipleApplyAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedEmptyMultipleApplyAPI
+    const TfToken EmptyMultipleApplyAPI;
+    /// \brief "MultipleApplyAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedMultipleApplyAPI
+    const TfToken MultipleApplyAPI;
+    /// \brief "NonAppliedAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedNonAppliedAPI
+    const TfToken NonAppliedAPI;
+    /// \brief "PublicMultipleApplyAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedPublicMultipleApplyAPI
+    const TfToken PublicMultipleApplyAPI;
+    /// \brief "SingleApplyAPI"
+    /// 
+    /// Schema identifer and family for UsdContrivedSingleApplyAPI
+    const TfToken SingleApplyAPI;
+    /// \brief "TestNoVersion0"
+    /// 
+    /// Schema family for UsdContrivedTestNoVersion0_2
+    const TfToken TestNoVersion0;
+    /// \brief "TestNoVersion0_2"
+    /// 
+    /// Schema identifer for UsdContrivedTestNoVersion0_2
+    const TfToken TestNoVersion0_2;
+    /// \brief "TestPxHairman"
+    /// 
+    /// Schema identifer and family for UsdContrivedTestHairman, Schema family for UsdContrivedTestHairman_1
+    const TfToken TestPxHairman;
+    /// \brief "TestPxHairman_1"
+    /// 
+    /// Schema identifer for UsdContrivedTestHairman_1
+    const TfToken TestPxHairman_1;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

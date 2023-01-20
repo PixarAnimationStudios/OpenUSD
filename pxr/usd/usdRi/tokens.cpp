@@ -38,6 +38,9 @@ UsdRiTokensType::UsdRiTokensType() :
     renderContext("ri", TfToken::Immortal),
     spline("spline", TfToken::Immortal),
     values("values", TfToken::Immortal),
+    RiMaterialAPI("RiMaterialAPI", TfToken::Immortal),
+    RiSplineAPI("RiSplineAPI", TfToken::Immortal),
+    StatementsAPI("StatementsAPI", TfToken::Immortal),
     allTokens({
         bspline,
         catmullRom,
@@ -50,7 +53,10 @@ UsdRiTokensType::UsdRiTokensType() :
         positions,
         renderContext,
         spline,
-        values
+        values,
+        RiMaterialAPI,
+        RiSplineAPI,
+        StatementsAPI
     })
 {
 }

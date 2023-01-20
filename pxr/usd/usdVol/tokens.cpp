@@ -63,6 +63,11 @@ UsdVolTokensType::UsdVolTokensType() :
     unknown("unknown", TfToken::Immortal),
     Vector("Vector", TfToken::Immortal),
     vectorDataRoleHint("vectorDataRoleHint", TfToken::Immortal),
+    Field3DAsset("Field3DAsset", TfToken::Immortal),
+    FieldAsset("FieldAsset", TfToken::Immortal),
+    FieldBase("FieldBase", TfToken::Immortal),
+    OpenVDBAsset("OpenVDBAsset", TfToken::Immortal),
+    Volume("Volume", TfToken::Immortal),
     allTokens({
         bool_,
         Color,
@@ -100,7 +105,12 @@ UsdVolTokensType::UsdVolTokensType() :
         uint,
         unknown,
         Vector,
-        vectorDataRoleHint
+        vectorDataRoleHint,
+        Field3DAsset,
+        FieldAsset,
+        FieldBase,
+        OpenVDBAsset,
+        Volume
     })
 {
 }

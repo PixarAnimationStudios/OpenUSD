@@ -482,3 +482,24 @@ class TestPxHairman "TestPxHairman" (
         }
     )
 }
+
+class TestPxHairman_1 "TestPxHairman_1" (
+    inherits = </Typed>
+    customData = {
+        string className = "TestHairman_1"
+        dictionary extraPlugInfo = {
+            string extraInfo = "ExtraInfo"
+        }
+    }
+)
+{
+    custom double temp
+}
+
+# Tests class token generation for schema family when there's no version 0.
+class TestNoVersion0_2 "TestNoVersion0_2" (
+    inherits = </Typed>
+)
+{
+    custom double temp
+}

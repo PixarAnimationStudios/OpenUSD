@@ -640,6 +640,10 @@ class ClassInfo(object):
                                 'nor provide a typename(API).',
                                 sdfPrim.path)
 
+        self.family, self.version = \
+            Usd.SchemaRegistry.ParseSchemaFamilyAndVersionFromIdentifier(
+                sdfPrim.path.name)
+
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
             not sdfPrim.path.name.endswith('API'):
             raise _GetSchemaDefException(
@@ -1054,7 +1058,8 @@ def _MakeValidToken(tokenId, useLiteralIdentifier):
     return tokenId
 
 
-def _AddToken(tokenDict, tokenId, val, desc, useLiteralIdentifier=False):
+def _AddToken(tokenDict, classTokenSet, tokenId, val, desc, 
+              useLiteralIdentifier=False):
     """tokenId must be an identifier"""
 
     cppReservedKeywords = [
@@ -1108,53 +1113,78 @@ def _AddToken(tokenDict, tokenId, val, desc, useLiteralIdentifier=False):
         
         # Update Description
         tokenDict[tokenId] = token._replace(
-            desc=desc + ', ' + token.desc)
+            desc=token.desc + ', ' + desc)
     
     else:
         tokenDict[tokenId] = Token(tokenId, val, desc)
 
-    return tokenId
+    if classTokenSet is not None:
+        classTokenSet.add(tokenId)
 
-
-def GatherTokens(classes, libName, libTokens):
+def GatherTokens(classes, libName, libTokens, 
+                 includeSchemaIdentifierTokens = False):
     tokenDict = {}
+    schemaIdentifierTokensDict = {}
 
     # Add tokens from all classes to the token set
     for cls in classes:
+
+        if includeSchemaIdentifierTokens:
+            # Add the token for the class's schema identifier and family.
+            # We keep these separate from the rest of the tokens while we 
+            # gather so we can sort them to be at the end of the tokens list.
+            if cls.version == 0:
+                # For version 0, the identifier and family will be the same.
+                _AddToken(schemaIdentifierTokensDict, None, 
+                    cls.usdPrimTypeName, cls.usdPrimTypeName, 
+                    'Schema identifer and family for {}'.format(cls.cppClassName), 
+                    useLiteralIdentifier=True)
+            else:
+                _AddToken(schemaIdentifierTokensDict, None, 
+                    cls.usdPrimTypeName, cls.usdPrimTypeName, 
+                    'Schema identifer for {}'.format(cls.cppClassName), 
+                    useLiteralIdentifier=True)
+                _AddToken(schemaIdentifierTokensDict, None, 
+                    cls.family, cls.family, 
+                    'Schema family for {}'.format(cls.cppClassName), 
+                    useLiteralIdentifier=True)
+
         # Add tokens from attributes to the token set
         #
         # We sort by name here to get a stable ordering when building up the
-        # desc string below. The sort is reversed because items are prepended
-        # to the description. Reversing this sort results in a forward sort in
-        # the doc strings.
-        for attr in sorted(cls.attrs.values(),
-                           key=lambda a: a.name.lower(), reverse=True):
+        # desc string below.
+        for attr in sorted(cls.attrs.values(), key=lambda a: a.name.lower()):
 
             # Add Attribute Names to token set
-            cls.tokens.add(attr.name)
             # For property names, camelCase all tokens irrespective of
             # useLiteralIdentifier, so that we are consistent in our attribute
             # naming when namespace prefix are provided and respect our coding
             # convention. (Example: namespacePrefix:attrName ->
             # namespacePrefixAttrName)
-            _AddToken(tokenDict, attr.name, attr.rawName, cls.cppClassName)
+            _AddToken(tokenDict, cls.tokens, attr.name, attr.rawName, cls.cppClassName)
 
-            
-            # Add default value (if token type) to token set
-            if attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback:
+            # Add fallback value (if token type) to token set
+            addTokenForFallback = (
+                attr.typeName == Sdf.ValueTypeNames.Token and attr.fallback)
+            if addTokenForFallback:
                 if attr.apiName != '':
-                    desc = 'Default value for %s::Get%sAttr()' % \
+                    desc = 'Fallback value for %s::Get%sAttr()' % \
                            (cls.cppClassName, _ProperCase(attr.apiName))
                 else:
-                    desc = 'Default value for %s schema attribute %s' % \
+                    desc = 'Fallback value for %s schema attribute %s' % \
                            (cls.cppClassName, attr.rawName)
-                fallbackNameToken = _AddToken(tokenDict, attr.fallback,
+                _AddToken(tokenDict, cls.tokens, attr.fallback,
                         attr.fallback, desc, cls.useLiteralIdentifier)
-                cls.tokens.add(fallbackNameToken)
             
             # Add Allowed Tokens for this attribute to token set
             if attr.allowedTokens:
                 for val in attr.allowedTokens:
+                    # Skip the fallback value if its in the allowed tokens as 
+                    # we don't need to also say that fallback value is a 
+                    # "possible value".
+                    if addTokenForFallback and val == attr.fallback:
+                        continue
+
                     # Empty string is a valid allowedTokens member,
                     # but do not declare a named literal for it.
                     if val != '':
@@ -1164,9 +1194,8 @@ def GatherTokens(classes, libName, libTokens):
                         else:
                             desc = 'Possible value for %s schema attribute %s' % \
                                    (cls.cppClassName, attr.rawName)
-                        valToken = _AddToken(tokenDict, val, val, desc, 
+                        _AddToken(tokenDict, cls.tokens, val, val, desc, 
                                 cls.useLiteralIdentifier)
-                        cls.tokens.add(valToken)
 
         # As per already established convention following tokens follow literal
         # identifier pattern and not camelCased by default:
@@ -1177,14 +1206,12 @@ def GatherTokens(classes, libName, libTokens):
 
         # Add tokens from relationships to the token set
         for rel in cls.rels.values():
-            cls.tokens.add(rel.name)
-            _AddToken(tokenDict, rel.name, rel.rawName, cls.cppClassName, True)
+            _AddToken(tokenDict, cls.tokens, rel.name, rel.rawName, cls.cppClassName, True)
             
         # Add schema tokens to token set
         schemaTokens = cls.customData.get("schemaTokens", {})
         for token, tokenInfo in schemaTokens.items():
-            cls.tokens.add(token)
-            _AddToken(tokenDict, token, tokenInfo.get("value", token),
+            _AddToken(tokenDict, cls.tokens, token, tokenInfo.get("value", token),
                       _SanitizeDoc(tokenInfo.get("doc", 
                           "Special token for the %s schema." % \
                                   cls.cppClassName), ' '), True)
@@ -1192,23 +1219,39 @@ def GatherTokens(classes, libName, libTokens):
         # Add property namespace prefix token for multiple-apply API
         # schema to token set
         if cls.propertyNamespacePrefix:
-            cls.tokens.add(cls.propertyNamespacePrefix)
-            _AddToken(tokenDict, cls.propertyNamespacePrefix,
+            _AddToken(tokenDict, cls.tokens, cls.propertyNamespacePrefix,
                       cls.propertyNamespacePrefix,
                       "Property namespace prefix for the %s schema." \
                               % cls.cppClassName, True)
 
     # Add library-wide tokens to token set
     for token, tokenInfo in libTokens.items():
-        _AddToken(tokenDict, token, tokenInfo.get("value", token), 
+        _AddToken(tokenDict, None, token, tokenInfo.get("value", token), 
                   _SanitizeDoc(tokenInfo.get("doc",
                       "Special token for the %s library." % libName), ' '), True)
 
-    # Sort the list of tokens lexicographically. This pair of keys will provide
+    # It's possible for there to be overlap between the tokens we collected
+    # for schema properties and the tokens representing the schema identifiers.
+    # In this case, we want the schema identifier to take precedence so that
+    # the token is sorted to show up with the rest of the schema identifiers.
+    # Thus, if we find a token matching a schema identifier token, remove it
+    # and add its description to the schema identifier token.
+    for token, tokenInfo in schemaIdentifierTokensDict.items():
+        poppedToken = tokenDict.pop(token, None)
+        if poppedToken is not None:
+            _AddToken(schemaIdentifierTokensDict, None, 
+                poppedToken.id, poppedToken.value, poppedToken.desc, True)
+
+    # Sort both lists of tokens lexicographically. This pair of keys will provide
     # a case insensitive primary key and a case sensitive secondary key. That
     # way we keep a stable sort for tokens that differ only in case.
-    return sorted(tokenDict.values(), key=lambda token: (token.id.lower(), token.id))
+    sortedTokens = sorted(
+        tokenDict.values(), key=lambda token: (token.id.lower(), token.id))
+    sortedSchemaIdentifierTokens = sorted(
+        schemaIdentifierTokensDict.values(), key=lambda token: (token.id.lower(), token.id))
 
+    # Return both sets of tokens concatenated, schema identifier tokens last.
+    return sortedTokens + sortedSchemaIdentifierTokens
 
 def GenerateCode(templatePath, codeGenPath, tokenData, classes, validate,
                  namespaceOpen, namespaceClose, namespaceUsing,
@@ -1785,7 +1828,8 @@ if __name__ == '__main__':
         # Generate code for schema libraries that aren't specified as codeless.
         if not skipCodeGen:
             # Gathered tokens are only used for code-full schemas.
-            tokenData = GatherTokens(classes, libName, libTokens)
+            tokenData = GatherTokens(classes, libName, libTokens,
+                                     includeSchemaIdentifierTokens=True)
             GenerateCode(templatePath, codeGenPath, tokenData, classes, 
                          args.validate,
                          namespaceOpen, namespaceClose, namespaceUsing,

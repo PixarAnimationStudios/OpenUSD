@@ -55,6 +55,7 @@ UsdHydraTokensType::UsdHydraTokensType() :
     uv("uv", TfToken::Immortal),
     wrapS("wrapS", TfToken::Immortal),
     wrapT("wrapT", TfToken::Immortal),
+    HydraGenerativeProceduralAPI("HydraGenerativeProceduralAPI", TfToken::Immortal),
     allTokens({
         black,
         clamp,
@@ -84,7 +85,8 @@ UsdHydraTokensType::UsdHydraTokensType() :
         useMetadata,
         uv,
         wrapS,
-        wrapT
+        wrapT,
+        HydraGenerativeProceduralAPI
     })
 {
 }

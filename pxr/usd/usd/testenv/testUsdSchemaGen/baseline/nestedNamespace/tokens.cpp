@@ -161,6 +161,18 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
     vector3fArray("vector3fArray", TfToken::Immortal),
     vector3h("vector3h", TfToken::Immortal),
     vector3hArray("vector3hArray", TfToken::Immortal),
+    Base("Base", TfToken::Immortal),
+    Derived("Derived", TfToken::Immortal),
+    DerivedNonAppliedAPI("DerivedNonAppliedAPI", TfToken::Immortal),
+    EmptyMultipleApplyAPI("EmptyMultipleApplyAPI", TfToken::Immortal),
+    MultipleApplyAPI("MultipleApplyAPI", TfToken::Immortal),
+    NonAppliedAPI("NonAppliedAPI", TfToken::Immortal),
+    PublicMultipleApplyAPI("PublicMultipleApplyAPI", TfToken::Immortal),
+    SingleApplyAPI("SingleApplyAPI", TfToken::Immortal),
+    TestNoVersion0("TestNoVersion0", TfToken::Immortal),
+    TestNoVersion0_2("TestNoVersion0_2", TfToken::Immortal),
+    TestPxHairman("TestPxHairman", TfToken::Immortal),
+    TestPxHairman_1("TestPxHairman_1", TfToken::Immortal),
     allTokens({
         asset,
         assetArray,
@@ -296,7 +308,19 @@ UsdContrivedTokensType::UsdContrivedTokensType() :
         vector3f,
         vector3fArray,
         vector3h,
-        vector3hArray
+        vector3hArray,
+        Base,
+        Derived,
+        DerivedNonAppliedAPI,
+        EmptyMultipleApplyAPI,
+        MultipleApplyAPI,
+        NonAppliedAPI,
+        PublicMultipleApplyAPI,
+        SingleApplyAPI,
+        TestNoVersion0,
+        TestNoVersion0_2,
+        TestPxHairman,
+        TestPxHairman_1
     })
 {
 }

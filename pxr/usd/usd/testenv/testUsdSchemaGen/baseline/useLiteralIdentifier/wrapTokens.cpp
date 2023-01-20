@@ -193,4 +193,16 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "vector3fArray", UsdContrivedTokens->vector3fArray);
     _AddToken(cls, "vector3h", UsdContrivedTokens->vector3h);
     _AddToken(cls, "vector3hArray", UsdContrivedTokens->vector3hArray);
+    _AddToken(cls, "Base", UsdContrivedTokens->Base);
+    _AddToken(cls, "Derived", UsdContrivedTokens->Derived);
+    _AddToken(cls, "DerivedNonAppliedAPI", UsdContrivedTokens->DerivedNonAppliedAPI);
+    _AddToken(cls, "EmptyMultipleApplyAPI", UsdContrivedTokens->EmptyMultipleApplyAPI);
+    _AddToken(cls, "MultipleApplyAPI", UsdContrivedTokens->MultipleApplyAPI);
+    _AddToken(cls, "NonAppliedAPI", UsdContrivedTokens->NonAppliedAPI);
+    _AddToken(cls, "PublicMultipleApplyAPI", UsdContrivedTokens->PublicMultipleApplyAPI);
+    _AddToken(cls, "SingleApplyAPI", UsdContrivedTokens->SingleApplyAPI);
+    _AddToken(cls, "TestNoVersion0", UsdContrivedTokens->TestNoVersion0);
+    _AddToken(cls, "TestNoVersion0_2", UsdContrivedTokens->TestNoVersion0_2);
+    _AddToken(cls, "TestPxHairman", UsdContrivedTokens->TestPxHairman);
+    _AddToken(cls, "TestPxHairman_1", UsdContrivedTokens->TestPxHairman_1);
 }

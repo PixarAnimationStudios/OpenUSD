@@ -64,6 +64,12 @@ UsdRenderTokensType::UsdRenderTokensType() :
     resolution("resolution", TfToken::Immortal),
     sourceName("sourceName", TfToken::Immortal),
     sourceType("sourceType", TfToken::Immortal),
+    RenderDenoisePass("RenderDenoisePass", TfToken::Immortal),
+    RenderPass("RenderPass", TfToken::Immortal),
+    RenderProduct("RenderProduct", TfToken::Immortal),
+    RenderSettings("RenderSettings", TfToken::Immortal),
+    RenderSettingsBase("RenderSettingsBase", TfToken::Immortal),
+    RenderVar("RenderVar", TfToken::Immortal),
     allTokens({
         adjustApertureHeight,
         adjustApertureWidth,
@@ -102,7 +108,13 @@ UsdRenderTokensType::UsdRenderTokensType() :
         renderSource,
         resolution,
         sourceName,
-        sourceType
+        sourceType,
+        RenderDenoisePass,
+        RenderPass,
+        RenderProduct,
+        RenderSettings,
+        RenderSettingsBase,
+        RenderVar
     })
 {
 }

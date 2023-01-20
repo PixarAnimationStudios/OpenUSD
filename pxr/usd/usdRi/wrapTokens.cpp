@@ -76,4 +76,7 @@ void wrapUsdRiTokens()
     _AddToken(cls, "renderContext", UsdRiTokens->renderContext);
     _AddToken(cls, "spline", UsdRiTokens->spline);
     _AddToken(cls, "values", UsdRiTokens->values);
+    _AddToken(cls, "RiMaterialAPI", UsdRiTokens->RiMaterialAPI);
+    _AddToken(cls, "RiSplineAPI", UsdRiTokens->RiSplineAPI);
+    _AddToken(cls, "StatementsAPI", UsdRiTokens->StatementsAPI);
 }

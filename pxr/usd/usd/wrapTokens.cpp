@@ -77,4 +77,8 @@ void wrapUsdTokens()
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
     _AddToken(cls, "fallbackPrimTypes", UsdTokens->fallbackPrimTypes);
+    _AddToken(cls, "APISchemaBase", UsdTokens->APISchemaBase);
+    _AddToken(cls, "ClipsAPI", UsdTokens->ClipsAPI);
+    _AddToken(cls, "CollectionAPI", UsdTokens->CollectionAPI);
+    _AddToken(cls, "ModelAPI", UsdTokens->ModelAPI);
 }

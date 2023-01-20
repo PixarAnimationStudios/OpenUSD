@@ -391,3 +391,13 @@ class TestPxHairman "TestPxHairman"
     custom float temp
 }
 
+class TestPxHairman_1 "TestPxHairman_1"
+{
+    custom double temp
+}
+
+class TestNoVersion0_2 "TestNoVersion0_2"
+{
+    custom double temp
+}
+
