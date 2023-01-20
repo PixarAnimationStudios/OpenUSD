@@ -76,13 +76,50 @@ class TestSdfPayload(unittest.TestCase):
         for payload in payloads:
             self.assertEqual(payload, eval(repr(payload)))
 
-        # Test invalid asset paths.
+        # Test inval(id asset paths.
         with self.assertRaises(Tf.ErrorException):
             p = Sdf.Payload('\x01\x02\x03')
 
         with self.assertRaises(Tf.ErrorException):
             p = Sdf.AssetPath('\x01\x02\x03')
             p = Sdf.AssetPath('foobar', '\x01\x02\x03')
+
+    def test_Hash(self):
+        self.assertEqual(
+            hash(Sdf.Payload()),
+            hash(Sdf.Payload("", Sdf.Path(), Sdf.LayerOffset()))
+        )
+        payload = Sdf.Payload(
+            "/path/to/asset",
+            Sdf.Path("/path/to/prim"),
+            Sdf.LayerOffset(offset = 10.0, scale = 1.5)
+        )
+        self.assertEqual(
+            hash(payload),
+            hash(Sdf.Payload(payload))
+        )
+
+        # Ensure that trivial permutations result in different hashes
+        permutations = [
+            Sdf.Payload(
+                payload.assetPath,
+                payload.primPath.AppendChild("child"),
+                payload.layerOffset
+            ),
+            Sdf.Payload(
+                payload.assetPath + "/alternate",
+                payload.primPath,
+                payload.layerOffset
+            ),
+            Sdf.Payload(
+                payload.assetPath,
+                payload.primPath,
+                payload.layerOffset * Sdf.LayerOffset(5.0, 2.0),
+            )
+        ]
+
+        hashes = [hash(h) for h in [payload] + permutations]
+        self.assertCountEqual(hashes, set(hashes))
             
 
 

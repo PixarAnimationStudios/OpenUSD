@@ -110,5 +110,46 @@ class TestSdfReferences(unittest.TestCase):
             p = Sdf.AssetPath('\x01\x02\x03')
             p = Sdf.AssetPath('foobar', '\x01\x02\x03')
 
+    def test_Hash(self):
+        reference = Sdf.Reference(
+            "//path/to/asset",
+            "/path/to/prim",
+            layerOffset=Sdf.LayerOffset(1.5, 2.8),
+            customData={"key" : "value"}
+        )
+        self.assertEqual(hash(reference), hash(reference))
+        self.assertEqual(hash(reference), hash(Sdf.Reference(reference)))
+
+        # Verify that simple permutations do not result in collisions
+        permutations = [
+            Sdf.Reference(
+                reference.assetPath + "/alternate",
+                reference.primPath,
+                reference.layerOffset,
+                reference.customData
+            ),
+            Sdf.Reference(
+                reference.assetPath,
+                reference.primPath.AppendChild("child"),
+                reference.layerOffset,
+                reference.customData
+            ),
+            Sdf.Reference(
+                reference.assetPath,
+                reference.primPath,
+                reference.layerOffset * Sdf.LayerOffset(5.0, 2.0),
+                reference.customData
+            ),
+            Sdf.Reference(
+                reference.assetPath,
+                reference.primPath,
+                reference.layerOffset,
+                customData = {"key": "other_value"}
+            )
+        ]
+
+        hashes = [hash(h) for h in [reference] + permutations]
+        self.assertCountEqual(hashes, set(hashes))
+
 if __name__ == "__main__":
     unittest.main()

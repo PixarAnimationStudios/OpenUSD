@@ -237,5 +237,56 @@ class TestSdfListOp(unittest.TestCase):
             self.assertTrue(listOp.HasItem(v))
         self.assertFalse(listOp.HasItem(4))
 
+    def test_Hash(self):
+        listOp = Sdf.IntListOp.Create(appendedItems = [1, 2, 3],
+                                      prependedItems = [0, 8, 9],
+                                      deletedItems = [-1, -2])
+        self.assertEqual(hash(listOp), hash(listOp))
+        self.assertEqual(
+            hash(listOp),
+            hash(
+                Sdf.IntListOp.Create(
+                    appendedItems=listOp.appendedItems,
+                    prependedItems=listOp.prependedItems,
+                    deletedItems=listOp.deletedItems
+                )
+            )
+        )
+
+        # Verify collisions aren't produced through simple permutations of the
+        # values. This should produce different hashes as long as each component
+        # of listOp defined aboeve has more than one value
+        permutations = [
+            # Same elements, but order is varried
+            Sdf.IntListOp.Create(
+                appendedItems=listOp.appendedItems,
+                prependedItems=listOp.prependedItems,
+                deletedItems=reversed(listOp.deletedItems)
+            ),
+            Sdf.IntListOp.Create(
+                appendedItems=listOp.appendedItems,
+                prependedItems=reversed(listOp.prependedItems),
+                deletedItems=listOp.deletedItems
+            ),
+            Sdf.IntListOp.Create(
+                appendedItems=reversed(listOp.appendedItems),
+                prependedItems=listOp.prependedItems,
+                deletedItems=listOp.deletedItems
+            ),
+            # Only one listOp component
+            Sdf.IntListOp.Create(
+                appendedItems=listOp.appendedItems,
+            ),
+            Sdf.IntListOp.Create(
+                prependedItems=listOp.prependedItems,
+            ),
+            Sdf.IntListOp.Create(
+                deletedItems=listOp.deletedItems,
+            )
+        ]
+        hashes = [hash(listOp)] + [hash(p) for p in permutations]
+        self.assertCountEqual(hashes, set(hashes))
+
+
 if __name__ == "__main__":
     unittest.main()

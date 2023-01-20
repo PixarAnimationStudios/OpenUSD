@@ -377,6 +377,15 @@ class TestSdfTypes(unittest.TestCase):
         _TestValueTypeName("/OldAttrTest.a25", Sdf.ValueTypeNames.Matrix3d)
         _TestValueTypeName("/OldAttrTest.a26", Sdf.ValueTypeNames.Matrix4d)
         _TestValueTypeName("/OldAttrTest.a27", Sdf.ValueTypeNames.Frame4d)
+
+    def test_Hash(self):
+        self.assertEqual(hash(Sdf.ValueTypeNames.Point3d), hash(Sdf.ValueTypeNames.Point3d))
+
+        # Verify the hashes don't collide for value types that share the same underlying C++ type
+        # but different roles
+        self.assertNotEqual(hash(Sdf.ValueTypeNames.Point3d), hash(Sdf.ValueTypeNames.Normal3d))
+        self.assertNotEqual(hash(Sdf.ValueTypeNames.Point3d), hash(Sdf.ValueTypeNames.Double3))
+
    
 if __name__ == "__main__":
     unittest.main()

@@ -74,10 +74,7 @@ static bool _Nonzero(SdfAssetPath const &self)
 
 static size_t _Hash(SdfAssetPath const &self)
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, self.GetAssetPath());
-    boost::hash_combine(hash, self.GetResolvedPath());
-    return hash;
+    return self.GetHash();
 }
 
 static std::string

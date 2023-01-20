@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
@@ -163,12 +164,12 @@ public:
     SDF_API bool IsInternal() const;
 
     friend inline size_t hash_value(const SdfReference &r) {
-        size_t h = 0;
-        boost::hash_combine(h, r._assetPath);
-        boost::hash_combine(h, r._primPath);
-        boost::hash_combine(h, r._layerOffset);
-        boost::hash_combine(h, r._customData);
-        return h;
+        return TfHash::Combine(
+            r._assetPath,
+            r._primPath,
+            r._layerOffset,
+            r._customData
+        );
     }
 
     /// Returns whether this reference equals \a rhs.
