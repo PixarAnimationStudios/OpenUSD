@@ -569,9 +569,9 @@ private:
     // to instancers to account for the fact that the id
     // of potentially every instance might have changed.
     void _DirtyInstancesAndResetPointer(
-        _PathToIntSharedPtr * const instanceToId);
+        _PathToIntSharedPtr * const instanceToIndex);
 
-    // Get prim data source for an instance.
+    // Get prim data source for the named USD instance.
     HdContainerDataSourceHandle _GetDataSourceForInstance(
         const SdfPath &primPath);
 
@@ -580,23 +580,23 @@ private:
     HdContainerDataSourceHandle _GetInstanceSchemaDataSource(
         const SdfPath &primPath);
 
-    // Given path of an instance and its info, get its index
-    // that is, the index into the
+    // Given path of an instance and its info, get its index.
+    // That is, the index into the
     // instancer's instancerTopology's instanceIndices that
     // corresponds to this instance.
-    int _GetInstanceId(
+    int _GetInstanceIndex(
         const _InstanceInfo &info,
         const SdfPath &instancePath);
 
     // Given instance info identifying an instancer, get
     // the instance to instance id map. That is, compute
     // it if necessary.
-    _PathToIntSharedPtr _GetInstanceToId(
+    _PathToIntSharedPtr _GetInstanceToIndex(
         const _InstanceInfo &info);
 
     // Given instance info identifying an instancer, compute
     // the instance to instance id map.
-    _PathToIntSharedPtr _ComputeInstanceToId(
+    _PathToIntSharedPtr _ComputeInstanceToIndex(
         const _InstanceInfo &info);
 
     HdSceneIndexBaseRefPtr const _inputScene;
@@ -606,7 +606,7 @@ private:
     _CurriedInstanceInfoToInstance _infoToInstance;
     _PathToInstanceInfo _instanceToInfo;
 
-    // _instancerToInstanceToId is populated lazily (per
+    // _instancerToInstanceToIndex is populated lazily (per
     // instancer). That is, it has an entry for each instancer,
     // but the entry might be a nullptr until a client
     // has queried an instance for its instance data source.
@@ -617,7 +617,7 @@ private:
     // population. That is: if we added the N-th instance, we
     // potentially need to send out a dirty notice for every
     // previous instance since its id might have been affected.
-    _PathToPathToInt _instancerToInstanceToId;
+    _PathToPathToInt _instancerToInstanceToIndex;
 };
 
 _InstanceObserverRefPtr
@@ -819,7 +819,7 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
     // Dirty instances (if previous non-null entry existed)
     // since the indices of potentially every other instance realized
     // by this instancer might have changed.
-    _DirtyInstancesAndResetPointer(&_instancerToInstanceToId[instancerPath]);
+    _DirtyInstancesAndResetPointer(&_instancerToInstanceToIndex[instancerPath]);
 }
 
 void
@@ -870,8 +870,8 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
 
         // The indices of potentially every other instance realized
         // by this instancer might have changed.
-        auto it2 = _instancerToInstanceToId.find(instancerPath);
-        if (it2 != _instancerToInstanceToId.end()) {
+        auto it2 = _instancerToInstanceToIndex.find(instancerPath);
+        if (it2 != _instancerToInstanceToIndex.end()) {
             _DirtyInstancesAndResetPointer(&it2->second);
         }
     }
@@ -882,8 +882,8 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
         _retainedSceneIndex->RemovePrims(
             { { instancerPath } });
         // And corresponding entry from map caching
-        // instance ids.
-        _instancerToInstanceToId.erase(instancerPath);
+        // instance indices.
+        _instancerToInstanceToIndex.erase(instancerPath);
     }
 
     if (level >= _RemovalLevel::BindingScope) {
@@ -946,22 +946,22 @@ _InstanceObserver::_RemoveInstanceFromInfoToInstance(
 
 void
 _InstanceObserver::_DirtyInstancesAndResetPointer(
-    _PathToIntSharedPtr * const instanceToId)
+    _PathToIntSharedPtr * const instanceToIndex)
 {
-    if (!*instanceToId) {
+    if (!*instanceToIndex) {
         return;
     }
 
-    _PathToIntSharedPtr original = *instanceToId;
+    _PathToIntSharedPtr original = *instanceToIndex;
     // Invalidate pointer before sending clients a prim dirty so
     // that a prim dirty handler wouldn't pick up the stale data.
-    *instanceToId = nullptr;
+    *instanceToIndex = nullptr;
 
-    for (const auto &instanceAndId : *original) {
+    for (const auto &instanceAndIndex : *original) {
         static const HdDataSourceLocatorSet locators{
             HdInstanceSchema::GetDefaultLocator()};
         _retainedSceneIndex->DirtyPrims(
-            { { instanceAndId.first, locators } });
+            { { instanceAndIndex.first, locators } });
     }
 
 }
@@ -994,7 +994,7 @@ _InstanceObserver::_GetInstanceSchemaDataSource(
 
     // The instance aggregation scene index never generates an
     // instancer with more than one prototype.
-    static HdIntDataSourceHandle const prototypeIdDs =
+    static HdIntDataSourceHandle const prototypeIndexDs =
         HdRetainedTypedSampledDataSource<int>::New(0);
 
     return
@@ -1002,27 +1002,27 @@ _InstanceObserver::_GetInstanceSchemaDataSource(
             .SetInstancer(
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
                     info.GetInstancerPath()))
-            .SetPrototypeId(prototypeIdDs)
-            .SetInstanceId(
+            .SetPrototypeIndex(prototypeIndexDs)
+            .SetInstanceIndex(
                 HdRetainedTypedSampledDataSource<int>::New(
-                    _GetInstanceId(info, primPath)))
+                    _GetInstanceIndex(info, primPath)))
             .Build();
 }
 
 int
-_InstanceObserver::_GetInstanceId(
+_InstanceObserver::_GetInstanceIndex(
     const _InstanceInfo &info,
     const SdfPath &instancePath)
 {
     TRACE_FUNCTION();
 
-    _PathToIntSharedPtr const instanceToId = _GetInstanceToId(info);
-    if (!instanceToId) {
+    _PathToIntSharedPtr const instanceToIndex = _GetInstanceToIndex(info);
+    if (!instanceToIndex) {
         return -1;
     }
 
-    auto it = instanceToId->find(instancePath);
-    if (it == instanceToId->end()) {
+    auto it = instanceToIndex->find(instancePath);
+    if (it == instanceToIndex->end()) {
         return -1;
     }
 
@@ -1030,13 +1030,13 @@ _InstanceObserver::_GetInstanceId(
 }
 
 _InstanceObserver::_PathToIntSharedPtr
-_InstanceObserver::_GetInstanceToId(
+_InstanceObserver::_GetInstanceToIndex(
     const _InstanceInfo &info)
 {
     TRACE_FUNCTION();
 
-    auto it = _instancerToInstanceToId.find(info.GetInstancerPath());
-    if (it == _instancerToInstanceToId.end()) {
+    auto it = _instancerToInstanceToIndex.find(info.GetInstancerPath());
+    if (it == _instancerToInstanceToIndex.end()) {
         // Entry (albeit nullptr) should for instancer should
         // have been added by _AddInstance.
         return nullptr;
@@ -1046,14 +1046,14 @@ _InstanceObserver::_GetInstanceToId(
     _PathToIntSharedPtr result = std::atomic_load(&it->second);
     if (!result) {
         // Compute if necessary.
-        result = _ComputeInstanceToId(info);
+        result = _ComputeInstanceToIndex(info);
         std::atomic_store(&it->second, result);
     }
     return result;
 }
 
 _InstanceObserver::_PathToIntSharedPtr
-_InstanceObserver::_ComputeInstanceToId(
+_InstanceObserver::_ComputeInstanceToIndex(
     const _InstanceInfo &info)
 {
     TRACE_FUNCTION();

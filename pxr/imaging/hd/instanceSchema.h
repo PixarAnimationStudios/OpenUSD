@@ -42,8 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDINSTANCE_SCHEMA_TOKENS \
     (instance) \
     (instancer) \
-    (prototypeId) \
-    (instanceId) \
+    (prototypeIndex) \
+    (instanceIndex) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdInstanceSchemaTokens, HD_API,
     HDINSTANCE_SCHEMA_TOKENS);
@@ -74,21 +74,21 @@ public:
     // account for this instance. Note that instanceIndices is nested, that
     // is a vector data source containing integer arrays, one for each
     // prototype the instancer is instancing. Thus, we need two indices to
-    // identify the entry: prototypeId is the outer index and instanceId the
-    // inner index.
+    // identify the entry: prototypeIndex is the outer index and
+    // instanceIndex the inner index.
     HD_API
     HdPathDataSourceHandle GetInstancer();
 
     // Index into vector data source at instancer's instancerTopology's
     // instanceIndices to find entry corresponding to this instance.
     HD_API
-    HdIntDataSourceHandle GetPrototypeId();
+    HdIntDataSourceHandle GetPrototypeIndex();
 
     // Index into int array within the vector data source at instancer's
     // instancerTopology's instanceIndices to find entry corresponding to
     // this instance.
     HD_API
-    HdIntDataSourceHandle GetInstanceId();
+    HdIntDataSourceHandle GetInstanceIndex();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -101,8 +101,8 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathDataSourceHandle &instancer,
-        const HdIntDataSourceHandle &prototypeId,
-        const HdIntDataSourceHandle &instanceId
+        const HdIntDataSourceHandle &prototypeIndex,
+        const HdIntDataSourceHandle &instanceIndex
     );
 
     /// \class HdInstanceSchema::Builder
@@ -118,11 +118,11 @@ public:
         Builder &SetInstancer(
             const HdPathDataSourceHandle &instancer);
         HD_API
-        Builder &SetPrototypeId(
-            const HdIntDataSourceHandle &prototypeId);
+        Builder &SetPrototypeIndex(
+            const HdIntDataSourceHandle &prototypeIndex);
         HD_API
-        Builder &SetInstanceId(
-            const HdIntDataSourceHandle &instanceId);
+        Builder &SetInstanceIndex(
+            const HdIntDataSourceHandle &instanceIndex);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -130,8 +130,8 @@ public:
 
     private:
         HdPathDataSourceHandle _instancer;
-        HdIntDataSourceHandle _prototypeId;
-        HdIntDataSourceHandle _instanceId;
+        HdIntDataSourceHandle _prototypeIndex;
+        HdIntDataSourceHandle _instanceIndex;
     };
 
     /// Retrieves a container data source with the schema's default name token

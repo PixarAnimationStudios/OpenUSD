@@ -49,25 +49,25 @@ HdInstanceSchema::GetInstancer()
 }
 
 HdIntDataSourceHandle
-HdInstanceSchema::GetPrototypeId()
+HdInstanceSchema::GetPrototypeIndex()
 {
     return _GetTypedDataSource<HdIntDataSource>(
-        HdInstanceSchemaTokens->prototypeId);
+        HdInstanceSchemaTokens->prototypeIndex);
 }
 
 HdIntDataSourceHandle
-HdInstanceSchema::GetInstanceId()
+HdInstanceSchema::GetInstanceIndex()
 {
     return _GetTypedDataSource<HdIntDataSource>(
-        HdInstanceSchemaTokens->instanceId);
+        HdInstanceSchemaTokens->instanceIndex);
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdInstanceSchema::BuildRetained(
         const HdPathDataSourceHandle &instancer,
-        const HdIntDataSourceHandle &prototypeId,
-        const HdIntDataSourceHandle &instanceId
+        const HdIntDataSourceHandle &prototypeIndex,
+        const HdIntDataSourceHandle &instanceIndex
 )
 {
     TfToken names[3];
@@ -79,14 +79,14 @@ HdInstanceSchema::BuildRetained(
         values[count++] = instancer;
     }
 
-    if (prototypeId) {
-        names[count] = HdInstanceSchemaTokens->prototypeId;
-        values[count++] = prototypeId;
+    if (prototypeIndex) {
+        names[count] = HdInstanceSchemaTokens->prototypeIndex;
+        values[count++] = prototypeIndex;
     }
 
-    if (instanceId) {
-        names[count] = HdInstanceSchemaTokens->instanceId;
-        values[count++] = instanceId;
+    if (instanceIndex) {
+        names[count] = HdInstanceSchemaTokens->instanceIndex;
+        values[count++] = instanceIndex;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -122,18 +122,18 @@ HdInstanceSchema::Builder::SetInstancer(
 }
 
 HdInstanceSchema::Builder &
-HdInstanceSchema::Builder::SetPrototypeId(
-    const HdIntDataSourceHandle &prototypeId)
+HdInstanceSchema::Builder::SetPrototypeIndex(
+    const HdIntDataSourceHandle &prototypeIndex)
 {
-    _prototypeId = prototypeId;
+    _prototypeIndex = prototypeIndex;
     return *this;
 }
 
 HdInstanceSchema::Builder &
-HdInstanceSchema::Builder::SetInstanceId(
-    const HdIntDataSourceHandle &instanceId)
+HdInstanceSchema::Builder::SetInstanceIndex(
+    const HdIntDataSourceHandle &instanceIndex)
 {
-    _instanceId = instanceId;
+    _instanceIndex = instanceIndex;
     return *this;
 }
 
@@ -142,8 +142,8 @@ HdInstanceSchema::Builder::Build()
 {
     return HdInstanceSchema::BuildRetained(
         _instancer,
-        _prototypeId,
-        _instanceId
+        _prototypeIndex,
+        _instanceIndex
     );
 }
 
