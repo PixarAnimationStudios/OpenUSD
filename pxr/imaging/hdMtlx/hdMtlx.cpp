@@ -208,8 +208,16 @@ _AddMaterialXNode(
         TF_WARN("NodeDef not found for Node '%s'", hdNodeType.GetText());
         return mx::NodePtr();
     }
+	
+	// account for namespace.
+	auto nodeCategoryName = [&]() ->std::string 
+	{
+		TfToken tok(mxNodeDef->getNamespace() + ":" + mxNodeDef->getNodeString());
+		return tok.GetString();
+	};
+
     const SdfPath hdNodePath(hdNodeName.GetString());
-    const std::string &mxNodeCategory = mxNodeDef->getNodeString();
+    const std::string mxNodeCategory = mxNodeDef->hasNamespace() ? nodeCategoryName() : mxNodeDef->getNodeString();
     const std::string &mxNodeType = mxNodeDef->getType();
     const std::string &mxNodeName = hdNodePath.GetName();
 
