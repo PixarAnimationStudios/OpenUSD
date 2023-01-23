@@ -37,6 +37,7 @@
 #include <boost/type_traits/is_signed.hpp>
 #include <boost/utility/enable_if.hpp>
 
+#include <algorithm>
 #include <climits>
 #include <cstdarg>
 #include <ctype.h>
