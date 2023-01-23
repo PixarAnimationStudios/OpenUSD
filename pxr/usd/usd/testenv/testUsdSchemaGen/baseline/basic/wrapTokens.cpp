@@ -174,6 +174,9 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "test_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne);
     _AddToken(cls, "test_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "testingAsset", UsdContrivedTokens->testingAsset);
+    _AddToken(cls, "testNewVersion", UsdContrivedTokens->testNewVersion);
+    _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrOne);
+    _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "testo", UsdContrivedTokens->testo);
     _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne);
     _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo);
@@ -204,9 +207,11 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "DerivedNonAppliedAPI", UsdContrivedTokens->DerivedNonAppliedAPI);
     _AddToken(cls, "EmptyMultipleApplyAPI", UsdContrivedTokens->EmptyMultipleApplyAPI);
     _AddToken(cls, "MultipleApplyAPI", UsdContrivedTokens->MultipleApplyAPI);
+    _AddToken(cls, "MultipleApplyAPI_1", UsdContrivedTokens->MultipleApplyAPI_1);
     _AddToken(cls, "NonAppliedAPI", UsdContrivedTokens->NonAppliedAPI);
     _AddToken(cls, "PublicMultipleApplyAPI", UsdContrivedTokens->PublicMultipleApplyAPI);
     _AddToken(cls, "SingleApplyAPI", UsdContrivedTokens->SingleApplyAPI);
+    _AddToken(cls, "SingleApplyAPI_1", UsdContrivedTokens->SingleApplyAPI_1);
     _AddToken(cls, "TestNoVersion0", UsdContrivedTokens->TestNoVersion0);
     _AddToken(cls, "TestNoVersion0_2", UsdContrivedTokens->TestNoVersion0_2);
     _AddToken(cls, "TestPxHairman", UsdContrivedTokens->TestPxHairman);

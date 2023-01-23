@@ -401,3 +401,15 @@ class TestNoVersion0_2 "TestNoVersion0_2"
     custom double temp
 }
 
+class "SingleApplyAPI_1" (
+    apiSchemas = ["BuiltinAPI"]
+)
+{
+}
+
+class "MultipleApplyAPI_1"
+{
+    int testNewVersion:__INSTANCE_NAME__:testAttrOne
+    double testNewVersion:__INSTANCE_NAME__:testAttrTwo
+}
+

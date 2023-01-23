@@ -502,6 +502,18 @@ struct UsdContrivedTokensType {
     /// 
     /// UsdContrivedDerived
     const TfToken testingAsset;
+    /// \brief "testNewVersion"
+    /// 
+    /// Property namespace prefix for the UsdContrivedMultipleApplyAPI_1 schema.
+    const TfToken testNewVersion;
+    /// \brief "testNewVersion:__INSTANCE_NAME__:testAttrOne"
+    /// 
+    /// UsdContrivedMultipleApplyAPI_1
+    const TfToken testNewVersion_MultipleApplyTemplate_TestAttrOne;
+    /// \brief "testNewVersion:__INSTANCE_NAME__:testAttrTwo"
+    /// 
+    /// UsdContrivedMultipleApplyAPI_1
+    const TfToken testNewVersion_MultipleApplyTemplate_TestAttrTwo;
     /// \brief "testo"
     /// 
     /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
@@ -620,8 +632,12 @@ struct UsdContrivedTokensType {
     const TfToken EmptyMultipleApplyAPI;
     /// \brief "MultipleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedMultipleApplyAPI
+    /// Schema identifer and family for UsdContrivedMultipleApplyAPI, Schema family for UsdContrivedMultipleApplyAPI_1
     const TfToken MultipleApplyAPI;
+    /// \brief "MultipleApplyAPI_1"
+    /// 
+    /// Schema identifer for UsdContrivedMultipleApplyAPI_1
+    const TfToken MultipleApplyAPI_1;
     /// \brief "NonAppliedAPI"
     /// 
     /// Schema identifer and family for UsdContrivedNonAppliedAPI
@@ -632,8 +648,12 @@ struct UsdContrivedTokensType {
     const TfToken PublicMultipleApplyAPI;
     /// \brief "SingleApplyAPI"
     /// 
-    /// Schema identifer and family for UsdContrivedSingleApplyAPI
+    /// Schema identifer and family for UsdContrivedSingleApplyAPI, Schema family for UsdContrivedSingleApplyAPI_1
     const TfToken SingleApplyAPI;
+    /// \brief "SingleApplyAPI_1"
+    /// 
+    /// Schema identifer for UsdContrivedSingleApplyAPI_1
+    const TfToken SingleApplyAPI_1;
     /// \brief "TestNoVersion0"
     /// 
     /// Schema family for UsdContrivedTestNoVersion0_2

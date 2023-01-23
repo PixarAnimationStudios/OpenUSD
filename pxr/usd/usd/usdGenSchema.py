@@ -436,21 +436,30 @@ def _ExtractNames(sdfPrim, customData):
     
     return usdPrimTypeName, className, cppClassName, baseFileName
 
+def _FindAllInherits(p):
+    if p.GetMetadata('inheritPaths'):
+        inherits = list(p.GetMetadata('inheritPaths').ApplyOperations([]))
+    else:
+        inherits = []
+    for path in inherits:
+        p2 = p.GetStage().GetPrimAtPath(path)
+        if p2:
+            inherits += _FindAllInherits(p2)
+    return inherits
 
 # Determines if a prim 'p' inherits from Typed
 def _IsTyped(p):
-    def _FindAllInherits(p):
-        if p.GetMetadata('inheritPaths'):
-            inherits = list(p.GetMetadata('inheritPaths').ApplyOperations([]))
-        else:
-            inherits = []
-        for path in inherits:
-            p2 = p.GetStage().GetPrimAtPath(path)
-            if p2:
-                inherits += _FindAllInherits(p2)
-        return inherits
-
     return Sdf.Path('/Typed') in set(_FindAllInherits(p))
+
+# Determines if a prim 'p' inherits from schema prim that would be in the same
+# schema family.
+def _InheritsOwnFamily(p):
+    allInheritedFamilies = [
+        Usd.SchemaRegistry.ParseSchemaFamilyAndVersionFromIdentifier(path.name)[0] 
+        for path in _FindAllInherits(p)]
+    family, _ =  Usd.SchemaRegistry.ParseSchemaFamilyAndVersionFromIdentifier(
+        p.GetPath().name)
+    return family in allInheritedFamilies
 
 class ClassInfo(object):
     def __init__(self, usdPrim, sdfPrim, useLiteralIdentifier=False):
@@ -579,7 +588,13 @@ class ClassInfo(object):
         self.apiAllowedInstanceNames = self.customData.get(
             API_ALLOWED_INSTANCE_NAMES)
         self.apiSchemaInstances = self.customData.get(API_SCHEMA_INSTANCES)
-                               
+
+        if _InheritsOwnFamily(usdPrim):
+            raise _GetSchemaDefException(
+                "Invalid inheritance: A schema cannot directly or indirectly "
+                "inherit from another schema in the same schema family.",
+                sdfPrim.path)
+
         if self.apiSchemaType != MULTIPLE_APPLY:
             if self.propertyNamespacePrefix:
                 raise _GetSchemaDefException(
@@ -640,16 +655,26 @@ class ClassInfo(object):
                                 'nor provide a typename(API).',
                                 sdfPrim.path)
 
+        if not Usd.SchemaRegistry.IsAllowedSchemaIdentifier(sdfPrim.path.name) :
+            raise _GetSchemaDefException(
+                'Schema name is not an allowed schema identifier.', 
+                sdfPrim.path)
+
         self.family, self.version = \
             Usd.SchemaRegistry.ParseSchemaFamilyAndVersionFromIdentifier(
                 sdfPrim.path.name)
 
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
-            not sdfPrim.path.name.endswith('API'):
+            not self.family.endswith('API'):
             raise _GetSchemaDefException(
-                        'API schemas must be named with an API suffix.', 
-                        sdfPrim.path)
+                'API schemas must be named with an API suffix.', 
+                sdfPrim.path)
         
+        if self.isTyped and self.family.endswith('API'):
+            raise _GetSchemaDefException(
+                'Typed schemas cannot be named with an API suffix.', 
+                sdfPrim.path)
+
         if self.isApi and sdfPrim.path.name != "APISchemaBase" and \
                 self.parentCppClassName != "UsdAPISchemaBase":
             if self.isAppliedAPISchema: 
@@ -1579,7 +1604,9 @@ def GenerateRegistry(codeGenPath, filePath, classes, validate, env):
 
         # If this is an API schema, check if it's applied and record necessary
         # information.
-        if p.GetName().endswith('API'):
+        family, _ = Usd.SchemaRegistry.ParseSchemaFamilyAndVersionFromIdentifier(
+            p.GetName())
+        if family.endswith('API'):
             apiSchemaType = p.GetCustomDataByKey(API_SCHEMA_TYPE) or SINGLE_APPLY
             if apiSchemaType == MULTIPLE_APPLY:
                 _RenamePropertiesWithInstanceablePrefix(p)
