@@ -1,6 +1,6 @@
 # Change Log
 
-## [23.02] - 2023-01-20
+## [23.02] - 2023-01-24
 
 Version 23.02 is the last release that supports Python 2. Support for Python 2 
 will be removed in the next release.
