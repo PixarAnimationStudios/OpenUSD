@@ -81,4 +81,5 @@ void wrapUsdTokens()
     _AddToken(cls, "ClipsAPI", UsdTokens->ClipsAPI);
     _AddToken(cls, "CollectionAPI", UsdTokens->CollectionAPI);
     _AddToken(cls, "ModelAPI", UsdTokens->ModelAPI);
+    _AddToken(cls, "Typed", UsdTokens->Typed);
 }

@@ -130,6 +130,10 @@ struct UsdTokensType {
     /// 
     /// Schema identifer and family for UsdModelAPI
     const TfToken ModelAPI;
+    /// \brief "Typed"
+    /// 
+    /// Schema identifer and family for UsdTyped
+    const TfToken Typed;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

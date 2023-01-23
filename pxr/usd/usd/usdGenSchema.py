@@ -573,12 +573,13 @@ class ClassInfo(object):
 
         self.isConcrete = bool(self.typeName)
         self.isTyped = _IsTyped(usdPrim)
+        self.isTypedBase = self.cppClassName == 'UsdTyped'
         self.isAPISchemaBase = self.cppClassName == 'UsdAPISchemaBase'
 
         self.fallbackPrimTypes = self.customData.get(FALLBACK_TYPES)
 
         self.isApi = not self.isTyped and not self.isConcrete and \
-                not self.isAPISchemaBase
+                not self.isAPISchemaBase and not self.isTypedBase
         self.apiSchemaType = self.customData.get(API_SCHEMA_TYPE, 
                 SINGLE_APPLY if self.isApi else None)
         self.propertyNamespacePrefix = \
@@ -634,17 +635,18 @@ class ClassInfo(object):
             raise _GetSchemaDefException("%s should only be used as a "
                 "customData field on applied API schemas." % API_CAN_ONLY_APPLY,
                 sdfPrim.path)
-
-        if self.isApi and not self.isAppliedAPISchema:
-            self.schemaKind = "nonAppliedAPI";
-        elif self.isApi and self.isAppliedAPISchema and not self.isMultipleApply:
-            self.schemaKind = "singleApplyAPI"
-        elif self.isApi and self.isAppliedAPISchema and self.isMultipleApply:
-            self.schemaKind = "multipleApplyAPI"
-        elif self.isConcrete and self.isTyped:
-            self.schemaKind = "concreteTyped"
-        elif self.isTyped:
-            self.schemaKind = "abstractTyped"
+        if self.isApi:
+            if not self.isAppliedAPISchema:
+                self.schemaKind = "nonAppliedAPI";
+            elif self.isMultipleApply:
+                self.schemaKind = "multipleApplyAPI"
+            else:
+                self.schemaKind = "singleApplyAPI"
+        elif self.isTyped and not self.isTypedBase:
+            if self.isConcrete:
+                self.schemaKind = "concreteTyped"
+            else:
+                self.schemaKind = "abstractTyped"
         else:
             self.schemaKind = "abstractBase"
         self.schemaKindEnumValue = "UsdSchemaKind::" + _ProperCase(self.schemaKind)
@@ -847,7 +849,7 @@ def ParseUsd(usdFilePath):
 
     # PARSE CLASSES
     for sdfPrim in sdfLayer.rootPrims:
-        if sdfPrim.name == "Typed" or sdfPrim.specifier != Sdf.SpecifierClass:
+        if sdfPrim.specifier != Sdf.SpecifierClass:
             continue
 
         if not _ValidateFields(sdfPrim):
@@ -1485,9 +1487,8 @@ def GeneratePlugInfo(templatePath, codeGenPath, classes, validate, env,
             # for multiple apply schemas.
             _UpdatePlugInfoWithAPISchemaApplyInfo(clsDict, cls)
 
-            # Write out alias/primdefs for concrete IsA schemas and API schemas
-            if (cls.isTyped or cls.isApi):
-                clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
+            # Write out alias/primdefs for all schemas
+            clsDict['alias'] = {'UsdSchemaBase': cls.usdPrimTypeName}
 
             types[cls.cppClassName] = clsDict
         # write plugInfo file back out.

@@ -43,6 +43,7 @@ UsdTokensType::UsdTokensType() :
     ClipsAPI("ClipsAPI", TfToken::Immortal),
     CollectionAPI("CollectionAPI", TfToken::Immortal),
     ModelAPI("ModelAPI", TfToken::Immortal),
+    Typed("Typed", TfToken::Immortal),
     allTokens({
         apiSchemas,
         clips,
@@ -60,7 +61,8 @@ UsdTokensType::UsdTokensType() :
         APISchemaBase,
         ClipsAPI,
         CollectionAPI,
-        ModelAPI
+        ModelAPI,
+        Typed
     })
 {
 }
