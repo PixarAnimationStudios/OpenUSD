@@ -63,9 +63,8 @@ UsdSkelSkeletonQuery::HasRestPose() const
 size_t
 hash_value(const UsdSkelSkeletonQuery& query)
 {
-    size_t hash = hash_value(query._definition);
-    boost::hash_combine(hash, query._animQuery);
-    return hash;
+    return TfHash::Combine(query._definition,
+                           query._animQuery);
 }
 
 
