@@ -426,7 +426,13 @@ class TestUsdLoadUnload(unittest.TestCase):
              '/other/child/none/child/all/two/prim'])
 
         self.assertEqual(testStage.GetLoadRules(), r)
-        
+
+    def test_HashLoadRules(self):
+        self.assertEqual(Usd.StageLoadRules(), Usd.StageLoadRules())
+        self.assertEqual(Usd.StageLoadRules.LoadAll(),
+                         Usd.StageLoadRules.LoadAll())
+        self.assertEqual(Usd.StageLoadRules.LoadNone(),
+                         Usd.StageLoadRules.LoadNone())
 
     def test_LoadAndUnload(self):
         """Test Stage::LoadUnload thoroughly, as all other requests funnel into it.

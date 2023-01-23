@@ -38,6 +38,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/ostreamMethods.h"
 
@@ -84,13 +85,12 @@ public:
         {
             inline size_t operator()(const ManifestKey& key) const
             {
-                size_t hash = key.primPath.GetHash();
-                boost::hash_combine(hash, TfHash()(key.clipSetName));
-                boost::hash_combine(hash, key.clipPrimPath.GetHash());
-                for (const auto& p : key.clipAssetPaths) {
-                    boost::hash_combine(hash, p.GetHash());
-                }
-                return hash;
+                return TfHash::Combine(
+                    key.primPath,
+                    key.clipSetName,
+                    key.clipPrimPath,
+                    key.clipAssetPaths
+                );
             }
         };
     };

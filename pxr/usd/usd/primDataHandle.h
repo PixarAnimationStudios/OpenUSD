@@ -26,7 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
+
 #include <boost/intrusive_ptr.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -126,7 +127,7 @@ private:
 
     // Provide hash_value.
     friend size_t hash_value(const Usd_PrimDataHandle &h) {
-        return boost::hash_value(h._p.get());
+        return TfHash()(h._p.get());
     }
 
     friend element_type *get_pointer(const Usd_PrimDataHandle &h) {

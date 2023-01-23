@@ -339,8 +339,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 
-#include <boost/functional/hash.hpp>
-
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE

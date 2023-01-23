@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/api.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <atomic>
 
@@ -105,8 +105,7 @@ struct Usd_Shared
 
     // hash_value.
     friend inline size_t hash_value(Usd_Shared const &sh) {
-        using boost::hash_value;
-        return hash_value(sh._held->data);
+        return TfHash()(sh._held->data);
     }
 private:
     boost::intrusive_ptr<Usd_Counted<T>> _held;
