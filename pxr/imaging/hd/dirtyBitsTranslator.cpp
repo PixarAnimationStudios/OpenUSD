@@ -265,7 +265,14 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdCamera::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
-    } else if (HdPrimTypeIsLight(primType)) {
+    } else if (HdPrimTypeIsLight(primType)
+            // special case for mesh lights coming from emulated scene
+            // for which the type will be mesh even though we are receiving
+            // sprim-specific dirty bits.
+            // NOTE: The absence of this would still work but would
+            //       over-invalidate since the fallback value is "".
+             || primType == HdPrimTypeTokens->mesh
+            ) {
         if (bits & (HdLight::DirtyParams |
                     HdLight::DirtyShadowParams |
                     HdLight::DirtyCollection)) {
