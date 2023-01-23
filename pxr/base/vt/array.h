@@ -46,7 +46,9 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <limits>
 #include <memory>
+#include <new>
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -498,6 +500,16 @@ class VtArray : public Vt_ArrayBase {
         return ARCH_UNLIKELY(_foreignSource) ? size() : _GetCapacity(_data);
     }
 
+    /// Return a theoretical maximum size limit for the container.  In practice
+    /// this size is unachievable due to the amount of available memory or other
+    /// system limitations.
+    constexpr size_t max_size() const {
+        // The number of value_type elements that can be fit into maximum size_t
+        // bytes minus the size of _ControlBlock.
+        return (std::numeric_limits<size_t>::max() - sizeof(_ControlBlock))
+            / sizeof(value_type);
+    }
+
     /// Return true if this array contains no elements, false otherwise.
     bool empty() const { return size() == 0; }
     
@@ -850,8 +862,13 @@ class VtArray : public Vt_ArrayBase {
     value_type *_AllocateNew(size_t capacity) {
         TfAutoMallocTag2 tag("VtArray::_AllocateNew", __ARCH_PRETTY_FUNCTION__);
         // Need space for the control block and capacity elements.
-        void *data = malloc(
-            sizeof(_ControlBlock) + capacity * sizeof(value_type));
+        // Exceptionally large capacity requests can overflow the arithmetic
+        // here.  If that happens we'll just attempt to allocate the max size_t
+        // value and let new() throw.
+        size_t numBytes = (capacity <= max_size())
+            ? sizeof(_ControlBlock) + capacity * sizeof(value_type)
+            : std::numeric_limits<size_t>::max();
+        void *data = ::operator new(numBytes);
         // Placement-new a control block.
         ::new (data) _ControlBlock(/*count=*/1, capacity);
         // Data starts after the block.
@@ -879,7 +896,8 @@ class VtArray : public Vt_ArrayBase {
                      p != e; ++p) {
                     p->~value_type();
                 }
-                free(std::addressof(_GetControlBlock(_data)));
+                ::operator delete(static_cast<void *>(
+                                      std::addressof(_GetControlBlock(_data))));
             }
         }
         else {

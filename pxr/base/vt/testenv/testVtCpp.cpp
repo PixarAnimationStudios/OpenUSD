@@ -78,6 +78,7 @@
 #include <iterator>
 #include <iostream>
 #include <limits>
+#include <new>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -510,6 +511,36 @@ static void testArray() {
         TF_AXIOM(array.back() == "aloha");
         TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
+    }
+    {
+        // Test that attempts to create overly large arrays throw
+        // std::bad_alloc
+
+        VtIntArray ia;
+        try {
+            ia.resize(std::numeric_limits<size_t>::max());
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
+
+        VtDoubleArray da;
+        try {
+            da.reserve(std::numeric_limits<size_t>::max() / 2);
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
+        
+        try {
+            da.resize(ia.max_size() + 1);
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
     }
 }
 
