@@ -41,39 +41,26 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens,
 
 
 
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetSampleFilters()
+HdContainerDataSourceHandle
+HdRenderSettingsSchema::GetNamespacedSettings()
 {
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->sampleFilters);
-}
-
-HdPathArrayDataSourceHandle
-HdRenderSettingsSchema::GetDisplayFilters()
-{
-    return _GetTypedDataSource<HdPathArrayDataSource>(
-        HdRenderSettingsSchemaTokens->displayFilters);
+    return _GetTypedDataSource<HdContainerDataSource>(
+        HdRenderSettingsSchemaTokens->namespacedSettings);
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+        const HdContainerDataSourceHandle &namespacedSettings
 )
 {
-    TfToken names[2];
-    HdDataSourceBaseHandle values[2];
+    TfToken names[1];
+    HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (sampleFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->sampleFilters;
-        values[count++] = sampleFilters;
-    }
-
-    if (displayFilters) {
-        names[count] = HdRenderSettingsSchemaTokens->displayFilters;
-        values[count++] = displayFilters;
+    if (namespacedSettings) {
+        names[count] = HdRenderSettingsSchemaTokens->namespacedSettings;
+        values[count++] = namespacedSettings;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -101,18 +88,10 @@ HdRenderSettingsSchema::GetDefaultLocator()
     return locator;
 } 
 HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetSampleFilters(
-    const HdPathArrayDataSourceHandle &sampleFilters)
+HdRenderSettingsSchema::Builder::SetNamespacedSettings(
+    const HdContainerDataSourceHandle &namespacedSettings)
 {
-    _sampleFilters = sampleFilters;
-    return *this;
-}
-
-HdRenderSettingsSchema::Builder &
-HdRenderSettingsSchema::Builder::SetDisplayFilters(
-    const HdPathArrayDataSourceHandle &displayFilters)
-{
-    _displayFilters = displayFilters;
+    _namespacedSettings = namespacedSettings;
     return *this;
 }
 
@@ -120,8 +99,7 @@ HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
     return HdRenderSettingsSchema::BuildRetained(
-        _sampleFilters,
-        _displayFilters
+        _namespacedSettings
     );
 }
 

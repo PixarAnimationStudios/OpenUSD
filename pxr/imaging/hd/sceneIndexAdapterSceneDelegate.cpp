@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/trace/trace.h"
@@ -1312,28 +1313,30 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         return VtValue();
     }
 
-    const std::pair<TfToken, TfToken> outputFilterTokens[] = {
-        {_tokens->outputsRiSampleFilters, HdRenderSettingsSchemaTokens->sampleFilters},
-        {_tokens->outputsRiDisplayFilters, HdRenderSettingsSchemaTokens->displayFilters}
-    };
+    HdRenderSettingsSchema rsSchema = HdRenderSettingsSchema(renderSettingsDs);
+    if (!rsSchema.IsDefined()) {
+        return VtValue();
+    }
 
-    for (const auto tokens : outputFilterTokens) {
-        if (key == tokens.first) {
-            HdSampledDataSourceHandle valueDs =
-                HdSampledDataSource::Cast(renderSettingsDs->Get(tokens.second));
-            if (!valueDs) {
-                return VtValue();
-            }
+    if (key == HdRenderSettingsPrimTokens->params) {
+        HdRenderSettingsParams rsParams;
+        if (HdContainerDataSourceHandle namespacedSettingsDS = 
+                rsSchema.GetNamespacedSettings()) {
 
-            VtValue pathArrayValue = valueDs->GetValue(0);
-            if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
-                VtArray<SdfPath> pathArray =
-                    pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
-                SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
-                return VtValue(pathVector);
+            VtDictionary &namespacedSettings = rsParams.namespacedSettings;
+            const TfTokenVector settingNames = namespacedSettingsDS->GetNames();
+            for (const auto& name : settingNames) {
+                HdSampledDataSourceHandle paramSDS = 
+                    HdSampledDataSource::Cast(namespacedSettingsDS->Get(name));
+                if (paramSDS) {
+                    namespacedSettings[name.GetString()] = paramSDS->GetValue(0);
+                }
             }
         }
+
+        return VtValue(rsParams);
     }
+    // XXX: HdRenderSettingsPrimTokens->active is not handled yet
 
     return VtValue();
 }

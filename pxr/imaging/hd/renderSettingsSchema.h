@@ -41,8 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDRENDERSETTINGS_SCHEMA_TOKENS \
     (renderSettings) \
-    (sampleFilters) \
-    (displayFilters) \
+    (namespacedSettings) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HDRENDERSETTINGS_SCHEMA_TOKENS);
@@ -58,9 +57,7 @@ public:
     //ACCESSORS
 
     HD_API
-    HdPathArrayDataSourceHandle GetSampleFilters();
-    HD_API
-    HdPathArrayDataSourceHandle GetDisplayFilters();
+    HdContainerDataSourceHandle GetNamespacedSettings();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -72,8 +69,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+        const HdContainerDataSourceHandle &namespacedSettings
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -86,19 +82,15 @@ public:
     {
     public:
         HD_API
-        Builder &SetSampleFilters(
-            const HdPathArrayDataSourceHandle &sampleFilters);
-        HD_API
-        Builder &SetDisplayFilters(
-            const HdPathArrayDataSourceHandle &displayFilters);
+        Builder &SetNamespacedSettings(
+            const HdContainerDataSourceHandle &namespacedSettings);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathArrayDataSourceHandle _sampleFilters;
-        HdPathArrayDataSourceHandle _displayFilters;
+        HdContainerDataSourceHandle _namespacedSettings;
     };
 
     /// Retrieves a container data source with the schema's default name token

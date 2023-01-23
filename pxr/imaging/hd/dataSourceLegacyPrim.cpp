@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -2046,33 +2047,31 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector v;
-        v.push_back(HdRenderSettingsSchemaTokens->sampleFilters);
-        v.push_back(HdRenderSettingsSchemaTokens->displayFilters);
+        v.push_back(HdRenderSettingsSchemaTokens->namespacedSettings);
         return v;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        const std::pair<TfToken, TfToken> outputFilterTokens[] = {
-            {
-                HdRenderSettingsSchemaTokens->sampleFilters,
-                _tokens->outputsRiSampleFilters
-            },
-            {
-                HdRenderSettingsSchemaTokens->displayFilters,
-                _tokens->outputsRiDisplayFilters
-            }
-        };
-        
-        for (const auto tokens : outputFilterTokens) {
-            if (name == tokens.first) {
-                const VtValue filterPathsValue =
-                    _sceneDelegate->Get(_id, tokens.second);
-                SdfPathVector filterPaths = 
-                    filterPathsValue.GetWithDefault<SdfPathVector>();
-                VtArray<SdfPath> pathsArray(filterPaths.begin(), filterPaths.end());
-                return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                    pathsArray);
+        if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->params);
+            if (value.IsHolding<HdRenderSettingsParams>()) {
+                const HdRenderSettingsParams rsParams = 
+                    value.UncheckedGet<HdRenderSettingsParams>();
+
+                std::vector<TfToken> namespacedParamNames;
+                std::vector<HdDataSourceBaseHandle> namespacedParamValues;
+                for (const auto &setting : rsParams.namespacedSettings) {
+                    namespacedParamNames.push_back(TfToken(setting.first));
+                    namespacedParamValues.push_back(
+                        HdRetainedTypedSampledDataSource<VtValue>::New(
+                            setting.second));
+                }
+                return HdRetainedContainerDataSource::New(
+                    namespacedParamNames.size(), 
+                    namespacedParamNames.data(),
+                    namespacedParamValues.data());
             }
         }
         
