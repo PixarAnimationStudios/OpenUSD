@@ -42,7 +42,6 @@
 #include "pxr/base/tf/pyArg.h"
 #include "pxr/base/tf/pyPolymorphic.h"
 
-#include <boost/assign/list_of.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/list.hpp>
@@ -467,10 +466,10 @@ _MakeClassWithVarArgInit(bool allowExtraArgs,
 {
     // To Python consumer, this class has 3 explicit optional arguments, named 
     // 'a', 'b', and 'c'.
-    const TfPyArgs optionalArgs = boost::assign::list_of<>
-        (TfPyArg("a", ""))
-        (TfPyArg("b", ""))
-        (TfPyArg("c", ""));
+    TfPyArgs optionalArgs {{
+        TfPyArg("a", ""),
+        TfPyArg("b", ""),
+        TfPyArg("c", "") }};
 
     const std::pair<tuple, dict> params = 
         TfPyProcessOptionalArgs(args, kwargs, optionalArgs, allowExtraArgs);
