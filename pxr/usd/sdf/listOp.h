@@ -27,8 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/optional/optional_fwd.hpp>
 
 #include <functional>
@@ -238,15 +238,15 @@ public:
     void ComposeOperations(const SdfListOp<T>& stronger, SdfListOpType op);
 
     friend inline size_t hash_value(const SdfListOp &op) {
-        size_t h = 0;
-        boost::hash_combine(h, op._isExplicit);
-        boost::hash_combine(h, op._explicitItems);
-        boost::hash_combine(h, op._addedItems);
-        boost::hash_combine(h, op._prependedItems);
-        boost::hash_combine(h, op._appendedItems);
-        boost::hash_combine(h, op._deletedItems);
-        boost::hash_combine(h, op._orderedItems);
-        return h;
+        return TfHash::Combine(
+            op._isExplicit,
+            op._explicitItems,
+            op._addedItems,
+            op._prependedItems,
+            op._appendedItems,
+            op._deletedItems,
+            op._orderedItems
+        );
     }
 
     bool operator==(const SdfListOp<T> &rhs) const {
