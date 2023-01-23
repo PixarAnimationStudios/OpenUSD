@@ -3933,29 +3933,47 @@ template <class T>
 void
 CrateFile::_UnpackValue(ValueRep rep, T *out) const
 {
-    auto const &h = _GetValueHandler<T>();
-    if (_useMmap) {
-        h.Unpack(_MakeReader(_MakeMmapStream(
-                                 &_mmapSrc, _debugPageMap.get())), rep, out);
-    } else if (_preadSrc) {
-        h.Unpack(_MakeReader(_PreadStream(_preadSrc)), rep, out);
-    } else {
-        h.Unpack(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+    try {
+        auto const &h = _GetValueHandler<T>();
+        if (_useMmap) {
+            h.Unpack(_MakeReader(_MakeMmapStream(
+                                     &_mmapSrc, _debugPageMap.get())), rep, out);
+        } else if (_preadSrc) {
+            h.Unpack(_MakeReader(_PreadStream(_preadSrc)), rep, out);
+        } else {
+            h.Unpack(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "%s, returning a value-initialized object",
+                         GetAssetPath().c_str(),
+                         ArchGetDemangled<T>().c_str());
+        *out = T();
     }
 }
 
 template <class T>
 void
 CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
-    auto const &h = _GetValueHandler<T>();
-    if (_useMmap) {
-        h.UnpackArray(_MakeReader(
-                          _MakeMmapStream(
-                              &_mmapSrc, _debugPageMap.get())), rep, out);
-    } else if (_preadSrc) {
-        h.UnpackArray(_MakeReader(_PreadStream(_preadSrc)), rep, out);
-    } else {
-        h.UnpackArray(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+    try {
+        auto const &h = _GetValueHandler<T>();
+        if (_useMmap) {
+            h.UnpackArray(_MakeReader(
+                              _MakeMmapStream(
+                                  &_mmapSrc, _debugPageMap.get())), rep, out);
+        } else if (_preadSrc) {
+            h.UnpackArray(_MakeReader(_PreadStream(_preadSrc)), rep, out);
+        } else {
+            h.UnpackArray(_MakeReader(_AssetStream(_assetSrc)), rep, out);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "VtArray<%s>, returning an empty array",
+                         GetAssetPath().c_str(),
+                         ArchGetDemangled<T>().c_str());
+        *out = VtArray<T>();
     }
 }
 
@@ -3968,13 +3986,21 @@ CrateFile::_UnpackValue(ValueRep rep, VtValue *result) const {
                         static_cast<int>(repType));
         return;
     }
-    auto index = static_cast<int>(repType);
-    if (_useMmap) {
-        _unpackValueFunctionsMmap[index](rep, result);
-    } else if (_preadSrc) {
-        _unpackValueFunctionsPread[index](rep, result);
-    } else {
-        _unpackValueFunctionsAsset[index](rep, result);
+    try {
+        auto index = static_cast<int>(repType);
+        if (_useMmap) {
+            _unpackValueFunctionsMmap[index](rep, result);
+        } else if (_preadSrc) {
+            _unpackValueFunctionsPread[index](rep, result);
+        } else {
+            _unpackValueFunctionsAsset[index](rep, result);
+        }
+    }
+    catch (...) {
+        TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
+                         "value, returning an empty VtValue",
+                         GetAssetPath().c_str());
+        *result = VtValue();
     }
 }
 
