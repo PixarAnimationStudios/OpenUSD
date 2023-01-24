@@ -140,11 +140,11 @@ UsdAPISchemaBase::_IsCompatible() const
     if (IsAppliedAPISchema()) {
         if (IsMultipleApplyAPISchema()) {
             if (_instanceName.IsEmpty() ||
-                !GetPrim()._HasMultiApplyAPI(_GetTfType(), _instanceName)) {
+                !GetPrim().HasAPI(_GetTfType(), _instanceName)) {
                 return false;
             }
         } else {
-            if (!GetPrim()._HasSingleApplyAPI(_GetTfType())) {
+            if (!GetPrim().HasAPI(_GetTfType())) {
                 return false;
             }
         }

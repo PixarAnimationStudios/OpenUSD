@@ -252,8 +252,7 @@ public:
 {% if IS_FLOATING_POINT(SCL) %}
     /// Length
     {{ SCL }} GetLength() const {
-        // TODO should use GfSqrt.
-        return sqrt(GetLengthSq());
+        return GfSqrt(GetLengthSq());
     }
 
     /// Normalizes the vector in place to unit length, returning the

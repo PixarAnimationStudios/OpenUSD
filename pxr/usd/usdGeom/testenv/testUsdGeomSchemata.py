@@ -708,19 +708,12 @@ class TestUsdGeomSchemata(unittest.TestCase):
         for t in types:
             self.assertTrue(prim.HasAPI(t))
 
-        # Check that we get an exception for unknown and non-API types
-        with self.assertRaises(Tf.ErrorException):
-            prim.HasAPI(Tf.Type.Unknown)
-        
-        with self.assertRaises(Tf.ErrorException):
-            prim.HasAPI(Tf.Type.FindByName('UsdGeomXform'))
-
-        with self.assertRaises(Tf.ErrorException):
-            prim.HasAPI(Tf.Type.FindByName('UsdGeomImageable'))
-
-        with self.assertRaises(Tf.ErrorException):
-            # Test with a non-applied API schema.
-            prim.HasAPI(Tf.Type.FindByName('UsdModelAPI'))
+        # Check that we return false but not an exception for unknown, non-API,
+        # and non-applied API types.
+        self.assertFalse(prim.HasAPI(Tf.Type.Unknown))
+        self.assertFalse(prim.HasAPI(Tf.Type.FindByName('UsdGeomXform')))
+        self.assertFalse(prim.HasAPI(Tf.Type.FindByName('UsdGeomImageable')))
+        self.assertFalse(prim.HasAPI(Tf.Type.FindByName('UsdModelAPI')))
 
 if __name__ == "__main__":
     unittest.main()

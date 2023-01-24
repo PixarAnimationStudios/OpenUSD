@@ -294,7 +294,7 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
 
     const HdSampledDataSource::Time epsilon = 0.0001;
 
-    for (size_t i = 0, e = _sampledValues.count(); i < e; ++i) {
+    for (size_t i = 0, e = _sampledValues.size(); i < e; ++i) {
 
         const HdSampledDataSource::Time & sampleTime = _sampledValues[i].first;
 
@@ -318,7 +318,7 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
                 // if it's closer, use it instead of me. In the case of a
                 // tie, use the earlier.
                 const HdSampledDataSource::Time previousDelta =
-                        shutterOffset - _sampledValues[i - 1];
+                        shutterOffset - _sampledValues[i - 1].first;
 
                 if (previousDelta <= delta) {
                     return _sampledValues[i - 1].second;
@@ -327,7 +327,7 @@ HdRetainedTypedMultisampledDataSource<T>::GetTypedValue(
                 }
             }
         } else {
-            if (sampleTime - shutterOffset < epsilon) {
+            if (fabs(sampleTime - shutterOffset) < epsilon) {
                 return _sampledValues[i].second;
             }
         }

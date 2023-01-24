@@ -325,6 +325,9 @@ public:
         const HdDataSourceLocator &newPrefix) const;
 
 private:
+    // Sort and uniquify it.
+    void _Normalize();
+
     void _InsertAndDeleteSuffixes(_Locators::iterator *position,
                                   const HdDataSourceLocator &locator);
     // Lexicographically sorted minimal list of locators generating

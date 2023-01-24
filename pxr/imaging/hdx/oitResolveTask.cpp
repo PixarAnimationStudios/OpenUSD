@@ -182,31 +182,63 @@ HdxOitResolveTask::Sync(
     // So, the Sync step for the image shader render pass is skipped as well.
 }
 
-const HdRenderPassAovBindingVector&
-HdxOitResolveTask::_GetAovBindings(
-    HdTaskContext * const ctx) const
+HdRenderPassStateSharedPtr
+HdxOitResolveTask::_GetContextRenderPassState(
+    HdTaskContext* const ctx) const
 {
-    static HdRenderPassAovBindingVector empty;
-
     if (!_HasTaskContextData(ctx, HdxTokens->renderPassState)) {
-        return empty;
+        return nullptr;
     }
 
     HdRenderPassStateSharedPtr renderPassState;
     _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
-    if (!renderPassState) {
+    return renderPassState;
+}
+
+void
+HdxOitResolveTask::_UpdateCameraFraming(
+    HdTaskContext* const ctx)
+{
+    const HdRenderPassStateSharedPtr ctxRenderPassState =
+        _GetContextRenderPassState(ctx);
+    if (!ctxRenderPassState) {
+        TF_CODING_ERROR("Unable to set camera framing data due to missing "
+                        "render pass state on task context");
+        return;
+    }
+
+    const CameraUtilFraming& framing = ctxRenderPassState->GetFraming();
+    if (framing.IsValid()) {
+        _renderPassState->SetCameraAndFraming(
+            ctxRenderPassState->GetCamera(), framing,
+            ctxRenderPassState->GetOverrideWindowPolicy());
+    } else {
+        _renderPassState->SetCameraAndViewport(
+            ctxRenderPassState->GetCamera(), ctxRenderPassState->GetViewport());
+    }
+}
+
+const HdRenderPassAovBindingVector&
+HdxOitResolveTask::_GetAovBindings(
+    HdTaskContext* const ctx) const
+{
+    static HdRenderPassAovBindingVector empty;
+
+    const HdRenderPassStateSharedPtr ctxRenderPassState =
+        _GetContextRenderPassState(ctx);
+    if (!ctxRenderPassState) {
         return empty;
     }
 
-    return renderPassState->GetAovBindings();
+    return ctxRenderPassState->GetAovBindings();
 }
 
 GfVec2i
 HdxOitResolveTask::_ComputeScreenSize(
-    HdTaskContext *ctx,
+    HdTaskContext* ctx,
     HdRenderIndex* renderIndex) const
 {
-    const HdRenderPassAovBindingVector&aovBindings = _GetAovBindings(ctx);
+    const HdRenderPassAovBindingVector& aovBindings = _GetAovBindings(ctx);
     if (aovBindings.empty()) {
         return _GetScreenSize();
     }
@@ -388,6 +420,7 @@ HdxOitResolveTask::Execute(HdTaskContext* ctx)
     if (!TF_VERIFY(_renderPassShader)) return;
 
     _renderPassState->SetAovBindings(_GetAovBindings(ctx));
+    _UpdateCameraFraming(ctx);
 
     HdxOitBufferAccessor oitBufferAccessor(ctx);
     if (!oitBufferAccessor.AddOitBufferBindings(_renderPassShader)) {

@@ -67,6 +67,7 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "allPurpose", UsdShadeTokens->allPurpose);
     _AddToken(cls, "bindMaterialAs", UsdShadeTokens->bindMaterialAs);
     _AddToken(cls, "coordSys", UsdShadeTokens->coordSys);
+    _AddToken(cls, "coordSys_MultipleApplyTemplate_Binding", UsdShadeTokens->coordSys_MultipleApplyTemplate_Binding);
     _AddToken(cls, "displacement", UsdShadeTokens->displacement);
     _AddToken(cls, "fallbackStrength", UsdShadeTokens->fallbackStrength);
     _AddToken(cls, "full", UsdShadeTokens->full);

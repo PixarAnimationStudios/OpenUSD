@@ -50,6 +50,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///   on the texture (e.g., GL) </li>
 /// <li>textureType:
 ///   Type of the texture (e.g. array texture, shadow, etc.).</li>
+/// <li>bindIndex:
+///   The index of the resource.</li>
 /// <li>arraySize:
 ///   If arraySize > 0, indicates the size of the array. Note that textureType 
 ///   = HgiTextureTypeTexture and arraySize = 2 would create an array with two 
@@ -69,6 +71,7 @@ struct HgiShaderFunctionTextureDesc
     uint32_t dimensions;
     HgiFormat format;
     HgiShaderTextureType textureType;
+    uint32_t bindIndex;
     size_t arraySize;
     bool writable;
 };
@@ -112,7 +115,7 @@ struct HgiShaderFunctionBufferDesc
 
     std::string nameInShader;
     std::string type;
-    int32_t bindIndex;
+    uint32_t bindIndex;
     uint32_t arraySize;
     HgiBindingType binding;
     bool writable;
@@ -147,6 +150,10 @@ bool operator!=(
 ///   Optionally specify an index for interstage parameters.</li>
 /// <li>interpolation:
 ///   Optionally specify the interpolation: Default, Flat or NoPerspective.</li>
+/// <li>sampling:
+///   Optionally specify the sampling: Default, Centroid or Sample.</li>
+/// <li>storage:
+///   Optionally specify the storage type: Default, Patch.</li>
 /// <li>role:
 ///   Optionally a role can be specified, like position, uv, color.</li>
 /// <li>arraySize:
@@ -163,6 +170,8 @@ struct HgiShaderFunctionParamDesc
     int32_t location;
     int32_t interstageSlot;
     HgiInterpolationType interpolation;
+    HgiSamplingType sampling;
+    HgiStorageType storage;
     std::string role;
     std::string arraySize;
 };
@@ -280,6 +289,10 @@ bool operator!=(
 /// <ul>
 /// <li>patchType:
 ///   The type of patch</li>
+/// <li>spacing
+///   The spacing used by the tessellation primitive generator</li>
+/// <li>ordering
+///   The ordering used by the tessellation primitive generator</li>
 /// <li>numVertsInPerPatch:
 ///   The number of vertices in per patch</li>
 /// <li>numVertsOutPerPatch:
@@ -288,13 +301,17 @@ bool operator!=(
 ///
 struct HgiShaderFunctionTessellationDesc
 {
-    enum class PatchType { Quad, Triangle };
+    enum class PatchType { Triangles, Quads, Isolines };
+    enum class Spacing { Equal, FractionalEven, FractionalOdd };
+    enum class Ordering { CW, CCW };
     HGI_API
     HgiShaderFunctionTessellationDesc();
 
-    PatchType patchType = PatchType::Triangle;
-    uint32_t numVertsPerPatchIn = 3;
-    uint32_t numVertsPerPatchOut = 3;
+    PatchType patchType;
+    Spacing spacing;
+    Ordering ordering;
+    std::string numVertsPerPatchIn;
+    std::string numVertsPerPatchOut;
 };
 
 HGI_API
@@ -306,6 +323,45 @@ HGI_API
 bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
+
+/// \struct HgiShaderFunctionGeometryDesc
+///
+/// Describes a geometry function's description
+///
+/// <ul>
+/// <li>inPrimitiveType:
+///   The input primitive type.</li>
+/// <li>outPrimitiveType:
+///   The output primitive type.</li>
+/// <li>outMaxVertices:
+///   The maximum number of vertices written by a single invovation of the 
+///   geometry shader.</li>
+/// </ul>
+///
+struct HgiShaderFunctionGeometryDesc
+{
+    enum class InPrimitiveType { 
+        Points, Lines, LinesAdjacency, Triangles, TrianglesAdjacency };
+    enum class OutPrimitiveType { 
+        Points, LineStrip, TriangleStrip };
+
+    HGI_API
+    HgiShaderFunctionGeometryDesc();
+
+    InPrimitiveType inPrimitiveType;
+    OutPrimitiveType outPrimitiveType;
+    std::string outMaxVertices;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionGeometryDesc& lhs,
+        const HgiShaderFunctionGeometryDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionGeometryDesc& lhs,
+        const HgiShaderFunctionGeometryDesc& rhs);
 
 ///
 /// Describes a fragment function's description
@@ -368,10 +424,14 @@ bool operator!=(
 ///   List of descriptions of the input blocks of the shader.</li>
 /// <li>stageOutputsBlocks:
 ///   List of descriptions of the output blocks of the shader.</li>
-/// <li>tessellationDesc:
-///   Description of tessellation shader function.</li>
 /// <li>computeDescriptor:
 ///   Description of compute shader function.</li>
+/// <li>tessellationDescriptor:
+///   Description of tessellation shader function.</li>
+/// <li>geometryDescriptor:
+///   Description of geometry shader function.</li>
+/// <li>fragmentDescriptor:
+///   Description of fragment shader function.</li>
 /// </ul>
 ///
 struct HgiShaderFunctionDesc
@@ -391,8 +451,9 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
-    HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionComputeDesc computeDescriptor;
+    HgiShaderFunctionTessellationDesc tessellationDescriptor;
+    HgiShaderFunctionGeometryDesc geometryDescriptor;
     HgiShaderFunctionFragmentDesc fragmentDescriptor;
 };
 
@@ -415,6 +476,7 @@ void
 HgiShaderFunctionAddTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex = 0,
     uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
@@ -426,6 +488,7 @@ HgiShaderFunctionAddArrayOfTextures(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
     const uint32_t arraySize,
+    const uint32_t bindIndex = 0,
     const uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);
@@ -436,6 +499,7 @@ void
 HgiShaderFunctionAddWritableTexture(
     HgiShaderFunctionDesc *desc,
     const std::string &nameInShader,
+    const uint32_t bindIndex = 0,
     const uint32_t dimensions = 2,
     const HgiFormat &format = HgiFormatFloat32Vec4,
     const HgiShaderTextureType textureType = HgiShaderTextureTypeTexture);

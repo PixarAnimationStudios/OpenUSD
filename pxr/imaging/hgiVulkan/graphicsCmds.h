@@ -117,7 +117,7 @@ public:
         uint32_t patchBaseVertexByteOffset) override;
 
     HGIVULKAN_API
-    void MemoryBarrier(HgiMemoryBarrier barrier) override;
+    void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
     /// Returns the command buffer used inside this cmds.
     HGIVULKAN_API

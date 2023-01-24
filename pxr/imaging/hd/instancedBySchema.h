@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDINSTANCEDBY_SCHEMA_TOKENS \
     (instancedBy) \
     (paths) \
+    (prototypeRoots) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdInstancedBySchemaTokens, HD_API,
     HDINSTANCEDBY_SCHEMA_TOKENS);
@@ -75,6 +76,8 @@ public:
 
     HD_API
     HdPathArrayDataSourceHandle GetPaths();
+    HD_API
+    HdPathArrayDataSourceHandle GetPrototypeRoots();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -86,7 +89,8 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathArrayDataSourceHandle &paths
+        const HdPathArrayDataSourceHandle &paths,
+        const HdPathArrayDataSourceHandle &prototypeRoots
     );
 
     /// \class HdInstancedBySchema::Builder
@@ -101,6 +105,9 @@ public:
         HD_API
         Builder &SetPaths(
             const HdPathArrayDataSourceHandle &paths);
+        HD_API
+        Builder &SetPrototypeRoots(
+            const HdPathArrayDataSourceHandle &prototypeRoots);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -108,6 +115,7 @@ public:
 
     private:
         HdPathArrayDataSourceHandle _paths;
+        HdPathArrayDataSourceHandle _prototypeRoots;
     };
 
     /// Retrieves a container data source with the schema's default name token

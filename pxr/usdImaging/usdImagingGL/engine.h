@@ -71,10 +71,11 @@ class UsdPrim;
 class HdRenderIndex;
 class HdxTaskController;
 class UsdImagingDelegate;
-class UsdImagingStageSceneIndex;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
-TF_DECLARE_WEAK_AND_REF_PTRS(UsdImagingStageSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
 /// \class UsdImagingGLEngine
 ///
@@ -85,34 +86,32 @@ class UsdImagingGLEngine
 public:
 
     // ---------------------------------------------------------------------
-    /// \name Global State
-    /// @{
-    // ---------------------------------------------------------------------
-
-    /// Returns true if Hydra is enabled for GL drawing.
-    USDIMAGINGGL_API
-    static bool IsHydraEnabled();
-
-    /// @}
-
-    // ---------------------------------------------------------------------
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
 
-    /// A HdDriver, containing the Hgi of your choice, can be optionally passed
+    /// An HdDriver, containing the Hgi of your choice, can be optionally passed
     /// in during construction. This can be helpful if you application creates
     /// multiple UsdImagingGLEngine that wish to use the same HdDriver / Hgi.
+    /// The \p rendererPluginId argument indicates the renderer plugin that
+    /// Hyrda should use. If the empty token is passed in, a default renderer
+    /// plugin will be chosen depending on the value of \p gpuEnabled.
+    /// The \p gpuEnabled argument determines if this instance will allow Hydra
+    /// to use the GPU to produce images.
     USDIMAGINGGL_API
-    UsdImagingGLEngine(const HdDriver& driver = HdDriver());
+    UsdImagingGLEngine(const HdDriver& driver = HdDriver(),
+                       const TfToken& rendererPluginId = TfToken(),
+                       bool gpuEnabled = true);
 
     USDIMAGINGGL_API
     UsdImagingGLEngine(const SdfPath& rootPath,
                        const SdfPathVector& excludedPaths,
-                       const SdfPathVector& invisedPaths=SdfPathVector(),
+                       const SdfPathVector& invisedPaths = SdfPathVector(),
                        const SdfPath& sceneDelegateID =
                                         SdfPath::AbsoluteRootPath(),
-                       const HdDriver& driver = HdDriver());
+                       const HdDriver& driver = HdDriver(),
+                       const TfToken& rendererPluginId = TfToken(),
+                       bool gpuEnabled = true);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -330,6 +329,10 @@ public:
     /// Return the user-friendly description of a renderer plugin.
     USDIMAGINGGL_API
     static std::string GetRendererDisplayName(TfToken const &id);
+
+    /// Return if the GPU is enabled and can be used for any rendering tasks.
+    USDIMAGINGGL_API
+    bool GetGPUEnabled() const;
 
     /// Return the id of the currently used renderer plugin.
     USDIMAGINGGL_API
@@ -606,6 +609,7 @@ protected:
     VtValue _userFramebuffer;
 
 protected:
+    bool _gpuEnabled;
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;
 
@@ -633,7 +637,10 @@ private:
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time...
-    UsdImagingStageSceneIndexRefPtr _sceneIndex;
+    UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
+    UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
+    HdSceneIndexBaseRefPtr _sceneIndex;
+
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     std::unique_ptr<HdEngine> _engine;

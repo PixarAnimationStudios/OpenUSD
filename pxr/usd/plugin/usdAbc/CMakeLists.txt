@@ -226,7 +226,6 @@ pxr_register_test(testUsdAbcIndexedProperties
 )
 
 pxr_register_test(testUsdAbcIndexedGeomArb
-    PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdcat hasColorSet.abc --out good_primvars_namespace_after_fix.usda"
     DIFF_COMPARE good_primvars_namespace_after_fix.usda
     EXPECTED_RETURN_CODE 0

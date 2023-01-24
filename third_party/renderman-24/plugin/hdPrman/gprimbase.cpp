@@ -48,4 +48,12 @@ HdPrman_GprimBase::UpdateInstanceVisibility(bool vis,
     }
 }
 
+std::vector<riley::GeometryPrototypeId> 
+HdPrman_GprimBase::GetPrototypeIds() const
+{
+    const std::vector<riley::GeometryPrototypeId> ret(_prototypeIds);
+    return ret;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -69,6 +69,7 @@ public:
     /// instance names.
     USDIMAGING_API
     virtual TfTokenVector GetImagingSubprims(
+            UsdPrim const& prim,
             TfToken const& appliedInstanceName);
 
     /// Called to determine whether an API schema specifies the hydra type of
@@ -79,6 +80,7 @@ public:
     /// instance names.
     USDIMAGING_API
     virtual TfToken GetImagingSubprimType(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName);
 
@@ -91,8 +93,8 @@ public:
     /// avoid doing work until some consumes the data.
     USDIMAGING_API
     virtual HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             TfToken const& appliedInstanceName,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
@@ -101,6 +103,7 @@ public:
     /// be flagged as dirty.
     USDIMAGING_API
     virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
             TfTokenVector const& properties);

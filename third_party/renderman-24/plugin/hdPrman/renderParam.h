@@ -292,6 +292,21 @@ public:
     void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
     riley::SampleFilterList GetSampleFilterList();
 
+    // Path to the connected Display Filter from the Render Settings Prim
+    void SetConnectedDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& connectedDisplayFilterPaths);
+    SdfPathVector GetConnectedDisplayFilterPaths() {
+        return _connectedDisplayFilterPaths;
+    }
+
+    // Riley Data from the Display Filter Prim
+    void AddDisplayFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateDisplayFilterNetwork(HdSceneDelegate *sceneDelegate);
+    riley::DisplayFilterList GetDisplayFilterList();
+
 private:
     void _CreateStatsSession();
     void _CreateRiley(const std::string &rileyVariant, 
@@ -396,6 +411,11 @@ private:
     SdfPathVector _connectedSampleFilterPaths;
     std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
+
+    // DisplayFilter
+    SdfPathVector _connectedDisplayFilterPaths;
+    std::map<SdfPath, riley::ShadingNode> _displayFilterNodes;
+    riley::DisplayFilterId _displayFiltersId;
 
     // RIX or XPU
     bool _xpu;

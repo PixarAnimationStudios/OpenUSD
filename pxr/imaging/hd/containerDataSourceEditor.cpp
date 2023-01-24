@@ -184,23 +184,6 @@ HdContainerDataSourceEditor::
 {
 }
 
-bool
-HdContainerDataSourceEditor::_NodeContainerDataSource::Has(const TfToken &name)
-{
-    if (_node) {
-        const auto it = _node->entries.find(name);
-        if (it == _node->entries.end()) {
-            return false;
-        }
-
-        if ((*it).second.dataSource || (*it).second.childNode) {
-            return true;
-        }
-    }
-
-    return false;
-}
-
 TfTokenVector
 HdContainerDataSourceEditor::_NodeContainerDataSource::GetNames()
 {

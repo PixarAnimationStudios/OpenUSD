@@ -217,6 +217,9 @@ HdStGLConversions::GetPrimitiveMode(
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             primMode = GL_PATCHES;
             break;    
+        case PrimitiveType::PRIM_COMPUTE:
+            primMode = GL_NONE;
+            break;
     }
 
     return primMode;

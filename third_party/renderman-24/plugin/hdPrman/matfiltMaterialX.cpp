@@ -879,19 +879,4 @@ MatfiltMaterialX(
     }
 }
 
-void
-MatfiltMaterialX(
-    const SdfPath &materialPath,
-    HdMaterialNetwork2 &hdNetwork,
-    const std::map<TfToken, VtValue> &contextValues,
-    const NdrTokenVec &shaderTypePriority,
-    std::vector<std::string> *outputErrorMessages)
-{
-    TF_UNUSED(contextValues);
-    TF_UNUSED(shaderTypePriority);
-
-    HdMaterialNetwork2Interface netInterface(materialPath, &hdNetwork);
-    MatfiltMaterialX(&netInterface, outputErrorMessages);
-}
-
 PXR_NAMESPACE_CLOSE_SCOPE                        

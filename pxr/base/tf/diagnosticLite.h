@@ -77,6 +77,7 @@ struct Tf_DiagnosticLiteHelper {
     
     TF_API void IssueError(
         char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
+    [[noreturn]]
     TF_API void IssueFatalError(
         char const *fmt, ...) const ARCH_PRINTF_FUNCTION(2,3);
     TF_API void IssueWarning(

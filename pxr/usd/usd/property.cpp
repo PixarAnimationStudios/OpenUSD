@@ -116,33 +116,6 @@ UsdProperty::SetNestedDisplayGroups(const std::vector<std::string>& nestedGroups
     return SetDisplayGroup(SdfPath::JoinIdentifier(nestedGroups));
 }
 
-
-std::string
-UsdProperty::GetDisplayName() const
-{
-    std::string result;
-    GetMetadata(SdfFieldKeys->DisplayName, &result);
-    return result;
-}
-
-bool
-UsdProperty::SetDisplayName(const std::string& newDisplayName) const
-{
-    return SetMetadata(SdfFieldKeys->DisplayName, newDisplayName);
-}
-
-bool
-UsdProperty::ClearDisplayName() const
-{
-    return ClearMetadata(SdfFieldKeys->DisplayName);
-}
-
-bool
-UsdProperty::HasAuthoredDisplayName() const
-{
-    return HasAuthoredMetadata(SdfFieldKeys->DisplayName);
-}
-
 bool
 UsdProperty::IsCustom() const
 {

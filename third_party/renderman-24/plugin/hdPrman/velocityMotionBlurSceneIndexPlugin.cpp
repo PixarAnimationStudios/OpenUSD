@@ -542,15 +542,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (!_pointsSource) {
-            return false;
-        }
-        
-        return _pointsSource->Has(name);
-    }
-
     TfTokenVector GetNames() override
     {
         if (!_pointsSource) {
@@ -613,15 +604,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (!_primvarsSource) {
-            return false;
-        }
-        
-        return _primvarsSource->Has(name);
-    }
-
     TfTokenVector GetNames() override
     {
         if (!_primvarsSource) {
@@ -681,15 +663,6 @@ public:
       : _primSource(primSource)
       , _inputArgs(inputArgs)
     {
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        if (!_primSource) {
-            return false;
-        }
-        
-        return _primSource->Has(name);
     }
 
     TfTokenVector GetNames() override

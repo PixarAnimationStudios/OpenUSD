@@ -146,6 +146,10 @@ def IsVisualStudioVersionOrGreater(desiredVersion):
         return version >= desiredVersion
     return False
 
+def IsVisualStudio2022OrGreater():
+    VISUAL_STUDIO_2022_VERSION = (17, 0)
+    return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2022_VERSION)
+
 def IsVisualStudio2019OrGreater():
     VISUAL_STUDIO_2019_VERSION = (16, 0)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2019_VERSION)
@@ -153,10 +157,6 @@ def IsVisualStudio2019OrGreater():
 def IsVisualStudio2017OrGreater():
     VISUAL_STUDIO_2017_VERSION = (15, 0)
     return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2017_VERSION)
-
-def IsVisualStudio2015OrGreater():
-    VISUAL_STUDIO_2015_VERSION = (14, 0)
-    return IsVisualStudioVersionOrGreater(VISUAL_STUDIO_2015_VERSION)
 
 def GetPythonInfo(context):
     """Returns a tuple containing the path to the Python executable, shared
@@ -377,12 +377,12 @@ def RunCMake(context, force, extraArgs = None):
     # building a 64-bit project. (Surely there is a better way to do this?)
     # TODO: figure out exactly what "vcvarsall.bat x64" sets to force x64
     if generator is None and Windows():
-        if IsVisualStudio2019OrGreater():
+        if IsVisualStudio2022OrGreater():
+            generator = "Visual Studio 17 2022"
+        elif IsVisualStudio2019OrGreater():
             generator = "Visual Studio 16 2019"
         elif IsVisualStudio2017OrGreater():
             generator = "Visual Studio 15 2017 Win64"
-        else:
-            generator = "Visual Studio 14 2015 Win64"
 
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
@@ -652,7 +652,7 @@ class Dependency(object):
         AllDependenciesByName.setdefault(name.lower(), self)
 
     def Exists(self, context):
-        return all([os.path.isfile(os.path.join(context.instDir, f))
+        return any([os.path.isfile(os.path.join(context.instDir, f))
                     for f in self.filesToCheck])
 
 class PythonDependency(object):
@@ -689,26 +689,27 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
-if MacOS():
-    # This version of boost resolves Python3 compatibilty issues on Big Sur and Monterey and is
-    # compatible with Python 2.7 through Python 3.10
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
-elif Linux():
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
-elif Windows():
-    # The default installation of boost on Windows puts headers in a versioned 
-    # subdirectory, which we have to account for here. In theory, specifying 
-    # "layout=system" would make the Windows install match Linux/MacOS, but that 
-    # causes problems for other dependencies that look for boost.
-    #
-    # boost 1.70 is required for Visual Studio 2019. For simplicity, we use
-    # this version for all older Visual Studio versions as well.
-    BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
-    BOOST_VERSION_FILE = "include/boost-1_70/boost/version.hpp"
-
 def InstallBoost_Helper(context, force, buildArgs):
+
+    # In general we use boost 1.70.0 to adhere to VFX Reference Platform CY2020.
+    # However, there are some cases where a newer version is required.
+    # - Building with Python 3.10 requires boost 1.76.0 or newer.
+    #   (https://github.com/boostorg/python/commit/cbd2d9)
+    # - Building with Visual Studio 2022 requires boost 1.78.0 or newer.
+    #   (https://github.com/boostorg/build/issues/735)
+    # - Building on MacOS requires boost 1.78.0 or newer to resolve Python 3
+    #   compatibility issues on Big Sur and Monterey.
+    pyInfo = GetPythonInfo(context)
+    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
+    if context.buildPython and pyVer >= (3, 10):
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+    elif IsVisualStudio2022OrGreater():
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+    elif MacOS():
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+    else:
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
     # since paths are limited to 260 characters by default on that platform.
@@ -730,23 +731,19 @@ def InstallBoost_Helper(context, force, buildArgs):
         bootstrapCmd = '{bootstrap} --prefix="{instDir}"'.format(
             bootstrap=bootstrap, instDir=context.instDir)
 
-        macOSArchitecture = ""
         macOSArch = ""
 
         if MacOS():
             if apple_utils.GetTargetArch(context) == \
                         apple_utils.TARGET_X86:
-                macOSArchitecture = "architecture=x86"
                 macOSArch = "-arch {0}".format(apple_utils.TARGET_X86)
             elif apple_utils.GetTargetArch(context) == \
                         apple_utils.GetTargetArmArch():
-                macOSArchitecture = "architecture=arm"
                 macOSArch = "-arch {0}".format(
                         apple_utils.GetTargetArmArch())
             elif context.targetUniversal:
                 (primaryArch, secondaryArch) = \
                         apple_utils.GetTargetArchPair(context)
-                macOSArchitecture = "architecture=combined"
                 macOSArch="-arch {0} -arch {1}".format(
                         primaryArch, secondaryArch)
 
@@ -780,7 +777,6 @@ def InstallBoost_Helper(context, force, buildArgs):
             'threading=multi', 
             'variant={variant}'.format(variant=boostBuildVariant),
             '--with-atomic',
-            '--with-program_options',
             '--with-regex'
         ]
 
@@ -842,27 +838,23 @@ def InstallBoost_Helper(context, force, buildArgs):
         if Windows():
             # toolset parameter for Visual Studio documented here:
             # https://github.com/boostorg/build/blob/develop/src/tools/msvc.jam
-            if context.cmakeToolset == "v142":
+            if context.cmakeToolset == "v143":
+                b2_settings.append("toolset=msvc-14.3")
+            elif context.cmakeToolset == "v142":
                 b2_settings.append("toolset=msvc-14.2")
             elif context.cmakeToolset == "v141":
                 b2_settings.append("toolset=msvc-14.1")
-            elif context.cmakeToolset == "v140":
-                b2_settings.append("toolset=msvc-14.0")
+            elif IsVisualStudio2022OrGreater():
+                b2_settings.append("toolset=msvc-14.3")
             elif IsVisualStudio2019OrGreater():
                 b2_settings.append("toolset=msvc-14.2")
             elif IsVisualStudio2017OrGreater():
                 b2_settings.append("toolset=msvc-14.1")
-            else:
-                b2_settings.append("toolset=msvc-14.0")
 
         if MacOS():
             # Must specify toolset=clang to ensure install_name for boost
             # libraries includes @rpath
             b2_settings.append("toolset=clang")
-
-            # Specify target for macOS cross-compilation.
-            if macOSArchitecture:
-                b2_settings.append(macOSArchitecture)
 
             if macOSArch:
                 b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
@@ -896,7 +888,27 @@ def InstallBoost(context, force, buildArgs):
             except: pass
         raise
 
-BOOST = Dependency("boost", InstallBoost, BOOST_VERSION_FILE)
+# The default installation of boost on Windows puts headers in a versioned 
+# subdirectory, which we have to account for here. Specifying "layout=system" 
+# would cause the Windows header install to match Linux/MacOS, but the 
+# "layout=system" flag also changes the naming of the boost dlls in a 
+# manner that causes problems for dependent libraries that rely on boost's
+# trick of automatically linking the boost libraries via pragmas in boost's
+# standard include files. Dependencies that use boost's pragma linking
+# facility in general don't have enough configuration switches to also coerce 
+# the naming of the dlls and so it is best to rely on boost's most default
+# settings for maximum compatibility.
+#
+# On behalf of versions of visual studio prior to vs2022, we still support
+# boost 1.70. We don't completely know if boost 1.78 is in play on Windows, 
+# until we have determined whether Python 3 has been selected as a target. 
+# That isn't known at this point in the script, so we simplify the logic by 
+# checking for any of the possible boost header locations that are possible
+# outcomes from running this script.
+BOOST = Dependency("boost", InstallBoost, 
+                   "include/boost/version.hpp",
+                   "include/boost-1_70/boost/version.hpp",
+                   "include/boost-1_78/boost/version.hpp")
 
 ############################################################
 # Intel TBB
@@ -1011,20 +1023,6 @@ def InstallTBB_MacOS(context, force, buildArgs):
             except:
                 PrintWarning(
                     "TBB debug libraries are not available on this platform.")
-
-        # Output paths that are of interest
-        with open(os.path.join(context.usdInstDir, 'tbbBuild.txt'), 'wt') as file:
-            file.write('ARCHIVE:' + TBB_URL.split("/")[-1] + '\n')
-            file.write('BUILDFOLDER:' + os.path.split(os.getcwd())[1] + '\n')
-            file.write('MAKEPRIMARY:' + makeTBBCmdPrimary + '\n')
-
-            if context.targetUniversal:
-                file.write('MAKESECONDARY:' + makeTBBCmdSecondary + '\n')
-                file.write('LIPO_RELEASE:' + ','.join(
-                        lipoCommandsRelease) + '\n')
-                if lipoCommandsDebug:
-                    file.write('LIPO_DEBUG:' + ','.join(
-                        lipoCommandsDebug) + '\n')
 
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
@@ -1633,12 +1631,6 @@ def InstallEmbree(context, force, buildArgs):
             extraArgs += [
                 '-DEMBREE_MAX_ISA=NEON',
                 '-DEMBREE_ISA_NEON=ON']
-        # By default Embree fails to build on Visual Studio 2015 due
-        # to an internal compiler issue that is worked around via the
-        # following flag. For more details see:
-        # https://github.com/embree/embree/issues/157
-        if IsVisualStudio2015OrGreater() and not IsVisualStudio2017OrGreater():
-            extraArgs.append('-DCMAKE_CXX_FLAGS=/d2SSAOptimizer-')
 
         extraArgs += buildArgs
 
@@ -1684,14 +1676,16 @@ def InstallUSD(context, force, buildArgs):
             # itself rather than rely on CMake's heuristics.
             pythonInfo = GetPythonInfo(context)
             if pythonInfo:
-                # According to FindPythonLibs.cmake these are the variables
-                # to set to specify which Python installation to use.
-                extraArgs.append('-DPYTHON_EXECUTABLE="{pyExecPath}"'
-                                 .format(pyExecPath=pythonInfo[0]))
-                extraArgs.append('-DPYTHON_LIBRARY="{pyLibPath}"'
-                                 .format(pyLibPath=pythonInfo[1]))
-                extraArgs.append('-DPYTHON_INCLUDE_DIR="{pyIncPath}"'
-                                 .format(pyIncPath=pythonInfo[2]))
+                prefix = "Python3" if Python3() else "Python2"
+                extraArgs.append('-D{prefix}_EXECUTABLE="{pyExecPath}"'
+                                 .format(prefix=prefix, 
+                                         pyExecPath=pythonInfo[0]))
+                extraArgs.append('-D{prefix}_LIBRARY="{pyLibPath}"'
+                                 .format(prefix=prefix,
+                                         pyLibPath=pythonInfo[1]))
+                extraArgs.append('-D{prefix}_INCLUDE_DIR="{pyIncPath}"'
+                                 .format(prefix=prefix,
+                                         pyIncPath=pythonInfo[2]))
         else:
             extraArgs.append('-DPXR_ENABLE_PYTHON_SUPPORT=OFF')
 
@@ -2371,13 +2365,25 @@ if not isPython64Bit:
     sys.exit(1)
 
 if which("cmake"):
-    # Check cmake requirements
-    if Windows():
-        # Windows build depend on boost 1.70, which is not supported before
-        # cmake version 3.14
+    # Check cmake minimum version requirements
+    pyInfo = GetPythonInfo(context)
+    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
+    if context.buildPython and pyVer >= (3, 10):
+        # Python 3.10 is not supported prior to 3.24
+        cmake_required_version = (3, 24)
+    elif IsVisualStudio2022OrGreater():
+        # Visual Studio 2022 is not supported prior to 3.24
+        cmake_required_version = (3, 24)
+    elif Windows():
+        # Visual Studio 2017 and 2019 are verified to work correctly with 3.14
         cmake_required_version = (3, 14)
+    elif MacOS():
+        # Apple Silicon is not supported prior to 3.19
+        cmake_required_version = (3, 19)
     else:
+        # Linux, and vfx platform CY2020, are verified to work correctly with 3.12
         cmake_required_version = (3, 12)
+
     cmake_version = GetCMakeVersion()
     if not cmake_version:
         PrintError("Failed to determine CMake version")

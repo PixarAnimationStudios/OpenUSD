@@ -45,17 +45,23 @@
                         "priority": 0,
                         "displayName": "Prman Dependency Forwarding Scene Index"
                     },
-                    "HdPrman_SampleFilterInvalidatingSceneIndexPlugin" : {
+                    "HdPrman_OutputFilterInvalidatingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
                         "priority": 0,
-                        "displayName": "Prman Sample Filter Invalidating Scene Index"
+                        "displayName": "Prman Output Filter Invalidating Scene Index"
                     },
                     "HdPrman_PinnedCurveExpandingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Pinned Curve Expanding Scene Index"
+                    },
+                    "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
                     }
                 }
             },

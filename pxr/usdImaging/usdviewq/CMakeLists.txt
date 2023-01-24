@@ -10,12 +10,14 @@ pxr_library(usdviewq
         tf
         usd
         usdGeom
+        hd
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        hydraObserver
         utils
 
     PYTHON_CPPFILES
@@ -26,6 +28,7 @@ pxr_library(usdviewq
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapHydraObserver.cpp
         wrapUtils.cpp
 
     PYMODULE_FILES
@@ -53,6 +56,7 @@ pxr_library(usdviewq
         preferences.py
         primViewItem.py
         common.py
+        hydraSceneBrowser.py
         legendUtil.py
         primLegend.py
         primTreeWidget.py

@@ -210,13 +210,14 @@ Usd_ClipCache::PopulateClipsForPrim(
     const SdfPath& path, const PcpPrimIndex& primIndex)
 {
     TRACE_FUNCTION();
-    TfAutoMallocTag2 tag("Usd", "Usd_ClipCache::PopulateClipsForPrim");
+    TfAutoMallocTag tag("Usd", "Usd_ClipCache::PopulateClipsForPrim");
 
     std::vector<Usd_ClipSetRefPtr> allClips;
     _ComputeClipsFromPrimIndex(path, primIndex, &allClips);
 
     const bool primHasClips = !allClips.empty();
     if (primHasClips) {
+        TRACE_SCOPE("Usd_ClipCache::PopulateClipsForPrim (primHasClips)");
         tbb::mutex::scoped_lock lock;
         if (_concurrentPopulationContext) {
             lock.acquire(_concurrentPopulationContext->_mutex);

@@ -53,10 +53,12 @@ public:
     static void Define();
 
     ///
-    /// Returns the id of plugin to use as the default
+    /// Returns the id of plugin to use as the default.  To ensure an
+    /// appropriate default is found, the \p gpuEnabled parameter will be used
+    /// to indicate if the GPU will be available when making the determination.
     ///
     HD_API
-    TfToken GetDefaultPluginId();
+    TfToken GetDefaultPluginId(bool gpuEnabled = true);
 
     ///
     /// \deprecated Use GetOrCreateRendererPlugin instead.

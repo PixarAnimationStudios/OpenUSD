@@ -58,11 +58,6 @@ void wrapUsdProperty()
         .def("SetNestedDisplayGroups", &UsdProperty::SetNestedDisplayGroups,
              arg("nestedGroups"))
 
-        .def("GetDisplayName", &UsdProperty::GetDisplayName)
-        .def("SetDisplayName", &UsdProperty::SetDisplayName, arg("name"))
-        .def("ClearDisplayName", &UsdProperty::ClearDisplayName)
-        .def("HasAuthoredDisplayName", &UsdProperty::HasAuthoredDisplayName)
-
         .def("GetPropertyStack", &UsdProperty::GetPropertyStack,
              arg("time"))
         .def("GetPropertyStackWithLayerOffsets", 

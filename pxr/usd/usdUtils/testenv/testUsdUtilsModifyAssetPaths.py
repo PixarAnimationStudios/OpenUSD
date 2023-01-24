@@ -24,19 +24,36 @@
 from pxr import UsdUtils
 from pxr import Sdf
 
-def main(usdFile, outFile):
+def Test(usdFile, outFile, fn):
     layer = Sdf.Layer.FindOrOpen(usdFile)
     UsdUtils.ModifyAssetPaths(layer, fn)
     layer.Export(outFile)
 
-def fn(s):
-    return 'SUCCESS_' + s
+def TestBasic():
+    # Test basic substitution
+    def fn(s):
+        return 'SUCCESS_' + s
 
-if __name__ == '__main__':
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument('usdFile')
-    parser.add_argument('outFile')
-    args = parser.parse_args()
+    Test('layer.usda', 'modified.usda', fn)
 
-    main(args.usdFile, args.outFile)
+TestBasic()
+
+def TestDuplicates():
+    # Test behavior when modify callback yields duplicate
+    # asset paths.
+    def fn(s):
+        return "baz.usd"
+
+    Test('layer.usda', 'duplicates.usda', fn)
+
+TestDuplicates()
+
+def TestRemoval():
+    # Tests behavior when modify callback returns empty asset
+    # paths.
+    def fn(s):
+        return ''
+        
+    Test('layer.usda', 'removal.usda', fn)
+
+TestRemoval()

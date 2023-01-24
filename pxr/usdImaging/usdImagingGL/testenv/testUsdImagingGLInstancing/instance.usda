@@ -94,6 +94,27 @@ def Xform "Parent" (
                 float3 outputs:color
             }
         }
+
+        def Material "VolumeMat"
+        {
+            token outputs:volume.connect = </Parent/Materials/VolumeMat/Volume.outputs:volume>
+            
+            def Shader "Volume"
+            {
+                uniform asset info:glslfx:sourceAsset = @volumeShaderParameter.glslfx@
+                uniform token info:implementationSource = "sourceAsset"
+                float3 inputs:emissionColor.connect = </Parent/Materials/VolumeMat/Primvar.outputs:result>
+
+                token outputs:volume
+            }
+
+            def Shader "Primvar"
+            {
+                uniform token info:id = "UsdPrimvarReader_float"
+                string inputs:varname = "emissionColor"
+                float outputs:result
+            }
+        }
     }
 
     def Xform "Meshes"
@@ -352,6 +373,25 @@ def Xform "Parent" (
         }
     }
 
+    def Scope "Volumes"
+    {
+        def Volume "Volume" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+            customData = {
+                bool zUp = 1
+            }
+        )
+        {
+            float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+            rel material:binding = </Parent/Materials/VolumeMat>
+            float3 primvars:emissionColor = (0, 0.3, 0) (
+                interpolation = "constant"
+            )
+            custom double3 xformOp:translate = (-8.5, 0, 4.25)
+            uniform token[] xformOpOrder = ["xformOp:translate"]
+        }
+    }
+
     def Scope "Intrinsics"
     {
         def Scope "Cube"
@@ -469,5 +509,7 @@ def Xform "Instance" (
     references = </Parent>
 )
 {
+    custom double3 xformOp:translate = (-2, 0, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
 }
 

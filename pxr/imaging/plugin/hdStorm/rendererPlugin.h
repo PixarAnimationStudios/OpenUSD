@@ -41,7 +41,7 @@ public:
     virtual void DeleteRenderDelegate(HdRenderDelegate *renderDelegate) 
         override;
 
-    virtual bool IsSupported() const override;
+    virtual bool IsSupported(bool gpuEnabled = true) const override;
 
 private:
     HdStormRendererPlugin(const HdStormRendererPlugin &)             = delete;

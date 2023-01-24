@@ -65,7 +65,7 @@
                         "bases": [
                             "UsdAPISchemaBase"
                         ], 
-                        "schemaKind": "nonAppliedAPI"
+                        "schemaKind": "multipleApplyAPI"
                     }, 
                     "UsdShadeMaterial": {
                         "alias": {

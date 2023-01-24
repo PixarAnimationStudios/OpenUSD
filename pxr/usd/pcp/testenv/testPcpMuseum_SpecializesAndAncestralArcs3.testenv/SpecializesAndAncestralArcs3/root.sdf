@@ -1,0 +1,18 @@
+#sdf 1.4.32
+(
+    """
+    Tests a particular composition case where an ancestral reference subtree
+    under an ancestral specializes arc was improperly being propagated back
+    to the specializes arc's origin causing the reference node subtree to 
+    remain inert. This museum case verifies that this problem is fixed.
+    """
+)
+
+def "Root" (
+    # References a prim with a child prim that specializes a prim with an 
+    # ancestral reference.
+    prepend references = @ref.sdf@</RefRoot>
+)
+{
+}
+

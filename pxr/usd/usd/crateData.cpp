@@ -773,8 +773,8 @@ private:
         // that upfront as a task and overlap it with building up all the live
         // field sets.
         dispatcher.Run([this, &specs, crateFile]() {
-            TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
-            TfAutoMallocTag tag2("Usd_CrateDataImpl main hash table");
+            TfAutoMallocTag tag("Usd", "Usd_CrateDataImpl::Open",
+                                "Usd_CrateDataImpl main hash table");
             // over-reserve by 25% to help ensure no rehashes.
             _data.reserve(specs.size() + (specs.size() >> 2));
             
@@ -798,7 +798,7 @@ private:
                  fsEnd = find(fsBegin, fieldSets.end(), FieldIndex())) {
                     
             // Add this range to liveFieldSets.
-            TfAutoMallocTag tag2("field data");
+            TfAutoMallocTag tag("field data");
             auto &fieldValuePairs =
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
                     
@@ -806,8 +806,8 @@ private:
                 [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
                     // XXX Won't need first two tags when bug #132031 is
                     // addressed
-                    TfAutoMallocTag2 tag("Usd", "Usd_CrateDataImpl::Open");
-                    TfAutoMallocTag tag2("field data");
+                    TfAutoMallocTag tag(
+                        "Usd", "Usd_CrateDataImpl::Open", "field data");
                     auto &pairs = fieldValuePairs.GetMutable();
                     pairs.resize(fsEnd-fsBegin);
                     for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {

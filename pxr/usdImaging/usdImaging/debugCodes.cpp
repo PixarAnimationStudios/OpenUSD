@@ -44,7 +44,6 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_POPULATION, "Report population events");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_SELECTION, "Report selection messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_SHADERS, "Report shader status messages");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_TEXTURES, "Report texture status messages");
     TF_DEBUG_ENVIRONMENT_SYMBOL(USDIMAGING_UPDATES, "Report non-authored, time-varying data changes");
 }
 

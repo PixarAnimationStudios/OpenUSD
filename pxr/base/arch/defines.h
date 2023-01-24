@@ -108,6 +108,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define ARCH_HAS_MMAP_MAP_POPULATE
 #endif
 
+//
+// Intrinsics
+//
+
+// ARCH_SPIN_PAUSE -- 'pause' on x86, 'yield' on arm.
+#if defined(ARCH_CPU_INTEL)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#define ARCH_SPIN_PAUSE() __builtin_ia32_pause()
+#elif defined(ARCH_COMPILER_MSVC)
+#define ARCH_SPIN_PAUSE() _mm_pause()
+#endif
+#elif defined(ARCH_CPU_ARM)
+#if defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
+#define ARCH_SPIN_PAUSE() asm volatile ("yield" ::: "memory")
+#elif defined(ARCH_COMPILER_MSVC)
+#define ARCH_SPIN_PAUSE() __yield();
+#endif
+#else
+#define ARCH_SPIN_PAUSE()
+#endif
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_ARCH_DEFINES_H 

@@ -239,6 +239,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewDisplayFilterEdits
+    DEST testUsdviewDisplayFilterEdits
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewSampleAndDisplayFilters
+    DEST testUsdviewSampleAndDisplayFilters
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewAnimatedBounds
     DEST testUsdviewAnimatedBounds
 )
@@ -882,7 +892,6 @@ pxr_register_test(testUsdviewUpAxis_zUp
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_zUp.py testZUp.usda"
     IMAGE_DIFF_COMPARE
         zUp.png
-        yUp.png
     FAIL 1
     FAIL_PERCENT 0.0002
     PERCEPTUAL

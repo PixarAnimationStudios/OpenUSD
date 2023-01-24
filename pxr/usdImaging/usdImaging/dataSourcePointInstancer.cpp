@@ -28,114 +28,38 @@
 #include "pxr/usdImaging/usdImaging/dataSourceRelationship.h"
 #include "pxr/usdImaging/usdImaging/primvarUtils.h"
 
-#include "pxr/imaging/hd/lazyContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/instancerTopologySchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 
-#include "pxr/usd/usdGeom/primvarsAPI.h"
-#include "pxr/usd/usdGeom/xformCache.h"
-
 PXR_NAMESPACE_OPEN_SCOPE
-
-UsdImagingDataSourcePointInstancerXforms::
-UsdImagingDataSourcePointInstancerXforms(
-        const UsdGeomPointInstancer &usdPI,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
-  : _usdPI(usdPI)
-  , _stageGlobals(stageGlobals)
-{}
-
-VtValue
-UsdImagingDataSourcePointInstancerXforms::GetValue(
-        HdSampledDataSource::Time shutterOffset)
-{
-    return VtValue(GetTypedValue(shutterOffset));
-}
-
-VtMatrix4dArray
-UsdImagingDataSourcePointInstancerXforms::GetTypedValue(
-        HdSampledDataSource::Time shutterOffset)
-{
-    TRACE_FUNCTION();
-
-    // TODO: This implementation is here to get things going but it ultimately
-    // not what we want for the following reasons.
-    // - We use the UsdGeomXformCache here where we typically leave this
-    //   flattening behavior to HdFlatteningSceneIndex.
-    // - We ignore the shutterOffset for now - so no motion blur support.
-    // - Some renderers can interpret the translate, rotate and scale primvars
-    //   directly and we do not need to bake them into an instanceTransform.
-    // - Write the code to compensate for the prototype transform in, e.g.,
-    //   a different scene index after the flattening scene index.
-
-    VtMatrix4dArray transforms;
-    _usdPI.ComputeInstanceTransformsAtTime(
-            &transforms, _stageGlobals.GetTime(), _stageGlobals.GetTime(),
-            UsdGeomPointInstancer::ExcludeProtoXform,
-            UsdGeomPointInstancer::IgnoreMask);
-
-    // Compensate for prototype transforms.  The per-instance transform is
-    // supposed to be:
-    //   (PI part) PI root transform * TRS *
-    //   (gprim part) proto root relative gprim transform ==
-    //                inv(proto root transform) * gprim transform
-    // ... For separation of data, gprims in imaging have their full transform,
-    // so we need to tack inv(proto root transform) on each instance transform.
-    VtIntArray protoIndices;
-    _usdPI.GetProtoIndicesAttr().Get(&protoIndices, _stageGlobals.GetTime());
-    SdfPathVector protoPaths;
-    _usdPI.GetPrototypesRel().GetTargets(&protoPaths);
-
-    std::vector<GfMatrix4d> protoXforms(protoPaths.size(), GfMatrix4d(1.0));
-
-    UsdGeomXformCache xformCache(_stageGlobals.GetTime());
-    for (size_t i = 0; i < protoPaths.size(); ++i) {
-        const SdfPath &protoPath = protoPaths[i];
-        if (const UsdPrim &protoPrim =
-                _usdPI.GetPrim().GetPrimAtPath(protoPath)) {
-            // TODO: Another implementation uses the transform of the
-            // protoPrim's parent instead.
-            protoXforms[i] = xformCache.GetLocalToWorldTransform(protoPrim)
-                .GetInverse();
-        }
-    }
-    for (size_t i = 0; i < transforms.size(); ++i) {
-        if (i < protoIndices.size()) {
-            const int protoIndex = protoIndices[i];
-            if (size_t(protoIndex) < protoXforms.size()) {
-                transforms[i] = protoXforms[protoIndex] * transforms[i];
-            }
-        }
-    }
-
-    return transforms;
-}
-
-bool
-UsdImagingDataSourcePointInstancerXforms::GetContributingSampleTimesForInterval(
-        HdSampledDataSource::Time startTime,
-        HdSampledDataSource::Time endTime,
-        std::vector<HdSampledDataSource::Time> *outSampleTimes)
-{
-    // Above code ignores shutterOffset, so return false here.
-    return false;
-}    
 
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourcePointInstancerMask::UsdImagingDataSourcePointInstancerMask(
+        const SdfPath &sceneIndexPath,
         const UsdGeomPointInstancer &usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
   : _usdPI(usdPI)
   , _stageGlobals(stageGlobals)
-{}
+{
+    if (UsdAttribute attr = usdPI.GetInvisibleIdsAttr()) {
+        if (attr.ValueMightBeTimeVarying()) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                .Append(HdInstancerTopologySchemaTokens->mask);
+            _stageGlobals.FlagAsTimeVarying(sceneIndexPath, locator);
+        }
+    }
+}
 
 VtValue
 UsdImagingDataSourcePointInstancerMask::GetValue(
-        HdSampledDataSource::Time shutterOffset)
+        const HdSampledDataSource::Time shutterOffset)
 {
     return VtValue(GetTypedValue(shutterOffset));
 }
@@ -165,82 +89,15 @@ UsdImagingDataSourcePointInstancerMask::GetContributingSampleTimesForInterval(
 
 // ----------------------------------------------------------------------------
 
-static
-HdContainerDataSourceHandle
-_PrimvarsDataSource(
-    UsdGeomPointInstancer usdPI,
-    const UsdImagingDataSourceStageGlobals &stageGlobals)
-{
-    std::vector<TfToken> names;
-    std::vector<HdDataSourceBaseHandle> values;
-
-    UsdGeomPrimvarsAPI primvars(usdPI);
-
-    for (const UsdGeomPrimvar &p : primvars.GetPrimvars()) {
-        if (p.GetInterpolation() != UsdGeomTokens->constant &&
-            p.GetInterpolation() != UsdGeomTokens->uniform) {
-            const TfToken &name = p.GetPrimvarName();
-            if (name != HdInstancerTokens->instanceTransform) {
-                names.push_back(name);
-                values.push_back(
-                    UsdImagingDataSourcePrimvar::New(
-                        usdPI.GetPath(),
-                        name,
-                        stageGlobals,
-                        UsdAttributeQuery(p.GetAttr()),
-                        UsdAttributeQuery(p.GetIndicesAttr()),
-                        HdPrimvarSchema::BuildInterpolationDataSource(
-                            UsdImagingUsdToHdInterpolationToken(
-                                p.GetInterpolation())),
-                        HdPrimvarSchema::BuildRoleDataSource(
-                            UsdImagingUsdToHdRole(
-                                p.GetAttr().GetRoleName()))));
-            }
-        }
-    }
-
-    names.push_back(HdInstancerTokens->instanceTransform);
-    values.push_back(
-        HdPrimvarSchema::Builder()
-            .SetPrimvarValue(
-                UsdImagingDataSourcePointInstancerXforms::New(
-                    usdPI, stageGlobals))
-            .SetInterpolation(
-                HdPrimvarSchema::BuildInterpolationDataSource(
-                    HdPrimvarSchemaTokens->instance))
-            .SetRole(
-                HdPrimvarSchema::BuildRoleDataSource(
-                    HdPrimvarSchemaTokens->transform))
-        .Build());
-
-    return HdRetainedContainerDataSource::New(
-        names.size(),
-        names.data(),
-        values.data());
-}
-
-// ----------------------------------------------------------------------------
-
 UsdImagingDataSourcePointInstancerTopology::
 UsdImagingDataSourcePointInstancerTopology(
+        const SdfPath &sceneIndexPath,
         UsdGeomPointInstancer usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
-  : _usdPI(usdPI)
+  : _sceneIndexPath(sceneIndexPath)
+  , _usdPI(usdPI)
   , _stageGlobals(stageGlobals)
 {}
-
-bool
-UsdImagingDataSourcePointInstancerTopology::Has(const TfToken &name)
-{
-    if (name == HdInstancerTopologySchemaTokens->prototypes ||
-        name == HdInstancerTopologySchemaTokens->instanceIndices ||
-        name == HdInstancerTopologySchemaTokens->mask)
-    {
-        return true;
-    }
-
-    return false;
-}
 
 TfTokenVector
 UsdImagingDataSourcePointInstancerTopology::GetNames()
@@ -266,7 +123,7 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
         // We need to flip the protoIndices: [0,1,0] -> 0: [0,2], 1: [1].
         std::vector<VtIntArray> instanceIndices;
         for (size_t i = 0; i < protoIndices.size(); ++i) {
-            int protoIndex = protoIndices[i];
+            const int protoIndex = protoIndices[i];
             if (size_t(protoIndex) >= instanceIndices.size()) {
                 instanceIndices.resize(protoIndex+1);
             }
@@ -283,7 +140,7 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
             indicesVec.size(), indicesVec.data());
     } else if (name == HdInstancerTopologySchemaTokens->mask) {
         return UsdImagingDataSourcePointInstancerMask::New(
-                _usdPI, _stageGlobals);
+                _sceneIndexPath, _usdPI, _stageGlobals);
     }
 
     return nullptr;
@@ -297,18 +154,6 @@ UsdImagingDataSourcePointInstancerPrim::UsdImagingDataSourcePointInstancerPrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
   : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
 {
-}
-
-bool
-UsdImagingDataSourcePointInstancerPrim::Has(const TfToken &name)
-{
-    if (name == HdInstancerTopologySchemaTokens->instancerTopology ||
-        name == HdPrimvarsSchemaTokens->primvars)
-    {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
 }
 
 TfTokenVector
@@ -325,16 +170,105 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
 {
     if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
         return UsdImagingDataSourcePointInstancerTopology::New(
-                UsdGeomPointInstancer(_GetUsdPrim()), _GetStageGlobals());
-    } else if (name == HdPrimvarsSchemaTokens->primvars) {
-        return HdLazyContainerDataSource::New(
-            std::bind(
-                _PrimvarsDataSource, 
+                _GetSceneIndexPath(),
                 UsdGeomPointInstancer(_GetUsdPrim()),
-                std::cref(_GetStageGlobals())));
+                _GetStageGlobals());
+    } else if (name == HdPrimvarsSchemaTokens->primvars) {
+
+        // Note that we are not yet handling velocities, accelerations
+        // and angularVelocities.
+        static const UsdImagingDataSourceCustomPrimvars::Mappings
+            customPrimvarMappings =
+                {
+                    { HdInstancerTokens->translate,
+                      UsdGeomTokens->positions,
+                      HdPrimvarSchemaTokens->instance
+                    },
+                    { HdInstancerTokens->rotate,
+                      UsdGeomTokens->orientations,
+                      HdPrimvarSchemaTokens->instance
+                    },
+                    { HdInstancerTokens->scale,
+                      UsdGeomTokens->scales,
+                      HdPrimvarSchemaTokens->instance
+                    }
+                };
+
+        HdContainerDataSourceHandle basePvs = HdContainerDataSource::Cast(
+            UsdImagingDataSourcePrim::Get(name));
+
+        HdContainerDataSourceHandle customPvs =
+            UsdImagingDataSourceCustomPrimvars::New(
+                _GetSceneIndexPath(),
+                _GetUsdPrim(),
+                customPrimvarMappings,
+                _GetStageGlobals());
+
+        if (basePvs) {
+            return HdOverlayContainerDataSource::New(basePvs, customPvs);
+        } else {
+            return customPvs;
+        }
+
     } else {
         return UsdImagingDataSourcePrim::Get(name);
     }
+}
+
+HdDataSourceLocatorSet
+UsdImagingDataSourcePointInstancerPrim::Invalidate(
+    UsdPrim const &prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties);
+
+    for (const TfToken &propertyName : properties) {
+        if (propertyName == UsdGeomTokens->prototypes) {
+            locators.insert(
+                HdInstancerTopologySchema::GetDefaultLocator());
+        }
+        if (propertyName == UsdGeomTokens->protoIndices) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                    .Append(HdInstancerTopologySchemaTokens->instanceIndices);
+            locators.insert(locator);
+        }
+        // inactiveIds are metadata - changing those will cause a resync
+        // of the prim, that is prim remove and add to the stage scene index.
+        // So we do not need to deal with them here.
+        if (propertyName == UsdGeomTokens->invisibleIds) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                    .Append(HdInstancerTopologySchemaTokens->mask);
+            locators.insert(locator);
+        }
+        if (propertyName == UsdGeomTokens->positions) {
+            static const HdDataSourceLocator locator =
+                HdPrimvarsSchema::GetDefaultLocator()
+                    .Append(HdInstancerTokens->translate)
+                    .Append(HdPrimvarSchemaTokens->primvarValue);
+            locators.insert(locator);
+        }
+        if (propertyName == UsdGeomTokens->orientations) {
+            static const HdDataSourceLocator locator =
+                HdPrimvarsSchema::GetDefaultLocator()
+                    .Append(HdInstancerTokens->rotate)
+                    .Append(HdPrimvarSchemaTokens->primvarValue);
+            locators.insert(locator);
+        }
+        if (propertyName == UsdGeomTokens->scales) {
+            static const HdDataSourceLocator locator =
+                HdPrimvarsSchema::GetDefaultLocator()
+                    .Append(HdInstancerTokens->scale)
+                    .Append(HdPrimvarSchemaTokens->primvarValue);
+            locators.insert(locator);
+        }
+    }
+
+    return locators;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -44,6 +44,13 @@ IsClose(double a, double b, double epsilon=1e-3)
 }
 
 static bool
+IsCloselyBounded(double value, double lower, double upper, double epsilon=1e-3)
+{
+    return (1 - epsilon) * lower  <= value
+           && value <= (1 + epsilon) * upper;
+}
+
+static bool
 Test_TfStopwatch()
 {
     bool ok = true;
@@ -64,42 +71,56 @@ Test_TfStopwatch()
 
     // Delay .5 seconds (500 million nanoseconds)
     //
+    auto pre_start = std::chrono::steady_clock::now();
     watch1.Start();
-    auto start = std::chrono::steady_clock::now();
+    auto post_start = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    auto pre_stop = std::chrono::steady_clock::now();
     watch1.Stop();
-    auto end = std::chrono::steady_clock::now();
+    auto post_stop = std::chrono::steady_clock::now();
 
-    std::chrono::duration<double> elapsed = end - start;
+    std::chrono::duration<double> minElapsed = pre_stop - post_start;
+    std::chrono::duration<double> maxElapsed = post_stop - pre_start;
 
-    // The value of watch1 should match the elapsed duration
+    // The value of watch1 should be bounded by minElapsed / maxElapsed:
+    //     minElapsed < watch1 < maxElapsed
     // measured via std::chrono. This should be roughly .5 seconds,
     // but may be higher since sleep_for may overshoot the requested
-    // time.
-    if (!IsClose(watch1.GetSeconds(), elapsed.count())) {
+    // time. We take the upper / lower bounds to account for possible thread
+    // scheduling issues.
+    if (!IsCloselyBounded(watch1.GetSeconds(), minElapsed.count(),
+                          maxElapsed.count())) {
         cout << "Sleep for .5 seconds but got: " << endl
              << "TfStopwatch: " << watch1.GetSeconds() << endl
-             << "std::chrono: " << elapsed.count() << endl;
+             << "std::chrono (lower bound): " << minElapsed.count() << endl
+             << "std::chrono (upper bound): " << maxElapsed.count() << endl;
         ok = false;
     }
 
     // Delay another .5 seconds and see if watch is near 1
     //
+    pre_start = std::chrono::steady_clock::now();
     watch1.Start();
-    start = std::chrono::steady_clock::now();
+    post_start = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    pre_stop = std::chrono::steady_clock::now();
     watch1.Stop();
-    end = std::chrono::steady_clock::now();
+    post_stop = std::chrono::steady_clock::now();
 
-    elapsed += (end - start);
+
+    minElapsed += pre_stop - post_start;
+    maxElapsed += post_stop - pre_start;
 
     // The value of watch1 should match the updated elapsed duration.
-    if (!IsClose(watch1.GetSeconds(), elapsed.count())) {
+    if (!IsCloselyBounded(watch1.GetSeconds(), minElapsed.count(),
+                          maxElapsed.count())) {
         cout << "Sleep for 1.0 seconds but got: " << endl
              << "TfStopwatch: " << watch1.GetSeconds() << endl
-             << "std::chrono: " << elapsed.count() << endl;
+             << "std::chrono (lower bound): " << minElapsed.count() << endl
+             << "std::chrono (upper bound): " << maxElapsed.count() << endl;
         ok = false;
     }
+
 
     // The value of watchCopy should be zero
     //

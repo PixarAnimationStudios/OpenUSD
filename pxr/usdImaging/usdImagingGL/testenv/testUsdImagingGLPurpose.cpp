@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/frustum.h"
@@ -31,9 +30,6 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/tf/getenv.h"
 
-#include "pxr/imaging/glf/contextCaps.h"
-#include "pxr/imaging/glf/drawTarget.h"
-#include "pxr/imaging/glf/glContext.h"
 #include "pxr/imaging/garch/glDebugWindow.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
@@ -44,6 +40,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
+#include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include <iostream>
 
@@ -72,35 +69,15 @@ int main(int argc, char *argv[])
     imageFilePath = TfStringReplace(imageFilePath, ".png", "");
 
     // prepare GL context
-    GarchGLDebugWindow window("UsdImagingGL Test", 512, 512);
-    window.Init();
-    GarchGLApiLoad();
-
-    // wrap into GlfGLContext so that GlfDrawTarget works
-    GlfGLContextSharedPtr ctx = GlfGLContext::GetCurrentGLContext();
-    GlfContextCaps::InitInstance();
-
-    // prep draw target
     int width = 512, height = 512;
-    GlfDrawTargetRefPtr drawTarget = GlfDrawTarget::New(GfVec2i(width, height));
-    drawTarget->Bind();
-    drawTarget->AddAttachment("color", GL_RGBA, GL_FLOAT, GL_RGBA);
-    drawTarget->AddAttachment("depth", GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8,
-                              GL_DEPTH24_STENCIL8);
-    drawTarget->Unbind();
-
-    GLfloat clearColor[4] = { 0.1f, 0.1f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
+    GarchGLDebugWindow window("UsdImagingGL Test", width, height);
+    window.Init();
 
     // open stage
     UsdStageRefPtr stage = UsdStage::Open(stageFilePath);
     UsdImagingGLEngineSharedPtr engine;
     SdfPathVector excludedPaths;
 
-    if (!UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cerr << "Couldn't initialize hydra" << std::endl;
-        exit(-1);
-    }
     engine.reset(
         new UsdImagingGLEngine(stage->GetPseudoRoot().GetPath(), 
                 excludedPaths));
@@ -149,9 +126,6 @@ int main(int argc, char *argv[])
 
     // --------------------------------------------------------------------
     // draw.
-    drawTarget->Bind();
-    glViewport(0, 0, 512, 512);
-    glEnable(GL_DEPTH_TEST);
 
     GfVec4d viewport(0, 0, width, height);
     engine->SetCameraState(modelViewMatrix, projMatrix);
@@ -163,14 +137,14 @@ int main(int argc, char *argv[])
     params.showGuides = false;
     params.showProxy = false;
     params.showRender = false;
+    params.clearColor = GfVec4f{ 0.1f, 0.1f, 0.1f, 1.0f };
 
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
+    engine->SetRendererAov(HdAovTokens->color);
+
     engine->Render(stage->GetPseudoRoot(), params);
 
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", imageFilePath + "_0.png");
-    drawTarget->Bind();
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, imageFilePath + "_0.png");
 
     // Change purpose.
     UsdGeomImageable prim(stage->GetPrimAtPath(purposePath));
@@ -180,35 +154,27 @@ int main(int argc, char *argv[])
     UsdAttribute purposeAttr = prim.CreatePurposeAttr();
     purposeAttr.Set(UsdGeomTokens->render);
 
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine->Render(stage->GetPseudoRoot(), params);
 
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", imageFilePath + "_1.png");
-    drawTarget->Bind();
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, imageFilePath + "_1.png");
 
     // Enable "render" purpose.
     params.showRender = true;
 
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine->Render(stage->GetPseudoRoot(), params);
 
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", imageFilePath + "_2.png");
-    drawTarget->Bind();
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, imageFilePath + "_2.png");
 
     // Revert purpose change & params change.
     params.showRender = false;
     purposeAttr.Set(UsdGeomTokens->default_);
 
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
     engine->Render(stage->GetPseudoRoot(), params);
 
-    drawTarget->Unbind();
-    drawTarget->WriteToFile("color", imageFilePath + "_3.png");
+    UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
+        engine.get(), HdAovTokens->color, imageFilePath + "_3.png");
 
     return EXIT_SUCCESS;
 }

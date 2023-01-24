@@ -56,6 +56,73 @@ class FixBrokenPixarSchemas(object):
         """
         return self._layerUpdated
 
+    def FixupCoordSysAPI(self):
+        """
+        Makes sure CoordSysAPI multiapply schema is applied and the instanced
+        binding relationship is used, instead of old non-applied CoordSysAPI
+        "coordSys:name" binding.
+        """
+        def _PrimSpecProvidesCoordSysAPI(path):
+            from pxr import Sdf
+            if not path.IsPrimPath():
+                return
+            primSpec = self._usdLayer.GetPrimAtPath(path)
+            apiSchemas = primSpec.GetInfo("apiSchemas")
+            # Collect all relationship which use of UsdShadeCoordSysAPI encoding
+            relationshipToUpdate = []
+            missingApiSchema = []
+            for rel in primSpec.relationships:
+                relName = rel.name
+                # is the relationship old style coordSys binding
+                if (relName.startswith("coordSys:") and \
+                        (not relName.endswith(":binding") or \
+                            relName.count(":") == 1)):
+                    relationshipToUpdate.append(rel)
+                # Since there was no prior codepath that could have left us in a
+                # state where a "coordSys:<name>:binding" was added but no
+                # UsdShadeCoordSysAPI is applied with the "<name>", following
+                # finds and fixes missing application of UsdShadeCoordSysAPI 
+                # but when new encoding relationship is present on the spec.
+                if (relName.startswith("coordSys:") and \
+                    relName.endswith(":binding") and \
+                    relName.count(":") > 1):
+                    instanceName = rel.name.split("coordSys:")[-1]. \
+                            split(":binding")[0]
+                    coordSysAPIName = "CoordSysAPI:%s" %instanceName
+                    if not apiSchemas.HasItem(coordSysAPIName):
+                        missingApiSchema.append(coordSysAPIName)
+                    
+
+            if len(relationshipToUpdate) == 0 and len(missingApiSchema) == 0:
+                return
+
+            # Will definitely be doing some updating!
+            self._layerUpdated = True
+
+            # though it shouldn't matter for our fixup usage, but better to
+            # follow best practice and make ALL changes in a change block.
+            with Sdf.ChangeBlock():
+                for rel in relationshipToUpdate:
+                    instanceName = rel.name.split("coordSys:")[-1]
+                    # Apply API
+                    coordSysAPIName = "CoordSysAPI:%s" %instanceName
+                    apiSchemas = self._ApplyAPI(apiSchemas, coordSysAPIName)
+                    # New Rel
+                    newRelPath = rel.path.ReplaceName(rel.name+":binding")
+                    # CopySpec
+                    Sdf.CopySpec(self._usdLayer, rel.path, 
+                            self._usdLayer, newRelPath)
+                    # Remove old rel
+                    primSpec.RemoveProperty(rel)
+                # Apply any missing UsdShadeCoordSysAPI api schema
+                for missingAPI in missingApiSchema:
+                    apiSchemas = self._ApplyAPI(apiSchemas, missingAPI)
+
+                primSpec.SetInfo("apiSchemas", apiSchemas)
+
+        self._usdLayer.Traverse("/", _PrimSpecProvidesCoordSysAPI)
+
+
     def FixupMaterialBindingAPI(self):
         """
         Makes sure MaterialBindingAPI is applied on the prim, which defines a

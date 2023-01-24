@@ -55,10 +55,11 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    TfTokenVector GetImagingSubprims() override;
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
 
     USDIMAGING_API
-    TfToken GetImagingSubprimType(TfToken const& subprim) override;
+    TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim)
+        override;
 
     // ---------------------------------------------------------------------- //
 

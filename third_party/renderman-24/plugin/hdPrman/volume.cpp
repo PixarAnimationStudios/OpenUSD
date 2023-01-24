@@ -171,7 +171,7 @@ _DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
             return HdPrman_Volume::FieldType::NormalType;
         } else if (vectorDataRoleHint == UsdVolTokens->vector) {
             return HdPrman_Volume::FieldType::VectorType;
-        } else if (vectorDataRoleHint == UsdVolTokens->none_) {
+        } else if (vectorDataRoleHint == UsdVolTokens->none) {
             // Fall through
         } else if (!vectorDataRoleHint.IsEmpty()) {
             TF_WARN("Unknown vectorDataRoleHint value '%s' on volume field prim"

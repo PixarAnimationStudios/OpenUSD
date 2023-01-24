@@ -88,6 +88,10 @@ private:
                          HdStDrawItem *drawItem,
                          HdDirtyBits *dirtyBits);
 
+    enum DrawingCoord {
+        InstancePrimvar = HdDrawingCoord::CustomSlotsBegin
+    };
+
     HdReprSharedPtr _volumeRepr;
 };
 

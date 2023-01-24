@@ -1871,20 +1871,12 @@ class StageView(QGLWidget):
         else:
             self._hud.updateGroup("BottomRight", 0, 0, col, {})
 
-        # Hydra Enabled (Top Right)
-        hydraMode = "Disabled"
-
-        if UsdImagingGL.Engine.IsHydraEnabled():
-            hydraMode = self._rendererDisplayName
-            if not hydraMode:
-                hydraMode = "Enabled"
-
         if self._renderPauseState:
             toPrint = {"Hydra": "(paused)"}
         elif self._renderStopState:
             toPrint = {"Hydra": "(stopped)"}
         else:
-            toPrint = {"Hydra": hydraMode}
+            toPrint = {"Hydra": self._rendererDisplayName}
             
         if self._rendererAovName != "color":
             toPrint["  AOV"] = self._rendererAovName

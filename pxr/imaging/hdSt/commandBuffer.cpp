@@ -26,19 +26,18 @@
 #include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/indirectDrawBatch.h"
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
+#include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
-#include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/computeCmds.h"
 
-#include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/renderIndex.h"
 
-#include "pxr/base/gf/matrix4f.h"
+#include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/tf/stl.h"
 
 #include "pxr/base/work/loops.h"
 
@@ -74,17 +73,77 @@ _NewDrawBatch(HdStDrawItemInstance * drawItemInstance,
     }
 }
 
+static
+bool
+_IsEnabledFrustumCullCPU(HgiCapabilities const * const capabilities)
+{
+    if (TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING)) {
+        return false;
+    }
+
+    const bool multiDrawIndirectEnabled =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+
+    const bool gpuFrustumCullingEnabled =
+        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
+            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
+            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+
+    // Enable CPU Frustum culling only when GPU frustum culling is not enabled.
+    return !(multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
+}
+
 void
 HdStCommandBuffer::PrepareDraw(
     HgiGraphicsCmds *gfxCmds,
     HdStRenderPassStateSharedPtr const &renderPassState,
-    HdStResourceRegistrySharedPtr const &resourceRegistry)
+    HdRenderIndex *renderIndex)
 {
     HD_TRACE_FUNCTION();
+
+    // Downcast the resource registry
+    HdStResourceRegistrySharedPtr const& resourceRegistry =
+        std::dynamic_pointer_cast<HdStResourceRegistry>(
+        renderIndex->GetResourceRegistry());
+    if (!TF_VERIFY(resourceRegistry)) {
+        return;
+    }
+
+    Hgi const * const hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const * const capabilities = hgi->GetCapabilities();
+
+    if (_IsEnabledFrustumCullCPU(capabilities)) {    
+        const bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
+
+        if (!freezeCulling) {
+            _FrustumCullCPU(renderPassState->GetCullMatrix());
+        }
+
+        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CPU CULLED: %zu drawItems\n",
+                                          GetCulledSize());
+    } else {
+        // Since culling state is stored across renders,
+        // we need to update all items visible state
+        HdChangeTracker const &tracker = renderIndex->GetChangeTracker();
+        SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
+    }
 
     for (auto const& batch : _drawBatches) {
         batch->PrepareDraw(gfxCmds, renderPassState, resourceRegistry);
     }
+
+    // Once all the prepare work is done, add a memory barrier before the next
+    // stage.
+    HgiComputeCmds *computeCmds =
+        resourceRegistry->GetGlobalComputeCmds(HgiComputeDispatchConcurrent);
+
+    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+
+    for (auto const& batch : _drawBatches) {
+        batch->EncodeDraw(renderPassState, resourceRegistry);
+    }
+
+    computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
     //
     // Compute work that was set up for indirect command buffers and frustum
@@ -362,7 +421,7 @@ HdStCommandBuffer::SyncDrawItemVisibility(unsigned visChangeCount)
 }
 
 void
-HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
+HdStCommandBuffer::_FrustumCullCPU(GfMatrix4d const &cullMatrix)
 {
     HD_TRACE_FUNCTION();
 
@@ -373,14 +432,14 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
     struct _Worker {
         static
         void cull(std::vector<HdStDrawItemInstance> * drawItemInstances,
-                GfMatrix4d const &viewProjMatrix,
-                size_t begin, size_t end) 
+                  GfMatrix4d const &cullMatrix,
+                  size_t begin, size_t end) 
         {
             for(size_t i = begin; i < end; i++) {
                 HdStDrawItemInstance& itemInstance = (*drawItemInstances)[i];
                 HdStDrawItem const* item = itemInstance.GetDrawItem();
                 bool visible = item->GetVisible() && 
-                    item->IntersectsViewVolume(viewProjMatrix);
+                    item->IntersectsViewVolume(cullMatrix);
                 if ((itemInstance.IsVisible() != visible) || 
                     (visible && item->HasInstancer())) {
                     itemInstance.SetVisible(visible);
@@ -392,12 +451,12 @@ HdStCommandBuffer::FrustumCull(GfMatrix4d const &viewProjMatrix)
     if (!mtCullingDisabled) {
         WorkParallelForN(_drawItemInstances.size(), 
                          std::bind(&_Worker::cull, &_drawItemInstances, 
-                                   std::cref(viewProjMatrix),
+                                   std::cref(cullMatrix),
                                    std::placeholders::_1,
                                    std::placeholders::_2));
     } else {
         _Worker::cull(&_drawItemInstances, 
-                      viewProjMatrix, 
+                      cullMatrix, 
                       0, 
                       _drawItemInstances.size());
     }

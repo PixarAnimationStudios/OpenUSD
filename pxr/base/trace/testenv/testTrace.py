@@ -204,22 +204,28 @@ class TestTrace(unittest.TestCase):
 
         gc.enabled = True
         sleepTime = 1.0
+        pre_begin = time.time()
         b = gc.BeginEvent("Test tuple")
-        b2 = time.time()
+        post_begin = time.time()
         time.sleep(sleepTime)
+        pre_end = time.time()
         e = gc.EndEvent("Test tuple")
-        e2 = time.time()
+        post_end = time.time()
 
         elapsedSeconds = Trace.GetElapsedSeconds(b, e)
-        expectedElapsedSeconds = e2 - b2
+        expectedMinSeconds = pre_end - post_begin
+        expectedMaxSeconds = post_end - pre_begin
         gr.Report()
 
-        elapsedDiff = abs(elapsedSeconds - expectedElapsedSeconds)
-        self.assertTrue(elapsedDiff < 0.005,
-                        "Elapsed: {} Expected: {} Diff: {}".format(
-                            elapsedSeconds, expectedElapsedSeconds, 
-                            elapsedDiff))
-
+        epsilon = 0.005
+        self.assertGreater(elapsedSeconds, expectedMinSeconds - epsilon,
+                        "Elapsed: {} Expected Min: {} Diff: {}".format(
+                            elapsedSeconds, expectedMinSeconds,
+                            expectedMinSeconds - elapsedSeconds))
+        self.assertLess(elapsedSeconds, expectedMaxSeconds + epsilon,
+                        "Elapsed: {} Expected Max: {} Diff: {}".format(
+                            elapsedSeconds, expectedMaxSeconds,
+                            elapsedSeconds - expectedMaxSeconds))
         print("")
 
 if __name__ == '__main__':

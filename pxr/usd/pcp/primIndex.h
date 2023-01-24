@@ -107,10 +107,13 @@ public:
     /// A default-constructed index is invalid.
     bool IsValid() const { return bool(_graph); }
 
-    PCP_API
-    void SetGraph(const PcpPrimIndex_GraphRefPtr& graph);
-    PCP_API
-    PcpPrimIndex_GraphPtr GetGraph() const;
+    void SetGraph(const PcpPrimIndex_GraphRefPtr& graph) {
+        _graph = graph;
+    }
+
+    const PcpPrimIndex_GraphRefPtr &GetGraph() const {
+        return _graph;
+    }
 
     /// Returns the root node of the prim index graph.
     PCP_API

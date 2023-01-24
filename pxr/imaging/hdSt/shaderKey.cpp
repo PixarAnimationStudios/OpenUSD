@@ -48,6 +48,7 @@ HdSt_ShaderKey::ComputeHash() const
     TfToken const *PTVS = GetPTVS();
     TfToken const *GS = GetGS();
     TfToken const *FS = GetFS();
+    TfToken const *CS = GetCS();
 
     while (VS && (!VS->IsEmpty())) {
         boost::hash_combine(hash, VS->Hash());
@@ -76,6 +77,10 @@ HdSt_ShaderKey::ComputeHash() const
     while (FS && (!FS->IsEmpty())) {
         boost::hash_combine(hash, FS->Hash());
         ++FS;
+    }
+    while (CS && (!CS->IsEmpty())) {
+        boost::hash_combine(hash, CS->Hash());
+        ++CS;
     }
     
     // During batching, we rely on geometric shader equality, and thus the
@@ -140,6 +145,7 @@ HdSt_ShaderKey::GetGlslfxString() const
        << "{\"techniques\": {\"default\": {\n";
 
     bool firstStage = true;
+    ss << _JoinTokens("computeShader",     GetCS(),  &firstStage);
     ss << _JoinTokens("vertexShader",      GetVS(),  &firstStage);
     ss << _JoinTokens("tessControlShader", GetTCS(), &firstStage);
     ss << _JoinTokens("tessEvalShader",    GetTES(), &firstStage);
@@ -197,6 +203,13 @@ HdSt_ShaderKey::GetGS() const
 /*virtual*/
 TfToken const*
 HdSt_ShaderKey::GetFS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetCS() const
 {
     return nullptr;
 }

@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<!-- 
+  Clearcoat Materials UsdPreviewSurface with varying clearcoat roughness 
+-->
+<materialx version="1.38">
+
+  <UsdPreviewSurface name="SR_emissive_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.7, 0.2, 0" />
+    <input name="emissiveColor" type="color3" value="0.2, 0.7, 0" />
+    <input name="roughness" type="float" value="0.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Emissive_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_emissive_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_emissive_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.7, 0.2, 0" />
+    <input name="emissiveColor" type="color3" value="0.2, 0.7, 0" />
+    <input name="roughness" type="float" value="0.25" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Emissive_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_emissive_02" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_emissive_03" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.7, 0.2, 0" />
+    <input name="emissiveColor" type="color3" value="0.2, 0.7, 0" />
+    <input name="roughness" type="float" value="0.5" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Emissive_03" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_emissive_03" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_emissive_04" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.7, 0.2, 0" />
+    <input name="emissiveColor" type="color3" value="0.2, 0.7, 0" />
+    <input name="roughness" type="float" value="0.75" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Emissive_04" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_emissive_04" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_emissive_05" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="0.7, 0.2, 0" />
+    <input name="emissiveColor" type="color3" value="0.2, 0.7, 0" />
+    <input name="roughness" type="float" value="1.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Emissive_05" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_emissive_05" />
+  </surfacematerial>
+
+
+</materialx>

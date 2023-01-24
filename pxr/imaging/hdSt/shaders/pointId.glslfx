@@ -64,7 +64,7 @@ void ProcessPointId(int pointId)
 FORWARD_DECL(int GetBaseVertexOffset());
 int GetPointId()
 {
-    return gl_VertexID - GetBaseVertexOffset();
+    return int(hd_VertexID) - GetBaseVertexOffset();
 }
 
 // Fwd declare selection decoder method defined in hdx/shaders/selection.glslfx

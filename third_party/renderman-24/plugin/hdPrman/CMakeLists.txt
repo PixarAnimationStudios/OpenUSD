@@ -78,6 +78,7 @@ pxr_plugin(${PXR_PACKAGE}
         coordSys
         debugCodes
         dependencyForwardingSceneIndexPlugin
+        displayFilter
         gprim
         gprimbase
         instancer
@@ -86,18 +87,18 @@ pxr_plugin(${PXR_PACKAGE}
         lightFilterUtils
         material
         matfiltConvertPreviewMaterial
-        matfiltFilterChain
         matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
+        outputFilterInvalidatingSceneIndexPlugin
         paramsSetter
         points
         renderDelegate
         renderSettings
         rixStrings
         sampleFilter
-        sampleFilterInvalidatingSceneIndexPlugin
         sphere
+        tokens
         volume
         xcpt
         ${optionalPublicClasses}
@@ -105,6 +106,7 @@ pxr_plugin(${PXR_PACKAGE}
     PRIVATE_CLASSES
         cameraContext
         renderPass
+        extComputationPrimvarPruningSceneIndexPlugin
         framebuffer
         implicitSurfaceSceneIndexPlugin
         matfiltSceneIndexPlugins

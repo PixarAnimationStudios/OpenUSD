@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -91,7 +92,7 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 }
 
 TfTokenVector
-UsdImagingPrimAdapter::GetImagingSubprims()
+UsdImagingPrimAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     TF_WARN("Datasource support not yet added for adapter '%s'",
             TfType::GetCanonicalTypeName(typeid(*this)).c_str());
@@ -99,15 +100,16 @@ UsdImagingPrimAdapter::GetImagingSubprims()
 }
 
 TfToken
-UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingPrimAdapter::GetImagingSubprimType(UsdPrim const& prim,
+    TfToken const& subprim)
 {
     return TfToken();
 }
 
 HdContainerDataSourceHandle
 UsdImagingPrimAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     return nullptr;
@@ -115,11 +117,35 @@ UsdImagingPrimAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
         TfToken const& subprim,
         TfTokenVector const& properties)
 {
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    }
+
     return HdDataSourceLocatorSet();
 }
+
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingPrimAdapter::GetPopulationMode()
+{
+    return RepresentsSelf;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+}
+
+// ----------------------------------------------------------------------------
+
 
 /*static*/
 bool

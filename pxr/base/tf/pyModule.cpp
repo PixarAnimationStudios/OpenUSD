@@ -422,8 +422,7 @@ void Tf_PyInitWrapModule(
         throw_error_already_set();
     }
 
-    TfAutoMallocTag2 tag2(packageTag2, "WrapModule");
-    TfAutoMallocTag tag(packageTag);
+    TfAutoMallocTag tag(packageTag2, "WrapModule", packageTag);
     
     // Set up the wrap context.
     Tf_PyWrapContextManager::GetInstance().PushContext(packageModule);

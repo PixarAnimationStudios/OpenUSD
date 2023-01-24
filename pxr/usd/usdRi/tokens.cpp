@@ -36,8 +36,6 @@ UsdRiTokensType::UsdRiTokensType() :
     outputsRiVolume("outputs:ri:volume", TfToken::Immortal),
     positions("positions", TfToken::Immortal),
     renderContext("ri", TfToken::Immortal),
-    riTextureGamma("ri:texture:gamma", TfToken::Immortal),
-    riTextureSaturation("ri:texture:saturation", TfToken::Immortal),
     spline("spline", TfToken::Immortal),
     values("values", TfToken::Immortal),
     allTokens({
@@ -51,8 +49,6 @@ UsdRiTokensType::UsdRiTokensType() :
         outputsRiVolume,
         positions,
         renderContext,
-        riTextureGamma,
-        riTextureSaturation,
         spline,
         values
     })

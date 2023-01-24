@@ -34,6 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 
@@ -65,17 +66,27 @@ UsdImagingRenderSettingsAdapter::Populate(
     index->InsertBprim(HdPrimTypeTokens->renderSettings, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
-    // Check for Sample Filter Connections
-    SdfPathVector connections;
-    prim.GetAttribute(_tokens->outputsRiSampleFilters)
-        .GetConnections(&connections);
-    for (auto const& connPath : connections) {
-        const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
-            connPath.GetPrimPath());
-        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(connPrim);
-        if (adapter) {
-            index->AddDependency(prim.GetPath(), connPrim);
-            adapter->Populate(connPrim, index, nullptr);
+    // Check for Sample and Display Filter Connections
+
+    const TfToken outputFilterTokens[] = {
+        _tokens->outputsRiSampleFilters,
+        _tokens->outputsRiDisplayFilters
+    };
+
+    for (const auto token : outputFilterTokens) {
+        SdfPathVector connections;
+        prim.GetAttribute(token)
+            .GetConnections(&connections);
+        for (auto const& connPath : connections) {
+            const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
+                connPath.GetPrimPath());
+            if (connPrim) {
+                UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(connPrim);
+                if (adapter) {
+                    index->AddDependency(prim.GetPath(), connPrim);
+                    adapter->Populate(connPrim, index, nullptr);
+                }
+            }
         }
     }
 
