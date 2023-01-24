@@ -315,7 +315,7 @@ HdEmbreeRenderer::Clear()
             continue;
         }
 
-        HdEmbreeRenderBuffer *rb = 
+        HdEmbreeRenderBuffer *rb =
             static_cast<HdEmbreeRenderBuffer*>(_aovBindings[i].renderBuffer);
 
         rb->Map();
@@ -415,7 +415,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         if (!_IsContained(_dataWindow, _width, _height)) {
             TF_CODING_ERROR(
                 "dataWindow is larger than render buffer");
-        
+
         }
     }
 
@@ -449,7 +449,9 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         // Always pass the renderThread to _RenderTiles to allow the first frame
         // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
+                // (i == 0) ? nullptr : renderThread,
+                renderThread,
                 std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as
@@ -532,7 +534,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
         // Compute the pixel location of tile boundaries.
         const unsigned int tileY = tile / numTilesX;
-        const unsigned int tileX = tile - tileY * numTilesX; 
+        const unsigned int tileX = tile - tileY * numTilesX;
         // (Above is equivalent to: tileX = tile % numTilesX)
         const unsigned int x0 = tileX * tileSize + minX;
         const unsigned int y0 = tileY * tileSize + minY;
@@ -592,7 +594,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
 /// Fill in an RTCRay structure from the given parameters.
 static void
-_PopulateRay(RTCRay *ray, GfVec3f const& origin, 
+_PopulateRay(RTCRay *ray, GfVec3f const& origin,
              GfVec3f const& dir, float nearest)
 {
     ray->org_x = origin[0];
