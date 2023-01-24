@@ -51,6 +51,9 @@ stages:
         Python39:
           PYTHON_INTERPRETER: /opt/python/cp39-cp39/bin/python
           PYTHON_TAG: cp39
+        Python310:
+          PYTHON_INTERPRETER: /opt/python/cp310-cp310/bin/python
+          PYTHON_TAG: cp310
     timeoutInMinutes: 90
     pool:
       vmImage: Ubuntu-20.04
@@ -116,6 +119,9 @@ stages:
         Python39:
           PYTHON_VERSION_SPEC: 3.9
           PYTHON_TAG: cp39
+        Python310:
+          PYTHON_VERSION_SPEC: 3.10
+          PYTHON_TAG: cp310
     timeoutInMinutes: 90
     pool:
       vmImage: 'windows-2019'
@@ -171,6 +177,10 @@ stages:
           PYTHON_VERSION_SPEC: 3.9
           PYTHON_INTERPRETER: python3.9
           PYTHON_TAG: cp39
+        Python310:
+          PYTHON_VERSION_SPEC: 3.10
+          PYTHON_INTERPRETER: python3.10
+          PYTHON_TAG: cp310
     timeoutInMinutes: 180
     pool:
       vmImage: 'macOS-11'
@@ -264,6 +274,10 @@ stages:
           PYTHON_VERSION_SPEC: 3.9
           IMAGE: 'Ubuntu-20.04'
           PYTHON_INTERPRETER: python3
+        Linux_Python310:
+          PYTHON_VERSION_SPEC: 3.10
+          IMAGE: 'Ubuntu-20.04'
+          PYTHON_INTERPRETER: python3
         Windows_Python36:
           PYTHON_VERSION_SPEC: 3.6
           IMAGE: 'windows-2019'
@@ -280,6 +294,10 @@ stages:
           PYTHON_VERSION_SPEC: 3.9
           IMAGE: 'windows-2019'
           PYTHON_INTERPRETER: python
+        Windows_Python310:
+          PYTHON_VERSION_SPEC: 3.10
+          IMAGE: 'windows-2019'
+          PYTHON_INTERPRETER: python
         Mac_Python36:
           PYTHON_VERSION_SPEC: 3.6
           IMAGE: 'macOS-11'
@@ -294,6 +312,10 @@ stages:
           PYTHON_INTERPRETER: python3
         Mac_Python39:
           PYTHON_VERSION_SPEC: 3.9
+          IMAGE: 'macOS-11'
+          PYTHON_INTERPRETER: python3
+        Mac_Python310:
+          PYTHON_VERSION_SPEC: 3.10
           IMAGE: 'macOS-11'
           PYTHON_INTERPRETER: python3
     timeoutInMinutes: 10
