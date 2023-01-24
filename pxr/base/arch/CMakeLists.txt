@@ -158,7 +158,7 @@ pxr_build_test(testArchVsnprintf
         testenv/testVsnprintf.cpp
 )
 
-# On windows, in debug mode, we need to copy testArchStaceTrace.pdb into the
+# On windows, in debug mode, we need to copy testArchStackTrace.pdb into the
 # testing folder, so the test can find it (and print out the right stack),
 # even if the build or test folder has been moved (ie, when the baked-in path in
 # executable, where it also looks for the pdb, doesn't work)
@@ -171,7 +171,7 @@ if (PXR_BUILD_TESTS AND WIN32)
     # place that .pdbs will be searched for, other than the baked-in absolute
     # path in the windows binary
     install(
-        FILES ${CMAKE_CURRENT_BINARY_DIR}/testArchStackTrace.pdb
+        FILES $<TARGET_PDB_FILE:testArchStackTrace>
         DESTINATION tests/ctest/testArchStackTrace
         CONFIGURATIONS Debug RelWithDebInfo
     )
