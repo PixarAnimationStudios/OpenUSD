@@ -53,7 +53,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (defaultgeomprop)
     (defaultinput)
     (doc)
-    (enum)
+    ((enum_, "enum"))
     (enumvalues)
     (nodecategory)
     (nodegroup)
@@ -178,7 +178,7 @@ ParseOptions(
     const mx::ConstElementPtr& element
 )
 {
-    const auto& enumLabels = element->getAttribute(_tokens->enum);
+    const auto& enumLabels = element->getAttribute(_tokens->enum_);
     if (enumLabels.empty()) {
         return;
     }
