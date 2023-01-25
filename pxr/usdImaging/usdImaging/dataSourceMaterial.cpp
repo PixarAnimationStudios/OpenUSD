@@ -669,7 +669,17 @@ _BuildMaterial(
                 &nodeDataSources,
                 stageGlobals);
 
-            terminalsNames.push_back(outputName);
+            // For an output to be considered specific to a renderContext, its base
+            // name should be of the form "<renderContext>:...", so there must be
+            // at least two components to the base name.
+            const std::vector<std::string> baseNameComponents =
+                SdfPath::TokenizeIdentifier(output.GetBaseName());
+            if (baseNameComponents.size() < 2u) {
+                continue;
+            }
+
+            const std::string& terminalName = baseNameComponents.back();
+            terminalsNames.push_back(TfToken(terminalName));
             terminalsValues.push_back(HdMaterialConnectionSchema::BuildRetained(
                 HdRetainedTypedSampledDataSource<TfToken>::New(
                     TfToken(upstreamShader.GetPath().GetString())),

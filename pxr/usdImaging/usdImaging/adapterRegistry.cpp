@@ -327,7 +327,7 @@ UsdImagingAdapterRegistry::_ConstructAdapter(
     // Lookup the plug-in type name based on the prim type.
     _TypeMap::const_iterator typeIt = tm.find(adapterKey);
 
-    if (typeIt == _typeMap.end()) {
+    if (typeIt == tm.end()) {
         // Unknown prim type.
         TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginLoad] Unknown prim "
                 "type '%s'\n",
