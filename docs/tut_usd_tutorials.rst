@@ -29,7 +29,7 @@ tutorials assume the interpreter is named "python".
 |                     |search path |                                        |
 +---------------------+------------+----------------------------------------+
 |:envvar:`PATH`       |Program     |:filename:`USD_INSTALL_ROOT/bin`        |
-|                     |search path |                                        |
+|                     |search path |:filename:`USD_INSTALL_ROOT/lib`        |
 +---------------------+------------+----------------------------------------+
 
 For more information see `Advanced Build Configuration
