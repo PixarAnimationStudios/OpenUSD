@@ -852,6 +852,8 @@ class VtArray : public Vt_ArrayBase {
         // Need space for the control block and capacity elements.
         void *data = malloc(
             sizeof(_ControlBlock) + capacity * sizeof(value_type));
+        if (!data) return nullptr;
+
         // Placement-new a control block.
         ::new (data) _ControlBlock(/*count=*/1, capacity);
         // Data starts after the block.
