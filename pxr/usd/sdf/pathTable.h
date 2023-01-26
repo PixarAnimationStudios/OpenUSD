@@ -31,7 +31,6 @@
 #include "pxr/base/tf/functionRef.h"
 
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <algorithm>
 #include <utility>
@@ -96,7 +95,9 @@ private:
     // pointer (\a next) to the next item in the hash bucket's linked list, and
     // two pointers (\a firstChild and \a nextSibling) that describe the tree
     // structure.
-    struct _Entry : boost::noncopyable {
+    struct _Entry {
+        _Entry(const _Entry&) = delete;
+        _Entry& operator=(const _Entry&) = delete;
         _Entry(value_type const &value, _Entry *n)
             : value(value)
             , next(n)
