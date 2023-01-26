@@ -66,7 +66,9 @@ using UsdSchemaVersion = unsigned int;
 /// classes, to enumerate all properties for a given schema class, and finally 
 /// to provide fallback values for unauthored built-in properties.
 ///
-class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
+class UsdSchemaRegistry : public TfWeakBase {
+    UsdSchemaRegistry(const UsdSchemaRegistry&) = delete;
+    UsdSchemaRegistry& operator=(const UsdSchemaRegistry&) = delete;
 public:
     using TokenToTokenVectorMap = 
         std::unordered_map<TfToken, TfTokenVector, TfHash>;
