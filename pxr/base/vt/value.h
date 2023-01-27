@@ -49,10 +49,6 @@
 #include "pxr/base/vt/types.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_constructor.hpp>
-#include <boost/type_traits/has_trivial_copy.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
 
 #include <iosfwd>
 #include <typeinfo>
@@ -201,12 +197,14 @@ class VtValue
     typedef std::aligned_storage<
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
+    // In C++17, std::is_trivially_copy_assignable<T> could be used in place of
+    // std::is_trivially_assignable
     template <class T>
     using _IsTriviallyCopyable = std::integral_constant<bool,
-        boost::has_trivial_constructor<T>::value &&
-        boost::has_trivial_copy<T>::value &&
-        boost::has_trivial_assign<T>::value &&
-        boost::has_trivial_destructor<T>::value>;
+        std::is_trivially_default_constructible<T>::value &&
+        std::is_trivially_copyable<T>::value &&
+        std::is_trivially_assignable<T&, const T&>::value &&
+        std::is_trivially_destructible<T>::value>;
 
     // Metafunction that returns true if T should be stored locally, false if it
     // should be stored remotely.
