@@ -447,7 +447,7 @@ struct Tf_IteratorInterface<PcpNodeRef::child_const_range, true> {
 
 template <>
 struct Tf_ShouldIterateOverCopy<PcpNodeRef::child_const_range> :
-    boost::true_type {};
+    std::true_type {};
 
 /// Support for range-based for loops for PcpNodeRef children ranges.
 inline

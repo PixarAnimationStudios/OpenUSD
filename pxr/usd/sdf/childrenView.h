@@ -514,7 +514,7 @@ struct SdfAdaptedChildrenViewCreator
 
 // Allow TfIteration over children views.
 template <typename C, typename P, typename A>
-struct Tf_ShouldIterateOverCopy<SdfChildrenView<C, P, A> > : boost::true_type
+struct Tf_ShouldIterateOverCopy<SdfChildrenView<C, P, A> > : std::true_type
 {
 };
 template <typename C, typename P, typename A>
