@@ -39,7 +39,6 @@
 
 #include <boost/python/object/class_detail.hpp>
 #include <boost/python/wrapper.hpp>
-#include <boost/type_traits.hpp>
 #include <boost/python/has_back_reference.hpp>
 
 #include <functional>
