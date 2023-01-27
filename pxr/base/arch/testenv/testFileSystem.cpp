@@ -14,6 +14,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
@@ -63,6 +64,7 @@ _AbsPathFilter(const std::string& path)
     return path;
 #endif
 }
+
 }
 
 static bool
@@ -73,8 +75,82 @@ TestArchAbsPath()
     ARCH_AXIOM(_AbsPathFilter(ArchAbsPath("/foo/bar")) == "/foo/bar");
     ARCH_AXIOM(_AbsPathFilter(ArchAbsPath("/foo/bar/../baz")) == "/foo/baz");
 
+    ARCH_AXIOM(_AbsPathFilter(ArchAbsPath("/foo/bar/../baz")) == "/foo/baz");
+
     return true;
 }
+
+#ifdef ARCH_OS_WINDOWS
+
+namespace {
+
+std::string _CreateLongWindowsPath(bool dir, bool dotted) {
+    std::string p = ArchGetTmpDir();
+    for (size_t i = 0; i < 15; ++i)
+        p += "\\abcdefghijklmnopqrs";
+    if (dotted)
+        p += "\\.\\..\\abcdefghijklmnopqrs";
+    if (!dir)
+        p += "\\foo.bar";
+    ARCH_AXIOM(p.size() > ARCH_PATH_MAX);
+    return p;
+}
+
+std::string _CreatePhysicalLongPathDirectory() {
+    std::string tmpDir(ArchGetTmpDir());
+    std::string prefix(150, 'a');
+    tmpDir = ArchMakeTmpSubdir(tmpDir, prefix);
+    prefix.assign(150, 'b');
+    tmpDir = ArchMakeTmpSubdir(tmpDir, prefix);
+    ARCH_AXIOM(tmpDir.size() > ARCH_PATH_MAX);
+    return tmpDir;
+}
+
+} // namespace
+
+static bool TestLongPaths()
+{
+    const std::string longFilePathDotted = _CreateLongWindowsPath(false, true);
+    const std::string longFilePath = _CreateLongWindowsPath(false, false);
+    const std::string longFilePathForwardSlash = [&longFilePath]() {
+        std::string t = longFilePath;
+        std::replace(t.begin(), t.end(), '\\', '/');
+        return t;
+    }();
+
+    {
+        const std::string actual = ArchNormPath(longFilePathDotted, false);
+        const std::string expected = longFilePathForwardSlash;
+        ARCH_AXIOM(actual == expected);
+    }
+    {
+        const std::string actual = ArchAbsPath(longFilePathDotted);
+        const std::string expected = longFilePath;
+        ARCH_AXIOM(actual == expected);
+    }
+    {
+        std::string longTmpDir = _CreatePhysicalLongPathDirectory();
+        const std::string longTmpFilePath = longTmpDir + '\\' + "foo.bar";
+
+        FILE *file;
+        ARCH_AXIOM((file = ArchOpenFile(longTmpFilePath.c_str(), "wb")) != NULL);
+        std::fprintf(file, "%s", "hello");
+        fclose(file); // TODO: fd arg of ArchCloseFile is not symmetrical??
+        ARCH_AXIOM(ArchUnlinkFile(longTmpFilePath.c_str()) == 0);
+        ARCH_AXIOM(ArchRmDir(longTmpDir.c_str()) == 0);
+    }
+
+    // ArchMakeTmpFile
+    // ArchFileAccess
+    // ArchReadLink
+    // ArchGetModificationTime
+    // ArchGetStatMode
+    // ArchGetFileLength
+
+    return true;
+}
+
+#endif
 
 int main()
 {
@@ -136,6 +212,10 @@ int main()
     // Test other utilities
     TestArchNormPath();
     TestArchAbsPath();
+
+#ifdef ARCH_OS_WINDOWS
+    TestLongPaths();
+#endif
 
     return 0;
 }
