@@ -4755,17 +4755,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                      << " = r.indices[" << index << "];\n";
         }
 
-    for(int i = 0; i < instanceIndexWidth; ++i) {
-        std::string const index = std::to_string(i);
-        _genVS   << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genPTVS << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genMOS << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-        _genMS << "  dc.instanceIndex[" << index << "]"
-                 << " = r.indices[" << index << "];\n";
-    }
     for(int i = 0; i < instanceIndexWidth-1; ++i) {
         std::string const index = std::to_string(i);
         _genVS   << "  dc.instanceCoords[" << index << "]"
@@ -4776,6 +4765,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genMOS   << "  dc.instanceCoords[" << index << "]"
                  << " = drawingCoordI" << index << ""
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        _genCS   << "  dc.instanceCoords[" << index << "]"
+                 << " = GetDrawingCoordField(10 +" << index <<")"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genMS   << "  dc.instanceCoords[" << index << "]"
                  << " = GetDrawingCoordField(10 +" << index <<")"

@@ -175,7 +175,7 @@ HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling()
     // Allow GPU frustum culling for PipelineDrawBatch to be disabled even
     // when other GPU frustum culling is enabled. Both switches must be true
     // for PipelineDrawBatch to use GPU frustum culling.
-    return false;
+    return true;
 }
 
 /* static */
