@@ -94,12 +94,8 @@ protected:
     HdDirtyBits
     _PropagateDirtyBits(HdDirtyBits bits) const override
     {
-        // XXX This is not ideal. Currently Riley requires us to provide
-        // all the values anytime we edit a volume. To make sure the values
-        // exist in the value cache, we propagte the dirty bits.value cache,
-        // we propagte the dirty bits.value cache, we propagte the dirty
-        // bits.value cache, we propagte the dirty bits.
-        return bits ? (bits | GetInitialDirtyBitsMask()) : bits;
+        // By default, just return the same dirty bits we recieved.
+        return bits;
     }
 
     void
@@ -207,10 +203,20 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Hydra dirty bits corresponding to PRMan prototype primvars
     // and instance attributes.
     const int prmanPrimvarBits =
-        HdChangeTracker::DirtyPrimvar;
+        HdChangeTracker::DirtyPrimvar |
+        HdChangeTracker::DirtyPoints |
+        HdChangeTracker::DirtyNormals |
+        HdChangeTracker::DirtyWidths |
+        HdChangeTracker::DirtyTopology;
+
     const int prmanAttrBits =
         HdChangeTracker::DirtyVisibility |
-        HdChangeTracker::DirtyTransform;
+        HdChangeTracker::DirtyTransform |
+        HdChangeTracker::DirtyVolumeField |
+        // Some primvars map to instance params:
+        HdChangeTracker::DirtyPrimvar | 
+        // Watch for light linking changes:
+        HdChangeTracker::DirtyCategories;
 
     //
     // Create or modify Riley geometry prototype(s).
