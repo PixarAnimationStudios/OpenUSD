@@ -282,7 +282,11 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdMaterialSchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyParams) {
-            set->append(HdPrimvarsSchema::GetDefaultLocator());
+            // for mesh lights, don't want changing light parameters to trigger
+            // mesh primvar updates.
+            if (primType != HdPrimTypeTokens->mesh) {
+                set->append(HdPrimvarsSchema::GetDefaultLocator());
+            }
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
