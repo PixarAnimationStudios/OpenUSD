@@ -71,14 +71,13 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/scoped_ptr.hpp>
-
 #include <cstdio>
 #include <cmath>
 #include <iterator>
 #include <iostream>
 #include <limits>
 #include <new>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -873,7 +872,7 @@ testDictionaryIterators()
         VtDictionary::iterator i = a.find(key2.first);
 
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             a.insert(std::make_pair(key3.first, key3.second));
         }
 
@@ -905,7 +904,7 @@ testDictionaryIterators()
         VtDictionary::const_iterator i = a.find(key2.first);
         VtDictionary::const_iterator j = expected.find(key2.first);
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             VtDictionary::value_type v(key3.first, key3.second);
             a.insert(v);
             expected.insert(v);
@@ -923,7 +922,7 @@ testDictionaryIterators()
         VtDictionary a = {key1, key2};
         VtDictionary::const_iterator i = a.find(key1.first);
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             a[key1.first] = VtValue(12);
         }
 
