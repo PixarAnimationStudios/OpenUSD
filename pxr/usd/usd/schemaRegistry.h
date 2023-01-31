@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 SDF_DECLARE_HANDLES(SdfAttributeSpec);
 SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 
+class UsdSchemaBase;
 class UsdPrimDefinition;
 
 /// Schema versions are specified as a single unsigned integer value.
@@ -171,6 +172,22 @@ public:
     USD_API
     static const SchemaInfo *
     FindSchemaInfo(const TfType &schemaType);
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// C++ schema class \p SchemaType. 
+    ///
+    /// All generated C++ schema classes, i.e. classes that derive from 
+    /// UsdSchemaBase, are expected to have their types registered with the
+    /// schema registry and as such, the return value from this function should
+    /// never be null. A null return value is indication of a coding error even
+    /// though this function itself will not report an error.
+    template <class SchemaType>
+    static const SchemaInfo *
+    FindSchemaInfo() {
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
+            "Provided type must derive UsdSchemaBase.");
+        return FindSchemaInfo(SchemaType::_GetStaticTfType());
+    }
 
     /// Finds and returns the schema info for a registered schema with the 
     /// given \p schemaIdentifier. Returns null if no registered schema with the 
