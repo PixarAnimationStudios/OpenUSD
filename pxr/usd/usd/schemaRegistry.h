@@ -67,6 +67,9 @@ using UsdSchemaVersion = unsigned int;
 ///
 class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
 public:
+    using TokenToTokenVectorMap = 
+        std::unordered_map<TfToken, TfTokenVector, TfHash>;
+
     /// Structure that holds the information about a schema that is registered
     /// with the schema registry.
     struct SchemaInfo {
@@ -403,7 +406,7 @@ public:
     /// include derived types of the listed types, the type lists returned by 
     /// this function do not. 
     USD_API
-    static const std::map<TfToken, TfTokenVector> &GetAutoApplyAPISchemas();
+    static const TokenToTokenVectorMap &GetAutoApplyAPISchemas();
 
     /// Collects all the additional auto apply schemas that can be defined in 
     /// a plugin through "AutoApplyAPISchemas" metadata and adds the mappings
@@ -418,7 +421,7 @@ public:
     /// may want to collect just these plugin API schema mappings.
     USD_API
     static void CollectAddtionalAutoApplyAPISchemasFromPlugins(
-        std::map<TfToken, TfTokenVector> *autoApplyAPISchemas);
+        TokenToTokenVectorMap *autoApplyAPISchemas);
 
     /// Creates a name template that can represent a property or API schema that
     /// belongs to a multiple apply schema and will therefore have multiple 
@@ -582,9 +585,15 @@ USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);
 void Usd_GetAPISchemaPluginApplyToInfoForType(
     const TfType &apiSchemaType,
     const TfToken &apiSchemaName,
-    std::map<TfToken, TfTokenVector> *autoApplyAPISchemasMap,
-    TfHashMap<TfToken, TfTokenVector, TfHash> *canOnlyApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *autoApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *canOnlyApplyAPISchemasMap,
     TfHashMap<TfToken, TfToken::Set, TfHash> *allowedInstanceNamesMap);
+
+// Utility for sorting a list of auto-applied API schemas. It is useful for 
+// certain clients to be able to make sure they can perform this type of sort
+// in the exact same way as UsdSchemaRegistry does.
+void Usd_SortAutoAppliedAPISchemas(
+    TfTokenVector *autoAppliedAPISchemas);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

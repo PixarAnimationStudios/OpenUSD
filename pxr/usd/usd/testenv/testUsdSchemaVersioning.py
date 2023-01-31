@@ -1877,5 +1877,69 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             ["multi:bar:foo:m_attr2",
              "multi:bar:m_attr1"])
 
+    def test_AutoApplyAPI(self):
+        """Tests versioning behavior with auto-apply API schemas"""        
+
+        # Verify the auto-apply API schemas setup for this test.
+        # We have three versions of the same schema family:
+        #   Version 0 - TestVersionedAutoApplyAPI
+        #   Version 2 - TestVersionedAutoApplyAPI_2
+        #   Version 10 - TestVersionedAutoApplyAPI_10
+        #
+        # These versions were chosen as the version order, 10 > 2 > 0, is 
+        # different than the lexicographical order of the suffixes, 
+        # "_2" > "_10" > "".
+        # 
+        # All three versions of the schema are set up to auto apply to 
+        # version 1 of the BasicVersioned typed schema. Only version 0 
+        # of the auto-apply schema is setup to auto-apply to version 0
+        # of the BasicVersioned typed schema.
+        autoApplySchemas = Usd.SchemaRegistry.GetAutoApplyAPISchemas()
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI"],
+            ["TestBasicVersioned", "TestBasicVersioned_1"])
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI_2"],
+            ["TestBasicVersioned_1"])
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI_10"],
+            ["TestBasicVersioned_1"])
+
+        # Create a prim typed with each version of the basic IsA schema.
+        stage = Usd.Stage.CreateInMemory()
+        primV0 = stage.DefinePrim("/Prim", "TestBasicVersioned")
+        primV1 = stage.DefinePrim("/Prim1", "TestBasicVersioned_1")
+        primV2 = stage.DefinePrim("/Prim2", "TestBasicVersioned_2")
+
+        self.assertTrue(primV0)
+        self.assertTrue(primV1)
+        self.assertTrue(primV2)
+
+        self.assertTrue(primV0.IsA(self.BasicVersion0Type))
+        self.assertTrue(primV1.IsA(self.BasicVersion1Type))
+        self.assertTrue(primV2.IsA(self.BasicVersion2Type))
+
+        # TestBasicVersioned has only version 0 of TestVersionedAutoApplyAPI
+        # auto-applied, so its the only API schema that applied to it.
+        self.assertEqual(primV0.GetAppliedSchemas(), 
+            ["TestVersionedAutoApplyAPI"])
+        self.assertEqual(primV0.GetPropertyNames(), 
+            ["a_attr"])
+
+        # TestBasicVersioned_1 has all three versions of 
+        # TestVersionedAutoApplyAPI applied. In this case only the latest 
+        # version of the schema family is applied which is version 10. 
+        self.assertEqual(primV1.GetAppliedSchemas(), 
+            ["TestVersionedAutoApplyAPI_10"])
+        self.assertEqual(primV1.GetPropertyNames(), 
+            ["a_attr10"])
+
+        # TestBasicVersioned_2 has none of the versions of 
+        # TestVersionedAutoApplyAPI explicitly applied. This case proves that
+        # the auto-applied schemas of the earlier versions of TestBasicVersioned
+        # do not automatically propagate to this later version.
+        self.assertEqual(primV2.GetAppliedSchemas(), 
+            [])
+        self.assertEqual(primV2.GetPropertyNames(), 
+            [])
+
+
 if __name__ == "__main__":
     unittest.main()

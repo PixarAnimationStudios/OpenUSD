@@ -240,11 +240,11 @@ struct _APISchemaApplyToInfoCache {
     
     // Mapping of API schema type name to a list of type names it should auto 
     // applied to.
-    std::map<TfToken, TfTokenVector> autoApplyAPISchemasMap;
+    UsdSchemaRegistry::TokenToTokenVectorMap autoApplyAPISchemasMap;
 
     // Mapping of API schema type name to a list of prim type names that it
     // is ONLY allowed to be applied to.
-    TfHashMap<TfToken, TfTokenVector, TfHash> canOnlyApplyAPISchemasMap;
+    UsdSchemaRegistry::TokenToTokenVectorMap canOnlyApplyAPISchemasMap;
 
     // Mapping of multiple apply API schema type name to a set of instance names
     // that are the only allowed instance names for that type.
@@ -835,7 +835,7 @@ _GetNameListFromMetadata(const JsObject &dict, const TfToken &key)
 /*static*/
 void
 UsdSchemaRegistry::CollectAddtionalAutoApplyAPISchemasFromPlugins(
-    std::map<TfToken, TfTokenVector> *autoApplyAPISchemas)
+    TokenToTokenVectorMap *autoApplyAPISchemas)
 {
     TRACE_FUNCTION();
 
@@ -942,21 +942,42 @@ _GetTypeToAutoAppliedAPISchemaNames()
 
         // With all the apply to types collected we can add the API schema to
         // the list of applied schemas for each Typed schema type.
-        // 
-        // Note that the auto apply API schemas map is sorted alphabetically by 
-        // API schema name so this list for each prim type will also be sorted
-        // alphabetically which is intentional. This ordering is arbitrary but 
-        // necessary to ensure we get a consistent strength ordering for auto 
-        // applied schemas every time. In practice, schema writers should be 
-        // careful to make sure that auto applied API schemas have unique 
-        // property names so that application order doesn't matter, but this at 
-        // least gives us consistent behavior if property name collisions occur.
         for (const TfType &applyToType : applyToTypes) {
             result[applyToType].push_back(apiSchemaName);
         }
     }
 
+    // We have to sort the auto apply API schemas for each type here to be in
+    // reverse "dictionary order" for two reasons.
+    // 1. To ensure that if multiple versions of an API schema exist and 
+    //    auto-apply to the same schema, then the latest version of the API
+    //    schema that is auto-applied will always be stronger than any of the 
+    //    earlier versions that are also auto-applied.
+    // 2. To enforce an arbitrary, but necessary, strength ordering for auto 
+    //    applied schemas that is consistent every time the schema registry is
+    //    initialized. In practice, schema writers should be careful to make
+    //    sure that auto applied API schemas have unique property names so that
+    //    application order doesn't matter, but this at least gives us
+    //    consistent behavior if property name collisions occur.
+    for (auto &typeAndAutoAppliedSchemas : result) {
+        Usd_SortAutoAppliedAPISchemas(&typeAndAutoAppliedSchemas.second);
+    }
+
     return result;
+}
+
+void Usd_SortAutoAppliedAPISchemas(TfTokenVector *autoAppliedAPISchemas) {
+    if (autoAppliedAPISchemas->size() < 2) {
+        return;
+    }
+    // Sort in reverse dictionary order. This ensures that later versions of
+    // a schema will always appear before earlier versions of the same schema
+    // family if present in this list. Outside of this, the ordering is 
+    // arbitrary.
+    std::sort(autoAppliedAPISchemas->begin(), autoAppliedAPISchemas->end(),
+        [](const TfToken &lhs, const TfToken &rhs) {
+            return TfDictionaryLessThan()(rhs, lhs);
+        });
 }
 
 // Helper class for initializing the schema registry by finding all generated 
@@ -1846,7 +1867,7 @@ UsdSchemaRegistry::GetTypeNameAndInstance(const TfToken &apiSchemaName)
 }
 
 /*static*/
-const std::map<TfToken, TfTokenVector> &
+const UsdSchemaRegistry::TokenToTokenVectorMap &
 UsdSchemaRegistry::GetAutoApplyAPISchemas()
 {
     return _GetAPISchemaApplyToInfoCache().autoApplyAPISchemasMap;
@@ -1917,7 +1938,7 @@ const TfTokenVector &
 UsdSchemaRegistry::GetAPISchemaCanOnlyApplyToTypeNames(
     const TfToken &apiSchemaName, const TfToken &instanceName)
 {
-    const TfHashMap<TfToken, TfTokenVector, TfHash> &canOnlyApplyToMap = 
+    const TokenToTokenVectorMap &canOnlyApplyToMap = 
         _GetAPISchemaApplyToInfoCache().canOnlyApplyAPISchemasMap;
 
     if (!instanceName.IsEmpty()) {
@@ -2072,8 +2093,8 @@ void
 Usd_GetAPISchemaPluginApplyToInfoForType(
     const TfType &apiSchemaType,
     const TfToken &apiSchemaName,
-    std::map<TfToken, TfTokenVector> *autoApplyAPISchemasMap,
-    TfHashMap<TfToken, TfTokenVector, TfHash> *canOnlyApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *autoApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *canOnlyApplyAPISchemasMap,
     TfHashMap<TfToken, TfToken::Set, TfHash> *allowedInstanceNamesMap)
 {
     PlugPluginPtr plugin =
