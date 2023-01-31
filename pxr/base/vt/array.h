@@ -441,12 +441,15 @@ class VtArray : public Vt_ArrayBase {
                 _foreignSource || !_IsUnique() || curSize == capacity())) {
             value_type *newData = _AllocateCopy(
                 _data, _CapacityForSize(curSize + 1), curSize);
+            ::new (static_cast<void*>(newData + curSize)) value_type(
+                std::forward<Args>(args)...);
             _DecRef();
             _data = newData;
         }
-        // Copy the value.
-        ::new (static_cast<void*>(_data + curSize)) value_type(
-            std::forward<Args>(args)...);
+        else {
+            ::new (static_cast<void*>(_data + curSize)) value_type(
+                std::forward<Args>(args)...);
+        }
         // Adjust size.
         ++_shapeData.totalSize;
     }
