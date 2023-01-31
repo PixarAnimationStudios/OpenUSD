@@ -87,6 +87,11 @@ public:
     {
     }
 
+
+    /// Construct from GfRange1d.
+    GF_API
+    explicit GfRange1f(class GfRange1d const &other);
+
     /// Returns the minimum value of the range.
     float GetMin() const { return _min; }
 

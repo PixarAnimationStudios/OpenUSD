@@ -89,6 +89,11 @@ public:
     {
     }
 
+
+    /// Implicitly convert from GfRange2f.
+    GF_API
+    GfRange2d(class GfRange2f const &other);
+
     /// Returns the minimum value of the range.
     const GfVec2d &GetMin() const { return _min; }
 

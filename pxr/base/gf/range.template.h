@@ -101,6 +101,13 @@ public:
     {
     }
 
+{% for S in SCALARS if S != SCL %}
+
+    /// {{ "Implicitly convert" if ALLOW_IMPLICIT_CONVERSION(S, SCL) else "Construct" }} from {{ RNGNAME(DIM, S) }}.
+    GF_API
+    {{ '' if ALLOW_IMPLICIT_CONVERSION(S, SCL) else 'explicit ' }}{{ RNG }}(class {{ RNGNAME(DIM, S) }} const &other);
+{% endfor %}
+
     /// Returns the minimum value of the range.
     {{ MINMAXPARM }}GetMin() const { return _min; }
 

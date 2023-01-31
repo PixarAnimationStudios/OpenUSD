@@ -89,6 +89,11 @@ public:
     {
     }
 
+
+    /// Construct from GfRange3d.
+    GF_API
+    explicit GfRange3f(class GfRange3d const &other);
+
     /// Returns the minimum value of the range.
     const GfVec3f &GetMin() const { return _min; }
 

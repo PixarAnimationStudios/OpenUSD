@@ -87,6 +87,11 @@ public:
     {
     }
 
+
+    /// Implicitly convert from GfRange1f.
+    GF_API
+    GfRange1d(class GfRange1f const &other);
+
     /// Returns the minimum value of the range.
     double GetMin() const { return _min; }
 
