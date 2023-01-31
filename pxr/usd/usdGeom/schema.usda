@@ -1678,6 +1678,15 @@ class NurbsCurves "NurbsCurves" (
         knots['i'th curve slice][order[i]-1]. The maxium must be less 
         than or equal to the last element's value in knots['i'th curve slice].
 	Range maps to (vmin, vmax) in the RenderMan spec.""")
+
+    double[] pointWeights (
+        doc = """Optionally provides "w" components for each control point,
+        thus must be the same length as the points attribute.  If authored,
+        the curve will be rational.  If unauthored, the curve will be
+        polynomial, i.e. weight for all points is 1.0.
+        \\note Some DCC's pre-weight the \\em points, but in this schema, 
+        \\em points are not pre-weighted."""
+    )
 }
 
 class Points "Points" (

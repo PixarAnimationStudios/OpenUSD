@@ -464,7 +464,7 @@ struct UsdGeomTokensType {
     const TfToken points;
     /// \brief "pointWeights"
     /// 
-    /// UsdGeomNurbsPatch
+    /// UsdGeomNurbsPatch, UsdGeomNurbsCurves
     const TfToken pointWeights;
     /// \brief "positions"
     /// 

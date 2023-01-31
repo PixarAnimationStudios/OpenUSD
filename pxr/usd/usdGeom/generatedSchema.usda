@@ -2997,6 +2997,14 @@ class NurbsCurves "NurbsCurves" (
         doc = """The primary geometry attribute for all PointBased
         primitives, describes points in (local) space."""
     )
+    double[] pointWeights (
+        doc = """Optionally provides \"w\" components for each control point,
+        thus must be the same length as the points attribute.  If authored,
+        the curve will be rational.  If unauthored, the curve will be
+        polynomial, i.e. weight for all points is 1.0.
+        \\note Some DCC's pre-weight the points, but in this schema, 
+        points are not pre-weighted."""
+    )
     color3f[] primvars:displayColor (
         doc = '''It is useful to have an "official" colorSet that can be used
         as a display or modeling color, even in the absence of any specified
