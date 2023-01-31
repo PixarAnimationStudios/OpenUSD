@@ -313,7 +313,7 @@ HdEmbreeRenderer::Clear()
             continue;
         }
 
-        HdEmbreeRenderBuffer *rb =
+        HdEmbreeRenderBuffer *rb = 
             static_cast<HdEmbreeRenderBuffer*>(_aovBindings[i].renderBuffer);
 
         rb->Map();
@@ -413,7 +413,7 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
         if (!_IsContained(_dataWindow, _width, _height)) {
             TF_CODING_ERROR(
                 "dataWindow is larger than render buffer");
-
+        
         }
     }
 
@@ -532,7 +532,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
         // Compute the pixel location of tile boundaries.
         const unsigned int tileY = tile / numTilesX;
-        const unsigned int tileX = tile - tileY * numTilesX;
+        const unsigned int tileX = tile - tileY * numTilesX; 
         // (Above is equivalent to: tileX = tile % numTilesX)
         const unsigned int x0 = tileX * tileSize + minX;
         const unsigned int y0 = tileY * tileSize + minY;
@@ -592,7 +592,7 @@ HdEmbreeRenderer::_RenderTiles(HdRenderThread *renderThread,
 
 /// Fill in an RTCRay structure from the given parameters.
 static void
-_PopulateRay(RTCRay *ray, GfVec3f const& origin,
+_PopulateRay(RTCRay *ray, GfVec3f const& origin, 
              GfVec3f const& dir, float nearest)
 {
     ray->org_x = origin[0];
