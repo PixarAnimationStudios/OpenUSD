@@ -48,20 +48,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
-    // tokens for RenderMan-specific light parameters
-    ((cheapCaustics,                "inputs:ri:light:cheapCaustics"))
-    ((cheapCausticsExcludeGroup,    "inputs:ri:light:cheapCausticsExcludeGroup"))
-    ((fixedSampleCount,             "inputs:ri:light:fixedSampleCount"))
-    ((importanceMultiplier,         "inputs:ri:light:importanceMultiplier"))
-    ((intensityNearDist,            "inputs:ri:light:intensityNearDist"))
-    ((thinShadow,                   "inputs:ri:light:thinShadow"))
-    ((traceLightPaths,              "inputs:ri:light:traceLightPaths"))
-    ((visibleInRefractionPath,      "inputs:ri:light:visibleInRefractionPath"))
-    ((lightGroup,                   "inputs:ri:light:lightGroup"))
-    ((colorMapGamma,                "inputs:ri:light:colorMapGamma"))
-    ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
-
     (meshLight)
     ((meshLightSourceMesh,          "sourceMesh"))
 );
