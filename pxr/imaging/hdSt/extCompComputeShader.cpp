@@ -24,7 +24,8 @@
 #include "pxr/imaging/hdSt/extCompComputeShader.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 
-#include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hdSt/binding.h"
+
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/base/arch/hash.h"
@@ -79,7 +80,7 @@ HdSt_ExtCompComputeShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_ExtCompComputeShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_ExtCompComputeShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // Resource binding is managed explicitly. See above comment.
 }

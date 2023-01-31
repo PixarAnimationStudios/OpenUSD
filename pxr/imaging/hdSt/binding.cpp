@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hdSt/binding.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 bool
-HdBindingRequest::operator==(HdBindingRequest const &other) const
+HdStBindingRequest::operator==(HdStBindingRequest const &other) const
 {
     return
         _bindingType == other._bindingType &&
@@ -41,13 +41,13 @@ HdBindingRequest::operator==(HdBindingRequest const &other) const
 }
 
 bool
-HdBindingRequest::operator!=(HdBindingRequest const &other) const
+HdStBindingRequest::operator!=(HdStBindingRequest const &other) const
 {
     return !(*this == other);
 }
 
 size_t
-HdBindingRequest::ComputeHash() const
+HdStBindingRequest::ComputeHash() const
 {
     return TfHash()(*this);
 }

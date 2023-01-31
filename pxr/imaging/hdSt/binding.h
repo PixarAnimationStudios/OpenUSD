@@ -21,31 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_BINDING_H
-#define PXR_IMAGING_HD_BINDING_H
+#ifndef PXR_IMAGING_HDST_BINDING_H
+#define PXR_IMAGING_HDST_BINDING_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hdSt/api.h"
 
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
+#include "pxr/imaging/hd/bufferResource.h"
+#include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-typedef std::vector<class HdBinding> HdBindingVector;
-typedef std::vector<class HdBindingRequest> HdBindingRequestVector;
+using HdStBindingVector = std::vector<class HdStBinding>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
-/// \class HdBinding
+/// \class HdStBinding
 ///
-/// Bindings are used for buffers or textures, it simple associates a binding
+/// Bindings are used for buffers or textures, it simply associates a binding
 /// type with a binding location.
 ///
-class HdBinding {
+class HdStBinding {
 public:
     enum Type { // primvar, drawing coordinate and dispatch buffer bindings
                 // also shader fallback values
@@ -96,8 +95,8 @@ public:
                 // which is assigned but optimized out after linking program.
                 NOT_EXIST = 0xffff
     };
-    HdBinding() : _typeAndLocation(-1) { }
-    HdBinding(Type type, int location, int textureUnit=0) {
+    HdStBinding() : _typeAndLocation(-1) { }
+    HdStBinding(Type type, int location, int textureUnit=0) {
         Set(type, location, textureUnit);
     }
     void Set(Type type, int location, int textureUnit) {
@@ -108,7 +107,7 @@ public:
     int GetLocation() const { return (_typeAndLocation >> 8) & 0xffff; }
     int GetTextureUnit() const { return (_typeAndLocation >> 24) & 0xff; }
     int GetValue() const { return _typeAndLocation; }
-    bool operator < (HdBinding const &b) const {
+    bool operator < (HdStBinding const &b) const {
         return (_typeAndLocation < b._typeAndLocation);
     }
 private:
@@ -124,15 +123,15 @@ private:
 /// This is a "request" because the caller makes a request before bindings are
 /// resolved. All requests are consulted and fulfilled during binding
 /// resolution.
-class HdBindingRequest {
+class HdStBindingRequest {
 public:
 
-    HdBindingRequest() = default;
+    HdStBindingRequest() = default;
 
     /// A data binding, not backed by neither BufferArrayRange nor
     /// BufferResource.  This binding request simply
     /// generates named metadata (#define HD_HAS_foo 1, #define HD_foo_Binding)
-    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name)
+    HdStBindingRequest(HdStBinding::Type bindingType, TfToken const& name)
         : _bindingType(bindingType)
         , _dataType(HdTypeInvalid)
         , _name(name)
@@ -146,8 +145,8 @@ public:
 
     /// A data binding, not backed by neither BufferArrayRange nor
     /// BufferResource.
-    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name,
-                     HdType dataType)
+    HdStBindingRequest(HdStBinding::Type bindingType, TfToken const& name,
+                       HdType dataType)
         : _bindingType(bindingType)
         , _dataType(dataType)
         , _name(name)
@@ -161,8 +160,8 @@ public:
 
     /// A buffer resource binding. Binds a given buffer resource to a specified
     /// name.  The data type is set from the resource.
-    HdBindingRequest(HdBinding::Type bindingType, TfToken const& name,
-                     HdBufferResourceSharedPtr const& resource)
+    HdStBindingRequest(HdStBinding::Type bindingType, TfToken const& name,
+                       HdBufferResourceSharedPtr const& resource)
         : _bindingType(bindingType)
         , _dataType(resource->GetTupleType().type)
         , _name(name)
@@ -179,10 +178,10 @@ public:
     /// all resources in the buffer array must have the same underlying
     /// identifier, hence must be interleaved and bindable as a single resource.
     /// Data types can be derived from each HdBufferResource of bar.
-    HdBindingRequest(HdBinding::Type type, TfToken const& name,
-                     HdBufferArrayRangeSharedPtr bar,
-                     bool interleave, bool writable = false,
-                     size_t arraySize = 0, bool concatenateNames = false)
+    HdStBindingRequest(HdStBinding::Type type, TfToken const& name,
+                       HdBufferArrayRangeSharedPtr bar,
+                       bool interleave, bool writable = false,
+                       size_t arraySize = 0, bool concatenateNames = false)
         : _bindingType(type)
         , _dataType(HdTypeInvalid)
         , _name(name)
@@ -240,8 +239,8 @@ public:
     TfToken const& GetName() const {
         return _name;
     }
-    /// Returns the HdBinding type of this request.
-    HdBinding::Type GetBindingType() const {
+    /// Returns the HdStBinding type of this request.
+    HdStBinding::Type GetBindingType() const {
         return _bindingType;
     }
     /// Returns the single resource associated with this binding request or
@@ -284,11 +283,11 @@ public:
     // ---------------------------------------------------------------------- //
     /// \name Comparison
     // ---------------------------------------------------------------------- //
-    HD_API
-    bool operator==(HdBindingRequest const &other) const;
+    HDST_API
+    bool operator==(HdStBindingRequest const &other) const;
 
-    HD_API
-    bool operator!=(HdBindingRequest const &other) const;
+    HDST_API
+    bool operator!=(HdStBindingRequest const &other) const;
 
     // ---------------------------------------------------------------------- //
     /// \name Hash
@@ -299,12 +298,12 @@ public:
     /// Note that this hash captures the structural state of the request, not
     /// the contents. For example, buffer array versions/reallocations will not
     /// affect hash, but changing the BAR pointer will.
-    HD_API
+    HDST_API
     size_t ComputeHash() const;
 
     // TfHash support.
     template <class HashState>
-    friend void TfHashAppend(HashState &h, HdBindingRequest const &br) {
+    friend void TfHashAppend(HashState &h, HdStBindingRequest const &br) {
         h.Append(br._name,
                  br._bindingType,
                  br._dataType,
@@ -318,7 +317,7 @@ private:
     // the current use cases.
 
     // Named binding request
-    HdBinding::Type _bindingType;
+    HdStBinding::Type _bindingType;
     HdType _dataType;
     TfToken _name;
 
@@ -339,4 +338,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HD_BINDING_H
+#endif  // PXR_IMAGING_HDST_BINDING_H

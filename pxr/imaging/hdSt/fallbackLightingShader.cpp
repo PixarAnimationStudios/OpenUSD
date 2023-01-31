@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/fallbackLightingShader.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/package.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -91,7 +91,8 @@ HdSt_FallbackLightingShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_FallbackLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_FallbackLightingShader::AddBindings(
+    HdStBindingRequestVector *customBindings)
 {
     // no-op
 }

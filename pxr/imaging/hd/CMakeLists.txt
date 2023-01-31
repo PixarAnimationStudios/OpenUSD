@@ -25,7 +25,6 @@ pxr_library(hd
         basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
-        binding
         bprim
         bufferArray
         bufferArrayRange

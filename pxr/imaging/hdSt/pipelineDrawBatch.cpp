@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
@@ -40,7 +41,6 @@
 #include "pxr/imaging/hdSt/shaderKey.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -1048,7 +1048,7 @@ _BindingState::GetBindingsForDrawing(
         binder.GetInterleavedBufferArrayBindingDesc(
             bindingsDesc, shaderBar, HdTokens->materialParams);
 
-        HdBindingRequestVector bindingRequests;
+        HdStBindingRequestVector bindingRequests;
         shader->AddBindings(&bindingRequests);
         for (auto const & req : bindingRequests) {
             binder.GetBindingRequestBindingDesc(bindingsDesc, req);
@@ -1070,18 +1070,20 @@ _GetVertexBuffersForViewTransformation(_BindingState const & state)
     HgiVertexAttributeDescVector attrDescVector;
 
     for (auto const & namedResource : dispatchBar->GetResources()) {
-        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBinding const binding =
+                                state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
         HdTupleType const tupleType = resource->GetTupleType();
 
-        if (binding.GetType() == HdBinding::DRAW_INDEX_INSTANCE) {
+        if (binding.GetType() == HdStBinding::DRAW_INDEX_INSTANCE) {
             HgiVertexAttributeDesc attrDesc;
             attrDesc.format =
                 HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
             attrDesc.offset = resource->GetOffset(),
             attrDesc.shaderBindLocation = binding.GetLocation();
             attrDescVector.push_back(attrDesc);
-        } else if (binding.GetType() == HdBinding::DRAW_INDEX_INSTANCE_ARRAY) {
+        } else if (binding.GetType() ==
+                                HdStBinding::DRAW_INDEX_INSTANCE_ARRAY) {
             for (size_t i = 0; i < tupleType.count; ++i) {
                 HgiVertexAttributeDesc attrDesc;
                 attrDesc.format =
@@ -1111,11 +1113,12 @@ _GetVertexBuffersForDrawing(_BindingState const & state)
         _GetVertexBuffersForViewTransformation(state);
 
     for (auto const & namedResource : state.vertexBar->GetResources()) {
-        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBinding const binding =
+                                state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
         HdTupleType const tupleType = resource->GetTupleType();
 
-        if (binding.GetType() == HdBinding::VERTEX_ATTR) {
+        if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
             HgiVertexAttributeDesc attrDesc;
             attrDesc.format =
                 HdStHgiConversions::GetHgiVertexFormat(tupleType.type);
@@ -1166,10 +1169,11 @@ _GetVertexBufferBindingsForDrawing(
         _GetVertexBufferBindingsForViewTransformation(bindings, state);
 
     for (auto const & namedResource : state.vertexBar->GetResources()) {
-        HdBinding const binding = state.binder.GetBinding(namedResource.first);
+        HdStBinding const binding =
+                                state.binder.GetBinding(namedResource.first);
         HdStBufferResourceSharedPtr const & resource = namedResource.second;
 
-        if (binding.GetType() == HdBinding::VERTEX_ATTR) {
+        if (binding.GetType() == HdStBinding::VERTEX_ATTR) {
             bindings->emplace_back(resource->GetHandle(),
                                    static_cast<uint32_t>(resource->GetOffset()),
                                    nextBinding);
@@ -1785,19 +1789,19 @@ HdSt_PipelineDrawBatch::_CullingProgram::Initialize(
 /* virtual */
 void
 HdSt_PipelineDrawBatch::_CullingProgram::_GetCustomBindings(
-    HdBindingRequestVector * customBindings,
+    HdStBindingRequestVector * customBindings,
     bool * enableInstanceDraw) const
 {
     if (!TF_VERIFY(enableInstanceDraw) ||
         !TF_VERIFY(customBindings)) return;
 
-    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::SSBO,
                                   _tokens->drawIndirectResult));
-    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::SSBO,
                                   _tokens->dispatchBuffer));
-    customBindings->push_back(HdBindingRequest(HdBinding::UBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::UBO,
                                   _tokens->ulocCullParams));
-    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::SSBO,
                                   _tokens->drawCullInput));
 
     // set instanceDraw true if instanceCulling is enabled.

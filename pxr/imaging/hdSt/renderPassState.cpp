@@ -274,8 +274,8 @@ HdStRenderPassState::Prepare(
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
+            HdStBindingRequest(HdStBinding::UBO, _tokens->renderPassState,
+                               _renderPassStateBar_, /*interleaved=*/true));
     }
 
     // Lighting hack supports different blending amounts, but we are currently
@@ -416,8 +416,8 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
             std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
+            HdStBindingRequest(HdStBinding::UBO, _tokens->renderPassState,
+                               _renderPassStateBar_, /*interleaved=*/true));
     }
 }
 

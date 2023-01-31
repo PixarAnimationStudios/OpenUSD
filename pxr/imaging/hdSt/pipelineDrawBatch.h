@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
 struct HgiIndirectCommands;
-using HdBindingRequestVector = std::vector<HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
 ///
@@ -124,7 +124,7 @@ private:
     protected:
         // _DrawingProgram overrides
         void _GetCustomBindings(
-            HdBindingRequestVector * customBindings,
+            HdStBindingRequestVector * customBindings,
             bool * enableInstanceDraw) const override;
     private:
         bool _useDrawIndexed;
