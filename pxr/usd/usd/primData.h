@@ -40,6 +40,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
+#include <boost/range/iterator_range.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
@@ -345,17 +346,26 @@ private:
 // Sibling iterator class.
 class Usd_PrimDataSiblingIterator {
     using _UnderylingIterator = Usd_PrimData*;
+    class _PtrProxy {
+    public:
+        Usd_PrimData** operator->() { return &_primData; }
+    private:
+        friend class Usd_PrimDataSiblingIterator;
+        explicit _PtrProxy(Usd_PrimData* primData) : _primData(primData) {}
+        Usd_PrimData* _primData = nullptr;
+    };
 public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = Usd_PrimData*;
     using reference = Usd_PrimData*;
-    using pointer = void;
+    using pointer = _PtrProxy;
     using difference_type = std::ptrdiff_t;
 
     // Default ctor.
     Usd_PrimDataSiblingIterator() = default;
 
     reference operator*() const { return _underlyingIterator; }
+    pointer operator->() const { return pointer(_underlyingIterator); }
 
     // pre-increment
     Usd_PrimDataSiblingIterator& operator++() {
@@ -407,17 +417,26 @@ Usd_PrimData::_ChildrenEnd() const
 // Tree iterator class.
 class Usd_PrimDataSubtreeIterator {
     using _UnderlyingIterator = Usd_PrimData*;
+    class _PtrProxy {
+    public:
+        Usd_PrimData** operator->() { return &_primData; }
+    private:
+        friend class Usd_PrimDataSubtreeIterator;
+        explicit _PtrProxy(Usd_PrimData* primData) : _primData(primData) {}
+        Usd_PrimData* _primData = nullptr;
+    };
 public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = Usd_PrimData*;
     using reference = Usd_PrimData*;
-    using pointer = void;
+    using pointer = _PtrProxy;
     using difference_type = std::ptrdiff_t;
 
     // Default ctor.
     Usd_PrimDataSubtreeIterator() = default;
 
     reference operator*() const { return _underlyingIterator; }
+    pointer operator->() const { return pointer(_underlyingIterator); }
 
     // pre-increment
     Usd_PrimDataSubtreeIterator& operator++() {
