@@ -484,8 +484,7 @@ std::ostream &VtStreamOut(const SdfVariantSelectionMap &, std::ostream &);
 /// well as limited inspection and editing capabilities (e.g., moving
 /// this data to a different spec or field) even when the data type
 /// of the value isn't known.
-class SdfUnregisteredValue : 
-    public boost::equality_comparable<SdfUnregisteredValue>
+class SdfUnregisteredValue
 {
 public:
     /// Wraps an empty VtValue
@@ -512,6 +511,9 @@ public:
 
     /// Returns true if the wrapped VtValues are equal
     SDF_API bool operator==(const SdfUnregisteredValue &other) const;
+
+    /// Returns true if the wrapped VtValues are not equal
+    SDF_API bool operator!=(const SdfUnregisteredValue &other) const;
 
 private:
     VtValue _value;

@@ -35,7 +35,6 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
-#include <boost/operators.hpp>
 #include <iterator>
 #include <map>
 #include <utility>
@@ -43,7 +42,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class _View>
-class SdfChildrenProxy : boost::equality_comparable<SdfChildrenProxy<_View> > {
+class SdfChildrenProxy {
 public:
     typedef _View View;
     typedef typename View::Adapter Adapter;
@@ -351,6 +350,11 @@ public:
     bool operator==(const This& other) const
     {
         return _view == other._view;
+    }
+
+    bool operator!=(const This& other) const
+    {
+        return !(*this == other);
     }
 
     /// Explicit bool conversion operator. The proxy object converts to 

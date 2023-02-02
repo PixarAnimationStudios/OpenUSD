@@ -380,6 +380,16 @@ class TestSdfTypes(unittest.TestCase):
 
     def test_Hash(self):
         self.assertEqual(hash(Sdf.ValueTypeNames.Point3d), hash(Sdf.ValueTypeNames.Point3d))
-   
+
+    def test_UnregisteredValueEquality(self):
+        self.assertTrue(Sdf.UnregisteredValue(str(5)) ==
+                        Sdf.UnregisteredValue(str(5)))
+        self.assertFalse(Sdf.UnregisteredValue(str(5)) !=
+                         Sdf.UnregisteredValue(str(5)))
+        self.assertTrue(Sdf.UnregisteredValue(str(5)) !=
+                        Sdf.UnregisteredValue(str(6)))
+        self.assertFalse(Sdf.UnregisteredValue(str(5)) ==
+                         Sdf.UnregisteredValue(str(6)))
+
 if __name__ == "__main__":
     unittest.main()
