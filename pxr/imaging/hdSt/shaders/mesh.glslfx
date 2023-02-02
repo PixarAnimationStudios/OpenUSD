@@ -344,7 +344,7 @@ void main(void)
 {   
 
     //IDEAS Experimentally tune 
-    const uint32_t indicesPerMesh = 60;
+    const uint32_t indicesPerMesh = 255;
     SetDrawIndex(hd_LocalInvocationID.x, 0);
     const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
     uint maxIndex = (indexCount / indicesPerMesh)+1;
@@ -483,6 +483,7 @@ void main(void) {
         vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
         ProcessPrimvarsOut(vertexOut);
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
+	ApplyClipPlanes(vertexOut.Peye);
     }
 
     if (hd_LocalIndexID < primitiveCount) {

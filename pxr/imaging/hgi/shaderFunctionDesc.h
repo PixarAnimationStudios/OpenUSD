@@ -330,9 +330,9 @@ struct HgiShaderFunctionMeshDesc
 {
     enum class MeshTopology { Point, Line, Triangle, None };
     MeshTopology meshTopology = MeshTopology::None;
-    uint32_t maxMeshletVertexCount = 64;
-    uint32_t maxPrimitiveCount = 64;
-    uint32_t maxTotalThreadsPerThreadgroup = 64;
+    uint32_t maxMeshletVertexCount = 255;
+    uint32_t maxPrimitiveCount = 85;
+    uint32_t maxTotalThreadsPerThreadgroup = 512;
     uint32_t maxTotalThreadgroupsPerMeshGrid = 64;
     uint32_t targetPrimitiveCount = 1;
 };

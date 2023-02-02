@@ -2911,7 +2911,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderFunctionTessellationDesc::PatchType::Quad;
                 */
         //should be a power of 3 and 2
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 1024;
+        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 255;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
