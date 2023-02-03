@@ -1252,14 +1252,14 @@ TfConst_cast(const TfRefPtr<const typename T::DataType>& ptr)
 template <>
 class TfRefPtr<TfRefBase> {
 private:
-    TfRefPtr<TfRefBase>() {
+    TfRefPtr() {
     }
 };
 
 template <>
 class TfRefPtr<const TfRefBase> {
 private:
-    TfRefPtr<const TfRefBase>() {
+    TfRefPtr() {
     }
 };
 
