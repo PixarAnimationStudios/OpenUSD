@@ -148,6 +148,24 @@ bool ShouldDiscardByAlpha(vec4 color)
     return (color.a < alphaThreshold);
 }
 
+vec2 ApplyAxisAlignedAffineTransform(vec4 t, vec2 pt)
+{
+    return t.xy * pt + t.zw;
+}
+
+-- glsl RenderPass.CameraFS
+
+vec2 HorizontallyNormalizedFilmbackCoordinates()
+{
+    const vec4 transform =
+#ifdef HD_HAS_imageToHorizontallyNormalizedFilmback
+        HdGet_imageToHorizontallyNormalizedFilmback();
+#else
+        vec4(vec2(1.0), vec2(0.0));
+#endif
+    return ApplyAxisAlignedAffineTransform(transform, gl_FragCoord.xy);
+}
+
 -- glsl RenderPass.ApplyClipPlanes
 
 void ApplyClipPlanes(vec4 Peye)

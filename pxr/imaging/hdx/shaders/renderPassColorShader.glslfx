@@ -61,6 +61,7 @@
             },
             "fragmentShader" : {
                 "source": [ "RenderPass.Camera",
+                            "RenderPass.CameraFS",
                             "Selection.DecodeUtils",
                             "Selection.ComputeColor",
                             "RenderPass.ApplyColorOverrides",

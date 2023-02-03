@@ -75,6 +75,9 @@ wrapFraming()
         .def("ApplyToProjectionMatrix",
              &This::ApplyToProjectionMatrix,
              ((args("projectionMatrix"), args("windowPolicy"))))
+        .def("ComputeFilmbackWindow",
+             &This::ComputeFilmbackWindow,
+             ((args("cameraAspectRatio"), args("windowPolicy"))))
         .def("IsValid", &This::IsValid)
         .def_readwrite("displayWindow", &This::displayWindow)
         .def_readwrite("dataWindow", &This::dataWindow)

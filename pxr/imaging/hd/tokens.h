@@ -197,6 +197,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fragmentShader)                            \
     (geometryShader)                            \
     (imageToWorldMatrix)                        \
+    (imageToHorizontallyNormalizedFilmback)     \
     (indicatorColor)                            \
     (lightingBlendAmount)                       \
     (overrideColor)                             \
