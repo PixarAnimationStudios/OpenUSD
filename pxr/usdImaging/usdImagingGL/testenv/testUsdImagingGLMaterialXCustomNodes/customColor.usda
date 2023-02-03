@@ -1,0 +1,41 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Sphere "CustomColorNode" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </MaterialX/Materials/surface_material_node>
+}
+
+def Scope "MaterialX"(
+    references = @./customColorMaterial.mtlx@</MaterialX>
+)
+{
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./images/StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 20
+        float inputs:intensity = 5
+        Vec3f xformOp:translate = (0, -50, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Camera "Camera"
+{
+    double3 xformOp:translate = (0, 0, 15)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

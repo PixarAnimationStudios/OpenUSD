@@ -3807,6 +3807,20 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         ENV
             PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
     )
+
+    pxr_register_test(testUsdImagingGLMaterialXCustomNodes_customColor
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage customColor.usda -write customColor.png"
+        IMAGE_DIFF_COMPARE
+            customColor.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.2
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXCustomNodes
+        ENV
+            PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
+    )
 endif()
 
 pxr_register_test(testUsdImagingGLInstancePrimvars
