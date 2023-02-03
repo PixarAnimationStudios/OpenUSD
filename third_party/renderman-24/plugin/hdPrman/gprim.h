@@ -506,7 +506,14 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                               .GetValue()),
                       riley::GeometryPrototypeId::InvalidId(), prototypeId,
                       instanceMaterialId, coordSysList, xform, instanceAttrs);
-                } else if (*dirtyBits & prmanAttrBits) {
+                } else if (*dirtyBits /*& prmanAttrBits*/) {
+                    // NOTE: Always update existing geometry instances for the
+                    //       rprims owned by a hydra instancer for now. The
+                    //       prior update behavior (of dirtying nearly all bits
+                    //       in _PropagateDirtyBits) resulted in the same thing.
+                    //       Absent of that, instance primvars (like color)
+                    //       drop off. Granular bits indictive of that are
+                    //       not present here.
                     riley->ModifyGeometryInstance(
                         riley::GeometryPrototypeId::InvalidId(),
                         instanceId, &instanceMaterialId, &coordSysList,
