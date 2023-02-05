@@ -1218,7 +1218,7 @@ _GetDrawPipeline(
                                                   state.geometricShader);
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
-        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 1024;
+        pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = 255/3;
         pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = 512;
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
@@ -1313,7 +1313,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         bool const drawIndirect = true;
 
         if (drawIndirect) {
-            _ExecuteDrawIndirect(gfxCmds, state.indexBar, psoHandle);
+            _ExecuteDrawIndirect(gfxCmds, state.indexBar, psoHandle, renderPassState);
         } else {
             _ExecuteDrawImmediate(gfxCmds, state.indexBar, psoHandle);
         }
@@ -1329,7 +1329,8 @@ void
 HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
     HgiGraphicsCmds * gfxCmds,
     HdStBufferArrayRangeSharedPtr const & indexBar,
-                                             HgiGraphicsPipelineHandle psoHandle)
+                                             HgiGraphicsPipelineHandle psoHandle,
+                                             HdStRenderPassStateSharedPtr const & renderPassState)
 {
     TRACE_FUNCTION();
 
@@ -1353,6 +1354,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         if (!TF_VERIFY(indexBuffer)) return;
         if (useMeshShaders) {
             struct Uniforms {
+                GfMatrix4f cullMatrix;
                 GfVec2f drawRangeNDC;
                 uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
@@ -1363,6 +1365,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             if (useMeshShaders) {
                 // set instanced cull parameters
                 Uniforms cullParams;
+                cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
                 cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                 cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
                 cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
@@ -1441,6 +1444,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                 if (useMeshShaders) {
                     struct Uniforms {
                         GfVec2f drawRangeNDC;
+                        GfMatrix4f cullMatrix;
                         uint32_t drawIndexCount;
                         uint32_t drawCommandNumUints;
                         uint32_t drawCoordOffset;
@@ -1450,6 +1454,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                     if (useMeshShaders) {
                         // set instanced cull parameters
                         Uniforms cullParams;
+                        //cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
                         cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                         cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
                         cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);

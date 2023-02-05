@@ -146,7 +146,8 @@ private:
     void _ExecuteDrawIndirect(
                 HgiGraphicsCmds * gfxCmds,
                 HdStBufferArrayRangeSharedPtr const & indexBar,
-                HgiGraphicsPipelineHandle psoHandle);
+                HgiGraphicsPipelineHandle psoHandle,
+                HdStRenderPassStateSharedPtr const & renderPassState);
 
     void _ExecuteDrawImmediate(
                 HgiGraphicsCmds * gfxCmds,

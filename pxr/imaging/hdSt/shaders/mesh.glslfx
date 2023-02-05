@@ -312,6 +312,7 @@ void main(void)
 -- layout Mesh.MeshObject.Main
 [
 ["uniform block", "Uniforms", "ulocCullParams",
+["mat4", "cullMatrix"],
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
@@ -379,7 +380,7 @@ void main(void)
     const uint maxZ = 1950;
     uint z = min(maxIndex, maxZ);
     //IDEAS go in scan order 
-    meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, z, 1));
+    meshGridProperties->set_threadgroups_per_grid(uint3(z, instanceCount, 1));
 }
 
 
@@ -391,6 +392,7 @@ void main(void)
 ["vec3", "Neye"]
 ],
 ["uniform block", "Uniforms", "ulocCullParams",
+["mat4", "cullMatrix"],
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
@@ -428,70 +430,99 @@ uint32_t baseIndex;
 
 void main(void) {
     //can be simplified to always use payload.baseVertex
-    uint endIndex = payload.indexRange[hd_LocalInvocationID.y].y;
-    uint startIndex = payload.indexRange[hd_LocalInvocationID.y].x;
+    uint endIndex = payload.indexRange[hd_LocalInvocationID.x].y;
+    uint startIndex = payload.indexRange[hd_LocalInvocationID.x].x;
     uint drawIndexCount2 =  endIndex - startIndex;
     uint32_t primitiveCount = drawIndexCount2/3;
     if(drawIndexCount2 < 1) {
         return;
     }
-    
-    uint ind = payload.indexRange[hd_LocalInvocationID.y].x + hd_LocalIndexID;
-    
-    if (ind < endIndex) {
-	baseVertex = payload.baseVertex;
-    	baseIndex = payload.baseIndex;
-    	gl_BaseInstance = payload.baseInstance;
-    	gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance;
+    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+    baseVertex = payload.baseVertex;
+    baseIndex = payload.baseIndex;
+    gl_BaseInstance = payload.baseInstance;
+    gl_InstanceID = hd_LocalInvocationID.y + payload.baseInstance;
+    VertexOut vertexOut[3];
+    for (int l = 0; l < 3; l++) {
+        uint ind = payload.indexRange[hd_LocalInvocationID.x].x + (hd_LocalIndexID * 3) + l;
+        if (ind < endIndex) {
+            if(l == 0) {
+                mesh.set_primitive_count(drawIndexCount2);
+            }
+            SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.y);
+            primitive_id = (ind)/3;
+            hd_VertexID = ind;
 
-        mesh.set_primitive_count(drawIndexCount2);
-        SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
-        primitive_id = (ind)/3;
-        hd_VertexID = ind;
+            uint index;
 
-        uint index;
+            uint totalIndOff = (ind % 3);
 
-        uint totalIndOff = (ind % 3);
+            uint usedBaseIndex = (baseIndex / 3);
 
-        uint usedBaseIndex = (baseIndex / 3);
+            if (totalIndOff % 3 == 0) {
+                index = (indices + (usedBaseIndex))[ind/3].x;
+            } else if (totalIndOff % 3 == 1) {
+                index = (indices + (usedBaseIndex))[ind/3].y;
+            } else if (totalIndOff % 3 == 2) {
+                index = (indices + (usedBaseIndex))[ind/3].z;
+            } else {
+               index = 0;
+            }
 
-        if (totalIndOff % 3 == 0) {
-            index = (indices + (usedBaseIndex))[ind/3].x;
-        } else if (totalIndOff % 3 == 1) {
-            index = (indices + (usedBaseIndex))[ind/3].y;
-        } else if (totalIndOff % 3 == 2) {
-            index = (indices + (usedBaseIndex))[ind/3].z;
-        } else {
-	    index = 0;
-	}
+            ProcessPrimvarsIn(index);
 
-        ProcessPrimvarsIn(index);
+            //this is problematic because of threads
 
-        //this is problematic because of threads
+            
+            float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
 
-        VertexOut vertexOut;
-        float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
+            vec3 Neye0 = GetNormal(vec3(0),index);
 
-        vec3 Neye0 = GetNormal(vec3(0),index);
+            //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
+            vertexOut[l].Peye = vec4(GetWorldToViewMatrix() * transform * point);
 
-        //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
-        MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-        vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+            vertexOut[l].Neye = Neye0; // normalized
 
-        vertexOut.Neye = Neye0; // normalized
-
-        vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
-        ProcessPrimvarsOut(vertexOut);
-        mesh.set_vertex(hd_LocalIndexID, vertexOut);
-	ApplyClipPlanes(vertexOut.Peye);
+            vertexOut[l].position = vec4(GetProjectionMatrix() * vertexOut[l].Peye);
+            ProcessPrimvarsOut(vertexOut[l]);
+            ApplyClipPlanes(vertexOut[l].Peye);
+        }
     }
+
+    bool cull = false;
+    //Triangle culling
+    //TODO possibly fine to calculate the cull matrix in shader
+    MAT4 toClip = cullMatrix * transform;
+
+
+    //backface culling
+    vec3 pos0 = vec3(vertexOut[0].position.xy / vertexOut[0].position.w, vertexOut[0].position.w);
+    vec3 pos1 = vec3(vertexOut[1].position.xy / vertexOut[1].position.w, vertexOut[1].position.w);
+    vec3 pos2 = vec3(vertexOut[2].position.xy / vertexOut[2].position.w, vertexOut[2].position.w);
+    //TODO remove array accessors and only calculate the z component of cross
+    vec3 n = cross(pos1 - pos0, pos2 - pos0);
+
+    bool backFaceCull = n.z <= 0.0f;
+    if (backFaceCull) {
+        cull = true;
+    } 
+
+
+    
+    for(int l = 0; l < 3; l++) {
+        //We probably no longer need to defer this or even maybe not even write if we cull
+        mesh.set_vertex((hd_LocalIndexID * 3) + l, vertexOut[l]);
+    }
+    
 
     if (hd_LocalIndexID < primitiveCount) {
         PrimOut primOut;
+        primOut.doCull = cull;
         mesh.set_primitive(hd_LocalIndexID, primOut);
 
         // Set the output indices.
         const uint i = (hd_LocalIndexID) * 3;
+        //Possibly we don't need to write this if cull
         mesh.set_index(i+0, i);
         mesh.set_index(i+1, i+1);
         mesh.set_index(i+2, i+2);
