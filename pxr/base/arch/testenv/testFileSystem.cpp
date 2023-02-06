@@ -96,14 +96,31 @@ std::string _CreateLongWindowsPath(bool dir, bool dotted) {
     return p;
 }
 
+// slightly awkward way of creating and deleting a long path without
+// having to introduce recursive deletion etc.
 std::string _CreatePhysicalLongPathDirectory() {
+    static const std::string tmpDirPart0("UsdArchTestLongPaths");
+    static const std::string tmpDirPart1(150, 'a');
+    static const std::string tmpDirPart2(150, 'b');
     std::string tmpDir(ArchGetTmpDir());
-    std::string prefix(150, 'a');
-    tmpDir = ArchMakeTmpSubdir(tmpDir, prefix);
-    prefix.assign(150, 'b');
-    tmpDir = ArchMakeTmpSubdir(tmpDir, prefix);
+    tmpDir = ArchMakeTmpSubdir(tmpDir, tmpDirPart0);
+    tmpDir = ArchMakeTmpSubdir(tmpDir, tmpDirPart1);
+    tmpDir = ArchMakeTmpSubdir(tmpDir, tmpDirPart2);
     ARCH_AXIOM(tmpDir.size() > ARCH_PATH_MAX);
     return tmpDir;
+}
+
+// implying structure from above
+void _RemoveLongPathDirectory(const std::string& longTmpDir) {
+    ARCH_AXIOM(ArchRmDir(longTmpDir.c_str()) == 0);
+
+    std::string::size_type lastSep = longTmpDir.find_last_of('\\');
+    ARCH_AXIOM(lastSep != std::string::npos);
+    ARCH_AXIOM(ArchRmDir(longTmpDir.substr(0, lastSep).c_str()) == 0);
+
+    lastSep = longTmpDir.find_last_of('\\', lastSep-1);
+    ARCH_AXIOM(lastSep != std::string::npos);
+    ARCH_AXIOM(ArchRmDir(longTmpDir.substr(0, lastSep).c_str()) == 0);
 }
 
 } // namespace
@@ -135,17 +152,33 @@ static bool TestLongPaths()
         FILE *file;
         ARCH_AXIOM((file = ArchOpenFile(longTmpFilePath.c_str(), "wb")) != NULL);
         std::fprintf(file, "%s", "hello");
-        fclose(file); // TODO: fd arg of ArchCloseFile is not symmetrical??
-        ARCH_AXIOM(ArchUnlinkFile(longTmpFilePath.c_str()) == 0);
-        ARCH_AXIOM(ArchRmDir(longTmpDir.c_str()) == 0);
-    }
+        fclose(file);
 
-    // ArchMakeTmpFile
-    // ArchFileAccess
-    // ArchReadLink
-    // ArchGetModificationTime
-    // ArchGetStatMode
-    // ArchGetFileLength
+        ARCH_AXIOM(ArchFileAccess(longTmpFilePath.c_str(), W_OK) == 0);
+        ARCH_AXIOM(ArchGetFileLength(longTmpFilePath.c_str()) == 5);
+
+        ARCH_AXIOM(ArchUnlinkFile(longTmpFilePath.c_str()) == 0);
+        _RemoveLongPathDirectory(longTmpDir);
+    }
+    {
+        std::string longTmpDir = _CreatePhysicalLongPathDirectory();
+        const std::string longTmpFilePath = longTmpDir + '\\' + "foo.bar";
+        ARCH_AXIOM(ArchTouchFile(longTmpFilePath, true));
+        ARCH_AXIOM(ArchUnlinkFile(longTmpFilePath.c_str()) == 0);
+        _RemoveLongPathDirectory(longTmpDir);
+    }
+    {
+        std::string longTmpDir = _CreatePhysicalLongPathDirectory();
+
+        std::string longTmpFilePath;
+        int tmpFileHandle = ArchMakeTmpFile(longTmpDir, "foo", &longTmpFilePath);
+        ARCH_AXIOM(tmpFileHandle != -1);
+        ArchCloseFile(tmpFileHandle);
+        ARCH_AXIOM(longTmpFilePath.size() == (longTmpDir.size() + 1 + 3 + 7));
+
+        ARCH_AXIOM(ArchUnlinkFile(longTmpFilePath.c_str()) == 0);
+        _RemoveLongPathDirectory(longTmpDir);
+    }
 
     return true;
 }
