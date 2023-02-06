@@ -64,6 +64,34 @@ static inline HANDLE _FileToWinHANDLE(FILE *file)
     return reinterpret_cast<HANDLE>(_get_osfhandle(_fileno(file)));
 }
 
+/// Expects an UTF-16 path and prepends the Windows long path prefix if necessary.
+/// see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
+std::wstring _ArchHandleLongWindowsPaths(const std::wstring& path)
+{
+    // Subtracting 12 (8.3) so this function also works for CreateDirectoryW:
+    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw
+    // ARCH_PATH_MAX counts the null terminator as well
+    if (path.size() >= ARCH_PATH_MAX - 12 - 1) {
+        std::wstring longPath = path;
+
+        // the \\?\ prefix requires strict backslash separators:
+        // see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
+        std::replace(std::begin(longPath), std::end(longPath), L'/', L'\\');
+
+        // prevent duplicate prefixing
+        if (longPath.find(LONG_PATH_PREFIX_W) != 0) {
+            // if it still starts with two backslashes, it is a network path
+            if (longPath[0] == L'\\' && longPath[1] == L'\\') {
+                return UNC_LONG_PATH_PREFIX_W + longPath.substr(2);
+            } else {
+                return LONG_PATH_PREFIX_W + longPath;
+            }
+        }
+    }
+
+    return path;
+}
+
 }
 #endif // ARCH_OS_WINDOWS
 
@@ -106,7 +134,7 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
         return nullptr;
     }
 
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
 
     // Call CreateFileW.
     HANDLE hfile = CreateFileW(
@@ -148,7 +176,7 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 
 bool ArchTouchFile(const std::string& fileName, bool create) {
 #if defined(ARCH_OS_WINDOWS)
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
 #endif
 
     if (create) {
@@ -192,7 +220,7 @@ bool ArchTouchFile(const std::string& fileName, bool create) {
 
 int ArchUnlinkFile(const char* path) {
 #if defined(ARCH_OS_WINDOWS)
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
     return _wunlink(apiPath.c_str());
 #else
     return unlink(path);
@@ -202,7 +230,7 @@ int ArchUnlinkFile(const char* path) {
 #if defined(ARCH_OS_WINDOWS)
 int ArchRmDir(const char* path)
 {
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
     return RemoveDirectoryW(apiPath.c_str()) ? 0 : -1;
 }
 #endif
@@ -233,7 +261,7 @@ ArchGetModificationTime(const char* pathname, double* time)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(pathname));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(pathname));
     if (_wstat64(apiPath.c_str(), &st) == 0)
 #else
     if (stat(pathname, &st) == 0)
@@ -458,7 +486,7 @@ ArchAbsPath(const string& path)
 
 #if defined(ARCH_OS_WINDOWS)
     // path
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
     std::vector<wchar_t> buffer(ARCH_PATH_MAX, 0);
     auto requiredBufferSize = GetFullPathNameW(apiPath.c_str(), buffer.size(), buffer.data(), nullptr);
     if (requiredBufferSize > buffer.size()) {
@@ -495,7 +523,7 @@ ArchGetStatMode(const char *pathname, int *mode)
 {
     ArchStatType st;
 #if defined(ARCH_OS_WINDOWS)
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(pathname));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(pathname));
     if (_wstat64(apiPath.c_str(), &st) == 0) {
 #else
     if (stat(pathname, &st) == 0) {
@@ -574,7 +602,7 @@ ArchGetFileLength(const char* fileName)
 #elif defined (ARCH_OS_WINDOWS)
     // Open a handle with 0 as the desired access and full sharing.
     // This opens the file even if exclusively locked.
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
     HANDLE handle =
         CreateFileW(apiPath.c_str(), 0,
                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -733,7 +761,7 @@ ArchMakeTmpFile(const std::string& tmpdir,
     int fd = -1;
     auto cTemplate =
         MakeUnique(sTemplate, [&fd](const char* name){
-            const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(name));
+            const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(name));
             _wsopen_s(&fd, apiPath.c_str(),
           _O_CREAT | _O_EXCL | _O_RDWR | _O_BINARY,
           _SH_DENYNO, _S_IREAD | _S_IWRITE);
@@ -777,7 +805,7 @@ ArchMakeTmpSubdir(const std::string& tmpdir,
 #if defined(ARCH_OS_WINDOWS)
     retstr =
         MakeUnique(sTemplate, [](const char* name){
-            const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(name));
+            const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(name));
             return (CreateDirectoryW(apiPath.c_str(), NULL) != 0);
         });
 #else
@@ -1185,7 +1213,7 @@ static int Arch_FileAccessError()
 int ArchFileAccess(const char* path, int mode)
 {
     // Simple existence check is handled specially.
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
     if (mode == F_OK) {
         return (GetFileAttributesW(apiPath.c_str()) != INVALID_FILE_ATTRIBUTES)
                 ? 0 : Arch_FileAccessError();
@@ -1299,7 +1327,7 @@ typedef struct _REPARSE_DATA_BUFFER {
 
 std::string ArchReadLink(const char* path)
 {
-    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
+    const std::wstring apiPath = _ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(path));
     HANDLE handle = ::CreateFileW(
             apiPath.c_str(), GENERIC_READ, FILE_SHARE_READ,
             NULL, OPEN_EXISTING,
@@ -1465,36 +1493,5 @@ void ArchFileAdvise(
     }
 #endif
 }
-
-#if defined(ARCH_OS_WINDOWS)
-
-ARCH_API
-std::wstring ArchHandleLongWindowsPaths(const std::wstring& path)
-{
-    // Subtracting 12 (8.3) so this function also works for CreateDirectoryW:
-    // https://learn.microsoft.com/en-us/windows/win32/api/fileapi/nf-fileapi-createdirectoryw
-    // ARCH_PATH_MAX counts the null terminator as well
-    if (path.size() >= ARCH_PATH_MAX - 12 - 1) {
-        std::wstring longPath = path;
-
-        // the \\?\ prefix requires strict backslash separators:
-        // see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation
-        std::replace(std::begin(longPath), std::end(longPath), L'/', L'\\');
-
-        // prevent duplicate prefixing
-        if (longPath.find(LONG_PATH_PREFIX_W) != 0) {
-            // if it still starts with two backslashes, it is a network path
-            if (longPath[0] == L'\\' && longPath[1] == L'\\') {
-                return UNC_LONG_PATH_PREFIX_W + longPath.substr(2);
-            } else {
-                return LONG_PATH_PREFIX_W + longPath;
-            }
-        }
-    }
-
-    return path;
-}
-
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
