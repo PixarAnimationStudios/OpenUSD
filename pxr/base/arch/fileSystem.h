@@ -450,11 +450,6 @@ inline std::wstring ArchWindowsUtf8ToUtf16(const std::string &str)
     return wstr;
 }
 
-/// Expects an UTF-16 path and prepends the Windows long path prefix if necessary.
-/// see https://learn.microsoft.com/en-us/windows/win32/fileio/maximum-file-path-limitation?tabs=registry
-ARCH_API
-std::wstring ArchHandleLongWindowsPaths(const std::wstring& path);
-
 #endif
 
 ///@}
