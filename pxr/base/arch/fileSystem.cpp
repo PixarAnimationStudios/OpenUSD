@@ -32,13 +32,16 @@
 #include <functional>
 #include <io.h>
 #include <process.h>
+#include <sys/utime.h>
 #include <Windows.h>
 #include <WinIoCtl.h>
 #else
 #include <alloca.h>
 #include <sys/mman.h>
 #include <sys/file.h>
+#include <sys/time.h>
 #include <unistd.h>
+#include <utime.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -140,6 +143,50 @@ FILE* ArchOpenFile(char const* fileName, char const* mode)
 #else
     return fopen(fileName, mode);
 #endif
+}
+
+bool ArchTouchFile(const std::string& fileName, bool create) {
+#if defined(ARCH_OS_WINDOWS)
+    const std::wstring apiPath = ArchHandleLongWindowsPaths(ArchWindowsUtf8ToUtf16(fileName));
+#endif
+
+    if (create) {
+#if !defined(ARCH_OS_WINDOWS)
+        // Attempt to create the file so it is readable and writable by user,
+        // group and other.
+        int fd = open(fileName.c_str(),
+            O_WRONLY | O_CREAT | O_NONBLOCK | O_NOCTTY,
+            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+        if (fd == -1)
+            return false;
+        close(fd);
+#else
+        HANDLE fileHandle =
+                ::CreateFileW(apiPath.c_str(),
+                              GENERIC_WRITE,          // open for write
+                              0,                      // not for sharing
+                              NULL,                   // default security
+                              OPEN_ALWAYS,            // opens existing
+                              FILE_ATTRIBUTE_NORMAL,  //normal file
+                              NULL);                  // no template
+
+        if (fileHandle == INVALID_HANDLE_VALUE) {
+            return false;
+        }
+
+        // Close the file
+        ::CloseHandle(fileHandle);
+#endif
+    }
+
+    // Passing NULL to the 'times' argument sets both the atime and mtime to
+    // the current time, with millisecond precision.
+#if defined(ARCH_OS_WINDOWS)
+    return _wutime(apiPath.c_str(), /* times */ NULL) == 0;
+#else
+    return utimes(fileName.c_str(), /* times */ NULL) == 0;
+#endif
+
 }
 
 int ArchUnlinkFile(const char* path) {

@@ -128,6 +128,11 @@ ArchOpenFile(char const* fileName, char const* mode);
 #   define ArchCloseFile(fd)            close(fd)
 #endif
 
+/// Touch a file.
+///
+/// Returns true upon success, false otherwise.
+ARCH_API bool ArchTouchFile(const std::string& fileName, bool create);
+
 /// Deletes a file.
 ///
 /// Returns 0 on success, or -1 otherwise.
