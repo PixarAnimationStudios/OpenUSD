@@ -30,14 +30,11 @@
 #if !defined(ARCH_OS_WINDOWS)
 #include <sys/time.h>
 #include <unistd.h>
-#include <utime.h>
 #include <dirent.h>
-#include <utime.h>
 #else
 #include <Windows.h>
 #include <Shellapi.h>
 #include <ShlwAPI.h>
-#include <sys/utime.h>
 #endif
 using std::set;
 using std::string;
@@ -666,42 +663,7 @@ TfListDir(string const& path, bool recursive)
 TF_API bool
 TfTouchFile(string const &fileName, bool create)
 {
-    if (create) {
-#if !defined(ARCH_OS_WINDOWS)
-        // Attempt to create the file so it is readable and writable by user,
-        // group and other.
-        int fd = open(fileName.c_str(),
-            O_WRONLY | O_CREAT | O_NONBLOCK | O_NOCTTY,
-            S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
-        if (fd == -1)
-            return false;
-        close(fd);
-#else
-            HANDLE fileHandle =
-                ::CreateFileW(ArchWindowsUtf8ToUtf16(fileName).c_str(),
-            GENERIC_WRITE,          // open for write
-            0,                      // not for sharing
-            NULL,                   // default security
-            OPEN_ALWAYS,            // opens existing
-            FILE_ATTRIBUTE_NORMAL,  //normal file
-            NULL);                  // no template
-
-        if (fileHandle == INVALID_HANDLE_VALUE) {
-            return false;
-        }
-
-        // Close the file
-        ::CloseHandle(fileHandle);
-#endif
-    }
-
-    // Passing NULL to the 'times' argument sets both the atime and mtime to
-    // the current time, with millisecond precision.
-#if defined(ARCH_OS_WINDOWS)
-    return _utime(fileName.c_str(), /* times */ NULL) == 0;
-#else
-    return utimes(fileName.c_str(), /* times */ NULL) == 0;
-#endif
+    return ArchTouchFile(fileName, create);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
