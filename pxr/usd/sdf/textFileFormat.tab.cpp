@@ -1,33 +1,8 @@
-//
-// Copyright 2016 Pixar
-//
-// Licensed under the Apache License, Version 2.0 (the "Apache License")
-// with the following modification; you may not use this file except in
-// compliance with the Apache License and the following modification to it:
-// Section 6. Trademarks. is deleted and replaced with:
-//
-// 6. Trademarks. This License does not grant permission to use the trade
-//    names, trademarks, service marks, or product names of the Licensor
-//    and its affiliates, except as required to comply with Section 4(c) of
-//    the License and to reproduce the content of the NOTICE file.
-//
-// You may obtain a copy of the Apache License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the Apache License with the above modification is
-// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied. See the Apache License for the specific
-// language governing permissions and limitations under the Apache License.
-//
+/* A Bison parser, made by GNU Bison 2.7.12-4996.  */
 
-/* A Bison parser, made by GNU Bison 2.4.1.  */
-
-/* Skeleton implementation for Bison's Yacc-like parsers in C
+/* Bison implementation for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989, 1990, 2000, 2001, 2002, 2003, 2004, 2005, 2006
-   Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2013 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -69,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "2.4.1"
+#define YYBISON_VERSION "2.7.12-4996"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -83,8 +58,6 @@
 /* Pull parsers.  */
 #define YYPULL 1
 
-/* Using locations.  */
-#define YYLSP_NEEDED 0
 
 /* Substitute the variable and function names.  */
 #define yyparse         textFileFormatYyparse
@@ -95,11 +68,9 @@
 #define yydebug         textFileFormatYydebug
 #define yynerrs         textFileFormatYynerrs
 
-
 /* Copy the first part of user declarations.  */
-
-/* Line 189 of yacc.c  */
-#line 25 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 371 of yacc.c  */
+#line 25 "textFileFormat.yy"
 
 
 #include "pxr/pxr.h"
@@ -119,6 +90,7 @@
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
+#include "pxr/usd/sdf/textFileFormatParser.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -1293,14 +1265,16 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 #endif // SDF_PARSER_DEBUG_MODE
 
 
+/* Line 371 of yacc.c  */
+#line 1269 "textFileFormat.tab.cpp"
 
-/* Line 189 of yacc.c  */
-#line 1276 "pxr/usd/sdf/textFileFormat.tab.cpp"
-
-/* Enabling traces.  */
-#ifndef YYDEBUG
-# define YYDEBUG 0
-#endif
+# ifndef YY_NULL
+#  if defined __cplusplus && 201103L <= __cplusplus
+#   define YY_NULL nullptr
+#  else
+#   define YY_NULL 0
+#  endif
+# endif
 
 /* Enabling verbose error messages.  */
 #ifdef YYERROR_VERBOSE
@@ -1310,11 +1284,17 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 # define YYERROR_VERBOSE 0
 #endif
 
-/* Enabling the token table.  */
-#ifndef YYTOKEN_TABLE
-# define YYTOKEN_TABLE 0
+/* In a future release of Bison, this section will be replaced
+   by #include "textFileFormat.tab.h".  */
+#ifndef YY_TEXTFILEFORMATYY_TEXTFILEFORMAT_TAB_H_INCLUDED
+# define YY_TEXTFILEFORMATYY_TEXTFILEFORMAT_TAB_H_INCLUDED
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 0
 #endif
-
+#if YYDEBUG
+extern int textFileFormatYydebug;
+#endif
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -1379,7 +1359,6 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 #endif
 
 
-
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 typedef int YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
@@ -1388,11 +1367,26 @@ typedef int YYSTYPE;
 #endif
 
 
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int textFileFormatYyparse (void *YYPARSE_PARAM);
+#else
+int textFileFormatYyparse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int textFileFormatYyparse (Sdf_TextParserContext *context);
+#else
+int textFileFormatYyparse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
+
+#endif /* !YY_TEXTFILEFORMATYY_TEXTFILEFORMAT_TAB_H_INCLUDED  */
+
 /* Copy the second part of user declarations.  */
 
-
-/* Line 264 of yacc.c  */
-#line 1373 "pxr/usd/sdf/textFileFormat.tab.cpp"
+/* Line 390 of yacc.c  */
+#line 1389 "textFileFormat.tab.cpp"
 
 #ifdef short
 # undef short
@@ -1442,27 +1436,36 @@ typedef short int yytype_int16;
 #define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
 
 #ifndef YY_
-# if YYENABLE_NLS
+# if defined YYENABLE_NLS && YYENABLE_NLS
 #  if ENABLE_NLS
 #   include <libintl.h> /* INFRINGES ON USER NAME SPACE */
-#   define YY_(msgid) dgettext ("bison-runtime", msgid)
+#   define YY_(Msgid) dgettext ("bison-runtime", Msgid)
 #  endif
 # endif
 # ifndef YY_
-#  define YY_(msgid) msgid
+#  define YY_(Msgid) Msgid
+# endif
+#endif
+
+#ifndef __attribute__
+/* This feature is available in gcc versions 2.5 and later.  */
+# if (! defined __GNUC__ || __GNUC__ < 2 \
+      || (__GNUC__ == 2 && __GNUC_MINOR__ < 5))
+#  define __attribute__(Spec) /* empty */
 # endif
 #endif
 
 /* Suppress unused-variable warnings by "using" E.  */
 #if ! defined lint || defined __GNUC__
-# define YYUSE(e) ((void) (e))
+# define YYUSE(E) ((void) (E))
 #else
-# define YYUSE(e) /* empty */
+# define YYUSE(E) /* empty */
 #endif
+
 
 /* Identity function, used to suppress warnings about constant conditions.  */
 #ifndef lint
-# define YYID(n) (n)
+# define YYID(N) (N)
 #else
 #if (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
@@ -1495,11 +1498,12 @@ YYID (yyi)
 #    define alloca _alloca
 #   else
 #    define YYSTACK_ALLOC alloca
-#    if ! defined _ALLOCA_H && ! defined _STDLIB_H && (defined __STDC__ || defined __C99__FUNC__ \
+#    if ! defined _ALLOCA_H && ! defined EXIT_SUCCESS && (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 #     include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-#     ifndef _STDLIB_H
-#      define _STDLIB_H 1
+      /* Use EXIT_SUCCESS as a witness for stdlib.h.  */
+#     ifndef EXIT_SUCCESS
+#      define EXIT_SUCCESS 0
 #     endif
 #    endif
 #   endif
@@ -1522,24 +1526,24 @@ YYID (yyi)
 #  ifndef YYSTACK_ALLOC_MAXIMUM
 #   define YYSTACK_ALLOC_MAXIMUM YYSIZE_MAXIMUM
 #  endif
-#  if (defined __cplusplus && ! defined _STDLIB_H \
+#  if (defined __cplusplus && ! defined EXIT_SUCCESS \
        && ! ((defined YYMALLOC || defined malloc) \
 	     && (defined YYFREE || defined free)))
 #   include <stdlib.h> /* INFRINGES ON USER NAME SPACE */
-#   ifndef _STDLIB_H
-#    define _STDLIB_H 1
+#   ifndef EXIT_SUCCESS
+#    define EXIT_SUCCESS 0
 #   endif
 #  endif
 #  ifndef YYMALLOC
 #   define YYMALLOC malloc
-#   if ! defined malloc && ! defined _STDLIB_H && (defined __STDC__ || defined __C99__FUNC__ \
+#   if ! defined malloc && ! defined EXIT_SUCCESS && (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 void *malloc (YYSIZE_T); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 #  ifndef YYFREE
 #   define YYFREE free
-#   if ! defined free && ! defined _STDLIB_H && (defined __STDC__ || defined __C99__FUNC__ \
+#   if ! defined free && ! defined EXIT_SUCCESS && (defined __STDC__ || defined __C99__FUNC__ \
      || defined __cplusplus || defined _MSC_VER)
 void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
@@ -1568,23 +1572,7 @@ union yyalloc
      ((N) * (sizeof (yytype_int16) + sizeof (YYSTYPE)) \
       + YYSTACK_GAP_MAXIMUM)
 
-/* Copy COUNT objects from FROM to TO.  The source and destination do
-   not overlap.  */
-# ifndef YYCOPY
-#  if defined __GNUC__ && 1 < __GNUC__
-#   define YYCOPY(To, From, Count) \
-      __builtin_memcpy (To, From, (Count) * sizeof (*(From)))
-#  else
-#   define YYCOPY(To, From, Count)		\
-      do					\
-	{					\
-	  YYSIZE_T yyi;				\
-	  for (yyi = 0; yyi < (Count); yyi++)	\
-	    (To)[yyi] = (From)[yyi];		\
-	}					\
-      while (YYID (0))
-#  endif
-# endif
+# define YYCOPY_NEEDED 1
 
 /* Relocate STACK from its old location to the new one.  The
    local variables YYSIZE and YYSTACKSIZE give the old and new number of
@@ -1603,6 +1591,26 @@ union yyalloc
     while (YYID (0))
 
 #endif
+
+#if defined YYCOPY_NEEDED && YYCOPY_NEEDED
+/* Copy COUNT objects from SRC to DST.  The source and destination do
+   not overlap.  */
+# ifndef YYCOPY
+#  if defined __GNUC__ && 1 < __GNUC__
+#   define YYCOPY(Dst, Src, Count) \
+      __builtin_memcpy (Dst, Src, (Count) * sizeof (*(Src)))
+#  else
+#   define YYCOPY(Dst, Src, Count)              \
+      do                                        \
+        {                                       \
+          YYSIZE_T yyi;                         \
+          for (yyi = 0; yyi < (Count); yyi++)   \
+            (Dst)[yyi] = (Src)[yyi];            \
+        }                                       \
+      while (YYID (0))
+#  endif
+# endif
+#endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
 #define YYFINAL  5
@@ -1918,7 +1926,7 @@ static const yytype_uint16 yyrline[] =
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || YYTOKEN_TABLE
+#if YYDEBUG || YYERROR_VERBOSE || 0
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
@@ -1991,7 +1999,7 @@ static const char *const yytname[] =
   "relationship_rhs", "relationship_target_list", "relationship_target",
   "prim_path_opt", "prim_path", "prim_or_property_scene_path", "name",
   "namespaced_name", "identifier", "extended_number", "stmtsep_opt",
-  "stmtsep", "listsep_opt", "listsep", "newlines_opt", "newlines", 0
+  "stmtsep", "listsep_opt", "listsep", "newlines_opt", "newlines", YY_NULL
 };
 #endif
 
@@ -2114,8 +2122,8 @@ static const yytype_uint8 yyr2[] =
        1,     2,     1,     1,     1,     2,     0,     1,     1,     2
 };
 
-/* YYDEFACT[STATE-NAME] -- Default rule to reduce with in state
-   STATE-NUM when YYTABLE doesn't specify something else to do.  Zero
+/* YYDEFACT[STATE-NAME] -- Default reduction number in state STATE-NUM.
+   Performed when YYTABLE doesn't specify something else to do.  Zero
    means the default is an error.  */
 static const yytype_uint16 yydefact[] =
 {
@@ -2356,8 +2364,7 @@ static const yytype_int16 yypgoto[] =
 
 /* YYTABLE[YYPACT[STATE-NUM]].  What to do in state STATE-NUM.  If
    positive, shift that token.  If negative, reduce the rule which
-   number is the opposite.  If zero, do what YYDEFACT says.
-   If YYTABLE_NINF, syntax error.  */
+   number is the opposite.  If YYTABLE_NINF, syntax error.  */
 #define YYTABLE_NINF -1
 static const yytype_uint16 yytable[] =
 {
@@ -2461,6 +2468,12 @@ static const yytype_uint16 yytable[] =
        0,     0,     0,     0,     0,   715,     0,     0,     0,     0,
      716,   717
 };
+
+#define yypact_value_is_default(Yystate) \
+  (!!((Yystate) == (-673)))
+
+#define yytable_value_is_error(Yytable_value) \
+  YYID (0)
 
 static const yytype_int16 yycheck[] =
 {
@@ -2669,78 +2682,50 @@ static const yytype_uint16 yystos[] =
 
 /* Like YYERROR except do call yyerror.  This remains here temporarily
    to ease the transition to the new meaning of YYERROR, for GCC.
-   Once GCC version 2 has supplanted version 1, this can go.  */
+   Once GCC version 2 has supplanted version 1, this can go.  However,
+   YYFAIL appears to be in use.  Nevertheless, it is formally deprecated
+   in Bison 2.4.2's NEWS entry, where a plan to phase it out is
+   discussed.  */
 
 #define YYFAIL		goto yyerrlab
+#if defined YYFAIL
+  /* This is here to suppress warnings from the GCC cpp's
+     -Wunused-macros.  Normally we don't worry about that warning, but
+     some users do, and we want to make it easy for users to remove
+     YYFAIL uses, which will produce warnings from Bison 2.5.  */
+#endif
 
 #define YYRECOVERING()  (!!yyerrstatus)
 
-#define YYBACKUP(Token, Value)					\
-do								\
-  if (yychar == YYEMPTY && yylen == 1)				\
-    {								\
-      yychar = (Token);						\
-      yylval = (Value);						\
-      yytoken = YYTRANSLATE (yychar);				\
-      YYPOPSTACK (1);						\
-      goto yybackup;						\
-    }								\
-  else								\
-    {								\
+#define YYBACKUP(Token, Value)                                  \
+do                                                              \
+  if (yychar == YYEMPTY)                                        \
+    {                                                           \
+      yychar = (Token);                                         \
+      yylval = (Value);                                         \
+      YYPOPSTACK (yylen);                                       \
+      yystate = *yyssp;                                         \
+      goto yybackup;                                            \
+    }                                                           \
+  else                                                          \
+    {                                                           \
       yyerror (context, YY_("syntax error: cannot back up")); \
       YYERROR;							\
     }								\
 while (YYID (0))
 
-
+/* Error token number */
 #define YYTERROR	1
 #define YYERRCODE	256
 
 
-/* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
-   If N is 0, then set CURRENT to the empty location which ends
-   the previous symbol: RHS[0] (always defined).  */
-
-#define YYRHSLOC(Rhs, K) ((Rhs)[K])
-#ifndef YYLLOC_DEFAULT
-# define YYLLOC_DEFAULT(Current, Rhs, N)				\
-    do									\
-      if (YYID (N))                                                    \
-	{								\
-	  (Current).first_line   = YYRHSLOC (Rhs, 1).first_line;	\
-	  (Current).first_column = YYRHSLOC (Rhs, 1).first_column;	\
-	  (Current).last_line    = YYRHSLOC (Rhs, N).last_line;		\
-	  (Current).last_column  = YYRHSLOC (Rhs, N).last_column;	\
-	}								\
-      else								\
-	{								\
-	  (Current).first_line   = (Current).last_line   =		\
-	    YYRHSLOC (Rhs, 0).last_line;				\
-	  (Current).first_column = (Current).last_column =		\
-	    YYRHSLOC (Rhs, 0).last_column;				\
-	}								\
-    while (YYID (0))
-#endif
-
-
-/* YY_LOCATION_PRINT -- Print the location on the stream.
-   This macro was not mandated originally: define only if we know
-   we won't break user code: when these are the locations we know.  */
-
+/* This macro is provided for backward compatibility. */
 #ifndef YY_LOCATION_PRINT
-# if YYLTYPE_IS_TRIVIAL
-#  define YY_LOCATION_PRINT(File, Loc)			\
-     fprintf (File, "%d.%d-%d.%d",			\
-	      (Loc).first_line, (Loc).first_column,	\
-	      (Loc).last_line,  (Loc).last_column)
-# else
-#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
-# endif
+# define YY_LOCATION_PRINT(File, Loc) ((void) 0)
 #endif
 
 
 /* YYLEX -- calling `yylex' with the right arguments.  */
-
 #ifdef YYLEX_PARAM
 # define YYLEX yylex (&yylval, YYLEX_PARAM)
 #else
@@ -2791,6 +2776,8 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, context)
     Sdf_TextParserContext *context;
 #endif
 {
+  FILE *yyo = yyoutput;
+  YYUSE (yyo);
   if (!yyvaluep)
     return;
   YYUSE (context);
@@ -2800,11 +2787,7 @@ yy_symbol_value_print (yyoutput, yytype, yyvaluep, context)
 # else
   YYUSE (yyoutput);
 # endif
-  switch (yytype)
-    {
-      default:
-	break;
-    }
+  YYUSE (yytype);
 }
 
 
@@ -2931,7 +2914,6 @@ int yydebug;
 # define YYMAXDEPTH 10000
 #endif
 
-
 
 #if YYERROR_VERBOSE
 
@@ -3034,115 +3016,145 @@ yytnamerr (char *yyres, const char *yystr)
 }
 # endif
 
-/* Copy into YYRESULT an error message about the unexpected token
-   YYCHAR while in state YYSTATE.  Return the number of bytes copied,
-   including the terminating null byte.  If YYRESULT is null, do not
-   copy anything; just return the number of bytes that would be
-   copied.  As a special case, return 0 if an ordinary "syntax error"
-   message will do.  Return YYSIZE_MAXIMUM if overflow occurs during
-   size calculation.  */
-static YYSIZE_T
-yysyntax_error (char *yyresult, int yystate, int yychar)
+/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
+   about the unexpected token YYTOKEN for the state stack whose top is
+   YYSSP.
+
+   Return 0 if *YYMSG was successfully written.  Return 1 if *YYMSG is
+   not large enough to hold the message.  In that case, also set
+   *YYMSG_ALLOC to the required number of bytes.  Return 2 if the
+   required number of bytes is too large to store.  */
+static int
+yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
+                yytype_int16 *yyssp, int yytoken)
 {
-  int yyn = yypact[yystate];
+  YYSIZE_T yysize0 = yytnamerr (YY_NULL, yytname[yytoken]);
+  YYSIZE_T yysize = yysize0;
+  enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
+  /* Internationalized format string. */
+  const char *yyformat = YY_NULL;
+  /* Arguments of yyformat. */
+  char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
+  /* Number of reported tokens (one for the "unexpected", one per
+     "expected"). */
+  int yycount = 0;
 
-  if (! (YYPACT_NINF < yyn && yyn <= YYLAST))
-    return 0;
-  else
+  /* There are many possibilities here to consider:
+     - Assume YYFAIL is not used.  It's too flawed to consider.  See
+       <http://lists.gnu.org/archive/html/bison-patches/2009-12/msg00024.html>
+       for details.  YYERROR is fine as it does not invoke this
+       function.
+     - If this state is a consistent state with a default action, then
+       the only way this function was invoked is if the default action
+       is an error action.  In that case, don't check for expected
+       tokens because there are none.
+     - The only way there can be no lookahead present (in yychar) is if
+       this state is a consistent state with a default action.  Thus,
+       detecting the absence of a lookahead is sufficient to determine
+       that there is no unexpected or expected token to report.  In that
+       case, just report a simple "syntax error".
+     - Don't assume there isn't a lookahead just because this state is a
+       consistent state with a default action.  There might have been a
+       previous inconsistent state, consistent state with a non-default
+       action, or user semantic action that manipulated yychar.
+     - Of course, the expected token list depends on states to have
+       correct lookahead information, and it depends on the parser not
+       to perform extra reductions after fetching a lookahead from the
+       scanner and before detecting a syntax error.  Thus, state merging
+       (from LALR or IELR) and default reductions corrupt the expected
+       token list.  However, the list is correct for canonical LR with
+       one exception: it will still contain any token that will not be
+       accepted due to an error action in a later state.
+  */
+  if (yytoken != YYEMPTY)
     {
-      int yytype = YYTRANSLATE (yychar);
-      YYSIZE_T yysize0 = yytnamerr (0, yytname[yytype]);
-      YYSIZE_T yysize = yysize0;
-      YYSIZE_T yysize1;
-      int yysize_overflow = 0;
-      enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
-      char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
-      int yyx;
+      int yyn = yypact[*yyssp];
+      yyarg[yycount++] = yytname[yytoken];
+      if (!yypact_value_is_default (yyn))
+        {
+          /* Start YYX at -YYN if negative to avoid negative indexes in
+             YYCHECK.  In other words, skip the first -YYN actions for
+             this state because they are default actions.  */
+          int yyxbegin = yyn < 0 ? -yyn : 0;
+          /* Stay within bounds of both yycheck and yytname.  */
+          int yychecklim = YYLAST - yyn + 1;
+          int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+          int yyx;
 
-# if 0
-      /* This is so xgettext sees the translatable formats that are
-	 constructed on the fly.  */
-      YY_("syntax error, unexpected %s");
-      YY_("syntax error, unexpected %s, expecting %s");
-      YY_("syntax error, unexpected %s, expecting %s or %s");
-      YY_("syntax error, unexpected %s, expecting %s or %s or %s");
-      YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s");
-# endif
-      char *yyfmt;
-      char const *yyf;
-      static char const yyunexpected[] = "syntax error, unexpected %s";
-      static char const yyexpecting[] = ", expecting %s";
-      static char const yyor[] = " or %s";
-      char yyformat[sizeof yyunexpected
-		    + sizeof yyexpecting - 1
-		    + ((YYERROR_VERBOSE_ARGS_MAXIMUM - 2)
-		       * (sizeof yyor - 1))];
-      char const *yyprefix = yyexpecting;
-
-      /* Start YYX at -YYN if negative to avoid negative indexes in
-	 YYCHECK.  */
-      int yyxbegin = yyn < 0 ? -yyn : 0;
-
-      /* Stay within bounds of both yycheck and yytname.  */
-      int yychecklim = YYLAST - yyn + 1;
-      int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
-      int yycount = 1;
-
-      yyarg[0] = yytname[yytype];
-      yyfmt = yystpcpy (yyformat, yyunexpected);
-
-      for (yyx = yyxbegin; yyx < yyxend; ++yyx)
-	if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR)
-	  {
-	    if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
-	      {
-		yycount = 1;
-		yysize = yysize0;
-		yyformat[sizeof yyunexpected - 1] = '\0';
-		break;
-	      }
-	    yyarg[yycount++] = yytname[yyx];
-	    yysize1 = yysize + yytnamerr (0, yytname[yyx]);
-	    yysize_overflow |= (yysize1 < yysize);
-	    yysize = yysize1;
-	    yyfmt = yystpcpy (yyfmt, yyprefix);
-	    yyprefix = yyor;
-	  }
-
-      yyf = YY_(yyformat);
-      yysize1 = yysize + yystrlen (yyf);
-      yysize_overflow |= (yysize1 < yysize);
-      yysize = yysize1;
-
-      if (yysize_overflow)
-	return YYSIZE_MAXIMUM;
-
-      if (yyresult)
-	{
-	  /* Avoid sprintf, as that infringes on the user's name space.
-	     Don't have undefined behavior even if the translation
-	     produced a string with the wrong number of "%s"s.  */
-	  char *yyp = yyresult;
-	  int yyi = 0;
-	  while ((*yyp = *yyf) != '\0')
-	    {
-	      if (*yyp == '%' && yyf[1] == 's' && yyi < yycount)
-		{
-		  yyp += yytnamerr (yyp, yyarg[yyi++]);
-		  yyf += 2;
-		}
-	      else
-		{
-		  yyp++;
-		  yyf++;
-		}
-	    }
-	}
-      return yysize;
+          for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+            if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR
+                && !yytable_value_is_error (yytable[yyx + yyn]))
+              {
+                if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
+                  {
+                    yycount = 1;
+                    yysize = yysize0;
+                    break;
+                  }
+                yyarg[yycount++] = yytname[yyx];
+                {
+                  YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULL, yytname[yyx]);
+                  if (! (yysize <= yysize1
+                         && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+                    return 2;
+                  yysize = yysize1;
+                }
+              }
+        }
     }
+
+  switch (yycount)
+    {
+# define YYCASE_(N, S)                      \
+      case N:                               \
+        yyformat = S;                       \
+      break
+      YYCASE_(0, YY_("syntax error"));
+      YYCASE_(1, YY_("syntax error, unexpected %s"));
+      YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
+      YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
+      YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
+      YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
+# undef YYCASE_
+    }
+
+  {
+    YYSIZE_T yysize1 = yysize + yystrlen (yyformat);
+    if (! (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
+      return 2;
+    yysize = yysize1;
+  }
+
+  if (*yymsg_alloc < yysize)
+    {
+      *yymsg_alloc = 2 * yysize;
+      if (! (yysize <= *yymsg_alloc
+             && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
+        *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
+      return 1;
+    }
+
+  /* Avoid sprintf, as that infringes on the user's name space.
+     Don't have undefined behavior even if the translation
+     produced a string with the wrong number of "%s"s.  */
+  {
+    char *yyp = *yymsg;
+    int yyi = 0;
+    while ((*yyp = *yyformat) != '\0')
+      if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
+        {
+          yyp += yytnamerr (yyp, yyarg[yyi++]);
+          yyformat += 2;
+        }
+      else
+        {
+          yyp++;
+          yyformat++;
+        }
+  }
+  return 0;
 }
 #endif /* YYERROR_VERBOSE */
-
 
 /*-----------------------------------------------.
 | Release the memory associated to this symbol.  |
@@ -3169,36 +3181,15 @@ yydestruct (yymsg, yytype, yyvaluep, context)
     yymsg = "Deleting";
   YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
 
-  switch (yytype)
-    {
-
-      default:
-	break;
-    }
+  YYUSE (yytype);
 }
 
-/* Prevent warnings from -Wmissing-prototypes.  */
-#ifdef YYPARSE_PARAM
-#if defined __STDC__ || defined __cplusplus
-int yyparse (void *YYPARSE_PARAM);
-#else
-int yyparse ();
-#endif
-#else /* ! YYPARSE_PARAM */
-#if defined __STDC__ || defined __cplusplus
-int yyparse (Sdf_TextParserContext *context);
-#else
-int yyparse ();
-#endif
-#endif /* ! YYPARSE_PARAM */
 
 
 
-
-
-/*-------------------------.
-| yyparse or yypush_parse.  |
-`-------------------------*/
+/*----------.
+| yyparse.  |
+`----------*/
 
 #ifdef YYPARSE_PARAM
 #if (defined __STDC__ || defined __C99__FUNC__ \
@@ -3225,8 +3216,31 @@ yyparse (context)
 /* The lookahead symbol.  */
 int yychar;
 
+
+#if defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
+/* Suppress an incorrect diagnostic about yylval being uninitialized.  */
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
+    _Pragma ("GCC diagnostic push") \
+    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")\
+    _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END \
+    _Pragma ("GCC diagnostic pop")
+#else
+/* Default value used for initialization, for pacifying older GCCs
+   or non-GCC compilers.  */
+static YYSTYPE yyval_default;
+# define YY_INITIAL_VALUE(Value) = Value
+#endif
+#ifndef YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END
+#endif
+#ifndef YY_INITIAL_VALUE
+# define YY_INITIAL_VALUE(Value) /* Nothing. */
+#endif
+
 /* The semantic value of the lookahead symbol.  */
-YYSTYPE yylval;
+YYSTYPE yylval YY_INITIAL_VALUE(yyval_default);
 
     /* Number of syntax errors so far.  */
     int yynerrs;
@@ -3239,7 +3253,7 @@ YYSTYPE yylval;
        `yyss': related to states.
        `yyvs': related to semantic values.
 
-       Refer to the stacks thru separate pointers, to allow yyoverflow
+       Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
     /* The state stack.  */
@@ -3257,7 +3271,7 @@ YYSTYPE yylval;
   int yyn;
   int yyresult;
   /* Lookahead token as an internal (translated) token number.  */
-  int yytoken;
+  int yytoken = 0;
   /* The variables used to return semantic value and location from the
      action routines.  */
   YYSTYPE yyval;
@@ -3275,9 +3289,8 @@ YYSTYPE yylval;
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
 
-  yytoken = 0;
-  yyss = yyssa;
-  yyvs = yyvsa;
+  yyssp = yyss = yyssa;
+  yyvsp = yyvs = yyvsa;
   yystacksize = YYINITDEPTH;
 
   YYDPRINTF ((stderr, "Starting parse\n"));
@@ -3286,14 +3299,6 @@ YYSTYPE yylval;
   yyerrstatus = 0;
   yynerrs = 0;
   yychar = YYEMPTY; /* Cause a token to be read.  */
-
-  /* Initialize stack pointers.
-     Waste one element of value and location stack
-     so that they stay on the same level as the state stack.
-     The wasted elements are never initialized.  */
-  yyssp = yyss;
-  yyvsp = yyvs;
-
   goto yysetstate;
 
 /*------------------------------------------------------------.
@@ -3385,7 +3390,7 @@ yybackup:
 
   /* First try to decide what to do without reference to lookahead token.  */
   yyn = yypact[yystate];
-  if (yyn == YYPACT_NINF)
+  if (yypact_value_is_default (yyn))
     goto yydefault;
 
   /* Not known => get a lookahead token if don't already have one.  */
@@ -3416,8 +3421,8 @@ yybackup:
   yyn = yytable[yyn];
   if (yyn <= 0)
     {
-      if (yyn == 0 || yyn == YYTABLE_NINF)
-	goto yyerrlab;
+      if (yytable_value_is_error (yyn))
+        goto yyerrlab;
       yyn = -yyn;
       goto yyreduce;
     }
@@ -3434,7 +3439,9 @@ yybackup:
   yychar = YYEMPTY;
 
   yystate = yyn;
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
 
   goto yynewstate;
 
@@ -3471,9 +3478,8 @@ yyreduce:
   switch (yyn)
     {
         case 47:
-
-/* Line 1455 of yacc.c  */
-#line 1347 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1347 "textFileFormat.yy"
     {
 
         // Store the names of the root prims.
@@ -3481,13 +3487,12 @@ yyreduce:
             SdfPath::AbsoluteRootPath(), SdfChildrenKeys->PrimChildren,
             context->nameChildrenStack.back(), context);
         context->nameChildrenStack.pop_back();
-    ;}
+    }
     break;
 
   case 48:
-
-/* Line 1455 of yacc.c  */
-#line 1358 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1358 "textFileFormat.yy"
     {
             _MatchMagicIdentifier((yyvsp[(1) - (1)]), context);
             context->nameChildrenStack.push_back(std::vector<TfToken>());
@@ -3496,25 +3501,23 @@ yyreduce:
                 SdfPath::AbsoluteRootPath(), SdfSpecTypePseudoRoot, context);
 
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 50:
-
-/* Line 1455 of yacc.c  */
-#line 1370 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1370 "textFileFormat.yy"
     {
             // If we're only reading metadata and we got here, 
             // we're done.
             if (context->metadataOnly)
                 YYACCEPT;
-        ;}
+        }
     break;
 
   case 51:
-
-/* Line 1455 of yacc.c  */
-#line 1376 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1376 "textFileFormat.yy"
     {
             // Abort if error after layer metadata.
             ABORT_IF_ERROR(context->seenError);
@@ -3523,148 +3526,133 @@ yyreduce:
             // we're done.
             if (context->metadataOnly)
                 YYACCEPT;
-        ;}
+        }
     break;
 
   case 57:
-
-/* Line 1455 of yacc.c  */
-#line 1402 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1402 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment, 
                 (yyvsp[(1) - (1)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 58:
-
-/* Line 1455 of yacc.c  */
-#line 1407 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1407 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 59:
-
-/* Line 1455 of yacc.c  */
-#line 1409 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1409 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 60:
-
-/* Line 1455 of yacc.c  */
-#line 1416 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1416 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeDeleted;
-        ;}
+        }
     break;
 
   case 61:
-
-/* Line 1455 of yacc.c  */
-#line 1419 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1419 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 62:
-
-/* Line 1455 of yacc.c  */
-#line 1422 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1422 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeAdded;
-        ;}
+        }
     break;
 
   case 63:
-
-/* Line 1455 of yacc.c  */
-#line 1425 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1425 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 64:
-
-/* Line 1455 of yacc.c  */
-#line 1428 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1428 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypePrepended;
-        ;}
+        }
     break;
 
   case 65:
-
-/* Line 1455 of yacc.c  */
-#line 1431 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1431 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 66:
-
-/* Line 1455 of yacc.c  */
-#line 1434 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1434 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeAppended;
-        ;}
+        }
     break;
 
   case 67:
-
-/* Line 1455 of yacc.c  */
-#line 1437 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1437 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 68:
-
-/* Line 1455 of yacc.c  */
-#line 1440 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1440 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePseudoRoot, context);
             context->listOpType = SdfListOpTypeOrdered;
-        ;}
+        }
     break;
 
   case 69:
-
-/* Line 1455 of yacc.c  */
-#line 1443 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1443 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePseudoRoot, context);
-        ;}
+        }
     break;
 
   case 70:
-
-/* Line 1455 of yacc.c  */
-#line 1448 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1448 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation, 
                 (yyvsp[(3) - (3)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 73:
-
-/* Line 1455 of yacc.c  */
-#line 1460 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1460 "textFileFormat.yy"
     {
             _SetField(
                 SdfPath::AbsoluteRootPath(), SdfFieldKeys->SubLayers, 
@@ -3675,144 +3663,130 @@ yyreduce:
 
             context->subLayerPaths.clear();
             context->subLayerOffsets.clear();
-        ;}
+        }
     break;
 
   case 76:
-
-/* Line 1455 of yacc.c  */
-#line 1479 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1479 "textFileFormat.yy"
     {
             context->subLayerPaths.push_back(context->layerRefPath);
             context->subLayerOffsets.push_back(context->layerRefOffset);
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 77:
-
-/* Line 1455 of yacc.c  */
-#line 1487 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1487 "textFileFormat.yy"
     {
             context->layerRefPath = (yyvsp[(1) - (1)]).Get<std::string>();
             context->layerRefOffset = SdfLayerOffset();
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 82:
-
-/* Line 1455 of yacc.c  */
-#line 1505 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1505 "textFileFormat.yy"
     {
             context->layerRefOffset.SetOffset( (yyvsp[(3) - (3)]).Get<double>() );
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 83:
-
-/* Line 1455 of yacc.c  */
-#line 1509 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1509 "textFileFormat.yy"
     {
             context->layerRefOffset.SetScale( (yyvsp[(3) - (3)]).Get<double>() );
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 86:
-
-/* Line 1455 of yacc.c  */
-#line 1525 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1525 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierDef;
             context->typeName = TfToken();
-        ;}
+        }
     break;
 
   case 88:
-
-/* Line 1455 of yacc.c  */
-#line 1529 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1529 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierDef;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
-        ;}
+        }
     break;
 
   case 90:
-
-/* Line 1455 of yacc.c  */
-#line 1533 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1533 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierClass;
             context->typeName = TfToken();
-        ;}
+        }
     break;
 
   case 92:
-
-/* Line 1455 of yacc.c  */
-#line 1537 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1537 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierClass;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
-        ;}
+        }
     break;
 
   case 94:
-
-/* Line 1455 of yacc.c  */
-#line 1541 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1541 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierOver;
             context->typeName = TfToken();
-        ;}
+        }
     break;
 
   case 96:
-
-/* Line 1455 of yacc.c  */
-#line 1545 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1545 "textFileFormat.yy"
     {
             context->specifier = SdfSpecifierOver;
             context->typeName = TfToken((yyvsp[(2) - (2)]).Get<std::string>());
-        ;}
+        }
     break;
 
   case 98:
-
-/* Line 1455 of yacc.c  */
-#line 1549 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1549 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrimOrder, 
                 context->nameVector, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 99:
-
-/* Line 1455 of yacc.c  */
-#line 1559 "pxr/usd/sdf/textFileFormat.yy"
-    { (yyval) = (yyvsp[(1) - (1)]); ;}
+/* Line 1787 of yacc.c  */
+#line 1559 "textFileFormat.yy"
+    { (yyval) = (yyvsp[(1) - (1)]); }
     break;
 
   case 100:
-
-/* Line 1455 of yacc.c  */
-#line 1560 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1560 "textFileFormat.yy"
     { 
             (yyval) = std::string( (yyvsp[(1) - (3)]).Get<std::string>() + '.'
                     + (yyvsp[(3) - (3)]).Get<std::string>() ); 
-        ;}
+        }
     break;
 
   case 101:
-
-/* Line 1455 of yacc.c  */
-#line 1567 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1567 "textFileFormat.yy"
     {
             TfToken name((yyvsp[(1) - (1)]).Get<std::string>());
             if (!SdfPath::IsValidIdentifier(name)) {
@@ -3842,13 +3816,12 @@ yyreduce:
                 _SetField(
                     context->path, SdfFieldKeys->TypeName, 
                     context->typeName, context);
-        ;}
+        }
     break;
 
   case 102:
-
-/* Line 1455 of yacc.c  */
-#line 1600 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1600 "textFileFormat.yy"
     {
             // Store the names of our children
             if (!context->nameChildrenStack.back().empty()) {
@@ -3870,754 +3843,677 @@ yyreduce:
 
             // Abort after each prim if we hit an error.
             ABORT_IF_ERROR(context->seenError);
-        ;}
+        }
     break;
 
   case 112:
-
-/* Line 1455 of yacc.c  */
-#line 1648 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1648 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment, 
                 (yyvsp[(1) - (1)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 113:
-
-/* Line 1455 of yacc.c  */
-#line 1653 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1653 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 114:
-
-/* Line 1455 of yacc.c  */
-#line 1655 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1655 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 115:
-
-/* Line 1455 of yacc.c  */
-#line 1662 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1662 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeDeleted;
-        ;}
+        }
     break;
 
   case 116:
-
-/* Line 1455 of yacc.c  */
-#line 1665 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1665 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 117:
-
-/* Line 1455 of yacc.c  */
-#line 1668 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1668 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeAdded;
-        ;}
+        }
     break;
 
   case 118:
-
-/* Line 1455 of yacc.c  */
-#line 1671 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1671 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 119:
-
-/* Line 1455 of yacc.c  */
-#line 1674 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1674 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypePrepended;
-        ;}
+        }
     break;
 
   case 120:
-
-/* Line 1455 of yacc.c  */
-#line 1677 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1677 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 121:
-
-/* Line 1455 of yacc.c  */
-#line 1680 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1680 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeAppended;
-        ;}
+        }
     break;
 
   case 122:
-
-/* Line 1455 of yacc.c  */
-#line 1683 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1683 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 123:
-
-/* Line 1455 of yacc.c  */
-#line 1686 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1686 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypePrim, context);
             context->listOpType = SdfListOpTypeOrdered;
-        ;}
+        }
     break;
 
   case 124:
-
-/* Line 1455 of yacc.c  */
-#line 1689 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1689 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypePrim, context);
-        ;}
+        }
     break;
 
   case 125:
-
-/* Line 1455 of yacc.c  */
-#line 1694 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1694 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation, 
                 (yyvsp[(3) - (3)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 126:
-
-/* Line 1455 of yacc.c  */
-#line 1701 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1701 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Kind, 
                 TfToken((yyvsp[(3) - (3)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 127:
-
-/* Line 1455 of yacc.c  */
-#line 1708 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1708 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission, 
                 _GetPermissionFromString((yyvsp[(3) - (3)]).Get<std::string>(), context), 
                 context);
-        ;}
+        }
     break;
 
   case 128:
-
-/* Line 1455 of yacc.c  */
-#line 1715 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1715 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 129:
-
-/* Line 1455 of yacc.c  */
-#line 1719 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1719 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeExplicit, context);
-        ;}
+        }
     break;
 
   case 130:
-
-/* Line 1455 of yacc.c  */
-#line 1722 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1722 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 131:
-
-/* Line 1455 of yacc.c  */
-#line 1726 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1726 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeDeleted, context);
-        ;}
+        }
     break;
 
   case 132:
-
-/* Line 1455 of yacc.c  */
-#line 1729 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1729 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 133:
-
-/* Line 1455 of yacc.c  */
-#line 1733 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1733 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeAdded, context);
-        ;}
+        }
     break;
 
   case 134:
-
-/* Line 1455 of yacc.c  */
-#line 1736 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1736 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 135:
-
-/* Line 1455 of yacc.c  */
-#line 1740 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1740 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypePrepended, context);
-        ;}
+        }
     break;
 
   case 136:
-
-/* Line 1455 of yacc.c  */
-#line 1743 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1743 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 137:
-
-/* Line 1455 of yacc.c  */
-#line 1747 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1747 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeAppended, context);
-        ;}
+        }
     break;
 
   case 138:
-
-/* Line 1455 of yacc.c  */
-#line 1750 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1750 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->payloadParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 139:
-
-/* Line 1455 of yacc.c  */
-#line 1754 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1754 "textFileFormat.yy"
     {
             _PrimSetPayloadListItems(SdfListOpTypeOrdered, context);
-        ;}
+        }
     break;
 
   case 140:
-
-/* Line 1455 of yacc.c  */
-#line 1758 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1758 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 141:
-
-/* Line 1455 of yacc.c  */
-#line 1760 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1760 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeExplicit, context);
-        ;}
+        }
     break;
 
   case 142:
-
-/* Line 1455 of yacc.c  */
-#line 1763 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1763 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 143:
-
-/* Line 1455 of yacc.c  */
-#line 1765 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1765 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeDeleted, context);
-        ;}
+        }
     break;
 
   case 144:
-
-/* Line 1455 of yacc.c  */
-#line 1768 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1768 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 145:
-
-/* Line 1455 of yacc.c  */
-#line 1770 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1770 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeAdded, context);
-        ;}
+        }
     break;
 
   case 146:
-
-/* Line 1455 of yacc.c  */
-#line 1773 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1773 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 147:
-
-/* Line 1455 of yacc.c  */
-#line 1775 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1775 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypePrepended, context);
-        ;}
+        }
     break;
 
   case 148:
-
-/* Line 1455 of yacc.c  */
-#line 1778 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1778 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 149:
-
-/* Line 1455 of yacc.c  */
-#line 1780 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1780 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeAppended, context);
-        ;}
+        }
     break;
 
   case 150:
-
-/* Line 1455 of yacc.c  */
-#line 1783 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1783 "textFileFormat.yy"
     {
             context->inheritParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 151:
-
-/* Line 1455 of yacc.c  */
-#line 1785 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1785 "textFileFormat.yy"
     {
             _PrimSetInheritListItems(SdfListOpTypeOrdered, context);
-        ;}
+        }
     break;
 
   case 152:
-
-/* Line 1455 of yacc.c  */
-#line 1789 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1789 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 153:
-
-/* Line 1455 of yacc.c  */
-#line 1791 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1791 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeExplicit, context);
-        ;}
+        }
     break;
 
   case 154:
-
-/* Line 1455 of yacc.c  */
-#line 1794 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1794 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 155:
-
-/* Line 1455 of yacc.c  */
-#line 1796 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1796 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeDeleted, context);
-        ;}
+        }
     break;
 
   case 156:
-
-/* Line 1455 of yacc.c  */
-#line 1799 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1799 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 157:
-
-/* Line 1455 of yacc.c  */
-#line 1801 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1801 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeAdded, context);
-        ;}
+        }
     break;
 
   case 158:
-
-/* Line 1455 of yacc.c  */
-#line 1804 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1804 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 159:
-
-/* Line 1455 of yacc.c  */
-#line 1806 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1806 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypePrepended, context);
-        ;}
+        }
     break;
 
   case 160:
-
-/* Line 1455 of yacc.c  */
-#line 1809 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1809 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 161:
-
-/* Line 1455 of yacc.c  */
-#line 1811 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1811 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeAppended, context);
-        ;}
+        }
     break;
 
   case 162:
-
-/* Line 1455 of yacc.c  */
-#line 1814 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1814 "textFileFormat.yy"
     {
             context->specializesParsingTargetPaths.clear();
-        ;}
+        }
     break;
 
   case 163:
-
-/* Line 1455 of yacc.c  */
-#line 1816 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1816 "textFileFormat.yy"
     {
             _PrimSetSpecializesListItems(SdfListOpTypeOrdered, context);
-        ;}
+        }
     break;
 
   case 164:
-
-/* Line 1455 of yacc.c  */
-#line 1820 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1820 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 165:
-
-/* Line 1455 of yacc.c  */
-#line 1824 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1824 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeExplicit, context);
-        ;}
+        }
     break;
 
   case 166:
-
-/* Line 1455 of yacc.c  */
-#line 1827 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1827 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 167:
-
-/* Line 1455 of yacc.c  */
-#line 1831 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1831 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeDeleted, context);
-        ;}
+        }
     break;
 
   case 168:
-
-/* Line 1455 of yacc.c  */
-#line 1834 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1834 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 169:
-
-/* Line 1455 of yacc.c  */
-#line 1838 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1838 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeAdded, context);
-        ;}
+        }
     break;
 
   case 170:
-
-/* Line 1455 of yacc.c  */
-#line 1841 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1841 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 171:
-
-/* Line 1455 of yacc.c  */
-#line 1845 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1845 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypePrepended, context);
-        ;}
+        }
     break;
 
   case 172:
-
-/* Line 1455 of yacc.c  */
-#line 1848 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1848 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 173:
-
-/* Line 1455 of yacc.c  */
-#line 1852 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1852 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeAppended, context);
-        ;}
+        }
     break;
 
   case 174:
-
-/* Line 1455 of yacc.c  */
-#line 1855 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1855 "textFileFormat.yy"
     {
             context->layerRefPath = std::string();
             context->savedPath = SdfPath();
             context->referenceParsingRefs.clear();
-        ;}
+        }
     break;
 
   case 175:
-
-/* Line 1455 of yacc.c  */
-#line 1859 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1859 "textFileFormat.yy"
     {
             _PrimSetReferenceListItems(SdfListOpTypeOrdered, context);
-        ;}
+        }
     break;
 
   case 176:
-
-/* Line 1455 of yacc.c  */
-#line 1864 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1864 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Relocates, 
                 context->relocatesParsingMap, context);
             context->relocatesParsingMap.clear();
-        ;}
+        }
     break;
 
   case 177:
-
-/* Line 1455 of yacc.c  */
-#line 1872 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1872 "textFileFormat.yy"
     {
             _PrimSetVariantSelection(context);
-        ;}
+        }
     break;
 
   case 178:
-
-/* Line 1455 of yacc.c  */
-#line 1876 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1876 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeExplicit, context); 
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 179:
-
-/* Line 1455 of yacc.c  */
-#line 1880 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1880 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeDeleted, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 180:
-
-/* Line 1455 of yacc.c  */
-#line 1884 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1884 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeAdded, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 181:
-
-/* Line 1455 of yacc.c  */
-#line 1888 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1888 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypePrepended, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 182:
-
-/* Line 1455 of yacc.c  */
-#line 1892 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1892 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeAppended, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 183:
-
-/* Line 1455 of yacc.c  */
-#line 1896 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1896 "textFileFormat.yy"
     {
             _PrimSetVariantSetNamesListItems(SdfListOpTypeOrdered, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 184:
-
-/* Line 1455 of yacc.c  */
-#line 1902 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1902 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
                 TfToken((yyvsp[(3) - (3)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 185:
-
-/* Line 1455 of yacc.c  */
-#line 1907 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1907 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
                 TfToken(), context);
-        ;}
+        }
     break;
 
   case 186:
-
-/* Line 1455 of yacc.c  */
-#line 1914 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1914 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrefixSubstitutions, 
                 context->currentDictionaries[0], context);
             context->currentDictionaries[0].clear();
-        ;}
+        }
     break;
 
   case 187:
-
-/* Line 1455 of yacc.c  */
-#line 1922 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1922 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SuffixSubstitutions, 
                 context->currentDictionaries[0], context);
             context->currentDictionaries[0].clear();
-        ;}
+        }
     break;
 
   case 194:
-
-/* Line 1455 of yacc.c  */
-#line 1943 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1943 "textFileFormat.yy"
     {
         if (context->layerRefPath.empty()) {
             Err(context, "Payload asset path must not be empty. If this "
@@ -4629,13 +4525,12 @@ yyreduce:
                            context->savedPath,
                            context->layerRefOffset);
         context->payloadParsingRefs.push_back(payload);
-    ;}
+    }
     break;
 
   case 195:
-
-/* Line 1455 of yacc.c  */
-#line 1955 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1955 "textFileFormat.yy"
     {
         // Internal payloads do not begin with an asset path so there's
         // no layer_ref rule, but we need to make sure we reset state the
@@ -4643,13 +4538,12 @@ yyreduce:
         context->layerRefPath.clear();
         context->layerRefOffset = SdfLayerOffset();
         ABORT_IF_ERROR(context->seenError);
-      ;}
+      }
     break;
 
   case 196:
-
-/* Line 1455 of yacc.c  */
-#line 1963 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 1963 "textFileFormat.yy"
     {
         if (!(yyvsp[(1) - (3)]).Get<std::string>().empty()) {
            _PathSetPrim((yyvsp[(1) - (3)]), context);
@@ -4662,13 +4556,12 @@ yyreduce:
                            context->savedPath,
                            context->layerRefOffset);
         context->payloadParsingRefs.push_back(payload);
-    ;}
+    }
     break;
 
   case 209:
-
-/* Line 1455 of yacc.c  */
-#line 2006 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2006 "textFileFormat.yy"
     {
         if (context->layerRefPath.empty()) {
             Err(context, "Reference asset path must not be empty. If this "
@@ -4681,13 +4574,12 @@ yyreduce:
                          context->layerRefOffset);
         ref.SwapCustomData(context->currentDictionaries[0]);
         context->referenceParsingRefs.push_back(ref);
-    ;}
+    }
     break;
 
   case 210:
-
-/* Line 1455 of yacc.c  */
-#line 2019 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2019 "textFileFormat.yy"
     {
         // Internal references do not begin with an asset path so there's
         // no layer_ref rule, but we need to make sure we reset state the
@@ -4695,13 +4587,12 @@ yyreduce:
         context->layerRefPath.clear();
         context->layerRefOffset = SdfLayerOffset();
         ABORT_IF_ERROR(context->seenError);
-      ;}
+      }
     break;
 
   case 211:
-
-/* Line 1455 of yacc.c  */
-#line 2027 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2027 "textFileFormat.yy"
     {
         if (!(yyvsp[(1) - (3)]).Get<std::string>().empty()) {
            _PathSetPrim((yyvsp[(1) - (3)]), context);
@@ -4715,70 +4606,62 @@ yyreduce:
                          context->layerRefOffset);
         ref.SwapCustomData(context->currentDictionaries[0]);
         context->referenceParsingRefs.push_back(ref);
-    ;}
+    }
     break;
 
   case 225:
-
-/* Line 1455 of yacc.c  */
-#line 2072 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2072 "textFileFormat.yy"
     {
         _InheritAppendPath(context);
-        ;}
+        }
     break;
 
   case 232:
-
-/* Line 1455 of yacc.c  */
-#line 2090 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2090 "textFileFormat.yy"
     {
         _SpecializesAppendPath(context);
-        ;}
+        }
     break;
 
   case 238:
-
-/* Line 1455 of yacc.c  */
-#line 2110 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2110 "textFileFormat.yy"
     {
             _RelocatesAdd((yyvsp[(1) - (3)]), (yyvsp[(3) - (3)]), context);
-        ;}
+        }
     break;
 
   case 243:
-
-/* Line 1455 of yacc.c  */
-#line 2126 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2126 "textFileFormat.yy"
     {
             context->nameVector.push_back(TfToken((yyvsp[(1) - (1)]).Get<std::string>()));
-        ;}
+        }
     break;
 
   case 248:
-
-/* Line 1455 of yacc.c  */
-#line 2144 "pxr/usd/sdf/textFileFormat.yy"
-    {;}
+/* Line 1787 of yacc.c  */
+#line 2144 "textFileFormat.yy"
+    {}
     break;
 
   case 249:
-
-/* Line 1455 of yacc.c  */
-#line 2145 "pxr/usd/sdf/textFileFormat.yy"
-    {;}
+/* Line 1787 of yacc.c  */
+#line 2145 "textFileFormat.yy"
+    {}
     break;
 
   case 250:
-
-/* Line 1455 of yacc.c  */
-#line 2146 "pxr/usd/sdf/textFileFormat.yy"
-    {;}
+/* Line 1787 of yacc.c  */
+#line 2146 "textFileFormat.yy"
+    {}
     break;
 
   case 253:
-
-/* Line 1455 of yacc.c  */
-#line 2152 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2152 "textFileFormat.yy"
     {
         const std::string name = (yyvsp[(2) - (2)]).Get<std::string>();
         ERROR_IF_NOT_ALLOWED(context, SdfSchema::IsValidVariantIdentifier(name));
@@ -4787,13 +4670,12 @@ yyreduce:
         context->currentVariantNames.push_back( std::vector<std::string>() );
 
         context->path = context->path.AppendVariantSelection(name, "");
-    ;}
+    }
     break;
 
   case 254:
-
-/* Line 1455 of yacc.c  */
-#line 2160 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2160 "textFileFormat.yy"
     {
 
         SdfPath variantSetPath = context->path;
@@ -4816,13 +4698,12 @@ yyreduce:
 
         context->currentVariantSetNames.pop_back();
         context->currentVariantNames.pop_back();
-    ;}
+    }
     break;
 
   case 257:
-
-/* Line 1455 of yacc.c  */
-#line 2191 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2191 "textFileFormat.yy"
     {
         const std::string variantName = (yyvsp[(1) - (1)]).Get<std::string>();
         ERROR_IF_NOT_ALLOWED(
@@ -4843,13 +4724,12 @@ yyreduce:
 
         _CreateSpec(context->path, SdfSpecTypeVariant, context);
 
-    ;}
+    }
     break;
 
   case 258:
-
-/* Line 1455 of yacc.c  */
-#line 2211 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2211 "textFileFormat.yy"
     {
         // Store the names of the prims and properties defined in this variant.
         if (!context->nameChildrenStack.back().empty()) {
@@ -4869,137 +4749,124 @@ yyreduce:
         std::string variantSet = context->path.GetVariantSelection().first;
         context->path = 
             context->path.GetParentPath().AppendVariantSelection(variantSet, "");
-    ;}
+    }
     break;
 
   case 259:
-
-/* Line 1455 of yacc.c  */
-#line 2234 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2234 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PrimOrder, 
                 context->nameVector, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 260:
-
-/* Line 1455 of yacc.c  */
-#line 2243 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2243 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->PropertyOrder, 
                 context->nameVector, context);
             context->nameVector.clear();
-        ;}
+        }
     break;
 
   case 263:
-
-/* Line 1455 of yacc.c  */
-#line 2265 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2265 "textFileFormat.yy"
     {
         context->variability = VtValue(SdfVariabilityUniform);
-    ;}
+    }
     break;
 
   case 264:
-
-/* Line 1455 of yacc.c  */
-#line 2268 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2268 "textFileFormat.yy"
     {
         // Convert legacy "config" variability to SdfVariabilityUniform.
         // This value was never officially used in USD but we handle
         // this just in case the value was written out.
         context->variability = VtValue(SdfVariabilityUniform);
-    ;}
+    }
     break;
 
   case 265:
-
-/* Line 1455 of yacc.c  */
-#line 2277 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2277 "textFileFormat.yy"
     {
         context->assoc = VtValue();
-    ;}
+    }
     break;
 
   case 266:
-
-/* Line 1455 of yacc.c  */
-#line 2283 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2283 "textFileFormat.yy"
     {
         _SetupValue((yyvsp[(1) - (1)]).Get<std::string>(), context);
-    ;}
+    }
     break;
 
   case 267:
-
-/* Line 1455 of yacc.c  */
-#line 2286 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2286 "textFileFormat.yy"
     {
         _SetupValue(std::string((yyvsp[(1) - (3)]).Get<std::string>() + "[]"), context);
-    ;}
+    }
     break;
 
   case 268:
-
-/* Line 1455 of yacc.c  */
-#line 2292 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2292 "textFileFormat.yy"
     {
         context->variability = VtValue();
         context->custom = false;
-    ;}
+    }
     break;
 
   case 269:
-
-/* Line 1455 of yacc.c  */
-#line 2296 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2296 "textFileFormat.yy"
     {
         context->custom = false;
-    ;}
+    }
     break;
 
   case 270:
-
-/* Line 1455 of yacc.c  */
-#line 2302 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2302 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(2) - (2)]), context);
 
         if (!context->values.valueTypeIsValid) {
             context->values.StartRecordingString();
         }
-    ;}
+    }
     break;
 
   case 271:
-
-/* Line 1455 of yacc.c  */
-#line 2309 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2309 "textFileFormat.yy"
     {
         if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
         }
-    ;}
+    }
     break;
 
   case 272:
-
-/* Line 1455 of yacc.c  */
-#line 2314 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2314 "textFileFormat.yy"
     {
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 273:
-
-/* Line 1455 of yacc.c  */
-#line 2320 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2320 "textFileFormat.yy"
     {
         context->custom = true;
         _PrimInitAttribute((yyvsp[(3) - (3)]), context);
@@ -5007,545 +4874,491 @@ yyreduce:
         if (!context->values.valueTypeIsValid) {
             context->values.StartRecordingString();
         }
-    ;}
+    }
     break;
 
   case 274:
-
-/* Line 1455 of yacc.c  */
-#line 2328 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2328 "textFileFormat.yy"
     {
         if (!context->values.valueTypeIsValid) {
             context->values.StopRecordingString();
         }
-    ;}
+    }
     break;
 
   case 275:
-
-/* Line 1455 of yacc.c  */
-#line 2333 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2333 "textFileFormat.yy"
     {
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 276:
-
-/* Line 1455 of yacc.c  */
-#line 2339 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2339 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(2) - (5)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = true;
-    ;}
+    }
     break;
 
   case 277:
-
-/* Line 1455 of yacc.c  */
-#line 2343 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2343 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeExplicit, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 278:
-
-/* Line 1455 of yacc.c  */
-#line 2347 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2347 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = true;
-    ;}
+    }
     break;
 
   case 279:
-
-/* Line 1455 of yacc.c  */
-#line 2351 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2351 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeAdded, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 280:
-
-/* Line 1455 of yacc.c  */
-#line 2355 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2355 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = true;
-    ;}
+    }
     break;
 
   case 281:
-
-/* Line 1455 of yacc.c  */
-#line 2359 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2359 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypePrepended, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 282:
-
-/* Line 1455 of yacc.c  */
-#line 2363 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2363 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = true;
-    ;}
+    }
     break;
 
   case 283:
-
-/* Line 1455 of yacc.c  */
-#line 2367 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2367 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeAppended, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 284:
-
-/* Line 1455 of yacc.c  */
-#line 2371 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2371 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = false;
-    ;}
+    }
     break;
 
   case 285:
-
-/* Line 1455 of yacc.c  */
-#line 2375 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2375 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeDeleted, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 286:
-
-/* Line 1455 of yacc.c  */
-#line 2379 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2379 "textFileFormat.yy"
     {
         _PrimInitAttribute((yyvsp[(3) - (6)]), context);
         context->connParsingTargetPaths.clear();
         context->connParsingAllowConnectionData = false;
-    ;}
+    }
     break;
 
   case 287:
-
-/* Line 1455 of yacc.c  */
-#line 2383 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2383 "textFileFormat.yy"
     {
         _AttributeSetConnectionTargetsList(SdfListOpTypeOrdered, context);
         context->path = context->path.GetParentPath();
-    ;}
+    }
     break;
 
   case 288:
-
-/* Line 1455 of yacc.c  */
-#line 2390 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2390 "textFileFormat.yy"
     {
             _PrimInitAttribute((yyvsp[(2) - (5)]), context);
-        ;}
+        }
     break;
 
   case 289:
-
-/* Line 1455 of yacc.c  */
-#line 2393 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2393 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->TimeSamples,
                 context->timeSamples, context);
             context->path = context->path.GetParentPath(); // pop attr
-        ;}
+        }
     break;
 
   case 300:
-
-/* Line 1455 of yacc.c  */
-#line 2425 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2425 "textFileFormat.yy"
     {
             _AttributeAppendConnectionPath(context);
-        ;}
+        }
     break;
 
   case 301:
-
-/* Line 1455 of yacc.c  */
-#line 2435 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2435 "textFileFormat.yy"
     {
         context->timeSamples = SdfTimeSampleMap();
-    ;}
+    }
     break;
 
   case 307:
-
-/* Line 1455 of yacc.c  */
-#line 2451 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2451 "textFileFormat.yy"
     {
         context->timeSampleTime = (yyvsp[(1) - (2)]).Get<double>();
-    ;}
+    }
     break;
 
   case 308:
-
-/* Line 1455 of yacc.c  */
-#line 2454 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2454 "textFileFormat.yy"
     {
         context->timeSamples[ context->timeSampleTime ] = context->currentValue;
-    ;}
+    }
     break;
 
   case 309:
-
-/* Line 1455 of yacc.c  */
-#line 2458 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2458 "textFileFormat.yy"
     {
         context->timeSampleTime = (yyvsp[(1) - (3)]).Get<double>();
         context->timeSamples[ context->timeSampleTime ] 
             = VtValue(SdfValueBlock());  
-    ;}
+    }
     break;
 
   case 318:
-
-/* Line 1455 of yacc.c  */
-#line 2488 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2488 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment,
                 (yyvsp[(1) - (1)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 319:
-
-/* Line 1455 of yacc.c  */
-#line 2493 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2493 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 320:
-
-/* Line 1455 of yacc.c  */
-#line 2495 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2495 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 321:
-
-/* Line 1455 of yacc.c  */
-#line 2502 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2502 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeDeleted;
-        ;}
+        }
     break;
 
   case 322:
-
-/* Line 1455 of yacc.c  */
-#line 2505 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2505 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 323:
-
-/* Line 1455 of yacc.c  */
-#line 2508 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2508 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeAdded;
-        ;}
+        }
     break;
 
   case 324:
-
-/* Line 1455 of yacc.c  */
-#line 2511 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2511 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 325:
-
-/* Line 1455 of yacc.c  */
-#line 2514 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2514 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypePrepended;
-        ;}
+        }
     break;
 
   case 326:
-
-/* Line 1455 of yacc.c  */
-#line 2517 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2517 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 327:
-
-/* Line 1455 of yacc.c  */
-#line 2520 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2520 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeAppended;
-        ;}
+        }
     break;
 
   case 328:
-
-/* Line 1455 of yacc.c  */
-#line 2523 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2523 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 329:
-
-/* Line 1455 of yacc.c  */
-#line 2526 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2526 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeAttribute, context);
             context->listOpType = SdfListOpTypeOrdered;
-        ;}
+        }
     break;
 
   case 330:
-
-/* Line 1455 of yacc.c  */
-#line 2529 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2529 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeAttribute, context);
-        ;}
+        }
     break;
 
   case 331:
-
-/* Line 1455 of yacc.c  */
-#line 2534 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2534 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation,
                 (yyvsp[(3) - (3)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 332:
-
-/* Line 1455 of yacc.c  */
-#line 2541 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2541 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission,
                 _GetPermissionFromString((yyvsp[(3) - (3)]).Get<std::string>(), context),
                 context);
-        ;}
+        }
     break;
 
   case 333:
-
-/* Line 1455 of yacc.c  */
-#line 2548 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2548 "textFileFormat.yy"
     {
              _SetField(
                  context->path, SdfFieldKeys->DisplayUnit,
                  _GetDisplayUnitFromString((yyvsp[(3) - (3)]).Get<std::string>(), context),
                  context);
-        ;}
+        }
     break;
 
   case 334:
-
-/* Line 1455 of yacc.c  */
-#line 2556 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2556 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
                 TfToken((yyvsp[(3) - (3)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 335:
-
-/* Line 1455 of yacc.c  */
-#line 2561 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2561 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
                 TfToken(), context);
-        ;}
+        }
     break;
 
   case 338:
-
-/* Line 1455 of yacc.c  */
-#line 2574 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2574 "textFileFormat.yy"
     {
         _SetField(
             context->path, SdfFieldKeys->Default,
             context->currentValue, context);
-    ;}
+    }
     break;
 
   case 339:
-
-/* Line 1455 of yacc.c  */
-#line 2579 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2579 "textFileFormat.yy"
     {
         _SetField(
             context->path, SdfFieldKeys->Default,
             SdfValueBlock(), context);
-    ;}
+    }
     break;
 
   case 340:
-
-/* Line 1455 of yacc.c  */
-#line 2591 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2591 "textFileFormat.yy"
     {
             _DictionaryBegin(context);
-        ;}
+        }
     break;
 
   case 341:
-
-/* Line 1455 of yacc.c  */
-#line 2594 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2594 "textFileFormat.yy"
     {
             _DictionaryEnd(context);
-        ;}
+        }
     break;
 
   case 346:
-
-/* Line 1455 of yacc.c  */
-#line 2610 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2610 "textFileFormat.yy"
     {
             _DictionaryInsertValue((yyvsp[(2) - (4)]), context);
-        ;}
+        }
     break;
 
   case 347:
-
-/* Line 1455 of yacc.c  */
-#line 2613 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2613 "textFileFormat.yy"
     {
             _DictionaryInsertDictionary((yyvsp[(2) - (4)]), context);
-        ;}
+        }
     break;
 
   case 352:
-
-/* Line 1455 of yacc.c  */
-#line 2631 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2631 "textFileFormat.yy"
     {
             _DictionaryInitScalarFactory((yyvsp[(1) - (1)]), context);
-    ;}
+    }
     break;
 
   case 353:
-
-/* Line 1455 of yacc.c  */
-#line 2637 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2637 "textFileFormat.yy"
     {
             _DictionaryInitShapedFactory((yyvsp[(1) - (3)]), context);
-    ;}
+    }
     break;
 
   case 354:
-
-/* Line 1455 of yacc.c  */
-#line 2647 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2647 "textFileFormat.yy"
     {
             _DictionaryBegin(context);
-        ;}
+        }
     break;
 
   case 355:
-
-/* Line 1455 of yacc.c  */
-#line 2650 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2650 "textFileFormat.yy"
     {
             _DictionaryEnd(context);
-        ;}
+        }
     break;
 
   case 360:
-
-/* Line 1455 of yacc.c  */
-#line 2666 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2666 "textFileFormat.yy"
     {
             _DictionaryInitScalarFactory(Value(std::string("string")), context);
             _ValueAppendAtomic((yyvsp[(3) - (3)]), context);
             _ValueSetAtomic(context);
             _DictionaryInsertValue((yyvsp[(1) - (3)]), context);
-        ;}
+        }
     break;
 
   case 361:
-
-/* Line 1455 of yacc.c  */
-#line 2679 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2679 "textFileFormat.yy"
     {
         context->currentValue = VtValue();
         if (context->values.IsRecordingString()) {
             context->values.SetRecordedString("None");
         }
-    ;}
+    }
     break;
 
   case 362:
-
-/* Line 1455 of yacc.c  */
-#line 2685 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2685 "textFileFormat.yy"
     {
         _ValueSetList(context);
-    ;}
+    }
     break;
 
   case 363:
-
-/* Line 1455 of yacc.c  */
-#line 2695 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2695 "textFileFormat.yy"
     {
             context->currentValue.Swap(context->currentDictionaries[0]);
             context->currentDictionaries[0].clear();
-        ;}
+        }
     break;
 
   case 365:
-
-/* Line 1455 of yacc.c  */
-#line 2700 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2700 "textFileFormat.yy"
     {
             // This is only here to allow 'None' metadata values for
             // an explicit list operation on an SdfListOp-valued field.
@@ -5555,40 +5368,36 @@ yyreduce:
             if (context->values.IsRecordingString()) {
                 context->values.SetRecordedString("None");
             }
-    ;}
+    }
     break;
 
   case 366:
-
-/* Line 1455 of yacc.c  */
-#line 2713 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2713 "textFileFormat.yy"
     {
             _ValueSetAtomic(context);
-        ;}
+        }
     break;
 
   case 367:
-
-/* Line 1455 of yacc.c  */
-#line 2716 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2716 "textFileFormat.yy"
     {
             _ValueSetTuple(context);
-        ;}
+        }
     break;
 
   case 368:
-
-/* Line 1455 of yacc.c  */
-#line 2719 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2719 "textFileFormat.yy"
     {
             _ValueSetList(context);
-        ;}
+        }
     break;
 
   case 369:
-
-/* Line 1455 of yacc.c  */
-#line 2722 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2722 "textFileFormat.yy"
     {
             // Set the recorded string on the ParserValueContext. Normally
             // 'values' is able to keep track of the parsed string, but in this
@@ -5599,160 +5408,144 @@ yyreduce:
             }
 
             _ValueSetShaped(context);
-        ;}
+        }
     break;
 
   case 370:
-
-/* Line 1455 of yacc.c  */
-#line 2733 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2733 "textFileFormat.yy"
     {
             _ValueSetCurrentToSdfPath((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 371:
-
-/* Line 1455 of yacc.c  */
-#line 2739 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2739 "textFileFormat.yy"
     {
             _ValueAppendAtomic((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 372:
-
-/* Line 1455 of yacc.c  */
-#line 2742 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2742 "textFileFormat.yy"
     {
             _ValueAppendAtomic((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 373:
-
-/* Line 1455 of yacc.c  */
-#line 2745 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2745 "textFileFormat.yy"
     {
             // The ParserValueContext needs identifiers to be stored as TfToken
             // instead of std::string to be able to distinguish between them.
             _ValueAppendAtomic(TfToken((yyvsp[(1) - (1)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 374:
-
-/* Line 1455 of yacc.c  */
-#line 2750 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2750 "textFileFormat.yy"
     {
             // The ParserValueContext needs asset paths to be stored as
             // SdfAssetPath instead of std::string to be able to distinguish
             // between them
             _ValueAppendAtomic(SdfAssetPath((yyvsp[(1) - (1)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 375:
-
-/* Line 1455 of yacc.c  */
-#line 2763 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2763 "textFileFormat.yy"
     {
             context->values.BeginList();
-        ;}
+        }
     break;
 
   case 376:
-
-/* Line 1455 of yacc.c  */
-#line 2766 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2766 "textFileFormat.yy"
     {
             context->values.EndList();
-        ;}
+        }
     break;
 
   case 383:
-
-/* Line 1455 of yacc.c  */
-#line 2791 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2791 "textFileFormat.yy"
     {
             context->values.BeginTuple();
-        ;}
+        }
     break;
 
   case 384:
-
-/* Line 1455 of yacc.c  */
-#line 2793 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2793 "textFileFormat.yy"
     {
             context->values.EndTuple();
-        ;}
+        }
     break;
 
   case 390:
-
-/* Line 1455 of yacc.c  */
-#line 2816 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2816 "textFileFormat.yy"
     {
         context->custom = false;
         context->variability = VtValue(SdfVariabilityUniform);
-    ;}
+    }
     break;
 
   case 391:
-
-/* Line 1455 of yacc.c  */
-#line 2820 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2820 "textFileFormat.yy"
     {
         context->custom = true;
         context->variability = VtValue(SdfVariabilityUniform);
-    ;}
+    }
     break;
 
   case 392:
-
-/* Line 1455 of yacc.c  */
-#line 2824 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2824 "textFileFormat.yy"
     {
         context->custom = true;
         context->variability = VtValue(SdfVariabilityVarying);
-    ;}
+    }
     break;
 
   case 393:
-
-/* Line 1455 of yacc.c  */
-#line 2828 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2828 "textFileFormat.yy"
     {
         context->custom = false;
         context->variability = VtValue(SdfVariabilityVarying);
-    ;}
+    }
     break;
 
   case 394:
-
-/* Line 1455 of yacc.c  */
-#line 2835 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2835 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (5)]), context); 
-        ;}
+        }
     break;
 
   case 395:
-
-/* Line 1455 of yacc.c  */
-#line 2838 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2838 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->TimeSamples,
                 context->timeSamples, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 396:
-
-/* Line 1455 of yacc.c  */
-#line 2847 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2847 "textFileFormat.yy"
     { 
             _PrimInitRelationship((yyvsp[(2) - (6)]), context);
 
@@ -5764,376 +5557,349 @@ yyreduce:
 
             _SetField(context->path, SdfFieldKeys->Default, path, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 397:
-
-/* Line 1455 of yacc.c  */
-#line 2862 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2862 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (2)]), context);
             context->relParsingAllowTargetData = true;
-        ;}
+        }
     break;
 
   case 398:
-
-/* Line 1455 of yacc.c  */
-#line 2867 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2867 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeExplicit, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 399:
-
-/* Line 1455 of yacc.c  */
-#line 2872 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2872 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
-        ;}
+        }
     break;
 
   case 400:
-
-/* Line 1455 of yacc.c  */
-#line 2875 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2875 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeDeleted, context); 
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 401:
-
-/* Line 1455 of yacc.c  */
-#line 2880 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2880 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
-        ;}
+        }
     break;
 
   case 402:
-
-/* Line 1455 of yacc.c  */
-#line 2884 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2884 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeAdded, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 403:
-
-/* Line 1455 of yacc.c  */
-#line 2888 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2888 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
-        ;}
+        }
     break;
 
   case 404:
-
-/* Line 1455 of yacc.c  */
-#line 2892 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2892 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypePrepended, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 405:
-
-/* Line 1455 of yacc.c  */
-#line 2896 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2896 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
             context->relParsingAllowTargetData = true;
-        ;}
+        }
     break;
 
   case 406:
-
-/* Line 1455 of yacc.c  */
-#line 2900 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2900 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeAppended, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 407:
-
-/* Line 1455 of yacc.c  */
-#line 2905 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2905 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(3) - (3)]), context);
-        ;}
+        }
     break;
 
   case 408:
-
-/* Line 1455 of yacc.c  */
-#line 2908 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2908 "textFileFormat.yy"
     {
             _RelationshipSetTargetsList(SdfListOpTypeOrdered, context);
             _PrimEndRelationship(context);
-        ;}
+        }
     break;
 
   case 409:
-
-/* Line 1455 of yacc.c  */
-#line 2913 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2913 "textFileFormat.yy"
     {
             _PrimInitRelationship((yyvsp[(2) - (5)]), context);
             context->relParsingAllowTargetData = true;
             _RelationshipAppendTargetPath((yyvsp[(4) - (5)]), context);
             _RelationshipInitTarget(context->relParsingTargetPaths->back(),
                                     context);
-        ;}
+        }
     break;
 
   case 420:
-
-/* Line 1455 of yacc.c  */
-#line 2942 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2942 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Comment,
                 (yyvsp[(1) - (1)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 421:
-
-/* Line 1455 of yacc.c  */
-#line 2947 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2947 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(1) - (1)]), SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 422:
-
-/* Line 1455 of yacc.c  */
-#line 2949 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2949 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 423:
-
-/* Line 1455 of yacc.c  */
-#line 2956 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2956 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeDeleted;
-        ;}
+        }
     break;
 
   case 424:
-
-/* Line 1455 of yacc.c  */
-#line 2959 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2959 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 425:
-
-/* Line 1455 of yacc.c  */
-#line 2962 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2962 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeAdded;
-        ;}
+        }
     break;
 
   case 426:
-
-/* Line 1455 of yacc.c  */
-#line 2965 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2965 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 427:
-
-/* Line 1455 of yacc.c  */
-#line 2968 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2968 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypePrepended;
-        ;}
+        }
     break;
 
   case 428:
-
-/* Line 1455 of yacc.c  */
-#line 2971 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2971 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 429:
-
-/* Line 1455 of yacc.c  */
-#line 2974 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2974 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeAppended;
-        ;}
+        }
     break;
 
   case 430:
-
-/* Line 1455 of yacc.c  */
-#line 2977 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2977 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 431:
-
-/* Line 1455 of yacc.c  */
-#line 2980 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2980 "textFileFormat.yy"
     {
             _GenericMetadataStart((yyvsp[(2) - (2)]), SdfSpecTypeRelationship, context);
             context->listOpType = SdfListOpTypeOrdered;
-        ;}
+        }
     break;
 
   case 432:
-
-/* Line 1455 of yacc.c  */
-#line 2983 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2983 "textFileFormat.yy"
     {
             _GenericMetadataEnd(SdfSpecTypeRelationship, context);
-        ;}
+        }
     break;
 
   case 433:
-
-/* Line 1455 of yacc.c  */
-#line 2988 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2988 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Documentation,
                 (yyvsp[(3) - (3)]).Get<std::string>(), context);
-        ;}
+        }
     break;
 
   case 434:
-
-/* Line 1455 of yacc.c  */
-#line 2995 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 2995 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->Permission,
                 _GetPermissionFromString((yyvsp[(3) - (3)]).Get<std::string>(), context),
                 context);
-        ;}
+        }
     break;
 
   case 435:
-
-/* Line 1455 of yacc.c  */
-#line 3003 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3003 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction,
                 TfToken((yyvsp[(3) - (3)]).Get<std::string>()), context);
-        ;}
+        }
     break;
 
   case 436:
-
-/* Line 1455 of yacc.c  */
-#line 3008 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3008 "textFileFormat.yy"
     {
             _SetField(
                 context->path, SdfFieldKeys->SymmetryFunction, 
                 TfToken(), context);
-        ;}
+        }
     break;
 
   case 440:
-
-/* Line 1455 of yacc.c  */
-#line 3022 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3022 "textFileFormat.yy"
     {
             context->relParsingTargetPaths = SdfPathVector();
-        ;}
+        }
     break;
 
   case 441:
-
-/* Line 1455 of yacc.c  */
-#line 3025 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3025 "textFileFormat.yy"
     {
             context->relParsingTargetPaths = SdfPathVector();
-        ;}
+        }
     break;
 
   case 445:
-
-/* Line 1455 of yacc.c  */
-#line 3037 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3037 "textFileFormat.yy"
     {
             _RelationshipAppendTargetPath((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 446:
-
-/* Line 1455 of yacc.c  */
-#line 3047 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3047 "textFileFormat.yy"
     {
         context->savedPath = SdfPath();
-    ;}
+    }
     break;
 
   case 448:
-
-/* Line 1455 of yacc.c  */
-#line 3054 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3054 "textFileFormat.yy"
     {
             _PathSetPrim((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 449:
-
-/* Line 1455 of yacc.c  */
-#line 3060 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 1787 of yacc.c  */
+#line 3060 "textFileFormat.yy"
     {
             _PathSetPrimOrPropertyScenePath((yyvsp[(1) - (1)]), context);
-        ;}
+        }
     break;
 
   case 458:
-
-/* Line 1455 of yacc.c  */
-#line 3092 "pxr/usd/sdf/textFileFormat.yy"
-    { (yyval) = (yyvsp[(1) - (1)]); ;}
+/* Line 1787 of yacc.c  */
+#line 3092 "textFileFormat.yy"
+    { (yyval) = (yyvsp[(1) - (1)]); }
     break;
 
 
-
-/* Line 1455 of yacc.c  */
-#line 6112 "pxr/usd/sdf/textFileFormat.tab.cpp"
+/* Line 1787 of yacc.c  */
+#line 5889 "textFileFormat.tab.cpp"
       default: break;
     }
+  /* User semantic actions sometimes alter yychar, and that requires
+     that yytoken be updated with the new translation.  We take the
+     approach of translating immediately before every use of yytoken.
+     One alternative is translating here after every semantic action,
+     but that translation would be missed if the semantic action invokes
+     YYABORT, YYACCEPT, or YYERROR immediately after altering yychar or
+     if it invokes YYBACKUP.  In the case of YYABORT or YYACCEPT, an
+     incorrect destructor might then be invoked immediately.  In the
+     case of YYERROR or YYBACKUP, subsequent parser actions might lead
+     to an incorrect destructor call or verbose syntax error message
+     before the lookahead is translated.  */
   YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
 
   YYPOPSTACK (yylen);
@@ -6161,6 +5927,10 @@ yyreduce:
 | yyerrlab -- here on detecting error |
 `------------------------------------*/
 yyerrlab:
+  /* Make sure we have latest lookahead translation.  See comments at
+     user semantic actions for why this is necessary.  */
+  yytoken = yychar == YYEMPTY ? YYEMPTY : YYTRANSLATE (yychar);
+
   /* If not already recovering from an error, report this error.  */
   if (!yyerrstatus)
     {
@@ -6168,37 +5938,36 @@ yyerrlab:
 #if ! YYERROR_VERBOSE
       yyerror (context, YY_("syntax error"));
 #else
+# define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
+                                        yyssp, yytoken)
       {
-	YYSIZE_T yysize = yysyntax_error (0, yystate, yychar);
-	if (yymsg_alloc < yysize && yymsg_alloc < YYSTACK_ALLOC_MAXIMUM)
-	  {
-	    YYSIZE_T yyalloc = 2 * yysize;
-	    if (! (yysize <= yyalloc && yyalloc <= YYSTACK_ALLOC_MAXIMUM))
-	      yyalloc = YYSTACK_ALLOC_MAXIMUM;
-	    if (yymsg != yymsgbuf)
-	      YYSTACK_FREE (yymsg);
-	    yymsg = (char *) YYSTACK_ALLOC (yyalloc);
-	    if (yymsg)
-	      yymsg_alloc = yyalloc;
-	    else
-	      {
-		yymsg = yymsgbuf;
-		yymsg_alloc = sizeof yymsgbuf;
-	      }
-	  }
-
-	if (0 < yysize && yysize <= yymsg_alloc)
-	  {
-	    (void) yysyntax_error (yymsg, yystate, yychar);
-	    yyerror (context, yymsg);
-	  }
-	else
-	  {
-	    yyerror (context, YY_("syntax error"));
-	    if (yysize != 0)
-	      goto yyexhaustedlab;
-	  }
+        char const *yymsgp = YY_("syntax error");
+        int yysyntax_error_status;
+        yysyntax_error_status = YYSYNTAX_ERROR;
+        if (yysyntax_error_status == 0)
+          yymsgp = yymsg;
+        else if (yysyntax_error_status == 1)
+          {
+            if (yymsg != yymsgbuf)
+              YYSTACK_FREE (yymsg);
+            yymsg = (char *) YYSTACK_ALLOC (yymsg_alloc);
+            if (!yymsg)
+              {
+                yymsg = yymsgbuf;
+                yymsg_alloc = sizeof yymsgbuf;
+                yysyntax_error_status = 2;
+              }
+            else
+              {
+                yysyntax_error_status = YYSYNTAX_ERROR;
+                yymsgp = yymsg;
+              }
+          }
+        yyerror (context, yymsgp);
+        if (yysyntax_error_status == 2)
+          goto yyexhaustedlab;
       }
+# undef YYSYNTAX_ERROR
 #endif
     }
 
@@ -6257,7 +6026,7 @@ yyerrlab1:
   for (;;)
     {
       yyn = yypact[yystate];
-      if (yyn != YYPACT_NINF)
+      if (!yypact_value_is_default (yyn))
 	{
 	  yyn += YYTERROR;
 	  if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYTERROR)
@@ -6280,7 +6049,9 @@ yyerrlab1:
       YY_STACK_PRINT (yyss, yyssp);
     }
 
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
 
 
   /* Shift the error token.  */
@@ -6304,7 +6075,7 @@ yyabortlab:
   yyresult = 1;
   goto yyreturn;
 
-#if !defined(yyoverflow) || YYERROR_VERBOSE
+#if !defined yyoverflow || YYERROR_VERBOSE
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
@@ -6316,8 +6087,13 @@ yyexhaustedlab:
 
 yyreturn:
   if (yychar != YYEMPTY)
-     yydestruct ("Cleanup: discarding lookahead",
-		 yytoken, &yylval, context);
+    {
+      /* Make sure we have latest lookahead translation.  See comments at
+         user semantic actions for why this is necessary.  */
+      yytoken = YYTRANSLATE (yychar);
+      yydestruct ("Cleanup: discarding lookahead",
+                  yytoken, &yylval, context);
+    }
   /* Do not reclaim the symbols of the rule which action triggered
      this YYABORT or YYACCEPT.  */
   YYPOPSTACK (yylen);
@@ -6341,9 +6117,8 @@ yyreturn:
 }
 
 
-
-/* Line 1675 of yacc.c  */
-#line 3124 "pxr/usd/sdf/textFileFormat.yy"
+/* Line 2050 of yacc.c  */
+#line 3124 "textFileFormat.yy"
 
 
 //--------------------------------------------------------------------
@@ -6386,192 +6161,3 @@ void textFileFormatYyerror(Sdf_TextParserContext *context, const char *msg)
 
     context->seenError = true;
 }
-
-static void _ReportParseError(Sdf_TextParserContext *context, 
-                              const std::string &text)
-{
-    if (!context->values.IsRecordingString()) {
-        textFileFormatYyerror(context, text.c_str());
-    }
-}
-
-// Helper class for generating/managing the buffer used by flex.
-//
-// This simply reads the given file entirely into memory, padded as flex
-// requires, and passes it along. Normally, flex reads data from a given file in
-// blocks of 8KB, which leads to O(n^2) behavior when trying to match strings
-// that are over this size. Giving flex a pre-filled buffer avoids this
-// behavior.
-struct Sdf_MemoryFlexBuffer : public boost::noncopyable
-{
-public:
-    Sdf_MemoryFlexBuffer(const std::shared_ptr<ArAsset>& asset,
-                         const std::string& name, yyscan_t scanner);
-    ~Sdf_MemoryFlexBuffer();
-
-    yy_buffer_state *GetBuffer() { return _flexBuffer; }
-
-private:
-    yy_buffer_state *_flexBuffer;
-
-    std::unique_ptr<char[]> _fileBuffer;
-
-    yyscan_t _scanner;
-};
-
-Sdf_MemoryFlexBuffer::Sdf_MemoryFlexBuffer(
-    const std::shared_ptr<ArAsset>& asset,
-    const std::string& name, yyscan_t scanner)
-    : _flexBuffer(nullptr)
-    , _scanner(scanner)
-{
-    // flex requires 2 bytes of null padding at the end of any buffers it is
-    // given.  We'll allocate a buffer with 2 padding bytes, then read the
-    // entire file in.
-    static const size_t paddingBytesRequired = 2;
-
-    size_t size = asset->GetSize();
-    std::unique_ptr<char[]> buffer(new char[size + paddingBytesRequired]);
-
-    if (asset->Read(buffer.get(), size, 0) != size) {
-        TF_RUNTIME_ERROR("Failed to read asset contents @%s@: "
-                         "an error occurred while reading",
-                         name.c_str());
-        return;
-    }
-
-    // Set null padding.
-    memset(buffer.get() + size, '\0', paddingBytesRequired);
-    _fileBuffer = std::move(buffer);
-    _flexBuffer = textFileFormatYy_scan_buffer(
-        _fileBuffer.get(), size + paddingBytesRequired, _scanner);
-}
-
-Sdf_MemoryFlexBuffer::~Sdf_MemoryFlexBuffer()
-{
-    if (_flexBuffer)
-        textFileFormatYy_delete_buffer(_flexBuffer, _scanner);
-}
-
-#ifdef SDF_PARSER_DEBUG_MODE
-extern int yydebug;
-#else
-static int yydebug;
-#endif // SDF_PARSER_DEBUG_MODE
-
-namespace {
-struct _DebugContext {
-    explicit _DebugContext(bool state=true) : _old(yydebug) { yydebug = state; }
-    ~_DebugContext() { yydebug = _old; }
-private:
-    bool _old;
-};
-}
-
-/// Parse a text layer into an SdfData
-bool 
-Sdf_ParseLayer(
-    const std::string& fileContext, 
-    const std::shared_ptr<ArAsset>& asset,
-    const std::string& magicId,
-    const std::string& versionString,
-    bool metadataOnly,
-    SdfDataRefPtr data,
-    SdfLayerHints *hints)
-{
-    TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayer");
-
-    TRACE_FUNCTION();
-
-    // Turn on debugging, if enabled.
-    _DebugContext debugCtx;
-
-    // Configure for input file.
-    Sdf_TextParserContext context;
-
-    context.data = data;
-    context.fileContext = fileContext;
-    context.magicIdentifierToken = magicId;
-    context.versionString = versionString;
-    context.metadataOnly = metadataOnly;
-    context.values.errorReporter =
-        std::bind(_ReportParseError, &context, std::placeholders::_1);
-
-    // Initialize the scanner, allowing it to be reentrant.
-    textFileFormatYylex_init(&context.scanner);
-    textFileFormatYyset_extra(&context, context.scanner);
-
-    int status = -1;
-    {
-        Sdf_MemoryFlexBuffer input(asset, fileContext, context.scanner);
-        yy_buffer_state *buf = input.GetBuffer();
-
-        // Continue parsing if we have a valid input buffer. If there 
-        // is no buffer, the appropriate error will have already been emitted.
-        if (buf) {
-            try {
-                TRACE_SCOPE("textFileFormatYyParse");
-                status = textFileFormatYyparse(&context);
-                *hints = context.layerHints;
-            } catch (boost::bad_get const &) {
-                TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
-                Err(&context, "Internal layer parser error.");
-            }
-        }
-    }
-
-    // Note that the destructor for 'input' calls
-    // textFileFormatYy_delete_buffer(), which requires a valid scanner
-    // object. So we need 'input' to go out of scope before we can destroy the
-    // scanner.
-    textFileFormatYylex_destroy(context.scanner);
-
-    return status == 0;
-}
-
-/// Parse a layer text string into an SdfData
-bool
-Sdf_ParseLayerFromString(
-    const std::string & layerString, 
-    const std::string & magicId,
-    const std::string & versionString,
-    SdfDataRefPtr data,
-    SdfLayerHints *hints)
-{
-    TfAutoMallocTag2 tag("Sdf", "Sdf_ParseLayerFromString");
-
-    TRACE_FUNCTION();
-
-    // Configure for input string.
-    Sdf_TextParserContext context;
-
-    context.data = data;
-    context.magicIdentifierToken = magicId;
-    context.versionString = versionString;
-    context.values.errorReporter =
-        std::bind(_ReportParseError, &context, std::placeholders::_1);
-
-    // Initialize the scanner, allowing it to be reentrant.
-    textFileFormatYylex_init(&context.scanner);
-    textFileFormatYyset_extra(&context, context.scanner);
-
-    // Run parser.
-    yy_buffer_state *buf = textFileFormatYy_scan_string(
-        layerString.c_str(), context.scanner);
-    int status = -1;
-    try {
-        TRACE_SCOPE("textFileFormatYyParse");
-        status = textFileFormatYyparse(&context);
-        *hints = context.layerHints;
-    } catch (boost::bad_get const &) {
-        TF_CODING_ERROR("Bad boost:get<T>() in layer parser.");
-        Err(&context, "Internal layer parser error.");
-    }
-
-    // Clean up.
-    textFileFormatYy_delete_buffer(buf, context.scanner);
-    textFileFormatYylex_destroy(context.scanner);
-
-    return status == 0;
-}
-

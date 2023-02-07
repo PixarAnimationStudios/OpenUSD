@@ -74,7 +74,9 @@ pxr_library(sdf
 
         # Flex/Bison generated code
         path.tab
+        pathUtf8.tab
         textFileFormat.tab
+        textFileFormatUtf8.tab
    
     PYTHON_PUBLIC_CLASSES
         pyChildrenProxy
@@ -108,6 +110,7 @@ pxr_library(sdf
         parserValueContext
         pathParser
         subLayerListEditor
+        textFileFormatParser
         textParserContext
         valueTypeRegistry
         vectorListEditor
@@ -119,7 +122,9 @@ pxr_library(sdf
     CPPFILES
         # Flex/Bison generated code
         path.lex.cpp
+        pathUtf8.lex.cpp
         textFileFormat.lex.cpp
+        textFileFormatUtf8.lex.cpp
 
     PYTHON_CPPFILES
         moduleDeps.cpp

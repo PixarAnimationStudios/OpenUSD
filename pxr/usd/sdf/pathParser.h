@@ -64,6 +64,15 @@ yy_buffer_state *pathYy_scan_bytes(const char* str, size_t len,
                                    yyscan_t yyscanner);
 void pathYy_delete_buffer(yy_buffer_state *b, yyscan_t yyscanner);
 
+// Generated bison symbols for UTF8 version of the parser
+int pathUtf8Yyparse(Sdf_PathParserContext *context);
+int pathUtf8Yylex_init(yyscan_t *yyscanner);
+int pathUtf8Yylex_destroy(yyscan_t yyscanner);
+yy_buffer_state* pathUtf8Yy_scan_string(const char* str, yyscan_t yyscanner);
+yy_buffer_state* pathUtf8Yy_scan_bytes(const char* str, int len, 
+                                    yyscan_t yyscanner);
+void pathUtf8Yy_delete_buffer(yy_buffer_state* b, yyscan_t yyscanner);
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_API

@@ -1,4 +1,5 @@
 #!/pxrpythonsubst
+# -*- coding: utf-8
 #
 # Copyright 2017 Pixar
 #
@@ -21,6 +22,8 @@
 # distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
+
+# NOTE: This file is saved with UTF-8 encoding to allow testing of UTF-8 based characters in paths
 
 from __future__ import print_function
 
@@ -59,8 +62,6 @@ class TestSdfPath(unittest.TestCase):
             /Foo/Bar/
             /Foo.bar[targ]/Bar
             /Foo.bar[targ].foo.foo
-            123
-            123test
             /Foo:Bar
             /Foo.bar.mapper[/Targ.attr].arg:name:space
             '''.split()
@@ -70,7 +71,23 @@ class TestSdfPath(unittest.TestCase):
             self.assertEqual(Sdf.Path(badPath), Sdf.Path.emptyPath)
             self.assertFalse(Sdf.Path.IsValidPathString(badPath))
         print('\tPassed')
-        
+
+        if not Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
+            # these aren't valid paths when using ASCII identifiers
+            # because they have identifiers starting with numbers
+            # later we test the same under UTF8 identifiers as good
+            asciiBadPaths = '''
+                123
+                123test
+                /123/test
+                '''.split()
+
+            for badPath in asciiBadPaths:
+                self.assertTrue(Sdf.Path(badPath).isEmpty)
+                self.assertEqual(Sdf.Path(badPath), Sdf.Path())
+                self.assertEqual(Sdf.Path(badPath), Sdf.Path.emptyPath)
+                self.assertFalse(Sdf.Path.IsValidPathString(badPath))
+
         # Test lessthan
         self.assertTrue(Sdf.Path('aaa') < Sdf.Path('aab'))
         self.assertTrue(not Sdf.Path('aaa') < Sdf.Path())
@@ -125,9 +142,9 @@ class TestSdfPath(unittest.TestCase):
         ]
         
         # Test IsAbsolutePath and IsPropertyPath
-        def BasicTest(path, elements):
-            self.assertEqual(path.IsAbsolutePath(), testAbsolute[testIndex])
-            self.assertEqual(path.IsPropertyPath(), testProperty[testIndex])
+        def BasicTest(path, elements, absolute, prop, test_index):
+            self.assertEqual(path.IsAbsolutePath(), absolute[test_index])
+            self.assertEqual(path.IsPropertyPath(), prop[test_index])
             prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), elements)
             self.assertEqual(path.GetPrefixes(), prefixes)
             self.assertEqual(path, eval(repr(path)))
@@ -140,17 +157,80 @@ class TestSdfPath(unittest.TestCase):
 
             # Test path
             testPaths.append(Sdf.Path(string))
-            BasicTest(testPaths[-1], testElements[testIndex])
+            BasicTest(testPaths[-1], testElements[testIndex], testAbsolute, 
+                testProperty, testIndex)
         
             # If path is a property then try it with a namespaced name.
             if testProperty[testIndex]:
                 testPaths.append(Sdf.Path(string + ':this:has:namespaces'))
                 elements = list(testElements[testIndex])
                 elements[-1] += ':this:has:namespaces'
-                BasicTest(testPaths[-1], elements)
+                BasicTest(testPaths[-1], elements, testAbsolute,
+                    testProperty, testIndex)
         
         print('\tPassed')
         
+        # ========================================================================
+        # Test UTF-8 encoded paths
+        # ========================================================================
+        utf8_good_paths = [
+            "123",
+            "123test",
+            "/123/test",
+            "Süßigkeiten.bar",
+            "/34/情報/información",
+            "情報._جيد"
+        ]
+        utf8_good_absolute = [False, False, True, False, True, False]
+        utf8_good_property = [False, False, False, True, False, True]
+        utf8_good_elements = [
+            ["123"],
+            ["123test"],
+            ["123", "test"],
+            ["Süßigkeiten", ".bar"],
+            ["34", "情報", "información"],
+            ["情報", "._جيد"]
+        ]
+
+        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
+            test_paths = list()
+            for test_index in range(len(utf8_good_paths)):
+                self.assertEqual(utf8_good_paths[test_index], 
+                    str(Sdf.Path(utf8_good_paths[test_index])))
+                test_paths.append(Sdf.Path(utf8_good_paths[test_index]))
+                BasicTest(test_paths[-1], utf8_good_elements[test_index], 
+                    utf8_good_absolute, utf8_good_property, test_index)
+                if utf8_good_property[test_index]:
+                    test_paths.append(Sdf.Path(utf8_good_paths[test_index] + 
+                        ":this:has:namespaceß"))
+                    elements = list(utf8_good_elements[test_index])
+                    elements[-1] += ":this:has:namespaceß"
+                    BasicTest(test_paths[-1], elements, utf8_good_absolute, 
+                        utf8_good_property, test_index)
+        else:
+            # with the ASCII parser, it will error out at the umlaut
+            # under x86, so the path should only have the "S"
+            # this is an illustration of a test that will pass a check
+            # for IsValidPathString, but is actually not what we expect!
+            # TODO: under aarch64, this result will be difference
+            # because char is signed rather than unsigned on that platform
+            bad_path_for_ascii = "Süßigkeiten.bar"
+            self.assertFalse(Sdf.Path(bad_path_for_ascii).isEmpty)
+            self.assertTrue(Sdf.Path(bad_path_for_ascii), Sdf.Path("S"))
+            self.assertTrue(Sdf.Path.IsValidPathString(bad_path_for_ascii))
+
+            # the next two should be flagged as bad paths
+            bad_path_for_ascii = "/34/情報/información"
+            self.assertTrue(Sdf.Path(bad_path_for_ascii).isEmpty)
+            self.assertEqual(Sdf.Path(bad_path_for_ascii), Sdf.Path())
+            self.assertEqual(Sdf.Path(bad_path_for_ascii), Sdf.Path.emptyPath)
+            self.assertFalse(Sdf.Path.IsValidPathString(bad_path_for_ascii))
+            bad_path_for_ascii = "情報._جيد"
+            self.assertTrue(Sdf.Path(bad_path_for_ascii).isEmpty)
+            self.assertEqual(Sdf.Path(bad_path_for_ascii), Sdf.Path())
+            self.assertEqual(Sdf.Path(bad_path_for_ascii), Sdf.Path.emptyPath)
+            self.assertFalse(Sdf.Path.IsValidPathString(bad_path_for_ascii))
+
         # ========================================================================
         # Test SdfPath hashing
         # ========================================================================

@@ -226,6 +226,7 @@ pxr_test_scripts(
     testenv/testUsdInstanceProxy.py
     testenv/testUsdInstancing.py
     testenv/testUsdLoadUnloadDeepNestedInstancing.py
+    testenv/testUsdLoadUtf8Content.py
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
@@ -239,6 +240,7 @@ pxr_test_scripts(
     testenv/testUsdRelationships.py
     testenv/testUsdResolveTargetPy.py
     testenv/testUsdSchemaBasePy.py
+    testenv/testUsdSchemaGen.py
     testenv/testUsdSchemaRegistry.py
     testenv/testUsdSchemaVersioning.py
     testenv/testUsdSpecializes.py
@@ -526,6 +528,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdFileFormats
     DEST testUsdFileFormats_pread
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdLoadUtf8Content
+    DEST testUsdLoadUtf8Content
 )
 
 pxr_install_test_dir(
@@ -928,6 +935,12 @@ pxr_register_test(testUsdFileFormats_pread
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdLoadUtf8Content
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdLoadUtf8Content"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdMetadataCpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMetadataCpp"
     EXPECTED_RETURN_CODE 0
@@ -1117,6 +1130,12 @@ pxr_register_test(testUsdSchemaBase
 pxr_register_test(testUsdSchemaBasePy
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaBasePy"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaGen
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaGen"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -34,6 +34,8 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/unicodeUtils.h"
 
 #include <cstdarg>
 #include <cstring>
@@ -45,6 +47,15 @@
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// environment setting for defaulting back to standard ASCII rules for 
+// identifiers and prim names by default this value is false indicating 
+// that normal USD processing paths will parse and determine identifier
+// validity.  If this value is set to true, Unicode processing paths
+// will be used on UTF-8 character sequences to determine identifier
+// validity.  In addition, if this value is true, slightly different
+// rules will be used to evaluate generic identifiers vs. prim names.
+TF_API extern TfEnvSetting<bool> TF_UTF8_IDENTIFIERS;
 
 class TfToken;
 
@@ -531,6 +542,34 @@ private:
                           const std::string &rhs) const;
 };
 
+///
+/// \class TFCollationOrder 
+///
+/// Provides an ordering based on regular ASCII dictionary or Unicode UTF8 UCA
+/// depending on the value of TF_UTF8_IDENTIFIERS.
+/// 
+/// This struct can be used in typedefs to provide an orderer that will access
+/// the right orderer underneath.
+/// 
+struct TfCollationOrder {
+    /// Return true if \p lhs is less than \p rhs based on some ordering.
+    /// The ordering varies based on the value of TF_UTF8_IDENTIFIERS:
+    /// False: ASCII dictionary ordering
+    /// True: Unicode UTF8 UCA (Unicode collation algorithm)
+    ///
+    /// Normally this functor is used to supply an ordering functor for STL
+    /// containers: for example,
+    /// \code
+    ///   map<string, DataType, TfCollationOrder>  table;
+    /// \endcode
+    ///
+    /// If you simply need to compare two strings, you can do so as follows:
+    /// \code
+    ///     bool aIsFirst = TfCollationOrder()(aString, bString);
+    /// \endcode
+    TF_API bool operator()(const std::string& lhs, const std::string& rhs) const;
+};
+
 /// Convert an arbitrary type into a string
 ///
 /// Use the type's stream output operator to convert it into a string. You are
@@ -675,6 +714,11 @@ TF_API
 std::string TfStringCatPaths( const std::string &prefix, 
                               const std::string &suffix );
 
+/// Convenience method for retrieving the value of TF_UTF8_IDENTIFIERS.
+///
+/// Returns true if the setting for using UTF8 identifiers is on, false if not.
+TF_API bool UseUTF8Identifiers();
+
 /// Test whether \a identifier is valid.
 ///
 /// An identifier is valid if it follows the C/Python identifier convention;
@@ -683,18 +727,113 @@ std::string TfStringCatPaths( const std::string &prefix,
 inline bool
 TfIsValidIdentifier(std::string const &identifier)
 {
-    char const *p = identifier.c_str();
-    auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
-    auto number = [](unsigned c) { return (c-'0') < 10; };
-    auto under = [](unsigned c) { return c == '_'; };
-    unsigned x = *p;
-    if (!x || number(x)) {
-        return false;
+    if (UseUTF8Identifiers())
+    {
+        // use unicode utils to validate the identifier
+        return TfUnicodeUtils::IsValidUTF8Identifier(identifier, 
+            identifier.begin(), identifier.end());
     }
-    while (letter(x) || number(x) || under(x)) {
-        x = *p++;
-    };
-    return x == 0;
+    else
+    {
+        char const *p = identifier.c_str();
+        auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
+        auto number = [](unsigned c) { return (c-'0') < 10; };
+        auto under = [](unsigned c) { return c == '_'; };
+        unsigned x = *p;
+        if (!x || number(x)) {
+            return false;
+        }
+        while (letter(x) || number(x) || under(x)) {
+            x = *p++;
+        };
+        return x == 0;
+    }
+}
+
+/// Test whether the subsequence of \a identifier given by begin and end 
+/// is a valid identifier name.
+///
+/// An identifier name is valid if it consists of any valid UTF-8 sequence 
+/// that is at least one character long and fulfills the standard C/Python 
+/// identifier convention for Unicode (XID_Start followed by 0 or more 
+/// XID_Continue class characters).  If the TF_UTF8_IDENTIFIERS environment 
+/// setting is overridden to false, identifier validity is checked against 
+/// legacy rules and follows the C/Python identifier convention for ASCII 
+/// characters (i.e. at least one character long, must start with a letter 
+/// or underscore, and must contain only letters, underscores, and numerals).
+/// WARNING: This method is for internal use only and performs no 
+///          validation on begin / end.
+/// 
+inline bool
+_TfIsValidIdentifierSubsequence(const std::string& identifier,
+    std::string::const_iterator begin, std::string::const_iterator end)
+{
+    if (UseUTF8Identifiers())
+    {
+        // use unicode utils to validate the identifier
+        return TfUnicodeUtils::IsValidUTF8Identifier(identifier, 
+            begin, end);
+    }
+    else
+    {
+        size_t count = (end - begin);
+        char const *p = &(*begin);
+        auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
+        auto number = [](unsigned c) { return (c-'0') < 10; };
+        auto under = [](unsigned c) { return c == '_'; };
+        unsigned x = *p;
+        if (!x || number(x)) {
+            return false;
+        }
+        for (size_t i = 0; i < count; i++)
+        {
+            if (letter(x) || number(x) || under(x))
+            {
+                x = *p++;
+            }
+            else
+            {
+                break;
+            }
+        }
+        return x == 0;
+    }
+}
+
+/// Tests whether \a primName is valid.
+///
+/// A prim name is valid if it's at least one character long and all characters
+/// are valid UTF-8 sequences.  This method ignores the value of 
+/// TF_UTF8_IDENTIFIERS and instead uses either UTF-8 or ASCII rules for 
+/// validation based on the value of \a utf8.
+///
+inline bool
+TfIsValidPrimName(const std::string& primName, bool utf8)
+{
+    if (utf8)
+    {
+        // use unicode utils to validate the prim name
+        return TfUnicodeUtils::IsValidUTF8PrimName(primName,
+        primName.begin(), primName.end());
+    }
+    else
+    {
+        return TfIsValidIdentifier(primName);
+    }
+}
+
+/// Tests whether \a primName is valid.
+///
+/// A prim name is valid if it's at least one character long and all characters
+/// are valid UTF-8 sequences.  If not using TF_UTF8_IDENTIFIERS, this method
+/// is equivalent to TfIsValidIdentifer.
+/// Valid UTF-8 sequences here means all characters must be in the XID_Continue
+/// character class (i.e. names can start with a digit, etc.).
+/// 
+inline bool
+TfIsValidPrimName(const std::string& primName)
+{
+    return TfIsValidPrimName(primName, UseUTF8Identifiers());
 }
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by
@@ -702,6 +841,12 @@ TfIsValidIdentifier(std::string const &identifier)
 TF_API
 std::string
 TfMakeValidIdentifier(const std::string &in);
+
+/// Produce a valid prim name (see TfIsValidPrimName) from \p in by
+/// replacing invalid characters with '_'.  If \p in is empty, return "_".
+TF_API
+std::string
+TfMakeValidPrimName(const std::string &in);
 
 /// Escapes characters in \a in so that they are valid XML.
 ///

@@ -25,6 +25,7 @@
 
 from pxr import Tf
 import logging
+import os
 import unittest
 
 class TestStringUtils(unittest.TestCase):
@@ -131,6 +132,53 @@ class TestStringUtils(unittest.TestCase):
         self.assertFalse(Tf.IsValidIdentifier('h e l l o'), 'h_e_l_l_o')
         self.assertFalse(Tf.IsValidIdentifier('!@#$%'), '_____')
 
+    def test_utf8_collation_ordering(self):
+
+        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS') == False:
+            return
+
+        def get_bytes(s):
+            codepoint_split = s.strip().split(' ')
+            unicode_str = ''
+            for byte in codepoint_split:
+                unicode_str += chr(int(byte, 16))
+            encoded_bytes = unicode_str.encode('utf-8', "ignore")
+            return encoded_bytes
+
+        # The files are designed so each line in the file will order as being greater than or equal to the previous one, when using the UCA and the Default Unicode Collation Element Table.
+        # There are known non-conformances in the current implementation that are called out in the CollationTest_NON_IGNORABLE_SHORT_ExceptionList.txt file.
+        # This test will test consecutive lines to ensure that the previous line is less than the current.
+        # If this fails, and the lines are not in the exception list, the test will fail.
+        def parse_and_test_file(file, start_index):
+            lines = []
+            with open(file, 'r') as file_to_test:
+                lines = file_to_test.readlines()
+            
+            input_base_name = os.path.splitext(os.path.basename(file))
+            exception_file_name = input_base_name[0] + "_ExceptionList" + input_base_name[1]
+            exception_lines = []
+            with open(exception_file_name, 'r') as exception_file:
+                exception_lines = exception_file.readlines()
+                
+            # create the exception list
+            # each exception is formatted as first_element_in_test ';' second_element_in_test
+            exceptions = []
+            for exception_line in exception_lines:
+                tokens = exception_line.split(';')
+                exceptions.append((tokens[0].strip(), tokens[1].strip()))
+                
+            for ln in range(start_index, len(lines) - 1):
+                is_exception = False
+                for exception_element in exceptions:
+                    if exception_element[0] == lines[ln].strip() and exception_element[1] == lines[ln + 1].strip():
+                        is_exception = True
+                        break
+                
+                if not is_exception:
+                    self.assertGreaterEqual(Tf.DictionaryStrcmp(get_bytes(lines[ln + 1]), get_bytes(lines[ln])), 0, 'Failure in file {} on lines {} and {} with code points {} and {}'.format(file, ln, ln+1, lines[ln], lines[ln+1]))
+
+        # First 10 lines are comments
+        parse_and_test_file('./CollationTest_NON_IGNORABLE_SHORT.txt', 9)
 
 if __name__ == '__main__':
     unittest.main()

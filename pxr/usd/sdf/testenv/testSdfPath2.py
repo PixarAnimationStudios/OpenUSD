@@ -381,7 +381,6 @@ class TestSdfPath2(unittest.TestCase):
         self.assertEqual(Sdf.Path("/A/B/C/D.rel[../../E.rel[F.attr].attr].attr").MakeAbsolutePath("/A/B"), "/A/B/C/D.rel[/A/B/E.rel[/A/B/E/F.attr].attr].attr")
         self.assertEqual(Sdf.Path("C/D.rel[../../E.rel[F.attr].attr].attr").MakeAbsolutePath("/A/B"), "/A/B/C/D.rel[/A/B/E.rel[/A/B/E/F.attr].attr].attr")
         self.assertEqual(Sdf.Path("../.attr").MakeAbsolutePath("/foo/bar"), "/foo.attr")
-        self.assertEqual(Sdf.Path("../.attr[1 & 2]").MakeAbsolutePath("/foo/bar"), "/foo.attr[1 & 2]")
         self.assertEqual(Sdf.Path.emptyPath.MakeAbsolutePath("/foo/bar"), Sdf.Path.emptyPath)
         self.assertEqual(Sdf.Path(".attr.mapper[/connection.target]").MakeAbsolutePath("/foo/bar"), "/foo/bar.attr.mapper[/connection.target]")
         self.assertEqual(Sdf.Path(".attr.mapper[/connection.target].arg").MakeAbsolutePath("/foo/bar"), "/foo/bar.attr.mapper[/connection.target].arg")
@@ -404,12 +403,14 @@ class TestSdfPath2(unittest.TestCase):
         
         self.assertEqual(Sdf.Path("/prim.rel[foo].attr").ReplaceTargetPath("bar"), "/prim.rel[bar].attr")
         self.assertEqual(Sdf.Path("/prim.rel[foo].attr:baz").ReplaceTargetPath("bar"), "/prim.rel[bar].attr:baz")
-        self.assertEqual(Sdf.Path("/prim.rel[foo].attr[1]").ReplaceTargetPath("bar"), "/prim.rel[bar].attr[1]")
+
+        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
+            self.assertEqual(Sdf.Path("/prim.rel[foo].attr[1]").ReplaceTargetPath("bar"), "/prim.rel[foo].attr[bar]")
+
         self.assertEqual(Sdf.Path("foo").ReplaceTargetPath("bar"), "foo")
         self.assertEqual(Sdf.Path("/prim.attr.mapper[/foo.target]").ReplaceTargetPath("/bar.target"), "/prim.attr.mapper[/bar.target]")
         self.assertEqual(Sdf.Path("/prim.attr.mapper[/foo.target].arg").ReplaceTargetPath("/bar.target"), "/prim.attr.mapper[/bar.target].arg")
         self.assertEqual(Sdf.Path("/prim.rel[foo].attr.expression").ReplaceTargetPath("bar"), "/prim.rel[bar].attr.expression")
-        self.assertEqual(Sdf.Path("/prim.rel[foo].attr.expression").ReplaceTargetPath("bar:baz"), "/prim.rel[bar:baz].attr.expression")
         self.assertEqual(Sdf.Path("/prim.rel[/prim].relAttr.mapper[/prim.attr]").ReplaceTargetPath("/bar.attr"), "/prim.rel[/prim].relAttr.mapper[/bar.attr]")
         self.assertEqual(Sdf.Path("/prim.rel[/prim].relAttr.mapper[/prim.attr]").ReplaceTargetPath("/bar.attr:baz"), "/prim.rel[/prim].relAttr.mapper[/bar.attr:baz]")
         

@@ -806,6 +806,18 @@ public:
     /// This returns \c true if IsValidIdentifier() does.
     SDF_API static bool IsValidNamespacedIdentifier(const std::string &name);
 
+    /// Returns whether \p name is a legal prim name for any path component.
+    SDF_API static bool IsValidPrimName(const std::string& name);
+
+    /// Returns whether \p name is a legal prim name for any path component.
+    /// This method uses the value of \p utf8 to determine which rules to
+    /// use to validate, regardless of the value of TF_UTF8_IDENTIFIERS.
+    SDF_API static bool IsValidPrimName(const std::string& name, bool utf8);
+
+    /// Returns whether \p name is a legal variant identifier.
+    /// Variant identifiers are more permissive than prim names.
+    SDF_API static bool IsValidVariantIdentifier(const std::string& name);
+
     /// Tokenizes \p name by the namespace delimiter.
     /// Returns the empty vector if \p name is not a valid namespaced
     /// identifier.

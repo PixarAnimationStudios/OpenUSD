@@ -118,6 +118,7 @@ private:
 } // anon
 
 static inline bool _IsValidIdentifier(TfToken const &name);
+static inline bool _IsValidPrimName(const TfToken& name);
 
 // XXX: Enable this define to make bad path strings
 // cause runtime errors.  This can be useful when trying to track down cases
@@ -137,26 +138,53 @@ SdfPath::SdfPath(const std::string &path) {
 
     Sdf_PathParserContext context;
 
-    // Initialize the scanner, allowing it to be reentrant.
-    pathYylex_init(&context.scanner);
+    if (UseUTF8Identifiers())
+    {
+        // Initialize the scanner, allowing it to be reentrant.
+        pathUtf8Yylex_init(&context.scanner);
 
-    yy_buffer_state *b = pathYy_scan_bytes(path.c_str(), path.size(),
-                                           context.scanner);
-    if( pathYyparse(&context) != 0 ) {
+        yy_buffer_state *b = pathUtf8Yy_scan_bytes(path.c_str(), 
+                                        static_cast<int>(path.size()),
+                                        context.scanner);
+        if( pathUtf8Yyparse(&context) != 0 ) {
 #ifdef PARSE_ERRORS_ARE_ERRORS
-        TF_RUNTIME_ERROR("Ill-formed SdfPath <%s>: %s",
+            TF_RUNTIME_ERROR("Ill-formed SdfPath <%s>: %s",
                          path.c_str(), context.errStr.c_str());
 #else
-        TF_WARN("Ill-formed SdfPath <%s>: %s",
+            TF_WARN("Ill-formed SdfPath <%s>: %s",
                 path.c_str(), context.errStr.c_str());
 #endif
-    } else {
-        *this = std::move(context.path);
-    }
+        } else {
+            *this = std::move(context.path);
+        }
 
-    // Clean up.
-    pathYy_delete_buffer(b, context.scanner);
-    pathYylex_destroy(context.scanner);
+        // Clean up.
+        pathUtf8Yy_delete_buffer(b, context.scanner);
+        pathUtf8Yylex_destroy(context.scanner);
+    }
+    else
+    {
+        // Initialize the scanner, allowing it to be reentrant.
+        pathYylex_init(&context.scanner);
+
+        yy_buffer_state *b = pathYy_scan_bytes(path.c_str(), path.size(),
+                                           context.scanner);
+        if( pathYyparse(&context) != 0 ) {
+#ifdef PARSE_ERRORS_ARE_ERRORS
+            TF_RUNTIME_ERROR("Ill-formed SdfPath <%s>: %s",
+                         path.c_str(), context.errStr.c_str());
+#else
+            TF_WARN("Ill-formed SdfPath <%s>: %s",
+                path.c_str(), context.errStr.c_str());
+#endif
+        } else {
+            *this = std::move(context.path);
+        }
+
+        // Clean up.
+        pathYy_delete_buffer(b, context.scanner);
+        pathYylex_destroy(context.scanner);
+    }
 }
 
 const SdfPath &
@@ -843,7 +871,7 @@ SdfPath::AppendChild(TfToken const &childName) const {
         if (ARCH_UNLIKELY(childName == SdfPathTokens->parentPathElement)) {
             return false;
         }
-        else if (ARCH_UNLIKELY(!_IsValidIdentifier(childName))) {
+        else if (ARCH_UNLIKELY(!_IsValidPrimName(childName))) {
             dd.Warn("Invalid prim name '%s'", childName.GetText());
             return false;
         }
@@ -1790,10 +1818,27 @@ static inline bool _IsValidIdentifier(TfToken const &name)
     return TfIsValidIdentifier(name.GetString());
 }
 
+static inline bool _IsValidPrimName(const TfToken& name)
+{
+    return TfIsValidPrimName(name.GetString());
+}
+
 bool
 SdfPath::IsValidIdentifier(const std::string &name)
 {
     return TfIsValidIdentifier(name);
+}
+
+bool
+SdfPath::IsValidPrimName(const std::string& name)
+{
+    return TfIsValidPrimName(name);
+}
+
+bool
+SdfPath::IsValidPrimName(const std::string& name, bool utf8)
+{
+    return TfIsValidPrimName(name, utf8);
 }
 
 // We use our own _IsAlpha and _IsAlnum here for two reasons.  One, we want to
@@ -1810,78 +1855,228 @@ static constexpr bool _IsAlnum(int x) {
 bool
 SdfPath::IsValidNamespacedIdentifier(const std::string &name)
 {
-    // A valid C/Python identifier except we also allow the namespace delimiter
-    // and if we tokenize on that delimiter then all tokens are valid C/Python
-    // identifiers.  That means following a delimiter there must be an '_' or
-    // alphabetic character.
-    constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
-    for (char const *p = name.c_str(); *p; ++p) {
-        if (!_IsAlpha(*p) && *p != '_') {
-            return false;
+    if (UseUTF8Identifiers())
+    {
+        // note that the original logic in the else block was not touched to 
+        // preserve existing code paths, but it is unfortunate that these sorts
+        // of checks are distributed across the code base rather 
+        // than using TfIsValidIdentifier as we do in this case (at the
+        // cost of some function call overhead)
+
+        // valid namespaced identifiers are valid identifiers separated by 
+        // SDF_PATH_NS_DELIMITER_CHAR the individual identifiers are validated 
+        // according to either UTF-8 rules
+        constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
+        std::string::const_iterator begin = name.begin();
+        std::string::const_iterator end = name.end();
+        std::string::const_iterator subsequenceStart = begin;
+        for (; begin != end; begin++)
+        {
+            // note this requires that SDF_PATH_NS_DELIMETER_CHAR is capable
+            // of being represented as a single UTF-8 byte (i.e. in the ASCII character set)
+            // otherwise we cannot reliably break the subsequences appropriately here
+            // this uses a special version of TfIsValidIdentifier that looks in sub-sequences
+            // of strings to validate
+            if ((*begin) == delim)
+            {
+                if (!_TfIsValidIdentifierSubsequence(name, subsequenceStart, begin))
+                {
+                    return false;
+                }
+
+                subsequenceStart = begin + 1;
+            }
         }
-        for (++p; _IsAlnum(*p) ||*p == '_'; ++p) {
-            /* consume identifier */
-        }
-        if (*p != delim) {
-            return !*p;
-        }
+
+        // check the last subsequence
+        return _TfIsValidIdentifierSubsequence(name, subsequenceStart, end);
     }
-    return false;
+    else
+    {
+        // A valid C/Python identifier except we also allow the namespace delimiter
+        // and if we tokenize on that delimiter then all tokens are valid C/Python
+        // identifiers.  That means following a delimiter there must be an '_' or
+        // alphabetic character.
+        constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
+        for (char const *p = name.c_str(); *p; ++p) {
+            if (!_IsAlpha(*p) && *p != '_') {
+                return false;
+            }
+            for (++p; _IsAlnum(*p) ||*p == '_'; ++p) {
+                /* consume identifier */
+            }
+            if (*p != delim) {
+                return !*p;
+            }
+        }
+        return false;
+    }
+}
+
+bool SdfPath::IsValidVariantIdentifier(const std::string& name)
+{
+    if (name.empty())
+    {
+        return false;
+    }
+
+    if (UseUTF8Identifiers())
+    {
+        std::string::const_iterator begin = name.begin();
+        std::string::const_iterator end = name.end();
+
+        // allow optional leading dot
+        if (begin != end && *begin == '.')
+        {
+            begin++;
+        }
+
+        TfUnicodeUtils::utf8_const_iterator iterator(begin, end);
+        for (; iterator != end; iterator++)
+        {
+            // valid variant identifier characters are '|' or '-'
+            // in addition to standard identifier characters
+            if (!(TfUnicodeUtils::IsUTF8CharXIDContinue(name, iterator.Wrapped()) || *(iterator.Wrapped()) == '|' || *(iterator.Wrapped()) == '-'))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+    else
+    {
+        // Allow [[:alnum:]_|\-]+ with an optional leading dot.
+
+        std::string::const_iterator first = name.begin();
+        std::string::const_iterator last = name.end();
+
+        // Allow optional leading dot.
+        if (first != last && *first == '.') {
+            ++first;
+        }
+
+        for (; first != last; ++first) {
+            char c = *first;
+            if (!(_IsAlnum(c) || (c == '_') || (c == '|') || (c == '-'))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 std::vector<std::string>
 SdfPath::TokenizeIdentifier(const std::string &name)
 {
-    std::vector<std::string> result;
+    if (UseUTF8Identifiers())
+    {
+        std::vector<std::string> result;
 
-    // This code currently assumes the namespace delimiter is one character.
-    const char namespaceDelimiter =
-        SdfPathTokens->namespaceDelimiter.GetText()[0];
+        // This code currently assumes the namespace delimiter is one character.
+        const char namespaceDelimiter =
+            SdfPathTokens->namespaceDelimiter.GetText()[0];
 
-    std::string::const_iterator first = name.begin();
-    std::string::const_iterator last = name.end();
+        std::string::const_iterator begin = name.begin();
+        std::string::const_iterator end = name.end();
 
-    // Not empty and first character is alpha or '_'.
-    if (first == last || !(isalpha(*first) || (*first == '_')))
-        return result;
-    // Last character is not the namespace delimiter.
-    if (*(last - 1) == namespaceDelimiter)
-        return result;
+        // make sure the string isn't empty and the first sequence is not the delimiter
+        if (begin == end || (*begin) == namespaceDelimiter)
+        {
+            return result;
+        }
 
-    // Count delimiters and reserve space in result.
-    result.reserve(1 + std::count(first, last, namespaceDelimiter));
+        // make sure the string doesn't end with the delimiter
+        if (*(end - 1) == namespaceDelimiter)
+        {
+            return result;
+        }
 
-    std::string::const_iterator anchor = first;
-    for (++first; first != last; ++first) {
-        // Allow a namespace delimiter.
-        if (*first == namespaceDelimiter) {
-            // Record token.
-            result.push_back(std::string(anchor, first));
+        // Count delimiters and reserve space in result.
+        result.reserve(1 + std::count(begin, end, namespaceDelimiter));
 
-            // Skip delimiter.  We know we will not go beyond the end of
-            // the string because we checked before the loop that the
-            // last character was not the delimiter.
-            anchor = ++first;
+        size_t startPosition = 0;
+        size_t delimPosition = name.find(namespaceDelimiter, startPosition);
 
-            // First character.
-            if (!(isalpha(*first) || (*first == '_'))) {
+        // continuously look for the next delimiter to tokenize
+        while (delimPosition != std::string::npos)
+        {
+            if (!_TfIsValidIdentifierSubsequence(name, begin + startPosition, begin + delimPosition))
+            {
                 TfReset(result);
                 return result;
             }
+
+            result.push_back(std::string(name, startPosition, delimPosition - startPosition));
+            startPosition = delimPosition + 1;
+            delimPosition = name.find(namespaceDelimiter, startPosition);
         }
-        else {
-            // Next character 
-            if (!(isalnum(*first) || (*first == '_'))) {
-                TfReset(result);
-                return result;
-            }
+
+        // get the last one starting at startPosition and going to the end
+        if (!_TfIsValidIdentifierSubsequence(name, begin + startPosition, end))
+        {
+            TfReset(result);
+            return result;
         }
+
+        result.push_back(std::string(name, startPosition));
+
+        return result;
     }
+    else
+    {
+        std::vector<std::string> result;
 
-    // Record the last token.
-    result.push_back(std::string(anchor, first));
+        // This code currently assumes the namespace delimiter is one character.
+        const char namespaceDelimiter =
+            SdfPathTokens->namespaceDelimiter.GetText()[0];
 
-    return result;
+        std::string::const_iterator first = name.begin();
+        std::string::const_iterator last = name.end();
+
+        // Not empty and first character is alpha or '_'.
+        if (first == last || !(isalpha(*first) || (*first == '_')))
+            return result;
+        // Last character is not the namespace delimiter.
+        if (*(last - 1) == namespaceDelimiter)
+            return result;
+
+        // Count delimiters and reserve space in result.
+        result.reserve(1 + std::count(first, last, namespaceDelimiter));
+
+        std::string::const_iterator anchor = first;
+        for (++first; first != last; ++first) {
+            // Allow a namespace delimiter.
+            if (*first == namespaceDelimiter) {
+                // Record token.
+                result.push_back(std::string(anchor, first));
+
+                // Skip delimiter.  We know we will not go beyond the end of
+                // the string because we checked before the loop that the
+                // last character was not the delimiter.
+                anchor = ++first;
+
+                // First character.
+                if (!(isalpha(*first) || (*first == '_'))) {
+                    TfReset(result);
+                    return result;
+                }
+            }
+            else {
+                // Next character 
+                if (!(isalnum(*first) || (*first == '_'))) {
+                    TfReset(result);
+                    return result;
+                }
+            }
+        }
+
+        // Record the last token.
+        result.push_back(std::string(anchor, first));
+
+        return result;
+    }
 }
 
 TfTokenVector
@@ -2004,23 +2199,47 @@ SdfPath::IsValidPathString(const std::string &pathString,
 {
     Sdf_PathParserContext context;
 
-    // Initialize the scanner, allowing it to be reentrant.
-    pathYylex_init(&context.scanner);
+    if (UseUTF8Identifiers())
+    {
+        // Initialize the scanner, allowing it to be reentrant.
+        pathUtf8Yylex_init(&context.scanner);
 
-    yy_buffer_state *b =
-        pathYy_scan_bytes(pathString.c_str(), pathString.size(), 
-                          context.scanner);
+        yy_buffer_state *b =
+            pathUtf8Yy_scan_bytes(pathString.c_str(), 
+                        static_cast<int>(pathString.size()), 
+                        context.scanner);
 
-    bool valid = (pathYyparse(&context) == 0);
+        bool valid = (pathUtf8Yyparse(&context) == 0);
 
-    if (!valid && errMsg)
-        *errMsg = context.errStr;
+        if (!valid && errMsg)
+            *errMsg = context.errStr;
 
-    // Clean up.
-    pathYy_delete_buffer(b, context.scanner);
-    pathYylex_destroy(context.scanner);
+        // Clean up.
+        pathUtf8Yy_delete_buffer(b, context.scanner);
+        pathUtf8Yylex_destroy(context.scanner);
 
-    return valid;
+        return valid;
+    }
+    else
+    {
+        // Initialize the scanner, allowing it to be reentrant.
+        pathYylex_init(&context.scanner);
+
+        yy_buffer_state *b =
+            pathYy_scan_bytes(pathString.c_str(), pathString.size(), 
+                            context.scanner);
+
+        bool valid = (pathYyparse(&context) == 0);
+
+        if (!valid && errMsg)
+            *errMsg = context.errStr;
+
+        // Clean up.
+        pathYy_delete_buffer(b, context.scanner);
+        pathYylex_destroy(context.scanner);
+
+        return valid;
+    }
 }
 
 // Caller ensures both absolute or both relative.  We need to crawl up the
