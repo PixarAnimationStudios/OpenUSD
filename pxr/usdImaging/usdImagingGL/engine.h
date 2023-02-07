@@ -304,6 +304,33 @@ public:
         int *outHitInstanceIndex = NULL,
         HdInstancerContext *outInstancerContext = NULL);
 
+    struct IntersectionResult
+    {
+        SdfPath hitPrimPath;
+        SdfPath hitInstancerPath;
+        int hitInstanceIndex = 0;
+        HdInstancerContext* instancerContext = NULL;
+    };
+
+    typedef std::vector<struct IntersectionResult> IntersectionResultVector;
+
+    /// Finds all objects intersecting a frustum by rendering.
+    ///	
+    /// This method uses Deep Selection to gather all paths within a region even 
+    /// if obscured by other visible objects.
+    ///
+    /// Returns whether a hit occurred and if so, \p outResults will point to all the 
+    /// gprims selected by the pick. \p outHitInstancerPath will point to the point 
+    /// instancer (if applicable) of each gprim. 
+    ///
+    USDIMAGINGGL_API
+    bool TestIntersections(
+        const GfMatrix4d& viewMatrix,
+        const GfMatrix4d& projectionMatrix,
+        const UsdPrim& root,
+        const UsdImagingGLRenderParams& params,
+        IntersectionResultVector& outResults);
+
     /// Decodes a pick result given hydra prim ID/instance ID (like you'd get
     /// from an ID render).
     USDIMAGINGGL_API

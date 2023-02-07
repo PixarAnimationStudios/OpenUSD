@@ -739,6 +739,64 @@ UsdImagingGLEngine::TestIntersection(
 }
 
 bool
+UsdImagingGLEngine::TestIntersections(
+    const GfMatrix4d& viewMatrix,
+    const GfMatrix4d& projectionMatrix,
+    const UsdPrim& root,
+    const UsdImagingGLRenderParams& params,
+    IntersectionResultVector& outResults)
+{
+    TF_VERIFY(_sceneDelegate);
+    TF_VERIFY(_taskController);
+
+    PrepareBatch(root, params);
+
+    // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
+    // subtree, but the subtree in the hydra namespace might be very different
+    // (e.g. for native instancing).  We need a translation step.
+    const SdfPath cachePath = root.GetPath();
+    const SdfPathVector roots = {
+        _sceneDelegate->ConvertCachePathToIndexPath(cachePath) };
+    _UpdateHydraCollection(&_intersectCollection, roots, params);
+
+    _PrepareRender(params);
+
+    HdxPickHitVector allHits;
+    HdxPickTaskContextParams pickParams;
+    pickParams.resolveMode = HdxPickTokens->resolveDeep;
+    pickParams.viewMatrix = viewMatrix;
+    pickParams.projectionMatrix = projectionMatrix;
+    pickParams.clipPlanes = params.clipPlanes;
+    pickParams.collection = _intersectCollection;
+    pickParams.outHits = &allHits;
+    const VtValue vtPickParams(pickParams);
+
+    _engine->SetTaskContextData(HdxPickTokens->pickParams, vtPickParams);
+    _Execute(params, _taskController->GetPickingTasks());
+
+    // return false if there were no hits
+    if (allHits.size() == 0) {
+        return false;
+    }
+
+    for(HdxPickHit& hit : allHits)
+    {
+        IntersectionResult res;
+        hit.objectId = _sceneDelegate->GetScenePrimPath(
+            hit.objectId, hit.instanceIndex, nullptr);
+        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+            hit.instancerId).GetAbsoluteRootOrPrimPath();
+
+        res.hitPrimPath = hit.objectId;
+        res.hitInstanceIndex = hit.instanceIndex;
+        res.hitInstancerPath = hit.instancerId;
+        outResults.push_back(res);
+    }
+
+    return true;
+}
+
+bool
 UsdImagingGLEngine::DecodeIntersection(
     unsigned char const primIdColor[4],
     unsigned char const instanceIdColor[4],

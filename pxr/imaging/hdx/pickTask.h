@@ -64,7 +64,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (resolveNearestToCamera)         \
     (resolveNearestToCenter)         \
     (resolveUnique)                  \
-    (resolveAll)
+    (resolveAll)                     \
+    (resolveDeep)
 
 TF_DECLARE_PUBLIC_TOKENS(HdxPickTokens, HDX_API, HDX_PICK_TOKENS);
 
@@ -228,6 +229,10 @@ struct HdxPrimOriginInfo
 ///     4. HdxPickTokens->resolveAll: Returns all the hits for the pick location
 ///         or region. The number of hits returned depends on the resolution
 ///         used and may have duplicates.
+///     5. HdxPickTokens->resolveDeep: Returns the unique hits not only of visible 
+///         geometry but also of all the geometry hiding behind. The 'pickTarget'
+///         influences this operation. For e.g., the subprim indices are ignored
+///         when the pickTarget is pickPrimsAndInstances.
 ///
 struct HdxPickTaskContextParams
 {
@@ -235,6 +240,7 @@ struct HdxPickTaskContextParams
 
     HdxPickTaskContextParams()
         : resolution(128, 128)
+        , maxNumDeepEntries(32000)
         , pickTarget(HdxPickTokens->pickPrimsAndInstances)
         , resolveMode(HdxPickTokens->resolveNearestToCamera)
         , doUnpickablesOcclude(false)
@@ -243,10 +249,12 @@ struct HdxPickTaskContextParams
         , clipPlanes()
         , depthMaskCallback(nullptr)
         , collection()
+        , alphaThreshold(0.f)
         , outHits(nullptr)
     {}
 
     GfVec2i resolution;
+    int maxNumDeepEntries;
     TfToken pickTarget;
     TfToken resolveMode;
     bool doUnpickablesOcclude;
@@ -255,6 +263,7 @@ struct HdxPickTaskContextParams
     std::vector<GfVec4d> clipPlanes;
     DepthMaskCallback depthMaskCallback;
     HdRprimCollection collection;
+    float alphaThreshold;
     HdxPickHitVector *outHits;
 };
 
@@ -328,6 +337,9 @@ private:
     bool _UseOcclusionPass() const;
     bool _UseWidgetPass() const;
 
+    void _ClearPickBuffer();
+    void _ResolveDeep();
+
     template<typename T>
     HdStTextureUtils::AlignedBuffer<T>
     _ReadAovBuffer(TfToken const & aovName) const;
@@ -355,6 +367,9 @@ private:
     TfToken _depthToken;
     std::unique_ptr<HdStRenderBuffer> _widgetDepthStencilBuffer;
     HdRenderPassAovBindingVector _widgetAovBindings;
+
+    // pick buffer used for deep selection
+    HdBufferArrayRangeSharedPtr _pickBuffer;
 
     HdxPickTask() = delete;
     HdxPickTask(const HdxPickTask &) = delete;
