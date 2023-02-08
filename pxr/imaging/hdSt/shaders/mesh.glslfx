@@ -146,7 +146,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- layout Mesh.PostTessVertex.Quad
-
 [
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
@@ -339,8 +338,6 @@ const int baseIndexOffset = 2;
 const int baseVertexOffset = 3;
 const int baseInstanceOffset = 4;
 
-//Idea -> Process 20 vertices per meshlet?
-
 void main(void)
 {   
 
@@ -428,6 +425,48 @@ uint32_t gl_BaseInstance;
 uint32_t baseVertex;
 uint32_t baseIndex;
 
+vec2 getScreenPos(vec4 hPos)
+{
+  hPos /= hPos.w;
+  return vec2((hPos.xy * 0.5 + 0.5) * (renderPassState.viewport.zw - renderPassState.viewport.xy));
+}
+
+bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
+{
+  // back face culling
+  vec2 ab = b.xy - a.xy;
+  vec2 ac = c.xy - a.xy;
+  float cross_product = ab.x * ac.y - ab.y * ac.x;   
+
+  //possibly needs reversal
+  //cross_product = -cross_product;
+  if (cross_product * winding < 0.0f) {return false;}
+
+  return true;
+}
+
+bool testTriangle(vec2 a, vec2 b, vec2 c, float winding, uint abits, uint bbits, uint cbits)
+{
+    if ((abits & bbits & cbits) == 0) {
+        return testTriangle(a,b,c,winding);
+    }
+    return false;
+}
+
+uint getCullBits(vec4 hPos)
+{
+    uint cullBits = 0;
+    cullBits |= hPos.x < -hPos.w ?  1 : 0;
+    cullBits |= hPos.x >  hPos.w ?  2 : 0;
+    cullBits |= hPos.y < -hPos.w ?  4 : 0;
+    cullBits |= hPos.y >  hPos.w ?  8 : 0;
+    //cullBits |= hPos.z < -hPos.w ? 16 : 0;
+    cullBits |= hPos.z <  0.0f      ? 16 : 0;
+    cullBits |= hPos.z >  hPos.w ? 32 : 0;
+    cullBits |= hPos.w <= 0.0f      ? 64 : 0;
+    return cullBits;
+}
+
 void main(void) {
     //can be simplified to always use payload.baseVertex
     uint endIndex = payload.indexRange[hd_LocalInvocationID.x].y;
@@ -489,29 +528,21 @@ void main(void) {
         }
     }
 
-    bool cull = false;
-    //Triangle culling
-    //TODO possibly fine to calculate the cull matrix in shader
-    MAT4 toClip = cullMatrix * transform;
+    vec2 as = getScreenPos(vertexOut[0].position);
+    vec2 bs = getScreenPos(vertexOut[1].position);
+    vec2 cs = getScreenPos(vertexOut[2].position);
 
+    uint abits = getCullBits(vertexOut[0].position);
+    uint bbits = getCullBits(vertexOut[1].position);
+    uint cbits = getCullBits(vertexOut[2].position);
 
-    //backface culling
-    vec3 pos0 = vec3(vertexOut[0].position.xy / vertexOut[0].position.w, vertexOut[0].position.w);
-    vec3 pos1 = vec3(vertexOut[1].position.xy / vertexOut[1].position.w, vertexOut[1].position.w);
-    vec3 pos2 = vec3(vertexOut[2].position.xy / vertexOut[2].position.w, vertexOut[2].position.w);
-    //TODO remove array accessors and only calculate the z component of cross
-    vec3 n = cross(pos1 - pos0, pos2 - pos0);
+    bool cull = !testTriangle(as.xy, bs.xy, cs.xy, 1.0, abits, bbits, cbits);
 
-    bool backFaceCull = n.z <= 0.0f;
-    if (backFaceCull) {
-        cull = true;
-    } 
-
-
-    
-    for(int l = 0; l < 3; l++) {
-        //We probably no longer need to defer this or even maybe not even write if we cull
-        mesh.set_vertex((hd_LocalIndexID * 3) + l, vertexOut[l]);
+    if(!cull) {
+        for(int l = 0; l < 3; l++) {
+            //We probably no longer need to defer this or even maybe not even write if we cull
+            mesh.set_vertex((hd_LocalIndexID * 3) + l, vertexOut[l]);
+        }
     }
     
 
@@ -519,13 +550,14 @@ void main(void) {
         PrimOut primOut;
         primOut.doCull = cull;
         mesh.set_primitive(hd_LocalIndexID, primOut);
-
-        // Set the output indices.
-        const uint i = (hd_LocalIndexID) * 3;
-        //Possibly we don't need to write this if cull
-        mesh.set_index(i+0, i);
-        mesh.set_index(i+1, i+1);
-        mesh.set_index(i+2, i+2);
+        if (!cull) {
+            // Set the output indices.
+            const uint i = (hd_LocalIndexID) * 3;
+            //Possibly we don't need to write this if cull
+            mesh.set_index(i+0, i);
+            mesh.set_index(i+1, i+1);
+            mesh.set_index(i+2, i+2);
+        }
     }
 }
 
