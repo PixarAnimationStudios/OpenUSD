@@ -42,6 +42,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDRENDERSETTINGS_SCHEMA_TOKENS \
     (renderSettings) \
     (namespacedSettings) \
+    (active) \
+    (renderProducts) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HDRENDERSETTINGS_SCHEMA_TOKENS);
@@ -58,6 +60,10 @@ public:
 
     HD_API
     HdContainerDataSourceHandle GetNamespacedSettings();
+    HD_API
+    HdBoolDataSourceHandle GetActive();
+    HD_API
+    HdVectorDataSourceHandle GetRenderProducts();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -69,7 +75,9 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &namespacedSettings
+        const HdContainerDataSourceHandle &namespacedSettings,
+        const HdBoolDataSourceHandle &active,
+        const HdVectorDataSourceHandle &renderProducts
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -84,6 +92,12 @@ public:
         HD_API
         Builder &SetNamespacedSettings(
             const HdContainerDataSourceHandle &namespacedSettings);
+        HD_API
+        Builder &SetActive(
+            const HdBoolDataSourceHandle &active);
+        HD_API
+        Builder &SetRenderProducts(
+            const HdVectorDataSourceHandle &renderProducts);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -91,6 +105,8 @@ public:
 
     private:
         HdContainerDataSourceHandle _namespacedSettings;
+        HdBoolDataSourceHandle _active;
+        HdVectorDataSourceHandle _renderProducts;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -106,6 +122,28 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the namespacedsettings data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the active data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetActiveLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderproducts data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetRenderProductsLocator();
 
 };
 

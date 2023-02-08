@@ -48,19 +48,45 @@ HdRenderSettingsSchema::GetNamespacedSettings()
         HdRenderSettingsSchemaTokens->namespacedSettings);
 }
 
+HdBoolDataSourceHandle
+HdRenderSettingsSchema::GetActive()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdRenderSettingsSchemaTokens->active);
+}
+
+HdVectorDataSourceHandle
+HdRenderSettingsSchema::GetRenderProducts()
+{
+    return _GetTypedDataSource<HdVectorDataSource>(
+        HdRenderSettingsSchemaTokens->renderProducts);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
-        const HdContainerDataSourceHandle &namespacedSettings
+        const HdContainerDataSourceHandle &namespacedSettings,
+        const HdBoolDataSourceHandle &active,
+        const HdVectorDataSourceHandle &renderProducts
 )
 {
-    TfToken names[1];
-    HdDataSourceBaseHandle values[1];
+    TfToken names[3];
+    HdDataSourceBaseHandle values[3];
 
     size_t count = 0;
     if (namespacedSettings) {
         names[count] = HdRenderSettingsSchemaTokens->namespacedSettings;
         values[count++] = namespacedSettings;
+    }
+
+    if (active) {
+        names[count] = HdRenderSettingsSchemaTokens->active;
+        values[count++] = active;
+    }
+
+    if (renderProducts) {
+        names[count] = HdRenderSettingsSchemaTokens->renderProducts;
+        values[count++] = renderProducts;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -87,6 +113,40 @@ HdRenderSettingsSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->namespacedSettings
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetActiveLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->active
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetRenderProductsLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->renderProducts
+    );
+    return locator;
+}
+
+
 HdRenderSettingsSchema::Builder &
 HdRenderSettingsSchema::Builder::SetNamespacedSettings(
     const HdContainerDataSourceHandle &namespacedSettings)
@@ -95,11 +155,29 @@ HdRenderSettingsSchema::Builder::SetNamespacedSettings(
     return *this;
 }
 
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetActive(
+    const HdBoolDataSourceHandle &active)
+{
+    _active = active;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetRenderProducts(
+    const HdVectorDataSourceHandle &renderProducts)
+{
+    _renderProducts = renderProducts;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
     return HdRenderSettingsSchema::BuildRetained(
-        _namespacedSettings
+        _namespacedSettings,
+        _active,
+        _renderProducts
     );
 }
 

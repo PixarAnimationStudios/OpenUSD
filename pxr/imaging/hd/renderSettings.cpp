@@ -44,10 +44,10 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
-const HdRenderSettingsParams&
-HdRenderSettings::GetParams() const
+const VtDictionary&
+HdRenderSettings::GetSettings() const
 {
-    return _params;
+    return _settings;
 }
 
 void
@@ -65,12 +65,21 @@ HdRenderSettings::Sync(
         }
     }
 
-    if (*dirtyBits & HdRenderSettings::DirtyParams) {
+    if (*dirtyBits & HdRenderSettings::DirtySettings) {
 
-        const VtValue vParams = sceneDelegate->Get(
-            GetId(), HdRenderSettingsPrimTokens->params);
-        if (vParams.IsHolding<HdRenderSettingsParams>()) {
-            _params = vParams.UncheckedGet<HdRenderSettingsParams>();
+        const VtValue vSettings = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->settings);
+        if (vSettings.IsHolding<VtDictionary>()) {
+            _settings = vSettings.UncheckedGet<VtDictionary>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
+
+        const VtValue vProducts = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->renderProducts);
+        if (vProducts.IsHolding<RenderProducts>()) {
+            _products = vProducts.UncheckedGet<RenderProducts>();
         }
     }
 
@@ -93,32 +102,6 @@ HdRenderSettings::_Sync(
     const HdDirtyBits *dirtyBits)
 {
     // no-op
-}
-
-// -------------------------------------------------------------------------- //
-// VtValue Requirements
-// -------------------------------------------------------------------------- //
-
-std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& rs)
-{
-    out << "HdRenderSettingsParams: \n"
-        << "    namespacedSettings: \n";
-    for (const auto &settings : rs.namespacedSettings) {
-        out << "      - " << settings.first << "\n";
-    }
-    return out;
-}
-
-bool operator==(const HdRenderSettingsParams& lhs, 
-                const HdRenderSettingsParams& rhs) 
-{
-    return lhs.namespacedSettings == rhs.namespacedSettings;
-}
-
-bool operator!=(const HdRenderSettingsParams& lhs, 
-                const HdRenderSettingsParams& rhs) 
-{
-    return !(lhs == rhs);
 }
 
 

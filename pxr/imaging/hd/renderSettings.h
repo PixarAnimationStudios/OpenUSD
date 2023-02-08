@@ -30,16 +30,12 @@
 
 #include "pxr/base/vt/dictionary.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#include "pxr/base/arch/hash.h"
 
-///
-/// XXX Empty for now, but will be filled up in a follow-up change to mirror
-///     UsdRenderSpec.
-///
-struct HdRenderSettingsParams
-{
-    VtDictionary namespacedSettings; // 'UsdRenderSpec::extraSettings'
-};
+
+#include <vector>
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 ///
 /// Abstract hydra prim backing render settings scene description.
@@ -57,7 +53,7 @@ struct HdRenderSettingsParams
 ///   use, the AOV outputs, etc.
 ///
 /// We aim to transition away from the API and task based render settings
-/// opinions (above 2) to using render settings scene description to drive
+/// opinions above to using render settings scene description to drive
 /// rendering in Hydra.
 ///
 /// \sa HdRenderSettingsPrimTokens (defined in hd/tokens.h) for tokens
@@ -73,9 +69,23 @@ public:
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
         DirtyActive           = 1 << 1,
-        DirtyParams           = 1 << 2,
-        AllDirty              = (DirtyActive | DirtyParams)
+        DirtySettings         = 1 << 2,
+        DirtyRenderProducts   = 1 << 3,
+        AllDirty              =    DirtyActive
+                                 | DirtySettings
+                                 | DirtyRenderProducts
     };
+
+    // Parameters that may be queried and invalidated.
+    ///
+    /// XXX RenderProduct is empty for now, but will be filled up
+    /// in a follow-up change.
+    ///
+    struct RenderProduct {
+    };
+    using RenderProducts = std::vector<RenderProduct>;
+
+    using NamespacedSettings = VtDictionary;
 
     HD_API
     ~HdRenderSettings() override;
@@ -87,7 +97,9 @@ public:
     bool IsActive() const;
 
     HD_API
-    const HdRenderSettingsParams& GetParams() const;
+    const NamespacedSettings& GetSettings() const;
+
+    // XXX Add API to query render products & AOV bindings.
 
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
@@ -124,18 +136,9 @@ private:
     HdRenderSettings &operator =(const HdRenderSettings &) = delete;
 
     bool _active;
-    HdRenderSettingsParams _params;
+    NamespacedSettings _settings;
+    RenderProducts _products;
 };
-
-// VtValue requirements
-HD_API
-std::ostream& operator<<(std::ostream& out, const HdRenderSettingsParams& pv);
-HD_API
-bool operator==(const HdRenderSettingsParams& lhs, 
-                const HdRenderSettingsParams& rhs);
-HD_API
-bool operator!=(const HdRenderSettingsParams& lhs, 
-                const HdRenderSettingsParams& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

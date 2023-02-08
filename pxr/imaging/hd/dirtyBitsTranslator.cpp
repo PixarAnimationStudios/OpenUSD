@@ -396,8 +396,14 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdRenderBufferSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        if (bits & HdRenderSettings::DirtyParams) {
-            set->append(HdRenderSettingsSchema::GetDefaultLocator());
+        if (bits & HdRenderSettings::DirtyActive) {
+            set->append(HdRenderSettingsSchema::GetActiveLocator());
+        }
+        if (bits & HdRenderSettings::DirtySettings) {
+            set->append(HdRenderSettingsSchema::GetNamespacedSettingsLocator());
+        }
+        if (bits & HdRenderSettings::DirtyRenderProducts) {
+            set->append(HdRenderSettingsSchema::GetRenderProductsLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -896,8 +902,17 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
             bits |= HdRenderBuffer::DirtyDescription;
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        if (_FindLocator(HdRenderSettingsSchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdRenderSettings::DirtyParams;
+        if (_FindLocator(HdRenderSettingsSchema::GetActiveLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyActive;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
+                 end, &it)) {
+            bits |= HdRenderSettings::DirtySettings;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyRenderProducts;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

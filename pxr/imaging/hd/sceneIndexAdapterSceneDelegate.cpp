@@ -1318,25 +1318,31 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         return VtValue();
     }
 
-    if (key == HdRenderSettingsPrimTokens->params) {
-        HdRenderSettingsParams rsParams;
+    if (key == HdRenderSettingsPrimTokens->settings) {
+        VtDictionary settings;
         if (HdContainerDataSourceHandle namespacedSettingsDS = 
                 rsSchema.GetNamespacedSettings()) {
 
-            VtDictionary &namespacedSettings = rsParams.namespacedSettings;
             const TfTokenVector settingNames = namespacedSettingsDS->GetNames();
             for (const auto& name : settingNames) {
                 HdSampledDataSourceHandle paramSDS = 
                     HdSampledDataSource::Cast(namespacedSettingsDS->Get(name));
                 if (paramSDS) {
-                    namespacedSettings[name.GetString()] = paramSDS->GetValue(0);
+                    settings[name.GetString()] = paramSDS->GetValue(0);
                 }
             }
         }
 
-        return VtValue(rsParams);
+        return VtValue(settings);
     }
-    // XXX: HdRenderSettingsPrimTokens->active is not handled yet
+    if (key == HdRenderSettingsPrimTokens->active) {
+        if (HdBoolDataSourceHandle activeDS = rsSchema.GetActive()) {
+            return VtValue(activeDS->GetTypedValue(0));
+        }
+        return VtValue(false);
+    }
+
+    // XXX Add support for renderProducts
 
     return VtValue();
 }

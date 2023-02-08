@@ -213,13 +213,9 @@ UsdImagingRenderSettingsAdapter::Get(
     VtIntArray *outIndices) const
 {
     // Gather authored settings attributes on the render settings prim.
-    if (key == HdRenderSettingsPrimTokens->params) {
-        HdRenderSettingsParams rsParams;
-
-        rsParams.namespacedSettings = UsdRenderComputeExtraSettings(
-            prim, _GetRenderSettingsNamespaces());
-
-        return VtValue(rsParams);
+    if (key == HdRenderSettingsPrimTokens->settings) {
+        return VtValue(UsdRenderComputeExtraSettings(
+            prim, _GetRenderSettingsNamespaces()));
     }
 
     TF_CODING_ERROR(

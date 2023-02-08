@@ -2048,6 +2048,7 @@ public:
     {
         TfTokenVector v;
         v.push_back(HdRenderSettingsSchemaTokens->namespacedSettings);
+        v.push_back(HdRenderSettingsSchemaTokens->renderProducts);
         return v;
     }
 
@@ -2055,14 +2056,14 @@ public:
     {
         if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
             const VtValue value = _sceneDelegate->Get(
-                _id, HdRenderSettingsPrimTokens->params);
-            if (value.IsHolding<HdRenderSettingsParams>()) {
-                const HdRenderSettingsParams rsParams = 
-                    value.UncheckedGet<HdRenderSettingsParams>();
+                _id, HdRenderSettingsPrimTokens->settings);
+            if (value.IsHolding<VtDictionary>()) {
+                const VtDictionary settings = 
+                    value.UncheckedGet<VtDictionary>();
 
                 std::vector<TfToken> namespacedParamNames;
                 std::vector<HdDataSourceBaseHandle> namespacedParamValues;
-                for (const auto &setting : rsParams.namespacedSettings) {
+                for (const auto &setting : settings) {
                     namespacedParamNames.push_back(TfToken(setting.first));
                     namespacedParamValues.push_back(
                         HdRetainedTypedSampledDataSource<VtValue>::New(
@@ -2074,7 +2075,12 @@ public:
                     namespacedParamValues.data());
             }
         }
-        
+
+        // XXX Update this for other fields (e.g., render products)
+
+        // Note: active can be skipped (instead of hardcoding it to false here)
+        //       since a downstream scene index will author its opinion.
+
         return HdSampledDataSourceHandle(
             Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
     }
