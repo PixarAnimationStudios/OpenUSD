@@ -52,7 +52,7 @@ static void Run()
     _Map _map;
 
     // Make sure size expectations are ok.
-    // Due to boost::compressed_pair, because both HashFn and EqualKey are
+    // Due to empty base optimization, because both HashFn and EqualKey are
     // 0-size, should only hold a vector + pointer
     // (Note that on windows, debug mode will change sizeof vector)
     TF_AXIOM(sizeof(_Map) == sizeof(std::vector<_Map::value_type>)
