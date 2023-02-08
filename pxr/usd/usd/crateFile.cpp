@@ -3226,6 +3226,53 @@ CrateFile::_ReadStructuralSections(Reader reader, int64_t fileSize)
     if (m.IsClean()) _ReadFieldSets(reader);
     if (m.IsClean()) _ReadPaths(reader);
     if (m.IsClean()) _ReadSpecs(reader);
+
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+    if (m.IsClean()) {
+        auto errorAndClear = [this]() {
+            TF_RUNTIME_ERROR("Corrupt asset @%s@", _assetPath.c_str());
+            _specs.clear();
+            _fieldSets.clear();
+            _fields.clear();
+        };
+        
+        // Sanity check structural validity.
+
+        // Fields.
+        for (Field const &f: _fields) {
+            if (f.tokenIndex.value >= _tokens.size()) {
+                errorAndClear();
+                return;
+            }
+        }
+
+        // FieldSets.
+        for (FieldIndex fi: _fieldSets) {
+            // Default-constructed FieldIndex terminates field runs, otherwise
+            // must index into _fields.
+            if (fi != FieldIndex() && fi.value >= _fields.size()) {
+                errorAndClear();
+                return;
+            }
+        }
+
+        // Specs.
+        for (Spec const &spec: _specs) {
+            // Range check path indexes, fieldSet indexes, spec types.
+            // Additionally, a fieldSetIndex must either be 0, or the element at
+            // the prior index must be a default-constructed FieldIndex.
+            if (spec.pathIndex.value >= _paths.size() ||
+                spec.fieldSetIndex.value >= _fieldSets.size() ||
+                (spec.fieldSetIndex.value &&
+                 _fieldSets[spec.fieldSetIndex.value-1] != FieldIndex()) ||
+                spec.specType == SdfSpecTypeUnknown ||
+                spec.specType >= SdfNumSpecTypes) {
+                errorAndClear();
+                return;
+            }
+        }
+    }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
 }
 
 template <class ByteStream>
@@ -3658,7 +3705,8 @@ CrateFile::_ReadCompressedPaths(Reader reader,
     cr.Read(reader, elementTokenIndexes.data(), numPaths);
 
 #ifdef PXR_PREFER_SAFETY_OVER_SPEED
-    // Range check the pathIndexes, which index (by absolute value) into _tokens.
+    // Range check the pathIndexes, which index (by absolute value) into
+    // _tokens.
     for (const int32_t elementTokenIndex: elementTokenIndexes) {
         if (static_cast<size_t>(
                 std::abs(elementTokenIndex)) >= _tokens.size()) {
@@ -3693,6 +3741,15 @@ CrateFile::_BuildDecompressedPathsImpl(
     bool hasChild = false, hasSibling = false;
     do {
         auto thisIndex = curIndex++;
+#ifdef PXR_PREFER_SAFETY_OVER_SPEED
+        // Range check thisIndex.
+        if (thisIndex >= pathIndexes.size()) {
+            TF_RUNTIME_ERROR("Corrupt paths encoding in crate file "
+                             "(index:%zu >= %zu)",
+                             thisIndex, pathIndexes.size());
+            return;
+        }
+#endif // PXR_PREFER_SAFETY_OVER_SPEED
         if (parentPath.IsEmpty()) {
             parentPath = SdfPath::AbsoluteRootPath();
             _paths[pathIndexes[thisIndex]] = parentPath;
