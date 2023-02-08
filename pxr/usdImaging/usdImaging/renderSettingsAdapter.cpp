@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -35,6 +36,9 @@
 
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX Placeholder before the RenderSettings DataSource is added
+using UsdImagingDataSourceRenderSettings = UsdImagingDataSourcePrim;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -54,12 +58,56 @@ UsdImagingRenderSettingsAdapter::~UsdImagingRenderSettingsAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingRenderSettingsAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingRenderSettingsAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->renderSettings;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingRenderSettingsAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceRenderSettings::New(
+                    prim.GetPath(), prim, stageGlobals);
+    }
+
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingRenderSettingsAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingPrimAdapter::InvalidateImagingSubprim(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 bool
 UsdImagingRenderSettingsAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
-    return supported;
+    return index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
 }
 
 SdfPath
