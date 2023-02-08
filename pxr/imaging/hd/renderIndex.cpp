@@ -352,7 +352,7 @@ HdRenderIndex::RemoveRprim(SdfPath const& id)
     // If we are emulating let's remove from the scene index
     // which will trigger render index removals later.
     if (_IsEnabledSceneIndexEmulation()) {
-        _emulationSceneIndex->RemovePrims({id});
+        _emulationSceneIndex->RemovePrim(id);
         return;
     }
     
@@ -643,18 +643,7 @@ void
 HdRenderIndex::RemoveSprim(TfToken const& typeId, SdfPath const& id)
 {
     if (_IsEnabledSceneIndexEmulation()) {
-
-        // Removing an sprim doesn't remove any descendant prims from the
-        // renderIndex. Removing a prim from the scene index does remove
-        // all descendant prims. Special case removal of an sprim which has
-        // children to instead be replaced with an empty type.
-        if (!_emulationSceneIndex->GetChildPrimPaths(id).empty()) {
-             _emulationSceneIndex->AddPrims({{id, TfToken(), nullptr}});
-             return;
-        }
-        
-        _emulationSceneIndex->RemovePrims({id});
-
+        _emulationSceneIndex->RemovePrim(id);
         return;
     }
 
@@ -727,7 +716,7 @@ void
 HdRenderIndex::RemoveBprim(TfToken const& typeId, SdfPath const& id)
 {
     if (_IsEnabledSceneIndexEmulation()) {
-        _emulationSceneIndex->RemovePrims({id});
+        _emulationSceneIndex->RemovePrim(id);
         return;
     }
 
