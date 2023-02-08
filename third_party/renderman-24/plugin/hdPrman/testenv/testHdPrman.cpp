@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
     if (settings) {
         // If we found USD settings, read those.
         TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
-        renderSpec = UsdRenderComputeSpec(settings, frameNum, prmanNamespaces);
+        renderSpec = UsdRenderComputeSpec(settings, prmanNamespaces);
     } else {
         // Otherwise, provide a built-in render specification.
         renderSpec = {
@@ -427,7 +427,7 @@ int main(int argc, char *argv[])
         // (0..1) time relative to the global shutterInterval.  This forces
         // all the cameras to have the same shutter interval, so in the
         // future the shutterInterval will be moved to new attributes on
-        // the cameras, and shutterCurve will exist an a UsdRi schema.
+        // the cameras, and shutterCurve will exist as a UsdRi schema.
         //
 
         VtDictionary renderSpecDict;

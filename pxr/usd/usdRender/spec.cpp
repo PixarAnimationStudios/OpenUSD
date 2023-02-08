@@ -160,10 +160,11 @@ static void _ApplyAspectRatioPolicy(
     }
 }
 
+// -------------------------------------------------------------------------- //
+
 UsdRenderSpec
 UsdRenderComputeSpec(
     UsdRenderSettings const& settings,
-    UsdTimeCode time,
     TfTokenVector const& extraNamespaces)
 {
     UsdRenderSpec rd;
@@ -259,6 +260,16 @@ UsdRenderComputeSpec(
     _ReadExtraSettings(prim, &rd.extraSettings, extraNamespaces);
 
     return rd;
+}
+
+VtDictionary
+UsdRenderComputeExtraSettings(
+    UsdPrim const& prim,
+    TfTokenVector const& namespaces)
+{
+    VtDictionary dict;
+    _ReadExtraSettings(prim, &dict, namespaces);
+    return dict;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

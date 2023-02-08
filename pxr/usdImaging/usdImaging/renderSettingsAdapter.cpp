@@ -212,36 +212,13 @@ UsdImagingRenderSettingsAdapter::Get(
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (prim.HasAttribute(key)) {
-        UsdAttribute const &attr = prim.GetAttribute(key);
-
-        // Only return authored values
-        VtValue value;
-        if (attr.HasAuthoredValue() && attr.Get(&value, time)) {
-            return value;
-        }
-        // Return UsdShadeConnectableAPI connections as a VtValue(SdfPathVector)
-        if (UsdShadeOutput::IsOutput(attr)) {
-            UsdShadeAttributeVector targets =
-                UsdShadeUtils::GetValueProducingAttributes(
-                    UsdShadeOutput(attr));
-            SdfPathVector outputs;
-            for (auto const& output : targets) {
-                outputs.push_back(output.GetPrimPath());
-            }
-            return VtValue(outputs);
-        }
-        return value;
-    }
-
-    // Use the UsdRenderSpec to populate and return the HdRenderSettingsParams
+    // Gather authored settings attributes on the render settings prim.
     if (key == HdRenderSettingsPrimTokens->params) {
-
-        const UsdRenderSpec renderSpec = UsdRenderComputeSpec(
-            UsdRenderSettings(prim), time, _GetRenderSettingsNamespaces());
-
         HdRenderSettingsParams rsParams;
-        rsParams.namespacedSettings = renderSpec.extraSettings;
+
+        rsParams.namespacedSettings = UsdRenderComputeExtraSettings(
+            prim, _GetRenderSettingsNamespaces());
+
         return VtValue(rsParams);
     }
 
