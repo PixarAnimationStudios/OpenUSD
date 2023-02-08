@@ -25,7 +25,7 @@
 # pylint: disable=map-builtin-not-iterating
 
 import unittest
-from pxr import Sdf, Usd
+from pxr import Sdf, Tf, Usd
 
 allFormats = ['usd' + x for x in 'ac']
 
@@ -291,6 +291,28 @@ class TestUsdPrimRange(unittest.TestCase):
             # explicitly specified.
             self.assertEqual(list(Usd.PrimRange(prototype)), 
                              [prototype, prototypeChild])
+
+    def test_PrimIterationOnExpiredStage(self):
+        for fmt in allFormats:
+            rootLayer = Sdf.Layer.CreateAnonymous('.' + fmt)
+            for p in Sdf.Path('/Something/To/Iterate/Over').GetPrefixes():
+                Sdf.PrimSpec(
+                    rootLayer.GetPrimAtPath(p.GetParentPath()), p.name,
+                    Sdf.SpecifierDef)
+
+            # Check that a Usd.PrimRange raises a Python exception when
+            # used with a dead stage.
+            stage = Usd.Stage.Open(rootLayer)
+            primRange = Usd.PrimRange.Stage(stage)
+            del stage
+            with self.assertRaises(RuntimeError):
+                prims = list(primRange)
+
+            with self.assertRaises(RuntimeError):
+                prims = list(Usd.PrimRange.Stage(Usd.Stage.Open(rootLayer)))
+
+            with self.assertRaises(RuntimeError):
+                prims = list(Usd.Stage.Open(rootLayer).Traverse())
 
 if __name__ == "__main__":
     unittest.main()
