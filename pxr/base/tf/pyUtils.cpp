@@ -54,7 +54,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 void
 TfPyThrowIndexError(const char* msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_IndexError, msg);
     boost::python::throw_error_already_set();
 }
@@ -62,7 +61,6 @@ TfPyThrowIndexError(const char* msg)
 void
 TfPyThrowRuntimeError(const char *msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_RuntimeError, msg);
     boost::python::throw_error_already_set();
 }
@@ -70,7 +68,6 @@ TfPyThrowRuntimeError(const char *msg)
 void
 TfPyThrowStopIteration(const char *msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_StopIteration, msg);
     boost::python::throw_error_already_set();
 }
@@ -78,7 +75,6 @@ TfPyThrowStopIteration(const char *msg)
 void
 TfPyThrowKeyError(const char *msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_KeyError, msg);
     boost::python::throw_error_already_set();
 }
@@ -86,7 +82,6 @@ TfPyThrowKeyError(const char *msg)
 void
 TfPyThrowValueError(const char *msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_ValueError, msg);
     boost::python::throw_error_already_set();
 }
@@ -94,7 +89,6 @@ TfPyThrowValueError(const char *msg)
 void
 TfPyThrowTypeError(const char *msg)
 {
-    TfPyLock pyLock;
     PyErr_SetString(PyExc_TypeError, msg);
     boost::python::throw_error_already_set();
 }
