@@ -79,6 +79,12 @@ public:
         ADD_PROPERTY(Vstruct,  , 0,                 , {})
         ADD_PROPERTY(Vstruct, _Array, 0,            , arrayMetadatum)
 
+        // Force a float[] to act like a vstruct (e.g. multiMaterialIn)
+        NdrTokenMap vstructMetadata = 
+            {{SdrPropertyMetadata->IsDynamicArray, "true" },
+             {SdrPropertyMetadata->Tag, "vstruct" }};
+        ADD_PROPERTY(Float, _Vstruct, 0,            , vstructMetadata)
+
         // Add different specialized float array versions
         VtFloatArray v2 = {0.0f, 0.0f};
         ADD_PROPERTY(Float, _Vec2, 2, v2, {})

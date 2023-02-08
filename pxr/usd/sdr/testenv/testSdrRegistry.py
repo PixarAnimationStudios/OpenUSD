@@ -238,6 +238,7 @@ class TestShaderNode(unittest.TestCase):
            'TerminalProperty': (Sdr.PropertyTypes.Terminal, Sdf.ValueTypeNames.Token),
            'VstructProperty': (Sdr.PropertyTypes.Vstruct, Sdf.ValueTypeNames.Token),
            'Vstruct_ArrayProperty': (Sdr.PropertyTypes.Vstruct, Sdf.ValueTypeNames.TokenArray),
+           'Float_VstructProperty': (Sdr.PropertyTypes.Vstruct, Sdf.ValueTypeNames.TokenArray),
            'Float_Vec2Property': (Sdr.PropertyTypes.Float, Sdf.ValueTypeNames.Float2),
            'Float_Vec3Property': (Sdr.PropertyTypes.Float, Sdf.ValueTypeNames.Float3),
            'Float_Vec4Property': (Sdr.PropertyTypes.Float, Sdf.ValueTypeNames.Float4),
@@ -255,6 +256,7 @@ class TestShaderNode(unittest.TestCase):
            'Float_Vec3Property': (Sdr.PropertyTypes.Float, Sdf.ValueTypeNames.FloatArray),
            'Float_Vec4Property': (Sdr.PropertyTypes.Float, Sdf.ValueTypeNames.FloatArray),
            'String_AssetProperty': (Sdr.PropertyTypes.String, Sdf.ValueTypeNames.String),
+           'Float_VstructProperty': (Sdr.PropertyTypes.Vstruct, Sdf.ValueTypeNames.FloatArray),
         })
         _CheckTypes(nodeOld, expectedTypes)
 
