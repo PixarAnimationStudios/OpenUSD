@@ -371,7 +371,7 @@ UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 }
 
 static void
-_ImportLibraries(mx::DocumentPtr *document, const NdrStringVec &searchPaths)
+_ImportLibraries(const NdrStringVec& searchPaths, mx::Document* document)
 {
     for (auto&& fileResult : NdrFsHelpersDiscoverFiles(searchPaths,
                                 UsdMtlxStandardFileExtensions(), false)) {
@@ -387,7 +387,7 @@ _ImportLibraries(mx::DocumentPtr *document, const NdrStringVec &searchPaths)
             // Merge this document into the global library
             // This properly sets the attributes on the destination 
             // elements, like source URI and namespace
-            (*document)->importLibrary(doc);
+            document->importLibrary(doc);
         }
         catch (mx::Exception& x) {
             TF_RUNTIME_ERROR("MaterialX error reading '%s': %s",
@@ -413,8 +413,8 @@ UsdMtlxGetDocument(const std::string& resolvedUri)
     // Read the file or the standard library files.
     if (resolvedUri.empty()) {
         document = mx::createDocument();
-        _ImportLibraries(&document, UsdMtlxStandardLibraryPaths());
-        _ImportLibraries(&document, UsdMtlxCustomSearchPaths());
+        _ImportLibraries(UsdMtlxStandardLibraryPaths(), document.get());
+        _ImportLibraries(UsdMtlxCustomSearchPaths(), document.get());
     }
     else {
         document = UsdMtlxReadDocument(resolvedUri);
