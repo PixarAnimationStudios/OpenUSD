@@ -63,6 +63,9 @@ public:
                         {},                                             \
                         {})));
 
+        NdrTokenMap arrayMetadatum = 
+            {{SdrPropertyMetadata->IsDynamicArray, "true" }};
+
         ADD_PROPERTY(Int,      , 0, 0               , {})
         ADD_PROPERTY(String,   , 0, std::string()   , {})
         ADD_PROPERTY(Float,    , 0, 0.0f            , {})
@@ -74,6 +77,7 @@ public:
         ADD_PROPERTY(Struct,   , 0,                 , {})
         ADD_PROPERTY(Terminal, , 0,                 , {})
         ADD_PROPERTY(Vstruct,  , 0,                 , {})
+        ADD_PROPERTY(Vstruct, _Array, 0,            , arrayMetadatum)
 
         // Add different specialized float array versions
         VtFloatArray v2 = {0.0f, 0.0f};
