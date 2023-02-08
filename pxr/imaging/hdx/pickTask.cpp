@@ -503,8 +503,10 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetEnableDepthMask(true);
         state->SetDepthFunc(HdCmpFuncLEqual);
 
-        // Make sure translucent pixels can be picked by not discarding them
-        state->SetAlphaThreshold(0.0f);
+        // Allow semi-transparent pixels to be picked, but discard fully
+        // transparent ones.
+        state->SetAlphaThreshold(0.0001f);
+
         state->SetAlphaToCoverageEnabled(false);
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
