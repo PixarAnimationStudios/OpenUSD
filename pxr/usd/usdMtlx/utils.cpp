@@ -242,13 +242,11 @@ _ReadFromAsset(mx::DocumentPtr doc, const ArResolvedPath& resolvedPath,
     std::shared_ptr<const char> buffer;
     size_t bufferSize = 0;
 
-    std::tie(buffer, bufferSize) = [&resolvedPath]() {
-        const std::shared_ptr<ArAsset> asset = 
-            ArGetResolver().OpenAsset(resolvedPath);
-        return asset ?
-            std::make_pair(asset->GetBuffer(), asset->GetSize()) :
-            std::make_pair(std::shared_ptr<const char>(), 0ul);
-    }();
+    if (std::shared_ptr<ArAsset> const asset = 
+                                ArGetResolver().OpenAsset(resolvedPath)) {
+        buffer = asset->GetBuffer();
+        bufferSize = asset->GetSize();
+    }
 
     if (!buffer) {
         TF_RUNTIME_ERROR("Unable to open MaterialX document '%s'",
@@ -351,7 +349,8 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
 mx::ConstDocumentPtr 
 UsdMtlxGetDocumentFromString(const std::string &mtlxXml)
 {
-    std::string hashStr = std::to_string(std::hash<std::string>{}(mtlxXml));
+    const std::string hashStr =
+        std::to_string(std::hash<std::string>{}(mtlxXml));
     // Look up in the cache, inserting a null document if missing.
     auto insertResult = _GetCache().emplace(hashStr, nullptr);
     auto& document = insertResult.first->second;
