@@ -43,29 +43,27 @@ Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions.
 Dependencies
 ------------
 
-The following dependencies are required:
- - C++ compiler
- - C compiler
+Required:
+ - C/C++ compiler
  - [CMake](https://cmake.org/documentation/)
  - [Boost](https://boost.org)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
 
-The following dependencies are optional:
+Optional:
  - [Python](https://python.org)
 
 See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
 Additional dependencies are required for the following components. These 
-components may be disabled at build-time, for further details see
+components may be disabled at build-time. For further details see
 [Advanced Build Configuration](BUILDING.md).
 
 **Imaging and USD Imaging**
 
-The following dependencies are required:
+Required:
  - [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv)
 
-The following dependencies are optional:
-
+Optional:
  - [OpenEXR](http://www.openexr.com)
  - [OpenImageIO](https://sites.google.com/site/openimageio/home)
  - [OpenColorIO](http://opencolorio.org/)
@@ -74,7 +72,7 @@ The following dependencies are optional:
 
 **usdview**
 
-The following dependencies are required:
+Required:
 
  - [PySide6](http://wiki.qt.io/PySide6) or [PySide2](http://wiki.qt.io/PySide2)
  - [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/)
