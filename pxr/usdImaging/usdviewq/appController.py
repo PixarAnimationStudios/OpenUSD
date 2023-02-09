@@ -1753,7 +1753,7 @@ class AppController(QtCore.QObject):
         def setOcioConfig(action):
             display = str(action.parent().title())
             view = str(action.text())
-            if config.hasattr('getDisplayViewColorSpaceName'):
+            if hasattr(config, 'getDisplayViewColorSpaceName'):
                 # OCIO version 2
                 colorSpace = config.getDisplayViewColorSpaceName(display, view)
             else:
