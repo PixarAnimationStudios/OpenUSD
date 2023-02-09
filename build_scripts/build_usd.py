@@ -440,12 +440,13 @@ def RunCMake(context, force, extraArgs = None, envOverride = None, hostPlatform 
             '-DENABLE_VISIBILITY=1 '
             '-DAPPLEIOS=1 '
             '-DENABLE_ARC=0 '
-            '-DDEPLOYMENT_TARGET=16.0 '
+            '-DDEPLOYMENT_TARGET={iosVersion} '
             '-DCMAKE_XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY="{codesignid}" '
             '-DCMAKE_XCODE_ATTRIBUTE_DEVELOPMENT_TEAM={developmentTeam} '
             '-DPYTHON_INCLUDE_DIR={framework}/include/python{version}  '
             '-DPYTHON_LIBRARY={framework}/lib '
             '-DPYTHON_EXECUTABLE:FILEPATH={executable} '.format(
+                iosVersion=context.iosVersion,
                 codesignid=CODE_SIGN_ID,
                 developmentTeam=DEVELOPMENT_TEAM,
                 version=pyVers,
@@ -926,7 +927,6 @@ def InstallBoost_Helper(context, force, buildArgs):
                 b2_settings.append("target-os=iphone")
                 b2_settings.append("define=_LITTLE_ENDIAN")
                 b2_settings.append("link=static")
-                iOSVersion = 16.0
                 newLines = [
                     'using darwin : iphone\n',
                     ': {XCODE_ROOT}/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang++'
@@ -942,7 +942,7 @@ def InstallBoost_Helper(context, force, buildArgs):
                 projectPath = 'user-config.jam'
                 b2_settings.append("--user-config=user-config.jam")
                 b2_settings.append("macosx-version=iphone-{IOS_SDK_VERSION}".format(
-                    IOS_SDK_VERSION=iOSVersion))
+                    IOS_SDK_VERSION=context.iosVersion))
                 if os.path.exists(projectPath):
                     os.remove(projectPath)
                 with open(projectPath, 'w') as projectFile:
