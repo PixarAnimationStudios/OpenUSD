@@ -189,6 +189,16 @@ def SetTarget(context, targetName):
     context.targetARM64 = (targetName == GetTargetArmArch())
     context.targetUniversal = (targetName == TARGET_UNIVERSAL)
     context.targetIos = (targetName == TARGET_IOS)
+    if context.targetIos:
+        sdkStr = GetCommandOutput('xcodebuild -showsdks')
+        sdkStrSpl = sdkStr.split()
+        for s in sdkStrSpl:
+            if s.startswith('iphoneos'):
+                s = s.replace('iphoneos', "")
+                context.iosVersion = s
+                break
+    else:
+        context.iosVersion = None
     if context.targetUniversal and not SupportsMacOSUniversalBinaries():
         self.targetUniversal = False
         raise ValueError(
