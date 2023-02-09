@@ -60,6 +60,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
 , _workToFlush(false)
 {
     if (!_device) {
+#if defined(ARCH_OS_OSX)
         if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
             auto devices = MTLCopyAllDevices();
             for (id<MTLDevice> d in devices) {
@@ -69,7 +70,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
                 }
             }
         }
-
+#endif
         if (!_device) {
             _device = MTLCreateSystemDefaultDevice();
         }
@@ -145,11 +146,10 @@ HgiMetal::~HgiMetal()
 bool
 HgiMetal::IsBackendSupported() const
 {
-    // Want Metal 2.0 and Metal Shading Language 2.2 or higher.
-    if (@available(macOS 10.15, ios 13.0, *)) {
+    if (@available(ios 14.0, *))
+    {
         return true;
     }
-
     return false;
 }
 
@@ -412,7 +412,7 @@ HgiMetal::GetAPIVersion() const
 void
 HgiMetal::CommitPrimaryCommandBuffer(
     CommitCommandBufferWaitType waitType,
-    bool forceNewBuffer)
+                              bool forceNewBuffer)
 {
     if (!_workToFlush && !forceNewBuffer) {
         return;

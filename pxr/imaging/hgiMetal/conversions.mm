@@ -26,6 +26,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -71,13 +72,21 @@ static const MTLPixelFormat _PIXEL_FORMAT_DESC[] =
     
     //MTLPixelFormatRGB8Unorm_sRGB, // Unsupported by HgiFormat
     MTLPixelFormatRGBA8Unorm_sRGB,  // HgiFormatUNorm8Vec4srgb,
-
+#if defined(ARCH_OS_IOS)
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+    MTLPixelFormatInvalid,      // Unsupported by iOS Metal
+#else
     MTLPixelFormatBC6H_RGBFloat,  // HgiFormatBC6FloatVec3
     MTLPixelFormatBC6H_RGBUfloat, // HgiFormatBC6UFloatVec3
     MTLPixelFormatBC7_RGBAUnorm,      // HgiFormatBC7UNorm8Vec4
     MTLPixelFormatBC7_RGBAUnorm_sRGB, // HgiFormatBC7UNorm8Vec4srgb
     MTLPixelFormatBC1_RGBA,           // HgiFormatBC1UNorm8Vec4
     MTLPixelFormatBC3_RGBA,           // HgiFormatBC3UNorm8Vec4
+#endif
 
     MTLPixelFormatDepth32Float_Stencil8, // HgiFormatFloat32UInt8
 
@@ -608,6 +617,25 @@ HgiMetalConversions::GetColorWriteMask(HgiColorMask mask)
             | ((mask & HgiColorMaskAlpha) ? MTLColorWriteMaskAlpha : 0);
     
     return mtlMask;
+}
+
+//
+// HgiIsFilterableFunction
+//
+
+static const std::set<MTLPixelFormat> unfilterableIosFormats =
+{
+    {MTLPixelFormatRGBA32Float}
+};
+
+bool
+HgiMetalConversions::IsFilterable(MTLPixelFormat format)
+{
+#if defined(ARCH_OS_IOS)
+    return unfilterableIosFormats.find(format) == unfilterableIosFormats.end();
+#else
+    return true;
+#endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

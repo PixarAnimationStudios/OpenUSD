@@ -106,7 +106,9 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
                        options:_bufferStorageMode];
     if (_bufferStorageMode != MTLStorageModeShared &&
         [_triangleTessFactors respondsToSelector:@selector(didModifyRange:)]) {
+#if defined(ARCH_OS_OSX)
         [_triangleTessFactors didModifyRange:{0, _triangleTessFactors.length}];
+#endif
     }
 
     MTLQuadTessellationFactorsHalf quadFactors;
@@ -123,7 +125,9 @@ HgiMetalIndirectCommandEncoder::HgiMetalIndirectCommandEncoder(Hgi* hgi)
                        options:_bufferStorageMode];
     if (_bufferStorageMode != MTLStorageModeShared &&
         [_quadTessFactors respondsToSelector:@selector(didModifyRange:)]) {
+#if defined(ARCH_OS_OSX)
         [_quadTessFactors didModifyRange:{0, _quadTessFactors.length}];
+#endif
     }
 }
 
@@ -666,8 +670,10 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
     if (_bufferStorageMode != MTLStorageModeShared &&
         [commands->indirectArgumentBuffer
             respondsToSelector:@selector(didModifyRange:)]) {
+#if defined(ARCH_OS_OSX)
         [commands->indirectArgumentBuffer
             didModifyRange:{0, commands->indirectArgumentBuffer.length}];
+#endif
     }
 
     // Set pipeline state on the encoder and dispatch to populate the ICB
@@ -713,8 +719,9 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
     // Ensure the the main argument buffer is updated on managed hardware.
     if (mainArgumentBuffer.storageMode != MTLStorageModeShared &&
         [mainArgumentBuffer respondsToSelector:@selector(didModifyRange:)]) {
-
+#if defined(ARCH_OS_OSX)
         [mainArgumentBuffer didModifyRange:{0, mainArgumentBuffer.length}];
+#endif
     }
     
     id<MTLIndirectCommandBuffer> indirectCommandBuffer =

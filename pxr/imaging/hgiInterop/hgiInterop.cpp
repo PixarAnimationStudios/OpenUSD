@@ -28,7 +28,9 @@
 
 #if defined(PXR_METAL_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiMetal/hgi.h"
+#if defined(ARCH_OS_OSX)
     #include "pxr/imaging/hgiInterop/metal.h"
+#endif
 #elif defined(PXR_VULKAN_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiVulkan/hgi.h"
     #include "pxr/imaging/hgiInterop/vulkan.h"
@@ -52,7 +54,7 @@ void HgiInterop::TransferToApp(
 {
     TfToken const& srcApi = srcHgi->GetAPIName();
 
-#if defined(PXR_METAL_SUPPORT_ENABLED)
+#if defined(PXR_METAL_SUPPORT_ENABLED) && !defined(ARCH_OS_IOS)
     if (srcApi==HgiTokens->Metal && dstApi==HgiTokens->OpenGL) {
         // Transfer Metal textures to OpenGL application
         if (!_metalToOpenGL) {
@@ -75,6 +77,7 @@ void HgiInterop::TransferToApp(
         TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
 #else
+#if !defined(ARCH_OS_IOS)
     if (srcApi==HgiTokens->OpenGL && dstApi==HgiTokens->OpenGL) {
         // Transfer OpenGL textures to OpenGL application
         if (!_openGLToOpenGL) {
@@ -85,6 +88,7 @@ void HgiInterop::TransferToApp(
     } else {
         TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
+#endif
 #endif
 }
 

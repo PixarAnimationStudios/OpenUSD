@@ -1,87 +1,157 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
-
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
-    message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
-    return()
-endif()
+set(optionalLibs "")
+set(optionalIncludeDirs "")
 
 set(optionalPublicClasses "")
 if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
-set(optionalLibs "")
-set(optionalIncludeDirs "")
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Building minimal ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
 
-pxr_library(glf
-    LIBRARIES
-        ar
-        arch
-        garch
-        gf
-        hf
-        hio
-        plug
-        tf
-        trace
-        sdf
-        ${Boost_PYTHON_LIBRARY}
-        ${OPENGL_gl_LIBRARY}
-        ${X11_LIBRARIES}
-        ${optionalLibs}
+    set(OPENGL_LIBRARY  "")
+if (NOT APPLEIOS)
+    set(OPENGL_LIBRARY              ${OPENGL_gl_LIBRARY}
+                                    ${OPENGL_glu_LIBRARY})
+endif()
 
-    INCLUDE_DIRS
-        ${Boost_INCLUDE_DIRS}
-        ${optionalIncludeDirs}
+    pxr_library(glf
+        LIBRARIES
+            ar
+            arch
+            garch
+            gf
+            hf
+            hio
+            plug
+            tf
+            trace
+            sdf
+            ${OPENGL_LIBRARY}
 
-    PUBLIC_CLASSES
-        bindingMap
-        contextCaps
-        diagnostic
-        drawTarget
-        glContext
-        glRawContext
-        info
-        simpleLight
-        simpleLightingContext
-        simpleMaterial
-        simpleShadowArray
-        texture
-        uniformBlock
-        utils
-        ${optionalPublicClasses}
+        INCLUDE_DIRS
+            ${Boost_INCLUDE_DIRS}
 
-    PRIVATE_CLASSES
-        debugCodes
-        glContextRegistry
+        PUBLIC_CLASSES
+            bindingMap
+            contextCaps
+            diagnostic
+            drawTarget
+            glContext
+            glRawContext
+            info
+            simpleLight
+            simpleLightingContext
+            simpleMaterial
+            simpleShadowArray
+            texture
+            uniformBlock
+            utils
 
-    PUBLIC_HEADERS
-        api.h
+        PRIVATE_CLASSES
+            debugCodes
+            glContextRegistry
 
-    CPPFILES
-        ${optionalCppFiles}
+        PUBLIC_HEADERS
+            api.h
 
-    PYTHON_CPPFILES
-        moduleDeps.cpp
+        CPPFILES
+            ${optionalCppFiles}
 
-    PYMODULE_CPPFILES
-        module.cpp
-        wrapDiagnostic.cpp
-        wrapDrawTarget.cpp
-        wrapSimpleLight.cpp
-        wrapSimpleMaterial.cpp
-        wrapTexture.cpp
+        PYTHON_CPPFILES
+            moduleDeps.cpp
 
-    PYMODULE_FILES
-        __init__.py
+        PYMODULE_CPPFILES
+            module.cpp
+            wrapDiagnostic.cpp
+            wrapDrawTarget.cpp
+            wrapSimpleLight.cpp
+            wrapSimpleMaterial.cpp
+            wrapTexture.cpp
 
-    RESOURCE_FILES
-        plugInfo.json
-        shaders/pcfShader.glslfx
-        shaders/simpleLighting.glslfx
+        PYMODULE_FILES
+            __init__.py
 
-    DOXYGEN_FILES
-        overview.dox
-)
+        RESOURCE_FILES
+            plugInfo.json
+            shaders/pcfShader.glslfx
+            shaders/simpleLighting.glslfx
+
+        DOXYGEN_FILES
+            overview.dox
+    )
+else()
+    pxr_library(glf
+            LIBRARIES
+            ar
+            arch
+            garch
+            gf
+            hf
+            hio
+            plug
+            tf
+            trace
+            sdf
+            ${Boost_PYTHON_LIBRARY}
+            ${OPENGL_LIBRARY}
+            ${X11_LIBRARIES}
+            ${optionalLibs}
+
+            INCLUDE_DIRS
+            ${Boost_INCLUDE_DIRS}
+            ${optionalIncludeDirs}
+
+            PUBLIC_CLASSES
+            bindingMap
+            contextCaps
+            diagnostic
+            drawTarget
+            glContext
+            glRawContext
+            info
+            simpleLight
+            simpleLightingContext
+            simpleMaterial
+            simpleShadowArray
+            texture
+            uniformBlock
+            utils
+            ${optionalPublicClasses}
+
+            PRIVATE_CLASSES
+            debugCodes
+            glContextRegistry
+
+            PUBLIC_HEADERS
+            api.h
+
+            CPPFILES
+            ${optionalCppFiles}
+
+            PYTHON_CPPFILES
+            moduleDeps.cpp
+
+            PYMODULE_CPPFILES
+            module.cpp
+            wrapDiagnostic.cpp
+            wrapDrawTarget.cpp
+            wrapSimpleLight.cpp
+            wrapSimpleMaterial.cpp
+            wrapTexture.cpp
+
+            PYMODULE_FILES
+            __init__.py
+
+            RESOURCE_FILES
+            plugInfo.json
+            shaders/pcfShader.glslfx
+            shaders/simpleLighting.glslfx
+
+            DOXYGEN_FILES
+            overview.dox
+    )
+endif()

@@ -14,14 +14,19 @@ set(optionalPrivateHeaders "")
 # Destination of hgiInterop is always OpenGL, so always include garch
 list(APPEND optionalLibraries garch)
 
-if (PXR_ENABLE_METAL_SUPPORT)
+if (APPLEIOS)
+    add_compile_options(-x objective-c++)
+    list(APPEND optionalLibraries hgiMetal)
+endif()
+
+list(APPEND optionalLibraries hgiGL)
+if (PXR_ENABLE_METAL_SUPPORT AND PXR_ENABLE_GL_SUPPORT)
     add_compile_options(-x objective-c++)
     FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)
     list(APPEND optionalLibraries ${COREVIDEO_LIBRARY} hgiMetal)
     list(APPEND optionalCppFiles metal.mm)
     list(APPEND optionalPrivateHeaders metal.h)
-else()
-    # No OpenGL-to-OpenGL interop when using Metal.
+elseif(PXR_ENABLE_GL_SUPPORT)
     list(APPEND optionalCppFiles opengl.cpp)
     list(APPEND optionalPrivateHeaders opengl.h)
 endif()
