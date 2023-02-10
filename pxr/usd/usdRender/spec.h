@@ -54,6 +54,8 @@ class UsdRenderSettings;
 struct UsdRenderSpec {
     /// Specification of a product.  See UsdRenderProduct.
     struct Product {
+        /// The path of this product, which uniquely identifies it.
+        SdfPath renderProductPath;
         /// The type of product, ex: "raster".
         TfToken type;
         /// The name of the product, which uniquely identifies it.

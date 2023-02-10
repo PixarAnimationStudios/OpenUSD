@@ -336,6 +336,8 @@ int main(int argc, char *argv[])
             /* products */
             {
                 UsdRenderSpec::Product {
+                    // product path
+                    SdfPath("/Render/Products/Fallback"),
                     TfToken("raster"),
                     TfToken(outputFilename),
                     // camera path

@@ -185,8 +185,9 @@ UsdRenderComputeSpec(
     settings.GetProductsRel().GetForwardedTargets(&targets);
     for (SdfPath const& target: targets) {
         if (UsdRenderProduct product =
-            UsdRenderProduct(stage->GetPrimAtPath(target))) {
+                UsdRenderProduct(stage->GetPrimAtPath(target))) {
             UsdRenderSpec::Product pd = base;
+            pd.renderProductPath = target;
 
             // Read product-specific overrides to base render settings.
             _ReadSettingsBase(UsdRenderSettingsBase(product), &pd, true);
