@@ -460,6 +460,11 @@ class SelectionDataModel(QtCore.QObject):
 
     def _ensureValidTargetPath(self, target):
         """Validate a property target or connection."""
+        if not target:
+            # This could be the case for example with CollectionAPIs where a
+            # relationship targets a collection name that does not map to an
+            # actual property.
+            return Sdf.Path.emptyPath
 
         return Sdf.Path(str(target))
 
