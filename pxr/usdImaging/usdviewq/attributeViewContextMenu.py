@@ -24,6 +24,7 @@
 
 from .qt import QtGui, QtWidgets, QtCore
 from pxr import Sdf
+from pxr import Usd
 from .usdviewContextMenuItem import UsdviewContextMenuItem
 from .common import (PropertyViewIndex, PropertyViewDataRoles,
                      PrimNotFoundException, PropertyNotFoundException)
@@ -68,6 +69,11 @@ def _selectPrimsAndProps(dataModel, paths):
         if not prim:
             raise PrimNotFoundException(primPath)
         prims.append(prim)
+
+        # No property will exist for a CollectionAPI path, so skip trying
+        # to get one and just use the prim on which the collection is authored.
+        if Usd.CollectionAPI.IsCollectionAPIPath(path):
+            continue
 
         if path.IsPropertyPath():
             prop = prim.GetProperty(path.name)
