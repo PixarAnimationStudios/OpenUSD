@@ -49,7 +49,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 // We define the empty stub for ABI compatibility even if Python support is
-// enabled so we can make sure size and alignment is the same.
+// enabled so that we can make sure size and alignment is the same.
 class TfPyObjWrapperStub
 {
 public:
@@ -57,7 +57,7 @@ public:
     static constexpr std::size_t Align = 8;
 
 private:
-    std::aligned_storage<Size, Align>::type _stub;
+    [[maybe_unused]] std::aligned_storage<Size, Align>::type _stub;
 };
 
 
