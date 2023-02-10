@@ -444,27 +444,43 @@ HgiMetalBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 }
 
 static bool
-_HgiCanBeFiltered(HgiFormat format)
+_HgiTextureCanBeFiltered(HgiTextureDesc descriptor)
 {
-    HgiFormat const componentFormat = HgiGetComponentBaseFormat(format);
+    HgiFormat const componentFormat =
+        HgiGetComponentBaseFormat(descriptor.format);
 
-    switch(componentFormat) {
-    case HgiFormatInt16:
-    case HgiFormatUInt16:
-    case HgiFormatInt32:
+    if (componentFormat == HgiFormatInt16 ||
+        componentFormat == HgiFormatUInt16 ||
+        componentFormat == HgiFormatInt32) {
         return false;
-    default:
-        return true;
     }
+
+    HgiTextureType const type = descriptor.type;
+    static_assert(HgiTextureTypeCount == (HgiTextureType2DArray+1),
+                  "New texture type is added that is not supported "
+                  "by GenerateMipMaps. Update GenerateMipMaps accordingly.");
+    GfVec3i const dims = descriptor.dimensions;
+    bool const is1DTex = (type == HgiTextureType1D ||
+                          type == HgiTextureType1DArray);
+    bool const is2DTex = (type == HgiTextureType2D ||
+                          type == HgiTextureType2DArray);
+    bool const is3DTex = (type == HgiTextureType3D);
+    HgiFormat const format = descriptor.format;
+    bool const dimensionsCompatible =
+        (is1DTex && dims[0] > 1) ||
+        (is2DTex && dims[0] > 1 && dims[1] > 1) ||
+        (is3DTex && dims[0] > 1 && dims[1] > 1 && dims[2] > 1);
+
+    return dimensionsCompatible;
 }
 
 void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
+
     if (metalTex) {
-        HgiFormat const format = metalTex->GetDescriptor().format;
-        if (_HgiCanBeFiltered(format)) {
+        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor())) {
             _CreateEncoder();
             // Can fail if the texture format is not filterable.
             [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
