@@ -76,9 +76,9 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_geometry.h>
-#include <embree3/rtcore_ray.h>
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_geometry.h>
+#include <embree4/rtcore_ray.h>
 #include <tbb/blocked_range.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_hash_map.h>
