@@ -203,7 +203,7 @@ void HdEmbreeMesh::_EmbreeCullFaces(const RTCFilterFunctionNArguments* args)
             default: break;
         }
         if (cull) {
-            // This is how you reject a hit in embree3 instead of setting
+            // This is how you reject a hit in embree3/4 instead of setting
             // geomId to invalid on the ray
             args->valid[i] = 0;
         }
