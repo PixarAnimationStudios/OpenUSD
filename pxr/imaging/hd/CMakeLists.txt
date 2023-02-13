@@ -43,6 +43,7 @@ pxr_library(hd
         coneSchema
         containerDataSourceEditor
         coordSys
+        coordSysSchema
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
