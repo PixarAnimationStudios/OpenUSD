@@ -1804,11 +1804,12 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
         bool fail = false;
 
-        // Verify that the reference or payload targets the default 
-        // reference/payload target or a root prim.
+        // Verify that the reference or payload targets either the default 
+        // reference/payload target, or a prim with an absolute path.
         if (!refOrPayload.GetPrimPath().IsEmpty() &&
             !(refOrPayload.GetPrimPath().IsAbsolutePath() && 
-              refOrPayload.GetPrimPath().IsPrimPath())) {
+              refOrPayload.GetPrimPath().IsPrimPath() &&
+              !refOrPayload.GetPrimPath().ContainsPrimVariantSelection())) {
             PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->site = PcpSite(node.GetSite());
@@ -2709,15 +2710,31 @@ _AddClassBasedArcs(
     Pcp_PrimIndexer* indexer)
 {
     for (size_t arcNum=0; arcNum < classArcs.size(); ++arcNum) {
+        SdfPath const& arcPath = classArcs[arcNum];
+
         PCP_INDEXING_MSG(indexer, node, "Found %s to <%s>", 
             TfEnum::GetDisplayName(arcType).c_str(),
-            classArcs[arcNum].GetText());
+            arcPath.GetText());
+
+        // Verify that the class-based arc (i.e., inherit or specialize)
+        // targets a prim path, with no variant selection.
+        if (!arcPath.IsEmpty() &&
+            !(arcPath.IsPrimPath() &&
+              !arcPath.ContainsPrimVariantSelection())) {
+            PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
+            err->rootSite = PcpSite(node.GetRootNode().GetSite());
+            err->site = PcpSite(node.GetSite());
+            err->primPath = arcPath;
+            err->arcType = arcType;
+            indexer->RecordError(err);
+            continue;
+        }
 
         // The mapping for a class arc maps the class to the instance.
         // Every other path maps to itself.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ classArcs[arcNum], /* targetNode */ node,
+                /* source */ arcPath, /* targetNode */ node,
                 indexer->inputs)
             .AddRootIdentity();
 

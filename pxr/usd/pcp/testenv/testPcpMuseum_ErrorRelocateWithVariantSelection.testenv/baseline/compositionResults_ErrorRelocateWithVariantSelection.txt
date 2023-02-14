@@ -1,0 +1,41 @@
+Loading @ErrorRelocateWithVariantSelection/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </Model_1>
+
+Prim Stack:
+    root.sdf             /Model_1
+    model.sdf            /Model
+    model.sdf            /Model{vset=vsel}
+
+Variant Selections:
+    {vset = vsel}
+
+Child names:
+     ['PrimOnlyInVariantSet', 'A']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/PrimOnlyInVariantSet>
+
+Prim Stack:
+    model.sdf            /Model{vset=vsel}PrimOnlyInVariantSet
+
+------------------------------------------------------------------------
+Results for composing </Model_1/A>
+
+Prim Stack:
+    model.sdf            /Model/A
+
+Child names:
+     ['B']
+
+------------------------------------------------------------------------
+Results for composing </Model_1/A/B>
+
+Prim Stack:
+    model.sdf            /Model/A/B
+

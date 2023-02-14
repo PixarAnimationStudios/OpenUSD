@@ -31,3 +31,9 @@ def "RootRef" (
     {
     }
 }
+
+def "InvalidSubrootRefWithVariantSelection" (
+    references = @./group.sdf@</Group{v=x}Model>
+)
+{
+}

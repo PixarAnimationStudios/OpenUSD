@@ -59,3 +59,9 @@ Property stacks:
 /RootRef/Child.a:
     group.sdf            /Group{v=y}Model.a
 
+------------------------------------------------------------------------
+Results for composing </InvalidSubrootRefWithVariantSelection>
+
+Prim Stack:
+    root.sdf             /InvalidSubrootRefWithVariantSelection
+

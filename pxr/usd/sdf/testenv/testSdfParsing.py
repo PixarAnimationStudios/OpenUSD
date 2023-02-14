@@ -65,6 +65,11 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        216_bad_variant_in_relocates_path.sdf
+        215_bad_variant_in_specializes_path.sdf
+        214_bad_variant_in_inherits_path.sdf
+        213_bad_variant_in_payload_path.sdf
+        212_bad_variant_in_reference_path.sdf
         211_bad_authored_opaque_attributes.sdf
         210_opaque_attributes.sdf
         209_bad_escaped_string4.sdf

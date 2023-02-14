@@ -1,0 +1,9 @@
+#sdf 1.4.32
+
+def Scope "p" (
+    inherits = [
+        </A{variantSelection=isProhibited}B>
+    ]
+    )
+{
+}
