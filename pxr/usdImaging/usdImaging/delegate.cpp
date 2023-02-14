@@ -2428,6 +2428,29 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
     }
 }
 
+void
+UsdImagingDelegate::SetRootInstancerId(SdfPath const& instancerId)
+{
+    if (instancerId == _rootInstancerId) {
+        return;
+    }
+    _rootInstancerId = instancerId;
+
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // Mark dirty.
+    TF_FOR_ALL(it, _hdPrimInfoMap) {
+        const SdfPath &cachePath = it->first;
+        _HdPrimInfo &primInfo = it->second;
+        if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                        cachePath,
+                                        HdChangeTracker::DirtyInstancer,
+                                        &indexProxy);
+        }
+    }
+}
+
 SdfPath 
 UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
                                      int instanceIndex,
@@ -2909,7 +2932,13 @@ UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
             primInfo->adapter->GetInstancerId(primInfo->usdPrim, cachePath);
     }
 
-    return ConvertCachePathToIndexPath(pathValue);
+    pathValue = ConvertCachePathToIndexPath(pathValue);
+
+    if (pathValue.IsEmpty()) {
+        return _rootInstancerId;
+    }
+
+    return pathValue;
 }
 
 /*virtual*/
