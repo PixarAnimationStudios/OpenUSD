@@ -95,14 +95,14 @@ public:
 
     TfTokenVector GetNames() override {
         static const TfTokenVector names = {
-            HdCoordSysSchemaTokens->name,
+            HdCoordSysSchemaTokens->coordSys,
             HdXformSchemaTokens->xform
         };
         return names;
     }
     
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdCoordSysSchemaTokens->name) {
+        if (name == HdCoordSysSchemaTokens->coordSys) {
             return HdCoordSysSchema::Builder()
                 .SetName(HdRetainedTypedSampledDataSource<TfToken>::New(
                         _coordSysName))
