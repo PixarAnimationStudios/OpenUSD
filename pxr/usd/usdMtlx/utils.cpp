@@ -57,6 +57,8 @@ TF_DEFINE_PUBLIC_TOKENS(UsdMtlxTokens, USD_MTLX_TOKENS);
 
 namespace {
 
+const std::string _CommaSeparator = ",";
+
 using DocumentCache = std::map<std::string, mx::DocumentPtr>;
 
 static
@@ -586,7 +588,11 @@ UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type)
 std::vector<std::string>
 UsdMtlxSplitStringArray(const std::string& s)
 {
-    return mx::splitString(s, mx::ARRAY_VALID_SEPARATORS);
+    std::vector<std::string> strs = mx::splitString(s, _CommaSeparator);
+    for (size_t i=0; i<strs.size(); ++i) {
+        strs[i] = mx::trimSpaces(strs[i]);
+    }
+    return strs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
