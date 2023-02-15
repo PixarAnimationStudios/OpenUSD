@@ -40,7 +40,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/range/iterator_range.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
@@ -305,19 +304,11 @@ private:
         _flags[Usd_PrimClipsFlag] = hasClips;
     }
 
-    typedef boost::iterator_range<
-        class Usd_PrimDataSiblingIterator> SiblingRange;
-
     inline class Usd_PrimDataSiblingIterator _ChildrenBegin() const;
     inline class Usd_PrimDataSiblingIterator _ChildrenEnd() const;
-    inline SiblingRange _GetChildrenRange() const;
-
-    typedef boost::iterator_range<
-        class Usd_PrimDataSubtreeIterator> SubtreeRange;
 
     inline class Usd_PrimDataSubtreeIterator _SubtreeBegin() const;
     inline class Usd_PrimDataSubtreeIterator _SubtreeEnd() const;
-    inline SubtreeRange _GetSubtreeRange() const;
 
     // Data members.
     UsdStage *_stage;
@@ -401,18 +392,6 @@ private:
     _UnderylingIterator _underlyingIterator = nullptr;
 };
 
-// Sibling range.
-typedef boost::iterator_range<
-    class Usd_PrimDataSiblingIterator> Usd_PrimDataSiblingRange;
-
-// Inform TfIterator it should feel free to make copies of the range type.
-template <>
-struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSiblingRange> : std::true_type {};
-template <>
-struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSiblingRange> : std::true_type {};
-
 Usd_PrimDataSiblingIterator
 Usd_PrimData::_ChildrenBegin() const
 {
@@ -424,13 +403,6 @@ Usd_PrimData::_ChildrenEnd() const
 {
     return Usd_PrimDataSiblingIterator(0);
 }
-
-Usd_PrimData::SiblingRange
-Usd_PrimData::_GetChildrenRange() const
-{
-    return Usd_PrimData::SiblingRange(_ChildrenBegin(), _ChildrenEnd());
-}
-
 
 // Tree iterator class.
 class Usd_PrimDataSubtreeIterator {
@@ -485,18 +457,6 @@ private:
     _UnderlyingIterator _underlyingIterator = nullptr;
 };
 
-// Tree range.
-typedef boost::iterator_range<
-    class Usd_PrimDataSubtreeIterator> Usd_PrimDataSubtreeRange;
-
-// Inform TfIterator it should feel free to make copies of the range type.
-template <>
-struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSubtreeRange> : std::true_type {};
-template <>
-struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSubtreeRange> : std::true_type {};
-
 Usd_PrimDataSubtreeIterator
 Usd_PrimData::_SubtreeBegin() const
 {
@@ -508,12 +468,6 @@ Usd_PrimDataSubtreeIterator
 Usd_PrimData::_SubtreeEnd() const
 {
     return Usd_PrimDataSubtreeIterator(GetNextPrim());
-}
-
-Usd_PrimData::SubtreeRange
-Usd_PrimData::_GetSubtreeRange() const
-{
-    return Usd_PrimData::SubtreeRange(_SubtreeBegin(), _SubtreeEnd());
 }
 
 // Helpers for instance proxies.
