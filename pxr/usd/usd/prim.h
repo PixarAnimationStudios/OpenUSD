@@ -43,8 +43,7 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/range/iterator_range.hpp>
-
+#include <iterator>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -2223,7 +2222,96 @@ private:
     _ProtoToInstancePathMap _GetProtoToInstancePathMap() const;
 };
 
-#ifdef doxygen
+/// Forward traversal iterator of sibling ::UsdPrim s.  This is a
+/// standard-compliant iterator that may be used with STL algorithms, etc.
+/// Filters according to a supplied predicate.
+class UsdPrimSiblingIterator {
+    using _UnderlyingIterator = const Usd_PrimData*;
+    class _PtrProxy {
+    public:
+        UsdPrim* operator->() { return &_prim; }
+    private:
+        friend class UsdPrimSiblingIterator;
+        explicit _PtrProxy(const UsdPrim& prim) : _prim(prim) {}
+        UsdPrim _prim;
+    };
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = UsdPrim;
+    using reference = UsdPrim;
+    using pointer = _PtrProxy;
+    using difference_type = std::ptrdiff_t;
+
+    // Default ctor.
+    UsdPrimSiblingIterator() = default;
+
+    /// Dereference.
+    reference operator*() const { return dereference(); }
+
+    /// Indirection.
+    pointer operator->() const { return pointer(dereference()); }
+
+    /// Preincrement.
+    UsdPrimSiblingIterator &operator++() {
+        increment();
+        return *this;
+    }
+
+    /// Postincrement.
+    UsdPrimSiblingIterator operator++(int) {
+        UsdPrimSiblingIterator result = *this;
+        increment();
+        return result;
+    }
+
+    bool operator==(const UsdPrimSiblingIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(const UsdPrimSiblingIterator& other) const {
+        return !equal(other);
+    }
+
+private:
+    friend class UsdPrim;
+
+    // Constructor used by Prim.
+    UsdPrimSiblingIterator(const _UnderlyingIterator &i,
+                           const SdfPath& proxyPrimPath,
+                           const Usd_PrimFlagsPredicate &predicate)
+        : _underlyingIterator(i)
+        , _proxyPrimPath(proxyPrimPath)
+        , _predicate(predicate) {
+        // Need to advance iterator to first matching element.
+        if (_underlyingIterator &&
+            !Usd_EvalPredicate(_predicate, _underlyingIterator,
+                               _proxyPrimPath))
+            increment();
+    }
+
+    bool equal(const UsdPrimSiblingIterator &other) const {
+        return _underlyingIterator == other._underlyingIterator && 
+            _proxyPrimPath == other._proxyPrimPath &&
+            _predicate == other._predicate;
+    }
+
+    void increment() {
+        if (Usd_MoveToNextSiblingOrParent(_underlyingIterator, _proxyPrimPath,
+                                          _predicate)) {
+            _underlyingIterator = nullptr;
+            _proxyPrimPath = SdfPath();
+        }
+    }
+
+    reference dereference() const {
+        return UsdPrim(_underlyingIterator, _proxyPrimPath);
+    }
+
+    _UnderlyingIterator _underlyingIterator = nullptr;
+    SdfPath _proxyPrimPath;
+    Usd_PrimFlagsPredicate _predicate;
+};
+
 /// Forward iterator range of sibling ::UsdPrim s.  This range type contains a
 /// pair of UsdPrimSiblingIterator s, denoting a half-open range of UsdPrim
 /// siblings.  It provides a subset of container-like API, such as begin(),
@@ -2341,102 +2429,6 @@ private:
     iterator _end;
 };
 
-#else
-
-
-/// Forward traversal iterator of sibling ::UsdPrim s.  This is a
-/// standard-compliant iterator that may be used with STL algorithms, etc.
-/// Filters according to a supplied predicate.
-class UsdPrimSiblingIterator {
-    using _UnderlyingIterator = const Usd_PrimData*;
-    class _PtrProxy {
-    public:
-        UsdPrim* operator->() { return &_prim; }
-    private:
-        friend class UsdPrimSiblingIterator;
-        explicit _PtrProxy(const UsdPrim& prim) : _prim(prim) {}
-        UsdPrim _prim;
-    };
-public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = UsdPrim;
-    using reference = UsdPrim;
-    using pointer = _PtrProxy;
-    using difference_type = std::ptrdiff_t;
-
-    // Default ctor.
-    UsdPrimSiblingIterator() = default;
-
-    /// Dereference.
-    reference operator*() const { return dereference(); }
-
-    /// Indirection.
-    pointer operator->() const { return pointer(dereference()); }
-
-    /// Preincrement.
-    UsdPrimSiblingIterator &operator++() {
-        increment();
-        return *this;
-    }
-
-    /// Postincrement.
-    UsdPrimSiblingIterator operator++(int) {
-        UsdPrimSiblingIterator result = *this;
-        increment();
-        return result;
-    }
-
-    bool operator==(const UsdPrimSiblingIterator& other) const {
-        return equal(other);
-    }
-
-    bool operator!=(const UsdPrimSiblingIterator& other) const {
-        return !equal(other);
-    }
-
-private:
-    friend class UsdPrim;
-
-    // Constructor used by Prim.
-    UsdPrimSiblingIterator(const _UnderlyingIterator &i,
-                           const SdfPath& proxyPrimPath,
-                           const Usd_PrimFlagsPredicate &predicate)
-        : _underlyingIterator(i)
-        , _proxyPrimPath(proxyPrimPath)
-        , _predicate(predicate) {
-        // Need to advance iterator to first matching element.
-        if (_underlyingIterator &&
-            !Usd_EvalPredicate(_predicate, _underlyingIterator,
-                               _proxyPrimPath))
-            increment();
-    }
-
-    bool equal(const UsdPrimSiblingIterator &other) const {
-        return _underlyingIterator == other._underlyingIterator && 
-            _proxyPrimPath == other._proxyPrimPath &&
-            _predicate == other._predicate;
-    }
-
-    void increment() {
-        if (Usd_MoveToNextSiblingOrParent(_underlyingIterator, _proxyPrimPath,
-                                          _predicate)) {
-            _underlyingIterator = nullptr;
-            _proxyPrimPath = SdfPath();
-        }
-    }
-
-    reference dereference() const {
-        return UsdPrim(_underlyingIterator, _proxyPrimPath);
-    }
-
-    _UnderlyingIterator _underlyingIterator = nullptr;
-    SdfPath _proxyPrimPath;
-    Usd_PrimFlagsPredicate _predicate;
-};
-
-// Typedef iterator range.
-typedef boost::iterator_range<UsdPrimSiblingIterator> UsdPrimSiblingRange;
-
 // Inform TfIterator it should feel free to make copies of the range type.
 template <>
 struct Tf_ShouldIterateOverCopy<
@@ -2479,7 +2471,103 @@ UsdPrim::_MakeSiblingRange(const Usd_PrimFlagsPredicate &pred) const {
         SiblingIterator(nullptr, SdfPath(), pred));
 }
 
-#ifdef doxygen
+/// Forward traversal iterator of sibling ::UsdPrim s.  This is a
+/// standard-compliant iterator that may be used with STL algorithms, etc.
+/// Filters according to a supplied predicate.
+class UsdPrimSubtreeIterator {
+    using _UnderlyingIterator = Usd_PrimDataConstPtr;
+    class _PtrProxy {
+    public:
+        UsdPrim* operator->() { return &_prim; }
+    private:
+        friend class UsdPrimSubtreeIterator;
+        explicit _PtrProxy(const UsdPrim& prim) : _prim(prim) {}
+        UsdPrim _prim;
+    };
+public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = UsdPrim;
+    using reference = UsdPrim;
+    using pointer = _PtrProxy;
+    using difference_type = std::ptrdiff_t;
+
+    // Default ctor.
+    UsdPrimSubtreeIterator() = default;
+
+    /// Dereference.
+    reference operator*() const { return dereference(); }
+    /// Indirection.
+    pointer operator->() const { return pointer(dereference()); }
+
+    /// Preincrement.
+    UsdPrimSubtreeIterator &operator++() {
+        increment();
+        return *this;
+    }
+
+    /// Postincrement.
+    UsdPrimSubtreeIterator operator++(int) {
+        UsdPrimSubtreeIterator result;
+        increment();
+        return result;
+    }
+
+    /// Equality.
+    bool operator==(const UsdPrimSubtreeIterator &other) const {
+        return equal(other);
+    }
+
+    /// Inequality.
+    bool operator!=(const UsdPrimSubtreeIterator &other) const {
+        return !equal(other);
+    }
+
+
+private:
+    friend class UsdPrim;
+
+    // Constructor used by Prim.
+    UsdPrimSubtreeIterator(const _UnderlyingIterator &i,
+                           const SdfPath &proxyPrimPath,
+                           const Usd_PrimFlagsPredicate &predicate)
+        : _underlyingIterator(i)
+        , _proxyPrimPath(proxyPrimPath)
+        , _predicate(predicate) {
+        // Need to advance iterator to first matching element.
+        if (_underlyingIterator &&
+            !Usd_EvalPredicate(_predicate, _underlyingIterator,
+                               _proxyPrimPath)) {
+            if (Usd_MoveToNextSiblingOrParent(_underlyingIterator,
+                                              _proxyPrimPath, _predicate)) {
+                _underlyingIterator = nullptr;
+                _proxyPrimPath = SdfPath();
+            }
+        }
+    }
+
+    bool equal(const UsdPrimSubtreeIterator &other) const {
+        return _underlyingIterator == other._underlyingIterator &&
+            _proxyPrimPath == other._proxyPrimPath &&
+            _predicate == other._predicate;
+    }
+
+    void increment() {
+        if (!Usd_MoveToChild(_underlyingIterator, _proxyPrimPath,
+                             _predicate)) {
+            while (Usd_MoveToNextSiblingOrParent(_underlyingIterator,
+                                                 _proxyPrimPath,
+                                                 _predicate)) {}
+        }
+    }
+
+    reference dereference() const {
+        return UsdPrim(_underlyingIterator, _proxyPrimPath);
+    }
+
+    _UnderlyingIterator _underlyingIterator = nullptr;
+    SdfPath _proxyPrimPath;
+    Usd_PrimFlagsPredicate _predicate;
+};
 
 /// Forward iterator range of sibling ::UsdPrim s.  This range type contains a
 /// pair of UsdPrimSubtreeIterator s, denoting a half-open range of UsdPrim
@@ -2600,109 +2688,6 @@ private:
     iterator _begin;
     iterator _end;
 };
-
-#else
-
-/// Forward traversal iterator of sibling ::UsdPrim s.  This is a
-/// standard-compliant iterator that may be used with STL algorithms, etc.
-/// Filters according to a supplied predicate.
-class UsdPrimSubtreeIterator {
-    using _UnderlyingIterator = Usd_PrimDataConstPtr;
-    class _PtrProxy {
-    public:
-        UsdPrim* operator->() { return &_prim; }
-    private:
-        friend class UsdPrimSubtreeIterator;
-        explicit _PtrProxy(const UsdPrim& prim) : _prim(prim) {}
-        UsdPrim _prim;
-    };
-public:
-    using iterator_category = std::forward_iterator_tag;
-    using value_type = UsdPrim;
-    using reference = UsdPrim;
-    using pointer = _PtrProxy;
-    using difference_type = std::ptrdiff_t;
-
-    // Default ctor.
-    UsdPrimSubtreeIterator() = default;
-
-    /// Dereference.
-    reference operator*() const { return dereference(); }
-    /// Indirection.
-    pointer operator->() const { return pointer(dereference()); }
-
-    /// Preincrement.
-    UsdPrimSubtreeIterator &operator++() {
-        increment();
-        return *this;
-    }
-
-    /// Postincrement.
-    UsdPrimSubtreeIterator operator++(int) {
-        UsdPrimSubtreeIterator result;
-        increment();
-        return result;
-    }
-
-    /// Equality.
-    bool operator==(const UsdPrimSubtreeIterator &other) const {
-        return equal(other);
-    }
-
-    /// Inequality.
-    bool operator!=(const UsdPrimSubtreeIterator &other) const {
-        return !equal(other);
-    }
-
-
-private:
-    friend class UsdPrim;
-
-    // Constructor used by Prim.
-    UsdPrimSubtreeIterator(const _UnderlyingIterator &i,
-                           const SdfPath &proxyPrimPath,
-                           const Usd_PrimFlagsPredicate &predicate)
-        : _underlyingIterator(i)
-        , _proxyPrimPath(proxyPrimPath)
-        , _predicate(predicate) {
-        // Need to advance iterator to first matching element.
-        if (_underlyingIterator &&
-            !Usd_EvalPredicate(_predicate, _underlyingIterator,
-                               _proxyPrimPath)) {
-            if (Usd_MoveToNextSiblingOrParent(_underlyingIterator,
-                                              _proxyPrimPath, _predicate)) {
-                _underlyingIterator = nullptr;
-                _proxyPrimPath = SdfPath();
-            }
-        }
-    }
-
-    bool equal(const UsdPrimSubtreeIterator &other) const {
-        return _underlyingIterator == other._underlyingIterator &&
-            _proxyPrimPath == other._proxyPrimPath &&
-            _predicate == other._predicate;
-    }
-
-    void increment() {
-        if (!Usd_MoveToChild(_underlyingIterator, _proxyPrimPath,
-                             _predicate)) {
-            while (Usd_MoveToNextSiblingOrParent(_underlyingIterator,
-                                                 _proxyPrimPath,
-                                                 _predicate)) {}
-        }
-    }
-
-    reference dereference() const {
-        return UsdPrim(_underlyingIterator, _proxyPrimPath);
-    }
-
-    _UnderlyingIterator _underlyingIterator = nullptr;
-    SdfPath _proxyPrimPath;
-    Usd_PrimFlagsPredicate _predicate;
-};
-
-// Typedef iterator range.
-typedef boost::iterator_range<UsdPrimSubtreeIterator> UsdPrimSubtreeRange;
 
 // Inform TfIterator it should feel free to make copies of the range type.
 template <>
