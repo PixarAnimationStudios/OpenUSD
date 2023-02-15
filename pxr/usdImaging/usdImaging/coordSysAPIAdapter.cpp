@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/coordSysSchema.h"
+#include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -34,6 +35,11 @@
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (coordSysBinding_dep_xform)
+);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -96,7 +102,8 @@ public:
     TfTokenVector GetNames() override {
         static const TfTokenVector names = {
             HdCoordSysSchemaTokens->coordSys,
-            HdXformSchemaTokens->xform
+            HdXformSchemaTokens->xform,
+            HdDependenciesSchemaTokens->__dependencies
         };
         return names;
     }
@@ -121,6 +128,41 @@ public:
             return UsdImagingDataSourceXform::New(
                     xformQuery, _sceneIndexPath, _stageGlobals);
         }
+
+        if (name == HdDependenciesSchemaTokens->__dependencies) {
+            // Need to add dependency for coordSys type prim (our subprim here)
+            // - xform 
+            // Note that there is no dependency on the coordSys binding's
+            // name, as any update to this in the source usd will result in
+            // invalidation of other parts of the hydra pipeline, which will
+            // anyhow result in coord sys prim being dirtied.
+            //
+            static const HdLocatorDataSourceHandle xformDs =
+                HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                    HdXformSchema::GetDefaultLocator());
+            
+            static const TfToken dependNames[] = {
+                _tokens->coordSysBinding_dep_xform
+            };
+
+            const HdDataSourceBaseHandle dependValues[] = {
+                //xform
+                HdDependencySchema::Builder()
+                    .SetDependedOnPrimPath(
+                            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                                _boundXformPrim.GetPath()))
+                    .SetDependedOnDataSourceLocator(xformDs)
+                    .SetAffectedDataSourceLocator(xformDs)
+                    .Build()
+            };
+
+            HdRetainedContainerDataSourceHandle deps =
+                HdRetainedContainerDataSource::New(
+                        TfArraySize(dependNames), dependNames, dependValues);
+
+            return deps;
+        }
+
         return nullptr;
     }
 
