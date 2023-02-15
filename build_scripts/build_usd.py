@@ -2381,8 +2381,8 @@ if which("cmake"):
         # Apple Silicon is not supported prior to 3.19
         cmake_required_version = (3, 19)
     else:
-        # Linux, and vfx platform CY2020, are verified to work correctly with 3.12
-        cmake_required_version = (3, 12)
+        # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
+        cmake_required_version = (3, 14)
 
     cmake_version = GetCMakeVersion()
     if not cmake_version:
