@@ -2167,20 +2167,21 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 
     _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-    // Go through the finalLoadSet, and check ancestors -- if any are loaded,
-    // include the most ancestral which was loaded last in the finalLoadSet.
+    // Go through the finalLoadSet, and include all unloaded ancestors in the
+    // final load set
     for (SdfPath const &p: finalLoadSet) {
-        SdfPath curPath = p;
-        while (true) {
-            SdfPath parentPath = curPath.GetParentPath();
-            if (parentPath.IsEmpty())
-                break;
-            UsdPrim prim = GetPrimAtPath(parentPath);
-            if (prim && prim.IsLoaded() && p != curPath) {
-                finalLoadSet.insert(curPath);
-                break;
+        SdfPath path = p.GetParentPath();
+        // Filter out the empty and absolute root paths before traversing
+        if (path.IsEmpty()) continue;
+        while (!path.IsAbsoluteRootPath()) {
+            UsdPrim prim = GetPrimAtPath(path);
+            if (prim && prim.HasAuthoredPayloads() && prim.IsActive() &&
+                !prim.IsLoaded()) {
+                // The path should always sort before 'p' so this shouldn't
+                // invalidate any iterators to 'finalLoadSet'
+                finalLoadSet.insert(path);
             }
-            curPath = parentPath;
+            path = path.GetParentPath();
         }
     }
 
