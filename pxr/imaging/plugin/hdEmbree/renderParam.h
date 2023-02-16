@@ -11,7 +11,11 @@
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderThread.h"
 
-#include <embree3/rtcore.h>
+#if defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+#else
+    #include <embree3/rtcore.h>
+#endif // defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
 
 PXR_NAMESPACE_OPEN_SCOPE
 

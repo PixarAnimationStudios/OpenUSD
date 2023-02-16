@@ -23,7 +23,12 @@
 
 #include "pxr/base/tf/errorMark.h"
 
-#include <embree3/rtcore.h>
+#if defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+#else
+    #include <embree3/rtcore.h>
+#endif // defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+
 #include <iostream>
 
 PXR_NAMESPACE_USING_DIRECTIVE

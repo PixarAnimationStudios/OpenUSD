@@ -76,9 +76,15 @@
 #include <unordered_set>
 #include <utility>
 #include <vector>
+#if defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+#include <embree4/rtcore.h>
+#include <embree4/rtcore_geometry.h>
+#include <embree4/rtcore_ray.h>
+#else
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_geometry.h>
 #include <embree3/rtcore_ray.h>
+#endif // defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

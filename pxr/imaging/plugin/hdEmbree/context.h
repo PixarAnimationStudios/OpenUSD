@@ -14,7 +14,11 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/vt/array.h"
 
-#include <embree3/rtcore.h>
+#if defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+#else
+    #include <embree3/rtcore.h>
+#endif // defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
 
 PXR_NAMESPACE_OPEN_SCOPE
 

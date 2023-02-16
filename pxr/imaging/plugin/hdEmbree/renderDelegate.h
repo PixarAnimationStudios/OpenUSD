@@ -13,8 +13,13 @@
 #include "pxr/imaging/plugin/hdEmbree/renderer.h"
 #include "pxr/base/tf/staticTokens.h"
 
+#if defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+#else
+    #include <embree3/rtcore.h>
+#endif // defined(PXR_EMBREE_MAJOR_VERSION) && PXR_EMBREE_MAJOR_VERSION >= 4
+
 #include <mutex>
-#include <embree3/rtcore.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
