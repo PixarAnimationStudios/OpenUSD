@@ -848,7 +848,11 @@ function(_pxr_target_link_libraries NAME)
                 if(";${PXR_STATIC_LIBS};" MATCHES ";${lib};")
                     # The library is explicitly static.
                     list(APPEND final ${lib})
-                elseif(MSVC)
+                elseif(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+                    list(APPEND final -Wl,-force_load ${lib})
+                elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU" AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+                    list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
+                elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
                     # The syntax here is -WHOLEARCHIVE[:lib] but CMake will
                     # treat that as a link flag and not "see" the library.
                     # As a result it won't replace a target with the path
@@ -871,10 +875,6 @@ function(_pxr_target_link_libraries NAME)
                     #
                     list(APPEND final -WHOLEARCHIVE:$<TARGET_FILE:${lib}>)
                     list(APPEND final ${lib})
-                elseif(CMAKE_COMPILER_IS_GNUCXX)
-                    list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
-                elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-                    list(APPEND final -Wl,-force_load ${lib})
                 else()
                     # Unknown platform.
                     list(APPEND final ${lib})
