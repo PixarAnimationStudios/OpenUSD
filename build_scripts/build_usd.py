@@ -689,6 +689,11 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
+if Windows():
+    BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
+else:
+    BOOST_VERSION_FILE = "include/boost/version.hpp"
+
 def InstallBoost_Helper(context, force, buildArgs):
 
     # In general we use boost 1.70.0 to adhere to VFX Reference Platform CY2020.
