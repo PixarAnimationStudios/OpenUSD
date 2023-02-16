@@ -536,7 +536,8 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mx::NodePtr mxShaderNode = mxDoc->addNode(mxType.GetString(),
                                               "Surface",
                                               "surfaceshader");
-    mx::NodePtr mxMaterial = mxDoc->addMaterialNode(materialName, mxShaderNode);
+    mx::NodePtr mxMaterial = mxDoc->addMaterialNode(
+        mxDoc->createValidChildName(materialName), mxShaderNode);
 
     _CreateMtlxNodeGraphFromTerminalNodeConnections(
         netInterface, terminalNodeName, terminalNodeConnectionNames,
