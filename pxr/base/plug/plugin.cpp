@@ -37,6 +37,7 @@
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/pathUtils.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/staticData.h"
@@ -49,6 +50,7 @@
 #include "pxr/base/tf/pyInterpreter.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
+#include <memory>
 #include <mutex>
 #include <string>
 #include <utility>
@@ -60,15 +62,15 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef TfHashMap< std::string, PlugPluginRefPtr, TfHash > _PluginMap;
+typedef pxr_tsl::robin_map<std::string, std::unique_ptr<PlugPlugin>, TfHash>
+    _PluginMap;
 typedef TfHashMap< std::string, PlugPluginPtr, TfHash > _WeakPluginMap;
 typedef TfHashMap< TfType, PlugPluginPtr, TfHash > _ClassMap;
 
 static TfStaticData<_PluginMap> _allPlugins;
-// XXX -- Use _WeakPluginMap
-static TfStaticData<_PluginMap> _allPluginsByDynamicLibraryName;
-static TfStaticData<_PluginMap> _allPluginsByModuleName;
-static TfStaticData<_PluginMap> _allPluginsByResourceName;
+static TfStaticData<_WeakPluginMap> _allPluginsByDynamicLibraryName;
+static TfStaticData<_WeakPluginMap> _allPluginsByModuleName;
+static TfStaticData<_WeakPluginMap> _allPluginsByResourceName;
 static std::mutex _allPluginsMutex;
 
 static TfStaticData<_ClassMap> _classMap;
@@ -98,12 +100,11 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
     std::lock_guard<std::mutex> lock(_allPluginsMutex);
 
     // Already registered?
-    auto iresult = _allPlugins->insert(
-        std::make_pair(metadata.pluginPath, TfNullPtr));
+    auto iresult = _allPlugins->try_emplace(metadata.pluginPath);
     if (!iresult.second) {
         auto it = iresult.first;
         TF_VERIFY(it->second);
-        return std::make_pair(it->second, false);
+        return {TfCreateWeakPtr(it->second.get()), false};
     }
     
     // Already registered with the same name but a different path?  Give
@@ -119,7 +120,7 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
             pluginCreationPath.c_str());
         // Remove the null entry we added in _allPlugins for the alt path.
         _allPlugins->erase(iresult.first);
-        return std::make_pair(it->second, false);
+        return {it->second, false};
     }
 
     // Go ahead and create a plugin.
@@ -128,7 +129,7 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
                                     metadata.pluginName.c_str(),
                                     pluginCreationPath.c_str());
     
-    PlugPluginRefPtr plugin = TfCreateRefPtr(
+    std::unique_ptr<PlugPlugin> plugin(
         new PlugPlugin(pluginCreationPath, metadata.pluginName,
                        metadata.resourcePath, metadata.plugInfo, pluginType));
 
@@ -140,13 +141,15 @@ PlugPlugin::_NewPlugin(const Plug_RegistrationMetadata &metadata,
                 metadata.pluginName.c_str(), pluginCreationPath.c_str());
     }
 
+    PlugPluginPtr weakPlugin = TfCreateWeakPtr(plugin.get());
+
     // Add to _allPlugins.
-    iresult.first->second = plugin;
+    iresult.first.value() = std::move(plugin);
 
     // Add to allPluginsByName too.
-    allPluginsByName[metadata.pluginName] = plugin;
+    allPluginsByName[metadata.pluginName] = weakPlugin;
 
-    return pair<PlugPluginPtr, bool>(plugin, true);
+    return {weakPlugin, true};
 }
 
 
@@ -444,7 +447,7 @@ PlugPlugin::_GetAllPlugins()
     PlugPluginPtrVector plugins;
     plugins.reserve(_allPlugins->size());
     TF_FOR_ALL(it, *_allPlugins) {
-        plugins.push_back(it->second);
+        plugins.push_back(TfCreateWeakPtr(it->second.get()));
     }
     return plugins;
 }
