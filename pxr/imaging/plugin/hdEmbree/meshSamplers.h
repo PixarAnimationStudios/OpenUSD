@@ -12,8 +12,13 @@
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/base/vt/types.h"
 
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_geometry.h>
+#if defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+    #include <embree4/rtcore_geometry.h>
+#else
+    #include <embree3/rtcore.h>
+    #include <embree3/rtcore_geometry.h>
+#endif // defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
 
 #include <bitset>
 

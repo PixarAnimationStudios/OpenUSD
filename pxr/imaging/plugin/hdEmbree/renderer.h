@@ -15,8 +15,13 @@
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/rect2i.h"
 
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_ray.h>
+#if defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
+    #include <embree4/rtcore.h>
+    #include <embree4/rtcore_ray.h>
+#else
+    #include <embree3/rtcore.h>
+    #include <embree3/rtcore_ray.h>
+#endif // defined(EMBREE_MAJOR_VERSION) && EMBREE_MAJOR_VERSION >= 4
 
 #include <random>
 #include <atomic>
