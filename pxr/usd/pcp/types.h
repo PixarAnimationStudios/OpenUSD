@@ -33,8 +33,6 @@
 #include <limits>
 #include <vector>
 
-#include <boost/operators.hpp>
-
 /// \file pcp/types.h
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -130,7 +128,7 @@ struct PcpSiteTrackerSegment {
 typedef std::vector<PcpSiteTrackerSegment> PcpSiteTracker;
 
 // Internal type for Sd sites.
-struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
+struct Pcp_SdSiteRef {
     Pcp_SdSiteRef(const SdfLayerRefPtr& layer_, const SdfPath& path_) :
         layer(layer_), path(path_)
     {
@@ -142,10 +140,30 @@ struct Pcp_SdSiteRef : boost::totally_ordered<Pcp_SdSiteRef> {
         return layer == other.layer && path == other.path;
     }
 
+    bool operator!=(const Pcp_SdSiteRef& other) const
+    {
+        return !(*this == other);
+    }
+
     bool operator<(const Pcp_SdSiteRef& other) const
     {
         return layer < other.layer ||
                (!(other.layer < layer) && path < other.path);
+    }
+
+    bool operator<=(const Pcp_SdSiteRef& other) const
+    {
+        return !(other < *this);
+    }
+
+    bool operator>(const Pcp_SdSiteRef& other) const
+    {
+        return other < *this;
+    }
+
+    bool operator>=(const Pcp_SdSiteRef& other) const
+    {
+        return !(*this < other);
     }
 
     // These are held by reference for performance,
