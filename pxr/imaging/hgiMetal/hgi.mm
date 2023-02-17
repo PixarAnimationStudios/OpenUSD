@@ -146,7 +146,7 @@ HgiMetal::~HgiMetal()
 bool
 HgiMetal::IsBackendSupported() const
 {
-    if (@available(ios 14.0, *))
+    if (@available(ios 14.0, macOS 10.15, *))
     {
         return true;
     }

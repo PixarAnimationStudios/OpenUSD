@@ -107,23 +107,6 @@ def GetCommandOutput(command):
 
     return result
 
-def GetFrameworkRoot():
-    pathWithFramework = next(path for path in sys.path if (
-            "Python.framework" in path or "Python3.framework" in path))
-    splitPath = pathWithFramework.split('/')
-    index = 0
-    for p in range(0, len(splitPath)):
-        if splitPath[index] == "Python.framework" or \
-                splitPath[index] == "Python3.framework":
-            break
-        index = index+1
-    if index == len(splitPath):
-        raise Exception("Could not find Python framework")
-    #This should get Python.framework/Version/3.x
-    frameworkSplitPath = splitPath[0:index+3]
-    frameworkPath = "/".join(frameworkSplitPath)
-    return frameworkPath
-
 def GetTargetArmArch():
     # Allows the arm architecture string to be overridden by
     # setting MACOS_ARM_ARCHITECTURE
