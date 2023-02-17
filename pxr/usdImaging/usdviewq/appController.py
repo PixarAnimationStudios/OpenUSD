@@ -1133,6 +1133,9 @@ class AppController(QtCore.QObject):
             # the viewer, which might take a long time.
             if self._stageView:
                 self._stageView.setUpdatesEnabled(False)
+                
+            if self._noRender:
+                self._ui.renderFrame.hide()
 
             self._mainWindow.update()
 
