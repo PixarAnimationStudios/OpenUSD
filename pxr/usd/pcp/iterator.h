@@ -34,7 +34,6 @@
 
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 
@@ -50,16 +49,24 @@ class PcpPropertyIndex;
 /// order.
 ///
 class PcpNodeIterator
-    : public boost::iterator_facade<
-                 /* Derived =   */ PcpNodeIterator, 
-                 /* ValueType = */ PcpNodeRef,
-                 /* Category =  */ boost::random_access_traversal_tag,
-                 /* RefType =   */ PcpNodeRef
-             >
 {
+    class _PtrProxy {
+    public:
+        PcpNodeRef* operator->() { return &_nodeRef; }
+    private:
+        friend class PcpNodeIterator;
+        explicit _PtrProxy(const PcpNodeRef& nodeRef) : _nodeRef(nodeRef) {}
+        PcpNodeRef _nodeRef;
+    };
 public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = PcpNodeRef;
+    using reference = PcpNodeRef;
+    using pointer = _PtrProxy;
+    using difference_type = std::ptrdiff_t;
+
     /// Constructs an invalid iterator.
-    PcpNodeIterator() : _graph(0), _nodeIdx(PCP_INVALID_INDEX) {}
+    PcpNodeIterator() = default;
 
     // Returns a compressed Sd site.  For internal use only.
     Pcp_CompressedSdSite GetCompressedSdSite(size_t layerIndex) const
@@ -67,12 +74,94 @@ public:
         return Pcp_CompressedSdSite(_nodeIdx, layerIndex);
     }
 
+    reference operator*() const { return dereference(); }
+    pointer operator->() const { return pointer(dereference()); }
+    reference operator[](const difference_type index) const {
+        PcpNodeIterator advanced(*this);
+        advanced.advance(index);
+        return advanced.dereference();
+    }
+
+    difference_type operator-(const PcpNodeIterator& other) const {
+        return -distance_to(other);
+    }
+
+    PcpNodeIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    PcpNodeIterator& operator--() {
+        decrement();
+        return *this;
+    }
+
+    PcpNodeIterator operator++(int) {
+        PcpNodeIterator result(*this);
+        increment();
+        return result;
+    }
+
+    PcpNodeIterator operator--(int) {
+        PcpNodeIterator result(*this);
+        decrement();
+        return result;
+    }
+
+    PcpNodeIterator operator+(const difference_type increment) const {
+        PcpNodeIterator result(*this);
+        result.advance(increment);
+        return result;
+    }
+
+    PcpNodeIterator operator-(const difference_type decrement) const {
+        PcpNodeIterator result(*this);
+        result.advance(-decrement);
+        return result;
+    }
+
+    PcpNodeIterator& operator+=(const difference_type increment) {
+        advance(increment);
+        return *this;
+    }
+
+    PcpNodeIterator& operator-=(const difference_type decrement) {
+        advance(-decrement);
+        return *this;
+    }
+
+    bool operator==(const PcpNodeIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(const PcpNodeIterator& other) const {
+        return !equal(other);
+    }
+
+    bool operator<(const PcpNodeIterator& other) const {
+        TF_DEV_AXIOM(_graph == other._graph);
+        return _nodeIdx < other._nodeIdx;
+    }
+
+    bool operator<=(const PcpNodeIterator& other) const {
+        TF_DEV_AXIOM(_graph == other._graph);
+        return _nodeIdx <= other._nodeIdx;
+    }
+
+    bool operator>(const PcpNodeIterator& other) const {
+        TF_DEV_AXIOM(_graph == other._graph);
+        return _nodeIdx > other._nodeIdx;
+    }
+
+    bool operator>=(const PcpNodeIterator& other) const {
+        TF_DEV_AXIOM(_graph == other._graph);
+        return _nodeIdx >= other._nodeIdx;
+    }
+
 private:
     friend class PcpPrimIndex;
     PcpNodeIterator(PcpPrimIndex_Graph* graph, size_t nodeIdx) :
         _graph(graph), _nodeIdx(nodeIdx) {}
-
-    friend class boost::iterator_core_access;
 
     void increment() { ++_nodeIdx; }
     void decrement() { --_nodeIdx; }
@@ -88,8 +177,8 @@ private:
     }
 
 private:
-    PcpPrimIndex_Graph* _graph;
-    size_t _nodeIdx;
+    PcpPrimIndex_Graph* _graph = nullptr;
+    size_t _nodeIdx = PCP_INVALID_INDEX;
 };
 
 /// \class PcpNodeReverseIterator
@@ -112,14 +201,22 @@ public:
 /// strong-to-weak order.
 ///
 class PcpPrimIterator 
-    : public boost::iterator_facade<
-                 /* Derived  = */ PcpPrimIterator, 
-                 /* Value    = */ SdfSite,
-                 /* Category = */ boost::random_access_traversal_tag,
-                 /* Ref      = */ SdfSite
-             >
 {
+    class _PtrProxy {
+    public:
+        SdfSite* operator->() { return &_site; }
+    private:
+        friend class PcpPrimIterator;
+        explicit _PtrProxy(const SdfSite& site) : _site(site) {}
+        SdfSite _site;
+    };
 public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = SdfSite;
+    using reference = SdfSite;
+    using pointer = _PtrProxy;
+    using difference_type = std::ptrdiff_t;
+
     /// Constructs an invalid iterator.
     PCP_API
     PcpPrimIterator();
@@ -138,8 +235,91 @@ public:
     PCP_API
     Pcp_SdSiteRef _GetSiteRef() const;
 
+    reference operator*() const { return dereference(); }
+    pointer operator->() const { return pointer(dereference()); }
+    reference operator[](const difference_type index) const {
+        PcpPrimIterator advanced(*this);
+        advanced.advance(index);
+        return advanced.dereference();
+    }
+
+    difference_type operator-(const PcpPrimIterator& other) const {
+        return -distance_to(other);
+    }
+
+    PcpPrimIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    PcpPrimIterator& operator--() {
+        decrement();
+        return *this;
+    }
+
+    PcpPrimIterator operator++(int) {
+        PcpPrimIterator result(*this);
+        increment();
+        return result;
+    }
+
+    PcpPrimIterator operator--(int) {
+        PcpPrimIterator result(*this);
+        decrement();
+        return result;
+    }
+
+    PcpPrimIterator operator+(const difference_type increment) const {
+        PcpPrimIterator result(*this);
+        result.advance(increment);
+        return result;
+    }
+
+    PcpPrimIterator operator-(const difference_type decrement) const {
+        PcpPrimIterator result(*this);
+        result.advance(-decrement);
+        return result;
+    }
+
+    PcpPrimIterator& operator+=(const difference_type increment) {
+        advance(increment);
+        return *this;
+    }
+
+    PcpPrimIterator& operator-=(const difference_type decrement) {
+        advance(-decrement);
+        return *this;
+    }
+
+    bool operator==(const PcpPrimIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(const PcpPrimIterator& other) const {
+        return !equal(other);
+    }
+
+    bool operator<(const PcpPrimIterator& other) const {
+        TF_DEV_AXIOM(_primIndex == other._primIndex);
+        return _pos < other._pos;
+    }
+
+    bool operator<=(const PcpPrimIterator& other) const {
+        TF_DEV_AXIOM(_primIndex == other._primIndex);
+        return _pos <= other._pos;
+    }
+
+    bool operator>(const PcpPrimIterator& other) const {
+        TF_DEV_AXIOM(_primIndex == other._primIndex);
+        return _pos > other._pos;
+    }
+
+    bool operator>=(const PcpPrimIterator& other) const {
+        TF_DEV_AXIOM(_primIndex == other._primIndex);
+        return _pos >= other._pos;
+    }
+
 private:
-    friend class boost::iterator_core_access;
     PCP_API
     void increment();
     PCP_API
@@ -154,8 +334,8 @@ private:
     reference dereference() const;
 
 private:
-    const PcpPrimIndex* _primIndex;
-    size_t _pos;
+    const PcpPrimIndex* _primIndex = nullptr;
+    size_t _pos = PCP_INVALID_INDEX;
 };
 
 /// \class PcpPrimReverseIterator
@@ -190,13 +370,14 @@ public:
 /// strong-to-weak order.
 ///
 class PcpPropertyIterator
-    : public boost::iterator_facade<
-                 /* Derived  = */ PcpPropertyIterator, 
-                 /* Value    = */ const SdfPropertySpecHandle,
-                 /* Category = */ boost::random_access_traversal_tag
-             >
 {
 public:
+    using iterator_category = std::random_access_iterator_tag;
+    using value_type = const SdfPropertySpecHandle;
+    using reference = const SdfPropertySpecHandle&;
+    using pointer = const SdfPropertySpecHandle*;
+    using difference_type = std::ptrdiff_t;
+
     /// Constructs an invalid iterator.
     PCP_API
     PcpPropertyIterator();
@@ -215,8 +396,91 @@ public:
     PCP_API
     bool IsLocal() const;
 
+    reference operator*() const { return dereference(); }
+    pointer operator->() const { return &(dereference()); }
+    reference operator[](const difference_type index) const {
+        PcpPropertyIterator advanced(*this);
+        advanced.advance(index);
+        return advanced.dereference();
+    }
+
+    difference_type operator-(const PcpPropertyIterator& other) const {
+        return -distance_to(other);
+    }
+
+    PcpPropertyIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    PcpPropertyIterator& operator--() {
+        decrement();
+        return *this;
+    }
+
+    PcpPropertyIterator operator++(int) {
+        PcpPropertyIterator result(*this);
+        increment();
+        return result;
+    }
+
+    PcpPropertyIterator operator--(int) {
+        PcpPropertyIterator result(*this);
+        decrement();
+        return result;
+    }
+
+    PcpPropertyIterator operator+(const difference_type increment) const {
+        PcpPropertyIterator result(*this);
+        result.advance(increment);
+        return result;
+    }
+
+    PcpPropertyIterator operator-(const difference_type decrement) const {
+        PcpPropertyIterator result(*this);
+        result.advance(-decrement);
+        return result;
+    }
+
+    PcpPropertyIterator& operator+=(const difference_type increment) {
+        advance(increment);
+        return *this;
+    }
+
+    PcpPropertyIterator& operator-=(const difference_type decrement) {
+        advance(-decrement);
+        return *this;
+    }
+
+    bool operator==(const PcpPropertyIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(const PcpPropertyIterator& other) const {
+        return !equal(other);
+    }
+
+    bool operator<(const PcpPropertyIterator& other) const {
+        TF_DEV_AXIOM(_propertyIndex == other._propertyIndex);
+        return _pos < other._pos;
+    }
+
+    bool operator<=(const PcpPropertyIterator& other) const {
+        TF_DEV_AXIOM(_propertyIndex == other._propertyIndex);
+        return _pos <= other._pos;
+    }
+
+    bool operator>(const PcpPropertyIterator& other) const {
+        TF_DEV_AXIOM(_propertyIndex == other._propertyIndex);
+        return _pos > other._pos;
+    }
+
+    bool operator>=(const PcpPropertyIterator& other) const {
+        TF_DEV_AXIOM(_propertyIndex == other._propertyIndex);
+        return _pos >= other._pos;
+    }
+
 private:
-    friend class boost::iterator_core_access;
     PCP_API
     void increment();
     PCP_API
@@ -231,8 +495,8 @@ private:
     reference dereference() const;
 
 private:
-    const PcpPropertyIndex* _propertyIndex;
-    size_t _pos;
+    const PcpPropertyIndex* _propertyIndex = nullptr;
+    size_t _pos = 0;
 };
 
 /// \class PcpPropertyReverseIterator
