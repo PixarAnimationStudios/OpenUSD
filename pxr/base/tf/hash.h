@@ -89,12 +89,20 @@ TfHashAppend(HashState &h, std::pair<T, U> const &p)
     h.Append(p.second);
 }
 
-// Support std::vector.
+// Support std::vector. std::vector<bool> specialized below.
 template <class HashState, class T>
-inline void
+inline std::enable_if_t<!std::is_same<std::remove_const_t<T>, bool>::value>
 TfHashAppend(HashState &h, std::vector<T> const &vec)
 {
     h.AppendContiguous(vec.data(), vec.size());
+}
+
+// Support std::vector<bool>.
+template <class HashState>
+inline void
+TfHashAppend(HashState &h, std::vector<bool> const &vec)
+{
+    h.Append(std::hash<std::vector<bool>>{}(vec));
 }
 
 // Support std::set.

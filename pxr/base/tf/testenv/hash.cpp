@@ -294,6 +294,9 @@ Test_TfHash()
     std::vector<int> vint = {1, 2, 3, 4, 5};
     printf("hash(vector<int>): %zu\n", h(vint));
 
+    std::vector<bool> vbool = {true, false, true};
+    printf("hash(vector<bool>): %zu\n", h(vbool));
+
     std::set<int> sint = {1, 2, 3, 4, 5};
     printf("hash(set<int>): %zu\n", h(sint));
 
