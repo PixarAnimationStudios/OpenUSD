@@ -372,6 +372,7 @@ class AppController(QtCore.QObject):
         with self._makeTimer('bring up the UI'):
 
             self._primToItemMap = {}
+            self._allSceneCameras = None
             self._itemsToPush = []
             self._currentSpec = None
             self._currentLayer = None
@@ -1283,6 +1284,7 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.closeRenderer()
         self._dataModel.stage = None
+        self._allSceneCameras = None
 
     def _startQtShutdownTimer(self):
         self._qtShutdownTimer = self._makeTimer('tear down the UI')
@@ -2475,6 +2477,9 @@ class AppController(QtCore.QObject):
 
         self._hasPrimResync = hasPrimResync or self._hasPrimResync
 
+        # Scene cameras may need to update when something in the stage changes
+        self._allSceneCameras = None
+
         self._clearCaches(preserveCamera=True)
 
         # Update the UIs (it gets all of them) and StageView on a timer
@@ -2972,8 +2977,11 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.cameraPrim = camera
 
     def _refreshCameraListAndMenu(self, preserveCurrCamera):
-        self._allSceneCameras = Utils._GetAllPrimsOfType(
-            self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
+    	# Scene cameras should only change when something in the stage
+    	# changes so only update them if needed.
+        if self._allSceneCameras is None:
+            self._allSceneCameras = Utils._GetAllPrimsOfType(
+                self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
         currCamera = self._startingPrimCamera
         if self._stageView:
             currCamera = self._dataModel.viewSettings.cameraPrim
