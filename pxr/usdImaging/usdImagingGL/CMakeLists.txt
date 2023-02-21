@@ -1651,6 +1651,17 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_sibling_pi
     TESTENV testUsdImagingGLPointInstancer
 )
 
+pxr_register_test(testUsdImagingGLPointInstancer_pi_sibling_pi_over
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi_over.usda -write pi_sibling_pi_over.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_pi_over.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
+)
+
 pxr_register_test(testUsdImagingGLPointInstancer_pi_varying
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -translate 0 -10 -40 -clear 0.2 0.2 0.2 1 -stage pi_varying.usda -times 0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 18 19 20 21 22 23 24 25 26 27 28 29 30 -write pi_varying.png"
     IMAGE_DIFF_COMPARE
@@ -1911,6 +1922,19 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi.png"
     IMAGE_DIFF_COMPARE
         pi_sibling_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi_over
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi_over.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_pi_over.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL

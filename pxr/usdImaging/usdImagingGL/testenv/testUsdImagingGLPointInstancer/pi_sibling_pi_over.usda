@@ -1,0 +1,37 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Root"
+{
+    def PointInstancer "depth2"
+    {
+        float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+        point3f[] positions = [(0, 0, -1), (0, 0, 1)]
+        int[] protoIndices = [0, 0]
+        rel prototypes = </Root/depth1>
+    }
+
+    def PointInstancer "depth1"
+    {
+        float3[] extent = [(-3, -3, -3), (3, 3, 3)]
+        point3f[] positions = [(-1, 0, 0), (1, 0, 0)]
+        int[] protoIndices = [0, 0]
+        rel prototypes = </Root/prototypes/proto2>
+    }
+
+    over "prototypes"
+    {
+        def Xform "proto2"
+        {
+            def Sphere "sphere"
+            {
+                float3[] primvars:displayColor = [(0, 1, 0)]
+            }
+        }
+    }
+}
+

@@ -90,13 +90,13 @@ _IsOver(const HdSceneIndexPrim &prim)
     if (!prim.dataSource) {
         return false;
     }
-    HdBoolDataSourceHandle const ds =
-        HdBoolDataSource::Cast(
+    HdTokenDataSourceHandle const ds =
+        HdTokenDataSource::Cast(
             prim.dataSource->Get(UsdImagingSpecifierTokens->usdSpecifier));
     if (!ds) {
         return false;
     }
-    return ds->GetTypedValue(0.0f);
+    return ds->GetTypedValue(0.0f) == UsdImagingSpecifierTokens->over;
 }
 
 }
