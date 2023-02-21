@@ -147,10 +147,10 @@ command prompt and not the 32-bit (x86) command prompt.
 See https://docs.microsoft.com/en-us/cpp/build/how-to-enable-a-64-bit-visual-cpp-toolset-on-the-command-line for more details.
 
 For example, the following will download, build, and install USD's dependencies,
-then build and install USD into `C:\Program Files\USD`.
+then build and install USD into `C:\USD`.
 
 ```
-C:\> python USD\build_scripts\build_usd.py "C:\Program Files\USD"
+C:\> python USD\build_scripts\build_usd.py "C:\USD"
 ```
 
 #### 4. Try it out
