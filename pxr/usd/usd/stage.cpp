@@ -97,7 +97,6 @@
 
 #include <boost/optional.hpp>
 #include <boost/iterator/transform_iterator.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/spin_mutex.h>
@@ -852,7 +851,7 @@ _OpenLayer(
 {
     boost::optional<ArResolverContextBinder> binder;
     if (!resolverContext.IsEmpty())
-        binder = boost::in_place(resolverContext);
+        binder.emplace(resolverContext);
 
     SdfLayer::FileFormatArguments args;
     args[SdfFileFormatTokens->TargetArg] =
@@ -2952,7 +2951,7 @@ UsdStage::_ComposeSubtreesInParallel(
 
     // Begin a subtree composition in parallel.
     WorkWithScopedParallelism([this, &prims, &primIndexPaths]() {
-            _dispatcher = boost::in_place();
+            _dispatcher.emplace();
             // We populate the clip cache concurrently during composition, so we
             // need to enable concurrent population here.
             Usd_ClipCache::ConcurrentPopulationContext
@@ -3104,7 +3103,7 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
     TF_AXIOM(!_dispatcher);
 
     WorkWithScopedParallelism([&]() {
-        _dispatcher = boost::in_place();
+        _dispatcher.emplace();
         for (const auto& path : paths) {
             Usd_PrimDataPtr prim = _GetPrimDataAtPath(path);
             // We *expect* every prim in paths to be valid as we iterate,

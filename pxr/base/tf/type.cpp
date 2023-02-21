@@ -53,7 +53,6 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 #include <atomic>
 #include <algorithm>
@@ -279,11 +278,11 @@ public:
         }
 
         if (!base->aliasToDerivedTypeMap)
-            base->aliasToDerivedTypeMap = boost::in_place(0);
+            base->aliasToDerivedTypeMap.emplace(0);
         (*base->aliasToDerivedTypeMap)[alias] = derived;
 
         if (!base->derivedTypeToAliasesMap)
-            base->derivedTypeToAliasesMap = boost::in_place(0);
+            base->derivedTypeToAliasesMap.emplace(0);
         (*base->derivedTypeToAliasesMap)[derived].push_back(alias);
     }
 
