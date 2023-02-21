@@ -66,6 +66,7 @@ public:
     /// classes can't override it and instead override _Sync.
     /// This 'non-virtual interface'-like pattern allows us to ensure we always
     /// initialized Hgi during the Sync task so derived classes don't have to.
+    HDX_API 
     void Sync(
         HdSceneDelegate* delegate,
         HdTaskContext* ctx,
