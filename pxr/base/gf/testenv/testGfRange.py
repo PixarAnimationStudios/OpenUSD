@@ -328,5 +328,14 @@ class TestGfRange(unittest.TestCase):
             # Construct float from double type
             self.assertEqual(Rangef(r1d), r1f)
 
+    def test_Hash(self):
+        for RangeType, ValueType in self.Ranges:
+            r = RangeType(
+                makeValue(ValueType, [-1.0, -2.0, -3.0, -4.0]),
+                makeValue(ValueType, [4.0, 3.0, 2.0, 1.0])
+            )
+            self.assertEqual(hash(r), hash(r))
+            self.assertEqual(hash(r), hash(RangeType(r)))
+
 if __name__ == '__main__':
     unittest.main()

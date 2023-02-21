@@ -69,6 +69,10 @@ static GfQuath& __itruediv__(GfQuath &self, GfHalf value)
     return self /= value;
 }
 
+static size_t __hash__(GfQuath const &self) {
+    return TfHash()(self);
+}
+
 // Zero-initialized default ctor for python.
 static GfQuath *__init__() { return new GfQuath(0); }
 
@@ -156,7 +160,7 @@ void wrapQuath()
         .def(GfHalf() * self)
         .def(self / GfHalf())
         .def("__repr__", __repr__)
-
+        .def("__hash__", __hash__)
         ;
 
 

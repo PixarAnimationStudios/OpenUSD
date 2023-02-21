@@ -205,5 +205,10 @@ class TestGfRotation(unittest.TestCase):
         self.assertTrue(Gf.IsClose(rot.angle, -1.91983, 0.00001))
         self.assertEqual(rot.axis, axis.GetNormalized())
 
+    def test_Hash(self):
+        rot = Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 40.0)
+        self.assertEqual(hash(rot), hash(rot))
+        self.assertEqual(hash(rot), hash(Gf.Rotation(rot)))
+
 if __name__ == '__main__':
     unittest.main()

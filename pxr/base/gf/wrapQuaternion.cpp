@@ -86,6 +86,8 @@ void wrapQuaternion()
 
         .def(init<double, const GfVec3d &>())
 
+        .def(init<This>())
+
         .def( TfTypePythonClass() )
 
         .def("GetZero", &This::GetZero)

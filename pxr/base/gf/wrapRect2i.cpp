@@ -48,6 +48,10 @@ static string _Repr(GfRect2i const &self) {
         TfPyRepr(self.GetMax()) + ")";
 }
 
+static size_t __hash__(GfRect2i const &self) {
+    return TfHash()(self);
+}
+
 } // anonymous namespace 
 
 void wrapRect2i()
@@ -115,7 +119,7 @@ void wrapRect2i()
         .def( self + self )
         
         .def("__repr__", _Repr)
-        
+        .def("__hash__", __hash__)
         ;
     to_python_converter<std::vector<This>,
         TfPySequenceToPython<std::vector<This> > >();
