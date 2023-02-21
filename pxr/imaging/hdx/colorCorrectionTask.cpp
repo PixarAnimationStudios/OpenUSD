@@ -88,14 +88,14 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
 
     // Only for version 2 and above
     for (BufferInfo &buffer : _bufferConstants) {
-        _hgi->DestroyBuffer(&buffer.handle);
+        _GetHgi()->DestroyBuffer(&buffer.handle);
     }
     _bufferConstants.clear();
 
     // Only for version 2 and above
     for (TextureSamplerInfo &textureLut : _textureLUTs) {
-        _hgi->DestroyTexture(&textureLut.texHandle);
-        _hgi->DestroySampler(&textureLut.samplerHandle);
+        _GetHgi()->DestroyTexture(&textureLut.texHandle);
+        _GetHgi()->DestroySampler(&textureLut.samplerHandle);
     }
     _textureLUTs.clear();
 
@@ -416,20 +416,20 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
     shaderDesc->setFunctionName("OCIODisplay");
     const float *lutValues = nullptr;
     shaderDesc->setLanguage(
-        _hgi->GetAPIName() == HgiTokens->OpenGL ?
+        _GetHgi()->GetAPIName() == HgiTokens->OpenGL ?
                     OCIO::GPU_LANGUAGE_GLSL_4_0 :
                     OCIO::GPU_LANGUAGE_MSL_2_0);
 
     gpuProcessor->extractGpuShaderInfo(shaderDesc);
 
     for (BufferInfo &buffer : _bufferConstants) {
-        _hgi->DestroyBuffer(&buffer.handle);
+        _GetHgi()->DestroyBuffer(&buffer.handle);
     }
     _bufferConstants.clear();
 
     for (TextureSamplerInfo &textureLut : _textureLUTs) {
-        _hgi->DestroyTexture(&textureLut.texHandle);
-        _hgi->DestroySampler(&textureLut.samplerHandle);
+        _GetHgi()->DestroyTexture(&textureLut.texHandle);
+        _GetHgi()->DestroySampler(&textureLut.samplerHandle);
     }
     _textureLUTs.clear();
 
@@ -478,9 +478,9 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         _textureLUTs.emplace_back(TextureSamplerInfo{
                                     static_cast<unsigned char>(3),
                                     textureName,
-                                    _hgi->CreateTexture(lutDesc),
+                                    _GetHgi()->CreateTexture(lutDesc),
                                     samplerName,
-                                    _hgi->CreateSampler(sampDesc)});
+                                    _GetHgi()->CreateSampler(sampDesc)});
     }
 
     for(int i = 0; i < shaderDesc->getNumTextures(); ++i) {
@@ -536,9 +536,9 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         _textureLUTs.emplace_back(TextureSamplerInfo {
                                     static_cast<unsigned char>(height == 1 ? 1 : 2),
                                     textureName,
-                                    _hgi->CreateTexture(lutDesc),
+                                    _GetHgi()->CreateTexture(lutDesc),
                                     samplerName,
-                                    _hgi->CreateSampler(sampDesc)});
+                                    _GetHgi()->CreateSampler(sampDesc)});
     }
 
     UniformBufferDataVector uniformBuffersData = _GetUniformBuffersData(shaderDesc);
@@ -580,7 +580,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         }
         _bufferConstants.emplace_back(BufferInfo { ubo.typeName,
             ubo.name, ubo.count,
-            ubo.count > 1 ? _hgi->CreateBuffer(bufferDesc) :
+            ubo.count > 1 ? _GetHgi()->CreateBuffer(bufferDesc) :
                             HgiHandle<HgiBuffer>()
         });
     }
@@ -601,7 +601,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
         HgiShaderFunctionAddTexture(
             &fragDesc, texInfo.texName, bindingIdx, texInfo.dim);
         ++bindingIdx;
-        if(_hgi->GetAPIName() == HgiTokens->Metal)
+        if(_GetHgi()->GetAPIName() == HgiTokens->Metal)
         {
             fsCode += "textureBind_" + texInfo.texName + ",";
             fsCode += "samplerBind_" + texInfo.texName + ",";
@@ -637,7 +637,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
     for(BufferInfo const &buffInfo : _bufferConstants) {
         if(buffInfo.count == 1)
         {
-            if(_hgi->GetAPIName() == HgiTokens->Metal)
+            if(_GetHgi()->GetAPIName() == HgiTokens->Metal)
             {
                 HgiShaderFunctionAddConstantParam(&fragDesc, buffInfo.name, buffInfo.typeName);
                 fsCode += buffInfo.name + ", ";
@@ -652,7 +652,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
                                         buffInfo.typeName, bindingIdx++,
                                         HgiBindingTypeUniformArray);
 
-            if(_hgi->GetAPIName() == HgiTokens->Metal)
+            if(_GetHgi()->GetAPIName() == HgiTokens->Metal)
             {
                 fsCode += buffInfo.name + ", ";
                 fsCode += buffInfo.name + "_count, ";
