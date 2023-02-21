@@ -43,6 +43,7 @@ pxr_library(usdImaging
         dataSourceRelationship
         dataSourceStage
         dataSourceStageGlobals
+        dataSourceUsdPrimInfo
         dataSourceVolume
         debugCodes
         delegate
@@ -96,6 +97,7 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        usdPrimInfoSchema
         rectLightAdapter
         renderSettingsAdapter
         representedByAncestorPrimAdapter

@@ -25,6 +25,7 @@
 
 #include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/instanceSchema.h"
@@ -382,25 +383,20 @@ _GetBindingHash(HdContainerDataSourceHandle const &primSource)
 }
 
 
-// Gives result of data source at "usdPrototypePath" or empty path.
+// Gives niPrototypePath from UsdImagingUsdPrimInfoSchema.
 SdfPath
 _GetUsdPrototypePath(HdContainerDataSourceHandle const &primSource)
 {
-    if (!primSource) {
-        return SdfPath();
-    }
-    HdPathDataSourceHandle const pathDs =
-        HdPathDataSource::Cast(
-            primSource->Get(
-                UsdImagingNativeInstancingTokens->usdPrototypePath));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(primSource);
+    HdPathDataSourceHandle const pathDs = schema.GetNiPrototypePath();
     if (!pathDs) {
         return SdfPath();
     }
     return pathDs->GetTypedValue(0.0f);
 }
 
-// Gives the name of the USD prototype obtained from the data source
-// at "usdPrototypePath" - or empty token.
+// Gives the name of niPrototypePath from UsdImagingUsdPrimInfoSchema.
 TfToken
 _GetUsdPrototypeName(HdContainerDataSourceHandle const &primSource)
 {
@@ -481,7 +477,7 @@ struct _InstanceInfo {
     SdfPath GetBindingPrimPath() const {
         return
             enclosingPrototypeRoot
-                .AppendChild(UsdImagingNativeInstancingTokens->prototypesScope)
+                .AppendChild(UsdImagingTokens->propagatedPrototypesScope)
                 .AppendChild(bindingHash);
     }
 
@@ -671,8 +667,7 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                 HdInstancedBySchema::GetDefaultLocator().Append(
                     HdInstancedBySchemaTokens->prototypeRoots),
                 HdMaterialBindingSchema::GetDefaultLocator(),
-                HdDataSourceLocator(
-                    UsdImagingNativeInstancingTokens->usdPrototypePath)};
+                UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
 
             if (entry.dirtyLocators.Intersects(srcLocators)) {
                 _RemovePrim(path);

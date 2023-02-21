@@ -23,7 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -36,10 +36,9 @@ namespace {
 bool
 _IsUsdInstance(HdContainerDataSourceHandle const &primSource)
 {
-    HdPathDataSourceHandle const pathDs =
-        HdPathDataSource::Cast(
-            primSource->Get(
-                UsdImagingNativeInstancingTokens->usdPrototypePath));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(primSource);
+    HdPathDataSourceHandle const pathDs = schema.GetNiPrototypePath();
     if (!pathDs) {
         return false;
     }

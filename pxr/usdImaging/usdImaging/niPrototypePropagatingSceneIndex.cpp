@@ -271,7 +271,7 @@ UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
     // Path has __Usd_Prototypes at correct place.
     const TfToken parentParentName =
         primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != UsdImagingNativeInstancingTokens->prototypesScope) {
+    if (parentParentName != UsdImagingTokens->propagatedPrototypesScope) {
         return;
     }
 
