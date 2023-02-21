@@ -108,11 +108,20 @@ class SdfAssetPath;
 /// 
 /// Each instance's transformation is a combination of the SRT affine transform
 /// described by its scale, orientation, and position, applied \em after
-/// (i.e. less locally) than the transformation computed at the root of the
-/// prototype it is instancing.  In other words, to put an instance of a 
-/// PointInstancer into the space of the PointInstancer's parent prim:
+/// (i.e. less locally than) the local to parent transformation computed at 
+/// the root of the prototype it is instancing. 
 /// 
-/// 1. Apply (most locally) the authored transformation for 
+/// If your processing of prototype geometry naturally takes into account the 
+/// transform of the prototype root, then this term can be omitted from the 
+/// computation of each instance transform, and this can be controlled when 
+/// computing instance transformation matrices using the 
+/// UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
+/// 
+/// To understand the computation of the instance transform, in order to put
+/// an instance of a PointInstancer into the space of the PointInstancer's 
+/// parent prim we do the following:
+/// 
+/// 1. Apply (most locally) the authored local to parent transformation for 
 /// <em>prototypes[protoIndices[i]]</em>
 /// 2. If *scales* is authored, next apply the scaling matrix from *scales[i]*
 /// 3. If *orientations* is authored: **if *angularVelocities* is authored**, 
