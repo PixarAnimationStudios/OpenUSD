@@ -62,7 +62,9 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderProductSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
@@ -2032,6 +2034,85 @@ private:
 
 // ----------------------------------------------------------------------------
 
+static HdContainerDataSourceHandle
+_ToContainerDS(const VtDictionary &dict)
+{
+    std::vector<TfToken> names;
+    std::vector<HdDataSourceBaseHandle> values;
+    const size_t numDictEntries = dict.size();
+    names.reserve(numDictEntries);
+    values.reserve(numDictEntries);
+
+    for (const auto &pair : dict) {
+        names.push_back(TfToken(pair.first));
+        values.push_back(
+            HdRetainedSampledDataSource::New(pair.second));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
+}
+
+using HdRenderProducts = HdRenderSettings::RenderProducts;
+static HdVectorDataSourceHandle
+_ToVectorDS(const HdRenderProducts &hdProducts)
+{
+    std::vector<HdDataSourceBaseHandle> productsDs;
+    productsDs.reserve(hdProducts.size());
+
+    for (const auto & hdProduct : hdProducts) {
+        // Construct render var ds.
+        std::vector<HdDataSourceBaseHandle> varsDs;
+        for (const auto & hdVar : hdProduct.renderVars) {
+            varsDs.push_back(
+                HdRenderVarSchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        hdVar.varPath),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.dataType),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        TfToken(hdVar.sourceName)),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.sourceType),
+                    _ToContainerDS(
+                        hdVar.extraSettings)));
+        }
+
+        productsDs.push_back(
+            HdRenderProductSchema::BuildRetained(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.productPath),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.type),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.name),
+                HdRetainedTypedSampledDataSource<GfVec2i>::New(
+                    hdProduct.resolution),
+                HdRetainedSmallVectorDataSource::New(
+                    varsDs.size(), varsDs.data()),
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.cameraPath),
+                HdRetainedTypedSampledDataSource<float>::New(
+                    hdProduct.pixelAspectRatio),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.aspectRatioConformPolicy),
+                HdRetainedTypedSampledDataSource<GfVec2f>::New(
+                    hdProduct.apertureSize),
+                HdRetainedTypedSampledDataSource<GfVec4f>::New(
+                    GfVec4f(
+                        hdProduct.dataWindowNDC.GetMin()[0],
+                        hdProduct.dataWindowNDC.GetMin()[1],
+                        hdProduct.dataWindowNDC.GetMax()[0],
+                        hdProduct.dataWindowNDC.GetMax()[1])),
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    hdProduct.disableMotionBlur),
+                _ToContainerDS(
+                    hdProduct.extraSettings)));
+    }
+
+    return HdRetainedSmallVectorDataSource::New(
+                productsDs.size(), productsDs.data());
+}
+
 class Hd_DataSourceRenderSettings : public HdContainerDataSource
 {
 public:
@@ -2058,25 +2139,18 @@ public:
             const VtValue value = _sceneDelegate->Get(
                 _id, HdRenderSettingsPrimTokens->settings);
             if (value.IsHolding<VtDictionary>()) {
-                const VtDictionary settings = 
-                    value.UncheckedGet<VtDictionary>();
-
-                std::vector<TfToken> namespacedParamNames;
-                std::vector<HdDataSourceBaseHandle> namespacedParamValues;
-                for (const auto &setting : settings) {
-                    namespacedParamNames.push_back(TfToken(setting.first));
-                    namespacedParamValues.push_back(
-                        HdRetainedTypedSampledDataSource<VtValue>::New(
-                            setting.second));
-                }
-                return HdRetainedContainerDataSource::New(
-                    namespacedParamNames.size(), 
-                    namespacedParamNames.data(),
-                    namespacedParamValues.data());
+                return _ToContainerDS(
+                    value.UncheckedGet<VtDictionary>());
             }
         }
 
-        // XXX Update this for other fields (e.g., render products)
+        if (name == HdRenderSettingsSchemaTokens->renderProducts) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderProducts);
+            if (value.IsHolding<HdRenderProducts>()) {
+                return _ToVectorDS(value.UncheckedGet<HdRenderProducts>());
+            }
+        }
 
         // Note: active can be skipped (instead of hardcoding it to false here)
         //       since a downstream scene index will author its opinion.

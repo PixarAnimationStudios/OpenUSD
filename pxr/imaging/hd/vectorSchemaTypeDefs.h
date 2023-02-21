@@ -35,6 +35,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Numeric
 using HdIntArrayVectorSchema = HdTypedVectorSchema<VtIntArray>;
 
+// Schema types
+using HdRenderProductVectorSchema =
+    HdTypedVectorSchema<class HdRenderProductSchema>;
+using HdRenderVarVectorSchema =
+    HdTypedVectorSchema<class HdRenderVarSchema>;
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

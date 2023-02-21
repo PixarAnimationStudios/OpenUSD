@@ -55,11 +55,11 @@ HdRenderSettingsSchema::GetActive()
         HdRenderSettingsSchemaTokens->active);
 }
 
-HdVectorDataSourceHandle
+HdRenderProductVectorSchema
 HdRenderSettingsSchema::GetRenderProducts()
 {
-    return _GetTypedDataSource<HdVectorDataSource>(
-        HdRenderSettingsSchemaTokens->renderProducts);
+    return HdRenderProductVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
+        HdRenderSettingsSchemaTokens->renderProducts));
 }
 
 /*static*/

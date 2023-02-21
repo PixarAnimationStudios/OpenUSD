@@ -29,9 +29,9 @@
 #include "pxr/imaging/hd/bprim.h"
 
 #include "pxr/base/vt/dictionary.h"
-
-#include "pxr/base/arch/hash.h"
-
+#include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/range2f.h"
 
 #include <vector>
 
@@ -77,14 +77,56 @@ public:
     };
 
     // Parameters that may be queried and invalidated.
-    ///
-    /// XXX RenderProduct is empty for now, but will be filled up
-    /// in a follow-up change.
-    ///
+    //
+    // \note This mirrors UsdRender except that the render products and vars
+    //       are "flattened out" similar to UsdRenderSpec.
     struct RenderProduct {
-    };
-    using RenderProducts = std::vector<RenderProduct>;
+        struct RenderVar {
+            SdfPath varPath;
+            TfToken dataType;
+            std::string sourceName;
+            TfToken sourceType;
+            VtDictionary extraSettings;
+        };
 
+        /// Identification & output information
+        //
+        // Path to product prim in scene description.
+        SdfPath productPath;
+        // The type of product, ex: "raster".
+        TfToken type;
+        // The name of the product, which uniquely identifies it.
+        TfToken name;
+        // The pixel resolution of the product.
+        GfVec2i resolution;
+        // The render vars that the product is comprised of.
+        std::vector<RenderVar> renderVars;
+
+        /// Camera and framing
+        //
+        // Path to the camera to use for this product.
+        SdfPath cameraPath;
+        // The pixel aspect ratio as adjusted by aspectRatioConformPolicy.
+        float pixelAspectRatio;
+        // The policy that was applied to conform aspect ratio
+        // mismatches between the aperture and image.
+        TfToken aspectRatioConformPolicy;
+        // The camera aperture size as adjusted by aspectRatioConformPolicy.
+        GfVec2f apertureSize;
+        // The data window, in NDC terms relative to the aperture.
+        // (0,0) corresponds to bottom-left and (1,1) corresponds to
+        // top-right.  Note that the data window can partially cover
+        // or extend beyond the unit range, for representing overscan
+        // or cropped renders.
+        GfRange2f dataWindowNDC;
+
+        /// Settings overrides
+        //
+        bool disableMotionBlur;
+        VtDictionary extraSettings;
+    };
+
+    using RenderProducts = std::vector<RenderProduct>;
     using NamespacedSettings = VtDictionary;
 
     HD_API
@@ -99,7 +141,10 @@ public:
     HD_API
     const NamespacedSettings& GetSettings() const;
 
-    // XXX Add API to query render products & AOV bindings.
+    HD_API
+    const RenderProducts& GetRenderProducts() const;
+
+    // XXX Add API to query AOV bindings.
 
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
@@ -139,6 +184,31 @@ private:
     NamespacedSettings _settings;
     RenderProducts _products;
 };
+
+// VtValue requirements
+HD_API
+size_t hash_value(HdRenderSettings::RenderProduct const &rp);
+
+HD_API
+std::ostream& operator<<(
+    std::ostream& out, const HdRenderSettings::RenderProduct&);
+
+HD_API
+bool operator==(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs);
+HD_API
+bool operator!=(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs);
+HD_API
+std::ostream& operator<<(
+    std::ostream& out, const HdRenderSettings::RenderProduct::RenderVar&);
+
+HD_API
+bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs);
+HD_API
+bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

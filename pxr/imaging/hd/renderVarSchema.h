@@ -28,8 +28,8 @@
 /* ** defs.py or the (*)Schema.template.h files to make changes.           ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_RENDER_SETTINGS_SCHEMA_H
-#define PXR_IMAGING_HD_RENDER_SETTINGS_SCHEMA_H
+#ifndef PXR_IMAGING_HD_RENDER_VAR_SCHEMA_H
+#define PXR_IMAGING_HD_RENDER_VAR_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
 
@@ -39,31 +39,37 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDRENDERSETTINGS_SCHEMA_TOKENS \
-    (renderSettings) \
+#define HDRENDERVAR_SCHEMA_TOKENS \
+    (renderVar) \
+    (path) \
+    (dataType) \
+    (sourceName) \
+    (sourceType) \
     (namespacedSettings) \
-    (active) \
-    (renderProducts) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
-    HDRENDERSETTINGS_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderVarSchemaTokens, HD_API,
+    HDRENDERVAR_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
-class HdRenderSettingsSchema : public HdSchema
+class HdRenderVarSchema : public HdSchema
 {
 public:
-    HdRenderSettingsSchema(HdContainerDataSourceHandle container)
+    HdRenderVarSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
     //ACCESSORS
 
     HD_API
+    HdPathDataSourceHandle GetPath();
+    HD_API
+    HdTokenDataSourceHandle GetDataType();
+    HD_API
+    HdTokenDataSourceHandle GetSourceName();
+    HD_API
+    HdTokenDataSourceHandle GetSourceType();
+    HD_API
     HdContainerDataSourceHandle GetNamespacedSettings();
-    HD_API
-    HdBoolDataSourceHandle GetActive();
-    HD_API
-    HdRenderProductVectorSchema GetRenderProducts();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -75,12 +81,14 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &namespacedSettings,
-        const HdBoolDataSourceHandle &active,
-        const HdVectorDataSourceHandle &renderProducts
+        const HdPathDataSourceHandle &path,
+        const HdTokenDataSourceHandle &dataType,
+        const HdTokenDataSourceHandle &sourceName,
+        const HdTokenDataSourceHandle &sourceType,
+        const HdContainerDataSourceHandle &namespacedSettings
     );
 
-    /// \class HdRenderSettingsSchema::Builder
+    /// \class HdRenderVarSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -90,32 +98,40 @@ public:
     {
     public:
         HD_API
+        Builder &SetPath(
+            const HdPathDataSourceHandle &path);
+        HD_API
+        Builder &SetDataType(
+            const HdTokenDataSourceHandle &dataType);
+        HD_API
+        Builder &SetSourceName(
+            const HdTokenDataSourceHandle &sourceName);
+        HD_API
+        Builder &SetSourceType(
+            const HdTokenDataSourceHandle &sourceType);
+        HD_API
         Builder &SetNamespacedSettings(
             const HdContainerDataSourceHandle &namespacedSettings);
-        HD_API
-        Builder &SetActive(
-            const HdBoolDataSourceHandle &active);
-        HD_API
-        Builder &SetRenderProducts(
-            const HdVectorDataSourceHandle &renderProducts);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
+        HdPathDataSourceHandle _path;
+        HdTokenDataSourceHandle _dataType;
+        HdTokenDataSourceHandle _sourceName;
+        HdTokenDataSourceHandle _sourceType;
         HdContainerDataSourceHandle _namespacedSettings;
-        HdBoolDataSourceHandle _active;
-        HdVectorDataSourceHandle _renderProducts;
     };
 
     /// Retrieves a container data source with the schema's default name token
-    /// "renderSettings" from the parent container and constructs a
-    /// HdRenderSettingsSchema instance.
+    /// "renderVar" from the parent container and constructs a
+    /// HdRenderVarSchema instance.
     /// Because the requested container data source may not exist, the result
     /// should be checked with IsDefined() or a bool comparison before use.
     HD_API
-    static HdRenderSettingsSchema GetFromParent(
+    static HdRenderVarSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
@@ -130,20 +146,6 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     HD_API
     static const HdDataSourceLocator &GetNamespacedSettingsLocator();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the active data source can be found.
-    /// This is often useful for checking intersection against the
-    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-    HD_API
-    static const HdDataSourceLocator &GetActiveLocator();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the renderproducts data source can be found.
-    /// This is often useful for checking intersection against the
-    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-    HD_API
-    static const HdDataSourceLocator &GetRenderProductsLocator();
 
 };
 
