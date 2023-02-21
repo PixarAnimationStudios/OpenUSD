@@ -84,14 +84,14 @@ public:
     _InstancerObserver(
         _ContextSharedPtr const &context);
 
-    /// Adds the prims under prototypeRoot at rerootedPrototypeRoot
+    /// Adds the prims under prototype at propagatedPrototype
     /// and sets the instancedBy:paths data source of those prims
     /// to instancer.
     _InstancerObserver(
         _ContextSharedPtr const &context,
         const SdfPath &instancer,
-        const SdfPath &prototypeRoot,
-        const SdfPath &rerootedPrototypeRoot);
+        const SdfPath &prototype,
+        const SdfPath &propagatedPrototype);
 
     ~_InstancerObserver();
 
@@ -137,8 +137,8 @@ private:
 
     _ContextSharedPtr const _context;
     
-    const SdfPath _prototypeRoot;
-    const SdfPath _rerootedPrototypeRoot;
+    const SdfPath _prototype;
+    const SdfPath _propagatedPrototype;
 
     HdSceneIndexBaseRefPtr const _prototypeSceneIndex;
     HdSceneIndexBaseRefPtr const _rerootingSceneIndex;
@@ -164,35 +164,35 @@ _InstancerObserver::_InstancerObserver(_ContextSharedPtr const &context)
   : _InstancerObserver(
       context,
       /* instancer = */ SdfPath(),
-      /* prototypeRoot = */ SdfPath::AbsoluteRootPath(),
-      /* rerootedPrototypeRoot = */ SdfPath::AbsoluteRootPath())
+      /* prototype = */ SdfPath::AbsoluteRootPath(),
+      /* propagatedPrototype = */ SdfPath::AbsoluteRootPath())
 {
 }
 
 _InstancerObserver::_InstancerObserver(
         _ContextSharedPtr const &context,
         const SdfPath &instancer,
-        const SdfPath &prototypeRoot,
-        const SdfPath &rerootedPrototypeRoot)
+        const SdfPath &prototype,
+        const SdfPath &propagatedPrototype)
   : _context(context)
-  , _prototypeRoot(prototypeRoot)
-  , _rerootedPrototypeRoot(rerootedPrototypeRoot)
+  , _prototype(prototype)
+  , _propagatedPrototype(propagatedPrototype)
   , _prototypeSceneIndex(
       UsdImaging_PiPrototypeSceneIndex::New(
           // Isolate the prototype
           _RerootingSceneIndex(
               context->inputSceneIndex,
-              prototypeRoot, prototypeRoot),
+              prototype, prototype),
           instancer,
-          prototypeRoot))
+          prototype))
   , _rerootingSceneIndex(
       _RerootingSceneIndex(
           _prototypeSceneIndex,
-          prototypeRoot, rerootedPrototypeRoot))
+          prototype, propagatedPrototype))
 {    
     _context->mergingSceneIndex->AddInputScene(
         _rerootingSceneIndex,
-        rerootedPrototypeRoot);
+        propagatedPrototype);
 
     _prototypeSceneIndex->AddObserver(HdSceneIndexObserverPtr(this));
 
@@ -226,7 +226,7 @@ _InstancerObserver::~_InstancerObserver()
 SdfPath
 _InstancerObserver::_RerootedPath(const SdfPath &instancer) const
 {
-    return instancer.ReplacePrefix(_prototypeRoot, _rerootedPrototypeRoot);
+    return instancer.ReplacePrefix(_prototype, _propagatedPrototype);
 }
 
 TfToken
@@ -248,7 +248,7 @@ _InstancerObserver::_InstancerHash(const SdfPath &instancer) const
     // actually compute a chain of hashes if we have nested point instancers.
     //
 
-    const size_t h = TfHash::Combine(instancer, _rerootedPrototypeRoot);
+    const size_t h = TfHash::Combine(instancer, _propagatedPrototype);
     
     return TfToken(TfStringPrintf("ForInstancer%zx", h));
 }
@@ -292,18 +292,18 @@ _InstancerObserver::_UpdateInstancerPrototypes(
     // Compute the re-rooted paths for the instancer's prototypes.
     // Add a _InstancerObserver for the re-rooted path if there wasn't a _InstancerObserver
     // already.
-    VtArray<SdfPath> rerootedPrototypes;
-    rerootedPrototypes.reserve(prototypes.size());
+    VtArray<SdfPath> propagatedPrototypes;
+    propagatedPrototypes.reserve(prototypes.size());
     for (const SdfPath &prototype : prototypes) {
-        const SdfPath rerootedPrototype =
+        const SdfPath propagatedPrototype =
             prototype.AppendChild(
                 _InstancerHash(instancer));
-        rerootedPrototypes.push_back(rerootedPrototype);
+        propagatedPrototypes.push_back(propagatedPrototype);
         _InstancerObserverUniquePtr &observer = 
             (*prototypeToInstancerObserver)[prototype];
         if (!observer) {
             observer = std::make_unique<_InstancerObserver>(
-                _context, rerootedInstancer, prototype, rerootedPrototype);
+                _context, rerootedInstancer, prototype, propagatedPrototype);
         }
     }
 
@@ -311,7 +311,7 @@ _InstancerObserver::_UpdateInstancerPrototypes(
     _context->instancerSceneIndex->AddPrims(
         { { rerootedInstancer,
             HdPrimTypeTokens->instancer,
-            _InstancerTopology(rerootedPrototypes) } });
+            _InstancerTopology(propagatedPrototypes) } });
 }
 
 VtArray<SdfPath>
@@ -360,7 +360,7 @@ _InstancerObserver::_UpdateInstancer(
 void
 _InstancerObserver::_Populate()
 {
-    UsdImaging_SceneIndexPrimView view(_prototypeSceneIndex, _prototypeRoot);
+    UsdImaging_SceneIndexPrimView view(_prototypeSceneIndex, _prototype);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
         HdSceneIndexPrim const prim = _prototypeSceneIndex->GetPrim(path);
