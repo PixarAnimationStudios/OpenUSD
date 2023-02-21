@@ -1000,22 +1000,19 @@ def InstallTBB_MacOS(context, force, buildArgs):
             x86Dir = os.path.dirname(x86Files[0])
             armDir = os.path.dirname(armFiles[0])
 
-            lipoCommandsRelease = apple_utils.CreateUniversalBinaries(
-                                        context, libNames, x86Dir, armDir)
+            apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
 
             x86Files = glob.glob(
                 os.getcwd() + "/build/*intel64*_debug/libtbb*.*")
             armFiles = glob.glob(
                 os.getcwd() + "/build/*{0}*_debug/libtbb*.*".format(
                         apple_utils.GetTargetArmArch()))
-            lipoCommandsDebug = None
             if x86Files and armFiles:
                 libNames = [os.path.basename(x) for x in x86Files]
                 x86Dir = os.path.dirname(x86Files[0])
                 armDir = os.path.dirname(armFiles[0])
 
-                lipoCommandsDebug = apple_utils.CreateUniversalBinaries(
-                                        context, libNames, x86Dir, armDir)
+                apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
         else:
             CopyFiles(context, "build/*_release/libtbb*.*", "lib")
             try:
