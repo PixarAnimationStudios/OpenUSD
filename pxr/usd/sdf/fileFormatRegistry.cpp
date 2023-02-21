@@ -25,6 +25,7 @@
 /// \file Sdf/fileFormatRegistry.cpp
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/fileFormatRegistry.h"
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/fileFormat.h"
@@ -36,6 +37,7 @@
 #include "pxr/base/tf/staticTokens.h"
 
 #include <algorithm>
+#include <type_traits>
 
 using std::string;
 using std::vector;
@@ -47,6 +49,9 @@ TF_DEFINE_PRIVATE_TOKENS(_PlugInfoKeyTokens,
     ((Extensions, "extensions"))
     ((Target,     "target"))
     ((Primary,    "primary"))
+    ((SupportsReading, "supportsReading"))
+    ((SupportsWriting, "supportsWriting"))
+    ((SupportsEditing, "supportsEditing"))
     );
 
 // Locale-independent tolower only for ascii/utf-8 A-Z.
@@ -61,6 +66,25 @@ _ToLower(std::string const &str)
                    });
     return lowered;
 }
+
+// Searches plugin meta data to determine if a capability is supported for the
+// file format type.  All capabilities are enabled by default (for backwards
+// compatability) so the user must explicitly opt out in plugInfo.json
+static bool 
+_FormatCapabilityIsSupported(
+    PlugRegistry& reg,
+    TfType formatType,
+    const string& key)
+{
+    JsValue capability = reg.GetDataFromPluginMetaData(formatType, key);
+
+    if (capability.IsBool() && !capability.GetBool()) {
+        return false;
+    }
+
+    return true;
+}
+
 
 SdfFileFormatRefPtr
 Sdf_FileFormatRegistry::_Info::GetFileFormat() const
@@ -113,28 +137,27 @@ Sdf_FileFormatRegistry::FindById(
     return TfNullPtr;
 }
 
-SdfFileFormatConstPtr
-Sdf_FileFormatRegistry::FindByExtension(
+Sdf_FileFormatRegistry::_InfoSharedPtr 
+Sdf_FileFormatRegistry::_GetFormatInfo(
     const string& s,
     const string& target)
 {
-    TRACE_FUNCTION();
+    _InfoSharedPtr formatInfo;
 
     if (s.empty()) {
         TF_CODING_ERROR("Cannot find file format for empty string");
-        return TfNullPtr;
+        return formatInfo;
     }
 
     // Convert to lowercase for lookup.
     string ext = _ToLower(SdfFileFormat::GetFileExtension(s));
     if (ext.empty()) {
         TF_CODING_ERROR("Unable to determine extension for '%s'", s.c_str());
-        return TfNullPtr;
+        return formatInfo;
     }
 
     _RegisterFormatPlugins();
 
-    _InfoSharedPtr formatInfo;
     if (target.empty()) {
         _ExtensionIndex::const_iterator it = _extensionIndex.find(ext);
         if (it != _extensionIndex.end())
@@ -151,6 +174,18 @@ Sdf_FileFormatRegistry::FindByExtension(
             }
         }
     }
+
+    return formatInfo;
+}
+
+SdfFileFormatConstPtr
+Sdf_FileFormatRegistry::FindByExtension(
+    const string& s,
+    const string& target)
+{
+    TRACE_FUNCTION();
+
+    _InfoSharedPtr formatInfo = _GetFormatInfo(s, target);
 
     return formatInfo ? _GetFileFormat(formatInfo) : TfNullPtr;
 }
@@ -181,6 +216,40 @@ Sdf_FileFormatRegistry::GetPrimaryFormatForExtension(
     }
     
     return TfToken();
+}
+
+Sdf_FileFormatRegistry::_Info::Capabilities 
+Sdf_FileFormatRegistry::_ParseFormatCapabilities(
+    const TfType& formatType)
+{
+    using UT = std::underlying_type<_Info::Capabilities>::type;
+    using Capabilities = _Info::Capabilities;
+
+    PlugRegistry& reg = PlugRegistry::GetInstance();
+
+    _Info::Capabilities capabilities = Capabilities::None;
+    if (_FormatCapabilityIsSupported( 
+        reg, formatType, _PlugInfoKeyTokens->SupportsReading)) {
+        capabilities = static_cast<Capabilities>(
+            static_cast<UT>(capabilities) | 
+            static_cast<UT>(Capabilities::Reading));
+    }
+
+    if (_FormatCapabilityIsSupported( 
+        reg, formatType, _PlugInfoKeyTokens->SupportsWriting)) {
+        capabilities = static_cast<Capabilities>(
+            static_cast<UT>(capabilities) | 
+            static_cast<UT>(Capabilities::Writing));
+    }
+
+    if (_FormatCapabilityIsSupported( 
+        reg, formatType, _PlugInfoKeyTokens->SupportsEditing)) {
+        capabilities = static_cast<Capabilities>(
+            static_cast<UT>(capabilities) | 
+            static_cast<UT>(Capabilities::Editing));
+    }
+
+    return capabilities;
 }
 
 void
@@ -319,6 +388,8 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
 
+        _Info::Capabilities capabilities = _ParseFormatCapabilities(formatType);
+
         TF_DEBUG(SDF_FILE_FORMAT).Msg("_RegisterFormatPlugins: "
             "  target '%s'\n", target.c_str());
 
@@ -331,7 +402,7 @@ Sdf_FileFormatRegistry::_RegisterFormatPlugins()
             continue;
         }
         info = std::make_shared<_Info>(
-            formatIdToken, formatType, TfToken(target), plugin);
+            formatIdToken, formatType, TfToken(target), plugin, capabilities);
 
         // Record the extensions that this file format plugin can handle.
         // Note that an extension may be supported by multiple file format
@@ -457,6 +528,50 @@ Sdf_FileFormatRegistry::_GetFileFormat(
         return TfNullPtr;
 
     return info->GetFileFormat();
+}
+
+bool 
+Sdf_FileFormatRegistry::FormatSupportsReading(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FormatSupportsCapability(extension, target, 
+        _Info::Capabilities::Reading);
+}
+
+bool 
+Sdf_FileFormatRegistry::FormatSupportsWriting(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FormatSupportsCapability(extension, target, 
+        _Info::Capabilities::Writing);
+}
+
+bool 
+Sdf_FileFormatRegistry::FormatSupportsEditing(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FormatSupportsCapability(extension, target, 
+        _Info::Capabilities::Editing);
+}
+
+bool 
+Sdf_FileFormatRegistry::_FormatSupportsCapability(
+    const std::string& path,
+    const std::string& target,
+    _Info::Capabilities capabilityFlag)
+{
+    using UT = std::underlying_type<_Info::Capabilities>::type;
+    _InfoSharedPtr formatInfo = _GetFormatInfo(path, target);
+    
+    if (!formatInfo) {
+        return false;
+    }
+
+    return static_cast<UT>(formatInfo->capabilities) & 
+        static_cast<UT>(capabilityFlag);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

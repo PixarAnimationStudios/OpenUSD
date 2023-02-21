@@ -75,6 +75,24 @@ public:
     /// the primary format for the given file extension.
     TfToken GetPrimaryFormatForExtension(const std::string& ext);
 
+    /// Returns true if the file format instance that supports the extension
+    /// for the supplied \p path and \p target pair supports reading.
+    bool FormatSupportsReading(
+        const std::string& extension,
+        const std::string& target = std::string());
+
+    /// Returns true if the file format instance that supports the extension
+    /// for the supplied \p path and \p target pair supports writing.
+    bool FormatSupportsWriting(
+        const std::string& extension,
+        const std::string& target = std::string());
+
+    /// Returns true if the file format instance that supports the extension
+    /// for the supplied \p path and \p target pair supports editing.
+    bool FormatSupportsEditing(
+        const std::string& extension,
+        const std::string& target = std::string());
+
 private:
     /// \struct _Info
     ///
@@ -85,13 +103,24 @@ private:
     ///
     class _Info {
     public:
+        /// Enumerates specific Capabilities that can be authored in the 
+        /// format's plugInfo.json file.
+        enum class Capabilities: uint32_t {
+            None        = 0,
+            Reading     = 1 << 0,
+            Writing     = 1 << 1,
+            Editing     = 1 << 2
+        };
+
         _Info(const TfToken& formatId,
               const TfType& type, 
               const TfToken& target, 
-              const PlugPluginPtr& plugin)
+              const PlugPluginPtr& plugin,
+              Capabilities capabilities)
             : formatId(formatId)
             , type(type)
             , target(target)
+            , capabilities(capabilities)
             , _plugin(plugin)
             , _hasFormat(false)
         { }
@@ -102,6 +131,7 @@ private:
         const TfToken formatId;
         const TfType type;
         const TfToken target;
+        const Capabilities capabilities;
 
     private:
         const PlugPluginPtr _plugin;
@@ -137,6 +167,21 @@ private:
     // associated plugin, instantiate the format, cache the instance and
     // return it.
     SdfFileFormatConstPtr _GetFileFormat(const _InfoSharedPtr& format);
+
+    // Gets the format info for the supplied path, target pair
+    _InfoSharedPtr _GetFormatInfo(
+        const std::string& path,
+        const std::string& target);
+
+    // Given a path and target: returns true if the file format supports the
+    // given capability.
+    bool _FormatSupportsCapability(
+        const std::string& extension,
+        const std::string& target, 
+        _Info::Capabilities capability);
+
+    static _Info::Capabilities _ParseFormatCapabilities(
+        const TfType& fileFormatType);
 
     _FormatInfo _formatInfo;
     _ExtensionIndex _extensionIndex;

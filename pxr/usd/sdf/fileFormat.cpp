@@ -395,6 +395,28 @@ SdfFileFormat::GetExternalAssetDependencies(
     return std::set<std::string>();
 }
 
+// XXX:
+// fileFormatRegistry.cpp: file format creation does not provide a
+// straightforward way to pass parsed capabilities to format constructor.
+// As a result, instance methods defer this check to the registry itself.
+bool SdfFileFormat::SupportsReading() const
+{
+    return _FileFormatRegistry->FormatSupportsReading(
+        GetPrimaryFileExtension(), GetTarget());
+}
+
+bool SdfFileFormat::SupportsWriting() const
+{
+    return _FileFormatRegistry->FormatSupportsWriting(
+        GetPrimaryFileExtension(), GetTarget());
+}
+
+bool SdfFileFormat::SupportsEditing() const
+{
+    return _FileFormatRegistry->FormatSupportsEditing(
+        GetPrimaryFileExtension(), GetTarget());
+}
+
 /* static */
 std::string
 SdfFileFormat::GetFileExtension(
@@ -414,6 +436,31 @@ SdfFileFormat::FindAllFileFormatExtensions()
 {
     return _FileFormatRegistry->FindAllFileFormatExtensions();
 }
+
+/* static */
+bool SdfFileFormat::FormatSupportsReading(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FileFormatRegistry->FormatSupportsReading(extension, target);
+}
+
+/* static */
+bool SdfFileFormat::FormatSupportsWriting(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FileFormatRegistry->FormatSupportsWriting(extension, target);
+}
+
+/* static */
+bool SdfFileFormat::FormatSupportsEditing(
+    const std::string& extension,
+    const std::string& target)
+{
+    return _FileFormatRegistry->FormatSupportsEditing(extension, target);
+}
+
 
 /* static */
 SdfFileFormatConstPtr

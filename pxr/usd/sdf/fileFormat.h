@@ -254,6 +254,22 @@ public:
     virtual std::set<std::string> GetExternalAssetDependencies(
         const SdfLayer& layer) const;
 
+
+    /// Returns true if this file format supports reading.
+    /// This is a convenience method for invoking \ref FormatSupportsReading
+    /// with this format's extension and target
+    SDF_API bool SupportsReading() const;
+
+    // Returns true if this file format supports writing.
+    /// This is a convenience method for invoking \ref FormatSupportsWriting
+    /// with this format's extension and target
+    SDF_API bool SupportsWriting() const;
+
+    // Returns true if this file format supports editing.
+    /// This is a convenience method for invoking \ref FormatSupportsEditing
+    /// with this format's extension and target
+    SDF_API bool SupportsEditing() const;
+
     /// Returns the file extension for path or file name \p s, without the
     /// leading dot character.
     SDF_API static std::string GetFileExtension(const std::string& s);
@@ -261,6 +277,42 @@ public:
     /// Returns a set containing the extension(s) corresponding to 
     /// all registered file formats.
     SDF_API static std::set<std::string> FindAllFileFormatExtensions();
+
+    /// Returns true if the file format for the supplied \p extension and
+    /// \p target pair supports reading.
+    /// This method will not load the plugin that provides the specified 
+    /// file format.
+    /// If the extension and target pair is invalid, this method will
+    /// return false.
+    /// \sa FormatSupportsWriting \sa FormatSupportsEditing
+    SDF_API
+    static bool FormatSupportsReading(
+        const std::string& extension,
+        const std::string& target = std::string());
+
+    /// Returns true if the file format for the supplied \p extension and 
+    /// \p target pair supports writing.
+    /// This method will not load the plugin that provides the specified 
+    /// file format.
+    /// If the extension and target pair is invalid, this method will return
+    /// false.
+    /// \sa FormatSupportsReading \sa FormatSupportsEditing
+    SDF_API
+    static bool FormatSupportsWriting(
+        const std::string& extension,
+        const std::string& target = std::string());
+
+    /// Returns true if the file format for the supplied \p extension and 
+    /// \p target pair supports editing.
+    /// This method will not load the plugin that provides the specified 
+    /// file format.
+    /// If the extension and target pair is invalid, this method will return
+    /// false.
+    /// \sa FormatSupportsReading \sa FormatSupportsWriting
+    SDF_API
+    static bool FormatSupportsEditing(
+        const std::string& extension,
+        const std::string& target = std::string());
 
     /// Returns the file format instance with the specified \p formatId
     /// identifier. If a format with a matching identifier is not found, this
