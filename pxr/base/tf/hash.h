@@ -34,6 +34,7 @@
 #include <cstring>
 #include <string>
 #include <map>
+#include <memory>
 #include <set>
 #include <typeindex>
 #include <type_traits>
@@ -140,6 +141,22 @@ template <class HashState, class T>
 inline void
 TfHashAppend(HashState &h, const T* ptr) {
     return h.Append(reinterpret_cast<uintptr_t>(ptr));
+}
+
+// Support for hashing std::shared_ptr. When TfHash support for std::hash is
+// enabled, this explicit specialization will no longer be necessary.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const std::shared_ptr<T>& ptr) {
+    h.Append(std::hash<std::shared_ptr<T>>{}(ptr));
+}
+
+// Support for hashing std::unique_ptr. When TfHash support for std::hash is
+// enabled, this explicit specialization will no longer be necessary.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const std::unique_ptr<T>& ptr) {
+    h.Append(std::hash<std::unique_ptr<T>>{}(ptr));
 }
 
 // We refuse to hash [const] char *.  You're almost certainly trying to hash the
