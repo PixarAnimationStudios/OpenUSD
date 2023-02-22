@@ -48,6 +48,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class UsdDracoExportAttributeInterface {
 public:
+    virtual ~UsdDracoExportAttributeInterface() = default;
+
     virtual const UsdDracoAttributeDescriptor &GetDescriptor() const = 0;
     virtual void GetFromMesh(const UsdGeomMesh &usdMesh,
                              size_t numPositions) = 0;
