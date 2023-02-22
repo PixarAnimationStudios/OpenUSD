@@ -1058,38 +1058,17 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 ############################################################
 # JPEG
 
-if Windows():
-    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/1.5.1.zip"
-elif MacOS():
-    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
-else:
-    JPEG_URL = "https://www.ijg.org/files/jpegsr9b.zip"
+JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
 
 def InstallJPEG(context, force, buildArgs):
-    if Windows() or MacOS():
-        InstallJPEG_Turbo(context, force, buildArgs)
-    else:
-        InstallJPEG_Lib(context, force, buildArgs)
-
-def InstallJPEG_Turbo(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
         extraJPEGArgs = buildArgs
-        if MacOS():
+        if not which("nasm"):
             extraJPEGArgs.append("-DWITH_SIMD=FALSE")
+            PrintWarning("nasm not found, building turbo jpeg without simd optimizations")
 
         RunCMake(context, force, extraJPEGArgs)
         return os.getcwd()
-
-
-def InstallJPEG_Lib(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
-        Run('./configure --prefix="{instDir}" '
-            '--disable-static --enable-shared '
-            '{buildArgs}'
-            .format(instDir=context.instDir,
-                    buildArgs=" ".join(buildArgs)))
-        Run('make -j{procs} install'
-            .format(procs=context.numJobs))
 
 JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
         
@@ -2435,12 +2414,6 @@ if PYSIDE in requiredDependencies:
                        " adjust your PATH. (Note that this program may be"
                        " named {0} depending on your platform)"
                        .format(" or ".join(set(pyside2Uic+pyside6Uic))))
-        sys.exit(1)
-
-if JPEG in requiredDependencies:
-    # NASM is required to build libjpeg-turbo
-    if (Windows() and not which("nasm")):
-        PrintError("nasm not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 # Summarize
