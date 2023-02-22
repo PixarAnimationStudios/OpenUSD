@@ -37,7 +37,6 @@
 
 #include "pxr/base/trace/trace.h"
 
-#include <boost/functional/hash.hpp>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/spin_mutex.h>
 

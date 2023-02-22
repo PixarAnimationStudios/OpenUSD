@@ -73,6 +73,11 @@ _Repr(const SdfReference &self)
     return TF_PY_REPR_PREFIX + "Reference(" + args + ")";
 }
 
+static size_t __hash__(const SdfReference &self)
+{
+    return TfHash()(self);
+}
+
 } // anonymous namespace 
 
 void wrapReference()
@@ -128,7 +133,7 @@ void wrapReference()
         .def(self >= self)
 
         .def("__repr__", _Repr)
-
+        .def("__hash__", __hash__)
         ;
 
 }
