@@ -30,7 +30,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/variant.hpp>
 
