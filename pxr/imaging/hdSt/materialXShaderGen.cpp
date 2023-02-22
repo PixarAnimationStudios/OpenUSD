@@ -689,12 +689,12 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
     Base::emitLineBreak(mxStage);
     Base::emitTypeDefinitions(mxContext, mxStage);
 
-    // Add all constants
+    // Add all constants and ensure that values are initialized
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
     if (!constants.empty()) {
         emitVariableDeclarations(constants, constQualifier,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, true);
         Base::emitLineBreak(mxStage);
     }
 
