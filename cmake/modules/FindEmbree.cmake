@@ -19,12 +19,30 @@
 #
 #=============================================================================
 
+find_path(EMBREE_INCLUDE_DIR
+    embree4/rtcore.h
+    embree3/rtcore.h
+HINTS
+    "${EMBREE_LOCATION}/include"
+    "$ENV{EMBREE_LOCATION}/include"
+DOC
+    "Embree headers path"
+)
+
+if (EMBREE_INCLUDE_DIR AND EXISTS "${EMBREE_INCLUDE_DIR}/embree4/rtcore.h")
+    set(EMBREE_VERSIONED_LIBRARY_NAME "embree4")
+    set(EMBREE_VERSION_HEADER_FILE_NAME "rtcore_config.h")
+else()
+    set(EMBREE_VERSIONED_LIBRARY_NAME "embree3")
+    set(EMBREE_VERSION_HEADER_FILE_NAME "rtcore_version.h")
+endif()
+
 if (APPLE)
-    set (EMBREE_LIB_NAME libembree3.dylib)
+    set (EMBREE_LIB_NAME "lib${EMBREE_VERSIONED_LIBRARY_NAME}.dylib")
 elseif (UNIX)
-    set (EMBREE_LIB_NAME libembree3.so)
+    set (EMBREE_LIB_NAME "lib${EMBREE_VERSIONED_LIBRARY_NAME}.so")
 elseif (WIN32)
-    set (EMBREE_LIB_NAME embree3.lib)
+    set (EMBREE_LIB_NAME "${EMBREE_VERSIONED_LIBRARY_NAME}.lib")
 endif()
 
 find_library(EMBREE_LIBRARY
@@ -38,21 +56,14 @@ find_library(EMBREE_LIBRARY
         "Embree library path"
 )
 
-find_path(EMBREE_INCLUDE_DIR
-    embree3/rtcore.h
-HINTS
-    "${EMBREE_LOCATION}/include"
-    "$ENV{EMBREE_LOCATION}/include"
-DOC
-    "Embree headers path"
-)
+set(EMBREE_VERSION_HEADER_FILE_PATH "${EMBREE_INCLUDE_DIR}/${EMBREE_VERSIONED_LIBRARY_NAME}/${EMBREE_VERSION_HEADER_FILE_NAME}")
 
-if (EMBREE_INCLUDE_DIR AND EXISTS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" )
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_MAJOR.*$")
+if (EMBREE_INCLUDE_DIR AND EXISTS "${EMBREE_VERSION_HEADER_FILE_PATH}")
+    file(STRINGS "${EMBREE_VERSION_HEADER_FILE_PATH}" TMP REGEX "^#define RTC_VERSION_MAJOR.*$")
     string(REGEX MATCHALL "[0-9]+" MAJOR ${TMP})
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_MINOR.*$")
+    file(STRINGS "${EMBREE_VERSION_HEADER_FILE_PATH}" TMP REGEX "^#define RTC_VERSION_MINOR.*$")
     string(REGEX MATCHALL "[0-9]+" MINOR ${TMP})
-    file(STRINGS "${EMBREE_INCLUDE_DIR}/embree3/rtcore_version.h" TMP REGEX "^#define RTC_VERSION_PATCH.*$")
+    file(STRINGS "${EMBREE_VERSION_HEADER_FILE_PATH}" TMP REGEX "^#define RTC_VERSION_PATCH.*$")
     string(REGEX MATCHALL "[0-9]+" PATCH ${TMP})
 
     set (EMBREE_VERSION ${MAJOR}.${MINOR}.${PATCH})
