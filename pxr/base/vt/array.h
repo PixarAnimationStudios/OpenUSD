@@ -813,23 +813,21 @@ class VtArray : public Vt_ArrayBase {
     }
 
   private:
-    class _Streamer : public VtStreamOutIterator {
+    class _Streamer {
     public:
-        _Streamer(const_pointer data) : _p(data) { }
-        virtual ~_Streamer() { }
-        virtual void Next(std::ostream &out)
-        {
+        explicit _Streamer(const_pointer data) : _p(data) { }
+        void operator()(std::ostream &out) const {
             VtStreamOut(*_p++, out);
         }
 
     private:
-        const_pointer _p;
+        mutable const_pointer _p;
     };
 
     /// Outputs a comma-separated list of the values in the array.
     friend std::ostream &operator <<(std::ostream &out, const VtArray &self) {
         VtArray::_Streamer streamer(self.cdata());
-        VtStreamOutArray(&streamer, self.size(), self._GetShapeData(), out);
+        VtStreamOutArray(out, self._GetShapeData(), streamer);
         return out;
     }
 
