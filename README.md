@@ -99,7 +99,6 @@ additional documentation for running cmake directly.
         - gcc
         - Xcode
         - Microsoft Visual Studio
-    - NASM (required for Imaging on Windows)
     - CMake
 - Optional (Can be ignored by passing `--no-python` as an argument to `build_usd.py`)
     - Python (required for [bindings and tests](BUILDING.md#python)) 
