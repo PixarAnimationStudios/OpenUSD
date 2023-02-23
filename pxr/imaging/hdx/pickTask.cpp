@@ -905,13 +905,13 @@ HdxPrimOriginInfo::FromPickHit(HdRenderIndex * const renderIndex,
         return result;
     }
 
-    // instanceId encodes the index of the instance at each level of
+    // instanceIndex encodes the index of the instance at each level of
     // instancing.
     //
     // Example: we picked instance 6 of 10 in the outer most instancer
     //                    instance 3 of 12 in the next instancer
     //                    instance 7 of 15 in the inner most instancer,
-    // instanceId = 6 * 12 * 15 + 3 * 15 + 7.
+    // instanceIndex = 6 * 12 * 15 + 3 * 15 + 7.
 
     int instanceIndex = hit.instanceIndex;
 

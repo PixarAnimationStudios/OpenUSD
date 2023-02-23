@@ -28,8 +28,8 @@
 /* ** defs.py or the (*)Schema.template.h files to make changes.           ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_SELECTION_SCHEMA_H
-#define PXR_IMAGING_HD_SELECTION_SCHEMA_H
+#ifndef PXR_IMAGING_HD_INSTANCE_INDICES_SCHEMA_H
+#define PXR_IMAGING_HD_INSTANCE_INDICES_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
 
@@ -39,30 +39,30 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDSELECTION_SCHEMA_TOKENS \
-    (fullySelected) \
-    (nestedInstanceIndices) \
+#define HDINSTANCEINDICES_SCHEMA_TOKENS \
+    (instancer) \
+    (prototypeIndex) \
+    (instanceIndices) \
 
-TF_DECLARE_PUBLIC_TOKENS(HdSelectionSchemaTokens, HD_API,
-    HDSELECTION_SCHEMA_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdInstanceIndicesSchemaTokens, HD_API,
+    HDINSTANCEINDICES_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
-class HdSelectionSchema : public HdSchema
+class HdInstanceIndicesSchema : public HdSchema
 {
 public:
-    HdSelectionSchema(HdContainerDataSourceHandle container)
+    HdInstanceIndicesSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
     //ACCESSORS
 
     HD_API
-    HdBoolDataSourceHandle GetFullySelected();
-
-    // Starting with the outer most, list for each nesting level of
-    // instancing what instances are selected.
+    HdPathDataSourceHandle GetInstancer();
     HD_API
-    HdInstanceIndicesVectorSchema GetNestedInstanceIndices();
+    HdIntDataSourceHandle GetPrototypeIndex();
+    HD_API
+    HdIntArrayDataSourceHandle GetInstanceIndices();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -74,11 +74,12 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdBoolDataSourceHandle &fullySelected,
-        const HdVectorDataSourceHandle &nestedInstanceIndices
+        const HdPathDataSourceHandle &instancer,
+        const HdIntDataSourceHandle &prototypeIndex,
+        const HdIntArrayDataSourceHandle &instanceIndices
     );
 
-    /// \class HdSelectionSchema::Builder
+    /// \class HdInstanceIndicesSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -88,19 +89,23 @@ public:
     {
     public:
         HD_API
-        Builder &SetFullySelected(
-            const HdBoolDataSourceHandle &fullySelected);
+        Builder &SetInstancer(
+            const HdPathDataSourceHandle &instancer);
         HD_API
-        Builder &SetNestedInstanceIndices(
-            const HdVectorDataSourceHandle &nestedInstanceIndices);
+        Builder &SetPrototypeIndex(
+            const HdIntDataSourceHandle &prototypeIndex);
+        HD_API
+        Builder &SetInstanceIndices(
+            const HdIntArrayDataSourceHandle &instanceIndices);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdBoolDataSourceHandle _fullySelected;
-        HdVectorDataSourceHandle _nestedInstanceIndices;
+        HdPathDataSourceHandle _instancer;
+        HdIntDataSourceHandle _prototypeIndex;
+        HdIntArrayDataSourceHandle _instanceIndices;
     };
 
 };

@@ -1399,11 +1399,14 @@ pxr_register_test(testUsdImagingGLPickAndHighlight
     TESTENV testUsdImagingGLPickAndHighlight
 )
 
-# Scene indices only support picking but no selection highlighting so far, so skipping most of the image diffs.
 pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLPickAndHighlight_000.png
+        testUsdImagingGLPickAndHighlight_001.png
+        testUsdImagingGLPickAndHighlight_002.png
+        testUsdImagingGLPickAndHighlight_003.png
+        testUsdImagingGLPickAndHighlight_004.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL

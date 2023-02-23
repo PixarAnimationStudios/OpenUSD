@@ -30,6 +30,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace UsdImagingSelectionSceneIndex_Impl
+{
+using _SelectionSharedPtr = std::shared_ptr<struct _Selection>;
+}
+
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 
 /// \class UsdImagingSelectionSceneIndex
@@ -51,11 +56,12 @@ public:
     USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
-    /// Add prim at path to the set of prims for which this scene index will
-    /// add a data source at locator selectionsSchema to indicate the prim
-    /// is selected.
+    /// Given a path (including usd proxy path inside a native instance) of
+    /// a USD prim, determine the corresponding prim in the Usd scene index
+    /// (filtered by the UsdImagingNiPrototypePropagatingSceneIndex) and
+    /// populate its selections data source.
     USDIMAGING_API
-    void AddSelection(const SdfPath &path);
+    void AddSelection(const SdfPath &usdPath);
 
     /// Reset the scene index selection state.
     USDIMAGING_API
@@ -79,8 +85,7 @@ private:
     UsdImagingSelectionSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
-public:
-    SdfPathSet _selectedPaths;
+    UsdImagingSelectionSceneIndex_Impl::_SelectionSharedPtr _selection;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

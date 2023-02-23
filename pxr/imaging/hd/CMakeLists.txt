@@ -84,6 +84,7 @@ pxr_library(hd
         geomSubsetsSchema
         instanceCategoriesSchema
         instancedBySchema
+        instanceIndicesSchema
         instancer
         instanceRegistry
         instancerTopologySchema
