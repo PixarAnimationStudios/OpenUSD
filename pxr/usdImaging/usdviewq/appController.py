@@ -1826,11 +1826,15 @@ class AppController(QtCore.QObject):
 
         if not self._stageView:
 
-            # The second child is self._ui.glFrame, which disappears if
+            # The second child is self._ui.renderFrame, which disappears if
             # its size is set to zero.
             if self._noRender:
-                # remove glFrame from the ui
-                self._ui.glFrame.setParent(None)
+                # hiding the widget would usually be sufficient,
+                # but _cacheViewerModeEscapeSizes() assumes the splitter has
+                # only two children, so we additionally remove renderFrame 
+                # from the ui
+                self._ui.renderFrame.hide()
+                self._ui.renderFrame.setParent(None)
 
                 # move the attributeBrowser into the primSplitter instead
                 self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
