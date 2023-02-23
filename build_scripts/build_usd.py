@@ -1569,7 +1569,7 @@ else:
 def InstallEmbree(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(EMBREE_URL, context, force)):
         extraArgs = [
-            '-DTBB_ROOT={instDir}'.format(instDir=context.instDir),
+            '-DTBB_ROOT="{instDir}"'.format(instDir=context.instDir),
             '-DEMBREE_TUTORIALS=OFF',
             '-DEMBREE_ISPC_SUPPORT=OFF'
         ]
