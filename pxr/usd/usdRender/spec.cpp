@@ -175,10 +175,10 @@ UsdRenderComputeSpec(
         return rd;
     }
 
-    // Read shared settings as a "base product".
+    // Read shared base settings as a "base product". Note that this excludes
+    // namespaced attributes that are gathered under extraSettings.
     UsdRenderSpec::Product base;
     _ReadSettingsBase(UsdRenderSettingsBase(prim), &base, false);
-    _ReadExtraSettings(prim, &base.extraSettings, extraNamespaces);
 
     // Products
     SdfPathVector targets; 
@@ -231,7 +231,8 @@ UsdRenderComputeSpec(
                         rv.GetDataTypeAttr().Get(&rvd.dataType);
                         rv.GetSourceNameAttr().Get(&rvd.sourceName);
                         rv.GetSourceTypeAttr().Get(&rvd.sourceType);
-                        // Store any other custom attributes in extraSettings.
+                        // Store any other custom render var attributes in
+                        // extraSettings.
                         _ReadExtraSettings(prim, &rvd.extraSettings,
                                            extraNamespaces);
                         // Record new render var.
@@ -247,7 +248,8 @@ UsdRenderComputeSpec(
                     }
                 }
             }
-            // Store any other custom attributes in extraSettings.
+            // Store any other custom render product attributes in
+            // extraSettings.
             _ReadExtraSettings(product.GetPrim(), &pd.extraSettings,
                                extraNamespaces);
             rd.products.emplace_back(pd);
@@ -257,7 +259,7 @@ UsdRenderComputeSpec(
     // Scene configuration
     settings.GetMaterialBindingPurposesAttr().Get(&rd.materialBindingPurposes);
     settings.GetIncludedPurposesAttr().Get(&rd.includedPurposes);
-    // Store any other custom attributes in extraSettings.
+    // Store any other custom render settings attributes in extraSettings.
     _ReadExtraSettings(prim, &rd.extraSettings, extraNamespaces);
 
     return rd;
