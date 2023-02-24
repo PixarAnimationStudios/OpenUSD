@@ -522,6 +522,7 @@ void main(void) {
         vertexOut.Neye = Neye0; // normalized
 
         vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
+	vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
         ProcessPrimvarsOut(vertexOut);
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
         ApplyClipPlanes(vertexOut.Peye);
@@ -1390,7 +1391,15 @@ vec4 GetInterpolatedPatchCoord()
     ["in block", "VertexData", "inData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+["uniform block", "Uniforms", "ulocCullParams",
+["mat4", "cullMatrix"],
+["vec2", "drawRangeNDC"],
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"],
+["uint", "drawCoordIOffset"]
+]
 ]
 
 --- --------------------------------------------------------------------------
