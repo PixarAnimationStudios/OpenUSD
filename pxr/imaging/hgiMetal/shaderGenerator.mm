@@ -360,10 +360,22 @@ _GetPackedTypeDefinitions()
 }
 
 std::string
-_ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
+_ComputeHeader(id<MTLDevice> device, const HgiShaderFunctionDesc &descriptor)
 {
+    HgiShaderStage stage = descriptor.shaderStage;
     std::stringstream header;
-
+    
+    if (stage == HgiShaderStageMeshObject || stage == HgiShaderStageMeshlet) {
+        header << "#ifndef MESH_SHADING_CONFIG_H\n"
+               << "#define MESH_SHADING_CONFIG_H\n"
+               << "#define MAX_OBJECT_THREADS         (" << descriptor.meshDescriptor.maxTotalThreadsPerObjectThreadgroup << ")\n"
+               << "#define ACTUAL_OBJECT_THREADS     MAX_OBJECT_THREADS\n"
+               << "#define MAX_INDICES                (" << descriptor.meshDescriptor.maxMeshletVertexCount << ")\n"
+               << "#define MAX_PRIMITIVES            (((MAX_INDICES) + 2) / 3)\n"
+               << "#define ENABLE_BACKFACE_CULLING    (0)\n"
+               << "#endif // MESH_SHADING_CONFIG_H\n";
+    }
+    
     // Metal feature set defines
     // Define all macOS 10.13 feature set enums onwards
     if (@available(macos 10.13, ios 100.100, *)) {
@@ -568,11 +580,143 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     return header.str();
 }
 
-std::string const&
-_GetHeader(id<MTLDevice> device, HgiShaderStage stage)
+std::string
+_GetHeader(id<MTLDevice> device, const HgiShaderFunctionDesc &descriptor)
 {
     // This assumes that there is only ever one MTLDevice.
-    static std::string header = _ComputeHeader(device, stage);
+    const char *indexOptim = R""""(
+#define INVALID_GLOBAL_INDEX    (0xffffffff)
+
+#define INVALID_INDEX       (INVALID_GLOBAL_INDEX)
+
+#define SIMD_WIDTH          (32)
+#define NUM_SIMD_GROUPS     ((MAX_INDICES + SIMD_WIDTH - 1) / SIMD_WIDTH)
+
+#define MAX_OPEN_ADDRESSING_ATTEMPTS    (1)
+
+// Needs to be <= MAX_INDICES!!
+#define NUM_BUCKETS         (MAX_INDICES)
+
+#if NUM_BUCKETS > MAX_INDICES
+#   error "Error: NUM_BUCKETS must be < MAX_INDICES"
+#endif
+
+#if NUM_SIMD_GROUPS > 1
+#   define ThreadgroupBarrier()    threadgroup_barrier(mem_flags::mem_threadgroup)
+#else
+#   define ThreadgroupBarrier()    ((void)0)
+#endif
+
+#if NUM_BUCKETS != MAX_INDICES
+#   define IsThreadIndexInHashMap(threadId) (threadId < NUM_BUCKETS)
+#else
+#   define IsThreadIndexInHashMap(threadId) (true)
+#endif
+
+struct HashMap
+{
+    uint keys[NUM_BUCKETS];
+    uchar values[NUM_BUCKETS];
+};
+
+struct IndexListOptimizerContext
+{
+    uint globalIndices[MAX_INDICES];
+    uchar localIndices[MAX_INDICES];
+    uint numUniqueVertices;
+
+    union
+    {
+        HashMap hashMap;
+
+#if ENABLE_BACKFACE_CULLING == 1
+        // TODO: move from here
+        half2 positions[MAX_INDICES];
+#endif
+    };
+};
+
+void optimizeIndexList(threadgroup IndexListOptimizerContext &ctx, const ushort threadId, const uint numIndices, const uint globalIndex)
+{
+    const uint simdId = threadId / SIMD_WIDTH;
+    const uint threadIdInSimd = threadId % SIMD_WIDTH;
+
+    // Hash the global index
+    const uint globalIndexHash = globalIndex * 1664525u + 1013904223u;
+
+    // Initialize the LUT here to save one barrier later
+    if( IsThreadIndexInHashMap(threadId) )
+    {
+        ctx.hashMap.keys[threadId] = INVALID_INDEX;
+    }
+
+    if( threadId == 0 )
+    {
+        ctx.numUniqueVertices = 0;
+    }
+
+    ThreadgroupBarrier();
+
+    // Try to add the global index to the hash set
+    bool isGlobalIndexInHashSet = false;
+    if( threadId < numIndices )
+    {
+        for(uint attempt = 0; attempt < MAX_OPEN_ADDRESSING_ATTEMPTS; ++attempt)
+        {
+            const uint bucketIndex = (globalIndexHash + attempt) % NUM_BUCKETS;
+            threadgroup auto *bucketKey = (volatile threadgroup metal::atomic_uint*) &ctx.hashMap.keys[bucketIndex];
+
+            uint previousValue = INVALID_INDEX;
+            if( atomic_compare_exchange_weak_explicit(bucketKey, &previousValue, globalIndex, memory_order_relaxed, memory_order_relaxed) )
+            {
+                const uint localIndex = atomic_fetch_add_explicit((threadgroup metal::atomic_uint*)&ctx.numUniqueVertices, 1, memory_order_relaxed);
+                ctx.hashMap.values[bucketIndex] = uchar(localIndex);
+                ctx.globalIndices[localIndex] = globalIndex;
+                isGlobalIndexInHashSet = true;
+                break;
+            }
+            else if( previousValue == globalIndex )
+            {
+                isGlobalIndexInHashSet = true;
+                break;
+            }
+        }
+    }
+
+    ThreadgroupBarrier();
+
+    if( threadId < numIndices )
+    {
+        if( isGlobalIndexInHashSet )
+        {
+            for(uint attempt = 0; attempt < MAX_OPEN_ADDRESSING_ATTEMPTS; ++attempt)
+            {
+                const uint bucketIndex = (globalIndexHash + attempt) % NUM_BUCKETS;
+
+                if( ctx.hashMap.keys[bucketIndex] == globalIndex )
+                {
+                    ctx.localIndices[threadId] = ctx.hashMap.values[bucketIndex];
+                    break;
+                }
+            }
+        }
+        else
+        {
+            const uint localIndex = atomic_fetch_add_explicit((threadgroup atomic_uint*)&ctx.numUniqueVertices, 1, memory_order_relaxed);
+            ctx.globalIndices[localIndex] = globalIndex;
+            ctx.localIndices[threadId] = (uchar) localIndex;
+        }
+    }
+
+    ThreadgroupBarrier();
+}
+)"""";
+    std::string header;
+    if (descriptor.shaderStage == HgiShaderStageMeshlet) {
+        header = _ComputeHeader(device, descriptor) + indexOptim;
+    } else {
+        header = _ComputeHeader(device, descriptor);
+    }
     return header;
 }
 
@@ -1361,9 +1505,9 @@ _BuildMeshObjectAttribute(
 {
     ss << "[[object,";
     ss << "max_total_threads_per_threadgroup(";
-    ss << meshDesc.maxTotalThreadsPerThreadgroup << "),";
+    ss << meshDesc.maxTotalThreadsPerObjectThreadgroup << "),";
     ss << "max_total_threadgroups_per_mesh_grid(";
-    ss << meshDesc.maxTotalThreadgroupsPerMeshGrid << ")]]";
+    ss << meshDesc.maxTotalThreadgroupsPerMeshObject << ")]]";
 }
 
 void
@@ -1373,7 +1517,7 @@ _BuildMeshletAttribute(
 {
     ss << "[[mesh,";
     ss << "max_total_threads_per_threadgroup(";
-    ss << meshDesc.maxTotalThreadsPerThreadgroup << ")]]";
+    ss << meshDesc.maxTotalThreadsPerMeshletThreadgroup << ")]]";
 }
 
 void
@@ -1521,7 +1665,7 @@ HgiMetalShaderGenerator::HgiMetalShaderGenerator(
                 member.arraySize);
     }
     std::stringstream macroSection;
-    macroSection << _GetHeader(device, descriptor.shaderStage);
+    macroSection << _GetHeader(device, descriptor);
     if (_IsTessFunction(descriptor)) {
         macroSection << "#define VERTEX_CONTROL_POINTS_PER_PATCH "
         << descriptor.tessellationDescriptor.numVertsPerPatchIn
@@ -1607,6 +1751,9 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
             hasContructorParams = true;
         }
     }
+    if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+        ss << ", threadgroup IndexListOptimizerContext &indexListOptimizerContext";
+    }
     ss << ")";
     
     if (hasContructorParams) {
@@ -1624,6 +1771,9 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
                 }
                 ss << paramDecl.str();
             }
+        }
+        if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+            ss << ", indexListOptimizerContext(indexListOptimizerContext)";
         }
     }
     ss << "{};\n\n";
@@ -1670,6 +1820,9 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         }
     }
     ss <<"){\n";
+    if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+        ss <<"threadgroup IndexListOptimizerContext indexListOptimizerContext;\n";
+    }
     ss << _generatorShaderSections->GetScopeTypeName() << " "
        << _generatorShaderSections->GetScopeInstanceName();
     
@@ -1688,6 +1841,9 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
                 }
                 ss << paramDecl.str();
             }
+        }
+        if (_descriptor.shaderStage == HgiShaderStageMeshlet) {
+            ss << ", indexListOptimizerContext";
         }
         ss << ")";
     }

@@ -2849,12 +2849,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         mosDesc.stageInputs.push_back(std::move(paramDesc));
         
-        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandIndexPayload", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandNumUintLocal", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseInstance", "uint");
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "indexCount", "uint");
         
         /*
         HgiShaderFunctionAddBuffer(
@@ -2885,8 +2885,13 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         
         
         //TODO Thor something better than this
-        mosDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = 512;
-        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshGrid = 128;
+        mosDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
+        mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
+        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
+        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
+        
+        mosDesc.meshDescriptor.maxMeshletVertexCount = 96;
+        mosDesc.meshDescriptor.maxPrimitiveCount = mosDesc.meshDescriptor.maxMeshletVertexCount/3;
         mosDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         
         if (!glslProgram->CompileShader(mosDesc)) {
@@ -2899,27 +2904,21 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasMS) {
         HgiShaderFunctionDesc msDesc;
         msDesc.shaderStage = HgiShaderStageMeshlet;
-
-        //msDesc.tessellationDescriptor.numVertsPerPatchIn =
-        //        _geometricShader->GetPrimitiveIndexSize();
-
-        //Set the patchtype to later decide tessfactor types
-        /*
-        ptvsDesc.tessellationDescriptor.patchType =
-                _geometricShader->IsPrimTypeTriangles() ?
-                HgiShaderFunctionTessellationDesc::PatchType::Triangle :
-                HgiShaderFunctionTessellationDesc::PatchType::Quad;
-                */
-        //should be a power of 3 and 2
-        msDesc.meshDescriptor.maxTotalThreadsPerThreadgroup = (255/3);
+        
+        msDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
+        msDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
+        msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
+        msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
+        
+        msDesc.meshDescriptor.maxMeshletVertexCount = 96;
+        msDesc.meshDescriptor.maxPrimitiveCount = msDesc.meshDescriptor.maxMeshletVertexCount/3;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
-        HgiShaderFunctionAddPayloadMember(&msDesc, "indexRange", "uint2", 1950);
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandIndexPayload", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandNumUintLocal", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseInstance", "uint");
-        HgiShaderFunctionAddPayloadMember(&msDesc, "culledIndices", "uint32_t", 3);
+        HgiShaderFunctionAddPayloadMember(&msDesc, "indexCount", "uint");
         resourceGen._GenerateHgiResources(&msDesc,
                                           HdShaderTokens->meshletShader, _resAttrib, _metaData);
         resourceGen._GenerateHgiResources(&msDesc,

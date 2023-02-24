@@ -341,17 +341,14 @@ const int baseInstanceOffset = 4;
 void main(void)
 {   
 
-    //IDEAS Experimentally tune 
-    const uint32_t indicesPerMesh = 255;
+    //IDEAS Experimentally tune
+    const uint32_t indicesPerMesh = MAX_INDICES;
     SetDrawIndex(hd_LocalInvocationID.x, 0);
     const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
-    uint maxIndex = (indexCount / indicesPerMesh)+1;
-    const uint maxMaxIndex = 1950;
-    maxIndex = min(maxIndex, maxMaxIndex);
-
+    const uint numMeshlets = (indexCount + MAX_INDICES - 1) / MAX_INDICES;
 
     //TODO maybe remove this
-    
+
     uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
     uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
     uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
@@ -359,25 +356,17 @@ void main(void)
 
     //IDEA Maybe sorting the inputs?
 
-    //SPlit this across threads
-    for (uint i = 0; i < maxIndex; i++) {
-        payload.indexRange[i].x = i * indicesPerMesh;
-        payload.indexRange[i].y = min((i+1) * (indicesPerMesh), indexCount);
-    }
-
-
     payload.baseVertex = baseVertex;
     payload.baseIndex = baseIndex;
     payload.baseInstance = baseInstance;
     payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
     payload.drawCommandNumUintLocal = drawCommandNumUints;
+    payload.indexCount = indexCount;
+
     // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.
 
-    //This should never go over 1024 -> need better upstream detection
-    const uint maxZ = 1950;
-    uint z = min(maxIndex, maxZ);
-    //IDEAS go in scan order 
-    meshGridProperties->set_threadgroups_per_grid(uint3(z, instanceCount, 1));
+    //IDEAS go in scan order
+    meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, numMeshlets, 1));
 }
 
 
@@ -402,7 +391,14 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Meshlet.Triangle
 
-        vec4 GetPatchCoord(int index)
+threadgroup IndexListOptimizerContext &indexListOptimizerContext;
+//start index list optimizer
+
+
+
+//end index list optimizer
+
+vec4 GetPatchCoord(int index)
 {
     vec2 uv[3];
     uv[0] = vec2(0, 0); // (0, 0, 1);
@@ -425,32 +421,26 @@ uint32_t gl_BaseInstance;
 uint32_t baseVertex;
 uint32_t baseIndex;
 
-vec2 getScreenPos(vec4 hPos)
+half2 getScreenPos(float4 hPos)
 {
   hPos /= hPos.w;
-  return vec2((hPos.xy * 0.5 + 0.5) * (renderPassState.viewport.zw - renderPassState.viewport.xy));
+  return half2((hPos.xy * 0.5 + 0.5) * (renderPassState.viewport.zw - renderPassState.viewport.xy));
 }
 
-bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
+bool testTriangle(half2 a, half2 b, half2 c, half winding)
 {
+#if ENABLE_BACKFACE_CULLING
   // back face culling
-  vec2 ab = b.xy - a.xy;
-  vec2 ac = c.xy - a.xy;
-  float cross_product = ab.x * ac.y - ab.y * ac.x;   
+  const half2 ab = b.xy - a.xy;
+  const half2 ac = c.xy - a.xy;
+  const half cross_product = ab.x * ac.y - ab.y * ac.x;
 
   //possibly needs reversal
   //cross_product = -cross_product;
   if (cross_product * winding < 0.0f) {return false;}
+#endif
 
   return true;
-}
-
-bool testTriangle(vec2 a, vec2 b, vec2 c, float winding, uint abits, uint bbits, uint cbits)
-{
-    if ((abits & bbits & cbits) == 0) {
-        return testTriangle(a,b,c,winding);
-    }
-    return false;
 }
 
 uint getCullBits(vec4 hPos)
@@ -469,94 +459,124 @@ uint getCullBits(vec4 hPos)
 
 void main(void) {
     //can be simplified to always use payload.baseVertex
-    uint endIndex = payload.indexRange[hd_LocalInvocationID.x].y;
-    uint startIndex = payload.indexRange[hd_LocalInvocationID.x].x;
+    const uint startIndex = MAX_INDICES * hd_LocalInvocationID.y;
+    const uint endIndex   = min(startIndex + MAX_INDICES, payload.indexCount);
     uint drawIndexCount2 =  endIndex - startIndex;
-    uint32_t primitiveCount = drawIndexCount2/3;
+    uint32_t inputPrimitiveCount = drawIndexCount2/3;
     if(drawIndexCount2 < 1) {
         return;
     }
-    MAT4 transform = ApplyInstanceTransform(HdGet_transform());
-    baseVertex = payload.baseVertex;
-    baseIndex = payload.baseIndex;
-    gl_BaseInstance = payload.baseInstance;
-    gl_InstanceID = hd_LocalInvocationID.y + payload.baseInstance;
-    VertexOut vertexOut[3];
-    for (int l = 0; l < 3; l++) {
-        uint ind = payload.indexRange[hd_LocalInvocationID.x].x + (hd_LocalIndexID * 3) + l;
-        if (ind < endIndex) {
-            if(l == 0) {
-                mesh.set_primitive_count(drawIndexCount2);
-            }
-            SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.y);
-            primitive_id = (ind)/3;
-            hd_VertexID = ind;
 
-            uint index;
+    uint ind = startIndex + hd_LocalIndexID;
 
-            uint totalIndOff = (ind % 3);
+    uint globalIndex;
 
-            uint usedBaseIndex = (baseIndex / 3);
+    if (ind < endIndex)
+    {
+        baseVertex = payload.baseVertex;
+        baseIndex = payload.baseIndex;
+        gl_BaseInstance = payload.baseInstance;
+        gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance;
 
-            if (totalIndOff % 3 == 0) {
-                index = (indices + (usedBaseIndex))[ind/3].x;
-            } else if (totalIndOff % 3 == 1) {
-                index = (indices + (usedBaseIndex))[ind/3].y;
-            } else if (totalIndOff % 3 == 2) {
-                index = (indices + (usedBaseIndex))[ind/3].z;
-            } else {
-               index = 0;
-            }
+        SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
+        primitive_id = (ind)/3;
+        hd_VertexID = ind;
 
-            ProcessPrimvarsIn(index);
+        uint totalIndOff = (ind % 3);
 
-            //this is problematic because of threads
+        uint usedBaseIndex = (baseIndex / 3);
 
-            
-            float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
-
-            vec3 Neye0 = GetNormal(vec3(0),index);
-
-            //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
-            vertexOut[l].Peye = vec4(GetWorldToViewMatrix() * transform * point);
-
-            vertexOut[l].Neye = Neye0; // normalized
-
-            vertexOut[l].position = vec4(GetProjectionMatrix() * vertexOut[l].Peye);
-            ProcessPrimvarsOut(vertexOut[l]);
-            ApplyClipPlanes(vertexOut[l].Peye);
+        if (totalIndOff % 3 == 0) {
+            globalIndex = (indices + (usedBaseIndex))[ind/3].x;
+        } else if (totalIndOff % 3 == 1) {
+            globalIndex = (indices + (usedBaseIndex))[ind/3].y;
+        } else if (totalIndOff % 3 == 2) {
+            globalIndex = (indices + (usedBaseIndex))[ind/3].z;
+        } else {
+        globalIndex = 0;
         }
     }
-
-    vec2 as = getScreenPos(vertexOut[0].position);
-    vec2 bs = getScreenPos(vertexOut[1].position);
-    vec2 cs = getScreenPos(vertexOut[2].position);
-
-    uint abits = getCullBits(vertexOut[0].position);
-    uint bbits = getCullBits(vertexOut[1].position);
-    uint cbits = getCullBits(vertexOut[2].position);
-
-    bool cull = !testTriangle(as.xy, bs.xy, cs.xy, 1.0, abits, bbits, cbits);
-
-    if(!cull) {
-        for(int l = 0; l < 3; l++) {
-            //We probably no longer need to defer this or even maybe not even write if we cull
-            mesh.set_vertex((hd_LocalIndexID * 3) + l, vertexOut[l]);
-        }
+    else
+    {
+        globalIndex = INVALID_GLOBAL_INDEX;
     }
-    
 
-    if (hd_LocalIndexID < primitiveCount) {
-        PrimOut primOut;
-        primOut.doCull = cull;
-        mesh.set_primitive(hd_LocalIndexID, primOut);
-        if (!cull) {
+    optimizeIndexList(indexListOptimizerContext, ushort(hd_LocalIndexID), drawIndexCount2, globalIndex);
+
+    if( hd_LocalIndexID < indexListOptimizerContext.numUniqueVertices )
+    {
+        uint index = indexListOptimizerContext.globalIndices[hd_LocalIndexID];
+        ProcessPrimvarsIn(index);
+
+        //this is problematic because of threads
+
+        VertexOut vertexOut;
+        float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
+
+        vec3 Neye0 = GetNormal(vec3(0),index);
+
+        //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
+        MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+        vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+
+        vertexOut.Neye = Neye0; // normalized
+
+        vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
+        ProcessPrimvarsOut(vertexOut);
+        mesh.set_vertex(hd_LocalIndexID, vertexOut);
+        ApplyClipPlanes(vertexOut.Peye);
+
+#if ENABLE_BACKFACE_CULLING == 1
+        indexListOptimizerContext.positions[hd_LocalIndexID] = getScreenPos(vertexOut.position);
+#endif
+    }
+
+    ThreadgroupBarrier();
+
+    const uint simdId = hd_LocalIndexID / SIMD_WIDTH;
+    if( simdId == 0 )
+    {
+        const uint baseIndex = hd_LocalIndexID * 3;
+
+        const uchar localIndex0 = indexListOptimizerContext.localIndices[baseIndex+0];
+        const uchar localIndex1 = indexListOptimizerContext.localIndices[baseIndex+1];
+        const uchar localIndex2 = indexListOptimizerContext.localIndices[baseIndex+2];
+
+#if ENABLE_BACKFACE_CULLING == 1
+        const bool visible = testTriangle(
+            indexListOptimizerContext.positions[localIndex0],
+            indexListOptimizerContext.positions[localIndex1],
+            indexListOptimizerContext.positions[localIndex2],
+            1.0);
+
+        const uint visiblePrimitivesThreadMask = (uint) (simd_vote::vote_t) simd_ballot(visible);
+        const uint outputPrimitiveCount = popcount(visiblePrimitivesThreadMask);
+#else
+        const bool visible = true;
+        const uint outputPrimitiveCount = inputPrimitiveCount;
+#endif
+
+        if( hd_LocalIndexID == 0 )
+        {
+            mesh.set_primitive_count(outputPrimitiveCount);
+        }
+
+        if( visible )
+        {
+#if ENABLE_BACKFACE_CULLING == 1
+            const uint primitiveId = popcount(visiblePrimitivesThreadMask & ((1 << hd_LocalIndexID) - 1));
+#else
+            const uint primitiveId = hd_LocalIndexID;
+#endif
+
+            PrimOut primOut;
+            mesh.set_primitive(primitiveId, primOut);
+
             // Set the output indices.
-            const uint i = (hd_LocalIndexID) * 3;
-            //Possibly we don't need to write this if cull
-            mesh.set_index(i+0, i);
-            mesh.set_index(i+1, i+1);
-            mesh.set_index(i+2, i+2);
+            const uint baseIndex = primitiveId * 3;
+            mesh.set_index(baseIndex+0, localIndex0);
+            mesh.set_index(baseIndex+1, localIndex1);
+            mesh.set_index(baseIndex+2, localIndex2);
         }
     }
 }

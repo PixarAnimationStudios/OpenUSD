@@ -33,21 +33,21 @@
 // quaternion to matrix. xyz = imaginary, w = real
 MAT4 GetRotationMatrix(vec4 q)
 {
-    MAT4 r;
-    r[0].xyzw = vec4(1 - 2 * (q.y * q.y + q.z * q.z),
-                         2 * (q.x * q.y + q.z * q.w),
-                         2 * (q.x * q.z - q.y * q.w),
-                     0);
-    r[1].xyzw = vec4(    2 * (q.x * q.y - q.z * q.w),
+MAT4 r;
+r[0].xyzw = vec4(1 - 2 * (q.y * q.y + q.z * q.z),
+                 2 * (q.x * q.y + q.z * q.w),
+                 2 * (q.x * q.z - q.y * q.w),
+                 0);
+r[1].xyzw = vec4(    2 * (q.x * q.y - q.z * q.w),
                      1 - 2 * (q.x * q.x + q.z * q.z),
-                         2 * (q.y * q.z + q.x * q.w),
+                     2 * (q.y * q.z + q.x * q.w),
                      0);
-    r[2].xyzw = vec4(    2 * (q.x * q.z + q.y * q.w),
-                         2 * (q.y * q.z - q.x * q.w),
+r[2].xyzw = vec4(    2 * (q.x * q.z + q.y * q.w),
+                     2 * (q.y * q.z - q.x * q.w),
                      1 - 2 * (q.x * q.x + q.y * q.y),
                      0);
-    r[3] = vec4(0, 0, 0, 1);
-    return r;
+r[3] = vec4(0, 0, 0, 1);
+return r;
 }
 
 // ---------------------------------------------------------------------------
@@ -152,12 +152,20 @@ MAT4 GetInstanceTransformInverse()
 
 MAT4 ApplyInstanceTransform(MAT4 m)
 {
-    return GetInstanceTransform() * m;
+#if defined(HD_INSTANCER_NUM_LEVELS) || defined(HD_HAS_instancerTransform)
+return GetInstanceTransform() * m;
+#else
+return m;
+#endif
 }
 
 MAT4 ApplyInstanceTransformInverse(MAT4 m)
 {
-    return m * GetInstanceTransformInverse();
+#if defined(HD_INSTANCER_NUM_LEVELS) || defined(HD_HAS_instancerTransform)
+return m * GetInstanceTransformInverse();
+#else
+return m;
+#endif
 }
 
 bool IsFlipped()
