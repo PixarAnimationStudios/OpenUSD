@@ -282,7 +282,7 @@ mat4 GetDomeLightTransform(mat4 worldToLightTransform)
     return worldToLightTransform * worldToViewInverse;
 }
 
-vec3
+LightingContributions
 evaluateIndirectLighting(
         vec3 diffuseColor,
         vec3 specularColor,
@@ -300,7 +300,9 @@ evaluateIndirectLighting(
         float clearcoatRoughness,
         mat4 worldToLightTransform)
 {
-    vec3 indirect = vec3(0.0);
+    LightingContributions indirect;
+    indirect.diffuse = vec3(0.0);
+    indirect.specular = vec3(0.0);
 
 #ifdef HD_HAS_domeLightIrradiance
     vec3 F0 = specularColor;
@@ -352,7 +354,9 @@ evaluateIndirectLighting(
     }
 
     // Indirect Lighting
-    indirect = (d * diffuse + specular + clearcoat) * occlusion;
+    indirect.diffuse = (d * diffuse) * occlusion;
+    indirect.specular = (specular + clearcoat) * occlusion;
+
 #endif
 
     return indirect;
@@ -438,13 +442,14 @@ evaluateLights(
         // calculate the indirect light (DomeLight)
         if (light.isIndirectLight) {
 
-            indirectLight = evaluateIndirectLighting(diffuseColor,
-                                    specularColor, Neye, Reye, NdotE,
-                                    EdotH, ior, metallic, occlusion,
-                                    specularRoughness, useSpecularWorkflow,
-                                    clearcoatAmount, clearcoatColor, 
-                                    clearcoatRoughness, 
-                                    light.worldToLightTransform);
+            LightingContributions indirectLightContrib = 
+                evaluateIndirectLighting(diffuseColor, specularColor,
+                    Neye, Reye, NdotE, EdotH, ior, metallic, occlusion,
+                    specularRoughness, useSpecularWorkflow,
+                    clearcoatAmount, clearcoatColor, clearcoatRoughness,
+                    light.worldToLightTransform);
+            indirectLight = (indirectLightContrib.diffuse * light.diffuse.rgb 
+                           + indirectLightContrib.specular * light.specular.rgb);
         }
         // all other light sources contribute to the direct lighting
         else {
