@@ -340,7 +340,6 @@ const int baseInstanceOffset = 4;
 
 void main(void)
 {   
-
     //IDEAS Experimentally tune
     const uint32_t indicesPerMesh = MAX_INDICES;
     SetDrawIndex(hd_LocalInvocationID.x, 0);
@@ -384,8 +383,7 @@ void main(void)
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"],
 ["uint", "drawCoordIOffset"]
-],
-    ["out", "vec4", "gsPatchCoord"]
+]
 ]
 
 --- --------------------------------------------------------------------------
@@ -456,8 +454,9 @@ uint getCullBits(vec4 hPos)
     cullBits |= hPos.w <= 0.0f      ? 64 : 0;
     return cullBits;
 }
-
+hd_drawingCoord dcMemb;
 void main(void) {
+    dcMemb = GetDrawingCoordFull();
     //can be simplified to always use payload.baseVertex
     const uint startIndex = MAX_INDICES * hd_LocalInvocationID.y;
     const uint endIndex   = min(startIndex + MAX_INDICES, payload.indexCount);
@@ -1300,18 +1299,13 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
--- layout Mesh.Fragment.PatchCoord
-
-[
-    ["in", "vec4", "gsPatchCoord"]
-]
-
---- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return gsPatchCoord;
+    vec3 barycentric = GetPatchControlPoint();
+    return OsdInterpolatePatchCoordTriangle(
+                        barycentric.yz, GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
@@ -1405,6 +1399,8 @@ vec4 GetInterpolatedPatchCoord()
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
 
+hd_drawingCoord dcMemb;
+
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset
 int HdGet_ptexFaceOffset()
@@ -1438,6 +1434,7 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    dcMemb = GetDrawingCoordFull();
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);

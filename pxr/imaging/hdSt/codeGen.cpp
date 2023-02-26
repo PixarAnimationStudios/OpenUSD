@@ -4772,7 +4772,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << "  hd_instanceIndex r = GetInstanceIndex();\n";
     
     _genMS   << "// Compute shaders read the drawCommands buffer directly.\n"
-                 << "hd_drawingCoord GetDrawingCoord() {\n"
+                 << "hd_drawingCoord GetDrawingCoordFull() {\n"
                  << "  hd_drawingCoord dc;\n"
                  << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
                  << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
@@ -4786,7 +4786,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << "  hd_instanceIndex r = GetInstanceIndex();\n";
     if (_hasMS) {
         _genFS   << "// Compute shaders read the drawCommands buffer directly.\n"
-        << "hd_drawingCoord GetDrawingCoord() {\n"
+        << "hd_drawingCoord GetDrawingCoordFull() {\n"
         << "  hd_drawingCoord dc;\n"
         << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
         << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
@@ -4856,9 +4856,11 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     if(_hasMS) {
         _genFS   << "  return dc;\n"
         << "}\n";
+        _genFS << "hd_drawingCoord GetDrawingCoord() { return dcMemb; }\n";
     }
     _genMOS   << "  return dc;\n"
              << "}\n";
+    _genMS << "hd_drawingCoord GetDrawingCoord() { return dcMemb; }\n";
 
     // note: GL spec says tessellation input array size must be equal to
     //       gl_MaxPatchVertices, which is used for intrinsic declaration
