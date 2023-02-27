@@ -253,5 +253,18 @@ class TestSdfListOp(unittest.TestCase):
             )
         )
 
+    # Sanity test for binding, ApplyOperation logic exhaustively tested above
+    def test_GetAppliedItems(self):
+        e = [1, 2, 3]
+        listOp = _ExplicitItems(e)
+        items = listOp.GetAppliedItems()
+        self.assertEqual(items, e)
+
+        p = [4, 5, 6]
+        a = [7, 8, 9]
+        listOp = Sdf.IntListOp.Create(prependedItems=p, appendedItems=a)
+        items = listOp.GetAppliedItems()
+        self.assertEqual(items, p + a)
+
 if __name__ == "__main__":
     unittest.main()

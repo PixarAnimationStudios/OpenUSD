@@ -155,7 +155,9 @@ private:
             .add_property("orderedItems",
                 &Type::GetOrderedItems,
                 &This::_SetOrderedProxy)
-            .def("GetAddedOrExplicitItems", &Type::GetAddedOrExplicitItems,
+            .def("GetAddedOrExplicitItems", &Type::GetAppliedItems,
+                return_value_policy<TfPySequenceToTuple>()) // deprecated
+            .def("GetAppliedItems", &Type::GetAppliedItems,
                 return_value_policy<TfPySequenceToTuple>())
             .add_property("isExplicit", &Type::IsExplicit)
             .add_property("isOrderedOnly", &Type::IsOrderedOnly)

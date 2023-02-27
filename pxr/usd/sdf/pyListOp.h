@@ -127,7 +127,9 @@ private:
                               return_value_policy<return_by_value>()),
                 &T::SetOrderedItems)
             .def("GetAddedOrExplicitItems",
-                &This::_GetAddedOrExplicitItems)
+                &T::GetAppliedItems) //deprecated
+            .def("GetAppliedItems",
+                &T::GetAppliedItems)
 
             .add_property("isExplicit", &T::IsExplicit)
 
@@ -138,14 +140,6 @@ private:
     static std::string _GetStr(const T& listOp)
     {
         return TfStringify(listOp);
-    }
-    
-    static 
-    ItemVector _GetAddedOrExplicitItems(const T& listOp)
-    {
-        ItemVector result;
-        listOp.ApplyOperations(&result);
-        return result;
     }
 
 };

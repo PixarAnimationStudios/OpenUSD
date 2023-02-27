@@ -162,6 +162,14 @@ public:
     /// Return the item vector identified by \p type.
     SDF_API const ItemVector& GetItems(SdfListOpType type) const;
 
+    /// Returns the effective list of items represented by the operations in
+    /// this list op. This function should be used to determine the final list
+    /// of items added instead of looking at the individual explicit, prepended,
+    /// and appended item lists. 
+    ///
+    /// This is equivalent to calling ApplyOperations on an empty item vector.
+    SDF_API ItemVector GetAppliedItems() const;
+
     SDF_API void SetExplicitItems(const ItemVector &items);
     SDF_API void SetAddedItems(const ItemVector &items);
     SDF_API void SetPrependedItems(const ItemVector &items);
