@@ -580,8 +580,8 @@ Specifically:
 class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
-        return "A prim providing a material binding, must have "\
-                "MaterialBindingAPI applied on the prim."
+        return "A prim providing a material binding, must have " \
+               "MaterialBindingAPI applied on the prim."
 
     def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
         super(MaterialBindingAPIAppliedChecker, self).__init__(verbose, 
@@ -597,6 +597,46 @@ class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
                 self._AddFailedCheck("Found material bindings but no " \
                     "MaterialBindingAPI applied on the prim <%s>." \
                     % prim.GetPath())
+
+class SkelBindingAPIAppliedChecker(BaseRuleChecker):
+    @staticmethod
+    def GetDescription():
+        return "A prim providing skelBinding properties, must have " \
+               "SkelBindingAPI applied on the prim."
+
+    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
+        from pxr import Usd
+        usdSchemaRegistry = Usd.SchemaRegistry()
+        primDef = usdSchemaRegistry.BuildComposedPrimDefinition("",
+                ["SkelBindingAPI"])
+        self._skelBindingAPIProps = primDef.GetPropertyNames()
+        super(SkelBindingAPIAppliedChecker, self).__init__(verbose,
+                consumerLevelChecks, assetLevelChecks)
+
+    def CheckPrim(self, prim):
+        from pxr import UsdSkel
+        if not prim.HasAPI(UsdSkel.BindingAPI):
+            primProperties = prim.GetPropertyNames()
+            for skelProperty in self._skelBindingAPIProps:
+                if skelProperty in primProperties:
+                    self._AddFailedCheck("Found a UsdSkelBinding property " \
+                        "(%s) , but no SkelBindingAPI applied on the prim " \
+                        "<%s>." %(skelProperty, prim.GetPath()))
+                    return
+        else:
+            # If the API is already applied make sure this prim is either
+            # SkelRoot type or is rooted under a SkelRoot prim, else prim won't
+            # be considered for any UsdSkel Skinning.
+            if prim.GetTypeName() == UsdSkel.Tokens.SkelRoot:
+                return
+            parentPrim = prim.GetParent()
+            while not parentPrim.IsPseudoRoot():
+                if parentPrim.GetTypeName() == UsdSkel.Tokens.SkelRoot:
+                    return
+                parentPrim = parentPrim.GetParent()
+            self._AddFailedCheck("UsdSkelBindingAPI applied on a prim, which " \
+                    "is not of type SkelRoot or is not rooted at a prim of " \
+                    "type SkelRoot, as required by the UsdSkel schema.");
 
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
@@ -875,7 +915,7 @@ class ComplianceChecker(object):
         return [ByteAlignmentChecker, CompressionChecker, 
                 MissingReferenceChecker, StageMetadataChecker, TextureChecker, 
                 PrimEncapsulationChecker, NormalMapTextureChecker,
-                MaterialBindingAPIAppliedChecker]
+                MaterialBindingAPIAppliedChecker, SkelBindingAPIAppliedChecker]
 
     @staticmethod
     def GetARKitRules(skipARKitRootLayerCheck=False):

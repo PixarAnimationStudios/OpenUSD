@@ -45,4 +45,7 @@ Specifically:
 [MaterialBindingAPIAppliedChecker]:
  A prim providing a material binding, must have MaterialBindingAPI applied on the prim.
 ------------------------------
+[SkelBindingAPIAppliedChecker]:
+ A prim providing skelBinding properties, must have SkelBindingAPI applied on the prim.
+------------------------------
 Success!
