@@ -49,6 +49,7 @@ public:
 
 protected:
 
+    HD_API
     HdGpGenerativeProceduralPlugin();
 
     HD_API

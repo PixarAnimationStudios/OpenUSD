@@ -48,7 +48,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdGpGenerativeProceduralTokens,
 class HdGpGenerativeProcedural
 {
 public:
+    HD_API
     HdGpGenerativeProcedural(const SdfPath &proceduralPrimPath);
+    
+    HD_API
     virtual ~HdGpGenerativeProcedural();
 
     using DependencyMap =
@@ -119,6 +122,7 @@ public:
         const SdfPath &childPrimPath) = 0;
 
 protected:
+    HD_API
     const SdfPath &_GetProceduralPrimPath();
 
 private:
