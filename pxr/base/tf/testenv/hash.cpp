@@ -318,6 +318,12 @@ Test_TfHash()
     // Validate support for std::type_index
     printf("hash(type_index): %zu\n", h(std::type_index(typeid(int))));
 
+    // Validate support for std::shared_ptr
+    printf("hash(shared_ptr): %zu\n", h(std::make_shared<int>(5)));
+
+    // Validate support for std::unique_ptr
+    printf("hash(unique_ptr): %zu\n", h(std::make_unique<int>(7)));
+
     TfHasher tfh;
     //BoostHasher bh;
 
