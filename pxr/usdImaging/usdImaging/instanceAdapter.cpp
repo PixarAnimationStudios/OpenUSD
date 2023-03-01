@@ -1590,10 +1590,12 @@ std::vector<VtArray<TfToken>>
 UsdImagingInstanceAdapter::GetInstanceCategories(UsdPrim const& prim) 
 {
     HD_TRACE_FUNCTION();
-    const UsdImaging_CollectionCache& cc = _GetCollectionCache();
     std::vector<VtTokenArray> result;
-    _GetInstanceCategoriesFn catsFn(this, &cc, &result);
-    _RunForAllInstancesToDraw(prim, &catsFn);
+    if (TfMapLookupPtr(_instancerData, prim.GetPath())) {
+        const UsdImaging_CollectionCache& cc = _GetCollectionCache();
+        _GetInstanceCategoriesFn catsFn(this, &cc, &result);
+        _RunForAllInstancesToDraw(prim, &catsFn);
+    }
     return result;
 }
 
