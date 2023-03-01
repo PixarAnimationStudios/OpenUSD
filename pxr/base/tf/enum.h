@@ -37,7 +37,6 @@
 #include "pxr/base/tf/api.h"
 
 #include <boost/operators.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
 
 #include <iosfwd>
 #include <string>
@@ -447,10 +446,8 @@ TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 /// \ingroup group_tf_RuntimeTyping
 /// \hideinitializer
 #define TF_ADD_ENUM_NAME(VAL, ...)                               \
-    TfEnum::_AddName(VAL,                                        \
-                     TF_PP_STRINGIZE(VAL)                        \
-                     BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__)) \
-                     __VA_ARGS__)
+    TfEnum::_AddName(VAL, TF_PP_STRINGIZE(VAL),                  \
+                     std::string{__VA_ARGS__});
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

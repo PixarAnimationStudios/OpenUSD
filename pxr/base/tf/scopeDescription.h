@@ -32,7 +32,6 @@
 #include "pxr/base/tf/api.h"
 
 #include <boost/optional.hpp>
-#include <boost/preprocessor/if.hpp>
 
 #include <vector>
 #include <string>
@@ -133,10 +132,27 @@ TfGetThisThreadScopeDescriptionStack();
 
 /// Macro that accepts either a single string, or printf-style arguments and
 /// creates a scope description local variable with the resulting string.
-#define TF_DESCRIBE_SCOPE(fmt, ...)                                            \
+#define TF_DESCRIBE_SCOPE(...)                                                 \
     TfScopeDescription __scope_description__                                   \
-    (BOOST_PP_IF(TF_NUM_ARGS(__VA_ARGS__),                                     \
-                 TfStringPrintf(fmt, __VA_ARGS__), fmt), TF_CALL_CONTEXT)
+    (Tf_DescribeScopeFormat(__VA_ARGS__), TF_CALL_CONTEXT);                    \
+
+template <typename... Args>
+inline std::string
+Tf_DescribeScopeFormat(const char* fmt, Args&&... args) {
+    return TfStringPrintf(fmt, std::forward<Args>(args)...);
+}
+
+// If there are no formatting arguments, the string can be forwarded to the
+// scope description constructor. In C++17, consider if std::string_view could
+// reduce the need for as many of these overloads
+inline const char*
+Tf_DescribeScopeFormat(const char* fmt) { return fmt; }
+
+inline std::string&&
+Tf_DescribeScopeFormat(std::string&& fmt) { return std::move(fmt); }
+
+inline const std::string&
+Tf_DescribeScopeFormat(const std::string& fmt) { return fmt; }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
