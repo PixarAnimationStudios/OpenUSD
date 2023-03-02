@@ -61,7 +61,8 @@
 // 44 -> 45: Added HdSceneDelegate::GetScenePrimPaths.
 // 45 -> 46: New signatures for HdRendererPlugin::IsSupported and
 //           HdRendererPluginRegistry::GetDefaultPluginId
-#define HD_API_VERSION 46
+// 46 -> 47: Adding HdRenderDelegate::GetRenderSettingsNamespaces()
+#define HD_API_VERSION 47
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

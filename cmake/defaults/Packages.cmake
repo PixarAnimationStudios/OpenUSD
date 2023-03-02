@@ -43,7 +43,7 @@ find_package(Boost REQUIRED)
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
-# component dependencies like python, program options, etc. Refer some related 
+# component dependencies like python, etc. Refer some related
 # discussions:
 # https://github.com/boostorg/python/issues/262#issuecomment-483069294
 # https://github.com/boostorg/boost_install/issues/12#issuecomment-508683006
@@ -51,15 +51,13 @@ find_package(Boost REQUIRED)
 # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
 # is enabled by default for boost version 1.70 and above. If a user explicitly 
 # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.70")
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
-    if (Boost_NO_BOOST_CMAKE)
-        message(STATUS "Disabling boost-provided cmake config")
-    endif()
+option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
+if (Boost_NO_BOOST_CMAKE)
+    message(STATUS "Disabling boost-provided cmake config")
 endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
-    # --Python.
+    # 1--Python.
     macro(setup_python_package package)
         find_package(${package} COMPONENTS Interpreter Development REQUIRED)
 
@@ -76,6 +74,28 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         if(WIN32)
             file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
             file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+        endif()
+
+        # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP might be explicitly set when 
+        # packaging wheels, or when cross compiling to a Python environment 
+        # that is not the current interpreter environment.
+        # If it was not explicitly set to ON or OFF, then determine whether 
+        # Python was statically linked to its runtime library by fetching the
+        # sysconfig variable LDLIBRARY, and set the variable accordingly.
+        # If the variable does not exist, PXR_PY_UNDEFINED_DYNAMIC_LOOKUP will
+        # default to OFF. On Windows, LDLIBRARY does not exist, as the default
+        # will always be OFF.
+        if((NOT WIN32) AND (NOT DEFINED PXR_PY_UNDEFINED_DYNAMIC_LOOKUP))
+            execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "import sysconfig;print(sysconfig.get_config_var('LDLIBRARY'))"
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                OUTPUT_VARIABLE PXR_PYTHON_LINKED_LIBRARY
+            )
+            get_filename_component(PXR_PYTHON_LINKED_LIBRARY_EXT ${PXR_PYTHON_LINKED_LIBRARY} LAST_EXT)
+            if(PXR_PYTHON_LINKED_LIBRARY_EXT STREQUAL ".a")
+                set(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP ON)
+                message(STATUS 
+                        "PXR_PY_UNDEFINED_DYNAMIC_LOOKUP wasn't specified, forced ON because Python statically links ${PXR_PYTHON_LINKED_LIBRARY}")
+            endif()
         endif()
 
         # This option indicates that we don't want to explicitly link to the
@@ -97,30 +117,27 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         set(Boost_USE_DEBUG_PYTHON ON)
     endif()
 
-    if (${Boost_VERSION_STRING} VERSION_GREATER_EQUAL "1.67")
-        # As of boost 1.67 the boost_python component name includes the
-        # associated Python version (e.g. python27, python36). 
-        # XXX: After boost 1.73, boost provided config files should be able to 
-        # work without specifying a python version!
-        # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
-
-        # Find the component under the versioned name and then set the generic
-        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-        # logic in each library's CMakeLists.txt.
-        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-        find_package(Boost
-            COMPONENTS
-                python${python_version_nodot}
-            REQUIRED
-        )
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-    else()
-        find_package(Boost
-            COMPONENTS
-                python
-            REQUIRED
-        )
+    # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
+    if(WIN32)
+        set(Boost_COMPILER "-vc143;-vc142;-vc141")
     endif()
+
+    # As of boost 1.67 the boost_python component name includes the
+    # associated Python version (e.g. python27, python36). 
+    # XXX: After boost 1.73, boost provided config files should be able to 
+    # work without specifying a python version!
+    # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
+
+    # Find the component under the versioned name and then set the generic
+    # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
+    # logic in each library's CMakeLists.txt.
+    set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
+    find_package(Boost
+        COMPONENTS
+        python${python_version_nodot}
+        REQUIRED
+    )
+    set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
 
     # --Jinja2
     find_package(Jinja2)
@@ -140,14 +157,6 @@ else()
     endif()
 endif()
 
-# --USD tools
-if(PXR_BUILD_USD_TOOLS OR PXR_BUILD_TESTS)
-    find_package(Boost
-    COMPONENTS
-        program_options
-    REQUIRED
-    )
-endif()
 
 # --TBB
 find_package(TBB REQUIRED COMPONENTS tbb)

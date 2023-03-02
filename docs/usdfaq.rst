@@ -689,3 +689,38 @@ See `Advanced Build Configuration
 <https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
 instructions on how to enable these plugins.
 
+Why Isn't My App Finding USD DLLs and Plugins on Windows?
+#########################################################
+
+If you get errors similar to "This program can't start because USD_AR.DLL is 
+missing from your computer" or "Failed to load plugin 'usd': The specified 
+module could not be found" when running your app, this means the USD DLLs or 
+USD plugins can't be located at runtime. 
+
+One way to fix this is to install the USD DLLs and USD plugins in the same 
+directory as your executable. For example, if you built ``MyCustomUSDTool.exe``
+and installed it into ``C:\MyPrograms\MyCustomUSDTool\``, your directory layout 
+might look something like:
+
+.. code-block:: text
+
+  C:\MyPrograms\MyCustomUSDTool\MyCustomTool.exe
+  C:\MyPrograms\MyCustomUSDTool\tbb.dll
+  C:\MyPrograms\MyCustomUSDTool\usd_ar.dll
+  C:\MyPrograms\MyCustomUSDTool\(...remaining USD DLLs...)
+  C:\MyPrograms\MyCustomUSDTool\usd\plugInfo.json
+  C:\MyPrograms\MyCustomUSDTool\usd\ar\resources\plugInfo.json
+  C:\MyPrograms\MyCustomUSDTool\usd\(...remaining core USD plugin directories and files...)
+  C:\MyPrograms\MyCustomUSDTool\usd\(...other non-core plugin directories as needed...)
+
+Another approach is to install your DLLs and plugins to a directory that is 
+added to your Windows :envvar:`PATH` environment variable. See `Dynamic-link 
+library search order <https://learn.microsoft.com/en-us/windows/win32/dlls/dynamic-link-library-search-order>`_
+for more details on how Windows searches for DLLs at runtime.
+
+If you prefer not to have to install a large number of DLLs, you can build a 
+single monolithic USD DLL using the :code:`PXR_BUILD_MONOLITHIC` cmake flag. See 
+`Advanced Build Configuration 
+<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+more information. Note that you will still need to install the USD plugins 
+directory along with the monolithic USD DLL.

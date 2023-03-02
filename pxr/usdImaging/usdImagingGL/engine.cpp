@@ -24,13 +24,14 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
-#include "pxr/usdImaging/usdImagingGL/drawModeSceneIndex.h"
-
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/prototypePruningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
+#include "pxr/imaging/hd/materialBindingSchema.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -145,8 +146,6 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
-    , _sceneIndex(nullptr)
-    , _sceneDelegate(nullptr)
 {
     if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver &&
         _hgiDriver.driver.IsHolding<Hgi*>()) {
@@ -171,6 +170,8 @@ UsdImagingGLEngine::_DestroyHydraObjects()
     if (_GetUseSceneIndices()) {
         if (_renderIndex && _sceneIndex) {
             _renderIndex->RemoveSceneIndex(_sceneIndex);
+            _stageSceneIndex = nullptr;
+            _selectionSceneIndex = nullptr;
             _sceneIndex = nullptr;
         }
     } else {
@@ -205,9 +206,9 @@ UsdImagingGLEngine::PrepareBatch(
     if (_CanPrepare(root)) {
         if (!_isPopulated) {
             if (_GetUseSceneIndices()) {
-                TF_VERIFY(_sceneIndex);
-                _sceneIndex->SetStage(root.GetStage());
-                _sceneIndex->Populate();
+                TF_VERIFY(_stageSceneIndex);
+                _stageSceneIndex->SetStage(root.GetStage());
+                _stageSceneIndex->Populate();
 
                 // XXX(USD-7113): Add pruning based on _rootPath,
                 // _excludedPrimPaths
@@ -232,7 +233,7 @@ UsdImagingGLEngine::PrepareBatch(
 
         // SetTime will only react if time actually changes.
         if (_GetUseSceneIndices()) {
-            _sceneIndex->SetTime(params.frame);
+            _stageSceneIndex->SetTime(params.frame);
         } else {
             _sceneDelegate->SetTime(params.frame);
         }
@@ -556,7 +557,11 @@ UsdImagingGLEngine::SetSelected(SdfPathVector const& paths)
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): selection support
+        _selectionSceneIndex->ClearSelection();
+
+        for (const SdfPath &path : paths) {
+            _selectionSceneIndex->AddSelection(path);
+        }
         return;
     }
 
@@ -586,6 +591,11 @@ UsdImagingGLEngine::ClearSelected()
         return;
     }
 
+    if (_GetUseSceneIndices()) {
+        _selectionSceneIndex->ClearSelection();
+        return;
+    }
+    
     TF_VERIFY(_selTracker);
 
     _selTracker->SetSelection(std::make_shared<HdSelection>());
@@ -609,7 +619,7 @@ UsdImagingGLEngine::AddSelected(SdfPath const &path, int instanceIndex)
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): selection support
+        _selectionSceneIndex->AddSelection(path);
         return;
     }
 
@@ -659,13 +669,6 @@ UsdImagingGLEngine::TestIntersection(
         return false;
     }
 
-    if (_GetUseSceneIndices()) {
-        // XXX(HYD-2299): picking support
-        return false;
-    }
-
-    TF_VERIFY(_sceneDelegate);
-
     PrepareBatch(root, params);
 
     // XXX(UsdImagingPaths): This is incorrect...  "Root" points to a USD
@@ -708,10 +711,19 @@ UsdImagingGLEngine::TestIntersection(
         *outHitNormal = hit.worldSpaceHitNormal;
     }
 
-    hit.objectId = _sceneDelegate->GetScenePrimPath(
-        hit.objectId, hit.instanceIndex, outInstancerContext);
-    hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
-        hit.instancerId).GetAbsoluteRootOrPrimPath();
+    if (_sceneDelegate) {
+        hit.objectId = _sceneDelegate->GetScenePrimPath(
+            hit.objectId, hit.instanceIndex, outInstancerContext);
+        hit.instancerId = _sceneDelegate->ConvertIndexPathToCachePath(
+            hit.instancerId).GetAbsoluteRootOrPrimPath();
+    } else {
+        const HdxPrimOriginInfo info = HdxPrimOriginInfo::FromPickHit(
+            _renderIndex.get(), hit);
+        const SdfPath usdPath = info.GetFullPath();
+        if (!usdPath.IsEmpty()) {
+            hit.objectId = usdPath;
+        }
+    }
 
     if (outHitPrimPath) {
         *outHitPrimPath = hit.objectId;
@@ -952,15 +964,36 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        _sceneIndex = UsdImagingStageSceneIndex::New();
-        _renderIndex->InsertSceneIndex(
-            UsdImagingGLDrawModeSceneIndex::New(
-                HdFlatteningSceneIndex::New(
-                    UsdImagingPiPrototypePropagatingSceneIndex::New(
-                        UsdImagingPrototypePruningSceneIndex::New(
-                            _sceneIndex))),
-                /* inputArgs = */ nullptr),
-            _sceneDelegateId);
+        // The native prototype propagating scene index does a lot of
+        // the flattening before inserting copies of the the prototypes
+        // into the scene index. However, the resolved material for a prim
+        // coming from a USD prototype can depend on the prim ancestors of
+        // a corresponding instance. So we need to do one final resolve here.
+        static const HdContainerDataSourceHandle flatteningInputArgs =
+            HdRetainedContainerDataSource::New(
+                HdMaterialBindingSchemaTokens->materialBinding,
+                HdRetainedTypedSampledDataSource<bool>::New(true));
+
+        _sceneIndex = _stageSceneIndex =
+            UsdImagingStageSceneIndex::New();
+
+        _sceneIndex =
+            UsdImagingPiPrototypePropagatingSceneIndex::New(_sceneIndex);
+        
+        _sceneIndex =
+            UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
+
+        _sceneIndex = _selectionSceneIndex =
+            UsdImagingSelectionSceneIndex::New(_sceneIndex);
+
+        _sceneIndex =
+            HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
+
+        _sceneIndex =
+            UsdImagingDrawModeSceneIndex::New(_sceneIndex,
+                                              /* inputArgs = */ nullptr);
+
+        _renderIndex->InsertSceneIndex(_sceneIndex, _sceneDelegateId);
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(
                 _renderIndex.get(), _sceneDelegateId);
@@ -1374,7 +1407,7 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
 
     if (_GetUseSceneIndices()) {
         // XXX(USD-7115): fallback refine level
-        _sceneIndex->ApplyPendingUpdates();
+        _stageSceneIndex->ApplyPendingUpdates();
     } else {
         // Set the fallback refine level; if this changes from the
         // existing value, all prim refine levels will be dirtied.

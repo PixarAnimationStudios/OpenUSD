@@ -70,6 +70,7 @@ pxr_library(tf
         setenv
         singleton
         smallVector
+        spinRWMutex
         stackTrace
         stacked
         status
@@ -129,6 +130,7 @@ pxr_library(tf
         instantiateSingleton.h
         instantiateStacked.h
         instantiateType.h
+        pxrCLI11/CLI11.h
         pxrTslRobinMap/robin_growth_policy.h
         pxrTslRobinMap/robin_hash.h
         pxrTslRobinMap/robin_map.h
@@ -145,6 +147,7 @@ pxr_library(tf
     PYTHON_PUBLIC_HEADERS
         py3Compat.h
         pySafePython.h
+        pySignatureExt.h
         pyStaticTokens.h
 
     PRIVATE_CLASSES

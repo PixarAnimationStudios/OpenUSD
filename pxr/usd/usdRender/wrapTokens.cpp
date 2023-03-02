@@ -102,4 +102,10 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "resolution", UsdRenderTokens->resolution);
     _AddToken(cls, "sourceName", UsdRenderTokens->sourceName);
     _AddToken(cls, "sourceType", UsdRenderTokens->sourceType);
+    _AddToken(cls, "RenderDenoisePass", UsdRenderTokens->RenderDenoisePass);
+    _AddToken(cls, "RenderPass", UsdRenderTokens->RenderPass);
+    _AddToken(cls, "RenderProduct", UsdRenderTokens->RenderProduct);
+    _AddToken(cls, "RenderSettings", UsdRenderTokens->RenderSettings);
+    _AddToken(cls, "RenderSettingsBase", UsdRenderTokens->RenderSettingsBase);
+    _AddToken(cls, "RenderVar", UsdRenderTokens->RenderVar);
 }

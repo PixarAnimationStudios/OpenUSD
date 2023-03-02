@@ -118,13 +118,6 @@ public:
         return *_curLayer;
     }
 
-    /// Returns the index of the current layer in the current node's layer 
-    /// stack for a valid resolver.
-    ///
-    /// The behavior is undefined if the resolver is not valid.
-    USD_API
-    size_t GetLayerStackIndex() const;
-
     /// Returns a translated path for the current PcpNode and Layer for a valid
     /// resolver.
     ///

@@ -35,18 +35,17 @@
 #include "pxr/base/tf/stopwatch.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <boost/random.hpp>
-#include <boost/program_options.hpp>
-
+#include <random>
 #include <thread>
 
 using std::string;
 using std::vector;
 PXR_NAMESPACE_USING_DIRECTIVE
-namespace boost_po = boost::program_options;
+using namespace pxr_CLI;
 
 static size_t numThreads;
 static size_t msecsToRun;
@@ -151,14 +150,12 @@ _WorkTask(size_t msecsToRun, bool runForever)
     // Use a local random number generator to minimize synchronization
     // between threads, as would happen with using libc's random().
     const std::thread::id threadId = std::this_thread::get_id();
-    boost::mt19937 mt(std::hash<std::thread::id>()(threadId));
-    boost::uniform_int<unsigned int> dist(0, _testCases.size()-1);
-    boost::variate_generator< boost::mt19937, boost::uniform_int<unsigned int> >
-        gen(mt, dist);
+    std::mt19937 mt(std::hash<std::thread::id>()(threadId));
+    std::uniform_int_distribution<unsigned int> dist(0, _testCases.size()-1);
 
     while (runForever || static_cast<size_t>(sw.GetMilliseconds()) < msecsToRun) {
         sw.Start();
-        const int i = gen();
+        const int i = dist(mt);
 
         printf("  Thread %s running test case %d\n",
                TfStringify(threadId).c_str(), i);
@@ -180,32 +177,14 @@ _WorkTask(size_t msecsToRun, bool runForever)
 int main(int argc, char const **argv)
 {
     // Set up arguments and their defaults
-    boost_po::options_description desc("Options");
-    desc.add_options()
-        ("forever",
-         boost_po::bool_switch(&runForever),
-         "Run forever")
+    CLI::App app("Tests USD threading", "testUsdStageThreading");
+    app.add_flag("--forever", runForever, "Run Forever");
+    app.add_option("--numThreads", numThreads, "Number of threads to use")
+        ->default_val(std::thread::hardware_concurrency());
+    app.add_option("--msec", msecsToRun, "Milliseconds to run")
+        ->default_val(10*1000);
 
-        ("numThreads",
-         boost_po::value<size_t>(&numThreads)->default_value(
-             std::thread::hardware_concurrency()),
-         "Number of threads to use")
-
-        ("msec",
-         boost_po::value<size_t>(&msecsToRun)->default_value(10*1000),
-         "Milliseconds to run")
-    ;
-
-    boost_po::variables_map vm;                                                 
-    try {                                                                       
-        boost_po::store(boost_po::parse_command_line(argc, argv, desc), vm);    
-        boost_po::notify(vm);                                                   
-    } catch (const boost_po::error &e) {                                        
-        fprintf(stderr, "%s\n", e.what());                                      
-        fprintf(stderr, "%s\n", TfStringify(desc).c_str());                     
-        exit(1);                                                                
-    }
-
+    CLI11_PARSE(app, argc, argv);
 
     // Initialize. 
     printf("Using %zu threads\n", numThreads);

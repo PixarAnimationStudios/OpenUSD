@@ -34,8 +34,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/api.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -221,10 +220,7 @@ class GfRotation {
 
     /// Hash.
     friend inline size_t hash_value(const GfRotation &r) {
-        size_t h = 0;
-        boost::hash_combine(h, r._axis);
-        boost::hash_combine(h, r._angle);
-        return h;
+        return TfHash::Combine(r._axis, r._angle);
     }
 
     /// Component-wise rotation equality test. The axes and angles must match

@@ -24,14 +24,13 @@ USD Home
    collaboratively constructing animated 3D scenes, designed to meet the needs
    of large-scale film and visual effects production.
 
-   :fa:`caret-right` USD provides robust interchange between digital content
+   :fa:`caret-right` USD enables robust interchange between digital content
    creation tools with its expanding set of schemas, covering domains like
    geometry, shading, lighting, and physics.
 
-   :fa:`caret-right` USD's unique composition features have powerful benefits.
-   For example, composition provides rich and varied ways to combine individual
-   assets into larger assemblies, and enables workflows that let many users
-   collaborate simultaneously without conflict.
+   :fa:`caret-right` USD's unique composition ability provides rich and varied
+   ways to combine assets into larger assemblies, enables collaborative
+   workflows so that many creators can work together with ease, and more.
 
 .. panels::
    :container: container-fluid p-0 mb-4

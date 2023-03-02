@@ -159,60 +159,185 @@ static bool _PropertyTypesMatch(
 void 
 UsdPrimDefinition::_ComposePropertiesFromPrimDef(
     const UsdPrimDefinition &weakerPrimDef, 
-    bool useWeakerPropertyForTypeConflict,
+    bool useWeakerPropertyForTypeConflict)
+{
+    _properties.reserve(_properties.size() + weakerPrimDef._properties.size());
+
+    // Copy over property to path mappings from the weaker prim definition that 
+    // aren't already in this prim definition.
+    for (const auto &it : weakerPrimDef._propPathMap) {
+        // Note that the prop name may be empty as we use the empty path to
+        // map to the spec containing the prim level metadata. We need to 
+        // make sure we don't add the empty name to properties list if 
+        // we successfully insert a metadata mapping.
+        auto insertResult = _propPathMap.insert(it);
+        if (insertResult.second){
+            if (!it.first.IsEmpty()) {
+                _properties.push_back(it.first);
+            }
+        } else {
+            // The property exists already. If we need to use the weaker 
+            // property in the event of a property type conflict, then we
+            // check if the weaker property's type matches the existing, and
+            // replace the existing with the weaker property if the types
+            // do not match.
+            if (useWeakerPropertyForTypeConflict &&
+                !_PropertyTypesMatch(*this, weakerPrimDef, it.first)) {
+                insertResult.first->second = it.second;
+            }
+        }
+    }
+}
+
+void 
+UsdPrimDefinition::_ComposePropertiesFromPrimDefInstance(
+    const UsdPrimDefinition &weakerPrimDef, 
     const std::string &instanceName)
 {
     _properties.reserve(_properties.size() + weakerPrimDef._properties.size());
 
     // Copy over property to path mappings from the weaker prim definition that 
     // aren't already in this prim definition.
-    if (instanceName.empty()) {
-        for (const auto &it : weakerPrimDef._propPathMap) {
-            // Note that the prop name may be empty as we use the empty path to
-            // map to the spec containing the prim level metadata. We need to 
-            // make sure we don't add the empty name to properties list if 
-            // we successfully insert a metadata mapping.
-            auto insertResult = _propPathMap.insert(it);
-            if (insertResult.second){
-                if (!it.first.IsEmpty()) {
-                    _properties.push_back(it.first);
-                }
-            } else {
-                // The property exists already. If we need to use the weaker 
-                // property in the event of a property type conflict, then we
-                // check if the weaker property's type matches the existing, and
-                // replace the existing with the weaker property if the types
-                // do not match.
-                if (useWeakerPropertyForTypeConflict &&
-                    !_PropertyTypesMatch(*this, weakerPrimDef, it.first)) {
-                    insertResult.first->second = it.second;
-                }
-            }
-        }
-    } else {
-        for (const auto &it : weakerPrimDef._propPathMap) {
-            // Apply the prefix to each property name before adding it.
-            const TfToken instancedPropName = 
-                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
-                    it.first, instanceName);
-            auto insertResult = _propPathMap.emplace(
-                instancedPropName, it.second);
-            if (insertResult.second) {
-                _properties.push_back(instancedPropName);
-            } else {
-                // The property exists already. If we need to use the weaker 
-                // property in the event of a property type conflict, then we
-                // check if the weaker property's type matches the existing, and
-                // replace the existing with the weaker property if the types
-                // do not match.
-                if (useWeakerPropertyForTypeConflict && 
-                    !_PropertyTypesMatch(
-                        *this, weakerPrimDef, instancedPropName)) {
-                    insertResult.first->second = it.second;
-                }
-            }
+    for (const auto &it : weakerPrimDef._propPathMap) {
+        // Apply the prefix to each property name before adding it.
+        const TfToken instancedPropName = 
+            UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                it.first, instanceName);
+        auto insertResult = _propPathMap.emplace(
+            instancedPropName, it.second);
+        if (insertResult.second) {
+            _properties.push_back(instancedPropName);
         }
     }
+}
+
+bool 
+UsdPrimDefinition::_ComposeWeakerAPIPrimDefinition(
+    const UsdPrimDefinition &apiPrimDef,
+    const TfToken &instanceName,
+    _FamilyAndInstanceToVersionMap *alreadyAppliedSchemaFamilyVersions,
+    bool allowDupes)
+{
+    // Helper for appending the given schemas to our applied schemas list while
+    // checking for version conflicts. Returns true if the schemas are appended
+    // which only happens if there are no conflicts.
+    auto appendSchemasFn = [&](const TfTokenVector &apiSchemaNamesToAppend) {
+        // We store some information so that we can undo any schemas added by
+        // this function if we run into a version conflict partway through.
+        const size_t startingNumAppliedSchemas = _appliedAPISchemas.size();
+        std::vector<std::pair<TfToken, TfToken>> newlyAddedFamilies;
+
+        _appliedAPISchemas.reserve(
+            startingNumAppliedSchemas + apiSchemaNamesToAppend.size());
+        // Append each API schema name to this definition's applied API schemas
+        // list checking each for vesion conflicts with the already applied 
+        // schemas. If any conflicts are found, NONE of these schemas will be
+        // applied. 
+        for (const TfToken &apiSchemaName : apiSchemaNamesToAppend) {
+            // Applied schema names may be a single apply schema or an instance 
+            // of a multiple apply schema so we have to parse the full schema 
+            // name into a schema identifier and possibly an instance name.
+            const std::pair<TfToken, TfToken> identifierAndInstance = 
+                UsdSchemaRegistry::GetTypeNameAndInstance(apiSchemaName);
+
+            // Use the identifier to get the schema family. The family and 
+            // instance name are the key into the already applied family 
+            // versions.
+            const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+                UsdSchemaRegistry::FindSchemaInfo(identifierAndInstance.first);
+            std::pair<TfToken, TfToken> familyAndInstance(
+                schemaInfo->family, identifierAndInstance.second);
+
+            // Try to add the family and instance's version to the applied map
+            // to check if we have a version conflict.
+            const auto result = alreadyAppliedSchemaFamilyVersions->emplace(
+                familyAndInstance, schemaInfo->version);
+            if (result.second) {
+                // The family and instance were not already in the map so we
+                // can add the schema name to the applied list. We also store 
+                // that this is a newly added family and instance so that we
+                // can undo the addition if we have to.
+                _appliedAPISchemas.push_back(std::move(apiSchemaName));
+                newlyAddedFamilies.push_back(std::move(familyAndInstance));
+            } else if (result.first->second == schemaInfo->version) {
+                // The family and instance were already added but the versions
+                // are the same. This is allowed. If we allow the API schema
+                // name to show up in the list more than once, we add it. 
+                // Otherwise we safely skip it.
+                if (allowDupes) {
+                    _appliedAPISchemas.push_back(std::move(apiSchemaName));
+                }
+            } else {
+                // If we get here, the family and instance name were already 
+                // added with a different version of the schema. This is a 
+                // conflict and we will not add ANY of the schemas that are 
+                // included by the API schema definition. Since we may have 
+                // added some of the included schemas, we need to undo that
+                // here before returning.
+                _appliedAPISchemas.resize(startingNumAppliedSchemas);
+                for (const auto &key : newlyAddedFamilies) {
+                    alreadyAppliedSchemaFamilyVersions->erase(key);
+                }
+
+                if (apiSchemaNamesToAppend.front() == apiSchemaName) {
+                   TF_WARN("Failure composing the API schema definition for "
+                        "'%s' into another prim definition. Adding this schema "
+                        "would cause a version conflict with an already "
+                        "composed in API schema definition with family '%s' "
+                        "and version %u.",
+                    apiSchemaName.GetText(),
+                    result.first->first.first.GetText(),
+                    result.first->second);
+                } else {
+                    TF_WARN("Failure composing the API schema definition for "
+                        "'%s' into another prim definition. Adding API schema "
+                        "'%s', which is built in to this schema definition "
+                        "would cause a version conflict with an already "
+                        "composed in API schema definition with family '%s' "
+                        "and version %u.",
+                    apiSchemaNamesToAppend.front().GetText(),
+                    apiSchemaName.GetText(),
+                    result.first->first.first.GetText(),
+                    result.first->second);
+                }
+                return false;
+            }
+        }
+
+        // All schemas were successfully included.
+        return true;
+    };
+
+    // Append all the API schemas included in the schema def to the 
+    // prim def's API schemas list. This list will always include the 
+    // schema itself followed by all other API schemas that were 
+    // composed into its definition.
+    const TfTokenVector &apiSchemaNamesToAppend = 
+        apiPrimDef.GetAppliedAPISchemas();
+
+    if (instanceName.IsEmpty()) {
+        if (!appendSchemasFn(apiSchemaNamesToAppend)) {
+            return false;
+        }
+        _ComposePropertiesFromPrimDef(apiPrimDef);
+    } else {
+        // If an instance name is provided, the API schema definition is a 
+        // multiple apply template that needs the instance name applied to it
+        // and all the other multiple apply schema templates it may include.
+        TfTokenVector instancedAPISchemaNames;
+        instancedAPISchemaNames.reserve(apiSchemaNamesToAppend.size());
+        for (const TfToken &apiSchemaName : apiSchemaNamesToAppend) {
+            instancedAPISchemaNames.push_back(
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    apiSchemaName, instanceName));
+        }
+        if (!appendSchemasFn(instancedAPISchemaNames)) {
+            return false;
+        }
+        _ComposePropertiesFromPrimDefInstance(apiPrimDef, instanceName);
+    }
+
+    return true;
 }
 
 bool 

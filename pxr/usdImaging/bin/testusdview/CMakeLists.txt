@@ -239,6 +239,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewDisplayFilterEdits
+    DEST testUsdviewDisplayFilterEdits
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewSampleAndDisplayFilters
+    DEST testUsdviewSampleAndDisplayFilters
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewAnimatedBounds
     DEST testUsdviewAnimatedBounds
 )
@@ -351,6 +361,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdviewPointWidths
     DEST testUsdviewPointWidths
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewPointInstancerVariant
+    DEST testUsdviewPointInstancerVariant
 )
 
 
@@ -1033,6 +1048,18 @@ pxr_register_test(testUsdviewPointWidths
         end.png
     FAIL 1
     FAIL_PERCENT 0.002
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewPointInstancerVariant
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewPointInstancerVariant.py test.usda"
+    IMAGE_DIFF_COMPARE
+        variantB.png
+        variantA.png
+    FAIL 1
+    FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
 )

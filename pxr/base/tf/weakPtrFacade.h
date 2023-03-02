@@ -27,16 +27,13 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/refPtr.h"
 #include "pxr/base/tf/weakBase.h"
 
 #include "pxr/base/arch/demangle.h"
 
-#include <boost/functional/hash_fwd.hpp>
-#include <boost/mpl/or.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -377,9 +374,9 @@ inline TfRefPtr<T>::TfRefPtr(const TfWeakPtrFacade<X, U>& p,
 //
 template <template <class> class Ptr, class T>
 struct TfTypeFunctions<Ptr<T>,
-                       typename boost::enable_if<
-                           boost::is_base_of<TfWeakPtrFacadeBase, Ptr<T> >
-                           >::type>
+                       std::enable_if_t<
+                           std::is_base_of<TfWeakPtrFacadeBase, Ptr<T>>::value
+                       >>
 {
     static T* GetRawPtr(const Ptr<T>& t) {
         return get_pointer(t);
@@ -399,9 +396,9 @@ struct TfTypeFunctions<Ptr<T>,
 
 template <template <class> class Ptr, class T>
 struct TfTypeFunctions<Ptr<const T>,
-                       typename boost::enable_if<
-                           boost::is_base_of<TfWeakPtrFacadeBase, Ptr<const T> >
-                           >::type>
+                       std::enable_if_t<
+                           std::is_base_of<TfWeakPtrFacadeBase, Ptr<const T>>::value
+                       >>
 {
     static const T* GetRawPtr(const Ptr<const T>& t) {
         return get_pointer(t);
@@ -431,11 +428,7 @@ template <template <class> class X, class T>
 inline size_t
 hash_value(TfWeakPtrFacade<X, T> const &ptr)
 {
-    // Make the boost::hash type depend on T so that we don't have to always
-    // include boost/functional/hash.hpp in this header for the definition of
-    // boost::hash.
-    auto uniqueId = ptr.GetUniqueIdentifier();
-    return boost::hash<decltype(uniqueId)>()(uniqueId);
+    return TfHash()(ptr);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

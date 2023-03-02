@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
 struct HgiIndirectCommands;
-using HdBindingRequestVector = std::vector<HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
 ///
@@ -65,6 +65,12 @@ public:
     HDST_API
     void PrepareDraw(
         HgiGraphicsCmds *gfxCmds,
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry) override;
+
+    /// Encode drawing commands for this batch.
+    HDST_API
+    void EncodeDraw(
         HdStRenderPassStateSharedPtr const & renderPassState,
         HdStResourceRegistrySharedPtr const & resourceRegistry) override;
 
@@ -118,7 +124,7 @@ private:
     protected:
         // _DrawingProgram overrides
         void _GetCustomBindings(
-            HdBindingRequestVector * customBindings,
+            HdStBindingRequestVector * customBindings,
             bool * enableInstanceDraw) const override;
     private:
         bool _useDrawIndexed;
@@ -126,7 +132,7 @@ private:
         size_t _bufferArrayHash;
     };
 
-    _CullingProgram &_GetCullingProgram(
+    void _CreateCullingProgram(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
     void _CompileBatch(HdStResourceRegistrySharedPtr const & resourceRegistry);
@@ -185,6 +191,7 @@ private:
 
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;
+    size_t _drawCoordOffset;
     size_t _patchBaseVertexByteOffset;
     
     std::unique_ptr<HgiIndirectCommands> _indirectCommands;

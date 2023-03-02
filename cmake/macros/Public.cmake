@@ -24,8 +24,8 @@
 include(Private)
 
 function(pxr_build_documentation)
-    configure_file(${CMAKE_SOURCE_DIR}/docs/doxygen/Doxyfile.in
-                   ${CMAKE_BINARY_DIR}/Doxyfile)
+    configure_file(${PROJECT_SOURCE_DIR}/docs/doxygen/Doxyfile.in
+                   ${PROJECT_BINARY_DIR}/Doxyfile)
 
     add_custom_target(
         documentation
@@ -34,34 +34,34 @@ function(pxr_build_documentation)
         # since it's generated outside of the libraries.
         COMMAND
             ${CMAKE_COMMAND} -E copy
-            "${CMAKE_BINARY_DIR}/include/pxr/pxr.h"
-            "${CMAKE_BINARY_DIR}/docs/include/pxr/pxr.h"
+            "${PROJECT_BINARY_DIR}/include/pxr/pxr.h"
+            "${PROJECT_BINARY_DIR}/docs/include/pxr/pxr.h"
         COMMAND 
             ${CMAKE_COMMAND} -E copy_directory
-            "${CMAKE_SOURCE_DIR}/docs"
-            "${CMAKE_BINARY_DIR}/docs"
+            "${PROJECT_SOURCE_DIR}/docs"
+            "${PROJECT_BINARY_DIR}/docs"
     )
 
     # Execute doxygen during the install step. All of the files we want
     # doxygen to process should already have been copied to the docs
     # directory during the build step
-    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} ${CMAKE_BINARY_DIR}/Doxyfile)")
+    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile)")
 
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
 
-    set(BUILT_DOCS_TAG_FILE "${CMAKE_BINARY_DIR}/docs/USD.tag")
+    set(BUILT_DOCS_TAG_FILE "${PROJECT_BINARY_DIR}/docs/USD.tag")
     install(
         FILES ${BUILT_DOCS_TAG_FILE}
         DESTINATION ${INST_DOCS_ROOT}
     )
 
-    set(BUILT_HTML_DOCS "${CMAKE_BINARY_DIR}/docs/doxy_html")
+    set(BUILT_HTML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_html")
     install(
         DIRECTORY ${BUILT_HTML_DOCS}
         DESTINATION ${INST_DOCS_ROOT}
     )
 
-    set(BUILT_XML_DOCS "${CMAKE_BINARY_DIR}/docs/doxy_xml")
+    set(BUILT_XML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_xml")
     install(
         DIRECTORY ${BUILT_XML_DOCS}
         DESTINATION ${INST_DOCS_ROOT}
@@ -186,7 +186,7 @@ function(pxr_cpp_bin BIN_NAME)
     # Install and include headers from the build directory.
     get_filename_component(
         PRIVATE_INC_DIR
-        "${CMAKE_BINARY_DIR}/include"
+        "${PROJECT_BINARY_DIR}/include"
         ABSOLUTE
     )
 
@@ -197,6 +197,7 @@ function(pxr_cpp_bin BIN_NAME)
     )
 
     _pxr_init_rpath(rpath "${installDir}")
+    _pxr_add_rpath(rpath "${CMAKE_INSTALL_PREFIX}/lib")
     _pxr_install_rpath(rpath ${BIN_NAME})
 
     _pxr_target_link_libraries(${BIN_NAME}
@@ -491,7 +492,7 @@ function(pxr_build_test_shared_lib LIBRARY_NAME)
 
         set(testPlugInfoLibDir "tests/${bt_INSTALL_PREFIX}/lib/${LIBRARY_NAME}")
         set(testPlugInfoResourceDir "${testPlugInfoLibDir}/${TEST_PLUG_INFO_RESOURCE_PATH}")
-        set(testPlugInfoPath "${CMAKE_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
+        set(testPlugInfoPath "${PROJECT_BINARY_DIR}/${testPlugInfoResourceDir}/plugInfo.json")
 
         file(RELATIVE_PATH 
             TEST_PLUG_INFO_LIBRARY_PATH
@@ -777,7 +778,7 @@ function(pxr_register_test TEST_NAME)
 
         # <PXR_CTEST_RUN_ID> will be set by CTestCustom.cmake, and then
         # expanded by testWrapper.py
-        set(failuresDir ${CMAKE_BINARY_DIR}/Testing/Failed-Diffs/<PXR_CTEST_RUN_ID>/${TEST_NAME})
+        set(failuresDir ${PROJECT_BINARY_DIR}/Testing/Failed-Diffs/<PXR_CTEST_RUN_ID>/${TEST_NAME})
         set(testWrapperCmd ${testWrapperCmd} --failures-dir=${failuresDir})
     endif()
 
@@ -929,11 +930,11 @@ endfunction() # pxr_setup_third_plugins
 function(pxr_toplevel_prologue)
     # Generate a namespace declaration header, pxr.h, at the top level of
     # pxr at configuration time.
-    configure_file(${CMAKE_SOURCE_DIR}/pxr/pxr.h.in
-        ${CMAKE_BINARY_DIR}/include/pxr/pxr.h     
+    configure_file(${PROJECT_SOURCE_DIR}/pxr/pxr.h.in
+        ${PROJECT_BINARY_DIR}/include/pxr/pxr.h     
     )  
     install(
-        FILES ${CMAKE_BINARY_DIR}/include/pxr/pxr.h
+        FILES ${PROJECT_BINARY_DIR}/include/pxr/pxr.h
         DESTINATION include/pxr
     )
 
@@ -1212,12 +1213,12 @@ function(pxr_monolithic_epilogue)
             usd_m
         COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_BINARY_DIR}/usd-targets-$<CONFIG>.cmake"
-            "${CMAKE_BINARY_DIR}/usd-targets-$<CONFIG>.cmake"
+            "${PROJECT_BINARY_DIR}/usd-targets-$<CONFIG>.cmake"
         COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_BINARY_DIR}/usd-imports-$<CONFIG>.cmake"
-            "${CMAKE_BINARY_DIR}/usd-imports-$<CONFIG>.cmake"
-        COMMAND ${CMAKE_COMMAND} -E echo Export file: ${CMAKE_BINARY_DIR}/usd-targets-$<CONFIG>.cmake
-        COMMAND ${CMAKE_COMMAND} -E echo Import file: ${CMAKE_BINARY_DIR}/usd-imports-$<CONFIG>.cmake
+            "${PROJECT_BINARY_DIR}/usd-imports-$<CONFIG>.cmake"
+        COMMAND ${CMAKE_COMMAND} -E echo Export file: ${PROJECT_BINARY_DIR}/usd-targets-$<CONFIG>.cmake
+        COMMAND ${CMAKE_COMMAND} -E echo Import file: ${PROJECT_BINARY_DIR}/usd-imports-$<CONFIG>.cmake
     )
 endfunction() # pxr_monolithic_epilogue
 
@@ -1245,13 +1246,13 @@ function(pxr_tests_prologue)
     add_custom_target(
         test_setup
         ALL
-        DEPENDS "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+        DEPENDS "${PROJECT_BINARY_DIR}/CTestCustom.cmake"
     )
     add_custom_command(
-        OUTPUT "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+        OUTPUT "${PROJECT_BINARY_DIR}/CTestCustom.cmake"
         COMMAND ${CMAKE_COMMAND} -E copy
             "${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults/CTestCustom.cmake"
-            "${CMAKE_BINARY_DIR}/CTestCustom.cmake"
+            "${PROJECT_BINARY_DIR}/CTestCustom.cmake"
         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/cmake/defaults/CTestCustom.cmake"
         COMMENT "Copying CTestCustom.cmake"
     )

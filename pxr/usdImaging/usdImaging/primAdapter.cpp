@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -120,8 +121,31 @@ UsdImagingPrimAdapter::InvalidateImagingSubprim(
         TfToken const& subprim,
         TfTokenVector const& properties)
 {
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    }
+
     return HdDataSourceLocatorSet();
 }
+
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingPrimAdapter::GetPopulationMode()
+{
+    return RepresentsSelf;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+}
+
+// ----------------------------------------------------------------------------
+
 
 /*static*/
 bool
@@ -726,6 +750,13 @@ UsdImagingPrimAdapter::_GetMaterialRenderContexts() const
 {
     return _delegate->GetRenderIndex().GetRenderDelegate()->
         GetMaterialRenderContexts();
+}
+
+TfTokenVector
+UsdImagingPrimAdapter::_GetRenderSettingsNamespaces() const
+{
+    return _delegate->GetRenderIndex().GetRenderDelegate()->
+        GetRenderSettingsNamespaces();
 }
 
 bool 

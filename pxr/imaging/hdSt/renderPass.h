@@ -29,8 +29,6 @@
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hd/renderPass.h"
 
-#include <unordered_map>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
@@ -63,9 +61,6 @@ protected:
 private:
     void _UpdateDrawItems(TfTokenVector const& renderTags);
     void _UpdateCommandBuffer(TfTokenVector const& renderTags);
-
-    // XXX: This should really be in HdSt_DrawBatch::PrepareDraw.
-    void _FrustumCullCPU(HdStRenderPassStateSharedPtr const &renderPassState);
 
     // -----------------------------------------------------------------------
     // Drawing state

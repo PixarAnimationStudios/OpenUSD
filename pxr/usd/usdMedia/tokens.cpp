@@ -27,6 +27,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdMediaTokensType::UsdMediaTokensType() :
     auralMode("auralMode", TfToken::Immortal),
+    defaultImage("defaultImage", TfToken::Immortal),
     endTime("endTime", TfToken::Immortal),
     filePath("filePath", TfToken::Immortal),
     gain("gain", TfToken::Immortal),
@@ -38,10 +39,17 @@ UsdMediaTokensType::UsdMediaTokensType() :
     onceFromStart("onceFromStart", TfToken::Immortal),
     onceFromStartToEnd("onceFromStartToEnd", TfToken::Immortal),
     playbackMode("playbackMode", TfToken::Immortal),
+    previews("previews", TfToken::Immortal),
+    previewThumbnails("previews:thumbnails", TfToken::Immortal),
+    previewThumbnailsDefault("previews:thumbnails:default", TfToken::Immortal),
     spatial("spatial", TfToken::Immortal),
     startTime("startTime", TfToken::Immortal),
+    thumbnails("thumbnails", TfToken::Immortal),
+    AssetPreviewsAPI("AssetPreviewsAPI", TfToken::Immortal),
+    SpatialAudio("SpatialAudio", TfToken::Immortal),
     allTokens({
         auralMode,
+        defaultImage,
         endTime,
         filePath,
         gain,
@@ -53,8 +61,14 @@ UsdMediaTokensType::UsdMediaTokensType() :
         onceFromStart,
         onceFromStartToEnd,
         playbackMode,
+        previews,
+        previewThumbnails,
+        previewThumbnailsDefault,
         spatial,
-        startTime
+        startTime,
+        thumbnails,
+        AssetPreviewsAPI,
+        SpatialAudio
     })
 {
 }

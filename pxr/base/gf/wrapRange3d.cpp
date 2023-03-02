@@ -81,6 +81,8 @@ void wrapRange3d()
     cls
         .def(init<GfRange3d>())
         .def(init<const GfVec3d &, const GfVec3d &>())
+
+        .def(init<GfRange3f>())
         
         .def(TfTypePythonClass())
 

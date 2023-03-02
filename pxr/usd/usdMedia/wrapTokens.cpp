@@ -65,6 +65,7 @@ void wrapUsdMediaTokens()
     boost::python::class_<UsdMediaTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "auralMode", UsdMediaTokens->auralMode);
+    _AddToken(cls, "defaultImage", UsdMediaTokens->defaultImage);
     _AddToken(cls, "endTime", UsdMediaTokens->endTime);
     _AddToken(cls, "filePath", UsdMediaTokens->filePath);
     _AddToken(cls, "gain", UsdMediaTokens->gain);
@@ -76,6 +77,12 @@ void wrapUsdMediaTokens()
     _AddToken(cls, "onceFromStart", UsdMediaTokens->onceFromStart);
     _AddToken(cls, "onceFromStartToEnd", UsdMediaTokens->onceFromStartToEnd);
     _AddToken(cls, "playbackMode", UsdMediaTokens->playbackMode);
+    _AddToken(cls, "previews", UsdMediaTokens->previews);
+    _AddToken(cls, "previewThumbnails", UsdMediaTokens->previewThumbnails);
+    _AddToken(cls, "previewThumbnailsDefault", UsdMediaTokens->previewThumbnailsDefault);
     _AddToken(cls, "spatial", UsdMediaTokens->spatial);
     _AddToken(cls, "startTime", UsdMediaTokens->startTime);
+    _AddToken(cls, "thumbnails", UsdMediaTokens->thumbnails);
+    _AddToken(cls, "AssetPreviewsAPI", UsdMediaTokens->AssetPreviewsAPI);
+    _AddToken(cls, "SpatialAudio", UsdMediaTokens->SpatialAudio);
 }

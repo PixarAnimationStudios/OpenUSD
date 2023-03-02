@@ -190,7 +190,7 @@ public:
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
 
     HGIGL_API
-    static HgiGLOpsFn MemoryBarrier(HgiMemoryBarrier barrier);
+    static HgiGLOpsFn InsertMemoryBarrier(HgiMemoryBarrier barrier);
 
 };
 

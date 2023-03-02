@@ -95,6 +95,20 @@ UsdImagingBasisCurvesAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingBasisCurvesAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceBasisCurvesPrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 bool
 UsdImagingBasisCurvesAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const

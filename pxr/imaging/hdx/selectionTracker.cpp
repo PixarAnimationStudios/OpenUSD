@@ -24,6 +24,7 @@
 #include "pxr/imaging/hdx/selectionTracker.h"
 
 #include "pxr/imaging/hdx/debugCodes.h"
+#include "pxr/imaging/hdx/selectionSceneIndexObserver.h"
 
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -37,8 +38,73 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdxSelectionTracker::_MergedSelection
+{
+public:
+    _MergedSelection()
+      : _lastVersion(0)
+      , _legacySelectionVersion(0)
+    {
+    }
+
+    // Returns the union of the selection from the scene index and
+    // from the legacy selection set with HdxSelectionTracker::SetSelection.
+    HdSelectionSharedPtr
+    ComputeSelection(const HdRenderIndex * const index)
+    {
+        // Tell scene index observer what scene index to observe
+        _observer.SetSceneIndex(index->GetTerminalSceneIndex());
+
+        // Recompute if changed since last time it was computed.
+        if (_lastVersion != GetVersion()) {
+            _selection = HdSelection::Merge(
+                _observer.GetSelection(), _legacySelection);
+            _lastVersion = GetVersion();
+        }
+        return _selection;
+    }
+
+    // Version number for union of the two selections.
+    int
+    GetVersion() const {
+        return _observer.GetVersion() + _legacySelectionVersion;
+    }
+
+    // Version number of selection set by HdxSelectionTracker::SetSelection.
+    void
+    IncrementLegacyVersion()
+    {
+        ++_legacySelectionVersion;
+    }
+
+    // Selection set by HdxSelectionTracker::SetSelection.
+    HdSelectionSharedPtr const &
+    GetLegacySelection() const
+    {
+        return _legacySelection;
+    }
+
+    void
+    SetLegacySelection(HdSelectionSharedPtr const &legacySelection)
+    {
+        _legacySelection = legacySelection;
+        IncrementLegacyVersion();
+    }
+    
+private:
+    // Cache the computed union. The version of the selection cached here
+    // is stored as _lastVersion.
+    HdSelectionSharedPtr _selection;
+    int _lastVersion;
+
+    HdxSelectionSceneIndexObserver _observer;
+
+    HdSelectionSharedPtr _legacySelection;
+    int _legacySelectionVersion;
+};
+
 HdxSelectionTracker::HdxSelectionTracker()
-    : _version(0)
+  : _mergedSelection(std::make_unique<_MergedSelection>())
 {
 }
 
@@ -53,13 +119,25 @@ HdxSelectionTracker::UpdateSelection(HdRenderIndex* index)
 int
 HdxSelectionTracker::GetVersion() const
 {
-    return _version;
+    return _mergedSelection->GetVersion();
+}
+
+void
+HdxSelectionTracker::SetSelection(HdSelectionSharedPtr const &selection)
+{
+    _mergedSelection->SetLegacySelection(selection);
+}
+
+HdSelectionSharedPtr const &
+HdxSelectionTracker::GetSelectionMap() const
+{
+    return _mergedSelection->GetLegacySelection();
 }
 
 void
 HdxSelectionTracker::_IncrementVersion()
 {
-    ++_version;
+    _mergedSelection->IncrementLegacyVersion();
 }
 
 namespace {
@@ -92,9 +170,9 @@ namespace {
 
 /*virtual*/
 bool
-HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
-                                              bool enableSelection,
-                                              VtIntArray* offsets) const
+HdxSelectionTracker::GetSelectionOffsetBuffer(const HdRenderIndex * const index,
+                                              const bool enableSelection,
+                                              VtIntArray* const offsets) const
 {
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("Hdx", "GetSelectionOffsetBuffer");
@@ -138,10 +216,15 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
 
     (*offsets)[0] = numHighlightModes;
 
+    HdSelectionSharedPtr const selection =
+        enableSelection
+        ? _mergedSelection->ComputeSelection(index)
+        : nullptr;
+
     // We expect the collection of selected items to be created externally and
     // set via SetSelection. Exit early if the tracker doesn't have one set,
     // or it's empty. Likewise if enableSelection is false.
-    if (!_selection || !enableSelection || _selection->IsEmpty()) {
+    if (!selection || selection->IsEmpty()) {
         for (int mode = HdSelection::HighlightModeSelect;
                  mode < HdSelection::HighlightModeCount;
                  mode++) {
@@ -158,9 +241,11 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
              mode++) {
        
         std::vector<int> output;
-        bool modeHasSelection = _GetSelectionOffsets(
-                                static_cast<HdSelection::HighlightMode>(mode), 
-                                index, copyOffset, &output);
+        const bool modeHasSelection =
+            _GetSelectionOffsets(
+                selection,
+                static_cast<HdSelection::HighlightMode>(mode),
+                index, copyOffset, &output);
         hasSelection = hasSelection || modeHasSelection;
 
         (*offsets)[mode + 1] = modeHasSelection? copyOffset : SELECT_NONE;
@@ -186,12 +271,17 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(HdRenderIndex const* index,
 
 /*virtual*/
 VtVec4fArray
-HdxSelectionTracker::GetSelectedPointColors() const
+HdxSelectionTracker::GetSelectedPointColors(const HdRenderIndex * const index)
 {
-    if (!_selection) return VtVec4fArray();
+    HdSelectionSharedPtr const selection =
+        _mergedSelection->ComputeSelection(index);
+
+    if (!selection) {
+        return VtVec4fArray();
+    }
     
-    std::vector<GfVec4f> const& pointColors =
-        _selection->GetSelectedPointColors();
+    const std::vector<GfVec4f> &pointColors =
+        selection->GetSelectedPointColors();
 
     VtVec4fArray vtColors(pointColors.size());
     std::copy(pointColors.begin(), pointColors.end(), vtColors.begin());
@@ -326,16 +416,15 @@ constexpr int INVALID = -1;
 
 }
 
-/*virtual*/
 bool
-HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode,
-                                          HdRenderIndex const *index,
-                                          size_t modeOffset,
-                                          std::vector<int> *output) const
+HdxSelectionTracker::_GetSelectionOffsets(HdSelectionSharedPtr const &selection,
+                                          const HdSelection::HighlightMode mode,
+                                          const HdRenderIndex * const index,
+                                          const size_t modeOffset,
+                                          std::vector<int> * const output) const
 {
-
-    const SdfPathVector selectedPrims =  _selection->GetSelectedPrimPaths(mode);
-    const size_t numPrims = _selection ? selectedPrims.size() : 0;
+    const SdfPathVector selectedPrims =  selection->GetSelectedPrimPaths(mode);
+    const size_t numPrims = selection ? selectedPrims.size() : 0;
     if (numPrims == 0) {
         TF_DEBUG(HDX_SELECTION_SETUP).Msg(
             "No selected prims for mode %d\n", mode);
@@ -453,7 +542,8 @@ HdxSelectionTracker::_GetSelectionOffsets(HdSelection::HighlightMode const& mode
                 id, objPath.GetText());
 
         HdSelection::PrimSelectionState const* primSelState =
-            _selection->GetPrimSelectionState(mode, objPath);
+            selection->GetPrimSelectionState(mode, objPath);
+
         if (!primSelState) continue;
 
         // netSubprimOffset tracks the "net" offset to the start of each

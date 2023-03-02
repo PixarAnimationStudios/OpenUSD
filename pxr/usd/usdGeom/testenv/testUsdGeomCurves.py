@@ -68,6 +68,7 @@ class TestNurbsCurves(unittest.TestCase):
         assert 'curveVertexCounts' in self.schema.GetSchemaAttributeNames()
         assert 'knots' in self.schema.GetSchemaAttributeNames()
         assert 'order' in self.schema.GetSchemaAttributeNames()
+        assert 'pointWeights' in self.schema.GetSchemaAttributeNames()
         knots = self.schema.GetKnotsAttr()
         assert(knots)
 

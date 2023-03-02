@@ -37,9 +37,12 @@ class "LightAPI" (
     uniform bool collection:lightLink:includeRoot = 1
     uniform bool collection:shadowLink:includeRoot = 1
     color3f inputs:color = (1, 1, 1) (
+        displayGroup = "Basic"
+        displayName = "Color"
         doc = "The color of emitted light, in energy-linear terms."
     )
     float inputs:colorTemperature = 6500 (
+        displayGroup = "Basic"
         displayName = "Color Temperature"
         doc = """Color temperature, in degrees Kelvin, representing the
         white point.  The default is a common white point, D65.  Lower
@@ -50,23 +53,30 @@ class "LightAPI" (
         See UsdLuxBlackbodyTemperatureAsRgb()."""
     )
     float inputs:diffuse = 1 (
+        displayGroup = "Refine"
         displayName = "Diffuse Multiplier"
         doc = """A multiplier for the effect of this light on the diffuse
         response of materials.  This is a non-physical control."""
     )
     bool inputs:enableColorTemperature = 0 (
+        displayGroup = "Basic"
         displayName = "Enable Color Temperature"
         doc = "Enables using colorTemperature."
     )
     float inputs:exposure = 0 (
+        displayGroup = "Basic"
+        displayName = "Exposure"
         doc = """Scales the power of the light exponentially as a power
         of 2 (similar to an F-stop control over exposure).  The result
         is multiplied against the intensity."""
     )
     float inputs:intensity = 1 (
+        displayGroup = "Basic"
+        displayName = "Intensity"
         doc = "Scales the power of the light linearly."
     )
     bool inputs:normalize = 0 (
+        displayGroup = "Advanced"
         displayName = "Normalize Power"
         doc = """Normalizes power by the surface area of the light.
         This makes it easier to independently adjust the power and shape
@@ -74,6 +84,7 @@ class "LightAPI" (
         angular size of the light."""
     )
     float inputs:specular = 1 (
+        displayGroup = "Refine"
         displayName = "Specular Multiplier"
         doc = """A multiplier for the effect of this light on the specular
         response of materials.  This is a non-physical control."""
@@ -83,6 +94,8 @@ class "LightAPI" (
     )
     uniform token light:materialSyncMode = "noMaterialResponse" (
         allowedTokens = ["materialGlowTintsLight", "independent", "noMaterialResponse"]
+        displayGroup = "Geometry"
+        displayName = "Material Sync Mode"
         doc = """For a LightAPI applied to geometry that has a bound Material, 
         which is entirely or partly emissive, this specifies the relationship 
         of the Material response to the lighting response.
@@ -349,16 +362,19 @@ class "ShapingAPI" (
 {
     float inputs:shaping:cone:angle = 90 (
         displayGroup = "Shaping"
+        displayName = "Cone Angle"
         doc = """Angular limit off the primary axis to restrict the
         light spread."""
     )
     float inputs:shaping:cone:softness = 0 (
         displayGroup = "Shaping"
+        displayName = "Cone Softness"
         doc = """Controls the cutoff softness for cone angle.
         TODO: clarify semantics"""
     )
     float inputs:shaping:focus = 0 (
         displayGroup = "Shaping"
+        displayName = "Emission Focus"
         doc = """A control to shape the spread of light.  Higher focus
         values pull light towards the center and narrow the spread.
         Implemented as an off-axis cosine power exponent.
@@ -366,22 +382,26 @@ class "ShapingAPI" (
     )
     color3f inputs:shaping:focusTint = (0, 0, 0) (
         displayGroup = "Shaping"
+        displayName = "Emission Focus Tint"
         doc = """Off-axis color tint.  This tints the emission in the
         falloff region.  The default tint is black.
         TODO: clarify semantics"""
     )
     float inputs:shaping:ies:angleScale = 0 (
         displayGroup = "Shaping"
+        displayName = "Profile Scale"
         doc = """Rescales the angular distribution of the IES profile.
         TODO: clarify semantics"""
     )
     asset inputs:shaping:ies:file (
         displayGroup = "Shaping"
+        displayName = "IES Profile"
         doc = """An IES (Illumination Engineering Society) light
         profile describing the angular distribution of light."""
     )
     bool inputs:shaping:ies:normalize = 0 (
         displayGroup = "Shaping"
+        displayName = "Profile Normalization"
         doc = """Normalizes the IES profile so that it affects the shaping
         of the light while preserving the overall energy output."""
     )
@@ -394,29 +414,42 @@ class "ShadowAPI" (
 {
     color3f inputs:shadow:color = (0, 0, 0) (
         displayGroup = "Shadows"
+        displayName = "Shadow Color"
         doc = """The color of shadows cast by the light.  This is a
         non-physical control.  The default is to cast black shadows."""
     )
     float inputs:shadow:distance = -1 (
         displayGroup = "Shadows"
-        doc = """The maximum distance shadows are cast.
+        displayName = "Shadow Max Distance"
+        doc = """The maximum distance shadows are cast. The distance is
+        measured as the distance between the point on the surface and the 
+        occluder.
         The default value (-1) indicates no limit.
         """
     )
     bool inputs:shadow:enable = 1 (
         displayGroup = "Shadows"
+        displayName = "Enable Shadows"
         doc = "Enables shadows to be cast by this light."
     )
     float inputs:shadow:falloff = -1 (
         displayGroup = "Shadows"
-        doc = """The near distance at which shadow falloff begins.
-        The default value (-1) indicates no falloff.
+        displayName = "Shadow Falloff"
+        doc = """The size of the shadow falloff zone within the shadow max 
+        distance, which can be used to hide the hard cut-off for shadows seen 
+        stretching past the max distance. The falloff zone is the area that 
+        fades from full shadowing at the beginning of the falloff zone to no 
+        shadowing at the max distance from the occluder. The falloff zone 
+        distance cannot exceed the shadow max distance. A falloff value equal 
+        to or less than zero (with -1 as the default) indicates no falloff. 
         """
     )
     float inputs:shadow:falloffGamma = 1 (
         displayGroup = "Shadows"
+        displayName = "Shadow Falloff Gamma"
         doc = """A gamma (i.e., exponential) control over shadow strength
-        with linear distance within the falloff zone.
+        with linear distance within the falloff zone. This controls the rate
+        of the falloff.
         This requires the use of shadowDistance and shadowFalloff."""
     )
 }
@@ -659,6 +692,8 @@ class DistantLight "DistantLight" (
 )
 {
     float inputs:angle = 0.53 (
+        displayGroup = "Basic"
+        displayName = "Angle Extent"
         doc = """Angular size of the light in degrees.
         As an example, the Sun is approximately 0.53 degrees as seen from Earth.
         Higher values broaden the light and therefore soften shadow edges.
@@ -750,6 +785,8 @@ class DiskLight "DiskLight" (
         during traversal."""
     )
     float inputs:radius = 0.5 (
+        displayGroup = "Geometry"
+        displayName = "Radius"
         doc = "Radius of the disk."
     )
     uniform token light:shaderId = "DiskLight"
@@ -837,12 +874,18 @@ class RectLight "RectLight" (
         during traversal."""
     )
     float inputs:height = 1 (
+        displayGroup = "Geometry"
+        displayName = "Height"
         doc = "Height of the rectangle, in the local Y axis."
     )
     asset inputs:texture:file (
+        displayGroup = "Basic"
+        displayName = "Color Map"
         doc = "A color texture to use on the rectangle."
     )
     float inputs:width = 1 (
+        displayGroup = "Geometry"
+        displayName = "Width"
         doc = "Width of the rectangle, in the local X axis."
     )
     uniform token light:shaderId = "RectLight"
@@ -926,6 +969,8 @@ class SphereLight "SphereLight" (
         during traversal."""
     )
     float inputs:radius = 0.5 (
+        displayGroup = "Geometry"
+        displayName = "Radius"
         doc = "Radius of the sphere."
     )
     uniform token light:shaderId = "SphereLight"
@@ -961,6 +1006,8 @@ class SphereLight "SphereLight" (
         purpose is computed and used."""
     )
     bool treatAsPoint = 0 (
+        displayGroup = "Advanced"
+        displayName = "Treat As Point"
         doc = """A hint that this light can be treated as a 'point'
         light (effectively, a zero-radius sphere) by renderers that
         benefit from non-area lighting. Renderers that only support
@@ -1018,9 +1065,13 @@ class CylinderLight "CylinderLight" (
         during traversal."""
     )
     float inputs:length = 1 (
-        doc = "Width of the rectangle, in the local X axis."
+        displayGroup = "Geometry"
+        displayName = "Length"
+        doc = "Length of the cylinder, in the local X axis."
     )
     float inputs:radius = 0.5 (
+        displayGroup = "Geometry"
+        displayName = "Radius"
         doc = "Radius of the cylinder."
     )
     uniform token light:shaderId = "CylinderLight"
@@ -1056,6 +1107,8 @@ class CylinderLight "CylinderLight" (
         purpose is computed and used."""
     )
     bool treatAsLine = 0 (
+        displayGroup = "Advanced"
+        displayName = "Treat As Line"
         doc = """A hint that this light can be treated as a 'line'
         light (effectively, a zero-radius cylinder) by renderers that
         benefit from non-area lighting. Renderers that only support
@@ -1182,14 +1235,20 @@ class DomeLight "DomeLight" (
 )
 {
     float guideRadius = 100000 (
+        displayGroup = "Guides"
+        displayName = "Radius"
         doc = "The radius of guide geometry to use to visualize the dome light.  The default is 1 km for scenes whose metersPerUnit is the USD default of 0.01 (i.e., 1 world unit is 1 cm)."
     )
     asset inputs:texture:file (
+        displayGroup = "Basic"
+        displayName = "Color Map"
         doc = """A color texture to use on the dome, such as an HDR (high
         dynamic range) texture intended for IBL (image based lighting)."""
     )
     token inputs:texture:format = "automatic" (
         allowedTokens = ["automatic", "latlong", "mirroredBall", "angular", "cubeMapVerticalCross"]
+        displayGroup = "Basic"
+        displayName = "Color Map Format"
         doc = """Specifies the parameterization of the color map file.
         Valid values are:
         - automatic: Tries to determine the layout from the file itself.

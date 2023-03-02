@@ -39,6 +39,11 @@ UsdTokensType::UsdTokensType() :
     expandPrimsAndProperties("expandPrimsAndProperties", TfToken::Immortal),
     explicitOnly("explicitOnly", TfToken::Immortal),
     fallbackPrimTypes("fallbackPrimTypes", TfToken::Immortal),
+    APISchemaBase("APISchemaBase", TfToken::Immortal),
+    ClipsAPI("ClipsAPI", TfToken::Immortal),
+    CollectionAPI("CollectionAPI", TfToken::Immortal),
+    ModelAPI("ModelAPI", TfToken::Immortal),
+    Typed("Typed", TfToken::Immortal),
     allTokens({
         apiSchemas,
         clips,
@@ -52,7 +57,12 @@ UsdTokensType::UsdTokensType() :
         expandPrims,
         expandPrimsAndProperties,
         explicitOnly,
-        fallbackPrimTypes
+        fallbackPrimTypes,
+        APISchemaBase,
+        ClipsAPI,
+        CollectionAPI,
+        ModelAPI,
+        Typed
     })
 {
 }

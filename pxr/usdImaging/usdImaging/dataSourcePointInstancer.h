@@ -132,7 +132,6 @@ private:
         UsdPrim usdPrim,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
-    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePointInstancerPrim);

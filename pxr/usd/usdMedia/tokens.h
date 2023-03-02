@@ -66,6 +66,10 @@ struct UsdMediaTokensType {
     /// 
     /// UsdMediaSpatialAudio
     const TfToken auralMode;
+    /// \brief "defaultImage"
+    /// 
+    /// Dictionary key in a Thumbnails dictionary for the default thumbnail image. 
+    const TfToken defaultImage;
     /// \brief "endTime"
     /// 
     /// UsdMediaSpatialAudio
@@ -100,7 +104,7 @@ struct UsdMediaTokensType {
     const TfToken nonSpatial;
     /// \brief "onceFromStart"
     /// 
-    /// Possible value for UsdMediaSpatialAudio::GetPlaybackModeAttr(), Default value for UsdMediaSpatialAudio::GetPlaybackModeAttr()
+    /// Fallback value for UsdMediaSpatialAudio::GetPlaybackModeAttr()
     const TfToken onceFromStart;
     /// \brief "onceFromStartToEnd"
     /// 
@@ -110,14 +114,38 @@ struct UsdMediaTokensType {
     /// 
     /// UsdMediaSpatialAudio
     const TfToken playbackMode;
+    /// \brief "previews"
+    /// 
+    /// Dictionary key in the assetInfo dictionary for asset previews sub-dictionary. 
+    const TfToken previews;
+    /// \brief "previews:thumbnails"
+    /// 
+    /// Full key in the assetInfo dictionary for thumbnails previews dictionary. 
+    const TfToken previewThumbnails;
+    /// \brief "previews:thumbnails:default"
+    /// 
+    /// Full key in the assetInfo dictionary for the "default" thumbnails in the previews dictionary. 
+    const TfToken previewThumbnailsDefault;
     /// \brief "spatial"
     /// 
-    /// Possible value for UsdMediaSpatialAudio::GetAuralModeAttr(), Default value for UsdMediaSpatialAudio::GetAuralModeAttr()
+    /// Fallback value for UsdMediaSpatialAudio::GetAuralModeAttr()
     const TfToken spatial;
     /// \brief "startTime"
     /// 
     /// UsdMediaSpatialAudio
     const TfToken startTime;
+    /// \brief "thumbnails"
+    /// 
+    /// Dictionary key in the assetInfo["previews"]  dictionary for thumbnails previews sub-dictionary. 
+    const TfToken thumbnails;
+    /// \brief "AssetPreviewsAPI"
+    /// 
+    /// Schema identifer and family for UsdMediaAssetPreviewsAPI
+    const TfToken AssetPreviewsAPI;
+    /// \brief "SpatialAudio"
+    /// 
+    /// Schema identifer and family for UsdMediaSpatialAudio
+    const TfToken SpatialAudio;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

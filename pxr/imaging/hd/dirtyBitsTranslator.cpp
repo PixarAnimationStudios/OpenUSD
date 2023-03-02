@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/renderSettings.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
@@ -69,6 +70,7 @@
 #include "pxr/imaging/hd/renderBufferSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -263,7 +265,14 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdCamera::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
-    } else if (HdPrimTypeIsLight(primType)) {
+    } else if (HdPrimTypeIsLight(primType)
+            // special case for mesh lights coming from emulated scene
+            // for which the type will be mesh even though we are receiving
+            // sprim-specific dirty bits.
+            // NOTE: The absence of this would still work but would
+            //       over-invalidate since the fallback value is "".
+             || primType == HdPrimTypeTokens->mesh
+            ) {
         if (bits & (HdLight::DirtyParams |
                     HdLight::DirtyShadowParams |
                     HdLight::DirtyCollection)) {
@@ -273,7 +282,11 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdMaterialSchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyParams) {
-            set->append(HdPrimvarsSchema::GetDefaultLocator());
+            // for mesh lights, don't want changing light parameters to trigger
+            // mesh primvar updates.
+            if (primType != HdPrimTypeTokens->mesh) {
+                set->append(HdPrimvarsSchema::GetDefaultLocator());
+            }
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
         if (bits & HdLight::DirtyTransform) {
@@ -306,6 +319,13 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (bits & HdChangeTracker::DirtyParams) {
             set->append(HdSampleFilterSchema::GetDefaultLocator());
+        }
+        if (bits & HdChangeTracker::DirtyVisibility) {
+            set->append(HdVisibilitySchema::GetDefaultLocator());
+        }
+    } else if (primType == HdPrimTypeTokens->displayFilter) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            set->append(HdDisplayFilterSchema::GetDefaultLocator());
         }
         if (bits & HdChangeTracker::DirtyVisibility) {
             set->append(HdVisibilitySchema::GetDefaultLocator());
@@ -376,8 +396,14 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdRenderBufferSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        if (bits & HdChangeTracker::DirtyParams) {
-            set->append(HdRenderSettingsSchema::GetDefaultLocator());
+        if (bits & HdRenderSettings::DirtyActive) {
+            set->append(HdRenderSettingsSchema::GetActiveLocator());
+        }
+        if (bits & HdRenderSettings::DirtySettings) {
+            set->append(HdRenderSettingsSchema::GetNamespacedSettingsLocator());
+        }
+        if (bits & HdRenderSettings::DirtyRenderProducts) {
+            set->append(HdRenderSettingsSchema::GetRenderProductsLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -788,6 +814,13 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyVisibility;
         }
+    } else if (primType == HdPrimTypeTokens->displayFilter) {
+        if (_FindLocator(HdDisplayFilterSchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
+        }
+        if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyVisibility;
+        }
     } else {
         const auto fncIt = Hd_SPrimSToBFncs->find(primType);
         if (fncIt == Hd_SPrimSToBFncs->end()) {
@@ -869,8 +902,17 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
             bits |= HdRenderBuffer::DirtyDescription;
         }
     } else if (primType == HdPrimTypeTokens->renderSettings) {
-        if (_FindLocator(HdRenderSettingsSchema::GetDefaultLocator(), end, &it)) {
-            bits |= HdChangeTracker::DirtyParams;
+        if (_FindLocator(HdRenderSettingsSchema::GetActiveLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyActive;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
+                 end, &it)) {
+            bits |= HdRenderSettings::DirtySettings;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyRenderProducts;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

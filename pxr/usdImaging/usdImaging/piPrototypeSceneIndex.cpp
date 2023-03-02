@@ -23,8 +23,8 @@
 //
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -87,16 +87,13 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
 bool
 _IsOver(const HdSceneIndexPrim &prim)
 {
-    if (!prim.dataSource) {
-        return false;
-    }
-    HdBoolDataSourceHandle const ds =
-        HdBoolDataSource::Cast(
-            prim.dataSource->Get(UsdImagingSpecifierTokens->usdSpecifier));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(prim.dataSource);
+    HdTokenDataSourceHandle const ds = schema.GetSpecifier();
     if (!ds) {
         return false;
     }
-    return ds->GetTypedValue(0.0f);
+    return ds->GetTypedValue(0.0f) == UsdImagingUsdPrimInfoSchemaTokens->over;
 }
 
 }
@@ -165,8 +162,10 @@ _MakeUnrenderable(HdSceneIndexPrim * const prim)
     //
     static HdContainerDataSourceHandle const overlaySource =
         HdRetainedContainerDataSource::New(
-            UsdImagingNativeInstancingTokens->usdPrototypePath,
-            HdBlockDataSource::New());
+            UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo,
+            HdRetainedContainerDataSource::New(
+                UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath,
+                HdBlockDataSource::New()));
     prim->dataSource = HdOverlayContainerDataSource::New(
         overlaySource,
         prim->dataSource);

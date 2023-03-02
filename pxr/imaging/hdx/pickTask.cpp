@@ -30,9 +30,12 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/tokens.h"
 
+#include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderPass.h"
+#include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/imaging/hdSt/renderBuffer.h"
@@ -226,7 +229,7 @@ HdxPickTask::_CreateAovBindings()
 
         HdAovDescriptor depthDesc = renderDelegate->GetDefaultAovDescriptor(
             HdAovTokens->depth);
-        
+
         _widgetAovBindings = _pickableAovBindings;
         for (auto& binding : _widgetAovBindings) {
             binding.clearValue = VtValue();
@@ -338,7 +341,7 @@ HdxPickTask::_ConditionStencilWithGLCallback(
                         GL_KEEP,     // stencil passed, depth failed
                         GL_REPLACE); // stencil passed, depth passed
         }
-        
+
         //
         // Condition the stencil buffer.
         //
@@ -500,8 +503,10 @@ HdxPickTask::Sync(HdSceneDelegate* delegate,
         state->SetEnableDepthMask(true);
         state->SetDepthFunc(HdCmpFuncLEqual);
 
-        // Make sure translucent pixels can be picked by not discarding them
-        state->SetAlphaThreshold(0.0f);
+        // Allow semi-transparent pixels to be picked, but discard fully
+        // transparent ones.
+        state->SetAlphaThreshold(0.0001f);
+
         state->SetAlphaToCoverageEnabled(false);
         state->SetBlendEnabled(false);
         state->SetCullStyle(_params.cullStyle);
@@ -592,6 +597,9 @@ void
 HdxPickTask::Execute(HdTaskContext* ctx)
 {
     GLF_GROUP_FUNCTION();
+
+    // This is important for Hgi garbage collection to run.
+    _hgi->StartFrame();
 
     GfVec2i dimensions = _contextParams.resolution;
     GfVec4i viewport(0, 0, dimensions[0], dimensions[1]);
@@ -689,6 +697,9 @@ HdxPickTask::Execute(HdTaskContext* ctx)
         TF_CODING_ERROR("Unrecognized interesection mode '%s'",
             _contextParams.resolveMode.GetText());
     }
+
+    // This is important for Hgi garbage collection to run.
+    _hgi->EndFrame();
 }
 
 const TfTokenVector &
@@ -769,26 +780,31 @@ HdxPickResult::_GetNormal(int index) const
 }
 
 bool
-HdxPickResult::_ResolveHit(int index, int x, int y, float z,
-                           HdxPickHit* hit) const
+HdxPickResult::_ResolveHit(
+    const int index,
+    const int x,
+    const int y,
+    const float z,
+    HdxPickHit* const hit) const
 {
-    int primId = _GetPrimId(index);
+    const int primId = _GetPrimId(index);
     hit->objectId = _index->GetRprimPathFromPrimId(primId);
-
-    if (!hit->IsValid()) {
+    if (hit->objectId.IsEmpty()) {
         return false;
     }
 
-    bool rprimValid = _index->GetSceneDelegateAndInstancerIds(hit->objectId,
-                                                           &(hit->delegateId),
-                                                           &(hit->instancerId));
+    _index->GetSceneDelegateAndInstancerIds(
+        hit->objectId,
+        &(hit->delegateId),
+        &(hit->instancerId));
 
-    if (!TF_VERIFY(rprimValid, "%s\n", hit->objectId.GetText())) {
-        return false;
-    }
+    hit->instanceIndex = _GetInstanceId(index);
+    hit->elementIndex = _GetElementId(index);
+    hit->edgeIndex = _GetEdgeId(index);
+    hit->pointIndex = _GetPointId(index);
 
     // Calculate the hit location in NDC, then transform to worldspace.
-    GfVec3d ndcHit(
+    const GfVec3d ndcHit(
         ((double)x / _bufferSize[0]) * 2.0 - 1.0,
         ((double)y / _bufferSize[1]) * 2.0 - 1.0,
         ((z - _depthRange[0]) / (_depthRange[1] - _depthRange[0])) * 2.0 - 1.0);
@@ -797,16 +813,205 @@ HdxPickResult::_ResolveHit(int index, int x, int y, float z,
     hit->normalizedDepth =
         (z - _depthRange[0]) / (_depthRange[1] - _depthRange[0]);
 
-    hit->instanceIndex = _GetInstanceId(index);
-    hit->elementIndex = _GetElementId(index);
-    hit->edgeIndex = _GetEdgeId(index);
-    hit->pointIndex = _GetPointId(index);
-
     if (TfDebug::IsEnabled(HDX_INTERSECT)) {
         std::cout << *hit << std::endl;
     }
 
     return true;
+}
+
+// Extracts (first) instanced by path from primSource.
+static
+SdfPath
+_ComputeInstancedByPath(
+    HdContainerDataSourceHandle const &primSource)
+{
+    HdInstancedBySchema schema =
+        HdInstancedBySchema::GetFromParent(primSource);
+    HdPathArrayDataSourceHandle const ds = schema.GetPaths();
+    if (!ds) {
+        return SdfPath();
+    }
+    const VtArray<SdfPath> &paths = ds->GetTypedValue(0.0f);
+    if (paths.empty()) {
+        return SdfPath();
+    }
+    return paths[0];
+}
+
+// Given a prim (as primPath and data source in the given scene index)
+// returns the instancer instancing the prim (as primPath and data source).
+//
+// Also return the indices in the instancer that the prototype containing
+// the given prim corresponds to.
+//
+// For implicit instancing, give the paths of the implicit instances
+// instantiating the prototype containing the given prim.
+//
+static
+std::tuple<SdfPath, HdContainerDataSourceHandle, VtArray<int>, VtArray<SdfPath>>
+_ComputeInstancerAndInstanceIndicesAndLocations(
+    HdSceneIndexBaseRefPtr const &sceneIndex,
+    const SdfPath &primPath,
+    HdContainerDataSourceHandle const &primSource)
+{
+    const SdfPath instancerPath = _ComputeInstancedByPath(primSource);
+    if (instancerPath.IsEmpty()) {
+        return { SdfPath(), nullptr, {}, {} };
+    }
+
+    HdContainerDataSourceHandle const instancerSource =
+        sceneIndex->GetPrim(instancerPath).dataSource;
+    
+    HdInstancerTopologySchema schema =
+        HdInstancerTopologySchema::GetFromParent(instancerSource);
+    if (!schema) {
+        return { SdfPath(), nullptr, {}, {} };
+    }
+
+    HdPathArrayDataSourceHandle const instanceLocationsDs =
+        schema.GetInstanceLocations();
+
+    return { instancerPath,
+             instancerSource,
+             schema.ComputeInstanceIndicesForProto(primPath),
+             instanceLocationsDs
+                    ? instanceLocationsDs->GetTypedValue(0.0f)
+                    : VtArray<SdfPath>() };
+}
+
+HdxPrimOriginInfo
+HdxPrimOriginInfo::FromPickHit(HdRenderIndex * const renderIndex,
+                               const HdxPickHit &hit)
+{
+    HdxPrimOriginInfo result;
+
+    HdSceneIndexBaseRefPtr const sceneIndex =
+        renderIndex->GetTerminalSceneIndex();
+    // Fallback value.
+
+    if (!sceneIndex) {
+        return result;
+    }
+
+    SdfPath path = hit.objectId;
+    HdContainerDataSourceHandle primSource =
+        sceneIndex->GetPrim(path).dataSource;
+
+    // First, ask the prim itself for the prim origin data source.
+    result.primOrigin =
+        HdPrimOriginSchema::GetFromParent(primSource).GetContainer();
+    if (!result.primOrigin) {
+        return result;
+    }
+
+    // instanceIndex encodes the index of the instance at each level of
+    // instancing.
+    //
+    // Example: we picked instance 6 of 10 in the outer most instancer
+    //                    instance 3 of 12 in the next instancer
+    //                    instance 7 of 15 in the inner most instancer,
+    // instanceIndex = 6 * 12 * 15 + 3 * 15 + 7.
+
+    int instanceIndex = hit.instanceIndex;
+
+    // Starting with the prim itself, ask for the instancer instancing
+    // it and the instancer instancing that instancer and so on.
+    while (true) {
+        VtArray<int> instanceIndices;
+        VtArray<SdfPath> instanceLocations;
+
+        // Get data from the instancer.
+        std::tie(path, primSource, instanceIndices, instanceLocations) =
+            _ComputeInstancerAndInstanceIndicesAndLocations(
+                sceneIndex, path, primSource);
+
+        if (!primSource) {
+            break;
+        }
+
+        // How often does the current instancer instantiate the
+        // prototype containing the given prim (or inner instancer).
+        const size_t n = instanceIndices.size();
+        if (n == 0) {
+            break;
+        }
+
+        HdxInstancerContext ctx;
+        ctx.instancerSceneIndexPath = path;
+        ctx.instancerPrimOrigin =
+            HdPrimOriginSchema::GetFromParent(primSource).GetContainer();
+
+        const size_t i = instanceIndex % n;
+        instanceIndex /= n;
+
+        ctx.instanceId = instanceIndices[i];
+
+        if ( ctx.instanceId >= 0 &&
+             ctx.instanceId < static_cast<int>(instanceLocations.size())) {
+            ctx.instanceSceneIndexPath = instanceLocations[ctx.instanceId];
+
+            HdPrimOriginSchema schema =
+                HdPrimOriginSchema::GetFromParent(
+                    sceneIndex->GetPrim(ctx.instanceSceneIndexPath).dataSource);
+            ctx.instancePrimOrigin = schema.GetContainer();
+        }
+
+        result.instancerContexts.push_back(std::move(ctx));
+    }
+    
+    // Bring it into the form so that outer most instancer is first.
+    std::reverse(result.instancerContexts.begin(),
+                 result.instancerContexts.end());
+
+    return result;
+}
+
+// Consults given prim source for origin path to either replace
+// the given path (if origin path is absolute) or append to given
+// path (if origin path is relative). If no prim origin data source,
+// leave path unchanged.
+static
+void
+_AppendPrimOriginToPath(HdContainerDataSourceHandle const &primOriginDs,
+                        const TfToken &nameInPrimOrigin,
+                        SdfPath * const path)
+{
+    HdPrimOriginSchema schema = HdPrimOriginSchema(primOriginDs);
+    if (!schema) {
+        return;
+    }
+    const SdfPath scenePath = schema.GetOriginPath(nameInPrimOrigin);
+    if (scenePath.IsEmpty()) {
+        return;
+    }
+    if (scenePath.IsAbsolutePath()) {
+        *path = scenePath;
+    } else {
+        *path = path->AppendPath(scenePath);
+    }
+}
+
+SdfPath
+HdxPrimOriginInfo::GetFullPath(const TfToken &nameInPrimOrigin) const
+{
+    SdfPath path;
+
+    // Combine implicit instance paths.
+    //
+    // In case of USD, only native instancing (not point instancing)
+    // contributes instancers giving implicit instance paths.
+    // The first instancer coming from native instancing is outside
+    // any USD prototype and would give an absolute implicit instance path.
+    // The next (inner) instancer would be inside a USD prototype and
+    // gives an implicit instance path relative to the prototype root.
+    for (const HdxInstancerContext &ctx : instancerContexts) {
+        _AppendPrimOriginToPath(
+            ctx.instancePrimOrigin, nameInPrimOrigin, &path);
+    }
+    _AppendPrimOriginToPath(
+        primOrigin, nameInPrimOrigin, &path);
+    return path;
 }
 
 size_t
@@ -1061,14 +1266,15 @@ operator<<(std::ostream& out, HdxPickHit const& h)
 {
     out << "Delegate: <" << h.delegateId << "> "
         << "Object: <" << h.objectId << "> "
-        << "Instancer: <" << h.instancerId << "> "
-        << "Instance: [" << h.instanceIndex << "] "
+        << "LegacyInstancer: <" << h.instancerId << "> "
+        << "LegacyInstanceId: [" << h.instanceIndex << "] "
         << "Element: [" << h.elementIndex << "] "
         << "Edge: [" << h.edgeIndex  << "] "
         << "Point: [" << h.pointIndex  << "] "
-        << "HitPoint: (" << h.worldSpaceHitPoint << ") "
-        << "HitNormal: (" << h.worldSpaceHitNormal << ") "
-        << "Depth: (" << h.normalizedDepth << ") ";
+        << "HitPoint: " << h.worldSpaceHitPoint << " "
+        << "HitNormal: " << h.worldSpaceHitNormal << " "
+        << "Depth: " << h.normalizedDepth;
+
     return out;
 }
 

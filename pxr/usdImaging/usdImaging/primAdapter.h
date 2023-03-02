@@ -98,6 +98,49 @@ public:
             TfToken const& subprim,
             TfTokenVector const& properties);
 
+    /// \enum Scope
+    ///
+    /// Determines what USD prims an adapter type is responsible for from a
+    /// population and invalidation standpoint.
+    ///
+    enum PopulationMode
+    {
+        /// The adapter is responsible only for USD prims of its registered
+        /// type. Any descendent USD prims are managed independently.
+        RepresentsSelf,
+
+        /// The adapter is responsible for USD prims of its registered type as
+        /// well as any descendents of those prims. No population occurs for
+        /// descendent prims. USD changes to descendent prims whose own PopulationMode
+        /// is set to RepresentedByAncestor will be send to this adapter.
+        RepresentsSelfAndDescendents,
+
+        /// Changes to prims of this adapter's registered type are sent to the
+        /// first ancestor prim whose adapter's PopulationMode value is 
+        /// RepresentsSelfAndDescendents.
+        ///
+        /// This value alone does not prevent population as it is expected that
+        /// such prims appear beneath another prim whose own PopulationMode value
+        /// prevents descendents from being populated.
+        RepresentedByAncestor,
+    };
+
+    /// Returns the prim's behavior with regard to population and invalidation.
+    /// See PopulationMode for possible values.
+    USDIMAGING_API
+    virtual PopulationMode GetPopulationMode();
+
+    /// This is called (for each result of GetImagingSubprims) when this
+    /// adapter's GetScope() result is RepresentsSelfAndDescendents and
+    /// USD properties have changed on a descendent prim whose adapter's
+    /// GetScope() result is RepresentedByAncestor.
+    USDIMAGING_API
+    virtual HdDataSourceLocatorSet InvalidateImagingSubprimFromDescendent(
+            UsdPrim const& prim,
+            UsdPrim const& descendentPrim,
+            TfToken const& subprim,
+            TfTokenVector const& properties);
+
     // ---------------------------------------------------------------------- //
     /// \name Initialization
     // ---------------------------------------------------------------------- //
@@ -695,6 +738,11 @@ protected:
     // Returns the material contexts from the renderer delegate.
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
+
+    // Returns the namespace prefixes for render settings attributes relevant 
+    // to a renderer delegate.
+    USDIMAGING_API
+    TfTokenVector _GetRenderSettingsNamespaces() const;
 
     /// Returns whether custom shading of prims is enabled.
     USDIMAGING_API

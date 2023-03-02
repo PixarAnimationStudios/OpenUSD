@@ -436,7 +436,15 @@ UsdShadeShaderDefUtils::GetPrimvarNamesMetadataString(
     // If there's an existing value in the definition, we must append to it.
     std::vector<std::string> primvarNames; 
     if (metadata.count(SdrNodeMetadata->Primvars)) {
-        primvarNames.push_back(metadata.at(SdrNodeMetadata->Primvars));
+        auto& existingValue = metadata.at(SdrNodeMetadata->Primvars);
+        // Only append if it's non-empty - calling code may do, ie,
+        //    metadata["primvars"] = this_function()
+        // ...and on some compilers / architectures, that will result in a
+        // default empty string being inserted into metadata BEFORE this
+        // function is called
+        if (!existingValue.empty()) {
+            primvarNames.push_back(existingValue);
+        }
     }
 
     for (auto &shdInput : shaderDef.GetInputs(/* onlyAuthored */ false)) {

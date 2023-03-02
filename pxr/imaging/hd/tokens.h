@@ -197,6 +197,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (fragmentShader)                            \
     (geometryShader)                            \
     (imageToWorldMatrix)                        \
+    (imageToHorizontallyNormalizedFilmback)     \
     (indicatorColor)                            \
     (lightingBlendAmount)                       \
     (overrideColor)                             \
@@ -267,6 +268,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (instancer)                                 \
     (instance)                                  \
     (sampleFilter)                              \
+    (displayFilter)                             \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \
@@ -400,6 +402,11 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     /* interactive vs offline */                      \
     (enableInteractive)
 
+#define HD_RENDER_SETTINGS_PRIM_TOKENS                \
+    (active)                                          \
+    (settings)                                        \
+    (renderProducts)
+
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
     (shaderFile)
@@ -426,6 +433,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens, HD_API,
+                         HD_RENDER_SETTINGS_PRIM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);

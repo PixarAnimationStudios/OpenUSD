@@ -65,7 +65,7 @@ void wrapUsdVolTokens()
     boost::python::class_<UsdVolTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "bool_", UsdVolTokens->bool_);
-    _AddToken(cls, "color", UsdVolTokens->color);
+    _AddToken(cls, "Color", UsdVolTokens->Color);
     _AddToken(cls, "double2", UsdVolTokens->double2);
     _AddToken(cls, "double3", UsdVolTokens->double3);
     _AddToken(cls, "double_", UsdVolTokens->double_);
@@ -91,14 +91,19 @@ void wrapUsdVolTokens()
     _AddToken(cls, "mask", UsdVolTokens->mask);
     _AddToken(cls, "matrix3d", UsdVolTokens->matrix3d);
     _AddToken(cls, "matrix4d", UsdVolTokens->matrix4d);
-    _AddToken(cls, "none", UsdVolTokens->none);
-    _AddToken(cls, "normal", UsdVolTokens->normal);
-    _AddToken(cls, "point", UsdVolTokens->point);
+    _AddToken(cls, "None_", UsdVolTokens->None_);
+    _AddToken(cls, "Normal", UsdVolTokens->Normal);
+    _AddToken(cls, "Point", UsdVolTokens->Point);
     _AddToken(cls, "quatd", UsdVolTokens->quatd);
     _AddToken(cls, "staggered", UsdVolTokens->staggered);
     _AddToken(cls, "string", UsdVolTokens->string);
     _AddToken(cls, "uint", UsdVolTokens->uint);
     _AddToken(cls, "unknown", UsdVolTokens->unknown);
-    _AddToken(cls, "vector", UsdVolTokens->vector);
+    _AddToken(cls, "Vector", UsdVolTokens->Vector);
     _AddToken(cls, "vectorDataRoleHint", UsdVolTokens->vectorDataRoleHint);
+    _AddToken(cls, "Field3DAsset", UsdVolTokens->Field3DAsset);
+    _AddToken(cls, "FieldAsset", UsdVolTokens->FieldAsset);
+    _AddToken(cls, "FieldBase", UsdVolTokens->FieldBase);
+    _AddToken(cls, "OpenVDBAsset", UsdVolTokens->OpenVDBAsset);
+    _AddToken(cls, "Volume", UsdVolTokens->Volume);
 }

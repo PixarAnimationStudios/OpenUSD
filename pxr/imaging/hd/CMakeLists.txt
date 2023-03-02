@@ -25,7 +25,6 @@ pxr_library(hd
         basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
-        binding
         bprim
         bufferArray
         bufferArrayRange
@@ -44,6 +43,7 @@ pxr_library(hd
         coneSchema
         containerDataSourceEditor
         coordSys
+        coordSysSchema
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
@@ -57,6 +57,7 @@ pxr_library(hd
         dependencySchema
         dirtyBitsTranslator
         dirtyList
+        displayFilterSchema
         drawingCoord
         drawItem
         engine
@@ -82,8 +83,8 @@ pxr_library(hd
         geomSubsetSchema
         geomSubsetsSchema
         instanceCategoriesSchema
-        instancedBySceneIndex
         instancedBySchema
+        instanceIndicesSchema
         instancer
         instanceRegistry
         instancerTopologySchema
@@ -116,6 +117,7 @@ pxr_library(hd
         prefixingSceneIndex
         primDataSourceOverlayCache
         primGather
+        primOriginSchema
         primTypeIndex
         primvarSchema
         primvarsSchema
@@ -129,7 +131,10 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderProductSchema
+        renderSettings
         renderSettingsSchema
+        renderVarSchema
         renderThread
         repr
         resource
@@ -149,12 +154,15 @@ pxr_library(hd
         sceneIndexPluginRegistry
         schema
         selection
+        selectionSchema
+        selectionsSchema
         smoothNormals
         sortedIds
         sphereSchema
         sprim
         strategyBase
         subdivisionTagsSchema
+        systemSchema
         task
         timeSampleArray
         tokens
@@ -164,6 +172,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        vectorSchema
         vertexAdjacency
         visibilitySchema
         volume
@@ -177,6 +186,7 @@ pxr_library(hd
         dataSourceTypeDefs.h
         driver.h
         materialNetworkInterface.h
+        vectorSchemaTypeDefs.h
         version.h
 
     PRIVATE_CLASSES

@@ -28,29 +28,17 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static void
-_ResolveVirtualStructs(
-    HdMaterialNetworkInterface *interface, bool enableConditions)
-{
-    static const NdrTokenVec shaderTypePriority = {
-        TfToken("OSL"),
-        TfToken("RmanCpp"),
-    };
-
-    MatfiltResolveVstructs(interface, shaderTypePriority, enableConditions);
-}
-
-static void
 _ResolveVirtualStructsWithConditionals(
     HdMaterialNetworkInterface *networkInterface)
 {
-    _ResolveVirtualStructs(networkInterface, true);
+    MatfiltResolveVstructs(networkInterface, true);
 }
 
 static void
 _ResolveVirtualStructsWithoutConditionals(
     HdMaterialNetworkInterface *networkInterface)
 {
-    _ResolveVirtualStructs(networkInterface, false);
+    MatfiltResolveVstructs(networkInterface, false);
 }
 
 HdPrman_VirtualStructResolvingSceneIndex::HdPrman_VirtualStructResolvingSceneIndex(

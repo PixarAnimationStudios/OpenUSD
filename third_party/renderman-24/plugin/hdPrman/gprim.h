@@ -94,12 +94,8 @@ protected:
     HdDirtyBits
     _PropagateDirtyBits(HdDirtyBits bits) const override
     {
-        // XXX This is not ideal. Currently Riley requires us to provide
-        // all the values anytime we edit a volume. To make sure the values
-        // exist in the value cache, we propagte the dirty bits.value cache,
-        // we propagte the dirty bits.value cache, we propagte the dirty
-        // bits.value cache, we propagte the dirty bits.
-        return bits ? (bits | GetInitialDirtyBitsMask()) : bits;
+        // By default, just return the same dirty bits we recieved.
+        return bits;
     }
 
     void
@@ -109,6 +105,14 @@ protected:
         TF_UNUSED(reprToken);
         TF_UNUSED(dirtyBits);
         // No-op
+    }
+
+    // We override this member function in mesh.cpp to support the creation
+    // of mesh light prototype geometry.
+    virtual bool
+    _PrototypeOnly()
+    {
+        return false;
     }
 
     // Provide a fallback material.  Default grabs _fallbackMaterial
@@ -199,10 +203,20 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Hydra dirty bits corresponding to PRMan prototype primvars
     // and instance attributes.
     const int prmanPrimvarBits =
-        HdChangeTracker::DirtyPrimvar;
+        HdChangeTracker::DirtyPrimvar |
+        HdChangeTracker::DirtyPoints |
+        HdChangeTracker::DirtyNormals |
+        HdChangeTracker::DirtyWidths |
+        HdChangeTracker::DirtyTopology;
+
     const int prmanAttrBits =
         HdChangeTracker::DirtyVisibility |
-        HdChangeTracker::DirtyTransform;
+        HdChangeTracker::DirtyTransform |
+        HdChangeTracker::DirtyVolumeField |
+        // Some primvars map to instance params:
+        HdChangeTracker::DirtyPrimvar | 
+        // Watch for light linking changes:
+        HdChangeTracker::DirtyCategories;
 
     //
     // Create or modify Riley geometry prototype(s).
@@ -292,6 +306,14 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 }
             }
         }
+    }
+
+    //
+    // Stop here, or also create geometry instances?
+    //
+    if (_PrototypeOnly()) {
+        *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+        return;
     }
 
     //
@@ -484,7 +506,14 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                               .GetValue()),
                       riley::GeometryPrototypeId::InvalidId(), prototypeId,
                       instanceMaterialId, coordSysList, xform, instanceAttrs);
-                } else if (*dirtyBits & prmanAttrBits) {
+                } else if (*dirtyBits /*& prmanAttrBits*/) {
+                    // NOTE: Always update existing geometry instances for the
+                    //       rprims owned by a hydra instancer for now. The
+                    //       prior update behavior (of dirtying nearly all bits
+                    //       in _PropagateDirtyBits) resulted in the same thing.
+                    //       Absent of that, instance primvars (like color)
+                    //       drop off. Granular bits indictive of that are
+                    //       not present here.
                     riley->ModifyGeometryInstance(
                         riley::GeometryPrototypeId::InvalidId(),
                         instanceId, &instanceMaterialId, &coordSysList,

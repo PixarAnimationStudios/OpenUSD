@@ -30,6 +30,8 @@ tutorials assume the interpreter is named "python".
 +---------------------+------------+----------------------------------------+
 |:envvar:`PATH`       |Program     |:filename:`USD_INSTALL_ROOT/bin`        |
 |                     |search path |                                        |
+|                     |            |On Windows also add                     |
+|                     |            |:filename:`USD_INSTALL_ROOT/lib`        |
 +---------------------+------------+----------------------------------------+
 
 For more information see `Advanced Build Configuration

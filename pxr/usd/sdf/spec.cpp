@@ -325,9 +325,13 @@ SdfSpec::ClearInfo( const TfToken & key )
     // Perform some validation to ensure we allow the clearing of this field
     // via the Info API. Note this function will issue coding errors as needed.
     const SdfSchemaBase& schema = GetSchema();
-    const SdfSchema::FieldDefinition* fieldDef = schema.GetFieldDefinition(key);
-    if (!_CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "clear")) {
-        return;
+    
+    // A field without a definition may still exist as an unknown field.
+    if (const SdfSchema::FieldDefinition *fieldDef = 
+        schema.GetFieldDefinition(key)) {
+        if (!_CanEditInfoOnSpec(key, GetSpecType(), schema, fieldDef, "clear")) {
+            return;
+        }
     }
 
     SdfChangeBlock block;

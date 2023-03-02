@@ -22,8 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -50,6 +48,7 @@
 
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
+#include "pxr/base/tf/getenv.h"
 
 #include <iomanip>
 #include <iostream>
@@ -71,6 +70,10 @@ struct OutHit {
 static bool
 _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
 {
+    static const bool skipInstancerDetails = TfGetenvBool(
+        "USD_IMAGING_GL_PICK_TEST_SKIP_INSTANCER_DETAILS",
+        false);
+
     double const epsilon = 1e-6;
     return GfIsClose(lhs.outHitPoint[0], rhs.outHitPoint[0], epsilon) &&
            GfIsClose(lhs.outHitPoint[1], rhs.outHitPoint[1], epsilon) &&
@@ -79,8 +82,9 @@ _CompareOutHit(OutHit const & lhs, OutHit const & rhs)
            GfIsClose(lhs.outHitNormal[1], rhs.outHitNormal[1], epsilon) &&
            GfIsClose(lhs.outHitNormal[2], rhs.outHitNormal[2], epsilon) &&
            lhs.outHitPrimPath == rhs.outHitPrimPath &&
-           lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
-           lhs.outHitInstanceIndex == rhs.outHitInstanceIndex;
+           (skipInstancerDetails ||
+            (lhs.outHitInstancerPath == rhs.outHitInstancerPath &&
+             lhs.outHitInstanceIndex == rhs.outHitInstanceIndex));
 }
 
 class My_TestGLDrawing : public UsdImagingGL_UnitTestGLDrawing {
@@ -118,8 +122,6 @@ private:
     bool _mouseButton[3];
 };
 
-GLuint vao;
-
 void
 My_TestGLDrawing::InitTest()
 {
@@ -141,17 +143,6 @@ My_TestGLDrawing::InitTest()
         }
     }
     _engine->SetSelectionColor(GfVec4f(1, 1, 0, 1));
-
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
-
-    if(IsEnabledTestLighting()) {
-        glEnable(GL_LIGHTING);
-        glEnable(GL_LIGHT0);
-        float position[4] = {0,-.5,.5,0};
-        glLightfv(GL_LIGHT0, GL_POSITION, position);
-    }
 
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
@@ -272,30 +263,16 @@ My_TestGLDrawing::Draw(bool render)
     params.highlight = true;
     params.clearColor = GetClearColor();
 
-    glViewport(0, 0, width, height);
-
-    GLfloat clearColor[4] = { 1.0f, .5f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
-
-    glEnable(GL_DEPTH_TEST);
-
     if(IsEnabledTestLighting()) {
         GlfSimpleLightingContextRefPtr lightingContext = GlfSimpleLightingContext::New();
         lightingContext->SetStateFromOpenGL();
         _engine->SetLightingState(lightingContext);
     }
 
-    if (!GetClipPlanes().empty()) {
-        params.clipPlanes = GetClipPlanes();
-        for (size_t i=0; i<GetClipPlanes().size(); ++i) {
-            glEnable(GL_CLIP_PLANE0 + i);
-        }
-    }
+    params.clipPlanes = GetClipPlanes();
 
     if (render) {
         do {
-            glClearBufferfv(GL_COLOR, 0, clearColor);
-            glClearBufferfv(GL_DEPTH, 0, clearDepth);
             _engine->Render(_stage->GetPseudoRoot(), params);
         } while (!_engine->IsConverged());
 
@@ -307,7 +284,7 @@ My_TestGLDrawing::Draw(bool render)
             suffix << "_" << std::setw(3) << std::setfill('0') << i << ".png";
             imageFilePath = TfStringReplace(imageFilePath, ".png", suffix.str());
             std::cout << imageFilePath << "\n";
-            WriteToFile("color", imageFilePath);
+            WriteToFile(_engine.get(), HdAovTokens->color, imageFilePath);
 
             i++;
         }

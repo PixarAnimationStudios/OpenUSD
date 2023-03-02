@@ -33,7 +33,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdFlatteningSceneIndex;
 TF_DECLARE_REF_PTRS(HdFlatteningSceneIndex);
 
 ///
@@ -103,7 +102,6 @@ private:
     bool _flattenPurpose;
     bool _flattenModel;
     bool _flattenMaterialBinding;
-    bool _flattenInstancedBy;
     TfTokenVector _dataSourceNames;
 
     HdContainerDataSourceHandle _identityXform;
@@ -153,8 +151,6 @@ private:
             const HdContainerDataSourceHandle &model);
         HdDataSourceBaseHandle _GetMaterialBinding();
         HdDataSourceBaseHandle _GetMaterialBindingUncached();
-        HdDataSourceBaseHandle _GetInstancedBy();
-        HdDataSourceBaseHandle _GetInstancedByUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -169,7 +165,6 @@ private:
         // Internally, this is set to a retained bool=false data source to 
         // indicate that no binding is present.
         HdDataSourceBaseAtomicHandle _computedMaterialBindingDataSource;
-        HdDataSourceBaseAtomicHandle _computedInstancedByDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

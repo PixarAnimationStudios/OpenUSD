@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -61,13 +62,18 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderProductSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/base/tf/stringUtils.h"
 
 #include <algorithm>
 
@@ -79,11 +85,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (binding)
     (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
+    (materialSyncMode)
 
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 // ----------------------------------------------------------------------------
@@ -1276,6 +1285,10 @@ public:
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
             HdTokens->isLight,
+            _tokens->materialSyncMode,  // Part of UsdLux but not yet hydra
+                                        // here just so you can see it in the
+                                        // browser coming from legacy scene
+                                        // delegates.
         };
         return result;
     }
@@ -2021,6 +2034,85 @@ private:
 
 // ----------------------------------------------------------------------------
 
+static HdContainerDataSourceHandle
+_ToContainerDS(const VtDictionary &dict)
+{
+    std::vector<TfToken> names;
+    std::vector<HdDataSourceBaseHandle> values;
+    const size_t numDictEntries = dict.size();
+    names.reserve(numDictEntries);
+    values.reserve(numDictEntries);
+
+    for (const auto &pair : dict) {
+        names.push_back(TfToken(pair.first));
+        values.push_back(
+            HdRetainedSampledDataSource::New(pair.second));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
+}
+
+using HdRenderProducts = HdRenderSettings::RenderProducts;
+static HdVectorDataSourceHandle
+_ToVectorDS(const HdRenderProducts &hdProducts)
+{
+    std::vector<HdDataSourceBaseHandle> productsDs;
+    productsDs.reserve(hdProducts.size());
+
+    for (const auto & hdProduct : hdProducts) {
+        // Construct render var ds.
+        std::vector<HdDataSourceBaseHandle> varsDs;
+        for (const auto & hdVar : hdProduct.renderVars) {
+            varsDs.push_back(
+                HdRenderVarSchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        hdVar.varPath),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.dataType),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        TfToken(hdVar.sourceName)),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.sourceType),
+                    _ToContainerDS(
+                        hdVar.extraSettings)));
+        }
+
+        productsDs.push_back(
+            HdRenderProductSchema::BuildRetained(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.productPath),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.type),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.name),
+                HdRetainedTypedSampledDataSource<GfVec2i>::New(
+                    hdProduct.resolution),
+                HdRetainedSmallVectorDataSource::New(
+                    varsDs.size(), varsDs.data()),
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.cameraPath),
+                HdRetainedTypedSampledDataSource<float>::New(
+                    hdProduct.pixelAspectRatio),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.aspectRatioConformPolicy),
+                HdRetainedTypedSampledDataSource<GfVec2f>::New(
+                    hdProduct.apertureSize),
+                HdRetainedTypedSampledDataSource<GfVec4f>::New(
+                    GfVec4f(
+                        hdProduct.dataWindowNDC.GetMin()[0],
+                        hdProduct.dataWindowNDC.GetMin()[1],
+                        hdProduct.dataWindowNDC.GetMax()[0],
+                        hdProduct.dataWindowNDC.GetMax()[1])),
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    hdProduct.disableMotionBlur),
+                _ToContainerDS(
+                    hdProduct.extraSettings)));
+    }
+
+    return HdRetainedSmallVectorDataSource::New(
+                productsDs.size(), productsDs.data());
+}
+
 class Hd_DataSourceRenderSettings : public HdContainerDataSource
 {
 public:
@@ -2036,26 +2128,35 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector v;
-        v.push_back(HdRenderSettingsSchemaTokens->sampleFilters);
+        v.push_back(HdRenderSettingsSchemaTokens->namespacedSettings);
+        v.push_back(HdRenderSettingsSchemaTokens->renderProducts);
         return v;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        if (name == HdRenderSettingsSchemaTokens->sampleFilters) {
-            const VtValue filterPathsValue =
-                _sceneDelegate->Get(_id, _tokens->outputsRiSampleFilters);
-            SdfPathVector filterPaths;
-            if (filterPathsValue.IsHolding<SdfPathVector>()) {
-                filterPaths = filterPathsValue.UncheckedGet<SdfPathVector>();
+        if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->settings);
+            if (value.IsHolding<VtDictionary>()) {
+                return _ToContainerDS(
+                    value.UncheckedGet<VtDictionary>());
             }
-            VtArray<SdfPath> pathsArray(filterPaths.begin(), filterPaths.end());
-            return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                    pathsArray);
-        } else {
-            return HdSampledDataSourceHandle(
-                Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
         }
+
+        if (name == HdRenderSettingsSchemaTokens->renderProducts) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderProducts);
+            if (value.IsHolding<HdRenderProducts>()) {
+                return _ToVectorDS(value.UncheckedGet<HdRenderProducts>());
+            }
+        }
+
+        // Note: active can be skipped (instead of hardcoding it to false here)
+        //       since a downstream scene index will author its opinion.
+
+        return HdSampledDataSourceHandle(
+            Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
     }
 
 private:
@@ -2245,6 +2346,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdSampleFilterSchemaTokens->sampleFilter);
     }
 
+    if (_type == HdPrimTypeTokens->displayFilter) {
+        result.push_back(HdDisplayFilterSchemaTokens->displayFilter);
+    }
+
     if (HdLegacyPrimTypeIsVolumeField(_type)) {
         result.push_back(HdVolumeFieldSchemaTokens->volumeField);
     }
@@ -2398,8 +2503,9 @@ _ConvertHdMaterialNetworkToHdDataSources(
     return true;
 }
 
+template <typename SchemaType>
 static bool
-_ConvertSampleFilterNodeToHdDataSources(
+_ConvertOutputFilterNodeToHdDataSources(
     const HdMaterialNode2 &hdNode,
     HdContainerDataSourceHandle *result)
 {
@@ -2419,12 +2525,12 @@ _ConvertSampleFilterNodeToHdDataSources(
             paramsNames.size(), 
             paramsNames.data(),
             paramsValues.data()),
-        HdRetainedContainerDataSource::New(),// SampleFilter has no connections
+        HdRetainedContainerDataSource::New(),
         HdRetainedTypedSampledDataSource<TfToken>::New(
             hdNode.nodeTypeId),
             nullptr /*renderContextNodeIdentifiers*/);
 
-    *result = HdSampleFilterSchema::BuildRetained(nodeDS);
+    *result = SchemaType::BuildRetained(nodeDS);
 
     return true;
 }
@@ -2567,11 +2673,31 @@ HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
     HdMaterialNode2 sampleFilterNode =
         sampleFilterValue.UncheckedGet<HdMaterialNode2>();
     HdContainerDataSourceHandle sampleFilterDS = nullptr;    
-    if (!_ConvertSampleFilterNodeToHdDataSources(
+    if (!_ConvertOutputFilterNodeToHdDataSources<HdSampleFilterSchema>(
             sampleFilterNode, &sampleFilterDS)) {
         return nullptr;
     }
     return sampleFilterDS;
+}
+
+HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
+{
+    VtValue displayFilterValue = _sceneDelegate->Get(
+        _id, HdDisplayFilterSchemaTokens->displayFilterResource);
+
+    if (!displayFilterValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    HdMaterialNode2 displayFilterNode = 
+        displayFilterValue.UncheckedGet<HdMaterialNode2>();
+    HdContainerDataSourceHandle displayFilterDS = nullptr;
+    if (!_ConvertOutputFilterNodeToHdDataSources<HdDisplayFilterSchema>(
+            displayFilterNode, &displayFilterDS)) {
+        return nullptr;
+    }
+    return displayFilterDS;
 }
 
 HdDataSourceBaseHandle
@@ -2652,11 +2778,23 @@ HdDataSourceLegacyPrim::_GetCoordSysBindingDataSource()
     for (SdfPath const &path : *coordSysBindings) {
         // Note: the scene delegate API just binds prims to unnamed
         // coord sys objects.  These coord sys objects have paths of the
-        // form /path/to/object.coordSys:foo, where "foo" is the name the
-        // shader gets to access.  We pull these names out to store in the
+        // form /path/to/object.coordSys:foo:binding, where "foo" is the name 
+        // the shader gets to access.  We pull these names out to store in the
         // schema.
-        names.push_back(TfToken(SdfPath::StripPrefixNamespace(
-                        path.GetName(), _tokens->coordSys).first));
+        // XXX: Note that for backward compatibility of non-applied
+        // UsdShadeCoordSysAPI api schema, a form like 
+        // /path/to/object.coordSys:foo is supporterd!
+        const std::string &attrName = path.GetName();
+        const std::string &nameSpacedCoordSysName =
+            TfStringEndsWith(attrName, _tokens->binding.GetString())
+            ? TfStringGetBeforeSuffix(
+                    attrName, *SdfPathTokens->namespaceDelimiter.GetText())
+            : attrName;
+        names.push_back(
+                TfToken(
+                    SdfPath::StripPrefixNamespace(
+                        nameSpacedCoordSysName, _tokens->coordSys).first));
+
         paths.push_back(HdRetainedTypedSampledDataSource<SdfPath>::New(
             path));
     }
@@ -2817,6 +2955,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return Hd_DataSourceRenderSettings::New(_sceneDelegate, _id);
     } else if (name == HdSampleFilterSchemaTokens->sampleFilter) {
         return _GetSampleFilterDataSource();
+    } else if (name == HdDisplayFilterSchemaTokens->displayFilter) {
+        return _GetDisplayFilterDataSource();
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {
         return Hd_DataSourceVolumeField::New(_id, _sceneDelegate);
     } else if (name == HdPrimTypeTokens->drawTarget) {

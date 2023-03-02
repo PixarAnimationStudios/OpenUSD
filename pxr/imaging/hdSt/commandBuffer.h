@@ -29,8 +29,6 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/drawItemInstance.h"
 
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/matrix4d.h"
 
 #include <memory>
@@ -38,7 +36,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
+class HdRenderIndex;
 class HdStDrawItem;
 class HdStDrawItemInstance;
 class HgiCapabilities;
@@ -74,17 +72,13 @@ public:
     HDST_API
     void PrepareDraw(HgiGraphicsCmds *gfxCmds,
                      HdStRenderPassStateSharedPtr const &renderPassState,
-                     HdStResourceRegistrySharedPtr const &resourceRegistry);
+                     HdRenderIndex *renderIndex);
 
     /// Execute the command buffer
     HDST_API
     void ExecuteDraw(HgiGraphicsCmds *gfxCmds,
                      HdStRenderPassStateSharedPtr const &renderPassState,
                      HdStResourceRegistrySharedPtr const &resourceRegistry);
-
-    /// Cull drawItemInstances based on passed in combined view and projection matrix
-    HDST_API
-    void FrustumCull(GfMatrix4d const &cullMatrix);
 
     /// Sync visibility state from RprimSharedState to DrawItemInstances.
     HDST_API
@@ -125,6 +119,9 @@ public:
 
 private:
     void _RebuildDrawBatches(HgiCapabilities const *hgiCapabilities);
+    
+    /// Cull drawItemInstances based on view frustum cull matrix
+    void _FrustumCullCPU(GfMatrix4d const &cullMatrix);
 
     HdDrawItemConstPtrVectorSharedPtr _drawItems;
     std::vector<HdStDrawItemInstance> _drawItemInstances;

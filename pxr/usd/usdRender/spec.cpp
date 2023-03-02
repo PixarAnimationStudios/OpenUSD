@@ -26,12 +26,13 @@
 #include "pxr/usd/usdRender/product.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdShade/output.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 static void
 _ReadExtraSettings(UsdPrim const& prim, VtDictionary *extraSettings,
-                   std::vector<std::string> const& namespaces)
+                   TfTokenVector const& namespaces)
 {
     std::vector<UsdAttribute> attrs = prim.GetAuthoredAttributes();
     for (UsdAttribute attr: attrs) {
@@ -55,6 +56,16 @@ _ReadExtraSettings(UsdPrim const& prim, VtDictionary *extraSettings,
         VtValue val;
         if (attr.Get(&val)) {
             (*extraSettings)[attr.GetName()] = val;
+        }
+        else if (UsdShadeOutput::IsOutput(attr)) {
+            UsdShadeAttributeVector targets =
+                UsdShadeUtils::GetValueProducingAttributes(
+                    UsdShadeOutput(attr));
+            SdfPathVector outputs;
+            for (auto const& output : targets) {
+                outputs.push_back(output.GetPrimPath());
+            }
+            (*extraSettings)[attr.GetName()] = VtValue(outputs);
         }
     }
 }
@@ -149,11 +160,12 @@ static void _ApplyAspectRatioPolicy(
     }
 }
 
+// -------------------------------------------------------------------------- //
+
 UsdRenderSpec
 UsdRenderComputeSpec(
     UsdRenderSettings const& settings,
-    UsdTimeCode time,
-    std::vector<std::string> const& extraNamespaces)
+    TfTokenVector const& extraNamespaces)
 {
     UsdRenderSpec rd;
     UsdPrim prim = settings.GetPrim();
@@ -163,18 +175,19 @@ UsdRenderComputeSpec(
         return rd;
     }
 
-    // Read shared settings as a "base product".
+    // Read shared base settings as a "base product". Note that this excludes
+    // namespaced attributes that are gathered under extraSettings.
     UsdRenderSpec::Product base;
     _ReadSettingsBase(UsdRenderSettingsBase(prim), &base, false);
-    _ReadExtraSettings(prim, &base.extraSettings, extraNamespaces);
 
     // Products
     SdfPathVector targets; 
     settings.GetProductsRel().GetForwardedTargets(&targets);
     for (SdfPath const& target: targets) {
         if (UsdRenderProduct product =
-            UsdRenderProduct(stage->GetPrimAtPath(target))) {
+                UsdRenderProduct(stage->GetPrimAtPath(target))) {
             UsdRenderSpec::Product pd = base;
+            pd.renderProductPath = target;
 
             // Read product-specific overrides to base render settings.
             _ReadSettingsBase(UsdRenderSettingsBase(product), &pd, true);
@@ -218,7 +231,8 @@ UsdRenderComputeSpec(
                         rv.GetDataTypeAttr().Get(&rvd.dataType);
                         rv.GetSourceNameAttr().Get(&rvd.sourceName);
                         rv.GetSourceTypeAttr().Get(&rvd.sourceType);
-                        // Store any other custom attributes in extraSettings.
+                        // Store any other custom render var attributes in
+                        // extraSettings.
                         _ReadExtraSettings(prim, &rvd.extraSettings,
                                            extraNamespaces);
                         // Record new render var.
@@ -234,7 +248,8 @@ UsdRenderComputeSpec(
                     }
                 }
             }
-            // Store any other custom attributes in extraSettings.
+            // Store any other custom render product attributes in
+            // extraSettings.
             _ReadExtraSettings(product.GetPrim(), &pd.extraSettings,
                                extraNamespaces);
             rd.products.emplace_back(pd);
@@ -244,10 +259,20 @@ UsdRenderComputeSpec(
     // Scene configuration
     settings.GetMaterialBindingPurposesAttr().Get(&rd.materialBindingPurposes);
     settings.GetIncludedPurposesAttr().Get(&rd.includedPurposes);
-    // Store any other custom attributes in extraSettings.
+    // Store any other custom render settings attributes in extraSettings.
     _ReadExtraSettings(prim, &rd.extraSettings, extraNamespaces);
 
     return rd;
+}
+
+VtDictionary
+UsdRenderComputeExtraSettings(
+    UsdPrim const& prim,
+    TfTokenVector const& namespaces)
+{
+    VtDictionary dict;
+    _ReadExtraSettings(prim, &dict, namespaces);
+    return dict;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

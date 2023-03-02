@@ -38,8 +38,7 @@
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/half.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <cstddef>
 #include <cmath>
@@ -144,10 +143,7 @@ public:
 
     /// Hash.
     friend inline size_t hash_value(GfVec2h const &vec) {
-        size_t h = 0;
-        boost::hash_combine(h, vec[0]);
-        boost::hash_combine(h, vec[1]);
-        return h;
+        return TfHash::Combine(vec[0], vec[1]);
     }
 
     /// Equality comparison.
@@ -249,8 +245,7 @@ public:
 
     /// Length
     GfHalf GetLength() const {
-        // TODO should use GfSqrt.
-        return sqrt(GetLengthSq());
+        return GfSqrt(GetLengthSq());
     }
 
     /// Normalizes the vector in place to unit length, returning the

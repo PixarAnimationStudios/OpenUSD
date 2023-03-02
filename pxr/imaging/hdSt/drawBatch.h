@@ -95,6 +95,11 @@ public:
         HdStRenderPassStateSharedPtr const &renderPassState,
         HdStResourceRegistrySharedPtr const &resourceRegistry) = 0;
 
+    /// Encode drawing commands for this batch.
+    virtual void EncodeDraw(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+
     /// Executes the drawing commands for this batch.
     virtual void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
@@ -122,6 +127,9 @@ protected:
     ///
     class _DrawingProgram {
     public:
+        using DrawingCoordBufferBinding =
+                HdSt_ResourceBinder::MetaData::DrawingCoordBufferBinding;
+
         _DrawingProgram() {}
 
         HDST_API
@@ -150,6 +158,17 @@ protected:
             _shaders.clear();
         }
         
+        void SetDrawingCoordBufferBinding(
+            DrawingCoordBufferBinding const &
+                drawingCoordBufferBinding) {
+            _drawingCoordBufferBinding = drawingCoordBufferBinding;
+        }
+
+        const DrawingCoordBufferBinding &
+        GetDrawingCoordBufferBinding() const {
+            return _drawingCoordBufferBinding;
+        }
+
         void SetMaterialNetworkShader(
                 HdSt_MaterialNetworkShaderSharedPtr const &shader) {
             _materialNetworkShader = shader;
@@ -197,7 +216,7 @@ protected:
         // enabled or not.
         HDST_API
         virtual void _GetCustomBindings(
-            HdBindingRequestVector *customBindings,
+            HdStBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const;
 
         HDST_API
@@ -206,6 +225,7 @@ protected:
     private:
         HdStGLSLProgramSharedPtr _glslProgram;
         HdSt_ResourceBinder _resourceBinder;
+        DrawingCoordBufferBinding _drawingCoordBufferBinding;
         HdStShaderCodeSharedPtrVector _shaders;
         HdSt_GeometricShaderSharedPtr _geometricShader;
         HdSt_MaterialNetworkShaderSharedPtr _materialNetworkShader;

@@ -111,5 +111,3 @@ void wrapPlugin()
     boost::python::to_python_converter<std::vector<object>,
         TfPySequenceToPython<std::vector<object> > >();
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(PlugPlugin)

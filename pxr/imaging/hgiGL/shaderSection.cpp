@@ -133,6 +133,8 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
     const std::string &identifier,
     const std::string &typeName,
     const HgiInterpolationType interpolation,
+    const HgiSamplingType sampling,
+    const HgiStorageType storage,
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &storageQualifier,
     const std::string &defaultValue,
@@ -146,6 +148,8 @@ HgiGLMemberShaderSection::HgiGLMemberShaderSection(
                          blockInstanceIdentifier)
     , _typeName(typeName)
     , _interpolation(interpolation)
+    , _sampling(sampling)
+    , _storage(storage)
 {
 }
 
@@ -166,6 +170,23 @@ HgiGLMemberShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
         break;
     case HgiInterpolationNoPerspective:
         ss << "noperspective ";
+        break;
+    }
+    switch (_sampling) {
+    case HgiSamplingDefault:
+        break;
+    case HgiSamplingCentroid:
+        ss << "centroid ";
+        break;
+    case HgiSamplingSample:
+        ss << "sample ";
+        break;
+    }
+    switch (_storage) {
+    case HgiStorageDefault:
+        break;
+    case HgiStoragePatch:
+        ss << "patch ";
         break;
     }
     WriteDeclaration(ss);

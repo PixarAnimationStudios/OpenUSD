@@ -110,7 +110,10 @@ private:
 
     // Adapter delegation.
 
-    _APISchemaAdapters _AdapterSetLookup(UsdPrim prim) const;
+    _APISchemaAdapters _AdapterSetLookup(UsdPrim prim,
+            // optionally return the prim adapter (which will also be
+            // included in wrapped form as  part of the ordered main result)
+            UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
 
     UsdImagingAPISchemaAdapterSharedPtr _APIAdapterLookup(
             const TfToken &adapterKey) const;
@@ -197,12 +200,26 @@ private:
 
     mutable _ApiAdapterMap _apiAdapterMap;
 
+    struct _AdapterSetEntry
+    {
+         // ordered and inclusive of primAdapter
+        _APISchemaAdapters allAdapters;
+
+        // for identifying prim adapter within same lookup
+        UsdImagingPrimAdapterSharedPtr primAdapter; 
+    };
+
     // Use UsdPrimTypeInfo pointer as key because they are guaranteed to be
     // cached at least as long as the stage is open.
     using _AdapterSetMap = tbb::concurrent_unordered_map<
-        const UsdPrimTypeInfo *, _APISchemaAdapters, TfHash>;
+        const UsdPrimTypeInfo *, _AdapterSetEntry, TfHash>;
 
     mutable _AdapterSetMap _adapterSetMap;
+
+
+    using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
+    _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim);
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

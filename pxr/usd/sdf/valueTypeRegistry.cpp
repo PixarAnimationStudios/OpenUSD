@@ -28,9 +28,9 @@
 #include "pxr/usd/sdf/valueTypePrivate.h"
 #include "pxr/usd/sdf/types.h" // For SdfDimensionlessUnitDefault
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/type.h"
-#include <boost/functional/hash.hpp>
 
 #include <tbb/spin_rw_mutex.h>
 
@@ -183,17 +183,7 @@ private:
     // can be the core type for multiple roles but all types that have
     // the same TfType and role are aliases of each other.
     typedef std::pair<TfType, TfToken> CoreTypeKey;
-    struct CoreTypeKeyHash {
-        size_t operator()(const CoreTypeKey& x) const
-        {
-            size_t hash = 0;
-            boost::hash_combine(hash, TfHash()(x.first));
-            boost::hash_combine(hash, x.second.Hash());
-            return hash;
-        }
-    };
-
-    typedef TfHashMap<CoreTypeKey, CoreType, CoreTypeKeyHash> CoreTypeMap;
+    typedef TfHashMap<CoreTypeKey, CoreType, TfHash> CoreTypeMap;
     typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TypeMap;
     typedef TfHashMap<TfToken, CoreType, TfHash> TemporaryCoreTypeMap;
     typedef TfHashMap<TfToken, Sdf_ValueTypeImpl, TfHash> TemporaryNameMap;

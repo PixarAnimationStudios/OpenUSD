@@ -32,19 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// MatfiltFilterChain::FilterFunc implementation which renames "ri:*" terminals
-/// to be the standard HdMaterialTerminalTokens.
-void MatfiltResolveTerminals(
-    const SdfPath& networkId,
-    HdMaterialNetwork2& network,
-    const std::map<TfToken, VtValue>& contextValues,
-    const NdrTokenVec& shaderTypePriority,
-    std::vector<std::string>* outputErrorMessages);
-
-/// Returns the terminal mappings that this material filter should apply.
-///
-/// Note, the scene index implementation of this material filter just uses
-/// HdSiTerminalsResolvingSceneIndex with this dictionary.
+/// Returns the "ri:*:" RenderMan terminal mappings that should be
+/// used with HdSiTerminalsResolvingSceneIndex.
 const std::map<TfToken, TfToken>&
 MatfiltResolveTerminalsGetTerminalMappings();
 

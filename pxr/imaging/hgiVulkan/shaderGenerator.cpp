@@ -84,6 +84,91 @@ HgiVulkanShaderGenerator::HgiVulkanShaderGenerator(
             "local_size_y = " + std::to_string(workSizeY) + ", "
             "local_size_z = " + std::to_string(workSizeZ) + ") in;\n"
         );
+    } else if (descriptor.shaderStage == HgiShaderStageTessellationControl) {
+        _shaderLayoutAttributes.emplace_back(
+            "layout (vertices = " +
+                descriptor.tessellationDescriptor.numVertsPerPatchOut +
+                ") out;\n");
+    } else if (descriptor.shaderStage == HgiShaderStageTessellationEval) {
+        if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Triangles) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles) in;\n");
+        } else if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Quads) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (quads) in;\n");
+        } else if (descriptor.tessellationDescriptor.patchType ==
+                HgiShaderFunctionTessellationDesc::PatchType::Isolines) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (isolines) in;\n");
+        }
+        if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::Equal) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (equal_spacing) in;\n");
+        } else if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::FractionalEven) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (fractional_even_spacing) in;\n");
+        } else if (descriptor.tessellationDescriptor.spacing ==
+                HgiShaderFunctionTessellationDesc::Spacing::FractionalOdd) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (fractional_odd_spacing) in;\n");
+        }
+        if (descriptor.tessellationDescriptor.ordering ==
+                HgiShaderFunctionTessellationDesc::Ordering::CW) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (cw) in;\n");
+        } else if (descriptor.tessellationDescriptor.ordering ==
+                HgiShaderFunctionTessellationDesc::Ordering::CCW) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (ccw) in;\n");
+        }
+    } else if (descriptor.shaderStage == HgiShaderStageGeometry) {
+        if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Points) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (points) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Lines) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (lines) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::LinesAdjacency) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (lines_adjacency) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::Triangles) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles) in;\n");
+        } else if (descriptor.geometryDescriptor.inPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::InPrimitiveType::TrianglesAdjacency){
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangles_adjacency) in;\n");
+        }
+
+        if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::Points) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (points, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        } else if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::LineStrip) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (line_strip, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        } else if (descriptor.geometryDescriptor.outPrimitiveType ==
+            HgiShaderFunctionGeometryDesc::OutPrimitiveType::TriangleStrip) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (triangle_strip, max_vertices = " +
+                descriptor.geometryDescriptor.outMaxVertices + ") out;\n");
+        }
+    } else if (descriptor.shaderStage == HgiShaderStageFragment) {
+        if (descriptor.fragmentDescriptor.earlyFragmentTests) {
+            _shaderLayoutAttributes.emplace_back(
+                "layout (early_fragment_tests) in;\n");
+        }
     }
 
     // The ordering here is important (buffers before textures), because we
@@ -128,6 +213,14 @@ HgiVulkanShaderGenerator::_WriteExtensions(std::ostream &ss)
                 ss << "  return gl_BaseVertex;\n";
             }
             ss << "}\n";
+
+            ss << "int HgiGetBaseInstance() {\n";
+            if (glslVersion < 460) { // use ARB extension
+                ss << "  return gl_BaseInstanceARB;\n";
+            } else {
+                ss << "  return gl_BaseInstance;\n";
+            }
+            ss << "}\n";
         }
     }
 
@@ -154,9 +247,6 @@ HgiVulkanShaderGenerator::_WriteMacros(std::ostream &ss)
     ss << "\n"
         << "#define HGI_HAS_DOUBLE_TYPE 1\n"
         << "\n";
-
-    // Define platform independent baseInstance as 0
-    ss << "#define gl_BaseInstance 0\n";
 }
 
 void
@@ -262,17 +352,35 @@ HgiVulkanShaderGenerator::_WriteInOuts(
     const HgiShaderFunctionParamDescVector &parameters,
     const std::string &qualifier) 
 {
-    // To unify glslfx across different apis, other apis
-    // may want these to be defined, but since they are
-    // taken in opengl we ignore them
+    // To unify glslfx across different apis, other apis may want these to be 
+    // defined, but since they are taken in opengl we ignore them.
     const static std::set<std::string> takenOutParams {
         "gl_Position",
         "gl_FragColor",
-        "gl_FragDepth"
+        "gl_FragDepth",
+        "gl_PointSize",
+        "gl_ClipDistance",
+        "gl_CullDistance",
     };
-    const static std::map<std::string, std::string> takenInParams {
+
+    const static std::unordered_map<std::string, std::string> takenInParams {
         { HgiShaderKeywordTokens->hdPosition, "gl_Position"},
-        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"}
+        { HgiShaderKeywordTokens->hdPointCoord, "gl_PointCoord"},
+        { HgiShaderKeywordTokens->hdClipDistance, "gl_ClipDistance"},
+        { HgiShaderKeywordTokens->hdCullDistance, "gl_CullDistance"},
+        { HgiShaderKeywordTokens->hdVertexID, "gl_VertexIndex"},
+        { HgiShaderKeywordTokens->hdInstanceID, "gl_InstanceIndex"},
+        { HgiShaderKeywordTokens->hdPrimitiveID, "gl_PrimitiveID"},
+        { HgiShaderKeywordTokens->hdSampleID, "gl_SampleID"},
+        { HgiShaderKeywordTokens->hdSamplePosition, "gl_SamplePosition"},
+        { HgiShaderKeywordTokens->hdFragCoord, "gl_FragCoord"},
+        { HgiShaderKeywordTokens->hdBaseVertex, "gl_BaseVertex"},
+        { HgiShaderKeywordTokens->hdBaseInstance, "HgiGetBaseInstance()"},
+        { HgiShaderKeywordTokens->hdFrontFacing, "gl_FrontFacing"},
+        { HgiShaderKeywordTokens->hdLayer, "gl_Layer"},
+        { HgiShaderKeywordTokens->hdViewportIndex, "gl_ViewportIndex"},
+        { HgiShaderKeywordTokens->hdGlobalInvocationID, "gl_GlobalInvocationID"},
+        { HgiShaderKeywordTokens->hdBaryCoordNoPerspNV, "gl_BaryCoordNoPerspNV"},
     };
 
     const bool in_qualifier = qualifier == "in";
@@ -288,16 +396,36 @@ HgiVulkanShaderGenerator::_WriteInOuts(
             const std::string &role = param.role;
             auto const& keyword = takenInParams.find(role);
             if (keyword != takenInParams.end()) {
-                CreateShaderSection<HgiVulkanKeywordShaderSection>(
-                    paramName,
-                    param.type,
-                    keyword->second);
+                if (role == HgiShaderKeywordTokens->hdGlobalInvocationID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdVertexID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdInstanceID) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                } else if (role == HgiShaderKeywordTokens->hdBaseInstance) {
+                    CreateShaderSection<HgiVulkanKeywordShaderSection>(
+                        paramName,
+                        param.type,
+                        keyword->second);
+                }
                 continue;
             }
         }
 
-        const int locationIndex = in_qualifier ? _inLocationIndex++ :
-            _outLocationIndex++;
+        // If a location has been specified then add it to the attributes.
+        const int32_t locationIndex =
+            param.location >= 0
+            ? param.location
+            : (in_qualifier ? _inLocationIndex++ : _outLocationIndex++);
 
         const HgiShaderSectionAttributeVector attrs {
             HgiShaderSectionAttribute{
@@ -307,8 +435,13 @@ HgiVulkanShaderGenerator::_WriteInOuts(
         CreateShaderSection<HgiVulkanMemberShaderSection>(
             paramName,
             param.type,
+            param.interpolation,
+            param.sampling,
+            param.storage,
             attrs,
-            qualifier);
+            qualifier,
+            std::string(),
+            param.arraySize);
     }
 }
 
@@ -331,6 +464,9 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
                 CreateShaderSection<HgiVulkanMemberShaderSection>(
                     member.name,
                     member.type,
+                    HgiInterpolationDefault,
+                    HgiSamplingDefault,
+                    HgiStorageDefault,
                     HgiShaderSectionAttributeVector(),
                     qualifier,
                     std::string(),

@@ -57,6 +57,17 @@ public:
     USDIMAGING_API
     ~UsdImagingGprimAdapter() override;
 
+
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
+            TfToken const& subprim,
+            TfTokenVector const& properties) override;
+
     // ---------------------------------------------------------------------- //
     /// \name Parallel Setup and Resolve
     // ---------------------------------------------------------------------- //

@@ -1116,6 +1116,13 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
+    if (!format->SupportsReading()) {
+        TF_CODING_ERROR("Cannot read layer @%s@: %s file format does not"
+                        "support reading",
+                        identifier.c_str(),
+                        format->GetFormatId().GetText());
+        return false;
+    }
     return IsIncludedByDetachedLayerRules(identifier) ?
         format->ReadDetached(this, resolvedPath, metadataOnly) :
         format->Read(this, resolvedPath, metadataOnly);
@@ -4706,6 +4713,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
     if (!TF_VERIFY(fileFormat)) {
         TF_RUNTIME_ERROR("Unknown file format when attempting to write '%s'",
             newFileName.c_str());
+        return false;
+    }
+
+    if (!fileFormat->SupportsWriting()) {
+        TF_CODING_ERROR("Cannot save layer @%s@: %s file format does not"
+                        "support writing",
+                        newFileName.c_str(),
+                        fileFormat->GetFormatId().GetText());
         return false;
     }
 

@@ -1,3 +1,22 @@
+:root {
+    --san-serif: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Lato", "proxima-nova", "Helvetica Neue", Arial, "Segoe UI", Roboto, Helvetica, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --san-serif2: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Roboto Slab", "ff-tisa-web-pro", "Georgia", Arial, "Segoe UI", Roboto, Helvetica, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+    --serif: ui-serif, -apple-system-ui-serif, 'Georgia', serif;
+    --monospace: ui-monospace, -apple-system-ui-serif, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", Courier, 'Andale Mono', 'Ubuntu Mono', monospace;
+}
+
+body, .rst-content {
+    font-family: var(--san-serif);
+}
+
+.rst-content .toctree-wrapper>p.caption, h1, h2, h3, h4, h5, h6, legend {
+    font-family: var(--serif);
+}
+
+h4 {
+    font-weight: 650;
+}
+
 .bolditalic {
   font-weight: bold;
   font-style: italic;
@@ -18,8 +37,8 @@
   text-decoration: underline;
 }
 
-.mono {
-  font-family: monospace
+.mono, .rst-content .linenodiv pre, .rst-content div[class^=highlight] pre, .rst-content pre.literal-block {
+  font-family: var(--monospace)
 }
 
 .underline {
@@ -49,7 +68,7 @@ img.usd-logo-image {
 }
 
 .usd-title-image-outer {
-    --title-image-width: calc
+    --title-image-width: calc;
     position: relative;
     float: left;
 }
@@ -65,7 +84,7 @@ img.usd-logo-image {
     left: 0;
     bottom: 0;
     width: 100%;
-    font-family: Roboto Slab,ff-tisa-web-pro,Georgia,Arial,sans-serif;
+    font-family: var(--san-serif);
     font-weight: 700;
     font-size: 3vw;
 }
@@ -101,6 +120,12 @@ div.usd-tutorial-admonition > p {
   -webkit-column-count: 4; /* Chrome, Safari, Opera */
   -moz-column-count: 4; /* Firefox */
   column-count: 4;
+}
+
+.threecolumn {
+  -webkit-column-count: 3; /* Chrome, Safari, Opera */
+  -moz-column-count: 3; /* Firefox */
+  column-count: 3;
 }
 
 .twocolumn {

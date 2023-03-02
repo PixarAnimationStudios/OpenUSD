@@ -35,7 +35,7 @@
 
 #include "pxr/base/gf/frustum.h"
 
-
+#include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/gf/vec3d.h"
@@ -54,6 +54,8 @@ class UsdRenderSettings;
 struct UsdRenderSpec {
     /// Specification of a product.  See UsdRenderProduct.
     struct Product {
+        /// The path of this product, which uniquely identifies it.
+        SdfPath renderProductPath;
         /// The type of product, ex: "raster".
         TfToken type;
         /// The name of the product, which uniquely identifies it.
@@ -120,8 +122,19 @@ struct UsdRenderSpec {
 USDRENDER_API
 UsdRenderSpec
 UsdRenderComputeSpec(UsdRenderSettings const& settings,
-                     UsdTimeCode time,
-                     std::vector<std::string> const& namespaces);
+                     TfTokenVector const& namespaces);
+
+/// Returns a dictionary populated with attributes filtered by the namespaces.
+/// If a non-empty list of namespaces is provided, only authored attributes
+/// within those namespaces are returned.
+/// If an empty list of namespaces is provided, all custom (non-schema)
+/// attributes are returned.
+/// \note Special handling is provided for connectable attributes that are used
+///       to represent node graph outputs.
+USDRENDER_API
+VtDictionary
+UsdRenderComputeExtraSettings(UsdPrim const& prim,
+                              TfTokenVector const& namespaces);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

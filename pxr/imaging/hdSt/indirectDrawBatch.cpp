@@ -27,6 +27,7 @@
 // this temporarily until Storm has transitioned fully to Hgi.
 #include "pxr/imaging/hgiGL/graphicsCmds.h"
 
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
@@ -42,7 +43,6 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/debugCodes.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -51,6 +51,8 @@
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 
 #include "pxr/imaging/glf/diagnostic.h"
+
+#include "pxr/base/gf/matrix4f.h"
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
@@ -924,6 +926,14 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 }
 
+void
+HdSt_IndirectDrawBatch::EncodeDraw(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    // No implementation.
+}
+
 ////////////////////////////////////////////////////////////
 // GPU Resource Binding
 ////////////////////////////////////////////////////////////
@@ -1398,7 +1408,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
     GfVec2f const &drawRangeNdc = renderPassState->GetDrawingRangeNDC();
 
     // Get the bind index for the 'cullParams' uniform block
-    HdBinding binding = state.binder.GetBinding(_tokens->ulocCullParams);
+    HdStBinding binding = state.binder.GetBinding(_tokens->ulocCullParams);
     int bindLoc = binding.GetLocation();
 
     if (_useInstanceCulling) {
@@ -1423,7 +1433,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
 
         // Make sure the reset-pass memory writes
         // are visible to the culling shader pass.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
         // Perform Culling Pass
         cullParamsInstanced.resetPass = 0;
@@ -1439,7 +1449,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
 
         // Make sure culling memory writes are
         // visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     } else {
         // set cull parameters
         Uniforms cullParams;
@@ -1455,7 +1465,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
         cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1, 0);
 
         // Make sure culling memory writes are visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     }
 
     cullGfxCmds->PopDebugGroup();
@@ -1621,30 +1631,30 @@ HdSt_IndirectDrawBatch::_CullingProgram::Initialize(
 /* virtual */
 void
 HdSt_IndirectDrawBatch::_CullingProgram::_GetCustomBindings(
-    HdBindingRequestVector *customBindings,
+    HdStBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
     if (!TF_VERIFY(enableInstanceDraw) ||
         !TF_VERIFY(customBindings)) return;
 
-    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::SSBO,
                                   _tokens->drawIndirectResult));
-    customBindings->push_back(HdBindingRequest(HdBinding::SSBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::SSBO,
                                   _tokens->dispatchBuffer));
-    customBindings->push_back(HdBindingRequest(HdBinding::UBO,
+    customBindings->push_back(HdStBindingRequest(HdStBinding::UBO,
                                   _tokens->ulocCullParams));
 
     if (_useInstanceCulling) {
         customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX_INSTANCE,
+            HdStBindingRequest(HdStBinding::DRAW_INDEX_INSTANCE,
                 _tokens->drawCommandIndex));
     } else {
         // non-instance culling
         customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX,
+            HdStBindingRequest(HdStBinding::DRAW_INDEX,
                 _tokens->drawCommandIndex));
         customBindings->push_back(
-            HdBindingRequest(HdBinding::DRAW_INDEX,
+            HdStBindingRequest(HdStBinding::DRAW_INDEX,
                 _tokens->instanceCountInput));
     }
 

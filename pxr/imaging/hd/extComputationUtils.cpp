@@ -68,7 +68,7 @@ HdExtComputationUtils::_GenerateDependencyMap(
     HdExtComputationUtils::ComputationDependencyMap cdm;
     while (!computations.empty()) {
         // Pop head entry and skip if already processed.
-        HdExtComputation const * curComp = computations.back();
+        HdExtComputation const * curComp = computations.front();
         computations.pop_front();
         if (cdm.find(curComp) != cdm.end()) {
             continue;

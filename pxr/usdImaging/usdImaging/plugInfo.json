@@ -69,6 +69,11 @@
                         "isInternal": true,
                         "primTypeName": "coordSys"
                     },
+                    "UsdImagingCoordSysAPIAdapter" : {
+                        "bases": ["UsdImagingAPISchemaAdapter"],
+                        "isInternal": true,
+                        "apiSchemaName": "CoordSysAPI"
+                    },
                     "UsdImagingCubeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -83,6 +88,11 @@
                         "isInternal": true,
                         "primTypeName": "Cylinder"
                     },
+                    "UsdImagingDrawModeAdapter" : {
+                        "bases": ["UsdImagingPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "__drawModeAdapter"
+                    },
                     "UsdImagingHermiteCurvesAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -95,6 +105,13 @@
                         "isInternal": true,
                         "primTypeName": "Material"
                     },
+
+                    "UsdImagingShaderAdapter" : {
+                        "bases": ["UsdImagingRepresentedByAncestorPrimAdapter"],
+                        "isInternal": true,
+                        "primTypeName": "Shader"
+                    },
+
                     "UsdImagingMaterialBindingAPIAdapter" : {
                         "bases": ["UsdImagingAPISchemaAdapter"],
                         "isInternal": true,
@@ -163,6 +180,14 @@
                         "isInternal": true,
                         "primTypeName": "PxrSampleFilterPluginBase",
                         "includeDerivedPrimTypes" : true 
+                    },
+                    "UsdImagingDisplayFilterAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "PxrDisplayFilterPluginBase",
+                        "includeDerivedPrimTypes": true
                     },
                     "UsdImagingVolumeAdapter": {
                         "bases": [

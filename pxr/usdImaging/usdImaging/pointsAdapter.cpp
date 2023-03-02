@@ -83,6 +83,20 @@ UsdImagingPointsAdapter::GetImagingSubprimData(
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingPointsAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointsPrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
 bool
 UsdImagingPointsAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {

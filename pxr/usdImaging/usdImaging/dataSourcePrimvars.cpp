@@ -31,6 +31,8 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 
+#include "pxr/base/tf/denseHashMap.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static inline bool
@@ -57,7 +59,6 @@ UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
     const SdfPath &sceneIndexPath,
     UsdPrim const &usdPrim,
     UsdGeomPrimvarsAPI usdPrimvars,
-    const CustomPrimvarMappings &customPrimvarMappings,
     const UsdImagingDataSourceStageGlobals & stageGlobals)
 : _sceneIndexPath(sceneIndexPath)
 , _usdPrim(usdPrim)
@@ -66,14 +67,6 @@ UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
     const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetPrimvars();
     for (const UsdGeomPrimvar & p : primvars) {
         _namespacedPrimvars[p.GetPrimvarName()] = p;
-    }
-
-    for (const CustomPrimvarMapping& cp : customPrimvarMappings) {
-        UsdAttributeQuery attrQ(
-            usdPrimvars.GetPrim().GetAttribute(cp.usdAttrName));
-        if (attrQ.HasAuthoredValue()) {
-            _customPrimvars[cp.primvarName] = { attrQ, cp.interpolation };
-        }
     }
 }
 
@@ -91,13 +84,9 @@ UsdImagingDataSourcePrimvars::GetNames()
     TRACE_FUNCTION();
 
     TfTokenVector result;
-    result.reserve(_customPrimvars.size() + _namespacedPrimvars.size());
+    result.reserve(_namespacedPrimvars.size());
 
     for (const auto & entry : _namespacedPrimvars) {
-        result.push_back(entry.first);
-    }
-
-    for (const auto & entry : _customPrimvars) {
         result.push_back(entry.first);
     }
 
@@ -133,6 +122,56 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
                     UsdImagingUsdToHdRole(attr.GetRoleName())));
     }
 
+    if (UsdRelationship rel =
+            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
+
+        return HdPrimvarSchema::Builder()
+            .SetPrimvarValue(UsdImagingDataSourceRelationship::New(
+                rel, _stageGlobals))
+            .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
+                HdPrimvarSchemaTokens->constant))
+            .Build();
+    }
+
+    return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
+UsdImagingDataSourceCustomPrimvars::UsdImagingDataSourceCustomPrimvars(
+        const SdfPath &sceneIndexPath,
+        UsdPrim const &usdPrim,
+        const Mappings &mappings,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+: _sceneIndexPath(sceneIndexPath)
+, _usdPrim(usdPrim)
+, _stageGlobals(stageGlobals)
+{
+    for (const Mapping& cp : mappings) {
+        UsdAttributeQuery attrQ(
+            _usdPrim.GetPrim().GetAttribute(cp.usdAttrName));
+        if (attrQ.HasAuthoredValue()) {
+            _customPrimvars[cp.primvarName] = { attrQ, cp.interpolation };
+        }
+    }
+}
+
+TfTokenVector
+UsdImagingDataSourceCustomPrimvars::GetNames()
+{
+    TfTokenVector result;
+    result.reserve(_customPrimvars.size());
+
+    for (const auto &entry : _customPrimvars) {
+        result.push_back(entry.first);
+    }
+
+    return result;
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourceCustomPrimvars::Get(const TfToken &name)
+{
     const auto cIt = _customPrimvars.find(name);
     if (cIt != _customPrimvars.end()) {
         const UsdAttributeQuery &attrQ = cIt->second.first;
@@ -151,19 +190,34 @@ UsdImagingDataSourcePrimvars::Get(const TfToken & name)
                 UsdImagingUsdToHdRole(attr.GetRoleName())));
     }
 
+    return nullptr;
+}
 
-    if (UsdRelationship rel =
-            _usdPrim.GetRelationship(_GetPrefixedName(name))) {
 
-        return HdPrimvarSchema::Builder()
-            .SetPrimvarValue(UsdImagingDataSourceRelationship::New(
-                rel, _stageGlobals))
-            .SetInterpolation(HdPrimvarSchema::BuildInterpolationDataSource(
-                HdPrimvarSchemaTokens->constant))
-            .Build();
+
+/*static*/
+HdDataSourceLocatorSet
+UsdImagingDataSourceCustomPrimvars::Invalidate(
+        const TfTokenVector &properties,
+        const Mappings &mappings)
+{
+    HdDataSourceLocatorSet result;
+
+    // TODO, decide how to handle this based on the size?
+    TfDenseHashMap<TfToken, TfToken, TfHash> nameMappings;
+    for (const UsdImagingDataSourceCustomPrimvars::Mapping &m : mappings) {
+        nameMappings[m.usdAttrName] = m.primvarName;
     }
 
-    return nullptr;
+    for (const TfToken &propertyName : properties) {
+        const auto it = nameMappings.find(propertyName);
+        if (it != nameMappings.end()) {
+            result.insert(HdPrimvarsSchema::GetDefaultLocator().Append(
+                it->second));
+        }
+    }
+
+    return result;
 }
 
 // ----------------------------------------------------------------------------

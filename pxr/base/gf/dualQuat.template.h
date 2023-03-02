@@ -40,8 +40,7 @@
 {% endif %}
 
 #include "pxr/base/gf/quat{{ SUFFIX }}.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -175,10 +174,7 @@ class {{ DUALQUAT }} final
 
     /// Hash.
     friend inline size_t hash_value(const {{ DUALQUAT }} &dq) {
-        size_t h = 0;
-        boost::hash_combine(h, dq.GetReal());
-        boost::hash_combine(h, dq.GetDual());
-        return h;
+        return TfHash::Combine(dq.GetReal(), dq.GetDual());
     }
 
     /// Component-wise dual quaternion equality test. The real and dual parts

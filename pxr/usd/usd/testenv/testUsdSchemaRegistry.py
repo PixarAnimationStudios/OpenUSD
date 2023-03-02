@@ -225,11 +225,17 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("ModelAPI"), 
             modelAPI)
 
-        # A valid type without an associated schema prim definition returns an
-        # empty type name.
-        self.assertTrue(Tf.Type(Usd.Typed))        
+        # Test getting a schema type name from the abstract base schema 
+        # UsdTyped. 
         self.assertEqual(
-            Usd.SchemaRegistry().GetSchemaTypeName(Tf.Type(Usd.Typed)), "")
+            Usd.SchemaRegistry.GetSchemaTypeName(Usd.Typed), 
+            "Typed")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(abstractTest),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(abstractTest), 
+            "")
 
     def test_FindConcretePrimDefinition(self):
         # MetadataTest is a concrete prim schama. Can get the prim definition
@@ -288,20 +294,6 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             'collection:__INSTANCE_NAME__:expansionRule'))
         self.assertFalse(primDef.GetSchemaRelationshipSpec(
             'collection:__INSTANCE_NAME__:expansionRule'))
-
-        # We can also get the CollectionAPI prim definition using its template
-        # name instead.
-        templatePrimDef = Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(
-            'CollectionAPI:__INSTANCE_NAME__')
-        # Note that we can't test for equality of the prim defs directly, even
-        # though they're the same, since the python objects are different. So we
-        # verify that the main aspects of the definitions are same instead.
-        self.assertEqual(templatePrimDef.GetPropertyNames(),
-                         primDef.GetPropertyNames())
-        self.assertEqual(templatePrimDef.ListMetadataFields(),
-                         primDef.ListMetadataFields())
-        self.assertEqual(templatePrimDef.GetAppliedAPISchemas(),
-                         primDef.GetAppliedAPISchemas())
 
         # API schema but not an applied schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindAppliedAPIPrimDefinition(

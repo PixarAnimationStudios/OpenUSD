@@ -91,6 +91,7 @@ HdInstancer::_SyncInstancerAndParents(HdRenderIndex &renderIndex,
 {
     HdRenderParam *renderParam =
         renderIndex.GetRenderDelegate()->GetRenderParam();
+    HdChangeTracker& tracker = renderIndex.GetChangeTracker();
     SdfPath id = instancerId;
     while (!id.IsEmpty()) {
         HdInstancer *instancer = renderIndex.GetInstancer(id);
@@ -98,17 +99,13 @@ HdInstancer::_SyncInstancerAndParents(HdRenderIndex &renderIndex,
             return;
         }
 
-        HdDirtyBits dirtyBits =
-            renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
-
+        std::lock_guard<std::mutex> lock(instancer->_instanceLock);
+        HdDirtyBits dirtyBits = tracker.GetInstancerDirtyBits(id);
         if (dirtyBits != HdChangeTracker::Clean) {
-            std::lock_guard<std::mutex> lock(instancer->_instanceLock);
-            dirtyBits =
-                renderIndex.GetChangeTracker().GetInstancerDirtyBits(id);
             instancer->Sync(instancer->GetDelegate(), renderParam, &dirtyBits);
-            renderIndex.GetChangeTracker().MarkInstancerClean(id);
+            tracker.MarkInstancerClean(id);
         }
-
+        
         id = instancer->GetParentId();
     }
 }

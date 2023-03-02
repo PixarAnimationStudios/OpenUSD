@@ -24,8 +24,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -90,8 +88,6 @@ private:
     bool _mouseButton[3];
 };
 
-GLuint vao;
-
 void
 My_TestGLDrawing::InitTest()
 {
@@ -119,10 +115,6 @@ My_TestGLDrawing::InitTest()
         _engine->SetRendererSetting(TfToken(renderSetting.first),
                                     renderSetting.second);
     }
-
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
 
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
@@ -257,12 +249,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetRenderViewport(viewport);
     }
  
-    bool const useAovs = !GetRendererAov().IsEmpty();
-    GfVec4f fboClearColor = useAovs? GfVec4f(0.0f) : GetClearColor();
-    GLfloat clearDepth[1] = { 1.0f };
-    bool const clearOnlyOnce = ShouldClearOnce();
-    bool cleared = false;
-
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting = IsEnabledTestLighting();
@@ -279,13 +265,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _SetDisplayUnloadedPrimsWithBounds(_engine.get(), true);
     }
 
-    glViewport(0, 0, width, height);
-
-    glEnable(GL_DEPTH_TEST);
-
-    if (useAovs) {
-        _engine->SetRendererAov(GetRendererAov());
-    }
+    _engine->SetRendererAov(GetRendererAov());
 
     if(IsEnabledTestLighting()) {
         _engine->SetLightingState(_lightingContext);
@@ -295,12 +275,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetEnablePresentation(false);
     }
 
-    if (!GetClipPlanes().empty()) {
-        params.clipPlanes = GetClipPlanes();
-        for (size_t i=0; i<GetClipPlanes().size(); ++i) {
-            glEnable(GL_CLIP_PLANE0 + i);
-        }
-    }
+    params.clipPlanes = GetClipPlanes();
 
     for (double const &t : GetTimes()) {
         UsdTimeCode time = t;
@@ -324,15 +299,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 
                 convergenceIterations++;
 
-                if (cleared && clearOnlyOnce) {
-                    // Don't clear the FBO
-                } else {
-                    glClearBufferfv(GL_COLOR, 0, fboClearColor.data());
-                    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
-                    cleared = true;
-                }
-                
                 _engine->Render(_stage->GetPseudoRoot(), params);
             } while (!_engine->IsConverged());
         
@@ -358,7 +324,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 imageFilePath = TfStringReplace(imageFilePath, ".png", suffix.str());
             }
             std::cout << imageFilePath << "\n";
-            WriteToFile("color", imageFilePath);
+            WriteToFile(_engine.get(), HdAovTokens->color, imageFilePath);
         }
     }
 

@@ -35,6 +35,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/array.h"
 
+#include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/assetPath.h"
 
@@ -120,6 +121,10 @@ using HdFormatDataSourceHandle = HdFormatDataSource::Handle;
 
 using HdTupleTypeDataSource = HdTypedSampledDataSource<HdTupleType>;
 using HdTupleTypeDataSourceHandle = HdTupleTypeDataSource::Handle;
+
+// ArResolverContext
+using HdResolverContextDataSource = HdTypedSampledDataSource<ArResolverContext>;
+using HdResolverContextDataSourceHandle = HdResolverContextDataSource::Handle;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

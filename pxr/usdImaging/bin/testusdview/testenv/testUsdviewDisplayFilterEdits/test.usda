@@ -1,0 +1,159 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "World"
+{
+    float xyz = 123
+
+    def Cube "GroundPlane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Grid>
+        double xformOp:rotateY = -90
+        float3 xformOp:scale = (5, 0.05, 5)
+        token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateY"]
+    }
+
+    def Cube "Cube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Red>
+        color3f[] primvars:displayColor = [(0.8763, 0.2168, 0.2168)]
+        double size = 1.2
+        double3 xformOp:translate = (3.85, 0.65, 3.85)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Cone "Cone" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        token axis = "Y"
+        double height = 1.2
+        rel material:binding = </Material/Blue>
+        color3f[] primvars:displayColor = [(0.0436, 0.1311, 0.3634)]
+        double radius = 0.6
+        double3 xformOp:translate = (-3.85, 0.65, 3.85)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "LargeSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/White>
+        double radius = 2
+        double3 xformOp:translate = (0, 2, 0)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Scope "Lights"
+    {
+        def RectLight "Light"
+        {
+            float inputs:exposure = 3
+            float inputs:focus = 1
+            float inputs:height = 2
+            float inputs:intensity = 1
+            float inputs:width = 9
+            double3 xformOp:rotateXYZ = (-60, 31.5, 0)
+            double3 xformOp:translate = (3.6, 11.4, 6)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    float2 clippingRange = (0.1, 10000)
+    float focalLength = 25
+    float focusDistance = 21
+    float fStop = 22
+    double3 xformOp:rotateXYZ = (-18.9, 17.76, 0)
+    double3 xformOp:translate = (-1, 0, 21)
+    token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+}
+
+def Scope "Material"
+{
+    def Material "Grid"
+    {
+        token outputs:surface.connect = </Material/Grid/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor.connect = </Material/Grid/Texture.outputs:resultRGB>
+            token outputs:out
+        }
+
+        def Shader "Texture"
+        {
+            uniform token info:id = "PxrTexture"
+            token inputs:filename = "grid_t"
+            color3f outputs:resultRGB
+        }
+    }
+
+    def Material "White"
+    {
+        token outputs:surface.connect = </Material/White/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (1, 1, 1)
+            float inputs:diffuseGain = 0.5
+            token outputs:out
+        }
+    }
+
+    def Material "Red"
+    {
+        token outputs:surface.connect = </Material/Red/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (0.8763, 0.2168, 0.2168)
+            token outputs:out
+        }
+    }
+
+    def Material "Blue"
+    {
+        token outputs:surface.connect = </Material/Blue/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (0.0436, 0.1311, 0.3634)
+            token outputs:out
+        }
+    }
+}
+
+def Scope "Render"
+{
+    def RenderSettings "RenderSettings"
+    {
+        token outputs:ri:displayFilters.connect = </Render/DisplayFilter1.outputs:result>
+    }
+
+    def PxrColorTransformDisplayFilter "DisplayFilter1"
+    {
+        float[] inputs:ri:transform = [ 0, 0, 1, 1, 0, 0, 0, 1, 0 ]
+        token outputs:result
+    }
+
+    def PxrBackgroundDisplayFilter "DisplayFilter2"
+    {
+        color3f inputs:ri:backgroundColor = (1, 0, 1)
+        token outputs:result
+    }
+}
+

@@ -760,12 +760,14 @@ class TestGfMatrix(unittest.TestCase):
                     Gf.Matrix4f]
         for Matrix in Matrices:
             # Test GetDeterminant and GetInverse on Matrix4
+
+            epsilon = 1e-10 if Matrix.__name__.endswith("d") else 1e-5
             def AssertDeterminant(m, det):
                 # Unfortunately, we don't have an override of Gf.IsClose
                 # for Gf.Matrix4*
                 for row1, row2 in zip(m * m.GetInverse(), Matrix()):
-                    self.assertTrue(Gf.IsClose(row1, row2, 1e-6))
-                self.assertTrue(Gf.IsClose(m.GetDeterminant(), det, 1e-6))
+                    self.assertTrue(Gf.IsClose(row1, row2, epsilon))
+                self.assertTrue(Gf.IsClose(m.GetDeterminant(), det, epsilon))
 
             m1   = Matrix(0.0, 1.0, 0.0, 0.0,
                             1.0, 0.0, 0.0, 0.0,
@@ -815,6 +817,21 @@ class TestGfMatrix(unittest.TestCase):
             int(Gf.Matrix3d(3))
         with self.assertRaises(excType):
             int(Gf.Matrix3f(3))
+
+    def test_Hash(self):
+        MatrixTypes = [
+            Gf.Matrix2d,
+            Gf.Matrix2f,
+            Gf.Matrix3d,
+            Gf.Matrix3f,
+            Gf.Matrix4d,
+            Gf.Matrix4f
+        ]
+
+        for MatrixType in MatrixTypes:
+            m  = MatrixType(*(i * 2.0 for i in range(1, 1 + MatrixType.dimension[0] * MatrixType.dimension[1])))
+            self.assertEqual(hash(m), hash(m))
+            self.assertEqual(hash(m), hash(MatrixType(m)))
 
 if __name__ == '__main__':
     unittest.main()

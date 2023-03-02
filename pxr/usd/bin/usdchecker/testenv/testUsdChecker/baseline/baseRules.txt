@@ -17,7 +17,7 @@ should always have upAxis set to 'Y'
 ------------------------------
 [TextureChecker]:
  Texture files should be readable by intended client 
-(only .jpg or .png for consumer-level USDZ).
+(only .jpg, .jpeg or .png for consumer-level USDZ).
 ------------------------------
 [PrimEncapsulationChecker]:
  Check for basic prim encapsulation rules:
@@ -44,5 +44,8 @@ Specifically:
 ------------------------------
 [MaterialBindingAPIAppliedChecker]:
  A prim providing a material binding, must have MaterialBindingAPI applied on the prim.
+------------------------------
+[SkelBindingAPIAppliedChecker]:
+ A prim providing skelBinding properties, must have SkelBindingAPI applied on the prim.
 ------------------------------
 Success!

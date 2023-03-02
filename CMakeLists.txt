@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.12)
+cmake_minimum_required(VERSION 3.14)
 
 project(usd)
 
@@ -14,9 +14,9 @@ if (NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif()
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH}
-                      ${CMAKE_SOURCE_DIR}/cmake/defaults
-                      ${CMAKE_SOURCE_DIR}/cmake/modules
-                      ${CMAKE_SOURCE_DIR}/cmake/macros)
+                      ${PROJECT_SOURCE_DIR}/cmake/defaults
+                      ${PROJECT_SOURCE_DIR}/cmake/modules
+                      ${PROJECT_SOURCE_DIR}/cmake/macros)
 
 include(Options)
 include(ProjectDefaults)

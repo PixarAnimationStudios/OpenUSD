@@ -88,7 +88,11 @@ public:
         UsdShadeAttributeType attrType;
         UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
         if (attrType == UsdShadeAttributeType::Input) {
-            return UsdImagingDataSourceAttributeNew(attr, _stageGlobals);
+            return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
+                _sceneIndexPath,
+                    _locatorPrefix.IsEmpty()
+                        ? _locatorPrefix
+                        : _locatorPrefix.Append(name));
         }
 
         // fallback case for requested but unauthored inputs on lights or
@@ -98,7 +102,11 @@ public:
                 || _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
             attr = input.GetAttr();
             if (attr) {
-                return UsdImagingDataSourceAttributeNew(attr, _stageGlobals);
+                return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
+                    _sceneIndexPath,
+                        _locatorPrefix.IsEmpty()
+                            ? _locatorPrefix
+                            : _locatorPrefix.Append(name));
             }
         }
 
@@ -108,11 +116,19 @@ public:
 private:
     _UsdImagingDataSourceShadingNodeParameters(
         UsdShadeShader shaderNode,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
-    : _shaderNode(shaderNode), _stageGlobals(stageGlobals){}
+        const UsdImagingDataSourceStageGlobals &stageGlobals,
+        const SdfPath &sceneIndexPath,
+        const HdDataSourceLocator &locatorPrefix)
+    : _shaderNode(shaderNode)
+    , _stageGlobals(stageGlobals)
+    , _sceneIndexPath(sceneIndexPath)
+    , _locatorPrefix(locatorPrefix)
+    {}
 
     UsdShadeShader _shaderNode;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
+    SdfPath _sceneIndexPath;
+    HdDataSourceLocator _locatorPrefix;
 };
 
 class _UsdImagingDataSourceShadingNodeInputs : public HdContainerDataSource
@@ -426,7 +442,16 @@ public:
 
         if (name == HdMaterialNodeSchemaTokens->parameters) {
             return _UsdImagingDataSourceShadingNodeParameters::New(
-                _shaderNode, _stageGlobals);
+                _shaderNode, _stageGlobals, _sceneIndexPath,
+                    _locatorPrefix.IsEmpty()
+                        ? _locatorPrefix
+                        : _locatorPrefix
+                            .Append(
+                                _shaderNode.GetPrim().GetPath().GetToken())
+                            .Append(
+                                HdMaterialNodeSchemaTokens->parameters)
+                            );
+
         }
 
         if (name == HdMaterialNodeSchemaTokens->inputConnections) {
@@ -440,11 +465,19 @@ public:
 private:
     _UsdImagingDataSourceShadingNode(
         UsdShadeShader shaderNode,
-        const UsdImagingDataSourceStageGlobals &stageGlobals)
-    : _shaderNode(shaderNode), _stageGlobals(stageGlobals){}
+        const UsdImagingDataSourceStageGlobals &stageGlobals,
+        const SdfPath &sceneIndexPath,
+        const HdDataSourceLocator &locatorPrefix)
+    : _shaderNode(shaderNode)
+    , _stageGlobals(stageGlobals)
+    , _sceneIndexPath(sceneIndexPath)
+    , _locatorPrefix(locatorPrefix)
+    {}
 
     UsdShadeShader _shaderNode;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
+    SdfPath _sceneIndexPath;
+    HdDataSourceLocator _locatorPrefix;
 };
 
 
@@ -491,7 +524,9 @@ static void
 _WalkGraph(
     UsdShadeConnectableAPI const &shadeNode,
     _TokenDataSourceMap * const outputNodes,
-    const UsdImagingDataSourceStageGlobals &stageGlobals)
+    const UsdImagingDataSourceStageGlobals &stageGlobals,
+    const SdfPath &sceneIndexPath,
+    const HdDataSourceLocator &locatorPrefix)
 {
     if (!shadeNode) {
         return;
@@ -509,7 +544,8 @@ _WalkGraph(
     }
 
     HdDataSourceBaseHandle nodeValue =
-        _UsdImagingDataSourceShadingNode::New(shadeNode, stageGlobals);
+        _UsdImagingDataSourceShadingNode::New(
+            shadeNode, stageGlobals, sceneIndexPath, locatorPrefix);
 
     outputNodes->insert({nodeName, nodeValue});
 
@@ -530,7 +566,9 @@ _WalkGraph(
             _WalkGraph(
                 UsdShadeConnectableAPI(attr.GetPrim()),
                 outputNodes,
-                stageGlobals);
+                stageGlobals,
+                sceneIndexPath,
+                locatorPrefix);
         }
     }
 
@@ -542,13 +580,20 @@ _BuildNetwork(
     UsdShadeConnectableAPI const &terminalNode,
     const TfToken &terminalName,
     UsdImagingDataSourceStageGlobals const &stageGlobals,
-    TfToken const& context)
+    TfToken const& context,
+    const SdfPath &sceneIndexPath,
+    const HdDataSourceLocator &locatorPrefix)
 {
 
     _TokenDataSourceMap nodeDataSources;
     _WalkGraph(terminalNode,
                 &nodeDataSources,
-                stageGlobals);
+                stageGlobals,
+                sceneIndexPath,
+                locatorPrefix.IsEmpty()
+                    ? locatorPrefix
+                    : locatorPrefix.Append(
+                        HdMaterialNetworkSchemaTokens->nodes));
 
     TfTokenVector nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
@@ -585,7 +630,9 @@ HdDataSourceBaseHandle
 _BuildMaterial(
     UsdShadeNodeGraph const &usdMat, 
     UsdImagingDataSourceStageGlobals const &stageGlobals,
-    TfToken const& context)
+    TfToken const& context,
+    const SdfPath &sceneIndexPath,
+    const HdDataSourceLocator &locatorPrefix)
 {
     TfTokenVector terminalsNames;
     std::vector<HdDataSourceBaseHandle> terminalsValues;
@@ -607,7 +654,12 @@ _BuildMaterial(
 
             _WalkGraph(upstreamShader,
                 &nodeDataSources,
-                stageGlobals);
+                stageGlobals,
+                sceneIndexPath,
+                locatorPrefix.IsEmpty()
+                    ? locatorPrefix
+                    : locatorPrefix.Append(
+                        HdMaterialNetworkSchemaTokens->nodes));
 
             terminalsNames.push_back(outputName);
             terminalsValues.push_back(HdMaterialConnectionSchema::BuildRetained(
@@ -663,12 +715,20 @@ UsdImagingDataSourceMaterial::Get(const TfToken &name)
 
     HdDataSourceBaseHandle networkDs;
 
+    // sceneIndexPath and dataSourceLocator are sent along so that discovery
+    // of time-varying shader parameters are managed for the hydra material
+    // prim and not individual USD shader prims.
+
     if (_fixedTerminalName.IsEmpty()) {
         networkDs = _BuildMaterial(
-            UsdShadeNodeGraph(_usdPrim), _stageGlobals, name);
+            UsdShadeNodeGraph(_usdPrim), _stageGlobals, name,
+                _usdPrim.GetPath(), HdDataSourceLocator(
+                    HdMaterialSchemaTokens->material, name));
     } else {
         networkDs = _BuildNetwork(UsdShadeConnectableAPI(_usdPrim),
-            _fixedTerminalName, _stageGlobals, name);
+            _fixedTerminalName, _stageGlobals, name,
+                _usdPrim.GetPath(), HdDataSourceLocator(
+                    HdMaterialSchemaTokens->material, name));
     }
 
 

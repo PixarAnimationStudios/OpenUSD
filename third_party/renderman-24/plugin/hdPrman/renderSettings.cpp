@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "hdPrman/renderSettings.h"
-
 #include "hdPrman/renderParam.h"
 
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -33,47 +32,46 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
-HdPrman_RenderSettings::HdPrman_RenderSettings(
-    SdfPath const& id)
-    : HdBprim(id)
+HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
+    : HdRenderSettings(id)
 {
 }
+
+HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
 
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
 }
 
-void HdPrman_RenderSettings::Sync(
+void HdPrman_RenderSettings::_Sync(
     HdSceneDelegate *sceneDelegate,
     HdRenderParam *renderParam,
-    HdDirtyBits *dirtyBits)
+    const HdDirtyBits *dirtyBits)
 {
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
-    if (*dirtyBits & HdChangeTracker::DirtyParams) {
+    if (*dirtyBits & HdRenderSettings::DirtySettings) {
+        // NamespacedSettings contains all the Prman-specific Render Settings
+        const VtDictionary& namespacedSettings = GetSettings();
 
-        VtValue filterPathValue =
-            sceneDelegate->Get(GetId(), _tokens->outputsRiSampleFilters);
-
-        if (filterPathValue.IsHolding<SdfPathVector>()) {
-            const SdfPathVector filterPaths =
-                filterPathValue.UncheckedGet<SdfPathVector>();
-            param->SetConnectedSampleFilterPaths(sceneDelegate, filterPaths);
+        // Set the SampleFilters connected to this Render Settings prim
+        const auto sampleFilterIt = namespacedSettings.find(
+            _tokens->outputsRiSampleFilters.GetString());
+        if (sampleFilterIt != namespacedSettings.end()) {
+            param->SetConnectedSampleFilterPaths(sceneDelegate,
+                sampleFilterIt->second.GetWithDefault<SdfPathVector>());
         }
-        if (filterPathValue.IsEmpty()) {
-            param->SetConnectedSampleFilterPaths(sceneDelegate, SdfPathVector());
+        // Set the DisplayFilters connected to this Render Settings prim
+        const auto displayFilterIt = namespacedSettings.find(
+            _tokens->outputsRiDisplayFilters.GetString());
+        if (displayFilterIt != namespacedSettings.end()) {
+            param->SetConnectedDisplayFilterPaths(sceneDelegate, 
+                displayFilterIt->second.GetWithDefault<SdfPathVector>());
         }
     }
-
-    *dirtyBits = HdChangeTracker::Clean;
-}
-
-HdDirtyBits HdPrman_RenderSettings::GetInitialDirtyBitsMask() const
-{
-    int mask = HdChangeTracker::Clean | HdChangeTracker::DirtyParams;
-    return (HdDirtyBits)mask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

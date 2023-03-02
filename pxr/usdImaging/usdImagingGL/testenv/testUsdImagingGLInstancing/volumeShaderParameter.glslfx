@@ -39,7 +39,7 @@
 -- glsl VolumeShaderParameter.VolumeShader
 
 // Forward declare function.
-vec3 coordsToLocalVolumeSpace(vec3);
+FORWARD_DECL(vec3 coordsToLocalVolumeSpace(vec3));
 
 float
 scaledDistance(vec3 coords)

@@ -30,6 +30,7 @@
 
 #include <atomic>
 #include <algorithm>
+#include <cmath>
 #include <iterator>
 #include <numeric>
 #include <type_traits>
@@ -249,7 +250,8 @@ ArchGetIntervalTimerTickOverhead()
 int64_t
 ArchTicksToNanoseconds(uint64_t nTicks)
 {
-    return int64_t(static_cast<double>(nTicks)*Arch_NanosecondsPerTick + .5);
+    return static_cast<int64_t>(
+        std::llround(static_cast<double>(nTicks)*Arch_NanosecondsPerTick));
 }
 
 double
@@ -259,8 +261,10 @@ ArchTicksToSeconds(uint64_t nTicks)
 }
 
 uint64_t
-ArchSecondsToTicks(double seconds) {
-    return static_cast<uint64_t>(1.0e9 * seconds / ArchGetNanosecondsPerTick());
+ArchSecondsToTicks(double seconds)
+{
+    return static_cast<uint64_t>(
+        std::llround(1.0e9 * seconds / ArchGetNanosecondsPerTick()));
 }
 
 double 

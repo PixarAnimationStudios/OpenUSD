@@ -45,11 +45,11 @@
                         "priority": 0,
                         "displayName": "Prman Dependency Forwarding Scene Index"
                     },
-                    "HdPrman_SampleFilterInvalidatingSceneIndexPlugin" : {
+                    "HdPrman_OutputFilterInvalidatingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
                         "priority": 0,
-                        "displayName": "Prman Sample Filter Invalidating Scene Index"
+                        "displayName": "Prman Output Filter Invalidating Scene Index"
                     },
                     "HdPrman_PinnedCurveExpandingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],

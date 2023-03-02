@@ -229,7 +229,7 @@ HgiVulkanGraphicsCmds::BindVertexBuffers(
 
         vkCmdBindVertexBuffers(
             _commandBuffer->GetVulkanCommandBuffer(),
-            0, // first bindings
+            bindings[0].index, // first binding
             buffers.size(),
             buffers.data(),
             bufferOffsets.data());
@@ -338,10 +338,10 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
 }
 
 void
-HgiVulkanGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 HgiVulkanCommandBuffer*

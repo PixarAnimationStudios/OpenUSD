@@ -1,0 +1,225 @@
+#usda 1.0
+(
+    "Test schema file for testUsdSchemaVersioning"
+    subLayers = [
+        @usd/schema.usda@
+    ]
+)
+
+def "GLOBAL" (
+    customData = {
+        string libraryName      = "testUsdSchemaVersioning"
+        string libraryPath      = "pxr/usd/usd"
+        bool skipCodeGeneration = true
+    }
+)
+{
+}
+
+class TestBasicVersioned "TestBasicVersioned" (
+    inherits = </Typed>
+)
+{
+}
+
+class TestBasicVersioned_1 "TestBasicVersioned_1" (
+    inherits = </Typed>
+)
+{
+}
+
+class TestBasicVersioned_2 "TestBasicVersioned_2" (
+    inherits = </Typed>
+)
+{
+}
+
+class "TestVersionedSingleApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned"]
+    }
+)
+{
+    int s_attr
+}
+
+class "TestVersionedSingleApplyAPI_1" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+    int s_attr1
+}
+
+class "TestVersionedSingleApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_2"]
+    }
+)
+{
+    int s_attr2
+}
+
+class "TestVersionedMultiApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned"]
+        token propertyNamespacePrefix = "multi"
+    }
+)
+{
+    int m_attr
+}
+
+class "TestVersionedMultiApplyAPI_1" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned", "TestBasicVersioned_1"]
+        token propertyNamespacePrefix = "multi"
+    }
+)
+{
+    int m_attr1
+}
+
+class "TestVersionedMultiApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token[] apiSchemaCanOnlyApplyTo = ["TestBasicVersioned_1", "TestBasicVersioned_2"]
+        token propertyNamespacePrefix = "multi"
+    }
+)
+{
+    int m_attr2
+}
+
+class TestPrimWithAPIBuiltins "TestPrimWithAPIBuiltins" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI_1",
+                          "TestVersionedMultiApplyAPI_2:foo"]
+)
+{
+}
+
+class "TestAPIWithAPIBuiltins1_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI_1",
+                          "TestVersionedMultiApplyAPI:foo"]
+)
+{
+    int b_attr1
+}
+
+class "TestAPIWithAPIBuiltins2_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedMultiApplyAPI:bar",
+                          "TestVersionedSingleApplyAPI_2"]
+)
+{
+    int b_attr2
+}
+
+class "TestAPIWithAPIBuiltins3_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedMultiApplyAPI_2:bar",
+                          "TestVersionedMultiApplyAPI_2:baz"]
+)
+{
+    int b_attr3
+}
+
+
+class TestPrimWithAPIVersionConflict1 "TestPrimWithAPIVersionConflict1" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI", 
+                          "TestVersionedSingleApplyAPI_1",
+                          "TestVersionedSingleApplyAPI_2"]
+)
+{
+}
+
+class TestPrimWithAPIVersionConflict2 "TestPrimWithAPIVersionConflict2" (
+    inherits = </Typed>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI_1", 
+                          "TestVersionedSingleApplyAPI",
+                          "TestVersionedSingleApplyAPI_2"]
+)
+{
+}
+
+class "TestSingleApplyWithAPIVersionConflict1_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI", 
+                          "TestVersionedSingleApplyAPI_1",
+                          "TestVersionedSingleApplyAPI_2"]
+)
+{
+}
+
+class "TestSingleApplyWithAPIVersionConflict2_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedSingleApplyAPI_1", 
+                          "TestVersionedSingleApplyAPI",
+                          "TestVersionedSingleApplyAPI_2"]
+)
+{
+}
+
+class "TestSingleApplyWithAPIVersionConflict3_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestAPIWithAPIBuiltins1_API", 
+                          "TestAPIWithAPIBuiltins2_API",
+                          "TestAPIWithAPIBuiltins3_API"]
+)
+{
+}
+
+class "TestMultiApplyWithAPIVersionConflict_API" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["TestVersionedMultiApplyAPI_1", 
+                          "TestVersionedMultiApplyAPI_2",
+                          "TestVersionedMultiApplyAPI_2:foo",
+                          "TestVersionedMultiApplyAPI:foo"]
+    customData = {
+        token apiSchemaType = "multipleApply"
+    }
+)
+{
+}
+
+class "TestVersionedAutoApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned", "TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr
+}
+
+class "TestVersionedAutoApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr2
+}
+
+class "TestVersionedAutoApplyAPI_10" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr10
+}

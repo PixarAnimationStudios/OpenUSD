@@ -9,6 +9,7 @@ over "GLOBAL" (
 	customData = {
 	string libraryName = "usdPhysics"
 	string libraryPath = "pxr/usd/usdPhysics"
+    bool useLiteralIdentifier = 0
     dictionary libraryTokens = {
         dictionary colliders = {
             string doc = """

@@ -100,7 +100,7 @@ struct UsdTokensType {
     const TfToken exclude;
     /// \brief "expandPrims"
     /// 
-    /// Possible value for UsdCollectionAPI::GetExpansionRuleAttr(), Default value for UsdCollectionAPI::GetExpansionRuleAttr()
+    /// Fallback value for UsdCollectionAPI::GetExpansionRuleAttr()
     const TfToken expandPrims;
     /// \brief "expandPrimsAndProperties"
     /// 
@@ -114,6 +114,26 @@ struct UsdTokensType {
     /// 
     ///  A dictionary metadata that maps the name of a concrete schema prim type to an ordered list of schema prim types to use instead if the schema prim type doesn't exist in version of USD being used. 
     const TfToken fallbackPrimTypes;
+    /// \brief "APISchemaBase"
+    /// 
+    /// Schema identifer and family for UsdAPISchemaBase
+    const TfToken APISchemaBase;
+    /// \brief "ClipsAPI"
+    /// 
+    /// Schema identifer and family for UsdClipsAPI
+    const TfToken ClipsAPI;
+    /// \brief "CollectionAPI"
+    /// 
+    /// Schema identifer and family for UsdCollectionAPI
+    const TfToken CollectionAPI;
+    /// \brief "ModelAPI"
+    /// 
+    /// Schema identifer and family for UsdModelAPI
+    const TfToken ModelAPI;
+    /// \brief "Typed"
+    /// 
+    /// Schema identifer and family for UsdTyped
+    const TfToken Typed;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

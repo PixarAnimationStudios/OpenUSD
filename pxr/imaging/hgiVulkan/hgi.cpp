@@ -108,9 +108,10 @@ HgiVulkan::CreateBlitCmds()
 }
 
 HgiComputeCmdsUniquePtr
-HgiVulkan::CreateComputeCmds()
+HgiVulkan::CreateComputeCmds(
+    HgiComputeCmdsDesc const& desc)
 {
-    HgiVulkanComputeCmds* cmds(new HgiVulkanComputeCmds(this));
+    HgiVulkanComputeCmds* cmds(new HgiVulkanComputeCmds(this, desc));
     return HgiComputeCmdsUniquePtr(cmds);
 }
 

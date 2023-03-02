@@ -31,6 +31,7 @@
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/sampleFilter.h"
+#include "hdPrman/displayFilter.h"
 #include "hdPrman/coordSys.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/renderParam.h"
@@ -42,6 +43,7 @@
 #include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
 #include "hdPrman/resourceRegistry.h"
+#include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
 
 #include "pxr/imaging/hd/bprim.h"
@@ -62,6 +64,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (openvdbAsset)
     (field3dAsset)
+    (ri)
+    ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
     (prmanParams) /* XXX currently duplicated whereever used as to not yet */
                  /* establish a formal convention */
@@ -76,6 +80,13 @@ TF_DEFINE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens,
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanIntegratorTokens,
     HDPRMAN_INTEGRATOR_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderProductTokens,
+    HDPRMAN_RENDER_PRODUCT_TOKENS);
+
+TF_DEFINE_PUBLIC_TOKENS(HdPrmanAovSettingsTokens,
+    HDPRMAN_AOV_SETTINGS_TOKENS);
+
+
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
 {
     HdPrimTypeTokens->cone,
@@ -85,6 +96,9 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_RPRIM_TYPES =
     HdPrimTypeTokens->basisCurves,
     HdPrimTypeTokens->points,
     HdPrimTypeTokens->volume,
+
+    // New type, specific to mesh light source geom.
+    HdPrmanTokens->meshLightSourceGeom,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
@@ -99,10 +113,12 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->diskLight,
     HdPrimTypeTokens->cylinderLight,
     HdPrimTypeTokens->sphereLight,
+    HdPrimTypeTokens->meshLight,
     HdPrimTypeTokens->pluginLight,
     HdPrimTypeTokens->extComputation,
     HdPrimTypeTokens->coordSys,
     HdPrimTypeTokens->sampleFilter,
+    HdPrimTypeTokens->displayFilter,
     _tokens->prmanParams,
 };
 
@@ -125,6 +141,33 @@ _ToLower(const std::string &s)
     return result;
 }
 
+static
+std::vector<std::string>
+_GetExtraArgs(const HdRenderSettingsMap &settingsMap)
+{
+    std::string extraArgs;
+
+    auto it = settingsMap.find(HdPrmanRenderSettingsTokens->batchCommandLine);
+    if (it != settingsMap.end()) {
+        // husk's --delegate-options arg allows users to pass an arbitrary
+        // string of args which we pass along to PRManBegin.
+        if (it->second.IsHolding<VtArray<std::string>>()) {
+            const VtArray<std::string>& v =
+                it->second.UncheckedGet<VtArray<std::string>>();
+            for (VtArray<std::string>::const_iterator i = v.cbegin();
+                 i != v.cend(); ++i) {
+                if (*i == "--delegate-options") {
+                    ++i;
+                    if(i != v.cend()) {
+                        extraArgs = *i;
+                    }
+                }
+            }
+        }
+    }
+    return TfStringTokenize(extraArgs, " ");
+}
+
 HdPrmanRenderDelegate::HdPrmanRenderDelegate(
     HdRenderSettingsMap const& settingsMap)
   : HdRenderDelegate(settingsMap)
@@ -138,7 +181,7 @@ HdPrmanRenderDelegate::HdPrmanRenderDelegate(
         HdPrmanRenderSettingsTokens->xpuDevices, std::string());
 
     _renderParam = std::make_unique<HdPrman_RenderParam>(
-        rileyVariant, xpuDevices);
+        rileyVariant, xpuDevices, _GetExtraArgs(settingsMap));
 
     _Initialize();
 }
@@ -303,8 +346,12 @@ HdRprim *
 HdPrmanRenderDelegate::CreateRprim(TfToken const& typeId,
                                     SdfPath const& rprimId)
 {
-    if (typeId == HdPrimTypeTokens->mesh) {
-        return new HdPrman_Mesh(rprimId);
+    bool isMeshLight = false;
+    if (typeId == HdPrmanTokens->meshLightSourceGeom) {
+        isMeshLight = true;
+        return new HdPrman_Mesh(rprimId, isMeshLight);
+    } else if (typeId == HdPrimTypeTokens->mesh) {
+        return new HdPrman_Mesh(rprimId, isMeshLight);
     } else if (typeId == HdPrimTypeTokens->basisCurves) {
         return new HdPrman_BasisCurves(rprimId);
     } if (typeId == HdPrimTypeTokens->cone) {
@@ -350,6 +397,7 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->meshLight ||
                typeId == HdPrimTypeTokens->pluginLight) {
         sprim = new HdPrmanLight(sprimId, typeId);
 
@@ -364,6 +412,8 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         sprim = new HdPrmanParamsSetter(sprimId);
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
         sprim = new HdPrman_SampleFilter(sprimId);
+    } else if (typeId == HdPrimTypeTokens->displayFilter) {
+        sprim = new HdPrman_DisplayFilter(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -391,6 +441,7 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                typeId == HdPrimTypeTokens->diskLight ||
                typeId == HdPrimTypeTokens->cylinderLight ||
                typeId == HdPrimTypeTokens->sphereLight ||
+               typeId == HdPrimTypeTokens->meshLight ||
                typeId == HdPrimTypeTokens->pluginLight) {
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
@@ -399,6 +450,8 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanParamsSetter(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
         return new HdPrman_SampleFilter(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->displayFilter) {
+        return new HdPrman_DisplayFilter(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -491,18 +544,16 @@ HdPrmanRenderDelegate::GetMaterialBindingPurpose() const
 TfToken
 HdPrmanRenderDelegate::GetMaterialNetworkSelector() const
 {
-    static const TfToken ri("ri");
-    return ri;
+    return _tokens->ri;
 }
 #else
 TfTokenVector
 HdPrmanRenderDelegate::GetMaterialRenderContexts() const
 {
-    static const TfToken ri("ri");
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
-    return {ri, _tokens->mtlxRenderContext};
+    return {_tokens->ri, _tokens->mtlxRenderContext};
 #else
-    return {ri};
+    return {_tokens->ri};
 #endif
 }
 #endif
@@ -512,6 +563,14 @@ HdPrmanRenderDelegate::GetShaderSourceTypes() const
 {
     return HdPrmanMaterial::GetShaderSourceTypes();
 }
+
+#if HD_API_VERSION > 46
+TfTokenVector
+HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
+{
+    return {_tokens->ri, _tokens->outputsRi};
+}
+#endif
 
 void
 HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key, 

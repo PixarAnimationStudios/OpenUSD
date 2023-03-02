@@ -32,6 +32,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computeCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
@@ -177,7 +178,8 @@ public:
     /// created on the main thread, recorded into (exclusively) by one secondary
     /// thread and be submitted on the main thread. See notes above.
     HGI_API
-    virtual HgiComputeCmdsUniquePtr CreateComputeCmds() = 0;
+    virtual HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeCmdsDesc const& desc) = 0;
 
     /// Create a texture in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.

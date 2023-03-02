@@ -33,6 +33,10 @@
 
 #include <cstring>
 #include <string>
+#include <map>
+#include <memory>
+#include <set>
+#include <typeindex>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -86,12 +90,49 @@ TfHashAppend(HashState &h, std::pair<T, U> const &p)
     h.Append(p.second);
 }
 
-// Support std::vector.
+// Support std::vector. std::vector<bool> specialized below.
 template <class HashState, class T>
-inline void
+inline std::enable_if_t<!std::is_same<std::remove_const_t<T>, bool>::value>
 TfHashAppend(HashState &h, std::vector<T> const &vec)
 {
     h.AppendContiguous(vec.data(), vec.size());
+}
+
+// Support std::vector<bool>.
+template <class HashState>
+inline void
+TfHashAppend(HashState &h, std::vector<bool> const &vec)
+{
+    h.Append(std::hash<std::vector<bool>>{}(vec));
+}
+
+// Support std::set.
+// NOTE: Supporting std::unordered_set is complicated because the traversal
+// order is not guaranteed
+template <class HashState, class T, class Compare>
+inline void
+TfHashAppend(HashState& h, std::set<T, Compare> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
+// Support std::map.
+// NOTE: Supporting std::unordered_map is complicated because the traversal
+// order is not guaranteed
+template <class HashState, class Key, class Value, class Compare>
+inline void
+TfHashAppend(HashState& h, std::map<Key, Value, Compare> const &elements)
+{
+    h.AppendRange(std::begin(elements), std::end(elements));
+}
+
+// Support std::type_index.  When TfHash support for std::hash is enabled,
+// this explicit specialization will no longer be necessary.
+template <class HashState>
+inline void
+TfHashAppend(HashState& h, std::type_index const &type_index)
+{
+    return h.Append(type_index.hash_code());
 }
 
 // Support for hashing std::string.
@@ -108,6 +149,22 @@ template <class HashState, class T>
 inline void
 TfHashAppend(HashState &h, const T* ptr) {
     return h.Append(reinterpret_cast<uintptr_t>(ptr));
+}
+
+// Support for hashing std::shared_ptr. When TfHash support for std::hash is
+// enabled, this explicit specialization will no longer be necessary.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const std::shared_ptr<T>& ptr) {
+    h.Append(std::hash<std::shared_ptr<T>>{}(ptr));
+}
+
+// Support for hashing std::unique_ptr. When TfHash support for std::hash is
+// enabled, this explicit specialization will no longer be necessary.
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, const std::unique_ptr<T>& ptr) {
+    h.Append(std::hash<std::unique_ptr<T>>{}(ptr));
 }
 
 // We refuse to hash [const] char *.  You're almost certainly trying to hash the

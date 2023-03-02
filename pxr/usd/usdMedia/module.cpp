@@ -31,5 +31,6 @@ TF_WRAP_MODULE
     TF_WRAP(UsdMediaTokens);
 
     // Generated schema.
+    TF_WRAP(UsdMediaAssetPreviewsAPI);
     TF_WRAP(UsdMediaSpatialAudio);
 }

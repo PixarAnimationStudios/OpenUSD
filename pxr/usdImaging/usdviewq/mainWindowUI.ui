@@ -159,6 +159,7 @@
             <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
+            <addaction name="actionShow_Prim_DisplayName"/>
            </widget>
            <addaction name="menuNavigation"/>
            <addaction name="menuShow"/>
@@ -526,6 +527,7 @@
             <addaction name="separator"/>
             <addaction name="menuBackground_Color"/>
             <addaction name="actionCull_Backfaces"/>
+            <addaction name="actionDomeLightTexturesVisible"/>
            </widget>
            <widget class="QMenu" name="menuCamera">
             <property name="title">
@@ -1650,7 +1652,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1931,6 +1933,17 @@
    </property>
    <property name="text">
     <string>Enable Default Dome Light</string>
+   </property>
+  </action>
+  <action name="actionDomeLightTexturesVisible">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Dome Light Textures</string>
    </property>
   </action>
   <action name="actionLevel_6">
@@ -2659,6 +2672,14 @@
    </property>
    <property name="text">
     <string>Abstract Prims (Classes)</string>
+   </property>
+  </action>
+  <action name="actionShow_Prim_DisplayName">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use Display Name (Prims)</string>
    </property>
   </action>
   <action name="actionPick_Prims">

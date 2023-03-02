@@ -25,6 +25,8 @@
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/systemSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -254,16 +256,26 @@ UsdImagingRerootingSceneIndex::GetPrim(const SdfPath& primPath) const
         return { TfToken(), nullptr };
     }
 
-    if (_srcEqualsDst) {
-        return _GetInputSceneIndex()->GetPrim(primPath);
-    }
+    const SdfPath inputScenePath
+        = _srcEqualsDst ? primPath : _DstPathToSrcPath(primPath);
 
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(
-        _DstPathToSrcPath(primPath));
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(inputScenePath);
 
     if (prim.dataSource) {
-        prim.dataSource = _RerootingSceneIndexContainerDataSource::New(
-            _srcPrefix, _dstPrefix, prim.dataSource);
+        // Wrap the container data source so that paths are properly re-mapped.
+        // When src == dst, we can short-circuit this.
+        if (!_srcEqualsDst) {
+            prim.dataSource = _RerootingSceneIndexContainerDataSource::New(
+                _srcPrefix, _dstPrefix, prim.dataSource);
+        }
+
+        // If we are at the dst root, we'll compose the system data source.
+        if (primPath == _dstPrefix) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                HdSystemSchema::ComposeAsPrimDataSource(
+                    _GetInputSceneIndex(), inputScenePath, nullptr),
+                prim.dataSource);
+        }
     }
 
     return prim;

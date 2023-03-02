@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/bigRWMutex.h"
+#include "pxr/base/tf/spinRWMutex.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/stopwatch.h"
 
@@ -38,6 +39,13 @@ struct BigRW
     static constexpr const char *Label = "TfBigRwMutex";
     using MutexType = TfBigRWMutex;
     using LockType = TfBigRWMutex::ScopedLock;
+};
+
+struct SpinRW
+{
+    static constexpr const char *Label = "TfSpinRWMutex";
+    using MutexType = TfSpinRWMutex;
+    using LockType = TfSpinRWMutex::ScopedLock;
 };
 
 struct TbbSpinRW
@@ -66,7 +74,7 @@ Test_RWMutexThroughput()
 
     // Make a bunch of threads that mostly read, but occasionally write.
 
-    int numThreads = std::thread::hardware_concurrency()-1;
+    const int numThreads = std::thread::hardware_concurrency()-1;
     std::vector<std::thread> threads(numThreads);
     for (auto &t: threads) {
         t = std::thread([&mutex, &value, numSeconds]() {
@@ -106,6 +114,7 @@ Test_RWMutexThroughput()
 static bool
 Test_TfRWMutexes()
 {
+    Test_RWMutexThroughput<SpinRW>();
     Test_RWMutexThroughput<BigRW>();
     Test_RWMutexThroughput<TbbSpinRW>();
     Test_RWMutexThroughput<TbbQRW>();

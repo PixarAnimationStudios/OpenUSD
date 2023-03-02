@@ -192,11 +192,10 @@ public:
     /// open, it will generally be kept open for the life of the stage.
     SdfLayerHandle GetLayerIfOpen() const;
 
-    /// Layer stack, prim spec path, and index of layer where this clip
-    /// was introduced.
+    /// Layer stack, prim spec path, and layer where this clip was introduced.
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;
-    size_t sourceLayerIndex;
+    SdfLayerHandle sourceLayer;
 
     /// Asset path for the clip and the path to the prim in the clip
     /// that provides data.

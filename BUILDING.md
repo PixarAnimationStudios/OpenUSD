@@ -35,10 +35,7 @@ Some examples:
 ```bash
 cmake                                       \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
--DOPENEXR_LOCATION=/path/to/openexr         \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_LOCATION=/path/to/ptex               \
--DOIIO_LOCATION=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 
@@ -53,10 +50,7 @@ The following will generate an Xcode project that can be used to build USD.
 cmake                                       \
 -G "Xcode"                                  \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
--DOPENEXR_LOCATION=/path/to/openexr         \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
--DPTEX_LOCATION=/path/to/ptex               \
--DOIIO_LOCATION=/path/to/openimageio        \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 
@@ -65,24 +59,27 @@ cmake --build . --target install -- -j <NUM_CORES>
 
 #### On Windows
 
-The following will generate a Visual Studio 2015 solution that can be used to
+The following will generate a Visual Studio 2017 solution that can be used to
 build USD.
 
 ```cmd.exe
 "C:\Program Files\CMake\bin\cmake.exe"      ^
--G "Visual Studio 14 2015 Win64"            ^
+-G "Visual Studio 15 2017 Win64"            ^
 -DTBB_ROOT_DIR=C:\path\to\tbb               ^
--DOPENEXR_LOCATION=C:\path\to\openexr       ^
 -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
--DPTEX_LOCATION=C:\path\to\ptex             ^
--DOIIO_LOCATION=C:\path\to\openimageio      ^
 -DBOOST_ROOT=C:\path\to\boost               ^
 \path\to\USD\source
 
 cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
 ```
 
-Note: if you're trying to build with Visual Studio 2017, use the "Visual Studio 15 2017 Win64" generator.
+For other versions of Visual Studio, use the following cmake arguments:
+
+- For VS2019: `-G "Visual Studio 16 2019" -A x64`
+- For VS2022: `-G "Visual Studio 17 2022" -A x64`
+
+For more information on Visual Studio generators for cmake, see 
+[Visual Studio Generators](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators).
 
 ## Optional Components
 
@@ -163,10 +160,6 @@ Disable this component by specifying the cmake flag `PXR_BUILD_IMAGING=FALSE` wh
 invoking cmake. Disabling this component will also disable the [USD Imaging](#usd-imaging)
 component and any [Imaging Plugins](#imaging-plugins).
 
-Support for Ptex can optionally be disabled by specifying the cmake flag
-`PXR_ENABLE_PTEX_SUPPORT=FALSE`.
-
-
 ##### USD Imaging
 
 This component provides the USD imaging delegates for Hydra, as well as
@@ -176,9 +169,37 @@ Disable this component by specifying the cmake flag `PXR_BUILD_USD_IMAGING=FALSE
 invoking cmake. usdview may also be disabled independently by specifying the cmake flag 
 `PXR_BUILD_USDVIEW=FALSE`.
 
+##### Command-line Tools
+
+USD by default builds several helpful command-line tools for validating and 
+manipulating USD files. For more information on the tools, see [USD Toolset](https://graphics.pixar.com/usd/release/toolset.html).
+
+Disable building the command-line tools by specifying the cmake flag 
+`PXR_BUILD_USD_TOOLS=FALSE` when invoking cmake. 
+
+##### Examples
+
+USD by default builds several example projects that demonstrate how to develop
+various extensions and plugins.
+
+Disable building the examples by specifying the cmake flag 
+`PXR_BUILD_EXAMPLES=FALSE` when invoking cmake. 
+
+##### Tutorials
+
+USD by default builds USD and Python files used for the [USD Tutorials](https://graphics.pixar.com/usd/release/tut_usd_tutorials.html).
+
+Disable building the tutorial support files by specifying the cmake flag 
+`PXR_BUILD_TUTORIALS=FALSE` when invoking cmake. 
+
 ## Imaging Plugins
 
 Hydra's rendering functionality can be extended with these optional plugins.
+
+##### Ptex
+
+Support for Ptex is disabled by default and can be enabled by specifying the 
+cmake flag `PXR_ENABLE_PTEX_SUPPORT=TRUE`.
 
 ##### OpenImageIO 
 

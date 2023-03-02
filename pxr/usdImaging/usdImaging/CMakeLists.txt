@@ -11,6 +11,8 @@ pxr_library(usdImaging
         work
         geomUtil
         hd
+        hdar
+        hio
         pxOsd
         sdf
         usd
@@ -39,10 +41,14 @@ pxr_library(usdImaging
         dataSourcePrim
         dataSourcePrimvars
         dataSourceRelationship
+        dataSourceStage
         dataSourceStageGlobals
+        dataSourceUsdPrimInfo
         dataSourceVolume
         debugCodes
         delegate
+        drawModeAdapter
+        drawModeSceneIndex
         indexProxy
         materialParamUtils
         modelSchema
@@ -50,6 +56,7 @@ pxr_library(usdImaging
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
+        selectionSceneIndex
         tokens
         apiSchemaAdapter
         basisCurvesAdapter
@@ -58,10 +65,12 @@ pxr_library(usdImaging
         collectionAPIAdapter
         coneAdapter
         coordSysAdapter
+        coordSysAPIAdapter
         cubeAdapter
         cylinderAdapter
         cylinderLightAdapter
         diskLightAdapter
+        displayFilterAdapter
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
@@ -76,6 +85,7 @@ pxr_library(usdImaging
         materialAdapter
         materialBindingAPIAdapter
         meshAdapter
+        niPrototypePropagatingSceneIndex
         nurbsCurvesAdapter
         nurbsPatchAdapter
         piPrototypePropagatingSceneIndex
@@ -87,9 +97,10 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
-        prototypePruningSceneIndex
+        usdPrimInfoSchema
         rectLightAdapter
         renderSettingsAdapter
+        representedByAncestorPrimAdapter
         rerootingSceneIndex
         sampleFilterAdapter
         sphereAdapter
@@ -98,6 +109,10 @@ pxr_library(usdImaging
         volumeAdapter
 
     PRIVATE_CLASSES
+        drawModeStandin
+        niInstanceAggregationSceneIndex
+        niPrototypePruningSceneIndex
+        niPrototypeSceneIndex
         sceneIndexPrimView
         piPrototypeSceneIndex
 

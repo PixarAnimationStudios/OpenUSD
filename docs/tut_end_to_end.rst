@@ -160,7 +160,7 @@ Start by copying the Ball textures into your Ball directory:
 
 .. code-block:: console
 
-   cp -r assets/Ball/tex/ models/Ball/
+   cp -r assets/Ball/tex models/Ball/
 
 Add shading variants to the Ball with a python script:
 

@@ -71,10 +71,11 @@ class UsdPrim;
 class HdRenderIndex;
 class HdxTaskController;
 class UsdImagingDelegate;
-class UsdImagingStageSceneIndex;
 
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
-TF_DECLARE_WEAK_AND_REF_PTRS(UsdImagingStageSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
+TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
 /// \class UsdImagingGLEngine
 ///
@@ -636,7 +637,10 @@ private:
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
     // at a time...
-    UsdImagingStageSceneIndexRefPtr _sceneIndex;
+    UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
+    UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
+    HdSceneIndexBaseRefPtr _sceneIndex;
+
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     std::unique_ptr<HdEngine> _engine;

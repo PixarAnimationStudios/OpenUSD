@@ -71,6 +71,16 @@ HdMtlxSearchPaths()
     return searchPaths;
 }
 
+// Return the MaterialX Node string with the namespace prepended when present
+static std::string
+_GetMxNodeString(mx::NodeDefPtr const& mxNodeDef)
+{    
+    // If the nodedef is in a namespace, add it to the node string 
+    return mxNodeDef->hasNamespace()
+        ? mxNodeDef->getNamespace() + ":" + mxNodeDef->getNodeString()
+        : mxNodeDef->getNodeString();
+}
+
 // Return the MaterialX Node Type based on the corresponding NodeDef name, 
 // which is stored as the hdNodeType. 
 static TfToken
@@ -83,15 +93,7 @@ _GetMxNodeType(mx::DocumentPtr const& mxDoc, TfToken const& hdNodeType)
         return TfToken();
     }
 
-    std::string namespaceName = mxNodeDef->getNamespace();
-    if (!namespaceName.empty()) {
-        // in case the nodedef is in a namespace, 
-        // we need to add it to the node name 
-        return TfToken(namespaceName + ":" + mxNodeDef->getNodeString());
-    }
-    else {
-        return TfToken(mxNodeDef->getNodeString());
-    }
+    return TfToken(_GetMxNodeString(mxNodeDef));
 }
 
 // Add the mxNode to the mxNodeGraph, or get the mxNode from the NodeGraph 
@@ -209,7 +211,7 @@ _AddMaterialXNode(
         return mx::NodePtr();
     }
     const SdfPath hdNodePath(hdNodeName.GetString());
-    const std::string &mxNodeCategory = mxNodeDef->getNodeString();
+    const std::string mxNodeCategory = _GetMxNodeString(mxNodeDef);
     const std::string &mxNodeType = mxNodeDef->getType();
     const std::string &mxNodeName = hdNodePath.GetName();
 
@@ -534,7 +536,8 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     mx::NodePtr mxShaderNode = mxDoc->addNode(mxType.GetString(),
                                               "Surface",
                                               "surfaceshader");
-    mx::NodePtr mxMaterial = mxDoc->addMaterialNode(materialName, mxShaderNode);
+    mx::NodePtr mxMaterial = mxDoc->addMaterialNode(
+        mxDoc->createValidChildName(materialName), mxShaderNode);
 
     _CreateMtlxNodeGraphFromTerminalNodeConnections(
         netInterface, terminalNodeName, terminalNodeConnectionNames,

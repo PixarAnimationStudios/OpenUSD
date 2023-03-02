@@ -33,9 +33,6 @@
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/mpl/and.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
 #include <boost/python/bases.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/extract.hpp>
@@ -114,9 +111,9 @@ public:
 
     // If Notice is really TfNotice, then this is the root of the hierarchy and
     // bases is empty, otherwise bases contains the base class.
-    typedef typename boost::mpl::if_<
-        boost::is_same<NoticeType, TfNotice>
-        , boost::python::bases<>, boost::python::bases<BaseType> >::type Bases;
+    using Bases = std::conditional_t<std::is_same<NoticeType, TfNotice>::value,
+                                     boost::python::bases<>,
+                                     boost::python::bases<BaseType>>;
 
     typedef boost::python::class_<NoticeType, This, Bases> ClassType;
 

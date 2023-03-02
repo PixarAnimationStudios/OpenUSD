@@ -103,7 +103,7 @@ public:
     std::string name;
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;
-    size_t sourceLayerIndex;
+    SdfLayerHandle sourceLayer;
     SdfPath clipPrimPath;
     Usd_ClipRefPtr manifestClip;
     Usd_ClipRefPtrVector valueClips;

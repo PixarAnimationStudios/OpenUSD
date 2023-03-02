@@ -22,18 +22,30 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/base/gf/vec4f.h"
 
+#include "pxr/usd/usdRender/product.h"
+#include "pxr/usd/usdRender/spec.h"
+#include "pxr/usd/usdRender/settings.h"
+#include "pxr/usd/usdRender/var.h"
+
+
 PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX Placeholder before the RenderSettings DataSource is added
+using UsdImagingDataSourceRenderSettings = UsdImagingDataSourcePrim;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 
@@ -48,12 +60,64 @@ UsdImagingRenderSettingsAdapter::~UsdImagingRenderSettingsAdapter()
 {
 }
 
+// -------------------------------------------------------------------------- //
+// 2.0 Prim adapter API
+// -------------------------------------------------------------------------- //
+
+TfTokenVector
+UsdImagingRenderSettingsAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingRenderSettingsAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->renderSettings;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingRenderSettingsAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceRenderSettings::New(
+                    prim.GetPath(), prim, stageGlobals);
+    }
+
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingRenderSettingsAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingPrimAdapter::InvalidateImagingSubprim(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
+// -------------------------------------------------------------------------- //
+// 1.0 Prim adapter API
+// -------------------------------------------------------------------------- //
+
 bool
 UsdImagingRenderSettingsAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
-    return supported;
+    return index->IsBprimTypeSupported(HdPrimTypeTokens->renderSettings);
 }
 
 SdfPath
@@ -62,20 +126,72 @@ UsdImagingRenderSettingsAdapter::Populate(
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertBprim(HdPrimTypeTokens->renderSettings, prim.GetPath(), prim);
+    SdfPath const rsPrimPath = prim.GetPath();
+    index->InsertBprim(HdPrimTypeTokens->renderSettings, rsPrimPath, prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
-    // Check for Sample Filter Connections
-    SdfPathVector connections;
-    prim.GetAttribute(_tokens->outputsRiSampleFilters)
-        .GetConnections(&connections);
-    for (auto const& connPath : connections) {
-        const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
-            connPath.GetPrimPath());
-        UsdImagingPrimAdapterSharedPtr adapter = _GetPrimAdapter(connPrim);
-        if (adapter) {
-            index->AddDependency(prim.GetPath(), connPrim);
-            adapter->Populate(connPrim, index, nullptr);
+    // Find render products (and transitively) render var prims targeted by
+    // this prim and add dependency *from* the USD prim(s) *to* the hydra
+    // render settings prim. This is necessary because we *don't* populate
+    // Hydra prims for render product and render var USD prims and thus have to
+    // forward change notices from the USD prims to the hydra render settings
+    // prim.
+    //
+    // XXX Populate a cache to hold the targeting settings prim for each product
+    //     and var to aid with change processing.
+    {   
+        UsdRenderSettings rs(prim);
+        SdfPathVector targets;
+        rs.GetProductsRel().GetForwardedTargets(&targets);
+
+        for (SdfPath const & target : targets) {
+            if (UsdRenderProduct product =
+                    UsdRenderProduct(prim.GetStage()->GetPrimAtPath(target))) {
+
+                index->AddDependency(/* to   */rsPrimPath,
+                                     /* from */product.GetPrim());
+
+                SdfPathVector renderVarPaths;
+                product.GetOrderedVarsRel().GetForwardedTargets(
+                    &renderVarPaths);
+                for (SdfPath const& renderVarPath: renderVarPaths ) {
+                    UsdPrim rv = prim.GetStage()->GetPrimAtPath(renderVarPath);
+                    if (rv.IsA<UsdRenderVar>()) {
+                        index->AddDependency(/* to   */rsPrimPath,
+                                             /* from */rv);
+                    }
+                }
+            }
+        }
+    }
+
+    // Check for Sample and Display Filter Connections and:
+    // 1, Forward to their adapter for populating corresponding Hydra prims
+    // 2. Add dependency *from* the corressponding USD prim(s) *to* the hydra
+    //    render settings prim.
+    {
+        const TfToken outputFilterTokens[] = {
+            _tokens->outputsRiSampleFilters,
+            _tokens->outputsRiDisplayFilters
+        };
+
+        for (const auto token : outputFilterTokens) {
+            SdfPathVector connections;
+            prim.GetAttribute(token)
+                .GetConnections(&connections);
+            for (auto const& connPath : connections) {
+                const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
+                    connPath.GetPrimPath());
+                if (connPrim) {
+                    UsdImagingPrimAdapterSharedPtr adapter =
+                        _GetPrimAdapter(connPrim);
+                    if (adapter) {
+                        index->AddDependency(/* to   */prim.GetPath(),
+                                             /* from */connPrim);
+                        adapter->Populate(connPrim, index, nullptr);
+                    }
+                }
+            }
         }
     }
 
@@ -127,6 +243,11 @@ UsdImagingRenderSettingsAdapter::ProcessPropertyChange(
     SdfPath const& cachePath, 
     TfToken const& propertyName)
 {
+    // XXX Process property changes on RenderSettings prim, as well as changes
+    //     to targeted RenderProduct and RenderVar prims.
+    //     For now, return AllDirty as a catch-all.
+    //     This should be HdRenderSettings::AllDirty, but UsdImagingDelegate
+    //     relies on the enum value below instead to flag resync.
     return HdChangeTracker::AllDirty;
 }
 
@@ -140,6 +261,53 @@ UsdImagingRenderSettingsAdapter::MarkDirty(
     index->MarkBprimDirty(cachePath, dirty);
 }
 
+namespace {
+
+static HdRenderSettings::RenderProducts
+_ToHdRenderProducts(UsdRenderSpec const &renderSpec)
+{
+    HdRenderSettings::RenderProducts hdProducts;
+    hdProducts.reserve(renderSpec.products.size());
+
+    for (auto const &product : renderSpec.products) {
+        HdRenderSettings::RenderProduct hdProduct;
+        hdProduct.productPath = product.renderProductPath;
+        hdProduct.type = product.type;
+        hdProduct.name = product.name;
+        hdProduct.resolution = product.resolution;
+
+        hdProduct.renderVars.reserve(product.renderVarIndices.size());
+        for (size_t const &varId : product.renderVarIndices) {
+            UsdRenderSpec::RenderVar const &rv =
+                renderSpec.renderVars[varId];
+            HdRenderSettings::RenderProduct::RenderVar hdVar;
+            hdVar.varPath = rv.renderVarPath;
+            hdVar.dataType = rv.dataType;
+            hdVar.sourceName = rv.sourceName;
+            hdVar.sourceType = rv.sourceType;
+            hdVar.extraSettings = rv.extraSettings;
+
+            hdProduct.renderVars.push_back(std::move(hdVar));
+        }
+
+        hdProduct.cameraPath = product.cameraPath;
+        hdProduct.pixelAspectRatio = product.pixelAspectRatio;
+        hdProduct.aspectRatioConformPolicy =
+            product.aspectRatioConformPolicy;
+        hdProduct.apertureSize = product.apertureSize;
+        hdProduct.dataWindowNDC = product.dataWindowNDC;
+
+        hdProduct.disableMotionBlur = product.disableMotionBlur;
+        hdProduct.extraSettings = product.extraSettings;
+
+        hdProducts.push_back(std::move(hdProduct));
+    }
+
+    return hdProducts;
+}
+
+}
+
 VtValue
 UsdImagingRenderSettingsAdapter::Get(
     UsdPrim const& prim,
@@ -148,26 +316,17 @@ UsdImagingRenderSettingsAdapter::Get(
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (prim.HasAttribute(key)) {
-        UsdAttribute const &attr = prim.GetAttribute(key);
+    // Gather authored settings attributes on the render settings prim.
+    if (key == HdRenderSettingsPrimTokens->settings) {
+        return VtValue(UsdRenderComputeExtraSettings(
+            prim, _GetRenderSettingsNamespaces()));
+    }
 
-        // Only return authored attribute values and UsdShadeConnectableAPI
-        // connections
-        VtValue value;
-        if (attr.HasAuthoredValue() && attr.Get(&value, time)) {
-            return value;
-        }
-        if (UsdShadeOutput::IsOutput(attr)) {
-            UsdShadeAttributeVector targets =
-                UsdShadeUtils::GetValueProducingAttributes(
-                    UsdShadeOutput(attr));
-            SdfPathVector outputs;
-            for (auto const& output : targets) {
-                outputs.push_back(output.GetPrimPath());
-            }
-            return VtValue(outputs);
-        }
-        return value;
+    if (key == HdRenderSettingsPrimTokens->renderProducts) {
+        const UsdRenderSpec renderSpec = UsdRenderComputeSpec(
+            UsdRenderSettings(prim), _GetRenderSettingsNamespaces());
+
+        return VtValue(_ToHdRenderProducts(renderSpec));
     }
 
     TF_CODING_ERROR(

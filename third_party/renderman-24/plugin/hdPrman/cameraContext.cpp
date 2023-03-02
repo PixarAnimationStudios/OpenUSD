@@ -263,7 +263,11 @@ _ComputeProjectionShader(const HdCamera::Projection projection)
     // Switch this to PxrCamera once it is ready in RenderMan.
     static const RtUString us_PxrCamera(
         TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)
+#if _PRMANAPI_VERSION_ < 25
             ? "PxrProjection"
+#else
+            ? "PxrCamera"
+#endif
             : "PxrPerspective");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
 

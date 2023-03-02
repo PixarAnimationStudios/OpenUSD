@@ -204,6 +204,8 @@ class PluginMenu(object):
         if shortcut is not None:
             action.setShortcut(QtGui.QKeySequence(shortcut))
 
+        return action
+
     def findOrCreateSubmenu(self, menuName):
         """Get a PluginMenu object for the submenu with the given name. If no
         submenu with the given name exists, it is created.

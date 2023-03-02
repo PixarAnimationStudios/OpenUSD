@@ -68,6 +68,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ND_standard_surface_surfaceshader)
     (ND_UsdPreviewSurface_surfaceshader)
     (ND_displacement_float)
+    (ND_image_vector2)
+    (ND_image_vector3)
+    (ND_image_vector4)
 
     // MaterialX - OSL Adapter Node names
     ((SS_Adapter, "StandardSurfaceParameters"))
@@ -106,6 +109,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (repeat)
     (uaddressmode)
     (vaddressmode)
+
+    // Color Space
+    ((cs_raw, "raw"))
+    ((cs_auto, "auto"))
 );
 
 static bool
@@ -654,6 +661,23 @@ _GetWrapModes(
     }
 }
 
+static void
+_GetColorSpace(
+    HdMaterialNetworkInterface *netInterface,
+    TfToken const &hdTextureNodeName,
+    TfToken *colorSpace)
+{
+    const TfToken nodeType = netInterface->GetNodeType(hdTextureNodeName);
+    if( nodeType == _tokens->ND_image_vector2 ||
+        nodeType == _tokens->ND_image_vector3 ||
+        nodeType == _tokens->ND_image_vector4 ) {
+        // For images not used as color use "raw" (eg. normal maps)
+        *colorSpace = _tokens->cs_raw;
+    } else {
+        *colorSpace = _tokens->cs_auto;
+    }
+}
+
 static void 
 _UpdateTextureNodes(
     HdMaterialNetworkInterface *netInterface,
@@ -706,11 +730,14 @@ _UpdateTextureNodes(
 
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
-                
-                std::string const &mxInputValue = 
-                    TfStringPrintf("rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s", 
-                                    pluginName.c_str(), path.c_str(), 
-                                    uWrap.GetText(), vWrap.GetText());
+
+                TfToken colorSpace;
+                _GetColorSpace(netInterface, textureNodeName, &colorSpace);
+
+                std::string const &mxInputValue = TfStringPrintf(
+                    "rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s&sourceColorSpace=%s",
+                    pluginName.c_str(), path.c_str(), uWrap.GetText(),
+                    vWrap.GetText(), colorSpace.GetText());
                 TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
                     .Msg("Resolved MaterialX asset path: %s\n",
                          mxInputValue.c_str());
@@ -795,6 +822,61 @@ _UpdateTextureNodes(
     }
 }
 
+// Texcoord nodes don't work for RenderMan, so convert them
+// to geompropvalue nodes that look up the texture coordinate primvar name.
+static void
+_UpdatePrimvarNodes(
+    HdMaterialNetworkInterface *netInterface,
+    std::set<SdfPath> const &hdPrimvarNodePaths,
+    mx::DocumentPtr const &mxDoc)
+{
+    for (SdfPath const &nodePath : hdPrimvarNodePaths) {
+        TfToken const &nodeName = nodePath.GetToken();
+        std::string mxNodeName = nodePath.GetName();
+        const TfToken nodeType = netInterface->GetNodeType(nodeName);
+        if (nodeType.IsEmpty()) {
+            TF_WARN("Can't find node '%s' in material network.",
+                    nodeName.GetText());
+            continue;
+        }
+
+        mx::NodeGraphPtr mxNodeGraph;
+        mx::NodePtr mxNode;
+
+        _FindGraphAndNodeByName(mxDoc, nodePath.GetParentPath().GetName(),
+                                mxNodeName, &mxNodeGraph, &mxNode);
+
+        // Ignore nodes that aren't "texcoord" nodes
+        if (!mxNode || mxNode->getCategory() != _tokens->texcoord) {
+            continue;
+        }
+        mx::NodeDefPtr mxNodeDef = mxDoc->getNodeDef(
+            _tokens->ND_geompropvalue_vector2.GetText());
+        if (!mxNodeDef) {
+            continue;
+        }
+
+        // Get the sdr node for the texcoord node
+        SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
+        const SdrShaderNodeConstPtr sdrTexcoordNode =
+            sdrRegistry.GetShaderNodeByIdentifierAndType(
+                nodeType, _tokens->mtlx);
+        // Get the primvarname from the sdrTexcoordNode metadata
+        auto metadata = sdrTexcoordNode->GetMetadata();
+        auto primvarName = metadata[SdrNodeMetadata->Primvars];
+
+        // Set the category and type of this texcoord node
+        // so that it will become a geompropvalue node
+        // that looks up the texture coordinate primvar name.
+        mxNode->setType(mxNodeDef->getType());
+        mxNode->setCategory(mxNodeDef->getNodeString());
+        mxNode->setNodeDefString(_tokens->ND_geompropvalue_vector2);
+        mxNode->setInputValue(_tokens->geomprop.GetText(),
+                              primvarName,
+                              _tokens->string_type.GetText());
+    }
+}
+
 void
 MatfiltMaterialX(
     HdMaterialNetworkInterface *netInterface,
@@ -852,6 +934,7 @@ MatfiltMaterialX(
                     stdLibraries, &hdMtlxData);
 
             _UpdateTextureNodes(netInterface, hdMtlxData.hdTextureNodes, mxDoc);
+            _UpdatePrimvarNodes(netInterface, hdMtlxData.hdPrimvarNodes, mxDoc);
 
             // Remove the material and shader nodes from the MaterialX Document
             // (since we need to use PxrSurface as the closure instead of the 
@@ -877,21 +960,6 @@ MatfiltMaterialX(
             netInterface->DeleteNode(nodeName);
         }
     }
-}
-
-void
-MatfiltMaterialX(
-    const SdfPath &materialPath,
-    HdMaterialNetwork2 &hdNetwork,
-    const std::map<TfToken, VtValue> &contextValues,
-    const NdrTokenVec &shaderTypePriority,
-    std::vector<std::string> *outputErrorMessages)
-{
-    TF_UNUSED(contextValues);
-    TF_UNUSED(shaderTypePriority);
-
-    HdMaterialNetwork2Interface netInterface(materialPath, &hdNetwork);
-    MatfiltMaterialX(&netInterface, outputErrorMessages);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE                        

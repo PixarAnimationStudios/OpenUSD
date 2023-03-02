@@ -1221,10 +1221,10 @@ _BuildTessAttribute(
 {
     ss << "[[patch(";
     switch (tessDesc.patchType) {
-        case HgiShaderFunctionTessellationDesc::PatchType::Triangle:
+        case HgiShaderFunctionTessellationDesc::PatchType::Triangles:
             ss << "triangle, ";
             break;
-        case HgiShaderFunctionTessellationDesc::PatchType::Quad:
+        case HgiShaderFunctionTessellationDesc::PatchType::Quads:
             ss << "quad, ";
             break;
             default:

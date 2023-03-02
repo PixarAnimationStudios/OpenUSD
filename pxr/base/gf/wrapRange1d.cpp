@@ -81,6 +81,8 @@ void wrapRange1d()
     cls
         .def(init<GfRange1d>())
         .def(init<double , double >())
+
+        .def(init<GfRange1f>())
         
         .def(TfTypePythonClass())
 

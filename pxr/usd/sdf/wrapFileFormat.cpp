@@ -113,6 +113,28 @@ void wrapFileFormat()
         .def("FindById", &This::FindById)
         .staticmethod("FindById")
 
+        .def("SupportsReading", &SdfFileFormat::SupportsReading)
+        .def("SupportsWriting", &SdfFileFormat::SupportsWriting)
+        .def("SupportsEditing", &SdfFileFormat::SupportsEditing)
+
+        .def("FormatSupportsReading", 
+                SdfFileFormat::FormatSupportsReading,
+                ( arg("extension"),
+                  arg("target") = std::string() ))
+        .staticmethod("FormatSupportsReading")
+
+        .def("FormatSupportsWriting", 
+                SdfFileFormat::FormatSupportsWriting,
+                ( arg("extension"),
+                  arg("target") = std::string() ))
+        .staticmethod("FormatSupportsWriting")
+
+        .def("FormatSupportsEditing", 
+                SdfFileFormat::FormatSupportsEditing,
+                ( arg("extension"),
+                  arg("target") = std::string() ))
+        .staticmethod("FormatSupportsEditing")
+
         .def("FindByExtension",
              (SdfFileFormatConstPtr(*)(const std::string&, const std::string&))
                 &This::FindByExtension,
@@ -130,6 +152,7 @@ void wrapFileFormat()
 
     TF_PY_WRAP_PUBLIC_TOKENS(
         "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
+
 }
 
 TF_REFPTR_CONST_VOLATILE_GET(SdfFileFormat)

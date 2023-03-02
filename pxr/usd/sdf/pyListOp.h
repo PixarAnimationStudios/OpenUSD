@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/base/arch/demangle.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include <boost/python.hpp>
@@ -67,6 +68,10 @@ private:
         }
     }
 
+    static size_t _Hash(const T &self){
+        return TfHash()(self);
+    }
+
     static void _Wrap(const std::string& name)
     {
         using namespace boost::python;
@@ -75,6 +80,7 @@ private:
 
         class_<T>(name.c_str())
             .def("__str__", &This::_GetStr)
+            .def("__hash__", &This::_Hash)
 
             .def("Create", &T::Create,
                  (arg("prependedItems") = ItemVector(),
@@ -121,7 +127,9 @@ private:
                               return_value_policy<return_by_value>()),
                 &T::SetOrderedItems)
             .def("GetAddedOrExplicitItems",
-                &This::_GetAddedOrExplicitItems)
+                &T::GetAppliedItems) //deprecated
+            .def("GetAppliedItems",
+                &T::GetAppliedItems)
 
             .add_property("isExplicit", &T::IsExplicit)
 
@@ -132,14 +140,6 @@ private:
     static std::string _GetStr(const T& listOp)
     {
         return TfStringify(listOp);
-    }
-    
-    static 
-    ItemVector _GetAddedOrExplicitItems(const T& listOp)
-    {
-        ItemVector result;
-        listOp.ApplyOperations(&result);
-        return result;
     }
 
 };

@@ -42,8 +42,7 @@
 #include "pxr/base/gf/half.h"
 {% endif %}
 {% endif %}
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <cstddef>
 {% if IS_FLOATING_POINT(SCL) -%}
@@ -143,9 +142,7 @@ public:
 
     /// Hash.
     friend inline size_t hash_value({{ VEC }} const &vec) {
-        size_t h = 0;
-        {{ LIST("boost::hash_combine(h, vec[%(i)s]);", sep='\n        ') }}
-        return h;
+        return TfHash::Combine({{ LIST("vec[%(i)s]", sep=', ') }});
     }
 
     /// Equality comparison.
@@ -252,8 +249,7 @@ public:
 {% if IS_FLOATING_POINT(SCL) %}
     /// Length
     {{ SCL }} GetLength() const {
-        // TODO should use GfSqrt.
-        return sqrt(GetLengthSq());
+        return GfSqrt(GetLengthSq());
     }
 
     /// Normalizes the vector in place to unit length, returning the

@@ -27,7 +27,7 @@
 #include "pxr/usd/usdProc/generativeProcedural.h"
 
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdImaging/dataSourceGprim.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -83,7 +83,7 @@ UsdProcImagingGenerativeProceduralAdapter::GetImagingSubprimData(
 {
     if (subprim.IsEmpty()) {
         //return _PrimDataSource::New(
-        return UsdImagingDataSourceGprim::New(
+        return UsdImagingDataSourcePrim::New(
             prim.GetPath(),
             prim,
             stageGlobals);
@@ -98,9 +98,6 @@ UsdProcImagingGenerativeProceduralAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        HdDataSourceLocatorSet result = 
-            UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
-        
         for (const TfToken &name : properties) {
             if (name == UsdProcTokens->proceduralSystem) {
                 // Return the locator convention which indicates that stage
@@ -111,9 +108,12 @@ UsdProcImagingGenerativeProceduralAdapter::InvalidateImagingSubprim(
             }
         }
 
+        HdDataSourceLocatorSet result = 
+            UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+
         return result;
     }
-    
+
     return HdDataSourceLocatorSet();
 }
 

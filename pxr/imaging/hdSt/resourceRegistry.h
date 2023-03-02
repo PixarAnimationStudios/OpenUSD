@@ -456,7 +456,8 @@ public:
     /// The returned pointer should not be held onto by the client as it is
     /// only valid until the HgiComputeCmds has been submitted.
     HDST_API
-    HgiComputeCmds* GetGlobalComputeCmds();
+    HgiComputeCmds* GetGlobalComputeCmds(
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial);
 
     /// Submits blit work queued in global blit cmds for GPU execution.
     /// We can call this when we want to submit some work to the GPU.

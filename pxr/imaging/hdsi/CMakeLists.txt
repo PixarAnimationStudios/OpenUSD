@@ -19,6 +19,7 @@ pxr_library(hdsi
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
         materialBindingResolvingSceneIndex
+        materialPrimvarTransferSceneIndex
         pinnedCurveExpandingSceneIndex
         terminalsResolvingSceneIndex
 

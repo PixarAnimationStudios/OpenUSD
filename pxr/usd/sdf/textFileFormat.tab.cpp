@@ -647,13 +647,13 @@ _RelocatesAdd(const Value& arg1, const Value& arg2,
     SdfPath srcPath(srcStr);
     SdfPath targetPath(targetStr);
 
-    if (!srcPath.IsPrimPath()) {
-        Err(context, "'%s' is not a valid prim path",
+    if (!SdfSchema::IsValidRelocatesPath(srcPath)) {
+        Err(context, "'%s' is not a valid relocates path",
             srcStr.c_str());
         return;
     }
-    if (!targetPath.IsPrimPath()) {
-        Err(context, "'%s' is not a valid prim path",
+    if (!SdfSchema::IsValidRelocatesPath(targetPath)) {
+        Err(context, "'%s' is not a valid relocates path",
             targetStr.c_str());
         return;
     }

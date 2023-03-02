@@ -74,13 +74,18 @@ UsdSchemaBase::_IsCompatible() const
     return true;
 }
 
-TF_MAKE_STATIC_DATA(TfType, _tfType) {
-    *_tfType = TfType::Find<UsdSchemaBase>();
+/* static */
+const TfType &
+UsdSchemaBase::_GetStaticTfType()
+{
+    static TfType tfType = TfType::Find<UsdSchemaBase>();
+    return tfType;
 }
+
 const TfType &
 UsdSchemaBase::_GetTfType() const
 {
-    return *_tfType;
+    return _GetStaticTfType();
 }
 
 UsdAttribute

@@ -380,14 +380,38 @@ PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
     TF_REVERSE_FOR_ALL(layer, layers) {
         VtValue namesVal = (*layer)->GetField(path, namesField);
         if (namesVal.IsHolding<TfTokenVector>()) {
-            const TfTokenVector & names =
-                namesVal.UncheckedGet<TfTokenVector>();
-            // Append names in order.  Skip names that are 
-            // already in the nameSet.
-            TF_FOR_ALL(name, names) {
-                if (nameSet->insert(*name).second) {
-                    nameOrder->push_back(*name);
+            TfTokenVector names = namesVal.UncheckedRemove<TfTokenVector>();
+
+            // Append names in order.  Skip names that are already in the
+            // nameSet.
+
+            auto doOneByOne = [&]() {
+                for (TfToken &name: names) {
+                    if (nameSet->insert(name).second) {
+                        nameOrder->push_back(std::move(name));
+                    }
                 }
+            };
+            
+            // Commonly, nameSet is empty.  In this case, insert everything
+            // upfront, then check the size.  If it is the same size as names,
+            // they were unique, and we can just append them all.
+            if (nameSet->empty()) {
+                nameSet->insert(names.begin(), names.end());
+                if (nameSet->size() == names.size()) {
+                    *nameOrder = std::move(names);
+                }
+                else {
+                    // This case is really, really unlikely -- sdfdata semantics
+                    // should disallow duplicates within a single names field.
+                    // In this case we just pay the price and do them
+                    // one-by-one.
+                    nameSet->clear();
+                    doOneByOne();
+                }
+            }
+            else {
+                doOneByOne();
             }
         }
         if (orderField) {

@@ -24,10 +24,10 @@
 
 #include "pxr/imaging/hdSt/geometricShader.h"
 
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -131,7 +131,7 @@ HdSt_GeometricShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_GeometricShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // no-op
 }
@@ -169,6 +169,9 @@ HdSt_GeometricShader::GetPrimitiveIndexSize() const
             break;
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             primIndexSize = 12;
+            break;
+        case PrimitiveType::PRIM_COMPUTE:
+            primIndexSize = 0;
             break;
     }
 
@@ -231,6 +234,9 @@ HdSt_GeometricShader::GetNumPrimitiveVertsForGeometryShader() const
         case PrimitiveType::PRIM_MESH_REFINED_QUADS:
             numPrimVerts = 4;
             break;
+        case PrimitiveType::PRIM_COMPUTE:
+            numPrimVerts = 0;
+            break;
     }
 
     return numPrimVerts;
@@ -275,6 +281,9 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
         case PrimitiveType::PRIM_MESH_BSPLINE:
         case PrimitiveType::PRIM_MESH_BOXSPLINETRIANGLE:
             primitiveType = HgiPrimitiveTypePatchList;
+            break;
+        case PrimitiveType::PRIM_COMPUTE:
+            primitiveType = HgiPrimitiveTypePointList;
             break;
     }
 

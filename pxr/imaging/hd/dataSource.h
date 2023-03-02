@@ -68,6 +68,14 @@ PXR_NAMESPACE_OPEN_SCOPE
         return Handle(new type(std::forward<Args>(args) ... )); \
     }
 
+/// HD_DECLARE_DATASOURCE_INITIALIZER_LIST_NEW
+/// Used for declaring a `New` function for datasource types that have a
+/// constructor that takes an initializer_list<T>.
+#define HD_DECLARE_DATASOURCE_INITIALIZER_LIST_NEW(type, T) \
+    static Handle New(std::initializer_list<T> initList) { \
+        return Handle(new type(initList)); \
+    }
+
 #define HD_DECLARE_DATASOURCE_HANDLES(type) \
     using type##Handle = type::Handle; \
     using type##AtomicHandle = type::AtomicHandle;

@@ -102,6 +102,12 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
+
 private:
     UsdImagingDataSourceBasisCurvesPrim(
         const SdfPath &sceneIndexPath,

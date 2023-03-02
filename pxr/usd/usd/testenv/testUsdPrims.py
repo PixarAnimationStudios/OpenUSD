@@ -1018,19 +1018,12 @@ class TestUsdPrim(unittest.TestCase):
 
             self.assertTrue(world.HasAPI(Usd.CollectionAPI))
 
-            # The schemaType that's passed into HasAPI must derive from 
-            # UsdAPISchemaBase and must not be UsdAPISchemaBase.
-            with self.assertRaises(RuntimeError):
-                world.HasAPI(Usd.Typed)
-            with self.assertRaises(RuntimeError):
-                world.HasAPI(Usd.APISchemaBase)
-            with self.assertRaises(RuntimeError):
-                world.HasAPI(Usd.ModelAPI)
-
-            # Try calling HasAPI a random TfType that isn't a derivative of 
-            # SchemaBase.
-            with self.assertRaises(RuntimeError):
-                world.HasAPI(Sdf.ListOpType)
+            # HasAPI always returns false (but doesn't error) for types that 
+            # aren't applied API schema types.
+            self.assertFalse(world.HasAPI(Usd.Typed))
+            self.assertFalse(world.HasAPI(Usd.APISchemaBase))
+            self.assertFalse(world.HasAPI(Usd.ModelAPI))
+            self.assertFalse(world.HasAPI(Sdf.ListOpType))
 
             self.assertEqual(['CollectionAPI:root'], world.GetAppliedSchemas())
 

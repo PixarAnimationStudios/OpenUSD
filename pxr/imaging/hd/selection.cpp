@@ -240,4 +240,70 @@ void HdSelection::_GetSelectionPrimPathsForMode(
     }
 }
 
+template<typename T>
+static
+void
+_Append(std::vector<T> * result,
+        const std::vector<T> &other)
+{
+    result->insert(result->end(), other.begin(), other.end());
+}
+
+static
+void
+_AppendWithOffset(std::vector<int> * result,
+                  const std::vector<int> &other,
+                  const int offset)
+{
+    result->reserve(result->size() + other.size());
+    for (const int i : other) {
+        result->push_back(i + offset);
+    }
+}
+    
+
+HdSelectionSharedPtr
+HdSelection::Merge(HdSelectionSharedPtr const &a,
+                   HdSelectionSharedPtr const &b)
+{
+    if (!a || a->IsEmpty()) {
+        return b;
+    }
+    if (!b || b->IsEmpty()) {
+        return a;
+    }
+
+    HdSelectionSharedPtr result = std::make_shared<HdSelection>(*a);
+    const size_t ptOffset = result->_selectedPointColors.size();
+
+    _Append(&result->_selectedPointColors, b->_selectedPointColors);
+
+    for (size_t mode = 0; mode < HighlightModeCount; mode++) {
+        for (const auto &pathAndState : b->_selMap[mode]) {
+            const SdfPath &path = pathAndState.first;
+            const PrimSelectionState &state = pathAndState.second;
+            PrimSelectionState &resultState = result->_selMap[mode][path];
+            resultState.fullySelected |= state.fullySelected;
+            _Append(
+                &resultState.instanceIndices,
+                state.instanceIndices);
+            _Append(
+                &resultState.elementIndices,
+                state.elementIndices);
+            _Append(
+                &resultState.edgeIndices,
+                state.edgeIndices);
+            _Append(
+                &resultState.pointIndices,
+                state.pointIndices);
+            _AppendWithOffset(
+                &resultState.pointColorIndices,
+                state.pointColorIndices,
+                ptOffset);
+        }
+    }
+
+    return result;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

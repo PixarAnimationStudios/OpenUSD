@@ -246,6 +246,33 @@ public:
     UsdAttribute CreateRangesAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // POINTWEIGHTS 
+    // --------------------------------------------------------------------- //
+    /// Optionally provides "w" components for each control point,
+    /// thus must be the same length as the points attribute.  If authored,
+    /// the curve will be rational.  If unauthored, the curve will be
+    /// polynomial, i.e. weight for all points is 1.0.
+    /// \note Some DCC's pre-weight the \em points, but in this schema, 
+    /// \em points are not pre-weighted.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double[] pointWeights` |
+    /// | C++ Type | VtArray<double> |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->DoubleArray |
+    USDGEOM_API
+    UsdAttribute GetPointWeightsAttr() const;
+
+    /// See GetPointWeightsAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreatePointWeightsAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

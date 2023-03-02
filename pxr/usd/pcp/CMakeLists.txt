@@ -885,6 +885,11 @@ pxr_install_test_dir(
     DEST testPcpMuseum_ErrorRelocateToSelf
 )
 
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ErrorRelocateWithVariantSelection.testenv
+    DEST testPcpMuseum_ErrorRelocateWithVariantSelection
+)
+
 pxr_register_test(testPcpMuseum_BasicInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInstancing/root.sdf"
@@ -965,9 +970,11 @@ pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
 
 pxr_register_test(testPcpMuseum_BasicInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInherits/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_BasicInherits.txt BasicInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicInherits.txt
-    DIFF_COMPARE compositionResults_BasicInherits.txt 
+    DIFF_COMPARE compositionResults_BasicInherits.txt compositionErrors_BasicInherits.txt
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
 )
 
 pxr_register_test(testPcpMuseum_BasicLocalAndGlobalClassCombination
@@ -1177,9 +1184,11 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndRelocates
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_SubrootReferenceAndVariants.txt SubrootReferenceAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants.txt
-    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt 
+    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt compositionErrors_SubrootReferenceAndVariants.txt 
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
 )
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
@@ -1654,6 +1663,14 @@ pxr_register_test(testPcpMuseum_ErrorRelocateToSelf
     DIFF_COMPARE compositionResults_ErrorRelocateToSelf_pcp.txt compositionErrors_ErrorRelocateToSelf_pcp.txt
 )
 
+pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateWithVariantSelection.txt ErrorRelocateWithVariantSelection/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorRelocateWithVariantSelection.txt
+    DIFF_COMPARE compositionResults_ErrorRelocateWithVariantSelection.txt compositionErrors_ErrorRelocateWithVariantSelection.txt
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
+)
 
 pxr_register_test(testPcpIterator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpIterator"

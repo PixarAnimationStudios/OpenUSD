@@ -83,6 +83,10 @@ void wrapRange{{ SUFFIX }}()
     cls
         .def(init<{{ RNG }}>())
         .def(init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
+
+{% for S in SCALARS if S != SCL %}
+        .def(init<{{ RNGNAME(DIM, S) }}>())
+{% endfor %}
         
         .def(TfTypePythonClass())
 

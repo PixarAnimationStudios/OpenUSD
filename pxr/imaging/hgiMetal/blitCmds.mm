@@ -443,19 +443,37 @@ HgiMetalBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
     }
 }
 
+static bool
+_HgiCanBeFiltered(HgiFormat format)
+{
+    HgiFormat const componentFormat = HgiGetComponentBaseFormat(format);
+
+    switch(componentFormat) {
+    case HgiFormatInt16:
+    case HgiFormatUInt16:
+    case HgiFormatInt32:
+        return false;
+    default:
+        return true;
+    }
+}
+
 void
 HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
     if (metalTex) {
-        _CreateEncoder();
-        
-        [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
+        HgiFormat const format = metalTex->GetDescriptor().format;
+        if (_HgiCanBeFiltered(format)) {
+            _CreateEncoder();
+            // Can fail if the texture format is not filterable.
+            [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
+        }
     }
 }
 
 void
-HgiMetalBlitCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     TF_VERIFY(barrier==HgiMemoryBarrierAll, "Unknown barrier");
     // Do nothing. All blit encoder work will be visible to next encoder.

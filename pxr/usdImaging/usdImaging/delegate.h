@@ -209,6 +209,14 @@ public:
     /// Returns the root visibility for the entire delegate.
     bool GetRootVisibility() const { return _rootIsVisible; }
 
+    /// Sets the root instancer id for the entire delegate, which is used as a 
+    /// fallback value for GetInstancerId.
+    USDIMAGING_API
+    void SetRootInstancerId(SdfPath const& instancerId);
+
+    /// Returns the root instancer id for the entire delegate.
+    SdfPath GetRootInstancerId() const { return _rootInstancerId; }
+
     /// Set the list of paths that must be invised.
     USDIMAGING_API
     void SetInvisedPrimPaths(SdfPathVector const &invisedPaths);
@@ -559,14 +567,25 @@ private:
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const&,
                               UsdStageWeakPtr const& sender);
 
+    // Map holding USD subtree path keys mapped to associated hydra prim cache
+    // paths. This may be prepopulated and provided to the Refresh and Resync
+    // methods below to speed up dependency gathering.
+    typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash>
+        _FlattenedDependenciesCacheMap;
+
     // The lightest-weight update, it does fine-grained invalidation of
     // individual properties at the given path (prim or property).
     //
     // If \p path is a prim path, changedPrimInfoFields will be populated
     // with the list of scene description fields that caused this prim to
     // be refreshed.
-    void _RefreshUsdObject(SdfPath const& usdPath, 
+    //
+    // Returns whether the prim or the subtree rooted at `usdPath` needed to
+    // be resync'd (i.e., removed and repopulated).
+    //
+    bool _RefreshUsdObject(SdfPath const& usdPath, 
                            TfTokenVector const& changedPrimInfoFields,
+                           _FlattenedDependenciesCacheMap const &cache,
                            UsdImagingIndexProxy* proxy,
                            SdfPathSet* allTrackedVariabilityPaths); 
 
@@ -577,7 +596,9 @@ private:
     // Repopulate() on those prims individually. If repopulateFromRoot is
     // true, Repopulate() will be called on \p rootPath instead. This is slower,
     // but handles changes in tree topology.
-    void _ResyncUsdPrim(SdfPath const& usdRootPath, UsdImagingIndexProxy* proxy,
+    void _ResyncUsdPrim(SdfPath const& usdRootPath,
+                        _FlattenedDependenciesCacheMap const &cache,
+                        UsdImagingIndexProxy* proxy,
                         bool repopulateFromRoot = false);
 
     // ---------------------------------------------------------------------- //
@@ -664,14 +685,18 @@ private:
     // Map from USD path to Hydra path, for tracking USD->hydra dependencies.
     _DependencyMap _dependencyInfo;
 
+    // Appends hydra prim cache paths corresponding to the USD subtree
+    // provided by looking up the dependency map (above).
     void _GatherDependencies(SdfPath const& subtree,
                              SdfPathVector *affectedCachePaths);
 
-    typedef TfHashMap<SdfPath, SdfPathVector, SdfPath::Hash> _FlattenedDependenciesCacheMap;
-    _FlattenedDependenciesCacheMap _flattenedDependenciesCacheMap;
-
-    void _CacheDependencies(SdfPath const &subtree,
-                            SdfPathVector *affectedCachePaths);
+    // Overload that takes an additional cache argument to help speed up the
+    // dependency gathering operation. The onus is on the client to prepopulate
+    // the cache.
+    void
+    _GatherDependencies(SdfPath const &subtree,
+                        _FlattenedDependenciesCacheMap const &cache,
+                        SdfPathVector *affectedCachePaths);
 
     // SdfPath::ReplacePrefix() is used frequently to convert between
     // cache path and Hydra render index path and is a performance bottleneck.
@@ -724,6 +749,7 @@ private:
 
     GfMatrix4d _rootXf;
     bool _rootIsVisible;
+    SdfPath _rootInstancerId;
 
     /// The current time from which the delegate will read data.
     UsdTimeCode _time;

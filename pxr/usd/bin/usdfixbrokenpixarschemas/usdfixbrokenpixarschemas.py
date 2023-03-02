@@ -77,10 +77,11 @@ def _ValidateFileNames(inputFile, backupFile, isUsdzFile):
 def main():
     parser = argparse.ArgumentParser(description="""Fixes usd / usdz layer
     by applying appropriate fixes defined in the UsdUtils.FixBrokenPixarSchemas.
-    If the given usd file has any fixes to be saved, a backup is created for the
-    same. If a usdz package is provided, it is extracted recursively at a temp 
-    location, and fixes are applied on each layer individually, which are then 
-    packaged into a new usdz package, while creating a backup of the original.
+    If the given usd file has any fixes to be saved, a backup is created for 
+    that file. If a usdz package is provided, it is extracted recursively at a 
+    temp location, and fixes are applied on each layer individually, which are 
+    then packaged into a new usdz package, while creating a backup of the 
+    original.
     """)
 
     parser.add_argument('inputFile', type=str, nargs='?',
@@ -114,12 +115,26 @@ def main():
     if isUsdzFile:
         shutil.copyfile(inputFile, backupFile)
         # UsdzAssetIterator will make sure to extract and pack when done!
-        with UsdUtils.UsdzAssetIterator(inputFile, args.verbose) as usdAssetItr:
-            # Generators for usdAssets giving us recursive lazy access to 
-            # usdAssets within the usdz package for applying fixes.
-            for usdAsset in usdAssetItr.UsdAssets():
-                if usdAsset:
-                    success |= _FixUsdAsset(usdAsset)
+        try:
+            with UsdUtils.UsdzAssetIterator(
+                    inputFile, args.verbose) as usdAssetItr:
+                # Generators for usdAssets giving us recursive lazy access to 
+                # usdAssets within the usdz package for applying fixes.
+                for usdAsset in usdAssetItr.UsdAssets():
+                    if usdAsset:
+                        success |= _FixUsdAsset(usdAsset)
+        except Exception as e:
+            # UsdzAssetIterator raised an exception - possible due to
+            # non-compliance of the root layer. This is possible if the fixed 
+            # usd assets are still failing compliance, since the fixer only 
+            # fixes incompatiblities with Pixar schema revisions and not all 
+            # compliance tests handled by usdchecker.
+            success = False
+            _Err("Failed to update (%s) since it does not pass the USD "
+                 "validation suite even after fixing broken Pixar schemas. Run "
+                 "usdfixbrokenpixarschemas again after fixing all non-Pixar "
+                 "schema related test failures by running usdchecker on the "
+                 "assets indicated in the error log." %inputFile)
     else:
         shutil.copyfile(inputFile, backupFile)
         success = _FixUsdAsset(inputFile)

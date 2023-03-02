@@ -31,6 +31,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 HdPrman_RenderViewDesc::RenderOutputDesc::RenderOutputDesc()
   : type(riley::RenderOutputType::k_Color)
   , rule(RixStr.k_filter)
+  , filter(RixStr.k_box)
+  , filterWidth(1.0f, 1.0f)
+  , relativePixelVariance(1.0f)
 { }
 
 HdPrman_RenderViewContext::HdPrman_RenderViewContext() = default;
@@ -45,7 +48,8 @@ HdPrman_RenderViewContext::CreateRenderView(
     using RenderOutputDesc = HdPrman_RenderViewDesc::RenderOutputDesc;
 
     for (const RenderOutputDesc &outputDesc : desc.renderOutputDescs) {
-        const riley::FilterSize filterWidth = { 1.0f, 1.0f };
+        const riley::FilterSize filterWidth = { outputDesc.filterWidth[0],
+                                                outputDesc.filterWidth[1] };
         
         _renderOutputIds.push_back(
             riley->CreateRenderOutput(
@@ -54,9 +58,9 @@ HdPrman_RenderViewContext::CreateRenderView(
                 outputDesc.type,
                 outputDesc.sourceName,
                 outputDesc.rule,
-                RixStr.k_box,
+                outputDesc.filter,
                 filterWidth,
-                1.0f,
+                outputDesc.relativePixelVariance,
                 outputDesc.params));
     }
     
@@ -87,7 +91,9 @@ HdPrman_RenderViewContext::CreateRenderView(
         }
         _displayIds.push_back(
             riley->CreateDisplay(
-                riley::UserId(stats::AddDataLocation(displayDesc.name.CStr()).GetValue()),
+                riley::UserId(
+                    stats::AddDataLocation(
+                        displayDesc.name.CStr()).GetValue()),
                 _renderTargetId,
                 displayDesc.name,
                 displayDesc.driver,
@@ -102,7 +108,7 @@ HdPrman_RenderViewContext::CreateRenderView(
             _renderTargetId,
             desc.cameraId,
             desc.integratorId,
-            {0, nullptr},
+            desc.displayFilterList,
             desc.sampleFilterList,
             RtParamList());
 }

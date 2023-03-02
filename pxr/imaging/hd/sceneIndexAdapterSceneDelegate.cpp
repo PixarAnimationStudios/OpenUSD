@@ -30,9 +30,12 @@
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/base/trace/trace.h"
+
+#include "pxr/base/arch/vsnprintf.h"
 
 #include "pxr/imaging/hd/dataSourceLegacyPrim.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
@@ -77,8 +80,11 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderProductSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/sphereSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -100,6 +106,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((prmanParamsNames, ""))
 
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 
@@ -134,9 +141,14 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
 , _cachedDirtyBits(0)
 , _cachedPrimType()
 {
+
+    std::string registeredName = ArchStringPrintf(
+        "HdSceneIndexAdapterSceneDelegate scene: %s@%p",
+            delegateID.GetString().c_str(),
+            (void *) parentIndex);
+
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
-        "HdSceneIndexAdapterSceneDelegate scene: " + delegateID.GetString(),
-            inputSceneIndex);
+        registeredName, inputSceneIndex);
 
     // XXX: note that we will likely want to move this to the Has-A observer
     // pattern we're using now...
@@ -1293,6 +1305,92 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
     return result;
 }
 
+namespace {
+
+static VtDictionary
+_ToDictionary(HdContainerDataSourceHandle const &cds)
+{
+    VtDictionary dict;
+    for (const TfToken &name : cds->GetNames()) {
+        if (HdSampledDataSourceHandle valueDs =
+                HdSampledDataSource::Cast(cds->Get(name))) {
+            dict[name.GetString()] = valueDs->GetValue(0);
+        }
+    }
+    return dict;
+}
+
+using _RenderVar = HdRenderSettings::RenderProduct::RenderVar;
+using _RenderVars = std::vector<_RenderVar>;
+static _RenderVars
+_ToRenderVars(HdRenderVarVectorSchema vars)
+{
+    if (!vars) {
+        return _RenderVars();
+    }
+
+    _RenderVars hdVars;
+    const HdVectorDataSourceHandle vds = vars.GetVector();
+    const size_t numVars = vds->GetNumElements();
+    hdVars.reserve(numVars);
+
+    for (size_t idx = 0; idx < numVars; idx++) {
+        HdRenderVarSchema rvSchema(HdContainerDataSource::Cast(
+            vds->GetElement(idx)));
+        
+        if (rvSchema) {
+            hdVars.push_back({
+                rvSchema.GetPath()->GetTypedValue(0),
+                rvSchema.GetDataType()->GetTypedValue(0),
+                rvSchema.GetSourceName()->GetTypedValue(0),
+                rvSchema.GetSourceType()->GetTypedValue(0),
+                _ToDictionary(rvSchema.GetNamespacedSettings())
+            });
+        }
+    }
+
+    return hdVars;
+}
+
+static GfRange2f
+_ToRange2f(GfVec4f const &v)
+{
+    return GfRange2f(GfVec2f(v[0], v[1]), GfVec2f(v[2],v[3]));
+}
+
+static HdRenderSettings::RenderProducts
+_ToRenderProducts(HdRenderProductVectorSchema products)
+{
+    HdRenderSettings::RenderProducts hdProducts;
+    const HdVectorDataSourceHandle vds = products.GetVector();
+    const size_t numProducts = vds->GetNumElements();
+    hdProducts.reserve(numProducts);
+    for (size_t idx = 0; idx < numProducts; idx++) {
+
+        HdRenderProductSchema rpSchema(HdContainerDataSource::Cast(
+            vds->GetElement(idx)));
+        
+        if (rpSchema) {
+            hdProducts.push_back({
+                rpSchema.GetPath()->GetTypedValue(0),
+                rpSchema.GetType()->GetTypedValue(0),
+                rpSchema.GetName()->GetTypedValue(0),
+                rpSchema.GetResolution()->GetTypedValue(0),
+                _ToRenderVars(rpSchema.GetRenderVars()),
+                rpSchema.GetCameraPrim()->GetTypedValue(0),
+                rpSchema.GetPixelAspectRatio()->GetTypedValue(0),
+                rpSchema.GetAspectRatioConformPolicy()->GetTypedValue(0),
+                rpSchema.GetApertureSize()->GetTypedValue(0),
+                _ToRange2f(rpSchema.GetDataWindowNDC()->GetTypedValue(0)),
+                rpSchema.GetDisableMotionBlur()->GetTypedValue(0),
+                _ToDictionary(rpSchema.GetNamespacedSettings())
+            });
+        }
+    }
+
+    return hdProducts;
+}
+
 static VtValue
 _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 {
@@ -1303,40 +1401,40 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         return VtValue();
     }
 
-    if (key == _tokens->outputsRiSampleFilters) {
-        HdSampledDataSourceHandle valueDs =
-            HdSampledDataSource::Cast(renderSettingsDs->Get(
-                HdRenderSettingsSchemaTokens->sampleFilters));
-        if (!valueDs) {
-            return VtValue();
-        }
+    HdRenderSettingsSchema rsSchema = HdRenderSettingsSchema(renderSettingsDs);
+    if (!rsSchema.IsDefined()) {
+        return VtValue();
+    }
 
-        VtValue pathArrayValue = valueDs->GetValue(0);
-        if (pathArrayValue.IsHolding<VtArray<SdfPath>>()) {
-            VtArray<SdfPath> pathArray =
-                pathArrayValue.UncheckedGet<VtArray<SdfPath>>();
-            SdfPathVector pathVector(pathArray.cbegin(), pathArray.cend());
-            return VtValue(pathVector);
+    if (key == HdRenderSettingsPrimTokens->settings) {
+        VtDictionary settings;
+        if (HdContainerDataSourceHandle namespacedSettingsDs = 
+                rsSchema.GetNamespacedSettings()) {
+
+            return VtValue(_ToDictionary(namespacedSettingsDs));
         }
     }
+    
+    if (key == HdRenderSettingsPrimTokens->active) {
+        if (HdBoolDataSourceHandle activeDS = rsSchema.GetActive()) {
+            return VtValue(activeDS->GetTypedValue(0));
+        }
+        return VtValue(false);
+    }
+
+    if (key == HdRenderSettingsPrimTokens->renderProducts) {
+        if (HdRenderProductVectorSchema products =
+            rsSchema.GetRenderProducts()) {
+            
+            return VtValue(_ToRenderProducts(products));
+        }
+    }
+
     return VtValue();
 }
 
 static VtValue
-_GetSampleFilterResource(HdSceneIndexPrim prim)
-{
-    TRACE_FUNCTION();
-
-    HdSampleFilterSchema filterSchema =
-        HdSampleFilterSchema::GetFromParent(prim.dataSource);
-    if (!filterSchema.IsDefined()) {
-        return VtValue();
-    }
-    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
-    if (!nodeSchema.IsDefined()) {
-        return VtValue();
-    }
-
+_ToOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
     // Convert HdDataSource with material node data to a HdMaterialNode2
     HdMaterialNode2 hdNode2;
     HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
@@ -1363,6 +1461,43 @@ _GetSampleFilterResource(HdSceneIndexPrim prim)
     return VtValue(hdNode2);
 }
 
+static VtValue
+_GetSampleFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdSampleFilterSchema filterSchema = 
+        HdSampleFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return _ToOutputFilterResource(nodeSchema);
+}
+
+
+static VtValue
+_GetDisplayFilterResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdDisplayFilterSchema filterSchema =
+        HdDisplayFilterSchema::GetFromParent(prim.dataSource);
+    if (!filterSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = filterSchema.GetDisplayFilterResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return _ToOutputFilterResource(nodeSchema);
+}
+
 static
 HdInterpolation
 Hd_InterpolationAsEnum(const TfToken &interpolationToken)
@@ -1384,6 +1519,7 @@ Hd_InterpolationAsEnum(const TfToken &interpolationToken)
     return HdInterpolation(-1);
 }
 
+}
 
 HdPrimvarDescriptorVector
 HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
@@ -1654,13 +1790,20 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
 
     // renderSettings usd of Get().
     if (prim.primType == HdPrimTypeTokens->renderSettings) {
-        _GetRenderSettings(prim, key);
+        return _GetRenderSettings(prim, key);
     }
 
     // sampleFilter usd of Get().
     if (prim.primType == HdPrimTypeTokens->sampleFilter) {
         if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
             return _GetSampleFilterResource(prim);
+        }
+        return VtValue();
+    }
+
+    if (prim.primType == HdPrimTypeTokens->displayFilter) {
+        if (key == HdDisplayFilterSchemaTokens->displayFilterResource) {
+            return _GetDisplayFilterResource(prim);
         }
         return VtValue();
     }
