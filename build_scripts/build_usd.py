@@ -1574,11 +1574,12 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.4.zip"
+MATERIALX_URL = "https://github.com/apple/MaterialX/archive/refs/tags/v1.38.6_MetalShadingLaguage.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
         cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
+        cmakeOptions += ['-DMATERIALX_BUILD_TESTS=OFF']
 
         cmakeOptions += buildArgs;
 

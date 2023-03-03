@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 
 #include <MaterialXGenGlsl/GlslShaderGenerator.h>
+#include <MaterialXGenMsl/MslShaderGenerator.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,19 +37,15 @@ struct HdSt_MxShaderGenInfo;
 ///
 /// Generates a glslfx shader with a surfaceShader function for a MaterialX 
 /// network
-class HdStMaterialXShaderGen : public MaterialX::GlslShaderGenerator
+template<typename T>
+class HdStMaterialXShaderGen : public T
 {
 public:
     HdStMaterialXShaderGen(HdSt_MxShaderGenInfo const& mxHdInfo);
 
-    static MaterialX::ShaderGeneratorPtr create(
-            HdSt_MxShaderGenInfo const& mxHdInfo) {
-        return std::make_shared<HdStMaterialXShaderGen>(mxHdInfo); 
-    }
-
-    MaterialX::ShaderPtr generate(const std::string& shaderName,
+    virtual MaterialX::ShaderPtr generate(const std::string& shaderName,
                            MaterialX::ElementPtr mxElement,
-                           MaterialX::GenContext& mxContext) const override;
+                           MaterialX::GenContext& mxContext) const = 0;
 
     // Overriding this function to catch and adjust SurfaceNode code
     void emitLine(const std::string& str, 
@@ -61,24 +58,6 @@ public:
     }
 
 protected:
-    void _EmitGlslfxShader(const MaterialX::ShaderGraph& mxGraph,
-                           MaterialX::GenContext& mxContext,
-                           MaterialX::ShaderStage& mxStage) const;
-
-private:
-
-    /// These three helper functions generate the Glslfx Shader
-    void _EmitGlslfxHeader(MaterialX::ShaderStage& mxStage) const;
-
-    void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
-                          MaterialX::GenContext& mxContext,
-                          MaterialX::ShaderStage& mxStage) const;
-
-    void _EmitMxSurfaceShader(const MaterialX::ShaderGraph& mxGraph,
-                              MaterialX::GenContext& mxContext,
-                              MaterialX::ShaderStage& mxStage) const;
-
-
     // Helper functions to generate the conversion between Hd and Mx VertexData 
     void _EmitMxInitFunction(MaterialX::VariableBlock const& vertexData,
                              MaterialX::ShaderStage& mxStage) const;
@@ -112,6 +91,15 @@ private:
                             MaterialX::ShaderStage& stage) const;
 #endif
 
+protected:
+
+    /// These two helper functions generate the Glslfx Shader
+    void _EmitGlslfxHeader(MaterialX::ShaderStage& mxStage) const;
+
+    void _EmitMxSurfaceShader(const MaterialX::ShaderGraph& mxGraph,
+                              MaterialX::GenContext& mxContext,
+                              MaterialX::ShaderStage& mxStage) const;
+    
     // Store MaterialX and Hydra counterparts and other Hydra specific info
     // to generate an appropriate glslfx header and properly initialize 
     // MaterialX values.
@@ -124,6 +112,58 @@ private:
 
     // Helper to catch code for the SurfaceNode
     bool _emittingSurfaceNode;
+};
+
+class HdStMaterialXGlslShaderGen
+    : public HdStMaterialXShaderGen<MaterialX::GlslShaderGenerator>
+{
+public:
+    HdStMaterialXGlslShaderGen(HdSt_MxShaderGenInfo const& mxHdInfo);
+    
+    static MaterialX::ShaderGeneratorPtr create(
+            HdSt_MxShaderGenInfo const& mxHdInfo) {
+        return std::make_shared<HdStMaterialXGlslShaderGen>(mxHdInfo);
+    }
+    
+    MaterialX::ShaderPtr generate(const std::string& shaderName,
+                           MaterialX::ElementPtr mxElement,
+                           MaterialX::GenContext& mxContext) const override;
+private:
+
+    void _EmitGlslfxShader(const MaterialX::ShaderGraph& mxGraph,
+                           MaterialX::GenContext& mxContext,
+                           MaterialX::ShaderStage& mxStage) const;
+
+    void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
+                          MaterialX::GenContext& mxContext,
+                          MaterialX::ShaderStage& mxStage) const;
+};
+
+class HdStMaterialXMslShaderGen
+    : public HdStMaterialXShaderGen<MaterialX::MslShaderGenerator>
+{
+public:
+    HdStMaterialXMslShaderGen(HdSt_MxShaderGenInfo const& mxHdInfo);
+    
+    static MaterialX::ShaderGeneratorPtr create(
+            HdSt_MxShaderGenInfo const& mxHdInfo) {
+        return std::make_shared<HdStMaterialXMslShaderGen>(mxHdInfo);
+    }
+    
+    MaterialX::ShaderPtr generate(const std::string& shaderName,
+                           MaterialX::ElementPtr mxElement,
+                           MaterialX::GenContext& mxContext) const override;
+private:
+    void _EmitMslfxShader(const MaterialX::ShaderGraph& mxGraph,
+                           MaterialX::GenContext& mxContext,
+                           MaterialX::ShaderStage& mxStage) const;
+    
+    /// These two helper functions generate the Mslfx Shader
+    void _EmitMslfxHeader(MaterialX::ShaderStage& mxStage) const;
+    
+    void _EmitMxFunctions(const MaterialX::ShaderGraph& mxGraph,
+                          MaterialX::GenContext& mxContext,
+                          MaterialX::ShaderStage& mxStage) const;
 };
 
 

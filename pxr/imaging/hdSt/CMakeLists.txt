@@ -20,6 +20,7 @@ if (${PXR_ENABLE_MATERIALX_SUPPORT})
         MaterialXCore
         MaterialXFormat
         MaterialXGenGlsl
+        MaterialXGenMsl
         hdMtlx
     )
     list(APPEND optionalPrivateClasses
