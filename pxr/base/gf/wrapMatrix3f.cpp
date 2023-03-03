@@ -35,6 +35,7 @@
 #include "pxr/base/gf/quatf.h"
 #include "pxr/base/gf/rotation.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -270,7 +271,7 @@ struct GfMatrix3f_Pickle_Suite : boost::python::pickle_suite
     }
 };
 
-static size_t __hash__(GfMatrix3f const &m) { return hash_value(m); }
+static size_t __hash__(GfMatrix3f const &m) { return TfHash{}(m); }
 
 static boost::python::tuple get_dimension()
 {
