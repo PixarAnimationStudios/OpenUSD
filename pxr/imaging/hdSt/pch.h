@@ -101,9 +101,6 @@
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/make_shared.hpp>
-#include <boost/mpl/and.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional/optional_fwd.hpp>
@@ -148,15 +145,11 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/smart_ptr.hpp>
-#include <boost/type_traits/decay.hpp>
 #include <boost/type_traits/has_trivial_assign.hpp>
 #include <boost/type_traits/has_trivial_constructor.hpp>
 #include <boost/type_traits/has_trivial_copy.hpp>
 #include <boost/type_traits/has_trivial_destructor.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/unordered_map.hpp>
 #include <boost/utility/enable_if.hpp>

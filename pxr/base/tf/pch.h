@@ -128,9 +128,6 @@
 #include <boost/functional/hash.hpp>
 #include <boost/functional/hash_fwd.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/mpl/and.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
 #include <boost/mpl/vector.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/operators.hpp>
@@ -226,19 +223,11 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 #include <boost/smart_ptr.hpp>
 #include <boost/type_traits.hpp>
-#include <boost/type_traits/add_reference.hpp>
-#include <boost/type_traits/has_left_shift.hpp>
-#include <boost/type_traits/is_abstract.hpp>
 #include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/is_signed.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/utility/in_place_factory.hpp>
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>

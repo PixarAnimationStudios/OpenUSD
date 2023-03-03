@@ -76,8 +76,6 @@
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/empty.hpp>
 #include <boost/mpl/front.hpp>
-#include <boost/mpl/if.hpp>
-#include <boost/mpl/or.hpp>
 #include <boost/mpl/pop_front.hpp>
 #include <boost/mpl/remove.hpp>
 #include <boost/mpl/vector.hpp>
@@ -127,9 +125,6 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/type_traits/is_base_of.hpp>
 #include <boost/type_traits/is_class.hpp>
-#include <boost/type_traits/is_const.hpp>
-#include <boost/type_traits/is_convertible.hpp>
-#include <boost/type_traits/is_enum.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/enable_if.hpp>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
