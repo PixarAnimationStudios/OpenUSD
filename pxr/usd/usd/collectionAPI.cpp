@@ -24,10 +24,11 @@
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
+
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +42,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (CollectionAPI)
     (collection)
 );
 
@@ -392,9 +392,9 @@ UsdCollectionAPI::GetNamedCollectionPath(
 static std::vector<std::string> 
 _GetCollectionAPIAliases(const TfType &collSchemaType) 
 {
-    // The alias for UsdCollectionAPI is already available as a static token 
-    // in _schemaTokes.
-    std::vector<std::string> collectionAPIAliases{_schemaTokens->CollectionAPI};
+    const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
+    std::vector<std::string> collectionAPIAliases =
+        schemaBaseType.GetAliases(collSchemaType);
 
     // If there are derived types of the CollectionAPI, include their aliases
     // too.
@@ -403,7 +403,6 @@ _GetCollectionAPIAliases(const TfType &collSchemaType)
     if (!derivedTypes.empty()) {
         collectionAPIAliases.reserve(collectionAPIAliases.size() + 
                                      derivedTypes.size());
-        const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
         for (const auto& derived : derivedTypes) {
             for (const auto &derivedAlias : schemaBaseType.GetAliases(derived)){
                 collectionAPIAliases.push_back(derivedAlias);
