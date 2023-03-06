@@ -652,5 +652,16 @@ class TestUsdCollectionAPI(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             query.IsPathIncluded('CollectionTest/Geom', Usd.Tokens.expandPrims)
 
+    def test_ExplicitOnlyAndIncludeRoot(self):
+        # Regression test that a membership query for a collection that has
+        # includeRoot=true and expansionMode=explicitOnly does not trigger a
+        # coding error.
+        collection = Usd.CollectionAPI.Get(testPrim,
+            'explicitOnlyAndIncludeRoot')
+        query = collection.ComputeMembershipQuery()
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage), [])
+
+
 if __name__ == "__main__":
     unittest.main()

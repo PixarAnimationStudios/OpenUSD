@@ -102,6 +102,8 @@ def "CollectionTest" (
         </B>
     ]
 
+    uniform token collection:explicitOnlyAndIncludeRoot:expansionRule = "explicitOnly"
+    uniform bool collection:explicitOnlyAndIncludeRoot:includeRoot = true
 
     def "Geom" (
         prepend apiSchemas = ["CollectionAPI:allGeom"]

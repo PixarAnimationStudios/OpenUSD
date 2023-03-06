@@ -601,10 +601,13 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
     // Consult includeRoot and include </> if requested.
     // (The separate attribute is necessary since </> cannot be a
     // target path in a relationship.)
-    bool includeRoot = false;
-    GetIncludeRootAttr().Get(&includeRoot);
-    if (includeRoot) {
-        includes.push_back(SdfPath::AbsoluteRootPath());
+    // includeRoot is not meaningful in combination with explicitOnly.
+    if (expRule != UsdTokens->explicitOnly) {
+        bool includeRoot = false;
+        GetIncludeRootAttr().Get(&includeRoot);
+        if (includeRoot) {
+            includes.push_back(SdfPath::AbsoluteRootPath());
+        }
     }
 
     UsdStageWeakPtr stage = GetPrim().GetStage();

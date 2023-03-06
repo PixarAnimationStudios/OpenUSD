@@ -147,7 +147,8 @@ class "CollectionAPI" (
     attribute indicating whether the pseudo-root path &lt;/&gt; should
     be counted as one of the included target paths.  The fallback is false.
     This separate attribute is required because relationships cannot
-    directly target the root.
+    directly target the root.  When expansionRule is explicitOnly, this
+    attribute is ignored.
     <li><b>rel collection:<i>collectionName</i>:includes</b> - specifies a list 
     of targets that are included in the collection. This can target prims or 
     properties directly. A collection can insert the rules of another
