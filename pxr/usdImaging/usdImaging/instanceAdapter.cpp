@@ -2667,7 +2667,7 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
 
             // set bits for all requested indices to true
             for (size_t i = 0; i < instanceIndices.size(); i++) {
-                requestedIndicesMap[instanceIndices[i]] = i;
+                requestedIndicesMap[instanceIndices[i] - minIdx] = i;
             }
 
             result.resize(instanceIndices.size());
