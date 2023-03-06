@@ -621,6 +621,7 @@ void main(void)
     // near plane.
     if (gl_FrontFacing != (determinant(instanceModelViewInverse) < 0.0)) {
         discard;
+        return;
     }
 
     // camera facing.

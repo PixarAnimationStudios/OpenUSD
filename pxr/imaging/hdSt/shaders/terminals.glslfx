@@ -318,12 +318,13 @@ integrateLights(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 ReprStyle GetReprStyle()
 {
     vec4 hullColor = vec4(vec3(0.18), 1.0);
-
+    ReprStyle reprStyle;
 #if defined(HD_HAS_selectedWeight)
     float weight = clamp(HdGet_selectedWeight(), 0.0, 1.0);
 
     if (weight <= 0.0) {
         discard;
+        return reprStyle;
     }
 
     // The three control points of the quadratic curve for the selection color
@@ -353,8 +354,6 @@ ReprStyle GetReprStyle()
     hullColor.a = HdGet_hullOpacity();
 #endif
 #endif
-
-    ReprStyle reprStyle;
     
     reprStyle.color                    = hullColor;
     reprStyle.usePrimvarColor          = false;
