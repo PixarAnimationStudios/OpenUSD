@@ -73,35 +73,23 @@ public:
     /// Return the property spec that defines the fallback for the property
     /// named \a propName on prims of this prim definition's type. Return null 
     /// if there is no such property spec.
-    SdfPropertySpecHandle GetSchemaPropertySpec(const TfToken& propName) const
-    {
-        if (const SdfPath *path = _GetPropertySpecPath(propName)) {
-            return _GetSchematics()->GetPropertyAtPath(*path);
-        }
-        return TfNullPtr;
-    }
+    USD_API
+    SdfPropertySpecHandle GetSchemaPropertySpec(
+        const TfToken& propName) const;
 
     /// This is a convenience method. It is shorthand for
     /// TfDynamic_cast<SdfAttributeSpecHandle>(
     ///     GetSchemaPropertySpec(primType, attrName));
-    SdfAttributeSpecHandle GetSchemaAttributeSpec(const TfToken& attrName) const
-    {
-        if (const SdfPath *path = _GetPropertySpecPath(attrName)) {
-            return _GetSchematics()->GetAttributeAtPath(*path);
-        }
-        return TfNullPtr;
-    }
+    USD_API
+    SdfAttributeSpecHandle GetSchemaAttributeSpec(
+        const TfToken& attrName) const;
 
     /// This is a convenience method. It is shorthand for
     /// TfDynamic_cast<SdfRelationshipSpecHandle>(
     ///     GetSchemaPropertySpec(primType, relName));
-    SdfRelationshipSpecHandle GetSchemaRelationshipSpec(const TfToken& relName) const
-    {
-        if (const SdfPath *path = _GetPropertySpecPath(relName)) {
-            return _GetSchematics()->GetRelationshipAtPath(*path);
-        }
-        return TfNullPtr;
-    }
+    USD_API
+    SdfRelationshipSpecHandle GetSchemaRelationshipSpec(
+        const TfToken& relName) const;
 
     /// Retrieves the fallback value for the attribute named \p attrName and
     /// stores it in \p value if possible. 

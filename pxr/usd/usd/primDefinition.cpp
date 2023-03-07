@@ -45,6 +45,33 @@ UsdPrimDefinition::UsdPrimDefinition(
     }
 }
 
+SdfPropertySpecHandle 
+UsdPrimDefinition::GetSchemaPropertySpec(const TfToken& propName) const
+{
+    if (const SdfPath *path = _GetPropertySpecPath(propName)) {
+        return _GetSchematics()->GetPropertyAtPath(*path);
+    }
+    return TfNullPtr;
+}
+
+SdfAttributeSpecHandle 
+UsdPrimDefinition::GetSchemaAttributeSpec(const TfToken& attrName) const
+{
+    if (const SdfPath *path = _GetPropertySpecPath(attrName)) {
+        return _GetSchematics()->GetAttributeAtPath(*path);
+    }
+    return TfNullPtr;
+}
+
+SdfRelationshipSpecHandle 
+UsdPrimDefinition::GetSchemaRelationshipSpec(const TfToken& relName) const
+{
+    if (const SdfPath *path = _GetPropertySpecPath(relName)) {
+        return _GetSchematics()->GetRelationshipAtPath(*path);
+    }
+    return TfNullPtr;
+}
+
 std::string 
 UsdPrimDefinition::GetDocumentation() const 
 {
