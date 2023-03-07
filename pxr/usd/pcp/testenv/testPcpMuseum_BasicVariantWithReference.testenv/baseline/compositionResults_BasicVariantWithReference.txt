@@ -1,0 +1,106 @@
+Loading @BasicVariantWithReference/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+
+------------------------------------------------------------------------
+Results for composing </ModelRef>
+
+Prim Stack:
+    root.sdf             /ModelRef
+    model.sdf            /Model
+    model.sdf            /Model{vset=without_children}
+
+Variant Selections:
+    {vset = without_children}
+
+Property names:
+     ['modelRootAttribute']
+
+Property stacks:
+/ModelRef.modelRootAttribute:
+    model.sdf            /Model.modelRootAttribute
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren>
+
+Prim Stack:
+    root.sdf             /ModelRefWithChildren
+    model.sdf            /Model
+    model.sdf            /Model{vset=with_children}
+
+Variant Selections:
+    {vset = with_children}
+
+Child names:
+     ['_prototype', 'InstanceViaReference', 'InstanceViaClass']
+
+Property names:
+     ['modelRootAttribute']
+
+Property stacks:
+/ModelRefWithChildren.modelRootAttribute:
+    model.sdf            /Model.modelRootAttribute
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren/_prototype>
+
+Prim Stack:
+    model.sdf            /Model{vset=with_children}_prototype
+
+Property names:
+     ['attr1', 'attr2']
+
+Property stacks:
+/ModelRefWithChildren/_prototype.attr1:
+    model.sdf            /Model{vset=with_children}_prototype.attr1
+/ModelRefWithChildren/_prototype.attr2:
+    model.sdf            /Model{vset=with_children}_prototype.attr2
+
+Attribute connections:
+/ModelRefWithChildren/_prototype.attr1:
+    /ModelRefWithChildren.modelRootAttribute
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren/InstanceViaReference>
+
+Prim Stack:
+    model.sdf            /Model{vset=with_children}InstanceViaReference
+    model.sdf            /Model{vset=with_children}_prototype
+
+Property names:
+     ['attr1', 'attr2']
+
+Property stacks:
+/ModelRefWithChildren/InstanceViaReference.attr1:
+    model.sdf            /Model{vset=with_children}_prototype.attr1
+/ModelRefWithChildren/InstanceViaReference.attr2:
+    model.sdf            /Model{vset=with_children}InstanceViaReference.attr2
+    model.sdf            /Model{vset=with_children}_prototype.attr2
+
+Attribute connections:
+/ModelRefWithChildren/InstanceViaReference.attr1:
+    /ModelRefWithChildren.modelRootAttribute
+
+------------------------------------------------------------------------
+Results for composing </ModelRefWithChildren/InstanceViaClass>
+
+Prim Stack:
+    model.sdf            /Model{vset=with_children}InstanceViaClass
+    model.sdf            /Model{vset=with_children}_prototype
+
+Property names:
+     ['attr1', 'attr2']
+
+Property stacks:
+/ModelRefWithChildren/InstanceViaClass.attr1:
+    model.sdf            /Model{vset=with_children}_prototype.attr1
+/ModelRefWithChildren/InstanceViaClass.attr2:
+    model.sdf            /Model{vset=with_children}InstanceViaClass.attr2
+    model.sdf            /Model{vset=with_children}_prototype.attr2
+
+Attribute connections:
+/ModelRefWithChildren/InstanceViaClass.attr1:
+    /ModelRefWithChildren.modelRootAttribute
+

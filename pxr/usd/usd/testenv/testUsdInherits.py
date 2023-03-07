@@ -171,21 +171,22 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
 
-            # Try to add a local inherit path pointing to a prim outside the 
-            # scope of reference. This should fail because that path will not
-            # map across the reference edit target.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetInherits() \
-                            .AddInherit("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
+            # Add a local inherit path pointing to a prim outside the 
+            # scope of reference.  This is allowed, because unlike
+            # external references, internal references do not
+            # encapsulate namespace.
+            instancePrim.GetInherits() \
+                        .AddInherit("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
+            expectedInheritPaths.prependedItems = ["/Ref2/Class"]
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
 
-            # Remove the local inherit path. This should fail and raise an
-            # error again because the path will not map across the reference.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetInherits().RemoveInherit("/Ref2/Class")
+            # Remove the local inherit path.
+            instancePrim.GetInherits().RemoveInherit("/Ref2/Class")
 
+            expectedInheritPaths.deletedItems = ["/Ref/Class", "/Class", "/Ref2/Class"]
+            expectedInheritPaths.prependedItems = []
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
             
@@ -198,11 +199,11 @@ class TestUsdInherits(unittest.TestCase):
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
 
-            # Try to set unmappable inherit paths using the SetInherits API,
-            # which should fail.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetInherits().SetInherits(["/Ref2/Class"])
+            # Try to set inherit paths using the SetInherits API.
+            instancePrim.GetInherits().SetInherits(["/Ref2/Class"])
 
+            expectedInheritPaths = Sdf.PathListOp()
+            expectedInheritPaths.explicitItems = ["/Ref2/Class"]
             self.assertEqual(instancePrimSpec.GetInfo("inheritPaths"),
                              expectedInheritPaths)
 

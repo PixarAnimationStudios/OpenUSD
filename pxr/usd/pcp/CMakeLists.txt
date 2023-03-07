@@ -406,6 +406,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicVariantWithReference.testenv
+    DEST testPcpMuseum_BasicVariantWithReference
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicOwner.testenv
     DEST testPcpMuseum_BasicOwner
 )
@@ -1038,6 +1043,13 @@ pxr_register_test(testPcpMuseum_BasicVariantWithConnections
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithConnections/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicVariantWithConnections.txt
     DIFF_COMPARE compositionResults_BasicVariantWithConnections.txt 
+)
+
+pxr_register_test(testPcpMuseum_BasicVariantWithReference
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithReference/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicVariantWithReference.txt
+    DIFF_COMPARE compositionResults_BasicVariantWithReference.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicOwner

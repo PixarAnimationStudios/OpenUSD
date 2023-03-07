@@ -1372,7 +1372,7 @@ _AddArc(
     PCP_INDEXING_PHASE(
         indexer,
         parent, 
-        "Adding new %s arc to %s to %s", 
+        "Adding new %s arc to %s from %s", 
         TfEnum::GetDisplayName(arcType).c_str(),
         Pcp_FormatSite(site).c_str(),
         Pcp_FormatSite(parent.GetSite()).c_str());
@@ -1973,13 +1973,18 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         SdfPath const &primPath = defaultPrimPath.IsEmpty() ? 
             refOrPayload.GetPrimPath() : defaultPrimPath;
 
-        // References and payloads only map values under the source path, aka 
-        // the reference root.  Any paths outside the reference root do
-        // not map across.
+        // The mapping for a reference (or payload) arc makes the source
+        // and target map to each other.  Paths outside these will not map,
+        // except for the case of internal references.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
                 /* source */ primPath, /* targetNode */ node, 
                 indexer->inputs, layerOffset);
+        if (isInternal) {
+            // Internal references maintain full namespace visibility
+            // outside the source & target.
+            mapExpr = mapExpr.AddRootIdentity();
+        }
 
         // Only need to include ancestral opinions if the prim path is
         // not a root prim.
