@@ -59,10 +59,10 @@ void wrapUsdProperty()
              arg("nestedGroups"))
 
         .def("GetPropertyStack", &UsdProperty::GetPropertyStack,
-             arg("time"))
+             arg("time")=UsdTimeCode::Default())
         .def("GetPropertyStackWithLayerOffsets", 
              &UsdProperty::GetPropertyStackWithLayerOffsets,
-             arg("time"),
+             arg("time")=UsdTimeCode::Default(),
              return_value_policy<TfPySequenceToList>())
 
         .def("IsCustom", &UsdProperty::IsCustom)
