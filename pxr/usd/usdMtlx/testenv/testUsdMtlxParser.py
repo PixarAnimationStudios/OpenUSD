@@ -72,7 +72,7 @@ class TestParser(unittest.TestCase):
         self.assertEqual(input.GetLabel(), "UI Vector")
         self.assertEqual(input.GetPage(), "UI Page")
         self.assertEqual(input.GetOptions(),
-            [("X", "1, 0, 0"), ("Y", "0, 1, 0"), ("Z", "0, 0, 1")])
+            [("X Label", "1, 0, 0"), ("Y Label", "0, 1, 0"), ("Z Label", "0, 0, 1")])
 
         node = Sdr.Registry().GetShaderNodeByIdentifier(
             'UsdMtlxTestNamespace:nd_float')

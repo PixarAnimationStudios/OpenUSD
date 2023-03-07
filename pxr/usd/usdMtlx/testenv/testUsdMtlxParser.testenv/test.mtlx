@@ -16,7 +16,7 @@
     <output name="out" type="string" />
   </nodedef>
   <nodedef name="nd_vector" node="UsdMtlxTestNode" doc="Vector help">
-    <input name="in" type="vector3" enum="X,Y,Z" enumvalues="1,0,0, 0,1,0, 0,0,1" doc="Property help" uiname="UI Vector" uifolder="UI Page" />
+    <input name="in" type="vector3" enum="X Label, Y Label, Z Label" enumvalues="1,0,0, 0,1,0, 0,0,1" doc="Property help" uiname="UI Vector" uifolder="UI Page" />
     <input name="note" type="string" value="" uniform="true" />
     <output name="out" type="vector3" />
   </nodedef>
