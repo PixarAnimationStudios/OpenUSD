@@ -113,7 +113,6 @@ pxr_library(usdImaging
         niInstanceAggregationSceneIndex
         niPrototypePruningSceneIndex
         niPrototypeSceneIndex
-        sceneIndexPrimView
         piPrototypeSceneIndex
 
     PUBLIC_HEADERS

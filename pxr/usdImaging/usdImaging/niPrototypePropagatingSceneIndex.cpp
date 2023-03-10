@@ -27,11 +27,11 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -251,8 +251,8 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
     HdSceneIndexBaseRefPtr const &instanceAggregationSceneIndex)
 {
     for (const SdfPath &primPath
-             : UsdImaging_SceneIndexPrimView(instanceAggregationSceneIndex,
-                                             SdfPath::AbsoluteRootPath())) {
+             : HdSceneIndexPrimView(instanceAggregationSceneIndex,
+                                    SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
 }

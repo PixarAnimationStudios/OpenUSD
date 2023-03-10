@@ -23,7 +23,6 @@
 //
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
@@ -36,6 +35,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
@@ -720,8 +720,8 @@ void
 _InstanceObserver::_Populate()
 {
     for (const SdfPath &primPath
-             : UsdImaging_SceneIndexPrimView(_inputScene,
-                                             SdfPath::AbsoluteRootPath())) {
+             : HdSceneIndexPrimView(_inputScene,
+                                    SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
 }

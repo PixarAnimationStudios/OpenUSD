@@ -21,14 +21,14 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdImaging_SceneIndexPrimView::const_iterator &
-UsdImaging_SceneIndexPrimView::const_iterator::operator++()
+HdSceneIndexPrimView::const_iterator &
+HdSceneIndexPrimView::const_iterator::operator++()
 {
     if (_skipDescendants) {
         _skipDescendants = false;
@@ -53,7 +53,7 @@ UsdImaging_SceneIndexPrimView::const_iterator::operator++()
     return *this;
 }
 
-UsdImaging_SceneIndexPrimView::const_iterator::const_iterator(
+HdSceneIndexPrimView::const_iterator::const_iterator(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &root)
   : _inputSceneIndex(inputSceneIndex)
@@ -62,14 +62,14 @@ UsdImaging_SceneIndexPrimView::const_iterator::const_iterator(
 {
 }
 
-UsdImaging_SceneIndexPrimView::const_iterator::const_iterator(
+HdSceneIndexPrimView::const_iterator::const_iterator(
         HdSceneIndexBaseRefPtr const &inputSceneIndex)
   : _inputSceneIndex(inputSceneIndex)
   , _skipDescendants(false)
 {
 }
 
-UsdImaging_SceneIndexPrimView::UsdImaging_SceneIndexPrimView(
+HdSceneIndexPrimView::HdSceneIndexPrimView(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &root)
   : _begin(inputSceneIndex, root)
@@ -77,14 +77,14 @@ UsdImaging_SceneIndexPrimView::UsdImaging_SceneIndexPrimView(
 {
 }
 
-const UsdImaging_SceneIndexPrimView::const_iterator &
-UsdImaging_SceneIndexPrimView::begin() const
+const HdSceneIndexPrimView::const_iterator &
+HdSceneIndexPrimView::begin() const
 {
     return _begin;
 }
 
-const UsdImaging_SceneIndexPrimView::const_iterator &
-UsdImaging_SceneIndexPrimView::end() const
+const HdSceneIndexPrimView::const_iterator &
+HdSceneIndexPrimView::end() const
 {
     return _end;
 }

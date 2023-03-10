@@ -153,6 +153,7 @@ pxr_library(hd
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema

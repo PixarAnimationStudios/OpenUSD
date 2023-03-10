@@ -26,7 +26,7 @@
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -534,7 +534,7 @@ _InstancerObserver::_UpdateInstancer(
 void
 _InstancerObserver::_Populate()
 {
-    UsdImaging_SceneIndexPrimView view(_prototypeSceneIndex, _prototype);
+    HdSceneIndexPrimView view(_prototypeSceneIndex, _prototype);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
         HdSceneIndexPrim const prim = _prototypeSceneIndex->GetPrim(path);
