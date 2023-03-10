@@ -16,6 +16,7 @@ pxr_library(usdRi
 
     PUBLIC_CLASSES
         materialAPI
+        renderPassAPI
         rmanUtilities
         splineAPI
         statementsAPI
@@ -33,6 +34,7 @@ pxr_library(usdRi
     PYMODULE_CPPFILES
         module.cpp
         wrapMaterialAPI.cpp
+        wrapRenderPassAPI.cpp
         wrapRmanUtilities.cpp
         wrapSplineAPI.cpp
         wrapStatementsAPI.cpp
