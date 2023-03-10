@@ -225,6 +225,223 @@ _RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
     return CameraUtilFit;
 }
 
+VtDictionary
+CreateRenderSpecDict(
+    UsdRenderSpec const &renderSpec, UsdRenderSpec::Product const &product)
+{
+    // RenderSpecDict contains: camera, renderVars, and renderProducts
+    VtDictionary renderSpecDict;
+
+    // Camera
+    renderSpecDict[HdPrmanExperimentalRenderSpecTokens->camera] =
+        product.cameraPath;
+    // Render Vars
+    {
+        std::vector<VtValue> renderVarDicts;
+
+        // Displays & Display Channels
+        for (size_t index: product.renderVarIndices) {
+            auto const& renderVar = renderSpec.renderVars[index];
+
+            // Map source to Ri name.
+            std::string name = renderVar.sourceName;
+            if (renderVar.sourceType == UsdRenderTokens->lpe) {
+                name = "lpe:" + name;
+            }
+
+            VtDictionary renderVarDict;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
+                name;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
+                renderVar.dataType.GetString();
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
+                renderVar.namespacedSettings;
+
+            renderVarDicts.push_back(VtValue(renderVarDict));
+        }
+        
+        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
+            renderVarDicts;
+    }
+    // Render Products
+    {
+        std::vector<VtValue> renderProducts;
+        {
+            VtDictionary renderProduct;
+            renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
+                product.name.GetString();
+            {
+                VtIntArray renderVarIndices;
+                const size_t num = product.renderVarIndices.size();
+                for (size_t i = 0; i < num; i++) {
+                    renderVarIndices.push_back(i);
+                }
+                renderProduct[
+                    HdPrmanExperimentalRenderSpecTokens->renderVarIndices] =
+                    renderVarIndices;
+            }
+            renderProducts.push_back(VtValue(renderProduct));
+        }
+        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
+            renderProducts;
+    }
+    return renderSpecDict;
+}
+
+// Add the integratorName and any associated values to the settingsMap based 
+// on the VisualizerStyle
+void
+AddVisualizerStyle(
+    std::string const &visualizerStyle, HdRenderSettingsMap *settingsMap)
+{
+    if (!visualizerStyle.empty()) {
+        const std::string integratorName("PxrVisualizer");
+        
+        // TODO Figure out how to represent this in UsdRi.
+        // Perhaps a UsdRiIntegrator prim, plus an adapter
+        // in UsdImaging that adds it as an sprim?
+        (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
+            integratorName;
+        
+        const std::string prefix = 
+            "ri:integrator:" + integratorName + ":";
+        
+        (*settingsMap)[TfToken(prefix + "wireframe")] = 1;
+        (*settingsMap)[TfToken(prefix + "style")] = visualizerStyle;
+    } else {
+        const std::string integratorName("PxrPathTracer");
+        (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
+            integratorName;
+    }
+}
+
+// Add the Namespaced Settings to the settingsMap making sure to add the 
+// fallback settings specific to testHdPrman
+void 
+AddNamespacedSettings(
+    VtDictionary const &namespacedSettings, HdRenderSettingsMap *settingsMap)
+{
+    // Add fallback settings specific to testHdPrman 
+    // Note: 'ri:trace:maxdepth' cannot be found in the applied schemas 
+    (*settingsMap)[TfToken("ri:trace:maxdepth")] = 10; 
+    (*settingsMap)[TfToken("ri:hider:jitter")] = 1;
+    (*settingsMap)[TfToken("ri:hider:minsamples")] = 32;
+    (*settingsMap)[TfToken("ri:hider:maxsamples")] = 64;
+    (*settingsMap)[TfToken("ri:Ri:PixelVariance")] = 0.01;
+
+    // Set namespaced settings 
+    for (const auto &item : namespacedSettings) {
+        (*settingsMap)[TfToken(item.first)] = item.second;
+    }
+}
+
+void
+HydraSetupAndRender(
+    HdPluginRenderDelegateUniqueHandle const &renderDelegate, 
+    UsdStageRefPtr const &stage, 
+    UsdRenderSpec::Product const &product,
+    const int frameNum, 
+    const std::string &cullStyle,
+    TfStopwatch timer_hydra)
+{
+    // Hydra setup
+    //
+    // Assemble a Hydra pipeline to feed USD data to Riley. 
+    // Scene data flows left-to-right:
+    //
+    //     => UsdStage
+    //       => UsdImagingDelegate (hydra "frontend")
+    //         => HdRenderIndex
+    //           => HdPrmanRenderDelegate (hydra "backend")
+    //             => Riley
+    //
+    // Note that Hydra is flexible, but that means it takes a few steps
+    // to configure the details. This might seem out of proportion in a
+    // simple usage example like this, if you don't consider the range of
+    // other scenarios Hydra is meant to handle.
+    std::unique_ptr<HdRenderIndex> const hdRenderIndex(
+        HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
+    
+    UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
+    std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
+
+    if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+        usdStageSceneIndex = UsdImagingStageSceneIndex::New();
+        hdRenderIndex->InsertSceneIndex(
+            HdFlatteningSceneIndex::New(usdStageSceneIndex),
+            SdfPath::AbsoluteRootPath());
+        usdStageSceneIndex->SetStage(stage);
+        usdStageSceneIndex->Populate();
+        usdStageSceneIndex->SetTime(frameNum);
+    } else {
+        hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
+            hdRenderIndex.get(),
+            SdfPath::AbsoluteRootPath());
+        hdUsdFrontend->Populate(stage->GetPseudoRoot());
+        hdUsdFrontend->SetTime(frameNum);
+        hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
+        if (!product.cameraPath.IsEmpty()) {
+            hdUsdFrontend->SetCameraForSampling(product.cameraPath);
+        }
+    }
+    if (!cullStyle.empty()) {
+        if (cullStyle == "none") {
+            hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
+        } else if (cullStyle == "back") {
+            hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
+        } else if (cullStyle == "front") {
+            hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
+        } else if (cullStyle == "backUnlessDoubleSided") {
+            hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
+        } else if (cullStyle == "frontUnlessDoubleSided") {
+            hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
+        }
+    }
+
+    const TfTokenVector renderTags{HdRenderTagTokens->geometry};
+    // The collection of scene contents to render
+    HdRprimCollection hdCollection(
+        _tokens->testCollection,
+        HdReprSelector(HdReprTokens->smoothHull));
+    HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
+    tracker.AddCollection(_tokens->testCollection);
+
+    // We don't need multi-pass rendering with a pathtracer
+    // so we use a single, simple render pass.
+    HdRenderPassSharedPtr const hdRenderPass =
+        renderDelegate->CreateRenderPass(hdRenderIndex.get(),
+                                            hdCollection);
+    HdRenderPassStateSharedPtr const hdRenderPassState =
+        renderDelegate->CreateRenderPassState();
+
+    CameraDelegate cameraDelegate(hdRenderIndex.get());
+
+    const HdCamera * const camera = 
+        dynamic_cast<const HdCamera*>(
+            hdRenderIndex->GetSprim(
+                HdTokens->camera,
+                product.cameraPath.IsEmpty()
+                    ? cameraDelegate.GetCameraId()
+                    : product.cameraPath));
+
+    hdRenderPassState->SetCameraAndFraming(
+        camera,
+        ComputeFraming(product),
+        { true, _RenderSettingsTokenToConformWindowPolicy(
+                                product.aspectRatioConformPolicy) });
+
+    // The task execution graph and engine configuration is also simple.
+    HdTaskSharedPtrVector tasks = {
+        std::make_shared<Hd_DrawTask>(hdRenderPass,
+                                      hdRenderPassState,
+                                      renderTags)
+    };
+    HdEngine hdEngine;
+    timer_hydra.Start();
+    hdEngine.Execute(hdRenderIndex.get(), &tasks);
+    timer_hydra.Stop();
+}
+
 void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
@@ -319,6 +536,7 @@ int main(int argc, char *argv[])
 
     UsdRenderSettings settings;
     if (renderSettingsPath.IsEmpty()) {
+        // Get the RenderSettings prim indicated in the stage metadata
         settings = UsdRenderSettings::GetStageRenderSettings(stage);
     } else {
         // If a path was specified, try to use the requested settings prim.
@@ -374,15 +592,7 @@ int main(int argc, char *argv[])
         };
     }
 
-    // Merge fallback settings specific to testHdPrman.
-    VtDictionary defaultSettings;
-    defaultSettings["ri:hider:jitter"] = 1;
-    defaultSettings["ri:hider:minsamples"] = 32;
-    defaultSettings["ri:hider:maxsamples"] = 64;
-    defaultSettings["ri:trace:maxdepth"] = 10;
-    defaultSettings["ri:Ri:PixelVariance"] = 0.01f;
-
-    // Update product settings.
+    // Update product settings based on the scene camera.
     for (auto &product: renderSpec.products) {
         // Command line overrides built-in paths.
         if (!sceneCamPath.IsEmpty()) {
@@ -392,7 +602,6 @@ int main(int argc, char *argv[])
             product.resolution[1] = (int)(product.resolution[0]/sceneCamAspect);
             product.apertureSize[1] = product.apertureSize[0]/sceneCamAspect;
         }
-        VtDictionaryOver(&product.namespacedSettings, defaultSettings);
     }
 
     //////////////////////////////////////////////////////////////////////// 
@@ -418,6 +627,7 @@ int main(int argc, char *argv[])
     for (auto product: renderSpec.products) {
         printf("Rendering %s...\n", product.name.GetText());
 
+        // Create HdRenderSettingsMap for the RenderDelegate
         HdRenderSettingsMap settingsMap;
 
         // Shutter settings from studio production.
@@ -432,69 +642,9 @@ int main(int argc, char *argv[])
         // the cameras, and shutterCurve will exist as a UsdRi schema.
         //
 
-        VtDictionary renderSpecDict;
-
-        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->camera] =
-            product.cameraPath;
-
-        {
-            std::vector<VtValue> renderVarDicts;
-
-            // Displays & Display Channels
-            for (size_t index: product.renderVarIndices) {
-                auto const& renderVar = renderSpec.renderVars[index];
-
-                // Map source to Ri name.
-                std::string name = renderVar.sourceName;
-                if (renderVar.sourceType == UsdRenderTokens->lpe) {
-                    name = "lpe:" + name;
-                }
-
-                VtDictionary renderVarDict;
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
-                    name;
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
-                    renderVar.dataType.GetString();
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
-                    renderVar.namespacedSettings;
-
-                renderVarDicts.push_back(VtValue(renderVarDict));
-            }
-            
-            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
-                renderVarDicts;
-        }
-
-        {
-            std::vector<VtValue> renderProducts;
-
-            {
-                VtDictionary renderProduct;
-                renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
-                    product.name.GetString();
-
-                {
-                    VtIntArray renderVarIndices;
-                    const size_t num = product.renderVarIndices.size();
-                    for (size_t i = 0; i < num; i++) {
-                        renderVarIndices.push_back(i);
-                    }
-
-                    renderProduct[
-                        HdPrmanExperimentalRenderSpecTokens->renderVarIndices] =
-                        renderVarIndices;
-                }
-
-                renderProducts.push_back(VtValue(renderProduct));
-            }
-        
-            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
-                renderProducts;
-        }
-        
-
+        // Create and save the RenderSpecDict to the HdRenderSettingsMap
         settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
-            renderSpecDict;
+            CreateRenderSpecDict(renderSpec, product);
 
         // Only allow "raster" for now.
         TF_VERIFY(product.type == TfToken("raster"));
@@ -504,36 +654,11 @@ int main(int argc, char *argv[])
         // the appropriate materialBindingPurposes from the USD scene.
         // We should also configure the scene to filter for the
         // requested includedPurposes.
-        if (!visualizerStyle.empty()) {
-            const std::string integratorName("PxrVisualizer");
-            
-            // TODO Figure out how to represent this in UsdRi.
-            // Perhaps a UsdRiIntegrator prim, plus an adapter
-            // in UsdImaging that adds it as an sprim?
-            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
-                integratorName;
-            
-            const std::string prefix = 
-                "ri:integrator:" + integratorName + ":";
-            
-            settingsMap[TfToken(prefix + "wireframe")] = 1;
-            settingsMap[TfToken(prefix + "style")] = visualizerStyle;
-        } else {
-            const std::string integratorName("PxrPathTracer");
-            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
-                integratorName;
-        }
-
-        for (const auto &item : product.namespacedSettings) {
-            const std::string &key =
-                TfStringStartsWith(item.first, "ri:")
-                ? item.first
-                : "ri:" + item.first;
-            settingsMap[TfToken(key)] = item.second;
-        }
-
+        AddVisualizerStyle(visualizerStyle, &settingsMap);
+        AddNamespacedSettings(product.namespacedSettings, &settingsMap);
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
+        // Create the RenderDelegate Passing in the HdRenderSettingsMap
         // Set up frontend -> index -> backend
         // TODO We should configure the render delegate to request
         // the appropriate materialBindingPurposes from the USD scene.
@@ -547,105 +672,10 @@ int main(int argc, char *argv[])
             HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
                 TfToken("HdPrmanLoaderRendererPlugin"),
                 settingsMap);
-        
-        // Hydra setup
-        //
-        // Assemble a Hydra pipeline to feed USD data to Riley. 
-        // Scene data flows left-to-right:
-        //
-        //     => UsdStage
-        //       => UsdImagingDelegate (hydra "frontend")
-        //         => HdRenderIndex
-        //           => HdPrmanRenderDelegate (hydra "backend")
-        //             => Riley
-        //
-        // Note that Hydra is flexible, but that means it takes a few steps
-        // to configure the details. This might seem out of proportion in a
-        // simple usage example like this, if you don't consider the range of
-        // other scenarios Hydra is meant to handle.
-        {
-            std::unique_ptr<HdRenderIndex> const hdRenderIndex(
-                HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
-            
-            UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
-            std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
 
-            if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
-                usdStageSceneIndex = UsdImagingStageSceneIndex::New();
-                hdRenderIndex->InsertSceneIndex(
-                    HdFlatteningSceneIndex::New(usdStageSceneIndex),
-                    SdfPath::AbsoluteRootPath());
-                usdStageSceneIndex->SetStage(stage);
-                usdStageSceneIndex->Populate();
-                usdStageSceneIndex->SetTime(frameNum);
-            } else {
-                hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
-                    hdRenderIndex.get(),
-                    SdfPath::AbsoluteRootPath());
-                hdUsdFrontend->Populate(stage->GetPseudoRoot());
-                hdUsdFrontend->SetTime(frameNum);
-                hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-                if (!product.cameraPath.IsEmpty()) {
-                    hdUsdFrontend->SetCameraForSampling(product.cameraPath);
-                }
-            }
-            if (!cullStyle.empty()) {
-                if (cullStyle == "none") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
-                } else if (cullStyle == "back") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
-                } else if (cullStyle == "front") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
-                } else if (cullStyle == "backUnlessDoubleSided") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
-                } else if (cullStyle == "frontUnlessDoubleSided") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
-                }
-            }
+        HydraSetupAndRender(
+            renderDelegate, stage, product, frameNum, cullStyle, timer_hydra);
 
-            const TfTokenVector renderTags{HdRenderTagTokens->geometry};
-            // The collection of scene contents to render
-            HdRprimCollection hdCollection(
-                _tokens->testCollection,
-                HdReprSelector(HdReprTokens->smoothHull));
-            HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
-            tracker.AddCollection(_tokens->testCollection);
-
-            // We don't need multi-pass rendering with a pathtracer
-            // so we use a single, simple render pass.
-            HdRenderPassSharedPtr const hdRenderPass =
-                renderDelegate->CreateRenderPass(hdRenderIndex.get(),
-                                                 hdCollection);
-            HdRenderPassStateSharedPtr const hdRenderPassState =
-                renderDelegate->CreateRenderPassState();
-
-            CameraDelegate cameraDelegate(hdRenderIndex.get());
-
-            const HdCamera * const camera = 
-                dynamic_cast<const HdCamera*>(
-                    hdRenderIndex->GetSprim(
-                        HdTokens->camera,
-                        product.cameraPath.IsEmpty()
-                            ? cameraDelegate.GetCameraId()
-                            : product.cameraPath));
-
-            hdRenderPassState->SetCameraAndFraming(
-                camera,
-                ComputeFraming(product),
-                { true, _RenderSettingsTokenToConformWindowPolicy(
-                                        product.aspectRatioConformPolicy) });
-
-            // The task execution graph and engine configuration is also simple.
-            HdTaskSharedPtrVector tasks = {
-                std::make_shared<Hd_DrawTask>(hdRenderPass,
-                                              hdRenderPassState,
-                                              renderTags)
-            };
-            HdEngine hdEngine;
-            timer_hydra.Start();
-            hdEngine.Execute(hdRenderIndex.get(), &tasks);
-            timer_hydra.Stop();
-        }
         printf("Rendered %s\n", product.name.GetText());
     }
 
