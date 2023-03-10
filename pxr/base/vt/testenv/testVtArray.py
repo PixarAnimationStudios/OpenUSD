@@ -60,6 +60,12 @@ class TestVtArray(unittest.TestCase):
         with self.assertRaises(TypeError):
             a = d['foo']
 
+    def test_SetNegativeIndices(self):
+        d = Vt.DoubleArray([1.0, 3.0, 5.0])
+        d[-1] = 2.0
+        d[-2] = 4.0
+        self.assertEqual(d, [1.0, 4.0, 2.0])
+
     def test_TooFewElements(self):
         d = Vt.DoubleArray(4)
         with self.assertRaises(ValueError):
