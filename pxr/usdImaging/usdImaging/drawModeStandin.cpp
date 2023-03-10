@@ -66,6 +66,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+UsdImaging_DrawModeStandin::~UsdImaging_DrawModeStandin() = default;
+
 const HdSceneIndexPrim &
 UsdImaging_DrawModeStandin::GetPrim() const
 {
