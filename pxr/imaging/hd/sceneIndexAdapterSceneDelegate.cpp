@@ -1406,7 +1406,7 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         return VtValue();
     }
 
-    if (key == HdRenderSettingsPrimTokens->settings) {
+    if (key == HdRenderSettingsPrimTokens->namespacedSettings) {
         VtDictionary settings;
         if (HdContainerDataSourceHandle namespacedSettingsDs = 
                 rsSchema.GetNamespacedSettings()) {

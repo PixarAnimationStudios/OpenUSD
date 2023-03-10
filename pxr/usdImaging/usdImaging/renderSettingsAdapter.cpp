@@ -285,7 +285,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
             hdVar.dataType = rv.dataType;
             hdVar.sourceName = rv.sourceName;
             hdVar.sourceType = rv.sourceType;
-            hdVar.extraSettings = rv.extraSettings;
+            hdVar.namespacedSettings = rv.namespacedSettings;
 
             hdProduct.renderVars.push_back(std::move(hdVar));
         }
@@ -298,7 +298,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
         hdProduct.dataWindowNDC = product.dataWindowNDC;
 
         hdProduct.disableMotionBlur = product.disableMotionBlur;
-        hdProduct.extraSettings = product.extraSettings;
+        hdProduct.namespacedSettings = product.namespacedSettings;
 
         hdProducts.push_back(std::move(hdProduct));
     }
@@ -317,9 +317,10 @@ UsdImagingRenderSettingsAdapter::Get(
     VtIntArray *outIndices) const
 {
     // Gather authored settings attributes on the render settings prim.
-    if (key == HdRenderSettingsPrimTokens->settings) {
-        return VtValue(UsdRenderComputeExtraSettings(
-            prim, _GetRenderSettingsNamespaces()));
+    if (key == HdRenderSettingsPrimTokens->namespacedSettings) {
+        return VtValue(
+            UsdRenderComputeNamespacedSettings(
+                prim, _GetRenderSettingsNamespaces()));
     }
 
     if (key == HdRenderSettingsPrimTokens->renderProducts) {

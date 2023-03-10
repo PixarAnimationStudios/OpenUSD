@@ -392,7 +392,7 @@ int main(int argc, char *argv[])
             product.resolution[1] = (int)(product.resolution[0]/sceneCamAspect);
             product.apertureSize[1] = product.apertureSize[0]/sceneCamAspect;
         }
-        VtDictionaryOver(&product.extraSettings, defaultSettings);
+        VtDictionaryOver(&product.namespacedSettings, defaultSettings);
     }
 
     //////////////////////////////////////////////////////////////////////// 
@@ -456,7 +456,7 @@ int main(int argc, char *argv[])
                 renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
                     renderVar.dataType.GetString();
                 renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
-                    renderVar.extraSettings;
+                    renderVar.namespacedSettings;
 
                 renderVarDicts.push_back(VtValue(renderVarDict));
             }
@@ -524,7 +524,7 @@ int main(int argc, char *argv[])
                 integratorName;
         }
 
-        for (const auto &item : product.extraSettings) {
+        for (const auto &item : product.namespacedSettings) {
             const std::string &key =
                 TfStringStartsWith(item.first, "ri:")
                 ? item.first

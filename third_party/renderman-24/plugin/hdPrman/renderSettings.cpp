@@ -53,9 +53,9 @@ void HdPrman_RenderSettings::_Sync(
 {
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
-    if (*dirtyBits & HdRenderSettings::DirtySettings) {
+    if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
         // NamespacedSettings contains all the Prman-specific Render Settings
-        const VtDictionary& namespacedSettings = GetSettings();
+        const VtDictionary& namespacedSettings = GetNamespacedSettings();
 
         // Set the SampleFilters connected to this Render Settings prim
         const auto sampleFilterIt = namespacedSettings.find(

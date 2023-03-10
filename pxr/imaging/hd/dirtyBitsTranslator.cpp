@@ -399,7 +399,7 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyActive) {
             set->append(HdRenderSettingsSchema::GetActiveLocator());
         }
-        if (bits & HdRenderSettings::DirtySettings) {
+        if (bits & HdRenderSettings::DirtyNamespacedSettings) {
             set->append(HdRenderSettingsSchema::GetNamespacedSettingsLocator());
         }
         if (bits & HdRenderSettings::DirtyRenderProducts) {
@@ -908,7 +908,7 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         }
         if (_FindLocator(HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
                  end, &it)) {
-            bits |= HdRenderSettings::DirtySettings;
+            bits |= HdRenderSettings::DirtyNamespacedSettings;
         }
         if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
                 end, &it)) {

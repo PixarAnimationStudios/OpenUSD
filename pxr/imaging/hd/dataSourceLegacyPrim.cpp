@@ -2073,8 +2073,7 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                         TfToken(hdVar.sourceName)),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         hdVar.sourceType),
-                    _ToContainerDS(
-                        hdVar.extraSettings)));
+                    _ToContainerDS(hdVar.namespacedSettings)));
         }
 
         productsDs.push_back(
@@ -2105,8 +2104,7 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                         hdProduct.dataWindowNDC.GetMax()[1])),
                 HdRetainedTypedSampledDataSource<bool>::New(
                     hdProduct.disableMotionBlur),
-                _ToContainerDS(
-                    hdProduct.extraSettings)));
+                _ToContainerDS(hdProduct.namespacedSettings)));
     }
 
     return HdRetainedSmallVectorDataSource::New(
@@ -2137,7 +2135,7 @@ public:
     {
         if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
             const VtValue value = _sceneDelegate->Get(
-                _id, HdRenderSettingsPrimTokens->settings);
+                _id, HdRenderSettingsPrimTokens->namespacedSettings);
             if (value.IsHolding<VtDictionary>()) {
                 return _ToContainerDS(
                     value.UncheckedGet<VtDictionary>());
