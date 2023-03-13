@@ -96,6 +96,8 @@ UsdContrivedMultipleApplyAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
             UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdContrivedTokens->test_MultipleApplyTemplate_),
     };
 
     return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
