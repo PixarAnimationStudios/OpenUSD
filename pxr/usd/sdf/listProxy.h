@@ -35,7 +35,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
-#include <boost/iterator/reverse_iterator.hpp>
 #include <boost/optional.hpp>
 
 #include <memory>

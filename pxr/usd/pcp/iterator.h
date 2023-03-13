@@ -34,7 +34,6 @@
 
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 
 PXR_NAMESPACE_OPEN_SCOPE
