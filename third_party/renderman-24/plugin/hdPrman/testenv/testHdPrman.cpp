@@ -47,6 +47,7 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
 
@@ -449,12 +450,15 @@ PrintUsage(const char* cmd, const char *err=nullptr)
         fprintf(stderr, "%s\n", err);
     }
     fprintf(stderr, "Usage: %s INPUT.usd "
-            "[--out OUTPUT] [--frame FRAME] "
-            "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
-            "[--sceneCamAspect aspectRatio] [--cullStyle CULL_STYLE] "
-            "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
+            "[--out|-o OUTPUT] [--frame|-f FRAME] [--env|-e NAME=VALUE]"
+            "[--sceneCamPath|-c CAM_PATH] [--settings|-s RENDERSETTINGS_PATH] "
+            "[--sceneCamAspect|-a aspectRatio] [--cullStyle|-k CULL_STYLE] "
+            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE]\n"
+            "Single-hyphen options still need a space before the value!\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
+            "NAME & VALUE are an environment variable and value to set with "
+            "ArchSetEnv; use multiple --env tags to set multiple variables\n"
             "CAM_PATH defaults to empty path if not specified\n"
             "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
             "STYLE indicates a PxrVisualizer style to use instead of "
@@ -488,26 +492,37 @@ int main(int argc, char *argv[])
     SdfPath sceneCamPath, renderSettingsPath;
     float sceneCamAspect = -1.0;
     std::string visualizerStyle;
+    std::vector<std::pair<std::string, std::string>> env;
 
     for (int i=2; i<argc-1; ++i) {
-        if (std::string(argv[i]) == "--frame") {
+        const std::string arg(argv[i]);
+        if (arg == "--frame" || arg == "-f") {
             frameNum = atoi(argv[++i]);
-        } else if (std::string(argv[i]) == "--sceneCamPath") {
+        } else if (arg == "--sceneCamPath" || arg == "-c") {
             sceneCamPath = SdfPath(argv[++i]);
-        } else if (std::string(argv[i]) == "--sceneCamAspect") {
+        } else if (arg == "--sceneCamAspect" || arg == "-a") {
             sceneCamAspect = atof(argv[++i]);
-        } else if (std::string(argv[i]) == "--out") {
+        } else if (arg == "--out" || arg == "-o") {
             outputFilename = argv[++i];
-        } else if (std::string(argv[i]) == "--settings") {
+        } else if (arg == "--settings" || arg == "-s") {
             renderSettingsPath = SdfPath(argv[++i]);
-        } else if (std::string(argv[i]) == "--visualize") {
+        } else if (arg == "--visualize" || arg == "-z") {
             visualizerStyle = argv[++i];
-        } else if (std::string(argv[i]) == "--perf") {
+        } else if (arg == "--perf" || arg == "-p") {
             perfOutput = argv[++i];
-        } else if (std::string(argv[i]) == "--trace") {
+        } else if (arg == "--trace" || arg == "-t") {
             traceOutput = argv[++i];
-        } else if (std::string(argv[i]) == "--cullStyle") {
+        } else if (arg == "--cullStyle" || arg == "-k") {
             cullStyle = argv[++i];
+        } else if (arg == "--env" || arg == "-e") {
+            std::vector<std::string> parts = TfStringSplit(argv[++i], "=");
+            env.push_back({parts[0], parts[1]});
+        }
+    }
+
+    if (!env.empty()) {
+        for (auto p : env) {
+            ArchSetEnv(p.first, p.second, true);
         }
     }
 

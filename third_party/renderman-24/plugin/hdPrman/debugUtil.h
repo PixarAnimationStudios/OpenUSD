@@ -1,5 +1,5 @@
 //
-// Copyright 2019 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,26 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/debugCodes.h"
+#ifndef EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_UTIL_H
+#define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_UTIL_H
 
-#include "pxr/base/tf/registryManager.h"
+#include "pxr/pxr.h"
+#include "pxr/base/arch/stackTrace.h"
+#include "hdPrman/renderParam.h"
+#include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug)
+namespace HdPrmanDebugUtil {
+
+std::string
+RtParamListToString(const RtParamList& params, const std::string& name = "");
+
+std::string
+GetCallerAsString(const TfCallContext& ctx);
+
+template <typename T>
+std::string
+RileyIdVecToString(const std::vector<T>& vec)
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_PRIMVARS, "Primvars");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_MATERIALS, "Materials");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_DUMP_MATERIALX_OSL_SHADER, 
-        "Print MaterialX Generated Osl Shaders");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LINKING, "Light linking");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_LIST, "Light list");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_VSTRUCTS, "Vstruct expansion");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_LIGHT_FILTER_LINKING, "Light filter linking");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_IMAGE_ASSET_RESOLVE,
-        "Resolved image asset paths");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_INSTANCERS, "Instancers");
+    std::string out;
+    for (const T& val : vec) {
+        if (!out.empty()) {
+            out += ", ";
+        }
+        out += std::to_string(val.AsUInt32());
+    }
+    return out;
+}
+
+std::string
+SdfPathVecToString(const std::vector<SdfPath>& vec);
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#endif // EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_DEBUG_UTIL_H
