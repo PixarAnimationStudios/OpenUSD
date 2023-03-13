@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/reverse_iterator.hpp>
 #include <algorithm>
 #include <vector>
 
@@ -381,7 +380,7 @@ private:
 public:
     typedef Sdf_ChildrenViewTraits<This, _InnerIterator, Predicate> _Traits;
     typedef typename _Traits::const_iterator const_iterator;
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
 

@@ -34,7 +34,6 @@
 
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -187,12 +186,12 @@ private:
 /// order.
 ///
 class PcpNodeReverseIterator
-    : public boost::reverse_iterator<PcpNodeIterator>
+    : public Tf_ProxyReferenceReverseIterator<PcpNodeIterator>
 {
 public:
     PcpNodeReverseIterator() { }
     explicit PcpNodeReverseIterator(const PcpNodeIterator& iter)
-        : boost::reverse_iterator<PcpNodeIterator>(iter) { }
+        : Tf_ProxyReferenceReverseIterator<PcpNodeIterator>(iter) {}
 };
 
 /// \class PcpPrimIterator
@@ -344,12 +343,12 @@ private:
 /// weak-to-strong order.
 ///
 class PcpPrimReverseIterator
-    : public boost::reverse_iterator<PcpPrimIterator>
+    : public Tf_ProxyReferenceReverseIterator<PcpPrimIterator>
 {
 public:
     PcpPrimReverseIterator() { }
     explicit PcpPrimReverseIterator(const PcpPrimIterator& iter)
-        : boost::reverse_iterator<PcpPrimIterator>(iter) { }
+        : Tf_ProxyReferenceReverseIterator<PcpPrimIterator>(iter) { }
         
     PcpNodeRef GetNode() const
     {

@@ -35,8 +35,8 @@
 
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
-#include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 #include <utility>
 
@@ -363,8 +363,8 @@ public:
     typedef _Iterator<This*, inner_iterator, _PairProxy> iterator;
     typedef _Iterator<const This*, const_inner_iterator,
                                    const value_type&> const_iterator;
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<iterator> reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
 
     explicit SdfMapEditProxy(const SdfSpecHandle& owner, const TfToken& field) :
         _editor(Sdf_CreateMapEditor<T>(owner, field))

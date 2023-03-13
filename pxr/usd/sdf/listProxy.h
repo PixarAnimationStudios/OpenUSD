@@ -35,7 +35,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
-#include <boost/iterator/reverse_iterator.hpp>
 #include <boost/optional.hpp>
 
 #include <memory>
@@ -298,8 +297,8 @@ public:
     typedef _ItemProxy reference;
     typedef _Iterator<This*, _GetHelper> iterator;
     typedef _Iterator<const This*, _ConstGetHelper> const_iterator;
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<iterator> reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
 
     /// Creates a default list proxy object for list operation vector specified
     /// \p op. This object evaluates to false in a boolean context and all
