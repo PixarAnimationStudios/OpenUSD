@@ -25,8 +25,10 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
-# Require C++14
-set(CMAKE_CXX_STANDARD 14)
+# Default to C++14
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 14)
+endif()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
