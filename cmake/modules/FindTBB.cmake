@@ -218,8 +218,9 @@ if(NOT TBB_FOUND)
   endif()
 
   # Find each component
+  list(APPEND TBB_FIND_COMPONENTS tbb)
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if("${_comp}" IN_LIST TBB_FIND_COMPONENTS)
 
       # Search for the libraries
       find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}
