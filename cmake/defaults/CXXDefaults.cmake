@@ -25,10 +25,20 @@ include(CXXHelpers)
 include(Version)
 include(Options)
 
-# Require C++14
-set(CMAKE_CXX_STANDARD 14)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+# Default to C++14
+if (NOT DEFINED CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 14)
+endif()
+if (NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+if (NOT DEFINED CMAKE_CXX_EXTENSIONS)
+    set(CMAKE_CXX_EXTENSIONS OFF)
+endif()
+
+if (CMAKE_CXX_STANDARD EQUAL 98 OR CMAKE_CXX_STANDARD LESS 14)
+    message(FATAL_ERROR "USD requires C++14 at least, CMAKE_CXX_STANDARD must be >= 14")
+endif()
 
 if (CMAKE_COMPILER_IS_GNUCXX)
     include(gccdefaults)
