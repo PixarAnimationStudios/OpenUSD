@@ -43,6 +43,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiMetalShaderSection: public HgiShaderSection
 {
 public:
+    
+    HGIMETAL_API
+    explicit HgiMetalShaderSection(
+            const std::string &identifier,
+            const HgiShaderSectionAttributeVector& attributes = {},
+            const std::string &defaultValue = std::string(),
+            const std::string &arraySize = std::string(),
+            const std::string &blockInstanceIdentifier = std::string());
     HGIMETAL_API
     ~HgiMetalShaderSection() override;
 
@@ -73,7 +81,10 @@ public:
     /// either exists
     HGIMETAL_API
     void WriteAttributesWithIndex(std::ostream& ss) const;
-
+    /// Returns the identifier
+    HGIMETAL_API
+    std::string GetIdentifier() const;
+    bool writesArrayOutput;
     using HgiShaderSection::HgiShaderSection;
 };
 
