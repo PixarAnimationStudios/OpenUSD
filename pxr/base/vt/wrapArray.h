@@ -259,7 +259,12 @@ void
 setitem_index(VtArray<T> &self, int64_t idx, object value)
 {
     static const bool tile = true;
-    setArraySlice(self, slice(idx, idx + 1), value, tile);
+    // Converting index -1 to a slice by adding 1 results in
+    // the slice [-1:0] which is empty. Using 'slice_nil' allows
+    // the slice to behave like [-1:]
+    const auto indexAsSlice = (idx == -1) ?
+        slice{idx, slice_nil{}} : slice{idx, idx + 1};
+    setArraySlice(self, indexAsSlice, value, tile);
 }
 
 template <typename T>
