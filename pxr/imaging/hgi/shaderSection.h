@@ -109,9 +109,9 @@ protected:
 
     HGI_API
     const std::string& _GetDefaultValue() const;
+    const std::string _identifierVar;
 
 private:
-    const std::string _identifierVar;
     const HgiShaderSectionAttributeVector _attributes;
     const std::string _defaultValue;
     const std::string _arraySize;

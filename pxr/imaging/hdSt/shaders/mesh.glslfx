@@ -56,6 +56,7 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
+    InitClipPlanes();
     ProcessPrimvarsIn();
 
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
@@ -108,6 +109,7 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
+    InitClipPlanes();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
@@ -181,6 +183,7 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
+    InitClipPlanes();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
@@ -263,6 +266,7 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
+    InitClipPlanes();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();

@@ -2156,6 +2156,20 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genTES << _procTES.str();
     _genPTVS << _procPTVSOut.str();
     _genGS  << _procGS.str();
+    
+    // Metal needs to initialize clip planes
+    if (metalTessellationEnabled) {
+        std::stringstream initClip = std::stringstream();
+        initClip << "void InitClipPlanes() {\n"
+                 << "    for (int i = 0; i < HD_NUM_clipPlanes; i++) {\n"
+                 << "        gl_ClipDistance[0] = FLT_MAX;\n"
+                 << "    }\n"
+                 << "}\n";
+        _genVS << initClip.str();
+        _genPTVS << initClip.str();
+    } else {
+        _genVS << "void InitClipPlanes(){}\n";
+    }
 
     // other shaders (renderPass, lighting, surface) first
     TF_FOR_ALL(it, _shaders) {
@@ -2605,6 +2619,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         if (!_geometricShader->IsFrustumCullingPass()) {
             HgiShaderFunctionAddStageOutput(
                 &vsDesc, "gl_Position", "vec4", "position");
+
+            HgiShaderFunctionParamDesc clipParam;
+            clipParam.nameInShader = "gl_ClipDistance";
+            clipParam.type = "float";
+            clipParam.role = "clip_distance";
+            clipParam.arraySize = "HD_NUM_clipPlanes";
+            HgiShaderFunctionAddStageOutput(
+                &vsDesc, clipParam);
             
             // For Metal, only set the role for the point size
             // if the primitive is a point list.
@@ -2878,8 +2900,15 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HgiShaderKeywordTokens->hdInstanceID);
 
         HgiShaderFunctionAddStageOutput(
-            &ptvsDesc, "gl_Position", "vec4",
-            "position");
+                &ptvsDesc, "gl_Position", "vec4",
+                "position");
+        HgiShaderFunctionParamDesc clipParam;
+        clipParam.nameInShader = "gl_ClipDistance";
+        clipParam.type = "float";
+        clipParam.role = "clip_distance";
+        clipParam.arraySize = "HD_NUM_clipPlanes";
+        HgiShaderFunctionAddStageOutput(
+            &ptvsDesc, clipParam);
 
         char const* pointRole =
             (_geometricShader->GetPrimitiveType() ==

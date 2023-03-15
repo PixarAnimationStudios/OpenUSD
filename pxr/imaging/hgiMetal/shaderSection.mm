@@ -26,6 +26,21 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+HgiMetalShaderSection::HgiMetalShaderSection(
+        const std::string &identifier,
+        const HgiShaderSectionAttributeVector& attributes,
+        const std::string &defaultValue,
+        const std::string &arraySize,
+        const std::string &blockInstanceIdentifier)
+  : HgiShaderSection(identifier,
+                     attributes,
+                     defaultValue,
+                     arraySize,
+                     blockInstanceIdentifier),
+    writesArrayOutput(false)
+{
+}
+
 HgiMetalShaderSection::~HgiMetalShaderSection() = default;
 
 bool
@@ -99,6 +114,11 @@ HgiMetalShaderSection::WriteAttributesWithIndex(std::ostream& ss) const
     if (attributes.size() > 0) {
         ss << "]]";
     }
+}
+
+std::string
+HgiMetalShaderSection::GetIdentifier() const {
+    return _identifierVar;
 }
 
 HgiMetalMemberShaderSection::HgiMetalMemberShaderSection(
@@ -814,6 +834,9 @@ HgiMetalStructTypeDeclarationShaderSection::WriteDeclaration(
         member->WriteParameter(ss);
         if (!member->HasBlockInstanceIdentifier()) {
             member->WriteAttributesWithIndex(ss);
+            if(!member->GetArraySize().empty() && member->writesArrayOutput) {
+                ss << "[" << member->GetArraySize() << "]";
+            }
         }
         ss << ";\n";
     }
@@ -1103,17 +1126,39 @@ HgiMetalStageOutputShaderSection::VisitEntryPointFunctionExecutions(
         if (i > 0) {
             ss << "\n";
         }
-        HgiShaderSection *member = structTypeDeclMembers[i];
-        WriteIdentifier(ss);
-        ss << ".";
-        member->WriteIdentifier(ss);
-        ss << " = " << scopeInstanceName << ".";
-        if (member->HasBlockInstanceIdentifier()) {
-            member->WriteBlockInstanceIdentifier(ss);
+        HgiMetalShaderSection *member = structTypeDeclMembers[i];
+        if (member->GetArraySize().empty()) {
+            WriteIdentifier(ss);
             ss << ".";
+            member->WriteIdentifier(ss);
+            ss << " = " << scopeInstanceName << ".";
+            if (member->HasBlockInstanceIdentifier()) {
+                member->WriteBlockInstanceIdentifier(ss);
+                ss << ".";
+            }
+            member->WriteIdentifier(ss);
+            ss << ";";
+        } else if (member->writesArrayOutput){
+            std::istringstream arrSizeRead(member->GetArraySize());
+            size_t arrEnd;
+            arrSizeRead >> arrEnd;
+            ss << "for(int i = 0; i < " << member->GetArraySize() << "; i++) {\n";
+            ss << "    ";
+            WriteIdentifier(ss);
+            ss << ".";
+            member->WriteIdentifier(ss);
+            ss << "[i]";
+            ss << " = " << scopeInstanceName << ".";
+            if (member->HasBlockInstanceIdentifier()) {
+                member->WriteBlockInstanceIdentifier(ss);
+                ss << ".";
+            }
+            member->WriteIdentifier(ss);
+            ss << "[i]";
+            ss << ";";
+            ss << "\n}\n";
+            
         }
-        member->WriteIdentifier(ss);
-        ss << ";";
     }
     return true;
 }
