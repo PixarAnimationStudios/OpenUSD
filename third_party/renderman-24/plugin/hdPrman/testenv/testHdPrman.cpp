@@ -343,7 +343,7 @@ HydraSetupAndRender(
     UsdRenderSpec::Product const &product,
     const int frameNum, 
     const std::string &cullStyle,
-    TfStopwatch timer_hydra)
+    TfStopwatch *timer_hydra)
 {
     // Hydra setup
     //
@@ -438,9 +438,9 @@ HydraSetupAndRender(
                                       renderTags)
     };
     HdEngine hdEngine;
-    timer_hydra.Start();
+    timer_hydra->Start();
     hdEngine.Execute(hdRenderIndex.get(), &tasks);
-    timer_hydra.Stop();
+    timer_hydra->Stop();
 }
 
 void
@@ -689,7 +689,7 @@ int main(int argc, char *argv[])
                 settingsMap);
 
         HydraSetupAndRender(
-            renderDelegate, stage, product, frameNum, cullStyle, timer_hydra);
+            renderDelegate, stage, product, frameNum, cullStyle, &timer_hydra);
 
         printf("Rendered %s\n", product.name.GetText());
     }
