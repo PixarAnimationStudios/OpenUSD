@@ -98,6 +98,9 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         usdPrimInfoSchema
+        usdRenderProductSchema
+        usdRenderSettingsSchema
+        usdRenderVarSchema
         rectLightAdapter
         renderSettingsAdapter
         representedByAncestorPrimAdapter
