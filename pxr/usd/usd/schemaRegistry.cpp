@@ -1362,6 +1362,7 @@ BuildPrimDefinition(_SchemaDefInitHelper *defInitHelper)
 
     // Create a new UsdPrimDefinition.
     primDef = new UsdPrimDefinition(
+        defInitHelper->_registry->_schematics,
         schematicsPrimPath, /* isAPISchema = */ true);
     // Also hold ownership of the prim definition until is either taken by the
     // registry or we delete it to rebuild the prim definition (in the case 
@@ -1653,14 +1654,16 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ComposePropertiesWithOverrides(
         // Get the path to the property in the prim definition that the 
         // override property applies to. If no such property exists, we ignore
         // the override.
-        SdfPath *defPath = primDef->_GetPropertySpecPath(propName);
-        if (!defPath) {
+        UsdPrimDefinition::_LayerAndPath *defLayerAndPath = 
+            primDef->_GetPropertyLayerAndPath(propName);
+        if (!defLayerAndPath) {
             continue;
         }
 
         // Property overrides are not allowed to change the type of a property
         // from its defining spec.
-        if (!_PropertyTypesMatch(schematicsLayer, propertyPath, *defPath)) {
+        if (!_PropertyTypesMatch(
+                schematicsLayer, propertyPath, defLayerAndPath->second)) {
             continue;
         }
 
@@ -1668,16 +1671,18 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ComposePropertiesWithOverrides(
         // get the property spec with the overrides applied. Any fields that
         // are defined in the override spec are stronger so we copy the defined
         // spec fields that aren't already in the override spec.
-        for (const TfToken srcField : schematicsLayer->ListFields(*defPath)) {
+        for (const TfToken srcField : 
+                defLayerAndPath->first->ListFields(defLayerAndPath->second)) {
             if (!schematicsLayer->HasField(propertyPath, srcField)) {
                 schematicsLayer->SetField(propertyPath, srcField, 
-                    schematicsLayer->GetField(*defPath, srcField));
+                    defLayerAndPath->first->GetField(
+                        defLayerAndPath->second, srcField));
             }
         }
 
         // With the override spec composed, set the definition's path for the 
         // property to the composed override spec path.
-        *defPath = propertyPath;
+        defLayerAndPath->second = propertyPath;
     }
 }
 
@@ -1730,6 +1735,7 @@ _PopulateConcretePrimDefinitions() const
 
         // Create a new prim definition for the concrete schema.
         std::unique_ptr<UsdPrimDefinition> primDef(new UsdPrimDefinition(
+            _registry->_schematics,
             schematicsPrimPath, /* isAPISchema = */ false));
 
         // Get both the defined properties and API schema override properties
@@ -1747,7 +1753,7 @@ _PopulateConcretePrimDefinitions() const
         // built-in API schema will automatically also include every API schema
         // it includes.
         TfTokenVector apiSchemasToCompose = _GetDirectBuiltinAPISchemas(
-            primDef->_schematicsPrimPath, *schemaInfo);
+            primDef->_primLayerAndPath.second, *schemaInfo);
         if (!apiSchemasToCompose.empty()) {
             // Note that we check for API schema version conflicts and will skip
             // all schemas under a directly built-in API schema if any would 
@@ -1997,7 +2003,8 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
     // as the prim type's definition. This does not yet add the prim type's
     // properties.
     std::unique_ptr<UsdPrimDefinition> composedPrimDef(new UsdPrimDefinition(
-        primDef->_schematicsPrimPath, /* isAPISchema = */ false));
+        _schematics,
+        primDef->_primLayerAndPath.second, /* isAPISchema = */ false));
 
     // We do not allow authored API schemas to cause a different version of an
     // API schema to be added if an API schema in that family is already 

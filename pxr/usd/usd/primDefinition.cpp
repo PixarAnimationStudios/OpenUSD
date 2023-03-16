@@ -31,8 +31,9 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 UsdPrimDefinition::UsdPrimDefinition(
+    const SdfLayerHandle &schematicsLayer,
     const SdfPath &schematicsPrimPath, bool isAPISchema)
-    : _schematicsPrimPath(schematicsPrimPath)
+    : _primLayerAndPath{get_pointer(schematicsLayer), schematicsPrimPath}
 {
     // If this prim definition is not for an API schema, the primary prim spec 
     // will provide the prim metadata. map the empty property name to the prim 
@@ -41,15 +42,20 @@ UsdPrimDefinition::UsdPrimDefinition(
     // allowing UsdStage to access fallback metadata from both prims and 
     // properties through the same code path without extra conditionals.
     if (!isAPISchema) {
-        _propPathMap.emplace(TfToken(), _schematicsPrimPath);
+        _propLayerAndPathMap.emplace(TfToken(), _primLayerAndPath);
     }
 }
 
 SdfPropertySpecHandle 
 UsdPrimDefinition::GetSchemaPropertySpec(const TfToken& propName) const
 {
-    if (const SdfPath *path = _GetPropertySpecPath(propName)) {
-        return _GetSchematics()->GetPropertyAtPath(*path);
+    if (const _LayerAndPath *layerAndPath = _GetPropertyLayerAndPath(propName)) {
+        // XXX: We have to const cast because the schematics layers really
+        // shouldn't be editable via the prim definitions. But these methods 
+        // already exist and return an editable property spec. These methods
+        // should one day be deprecated and replaced. 
+        return const_cast<SdfLayer *>(layerAndPath->first)->GetPropertyAtPath(
+            layerAndPath->second);
     }
     return TfNullPtr;
 }
@@ -57,8 +63,13 @@ UsdPrimDefinition::GetSchemaPropertySpec(const TfToken& propName) const
 SdfAttributeSpecHandle 
 UsdPrimDefinition::GetSchemaAttributeSpec(const TfToken& attrName) const
 {
-    if (const SdfPath *path = _GetPropertySpecPath(attrName)) {
-        return _GetSchematics()->GetAttributeAtPath(*path);
+    if (const _LayerAndPath *layerAndPath = _GetPropertyLayerAndPath(attrName)) {
+        // XXX: We have to const cast because the schematics layers really
+        // shouldn't be editable via the prim definitions. But these methods 
+        // already exist and return an editable property spec. These methods
+        // should one day be deprecated and replaced. 
+        return const_cast<SdfLayer *>(layerAndPath->first)->GetAttributeAtPath(
+            layerAndPath->second);
     }
     return TfNullPtr;
 }
@@ -66,8 +77,13 @@ UsdPrimDefinition::GetSchemaAttributeSpec(const TfToken& attrName) const
 SdfRelationshipSpecHandle 
 UsdPrimDefinition::GetSchemaRelationshipSpec(const TfToken& relName) const
 {
-    if (const SdfPath *path = _GetPropertySpecPath(relName)) {
-        return _GetSchematics()->GetRelationshipAtPath(*path);
+    if (const _LayerAndPath *layerAndPath = _GetPropertyLayerAndPath(relName)) {
+        // XXX: We have to const cast because the schematics layers really
+        // shouldn't be editable via the prim definitions. But these methods 
+        // already exist and return an editable property spec. These methods
+        // should one day be deprecated and replaced. 
+        return const_cast<SdfLayer *>(layerAndPath->first)->GetRelationshipAtPath(
+            layerAndPath->second);
     }
     return TfNullPtr;
 }
@@ -82,8 +98,10 @@ UsdPrimDefinition::GetDocumentation() const
     // field from the schematics for the prim path (which we store for all 
     // definitions specifically to access the documentation).
     std::string docString;
-    _GetSchematics()->HasField(
-        _schematicsPrimPath, SdfFieldKeys->Documentation, &docString);
+    if (_primLayerAndPath.first) {
+        _primLayerAndPath.first->HasField(
+            _primLayerAndPath.second, SdfFieldKeys->Documentation, &docString);
+    }
     return docString;
 }
 
@@ -101,10 +119,11 @@ UsdPrimDefinition::GetPropertyDocumentation(const TfToken &propName) const
 TfTokenVector 
 UsdPrimDefinition::_ListMetadataFields(const TfToken &propName) const
 {
-    if (const SdfPath *path = TfMapLookupPtr(_propPathMap, propName)) {
+    if (const _LayerAndPath *layerAndPath = _GetPropertyLayerAndPath(propName)) {
         // Get the list of fields from the schematics for the property (or prim)
         // path and remove the fields that we don't allow fallbacks for.
-        TfTokenVector fields = _GetSchematics()->ListFields(*path);
+        TfTokenVector fields = 
+            layerAndPath->first->ListFields(layerAndPath->second);
         fields.erase(std::remove_if(fields.begin(), fields.end(), 
                                     &UsdSchemaRegistry::IsDisallowedField), 
                      fields.end());
@@ -120,7 +139,10 @@ UsdPrimDefinition::_AddProperties(
     _properties.reserve(_properties.size() + propNameToPathVec.size());
 
     for (auto &propNameAndPath : propNameToPathVec) {
-        auto insertIt = _propPathMap.insert(std::move(propNameAndPath));
+        auto insertIt = _propLayerAndPathMap.emplace(
+            std::move(propNameAndPath.first),
+            std::make_pair(_primLayerAndPath.first,
+                           std::move(propNameAndPath.second)));
         if (insertIt.second) {
             _properties.push_back(insertIt.first->first);
         }
@@ -192,12 +214,12 @@ UsdPrimDefinition::_ComposePropertiesFromPrimDef(
 
     // Copy over property to path mappings from the weaker prim definition that 
     // aren't already in this prim definition.
-    for (const auto &it : weakerPrimDef._propPathMap) {
+    for (const auto &it : weakerPrimDef._propLayerAndPathMap) {
         // Note that the prop name may be empty as we use the empty path to
         // map to the spec containing the prim level metadata. We need to 
         // make sure we don't add the empty name to properties list if 
         // we successfully insert a metadata mapping.
-        auto insertResult = _propPathMap.insert(it);
+        auto insertResult = _propLayerAndPathMap.insert(it);
         if (insertResult.second){
             if (!it.first.IsEmpty()) {
                 _properties.push_back(it.first);
@@ -225,12 +247,12 @@ UsdPrimDefinition::_ComposePropertiesFromPrimDefInstance(
 
     // Copy over property to path mappings from the weaker prim definition that 
     // aren't already in this prim definition.
-    for (const auto &it : weakerPrimDef._propPathMap) {
+    for (const auto &it : weakerPrimDef._propLayerAndPathMap) {
         // Apply the prefix to each property name before adding it.
         const TfToken instancedPropName = 
             UsdSchemaRegistry::MakeMultipleApplyNameInstance(
                 it.first, instanceName);
-        auto insertResult = _propPathMap.emplace(
+        auto insertResult = _propLayerAndPathMap.emplace(
             instancedPropName, it.second);
         if (insertResult.second) {
             _properties.push_back(instancedPropName);
