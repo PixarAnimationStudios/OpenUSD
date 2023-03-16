@@ -132,6 +132,8 @@
                         ], 
                         "formatId": "usdz", 
                         "primary": true, 
+                        "supportsEditing": false, 
+                        "supportsWriting": false, 
                         "target": "usd"
                     }, 
                     "Usd_UsdzResolver": {

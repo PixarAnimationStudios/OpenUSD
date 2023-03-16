@@ -50,6 +50,8 @@
                         ],
                         "formatId": "usdRecursivePayloadsExample",
                         "primary": true,
+                        "supportsEditing": false,
+                        "supportsWriting": false,
                         "target": "usd"
                     }
                 }
