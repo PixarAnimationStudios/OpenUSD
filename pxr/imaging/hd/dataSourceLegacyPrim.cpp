@@ -2125,10 +2125,13 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector v;
-        v.push_back(HdRenderSettingsSchemaTokens->namespacedSettings);
-        v.push_back(HdRenderSettingsSchemaTokens->renderProducts);
-        return v;
+        static TfTokenVector names = {
+            HdRenderSettingsSchemaTokens->namespacedSettings,
+            HdRenderSettingsSchemaTokens->renderProducts,
+            HdRenderSettingsSchemaTokens->includedPurposes,
+            HdRenderSettingsSchemaTokens->materialBindingPurposes,
+            HdRenderSettingsSchemaTokens->renderingColorSpace};
+        return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
@@ -2147,6 +2150,33 @@ public:
                 _id, HdRenderSettingsPrimTokens->renderProducts);
             if (value.IsHolding<HdRenderProducts>()) {
                 return _ToVectorDS(value.UncheckedGet<HdRenderProducts>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->includedPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->includedPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->materialBindingPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->materialBindingPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->renderingColorSpace) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderingColorSpace);
+            if (value.IsHolding<TfToken>()) {
+                return HdRetainedTypedSampledDataSource<TfToken>::New(
+                    value.UncheckedGet<TfToken>());
             }
         }
 

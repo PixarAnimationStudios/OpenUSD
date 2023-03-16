@@ -96,6 +96,24 @@ HdRenderSettings::GetRenderProducts() const
     return _products;
 }
 
+const TfTokenVector&
+HdRenderSettings::GetIncludedPurposes() const
+{
+    return _includedPurposes;
+}
+
+const TfTokenVector&
+HdRenderSettings::GetMaterialBindingPurposes() const
+{
+    return _materialBindingPurposes;
+}
+
+const TfToken&
+HdRenderSettings::GetRenderingColorSpace() const
+{
+    return _renderingColorSpace;
+}
+
 void
 HdRenderSettings::Sync(
     HdSceneDelegate *sceneDelegate,
@@ -126,6 +144,33 @@ HdRenderSettings::Sync(
             GetId(), HdRenderSettingsPrimTokens->renderProducts);
         if (vProducts.IsHolding<RenderProducts>()) {
             _products = vProducts.UncheckedGet<RenderProducts>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyIncludedPurposes) {
+
+        const VtValue vPurposes = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->includedPurposes);
+        if (vPurposes.IsHolding<TfTokenVector>()) {
+            _includedPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyMaterialBindingPurposes) {
+
+        const VtValue vPurposes = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->materialBindingPurposes);
+        if (vPurposes.IsHolding<TfTokenVector>()) {
+            _materialBindingPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyRenderingColorSpace) {
+
+        const VtValue vColorSpace = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->renderingColorSpace);
+        if (vColorSpace.IsHolding<TfToken>()) {
+            _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
     }
 

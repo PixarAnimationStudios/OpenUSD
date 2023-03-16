@@ -1430,6 +1430,30 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         }
     }
 
+    if (key == HdRenderSettingsPrimTokens->includedPurposes) {
+        if (HdTokenArrayDataSourceHandle purposesDS =
+                rsSchema.GetIncludedPurposes()) {
+            
+            return VtValue(purposesDS->GetTypedValue(0));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->materialBindingPurposes) {
+        if (HdTokenArrayDataSourceHandle purposesDS =
+                rsSchema.GetMaterialBindingPurposes()) {
+            
+            return VtValue(purposesDS->GetTypedValue(0));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->renderingColorSpace) {
+        if (HdTokenDataSourceHandle colorSpaceDS =
+                rsSchema.GetRenderingColorSpace()) {
+            
+            return VtValue(colorSpaceDS->GetTypedValue(0));
+        }
+    }
+
     return VtValue();
 }
 

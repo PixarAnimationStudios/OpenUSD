@@ -67,13 +67,19 @@ class HdRenderSettings : public HdBprim
 public:
     // Change tracking for HdRenderSettings.
     enum DirtyBits : HdDirtyBits {
-        Clean                   = 0,
-        DirtyActive             = 1 << 1,
-        DirtyNamespacedSettings = 1 << 2,
-        DirtyRenderProducts     = 1 << 3,
-        AllDirty                =    DirtyActive
-                                   | DirtyNamespacedSettings
-                                   | DirtyRenderProducts
+        Clean                        = 0,
+        DirtyActive                  = 1 << 1,
+        DirtyNamespacedSettings      = 1 << 2,
+        DirtyRenderProducts          = 1 << 3,
+        DirtyIncludedPurposes        = 1 << 4,
+        DirtyMaterialBindingPurposes = 1 << 5,
+        DirtyRenderingColorSpace     = 1 << 6,
+        AllDirty                     =    DirtyActive
+                                        | DirtyNamespacedSettings
+                                        | DirtyRenderProducts
+                                        | DirtyIncludedPurposes
+                                        | DirtyMaterialBindingPurposes
+                                        | DirtyRenderingColorSpace
     };
 
     // Parameters that may be queried and invalidated.
@@ -144,6 +150,15 @@ public:
     HD_API
     const RenderProducts& GetRenderProducts() const;
 
+    HD_API
+    const TfTokenVector& GetIncludedPurposes() const;
+
+    HD_API
+    const TfTokenVector& GetMaterialBindingPurposes() const;
+
+    HD_API
+    const TfToken& GetRenderingColorSpace() const;
+
     // XXX Add API to query AOV bindings.
 
     // ------------------------------------------------------------------------
@@ -183,6 +198,9 @@ private:
     bool _active;
     NamespacedSettings _namespacedSettings;
     RenderProducts _products;
+    TfTokenVector _includedPurposes;
+    TfTokenVector _materialBindingPurposes;
+    TfToken _renderingColorSpace;
 };
 
 // VtValue requirements

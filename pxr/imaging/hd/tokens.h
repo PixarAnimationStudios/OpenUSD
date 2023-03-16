@@ -405,7 +405,10 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
 #define HD_RENDER_SETTINGS_PRIM_TOKENS                \
     (active)                                          \
     (namespacedSettings)                              \
-    (renderProducts)
+    (renderProducts)                                  \
+    (includedPurposes)                                \
+    (materialBindingPurposes)                         \
+    (renderingColorSpace)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \

@@ -330,6 +330,24 @@ UsdImagingRenderSettingsAdapter::Get(
         return VtValue(_ToHdRenderProducts(renderSpec));
     }
 
+    if (key == HdRenderSettingsPrimTokens->includedPurposes) {
+        VtArray<TfToken> purposes;
+        UsdRenderSettings(prim).GetIncludedPurposesAttr().Get(&purposes);
+        return VtValue(purposes);
+    }
+
+    if (key == HdRenderSettingsPrimTokens->materialBindingPurposes) {
+        VtArray<TfToken> purposes;
+        UsdRenderSettings(prim).GetMaterialBindingPurposesAttr().Get(&purposes);
+        return VtValue(purposes);
+    }
+
+    if (key == HdRenderSettingsPrimTokens->renderingColorSpace) {
+        TfToken colorSpace;
+        UsdRenderSettings(prim).GetRenderingColorSpaceAttr().Get(&colorSpace);
+        return VtValue(colorSpace);
+    }
+
     TF_CODING_ERROR(
         "Property %s not supported for RenderSettings by UsdImaging, path: %s",
         key.GetText(), cachePath.GetText());
