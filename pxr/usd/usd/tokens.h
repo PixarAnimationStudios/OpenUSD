@@ -78,6 +78,10 @@ struct UsdTokensType {
     /// 
     /// Property namespace prefix for the UsdCollectionAPI schema.
     const TfToken collection;
+    /// \brief "collection:__INSTANCE_NAME__"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_;
     /// \brief "collection:__INSTANCE_NAME__:excludes"
     /// 
     /// UsdCollectionAPI

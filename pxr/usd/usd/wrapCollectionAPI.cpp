@@ -63,6 +63,13 @@ _CreateIncludeRootAttr(UsdCollectionAPI &self,
     return self.CreateIncludeRootAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Bool), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateCollectionAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateCollectionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Opaque), writeSparsely);
+}
 
 static bool _WrapIsCollectionAPIPath(const SdfPath &path) {
     TfToken collectionName;
@@ -167,6 +174,13 @@ void wrapUsdCollectionAPI()
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
              &_CreateIncludeRootAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetCollectionAttr",
+             &This::GetCollectionAttr)
+        .def("CreateCollectionAttr",
+             &_CreateCollectionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

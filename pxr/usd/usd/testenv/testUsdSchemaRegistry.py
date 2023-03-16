@@ -274,7 +274,8 @@ class TestUsdSchemaRegistry(unittest.TestCase):
 
         # Prim def has built in property names.
         self.assertEqual(primDef.GetPropertyNames(), 
-            ['collection:__INSTANCE_NAME__:expansionRule', 
+            ['collection:__INSTANCE_NAME__',
+             'collection:__INSTANCE_NAME__:expansionRule', 
              'collection:__INSTANCE_NAME__:includeRoot', 
              'collection:__INSTANCE_NAME__:excludes', 
              'collection:__INSTANCE_NAME__:includes'])
@@ -466,6 +467,13 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "specifier" : Sdf.SpecifierOver
         }
         apiPrimDefProperties = {
+            "collection:__INSTANCE_NAME__" : {
+                "custom" : False,
+                "typeName" : Sdf.ValueTypeNames.Opaque,
+                "documentation" : apiPrimDef.GetPropertyDocumentation(
+                    "collection:__INSTANCE_NAME__"),
+                "variability" : Sdf.VariabilityUniform
+            },
             "collection:__INSTANCE_NAME__:expansionRule" : {
                 "custom" : False,
                 "default" : "expandPrims",
