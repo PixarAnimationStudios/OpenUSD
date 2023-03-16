@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 
+#include "pxr/base/tf/diagnostic.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -77,6 +78,15 @@ HdSystemSchema::Compose(
     SdfPath* foundAtPath)
 {
     if (!inputScene) {
+        return nullptr;
+    }
+
+    // GetParentPath for a non-absolute path will result in an infinite loop
+    // when trying to get Parent of .. -> ../.. -> ../../.. .........
+    if (!fromPath.IsAbsolutePath()) {
+        TF_CODING_ERROR("Trying to compose system containers by specifying a "
+                "non-absolute path (%s). fromPath must be an abolute path.", 
+                fromPath.GetText());
         return nullptr;
     }
 
