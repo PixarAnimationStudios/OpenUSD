@@ -299,10 +299,16 @@ UsdImagingStageSceneIndex::_AdapterSetLookup(
     // contains only the manually applied API schemas
     TfTokenVector appliedAPISchemas = typeInfo.GetAppliedAPISchemas();
 
-    result.allAdapters.reserve(allAppliedSchemas.size() + 1);
+    result.allAdapters.reserve(allAppliedSchemas.size() + 1 +
+        _keylessAdapters.size());
 
-    // first add the manually applied API schemas as they have the strongest
-    // opinion
+    // first add keyless adapters as they have a stronger opinion than any
+    // keyed adapter
+    result.allAdapters.insert(result.allAdapters.end(),
+        _keylessAdapters.begin(), _keylessAdapters.end());
+
+    // then add the manually applied API schemas as they have the strongest
+    // opinion of the keyed adapters
     for (const TfToken &schemaToken : appliedAPISchemas) {
         std::pair<TfToken, TfToken> tokenPair =
             UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
@@ -399,6 +405,12 @@ UsdImagingStageSceneIndex::_APIAdapterLookup(
 
 UsdImagingStageSceneIndex::UsdImagingStageSceneIndex()
 {
+    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
+    
+    for (UsdImagingAPISchemaAdapterSharedPtr &adapter :
+            reg.ConstructKeylessAPISchemaAdapters()) {
+        _keylessAdapters.emplace_back(adapter, TfToken());
+    }
 }
 
 UsdImagingStageSceneIndex::~UsdImagingStageSceneIndex()

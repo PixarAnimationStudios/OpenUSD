@@ -216,6 +216,7 @@ private:
 
     mutable _AdapterSetMap _adapterSetMap;
 
+    _APISchemaAdapters _keylessAdapters;
 
     using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
     _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim);
