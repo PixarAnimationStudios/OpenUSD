@@ -24,6 +24,7 @@
 #ifndef PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 #define PXR_IMAGING_HD_GP_GENERATIVE_PROCEDURAL_H
 
+#include "pxr/imaging/hdGp/api.h"
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/base/tf/denseHashMap.h"
 
@@ -48,10 +49,10 @@ TF_DECLARE_PUBLIC_TOKENS(HdGpGenerativeProceduralTokens,
 class HdGpGenerativeProcedural
 {
 public:
-    HD_API
+    HDGP_API
     HdGpGenerativeProcedural(const SdfPath &proceduralPrimPath);
     
-    HD_API
+    HDGP_API
     virtual ~HdGpGenerativeProcedural();
 
     using DependencyMap =
@@ -122,7 +123,7 @@ public:
         const SdfPath &childPrimPath) = 0;
 
 protected:
-    HD_API
+    HDGP_API
     const SdfPath &_GetProceduralPrimPath();
 
 private:
