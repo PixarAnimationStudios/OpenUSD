@@ -330,7 +330,11 @@ _FindVersionDelimiter(const std::string &idString)
     if (!std::isdigit(idString[delim])) {
         return std::string::npos;
     }
-    while (--delim >= 0) {
+
+    constexpr size_t maxDelimiterIndex = std::numeric_limits<size_t>::max();
+
+    // Till reach defined unsigned underflow.
+    while (--delim != maxDelimiterIndex) {
         if (idString[delim] == versionDelimiter) {
             return delim;
         }
@@ -1156,8 +1160,6 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
         if (generatedSchema) {
             VtDictionary customDataDict = generatedSchema->GetCustomLayerData();
 
-            bool hasErrors = false;
-
             _AddSchemaToSchematics(generatedSchema);
 
             // Schema generation will have added any defined fallback prim 
@@ -1178,13 +1180,6 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
                             generatedSchema->GetRealPath().c_str());
                     }
                 }
-            }
-
-            if (hasErrors) {
-                TF_CODING_ERROR(
-                    "Encountered errors in layer metadata from generated "
-                    "schema file '%s'. This schema must be regenerated.",
-                    generatedSchema->GetRealPath().c_str());
             }
         }
     }
