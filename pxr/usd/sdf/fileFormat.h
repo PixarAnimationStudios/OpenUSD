@@ -278,6 +278,13 @@ public:
     /// all registered file formats.
     SDF_API static std::set<std::string> FindAllFileFormatExtensions();
 
+    /// Returns a set containing the extension(s) corresponding to
+    /// all registered file formats that derive from \p baseType.
+    ///
+    /// \p baseType must derive from SdfFileFormat.
+    SDF_API static std::set<std::string> FindAllDerivedFileFormatExtensions(
+        const TfType& baseType);
+
     /// Returns true if the file format for the supplied \p extension and
     /// \p target pair supports reading.
     /// This method will not load the plugin that provides the specified 
