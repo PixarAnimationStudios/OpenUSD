@@ -78,7 +78,8 @@ public:
     USDIMAGING_API
     void SetStage(UsdStageRefPtr stage);
 
-    // Traverse the scene collecting imaging prims, and then call PrimsAdded.
+    // This function is a no-op and will be deprecated.
+    [[ deprecated("This is a no-op and will be removed.") ]]
     USDIMAGING_API
     void Populate();
 
@@ -175,7 +176,8 @@ private:
     _StageGlobals _stageGlobals;
 
     // Population
-    void _Populate(UsdPrim subtreeRoot);
+    void _Populate();
+    void _PopulateSubtree(UsdPrim subtreeRoot);
 
     // Edit processing
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice,

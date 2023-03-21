@@ -208,7 +208,6 @@ UsdImagingGLEngine::PrepareBatch(
             if (_GetUseSceneIndices()) {
                 TF_VERIFY(_stageSceneIndex);
                 _stageSceneIndex->SetStage(root.GetStage());
-                _stageSceneIndex->Populate();
 
                 // XXX(USD-7113): Add pruning based on _rootPath,
                 // _excludedPrimPaths
