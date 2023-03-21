@@ -885,22 +885,47 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     const bool isContextDependentPath =
         resolver.IsContextDependentPath(refPath);
 
-    // We determine if refPath is relative by creating identifiers with
-    // and without the anchoring layer and seeing if they're the same.
-    // If they aren't, then refPath depends on the anchor, so we assume
-    // it's relative.
-    const bool isRelativePath =
-        !isContextDependentPath &&
-        (resolver.CreateIdentifier(refPath, layer->GetResolvedPath()) !=
-         resolver.CreateIdentifier(refPath));
+    // We want to maintain relative paths where possible to keep localized
+    // assets as close as possible to their original layout. However, we
+    // skip this for context-dependent paths because those must be resolved
+    // to determine what asset is being referred to.
+    if (!isContextDependentPath) {
+        // We determine if refPath is relative by creating identifiers with
+        // and without the anchoring layer and seeing if they're the same.
+        // If they aren't, then refPath depends on the anchor, so we assume
+        // it's relative.
+        const std::string anchored = 
+            resolver.CreateIdentifier(refPath, layer->GetResolvedPath());
+        const std::string unanchored =
+            resolver.CreateIdentifier(refPath);
+        const bool isRelativePath = (anchored != unanchored);
 
-    // Return relative paths unmodified.
-    if (isRelativePathOut) {
-        *isRelativePathOut = isRelativePath;
+        if (isRelativePath) {
+            // Asset localization is rooted at the location of the root layer.
+            // If this relative path points somewhere outside that location
+            // (e.g., a relative path like "../foo.jpg"). there will be nowhere
+            // to put this asset in the localized asset structure. In that case,
+            // we need to remap this path. Otherwise, we can keep the relative
+            // asset path as-is.
+            const ArResolvedPath resolvedRefPath = resolver.Resolve(anchored);
+            const bool refPathIsOutsideAssetLocation = 
+                !TfStringStartsWith(
+                    TfNormPath(TfGetPathName(resolvedRefPath)),
+                    TfNormPath(TfGetPathName(rootFilePath)));
+
+            if (!refPathIsOutsideAssetLocation) {
+                if (isRelativePathOut) {
+                    *isRelativePathOut = true;
+                }
+
+                // Return relative paths unmodified.
+                return refPath;
+            }
+        }
     }
 
-    if (isRelativePath) {
-        return refPath;
+    if (isRelativePathOut) {
+        *isRelativePathOut = false;
     }
 
     std::string result = refPath;
