@@ -477,7 +477,6 @@ HydraSetupAndRender(
             HdFlatteningSceneIndex::New(usdStageSceneIndex),
             SdfPath::AbsoluteRootPath());
         usdStageSceneIndex->SetStage(stage);
-        usdStageSceneIndex->Populate();
         usdStageSceneIndex->SetTime(frameNum);
     } else {
         hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
