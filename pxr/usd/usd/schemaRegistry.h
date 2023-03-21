@@ -35,6 +35,7 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -574,7 +575,7 @@ private:
     // registry.
     class _SchemaDefInitHelper;
 
-    SdfLayerRefPtr _schematics;
+    std::vector<SdfLayerRefPtr> _schematicsLayers;
 
     std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
          TfHash> _concreteTypedPrimDefinitions;

@@ -66,7 +66,7 @@ public:
     {
         if (const _LayerAndPath *layerAndPath = 
                 _GetPropertyLayerAndPath(propName)) {
-            return layerAndPath->first->GetSpecType(layerAndPath->second);
+            return layerAndPath->GetSpecType();
         }
         return SdfSpecTypeUnknown;
     }
@@ -264,6 +264,38 @@ private:
             primDef._HasFieldDictKey(propName, fieldName, keyPath, value);
     }
 
+    // Prim definitions store property access via a pointer to the schematics
+    // layer and a path to the property spec on that layer.
+    struct _LayerAndPath {
+        // Note that we use a raw pointer to the layer (for efficiency) as only
+        // the schema registry can create a UsdPrimDefinition and is responsible
+        // for making sure any schematics layers are alive throughout the
+        // life-time of any UsdPrimDefinition it creates.
+        const SdfLayer *layer = nullptr;
+        SdfPath path;
+
+        // Accessors for the common data we extract from the schematics, inline
+        // for efficiency during value resolution (with the exception of 
+        // ListMetadataFields).
+        SdfSpecType GetSpecType() const {
+            return layer->GetSpecType(path);
+        }
+
+        template <class T>
+        bool HasField(const TfToken& fieldName, T* value) const {
+            return layer->HasField(path, fieldName, value);
+        }
+
+        template <class T>
+        bool HasFieldDictKey(
+            const TfToken& fieldName, const TfToken& keyPath, T* value) const {
+            return layer->HasFieldDictKey(path, fieldName, keyPath, value);
+        }
+
+        USD_API
+        TfTokenVector ListMetadataFields() const;
+    };
+
     /// It is preferable to use the _HasField and _HasFieldDictKey methods to 
     /// access property field values, as opposed to getting a spec handle from 
     /// the GetSchemaXXXSpec functions, as these methods are faster.
@@ -274,8 +306,7 @@ private:
     {
         if (const _LayerAndPath *layerAndPath = 
                 _GetPropertyLayerAndPath(propName)) {
-            return layerAndPath->first->HasField(
-                layerAndPath->second, fieldName, value);
+            return layerAndPath->HasField(fieldName, value);
         }
         return false;
     }
@@ -288,27 +319,29 @@ private:
     {
         if (const _LayerAndPath *layerAndPath = 
                 _GetPropertyLayerAndPath(propName)) {
-            return layerAndPath->first->HasFieldDictKey(
-                layerAndPath->second, fieldName, keyPath, value);
+            return layerAndPath->HasFieldDictKey(fieldName, keyPath, value);
         }
         return false;
     }
 
     UsdPrimDefinition() = default;
 
-    // Constructor that initializes the prim definition with prim path of 
-    // the primary prim spec of this definition's schema type in the schematics.
-    // This does not populate any of the properties of the prim definition.
-    UsdPrimDefinition(const SdfLayerHandle &schematicsLayer,
-        const SdfPath &schematicsPrimPath, bool isAPISchema);
+    USD_API
+    void _IntializeForTypedSchema(
+        const SdfLayerHandle &schematicsLayer,
+        const SdfPath &schematicsPrimPath, 
+        const VtTokenArray &propertiesToIgnore);
 
-    // Prim definitions store property access via a pointer to the schematics
-    // layer and a path to the property spec on that layer. Note that we use
-    // a raw pointer to the layer (for efficiency) as only the schema registry
-    // can create a UsdPrimDefinition and is responsible for making sure any
-    // schematics layers are alive throughout the life-time of any 
-    // UsdPrimDefinition it creates.
-    using _LayerAndPath = std::pair<const SdfLayer *, SdfPath>;
+    USD_API
+    void _IntializeForAPISchema(
+        const TfToken &apiSchemaName,
+        const SdfLayerHandle &schematicsLayer,
+        const SdfPath &schematicsPrimPath, 
+        const VtTokenArray &propertiesToIgnore);
+
+    // Only used by the two _Initialize methods.
+    bool _MapSchematicsPropertyPaths(
+        const VtTokenArray &propertiesToIgnore);
 
     // Accessors for looking property spec paths by name.
     const _LayerAndPath *_GetPropertyLayerAndPath(const TfToken& propName) const
@@ -326,10 +359,6 @@ private:
 
     // Helpers for constructing the prim definition.
     USD_API
-    void _AddProperties(
-        std::vector<std::pair<TfToken, SdfPath>> &&propNameToPathVec);
-
-    USD_API
     void _ComposePropertiesFromPrimDef(
         const UsdPrimDefinition &weakerPrimDef, 
         bool useWeakerPropertyForTypeConflict = false);
@@ -338,6 +367,12 @@ private:
     void _ComposePropertiesFromPrimDefInstance(
         const UsdPrimDefinition &weakerPrimDef, 
         const std::string &instanceName);
+
+    USD_API
+    void _ComposeOverAndReplaceExistingProperty(
+        const TfToken &propName,
+        const SdfLayerRefPtr &overLayer,
+        const SdfPath &overPrimPath);
 
     using _FamilyAndInstanceToVersionMap = 
         std::unordered_map<std::pair<TfToken, TfToken>, UsdSchemaVersion, TfHash>;
@@ -348,6 +383,11 @@ private:
         const TfToken &instanceName,
         _FamilyAndInstanceToVersionMap *alreadyAppliedSchemaFamilyVersions,
         bool allowDupes = false);
+
+    USD_API
+    static bool _PropertyTypesMatch(
+        const _LayerAndPath &strongerProp,
+        const _LayerAndPath &weakerProp);
 
     // Path to the prim in the schematics for this prim definition.
     _LayerAndPath _primLayerAndPath;
