@@ -49,6 +49,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdPrmanFramebuffer;
 class HdPrmanCamera;
 class HdPrmanRenderDelegate;
+class HdPrman_RenderSettings;
 class SdfAssetPath;
 
 // Compile-time limit on max time samples.
@@ -215,8 +216,10 @@ public:
         return _renderViewContext;
     }
 
-    void CreateRenderViewFromSpec(
-        const VtDictionary &renderSpec);
+    void CreateRenderViewFromRenderSpec(const VtDictionary &renderSpec);
+
+    void CreateRenderViewFromRenderSettingsPrim(
+        HdPrman_RenderSettings const &renderSettingsPrim);
 
     // Starts the render thread (if needed), and tells the render thread to
     // call into riley and start a render.
