@@ -163,6 +163,12 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--domeLightCameraVisibility', action='store_true', 
+                        help=('Show the dome light background in the rendered output.  '
+                              'If this option is not included and there is a dome light in '
+                              'the stage, the IBL from it will be used but the background '
+                              'will be transparent.'))
+
     parser.add_argument('--renderPassPrimPath', '-rp', action='store', 
         type=str, dest='rpPrimPath', 
         help=(
@@ -275,6 +281,10 @@ def main():
 
     _Msg('Camera: %s' % usdCamera.GetPath().pathString)
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
+
+    frameRecorder.SetRendererSetting(
+        "domeLightCameraVisibility",
+        args.domeLightCameraVisibility)
 
     for timeCode in args.frames:
         _Msg('Recording time code: %s' % timeCode)
