@@ -124,6 +124,13 @@ UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
     }
 }
 
+void
+UsdAppUtilsFrameRecorder::SetRendererSetting(TfToken const& id,
+                                             VtValue const& value)
+{
+    _imagingEngine.SetRendererSetting(id, value);
+}
+
 static GfCamera
 _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
                            const TfTokenVector& includedPurposes)

@@ -158,6 +158,11 @@ public:
             const UsdTimeCode timeCode,
             const std::string& outputImagePath);
 
+    /// Sets a renderer setting's value.
+    USDAPPUTILS_API
+    void SetRendererSetting(TfToken const& id,
+                            VtValue const& value);
+
 private:
     UsdImagingGLEngine _imagingEngine;
     size_t _imageWidth;
