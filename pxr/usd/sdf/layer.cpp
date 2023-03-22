@@ -243,7 +243,7 @@ SdfLayer::~SdfLayer()
     // Note that FindOrOpen may have already removed this layer from
     // the registry, so we count on this API not emitting errors in that
     // case.
-    _layerRegistry->Erase(_self);
+    _layerRegistry->Erase(_self, *(_self->_assetInfo));
 }
 
 const SdfFileFormatConstPtr&
@@ -779,7 +779,7 @@ SdfLayer::_TryToFindLayer(const string &identifier,
         if (layer) {
             // Layer is expiring and we have the write lock: erase it from the
             // registry.
-            _layerRegistry->Erase(layer);  
+            _layerRegistry->Erase(layer, *layer->_assetInfo);
         }
     } else if (!hasWriteLock && retryAsWriter && !lock.upgrade_to_writer()) {
         // Retry the find since we released the lock in upgrade_to_writer().
@@ -1480,13 +1480,15 @@ SdfLayer::_InitializeFromIdentifier(
         _stateDelegate->_SetLayer(_self);
     }
 
-    // Update the layer registry before sending notices.
-    _layerRegistry->InsertOrUpdate(_self);
-
     // Only send a notice if the identifier has changed (this notice causes
     // mass invalidation. See http://bug/33217). If the old identifier was
     // empty, this is a newly constructed layer, so don't send the notice.
-    if (!oldIdentifier.empty()) {
+    if (oldIdentifier.empty()) {
+        _layerRegistry->Insert(_self, *_assetInfo);
+    }
+    else {
+        // NOTE: After the swap, newInfo actually stores the original info.
+        _layerRegistry->Update(_self, *newInfo, *_assetInfo);
         SdfChangeBlock block;
         if (oldIdentifier != GetIdentifier()) {
             Sdf_ChangeManager::Get().DidChangeLayerIdentifier(
@@ -2563,7 +2565,8 @@ void
 SdfLayer::UpdateAssetInfo()
 {
     TRACE_FUNCTION();
-    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo()\n");
+    TF_DEBUG(SDF_LAYER).Msg("SdfLayer::UpdateAssetInfo('%s')\n",
+                            GetIdentifier().c_str());
 
     // Hold open a change block to defer identifier-did-change
     // notification until the mutex is unlocked.

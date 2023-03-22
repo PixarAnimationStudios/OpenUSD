@@ -27,14 +27,12 @@
 /// \file sdf/layerRegistry.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/assetPathResolver.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/hash.h"
 
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/identity.hpp>
-
 #include <string>
+#include <unordered_map>
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -56,12 +54,16 @@ public:
     /// Constructor.
     Sdf_LayerRegistry();
 
-    /// Inserts layer into the registry, or updates an existing registry entry
-    /// if an entry is found for the same layer.
-    void InsertOrUpdate(const SdfLayerHandle& layer);
+    /// Inserts layer into the registry
+    void Insert(const SdfLayerHandle& layer, const Sdf_AssetInfo& assetInfo);
+
+    /// Updates an existing registry entry if an entry is found for the same
+    /// layer.
+    void Update(const SdfLayerHandle& layer, const Sdf_AssetInfo& oldInfo,
+                const Sdf_AssetInfo& newInfo);
 
     /// Erases the layer from the registry, if found.
-    void Erase(const SdfLayerHandle& layer);
+    void Erase(const SdfLayerHandle& layer, const Sdf_AssetInfo& assetInfo);
 
     /// Returns a layer from the registry, searching first by identifier using
     /// FindByIdentifier, then by real path using FindByRealPath. If the layer
@@ -90,73 +92,54 @@ private:
     SdfLayerHandle _FindByRealPath(
         const std::string& layerPath,
         const std::string& resolvedPath=std::string()) const;
-    
-    // Index tags.
-    struct by_identity {};
-    struct by_identifier {};
-    struct by_repository_path {};
-    struct by_real_path {};
 
-    // Key Extractors.
-    struct layer_identifier {
-        typedef std::string result_type;
-        const result_type& operator()(const SdfLayerHandle& layer) const;
+    // A wrapper around a set of unordered_maps that maps layers
+    // bidirectionally to their various string representations (realPath,
+    // identifier, and repositoryPath)
+    class _Layers final {
+    public:
+        _Layers() = default;
+        using LayersByRealPath =
+            std::unordered_map<std::string, SdfLayerHandle, TfHash>;
+        using LayersByIdentifier =
+            std::unordered_multimap<std::string, SdfLayerHandle, TfHash>;
+        using LayersByRepositoryPath =
+            std::unordered_multimap<std::string, SdfLayerHandle, TfHash>;
+
+        const LayersByRealPath& ByRealPath() const { return _byRealPath; }
+        const LayersByIdentifier& ByIdentifier() const {
+            return _byIdentifier;
+        }
+        const LayersByRepositoryPath& ByRepositoryPath() const {
+            return _byRepositoryPath;
+        }
+
+        // Insert the layer.
+        // If the insertion is successful, return (the inserted layer, true)
+        // If insertion is unsuccessful, return the layer that's occupying one
+        // of the layer's entries and false.
+        std::pair<SdfLayerHandle, bool> Insert(const SdfLayerHandle& layer,
+                                               const Sdf_AssetInfo& assetInfo);
+
+        // Update all the aliases (realPath, identifier, repositoryPath)
+        // for this layer. The layer should already be stored in the container.
+        // If a layer already occupies the newAssetInfo realPath slot, the
+        // Update operation results in the layer being evicted from the
+        // registry, leaving a "dangling layer" outside of registry in user
+        // space. This is undesirable but matches legacy behavior.
+        void Update(const SdfLayerHandle& layer,
+                    const Sdf_AssetInfo& oldAssetInfo,
+                    const Sdf_AssetInfo& newAssetInfo);
+
+        // Remove this layer (and its aliases)
+        bool Erase(const SdfLayerHandle& layer,
+                   const Sdf_AssetInfo& assetInfo);
+
+    private:
+        LayersByRealPath _byRealPath;
+        LayersByIdentifier _byIdentifier;
+        LayersByRepositoryPath _byRepositoryPath;
     };
-
-    struct layer_repository_path {
-        typedef std::string result_type;
-        result_type operator()(const SdfLayerHandle& layer) const;
-    };
-
-    struct layer_real_path {
-        typedef std::string result_type;
-        result_type operator()(const SdfLayerHandle& layer) const;
-    };
-
-    // Unordered associative layer container.
-    typedef boost::multi_index::multi_index_container<
-        SdfLayerHandle,
-        boost::multi_index::indexed_by<
-            // Layer<->Layer, one-to-one. Duplicate layer handles cannot be
-            // inserted into the container.
-            boost::multi_index::hashed_unique<
-                boost::multi_index::tag<by_identity>,
-                boost::multi_index::identity<SdfLayerHandle>,
-                TfHash
-                >,
-            
-            // Layer<->RealPath, one-to-one. The real path is the file from
-            // which an existing layer asset was read, or the path to which a
-            // newly created layer asset will be written.
-            boost::multi_index::hashed_unique<
-                boost::multi_index::tag<by_real_path>,
-                layer_real_path
-                >,
-
-            // Layer<->Identifier, one-to-many. The identifier is the path
-            // passed in to CreateNew/FindOrOpen, and may be any path form
-            // resolvable to a single real path.
-            boost::multi_index::hashed_non_unique<
-                boost::multi_index::tag<by_identifier>,
-                layer_identifier
-                >,
-
-            // Layer<->RepositoryPath
-            boost::multi_index::hashed_non_unique<
-                boost::multi_index::tag<by_repository_path>,
-                layer_repository_path
-                >
-            >
-        > _Layers;
-
-    // Identity index.
-    typedef _Layers::index<by_identity>::type _LayersByIdentity;
-    // Identifier index.
-    typedef _Layers::index<by_identifier>::type _LayersByIdentifier;
-    // Real path index.
-    typedef _Layers::index<by_real_path>::type _LayersByRealPath;
-    // Repository path index.
-    typedef _Layers::index<by_repository_path>::type _LayersByRepositoryPath;
 
     _Layers _layers;
 };
