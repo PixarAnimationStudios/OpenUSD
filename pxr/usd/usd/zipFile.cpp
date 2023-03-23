@@ -27,13 +27,11 @@
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/ar/resolverContextBinder.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/pathUtils.h"
-#include "pxr/base/tf/safeOutputFile.h"
 
 #include <boost/crc.hpp>
 
@@ -43,8 +41,6 @@
 #include <shared_mutex>
 #include <vector>
 #include <unordered_map>
-
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
