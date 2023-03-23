@@ -122,6 +122,7 @@ private:
     MTLResourceOptions _bufferStorageMode;
     id<MTLBuffer> _triangleTessFactors;
     id<MTLBuffer> _quadTessFactors;
+    HgiDynamicState _dynamicState;
     
     using FreeCommandBuffers =
         std::multimap<uint32_t, id<MTLIndirectCommandBuffer>>;

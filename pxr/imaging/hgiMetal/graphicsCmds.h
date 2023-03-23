@@ -118,6 +118,9 @@ public:
     HGIMETAL_API
     void EnableParallelEncoder(bool enable);
 
+    HGIMETAL_API
+    void UpdateDynamicState(HgiDynamicState const *newDynamicState) override;
+
     // Needs to be accessible from the Metal IndirectCommandEncoder
     id<MTLRenderCommandEncoder> GetEncoder(uint32_t encoderIndex = 0);
 

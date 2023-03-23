@@ -966,8 +966,6 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
     desc.multiSampleState.sampleCount = aovTexture->GetDescriptor().sampleCount;
 
     // Setup rasterization state
-    desc.rasterizationState.cullMode = HgiCullModeBack;
-    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
     // Setup attachment descriptor
@@ -1023,6 +1021,10 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
+    HgiDynamicState dynamicState;
+    dynamicState.cullMode = HgiCullModeBack;
+    dynamicState.polygonMode = HgiPolygonModeFill;
+    gfxCmds->UpdateDynamicState(&dynamicState);
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);

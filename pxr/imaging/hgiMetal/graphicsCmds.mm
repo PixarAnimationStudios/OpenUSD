@@ -876,5 +876,16 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     
     return _hasWork;
 }
+void
+HgiMetalGraphicsCmds::UpdateDynamicState(HgiDynamicState const *newDynamicState)
+{
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
+    [encoder setCullMode:HgiMetalConversions::GetCullMode(
+            newDynamicState->cullMode)];
+    [encoder setTriangleFillMode:HgiMetalConversions::GetPolygonMode(
+            newDynamicState->polygonMode)];
+    TF_VERIFY(newDynamicState->lineWidth == 1.0f,
+              "Missing implementation buffers");
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -527,8 +527,6 @@ HdxFullscreenShader::_CreatePipeline(
     }
 
     // Setup rasterization state
-    desc.rasterizationState.cullMode = HgiCullModeBack;
-    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
     // Set the shaders
@@ -708,6 +706,11 @@ HdxFullscreenShader::_Draw(
 
     // Begin rendering
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
+
+    HgiDynamicState dynamicState;
+    dynamicState.cullMode = HgiCullModeBack;
+    dynamicState.polygonMode = HgiPolygonModeFill;
+    gfxCmds->UpdateDynamicState(&dynamicState);
     gfxCmds->PushDebugGroup(_debugName.c_str());
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);

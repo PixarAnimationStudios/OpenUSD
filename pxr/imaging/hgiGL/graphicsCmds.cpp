@@ -291,4 +291,24 @@ HgiGLGraphicsCmds::_AddResolveToOps(HgiGLDevice *device)
     _recording = false;
 }
 
+void
+HgiGLGraphicsCmds::UpdateDynamicState(HgiDynamicState const *newDynamicState)
+{
+    GLenum cullMode = HgiGLConversions::GetCullMode(
+            newDynamicState->cullMode);
+    if (cullMode == GL_NONE) {
+        glDisable(GL_CULL_FACE);
+    } else {
+        glEnable(GL_CULL_FACE);
+        glCullFace(cullMode);
+    }
+
+    GLenum polygonMode = HgiGLConversions::GetPolygonMode(
+            newDynamicState->polygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
+    if (newDynamicState->lineWidth != 1.0f) {
+        glLineWidth(newDynamicState->lineWidth);
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

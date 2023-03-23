@@ -188,27 +188,11 @@ HgiGLGraphicsPipeline::BindPipeline()
     //
     // Rasterization state
     //
-    GLenum cullMode = HgiGLConversions::GetCullMode(
-        _descriptor.rasterizationState.cullMode);
-    if (cullMode == GL_NONE) {
-        glDisable(GL_CULL_FACE);
-    } else {
-        glEnable(GL_CULL_FACE);
-        glCullFace(cullMode);
-    }
-
-    GLenum polygonMode = HgiGLConversions::GetPolygonMode(
-        _descriptor.rasterizationState.polygonMode);
-    glPolygonMode(GL_FRONT_AND_BACK, polygonMode);
 
     if (_descriptor.rasterizationState.winding == HgiWindingClockwise) {
         glFrontFace(GL_CW);
     } else {
         glFrontFace(GL_CCW);
-    }
-
-    if (_descriptor.rasterizationState.lineWidth != 1.0f) {
-        glLineWidth(_descriptor.rasterizationState.lineWidth);
     }
 
     if (_descriptor.rasterizationState.rasterizerEnabled) {

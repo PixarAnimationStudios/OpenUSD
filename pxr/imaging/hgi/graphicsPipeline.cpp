@@ -98,11 +98,31 @@ bool operator!=(
     return !(lhs == rhs);
 }
 
+HgiDynamicState::HgiDynamicState()
+        : polygonMode(HgiPolygonModeFill)
+        , lineWidth(1.0f)
+        , cullMode(HgiCullModeBack)
+{
+}
+
+bool operator==(
+        const HgiDynamicState& lhs,
+        const HgiDynamicState& rhs)
+{
+    return lhs.polygonMode == rhs.polygonMode &&
+           lhs.lineWidth == rhs.lineWidth &&
+           lhs.cullMode == rhs.cullMode;
+}
+
+bool operator!=(
+        const HgiDynamicState& lhs,
+        const HgiDynamicState& rhs)
+{
+    return !(lhs == rhs);
+}
+
 HgiRasterizationState::HgiRasterizationState()
-    : polygonMode(HgiPolygonModeFill)
-    , lineWidth(1.0f)
-    , cullMode(HgiCullModeBack)
-    , winding(HgiWindingCounterClockwise)
+    : winding(HgiWindingCounterClockwise)
     , rasterizerEnabled(true)
     , depthClampEnabled(false)
     , depthRange(0.f, 1.f)
@@ -115,10 +135,7 @@ bool operator==(
     const HgiRasterizationState& lhs,
     const HgiRasterizationState& rhs)
 {
-    return lhs.polygonMode == rhs.polygonMode &&
-           lhs.lineWidth == rhs.lineWidth &&
-           lhs.cullMode == rhs.cullMode &&
-           lhs.winding == rhs.winding &&
+    return lhs.winding == rhs.winding &&
            lhs.rasterizerEnabled == rhs.rasterizerEnabled &&
            lhs.depthClampEnabled == rhs.depthClampEnabled &&
            lhs.depthRange == rhs.depthRange &&

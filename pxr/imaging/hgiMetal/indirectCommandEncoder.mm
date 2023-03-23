@@ -46,17 +46,22 @@ struct HgiMetalIndirectCommands : public HgiIndirectCommands
     HgiMetalIndirectCommands(
         uint32_t drawCount,
         HgiGraphicsPipelineHandle const &graphicsPipeline,
+        HgiDynamicState const &dynamicState,
         HgiResourceBindingsHandle const &resourceBindings,
         id<MTLIndirectCommandBuffer> indirectCommandBuffer,
         id<MTLBuffer> argumentBuffer,
         id<MTLBuffer> mainArgumentBuffer)
-        : HgiIndirectCommands(drawCount, graphicsPipeline, resourceBindings)
+        : HgiIndirectCommands(drawCount, graphicsPipeline, dynamicState, resourceBindings)
         , indirectCommandBuffer(indirectCommandBuffer)
         , indirectArgumentBuffer(argumentBuffer)
         , mainArgumentBuffer(mainArgumentBuffer)
     {
     }
-    
+    HGIMETAL_API
+    void UpdateDynamicState(HgiDynamicState const *newDynamicState) override
+    {
+        dynamicState = *newDynamicState;
+    }
     id<MTLIndirectCommandBuffer> indirectCommandBuffer;
     id<MTLBuffer> indirectArgumentBuffer;
     id<MTLBuffer> mainArgumentBuffer;
@@ -570,6 +575,7 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
         std::make_unique<HgiMetalIndirectCommands>(
             drawCount,
             pipeline,
+            _dynamicState,
             resourceBindings,
             _AllocateCommandBuffer(drawCount),
             _AllocateArgumentBuffer(function.argumentEncoder.encodedLength),
@@ -701,6 +707,7 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
     HgiMetalGraphicsPipeline* graphicsPipeline =
         static_cast<HgiMetalGraphicsPipeline*>(metalCommands->graphicsPipeline.Get());
     graphicsPipeline->BindPipeline(encoder);
+    gfxCmds->UpdateDynamicState(&(commands->dynamicState));
 
     // Bind the resources.
     id<MTLBuffer> mainArgumentBuffer = metalCommands->mainArgumentBuffer;

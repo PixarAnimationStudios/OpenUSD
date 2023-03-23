@@ -373,10 +373,6 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
     //
     // Rasterization state
     //
-    [renderEncoder setCullMode:HgiMetalConversions::GetCullMode(
-        _descriptor.rasterizationState.cullMode)];
-    [renderEncoder setTriangleFillMode:HgiMetalConversions::GetPolygonMode(
-        _descriptor.rasterizationState.polygonMode)];
     [renderEncoder setFrontFacingWinding:HgiMetalConversions::GetWinding(
         _descriptor.rasterizationState.winding)];
     [renderEncoder setDepthStencilState:_depthStencilState];
@@ -385,9 +381,6 @@ HgiMetalGraphicsPipeline::BindPipeline(id<MTLRenderCommandEncoder> renderEncoder
         [renderEncoder
             setDepthClipMode: MTLDepthClipModeClamp];     
     }
-
-    TF_VERIFY(_descriptor.rasterizationState.lineWidth == 1.0f,
-        "Missing implementation buffers");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

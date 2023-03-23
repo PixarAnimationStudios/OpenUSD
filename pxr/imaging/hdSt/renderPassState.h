@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/renderPassState.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
+#include "pxr/imaging/hgi/dynamicStateUpdatable.h"
 
 #include <memory>
 
@@ -195,6 +196,12 @@ public:
     void InitGraphicsPipelineDesc(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+
+    // Helper to update a dynamic state from the render pass state
+    HDST_API
+    void UpdateDynamicState(
+            HgiDynamicStateUpdatable * dynamicStateUpdatable,
+            HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API

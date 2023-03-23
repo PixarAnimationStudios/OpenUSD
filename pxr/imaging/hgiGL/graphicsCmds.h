@@ -120,6 +120,9 @@ public:
     HGIGL_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIGL_API
+    void UpdateDynamicState(HgiDynamicState const *newDynamicState) override;
+
 protected:
     friend class HgiGL;
 

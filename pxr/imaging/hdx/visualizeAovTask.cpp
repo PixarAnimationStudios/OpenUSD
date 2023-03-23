@@ -367,8 +367,6 @@ HdxVisualizeAovTask::_CreatePipeline(HgiTextureDesc const& outputTextureDesc)
     desc.multiSampleState.alphaToCoverageEnable = false;
 
     // Setup rasterization state
-    desc.rasterizationState.cullMode = HgiCullModeBack;
-    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
 
     // Setup attachment descriptor
@@ -512,6 +510,11 @@ HdxVisualizeAovTask::_ApplyVisualizationKernel(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
+    // Setup dynamic state
+    HgiDynamicState dynamicState;
+    dynamicState.cullMode = HgiCullModeBack;
+    dynamicState.polygonMode = HgiPolygonModeFill;
+    gfxCmds->UpdateDynamicState(&dynamicState);
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);

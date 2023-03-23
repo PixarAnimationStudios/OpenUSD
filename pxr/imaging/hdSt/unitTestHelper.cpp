@@ -401,6 +401,10 @@ HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst,
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
+    HgiDynamicState dynamicState;
+    dynamicState.cullMode = HgiCullModeBack;
+    dynamicState.polygonMode = HgiPolygonModeFill;
+    gfxCmds->UpdateDynamicState(&dynamicState);
     gfxCmds->SetViewport(viewport);
     gfxCmds->SetConstantValues(_pipeline, HgiShaderStageFragment, 0, 
         _constantsData.size(), _constantsData.data());
@@ -685,8 +689,6 @@ HdSt_TextureTestDriver::_CreatePipeline(HgiTextureHandle const& colorDst)
     desc.vertexBuffers = { _vboDesc };
     desc.depthState.depthWriteEnabled = false;
     desc.multiSampleState.alphaToCoverageEnable = false;
-    desc.rasterizationState.cullMode = HgiCullModeBack;
-    desc.rasterizationState.polygonMode = HgiPolygonModeFill;
     desc.rasterizationState.winding = HgiWindingCounterClockwise;
     desc.shaderProgram = _shaderProgram;
     desc.shaderConstantsDesc.byteSize = _constantsData.size();

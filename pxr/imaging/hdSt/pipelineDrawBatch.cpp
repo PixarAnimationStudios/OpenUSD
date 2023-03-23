@@ -1212,7 +1212,7 @@ _GetDrawPipeline(
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
 
-        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
                                                   state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
@@ -1250,6 +1250,10 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
     // execute it here.  Otherwise render with the normal graphicsCmd path.
     //
     if (_indirectCommands) {
+        renderPassState->UpdateDynamicState(
+                _indirectCommands.get(),
+                _drawItemInstances.front()->GetDrawItem()->
+                        GetGeometricShader());
         HgiIndirectCommandEncoder *encoder = hgi->GetIndirectCommandEncoder();
         encoder->ExecuteDraw(gfxCmds, _indirectCommands.get());
 
@@ -1269,12 +1273,16 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
                 program.GetComposedShaders(),
                 program.GetGeometricShader());
 
+
         HgiGraphicsPipelineSharedPtr pso =
             _GetDrawPipeline(
                 renderPassState,
                 resourceRegistry,
                 state);
-        
+
+        renderPassState->UpdateDynamicState(
+                gfxCmds,
+                state.geometricShader);
         HgiGraphicsPipelineHandle psoHandle = *pso.get();
         gfxCmds->BindPipeline(psoHandle);
 

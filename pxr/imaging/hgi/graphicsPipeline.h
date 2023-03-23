@@ -154,9 +154,9 @@ bool operator!=(
     const HgiMultiSampleState& rhs);
 
 
-/// \struct HgiRasterizationState
+/// \struct HgiDynamicState
 ///
-/// Properties to configure the rasterization state.
+/// Properties to configure the dynamic state.
 ///
 /// <ul>
 /// <li>polygonMode:
@@ -165,6 +165,33 @@ bool operator!=(
 ///   The width of lines when polygonMode is set to line drawing.</li>
 /// <li>cullMode:
 ///   Determines the culling rules for primitives (triangles).</li>
+/// </ul>
+///
+struct HgiDynamicState
+{
+    HGI_API
+    HgiDynamicState();
+
+    HgiPolygonMode polygonMode;
+    float lineWidth;
+    HgiCullMode cullMode;
+};
+
+HGI_API
+bool operator==(
+        const HgiDynamicState& lhs,
+        const HgiDynamicState& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiDynamicState& lhs,
+        const HgiDynamicState& rhs);
+
+/// \struct HgiRasterizationState
+///
+/// Properties to configure the rasterization state.
+///
+/// <ul>
 /// <li>winding:
 ///   The rule that determines what makes a front-facing primitive.</li>
 /// <li>rasterizationEnabled:
@@ -185,10 +212,6 @@ struct HgiRasterizationState
 {
     HGI_API
     HgiRasterizationState();
-
-    HgiPolygonMode polygonMode;
-    float lineWidth;
-    HgiCullMode cullMode;
     HgiWinding winding;
     bool rasterizerEnabled;
     bool depthClampEnabled;

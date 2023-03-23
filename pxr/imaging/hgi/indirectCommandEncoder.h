@@ -29,6 +29,7 @@
 #include "pxr/imaging/hgi/cmds.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
+#include "pxr/imaging/hgi/dynamicStateUpdatable.h"
 
 #include <memory>
 #include <stdint.h>
@@ -39,10 +40,11 @@ class Hgi;
 class HgiComputeCmds;
 class HgiGraphicsCmds;
 
-struct HgiIndirectCommands
+struct HgiIndirectCommands : public HgiDynamicStateUpdatable
 {
     HgiIndirectCommands(uint32_t drawCount,
                         HgiGraphicsPipelineHandle const &graphicsPipeline,
+                        HgiDynamicState const &dynamicState,
                         HgiResourceBindingsHandle const &resourceBindings)
         : drawCount(drawCount)
         , graphicsPipeline(graphicsPipeline)
@@ -54,6 +56,7 @@ struct HgiIndirectCommands
 
     uint32_t drawCount;
     HgiGraphicsPipelineHandle graphicsPipeline;
+    HgiDynamicState dynamicState;
     HgiResourceBindingsHandle resourceBindings;
 };
 
