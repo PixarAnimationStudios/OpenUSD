@@ -81,7 +81,8 @@ public:
     HGIMETAL_API
     void ExecuteDraw(
         HgiGraphicsCmds * gfxCmds,
-        HgiIndirectCommands const* commands) override;
+        HgiIndirectCommands const* commands,
+        const std::function<void (HgiGraphicsCmds*)> *dynamicStateCallback = nullptr) override;
 
 private:
     HgiMetalIndirectCommandEncoder & operator=(const HgiMetalIndirectCommandEncoder&) = delete;

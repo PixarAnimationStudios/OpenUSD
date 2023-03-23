@@ -120,6 +120,15 @@ public:
     HGIGL_API
     void InsertMemoryBarrier(HgiMemoryBarrier barrier) override;
 
+    HGIGL_API
+    void SetCullMode(HgiCullMode const cullMode) override;
+    
+    HGIGL_API
+    void SetPolygonMode(HgiPolygonMode const polygonMode) override;
+    
+    HGIGL_API
+    void SetLineWidth(float const lineWidth) override;
+
 protected:
     friend class HgiGL;
 

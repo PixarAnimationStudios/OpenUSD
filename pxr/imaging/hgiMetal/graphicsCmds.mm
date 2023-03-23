@@ -878,4 +878,22 @@ HgiMetalGraphicsCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     return _hasWork;
 }
 
+void HgiMetalGraphicsCmds::SetCullMode(HgiCullMode const cullMode)
+{
+    [GetEncoder() setCullMode:HgiMetalConversions::GetCullMode(
+        cullMode)];
+}
+
+void HgiMetalGraphicsCmds::SetPolygonMode(
+      HgiPolygonMode const polygonMode)
+{
+    [GetEncoder() setTriangleFillMode:
+        HgiMetalConversions::GetPolygonMode(polygonMode)];
+}
+
+void HgiMetalGraphicsCmds::SetLineWidth(float const lineWidth)
+{
+    TF_VERIFY(lineWidth == 1.0f, "Missing implementation buffers");
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

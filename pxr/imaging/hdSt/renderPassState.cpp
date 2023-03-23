@@ -1176,23 +1176,31 @@ HdStRenderPassState::_InitMultiSampleState(
 }
 
 void
+HdStRenderPassState::UpdateDynamicState(
+        HgiGraphicsCmds * gfxCmds,
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+{
+    if (geometricShader->GetPolygonMode() == HdPolygonModeLine) {
+        gfxCmds->SetPolygonMode(HgiPolygonModeLine);
+        float const gsLineWidth = geometricShader->GetLineWidth();
+        if (gsLineWidth > 0) {
+            gfxCmds->SetLineWidth(gsLineWidth);
+        }
+    } else {
+        gfxCmds->SetPolygonMode(HgiPolygonModeFill);
+    }
+    gfxCmds->SetCullMode(
+       _ResolveCullMode(_cullStyle, geometricShader));
+}
+
+    rasterizationState->cullMode =
+        _ResolveCullMode(_cullStyle, geometricShader);
+
+void
 HdStRenderPassState::_InitRasterizationState(
     HgiRasterizationState * rasterizationState,
     HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
-    if (geometricShader->GetPolygonMode() == HdPolygonModeLine) {
-        rasterizationState->polygonMode = HgiPolygonModeLine;
-        float const gsLineWidth = geometricShader->GetLineWidth();
-        if (gsLineWidth > 0) {
-            rasterizationState->lineWidth = gsLineWidth;
-        }
-    } else {
-        rasterizationState->polygonMode = HgiPolygonModeFill;
-    }
-
-    rasterizationState->cullMode =
-        geometricShader->ResolveCullMode(_cullStyle);
-
     if (GetEnableDepthClamp()) {
         rasterizationState->depthClampEnabled = true;
     }

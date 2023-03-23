@@ -28,6 +28,7 @@
 #include "pxr/imaging/hgi/api.h"
 #include "pxr/imaging/hgi/cmds.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 
 #include <memory>
@@ -111,7 +112,9 @@ public:
     HGI_API
     virtual void ExecuteDraw(
         HgiGraphicsCmds * gfxCmds,
-        HgiIndirectCommands const* commands) = 0;
+        HgiIndirectCommands const* commands,
+        const std::function<void (HgiGraphicsCmds*)>
+            *dynamicStateCallback = nullptr) = 0;
 
 protected:
     HGI_API

@@ -704,7 +704,8 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
 void
 HgiMetalIndirectCommandEncoder::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
-    HgiIndirectCommands const* commands)
+    HgiIndirectCommands const* commands,
+    const std::function<void (HgiGraphicsCmds*)> *dynamicStateCallback)
 {
     HgiMetalGraphicsCmds *metalGfxCmds = static_cast<HgiMetalGraphicsCmds*>(gfxCmds);
     id<MTLRenderCommandEncoder> encoder = metalGfxCmds->GetEncoder();
@@ -718,7 +719,9 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
     HgiMetalGraphicsPipeline* graphicsPipeline =
         static_cast<HgiMetalGraphicsPipeline*>(metalCommands->graphicsPipeline.Get());
     graphicsPipeline->BindPipeline(encoder);
-
+    if (dynamicStateCallback != nullptr) {
+        dynamicStateCallback->operator()(gfxCmds);
+    }
     // Bind the resources.
     id<MTLBuffer> mainArgumentBuffer = metalCommands->mainArgumentBuffer;
     HgiMetalResourceBindings* resourceBindings =

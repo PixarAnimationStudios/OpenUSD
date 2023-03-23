@@ -117,6 +117,15 @@ public:
     
     HGIMETAL_API
     void EnableParallelEncoder(bool enable);
+    
+    HGIMETAL_API
+    void SetCullMode(HgiCullMode const cullMode) override;
+    
+    HGIMETAL_API
+    void SetPolygonMode(HgiPolygonMode const polygonMode) override;
+    
+    HGIMETAL_API
+    void SetLineWidth(float const lineWidth) override;
 
     // Needs to be accessible from the Metal IndirectCommandEncoder
     id<MTLRenderCommandEncoder> GetEncoder(uint32_t encoderIndex = 0);

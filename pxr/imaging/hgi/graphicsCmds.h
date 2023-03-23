@@ -66,6 +66,18 @@ public:
     /// drawing commands.
     HGI_API
     virtual void SetScissor(GfVec4i const& sc) = 0;
+    
+    /// Set the cull mode dynamically
+    HGI_API
+    virtual void SetCullMode(HgiCullMode const cullMode) = 0;
+    
+    /// Set the polygon mode dynamically
+    HGI_API
+    virtual void SetPolygonMode(HgiPolygonMode const polygonMode) = 0;
+    
+    /// Set the line width dynamically
+    HGI_API
+    virtual void SetLineWidth(float const lineWidth) = 0;
 
     /// Bind a pipeline state object. Usually you call this right after calling
     /// CreateGraphicsCmds to set the graphics pipeline state.

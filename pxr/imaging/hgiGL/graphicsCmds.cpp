@@ -291,4 +291,33 @@ HgiGLGraphicsCmds::_AddResolveToOps(HgiGLDevice *device)
     _recording = false;
 }
 
+void
+HgiGLGraphicsCmds::SetCullMode(HgiCullMode const cullMode)
+{
+    GLenum glCullMode = HgiGLConversions::GetCullMode(
+            cullMode);
+    if (glCullMode == GL_NONE) {
+        glDisable(GL_CULL_FACE);
+    } else {
+        glEnable(GL_CULL_FACE);
+        glCullFace(glCullMode);
+    }
+}
+
+void
+HgiGLGraphicsCmds::SetPolygonMode(HgiPolygonMode const polygonMode)
+{
+    GLenum glPolyMode = HgiGLConversions::GetPolygonMode(
+            polygonMode);
+    glPolygonMode(GL_FRONT_AND_BACK, glPolyMode);
+}
+
+void
+HgiGLGraphicsCmds::SetLineWidth(float const lineWidth)
+{
+    if (lineWidth != 1.0f) {
+        glLineWidth(lineWidth);
+    }
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
