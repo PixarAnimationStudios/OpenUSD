@@ -228,13 +228,13 @@ private:
 class UsdZipFileWriter
 {
 public:
-    /// Create a new file writer with \p filePath as the destination file path
+    /// Create a new file writer with \p assetPath as the destination asset
     /// where the zip archive will be written. The zip file will not be written
-    /// to \p filePath until the writer is destroyed or Save() is called.
+    /// to \p assetPath until the writer is destroyed or Save() is called.
     ///
     /// Returns an invalid object on error.
     USD_API
-    static UsdZipFileWriter CreateNew(const std::string& filePath);
+    static UsdZipFileWriter CreateNew(const std::string& assetPath);
 
     /// Create an invalid UsdZipFileWriter object.
     USD_API

@@ -24,8 +24,10 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/zipFile.h"
 #include "pxr/usd/ar/asset.h"
+#include "pxr/usd/ar/writableAsset.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/resolverContextBinder.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -41,6 +43,8 @@
 #include <shared_mutex>
 #include <vector>
 #include <unordered_map>
+
+#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -110,28 +114,49 @@ private:
 
 struct _OutputStream 
 {
-    _OutputStream(FILE* f) : _f(f) { }
+    _OutputStream(const std::shared_ptr<ArWritableAsset>& asset, size_t offset = 0) : _asset(asset), _cur(offset)
+    {
+    }
 
     template <class T>
     inline void Write(const T& value)
     {
         static_assert(_IsBitwiseReadWrite<T>::value, 
                       "Cannot fwrite non-trivially-copyable type");
-        fwrite(&value, sizeof(T), 1, _f);
+        size_t bytesWritten = _asset->Write(&value, sizeof(T), _cur);
+        if (bytesWritten == 0)
+        {
+            // TODO: This is an error from trying to write the type
+            return;
+        }
+
+        _cur += bytesWritten;
     }
 
     inline void Write(const char* buffer, size_t numBytes)
     {
-        fwrite(buffer, /* size = */ 1, /* count = */ numBytes, _f);
+        if (!buffer || numBytes == 0)
+        {
+            return;
+        }
+
+        size_t bytesWritten = _asset->Write(buffer, numBytes, _cur);
+        if (bytesWritten == 0)
+        {
+            // TODO: This is an error from trying to write out the buffer
+            return;
+        }
+        _cur += bytesWritten;
     }
 
     inline long Tell() const
     {
-        return ftell(_f);
+        return _cur;
     }
 
 private:
-    FILE* _f;
+    std::shared_ptr<ArWritableAsset> _asset;
+    size_t _cur;
 };
 
 // ------------------------------------------------------------
@@ -803,11 +828,10 @@ _ModTimeAndDate(const std::string& filename)
 
 // Compute CRC32 checksum for given file per zip specification
 uint32_t
-_Crc32(const ArchConstFileMapping& file)
+_Crc32(const char* buffer, size_t count)
 {
     boost::crc_32_type result;
-    result.process_block(
-        file.get(), file.get() + ArchGetFileMappingLength(file));
+    result.process_block(buffer, buffer + count);
     return result.checksum();
 }
 
@@ -838,12 +862,14 @@ _ZipFilePath(const std::string& filePath)
 class UsdZipFileWriter::_Impl
 {
 public:
-    _Impl(TfSafeOutputFile&& out) 
-        : outputFile(std::move(out)) 
-    { 
+
+    _Impl(std::shared_ptr<ArWritableAsset>&& output)
+        : outputAsset(std::move(output)), outputPosition(0)
+    {
     }
 
-    TfSafeOutputFile outputFile;
+    std::shared_ptr<ArWritableAsset> outputAsset;
+    size_t outputPosition;
 
     // Record for each file added to the zip file:
     //  - File path in zip file
@@ -855,16 +881,29 @@ public:
 };
 
 UsdZipFileWriter
-UsdZipFileWriter::CreateNew(const std::string& filePath)
+UsdZipFileWriter::CreateNew(const std::string& assetPath)
 {
-    TfErrorMark mark;
-    TfSafeOutputFile outputFile = TfSafeOutputFile::Replace(filePath);
-    if (!mark.IsClean()) {
+    ArResolver& resolver = ArGetResolver();
+
+    const std::string identifier = resolver.CreateIdentifierForNewAsset(assetPath);
+    const ArResolvedPath resolvedPath = resolver.ResolveForNewAsset(identifier);
+
+    if (resolvedPath.empty()) {
+        TF_CODING_ERROR("Can not write to new asset path '%s'. "
+                        "Failed to compute path for new asset",
+                        assetPath.c_str());
         return UsdZipFileWriter();
     }
 
-    return UsdZipFileWriter(std::unique_ptr<_Impl>(
-        new _Impl(std::move(outputFile))));
+    std::shared_ptr<ArWritableAsset> asset =
+            ArGetResolver().OpenAssetForWrite(resolvedPath,
+                                              ArResolver::WriteMode::Replace);
+
+    if (!asset) {
+        return UsdZipFileWriter();
+    }
+
+    return UsdZipFileWriter(std::unique_ptr<_Impl>(new _Impl(std::move(asset))));
 }
 
 UsdZipFileWriter::UsdZipFileWriter()
@@ -907,6 +946,9 @@ UsdZipFileWriter::AddFile(
         return std::string();
     }
 
+    // If the incoming filePathInArchiveIn is empty we might have
+    // a problem with using filePath as it could be some arbitrary asset identifier
+    // like a URI
     const std::string& filePathInArchive = 
         filePathInArchiveIn.empty() ? filePath : filePathInArchiveIn;
 
@@ -924,13 +966,23 @@ UsdZipFileWriter::AddFile(
         return zipFilePath;
     }
 
-    _OutputStream outStream(_impl->outputFile.Get());
+    _OutputStream outStream( _impl->outputAsset, _impl->outputPosition);
 
-    std::string err;
-    ArchConstFileMapping mapping = ArchMapFileReadOnly(filePath, &err);
-    if (!mapping) {
+    const std::string identifier = ArGetResolver().CreateIdentifier(filePath);
+    const ArResolvedPath resolvedPath = ArGetResolver().Resolve(identifier);
+
+    if (resolvedPath.empty()) {
         TF_RUNTIME_ERROR(
-            "Failed to map '%s': %s", filePath.c_str(), err.c_str());
+            "Failed to compute asset path for '%s'", filePath.c_str());
+        return std::string();
+    }
+
+    std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(resolvedPath);
+    if (!asset) {
+        TF_RUNTIME_ERROR(
+            "Failed to open asset path '%s' for '%s'",
+                resolvedPath.GetPathString().c_str(),
+                filePath.c_str());
         return std::string();
     }
 
@@ -941,9 +993,11 @@ UsdZipFileWriter::AddFile(
     h.f.bits = 0;
     h.f.compressionMethod = 0; // No compression
     std::tie(h.f.lastModTime, h.f.lastModDate) = _ModTimeAndDate(filePath);
-    h.f.crc32 = _Crc32(mapping);
-    h.f.compressedSize = ArchGetFileMappingLength(mapping);
-    h.f.uncompressedSize = ArchGetFileMappingLength(mapping);
+
+    auto buffer = asset->GetBuffer();
+    h.f.crc32 = _Crc32(buffer.get(), asset->GetSize());
+    h.f.compressedSize = asset->GetSize();
+    h.f.uncompressedSize = asset->GetSize();
     h.f.filenameLength = zipFilePath.length();
     
     const uint32_t offset = outStream.Tell();
@@ -957,10 +1011,11 @@ UsdZipFileWriter::AddFile(
     h.extraFieldStart = _PrepareExtraFieldPadding(
         extraFieldBuffer, h.f.extraFieldLength);
 
-    h.dataStart = mapping.get();
+    h.dataStart = buffer.get();
 
     _WriteLocalFileHeader(outStream, h);
     _impl->addedFiles.emplace_back(zipFilePath, h.f, offset);
+    _impl->outputPosition = outStream.Tell();
 
     return zipFilePath;
 }
@@ -973,7 +1028,7 @@ UsdZipFileWriter::Save()
         return false;
     }
 
-    _OutputStream outStream(_impl->outputFile.Get());
+    _OutputStream outStream(_impl->outputAsset, _impl->outputPosition);
 
     // Write central directory headers for each file added to the zip archive.
     const long centralDirectoryStart = outStream.Tell();
@@ -1030,10 +1085,10 @@ UsdZipFileWriter::Save()
         _WriteEndOfCentralDirectoryRecord(outStream, r);
     }
 
-    _impl->outputFile.Close();
+    bool result = _impl->outputAsset->Close();
     _impl.reset();
 
-    return true;
+    return result;
 }
 
 void 
@@ -1044,7 +1099,6 @@ UsdZipFileWriter::Discard()
         return;
     }
 
-    _impl->outputFile.Discard();
     _impl.reset();
 }
 
