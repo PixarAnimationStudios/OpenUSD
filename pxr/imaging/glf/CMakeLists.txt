@@ -1,19 +1,26 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE glf)
-
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
-    message(STATUS
-        "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
-    return()
-endif()
+set(optionalLibs "")
+set(optionalIncludeDirs "")
 
 set(optionalPublicClasses "")
 if (X11_FOUND)
     list(APPEND optionalPublicClasses testGLContext)
 endif()
 
-set(optionalLibs "")
-set(optionalIncludeDirs "")
+if (NOT ${PXR_ENABLE_GL_SUPPORT})
+    message(STATUS
+        "Building minimal ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
+endif()
+if (NOT APPLEIOS)
+    list(APPEND optionalLibs ${OPENGL_gl_LIBRARY})
+endif()
+if (UNIX)
+    list(APPEND optionalLibs ${X11_LIBRARIES})
+endif()
+if (${PXR_ENABLE_PYTHON_SUPPORT})
+     list(APPEND optionalLibs ${Boost_PYTHON_LIBRARY})
+endif()
 
 pxr_library(glf
     LIBRARIES
@@ -27,9 +34,6 @@ pxr_library(glf
         tf
         trace
         sdf
-        ${Boost_PYTHON_LIBRARY}
-        ${OPENGL_gl_LIBRARY}
-        ${X11_LIBRARIES}
         ${optionalLibs}
 
     INCLUDE_DIRS
