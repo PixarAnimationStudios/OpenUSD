@@ -60,6 +60,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
 , _workToFlush(false)
 {
     if (!_device) {
+#if defined(ARCH_OS_OSX)
         if( TfGetenvBool("HGIMETAL_USE_INTEGRATED_GPU", false)) {
             auto devices = MTLCopyAllDevices();
             for (id<MTLDevice> d in devices) {
@@ -69,7 +70,7 @@ HgiMetal::HgiMetal(id<MTLDevice> device)
                 }
             }
         }
-
+#endif
         if (!_device) {
             _device = MTLCreateSystemDefaultDevice();
         }
