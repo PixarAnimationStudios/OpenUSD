@@ -36,6 +36,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/base/trace/trace.h"
 
 #include "pxr/usd/usdMtlx/utils.h"
 
@@ -520,6 +521,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     MaterialX::DocumentPtr const& libraries,
     HdMtlxTexturePrimvarData *mxHdData)
 {
+    TRACE_FUNCTION_SCOPE("Create Mtlx Document from HdMaterialNetwork")
     if (!netInterface) {
         return nullptr;
     }
@@ -550,12 +552,14 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
         mxShaderNode);
 
     // Validate the MaterialX Document.
-    std::string message;
-    if (!mxDoc->validate(&message)) {
-        TF_WARN("Validation warnings for generated MaterialX file.\n%s", 
+    {
+	TRACE_FUNCTION_SCOPE("Validate created Mtlx Document")
+        std::string message;
+        if (!mxDoc->validate(&message)) {
+            TF_WARN("Validation warnings for generated MaterialX file.\n%s\n", 
                 message.c_str());
+        }
     }
-
     return mxDoc;
 }
 
