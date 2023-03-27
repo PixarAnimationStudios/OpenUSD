@@ -53,18 +53,18 @@ variable. For example:
 Use binary ".usd" files for geometry and shading caches
 #######################################################
 
-ASCII USD files can be a good choice for small files that primarily
-reference/subLayer other files together, such as the top-level "asset interface"
-file that defines a :ref:`Model <glossary:Model>`, provides its :ref:`AssetInfo
-<glossary:AssetInfo>`, declares its :ref:`VariantSets <glossary:VariantSet>`,
-and contains a :ref:`payload arc <glossary:Payload>` to the asset's
-contents. But for files that contain more than a few small definitions or
-overrides, the binary :ref:`"usdc" format <glossary:Crate File Format>` will
-open faster and consume substantially much less memory while held open (a
-:ref:`UsdStage <glossary:Stage>` keeps open all the layers that participate in a
-composition). You should not need to exert any extra effort to get this behavior
-since creating a new layer or stage with a filename :filename:`someFile.usd`
-will, by default, create a usdc file.
+:filename:`.usda` text files can be a good choice for small files
+that primarily reference/subLayer other files together, such as the top-level
+"asset interface" file that defines a :ref:`Model <glossary:Model>`, provides
+its :ref:`AssetInfo <glossary:AssetInfo>`, declares its :ref:`VariantSets
+<glossary:VariantSet>`, and contains a :ref:`payload arc <glossary:Payload>`
+to the asset's contents. But for files that contain more than a few small
+definitions or overrides, the binary :ref:`"usdc" format <glossary:Crate File
+Format>` will open faster and consume substantially much less memory while
+held open (a :ref:`UsdStage <glossary:Stage>` keeps open all the layers that
+participate in a composition). You should not need to exert any extra effort
+to get this behavior since creating a new layer or stage with a filename
+:filename:`someFile.usd` will, by default, create a usdc file.
 
 As much as your pipeline allows, you should also prefer binary USD files over
 Alembic caches, for performance. Alembic is a ground-breaking and outstanding
@@ -146,8 +146,8 @@ guidelines that we try to keep in mind:
 
 * **Prefer crate files.** 
 
-  As described above, putting big data in ASCII USD files increases latency
-  to opening a :ref:`Stage <glossary:Stage>` and memory footprint.
+  As described above, putting big data in :filename:`.usda` files increases
+  latency to opening a :ref:`Stage <glossary:Stage>` and memory footprint.
 
 * **Monitor Layer count.**
 

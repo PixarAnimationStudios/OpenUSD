@@ -118,7 +118,6 @@ private:
 
         void PrimDirtied(const HdDataSourceLocatorSet &dirtyAttributes);
 
-        bool Has(const TfToken &name) override;
         TfTokenVector GetNames() override;
         HdDataSourceBaseHandle Get(const TfToken &name) override;
 

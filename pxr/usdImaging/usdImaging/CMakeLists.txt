@@ -9,12 +9,16 @@ pxr_library(usdImaging
         trace
         vt
         work
+        geomUtil
         hd
+        hdar
+        hio
         pxOsd
         sdf
         usd
         usdGeom
         usdLux
+        usdRender
         usdShade
         usdVol
         ar
@@ -30,30 +34,42 @@ pxr_library(usdImaging
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim
+        dataSourceMaterial
         dataSourceMesh
+        dataSourcePointInstancer
         dataSourcePoints
         dataSourcePrim
         dataSourcePrimvars
         dataSourceRelationship
+        dataSourceStage
         dataSourceStageGlobals
         dataSourceVolume
         debugCodes
         delegate
+        drawModeAdapter
+        drawModeSceneIndex
         indexProxy
         materialParamUtils
+        modelSchema
+        primvarUtils
         resolvedAttributeCache
         instancerContext
         stageSceneIndex
+        selectionSceneIndex
         tokens
+        apiSchemaAdapter
         basisCurvesAdapter
         capsuleAdapter
         cameraAdapter
+        collectionAPIAdapter
         coneAdapter
         coordSysAdapter
+        coordSysAPIAdapter
         cubeAdapter
         cylinderAdapter
         cylinderLightAdapter
         diskLightAdapter
+        displayFilterAdapter
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
@@ -63,11 +79,16 @@ pxr_library(usdImaging
         implicitSurfaceMeshUtils
         instanceAdapter
         lightAdapter
+        lightAPIAdapter
         lightFilterAdapter
         materialAdapter
+        materialBindingAPIAdapter
         meshAdapter
+        niPrototypePropagatingSceneIndex
         nurbsCurvesAdapter
         nurbsPatchAdapter
+        piPrototypePropagatingSceneIndex
+        planeAdapter
         pluginLightAdapter
         pluginLightFilterAdapter
         pointsAdapter
@@ -76,15 +97,31 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         rectLightAdapter
+        renderSettingsAdapter
+        representedByAncestorPrimAdapter
+        rerootingSceneIndex
+        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
         volumeAdapter
 
+    PRIVATE_CLASSES
+        drawModeStandin
+        niInstanceAggregationSceneIndex
+        niPrototypePruningSceneIndex
+        niPrototypeSceneIndex
+        sceneIndexPrimView
+        piPrototypeSceneIndex
+
     PUBLIC_HEADERS
         api.h
+        dataSourceSchemaBased.h
         unitTestHelper.h
         version.h
+
+    PRIVATE_HEADERS
+        dataSourceImplicits-Impl.h
 
     RESOURCE_FILES
         plugInfo.json

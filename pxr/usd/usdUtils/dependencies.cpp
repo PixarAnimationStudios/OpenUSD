@@ -53,8 +53,6 @@
 #include <stack>
 #include <vector>
 
-#include <boost/get_pointer.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 using std::vector;
@@ -243,32 +241,37 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
 {
     if (val.IsHolding<SdfAssetPath>()) {
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
-        std::string rawAssetPath = assetPath.GetAssetPath();
+        const std::string& rawAssetPath = assetPath.GetAssetPath();
         if (!rawAssetPath.empty()) {
-            return VtValue(SdfAssetPath(
-                    _ProcessDependency(rawAssetPath, _DepType::Reference)));
+            const std::string remappedPath =
+                _ProcessDependency(rawAssetPath, _DepType::Reference);
+            return remappedPath.empty() ? 
+                VtValue() : VtValue(SdfAssetPath(remappedPath));
         }
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
-        VtArray<SdfAssetPath> updatedVal;
+        VtArray<SdfAssetPath> updatedArray;
         for (const SdfAssetPath& assetPath :
             val.UncheckedGet< VtArray<SdfAssetPath> >()) {                
-            std::string rawAssetPath = assetPath.GetAssetPath();
+            const std::string& rawAssetPath = assetPath.GetAssetPath();
             if (!rawAssetPath.empty()) {
-                updatedVal.push_back(SdfAssetPath(
-                        _ProcessDependency(rawAssetPath, _DepType::Reference)));
-            } else {
-                // Retain empty paths in the array.
-                updatedVal.push_back(assetPath);
+                const std::string remappedPath =
+                    _ProcessDependency(rawAssetPath, _DepType::Reference);
+                if (!remappedPath.empty()) {
+                    updatedArray.push_back(SdfAssetPath(remappedPath));
+                }
             }
         }
-        return VtValue(updatedVal);
+        return updatedArray.empty() ? VtValue() : VtValue::Take(updatedArray);
     }
     else if (val.IsHolding<VtDictionary>()) {
-        VtDictionary updatedVal;
+        VtDictionary updatedDict;
         for (const auto& p : val.UncheckedGet<VtDictionary>()) {
-            updatedVal[p.first] = _UpdateAssetValue(p.second);
+            VtValue updatedVal = _UpdateAssetValue(p.second);
+            if (!updatedVal.IsEmpty()) {
+                updatedDict[p.first] = std::move(updatedVal);
+            }
         }
-        return VtValue(updatedVal);
+        return updatedDict.empty() ? VtValue() : VtValue::Take(updatedDict);
     }
 
     return val;
@@ -277,18 +280,17 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
 void
 _FileAnalyzer::_ProcessSublayers()
 {
-    const std::vector<std::string> subLayerPaths = _layer->GetSubLayerPaths();
-
     if (_remapPathFunc) {
-        std::vector<std::string> newSubLayerPaths;
-        newSubLayerPaths.reserve(subLayerPaths.size());
-        for (auto &subLayer: subLayerPaths) {
-            newSubLayerPaths.push_back(
-                _ProcessDependency(subLayer, _DepType::Sublayer));
-        }
-        _layer->SetSubLayerPaths(newSubLayerPaths);
+        _layer->GetSubLayerPaths().ModifyItemEdits(
+            [this](const std::string& path) {
+                std::string remappedPath =
+                    _ProcessDependency(path, _DepType::Sublayer); 
+                return remappedPath.empty() ? 
+                    boost::optional<std::string>() : 
+                    boost::optional<std::string>(std::move(remappedPath));
+            });
     } else {
-        for (auto &subLayer: subLayerPaths) {
+        for (const auto &subLayer: _layer->GetSubLayerPaths()) {
             _ProcessDependency(subLayer, _DepType::Sublayer);
         }
     }
@@ -306,10 +308,18 @@ _FileAnalyzer::_RemapRefOrPayload(const RefOrPayloadType &refOrPayload)
 
     std::string remappedPath = 
         _ProcessDependency(refOrPayload.GetAssetPath(), DEP_TYPE);
+
+    // If the remapped path was empty, return none to indicate this reference
+    // or payload should be removed.
+    if (remappedPath.empty()) {
+        return boost::none;
+    }
+
     // If the path was not remapped to a different path, then return the 
-    // incoming payload unmodifed.
-    if (remappedPath == refOrPayload.GetAssetPath())
+    // incoming payload unmodified.
+    if (remappedPath == refOrPayload.GetAssetPath()) {
         return refOrPayload;
+    }
 
     // The payload or reference path was remapped, hence construct a new 
     // SdfPayload or SdfReference object with the remapped path.
@@ -322,13 +332,21 @@ void
 _FileAnalyzer::_ProcessPayloads(const SdfPrimSpecHandle &primSpec)
 {
     if (_remapPathFunc) {
-        primSpec->GetPayloadList().ModifyItemEdits(std::bind(
-            &_FileAnalyzer::_RemapRefOrPayload<SdfPayload, _DepType::Payload>, 
-            this, std::placeholders::_1));
+        primSpec->GetPayloadList().ModifyItemEdits(
+            [this](const SdfPayload& payload) {
+                return _RemapRefOrPayload<SdfPayload, _DepType::Payload>(
+                    payload);
+            });
     } else {
         for (SdfPayload const& payload:
              primSpec->GetPayloadList().GetAddedOrExplicitItems()) {
-            _ProcessDependency(payload.GetAssetPath(), _DepType::Payload);
+
+            // If the asset path is empty this is a local payload. We can ignore
+            // these since they refer to the same layer where the payload was
+            // authored.
+            if (!payload.GetAssetPath().empty()) {
+                _ProcessDependency(payload.GetAssetPath(), _DepType::Payload);
+            }
         }
     }
 }
@@ -350,58 +368,58 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
     const VtValue propertyNames =
         primSpec->GetField(SdfChildrenKeys->PropertyChildren);
 
-    if (propertyNames.IsHolding<vector<TfToken>>()) {
-        for (const auto& name :
-                propertyNames.UncheckedGet<vector<TfToken>>()) {
-            // For every property
-            // Build an SdfPath to the property
-            const SdfPath path = primSpec->GetPath().AppendProperty(name);
+    if (!propertyNames.IsHolding<vector<TfToken>>()) {
+        return;
+    }
 
-            // Check property metadata
-            for (const TfToken& infoKey : _layer->ListFields(path)) {
-                if (infoKey != SdfFieldKeys->Default &&
-                    infoKey != SdfFieldKeys->TimeSamples) {
+    for (const auto& name : propertyNames.UncheckedGet<vector<TfToken>>()) {
+        // For every property
+        // Build an SdfPath to the property
+        const SdfPath path = primSpec->GetPath().AppendProperty(name);
+
+        // Check property metadata
+        for (const TfToken& infoKey : _layer->ListFields(path)) {
+            if (infoKey != SdfFieldKeys->Default &&
+                infoKey != SdfFieldKeys->TimeSamples) {
                         
-                    VtValue value = _layer->GetField(path, infoKey);
-                    VtValue updatedValue = _UpdateAssetValue(value);
-                    if (_remapPathFunc && value != updatedValue) {
-                        _layer->SetField(path, infoKey, updatedValue);
-                    }
+                VtValue value = _layer->GetField(path, infoKey);
+                VtValue updatedValue = _UpdateAssetValue(value);
+                if (_remapPathFunc && value != updatedValue) {
+                    _layer->SetField(path, infoKey, updatedValue);
                 }
             }
+        }
 
-            // Check property existence
-            const VtValue vtTypeName =
-                _layer->GetField(path, SdfFieldKeys->TypeName);
-            if (!vtTypeName.IsHolding<TfToken>())
-                continue;
+        // Check property existence
+        const VtValue vtTypeName =
+            _layer->GetField(path, SdfFieldKeys->TypeName);
+        if (!vtTypeName.IsHolding<TfToken>()) {
+            continue;
+        }
 
-            const TfToken typeName =
-                vtTypeName.UncheckedGet<TfToken>();
-            if (typeName == SdfValueTypeNames->Asset ||
-                typeName == SdfValueTypeNames->AssetArray) {
+        const TfToken typeName = vtTypeName.UncheckedGet<TfToken>();
+        if (typeName == SdfValueTypeNames->Asset ||
+            typeName == SdfValueTypeNames->AssetArray) {
 
-                // Check default value
-                VtValue defValue = _layer->GetField(path, 
-                        SdfFieldKeys->Default);
-                VtValue updatedDefValue = _UpdateAssetValue(defValue);
-                if (_remapPathFunc && defValue != updatedDefValue) {
-                    _layer->SetField(path, SdfFieldKeys->Default, 
-                            updatedDefValue);
-                }
+            // Check default value
+            VtValue defValue = _layer->GetField(path, SdfFieldKeys->Default);
+            VtValue updatedDefValue = _UpdateAssetValue(defValue);
+            if (_remapPathFunc && defValue != updatedDefValue) {
+                _layer->SetField(path, SdfFieldKeys->Default, updatedDefValue);
+            }
 
-                // Check timeSample values
-                for (double t : _layer->ListTimeSamplesForPath(path)) {
-                    VtValue timeSampleVal;
-                    if (_layer->QueryTimeSample(path,
-                        t, &timeSampleVal)) {
+            // Check timeSample values
+            for (double t : _layer->ListTimeSamplesForPath(path)) {
+                VtValue timeSampleVal;
+                if (_layer->QueryTimeSample(path, t, &timeSampleVal)) {
+                    VtValue updatedVal = _UpdateAssetValue(timeSampleVal);
+                    if (_remapPathFunc && timeSampleVal != updatedVal) {
 
-                        VtValue updatedTimeSampleVal = 
-                            _UpdateAssetValue(timeSampleVal);
-                        if (_remapPathFunc && 
-                            timeSampleVal != updatedTimeSampleVal) {
-                            _layer->SetTimeSample(path, t, 
-                                    updatedTimeSampleVal);
+                        if (updatedVal.IsEmpty()) {
+                            _layer->EraseTimeSample(path, t);
+                        }
+                        else {
+                            _layer->SetTimeSample(path, t, updatedVal);
                         }
                     }
                 }
@@ -418,7 +436,12 @@ _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
             VtValue value = primSpec->GetInfo(infoKey);
             VtValue updatedValue = _UpdateAssetValue(value);
             if (_remapPathFunc && value != updatedValue) {
-                primSpec->SetInfo(infoKey, updatedValue);
+                if (updatedValue.IsEmpty()) {
+                    primSpec->ClearInfo(infoKey);
+                }
+                else {
+                    primSpec->SetInfo(infoKey, updatedValue);
+                }
             }
         }
     }
@@ -518,13 +541,21 @@ void
 _FileAnalyzer::_ProcessReferences(const SdfPrimSpecHandle &primSpec)
 {
     if (_remapPathFunc) {
-        primSpec->GetReferenceList().ModifyItemEdits(std::bind(
-            &_FileAnalyzer::_RemapRefOrPayload<SdfReference,
-            _DepType::Reference>, this, std::placeholders::_1));
+        primSpec->GetReferenceList().ModifyItemEdits(
+            [this](const SdfReference& ref) {
+                return _RemapRefOrPayload<SdfReference, _DepType::Reference>(
+                    ref);
+            });
     } else {
-        for (SdfReference const& reference:
+        for (SdfReference const& ref:
             primSpec->GetReferenceList().GetAddedOrExplicitItems()) {
-            _ProcessDependency(reference.GetAssetPath(), _DepType::Reference);
+
+            // If the asset path is empty this is a local reference. We can
+            // ignore these since they refer to the same layer where the
+            // reference was authored.
+            if (!ref.GetAssetPath().empty()) {
+                _ProcessDependency(ref.GetAssetPath(), _DepType::Reference);
+            }
         }
     }
 }
@@ -614,14 +645,6 @@ public:
             return;
         }
 
-#if AR_VERSION == 1
-        // ... and can be localized to a physical location on disk.
-        if (!ArGetResolver().FetchToLocalResolvedPath(assetPath.GetAssetPath(),
-                    rootFilePath)) {
-            return;
-        }
-#endif
-
         // Record all dependencies in layerDependenciesMap so we can recurse
         // on them.
         const auto processPathFunc =
@@ -697,8 +720,8 @@ public:
                 }
 
                 const std::string refAssetPath = 
-                        SdfComputeAssetPathRelativeToLayer(
-                            fileAnalyzer.GetLayer(), ref);
+                    SdfComputeAssetPathRelativeToLayer(
+                        fileAnalyzer.GetLayer(), ref);
 
                 std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
 
@@ -712,18 +735,6 @@ public:
                     _unresolvedAssetPaths.push_back(refAssetPath);
                     continue;
                 } 
-
-#if AR_VERSION == 1
-                // Ensure that the resolved path can be fetched to a physical 
-                // location on disk.
-                if (!ArGetResolver().FetchToLocalResolvedPath(refAssetPath, 
-                        resolvedRefFilePath)) {
-                    TF_WARN("Failed to fetch-to-local resolved path for asset "
-                        "@%s@ : '%s'. Skipping dependency.", 
-                        refAssetPath.c_str(), resolvedRefFilePath.c_str());
-                    continue;
-                }
-#endif
 
                 // Check if this dependency must skipped.
                 if (std::find(dependenciesToSkip.begin(), 
@@ -871,11 +882,6 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
 {
     auto &resolver = ArGetResolver();
 
-#if AR_VERSION == 1
-    const bool isContextDependentPath = resolver.IsSearchPath(refPath);
-    const bool isRelativePath = 
-        !isContextDependentPath && resolver.IsRelativePath(refPath);
-#else
     const bool isContextDependentPath =
         resolver.IsContextDependentPath(refPath);
 
@@ -887,7 +893,6 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
         !isContextDependentPath &&
         (resolver.CreateIdentifier(refPath, layer->GetResolvedPath()) !=
          resolver.CreateIdentifier(refPath));
-#endif
 
     // Return relative paths unmodified.
     if (isRelativePathOut) {
@@ -907,13 +912,7 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
                 SdfComputeAssetPathRelativeToLayer(layer, refPath);
         const std::string refFilePath = resolver.Resolve(refAssetPath);
 
-        bool resolveOk = !refFilePath.empty();
-#if AR_VERSION == 1
-        // Ensure that the resolved path can be fetched to a physical 
-        // location on disk.
-        resolveOk = resolveOk &&
-            resolver.FetchToLocalResolvedPath(refAssetPath, refFilePath);
-#endif
+        const bool resolveOk = !refFilePath.empty();
 
         if (resolveOk) {
             result = refFilePath;
@@ -924,19 +923,11 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     }
 
     // Normalize paths compared below to account for path format differences.
-#if AR_VERSION == 1
-    const std::string layerPath = 
-        resolver.ComputeNormalizedPath(layer->GetRealPath());
-    result = resolver.ComputeNormalizedPath(result);
-    rootFilePath = resolver.ComputeNormalizedPath(rootFilePath);
-    origRootFilePath = resolver.ComputeNormalizedPath(origRootFilePath);
-#else
     const std::string layerPath = 
         TfNormPath(layer->GetRealPath());
     result = TfNormPath(result);
     rootFilePath = TfNormPath(rootFilePath);
     origRootFilePath = TfNormPath(origRootFilePath);
-#endif
 
     bool resultPointsToRoot = ((result == rootFilePath) || 
                                (result == origRootFilePath));

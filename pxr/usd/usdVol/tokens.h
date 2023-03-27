@@ -173,7 +173,7 @@ struct UsdVolTokensType {
     /// \brief "None"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr(), Default value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken none_;
+    const TfToken none;
     /// \brief "Normal"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()

@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -117,6 +118,9 @@ public:
                  TfToken const &scheme=PxOsdOpenSubdivTokens->catmullClark,
                  TfToken const &orientation=HdTokens->rightHanded,
                  bool doubleSided=false);
+    
+    HD_API
+    void SetMeshCullStyle(SdfPath const &id, HdCullStyle const &cullstyle);
 
     /// Add a cube
     HD_API
@@ -204,6 +208,9 @@ public:
                    HdInterpolation widthInterp=HdInterpolationConstant,
                    bool authoredNormals=false,
                    SdfPath const &instancerId=SdfPath());
+    
+    HD_API
+    void SetCurveWrapMode(SdfPath const &id, TfToken const &wrap);
 
     HD_API
     void AddPoints(SdfPath const &id,
@@ -378,6 +385,8 @@ public:
     HD_API
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const & id) override;
     HD_API
+    virtual HdCullStyle GetCullStyle(SdfPath const &id) override;
+    HD_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     HD_API
     virtual VtValue GetIndexedPrimvar(SdfPath const& id, TfToken const& key, 
@@ -443,7 +452,7 @@ private:
             transform(transform),
             points(points), numVerts(numVerts), verts(verts),
             holes(holes), subdivTags(subdivTags), guide(guide),
-            doubleSided(doubleSided) { }
+            doubleSided(doubleSided), cullStyle(HdCullStyleDontCare) { }
 
         TfToken scheme;
         TfToken orientation;
@@ -456,6 +465,7 @@ private:
         bool guide;
         bool doubleSided;
         HdReprSelector reprSelector;
+        HdCullStyle cullStyle;
     };
     struct _Curves {
         _Curves() { }
@@ -463,15 +473,17 @@ private:
                 VtIntArray const &curveVertexCounts,
                 VtIntArray const &curveIndices,
                 TfToken const &type,
-                TfToken const &basis) :
+                TfToken const &basis,
+                TfToken const &wrap = HdTokens->nonperiodic) :
             points(points), curveVertexCounts(curveVertexCounts), 
-            curveIndices(curveIndices), type(type), basis(basis) { }
+            curveIndices(curveIndices), type(type), basis(basis), wrap(wrap) { }
 
         VtVec3fArray points;
         VtIntArray curveVertexCounts;
         VtIntArray curveIndices;
         TfToken type;
         TfToken basis;
+        TfToken wrap;
     };
     struct _Points {
         _Points() { }

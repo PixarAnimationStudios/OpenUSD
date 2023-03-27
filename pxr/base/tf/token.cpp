@@ -88,11 +88,13 @@ struct Tf_TokenRegistry
     static const size_t _NumSets = 128;
     static const size_t _SetMask = _NumSets-1;
     
-    // Utility to pad an instance to take up a cache line to avoid false
-    // sharing.
+    // Utility to pad an instance to take up a whole number of cache lines to
+    // avoid false sharing.
     template <class T>
-    struct alignas(ARCH_CACHE_LINE_SIZE) _CacheLinePadded {
+    struct _CacheLinePadded {
         T val;
+        char _unused_padding[
+            ARCH_CACHE_LINE_SIZE-(sizeof(T) % ARCH_CACHE_LINE_SIZE)];
     };
 
     // It's not ideal to use TfHashSet here.  It would be better to use

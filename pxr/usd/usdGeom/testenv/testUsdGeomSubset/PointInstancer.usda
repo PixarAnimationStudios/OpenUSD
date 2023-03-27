@@ -1,0 +1,106 @@
+#usda 1.0
+(
+    defaultPrim = "Sphere"
+    endFrame = 1
+    startFrame = 1
+)
+
+def Xform "Sphere" (
+    kind = "component"
+)
+{
+ 	def PointInstancer "PointInstancers" (
+    	kind = "assembly"
+    )
+    {
+        int64[] ids = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+        quath[] orientations = [(1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0), (1, 0, 0, 0)]
+        point3f[] positions = [(0, 0, 0), (0, 0, 25), (0, 0, 50), (0, 0, 75), (0, 0, 100), (25, 0, 0), (25, 0, 25), (25, 0, 50), (25, 0, 75), (25, 0, 100)]
+        int[] protoIndices = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+        rel prototypes = </Sphere/PointInstancers/Prototypes/pSphere1>
+        float3[] scales = [(1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1), (1, 1, 1)]
+
+        over "Prototypes"
+        {
+		    def Mesh "pSphere1"
+		    {
+		        Vec3f[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]
+
+				uniform token subsetFamily:materialBind:familyType = "partition"
+
+		        def GeomSubset "green" 
+		        {
+		            uniform token elementType = "face"
+		            uniform token familyName = "materialBind"
+		            int[] indices = [12, 13, 14, 15]
+		            rel material:binding =  </Sphere/Looks/initialShadingGroup>
+		        }
+
+		        def GeomSubset "blue" 
+		        {
+		            uniform token elementType = "face"
+		            uniform token familyName = "materialBind"
+		            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11]
+		            rel material:binding =  </Sphere/Looks/lambert2SG>
+		        }
+
+		        def GeomSubset "red" 
+		        {
+		            uniform token elementType = "face"
+		            uniform token familyName = "materialBind"
+		            int[] indices = [4, 5, 6, 7]
+		            rel material:binding =  </Sphere/Looks/lambert3SG>
+		        }
+		        
+		        int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
+		        int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
+		        PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
+		        Vec2f[] primvars:st = [(0, 0.25), (0.25, 0.25), (0.25, 0.5), (0, 0.5), (0.25, 0.25), (0.5, 0.25), (0.5, 0.5), (0.25, 0.5), (0.5, 0.25), (0.75, 0.25), (0.75, 0.5), (0.5, 0.5), (0.75, 0.25), (1, 0.25), (1, 0.5), (0.75, 0.5), (0, 0.5), (0.25, 0.5), (0.25, 0.75), (0, 0.75), (0.25, 0.5), (0.5, 0.5), (0.5, 0.75), (0.25, 0.75), (0.5, 0.5), (0.75, 0.5), (0.75, 0.75), (0.5, 0.75), (0.75, 0.5), (1, 0.5), (1, 0.75), (0.75, 0.75), (0.25, 0.25), (0, 0.25), (0.125, 0), (0.5, 0.25), (0.25, 0.25), (0.375, 0), (0.75, 0.25), (0.5, 0.25), (0.625, 0), (1, 0.25), (0.75, 0.25), (0.875, 0), (0, 0.75), (0.25, 0.75), (0.125, 1), (0.25, 0.75), (0.5, 0.75), (0.375, 1), (0.5, 0.75), (0.75, 0.75), (0.625, 1), (0.75, 0.75), (1, 0.75), (0.875, 1)] (
+		            interpolation = "faceVarying"
+		        )
+		        Vec3d xformOp:translate = (0.191260557342787, 0.0415678998936819, 0)
+		        uniform token[] xformOpOrder = ["xformOp:translate"]
+		    }
+		}
+	}
+
+    def Scope "Looks"
+    {
+        def Material "initialShadingGroup"
+        {
+			token outputs:surface.connect = </Sphere/Looks/initialShadingGroup/PbrPreview.outputs:surface>
+
+			def Shader "PbrPreview"
+			{
+			     uniform token info:id = "UsdPreviewSurface"
+			     color3f inputs:diffuseColor = (0, 1, 0)
+			     token outputs:surface
+			}
+        }
+
+        def Material "lambert2SG"
+        {
+			token outputs:surface.connect = </Sphere/Looks/lambert2SG/PbrPreview.outputs:surface>
+
+			def Shader "PbrPreview"
+			{
+			     uniform token info:id = "UsdPreviewSurface"
+			     color3f inputs:diffuseColor = (0, 0, 1)
+			     token outputs:surface
+			}
+        }
+
+        def Material "lambert3SG"
+        {
+			token outputs:surface.connect = </Sphere/Looks/lambert3SG/PbrPreview.outputs:surface>
+
+			def Shader "PbrPreview"
+			{
+			     uniform token info:id = "UsdPreviewSurface"
+			     color3f inputs:diffuseColor = (1, 0, 0)
+			     token outputs:surface
+			}
+        }
+    }
+}
+

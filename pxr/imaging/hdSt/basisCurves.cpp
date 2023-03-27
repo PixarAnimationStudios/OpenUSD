@@ -760,7 +760,7 @@ namespace {
 
 template <typename T> 
 void 
-AddVertexOrVaryingPrimvarSource(const TfToken &name, 
+AddVertexOrVaryingPrimvarSource(const SdfPath &id, const TfToken &name, 
     HdInterpolation interpolation, const VtValue &value, 
     HdSt_BasisCurvesTopologySharedPtr topology, 
     HdBufferSourceSharedPtrVector *sources, T fallbackValue) {
@@ -769,75 +769,75 @@ AddVertexOrVaryingPrimvarSource(const TfToken &name,
     if (!array.empty() || name == HdTokens->points) {
         sources->push_back(
             std::make_shared<HdSt_BasisCurvesPrimvarInterpolaterComputation<T>>(
-                topology, array, name, interpolation, fallbackValue, 
+                topology, array, id, name, interpolation, fallbackValue, 
                 HdGetValueTupleType(VtValue(array)).type));
     }
 }
 
 void ProcessVertexOrVaryingPrimvar(
-    const TfToken &name, HdInterpolation interpolation, 
+    const SdfPath &id, const TfToken &name, HdInterpolation interpolation, 
     const VtValue &value, HdSt_BasisCurvesTopologySharedPtr topology,
     HdBufferSourceSharedPtrVector *sources) {
     if (value.IsHolding<VtHalfArray>()) {
         AddVertexOrVaryingPrimvarSource<GfHalf>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtFloatArray>()) {
         AddVertexOrVaryingPrimvarSource<float>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2f>(
-            name, interpolation, value, topology, sources, GfVec2f(1, 0));             
+            id, name, interpolation, value, topology, sources, GfVec2f(1, 0));
     } else if (value.IsHolding<VtVec3fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3f>(
-            name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));   
+            id, name, interpolation, value, topology, sources, GfVec3f(1, 0, 0));
     } else if (value.IsHolding<VtVec4fArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4f>(
-            name, interpolation, value, topology, sources, GfVec4f(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4f(1, 0, 0, 1)); 
      } else if (value.IsHolding<VtDoubleArray>()) {
         AddVertexOrVaryingPrimvarSource<double>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtVec2dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2d>(
-            name, interpolation, value, topology, sources, GfVec2d(1, 0));            
+            id, name, interpolation, value, topology, sources, GfVec2d(1, 0));
     } else if (value.IsHolding<VtVec3dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3d>(
-            name, interpolation, value, topology, sources, GfVec3d(1, 0, 0));
+            id, name, interpolation, value, topology, sources, GfVec3d(1, 0, 0));
     } else if (value.IsHolding<VtVec4dArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4d>(
-            name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));                
+            id, name, interpolation, value, topology, sources, GfVec4d(1, 0, 0, 1));
     } else if (value.IsHolding<VtIntArray>()) {
         AddVertexOrVaryingPrimvarSource<int>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else if (value.IsHolding<VtVec2iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec2i>(
-            name, interpolation, value, topology, sources, GfVec2i(1, 0)); 
+            id, name, interpolation, value, topology, sources, GfVec2i(1, 0)); 
     } else if (value.IsHolding<VtVec3iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec3i>(
-            name, interpolation, value, topology, sources, GfVec3i(1, 0, 0)); 
+            id, name, interpolation, value, topology, sources, GfVec3i(1, 0, 0)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtVec4iArray>()) {
         AddVertexOrVaryingPrimvarSource<GfVec4i>(
-            name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
+            id, name, interpolation, value, topology, sources, GfVec4i(1, 0, 0, 1)); 
     } else if (value.IsHolding<VtArray<int16_t>>()) {
         AddVertexOrVaryingPrimvarSource<int16_t>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtArray<int32_t>>()) {
         AddVertexOrVaryingPrimvarSource<int32_t>(
-            name, interpolation, value, topology, sources, 1);
+            id, name, interpolation, value, topology, sources, 1);
     } else if (value.IsHolding<VtArray<uint16_t>>()) {
         AddVertexOrVaryingPrimvarSource<uint16_t>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else if (value.IsHolding<VtArray<uint32_t>>()) {
         AddVertexOrVaryingPrimvarSource<uint32_t>(
-            name, interpolation, value, topology, sources, 1); 
+            id, name, interpolation, value, topology, sources, 1); 
     } else {
-        TF_WARN("Type of vertex or varying primvar %s not yet fully supported", 
-                name.GetText());
+        TF_WARN("HdStBasisCurves(%s) - Type of vertex or varying primvar %s"
+                " not yet fully supported", id.GetText(), name.GetText());
         sources->push_back(std::make_shared<HdVtBufferSource>(name, value));
     }
 }
@@ -903,8 +903,8 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, HdInterpolationVertex, 
-                value, _topology, &sources);
+            ProcessVertexOrVaryingPrimvar(id, primvar.name,
+                HdInterpolationVertex, value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {
                 _displayOpacity = true;
@@ -1023,7 +1023,7 @@ HdStBasisCurves::_PopulateVaryingPrimvars(HdSceneDelegate *sceneDelegate,
         //assert name not in range.bufferArray.GetResources()
         VtValue value = GetPrimvar(sceneDelegate, primvar.name);
         if (!value.IsEmpty()) {
-            ProcessVertexOrVaryingPrimvar(primvar.name, 
+            ProcessVertexOrVaryingPrimvar(id, primvar.name, 
                 HdInterpolationVarying, value, _topology, &sources);
 
             if (primvar.name == HdTokens->displayOpacity) {

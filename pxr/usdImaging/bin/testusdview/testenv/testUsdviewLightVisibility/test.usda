@@ -21,7 +21,10 @@ def Sphere "frontSphere" {
     uniform token[] xformOpOrder = ["xformOp:translate"]
 }
 
-def Sphere "backSphere" {
+def Sphere "backSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
     double3 xformOp:translate = (-2, 2, 2)
     uniform token[] xformOpOrder = ["xformOp:translate"]
     rel material:binding = </Looks/Material_0>

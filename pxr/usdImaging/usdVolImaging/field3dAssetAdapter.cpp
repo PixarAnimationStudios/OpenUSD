@@ -42,13 +42,15 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdImagingField3DAssetAdapter::~UsdImagingField3DAssetAdapter() = default;
 
 TfTokenVector
-UsdImagingField3DAssetAdapter::GetImagingSubprims()
+UsdImagingField3DAssetAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingField3DAssetAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingField3DAssetAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return UsdVolImagingTokens->field3dAsset;
@@ -58,8 +60,8 @@ UsdImagingField3DAssetAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingField3DAssetAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {

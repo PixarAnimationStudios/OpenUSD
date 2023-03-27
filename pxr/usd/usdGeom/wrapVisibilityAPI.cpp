@@ -183,6 +183,11 @@ void wrapUsdGeomVisibilityAPI()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+        .def("GetPurposeVisibilityAttr",
+             &UsdGeomVisibilityAPI::GetPurposeVisibilityAttr,
+             (arg("purpose")))
+        ;
 }
 
 }

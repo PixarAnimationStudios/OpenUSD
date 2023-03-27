@@ -48,15 +48,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     (vertex) \
     (faceVarying) \
     (instance) \
-    (Point) \
-    (Normal) \
-    (Vector) \
-    (Color) \
-    (PointIndex) \
-    (EdgeIndex) \
-    (FaceIndex) \
-    (TextureCoordinate) \
-    (Transform) \
+    (point) \
+    (normal) \
+    (vector) \
+    (color) \
+    (pointIndex) \
+    (edgeIndex) \
+    (faceIndex) \
+    (textureCoordinate) \
+    (transform) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarSchemaTokens, HD_API,
     HDPRIMVAR_SCHEMA_TOKENS);
@@ -160,14 +160,14 @@ public:
         const TfToken &interpolation);
     /// Returns token data source for use as role value.
     /// Values of...
-    /// - HdPrimvarSchemaTokens->Point
-    /// - HdPrimvarSchemaTokens->Normal
-    /// - HdPrimvarSchemaTokens->Vector
-    /// - HdPrimvarSchemaTokens->Color
-    /// - HdPrimvarSchemaTokens->PointIndex
-    /// - HdPrimvarSchemaTokens->EdgeIndex
-    /// - HdPrimvarSchemaTokens->FaceIndex
-    /// - HdPrimvarSchemaTokens->TextureCoordinate
+    /// - HdPrimvarSchemaTokens->point
+    /// - HdPrimvarSchemaTokens->normal
+    /// - HdPrimvarSchemaTokens->vector
+    /// - HdPrimvarSchemaTokens->color
+    /// - HdPrimvarSchemaTokens->pointIndex
+    /// - HdPrimvarSchemaTokens->edgeIndex
+    /// - HdPrimvarSchemaTokens->faceIndex
+    /// - HdPrimvarSchemaTokens->textureCoordinate
     ///     ...will be stored statically and reused for future calls.
     HD_API
     static HdTokenDataSourceHandle BuildRoleDataSource(

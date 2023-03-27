@@ -128,6 +128,25 @@ public:
     USDGEOM_API
     GfBBox3d ComputeWorldBound(const UsdPrim& prim);
 
+    /// Computes the bound of the prim's descendents in world space while
+    /// excluding the subtrees rooted at the paths in \p pathsToSkip.
+    ///
+    /// Additionally, the parameter \p primOverride overrides the local-to-world
+    /// transform of the prim and \p ctmOverrides is used to specify overrides
+    /// the local-to-world transforms of certain paths underneath the prim.
+    ///
+    /// This leverages any pre-existing, cached bounds, but does not include the
+    /// transform (if any) authored on the prim itself.
+    ///
+    /// See ComputeWorldBound() for notes on performance and error handling.
+    USDGEOM_API
+    GfBBox3d ComputeWorldBoundWithOverrides(
+        const UsdPrim &prim,
+        const SdfPathSet &pathsToSkip,
+        const GfMatrix4d &primOverride,
+        const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
+
+
     /// Compute the bound of the given prim in the space of an ancestor prim,
     /// \p relativeToAncestorPrim, leveraging any pre-existing cached bounds.
     ///
@@ -416,6 +435,13 @@ private:
         std::string ToString() const;
     };
 
+    template<typename TransformType>
+    GfBBox3d _ComputeBoundWithOverridesHelper(
+        const UsdPrim &prim,
+        const SdfPathSet &pathsToSkip,
+        const TransformType &primOverride,
+        const TfHashMap<SdfPath, GfMatrix4d, SdfPath::Hash> &ctmOverrides);
+
     bool
     _ComputePointInstanceBoundsHelper(
         const UsdGeomPointInstancer &instancer,
@@ -458,6 +484,15 @@ private:
         // The cached bboxes for the various values of purpose token.
         _PurposeToBBoxMap bboxes;
 
+        // Queries for attributes that need to be re-computed at each
+        // time for this entry. This will be invalid for non-varying entries.
+        boost::shared_array<UsdAttributeQuery> queries;
+
+        // Computed purpose info of the prim that's associated with the entry.
+        // This data includes the prim's actual computed purpose as well as
+        // whether this purpose is inheritable by child prims.
+        UsdGeomImageable::PurposeInfo purposeInfo;
+
         // True when data in the entry is valid.
         bool isComplete;
 
@@ -466,15 +501,6 @@ private:
 
         // True when the entry is visible.
         bool isIncluded;
-
-        // Computed purpose info of the prim that's associated with the entry.
-        // This data includes the prim's actual computed purpose as well as
-        // whether this purpose is inheritable by child prims.
-        UsdGeomImageable::PurposeInfo purposeInfo;
-
-        // Queries for attributes that need to be re-computed at each
-        // time for this entry. This will be invalid for non-varying entries.
-        boost::shared_array<UsdAttributeQuery> queries;
     };
 
     // Returns the cache entry for the given \p prim if one already exists.

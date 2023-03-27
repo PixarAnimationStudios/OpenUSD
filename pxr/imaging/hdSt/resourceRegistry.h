@@ -45,6 +45,13 @@
 #include <map>
 #include <memory>
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXCore/Library.h>
+MATERIALX_NAMESPACE_BEGIN
+    using ShaderPtr = std::shared_ptr<class Shader>;
+MATERIALX_NAMESPACE_END
+#endif
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
@@ -413,6 +420,13 @@ public:
     HdInstance<HioGlslfxSharedPtr>
     RegisterGLSLFXFile(HdInstance<HioGlslfxSharedPtr>::ID id);
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    /// Register MaterialX GLSLFX Shader.
+    HDST_API
+    HdInstance<MaterialX::ShaderPtr>
+    RegisterMaterialXShader(HdInstance<MaterialX::ShaderPtr>::ID id);
+#endif
+
     /// Register a Hgi resource bindings into the registry.
     HDST_API
     HdInstance<HgiResourceBindingsSharedPtr>
@@ -442,7 +456,8 @@ public:
     /// The returned pointer should not be held onto by the client as it is
     /// only valid until the HgiComputeCmds has been submitted.
     HDST_API
-    HgiComputeCmds* GetGlobalComputeCmds();
+    HgiComputeCmds* GetGlobalComputeCmds(
+        HgiComputeDispatch dispatchMethod = HgiComputeDispatchSerial);
 
     /// Submits blit work queued in global blit cmds for GPU execution.
     /// We can call this when we want to submit some work to the GPU.
@@ -652,6 +667,11 @@ private:
     // glslfx file registry
     HdInstanceRegistry<HioGlslfxSharedPtr>
         _glslfxFileRegistry;
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    // MaterialX glslfx shader registry
+    HdInstanceRegistry<MaterialX::ShaderPtr> _materialXShaderRegistry;
+#endif
 
     // texture handle registry
     std::unique_ptr<class HdSt_TextureHandleRegistry> _textureHandleRegistry;

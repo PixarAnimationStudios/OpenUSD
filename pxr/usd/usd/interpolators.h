@@ -291,30 +291,35 @@ private:
             upperValue = lowerValue;
         }
 
-        _result->swap(lowerValue);
 
         // Fall back to held interpolation (_result is set to lowerValue above)
         // if sizes don't match. We don't consider this an error because
         // that would be too restrictive. Consumers will be responsible for
         // implementing their own interpolation in cases where this occurs
         // (e.g. meshes with varying topology)
-        if (_result->size() != upperValue.size()) {
+        if (lowerValue.size() != upperValue.size()) {
+            _result->swap(lowerValue);
             return true;
         }
 
         const double parametricTime = (time - lower) / (upper - lower);
         if (parametricTime == 0.0) {
-            // do nothing.
+            // just swap the lower value in.
+            _result->swap(lowerValue);
         }
         else if (parametricTime == 1.0) {
             // just swap the upper value in.
             _result->swap(upperValue);
         }
         else {
+            _result->resize(lowerValue.size());
+
             // must actually calculate interpolated values.
-            T *rptr = _result->data();
+            const T *lower = lowerValue.cdata();
+            const T* upper=  upperValue.cdata();
+            T* result = _result->data();
             for (size_t i = 0, j = _result->size(); i != j; ++i) {
-                rptr[i] = Usd_Lerp(parametricTime, rptr[i], upperValue[i]);
+                result[i] = Usd_Lerp(parametricTime, lower[i], upper[i]);
             }
         }
 

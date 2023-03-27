@@ -120,23 +120,6 @@ UsdLuxDistantLight::CreateAngleAttr(VtValue const &defaultValue, bool writeSpars
                        writeSparsely);
 }
 
-UsdAttribute
-UsdLuxDistantLight::GetIntensityAttr() const
-{
-    return GetPrim().GetAttribute(UsdLuxTokens->inputsIntensity);
-}
-
-UsdAttribute
-UsdLuxDistantLight::CreateIntensityAttr(VtValue const &defaultValue, bool writeSparsely) const
-{
-    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsIntensity,
-                       SdfValueTypeNames->Float,
-                       /* custom = */ false,
-                       SdfVariabilityVarying,
-                       defaultValue,
-                       writeSparsely);
-}
-
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -154,9 +137,7 @@ const TfTokenVector&
 UsdLuxDistantLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
-        UsdLuxTokens->lightShaderId,
         UsdLuxTokens->inputsAngle,
-        UsdLuxTokens->inputsIntensity,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

@@ -124,6 +124,13 @@ void wrapUsdContrivedPublicMultipleApplyAPI()
             (arg("prim"), arg("name")))
         .staticmethod("Get")
 
+        .def("GetAll",
+            (std::vector<UsdContrivedPublicMultipleApplyAPI>(*)(const UsdPrim &prim))
+                &This::GetAll,
+            arg("prim"),
+            return_value_policy<TfPySequenceToList>())
+        .staticmethod("GetAll")
+
         .def("CanApply", &_WrapCanApply, (arg("prim"), arg("name")))
         .staticmethod("CanApply")
 

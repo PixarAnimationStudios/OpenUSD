@@ -66,6 +66,12 @@ HgiVulkan::HgiVulkan()
 
 HgiVulkan::~HgiVulkan()
 {
+    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+
+    // Wait for command buffers to complete, then reset command buffers for 
+    // each device's queue.
+    queue->ResetConsumedCommandBuffers(HgiSubmitWaitTypeWaitUntilCompleted);
+
     // Wait for all devices and perform final garbage collection.
     _device->WaitForIdle();
     _garbageCollector->PerformGarbageCollection(_device);
@@ -102,9 +108,10 @@ HgiVulkan::CreateBlitCmds()
 }
 
 HgiComputeCmdsUniquePtr
-HgiVulkan::CreateComputeCmds()
+HgiVulkan::CreateComputeCmds(
+    HgiComputeCmdsDesc const& desc)
 {
-    HgiVulkanComputeCmds* cmds(new HgiVulkanComputeCmds(this));
+    HgiVulkanComputeCmds* cmds(new HgiVulkanComputeCmds(this, desc));
     return HgiComputeCmdsUniquePtr(cmds);
 }
 
@@ -269,6 +276,13 @@ HgiVulkanCapabilities const*
 HgiVulkan::GetCapabilities() const
 {
     return &_device->GetDeviceCapabilities();
+}
+
+
+HgiIndirectCommandEncoder*
+HgiVulkan::GetIndirectCommandEncoder() const
+{
+    return nullptr;
 }
 
 /* Single threaded */

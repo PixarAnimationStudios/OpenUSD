@@ -258,6 +258,12 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
             HgiBlendFactorZero,
             HgiBlendFactorOne,
             HgiBlendOpAdd);
+            
+        // Use LoadOpLoad because we want to blend the selection color onto
+        // the previous contents of the render target. 
+        _compositor->SetAttachmentLoadStoreOp(
+            HgiAttachmentLoadOpLoad,
+            HgiAttachmentStoreOpStore);
     }
 
     _compositor->Draw(aovTexture, /*no depth*/HgiTextureHandle());
@@ -278,13 +284,15 @@ HdxColorizeSelectionTask::_GetColorForMode(int mode) const
 void
 HdxColorizeSelectionTask::_ColorizeSelection()
 {
-    int32_t *piddata = reinterpret_cast<int32_t*>(_primId->Map());
+    const int32_t *piddata = reinterpret_cast<int32_t*>(_primId->Map());
     if (!piddata) {
         // Skip the colorizing if we can't look up prim ID
         return;
     }
-    int32_t *iiddata = reinterpret_cast<int32_t*>(_instanceId->Map());
-    int32_t *eiddata = reinterpret_cast<int32_t*>(_elementId->Map());
+    const int32_t *iiddata = _instanceId ?
+        reinterpret_cast<int32_t*>(_instanceId->Map()) : nullptr;
+    const int32_t *eiddata = _elementId ?
+        reinterpret_cast<int32_t*>(_elementId->Map()) : nullptr;
 
     for (size_t i = 0; i < _outputBufferSize; ++i) {
         GfVec4f output = GfVec4f(0,0,0,1);

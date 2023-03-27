@@ -98,9 +98,20 @@ public:
 protected:
     SDF_FILE_FORMAT_FACTORY_ACCESS;
 
+    bool _ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const override;
+
 private:
     UsdUsdzFileFormat();
     virtual ~UsdUsdzFileFormat();
+
+    template <bool Detached>
+    bool _ReadHelper(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

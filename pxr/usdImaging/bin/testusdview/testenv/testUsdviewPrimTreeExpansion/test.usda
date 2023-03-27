@@ -6,7 +6,9 @@ def Xform "Shapes" (
 {
     variantSet "a_shapeVariant" = {
         "capsule" {
-            def Capsule "Pill"
+            def Capsule "Pill" (
+                displayName = "CapsuleDisplayName"
+            )
             {
                 double3 xformOp:translate = (0, 0, 0)
                 uniform token[] xformOpOrder = ["xformOp:translate"]

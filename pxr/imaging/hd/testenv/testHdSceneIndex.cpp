@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
-
+#include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
 
@@ -512,7 +512,10 @@ TestPrefixingSceneIndex()
                         SdfPath("/A/B/C/D")),
                 TfToken("relativePath"),
                 HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        SdfPath("F/G"))
+                        SdfPath("F/G")),
+                TfToken("pathArray"),
+                HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                        {SdfPath("/A/B/C/D"), SdfPath("/A/B")})
             )
         )}}
     );
@@ -552,6 +555,19 @@ TestPrefixingSceneIndex()
                             TfToken("someContainer"),
                             TfToken("relativePath"))),
             SdfPath("F/G"))) {
+        return false;
+    }
+
+    if (!_CompareValue("COMPARING PATH ARRAY",
+            GetTypedValueFromScene<VtArray<SdfPath>>(
+                    prefixingSceneIndex,
+                    SdfPath("/E/F/G/A/C"),
+                    HdDataSourceLocator(
+                            TfToken("someContainer"),
+                            TfToken("pathArray"))),
+            VtArray<SdfPath>{
+                SdfPath("/E/F/G/A/B/C/D"),
+                SdfPath("/E/F/G/A/B")})) {
         return false;
     }
 
@@ -714,6 +730,556 @@ bool TestMergingSceneIndex()
 
 //-----------------------------------------------------------------------------
 
+namespace
+{
+
+TF_DECLARE_REF_PTRS(_RepopulatingSceneIndex);
+
+// utility for testing PrimAdded messages
+class _RepopulatingSceneIndex : public HdSingleInputFilteringSceneIndexBase
+{
+public:
+
+    static _RepopulatingSceneIndexRefPtr New(
+            const HdSceneIndexBaseRefPtr &inputScene) {
+        return TfCreateRefPtr(new _RepopulatingSceneIndex(inputScene));
+    }
+
+
+    HdSceneIndexPrim GetPrim(const SdfPath &path) const override {
+        return _GetInputSceneIndex()->GetPrim(path);
+    }
+
+    SdfPathVector GetChildPrimPaths(const SdfPath &path) const override {
+        return _GetInputSceneIndex()->GetChildPrimPaths(path);
+    }
+
+    void Repopulate(const SdfPath &fromRoot = SdfPath::AbsoluteRootPath())
+    {
+        HdSceneIndexBaseRefPtr input =  _GetInputSceneIndex();
+
+        HdSceneIndexObserver::AddedPrimEntries entries;
+
+        std::vector<SdfPath> queue = {
+            fromRoot,
+        };
+
+        while (!queue.empty()) {
+            const SdfPath path = queue.back();
+            queue.pop_back();
+
+            HdSceneIndexPrim prim = input->GetPrim(path);
+            entries.emplace_back(path, prim.primType);
+
+            const SdfPathVector childPaths = input->GetChildPrimPaths(path);
+            queue.insert(queue.end(), childPaths.begin(), childPaths.end());
+        }
+
+        _SendPrimsAdded(entries);
+    }
+
+protected:
+    _RepopulatingSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene)
+    : HdSingleInputFilteringSceneIndexBase(inputScene)
+    {
+    }
+
+    void _PrimsAdded(
+            const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::AddedPrimEntries &entries) override
+    {
+        _SendPrimsAdded(entries);
+    }
+
+    void _PrimsRemoved(
+            const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::RemovedPrimEntries &entries) override
+    {
+        _SendPrimsRemoved(entries);
+    }
+
+    void _PrimsDirtied(
+            const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::DirtiedPrimEntries &entries) override
+    {
+        _SendPrimsDirtied(entries);
+    }
+};
+
+}
+
+
+bool TestMergingSceneIndexPrimAddedNotices()
+{
+    HdRetainedSceneIndexRefPtr retainedSceneA = HdRetainedSceneIndex::New();
+    retainedSceneA->AddPrims({
+        {SdfPath("/A"), TfToken("chicken"), nullptr},
+        {SdfPath("/A/B"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(1)
+            )},
+        {SdfPath("/A/C"), TfToken(), //provides a data source but no type
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(1)
+            )},
+    });
+
+    HdRetainedSceneIndexRefPtr retainedSceneB = HdRetainedSceneIndex::New();
+    retainedSceneB->AddPrims({
+        {SdfPath("/A/B"), TfToken(), nullptr}, // no type
+        {SdfPath("/A/C"), TfToken("taco"),
+            HdRetainedContainerDataSource::New(
+                TfToken("value"),
+                HdRetainedTypedSampledDataSource<int>::New(2)
+            )},
+        {SdfPath("/A/D"), TfToken("salsa"), nullptr},
+    });
+
+    _RepopulatingSceneIndexRefPtr rpA =
+        _RepopulatingSceneIndex::New(retainedSceneA);
+
+    _RepopulatingSceneIndexRefPtr rpB =
+        _RepopulatingSceneIndex::New(retainedSceneB);
+
+    HdMergingSceneIndexRefPtr mergingSceneIndex = HdMergingSceneIndex::New();
+    mergingSceneIndex->AddInputScene(rpA, SdfPath::AbsoluteRootPath());
+    mergingSceneIndex->AddInputScene(rpB, SdfPath("/A"));
+
+    RecordingSceneIndexObserver observer;
+    mergingSceneIndex->AddObserver(HdSceneIndexObserverPtr(&observer));
+
+    const TfDenseHashMap<SdfPath, TfToken, TfHash> expectedTypes = {
+        {SdfPath("/"), TfToken()},
+        {SdfPath("/A"), TfToken("chicken")},
+        {SdfPath("/A/B"), TfToken("group")},
+        {SdfPath("/A/C"), TfToken("taco")},
+        {SdfPath("/A/D"), TfToken("salsa")},
+    };
+
+    auto _Compare = [&mergingSceneIndex, &observer, &expectedTypes]() {
+        for (const RecordingSceneIndexObserver::Event event :
+                observer.GetEvents()) {
+
+            if (event.eventType !=
+                    RecordingSceneIndexObserver::EventType_PrimAdded) {
+                std::cerr << "received unexpected event type for "
+                    << event.primPath << std::endl;
+                return false;
+            }
+
+            const auto it = expectedTypes.find(event.primPath);
+            if (it ==  expectedTypes.end()) {
+                std::cerr << "expected type is unknown for " << event.primPath
+                    << std::endl;
+                return false;
+            }
+
+            const TfToken &expectedType = it->second;
+            if (event.primType != expectedType) {
+                std::cerr << "expected '" << expectedType << "' but received '"
+                    << event.primType <<  "' for " << event.primPath
+                        << std::endl;
+                return false;
+            }
+
+            HdSceneIndexPrim prim = mergingSceneIndex->GetPrim(event.primPath);
+            if (prim.primType != expectedType) {
+                std::cerr << "expected '" <<  expectedType << "' but received '"
+                    <<  prim.primType << "' for GetPrim(" << event.primPath
+                        << ")" << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    std::cout << "comparing repopulation from input b" << std::endl;
+    rpB->Repopulate();
+    if (!_Compare()) {
+        return false;
+    }
+
+    observer.Clear();
+    std::cout << "comparing repopulation from input a" << std::endl;
+    rpA->Repopulate();
+    if (!_Compare()) {
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
+
+bool TestDependencyForwardingSceneIndex()
+{
+    using EventType = RecordingSceneIndexObserver::EventType;
+    using Event = RecordingSceneIndexObserver::Event;
+    using EventSet = RecordingSceneIndexObserver::EventSet;
+
+    using RDS = HdRetainedTypedSampledDataSource<HdDataSourceLocator>;
+
+    HdRetainedSceneIndexRefPtr retainedScene_ = HdRetainedSceneIndex::New();
+    HdRetainedSceneIndex &retainedScene = *retainedScene_;
+    HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene_ =
+        HdDependencyForwardingSceneIndex::New(retainedScene_);
+    HdDependencyForwardingSceneIndex &dependencyForwardingScene =
+        *dependencyForwardingScene_;
+
+
+    retainedScene.AddPrims({{SdfPath("/A"), TfToken("group"),
+        HdRetainedContainerDataSource::New()}}
+    );
+
+    retainedScene.AddPrims({{SdfPath("/B"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            HdDependenciesSchemaTokens->__dependencies,
+            HdRetainedContainerDataSource::New(
+                TfToken("test"),
+                HdDependencySchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/A")),
+                    RDS::New(HdDataSourceLocator(TfToken("taco"))),
+                    RDS::New(HdDataSourceLocator(TfToken("chicken")))
+                )
+            )
+        )}}
+    );
+
+    retainedScene.AddPrims({{SdfPath("/C"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            HdDependenciesSchemaTokens->__dependencies,
+            HdRetainedContainerDataSource::New(
+                TfToken("test"),
+                HdDependencySchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/B")),
+                    RDS::New(HdDataSourceLocator(TfToken("chicken"))),
+                    RDS::New(HdDataSourceLocator(TfToken("salsa")))
+                )
+            )
+        )}}
+    );
+
+    // ...D->E->F->D->...
+    retainedScene.AddPrims({{SdfPath("/D"), TfToken("group"),
+            HdRetainedContainerDataSource::New(
+                HdDependenciesSchemaTokens->__dependencies,
+                HdRetainedContainerDataSource::New(
+                    TfToken("test"),
+                    HdDependencySchema::BuildRetained(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                                SdfPath("/E")),
+                        RDS::New(HdDataSourceLocator(TfToken("attr2"))),
+                        RDS::New(HdDataSourceLocator(TfToken("attr1")))
+                    )
+                )
+            )}}
+        );
+
+    retainedScene.AddPrims({{SdfPath("/E"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            HdDependenciesSchemaTokens->__dependencies,
+            HdRetainedContainerDataSource::New(
+                TfToken("test"),
+                HdDependencySchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/F")),
+                    RDS::New(HdDataSourceLocator(TfToken("attr3"))),
+                    RDS::New(HdDataSourceLocator(TfToken("attr2")))
+                )
+            )
+        )}}
+    );
+
+    retainedScene.AddPrims({{SdfPath("/F"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            HdDependenciesSchemaTokens->__dependencies,
+            HdRetainedContainerDataSource::New(
+                TfToken("test"),
+                HdDependencySchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/D")),
+                    RDS::New(HdDataSourceLocator(TfToken("attr1"))),
+                    RDS::New(HdDataSourceLocator(TfToken("attr3")))
+                )
+            )
+        )}}
+    );
+
+    RecordingSceneIndexObserver recordingScene;
+    dependencyForwardingScene.AddObserver(
+        HdSceneIndexObserverPtr(&recordingScene));
+
+    // pulling on the scene causes dependencies to be computed at the visited
+    // prim
+    PrintSceneIndexPrim(dependencyForwardingScene, SdfPath("/"), true);
+
+    {
+        recordingScene.Clear();
+        retainedScene.DirtyPrims({{
+            SdfPath("/A"),
+            HdDataSourceLocator(TfToken("taco"))}}
+        );
+
+        auto baseline = EventSet{
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/A"), TfToken(),
+                HdDataSourceLocator(TfToken("taco"))
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/B"), TfToken(),
+                HdDataSourceLocator(TfToken("chicken"))
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/C"), TfToken(),
+                HdDataSourceLocator(TfToken("salsa"))
+            },
+        };
+
+        if (!_CompareValue("DIRTYING \"/A @taco\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+    }
+
+    {
+        recordingScene.Clear();
+        retainedScene.DirtyPrims({{
+            SdfPath("/A"),
+            HdDataSourceLocator()}}
+        );
+
+        auto baseline = EventSet{
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/A"), TfToken(),
+                HdDataSourceLocator()
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/B"), TfToken(),
+                HdDataSourceLocator(TfToken("chicken"))
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/C"), TfToken(),
+                HdDataSourceLocator(TfToken("salsa"))
+            },
+        };
+
+        if (!_CompareValue("DIRTYING \"/A @(prim level)\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+    }
+
+
+    // test cycles
+    {
+        auto baseline = EventSet{
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/D"), TfToken(),
+                HdDataSourceLocator(TfToken("attr1"))
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/E"), TfToken(),
+                HdDataSourceLocator(TfToken("attr2"))
+            },
+            Event{
+                EventType::EventType_PrimDirtied,
+                SdfPath("/F"), TfToken(),
+                HdDataSourceLocator(TfToken("attr3"))
+            },
+        };
+
+
+        recordingScene.Clear();
+        retainedScene.DirtyPrims({{
+            SdfPath("/D"),
+            HdDataSourceLocator(TfToken("attr1"))}}
+        );
+
+        if (!_CompareValue("CYCLE CHECK: DIRTYING \"/D @attr1\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+
+        recordingScene.Clear();
+        retainedScene.DirtyPrims({{
+            SdfPath("/E"),
+            HdDataSourceLocator(TfToken("attr2"))}}
+        );
+
+        if (!_CompareValue("CYCLE CHECK: DIRTYING \"/E @attr2\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+
+        recordingScene.Clear();
+        retainedScene.DirtyPrims({{
+            SdfPath("/F"),
+            HdDataSourceLocator(TfToken("attr3"))}}
+        );
+
+        if (!_CompareValue("CYCLE CHECK: DIRTYING \"/E @attr3\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+void TestDependencyForwardingSceneIndexEviction_InitScenes(
+    HdRetainedSceneIndexRefPtr * retainedSceneP,
+    HdDependencyForwardingSceneIndexRefPtr * dependencyForwardingSceneP)
+{
+    using RDS = HdRetainedTypedSampledDataSource<HdDataSourceLocator>;
+
+
+    HdRetainedSceneIndexRefPtr retainedScene = HdRetainedSceneIndex::New();
+
+    retainedScene->AddPrims({{SdfPath("/A"), TfToken("group"),
+        HdRetainedContainerDataSource::New()}}
+    );
+
+    retainedScene->AddPrims({{SdfPath("/B"), TfToken("group"),
+        HdRetainedContainerDataSource::New(
+            HdDependenciesSchemaTokens->__dependencies,
+            HdRetainedContainerDataSource::New(
+                TfToken("test"),
+                HdDependencySchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath("/A")),
+                    RDS::New(HdDataSourceLocator(TfToken("taco"))),
+                    RDS::New(HdDataSourceLocator(TfToken("chicken")))
+                )
+            )
+        )}}
+    );
+
+    retainedScene->AddPrims({{SdfPath("/C"), TfToken("group"),
+        HdRetainedContainerDataSource::New()}}
+    );
+
+    HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene =
+            HdDependencyForwardingSceneIndex::New(retainedScene);
+
+
+    // pull on all prims to seed the cache
+    PrintSceneIndexPrim(*dependencyForwardingScene, SdfPath("/"), true);
+
+
+    *retainedSceneP = retainedScene;
+    *dependencyForwardingSceneP = dependencyForwardingScene;
+}
+
+
+bool TestDependencyForwardingSceneIndexEviction()
+{
+    
+    HdRetainedSceneIndexRefPtr retainedScene;
+    HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene;
+
+    //---------------------
+    TestDependencyForwardingSceneIndexEviction_InitScenes(
+            &retainedScene, &dependencyForwardingScene);
+
+    retainedScene->RemovePrims({SdfPath("/B")});
+
+    SdfPathVector removedAffectedPrimPaths;
+    SdfPathVector removedDependedOnPrimPaths;
+    dependencyForwardingScene->RemoveDeletedEntries(
+            &removedAffectedPrimPaths,
+            &removedDependedOnPrimPaths);
+
+    //std::sort(
+    //    removedAffectedPrimPaths.begin(), removedAffectedPrimPaths.end());
+    //std::sort(
+    //    removedDependedOnPrimPaths.begin(), removedDependedOnPrimPaths.end());
+
+    SdfPathVector baselineAffected = {SdfPath("/B")};
+    SdfPathVector baselineDependedOn = {SdfPath("/A")};
+
+    if (!_CompareValue("Remove Affected (affected paths): ",
+            removedAffectedPrimPaths, baselineAffected)) {
+        return false;
+    }
+    if (!_CompareValue("Remove Affected (depended on paths): ",
+            removedDependedOnPrimPaths, baselineDependedOn)) {
+        return false;
+    }
+
+    //---------------------
+    TestDependencyForwardingSceneIndexEviction_InitScenes(
+            &retainedScene, &dependencyForwardingScene);
+    retainedScene->RemovePrims({SdfPath("/A")});
+
+    // NOTE: this should be removing /A from affected paths also!
+    //       (since we pulled on it, it should have checked for
+    //        dependencies and dirtied a group)
+
+    removedAffectedPrimPaths.clear();
+    removedDependedOnPrimPaths.clear();
+    dependencyForwardingScene->RemoveDeletedEntries(
+        &removedAffectedPrimPaths,
+        &removedDependedOnPrimPaths);
+
+    if (!_CompareValue("Remove Depended On (affected paths): ",
+            removedAffectedPrimPaths, baselineAffected)) {
+        return false;
+    }
+    if (!_CompareValue("Remove Depended On (depended on paths): ",
+            removedDependedOnPrimPaths, baselineDependedOn)) {
+        return false;
+    }
+
+
+    //---------------------
+    TestDependencyForwardingSceneIndexEviction_InitScenes(
+            &retainedScene, &dependencyForwardingScene);
+
+    // expecting nothing as _UpdateDependencies exits early if there is no
+    // dependency data source
+    baselineAffected = {};
+    baselineDependedOn = {};
+
+    retainedScene->RemovePrims({SdfPath("/C")});
+
+    removedAffectedPrimPaths.clear();
+    removedDependedOnPrimPaths.clear();
+    dependencyForwardingScene->RemoveDeletedEntries(
+        &removedAffectedPrimPaths,
+        &removedDependedOnPrimPaths);
+
+    if (!_CompareValue(
+        "Remove Prim Without Dependencies (affected paths): ",
+            removedAffectedPrimPaths, baselineAffected)) {
+        return false;
+    }
+    if (!_CompareValue(
+        "Remove Prim Without Dependencies  (depended on paths): ",
+            removedDependedOnPrimPaths, baselineDependedOn)) {
+        return false;
+    }
+
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X) std::cout << (++i) << ") " <<  str(X) << "..." << std::endl; \
@@ -730,6 +1296,9 @@ main(int argc, char**argv)
     TEST(TestFlatteningSceneIndex);
     TEST(TestPrefixingSceneIndex);
     TEST(TestMergingSceneIndex);
+    TEST(TestMergingSceneIndexPrimAddedNotices);
+    TEST(TestDependencyForwardingSceneIndex);
+    TEST(TestDependencyForwardingSceneIndexEviction);
 
     //--------------------------------------------------------------------------
     std::cout << "DONE testHdSceneIndex" << std::endl;

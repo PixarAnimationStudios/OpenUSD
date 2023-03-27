@@ -1,0 +1,42 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def "CustomMaterial" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </MaterialX/Materials/TexturedMaterial>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+}
+
+def Scope "MaterialX"(
+    references = @./texturedMaterial.mtlx@</MaterialX>
+    )
+{
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./images/solidWhite.png@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def SphereLight "Light"
+    {
+        float inputs:radius = 25
+        float inputs:intensity = 5
+        Vec3f xformOp:translate = (0, -50, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Camera "Camera"
+{
+    double3 xformOp:translate = (0, 0, 75)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

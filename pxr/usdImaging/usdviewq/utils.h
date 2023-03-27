@@ -53,11 +53,13 @@ public:
         bool isAbstract;
         bool isInPrototype;
         bool isInstance;
+        bool supportsGuides;
         bool supportsDrawMode;
         bool isVisibilityInherited;
         bool visVaries;
         std::string name;
         std::string typeName;
+        std::string displayName;
     };
 
     /// For the given \p stage and \p schemaType, return all active, defined

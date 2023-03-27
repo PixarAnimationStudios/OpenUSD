@@ -127,12 +127,10 @@ HgiGLGraphicsCmds::SetConstantValues(
 
 void
 HgiGLGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
     _ops.push_back( 
-        HgiGLOps::BindVertexBuffers(firstBinding, vertexBuffers, byteOffsets) );
+        HgiGLOps::BindVertexBuffers(bindings) );
 }
 
 void
@@ -234,9 +232,9 @@ HgiGLGraphicsCmds::PopDebugGroup()
 }
 
 void
-HgiGLGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiGLGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
-    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+    _ops.push_back( HgiGLOps::InsertMemoryBarrier(barrier) );
 }
 
 bool

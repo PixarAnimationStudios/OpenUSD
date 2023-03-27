@@ -339,6 +339,22 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
+    
+    /// Return the attribute that is used for expressing visibility opinions
+    /// for the given \p purpose.
+    ///
+    /// The valid purpose tokens are "guide", "proxy", and "render" which
+    /// return the attributes *guideVisibility*, *proxyVisibility*, and 
+    /// *renderVisibility* respectively.
+    ///
+    /// Note that while "default" is a valid purpose token for 
+    /// UsdGeomImageable::GetPurposeVisibilityAttr, it is not a valid purpose
+    /// for this function, as UsdGeomVisibilityAPI itself does not have a 
+    /// default visibility attribute. Calling this function with "default
+    /// will result in a coding error.
+    ///
+    USDGEOM_API
+    UsdAttribute GetPurposeVisibilityAttr(const TfToken &purpose) const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

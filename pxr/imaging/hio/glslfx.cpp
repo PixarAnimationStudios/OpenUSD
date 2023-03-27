@@ -178,40 +178,12 @@ _ComputeResolvedPath(
 
     ArResolver& resolver = ArGetResolver();
 
-#if AR_VERSION == 1
-    if (filename[0] == '/') {
-        return resolver.Resolve(filename);
-    }
-
-    // Try to resolve as file-relative. Resolve using the repository form of
-    // the anchored file path otherwise the relative file must be local to the
-    // containing file. If the anchored path cannot be represented as a
-    // repository path, perform a simple existence check.
-    const string anchoredPath =
-        resolver.AnchorRelativePath(containingFile, filename);
-    const string repositoryPath =
-        resolver.ComputeRepositoryPath(anchoredPath);
-    const string resolvedPath = repositoryPath.empty()
-        ? (TfPathExists(anchoredPath) ? anchoredPath : "")
-        : resolver.Resolve(repositoryPath);
-    if (!resolvedPath.empty() || filename[0] == '.') {
-        // If we found the path via file-relative search, return it.
-        // Otherwise, if we didn't find the file, and it actually has a
-        // file-relative prefix (./, ../), return empty to avoid a fruitless
-        // search.
-        return resolvedPath;
-    }
-
-    // Search for the file along the resolver search path.
-    return resolver.Resolve(filename);
-#else
     // Create an identifier for the specified .glslfx file by combining
     // the containing file and the new file to accommodate relative paths,
     // then resolve it.
     const std::string assetPath =
         resolver.CreateIdentifier(filename, ArResolvedPath(containingFile));
     return assetPath.empty() ? string() : resolver.Resolve(assetPath);
-#endif
 }
 
 HioGlslfx::HioGlslfx() :
@@ -226,16 +198,8 @@ HioGlslfx::HioGlslfx(string const & filePath, TfToken const & technique)
     , _hash(0)
 {
     string errorStr;
-#if AR_VERSION == 1
-    // Resolve with the containingFile set to the current working directory
-    // with a trailing slash. This ensures that relative paths supplied to the
-    // constructor are properly anchored to the containing file's directory.
-    const string resolvedPath =
-        _ComputeResolvedPath(ArchGetCwd() + "/", filePath, &errorStr);
-#else
     const string resolvedPath =
         _ComputeResolvedPath(string(), filePath, &errorStr);
-#endif
     if (resolvedPath.empty()) {
         if (!errorStr.empty()) {
             TF_RUNTIME_ERROR(errorStr);

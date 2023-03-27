@@ -717,6 +717,11 @@ private:
     // Load the plugin for the given type if it supplies connectable behavior.
     bool _LoadPluginDefiningBehaviorForType(const TfType& type) const
     {
+        // type being queried is not Usd compliant.
+        if (!type.IsA<UsdTyped>() && !type.IsA<UsdAPISchemaBase>()) {
+            return false;
+        }
+
         PlugRegistry& plugReg = PlugRegistry::GetInstance();
 
         const JsValue providesUsdShadeConnectableAPIBehavior = 

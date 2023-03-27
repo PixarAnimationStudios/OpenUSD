@@ -25,7 +25,7 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/matfiltFilterChain.h"
+#include "hdPrman/matfiltResolveTerminals.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -36,6 +36,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/rprim.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "RiTypesHelper.h"
@@ -47,10 +48,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-TF_DEFINE_ENV_SETTING(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT, false,
-                      "Use scene indices rather than matfilt callbacks.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (PxrDisplace)
@@ -59,6 +56,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (omitFromRender)
     (material)
     (light)
+    (PrimvarPass)
 );
 
 TF_MAKE_STATIC_DATA(NdrTokenVec, _sourceTypes) {
@@ -74,37 +72,6 @@ TfTokenVector const&
 HdPrmanMaterial::GetShaderSourceTypes()
 {
     return *_sourceTypes;
-}
-
-TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
-    *_filterChain = {
-        MatfiltConvertPreviewMaterial,
-        MatfiltResolveVstructs,
-#ifdef PXR_MATERIALX_SUPPORT_ENABLED
-        MatfiltMaterialX
-#endif
-    };
-}
-
-bool
-HdPrmanMaterial::GetUseSceneIndexForMatfilt()
-{
-    static const bool state =
-        TfGetEnvSetting(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT);
-
-    return state && HdRenderIndex::IsSceneIndexEmulationEnabled();
-}
-
-MatfiltFilterChain
-HdPrmanMaterial::GetFilterChain()
-{
-    return *_filterChain;
-}
-
-void
-HdPrmanMaterial::SetFilterChain(MatfiltFilterChain const& chain)
-{
-    *_filterChain = chain;
 }
 
 HdMaterialNetwork2 const&
@@ -227,6 +194,13 @@ _ConvertNodes(
             _ConvertNodes(network, e.upstreamNode, result, visitedNodes);
         }
     }
+
+    // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+    // UsdPreviewSurface materials and is not a registered shader node.
+    if (node.nodeTypeId == _tokens->PrimvarPass) {
+        return false;
+    }
+
     // Find shader registry entry.
     SdrRegistry &sdrRegistry = SdrRegistry::GetInstance();
     SdrShaderNodeConstPtr sdrEntry =
@@ -517,6 +491,12 @@ _ConvertNodes(
                 TF_WARN("Unknown upstream node %s", e.upstreamNode.GetText());
                 continue;
             }
+            // Ignore nodes of id "PrimvarPass". This node is a workaround for 
+            // UsdPreviewSurface materials and is not a registered shader node.
+            if (upstreamNode->nodeTypeId == _tokens->PrimvarPass) {
+                continue;
+            }
+
             SdrShaderNodeConstPtr upstreamSdrEntry =
                 sdrRegistry.GetShaderNodeByIdentifier(
                       upstreamNode->nodeTypeId, *_sourceTypes);
@@ -536,20 +516,27 @@ _ConvertNodes(
                         connEntry.first.data());
                 continue;
             }
-            if (!upstreamProp) {
+            TfToken propType = downstreamProp->GetType();
+            // In the case of terminals there is no upstream output name
+            // since the whole node is referenced as a whole
+            if (!upstreamProp && propType != SdrPropertyTypes->Terminal) {
                 TF_WARN("Unknown upstream property %s",
                         e.upstreamOutputName.data());
                 continue;
             }
             // Prman syntax for parameter references is "handle:param".
             RtUString name(downstreamProp->GetImplementationName().c_str());
-            RtUString inputRef(
-                               (e.upstreamNode.GetString()+":"
-                                + upstreamProp->GetImplementationName().c_str())
-                               .c_str());
+            RtUString inputRef;
+            if (!upstreamProp) {
+                inputRef = RtUString(e.upstreamNode.GetString().c_str());
+            } else {
+                inputRef = RtUString(
+                    (e.upstreamNode.GetString()+":"
+                    + upstreamProp->GetImplementationName().c_str())
+                    .c_str());
+            }
 
             // Establish the Riley connection.
-            TfToken propType = downstreamProp->GetType();
             if (propType == SdrPropertyTypes->Color) {
                 sn.params.SetColorReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Vector) {
@@ -566,6 +553,8 @@ _ConvertNodes(
                 sn.params.SetStringReference(name, inputRef);
             } else if (propType == SdrPropertyTypes->Struct) {
                 sn.params.SetStructReference(name, inputRef);
+            } else if (propType == SdrPropertyTypes->Terminal) {
+                sn.params.SetBxdfReference(name, inputRef);
             } else {
                 TF_WARN("Unknown type '%s' for property '%s' "
                         "on shader '%s' at %s; ignoring.",
@@ -630,6 +619,7 @@ HdPrman_DumpNetwork(HdMaterialNetwork2 const& network, SdfPath const& id)
 // otherwise it will be created as needed.
 static void
 _ConvertHdMaterialNetwork2ToRman(
+    HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam *renderParam,
     SdfPath const& id,
     const HdMaterialNetwork2 &network,
@@ -650,7 +640,7 @@ _ConvertHdMaterialNetwork2ToRman(
                 materialFound = true;
                 if (*materialId == riley::MaterialId::InvalidId()) {
                     *materialId = riley->CreateMaterial(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {
@@ -668,14 +658,30 @@ _ConvertHdMaterialNetwork2ToRman(
                 displacementFound = true;
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     *displacementId = riley->CreateDisplacement(
-                        riley::UserId::DefaultId(),
+                        riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
                         {static_cast<uint32_t>(nodes.size()), &nodes[0]},
                         RtParamList());
                 } else {
                     riley::ShadingNetwork const displacement = {
                         static_cast<uint32_t>(nodes.size()), &nodes[0]};
-                    riley->ModifyDisplacement(*displacementId, &displacement,
-                                              nullptr);
+                    riley::DisplacementResult const result =
+                            riley->ModifyDisplacement(*displacementId,
+                                                      &displacement,
+                                                      nullptr);
+                    if (result == riley::DisplacementResult::k_ResendPrimVars) {
+                        // Mark prims dirty so they pick up new displacement.
+                        HdRenderIndex& index =
+                                sceneDelegate->GetRenderIndex();
+                        HdChangeTracker& changeTracker =
+                                index.GetChangeTracker();
+                        for(auto rprimid : index.GetRprimIds()) {
+                            HdRprim const *rprim = index.GetRprim(rprimid);
+                            if(rprim->GetMaterialId() == id) {
+                                changeTracker.MarkRprimDirty(
+                                    rprimid, HdChangeTracker::DirtyPrimvar);
+                            }
+                        }
+                    }
                 }
                 if (*displacementId == riley::DisplacementId::InvalidId()) {
                     TF_RUNTIME_ERROR("Failed to create displacement %s\n",
@@ -713,34 +719,26 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
     if ((*dirtyBits & HdMaterial::DirtyResource) ||
         (*dirtyBits & HdMaterial::DirtyParams)) {
         VtValue hdMatVal = sceneDelegate->GetMaterialResource(id);
-        if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
+
+        if (hdMatVal.IsEmpty()) {
+            if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
+                printf("no material network found for %s:\n", id.GetText());
+            }
+            _ResetMaterial(param);
+        } else if (hdMatVal.IsHolding<HdMaterialNetworkMap>()) {
             // Convert HdMaterial to HdMaterialNetwork2 form.
             _materialNetwork = HdConvertToHdMaterialNetwork2(
                     hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
-            // Apply material filter chain to the network conditionally.
-            // NOTE: When use scene index plugins for matfilt transformations,
-            // the matfilt operations are triggered by the GetMaterialResource()
-            // call above.
-            if (!GetUseSceneIndexForMatfilt() && !_filterChain->empty()) {
-                std::vector<std::string> errors;
-                MatfiltExecFilterChain(*_filterChain, id, _materialNetwork, {},
-                                       *_sourceTypes, &errors);
-                if (!errors.empty()) {
-                    TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
-                        TfStringJoin(errors).c_str());
-                    // Policy choice: Attempt to use the material, regardless.
-                }
-            }
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 HdPrman_DumpNetwork(_materialNetwork, id);
             }
-            _ConvertHdMaterialNetwork2ToRman(param, id, _materialNetwork,
+            _ConvertHdMaterialNetwork2ToRman(sceneDelegate,
+                                             param, id, _materialNetwork,
                                              &_materialId, &_displacementId);
         } else {
-            TF_WARN("HdPrmanMaterial: Expected material resource "
-                    "for <%s> to contain HdMaterialNodes, but "
-                    "found %s instead.",
-                    id.GetText(), hdMatVal.GetTypeName().c_str());
+            TF_CODING_ERROR("HdPrmanMaterial: Expected material resource "
+                "for <%s> to contain HdMaterialNodes, but found %s instead.",
+                id.GetText(), hdMatVal.GetTypeName().c_str());
             _ResetMaterial(param);
         }
     }

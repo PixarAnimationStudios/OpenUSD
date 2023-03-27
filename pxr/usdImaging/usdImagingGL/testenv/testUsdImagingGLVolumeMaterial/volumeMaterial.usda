@@ -76,7 +76,9 @@ def Scope "Background" (
     doc = "Checkerboard pattern"
 )
 {
-    def Mesh "Checkerboard"
+    def Mesh "Checkerboard" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         int[] faceVertexCounts = [4]
         int[] faceVertexIndices = [0, 1, 2, 3]
@@ -150,7 +152,9 @@ def Scope "ParameterExamples" (
     doc = "Using different parameters for extinction, scattering, and emission"
 )
 {
-    def Volume "Emission"
+    def Volume "Emission" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -167,7 +171,9 @@ def Scope "ParameterExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "EmissionAndExtinction"
+    def Volume "EmissionAndExtinction" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -184,7 +190,9 @@ def Scope "ParameterExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "ScatteringAndExtinction"
+    def Volume "ScatteringAndExtinction" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -201,7 +209,9 @@ def Scope "ParameterExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "ScatteringAndExtinction2"
+    def Volume "ScatteringAndExtinction2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -218,7 +228,9 @@ def Scope "ParameterExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "ScatteringAndExtinction3"
+    def Volume "ScatteringAndExtinction3" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -235,7 +247,9 @@ def Scope "ParameterExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "Scattering"
+    def Volume "Scattering" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -257,7 +271,9 @@ def Scope "ShapeExamples" (
     doc = "Tests the other material where the shape of the volume can be controlled"
 )
 {
-    def Volume "AlmostCube"
+    def Volume "AlmostCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeShapeMaterial>
@@ -268,7 +284,9 @@ def Scope "ShapeExamples" (
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Volume "AlmostOctahedron"
+    def Volume "AlmostOctahedron" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeShapeMaterial>
@@ -284,7 +302,9 @@ over "Master" (
     instancable = true
 )
 {
-    def Volume "Volume1"
+    def Volume "Volume1" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(-1, -1, -1), (1, 1, 1)]
         rel material:binding = </VolumeParameterMaterial>
@@ -302,7 +322,9 @@ over "Master" (
         )
     }
 
-    def Volume "Volume2"
+    def Volume "Volume2" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         float3[] extent = [(0, 0, -1), (2, 2, 1)]
         rel material:binding = </VolumeShapeMaterial>
@@ -342,6 +364,7 @@ def Xform "InstancedVolumes" (
 
 over "RecursiveMaster" (
     instancable = true
+    prepend apiSchemas = ["MaterialBindingAPI"]
 )
 {
     def Xform "M1" (

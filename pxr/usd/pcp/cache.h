@@ -127,6 +127,18 @@ public:
     PCP_API
     PcpLayerStackPtr GetLayerStack() const;
 
+    /// Return true if this cache's root layer stack is \p layerStack, false
+    /// otherwise.  This is functionally equivalent to comparing against the
+    /// result of GetLayerStack(), but does not require constructing a TfWeakPtr
+    /// or any refcount operations.
+    bool HasRootLayerStack(PcpLayerStackRefPtr const &layerStack) const {
+        return layerStack == _layerStack;
+    }
+
+    /// \overload
+    PCP_API
+    bool HasRootLayerStack(PcpLayerStackPtr const &layerStack) const;
+
     /// Return true if the cache is configured in Usd mode.
     PCP_API
     bool IsUsd() const;
@@ -183,19 +195,10 @@ public:
     /// the muted layer did not exist, which means a composition error will 
     /// be generated.
     ///
-#if AR_VERSION == 1
-    /// A canonical identifier for each layer in \p layersToMute will be
-    /// computed using ArResolver::ComputeRepositoryPath.  Any layer 
-    /// encountered during composition with the same repository path will
-    /// be considered muted and ignored.  Relative paths will be assumed to
-    /// be relative to the cache's root layer.  Search paths are immediately 
-    /// resolved and the result is used for computing the canonical path.
-#else
     /// A canonical identifier for each layer in \p layersToMute will be
     /// computed using ArResolver::CreateIdentifier using the cache's root
     /// layer as the anchoring asset. Any layer encountered during composition
     /// with the same identifier will be considered muted and ignored.
-#endif
     ///
     /// Note that muting a layer will cause this cache to release all
     /// references to that layer.  If no other client is holding on to
@@ -625,6 +628,7 @@ public:
 
 private:
     friend class PcpChanges;
+    friend class Pcp_Dependencies;
     friend class Pcp_Statistics;
 
     struct _ParallelIndexer;

@@ -39,6 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_PTRS(PcpLayerStack);
 
+class GfInterval;
 class Usd_ClipSet;
 class Usd_ClipSetDefinition;
 
@@ -81,6 +82,11 @@ public:
     /// Return set of time samples for attribute at \p path.
     std::set<double> ListTimeSamplesForPath(const SdfPath& path) const;
 
+    /// Return list of time samples for attribute at \p path
+    /// in the given \p interval.
+    std::vector<double> GetTimeSamplesInInterval(
+        const SdfPath& path, const GfInterval& interval) const;
+
     /// Query time sample for the attribute at \p path at \p time.
     /// If no time sample exists in the active clip at \p time,
     /// \p interpolator will be used to try to interpolate the
@@ -97,7 +103,7 @@ public:
     std::string name;
     PcpLayerStackPtr sourceLayerStack;
     SdfPath sourcePrimPath;
-    size_t sourceLayerIndex;
+    SdfLayerHandle sourceLayer;
     SdfPath clipPrimPath;
     Usd_ClipRefPtr manifestClip;
     Usd_ClipRefPtrVector valueClips;

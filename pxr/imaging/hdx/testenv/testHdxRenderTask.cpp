@@ -57,13 +57,13 @@ int main(int argc, char *argv[])
     HgiUniquePtr hgi = Hgi::CreatePlatformDefaultHgi();
     HdDriver driver{HgiTokens->renderDriver, VtValue(hgi.get())};
 
-    HdEngine engine;
     HdStRenderDelegate renderDelegate;
     std::unique_ptr<HdRenderIndex> index(
         HdRenderIndex::New(&renderDelegate, {&driver}));
     TF_VERIFY(index != nullptr);
     std::unique_ptr<Hdx_UnitTestDelegate> delegate(
                                          new Hdx_UnitTestDelegate(index.get()));
+    HdEngine engine;
 
     // prep render task
     SdfPath renderSetupTask1("/renderSetupTask1");

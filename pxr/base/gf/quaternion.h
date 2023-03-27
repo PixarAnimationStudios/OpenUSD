@@ -91,6 +91,12 @@ class GfQuaternion
         return _imaginary;
     }
 
+    /// Returns the zero quaternion, which has a real part of 0 and
+    /// an imaginary part of (0,0,0).
+    static GfQuaternion GetZero() {
+        return GfQuaternion(0.0, GfVec3d(0.0, 0.0, 0.0));
+    }
+
     /// Returns the identity quaternion, which has a real part of 1 and 
     /// an imaginary part of (0,0,0).
     static GfQuaternion GetIdentity() {
@@ -238,6 +244,13 @@ GF_API GfQuaternion GfSlerp(const GfQuaternion& q0, const GfQuaternion& q1, doub
 /// Output a GfQuaternion using the format (r + (x, y, z)).
 /// \ingroup group_gf_DebuggingOutput
 GF_API std::ostream& operator<<(std::ostream& out, const GfQuaternion& q);
+
+
+/// Returns the dot (inner) product of two quaternions.
+inline double
+GfDot(const GfQuaternion &q1, const GfQuaternion &q2) {
+    return  (q1.GetReal() * q2.GetReal()) + GfDot(q1.GetImaginary(), q2.GetImaginary());
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

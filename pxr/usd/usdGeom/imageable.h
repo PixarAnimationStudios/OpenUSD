@@ -242,36 +242,6 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    
-    // --------------------------------------------------------------------- //
-    /// \name Primvar Creation and Introspection
-    /// @{
-    // --------------------------------------------------------------------- //
- 
-    /// \deprecated Please use UsdGeomPrimvarsAPI::CreatePrimvar() instead.
-    USDGEOM_API
-    UsdGeomPrimvar CreatePrimvar(const TfToken& attrName,
-                                 const SdfValueTypeName &typeName,
-                                 const TfToken& interpolation = TfToken(),
-                                 int elementSize = -1) const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvar() instead.
-    USDGEOM_API
-    UsdGeomPrimvar GetPrimvar(const TfToken &name) const;
-    
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetPrimvars() instead.
-    USDGEOM_API
-    std::vector<UsdGeomPrimvar> GetPrimvars() const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::GetAuthoredPrimvars() instead.
-    USDGEOM_API
-    std::vector<UsdGeomPrimvar> GetAuthoredPrimvars() const;
-
-    /// \deprecated Please use UsdGeomPrimvarsAPI::HasPrimvar() instead.
-    USDGEOM_API
-    bool HasPrimvar(const TfToken &name) const;
-
-
     /// Returns an ordered list of allowed values of the purpose attribute.
     /// 
     /// The ordering is important because it defines the protocol between 
@@ -377,10 +347,13 @@ public:
     /// for the given \p purpose.
     ///
     /// For "default" purpose, return the overall *visibility* attribute.
-    /// Otherwise, return *guideVisibility*, *proxyVisibility*, or
-    /// *renderVisibility*.
+    /// For "guide", "proxy", or "render" purpose, return *guideVisibility*,
+    /// *proxyVisibility*, or *renderVisibility* if UsdGeomVisibilityAPI is
+    /// applied to the prim. If UsdGeomvVisibiltyAPI is not applied, an
+    /// empty attribute is returned for purposes other than default.
     ///
-    /// \sa UsdGeomVisibilityAPI
+    /// \sa UsdGeomVisibilityAPI::Apply
+    /// \sa UsdGeomVisibilityAPI::GetPurposeVisibilityAttr
     USDGEOM_API
     UsdAttribute GetPurposeVisibilityAttr(
         const TfToken &purpose = UsdGeomTokens->default_) const;

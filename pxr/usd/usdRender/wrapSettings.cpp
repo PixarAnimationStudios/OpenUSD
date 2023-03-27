@@ -62,6 +62,13 @@ _CreateMaterialBindingPurposesAttr(UsdRenderSettings &self,
     return self.CreateMaterialBindingPurposesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->TokenArray), writeSparsely);
 }
+        
+static UsdAttribute
+_CreateRenderingColorSpaceAttr(UsdRenderSettings &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateRenderingColorSpaceAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdRenderSettings &self)
@@ -116,6 +123,13 @@ void wrapUsdRenderSettings()
              &This::GetMaterialBindingPurposesAttr)
         .def("CreateMaterialBindingPurposesAttr",
              &_CreateMaterialBindingPurposesAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetRenderingColorSpaceAttr",
+             &This::GetRenderingColorSpaceAttr)
+        .def("CreateRenderingColorSpaceAttr",
+             &_CreateRenderingColorSpaceAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
 

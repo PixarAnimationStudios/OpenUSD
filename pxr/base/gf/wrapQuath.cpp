@@ -113,6 +113,9 @@ void wrapQuath()
         .def(init<const GfQuatd & >())
         .def(init<const GfQuatf & >())
 
+        .def("GetZero", &GfQuath::GetZero)
+        .staticmethod("GetZero")
+
         .def("GetIdentity", &GfQuath::GetIdentity)
         .staticmethod("GetIdentity")
 

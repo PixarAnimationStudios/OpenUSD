@@ -44,12 +44,14 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include <cctype>
 #include <set>
 #include <utility>
 #include <vector>
@@ -102,6 +104,50 @@ using _TypeToTokenVecMap =
 using _TokenToTokenMap = 
     TfHashMap<TfToken, TfToken, TfToken::HashFunctor>;
 
+static UsdSchemaKind 
+_GetSchemaKindFromMetadata(const JsObject &dict)
+{
+    const JsValue *kindValue = TfMapLookupPtr(dict, _tokens->schemaKind);
+    if (!kindValue) {
+        return UsdSchemaKind::Invalid;
+    }
+
+    const TfToken schemaTypeToken(kindValue->GetString());
+    if (schemaTypeToken == _tokens->nonAppliedAPI) {
+        return UsdSchemaKind::NonAppliedAPI;
+    } else if (schemaTypeToken == _tokens->singleApplyAPI) {
+        return UsdSchemaKind::SingleApplyAPI;
+    } else if (schemaTypeToken == _tokens->multipleApplyAPI) {
+        return UsdSchemaKind::MultipleApplyAPI;
+    } else if (schemaTypeToken == _tokens->concreteTyped) {
+        return UsdSchemaKind::ConcreteTyped;
+    } else if (schemaTypeToken == _tokens->abstractTyped) {
+        return UsdSchemaKind::AbstractTyped;
+    } else if (schemaTypeToken == _tokens->abstractBase) {
+        return UsdSchemaKind::AbstractBase;
+    }
+
+    TF_CODING_ERROR("Invalid schema kind name '%s' found for plugin metadata "
+                    "key '%s'.", 
+                    schemaTypeToken.GetText(), _tokens->schemaKind.GetText());
+    return UsdSchemaKind::Invalid;
+}
+
+static UsdSchemaKind
+_GetSchemaKindFromPlugin(const TfType &schemaType)
+{
+    TRACE_FUNCTION();
+    PlugPluginPtr plugin =
+        PlugRegistry::GetInstance().GetPluginForType(schemaType);
+    if (!plugin) {
+        TF_CODING_ERROR("Failed to find plugin for schema type '%s'",
+                        schemaType.GetTypeName().c_str());
+        return UsdSchemaKind::Invalid;
+    }
+
+    return _GetSchemaKindFromMetadata(plugin->GetMetadataForType(schemaType));
+}
+
 namespace {
 // Helper struct for caching a bidirecional mapping between schema TfType and
 // USD type name token. This cache is used as a static local instance providing
@@ -110,47 +156,47 @@ struct _TypeMapCache {
     _TypeMapCache() {
         const TfType schemaBaseType = TfType::Find<UsdSchemaBase>();
 
-        auto _MapDerivedTypes = [this, &schemaBaseType](
-            const TfType &baseType, bool isTyped) 
-        {
-            set<TfType> types;
-            PlugRegistry::GetAllDerivedTypes(baseType, &types);
-            for (const TfType &type : types) {
-                // The USD type name is the type's alias under UsdSchemaBase. 
-                // All schemas should have a type name alias.
-                const vector<string> aliases = schemaBaseType.GetAliases(type);
-                if (aliases.size() == 1) {
-                    TfToken typeName(aliases.front(), TfToken::Immortal);
-                    nameToType.insert(std::make_pair(
-                        typeName, TypeInfo(type, isTyped)));
-                    typeToName.insert(std::make_pair(
-                        type, TypeNameInfo(typeName, isTyped)));
-                }
-            }
-        };
+        set<TfType> types;
+        PlugRegistry::GetAllDerivedTypes(schemaBaseType, &types);
+        types.insert(schemaBaseType);
 
-        _MapDerivedTypes(TfType::Find<UsdTyped>(), /*isTyped=*/true);
-        _MapDerivedTypes(TfType::Find<UsdAPISchemaBase>(), /*isTyped=*/false);
+        for (const TfType &type : types) {
+            // The schema's identifier is the type's alias under UsdSchemaBase. 
+            // All schemas should have a type name alias.
+            const vector<string> aliases = schemaBaseType.GetAliases(type);
+            if (aliases.size() != 1) {
+                continue;
+            }
+
+            // Generate all the components of the schema info.
+            const TfToken schemaIdentifier(aliases.front(), TfToken::Immortal);
+            const UsdSchemaKind schemaKind = _GetSchemaKindFromPlugin(type);
+            const std::pair<TfToken, UsdSchemaVersion> familyAndVersion = 
+                UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
+                    schemaIdentifier);
+
+            // Add primary mapping of schema info by type.
+            auto inserted = schemaInfoByType.emplace(type, 
+                UsdSchemaRegistry::SchemaInfo{
+                    schemaIdentifier, 
+                    type, 
+                    familyAndVersion.first, 
+                    familyAndVersion.second, 
+                    schemaKind});
+
+            // Add secondary mapping of schema info pointer by identifier.
+            schemaInfoByIdentifier.emplace(
+                schemaIdentifier, &inserted.first->second);
+        }
     }
 
-    // For each type and type name mapping we also want to store if it's a 
-    // concrete prim type vs an API schema type. 
-    struct TypeInfo {
-        TfType type;
-        bool isTyped;
-        TypeInfo(const TfType &type_, bool isTyped_) 
-            : type(type_), isTyped(isTyped_) {}
-    };
+    // Primary mapping of schema info by TfType.
+    std::unordered_map<TfType, UsdSchemaRegistry::SchemaInfo, TfHash> 
+        schemaInfoByType;
 
-    struct TypeNameInfo {
-        TfToken name;
-        bool isTyped;
-        TypeNameInfo(const TfToken &name_, bool isTyped_) 
-            : name(name_), isTyped(isTyped_) {}
-    };
-
-    TfHashMap<TfToken, TypeInfo, TfHash> nameToType;
-    TfHashMap<TfType, TypeNameInfo, TfHash> typeToName;
+    // Secondary mapping of schema info by identifier token.
+    std::unordered_map<TfToken, const UsdSchemaRegistry::SchemaInfo *, TfHash>
+        schemaInfoByIdentifier;
 };
 
 // Static singleton accessor
@@ -173,13 +219,12 @@ struct _APISchemaApplyToInfoCache {
 
         // For each schema type, extract the can apply and auto apply plugin 
         // info into the cache.
-        for (const auto &valuePair : typeCache.typeToName) {
-            const TfType &type = valuePair.first;
-            const TfToken &typeName = valuePair.second.name;
+        for (const auto &valuePair : typeCache.schemaInfoByType) {
+            const UsdSchemaRegistry::SchemaInfo &schemaInfo = valuePair.second;
 
             Usd_GetAPISchemaPluginApplyToInfoForType(
-                type,
-                typeName,
+                schemaInfo.type,
+                schemaInfo.identifier,
                 &autoApplyAPISchemasMap,
                 &canOnlyApplyAPISchemasMap,
                 &allowedInstanceNamesMap);
@@ -235,147 +280,336 @@ _IsAppliedAPISchemaKind(const UsdSchemaKind schemaKind)
            schemaKind == UsdSchemaKind::MultipleApplyAPI;
 }
 
+static bool
+_IsAPISchemaKind(const UsdSchemaKind schemaKind) 
+{
+    return schemaKind == UsdSchemaKind::SingleApplyAPI ||
+           schemaKind == UsdSchemaKind::MultipleApplyAPI ||
+           schemaKind == UsdSchemaKind::NonAppliedAPI;
+}
+
 static bool 
 _IsMultipleApplySchemaKind(const UsdSchemaKind schemaKind)
 {
     return schemaKind == UsdSchemaKind::MultipleApplyAPI;
 }
 
-static UsdSchemaKind 
-_GetSchemaKindFromMetadata(const JsObject &dict)
+/* static */
+TfToken
+UsdSchemaRegistry::MakeSchemaIdentifierForFamilyAndVersion(
+    const TfToken &schemaFamily, 
+    UsdSchemaVersion schemaVersion)
 {
-    const JsValue *kindValue = TfMapLookupPtr(dict, _tokens->schemaKind);
-    if (!kindValue) {
-        return UsdSchemaKind::Invalid;
+    // Version 0, the family is the identifier.
+    if (schemaVersion == 0) {
+        return schemaFamily;
     }
 
-    const TfToken schemaTypeToken(kindValue->GetString());
-    if (schemaTypeToken == _tokens->nonAppliedAPI) {
-        return UsdSchemaKind::NonAppliedAPI;
-    } else if (schemaTypeToken == _tokens->singleApplyAPI) {
-        return UsdSchemaKind::SingleApplyAPI;
-    } else if (schemaTypeToken == _tokens->multipleApplyAPI) {
-        return UsdSchemaKind::MultipleApplyAPI;
-    } else if (schemaTypeToken == _tokens->concreteTyped) {
-        return UsdSchemaKind::ConcreteTyped;
-    } else if (schemaTypeToken == _tokens->abstractTyped) {
-        return UsdSchemaKind::AbstractTyped;
-    } else if (schemaTypeToken == _tokens->abstractBase) {
-        return UsdSchemaKind::AbstractBase;
-    }
-
-    TF_CODING_ERROR("Invalid schema kind name '%s' found for plugin metadata "
-                    "key '%s'.", 
-                    schemaTypeToken.GetText(), _tokens->schemaKind.GetText());
-    return UsdSchemaKind::Invalid;
+    // All other versions, append the version suffix and find by identifier.
+    std::string idStr = schemaFamily.GetString();
+    idStr.append("_");
+    idStr.append(TfStringify(schemaVersion));
+    return TfToken(idStr);
 }
 
-static UsdSchemaKind
-_GetSchemaKindFromPlugin(const TfType &schemaType)
+// Search from the end of the string for an underscore character that is ONLY
+// followed by one or more digits. This is beginning of the version suffix if
+// found.
+static size_t
+_FindVersionDelimiter(const std::string &idString) 
 {
-    PlugPluginPtr plugin =
-        PlugRegistry::GetInstance().GetPluginForType(schemaType);
-    if (!plugin) {
-        TF_CODING_ERROR("Failed to find plugin for schema type '%s'",
-                        schemaType.GetTypeName().c_str());
-        return UsdSchemaKind::Invalid;
+    static const char versionDelimiter = '_';
+
+    // A version suffix is at least 2 characters long (underscore and 1+ digits)
+    const size_t idLen =  idString.size();
+    if (idLen < 2) {
+        return std::string::npos;
     }
 
-    return _GetSchemaKindFromMetadata(plugin->GetMetadataForType(schemaType));
+    size_t delim = idLen - 1;
+    if (!std::isdigit(idString[delim])) {
+        return std::string::npos;
+    }
+    while (--delim >= 0) {
+        if (idString[delim] == versionDelimiter) {
+            return delim;
+        }
+        if (!std::isdigit(idString[delim])) {
+            return std::string::npos;
+        }
+    }
+    return std::string::npos;
+}
+
+/* static */
+std::pair<TfToken, UsdSchemaVersion> 
+UsdSchemaRegistry::ParseSchemaFamilyAndVersionFromIdentifier(
+    const TfToken &schemaIdentifier)
+{
+    const std::string &idString = schemaIdentifier.GetString();
+
+    const size_t delim = _FindVersionDelimiter(idString);
+
+    if (delim == std::string::npos) {
+        // If the identifier has no version suffix, the family is the identifier
+        // and the version is zero.
+        return std::make_pair(schemaIdentifier, 0);
+    }
+
+    // Successfully parsed a family and version. Return them.
+    return std::make_pair(
+        TfToken(idString.substr(0, delim)), 
+        TfUnstringify<UsdSchemaVersion>(idString.substr(delim + 1)));
+}
+
+/* static */
+bool
+UsdSchemaRegistry::IsAllowedSchemaFamily(const TfToken &schemaFamily)
+{
+    return TfIsValidIdentifier(schemaFamily) &&
+        _FindVersionDelimiter(schemaFamily) == std::string::npos;
+}
+
+/* static */
+bool
+UsdSchemaRegistry::IsAllowedSchemaIdentifier(const TfToken &schemaIdentifier)
+{
+    const auto familyAndVersion =
+        ParseSchemaFamilyAndVersionFromIdentifier(schemaIdentifier);
+    return IsAllowedSchemaFamily(familyAndVersion.first) &&
+        MakeSchemaIdentifierForFamilyAndVersion(
+            familyAndVersion.first, familyAndVersion.second) == schemaIdentifier;
+}
+
+/*static*/
+const UsdSchemaRegistry::SchemaInfo *
+UsdSchemaRegistry::FindSchemaInfo(const TfType &schemaType)
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    return TfMapLookupPtr(typeMapCache.schemaInfoByType, schemaType);
+}
+
+/*static*/
+const UsdSchemaRegistry::SchemaInfo *
+UsdSchemaRegistry::FindSchemaInfo(const TfToken &schemaIdentifier)
+{
+    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
+    const auto it = typeMapCache.schemaInfoByIdentifier.find(schemaIdentifier);
+    return it != typeMapCache.schemaInfoByIdentifier.end() ?
+        it->second : nullptr;
+}
+
+/*static*/
+const UsdSchemaRegistry::SchemaInfo *
+UsdSchemaRegistry::FindSchemaInfo(
+    const TfToken &schemaFamily, UsdSchemaVersion schemaVersion)
+{
+    // It is possible to pass an invalid schema family with version 0 that 
+    // produces a registered schema's valid identifier. An example would be 
+    // FindSchemaInfo("Foo_1", 0) would be able to find schema info for a 
+    // schema named "Foo_1" if it exists even though "Foo_1" is family "Foo"
+    // version 1. This check is to prevent returning the schema info in this
+    // case as it wouldn't represent the passed in family and version.
+    if (ARCH_UNLIKELY(!IsAllowedSchemaFamily(schemaFamily))) {
+        return nullptr;
+    }
+
+    return FindSchemaInfo(
+        MakeSchemaIdentifierForFamilyAndVersion(schemaFamily, schemaVersion));
+}
+
+namespace {
+
+// Helper class for storing and retrieving a vector of schema info pointers
+// sorted from highest version to lowest. One of these will be created for each
+// schema family.
+class _VersionOrderedSchemas 
+{
+public:
+    using SchemaInfoConstPtr = const UsdSchemaRegistry::SchemaInfo *;
+    using SchemaInfoConstPtrVector = std::vector<SchemaInfoConstPtr>;
+
+    // Insert schema info, maintaining highest to lowest order
+    void Insert(const UsdSchemaRegistry::SchemaInfo * schemaInfo)
+    {
+        _orderedSchemas.insert(_LowerBound(schemaInfo->version), schemaInfo);
+    }
+
+    // Get the entire vector of ordered schemas.
+    const SchemaInfoConstPtrVector &
+    GetSchemaInfos() const
+    {
+        return _orderedSchemas;
+    }
+
+    // Get a copy of the subrange of schemas that match the version predicate.
+    SchemaInfoConstPtrVector
+    GetFilteredSchemaInfos(
+        UsdSchemaVersion schemaVersion,
+        UsdSchemaRegistry::VersionPolicy versionPolicy) const
+    {
+        // Note again that the schemas are ordered highest version to lowest, 
+        // thus the backwards seeming subranges.
+        switch (versionPolicy) {
+        case UsdSchemaRegistry::VersionPolicy::All:
+            return _orderedSchemas;
+        case UsdSchemaRegistry::VersionPolicy::GreaterThan:
+            return {_orderedSchemas.cbegin(), _LowerBound(schemaVersion)};
+        case UsdSchemaRegistry::VersionPolicy::GreaterThanOrEqual:
+            return {_orderedSchemas.cbegin(), _UpperBound(schemaVersion)};
+        case UsdSchemaRegistry::VersionPolicy::LessThan:
+            return {_UpperBound(schemaVersion), _orderedSchemas.cend()};
+        case UsdSchemaRegistry::VersionPolicy::LessThanOrEqual:
+            return {_LowerBound(schemaVersion), _orderedSchemas.cend()};
+        };
+        return {};
+    }
+
+private:
+    // Lower bound for highest to lowest version order.
+    SchemaInfoConstPtrVector::const_iterator
+    _LowerBound(UsdSchemaVersion schemaVersion) const
+    {
+        return std::lower_bound(_orderedSchemas.begin(), _orderedSchemas.end(), 
+            schemaVersion, 
+            [](SchemaInfoConstPtr lhs, UsdSchemaVersion schemaVersion) {
+                return lhs->version > schemaVersion;
+            });
+    }
+
+    // Upper bound for highest to lowest version order.
+    SchemaInfoConstPtrVector::const_iterator
+    _UpperBound(UsdSchemaVersion schemaVersion) const
+    {
+        return std::upper_bound(_orderedSchemas.begin(), _orderedSchemas.end(), 
+            schemaVersion, 
+            [](UsdSchemaVersion schemaVersion, SchemaInfoConstPtr rhs) {
+                return schemaVersion > rhs->version;
+            });
+    }
+
+    // Highest to lowest ordered vector.
+    SchemaInfoConstPtrVector _orderedSchemas;
+};
+
+};
+
+// Map of schema family token to schema info ordered from highest to lowest 
+// version.
+using _SchemasByFamilyCache = 
+    std::unordered_map<TfToken, _VersionOrderedSchemas, TfHash>;
+
+static const _SchemasByFamilyCache &
+_GetSchemasByFamilyCache()
+{
+    // Create the schemas by family singleton from the registered schema types.
+    static const _SchemasByFamilyCache schemaFamilyCache = [](){
+        const _TypeMapCache &typeCache = _GetTypeMapCache();
+        _SchemasByFamilyCache result;
+        for (const auto& keyValPair : typeCache.schemaInfoByType) {
+            const UsdSchemaRegistry::SchemaInfo &schemaInfo = keyValPair.second;
+            result[schemaInfo.family].Insert(&schemaInfo);
+        }
+        return result;
+    }();
+    return schemaFamilyCache;
+}
+
+/*static*/
+const std::vector<const UsdSchemaRegistry::SchemaInfo *> &
+UsdSchemaRegistry::FindSchemaInfosInFamily(
+    const TfToken &schemaFamily)
+{
+    const _SchemasByFamilyCache &schemaFamilyCache = _GetSchemasByFamilyCache();
+    auto it = schemaFamilyCache.find(schemaFamily);
+    if (it == schemaFamilyCache.end()) {
+        static const std::vector<const UsdSchemaRegistry::SchemaInfo *> empty;
+        return empty;
+    }
+    return it->second.GetSchemaInfos();
+}    
+
+/*static*/
+std::vector<const UsdSchemaRegistry::SchemaInfo *>
+UsdSchemaRegistry::FindSchemaInfosInFamily(
+    const TfToken &schemaFamily, 
+    UsdSchemaVersion schemaVersion, 
+    VersionPolicy versionPolicy)
+{
+    const _SchemasByFamilyCache &schemaFamilyCache = _GetSchemasByFamilyCache();
+    auto it = schemaFamilyCache.find(schemaFamily);
+    if (it == schemaFamilyCache.end()) {
+        return {};
+    }
+    return it->second.GetFilteredSchemaInfos(schemaVersion, versionPolicy);
 }
 
 /*static*/
 TfToken 
 UsdSchemaRegistry::GetSchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    return it != typeMapCache.typeToName.end() ? it->second.name : TfToken();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(schemaType);
+    return schemaInfo ? schemaInfo->identifier : TfToken();
 }
 
 /*static*/
 TfToken 
 UsdSchemaRegistry::GetConcreteSchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    if (it != typeMapCache.typeToName.end() &&
-        it->second.isTyped && 
-        _IsConcreteSchemaKind(_GetSchemaKindFromPlugin(schemaType))) {
-        return it->second.name;
-    }
-    return TfToken();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(schemaType);
+    return schemaInfo && _IsConcreteSchemaKind(schemaInfo->kind) ?
+        schemaInfo->identifier : TfToken();
 }
 
 /*static*/
 TfToken 
 UsdSchemaRegistry::GetAPISchemaTypeName(const TfType &schemaType) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    return it != typeMapCache.typeToName.end() && !it->second.isTyped ? 
-        it->second.name : TfToken();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(schemaType);
+    return schemaInfo && _IsAPISchemaKind(schemaInfo->kind) ?
+        schemaInfo->identifier : TfToken();
 }
 
 /*static*/
 TfType 
 UsdSchemaRegistry::GetTypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    return it != typeMapCache.nameToType.end() ? it->second.type : TfType();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(typeName);
+    return schemaInfo ? schemaInfo->type : TfType();
 }
 
 /*static*/
 TfType 
 UsdSchemaRegistry::GetConcreteTypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    if (it != typeMapCache.nameToType.end() && 
-        it->second.isTyped && 
-        _IsConcreteSchemaKind(_GetSchemaKindFromPlugin(it->second.type))) {
-        return it->second.type; 
-    }
-    return TfType();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(typeName);
+    return schemaInfo && _IsConcreteSchemaKind(schemaInfo->kind) ?
+        schemaInfo->type : TfType();
 }
 
 /*static*/
 TfType 
 UsdSchemaRegistry::GetAPITypeFromSchemaTypeName(const TfToken &typeName) 
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    return it != typeMapCache.nameToType.end() && !it->second.isTyped ? 
-        it->second.type : TfType();
+    const SchemaInfo *schemaInfo = FindSchemaInfo(typeName);
+    return schemaInfo && _IsAPISchemaKind(schemaInfo->kind) ?
+        schemaInfo->type : TfType();
 }
 
 /*static*/
 UsdSchemaKind 
 UsdSchemaRegistry::GetSchemaKind(const TfType &schemaType)
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.typeToName.find(schemaType);
-    if (it == typeMapCache.typeToName.end()) {
-        // No schema kind because it is not a schema type.
-        return UsdSchemaKind::Invalid;
-    }
-    // Is a valid schema type.
-    return _GetSchemaKindFromPlugin(schemaType);
+    const SchemaInfo *schemaInfo = FindSchemaInfo(schemaType);
+    return schemaInfo ? schemaInfo->kind : UsdSchemaKind::Invalid;
 }
 
 /*static*/
 UsdSchemaKind 
 UsdSchemaRegistry::GetSchemaKind(const TfToken &typeName)
 {
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-    auto it = typeMapCache.nameToType.find(typeName);
-    if (it == typeMapCache.nameToType.end()) {
-        // No schema kind because it is not a schema type.
-        return UsdSchemaKind::Invalid;
-    }
-    // Is a valid schema type.
-    return _GetSchemaKindFromPlugin(it->second.type);
+    const SchemaInfo *schemaInfo = FindSchemaInfo(typeName);
+    return schemaInfo ? schemaInfo->kind : UsdSchemaKind::Invalid;
 }
 
 /*static*/
@@ -542,33 +776,41 @@ _CopySpec(const T &srcSpec, const T &dstSpec)
 }
 
 static void
-_AddSchema(SdfLayerRefPtr const &source, SdfLayerRefPtr const &target)
+_CopyAttrSpec(const SdfAttributeSpecHandle &srcAttr, 
+              const SdfPrimSpecHandle &dstPrim,
+              const std::string &dstName)
 {
-    TRACE_FUNCTION();
-    for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
-        if (!target->GetPrimAtPath(prim->GetPath())) {
+    SdfAttributeSpecHandle newAttr =
+        SdfAttributeSpec::New(
+            dstPrim, dstName, srcAttr->GetTypeName(),
+            srcAttr->GetVariability(), srcAttr->IsCustom());
+    _CopySpec(srcAttr, newAttr);
+}
 
-            SdfPrimSpecHandle newPrim =
-                SdfPrimSpec::New(target, prim->GetName(), prim->GetSpecifier(),
-                                 prim->GetTypeName());
-            _CopySpec(prim, newPrim);
+static void
+_CopyRelSpec(const SdfRelationshipSpecHandle &srcRel, 
+             const SdfPrimSpecHandle &dstPrim,
+             const std::string &dstName)
+{
+    SdfRelationshipSpecHandle newRel =
+        SdfRelationshipSpec::New(
+            dstPrim, dstName, srcRel->IsCustom());
+    _CopySpec(srcRel, newRel);
+}
 
-            for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
-                SdfAttributeSpecHandle newAttr =
-                    SdfAttributeSpec::New(
-                        newPrim, attr->GetName(), attr->GetTypeName(),
-                        attr->GetVariability(), attr->IsCustom());
-                _CopySpec(attr, newAttr);
-            }
-
-            for (SdfRelationshipSpecHandle const &rel:
-                     prim->GetRelationships()) {
-                SdfRelationshipSpecHandle newRel =
-                    SdfRelationshipSpec::New(
-                        newPrim, rel->GetName(), rel->IsCustom());
-                _CopySpec(rel, newRel);
-            }
-        }
+static void
+_CopyPropSpec(const SdfPropertySpecHandle &srcProp, 
+              const SdfPrimSpecHandle &dstPrim,
+              const std::string &dstName)
+{
+    if (SdfAttributeSpecHandle attr = 
+            TfDynamic_cast<SdfAttributeSpecHandle>(srcProp)) {
+        _CopyAttrSpec(attr, dstPrim, dstName);
+    } else if (SdfRelationshipSpecHandle attr = 
+            TfDynamic_cast<SdfRelationshipSpecHandle>(srcProp)) {
+        _CopyRelSpec(attr, dstPrim, dstName);
+    } else {
+        TF_CODING_ERROR("Property spec is neither an attribute or a relationship");
     }
 }
 
@@ -694,8 +936,6 @@ _GetTypeToAutoAppliedAPISchemaNames()
 {
     _TypeToTokenVecMap result;
 
-    const _TypeMapCache & typeMapCache = _GetTypeMapCache();
-
     for (const auto &valuePair : UsdSchemaRegistry::GetAutoApplyAPISchemas()) {
         const TfToken &apiSchemaName = valuePair.first;
         const TfTokenVector &autoApplyToSchemas = valuePair.second;
@@ -707,11 +947,11 @@ _GetTypeToAutoAppliedAPISchemaNames()
             // The names listed are the USD type names (not the full TfType 
             // name) for abstract and concrete Typed schemas, so we need to get 
             // the actual TfType of the schema and its derived types.
-            const auto it = typeMapCache.nameToType.find(schemaName);
-            if (it != typeMapCache.nameToType.end()) {
-                const TfType &schemaType = it->second.type;
-                if (applyToTypes.insert(schemaType).second) {
-                    schemaType.GetAllDerivedTypes(&applyToTypes);
+            const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+                UsdSchemaRegistry::FindSchemaInfo(schemaName);
+            if (schemaInfo) {
+                if (applyToTypes.insert(schemaInfo->type).second) {
+                    schemaInfo->type.GetAllDerivedTypes(&applyToTypes);
                 }
             }
         }
@@ -766,6 +1006,13 @@ public:
     }
 
 private:
+    using _PropNameAndPath = std::pair<TfToken, SdfPath>;
+    using _PropNameAndPathVector = std::vector<_PropNameAndPath>;
+
+    using _PropNameAndPathsToCompose = std::pair<TfToken, SdfPathVector>;
+    using _PropNameAndPathsToComposeVector = 
+        std::vector<_PropNameAndPathsToCompose>;
+
     // Applied API schemas require some processing to determine the entire
     // expanded list of included API schemas that need to be composed into its 
     // prim definition. This structure is used to hold this info.
@@ -793,6 +1040,14 @@ private:
         // be included. Used for cycle detection.
         const _BuiltinAPISchemaInfo *includedBy;
 
+        // Composition of API schema property overrides only happen across
+        // an individual branch of an built-in API schema inclusion hierarchy
+        // (i.e. sibling built-ins cannot compose in overrides to each others
+        // properties). Thus we have to maintain a stack of the found property
+        // overrides during built-in expansion through passing them in this
+        // schema info bundle.
+        _PropNameAndPathsToComposeVector *propsWithOversToComposePtr;
+
         // Checks if this info's apiSchemaDef would cause a cycle by checking
         // if it matches any of the recursively expanded API definitions that 
         // caused it to be included.
@@ -810,18 +1065,46 @@ private:
 
     void _InitializePrimDefsAndSchematicsForPluginSchemas();
 
+    void _AddSchemaToSchematics(
+        SdfLayerRefPtr const &source);
+    void _AddOverridePropertyNamesFromSourceSpec(
+        const SdfPrimSpecHandle &prim);
+
     void _PrependAPISchemasFromSchemaPrim(
         const SdfPath &schematicsPrimPath,
-        TfTokenVector *appliedAPISchemas);
+        TfTokenVector *appliedAPISchemas) const;
 
     void _ExpandBuiltinAPISchemasRecursive(
         const _BuiltinAPISchemaInfo &builtinAPISchema,
         _BuiltinAPISchemaExpansionInfo *expansionInfo) const;
 
-    void _PopulateAppliedAPIPrimDefinitions();
-    void _PopulateConcretePrimDefinitions();
+    void _AddSchemaSpecPropertiesAndUpdateOversToCompose(
+        const _BuiltinAPISchemaInfo &includedSchemaInfo,
+        UsdPrimDefinition *primDef,
+        _PropNameAndPathsToComposeVector *propsWithOversToCompose) const;
+
+    _PropNameAndPathVector _GetPropertyPathsForSpec(
+        const SdfPath &primSpecPath, 
+        _PropNameAndPathVector *overrideProperties = nullptr) const;
+
+    _PropNameAndPathVector _GetPropertyPathsForSpec(
+        const SdfPath &primSpecPath, 
+        const TfToken &instanceName,
+        _PropNameAndPathVector *overrideProperties = nullptr) const;
+
+    void _ComposePropertiesWithOverrides(
+        UsdPrimDefinition *primDef,
+        _PropNameAndPathsToComposeVector *propsWithOversToCompose) const;
+
+    void _PopulateAppliedAPIPrimDefinitions() const;
+    void _PopulateConcretePrimDefinitions() const;
 
     UsdSchemaRegistry *_registry;
+
+    // Storage for the override property names that may be defined for each
+    // schema. See _AddOverridePropertyNamesFromSourceSpec for details.
+    std::unordered_map<TfToken, VtTokenArray, TfHash> 
+        _overridePropertyNamesPerSchema;
 };
 
 void
@@ -843,12 +1126,11 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
     // Get all the plugins that provide the types and initialize prim defintions
     // for the found schema types.
     std::vector<PlugPluginPtr> plugins;
-    for (const auto &valuePair : typeCache.typeToName) {
-        const TfType &type = valuePair.first;
-        const TfToken &typeName = valuePair.second.name;
+    for (const auto &valuePair : typeCache.schemaInfoByType) {
+        const SchemaInfo &schemaInfo = valuePair.second;
 
         if (PlugPluginPtr plugin =
-            PlugRegistry::GetInstance().GetPluginForType(type)) {
+            PlugRegistry::GetInstance().GetPluginForType(schemaInfo.type)) {
 
             auto insertIt = 
                 std::lower_bound(plugins.begin(), plugins.end(), plugin);
@@ -862,29 +1144,28 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
         // prim in the schema layer. The actual TfType's typename 
         // (i.e. C++ type name) is not a valid typename for a prim.
         SdfPath schematicsPrimPath = 
-            SdfPath::AbsoluteRootPath().AppendChild(typeName);
+            SdfPath::AbsoluteRootPath().AppendChild(schemaInfo.identifier);
 
         // Create a new UsdPrimDefinition for this type in the appropriate map 
         // based on the type's schema kind. The prim definitions are not fully 
         // populated by the schematics here; we'll populate all these prim 
         // definitions in the rest FindAndBuildAllSchemaDefinitions.
-        const UsdSchemaKind schemaKind = _GetSchemaKindFromPlugin(type);
-        if (_IsConcreteSchemaKind(schemaKind)) {
+        if (schemaInfo.kind == UsdSchemaKind::ConcreteTyped) {
             UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
                 schematicsPrimPath, /* isAPISchema = */ false);
             _registry->_concreteTypedPrimDefinitions.emplace(
-                typeName, newPrimDef);
+                schemaInfo.identifier, newPrimDef);
             // Check if there are any API schemas that have been setup to auto 
             // apply to this type. We'll set these in the prim definition's 
             // applied API schemas list so they can be processed when building 
             // out this prim definition in _PopulateConcretePrimDefinitions.
-            if (TfTokenVector *autoAppliedAPIs = 
-                    TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, type)) {
+            if (TfTokenVector *autoAppliedAPIs = TfMapLookupPtr(
+                    typeToAutoAppliedAPISchemaNames, schemaInfo.type)) {
                 TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
                     "The prim definition for schema type '%s' has "
                     "these additional built-in auto applied API "
                     "schemas: [%s].\n",
-                    typeName.GetText(),
+                    schemaInfo.identifier.GetText(),
                     TfStringJoin(autoAppliedAPIs->begin(), 
                                  autoAppliedAPIs->end(), ", ").c_str());
 
@@ -892,57 +1173,62 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
                 // map was only created help populate these prim definitions.
                 newPrimDef->_appliedAPISchemas = std::move(*autoAppliedAPIs);
             }
-        } else if (_IsAppliedAPISchemaKind(schemaKind)) {
+        } else if (schemaInfo.kind == UsdSchemaKind::MultipleApplyAPI) {
             UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
                 schematicsPrimPath, /* isAPISchema = */ true);
-            if (_IsMultipleApplySchemaKind(schemaKind)) {
-                // Multiple apply schemas are actually templates for creating
-                // an instance of the schema. We store the prim definition
-                // in the applied API definitions map using its template name
-                // which is "SchemaName:__INSTANCE_NAME__"
-                const TfToken typeNameTemplate = 
-                    MakeMultipleApplyNameTemplate(typeName, "");
-                _registry->_appliedAPIPrimDefinitions.emplace(
-                    typeNameTemplate, newPrimDef);
+            // Multiple apply schemas are actually templates for creating
+            // an instance of the schema. We store the prim definition
+            // in the applied API definitions map using its template name
+            // which is "SchemaName:__INSTANCE_NAME__"
+            const TfToken typeNameTemplate = 
+                MakeMultipleApplyNameTemplate(schemaInfo.identifier, "");
+            _registry->_appliedAPIPrimDefinitions.emplace(
+                typeNameTemplate, newPrimDef);
 
-                // We also store a separate mapping of the multiple apply schema
-                // name to the same template prim definition for easy lookup by 
-                // type name. Note that we can store these by raw pointer here
-                // because the prim definition will be populated in place.
-                _registry->_multiApplyAPIPrimDefinitions.emplace(
-                    typeName, newPrimDef);
+            // We also store a separate mapping of the multiple apply schema
+            // name to the same template prim definition for easy lookup by 
+            // type name. Note that we can store these by raw pointer here
+            // because the prim definition will be populated in place.
+            _registry->_multiApplyAPIPrimDefinitions.emplace(
+                schemaInfo.identifier, newPrimDef);
 
-                // Note that all typed and applied API schemas can include 
-                // built-in API schemas, but, unlike with single apply and typed
-                // schemas, schemas cannot be auto-applied to multiple apply API
-                // schemas.
-            } else {
-                _registry->_appliedAPIPrimDefinitions.emplace(
-                    typeName, newPrimDef);
+            // Note that all typed and applied API schemas can include 
+            // built-in API schemas, but, unlike with single apply and typed
+            // schemas, schemas cannot be auto-applied to multiple apply API
+            // schemas.
+        } else if (schemaInfo.kind == UsdSchemaKind::SingleApplyAPI) {
+            UsdPrimDefinition *newPrimDef = new UsdPrimDefinition(
+                schematicsPrimPath, /* isAPISchema = */ true);
+            _registry->_appliedAPIPrimDefinitions.emplace(
+                schemaInfo.identifier, newPrimDef);
 
-                // Check if there are any API schemas that have been setup to 
-                // auto apply to this API schema type. We'll set these in the 
-                // prim definition's applied API schemas list so they can be 
-                // processed when building out this prim definition in 
-                // _PopulateAppliedAPIPrimDefinitions.
-                if (TfTokenVector *autoAppliedAPIs = 
-                        TfMapLookupPtr(typeToAutoAppliedAPISchemaNames, type)) {
-                    TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
-                        "The prim definition for API schema type '%s' has "
-                        "these additional built-in auto applied API "
-                        "schemas: [%s].\n",
-                        typeName.GetText(),
-                        TfStringJoin(autoAppliedAPIs->begin(), 
-                                     autoAppliedAPIs->end(), ", ").c_str());
+            // Check if there are any API schemas that have been setup to 
+            // auto apply to this API schema type. We'll set these in the 
+            // prim definition's applied API schemas list so they can be 
+            // processed when building out this prim definition in 
+            // _PopulateAppliedAPIPrimDefinitions.
+            if (TfTokenVector *autoAppliedAPIs = TfMapLookupPtr(
+                    typeToAutoAppliedAPISchemaNames, schemaInfo.type)) {
+                TF_DEBUG(USD_AUTO_APPLY_API_SCHEMAS).Msg(
+                    "The prim definition for API schema type '%s' has "
+                    "these additional built-in auto applied API "
+                    "schemas: [%s].\n",
+                    schemaInfo.identifier.GetText(),
+                    TfStringJoin(autoAppliedAPIs->begin(), 
+                                    autoAppliedAPIs->end(), ", ").c_str());
 
-                    // Note that we take the API schema list from the map as the 
-                    // map was only created help populate these prim definitions.
-                    newPrimDef->_appliedAPISchemas = std::move(*autoAppliedAPIs);
-                }
+                // Note that we take the API schema list from the map as the 
+                // map was only created help populate these prim definitions.
+                newPrimDef->_appliedAPISchemas = std::move(*autoAppliedAPIs);
             }
-        } 
+        }
     }
 
+    // Drop the GIL if we have it, so that any tasks we create that might
+    // require it (e.g. for python lifetime management on TfRefBase) won't
+    // deadlock waiting for the GIL.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+    
     // For each plugin, if it has generated schema, add it to the schematics.
     std::vector<SdfLayerRefPtr> generatedSchemas(plugins.size());
     WorkWithScopedParallelism([&plugins, &generatedSchemas]() {
@@ -964,7 +1250,7 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
 
             bool hasErrors = false;
 
-            _AddSchema(generatedSchema, _registry->_schematics);
+            _AddSchemaToSchematics(generatedSchema);
 
             // Schema generation will have added any defined fallback prim 
             // types as a dictionary in layer metadata which will be composed
@@ -996,12 +1282,63 @@ _InitializePrimDefsAndSchematicsForPluginSchemas()
     }
 }
 
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::_AddSchemaToSchematics(
+    SdfLayerRefPtr const &source)
+{
+    TRACE_FUNCTION();
+    const SdfLayerRefPtr &schematicsLayer = _registry->_schematics;
+    for (SdfPrimSpecHandle const &prim: source->GetRootPrims()) {
+        if (!schematicsLayer->GetPrimAtPath(prim->GetPath())) {
+
+            SdfPrimSpecHandle newPrim = SdfPrimSpec::New(
+                schematicsLayer, prim->GetName(), 
+                prim->GetSpecifier(), prim->GetTypeName());
+            _CopySpec(prim, newPrim);
+
+            for (SdfAttributeSpecHandle const &attr: prim->GetAttributes()) {
+                _CopyAttrSpec(attr, newPrim, attr->GetName());
+            }
+
+            for (SdfRelationshipSpecHandle const &rel:
+                     prim->GetRelationships()) {
+                _CopyRelSpec(rel, newPrim, rel->GetName());
+            }
+
+            _AddOverridePropertyNamesFromSourceSpec(prim);
+        }
+    }
+}
+
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::_AddOverridePropertyNamesFromSourceSpec(
+    const SdfPrimSpecHandle &prim)
+{
+    // Override property names are stored in a customData field for each schema
+    // prim spec in the generatedSchema layers that we combine into the full 
+    // schematics layer. But we don't copy customData fields into the final 
+    // schematics (nor do we want to) so we have to extract this information 
+    // from the prim specs in the generatedSchemas and store it away to used 
+    // during the rest of schema initialization.
+    static const TfToken apiSchemaOverridePropertyNamesToken(
+        "apiSchemaOverridePropertyNames");
+    VtTokenArray overridePropertyNames;
+    if (prim->GetLayer()->HasFieldDictKey(
+            prim->GetPath(), 
+            SdfFieldKeys->CustomData, 
+            apiSchemaOverridePropertyNamesToken, 
+            &overridePropertyNames)) {
+        _overridePropertyNamesPerSchema.emplace(
+            prim->GetName(), std::move(overridePropertyNames));
+    }
+}
+
 // Helper that gets the authored API schemas from the schema prim path in the
 // schematics layer and prepends them to the given applied API schemas list.
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::_PrependAPISchemasFromSchemaPrim(
     const SdfPath &schematicsPrimPath,
-    TfTokenVector *appliedAPISchemas)
+    TfTokenVector *appliedAPISchemas) const
 {
     // Get the API schemas from the list op field in the schematics.
     SdfTokenListOp apiSchemasListOp;
@@ -1057,15 +1394,37 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
         MakeMultipleApplyNameInstance(
             appliedAPISchemas.front(), includedSchemaInfo.instanceName);
 
-    // Compose the included schema's properties from its schematic's prim
-    // spec into the prim definition we're expanding.
-    expansionInfo->primDef->_ComposePropertiesFromPrimSpec(
-        _registry->_schematics, 
-        includedSchemaInfo.apiSchemaDef->_schematicsPrimPath,
-        includedSchemaInfo.instanceName);
-
     // Add the included API schema to the expanded list.
     expansionInfo->allAPISchemaNames.push_back(includedAPISchemaName);
+
+    // Make a copy the parent's override properties to compose. We need a copy
+    // since the overrides from this branch of the API schema expansion do
+    // not apply to the other API schemas included by the parent schema. Note
+    // that we expect the number of property overrides to be very small (and 
+    // frequently empty) and we also expect that the depth of recursion of 
+    // API schema expansion to be very minimal, so the copying of this structure
+    // is unlikely to have a performance impact.
+    _PropNameAndPathsToComposeVector propsWithOversToCompose;
+    if (includedSchemaInfo.propsWithOversToComposePtr) {
+        propsWithOversToCompose = 
+            *(includedSchemaInfo.propsWithOversToComposePtr);
+    }
+
+    // Add the properties that come directly from the API schema's class 
+    // schematics. Any newly found defined properties that have overrides in
+    // propsWithOversToCompose will be fully composed into their final property
+    // spec for the expanded prim definition. Existing overrides in 
+    // propsWithOversToCompose that were able to be composed with a defined 
+    // property will be removed (we are done with them and won't need/want to
+    // compose them again). Any new properties that are declared as overrides in 
+    // this schematics spec will be added to propsWithOversToCompose so they
+    // can be composed with defined properties from API schemas that this 
+    // schema includes.
+    // \ref Usd_APISchemaStrengthOrdering
+    _AddSchemaSpecPropertiesAndUpdateOversToCompose(
+        includedSchemaInfo, 
+        expansionInfo->primDef,
+        &propsWithOversToCompose);
 
     // Recursively gather the built-in API schemas which are listed after the
     // included API schema in its applied API schemas list.
@@ -1151,7 +1510,8 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
         // included both "OtherMultiApplyAPI:__INSTANCE_NAME__:foo" and 
         // "OtherMultiApplyAPI:__INSTANCE_NAME__:bar").
         _BuiltinAPISchemaInfo builtinApiSchemaInfo = 
-            {builtinApiSchemaDef, builtinInstanceName, &includedSchemaInfo};
+            {builtinApiSchemaDef, builtinInstanceName, 
+             &includedSchemaInfo, &propsWithOversToCompose};
         if (builtinApiSchemaInfo.CheckForCycle()) {
             TF_WARN("Found unrecoverable API schema cycle while expanding "
                     "built-in API schema chain '%s'. An API schema of the same "
@@ -1165,12 +1525,345 @@ UsdSchemaRegistry::_SchemaDefInitHelper::_ExpandBuiltinAPISchemasRecursive(
 
         // Gather the built-in schemas prim specs and built-in API schemas.
         _ExpandBuiltinAPISchemasRecursive(builtinApiSchemaInfo, expansionInfo);
+
+        // Each of the API schemas we recursively expand in this loop may have 
+        // defined and composed any number of the properties that we have 
+        // overrides stored for. We remove the overrides for these composed 
+        // properties here so that we don't inadvertently compose over the 
+        // property again if one of the weaker sibling API schemas happens to 
+        // define the same property.
+        if (!propsWithOversToCompose.empty()) {
+            const auto removeIt = std::remove_if(
+                propsWithOversToCompose.begin(),
+                propsWithOversToCompose.end(),
+                [&](const _PropNameAndPathsToCompose &propWithOversToCompose) {
+                    return expansionInfo->primDef->_GetPropertySpecPath(
+                        propWithOversToCompose.first);
+                });
+            propsWithOversToCompose.erase(
+                removeIt, propsWithOversToCompose.end());
+        }
     }
+}
+
+void 
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_AddSchemaSpecPropertiesAndUpdateOversToCompose(
+    const _BuiltinAPISchemaInfo &includedSchemaInfo,
+    UsdPrimDefinition *primDef,
+    _PropNameAndPathsToComposeVector *propsWithOversToCompose) const
+{
+    // Get all the defined property paths and override property paths from the
+    // API schema's schematics spec.
+    _PropNameAndPathVector overrideProperties;
+    _PropNameAndPathVector definedProperties = _GetPropertyPathsForSpec(
+        includedSchemaInfo.apiSchemaDef->_schematicsPrimPath,
+        includedSchemaInfo.instanceName,
+        &overrideProperties);
+
+    // Compose the schema's defined properties into the expanded prim 
+    // definition.
+    primDef->_AddProperties(std::move(definedProperties));
+
+    // With the new defined properties added, compose any overrides gathered
+    // from the schemas that caused this API schema to be included over the 
+    // defined property definitions to which they apply. The composed property
+    // specs will be added (or updated) under the schematics prim spec of the
+    // expanded prim definition's type. Note that this removes any
+    // properties that are composed from propsWithOversToCompose so that we
+    // don't process these overrides again. Any property overrides that we don't
+    // have a defined property for yet will remain in propsWithOversToCompose
+    // as they may be defined elsewhere in the schema expansion.
+    _ComposePropertiesWithOverrides(primDef, propsWithOversToCompose);
+
+    // Now process the API schema override properties that this schema itself
+    // defines.
+    for (_PropNameAndPath &overridePropNameAndPath : overrideProperties) {
+        TfToken &overridePropName = overridePropNameAndPath.first;
+        SdfPath &overridePropPath = overridePropNameAndPath.second;
+
+        // If the property name is already found in the composed prim 
+        // definition, then we've already found a def for the property and don't
+        // process any more overrides.
+        if (primDef->_GetPropertySpecPath(overridePropName)) {
+            continue;
+        }
+
+        // Add the override property's path to the list of schema specs that 
+        // will need to be composed for the property with that name, starting
+        // a new list of paths if necessary.
+        // 
+        // We expect the number of override properties to be extemely small 
+        // making linear search efficient.
+        auto findIt = std::find_if(
+            propsWithOversToCompose->begin(),
+            propsWithOversToCompose->end(),
+            [&](const _PropNameAndPathsToCompose &propWithOversToCompose){
+                return propWithOversToCompose.first == overridePropName;
+            });
+
+        if (findIt == propsWithOversToCompose->end()) {
+            propsWithOversToCompose->emplace_back(
+                std::move(overridePropName), 
+                SdfPathVector({std::move(overridePropPath)}));
+        } else {
+            findIt->second.push_back(std::move(overridePropPath));
+        }
+    }
+}
+
+UsdSchemaRegistry::_SchemaDefInitHelper::_PropNameAndPathVector 
+UsdSchemaRegistry::_SchemaDefInitHelper::_GetPropertyPathsForSpec(
+    const SdfPath &primSpecPath, 
+    _PropNameAndPathVector *overrideProperties) const
+{
+    _PropNameAndPathVector definedProperties;
+
+    // Get the names of all the properties defined in the prim spec.
+    TfTokenVector specPropertyNames;
+    if (!_registry->_schematics->HasField<TfTokenVector>(
+            primSpecPath, 
+            SdfChildrenKeys->PropertyChildren, 
+            &specPropertyNames)) {
+        // While its possible for the spec to have no properties, we expect 
+        // the prim spec itself to exist.
+        if (!_registry->_schematics->HasSpec(primSpecPath)) {
+            TF_WARN("No prim spec exists at path '%s' in schematics layer.",
+                    primSpecPath.GetText());
+        }
+        return definedProperties;
+    }
+
+    definedProperties.reserve(specPropertyNames.size());
+
+    // Get the override property names for this schema if there are any. If 
+    // there aren't any, return the path for each property name.
+    const VtTokenArray *overridePropertyNames = TfMapLookupPtr(
+        _overridePropertyNamesPerSchema, primSpecPath.GetNameToken());
+    if (!overridePropertyNames) {
+        for (TfToken &propName : specPropertyNames) {
+            definedProperties.emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        }
+        return definedProperties;
+    } 
+
+    // Otherwish we have to filter out the override properties from the list
+    // and optionally return their paths via the output parameter.
+    if (overrideProperties) {
+        overrideProperties->reserve(overridePropertyNames->size());
+    }
+    for (TfToken &propName : specPropertyNames) {
+        if (std::find(overridePropertyNames->begin(),
+                      overridePropertyNames->end(), 
+                      propName) == overridePropertyNames->end()) {
+            definedProperties.emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        } else if (overrideProperties) {
+            overrideProperties->emplace_back(
+                std::move(propName), 
+                primSpecPath.AppendProperty(propName));
+        }
+    }
+
+    return definedProperties;
+}
+
+UsdSchemaRegistry::_SchemaDefInitHelper::_PropNameAndPathVector 
+UsdSchemaRegistry::_SchemaDefInitHelper::_GetPropertyPathsForSpec(
+    const SdfPath &primSpecPath, 
+    const TfToken &instanceName,
+    _PropNameAndPathVector *overrideProperties) const
+{
+    // First get the property names and specs without the instance name.
+    _PropNameAndPathVector definedProperties = 
+        _GetPropertyPathsForSpec(primSpecPath, overrideProperties);
+    if (instanceName.IsEmpty()) {
+        return definedProperties;
+    }
+
+    // Apply the instance to all the property names before returning property
+    // paths.
+    for (_PropNameAndPath &propNameAndPath : definedProperties) {
+        propNameAndPath.first = 
+            UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                propNameAndPath.first, instanceName);
+    }
+    if (overrideProperties) {
+        for (_PropNameAndPath &propNameAndPath : *overrideProperties) {
+            propNameAndPath.first = 
+                UsdSchemaRegistry::MakeMultipleApplyNameInstance(
+                    propNameAndPath.first, instanceName);
+        }
+    }
+
+    return definedProperties;
+}
+
+// Returns true if the property with the given name in these two separate prim
+// definitions have the same type. "Same type" here means that they are both
+// the same kind of property (attribute or relationship), have the same 
+// variability (varying or uniform) and if they are attributes, that their 
+// attribute type names are the same.
+static bool _PropertyTypesMatch(
+    const SdfLayerRefPtr &layer,
+    const SdfPath &strongerPropPath,
+    const SdfPath &weakerPropPath)
+{
+    const SdfSpecType specType = layer->GetSpecType(strongerPropPath);
+    const bool specIsAttribute = (specType == SdfSpecTypeAttribute);
+
+    // Compare spec types (relationship vs attribute)
+    if (specType != layer->GetSpecType(weakerPropPath)) {
+        TF_WARN("%s at path '%s' from stronger schema failed to override %s at "
+                "'%s' from weaker schema during schema prim definition "
+                "composition because of the property spec types do not match.",
+                specIsAttribute ? "Attribute" : "Relationsip",
+                strongerPropPath.GetText(),
+                specIsAttribute ? "relationsip" : "attribute",
+                weakerPropPath.GetText());
+        return false;
+    }
+
+    // Compare variability
+    SdfVariability strongerVariability, weakerVariability;
+    layer->HasField(
+        strongerPropPath, SdfFieldKeys->Variability, &strongerVariability);
+    layer->HasField(
+        weakerPropPath, SdfFieldKeys->Variability, &weakerVariability);
+    if (weakerVariability != strongerVariability) {
+        TF_WARN("Property at path '%s' from stronger schema failed to override "
+                "property at path '%s' from weaker schema during schema prim "
+                "definition composition because their variability does not "
+                "match.",
+                strongerPropPath.GetText(),
+                weakerPropPath.GetText());
+        return false;
+    }
+
+    // Done comparing if its not an attribute.
+    if (!specIsAttribute) {
+        return true;
+    }
+
+    // Compare the type name field of the attributes.
+    TfToken strongerTypeName;
+    layer->HasField(strongerPropPath, SdfFieldKeys->TypeName, &strongerTypeName);
+    TfToken weakerTypeName;
+    layer->HasField(weakerPropPath, SdfFieldKeys->TypeName, &weakerTypeName);
+    if (weakerTypeName != strongerTypeName) {
+        TF_WARN("Attribute at path '%s' with type name '%s' from stronger "
+                "schema failed to override attribute at path '%s' with type "
+                "name '%s' from weaker schema during schema prim definition "
+                "composition because of the attribute type names do not match.",
+                strongerPropPath.GetText(),
+                strongerTypeName.GetText(),
+                weakerPropPath.GetText(),
+                weakerTypeName.GetText());
+        return false;
+    }
+    return true;
 }
 
 void
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateAppliedAPIPrimDefinitions()
+_ComposePropertiesWithOverrides(
+    UsdPrimDefinition *primDef,
+    _PropNameAndPathsToComposeVector *propsWithOversToCompose) const
+{
+    if (propsWithOversToCompose->empty()) {
+        return;
+    }
+
+    _PropNameAndPathsToComposeVector uncomposedPropsWithOversToCompose;
+    const SdfLayerRefPtr &schematicsLayer = _registry->_schematics;
+
+    for (auto &propWithOversToCompose : *propsWithOversToCompose) {
+        const TfToken &propName = propWithOversToCompose.first;
+        SdfPathVector &propertyPaths = propWithOversToCompose.second;
+
+        // Get the defined property spec for the override property spec. If 
+        // there isn't one yet, move the override properties to the uncomposed
+        // list so we can return them back at the end.
+        SdfPath *defPath = primDef->_GetPropertySpecPath(propName);
+        if (!defPath) {
+            uncomposedPropsWithOversToCompose.push_back(
+                std::move(propWithOversToCompose));
+            continue;
+        }
+
+        // Property overrides are not allowed to change the type of a property
+        // from its defining spec so remove any override specs that are 
+        // invalid.
+        const auto badPropsIt = std::remove_if(
+            propertyPaths.begin(), propertyPaths.end(),
+            [&](const SdfPath &propPath) {
+                return !_PropertyTypesMatch(
+                    schematicsLayer, propPath, *defPath);
+            }
+        );
+        if (badPropsIt != propertyPaths.end()) {
+            propertyPaths.erase(badPropsIt, propertyPaths.end());
+            if (propertyPaths.empty()) {
+                continue;
+            }
+        }
+
+        // The composed property will always live under the prim definition's
+        // schematics prim spec, regardless of where the defs it is 
+        // composed from come from.
+        const SdfPath dstPath = 
+            primDef->_schematicsPrimPath.AppendProperty(propName);
+
+        // If the first override path is not from the composed prim 
+        // definition itself, then the schematics prim doesn't have a
+        // spec for this prorperty yet. Copy the first override to 
+        // create the needed property spec.
+        if (dstPath != propertyPaths.front()) {
+            SdfPrimSpecHandle dstPrim = 
+                schematicsLayer->GetPrimAtPath(primDef->_schematicsPrimPath);
+            SdfPropertySpecHandle srcProp = 
+                schematicsLayer->GetPropertyAtPath(propertyPaths.front());
+            _CopyPropSpec(srcProp, dstPrim, propName);
+        }
+
+        // Compose function. Any fields from the srcPath spec that aren't 
+        // already in the dstPath spec are copied into the dstPath spec.
+        auto composeFn = [&](const SdfPath &srcPath) {
+            for (const TfToken srcField : schematicsLayer->ListFields(srcPath)) {
+                if (!schematicsLayer->HasField(dstPath, srcField)) {
+                    schematicsLayer->SetField(dstPath, srcField, 
+                        schematicsLayer->GetField(srcPath, srcField));
+                }
+            }
+        };
+
+        // Now compose in the rest of the override property specs under
+        // our destination. We always skip the first entry as that will
+        // already be the spec the destination path starts with.
+        for (auto pathIt = propertyPaths.begin() + 1; 
+             pathIt != propertyPaths.end(); ++pathIt) {
+            composeFn(*pathIt);
+        }
+
+        // Last compose in the property definition itself.
+        composeFn(*defPath);
+
+        // Now that the spec is fully composed, set the definition's 
+        // path for the property to the composed property's path.
+        *defPath = dstPath;
+    }
+
+    // Update the propsWithOversToCompose to be the remaining prop overs that 
+    // weren't able to compose here.
+    propsWithOversToCompose->swap(uncomposedPropsWithOversToCompose);
+}
+
+void
+UsdSchemaRegistry::_SchemaDefInitHelper::
+_PopulateAppliedAPIPrimDefinitions() const
 {
     TRACE_FUNCTION();
     // All applied API schemas may contain other applied API schemas which may 
@@ -1211,8 +1904,9 @@ _PopulateAppliedAPIPrimDefinitions()
         // schema is itself), we can just add the prim spec's properties and be
         // done. 
         if (primDef->_appliedAPISchemas.size() == 1) {
-            primDef->_ComposePropertiesFromPrimSpec(
-                _registry->_schematics, primDef->_schematicsPrimPath);
+            _PropNameAndPathVector definedProperties = 
+                _GetPropertyPathsForSpec(primDef->_schematicsPrimPath);
+            primDef->_AddProperties(std::move(definedProperties));
             continue;
         }
 
@@ -1309,7 +2003,7 @@ _PopulateAppliedAPIPrimDefinitions()
 
 void 
 UsdSchemaRegistry::_SchemaDefInitHelper::
-_PopulateConcretePrimDefinitions()
+_PopulateConcretePrimDefinitions() const
 {
     TRACE_FUNCTION();
     // Populate all concrete API schema definitions; it is expected that all 
@@ -1331,10 +2025,15 @@ _PopulateConcretePrimDefinitions()
             primDef->_schematicsPrimPath,
             &primDef->_appliedAPISchemas);
 
-        // Compose the properties from the prim spec to the prim definition
-        // first as these are stronger than the built-in API schema properties.
-        primDef->_ComposePropertiesFromPrimSpec(
-            _registry->_schematics, primDef->_schematicsPrimPath);
+        // Get both the defined properties and API schema override properties
+        // from the concrete prim spec. We compose the defined properties from 
+        // the prim spec to the prim definition first as these are stronger 
+        // than the built-in API schema properties.
+        _PropNameAndPathVector overrideProperties;
+        _PropNameAndPathVector definedProperties = 
+            _GetPropertyPathsForSpec(primDef->_schematicsPrimPath, 
+                                     &overrideProperties);
+        primDef->_AddProperties(std::move(definedProperties));
 
         // If there are any applied API schemas in the list, compose them 
         // in now
@@ -1352,6 +2051,20 @@ _PopulateConcretePrimDefinitions()
             primDef->_appliedAPISchemas.clear();
             _registry->_ComposeAPISchemasIntoPrimDefinition(
                 primDef, apiSchemasToCompose);
+        }
+
+        // With all the built-in API schemas applied, we can now compose any
+        // API schema property overrides declared in the types schema over the 
+        // current defined properties.
+        if (!overrideProperties.empty()) {
+            _PropNameAndPathsToComposeVector overridePropertiesToCompose;
+            for (_PropNameAndPath &overrideProperty : overrideProperties) {
+                overridePropertiesToCompose.emplace_back(
+                    std::move(overrideProperty.first),
+                    SdfPathVector({std::move(overrideProperty.second)}));
+            }
+            _ComposePropertiesWithOverrides(
+                primDef, &overridePropertiesToCompose);
         }
     }
 }

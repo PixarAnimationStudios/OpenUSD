@@ -43,11 +43,42 @@ class UsdImagingCylinderAdapter : public UsdImagingGprimAdapter {
 public:
     typedef UsdImagingGprimAdapter BaseAdapter;
 
+    // Number of radial segments on a circular cross-section of the cylinder.
+    static constexpr size_t numRadial = 10;
+
     UsdImagingCylinderAdapter()
         : UsdImagingGprimAdapter()
     {}
     USDIMAGING_API
     virtual ~UsdImagingCylinderAdapter();
+
+    // ---------------------------------------------------------------------- //
+    /// \name Scene Index Support
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
+
+    USDIMAGING_API
+    TfToken GetImagingSubprimType(
+            UsdPrim const& prim,
+            TfToken const& subprim) override;
+
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetImagingSubprimData(
+            UsdPrim const& prim,
+            TfToken const& subprim,
+            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
+            TfToken const& subprim,
+            TfTokenVector const& properties) override;
+
+    // ---------------------------------------------------------------------- //
+    /// \name Initialization
+    // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
     SdfPath Populate(
@@ -91,15 +122,6 @@ public:
     VtValue GetPoints(
         UsdPrim const& prim,
         UsdTimeCode time) const override;
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshPoints(UsdPrim const& prim,
-                                 UsdTimeCode time);
-
-    // Used by the legacyEngine.
-    USDIMAGING_API
-    static VtValue GetMeshTopology();
 };
 
 

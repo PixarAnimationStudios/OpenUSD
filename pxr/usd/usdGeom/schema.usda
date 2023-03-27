@@ -808,6 +808,60 @@ class Cone "Cone" (
     )
 }
 
+class Plane "Plane" (
+    inherits = </Gprim>
+    doc = """Defines a primitive plane, centered at the origin, and is defined by
+    a cardinal axis, width, and length. The plane is double-sided by default.
+
+    The axis of width and length are perpendicular to the plane's \\em axis:
+
+    axis  | width  | length
+    ----- | ------ | -------
+    X     | z-axis | y-axis
+    Y     | x-axis | z-axis
+    Z     | x-axis | y-axis
+
+    """
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    uniform bool doubleSided = true (
+        doc = """Planes are double-sided by default. Clients may also support
+        single-sided planes.
+
+        \\sa UsdGeomGprim::GetDoubleSidedAttr()"""
+        )
+    double width = 2.0 (
+        doc = """The width of the plane, which aligns to the x-axis when \\em axis is
+        'Z' or 'Y', or to the z-axis when \\em axis is 'X'.  If you author \\em width 
+        you must also author \\em extent.
+
+        \\sa UsdGeomGprim::GetExtentAttr()"""
+    )
+    double length = 2.0 (
+        doc = """The length of the plane, which aligns to the y-axis when \\em axis is
+        'Z' or 'X', or to the z-axis when \\em axis is 'Y'.  If you author \\em length 
+        you must also author \\em extent.
+
+        \\sa UsdGeomGprim::GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the surface of the plane is aligned. When set
+        to 'Z' the plane is in the xy-plane; when \\em axis is 'X' the plane is in 
+        the yz-plane, and when \\em axis is 'Y' the plane is in the xz-plane.
+
+        \\sa UsdGeomGprim::GetAxisAttr()."""
+    )
+    float3[] extent = [(-1.0, -1.0, 0.0), (1.0, 1.0, 0.0)] (
+        doc = """Extent is re-defined on Plane only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
 class "PointBased" (
     doc = """Base class for all UsdGeomGprims that possess points,
     providing common attributes such as normals and velocities."""
@@ -1081,13 +1135,13 @@ class GeomSubset "GeomSubset" (
     could be extended in the future to support subsets representing edges, 
     segments, points etc.
 
-    To apply to a geometric prim, a GeomSubset prim must be defined as a 
-    child of it in namespace. This restriction makes it easy and efficient 
-    to discover subsets of a prim. We might want to relax this restriction if 
-    it's common to have multiple <b>families</b> of subsets on a gprim and if 
-    it's useful to be able to organize subsets belonging to a </b>family</b> 
-    under a common scope. See 'familyName' attribute for more info on defining 
-    a family of subsets.
+    To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
+    child in namespace, and possess a concrete defining specifier (i.e. def). 
+    This restriction makes it easy and efficient to discover subsets of a prim. 
+    We might want to relax this restriction if it's common to have multiple 
+    <b>families</b> of subsets on a gprim and if it's useful to be able to 
+    organize subsets belonging to a </b>family</b> under a common scope. See 
+    'familyName' attribute for more info on defining a family of subsets.
 
     Note that a GeomSubset isn't an imageable (i.e. doesn't derive from
     UsdGeomImageable). So, you can't author <b>visibility</b> for it or 
@@ -1859,7 +1913,7 @@ class PointInstancer "PointInstancer" (
     \\code
     01 def PointInstancer "Crowd_Mid"
     02 {
-    03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleTine_Casual> ]
+    03     rel prototypes = [ </Crowd_Mid/Prototypes/MaleThin_Business>, </Crowd_Mid/Prototypes/MaleThin_Casual> ]
     04     
     05     over "Prototypes" 
     06     {

@@ -43,11 +43,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// The concepts of displayWindow and dataWindow are similar to the ones in
 /// OpenEXR, including that the x- and y-axis of the coordinate system point
-/// left and down, respectively.
+/// right and down, respectively.
 ///
 /// In fact, these windows mean the same here and in OpenEXR if the
 /// displayWindow has the same aspect ratio (when accounting for the
-/// pixelAspectRatio) as the filmback plane of the camera has (that is the
+/// pixelAspectRatio) as the filmback plane of the camera (that is the
 /// ratio of the horizontalAperture to verticalAperture of, e.g., Usd's Camera
 /// or GfCamera).
 ///
@@ -66,7 +66,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// When using the AOVs, the render buffer size is determined
 /// independently from the framing info. However, the dataWindow is
 /// supposed to be contained in the render buffer rect (in particular,
-/// the dataWindow cannot contain pixels withs negative coordinates -
+/// the dataWindow cannot contain pixels with negative coordinates -
 /// this restriction does not apply if, e.g., hdPrman circumvents AOVs
 /// and writes directly to EXR). In other words, unlike in OpenEXR,
 /// the rect of pixels for which we allocate storage can differ from

@@ -51,6 +51,13 @@ WRAP_CUSTOM;
 
         
 static UsdAttribute
+_CreateSkinningMethodAttr(UsdSkelBindingAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateSkinningMethodAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Token), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateGeomBindTransformAttr(UsdSkelBindingAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateGeomBindTransformAttr(
@@ -147,6 +154,13 @@ void wrapUsdSkelBindingAPI()
 
         .def(!self)
 
+        
+        .def("GetSkinningMethodAttr",
+             &This::GetSkinningMethodAttr)
+        .def("CreateSkinningMethodAttr",
+             &_CreateSkinningMethodAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
         
         .def("GetGeomBindTransformAttr",
              &This::GetGeomBindTransformAttr)

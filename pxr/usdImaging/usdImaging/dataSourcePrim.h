@@ -31,9 +31,11 @@
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
+#include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -44,12 +46,6 @@ class UsdImagingDataSourceVisibility : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceVisibility);
-
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'visibility' only.
-    bool Has(const TfToken &name) override;
 
     /// Returns the names contained in this data source.
     ///
@@ -91,12 +87,6 @@ class UsdImagingDataSourcePurpose : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePurpose);
-
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'purpose' only.
-    bool Has(const TfToken &name) override;
 
     /// Returns the names contained in this data source.
     ///
@@ -179,12 +169,6 @@ class UsdImagingDataSourceExtent : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceExtent);
-
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    ///
-    /// This class returns \c true for 'min' and 'max' only.
-    bool Has(const TfToken &name) override;
 
     /// Returns the names contained in this datasource.
     ///
@@ -335,13 +319,6 @@ class UsdImagingDataSourceXform : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceXform);
 
-    /// Returns whether or not this container can return something meaningful
-    /// for \p name.
-    /// 
-    /// This class returns \c true for 'matrix' and 'resetXformStack' only.
-    ///
-    bool Has(const TfToken &name) override;
-
     /// Returns the names contained in this data source.
     ///
     /// This class only returns 'matrix' and 'resetXformStack'.
@@ -379,6 +356,76 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXform);
 // ----------------------------------------------------------------------------
 
 ///
+/// \class UsdImagingDataSourceModel
+///
+/// Data source representing model API for a USD prim.
+///
+class UsdImagingDataSourceModel : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceModel);
+
+    /// Return attribute names of UsdImagingModelSchema.
+    ///
+    TfTokenVector GetNames() override;
+
+    /// Returns data authored on USD prim (without resolving inherited) for
+    /// attribute names of UsdImagingModelSchema.
+    ///
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    /// C'tor.
+    ///
+    /// \p model is API schema from which this class can extract values from.
+    /// \p sceneIndexPath is the path of this object in the scene index.
+    /// \p stageGlobals represents the context object for the UsdStage with
+    /// which to evaluate this attribute data source.
+    ///
+    /// Note: client code calls this via static New().
+    UsdImagingDataSourceModel(
+            const UsdGeomModelAPI &model,
+            const SdfPath &sceneIndexPath,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+private:
+    UsdGeomModelAPI _model;
+    const SdfPath _sceneIndexPath;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceModel);
+
+// ----------------------------------------------------------------------------
+
+///
+/// \class UsdImagingDataSourcePrimOrigin
+///
+/// Data source to access the underlying UsdPrim.
+///
+class UsdImagingDataSourcePrimOrigin : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimOrigin);
+
+    TfTokenVector GetNames() override;
+
+    /// Get(UsdImagingTokens->usdPrim) returns a data source containing
+    /// the underyling UsdPrim.
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+private:
+    UsdImagingDataSourcePrimOrigin(const UsdPrim &usdPrim);
+
+private:
+    UsdPrim _usdPrim;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimOrigin);
+
+// ----------------------------------------------------------------------------
+
+///
 /// \class UsdImagingDataSourcePrim
 ///
 /// Data source representing a basic USD prim. This class is meant to check for
@@ -400,12 +447,6 @@ class UsdImagingDataSourcePrim : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrim);
 
-    /// Returns whether or not this data source can return a meaningful 
-    /// data source for \p name.
-    ///
-    USDIMAGING_API
-    bool Has(const TfToken &name) override;
-
     /// Returns the names for which this data source can return meaningful
     /// results.
     ///
@@ -416,6 +457,14 @@ public:
     ///
     USDIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    /// Returns the hydra attribute set we should invalidate if the value of
+    /// the USD properties in \p properties change.
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.
@@ -453,6 +502,8 @@ private:
     const SdfPath _sceneIndexPath;
     UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
+
+    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrim);

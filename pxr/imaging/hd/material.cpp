@@ -158,4 +158,25 @@ bool operator!=(const HdMaterialNetworkMap& lhs,
 }
 
 
+std::ostream& operator<<(std::ostream& out, const HdMaterialNode2& pv)
+{
+    out << "HdMaterialNode2 Params: (...) " ;
+    return out;
+}
+
+bool operator==(const HdMaterialNode2& lhs,
+                const HdMaterialNode2& rhs) 
+{
+    return lhs.nodeTypeId == rhs.nodeTypeId
+        && lhs.parameters == rhs.parameters
+        && lhs.inputConnections == rhs.inputConnections;
+}
+
+bool operator!=(const HdMaterialNode2& lhs,
+                const HdMaterialNode2& rhs) 
+{
+    return !(lhs == rhs);
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

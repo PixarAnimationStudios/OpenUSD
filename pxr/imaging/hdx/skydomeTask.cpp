@@ -33,9 +33,11 @@
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/textureObject.h"
 
+#include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hgi/hgi.h"
 
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +51,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 HdxSkydomeTask::HdxSkydomeTask(HdSceneDelegate* delegate, SdfPath const& id)
     : HdxTask(id)
     , _setupTask()
+    , _settingsVersion(0)
+    , _skydomeVisibility(true)
 {
 }
 
@@ -95,6 +99,18 @@ HdxSkydomeTask::Prepare(HdTaskContext* ctx, HdRenderIndex* renderIndex)
     if (_setupTask) {
         _setupTask->Prepare(ctx, renderIndex);
     }
+
+    const HdRenderDelegate* renderDelegate = renderIndex->GetRenderDelegate();
+    const unsigned int currentSettingsVersion =
+        renderDelegate->GetRenderSettingsVersion();
+    if (_settingsVersion != currentSettingsVersion) {
+        _settingsVersion = currentSettingsVersion;
+        _skydomeVisibility = renderDelegate->
+            GetRenderSetting<bool>(
+                HdRenderSettingsTokens->domeLightCameraVisibility,
+                true);
+    }
+
     _renderIndex = renderIndex;
 }
 
@@ -114,26 +130,32 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     HgiGraphicsCmdsDesc gfxCmdsDesc = 
         hdStRenderPassState->MakeGraphicsCmdsDesc(_renderIndex);
 
-    // Get the Domelight's transformation matrix from the lighting Context
+    // If the skydome is visible by the camera, get the Domelight's
+    // transformation matrix from the lighting Context
     bool haveDomeLight = false;
     GfMatrix4f lightTransform(1);
-    GlfSimpleLightingContextRefPtr lightingContext;
-    if (_GetTaskContextData(ctx, HdxTokens->lightingContext, &lightingContext)){
+    if (_skydomeVisibility) {
+        GlfSimpleLightingContextRefPtr lightingContext;
+        if (_GetTaskContextData(ctx, HdxTokens->lightingContext,
+                                &lightingContext)) {
 
-        GlfSimpleLightVector const& lights = lightingContext->GetLights();
-        for (int i = 0; i < lightingContext->GetNumLightsUsed(); ++i) {
+            GlfSimpleLightVector const& lights = lightingContext->GetLights();
+            for (int i = 0; i < lightingContext->GetNumLightsUsed(); ++i) {
 
-            GlfSimpleLight const &light = lights[i]; 
-            if (light.IsDomeLight()) {
-                lightTransform = GfMatrix4f(light.GetTransform().GetInverse());
-                haveDomeLight = true;
-                break;
+                GlfSimpleLight const &light = lights[i]; 
+                if (light.IsDomeLight()) {
+                    lightTransform = GfMatrix4f(
+                        light.GetTransform().GetInverse());
+                    haveDomeLight = true;
+                    break;
+                }
             }
         }
     }
 
-    // Without a domelight/skydomeTexture, clear the AOVs
-    if (!haveDomeLight || !_GetSkydomeTexture(ctx)) {
+    // If the skydome is not camera visible or there is no
+    // domelight/skydomeTexture, clear the AOVs
+    if (!_skydomeVisibility || !haveDomeLight || !_GetSkydomeTexture(ctx)) {
         _GetHgi()->SubmitCmds(_GetHgi()->CreateGraphicsCmds(gfxCmdsDesc).get());
         return;
     }
@@ -157,17 +179,7 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
-    GfVec4i viewport;
-    const CameraUtilFraming &framing = renderPassState->GetFraming();
-    
-    if (framing.IsValid()) {
-        GfVec2i size = framing.dataWindow.GetSize();
-        viewport = GfVec4i(0, 0, size[0], size[1]);
-    } else {
-        GfVec4f rect = renderPassState->GetViewport();
-        viewport =
-            GfVec4i(int(rect[0]), int(rect[1]), int(rect[2]), int(rect[3]));
-    }
+    GfVec4i viewport = hdStRenderPassState->ComputeViewport(gfxCmdsDesc);
 
     // Get the Color/Depth and Color/Depth Resolve Textures from the gfxCmdsDesc
     // so that the fullscreenShader can use them to create the appropriate

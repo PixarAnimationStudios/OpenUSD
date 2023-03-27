@@ -82,11 +82,9 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
                 layerStack->GetLayerOffsetForLayer(i);
 
             // List-op composition callback computes absolute asset paths
-            // relative to the layer where they were expressed and combines
-            // layer offsets.
+            // relative to the layer where they were expressed.
             curListOp.ApplyOperations(result,
-                [&layer, layerOffset, &infoMap](
-                    SdfListOpType opType, const RefOrPayloadType& refOrPayload)
+                [&](SdfListOpType opType, const RefOrPayloadType& refOrPayload)
                 {
                     // Fill in the result reference of payload with the anchored
                     // asset path instead of the authored asset path. This 
@@ -99,18 +97,15 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
                         authoredAssetPath : 
                         SdfComputeAssetPathRelativeToLayer(
                             layer, authoredAssetPath);
-                    SdfLayerOffset resolvedLayerOffset = layerOffset ?
-                        *layerOffset * refOrPayload.GetLayerOffset() : 
-                        refOrPayload.GetLayerOffset();
                     RefOrPayloadType result( assetPath, 
                                              refOrPayload.GetPrimPath(),
-                                             resolvedLayerOffset);
+                                             refOrPayload.GetLayerOffset());
 
                     _CopyCustomData(&result, refOrPayload);
-                    PcpSourceArcInfo& info = infoMap[result];
-                    info.layer = layer;
-                    info.layerOffset = refOrPayload.GetLayerOffset();
-                    info.authoredAssetPath = refOrPayload.GetAssetPath();
+                    infoMap[result] = {
+                        layer,
+                        layerOffset ? *layerOffset : SdfLayerOffset(),
+                        refOrPayload.GetAssetPath()};
                     return result;
                 });
         }
@@ -385,14 +380,38 @@ PcpComposeSiteChildNames(SdfLayerRefPtrVector const &layers,
     TF_REVERSE_FOR_ALL(layer, layers) {
         VtValue namesVal = (*layer)->GetField(path, namesField);
         if (namesVal.IsHolding<TfTokenVector>()) {
-            const TfTokenVector & names =
-                namesVal.UncheckedGet<TfTokenVector>();
-            // Append names in order.  Skip names that are 
-            // already in the nameSet.
-            TF_FOR_ALL(name, names) {
-                if (nameSet->insert(*name).second) {
-                    nameOrder->push_back(*name);
+            TfTokenVector names = namesVal.UncheckedRemove<TfTokenVector>();
+
+            // Append names in order.  Skip names that are already in the
+            // nameSet.
+
+            auto doOneByOne = [&]() {
+                for (TfToken &name: names) {
+                    if (nameSet->insert(name).second) {
+                        nameOrder->push_back(std::move(name));
+                    }
                 }
+            };
+            
+            // Commonly, nameSet is empty.  In this case, insert everything
+            // upfront, then check the size.  If it is the same size as names,
+            // they were unique, and we can just append them all.
+            if (nameSet->empty()) {
+                nameSet->insert(names.begin(), names.end());
+                if (nameSet->size() == names.size()) {
+                    *nameOrder = std::move(names);
+                }
+                else {
+                    // This case is really, really unlikely -- sdfdata semantics
+                    // should disallow duplicates within a single names field.
+                    // In this case we just pay the price and do them
+                    // one-by-one.
+                    nameSet->clear();
+                    doOneByOne();
+                }
+            }
+            else {
+                doOneByOne();
             }
         }
         if (orderField) {

@@ -70,9 +70,18 @@ using HdxSelectionTrackerSharedPtr =
 /// fragment shader, that allows us to perform a small number of lookups to
 /// quickly tell us if a fragment needs to be highlighted.
 ///
+/// For scene indices, the HdxSelectionTracker uses the HdSelectionsSchema
+/// (instaniated with GetFromParent of a prim data source) for a prim to
+/// determine the prim's selection status. However, to support scene delegates,
+/// we do support settings the selection directly with SetSelection.
+/// If both are used, the union of the selections is taken.
+///
 /// Conceptually, the implementation is split into:
-/// (a) HdSelection : Client facing API that builds a collection of selected
-/// items. This is agnostic of the rendering backend.
+/// (a) HdSelection (for clients using scene delegates) : Client facing API
+/// that builds a collection of selected items. This is agnostic of the
+/// rendering backend.
+/// HdSelectionsSchema (for clients using scene indices) : Scene indices
+/// can populate this schema for each selected prim.
 /// (b) HdxSelectionTracker: Base class that observes (a) and encodes it as
 /// needed by (c). This may be specialized to be backend specific.
 /// (c) HdxSelectionTask : A scene task that, currently, only syncs resources
@@ -104,8 +113,9 @@ public:
     HdxSelectionTracker();
     virtual ~HdxSelectionTracker();
 
-    /// Optional override to update the HdSelection during
-    /// HdxSelectionTask::Prepare.
+    /// Optional override to update the selection (either compute HdSelection and
+    /// call SetSelection or update a scene index with selection information using
+    /// the HdSelectionsSchema) during HdxSelectionTask::Prepare.
     HDX_API
     virtual void UpdateSelection(HdRenderIndex *index);
 
@@ -116,12 +126,12 @@ public:
     /// \p enableSelection is a global on/off switch for selection; if it's
     /// false, nothing will be encoded.
     HDX_API
-    virtual bool GetSelectionOffsetBuffer(HdRenderIndex const *index,
+    virtual bool GetSelectionOffsetBuffer(const HdRenderIndex *index,
                                           bool enableSelection,
                                           VtIntArray *offsets) const;
 
     HDX_API
-    virtual VtVec4fArray GetSelectedPointColors() const;
+    virtual VtVec4fArray GetSelectedPointColors(const HdRenderIndex *index);
 
     /// Returns a monotonically increasing version number, which increments
     /// whenever the result of GetBuffers has changed. Note that this number may
@@ -130,19 +140,18 @@ public:
     HDX_API
     int GetVersion() const;
 
-    /// The collection of selected objects is expected to be created externally
-    /// and set via SetSelection.
+    /// Set the collection of selected objects. The ultimate selection (used for
+    /// selection highlighting) will be the union of the collection set here and
+    /// the one computed by querying the scene indices (using the
+    /// HdxSelectionSceneIndexObserver).
     HDX_API
-    void SetSelection(HdSelectionSharedPtr const &selection) {
-        _selection = selection;
-        _IncrementVersion();
-    }
+    void SetSelection(HdSelectionSharedPtr const &selection);
 
+    /// Returns selection set with SetSelection.
+    ///
     /// XXX: Rename to GetSelection
     HDX_API
-    HdSelectionSharedPtr const &GetSelectionMap() const {
-        return _selection;
-    }
+    HdSelectionSharedPtr const &GetSelectionMap() const;
 
 protected:
     /// Increments the internal selection state version, used for invalidation
@@ -150,15 +159,18 @@ protected:
     HDX_API
     void _IncrementVersion();
 
-    HDX_API
-    virtual bool _GetSelectionOffsets(HdSelection::HighlightMode const& mode,
-                                      HdRenderIndex const* index,
-                                      size_t modeOffset,
-                                      std::vector<int>* offsets) const;
-
 private:
-    int _version;
-    HdSelectionSharedPtr _selection;
+    bool _GetSelectionOffsets(HdSelectionSharedPtr const &selection,
+                              HdSelection::HighlightMode mode,
+                              const HdRenderIndex *index,
+                              size_t modeOffset,
+                              std::vector<int>* offsets) const;
+
+    // A helper class to obtain the union of the selection computed
+    // by querying the scene indices (with the HdxSelectionSceneIndexObserver)
+    // and the selection set with SetSelection.
+    class _MergedSelection;
+    std::unique_ptr<_MergedSelection> _mergedSelection;
 };
 
 

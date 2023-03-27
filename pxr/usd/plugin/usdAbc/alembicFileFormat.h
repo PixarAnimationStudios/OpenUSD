@@ -73,6 +73,11 @@ protected:
 
     UsdAbcAlembicFileFormat();
 
+    bool _ReadDetached(
+        SdfLayer* layer,
+        const std::string& resolvedPath,
+        bool metadataOnly) const override;
+
 private:
     SdfFileFormatConstPtr _usda;
 };

@@ -100,7 +100,7 @@ public:
         GfVec3i const& dstTexelOffset = GfVec3i(0),
         int mipLevel=-1);
 
-    /// Transition image from its current layout to newLayout.
+    /// Transition image from oldLayout to newLayout.
     /// `producerAccess` of 0 means:
     ///    Only invalidation barrier, no flush barrier. For read-only resources.
     ///    Meaning: There are no pending writes.
@@ -110,6 +110,7 @@ public:
     static void TransitionImageBarrier(
         HgiVulkanCommandBuffer* cb,
         HgiVulkanTexture* tex,
+        VkImageLayout oldLayout,
         VkImageLayout newLayout,
         VkAccessFlags producerAccess,
         VkAccessFlags consumerAccess,

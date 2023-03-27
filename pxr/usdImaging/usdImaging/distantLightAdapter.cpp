@@ -42,6 +42,23 @@ UsdImagingDistantLightAdapter::~UsdImagingDistantLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingDistantLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingDistantLightAdapter::GetImagingSubprimType(
+        UsdPrim const& prim, TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->distantLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingDistantLightAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 {
@@ -56,6 +73,7 @@ UsdImagingDistantLightAdapter::Populate(UsdPrim const& prim,
 {
     index->InsertSprim(HdPrimTypeTokens->distantLight, prim.GetPath(), prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(prim);
 
     return prim.GetPath();
 }
@@ -64,6 +82,7 @@ void
 UsdImagingDistantLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->distantLight, cachePath);
 }
 

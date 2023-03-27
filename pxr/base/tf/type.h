@@ -690,7 +690,8 @@ private:
 
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-    bool _IsAImpl(TfType queryType) const;
+    // Callers must hold at least a read lock on the type registry's mutex.
+    bool _IsAImplNoLock(TfType queryType) const;
 
     typedef void *(*_CastFunction)(void *, bool derivedToBase);
 
@@ -709,8 +710,9 @@ private:
     // Construct a TfType with the given _TypeInfo.
     explicit TfType(_TypeInfo *info) : _info(info) {}
 
-    // Adds base type(s), and link as a derived type of that bases.
-    void _AddBases(
+    // Add base type(s), and link as a derived type of the bases.  Callers
+    // must hold a registry write lock.
+    void _AddBasesNoLock(
         const std::vector<TfType> &bases,
         std::vector<std::string> *errorToEmit) const;
 

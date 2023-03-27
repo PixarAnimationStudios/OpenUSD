@@ -116,9 +116,10 @@ HgiGL::CreateBlitCmds()
 }
 
 HgiComputeCmdsUniquePtr
-HgiGL::CreateComputeCmds()
+HgiGL::CreateComputeCmds(
+    HgiComputeCmdsDesc const& desc)
 {
-    HgiGLComputeCmds* cmds(new HgiGLComputeCmds(_device));
+    HgiGLComputeCmds* cmds(new HgiGLComputeCmds(_device, desc));
     return HgiComputeCmdsUniquePtr(cmds);
 }
 
@@ -258,6 +259,12 @@ HgiGLCapabilities const*
 HgiGL::GetCapabilities() const
 {
     return _capabilities.get();
+}
+
+HgiIndirectCommandEncoder*
+HgiGL::GetIndirectCommandEncoder() const
+{
+    return nullptr;
 }
 
 void

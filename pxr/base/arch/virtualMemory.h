@@ -57,6 +57,25 @@ ArchCommitVirtualMemoryRange(void *start, size_t numBytes);
 ARCH_API bool
 ArchFreeVirtualMemory(void *start, size_t numBytes);
 
+/// Memory protection options, see ArchSetMemoryProtection().
+enum ArchMemoryProtection {
+    ArchProtectNoAccess,
+    ArchProtectReadOnly,
+    ArchProtectReadWrite,
+    ArchProtectReadWriteCopy
+};
+
+/// Change the memory protection on the pages containing \p start and \p start +
+/// \p numBytes to \p protection.  Return true if the protection is changed
+/// successfully.  Return false in case of an error; check errno.  This function
+/// rounds \p start to the nearest lower page boundary.  On POSIX systems,
+/// ArchProtectReadWrite and ArchProtectReadWriteCopy are the same, on Windows
+/// they differ but the Windows API documentation does not make it clear what
+/// using ReadWrite means for a private file-backed mapping.
+ARCH_API bool
+ArchSetMemoryProtection(void const *start, size_t numBytes,
+                        ArchMemoryProtection protection);
+    
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_ARCH_VIRTUAL_MEMORY_H

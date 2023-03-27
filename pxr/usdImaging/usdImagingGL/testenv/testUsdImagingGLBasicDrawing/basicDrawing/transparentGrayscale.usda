@@ -1,0 +1,68 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Xform "Geom"
+{
+    def Mesh "Plane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(-2, -2, 0), (2, -2, 0), (2, 2, 0), (-2, 2, 0)]
+        color3f[] primvars:displayColor = [(0, 0.25, 0.5)]
+        float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = "vertex"
+        )
+        rel material:binding = </Materials/TestMaterial>
+    }
+    def Mesh "Background"
+    {
+        float3[] extent = [(-2, -2, -2), (2, 2, 2)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        point3f[] points = [(-2, -2, 0), (2, -2, 0), (2, 2, 0), (-2, 2, 0)]
+        color3f[] primvars:displayColor = [(0, 0.25, 0.5)]
+        float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = "vertex"
+        )
+        uniform token[] xformOpOrder = [ "xformOp:translate" ]
+        Vec3f xformOp:translate=(0,0,-2)
+    }
+}
+
+def Scope "Materials" 
+{
+    def Material "TestMaterial" 
+    {
+        token outputs:surface.connect = </Materials/TestMaterial/Surface.outputs:surface>
+
+        def Shader "Surface"
+        {   
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect =</Materials/TestMaterial/Texture.outputs:rgb>
+            float inputs:opacity.connect =</Materials/TestMaterial/Texture.outputs:a>
+            token outputs:surface
+        }
+
+        def Shader "Texture"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @./basicDrawing/transparentGrayscale.png@
+            float2 inputs:st.connect = </Materials/TestMaterial/Primvar.outputs:result>
+            float3 outputs:rgb
+            float outputs:a
+        }
+
+        def Shader "Primvar"
+        {
+            uniform token info:id = "UsdPrimvarReader_float2"
+            token inputs:varname = "st"
+            float2 outputs:result
+        }
+    }
+}
+

@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePoints.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/points.h"
@@ -51,13 +52,15 @@ UsdImagingPointsAdapter::~UsdImagingPointsAdapter()
 }
 
 TfTokenVector
-UsdImagingPointsAdapter::GetImagingSubprims()
+UsdImagingPointsAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingPointsAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingPointsAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->points;
@@ -67,8 +70,8 @@ UsdImagingPointsAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingPointsAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -78,6 +81,20 @@ UsdImagingPointsAdapter::GetImagingSubprimData(
             stageGlobals);
     }
     return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPointsAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointsPrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
 }
 
 bool
@@ -205,7 +222,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
             UsdGeomPoints points(prim);
             VtFloatArray widths;
             if (points.GetWidthsAttr().Get(&widths, time)) {
-                HdInterpolation interpolation = _UsdToHdInterpolation(
+                HdInterpolation interpolation = UsdImagingUsdToHdInterpolation(
                     points.GetWidthsInterpolation());
                 _MergePrimvar(&primvars, UsdGeomTokens->widths, interpolation);
             } else {
@@ -233,7 +250,7 @@ UsdImagingPointsAdapter::UpdateForTime(UsdPrim const& prim,
                 _MergePrimvar(
                     &primvars,
                     UsdGeomTokens->normals,
-                    _UsdToHdInterpolation(points.GetNormalsInterpolation()),
+                    UsdImagingUsdToHdInterpolation(points.GetNormalsInterpolation()),
                     HdPrimvarRoleTokens->normal);
             } else {
                 _RemovePrimvar(&primvars, UsdGeomTokens->normals);
@@ -255,14 +272,14 @@ UsdImagingPointsAdapter::ProcessPropertyChange(UsdPrim const& prim,
         UsdGeomPoints points(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->widths,
-            _UsdToHdInterpolation(points.GetWidthsInterpolation()),
+            UsdImagingUsdToHdInterpolation(points.GetWidthsInterpolation()),
             HdChangeTracker::DirtyWidths);
     
     } else if (propertyName == UsdGeomTokens->normals) {
         UsdGeomPoints points(prim);
         return UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
             prim, cachePath, propertyName, HdTokens->normals,
-            _UsdToHdInterpolation(points.GetNormalsInterpolation()),
+            UsdImagingUsdToHdInterpolation(points.GetNormalsInterpolation()),
             HdChangeTracker::DirtyNormals);
     }
     // Handle prefixed primvars that use special dirty bits.

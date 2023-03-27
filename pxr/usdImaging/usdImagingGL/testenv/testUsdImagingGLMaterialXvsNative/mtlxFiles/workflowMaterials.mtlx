@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!-- 
+  UsdPreviewSurface using both the specular and metallic workflows with varying roughness 
+-->
+<materialx version="1.38">
+
+  <UsdPreviewSurface name="SR_metallic_workflow_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 0"/>
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value="0, 0, 1" />
+    <input name="roughness" type="float" value="0.15" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Metallic_Workflow_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_metallic_workflow_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_metallic_workflow_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 0"/>
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value="0, 0, 1" />
+    <input name="roughness" type="float" value="0.75" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Metallic_Workflow_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_metallic_workflow_02" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_spec_workflow_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 0"/>
+    <input name="useSpecularWorkflow" type="integer" value="1" />
+    <input name="specularColor" type="color3" value="0, 0, 1" />
+    <input name="roughness" type="float" value="0.15" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Spec_Workflow_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_spec_workflow_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_spec_workflow_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 0"/>
+    <input name="useSpecularWorkflow" type="integer" value="1" />
+    <input name="specularColor" type="color3" value="0, 0, 1" />
+    <input name="roughness" type="float" value="0.75" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Spec_Workflow_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_spec_workflow_02" />
+  </surfacematerial>
+
+
+</materialx>

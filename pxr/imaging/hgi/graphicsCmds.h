@@ -99,14 +99,9 @@ public:
         const void* data) = 0;
 
     /// Binds the vertex buffer(s) that describe the vertex attributes.
-    /// `firstBinding` the first index to which buffers are bound (usually 0).
-    /// `byteOffsets` offset to where the data of each buffer starts, in bytes.
-    /// `strides` the size of a vertex in each of the buffers.
     HGI_API
     virtual void BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets) = 0;
+        HgiVertexBufferBindingVector const &bindings) = 0;
 
     /// Records a draw command that renders one or more instances of primitives
     /// using the number of vertices provided.
@@ -206,7 +201,7 @@ public:
     /// Inserts a barrier so that data written to memory by commands before
     /// the barrier is available to commands after the barrier.
     HGI_API
-    virtual void MemoryBarrier(HgiMemoryBarrier barrier) = 0;
+    virtual void InsertMemoryBarrier(HgiMemoryBarrier barrier) = 0;
 
 protected:
     HGI_API

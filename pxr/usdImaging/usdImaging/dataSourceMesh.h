@@ -42,7 +42,6 @@ class UsdImagingDataSourceSubdivisionTags : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceSubdivisionTags);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -69,7 +68,6 @@ class UsdImagingDataSourceMeshTopology : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceMeshTopology);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -99,7 +97,6 @@ class UsdImagingDataSourceMesh : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceMesh);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -128,9 +125,14 @@ class UsdImagingDataSourceMeshPrim : public UsdImagingDataSourceGprim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceMeshPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 private:
     UsdImagingDataSourceMeshPrim(

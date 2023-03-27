@@ -34,11 +34,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Chosen to be at the top of the range of indexs to not interfere
 /// with the vertex attributes.
 enum HgiMetalArgumentIndex {
+    HgiMetalArgumentIndexICB = 26,
     HgiMetalArgumentIndexConstants = 27,
     HgiMetalArgumentIndexSamplers = 28,
     HgiMetalArgumentIndexTextures = 29,
     HgiMetalArgumentIndexBuffers = 30,
 };
+
+enum HgiMetalArgumentOffset {
+    HgiMetalArgumentOffsetBufferVS = 0,
+    HgiMetalArgumentOffsetBufferFS = 512,
+    HgiMetalArgumentOffsetSamplerVS = 1024,
+    HgiMetalArgumentOffsetSamplerFS = 1536,
+    HgiMetalArgumentOffsetTextureVS = 2048,
+    HgiMetalArgumentOffsetTextureFS = 2560,
+
+    HgiMetalArgumentOffsetBufferCS = 0,
+    HgiMetalArgumentOffsetSamplerCS = 1024,
+    HgiMetalArgumentOffsetTextureCS = 2048,
+    
+    HgiMetalArgumentOffsetConstants = 3072,
+    
+    HgiMetalArgumentOffsetSize = 4096
+};
+
+
+class HgiMetal;
 
 ///
 /// \class HgiMetalResourceBindings

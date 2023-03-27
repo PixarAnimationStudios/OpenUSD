@@ -10,6 +10,7 @@ pxr_library(usdMedia
         usdGeom
 
     PUBLIC_CLASSES
+        assetPreviewsAPI
         spatialAudio
         tokens
 
@@ -21,6 +22,7 @@ pxr_library(usdMedia
 
     PYMODULE_CPPFILES
         module.cpp
+        wrapAssetPreviewsAPI.cpp
         wrapSpatialAudio.cpp
         wrapTokens.cpp
 
@@ -37,7 +39,14 @@ pxr_library(usdMedia
 )
 
 pxr_test_scripts(
+    testenv/testUsdMediaAssetPreviewsAPI.py
     testenv/testUsdMediaSpatialAudio.py
+)
+
+pxr_register_test(testUsdMediaAssetPreviewsAPI
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdMediaAssetPreviewsAPI"
+    EXPECTED_RETURN_CODE 0
 )
 
 pxr_register_test(testUsdMediaSpatialAudio

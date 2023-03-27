@@ -15,22 +15,20 @@ and interacting with MaterialX documents.
 
 MaterialX | USD | Notes
 --------- | --- | -----
-parameter | UsdShadeInput | Connectability is interfaceOnly
 input | UsdShadeInput | .
-output | UsdShadeOutput | A default output is named "out"
-material | UsdShadeMaterial | .
-nodegraph | UsdShadeNodeGraph | .
-collection | UsdCollectionAPI | See below
-geom | UsdCollectionAPI | See below
+output | UsdShadeOutput | A default output is named 'out'
 node | UsdShadeShader | .
 nodedef | UsdShadeShader | See below
+nodegraph | UsdShadeNodeGraph | .
 implementation | SdrShaderNode | .
+geom | UsdCollectionAPI | See below
+look | USD prim | See below
+collection | UsdCollectionAPI | See below
+material node | UsdShadeMaterial | A node of 'material' type
 materialassign | UsdShadeMaterialBindingAPI | .
 variant | USD variant | .
 variantset | USD variantset | .
 variantassign | USD variant selection | See below
-bindparam & bindinput | USD composition | See below
-look | USD prim | See below
 
 1. USD collections always contain absolute paths.  The file format
 plugin stores all collections on a single prim.
@@ -39,8 +37,7 @@ are converted to and stored with collections.  geomprefix is applied
 at the time of conversion so the prefix is baked in.  Equal collections
 share the same UsdCollectionAPI.
 3. The shader discovery and parsing parts of the plugin record the
-information for nodedefs and implementations.  (nodegraphs used to
-implement nodedefs aren't currently supported.)  However, the nodedef
+information for nodedefs and implementations. However, the nodedef
 is also translated by the file format.  This is so naive clients that
 don't look up the registered shader node will still see the attributes
 of a shader and so USD's composition can use the nodedef value's as
@@ -48,18 +45,32 @@ fallbacks.
 4. Variants are used both to support MaterialX variants and to select a
 look.
 5. USD leverages its composition features to implement several MaterialX
-features.  Parameters and inputs are bound simply by setting opinions on
-Material prims, which are stronger than the opinions on the shaders.
-Look inherits use references and material inherits use specializes.
-nodedef inherits are handled during conversion and don't map to USD
-composition.
+features.  Inputs are bound simply by setting opinions on Material prims, 
+which are stronger than the opinions on the shaders. Look inherits use 
+references and material inherits use specializes. Nodedef inherits are 
+handled during conversion and don't map to USD composition.
 6. MaterialX looks become variants on a single USD prim.  The expectation
 is that this prim will be referenced by various prims that will also set a
 variant selection to choose the desired look.  XXX -- How collection paths
 get mapped is still undecided.
-7. Materialx _bindtoken_ statements result in USD primvars added to the 
-Material being defined, as we expect future USD support for image filename
-token substitutions to be primvar-based.
+7. Custom nodes can be defined either locally or in a shared library. 
+    + Locally defined nodes need to have their associated nodedef/nodegraph 
+    either in the same mtlx file as the material, or included in the material 
+    mtlx file. 
+    + Custom nodes defined in a shared library do not need to be included in 
+    the material mtlx file, but do need to be defined in a separate mtlx file 
+    such that the nodedef and material mtlx files are not siblings, and whose 
+    containing folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS 
+    environment variable. 
+    + Library defined custom nodes that use textures need to set the nodegroup
+    on the nodedef to 'texture2d', and make sure the 'filename' typed input is 
+    exposed so renderers can recognize the texture references. 
+    + Custom nodes with an output of type 'surfaceshader' that use textures 
+    also need to expose the 'filename' typed inputs, but can follow the 
+    MaterialX convention of using 'shader' as the nodegroup name. 
+    + Nodegraphs with a 'surfaceshader' output can be defined locally, however
+    custom nodes which are implemented using such a nodegraph need to have both
+    the node and nodegraph defined in a shared library.
 
 \section usdMtlx_unsupported Unsupported MaterialX Features
 
@@ -102,16 +113,13 @@ no corresponding concept.
 + _attributedef_ elements.  These elements are ignored.  This is
 technically not unsupported since support is optional and only meaningful
 for applications that need it, which USD does not.
-+ interfacename attributes are not supported
-+ UsdMtlx expects additional nodes, other than the material and surface shader 
-nodes, to be contained inside a nodegraph. These additional nodes will be lost 
-when translating into UsdShade, if not contained in a nodegraph.
-+ Custom nodedefs are not fully supported. They currently work when the 
-custom node is directly providing the output of a nodegraph and not passed to 
-downstream nodes. The nodedef needs to be defined in a separate mtlx file that
-is included in the material mtlx file, and the filepath should be locatable by
-the PXR_MTLX_PLUGIN_SEARCH_PATHS environment variable. Note that the nodedef
-and material mtlx files should not be siblings.
++ Shared library custom nodes are not fully supported. Library defined custom
+nodes that use textures or texture coordinates must use the primary texture
+coordinate name, which defaults to 'st' but can be altered by setting the 
+USDMTLX_PRIMARY_UV_NAME environment variable.
++ Locally defined custom nodes are not supported when the node is defined as a 
+source code in a specific shading language (<implementation/>) instead of a 
+nodegraph.
 
 Note that the file format plugin uses the MaterialX XML reader so it
 can read any valid MaterialX file, even it contains features not supported

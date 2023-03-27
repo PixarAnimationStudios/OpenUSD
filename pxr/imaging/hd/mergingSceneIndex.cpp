@@ -34,17 +34,78 @@ HdMergingSceneIndex::HdMergingSceneIndex()
 }
 
 void
+HdMergingSceneIndex::
+_FillAddedEntriesRecursively(
+    const HdSceneIndexBaseRefPtr &sceneIndex,
+    const SdfPath &primPath,
+    HdSceneIndexObserver::AddedPrimEntries * const addedEntries)
+{
+    // Old scene indices might have a prim of different type at the given path,
+    // so we need to query the merging scene index itself here.
+    const TfToken resolvedPrimType = GetPrim(primPath).primType;
+
+    addedEntries->emplace_back(primPath, resolvedPrimType);
+    for (const SdfPath &childPath : sceneIndex->GetChildPrimPaths(primPath)) {
+        _FillAddedEntriesRecursively(sceneIndex, childPath, addedEntries);
+    }
+}
+
+static
+bool
+_Contains(const SdfPath &path, const SdfPathVector &v)
+{
+    return std::find(v.begin(), v.end(), path) != v.end();
+}
+
+static
+bool
+_HasPrim(HdSceneIndexBase * const sceneIndex, const SdfPath &path)
+{
+    return _Contains(path, sceneIndex->GetChildPrimPaths(path.GetParentPath()));
+}
+
+void
 HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
-    // XXX: Note: when scenes are added, we don't generate PrimsAdded;
-    // the caller is responsible for notifying the downstream scene indices of
-    // any previously populated prims.
-    if (inputScene) {
-        _inputs.emplace_back(inputScene, activeInputSceneRoot);
-        inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+    if (!inputScene) {
+        return;
     }
+    
+    HdSceneIndexObserver::AddedPrimEntries addedEntries;
+    if (_IsObserved()) {
+        // Before adding the new scene index, check for which prefixes
+        // of the activeInputSceneRoot another scene index was giving
+        // a prim already.
+        // If no other scene index was giving a prim for a prefix,
+        // send message that prim with empty type was added.
+        //
+        const SdfPathVector prefixes = activeInputSceneRoot.GetPrefixes();
+        size_t i = 0;
+        // Add 1 to skip the activeInputSceneRoot itself.
+        for ( ; i + 1 < prefixes.size(); i++) {
+            if (!_HasPrim(this, prefixes[i])) {
+                break;
+            }
+        }
+        // For this and all following prefixes, add empty prim.
+        for ( ; i + 1 < prefixes.size(); i++) {
+            addedEntries.emplace_back(prefixes[i], TfToken());
+        }
+    }
+
+    _inputs.emplace_back(inputScene, activeInputSceneRoot);
+    inputScene->AddObserver(HdSceneIndexObserverPtr(&_observer));
+
+    if (!_IsObserved()) {
+        return;
+    }
+
+    _FillAddedEntriesRecursively(
+        inputScene, activeInputSceneRoot, &addedEntries);
+
+    _SendPrimsAdded(addedEntries);
 }
 
 void
@@ -131,10 +192,15 @@ HdMergingSceneIndex::GetPrim(const SdfPath &primPath) const
     for (const _InputEntry &entry : _inputs) {
         if (primPath.HasPrefix(entry.sceneRoot)) {
             HdSceneIndexPrim prim = entry.sceneIndex->GetPrim(primPath);
+
+            // Use first non-empty prim type so that sparsely overlaid
+            // inputs can contribute data sources without defining type or type
+            // without providing a data source.
+            if (result.primType.IsEmpty() && !prim.primType.IsEmpty()) {
+                result.primType = prim.primType;
+            }
+
             if (prim.dataSource) {
-                if (contributingDataSources.empty()) {
-                    result.primType = prim.primType;
-                }
                 contributingDataSources.push_back(prim.dataSource);
             }
         }
@@ -170,6 +236,14 @@ HdMergingSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
                     entry.sceneIndex->GetChildPrimPaths(primPath)) {
                 childPaths.insert(childPath);
             }
+        } else {
+            // need to make sure we include intermediate scopes
+            if (entry.sceneRoot.HasPrefix(primPath)) {
+                SdfPathVector v;
+                entry.sceneRoot.GetPrefixes(&v);
+                const SdfPath &childPath = v[primPath.GetPathElementCount()];
+                childPaths.insert(childPath);
+            }
         }
     }
 
@@ -185,7 +259,75 @@ HdMergingSceneIndex::_PrimsAdded(
         return;
     }
 
-    _SendPrimsAdded(entries);
+    // if there's only one input, no additional interpretation is required.
+    if (_inputs.size() < 2) {
+        _SendPrimsAdded(entries);
+        return;
+    }
+
+    // Confirm that the type here is not masked by a stronger contributing
+    // input. We still send it along as an add because a weaker input providing
+    // potential data sources (at any container depth) does not directly
+    // indicate which data sources might be relevant. The trade-off is
+    // potential over-invalidation for correctness. This ensures that the
+    // primType is equivalent to what would be returned from GetPrim.
+
+    HdSceneIndexObserver::AddedPrimEntries filteredEntries;
+
+    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+        TfToken resolvedPrimType;
+
+        for (const _InputEntry &inputEntry : _inputs) {
+            if (!entry.primPath.HasPrefix(inputEntry.sceneRoot)) {
+                continue;
+            }
+
+            // Avoid calling GetPrim to get the prim type on scene index
+            // when the scene index is the sender.
+            const TfToken primType =
+                get_pointer(inputEntry.sceneIndex) == &sender
+                ? entry.primType
+                : inputEntry.sceneIndex->GetPrim(entry.primPath).primType;
+            
+            // If the primType is not empty, use it.
+            // Break so that we stop after the first contributing data source.
+            if (!primType.IsEmpty()) {
+                resolvedPrimType = primType;
+                break;
+            }
+        }
+
+        if (resolvedPrimType != entry.primType) {
+            if (filteredEntries.empty()) {
+                // copy up to this entry
+                filteredEntries.reserve(entries.size());
+                for (const HdSceneIndexObserver::AddedPrimEntry &origEntry :
+                        entries) {
+                    if (&origEntry == &entry) {
+                        break;
+                    }
+                    filteredEntries.push_back(origEntry);
+                }
+            }
+
+            // add altered entry
+            filteredEntries.emplace_back(entry.primPath, resolvedPrimType);
+
+        } else {
+            // add unaltered entry if we've started to fill filteredEntries
+            // otherwise, do nothing as we are meaningful in the original
+            // entries until we need to copy some.
+            if (!filteredEntries.empty()) {
+                filteredEntries.push_back(entry);
+            }
+        }
+    }
+
+    if (!filteredEntries.empty()) {
+        _SendPrimsAdded(filteredEntries);
+    } else {
+        _SendPrimsAdded(entries);
+    }
 }
 
 void

@@ -53,8 +53,7 @@ static const float _minimumShutterInterval = 1.0e-10;
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
-        HdPrman_VelocityMotionBlurSceneIndexPlugin,
-        HdSceneIndexPlugin>();
+        HdPrman_VelocityMotionBlurSceneIndexPlugin>();
 }
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
@@ -543,15 +542,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (!_pointsSource) {
-            return false;
-        }
-        
-        return _pointsSource->Has(name);
-    }
-
     TfTokenVector GetNames() override
     {
         if (!_pointsSource) {
@@ -614,15 +604,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (!_primvarsSource) {
-            return false;
-        }
-        
-        return _primvarsSource->Has(name);
-    }
-
     TfTokenVector GetNames() override
     {
         if (!_primvarsSource) {
@@ -682,15 +663,6 @@ public:
       : _primSource(primSource)
       , _inputArgs(inputArgs)
     {
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        if (!_primSource) {
-            return false;
-        }
-        
-        return _primSource->Has(name);
     }
 
     TfTokenVector GetNames() override

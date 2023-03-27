@@ -116,6 +116,13 @@ public:
         HgiBlendFactor dstAlphaBlendFactor,
         HgiBlendOp alphaBlendOp);
 
+    /// By default HdxFullscreenShader uses LoadOpDontCare and StoreOpStore.
+    /// This function allows you to override the attachment load and store op.
+    HDX_API
+    void SetAttachmentLoadStoreOp(
+        HgiAttachmentLoadOp attachmentLoadOp,
+        HgiAttachmentStoreOp attachmentStoreOp);
+
     /// Provide the shader constant values (uniforms).
     /// The data values are copied, so you do not have to set them
     /// each frame if they do not change in value.
@@ -206,6 +213,9 @@ private:
     HgiBlendFactor _srcAlphaBlendFactor;
     HgiBlendFactor _dstAlphaBlendFactor;
     HgiBlendOp _alphaBlendOp;
+
+    HgiAttachmentLoadOp _attachmentLoadOp;
+    HgiAttachmentStoreOp _attachmentStoreOp;
 
     HgiAttachmentDesc _attachment0;
     HgiAttachmentDesc _depthAttachment;

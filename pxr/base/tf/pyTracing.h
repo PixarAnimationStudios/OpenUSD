@@ -63,8 +63,8 @@ void Tf_PyFabricateTraceEvent(TfPyTraceInfo const &info);
 // For internal use only.  Do not use.
 void Tf_PyTracingPythonInitialized();
 #else
-/// \struct For storage alignment when PXR_PYTHON_SUPPORT_ENABLED
-/// is not enabled.
+/// \struct TfPyTraceInfo
+/// For storage alignment when PXR_PYTHON_SUPPORT_ENABLED is not enabled.
 struct TfPyTraceInfo;
 typedef std::function<void (TfPyTraceInfo const &)> TfPyTraceFn;
 typedef std::shared_ptr<TfPyTraceFn> TfPyTraceFnId;

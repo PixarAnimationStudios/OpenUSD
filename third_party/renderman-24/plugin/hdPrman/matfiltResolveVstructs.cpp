@@ -40,7 +40,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (vstructmemberaliases)         \
-    (enableVstructConditions)
 );
 
 namespace {
@@ -327,13 +326,17 @@ _ResolveVstructsForNode(
 void
 MatfiltResolveVstructs(
     HdMaterialNetworkInterface *interface,
-    const NdrTokenVec &shaderTypePriority,
     bool enableConditions)
 {
 
     if (!interface) {
         return;
     }
+
+    static const NdrTokenVec shaderTypePriority = {
+        TfToken("OSL"),
+        TfToken("RmanCpp"),
+    };
 
     std::set<TfToken> resolvedNodeNames;
 
@@ -345,28 +348,6 @@ MatfiltResolveVstructs(
             shaderTypePriority,
             enableConditions);
     }
-}
-
-void
-MatfiltResolveVstructs(
-    const SdfPath &networkId,
-    HdMaterialNetwork2 &network,
-    const std::map<TfToken, VtValue> &contextValues,
-    const NdrTokenVec &shaderTypePriority,
-    std::vector<std::string> *outputErrorMessages)
-{
-    bool enableConditions = true;
-
-    auto I = contextValues.find(_tokens->enableVstructConditions);
-    if (I != contextValues.end()) {
-        const VtValue &value = (*I).second;
-        if (value.IsHolding<bool>()) {
-            enableConditions = value.UncheckedGet<bool>();
-        }
-    }
-
-    HdMaterialNetwork2Interface interface(networkId, &network);
-    MatfiltResolveVstructs(&interface, shaderTypePriority, enableConditions);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

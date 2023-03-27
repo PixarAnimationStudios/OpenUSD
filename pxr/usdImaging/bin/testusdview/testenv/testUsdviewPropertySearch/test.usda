@@ -1,6 +1,8 @@
 #usda 1.0
 
-def Xform "f" {
+def Xform "f" (
+)
+{
     int a = 5
     float y = 6
     string z = "hello"   

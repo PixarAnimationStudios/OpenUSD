@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!-- 
+  Transparent Materials UsdPreviewSurface with varying roughness 
+-->
+<materialx version="1.38">
+
+  <!-- opacityThreshold = 0 and opacity = 0, opacity > 0 -->
+  <UsdPreviewSurface name="SR_opacity_01" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.25" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="1.52" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_01" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_01" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_opacity_02" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.25" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.0001" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="1.52" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_02" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_02" />
+  </surfacematerial>
+
+  <!-- Keeping Opacity/OpacityThreshold same and asjusting IOR -->
+  <UsdPreviewSurface name="SR_opacity_03" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.01" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.0001" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="1.52" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_03" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_03" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_opacity_04" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.01" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.0001" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="5.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_04" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_04" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_opacity_05" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.01" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.0001" />
+    <input name="opacityThreshold" type="float" value="0" />
+    <input name="ior" type="float" value="25.0" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_05" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_05" />
+  </surfacematerial>
+
+  <!-- OpacityThreshold > 0, with varying opacity -->
+  <UsdPreviewSurface name="SR_opacity_06" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.25" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.1" />
+    <input name="opacityThreshold" type="float" value="0.1" />
+    <input name="ior" type="float" value="1.52" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_06" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_06" />
+  </surfacematerial>
+
+  <UsdPreviewSurface name="SR_opacity_07" type="surfaceshader">
+    <input name="diffuseColor" type="color3" value="1 0 1"/>
+    <input name="roughness" type="float" value="0.25" />
+    <input name="clearcoat" type="float" value="0" />
+    <input name="clearcoatRoughness" type="float" value="0.01" />
+    <input name="opacity" type="float" value="0.5" />
+    <input name="opacityThreshold" type="float" value="0.1" />
+    <input name="ior" type="float" value="1.52" />
+  </UsdPreviewSurface>
+  <surfacematerial name="USD_Opacity_07" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="SR_opacity_07" />
+  </surfacematerial>
+
+
+</materialx>

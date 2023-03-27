@@ -23,11 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/cubeAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceImplicits-Impl.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/implicitSurfaceMeshUtils.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/geomUtil/cuboidMeshGenerator.h"
+#include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -40,6 +42,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCube, HdCubeSchema>;
+}
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -50,6 +55,51 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingCubeAdapter::~UsdImagingCubeAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingCubeAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingCubeAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->cube;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingCubeAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingCubeAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return _PrimSource::Invalidate(prim, subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool
@@ -109,12 +159,6 @@ VtValue
 UsdImagingCubeAdapter::GetPoints(UsdPrim const& prim,
                                  UsdTimeCode time) const
 {
-    return GetMeshPoints(prim, time);
-}
-
-static GfMatrix4d
-_GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
-{
     UsdGeomCube cube(prim);
 
     double size = 2.0;
@@ -122,31 +166,19 @@ _GetImplicitGeomScaleTransform(UsdPrim const& prim, UsdTimeCode time)
         TF_WARN("Could not evaluate double-valued size attribute on prim %s",
             prim.GetPath().GetText());
     }
+    
+    const size_t numPoints =
+        GeomUtilCuboidMeshGenerator::ComputeNumPoints();
 
-    return UsdImagingGenerateSphereOrCubeTransform(size);
-}
-
-/*static*/
-VtValue
-UsdImagingCubeAdapter::GetMeshPoints(UsdPrim const& prim, 
-                                     UsdTimeCode time)
-{
-    // Return scaled points (and not that of a unit geometry)
-    VtVec3fArray points = UsdImagingGetUnitCubeMeshPoints();
-    GfMatrix4d scale = _GetImplicitGeomScaleTransform(prim, time);
-    for (GfVec3f& pt : points) {
-        pt = scale.Transform(pt);
-    }
+    VtVec3fArray points(numPoints);
+        
+    GeomUtilCuboidMeshGenerator::GeneratePoints(
+        points.begin(),
+        /* xLength = */ size,
+        /* yLength = */ size,
+        /* zLength = */ size);
 
     return VtValue(points);
-}
-
-/*static*/
-VtValue
-UsdImagingCubeAdapter::GetMeshTopology()
-{
-    // Topology is constant and identical for all cubes.
-    return VtValue(HdMeshTopology(UsdImagingGetUnitCubeMeshTopology()));
 }
 
 /*virtual*/ 
@@ -158,7 +190,11 @@ UsdImagingCubeAdapter::GetTopology(UsdPrim const& prim,
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    return GetMeshTopology();
+    // All cubes share the same topology.
+    static const HdMeshTopology topology =
+        HdMeshTopology(GeomUtilCuboidMeshGenerator::GenerateTopology());
+
+    return VtValue(topology);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

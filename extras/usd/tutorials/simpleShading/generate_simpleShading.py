@@ -46,7 +46,7 @@ billboard.CreatePointsAttr([(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-43
 billboard.CreateFaceVertexCountsAttr([4])
 billboard.CreateFaceVertexIndicesAttr([0,1,2,3])
 billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
-texCoords = billboard.CreatePrimvar("st", 
+texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                     Sdf.ValueTypeNames.TexCoord2fArray, 
                                     UsdGeom.Tokens.varying)
 texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])
@@ -84,8 +84,7 @@ diffuseTextureSampler.CreateOutput('rgb', Sdf.ValueTypeNames.Float3)
 pbrShader.CreateInput("diffuseColor", Sdf.ValueTypeNames.Color3f).ConnectToSource(diffuseTextureSampler.ConnectableAPI(), 'rgb')
 
 # Now bind the Material to the card
-binding = UsdShade.MaterialBindingAPI.Apply(billboard.GetPrim())
-if binding:
-    binding.Bind(material)
+billboard.GetPrim().ApplyAPI(UsdShade.MaterialBindingAPI)
+UsdShade.MaterialBindingAPI(billboard).Bind(material)
 
 stage.Save()

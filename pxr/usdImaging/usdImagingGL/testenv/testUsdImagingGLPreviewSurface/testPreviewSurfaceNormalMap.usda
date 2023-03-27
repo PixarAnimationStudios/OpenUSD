@@ -123,7 +123,10 @@ def Scope "Prototypes"(
     active=false
 )
 {
-    def Mesh "Plane" {
+    def Mesh "Plane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
         uniform bool doubleSided = 1
 
         float2[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (interpolation = "vertex")

@@ -28,8 +28,10 @@
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/patternMatcher.h"
+#include "pxr/base/tf/pxrCLI11/CLI11.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/scopeDescription.h"
+
 // copyUtils.h pulls in boost/any.hpp via tf/diagnostic, and this winds up
 // generating an erroneous maybe-uninitialized warning on certain gcc & boost
 // versions, so we disable that diagnostic around this include.
@@ -43,8 +45,6 @@ ARCH_PRAGMA_POP
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/textFileFormat.h"
 
-#include <boost/program_options.hpp>
-
 #include <cstdio>
 #include <cstdarg>
 #include <functional>
@@ -56,6 +56,8 @@ ARCH_PRAGMA_POP
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using namespace pxr_CLI;
 
 using std::string;
 using std::vector;
@@ -129,23 +131,6 @@ operator<<(std::ostream &os, SortKey key)
     return os << "invalid";
 }
 
-std::istream &
-operator>>(std::istream &is, SortKey &key)
-{
-    std::string txt;
-    is >> txt;
-    if (txt == "path") {
-        key = SortByPath;
-    }
-    else if (txt == "field") {
-        key = SortByField;
-    }
-    else {
-        is.setstate(std::ios_base::failbit);
-    }
-    return is;
-}
-
 // An enum representing the type of output to produce.
 enum OutputType {
     OutputValidity,     // only check file validity by reading all values.
@@ -179,32 +164,6 @@ operator<<(std::ostream &os, OutputType outputType)
     return os << "invalid";
 }
 
-std::istream &
-operator>>(std::istream &is, OutputType &outputType)
-{
-    std::string txt;
-    is >> txt;
-    if (txt == "validity") {
-        outputType = OutputValidity;
-    }
-    else if (txt == "summary") {
-        outputType = OutputSummary;
-    }
-    else if (txt == "outline") {
-        outputType = OutputOutline;
-    }
-    else if (txt == "pseudoLayer") {
-        outputType = OutputPseudoLayer;
-    }
-    else if (txt == "layer") {
-        outputType = OutputLayer;
-    }
-    else {
-        is.setstate(std::ios_base::failbit);
-    }
-    return is;
-}
-
 // We use this structure to represent all the parameters for reporting.  We fill
 // this using command-line args.
 struct ReportParams
@@ -236,6 +195,20 @@ struct SummaryStats
     size_t numSampleTimes = 0;
 };
 
+// Convert string to double like std::stod, but throws an exception if
+// the string has trailing characters that don't contribute to the double
+// representation, like "42.0a".
+double StringToDouble(const std::string &s)
+{
+    size_t pos;
+    const double d = std::stod(s, &pos);
+    if (pos != s.size()) {
+        throw std::invalid_argument(
+            TfStringPrintf("invalid string '%s'", s.c_str()));
+    }
+    return d;
+}
+
 // Parse times and time ranges in timeSpecs, throw an exception if something
 // goes wrong.
 void
@@ -252,14 +225,17 @@ ParseTimes(vector<string> const &timeSpecs,
                         TfStringPrintf("invalid time syntax '%s'",
                                        spec.c_str()));
                 }
-                timeRanges->emplace_back(boost::lexical_cast<double>(elts[0]),
-                                         boost::lexical_cast<double>(elts[1]));
+                timeRanges->emplace_back(StringToDouble(elts[0]),
+                                         StringToDouble(elts[1]));
             } else {
-                literalTimes->emplace_back(boost::lexical_cast<double>(spec));
+                literalTimes->emplace_back(StringToDouble(spec));
             }
-        } catch (boost::bad_lexical_cast const &) {
+        } catch (std::invalid_argument const &) {
             throw std::invalid_argument(
                 TfStringPrintf("invalid time syntax '%s'", spec.c_str()));
+        } catch (std::out_of_range const &) {
+            throw std::invalid_argument(
+                TfStringPrintf("time out of range '%s'", spec.c_str()));
         }
     }
     sort(literalTimes->begin(), literalTimes->end());
@@ -703,10 +679,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 int
 main(int argc, char const *argv[])
 {
-    namespace po = boost::program_options;
     PXR_NAMESPACE_USING_DIRECTIVE
 
     progName = TfGetBaseName(argv[0]);
+    CLI::App app(
+        "Provides information in a variety of formats (including usda-like) about\n"
+        "Sdf Layers or specified (filtered) parts of a layer.", progName);
 
     string pathRegex = ".*", fieldRegex = ".*";
     OutputType outputType = OutputOutline;
@@ -721,85 +699,83 @@ main(int argc, char const *argv[])
     int64_t timeSamplesSizeLimit = -2;
     bool noValues = false;
 
-    po::options_description argOpts("Options");
-    argOpts.add_options()
-        ("help,h", "Show help message.")
-        ("path,p", po::value<string>(&pathRegex)->value_name("regex"),
-         "Report only paths matching this regex.  For 'layer' and "
-         "'pseudoLayer' output types, include all descendants of matching "
-         "paths.")
-        ("field,f", po::value<string>(&fieldRegex)->value_name("regex"),
-         "Report only fields matching this regex.")
-        ("time,t", po::value<vector<string>>(&timeSpecs)->
-         multitoken()->value_name("n or ff..lf"),
-         "Report only these times or time ranges for 'timeSamples' fields.")
-        ("timeTolerance", po::value<double>(&timeTolerance)->
-         default_value(timeTolerance)->value_name("tol"),
-         "Report times that are close to those requested within this "
-         "relative tolerance.")
-        ("arraySizeLimit", po::value<int64_t>(&arraySizeLimit)->value_name("N"),
-         "Truncate arrays with more than this many elements.  If -1, do not "
-         "truncate arrays.  Default: 0 for 'outline' output, 8 for "
-         "'pseudoLayer' output, and -1 for 'layer' output.")
-        ("timeSamplesSizeLimit",
-         po::value<int64_t>(&timeSamplesSizeLimit)->value_name("N"),
-         "Truncate timeSamples with more than this many values.  If -1, do not "
-         "truncate timeSamples.  Default: 0 for 'outline' output, 8 for "
-         "'pseudoLayer' output, and -1 for 'layer' output.  Truncation "
-         "performed after initial filtering by --time arguments.")
-        ("out,o",
-         po::value<string>(&outputFile)->default_value(std::string())->
-         value_name("outputFile"),
-         "Direct output to this file.  Use the "
-         "'outputFormat' for finer control over the underlying format for "
-         "output formats that are not uniquely determined by file extension.")
-        ("outputType",
-         po::value<OutputType>(&outputType)->default_value(outputType)->
-         value_name("validity|summary|outline|pseudoLayer|layer"),
-         "Specify output format; 'summary' reports overall statistics, "
-         "'outline' is a flat text report of paths and fields, "
-         "'pseudoLayer' is similar to the sdf file format but with truncated "
-         "array values and timeSamples for human readability, and 'layer' is "
-         "true layer output, with the format controlled by the 'outputFile' "
-         "and 'outputFormat' arguments.")
-        ("outputFormat",
-         po::value<string>(&outputFormat)->value_name("format"),
-         "Supply this as the 'format' entry of SdfFileFormatArguments for "
-         "'layer' output to a file.  Requires both 'layer' output and a "
-         "specified 'outputFile'.")
-        ("sortBy", po::value<SortKey>(&sortKey)->default_value(sortKey)->
-         value_name("path|field"),
-         "Group 'outline' output by either path or field.  Ignored for other "
-         "output types.")
-        ("noValues", po::bool_switch(&noValues),
-         "Do not report field values for 'outline' output.  Ignored for other "
-         "output types.")
-        ;
+    app.add_option(
+        "inputFiles", inputFiles, "The input files to process")
+        ->required(true)
+        ->option_text("...");
+    app.add_option(
+        "-p,--path", pathRegex, "Report only paths matching this regex.")
+        ->option_text("regex");
+    app.add_option(
+        "-f,--field", fieldRegex, "Report only fields matching this regex.")
+        ->option_text("regex");
+    app.add_option(
+        "-t,--time", timeSpecs,
+        "Report only these times (n) or time ranges (ff..lf) for\n"
+        "'timeSamples' fields")
+        ->option_text("n or ff..lf");
+    app.add_option(
+        "--timeTolerance", timeTolerance, 
+        "Report times that are close to those requested within this "
+        "relative tolerance. Default: " + std::to_string(timeTolerance))
+        ->default_val(timeTolerance)
+        ->option_text("tol");
+    app.add_option(
+        "--arraySizeLimit", arraySizeLimit, 
+        "Truncate arrays with more than this many elements.  If -1, do not\n"
+        "truncate arrays.  Default: 0 for 'outline' output, 8 for\n"
+        "'pseudoLayer' output, and -1 for 'layer' output.");
+    app.add_option(
+        "--timeSamplesSizeLimit", timeSamplesSizeLimit, 
+        "Truncate timeSamples with more than this many values.  If -1, do not\n"
+        "truncate timeSamples.  Default: 0 for 'outline' output, 8 for\n"
+        "'pseudoLayer' output, and -1 for 'layer' output.  Truncation\n"
+        "performed after initial filtering by --time arguments.");
+    app.add_option(
+        "-o,--out", outputFile,
+        "Direct output to this file.  Use the 'outputFormat' for finer\n"
+        "control over the underlying format for output formats that are\n"
+        "not uniquely determined by file extension.");
 
-    po::options_description inputFile("Input");
-    inputFile.add_options()
-        ("input-file", po::value<vector<string>>(&inputFiles), "input files");
+    const std::map<std::string, OutputType> outputTypeMap{
+        {"validity", OutputType::OutputValidity},
+        {"summary", OutputType::OutputSummary},
+        {"outline", OutputType::OutputOutline},
+        {"pseudoLayer", OutputType::OutputPseudoLayer},
+        {"layer", OutputType::OutputLayer}
+    };
 
-    po::options_description allOpts;
-    allOpts.add(argOpts).add(inputFile);
+    app.add_option(
+        "--outputType", outputType,
+        "Specify output format; 'summary' reports overall statistics,\n"
+        "'outline' is a flat text report of paths and fields,\n"
+        "'pseudoLayer' is similar to the sdf file format but with truncated\n"
+        "array values and timeSamples for human readability, and 'layer' is\n"
+        "true layer output, with the format controlled by the 'outputFile'\n"
+        "and 'outputFormat' arguments. Default: outline")
+        ->transform(CLI::CheckedTransformer(outputTypeMap, CLI::ignore_case))
+        ->option_text("validity|summary|outline|pseudoLayer|layer");
 
-    po::variables_map vm;
+    const std::map<std::string, SortKey> sortKeyMap{
+        {"path", SortByPath}, {"field", SortByField}
+    };
+
+    app.add_option(
+        "--sortBy", sortKey, 
+        "Group 'outline' output by either path or field.  Ignored for other\n"
+        "output types. Default: path")
+        ->transform(CLI::CheckedTransformer(sortKeyMap, CLI::ignore_case))
+        ->option_text("path|field");
+
+    app.add_flag(
+        "--noValues", noValues, "Do not report field values.");
+
+    CLI11_PARSE(app, argc, argv);
+
     try {
-        po::positional_options_description p;
-        p.add("input-file", -1);
-        po::store(po::command_line_parser(argc, argv).
-                  options(allOpts).positional(p).run(), vm);
-        po::notify(vm);
         ParseTimes(timeSpecs, &literalTimes, &timeRanges);
     } catch (std::exception const &e) {
         ErrExit("%s", e.what());
-    }
-
-    if (vm.count("help") || inputFiles.empty()) {
-        fprintf(stderr, "Usage: %s [options] <input files>\n",
-                progName.c_str());
-        fprintf(stderr, "%s\n", TfStringify(argOpts).c_str());
-        exit(1);
     }
 
     std::shared_ptr<TfPatternMatcher> pathMatcher(

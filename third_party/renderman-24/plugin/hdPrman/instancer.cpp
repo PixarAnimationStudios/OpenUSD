@@ -296,19 +296,35 @@ HdPrmanInstancer::GetInstancePrimvars(
             continue;
         }
 
-        // Instance primvars with the "ri:attributes:" prefix correspond to
-        // renderman-namespace attributes and have that prefix stripped.
+        // Instance primvars with the "ri:attributes:" and
+        // "primvars:ri:attributes:" prefixes correspond to renderman-namespace
+        // attributes and have that prefix stripped.
         // All other primvars are in the "user:" namespace, so if they don't
         // have that prefix we need to add it.
         RtUString name;
         static const char *userPrefix = "user:";
         static const char *riAttrPrefix = "ri:attributes:";
+        static const char *primVarsRiAttrPrefix = "primvars:ri:attributes:";
         if (!strncmp(entry.first.GetText(), userPrefix, strlen(userPrefix))) {
             name = RtUString(entry.first.GetText());
         } else if (!strncmp(entry.first.GetText(), riAttrPrefix,
                             strlen(riAttrPrefix))) {
             const char *strippedName = entry.first.GetText();
             strippedName += strlen(riAttrPrefix);
+            name = RtUString(strippedName);
+
+            // ri:attributes and primvars:ri:attributes primvars end up having
+            // the same name, potentially causing collisions in the primvar list.
+            // When both ri:attributes and primvar:ri:attributes versions of 
+            // the same primvars exist, the primvar:ri:attributes version should
+            // win out.
+            if (attrs.HasParam(name)) {
+                continue;
+            }
+        } else if (!strncmp(entry.first.GetText(), primVarsRiAttrPrefix,
+                            strlen(primVarsRiAttrPrefix))) {
+            const char *strippedName = entry.first.GetText();
+            strippedName += strlen(primVarsRiAttrPrefix);
             name = RtUString(strippedName);
         } else {
             std::string mangled =
@@ -335,8 +351,11 @@ HdPrmanInstancer::GetInstancePrimvars(
                 attrs.SetPoint(name, RtPoint3(v[0], v[1], v[2]));
             } else if (primvar.role == HdPrimvarRoleTokens->normal) {
                 attrs.SetPoint(name, RtNormal3(v[0], v[1], v[2]));
-            } else {
+            } else if (primvar.role == HdPrimvarRoleTokens->vector) {
                 attrs.SetVector(name, RtVector3(v[0], v[1], v[2]));
+            } else {
+                attrs.SetFloatArray(
+                    name, reinterpret_cast<const float*>(v.data()), 3);
             }
         } else if (val.IsHolding<VtArray<GfVec4f>>()) {
             const VtArray<GfVec4f>& v = val.UncheckedGet<VtArray<GfVec4f>>();

@@ -220,22 +220,6 @@ _LoadXmlDoc(const NdrNodeDiscoveryResult& discoveryResult,
             xml_document *doc)
 {
     if (!discoveryResult.resolvedUri.empty()) {
-#if AR_VERSION == 1
-        // Get the resolved URI to a location that it can be read by the Args
-        // parser
-        bool localFetchSuccessful = ArGetResolver().FetchToLocalResolvedPath(
-            discoveryResult.uri,
-            discoveryResult.resolvedUri
-        );
-
-        if (!localFetchSuccessful) {
-            TF_WARN("Could not localize the args file at URI [%s] into a local "
-                    "path. An invalid Sdr node definition will be created.",
-                    discoveryResult.uri.c_str());
-
-            return false;
-        }
-#endif
         std::shared_ptr<const char> buffer;
         std::shared_ptr<ArAsset> asset = ArGetResolver().OpenAsset(
             ArResolvedPath(discoveryResult.resolvedUri));
@@ -378,7 +362,15 @@ _GetDsoPathFromArgsPath(const std::string &argsPath)
 
     if (pathElts.size() < 3 || 
         !TfStringEndsWith(argsPath, argsExt) ||
-        pathElts[pathElts.size()-2] != "Args"){
+        pathElts[pathElts.size()-2] != "Args") {
+
+        if (pathElts.size() > 1 && pathElts[pathElts.size()-2] != "Args") {
+            TF_DEBUG(NDR_PARSING).Msg("Args file being parsed does not "
+                "live in \"Args\" named parent directory. No "
+                "implementation will be set for the sdr node.\n");
+            return std::string();
+        }
+
         TF_WARN("Unexpected path for RenderMan args file: %s - "
                 "expected a form like /path/to/plugins/Args/somePlugin.args",
                 argsPath.c_str());
@@ -650,7 +642,9 @@ _Parse(
             if (parentPage.empty()) {
                 _Parse(shaderRep, childElement, pageName);
             } else {
-                _Parse(shaderRep, childElement, parentPage + "." + pageName);
+                _Parse(shaderRep, childElement, 
+                        parentPage + 
+                        SdrPropertyTokens->PageDelimiter.GetString() + pageName);
             }
         }
 

@@ -69,65 +69,65 @@ class TestViewSettingsDataModel(unittest.TestCase):
         # Test AMBIENT component.
 
         # Check default.
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.2)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.2)
 
         # Set ambient then check that it updated and signal fired.
         vsDM.defaultMaterialAmbient = 0.4
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.4)
-        self.assertEquals(counter.getAndClearNumSignals(), 1)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.4)
+        self.assertEqual(counter.getAndClearNumSignals(), 1)
 
         # Set ambient to its current value then check that it did not change.
         # Even though the property was set it was not changed so
         # signalDefaultMaterialChanged should not have fired.
         vsDM.defaultMaterialAmbient = 0.4
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.4)
-        self.assertEquals(counter.getAndClearNumSignals(), 0)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.4)
+        self.assertEqual(counter.getAndClearNumSignals(), 0)
 
 
         # Test SPECULAR component.
 
         # Check default.
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.1)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.1)
 
         # Set specular then check that it updated and signal fired.
         vsDM.defaultMaterialSpecular = 0.4
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.4)
-        self.assertEquals(counter.getAndClearNumSignals(), 1)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.4)
+        self.assertEqual(counter.getAndClearNumSignals(), 1)
 
         # Set specular to its current value then check that it did not change.
         # Even though the property was set it was not changed so
         # signalDefaultMaterialChanged should not have fired.
         vsDM.defaultMaterialSpecular = 0.4
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.4)
-        self.assertEquals(counter.getAndClearNumSignals(), 0)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.4)
+        self.assertEqual(counter.getAndClearNumSignals(), 0)
 
 
         # Check that setting both ambient and specular with setDefaultMaterial
         # works and emits signalDefaultMaterialChanged when at least one
         # changes.
 
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.4)
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.4)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.4)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.4)
 
         # No change, so signalDefaultMaterialChanged should not have fired.
         vsDM.setDefaultMaterial(0.4, 0.4)
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.4)
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.4)
-        self.assertEquals(counter.getAndClearNumSignals(), 0)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.4)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.4)
+        self.assertEqual(counter.getAndClearNumSignals(), 0)
 
         # Change each component separately. Should be 2 signals fired.
         vsDM.setDefaultMaterial(0.5, 0.4)
         vsDM.setDefaultMaterial(0.5, 0.5)
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.5)
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.5)
-        self.assertEquals(counter.getAndClearNumSignals(), 2)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.5)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.5)
+        self.assertEqual(counter.getAndClearNumSignals(), 2)
 
         # Change both components at the same time. Only 1 signal should be
         # fired.
         vsDM.setDefaultMaterial(0.6, 0.6)
-        self.assertEquals(vsDM.defaultMaterialAmbient, 0.6)
-        self.assertEquals(vsDM.defaultMaterialSpecular, 0.6)
-        self.assertEquals(counter.getAndClearNumSignals(), 1)
+        self.assertEqual(vsDM.defaultMaterialAmbient, 0.6)
+        self.assertEqual(vsDM.defaultMaterialSpecular, 0.6)
+        self.assertEqual(counter.getAndClearNumSignals(), 1)
 
     def test_Complexity(self):
         """Test that complexity must use the preset complexities."""
@@ -135,18 +135,18 @@ class TestViewSettingsDataModel(unittest.TestCase):
         vsDM = ViewSettingsDataModel(None, None)
 
         vsDM.complexity = RefinementComplexities.MEDIUM
-        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
+        self.assertEqual(vsDM.complexity, RefinementComplexities.MEDIUM)
 
         # Users can't create their own complexities.
         with self.assertRaises(ValueError):
             vsDM.complexity = RefinementComplexities._RefinementComplexity(
                 "none", "None", 1.5)
-        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
+        self.assertEqual(vsDM.complexity, RefinementComplexities.MEDIUM)
 
         # Users can't set the float complexity directly.
         with self.assertRaises(ValueError):
             vsDM.complexity = 1.0
-        self.assertEquals(vsDM.complexity, RefinementComplexities.MEDIUM)
+        self.assertEqual(vsDM.complexity, RefinementComplexities.MEDIUM)
 
     def test_ShowMask(self):
         """Test that updating the camera mask mode properly updates showMask and
@@ -156,21 +156,21 @@ class TestViewSettingsDataModel(unittest.TestCase):
         vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
-        self.assertEquals(vsDM.cameraMaskMode, CameraMaskModes.NONE)
-        self.assertEquals(vsDM.showMask, False)
-        self.assertEquals(vsDM.showMask_Opaque, False)
+        self.assertEqual(vsDM.cameraMaskMode, CameraMaskModes.NONE)
+        self.assertEqual(vsDM.showMask, False)
+        self.assertEqual(vsDM.showMask_Opaque, False)
 
         # Check PARTIAL mode.
         vsDM.cameraMaskMode = CameraMaskModes.PARTIAL
-        self.assertEquals(vsDM.cameraMaskMode, CameraMaskModes.PARTIAL)
-        self.assertEquals(vsDM.showMask, True)
-        self.assertEquals(vsDM.showMask_Opaque, False)
+        self.assertEqual(vsDM.cameraMaskMode, CameraMaskModes.PARTIAL)
+        self.assertEqual(vsDM.showMask, True)
+        self.assertEqual(vsDM.showMask_Opaque, False)
 
         # Check FULL mode.
         vsDM.cameraMaskMode = CameraMaskModes.FULL
-        self.assertEquals(vsDM.cameraMaskMode, CameraMaskModes.FULL)
-        self.assertEquals(vsDM.showMask, True)
-        self.assertEquals(vsDM.showMask_Opaque, True)
+        self.assertEqual(vsDM.cameraMaskMode, CameraMaskModes.FULL)
+        self.assertEqual(vsDM.showMask, True)
+        self.assertEqual(vsDM.showMask_Opaque, True)
 
     def test_ClearColor(self):
         """Test that setting clearColorText changes the value of clearColor."""
@@ -178,19 +178,19 @@ class TestViewSettingsDataModel(unittest.TestCase):
         vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
-        self.assertEquals(vsDM.clearColorText, ClearColors.DARK_GREY)
-        self.assertEquals(vsDM.clearColor, (0.07074, 0.07074, 0.07074, 1.0))
+        self.assertEqual(vsDM.clearColorText, ClearColors.DARK_GREY)
+        self.assertEqual(vsDM.clearColor, (0.07074, 0.07074, 0.07074, 1.0))
 
         # Switch to a valid color.
         vsDM.clearColorText = ClearColors.BLACK
-        self.assertEquals(vsDM.clearColorText, ClearColors.BLACK)
-        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
+        self.assertEqual(vsDM.clearColorText, ClearColors.BLACK)
+        self.assertEqual(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
 
         # Switch to an invalid color.
         with self.assertRaises(ValueError):
             vsDM.clearColorText = "Octarine"
-        self.assertEquals(vsDM.clearColorText, ClearColors.BLACK)
-        self.assertEquals(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
+        self.assertEqual(vsDM.clearColorText, ClearColors.BLACK)
+        self.assertEqual(vsDM.clearColor, (0.0, 0.0, 0.0, 1.0))
 
     def test_HighlightColor(self):
         """Test that setting highlightColorName changes the value of
@@ -200,19 +200,19 @@ class TestViewSettingsDataModel(unittest.TestCase):
         vsDM = ViewSettingsDataModel(None, None)
 
         # Check default.
-        self.assertEquals(vsDM.highlightColorName, HighlightColors.YELLOW)
-        self.assertEquals(vsDM.highlightColor, (1.0, 1.0, 0.0, 0.5))
+        self.assertEqual(vsDM.highlightColorName, HighlightColors.YELLOW)
+        self.assertEqual(vsDM.highlightColor, (1.0, 1.0, 0.0, 0.5))
 
         # Switch to a valid color.
         vsDM.highlightColorName = HighlightColors.CYAN
-        self.assertEquals(vsDM.highlightColorName, HighlightColors.CYAN)
-        self.assertEquals(vsDM.highlightColor, (0.0, 1.0, 1.0, 0.5))
+        self.assertEqual(vsDM.highlightColorName, HighlightColors.CYAN)
+        self.assertEqual(vsDM.highlightColor, (0.0, 1.0, 1.0, 0.5))
 
         # Switch to an invalid color.
         with self.assertRaises(ValueError):
             vsDM.highlightColorName = "Octarine"
-        self.assertEquals(vsDM.highlightColorName, HighlightColors.CYAN)
-        self.assertEquals(vsDM.highlightColor, (0.0, 1.0, 1.0, 0.5))
+        self.assertEqual(vsDM.highlightColorName, HighlightColors.CYAN)
+        self.assertEqual(vsDM.highlightColor, (0.0, 1.0, 1.0, 0.5))
 
 
 if __name__ == "__main__":

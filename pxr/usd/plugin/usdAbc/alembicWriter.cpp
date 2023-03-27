@@ -170,8 +170,8 @@ private:
 private:
     SdfPath _propPath;
     const SdfAbstractData* _data;
-    boost::shared_ptr<VtValue> _value;
-    boost::shared_ptr<SdfTimeSampleMap> _local;
+    std::shared_ptr<VtValue> _value;
+    std::shared_ptr<SdfTimeSampleMap> _local;
     const SdfTimeSampleMap* _samples;
     bool _timeSampled;
     SdfValueTypeName _typeName;
@@ -1465,13 +1465,13 @@ _MakeIndexed(_SampleForAlembic* values)
 
     // Build the result.
     const size_t numPODs = extent * unique.size();
-    boost::shared_array<POD> uniqueBuffer(new POD[numPODs]);
+    std::unique_ptr<POD[]> uniqueBuffer(new POD[numPODs]);
     for (size_t i = 0, n = unique.size(); i != n; ++i) {
         unique[i].CopyTo(uniqueBuffer.get() + i * extent);
     }
 
     // Create a new sample object with the indexes.
-    _SampleForAlembic result(uniqueBuffer, numPODs);
+    _SampleForAlembic result(std::move(uniqueBuffer), numPODs);
     result.SetIndices(indicesPtr);
 
     // Cut over.
@@ -1846,9 +1846,10 @@ _SampleForAlembic
 _CopyAdskColor(const VtValue& src)
 {
     const VtArray<GfVec3f>& color = src.UncheckedGet<VtArray<GfVec3f> >();
-    std::vector<float> result(color[0].GetArray(), color[0].GetArray() + 3);
-    result.push_back(1.0);
-    return _SampleForAlembic(result);
+    std::unique_ptr<float[]> result(new float[4]);
+    std::copy(color[0].GetArray(), color[0].GetArray() + 3, result.get());
+    result[3] = 1.0;
+    return _SampleForAlembic(std::move(result), 4);
 }
 
 static

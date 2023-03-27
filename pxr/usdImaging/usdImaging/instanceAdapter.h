@@ -520,7 +520,7 @@ private:
     // technically be split out to avoid two lookups, however it seems cleaner
     // to keep everything bundled up under the instancer path.
     struct _InstancerData {
-        _InstancerData() : numInstancesToDraw(0), refreshVariability(false) { }
+        _InstancerData() : numInstancesToDraw(0), refresh(false) { }
 
         // The prototype prim path associated with this instancer.
         SdfPath prototypePath;
@@ -546,7 +546,7 @@ private:
 
         // Paths to Usd instance prims. Note that this is not necessarily
         // equivalent to all the instances that will be drawn. See below.
-        std::vector<SdfPath> instancePaths;
+        SdfPathSet instancePaths;
 
         // Number of actual instances of this instancer that will be 
         // drawn. See comment on _RunForAllInstancesToDraw.
@@ -582,9 +582,10 @@ private:
         // Parent native instances.
         SdfPathVector parentInstances;
 
-        // Flag indicating we've queued up the delegate to call TrackVariability
-        // on this instancer.  We record this so we don't do it multiple times.
-        mutable bool refreshVariability;
+        // Flag indicating we've asked the delegate to refresh this instancer
+        // (via TrackVariability/UpdateForTime).  We record this so we don't
+        // do it multiple times.
+        mutable bool refresh;
     };
 
     // Map from hydra instancer cache path to the various instancer state we
@@ -626,6 +627,12 @@ private:
     typedef TfHashMultiMap<SdfPath, SdfPath, SdfPath::Hash>
         _PrototypeToInstancerMap;
     _PrototypeToInstancerMap _prototypeToInstancerMap;
+
+    // Map from instance cache path to their instancer path.
+    // Note: this is for reducing proto prim lookup in _GetProtoPrim method.
+    typedef std::unordered_map<SdfPath, SdfPath, SdfPath::Hash>
+        _ProtoPrimToInstancerMap;
+    _ProtoPrimToInstancerMap _protoPrimToInstancerMap;
 };
 
 

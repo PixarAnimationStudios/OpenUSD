@@ -109,6 +109,59 @@ _ComputeDataWindow(
     return fallbackViewport;
 }
 
+static
+const GfVec3i &
+_GetFramebufferSize(const HgiGraphicsCmdsDesc &desc)
+{
+    for (const HgiTextureHandle &color : desc.colorTextures) {
+        return color->GetDescriptor().dimensions;
+    }
+    if (desc.depthTexture) {
+        return desc.depthTexture->GetDescriptor().dimensions;
+    }
+    
+    static const GfVec3i fallback(0);
+    return fallback;
+}
+
+static
+GfVec4i
+_ToVec4i(const GfVec4f &v)
+{
+    return GfVec4i(int(v[0]), int(v[1]), int(v[2]), int(v[3]));
+}
+
+static
+GfVec4i
+_ComputeViewport(const GfRect2i &dataWindow, const GfVec3i &framebufferSize)
+{
+    const int framebufferHeight = framebufferSize[1];
+    if (framebufferHeight > 0) {
+        return GfVec4i(
+            dataWindow.GetMinX(),
+            framebufferHeight - (dataWindow.GetMinY() + dataWindow.GetHeight()),
+            dataWindow.GetWidth(),
+            dataWindow.GetHeight());
+    } else {
+        return GfVec4i(dataWindow.GetMinX(),  dataWindow.GetMinY(),
+                       dataWindow.GetWidth(), dataWindow.GetHeight());
+    }
+}
+
+GfVec4i
+HdStRenderPassState::ComputeViewport(const HgiGraphicsCmdsDesc &desc) const
+{
+    const CameraUtilFraming &framing = GetFraming();
+    // Use data window for clients using the new camera framing API.
+    if (framing.IsValid()) {
+        return _ComputeViewport(framing.dataWindow, _GetFramebufferSize(desc));
+    }
+
+    // For clients not using the new camera framing API, fallback
+    // to the viewport they specified.
+    return _ToVec4i(GetViewport());
+}
+
 void
 HdStRenderPassState::Prepare(
     HdResourceRegistrySharedPtr const &resourceRegistry)
@@ -232,7 +285,9 @@ HdStRenderPassState::Prepare(
     GfMatrix4d const& worldToViewMatrix = GetWorldToViewMatrix();
     GfMatrix4d projMatrix = GetProjectionMatrix();
 
-    if (!hdStResourceRegistry->GetHgi()->GetCapabilities()->IsSet(
+    HgiCapabilities const * capabilities =
+        hdStResourceRegistry->GetHgi()->GetCapabilities();
+    if (!capabilities->IsSet(
         HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne)) {
         // Different backends use different clip space depth ranges. The
         // codebase generally assumes an OpenGL-style depth of [-1, 1] when
@@ -243,20 +298,26 @@ HdStRenderPassState::Prepare(
         depthAdjustmentMat[3][2] = 0.5;
         projMatrix = projMatrix * depthAdjustmentMat;
     }
+    bool const doublesSupported = capabilities->IsSet(
+        HgiDeviceCapabilitiesBitsShaderDoublePrecision);
 
     HdBufferSourceSharedPtrVector sources = {
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->worldToViewMatrix,
-            worldToViewMatrix),
+            worldToViewMatrix,
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->worldToViewInverseMatrix,
-            worldToViewMatrix.GetInverse()),
+            worldToViewMatrix.GetInverse(),
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->projectionMatrix,
-            projMatrix),
+            projMatrix,
+            doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->imageToWorldMatrix,
-            GetImageToWorldMatrix()),
+            GetImageToWorldMatrix(),
+            doublesSupported),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(
@@ -392,32 +453,19 @@ _ResolveCullMode(
         return HgiCullModeNone;
     }
 
-    HgiCullMode resolvedCullMode = HgiCullModeNone;
 
-    // renderPass culling opinions
-    switch (rsCullStyle) {
-        case HdCullStyleFront:
-        case HdCullStyleFrontUnlessDoubleSided:
-            resolvedCullMode = HgiCullModeFront;
-            break;
-        case HdCullStyleBack:
-        case HdCullStyleBackUnlessDoubleSided:
-            resolvedCullMode = HgiCullModeBack;
-            break;
-        case HdCullStyleNothing:
-        case HdCullStyleDontCare:
-        default:
-            // disable culling
-            resolvedCullMode = HgiCullModeNone;
-            break;
-    }
-
-    // geometricShader culling opinions
+    // If the Rprim has an opinion, that wins. Else use the render pass.
+    HdCullStyle const gsCullStyle = geometricShader->GetCullStyle();
+    HdCullStyle const resolvedCullStyle =
+        gsCullStyle == HdCullStyleDontCare? rsCullStyle : gsCullStyle;
+    
     bool const hasMirroredTransform =
                         geometricShader->GetHasMirroredTransform();
     bool const doubleSided = geometricShader->GetDoubleSided();
 
-    switch (geometricShader->GetCullStyle()) {
+    HgiCullMode resolvedCullMode = HgiCullModeNone;
+
+    switch (resolvedCullStyle) {
         case HdCullStyleFront:
             if (hasMirroredTransform) {
                 resolvedCullMode = HgiCullModeBack;
@@ -451,25 +499,8 @@ _ResolveCullMode(
             }
             break;
         case HdCullStyleNothing:
-            resolvedCullMode = HgiCullModeNone;
-            break;
-        case HdCullStyleDontCare:
         default:
-            // Fallback to the renderPass opinion, but account for
-            // combinations of parameters that require extra handling
-            if (doubleSided &&
-               (rsCullStyle == HdCullStyleBackUnlessDoubleSided ||
-                rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeNone;
-            } else if (hasMirroredTransform &&
-                (rsCullStyle == HdCullStyleBack ||
-                 rsCullStyle == HdCullStyleBackUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeFront;
-            } else if (hasMirroredTransform &&
-                (rsCullStyle == HdCullStyleFront ||
-                 rsCullStyle == HdCullStyleFrontUnlessDoubleSided)) {
-                resolvedCullMode = HgiCullModeBack;
-            }
+            resolvedCullMode = HgiCullModeNone;
             break;
     }
 

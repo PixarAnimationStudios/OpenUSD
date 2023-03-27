@@ -94,11 +94,6 @@ wrapErrors()
         ("ErrorInconsistentAttributeVariability", "", no_init)
         ;
 
-    class_<PcpErrorInternalAssetPath, bases<PcpErrorBase>,
-        PcpErrorInternalAssetPathPtr>
-        ("ErrorInternalAssetPath", "", no_init)
-        ;
-
     class_<PcpErrorInvalidPrimPath, bases<PcpErrorBase>,
         PcpErrorInvalidPrimPathPtr>
         ("ErrorInvalidPrimPath", "", no_init)
@@ -154,11 +149,6 @@ wrapErrors()
         ("ErrorInvalidSublayerPath", "", no_init)
         ;
 
-    class_<PcpErrorInvalidVariantSelection, bases<PcpErrorBase>,
-           PcpErrorInvalidVariantSelectionPtr>
-        ("ErrorInvalidVariantSelection", "", no_init)
-        ;
-
     class_<PcpErrorOpinionAtRelocationSource, bases<PcpErrorBase>, 
            PcpErrorOpinionAtRelocationSourcePtr>
         ("ErrorOpinionAtRelocationSource", "", no_init)
@@ -197,7 +187,6 @@ wrapErrors()
         TfPyContainerConversions::variable_capacity_policy >();
 }
 
-TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidVariantSelection)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorPropertyPermissionDenied)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorBase)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorTargetPathBase)
@@ -207,7 +196,6 @@ TF_REFPTR_CONST_VOLATILE_GET(PcpErrorCapacityExceeded)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentPropertyType)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeType)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInconsistentAttributeVariability)
-TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInternalAssetPath)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidPrimPath)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidAssetPathBase)
 TF_REFPTR_CONST_VOLATILE_GET(PcpErrorInvalidAssetPath)

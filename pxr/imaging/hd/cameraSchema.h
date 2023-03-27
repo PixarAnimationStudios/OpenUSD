@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (verticalApertureOffset) \
     (focalLength) \
     (clippingRange) \
+    (clippingPlanes) \
     (perspective) \
     (orthographic) \
 
@@ -75,6 +76,8 @@ public:
     HdFloatDataSourceHandle GetFocalLength();
     HD_API
     HdVec2fDataSourceHandle GetClippingRange();
+    HD_API
+    HdVec4dArrayDataSourceHandle GetClippingPlanes();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -92,7 +95,8 @@ public:
         const HdFloatDataSourceHandle &horizontalApertureOffset,
         const HdFloatDataSourceHandle &verticalApertureOffset,
         const HdFloatDataSourceHandle &focalLength,
-        const HdVec2fDataSourceHandle &clippingRange
+        const HdVec2fDataSourceHandle &clippingRange,
+        const HdVec4dArrayDataSourceHandle &clippingPlanes
     );
 
     /// \class HdCameraSchema::Builder
@@ -125,6 +129,9 @@ public:
         HD_API
         Builder &SetClippingRange(
             const HdVec2fDataSourceHandle &clippingRange);
+        HD_API
+        Builder &SetClippingPlanes(
+            const HdVec4dArrayDataSourceHandle &clippingPlanes);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -138,6 +145,7 @@ public:
         HdFloatDataSourceHandle _verticalApertureOffset;
         HdFloatDataSourceHandle _focalLength;
         HdVec2fDataSourceHandle _clippingRange;
+        HdVec4dArrayDataSourceHandle _clippingPlanes;
     };
 
     /// Retrieves a container data source with the schema's default name token

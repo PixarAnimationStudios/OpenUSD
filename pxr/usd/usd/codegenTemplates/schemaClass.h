@@ -194,6 +194,14 @@ public:
     {% endif -%}
     static {{ cls.cppClassName }}
     Get(const UsdPrim &prim, const TfToken &name);
+
+    /// Return a vector of all named instances of {{ cls.cppClassName }} on the 
+    /// given \p prim.
+    {% if useExportAPI -%}
+    {{ Upper(libraryName) }}_API
+    {% endif -%}
+    static std::vector<{{ cls.cppClassName }}>
+    GetAll(const UsdPrim &prim);
 {% endif %}
 {% endif %}
 

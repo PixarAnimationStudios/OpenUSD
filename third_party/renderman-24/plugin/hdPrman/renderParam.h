@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
+#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
@@ -38,6 +39,10 @@
 #include <mutex>
 
 class RixRiCtl;
+
+namespace stats {
+class Session;
+};
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,7 +63,8 @@ class HdPrman_RenderParam : public HdRenderParam
 {
 public:
     HDPRMAN_API
-    HdPrman_RenderParam(const std::string &rileyVariant);
+    HdPrman_RenderParam(const std::string &rileyVariant, 
+        const std::string &xpuDevices);
 
     HDPRMAN_API
     ~HdPrman_RenderParam() override;
@@ -69,7 +75,8 @@ public:
     // Convert any Hydra primvars that should be Riley instance attributes.
     HDPRMAN_API
     RtParamList
-    ConvertAttributes(HdSceneDelegate *sceneDelegate, SdfPath const& id);
+    ConvertAttributes(HdSceneDelegate *sceneDelegate,
+        SdfPath const& id, bool isGeometry);
 
     // A vector of Riley coordinate system id's.
     using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;
@@ -270,13 +277,46 @@ public:
     // immediately set it as riley option.
     void UpdateRileyShutterInterval(const HdRenderIndex * renderIndex);
 
+    // Path to the connected Sample Filter from the Render Settings Prim
+    void SetConnectedSampleFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& connectedSampleFilterPaths);
+    SdfPathVector GetConnectedSampleFilterPaths() {
+        return _connectedSampleFilterPaths;
+    }
+
+    // Riley Data from the Sample Filter Prim
+    void AddSampleFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate);
+    riley::SampleFilterList GetSampleFilterList();
+
+    // Path to the connected Display Filter from the Render Settings Prim
+    void SetConnectedDisplayFilterPaths(HdSceneDelegate *sceneDelegate,
+        SdfPathVector const& connectedDisplayFilterPaths);
+    SdfPathVector GetConnectedDisplayFilterPaths() {
+        return _connectedDisplayFilterPaths;
+    }
+
+    // Riley Data from the Display Filter Prim
+    void AddDisplayFilter(
+        HdSceneDelegate *sceneDelegate, 
+        SdfPath const& path, 
+        riley::ShadingNode const& node);
+    void CreateDisplayFilterNetwork(HdSceneDelegate *sceneDelegate);
+    riley::DisplayFilterList GetDisplayFilterList();
+
 private:
-    void _CreateRiley(const std::string &rileyVariant);
+    void _CreateStatsSession();
+    void _CreateRiley(const std::string &rileyVariant, 
+        const std::string &xpuVariant);
     void _CreateFallbackMaterials();
     void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
-
+    
     void _DestroyRiley();
+    void _DestroyStatsSession();
 
     // Updates clear colors of AOV descriptors of framebuffer.
     // If this is not possible because the set of AOVs changed,
@@ -296,6 +336,9 @@ private:
 
     // Xcpt Handler
     HdPrman_Xcpt _xcpt;
+
+    // Roz stats session
+    stats::Session *_statsSession;
 
     // Riley instance.
     riley::Riley *_riley;
@@ -364,8 +407,19 @@ private:
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
 
+    // SampleFilter
+    SdfPathVector _connectedSampleFilterPaths;
+    std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
+    riley::SampleFilterId _sampleFiltersId;
+
+    // DisplayFilter
+    SdfPathVector _connectedDisplayFilterPaths;
+    std::map<SdfPath, riley::ShadingNode> _displayFilterNodes;
+    riley::DisplayFilterId _displayFiltersId;
+
     // RIX or XPU
     bool _xpu;
+    std::vector<int> _xpuGpuConfig;
 
     int _lastSettingsVersion;
 };

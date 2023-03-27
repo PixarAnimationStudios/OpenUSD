@@ -84,7 +84,9 @@ def Xform "QuadModel" (
     references = </QuadMeshProto>
 )
 {
-    def "Mesh"
+    def "Mesh" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material>
         double xformOp:rotateY = 0
@@ -98,7 +100,9 @@ def Xform "TriangleModel" (
     references = </TriangleMeshProto>
 )
 {
-    def "Mesh"
+    def "Mesh" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         rel material:binding = </Material>
         double xformOp:rotateY = 0

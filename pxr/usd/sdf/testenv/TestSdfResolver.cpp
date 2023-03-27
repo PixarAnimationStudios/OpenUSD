@@ -37,14 +37,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 //   arguments attached. File format arguments are a Sdf-level concern
 //   that resolver plugins should not have to reason about.
 //
-#if AR_VERSION == 1
-
-class Sdf_TestResolver
-    : public ArDefaultResolver
-{
-};
-
-#else
 
 static bool
 _AssetPathHasArguments(const std::string& assetPath)
@@ -125,8 +117,6 @@ protected:
     }
 
 };
-
-#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 AR_DEFINE_RESOLVER(Sdf_TestResolver, ArDefaultResolver);

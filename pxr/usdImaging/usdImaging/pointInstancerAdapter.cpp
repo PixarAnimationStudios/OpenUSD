@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/pointInstancerAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePointInstancer.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
@@ -33,6 +34,7 @@
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderIndex.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usdGeom/imageable.h"
@@ -71,6 +73,53 @@ TF_REGISTRY_FUNCTION(TfType)
 
 UsdImagingPointInstancerAdapter::~UsdImagingPointInstancerAdapter() 
 {
+}
+
+TfTokenVector
+UsdImagingPointInstancerAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+
+TfToken
+UsdImagingPointInstancerAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->instancer;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingPointInstancerAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointInstancerPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPointInstancerAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePointInstancerPrim::Invalidate(
+            prim, subprim, properties);
+    }
+    
+    return HdDataSourceLocatorSet();
 }
 
 bool
@@ -554,6 +603,18 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                     HdChangeTracker::DirtyPrimvar,
                     _tokens->instancer,
                     timeVaryingBits,
+                    false) ||
+            _IsVarying(prim,
+                    UsdGeomTokens->velocities,
+                    HdChangeTracker::DirtyPrimvar,
+                    _tokens->instancer,
+                    timeVaryingBits,
+                    false) ||
+            _IsVarying(prim,
+                    UsdGeomTokens->accelerations,
+                    HdChangeTracker::DirtyPrimvar,
+                    _tokens->instancer,
+                    timeVaryingBits,
                     false);
 
         if (!(*timeVaryingBits & HdChangeTracker::DirtyPrimvar)) {
@@ -602,9 +663,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                 protoPrim, cachePath, time, requestedBits);
         }
     } else if (_instancerData.find(cachePath) != _instancerData.end()) {
-        // For the instancer itself, we only send translate, rotate and scale
-        // back as primvars, which all fall into the DirtyPrimvar bucket
-        // currently.
+        // For the instancer itself, we only send translate, rotate, scale,
+        // velocities, and accelerations back as primvars, which all fall into
+        // the DirtyPrimvar bucket currently.
         if (requestedBits & HdChangeTracker::DirtyPrimvar) {
             UsdGeomPointInstancer instancer(prim);
 
@@ -639,8 +700,24 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
                     HdInterpolationInstance);
             }
 
-            // Convert non-constant primvars on UsdGeomPointInstancer
-            // into instance-rate primvars. Note: this only gets local primvars.
+            VtVec3fArray velocities;
+            if (instancer.GetVelocitiesAttr().Get(&velocities, time)) {
+                _MergePrimvar(
+                    &vPrimvars,
+                    HdTokens->velocities,
+                    HdInterpolationInstance);
+            }
+
+            VtVec3fArray accelerations;
+            if (instancer.GetAccelerationsAttr().Get(&accelerations, time)) {
+                _MergePrimvar(
+                    &vPrimvars,
+                    HdTokens->accelerations,
+                    HdInterpolationInstance);
+            }
+
+            // Convert non-uniform primvars on UsdGeomPointInstancer into
+            // instance-rate primvars. Note: this only gets local primvars.
             // Inherited primvars don't vary per-instance, so we let the
             // prototypes pick them up.
             UsdGeomPrimvarsAPI primvars(instancer);
@@ -701,7 +778,9 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
     if (propertyName == UsdGeomTokens->positions ||
         propertyName == UsdGeomTokens->orientations ||
-        propertyName == UsdGeomTokens->scales) {
+        propertyName == UsdGeomTokens->scales ||
+        propertyName == UsdGeomTokens->velocities ||
+        propertyName == UsdGeomTokens->accelerations) {
 
         TfToken primvarName = propertyName;
         if (propertyName == UsdGeomTokens->positions) {
@@ -710,6 +789,10 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
             primvarName = _tokens->rotate;
         } else if (propertyName == UsdGeomTokens->scales) {
             primvarName = _tokens->scale;
+        } else if (propertyName == UsdGeomTokens->velocities) {
+            primvarName = HdTokens->velocities;
+        } else if (propertyName == UsdGeomTokens->accelerations) {
+            primvarName = HdTokens->accelerations;
         }
 
         return _ProcessNonPrefixedPrimvarPropertyChange(
@@ -839,6 +922,12 @@ UsdImagingPointInstancerAdapter::MarkDirty(UsdPrim const& prim,
         proto.adapter->MarkDirty(prim, cachePath, dirty, index);
     } else {
         index->MarkInstancerDirty(cachePath, dirty);
+        // Note that if any primvars have changed, we need to re-run
+        // UpdateForTime. Value clips mean that frame changes can change the
+        // primvar set.
+        if (dirty & HdChangeTracker::DirtyPrimvar) {
+            index->RequestUpdateForTime(cachePath);
+        }
     }
 }
 
@@ -1674,6 +1763,10 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
             usdKey = UsdGeomTokens->scales;
         } else if (key == _tokens->rotate) {
             usdKey = UsdGeomTokens->orientations;
+        } else if (key == HdTokens->velocities) {
+            usdKey = UsdGeomTokens->velocities;
+        } else if (key == HdTokens->accelerations) {
+            usdKey = UsdGeomTokens->accelerations;
         }
         return UsdImagingPrimAdapter::SamplePrimvar(
             usdPrim, cachePath, usdKey, time,
@@ -1906,6 +1999,20 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 return VtValue(scales);
+            }
+
+        } else if (key == HdTokens->velocities) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtVec3fArray velocities;
+            if (instancer.GetVelocitiesAttr().Get(&velocities, time)) {
+                return VtValue(velocities);
+            }
+
+        } else if (key == HdTokens->accelerations) {
+            UsdGeomPointInstancer instancer(usdPrim);
+            VtVec3fArray accelerations;
+            if (instancer.GetAccelerationsAttr().Get(&accelerations, time)) {
+                return VtValue(accelerations);
             }
 
         } else {

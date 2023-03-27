@@ -386,9 +386,23 @@ UsdSkelBlendShapeQuery::ComputeFlattenedSubShapeWeights(
     if (ComputeSubShapeWeights(weights, &sparseSubShapeWeights,
                                &sparseBlendShapeIndices,
                                &sparseSubShapeIndices)) {
-        subShapeWeights->assign(_subShapes.size(), 0.0f);
+        if (!TF_VERIFY((sparseSubShapeIndices.size()
+                        == sparseSubShapeWeights.size()),
+                       "numIndices (%zu) != numWeights (%zu)",
+                       sparseSubShapeIndices.size(),
+                       sparseSubShapeWeights.size())) {
+            return false;
+        }
+        const size_t numSubShapes = _subShapes.size();
+        subShapeWeights->assign(numSubShapes, 0.0f);
         auto dst = TfMakeSpan(*subShapeWeights);
         for (size_t i = 0; i < sparseSubShapeWeights.size(); ++i) {
+            if (ARCH_UNLIKELY(
+                    !TF_VERIFY((sparseSubShapeIndices[i] < numSubShapes),
+                               "index (%d) out of range %zu - skipping.",
+                               (int)sparseSubShapeIndices[i], numSubShapes))) {
+                continue;
+            }
             dst[sparseSubShapeIndices[i]] = sparseSubShapeWeights[i];
         }
         return true;

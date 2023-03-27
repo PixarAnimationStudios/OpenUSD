@@ -14,12 +14,14 @@ pxr_library(hgi
         capabilities
         cmds
         computeCmds
+        computeCmdsDesc
         computePipeline
         debugCodes
         graphicsCmds
         graphicsCmdsDesc
         graphicsPipeline
         hgi
+        indirectCommandEncoder
         resourceBindings
         sampler
         shaderFunction

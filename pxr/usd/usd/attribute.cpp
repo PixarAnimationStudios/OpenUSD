@@ -230,6 +230,14 @@ UsdAttribute::GetResolveInfo(UsdTimeCode time) const
     return resolveInfo;
 }
 
+UsdResolveInfo
+UsdAttribute::GetResolveInfo() const
+{
+    UsdResolveInfo resolveInfo;
+    _GetStage()->_GetResolveInfo(*this, &resolveInfo, nullptr);
+    return resolveInfo;
+}
+
 template <typename T>
 bool 
 UsdAttribute::_Set(const T& value, UsdTimeCode time) const

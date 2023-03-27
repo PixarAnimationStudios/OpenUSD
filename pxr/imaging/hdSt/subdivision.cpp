@@ -1729,6 +1729,7 @@ _CreateResourceBindings(
         bufBind0.bindingIndex = BufferBinding_Sizes;
         bufBind0.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind0.stageUsage = HgiShaderStageCompute;
+        bufBind0.writable = false;
         bufBind0.offsets.push_back(0);
         bufBind0.buffers.push_back(sizes);
         resourceDesc.buffers.push_back(std::move(bufBind0));
@@ -1739,6 +1740,7 @@ _CreateResourceBindings(
         bufBind1.bindingIndex = BufferBinding_Offsets;
         bufBind1.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind1.stageUsage = HgiShaderStageCompute;
+        bufBind1.writable = false;
         bufBind1.offsets.push_back(0);
         bufBind1.buffers.push_back(offsets);
         resourceDesc.buffers.push_back(std::move(bufBind1));
@@ -1749,6 +1751,7 @@ _CreateResourceBindings(
         bufBind2.bindingIndex = BufferBinding_Indices;
         bufBind2.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind2.stageUsage = HgiShaderStageCompute;
+        bufBind2.writable = false;
         bufBind2.offsets.push_back(0);
         bufBind2.buffers.push_back(indices);
         resourceDesc.buffers.push_back(std::move(bufBind2));
@@ -1759,6 +1762,7 @@ _CreateResourceBindings(
         bufBind3.bindingIndex = BufferBinding_Weights;
         bufBind3.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind3.stageUsage = HgiShaderStageCompute;
+        bufBind3.writable = false;
         bufBind3.offsets.push_back(0);
         bufBind3.buffers.push_back(weights);
         resourceDesc.buffers.push_back(std::move(bufBind3));
@@ -1769,6 +1773,7 @@ _CreateResourceBindings(
         bufBind4.bindingIndex = BufferBinding_Primvar;
         bufBind4.resourceType = HgiBindResourceTypeStorageBuffer;
         bufBind4.stageUsage = HgiShaderStageCompute;
+        bufBind4.writable = true;
         bufBind4.offsets.push_back(0);
         bufBind4.buffers.push_back(primvar);
         resourceDesc.buffers.push_back(std::move(bufBind4));
@@ -1943,9 +1948,9 @@ _EvalStencilsGPU(
         resourceBindingsInstance.SetValue(rb);
     }
 
-    HgiResourceBindingsSharedPtr const & resourceBindindsPtr =
+    HgiResourceBindingsSharedPtr const & resourceBindingsPtr =
         resourceBindingsInstance.GetValue();
-    HgiResourceBindingsHandle resourceBindings = *resourceBindindsPtr.get();
+    HgiResourceBindingsHandle resourceBindings = *resourceBindingsPtr.get();
 
     // Get or add pipeline in registry.
     HdInstance<HgiComputePipelineSharedPtr> computePipelineInstance =

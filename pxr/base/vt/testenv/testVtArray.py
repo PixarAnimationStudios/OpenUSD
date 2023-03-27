@@ -25,6 +25,8 @@
 # pylint: disable=range-builtin-not-iterating
 #
 from __future__ import division
+
+import array
 import unittest
 import sys, math
 from pxr import Gf, Vt
@@ -157,10 +159,10 @@ class TestVtArray(unittest.TestCase):
         for arrayType, (x0, x1) in overflows:
             for x in (x0, x1):
                 with self.assertRaises(OverflowError):
-                    array = arrayType((x,))
+                    arrayT = arrayType((x,))
             for x in (x0+1, x1-1):
-                array = arrayType((x,))
-                self.assertEqual(array, eval(repr(array)))
+                arrayT = arrayType((x,))
+                self.assertEqual(arrayT, eval(repr(arrayT)))
 
     def test_ParallelizedOps(self):
         m0 = Vt.Matrix4dArray((Gf.Matrix4d(1),Gf.Matrix4d(2)))
@@ -195,6 +197,15 @@ class TestVtArray(unittest.TestCase):
                 arrayType=Vt.QuatfArray, expLen=3, expVal=Gf.Quatf(4, (1,2,3))),
             dict(length=12, fill=(1,2,3,4),
                 arrayType=Vt.QuathArray, expLen=3, expVal=Gf.Quath(4, (1,2,3))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuatdArray, expLen=6,
+                expVal=Gf.DualQuatd(Gf.Quatd(4, (1,2,3)), Gf.Quatd(8, (5,6,7)))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuatfArray, expLen=6,
+                expVal=Gf.DualQuatf(Gf.Quatf(4, (1,2,3)), Gf.Quatf(8, (5,6,7)))),
+            dict(length=48, fill=(1,2,3,4,5,6,7,8),
+                arrayType=Vt.DualQuathArray, expLen=6,
+                expVal=Gf.DualQuath(Gf.Quath(4, (1,2,3)), Gf.Quath(8, (5,6,7)))),
             dict(length=40, fill=(1,0,0,1),
                 arrayType=Vt.Matrix2fArray, expLen=10, expVal=Gf.Matrix2f()),
             dict(length=40, fill=(1,0,0,1),
@@ -347,6 +358,18 @@ class TestVtArray(unittest.TestCase):
         _TestDivision(Vt.QuatfArray, Gf.Quatf, Gf.Vec3f)
         _TestDivision(Vt.QuatdArray, Gf.Quatd, Gf.Vec3d)
         _TestDivision(Vt.QuaternionArray, Gf.Quaternion, Gf.Vec3d)
+
+    # The test is disabled for py2 because array in py2 doesn't support old py2
+    # buffer protocol.
+    @unittest.skipIf(sys.version_info.major == 2,
+            "Array in py2 doesn't support old py2 buffer protocol")
+    def test_LargeBuffer(self):
+        '''VtArray can be created from a buffer with item count
+           greater than maxint'''
+        largePyBuffer = array.array('B', (0,)) * 2500000000
+        vtArrayFromBuffer = Vt.UCharArray.FromBuffer(largePyBuffer)
+        self.assertEqual(len(vtArrayFromBuffer), 2500000000)
+
 
 if __name__ == '__main__':
     unittest.main()

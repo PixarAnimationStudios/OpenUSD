@@ -176,65 +176,10 @@ PXR_NAMESPACE_CLOSE_SCOPE
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdGeom/visibilityAPI.h"
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-TF_DEFINE_ENV_SETTING(
-    USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API, false,
-    "Whether UsdGeomImageable's primvars API should issue deprecation warnings");
-
-inline static void
-_IssueAPIWarningIfDeprecationFlagEnabled()
-{
-    if (TfGetEnvSetting(USD_GEOM_IMAGEABLE_DEPRECATE_PRIMVARS_API)) {
-        TF_WARN("API deprecation warning: UsdGeomImageable's primvars API "
-                "will be removed in the future.  Use UsdGeomPrimvarsAPI "
-                "instead.");
-    }
-}
-
-UsdGeomPrimvar 
-UsdGeomImageable::CreatePrimvar(const TfToken& attrName,
-                                const SdfValueTypeName &typeName,
-                                const TfToken& interpolation,
-                                int elementSize) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim())
-        .CreatePrimvar(attrName, typeName, interpolation,
-                       elementSize);
-}
-
-
-UsdGeomPrimvar
-UsdGeomImageable::GetPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvar(name);
-}
-
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::GetPrimvars() const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetPrimvars();
-}
-
-std::vector<UsdGeomPrimvar>
-UsdGeomImageable::GetAuthoredPrimvars() const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).GetAuthoredPrimvars();
-}
-
-bool
-UsdGeomImageable::HasPrimvar(const TfToken &name) const
-{
-    _IssueAPIWarningIfDeprecationFlagEnabled();
-    return UsdGeomPrimvarsAPI(GetPrim()).HasPrimvar(name);
-}
-
 
 /* static */
 const TfTokenVector &
@@ -282,21 +227,10 @@ UsdGeomImageable::GetPurposeVisibilityAttr(
     if (purpose == UsdGeomTokens->default_) {
         return GetVisibilityAttr();
     }
-    if (purpose == UsdGeomTokens->guide) {
-        return GetPrim().GetAttribute(UsdGeomTokens->guideVisibility);
-    }
-    if (purpose == UsdGeomTokens->proxy) {
-        return GetPrim().GetAttribute(UsdGeomTokens->proxyVisibility);
-    }
-    if (purpose == UsdGeomTokens->render) {
-        return GetPrim().GetAttribute(UsdGeomTokens->renderVisibility);
-    }
 
-    TF_CODING_ERROR(
-        "Unexpected purpose '%s' getting purpose visibility attribute for "
-        "<%s>.",
-        purpose.GetText(),
-        GetPrim().GetPath().GetText());
+    if (UsdGeomVisibilityAPI visAPI = UsdGeomVisibilityAPI(GetPrim())) {
+        return visAPI.GetPurposeVisibilityAttr(purpose);        
+    }
     return {};
 }
 
@@ -311,12 +245,12 @@ _ComputePurposeVisibility(
     if (const UsdGeomImageable ip = UsdGeomImageable(prim)) {
         TfToken localVis;
         const UsdAttribute attr = ip.GetPurposeVisibilityAttr(purpose);
-        if (attr.HasAuthoredValue() && attr.Get(&localVis, time)) {
+        if (attr && attr.HasAuthoredValue() && attr.Get(&localVis, time)) {
             return localVis;
         }
     }
 
-    // Otherwise, we inherit purpose visibiliy from the parent.
+    // Otherwise, we inherit purpose visibility from the parent.
     if (const UsdPrim parent = prim.GetParent()) {
         return _ComputePurposeVisibility(parent, purpose, time);
     }
@@ -431,27 +365,6 @@ UsdGeomImageable::MakeInvisible(const UsdTimeCode &time) const
     }
 }
 
-static
-TfToken
-_ComputePurpose(UsdPrim const &prim, UsdPrim *root=NULL)
-{
-    if (UsdPrim parent = prim.GetParent()){
-        TfToken myPurpose = _ComputePurpose(parent, root);
-        if (myPurpose != UsdGeomTokens->default_)
-            return myPurpose;
-        if (UsdGeomImageable ip = UsdGeomImageable(prim)){
-            ip.GetPurposeAttr().Get(&myPurpose);
-            if (root){
-                *root = prim;
-            }
-        }
-
-        return myPurpose;
-    }
-
-    return UsdGeomTokens->default_;
-}
-
 // Helper for computing only the authored purpose token from a valid imageable
 // prim. Returns an empty purpose token otherwise.
 static TfToken
@@ -487,12 +400,13 @@ _ComputeFallbackPurpose(const UsdGeomImageable &ip)
 // hierarchy and returns the first authored purpose opinion found on an 
 // imageable prim. Returns an empty token if there's purpose opinion to inherit
 // from.
-static
-TfToken _ComputeInheritableAncestorPurpose(const UsdPrim &prim)
+static TfToken
+_ComputeInheritableAncestorPurpose(const UsdPrim &prim)
 {
     UsdPrim parent = prim.GetParent();
     while (parent) {
-        const TfToken purpose = _ComputeAuthoredPurpose(UsdGeomImageable(parent));
+        const TfToken purpose =
+            _ComputeAuthoredPurpose(UsdGeomImageable(parent));
         if (!purpose.IsEmpty()) {
             return purpose;
         }
@@ -543,6 +457,20 @@ UsdGeomImageable::ComputePurposeInfo(const PurposeInfo &parentPurposeInfo) const
     return PurposeInfo (authoredPurpose, true);
 }
 
+// Helper to compute the purpose value for prim, which may or may not be
+// imageable.
+static
+TfToken
+_ComputePurpose(UsdPrim const &prim)
+{
+    UsdGeomImageable ip(prim);
+    if (ip) {
+        return ip.ComputePurpose();
+    }
+
+    return _ComputeInheritableAncestorPurpose(prim);
+}
+
 UsdPrim
 UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
 {
@@ -568,11 +496,14 @@ UsdGeomImageable::ComputeProxyPrim(UsdPrim *renderPrim) const
         if (proxyPrimRel.GetForwardedTargets(&target)){
             if (target.size() == 1){
                 if (UsdPrim proxy = self.GetStage()->GetPrimAtPath(target[0])){
-                    if (_ComputePurpose(proxy) != UsdGeomTokens->proxy){
+                    const TfToken computedPurpose = _ComputePurpose(proxy);
+                    if (computedPurpose != UsdGeomTokens->proxy){
                         TF_WARN("Prim <%s>, targeted as proxyPrim of prim "
-                                "<%s> does not have purpose 'proxy'",
+                                "<%s> should have purpose 'proxy' but has "
+                                "'%s' instead.",
                                 proxy.GetPath().GetText(),
-                                renderRoot.GetPath().GetText());
+                                renderRoot.GetPath().GetText(),
+                                computedPurpose.GetText());
                         return UsdPrim();
                     }
                     if (renderPrim){

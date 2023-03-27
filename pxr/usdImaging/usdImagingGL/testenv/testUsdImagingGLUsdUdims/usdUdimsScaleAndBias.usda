@@ -42,7 +42,10 @@ def Scope "Scene" (
 
     def Xform "Geom"
     {
-        def Mesh "Plane" {
+        def Mesh "Plane" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
             rel material:binding = </Scene/Looks/MainMaterial>
             float2[] primvars:st = [(0, 0), (10, 0), (10, 2), (0, 2)] (interpolation = "vertex")
             int[] faceVertexCounts = [4]

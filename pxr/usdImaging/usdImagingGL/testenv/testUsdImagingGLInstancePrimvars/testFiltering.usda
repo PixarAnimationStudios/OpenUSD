@@ -4,7 +4,9 @@
     upAxis = "Y"
 )
 
-class Xform "Mesh"
+class Xform "Mesh" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
 {
     def Sphere "Geom"
     {

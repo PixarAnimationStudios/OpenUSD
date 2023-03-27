@@ -58,13 +58,12 @@ void wrapUsdProperty()
         .def("SetNestedDisplayGroups", &UsdProperty::SetNestedDisplayGroups,
              arg("nestedGroups"))
 
-        .def("GetDisplayName", &UsdProperty::GetDisplayName)
-        .def("SetDisplayName", &UsdProperty::SetDisplayName, arg("name"))
-        .def("ClearDisplayName", &UsdProperty::ClearDisplayName)
-        .def("HasAuthoredDisplayName", &UsdProperty::HasAuthoredDisplayName)
-
         .def("GetPropertyStack", &UsdProperty::GetPropertyStack,
              arg("time"))
+        .def("GetPropertyStackWithLayerOffsets", 
+             &UsdProperty::GetPropertyStackWithLayerOffsets,
+             arg("time"),
+             return_value_policy<TfPySequenceToList>())
 
         .def("IsCustom", &UsdProperty::IsCustom)
         .def("SetCustom", &UsdProperty::SetCustom, arg("isCustom"))
@@ -88,4 +87,6 @@ void wrapUsdProperty()
         ;
 
     TfPyRegisterStlSequencesFromPython<UsdProperty>();
+    TfPyContainerConversions::tuple_mapping_pair<
+        std::pair<SdfPropertySpecHandle, SdfLayerOffset>>();
 }

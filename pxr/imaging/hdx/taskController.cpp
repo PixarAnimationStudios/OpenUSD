@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hdx/aovInputTask.h"
+#include "pxr/imaging/hdx/boundingBoxTask.h"
 #include "pxr/imaging/hdx/colorizeSelectionTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
 #include "pxr/imaging/hdx/freeCameraSceneDelegate.h"
@@ -68,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (colorCorrectionTask)
     (pickTask)
     (pickFromRenderBufferTask)
+    (boundingBoxTask)
     (presentTask)
     (skydomeTask)
     (visualizeAovTask)
@@ -196,9 +198,11 @@ _ViewportToAovDimensions(const GfVec4d& viewport)
 }
 
 HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
-                                     SdfPath const& controllerId)
+                                     SdfPath const& controllerId,
+                                     bool gpuEnabled)
     : _index(renderIndex)
     , _controllerId(controllerId)
+    , _gpuEnabled(gpuEnabled)
     , _delegate(renderIndex, controllerId)
     , _freeCameraSceneDelegate(
         std::make_unique<HdxFreeCameraSceneDelegate>(
@@ -222,6 +226,7 @@ HdxTaskController::~HdxTaskController()
         _colorCorrectionTaskId,
         _pickTaskId,
         _pickFromRenderBufferTaskId,
+        _boundingBoxTaskId,
         _presentTaskId
     };
 
@@ -255,6 +260,11 @@ HdxTaskController::_CreateRenderGraph()
     // delegate capabilities evolve, we'll need a more complicated switch
     // than this...
     if (_IsStormRenderingBackend(GetRenderIndex())) {
+        if (!_gpuEnabled) {
+            TF_WARN("Trying to use Storm while disabling the GPU.");
+            _gpuEnabled = true;
+        }
+
         _CreateLightingTask();
         _CreateShadowTask();
         _renderTaskIds.push_back(_CreateSkydomeTask());
@@ -277,6 +287,7 @@ HdxTaskController::_CreateRenderGraph()
             _CreateVisualizeAovTask();
             _CreatePresentTask();
             _CreatePickTask();
+            _CreateBoundingBoxTask();
         }
 
         // XXX AOVs are OFF by default for Storm TaskController because hybrid
@@ -290,12 +301,15 @@ HdxTaskController::_CreateRenderGraph()
         _renderTaskIds.push_back(_CreateRenderTask(TfToken()));
 
         if (_AovsSupported()) {
-            _CreateAovInputTask();
-            _CreateColorizeSelectionTask();
-            _CreateColorCorrectionTask();
-            _CreateVisualizeAovTask();
-            _CreatePresentTask();
-            _CreatePickFromRenderBufferTask();
+            if (_gpuEnabled) {
+                _CreateAovInputTask();
+                _CreateColorizeSelectionTask();
+                _CreateColorCorrectionTask();
+                _CreateVisualizeAovTask();
+                _CreatePresentTask();
+                _CreatePickFromRenderBufferTask();
+                _CreateBoundingBoxTask();
+            }
             // Initialize the AOV system to render color. Note:
             // SetRenderOutputs special-cases color to include support for
             // depth-compositing and selection highlighting/picking.
@@ -574,6 +588,21 @@ HdxTaskController::_CreatePickFromRenderBufferTask()
         taskParams);
 }
 
+void
+HdxTaskController::_CreateBoundingBoxTask()
+{
+    _boundingBoxTaskId = GetControllerId().AppendChild(
+        _tokens->boundingBoxTask);
+
+    HdxBoundingBoxTaskParams taskParams;
+
+    GetRenderIndex()->InsertTask<HdxBoundingBoxTask>(&_delegate,
+        _boundingBoxTaskId);
+
+    _delegate.SetParameter(_boundingBoxTaskId, HdTokens->params,
+        taskParams);
+}
+
 void 
 HdxTaskController::_CreateAovInputTask()
 {
@@ -690,6 +719,7 @@ HdxTaskController::GetRenderingTasks() const
      * - shadowTaskId
      * - renderTaskIds (There may be more than one)
      * - aovInputTaskId
+     * - boundingBoxTaskId
      * - selectionTaskId
      * - colorizeSelectionTaskId
      * - colorCorrectionTaskId
@@ -728,6 +758,10 @@ HdxTaskController::GetRenderingTasks() const
         // images and put the results into gpu textures onto shared context.
         if (!_aovInputTaskId.IsEmpty()) {
             tasks.push_back(GetRenderIndex()->GetTask(_aovInputTaskId));
+        }
+
+        if (!_boundingBoxTaskId.IsEmpty()) {
+            tasks.push_back(GetRenderIndex()->GetTask(_boundingBoxTaskId));
         }
 
         // Render volume prims
@@ -787,12 +821,27 @@ HdxTaskController::_GetAovPath(TfToken const& aov) const
     return GetControllerId().AppendChild(TfToken(identifier));
 }
 
+VtValue
+HdxTaskController::_GetDomeLightTexture(GlfSimpleLight const& light)
+{
+    SdfAssetPath const& domeLightAsset = light.GetDomeLightTextureFile();
+    if (domeLightAsset != SdfAssetPath()) {
+        return VtValue(domeLightAsset);
+    }
+    else {
+        static VtValue const defaultDomeLightAsset = 
+            VtValue(SdfAssetPath(HdxPackageDefaultDomeLightTexture(),
+                                 HdxPackageDefaultDomeLightTexture()));
+        return defaultDomeLightAsset;
+    }
+}
+
 void 
 HdxTaskController::_SetParameters(SdfPath const& pathName, 
                                   GlfSimpleLight const& light)
 {
     _delegate.SetParameter(pathName, HdLightTokens->intensity, VtValue(1.0f));
-    _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.f));
+    _delegate.SetParameter(pathName, HdLightTokens->exposure, VtValue(0.0f));
     _delegate.SetParameter(pathName, HdLightTokens->normalize, false);
     _delegate.SetParameter(pathName, HdLightTokens->color, 
         VtValue(GfVec3f(1, 1, 1)));
@@ -804,13 +853,10 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
         VtValue());
     _delegate.SetParameter(pathName, HdLightTokens->params, light);
 
-    // If we are setting the parameters for the dome light we need to add the 
-    // default dome light texture resource.
+    // If this is a dome light add the domelight texture resource.
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureFile,
-                               SdfAssetPath(
-                                   HdxPackageDefaultDomeLightTexture(),
-                                   HdxPackageDefaultDomeLightTexture()));
+                               _GetDomeLightTexture(light));
     }
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
@@ -852,10 +898,9 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
     node.parameters[HdTokens->transform] = light.GetTransform();
 
     if (light.IsDomeLight()) {
-        // For the domelight, add the default domelight texture resource.
+        // For the domelight, add the domelight texture resource.
         node.parameters[HdLightTokens->textureFile] = 
-            SdfAssetPath(HdxPackageDefaultDomeLightTexture(),
-                         HdxPackageDefaultDomeLightTexture());
+            _GetDomeLightTexture(light);
     }
     else {
         // For the camera light, initialize the transform based on the
@@ -923,14 +968,15 @@ HdxTaskController::_ReplaceLightSprim(size_t const& pathIdx,
         GetRenderIndex()->InsertSprim(_GetCameraLightType(),
                         &_delegate, pathName);
     }
-    // Set the parameters for lights[i] and mark as dirty
+    // Set the parameters for the light and mark as dirty
     _SetParameters(pathName, light);
+
     // Create a HdMaterialNetworkMap for the light if we are not using Storm
     if (_simpleLightTaskId.IsEmpty())
         _SetMaterialNetwork(pathName, light);
+
     GetRenderIndex()->GetChangeTracker().MarkSprimDirty(pathName, 
                                                 HdLight::AllDirty);
-
 }
 
 void
@@ -1203,6 +1249,18 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             params);
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _visualizeAovTaskId, HdChangeTracker::DirtyParams);
+    }
+
+    if (!_boundingBoxTaskId.IsEmpty()) {
+        HdxBoundingBoxTaskParams params =
+            _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+                _boundingBoxTaskId, HdTokens->params);
+
+        params.aovName = name;
+
+        _delegate.SetParameter(_boundingBoxTaskId, HdTokens->params, params);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _boundingBoxTaskId, HdChangeTracker::DirtyParams);
     }
 }
 
@@ -1557,6 +1615,38 @@ HdxTaskController::SetSelectionColor(GfVec4f const& color)
 }
 
 void
+HdxTaskController::SetSelectionLocateColor(GfVec4f const& color)
+{
+    if (!_selectionTaskId.IsEmpty()) {
+        HdxSelectionTaskParams params =
+            _delegate.GetParameter<HdxSelectionTaskParams>(
+                _selectionTaskId, HdTokens->params);
+
+        if (params.locateColor != color) {
+            params.locateColor = color;
+            _delegate.SetParameter(_selectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _selectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+
+    if (!_colorizeSelectionTaskId.IsEmpty()) {
+        HdxColorizeSelectionTaskParams params =
+            _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
+                _colorizeSelectionTaskId, HdTokens->params);
+
+        if (params.locateColor != color) {
+            params.locateColor = color;
+            _delegate.SetParameter(_colorizeSelectionTaskId,
+                HdTokens->params, params);
+            GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+                _colorizeSelectionTaskId, HdChangeTracker::DirtyParams);
+        }
+    }
+}
+
+void
 HdxTaskController::SetSelectionEnableOutline(bool enableOutline)
 {
     if (!_colorizeSelectionTaskId.IsEmpty()) {
@@ -1619,7 +1709,7 @@ HdxTaskController::_SetBuiltInLightingState(
         return;
     }
 
-    GlfSimpleLightVector const& lights = src->GetLights();
+    GlfSimpleLightVector const& activeLights = src->GetLights();
 
     // HdxTaskController inserts a set of light prims to represent the lights
     // passed in through the simple lighting context (lights vector). These are 
@@ -1627,13 +1717,13 @@ HdxTaskController::_SetBuiltInLightingState(
     // application state.
 
     // If we need to add lights to the _lightIds vector 
-    if (_lightIds.size() < lights.size()) {
+    if (_lightIds.size() < activeLights.size()) {
 
-        // cycle through the lights, add the new light and make sure the Sprims
-        // at _lightIds[i] match with what is in lights[i]
-        for (size_t i = 0; i < lights.size(); ++i) {
+        // Cycle through the active lights, add the new light and make sure 
+        // the Sprim at _lightIds[i] matches activeLights[i]
+        for (size_t i = 0; i < activeLights.size(); ++i) {
             
-            // Get or create the light path for lights[i]
+            // Get or create the light path for activeLights[i]
             bool needToAddLightPath = false;
             SdfPath lightPath = SdfPath();
             if (i >= _lightIds.size()) {
@@ -1644,10 +1734,9 @@ HdxTaskController::_SetBuiltInLightingState(
             else {
                 lightPath = _lightIds[i];
             }
-            // Make sure that light at _lightIds[i] matches with lights[i]
-            GlfSimpleLight currLight = _GetLightAtId(i);
-            if (currLight != lights[i]) {
-                _ReplaceLightSprim(i, lights[i], lightPath);
+            // Make sure the light at _lightIds[i] matches activeLights[i]
+            if (_GetLightAtId(i) != activeLights[i]) {
+                _ReplaceLightSprim(i, activeLights[i], lightPath);
             }
             if (needToAddLightPath) {
                 _lightIds.push_back(lightPath);
@@ -1656,19 +1745,18 @@ HdxTaskController::_SetBuiltInLightingState(
     }
 
     // If we need to remove lights from the _lightIds vector 
-    else if (_lightIds.size() > lights.size()) {
+    else if (_lightIds.size() > activeLights.size()) {
 
-        // Cycle through the lights making sure the Sprims at _lightIds[i] 
-        // match with what is in lights[i]
-        for (size_t i = 0; i < lights.size(); ++i) {
+        // Cycle through the active lights and make sure the Sprim at 
+        // _lightIds[i] matchs activeLights[i]
+        for (size_t i = 0; i < activeLights.size(); ++i) {
             
-            // Get the light path for lights[i]
+            // Get the light path for activeLights[i]
             SdfPath lightPath = _lightIds[i];
             
-            // Make sure that light at _lightIds[i] matches with lights[i]
-            GlfSimpleLight currLight = _GetLightAtId(i);
-            if (currLight != lights[i]) {
-                _ReplaceLightSprim(i, lights[i], lightPath);
+            // Make sure the light at _lightIds[i] matches activeLights[i]
+            if (_GetLightAtId(i) != activeLights[i]) {
+                _ReplaceLightSprim(i, activeLights[i], lightPath);
             }
         }
         // Now that everything matches, remove the last item in _lightIds
@@ -1678,33 +1766,33 @@ HdxTaskController::_SetBuiltInLightingState(
 
     // If there has been no change in the number of lights we still may need to 
     // update the light parameters eg. if the free camera has moved 
-    for (size_t i = 0; i < lights.size(); ++i) {
+    for (size_t i = 0; i < activeLights.size(); ++i) {
     
-        // Make sure the light parameters match
-        GlfSimpleLight light = _GetLightAtId(i);
-        if (light != lights[i]) {
-            _delegate.SetParameter(_lightIds[i], 
-                                    HdLightTokens->params, lights[i]);
+        // Make sure the light parameters and transform match
+        GlfSimpleLight const& activeLight = activeLights[i];
+        if (_GetLightAtId(i) != activeLight) {
+            _delegate.SetParameter(
+                _lightIds[i], HdLightTokens->params, activeLight);
+            _delegate.SetParameter(
+                _lightIds[i], HdTokens->transform, activeLight.GetTransform());
 
-            if (light.IsDomeLight()) {
+            if (activeLight.IsDomeLight()) {
                 _delegate.SetParameter(
                     _lightIds[i], HdLightTokens->textureFile,
-                    SdfAssetPath(
-                        HdxPackageDefaultDomeLightTexture(),
-                        HdxPackageDefaultDomeLightTexture()));
+                    _GetDomeLightTexture(activeLight));
             }
             GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
-                _lightIds[i], HdLight::DirtyParams);
+                _lightIds[i], HdLight::DirtyParams | HdLight::DirtyTransform);
         }
 
         // Update the camera light transform if needed
-        if (_simpleLightTaskId.IsEmpty() && !light.IsDomeLight()) {
-            GfMatrix4d const& viewInverseMatrix = 
+        if (_simpleLightTaskId.IsEmpty() && !activeLight.IsDomeLight()) {
+            GfMatrix4d const& viewInvMatrix = 
                 _freeCameraSceneDelegate->GetTransform(
                     _freeCameraSceneDelegate->GetCameraId());
-            VtValue trans = VtValue(viewInverseMatrix * light.GetTransform());
-            VtValue oldTrans = _delegate.Get(_lightIds[i], HdTokens->transform);
-            if (viewInverseMatrix != GfMatrix4d(1.0) && trans != oldTrans) {
+            VtValue trans = VtValue(viewInvMatrix * activeLight.GetTransform());
+            VtValue prevTrans = _delegate.Get(_lightIds[i], HdTokens->transform);
+            if (viewInvMatrix != GfMatrix4d(1.0) && trans != prevTrans) {
                 _delegate.SetParameter(_lightIds[i], HdTokens->transform, trans);
                 GetRenderIndex()->GetChangeTracker().MarkSprimDirty(
                     _lightIds[i], HdLight::DirtyTransform);
@@ -1854,6 +1942,33 @@ HdxTaskController::SetColorCorrectionParams(
 
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _colorCorrectionTaskId, HdChangeTracker::DirtyParams);
+    }
+}
+
+void
+HdxTaskController::SetBBoxParams(
+    const HdxBoundingBoxTaskParams& params)
+{
+    if (_boundingBoxTaskId.IsEmpty()) {
+        return;
+    }
+
+    HdxBoundingBoxTaskParams oldParams =
+        _delegate.GetParameter<HdxBoundingBoxTaskParams>(
+            _boundingBoxTaskId, HdTokens->params);
+
+    // We only take the params that will be coming from outside this
+    // HdxTaskController instance.
+    HdxBoundingBoxTaskParams mergedParams = oldParams;
+    mergedParams.bboxes = params.bboxes;
+    mergedParams.color = params.color;
+    mergedParams.dashSize = params.dashSize;
+
+    if (mergedParams != oldParams) {
+        _delegate.SetParameter(
+            _boundingBoxTaskId, HdTokens->params, mergedParams);
+        GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
+            _boundingBoxTaskId, HdChangeTracker::DirtyParams);
     }
 }
 

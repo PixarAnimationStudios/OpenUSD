@@ -112,6 +112,9 @@ void wrapUsdAttributeQuery()
         .def(init<const UsdPrim&, const TfToken&>(
                 (arg("prim"), arg("attributeName"))))
 
+        .def(init<const UsdAttribute&, const UsdResolveTarget&>(
+                (arg("attribute"), arg("resolveTarget"))))
+
         .def("CreateQueries", &UsdAttributeQuery::CreateQueries,
              (arg("prim"), arg("attributeNames")),
              return_value_policy<TfPySequenceToList>())

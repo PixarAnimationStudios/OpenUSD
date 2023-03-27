@@ -64,8 +64,8 @@ class TestUsdAbcSDFArguments(unittest.TestCase):
         self.assertEqual(len(pCubeShape1.GetNormalsAttr().Get(time)), 8)
         self.assertEqual(len(pCubeShape2.GetNormalsAttr().Get(time)), 24)
 
-        pCubeShape1ST = pCubeShape1.GetPrimvar('st')
-        pCubeShape2ST = pCubeShape2.GetPrimvar('st')
+        pCubeShape1ST = UsdGeom.PrimvarsAPI(pCubeShape1).GetPrimvar('st')
+        pCubeShape2ST = UsdGeom.PrimvarsAPI(pCubeShape2).GetPrimvar('st')
         
         self.assertEqual(pCubeShape1ST.GetTypeName(), 'texCoord2f[]')
         self.assertEqual(pCubeShape2ST.GetTypeName(), 'texCoord2f[]')
@@ -82,8 +82,10 @@ class TestUsdAbcSDFArguments(unittest.TestCase):
         flatABC = Usd.Stage.Open(flatFile)
         self.assertTrue(flatABC)
 
-        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape1').GetPrimvar('st').Get(time), pCubeShape1ST.Get(time))
-        self.assertEqual(UsdGeom.Mesh.Get(flatABC, '/pCubeShape2').GetPrimvar('st').Get(time), pCubeShape2ST.Get(time))
+        flat_pCubeShape1PvAPI = UsdGeom.PrimvarsAPI(UsdGeom.Mesh.Get(flatABC, '/pCubeShape1'))
+        flat_pCubeShape2PvAPI = UsdGeom.PrimvarsAPI(UsdGeom.Mesh.Get(flatABC, '/pCubeShape2'))
+        self.assertEqual(flat_pCubeShape1PvAPI.GetPrimvar('st').Get(time), pCubeShape1ST.Get(time))
+        self.assertEqual(flat_pCubeShape2PvAPI.GetPrimvar('st').Get(time), pCubeShape2ST.Get(time))
 
 if __name__ == '__main__':
     unittest.main()

@@ -37,16 +37,13 @@ set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 find_package(Threads REQUIRED)
 set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 
-# Set up a version string for comparisons. This is available
-# as Boost_VERSION_STRING in CMake 3.14+
 # Find Boost package before getting any boost specific components as we need to
 # disable boost-provided cmake config, based on the boost version found.
 find_package(Boost REQUIRED)
-set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_SUBMINOR_VERSION}")
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
-# component dependencies like python, program options, etc. Refer some related 
+# component dependencies like python, etc. Refer some related
 # discussions:
 # https://github.com/boostorg/python/issues/262#issuecomment-483069294
 # https://github.com/boostorg/boost_install/issues/12#issuecomment-508683006
@@ -54,57 +51,71 @@ set(boost_version_string "${Boost_MAJOR_VERSION}.${Boost_MINOR_VERSION}.${Boost_
 # Hence to avoid issues with Boost provided cmake config, Boost_NO_BOOST_CMAKE
 # is enabled by default for boost version 1.70 and above. If a user explicitly 
 # set Boost_NO_BOOST_CMAKE to Off, following will be a no-op.
-if (${boost_version_string} VERSION_GREATER_EQUAL "1.70")
-    option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
-    if (Boost_NO_BOOST_CMAKE)
-        message(STATUS "Disabling boost-provided cmake config")
-    endif()
+option(Boost_NO_BOOST_CMAKE "Disable boost-provided cmake config" ON)
+if (Boost_NO_BOOST_CMAKE)
+    message(STATUS "Disabling boost-provided cmake config")
 endif()
 
 if(PXR_ENABLE_PYTHON_SUPPORT)
-    # --Python.
+    # 1--Python.
+    macro(setup_python_package package)
+        find_package(${package} COMPONENTS Interpreter Development REQUIRED)
+
+        # Set up versionless variables so that downstream libraries don't
+        # have to worry about which Python version is being used.
+        set(PYTHON_EXECUTABLE "${${package}_EXECUTABLE}")
+        set(PYTHON_INCLUDE_DIRS "${${package}_INCLUDE_DIRS}")
+        set(PYTHON_VERSION_MAJOR "${${package}_VERSION_MAJOR}")
+        set(PYTHON_VERSION_MINOR "${${package}_VERSION_MINOR}")
+
+        # Convert paths to CMake path format on Windows to avoid string parsing
+        # issues when we pass PYTHON_EXECUTABLE or PYTHON_INCLUDE_DIRS to
+        # pxr_library or other functions.
+        if(WIN32)
+            file(TO_CMAKE_PATH ${PYTHON_EXECUTABLE} PYTHON_EXECUTABLE)
+            file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
+        endif()
+
+        # This option indicates that we don't want to explicitly link to the
+        # python libraries. See BUILDING.md for details.
+        if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
+            set(PYTHON_LIBRARIES "")
+        else()
+            set(PYTHON_LIBRARIES "${package}::Python")
+        endif()
+    endmacro()
+
     if(PXR_USE_PYTHON_3)
-        find_package(PythonInterp 3.0 REQUIRED)
-        find_package(PythonLibs 3.0 REQUIRED)
+        setup_python_package(Python3)
     else()
-        find_package(PythonInterp 2.7 REQUIRED)
-        find_package(PythonLibs 2.7 REQUIRED)
+        setup_python_package(Python2)
     endif()
 
     if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
     endif()
 
-    # This option indicates that we don't want to explicitly link to the python
-    # libraries. See BUILDING.md for details.
-    if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32 )
-        set(PYTHON_LIBRARIES "")
+    # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
+    if(WIN32)
+	set(Boost_COMPILER "-vc143;-vc142;-vc141")
     endif()
 
-    if (${boost_version_string} VERSION_GREATER_EQUAL "1.67")
-        # As of boost 1.67 the boost_python component name includes the
-        # associated Python version (e.g. python27, python36). 
-        # XXX: After boost 1.73, boost provided config files should be able to 
-        # work without specifying a python version!
-        # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
+    # As of boost 1.67 the boost_python component name includes the
+    # associated Python version (e.g. python27, python36). 
+    # XXX: After boost 1.73, boost provided config files should be able to 
+    # work without specifying a python version!
+    # https://github.com/boostorg/boost_install/blob/master/BoostConfig.cmake
 
-        # Find the component under the versioned name and then set the generic
-        # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
-        # logic in each library's CMakeLists.txt.
-        set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
-        find_package(Boost
-            COMPONENTS
-                python${python_version_nodot}
-            REQUIRED
-        )
-        set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
-    else()
-        find_package(Boost
-            COMPONENTS
-                python
-            REQUIRED
-        )
-    endif()
+    # Find the component under the versioned name and then set the generic
+    # Boost_PYTHON_LIBRARY variable so that we don't have to duplicate this
+    # logic in each library's CMakeLists.txt.
+    set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
+    find_package(Boost
+        COMPONENTS
+	    python${python_version_nodot}
+        REQUIRED
+    )
+    set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
 
     # --Jinja2
     find_package(Jinja2)
@@ -115,21 +126,15 @@ else()
         OR PXR_VALIDATE_GENERATED_CODE)
 
         if(PXR_USE_PYTHON_3)
-            find_package(PythonInterp 3.0 REQUIRED)
+            find_package(Python3 COMPONENTS Interpreter)
+            set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
         else()
-            find_package(PythonInterp 2.7 REQUIRED)
+            find_package(Python2 COMPONENTS Interpreter)
+            set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
         endif()
     endif()
 endif()
 
-# --USD tools
-if(PXR_BUILD_USD_TOOLS OR PXR_BUILD_TESTS)
-    find_package(Boost
-    COMPONENTS
-        program_options
-    REQUIRED
-    )
-endif()
 
 # --TBB
 find_package(TBB REQUIRED COMPONENTS tbb)
@@ -187,7 +192,7 @@ endif()
 if (PXR_BUILD_IMAGING)
     # --OpenImageIO
     if (PXR_BUILD_OPENIMAGEIO_PLUGIN)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenImageIO REQUIRED)
         add_definitions(-DPXR_OIIO_PLUGIN_ENABLED)
         if (OIIO_idiff_BINARY)
@@ -215,7 +220,7 @@ if (PXR_BUILD_IMAGING)
     if (PXR_ENABLE_VULKAN_SUPPORT)
         if (EXISTS $ENV{VULKAN_SDK})
             # Prioritize the VULKAN_SDK includes and packages before any system
-            # installed headers. This is to prevent linking against older SDKs 
+            # installed headers. This is to prevent linking against older SDKs
             # that may be installed by the OS.
             # XXX This is fixed in cmake 3.18+
             include_directories(BEFORE SYSTEM $ENV{VULKAN_SDK} $ENV{VULKAN_SDK}/include $ENV{VULKAN_SDK}/lib)
@@ -256,7 +261,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenVDB
     if (PXR_ENABLE_OPENVDB_SUPPORT)
-        find_package(OpenEXR REQUIRED)
+        set(REQUIRES_Imath TRUE)
         find_package(OpenVDB REQUIRED)
         add_definitions(-DPXR_OPENVDB_SUPPORT_ENABLED)
     endif()
@@ -285,7 +290,7 @@ endif()
 
 if (PXR_BUILD_ALEMBIC_PLUGIN)
     find_package(Alembic REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     if (PXR_ENABLE_HDF5_SUPPORT)
         find_package(HDF5 REQUIRED
             COMPONENTS
@@ -306,10 +311,21 @@ endif()
 
 if(PXR_ENABLE_OSL_SUPPORT)
     find_package(OSL REQUIRED)
-    find_package(OpenEXR REQUIRED)
+    set(REQUIRES_Imath TRUE)
     add_definitions(-DPXR_OSL_SUPPORT_ENABLED)
 endif()
 
 # ----------------------------------------------
+
+# Try and find Imath or fallback to OpenEXR
+# Use ImathConfig.cmake, 
+# Refer: https://github.com/AcademySoftwareFoundation/Imath/blob/main/docs/PortingGuide2-3.md#openexrimath-3x-only
+if(REQUIRES_Imath)
+    find_package(Imath CONFIG)
+    if (NOT Imath_FOUND)
+        MESSAGE(STATUS "Imath not found. Looking for OpenEXR instead.")
+        find_package(OpenEXR REQUIRED)
+    endif()
+endif()
 
 set(BUILD_SHARED_LIBS "${build_shared_libs}")

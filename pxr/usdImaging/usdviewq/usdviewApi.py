@@ -198,9 +198,9 @@ class UsdviewApi(object):
         self.__appController.statusMessage(msg)
 
     def GetSettings(self):
-        """DEPRECATED Returns the old settings object."""
+        """Returns the settings object."""
 
-        return self.__appController._settings
+        return self.__appController._configManager.settings
 
     def ClearPrimSelection(self):
         self.__appController._dataModel.selection.clearPrims()
@@ -238,6 +238,12 @@ class UsdviewApi(object):
         """
         stageView = self.__appController._stageView
         return stageView.GetRendererPlugins() if stageView else []
+
+    def GetViewportCurrentRendererId(self):
+        stageView = self.__appController._stageView
+        if stageView:
+            return stageView.GetCurrentRendererId()
+        return None
 
     def _ExportSession(self, stagePath, defcamName='usdviewCam', imgWidth=None,
             imgHeight=None):

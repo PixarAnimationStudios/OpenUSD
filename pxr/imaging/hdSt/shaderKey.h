@@ -78,7 +78,9 @@ struct HdSt_ShaderKey {
     HDST_API
     virtual TfToken const *GetGS() const;
     HDST_API
-    virtual TfToken const *GetFS() const; 
+    virtual TfToken const *GetFS() const;
+    HDST_API
+    virtual TfToken const *GetCS() const;
 
     // An implementation detail of code gen, which generates slightly
     // different code for the VS stage for the frustum culling pass.

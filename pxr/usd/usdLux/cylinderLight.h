@@ -57,11 +57,6 @@ class SdfAssetPath;
 /// The cylinder does not emit light from the flat end-caps.
 /// 
 ///
-/// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
-/// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
-/// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
-/// as the value.
-///
 class UsdLuxCylinderLight : public UsdLuxBoundableLightBase
 {
 public:
@@ -160,7 +155,7 @@ public:
     // --------------------------------------------------------------------- //
     // LENGTH 
     // --------------------------------------------------------------------- //
-    /// Width of the rectangle, in the local X axis.
+    /// Length of the cylinder, in the local X axis.
     ///
     /// | ||
     /// | -- | -- |

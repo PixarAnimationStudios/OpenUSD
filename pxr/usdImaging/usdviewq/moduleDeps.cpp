@@ -35,7 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_REGISTRY_FUNCTION(TfScriptModuleLoader) {
     // List of direct dependencies for this library.
     const std::vector<TfToken> reqs = {
-        TfToken("plug"),
+        TfToken("arch"),
+        TfToken("hd"),
         TfToken("tf"),
         TfToken("usd"),
         TfToken("usdGeom")

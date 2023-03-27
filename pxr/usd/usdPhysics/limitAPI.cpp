@@ -72,6 +72,20 @@ UsdPhysicsLimitAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdPhysicsLimitAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdPhysicsLimitAPI>
+UsdPhysicsLimitAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdPhysicsLimitAPI> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 
 /* static */
 bool 

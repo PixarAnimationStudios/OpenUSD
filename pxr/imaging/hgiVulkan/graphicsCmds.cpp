@@ -101,7 +101,7 @@ HgiVulkanGraphicsCmds::SetViewport(GfVec4i const& vp)
 
             VkViewport viewport;
             viewport.x = offsetX;
-            viewport.y = height - offsetY;
+            viewport.y = offsetY + height;
             viewport.width = width;
             viewport.height = -height;
             viewport.minDepth = 0.0f;
@@ -209,28 +209,27 @@ HgiVulkanGraphicsCmds::SetConstantValues(
 
 void
 HgiVulkanGraphicsCmds::BindVertexBuffers(
-    uint32_t firstBinding,
-    HgiBufferHandleVector const& vertexBuffers,
-    std::vector<uint32_t> const& byteOffsets)
+    HgiVertexBufferBindingVector const &bindings)
 {
     // Delay until the pipeline is set and the render pass has begun.
     _pendingUpdates.push_back(
-        [this, firstBinding, vertexBuffers, byteOffsets] {
+        [this, bindings] {
         std::vector<VkBuffer> buffers;
         std::vector<VkDeviceSize> bufferOffsets;
 
-        for (HgiBufferHandle bufHandle : vertexBuffers) {
-            HgiVulkanBuffer* buf=static_cast<HgiVulkanBuffer*>(bufHandle.Get());
+        for (HgiVertexBufferBinding const &binding : bindings) {
+            HgiVulkanBuffer* buf =
+                static_cast<HgiVulkanBuffer*>(binding.buffer.Get());
             VkBuffer vkBuf = buf->GetVulkanBuffer();
             if (vkBuf) {
                 buffers.push_back(vkBuf);
-                bufferOffsets.push_back(0);
+                bufferOffsets.push_back(binding.byteOffset);
             }
         }
 
         vkCmdBindVertexBuffers(
             _commandBuffer->GetVulkanCommandBuffer(),
-            0, // first bindings
+            bindings[0].index, // first binding
             buffers.size(),
             buffers.data(),
             bufferOffsets.data());
@@ -339,10 +338,10 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
 }
 
 void
-HgiVulkanGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 HgiVulkanCommandBuffer*

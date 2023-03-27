@@ -67,6 +67,7 @@ struct Vt_GetSubElementType<
     T, typename std::enable_if<GfIsGfVec<T>::value ||
                                GfIsGfMatrix<T>::value ||
                                GfIsGfQuat<T>::value ||
+                               GfIsGfDualQuat<T>::value ||
                                GfIsGfRange<T>::value>::type> {
     typedef typename T::ScalarType Type;
 };
@@ -152,6 +153,10 @@ Vt_GetElementShapeImpl(T *) { return { T::numRows, T::numColumns }; }
 template <class T>
 constexpr typename std::enable_if<GfIsGfQuat<T>::value, Vt_PyShape<1> >::type
 Vt_GetElementShapeImpl(T *) { return { 4 }; }
+
+template <class T>
+constexpr typename std::enable_if<GfIsGfDualQuat<T>::value, Vt_PyShape<2> >::type
+Vt_GetElementShapeImpl(T *) { return { 2, 4 }; }
 
 template <class T>
 constexpr typename std::enable_if<
@@ -411,12 +416,12 @@ Vt_ArrayFromBuffer(TfPyObjWrapper const &obj,
     // Check that the number of elements matches.
     auto multiply = [](Py_ssize_t x, Py_ssize_t y) { return x * y; };
     auto numItems = std::accumulate(
-        view.shape, view.shape + view.ndim, 1, multiply);
+        view.shape, view.shape + view.ndim, (Py_ssize_t)1, multiply);
 
     // Compute the total # of items in one element.
     auto elemShape = Vt_GetElementShape<T>();
     auto elemSize = std::accumulate(
-        elemShape.begin(), elemShape.end(), 1, multiply);
+        elemShape.begin(), elemShape.end(), (Py_ssize_t)1, multiply);
 
     // Sanity check data sizes.
     auto arraySize = numItems / elemSize;

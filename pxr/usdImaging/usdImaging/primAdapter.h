@@ -80,16 +80,66 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    virtual TfTokenVector GetImagingSubprims();
+    virtual TfTokenVector GetImagingSubprims(UsdPrim const& prim);
 
     USDIMAGING_API
-    virtual TfToken GetImagingSubprimType(TfToken const& subprim);
+    virtual TfToken GetImagingSubprimType(
+        UsdPrim const& prim, TfToken const& subprim);
 
     USDIMAGING_API
     virtual HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    USDIMAGING_API
+    virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
+            TfToken const& subprim,
+            TfTokenVector const& properties);
+
+    /// \enum Scope
+    ///
+    /// Determines what USD prims an adapter type is responsible for from a
+    /// population and invalidation standpoint.
+    ///
+    enum PopulationMode
+    {
+        /// The adapter is responsible only for USD prims of its registered
+        /// type. Any descendent USD prims are managed independently.
+        RepresentsSelf,
+
+        /// The adapter is responsible for USD prims of its registered type as
+        /// well as any descendents of those prims. No population occurs for
+        /// descendent prims. USD changes to descendent prims whose own PopulationMode
+        /// is set to RepresentedByAncestor will be send to this adapter.
+        RepresentsSelfAndDescendents,
+
+        /// Changes to prims of this adapter's registered type are sent to the
+        /// first ancestor prim whose adapter's PopulationMode value is 
+        /// RepresentsSelfAndDescendents.
+        ///
+        /// This value alone does not prevent population as it is expected that
+        /// such prims appear beneath another prim whose own PopulationMode value
+        /// prevents descendents from being populated.
+        RepresentedByAncestor,
+    };
+
+    /// Returns the prim's behavior with regard to population and invalidation.
+    /// See PopulationMode for possible values.
+    USDIMAGING_API
+    virtual PopulationMode GetPopulationMode();
+
+    /// This is called (for each result of GetImagingSubprims) when this
+    /// adapter's GetScope() result is RepresentsSelfAndDescendents and
+    /// USD properties have changed on a descendent prim whose adapter's
+    /// GetScope() result is RepresentedByAncestor.
+    USDIMAGING_API
+    virtual HdDataSourceLocatorSet InvalidateImagingSubprimFromDescendent(
+            UsdPrim const& prim,
+            UsdPrim const& descendentPrim,
+            TfToken const& subprim,
+            TfTokenVector const& properties);
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -270,6 +320,11 @@ public:
     virtual void MarkWindowPolicyDirty(UsdPrim const& prim,
                                        SdfPath const& cachePath,
                                        UsdImagingIndexProxy* index);
+
+    USDIMAGING_API
+    virtual void MarkCollectionsDirty(UsdPrim const& prim,
+                                      SdfPath const& cachePath,
+                                      UsdImagingIndexProxy* index);
 
     // ---------------------------------------------------------------------- //
     /// \name Computations 
@@ -807,12 +862,20 @@ protected:
     UsdImaging_CollectionCache& _GetCollectionCache() const;
 
     USDIMAGING_API
+    UsdStageRefPtr _GetStage() const;
+
+    USDIMAGING_API
     UsdImaging_CoordSysBindingStrategy::value_type
     _GetCoordSysBindings(UsdPrim const& prim) const;
 
     USDIMAGING_API
     UsdImaging_InheritedPrimvarStrategy::value_type
     _GetInheritedPrimvars(UsdPrim const& prim) const;
+
+    // Utility for derived classes to try to find an inherited primvar.
+    USDIMAGING_API
+    UsdGeomPrimvar _GetInheritedPrimvar(UsdPrim const& prim,
+                                        TfToken const& primvarName) const;
 
     USDIMAGING_API
     GfInterval _GetCurrentTimeSamplingInterval();
@@ -825,12 +888,6 @@ protected:
 
     USDIMAGING_API
     bool _DoesDelegateSupportCoordSys() const;
-
-    // Conversion functions between usd and hydra enums.
-    USDIMAGING_API
-    static HdInterpolation _UsdToHdInterpolation(TfToken const& usdInterp);
-    USDIMAGING_API
-    static TfToken _UsdToHdRole(TfToken const& usdRole);
 
 private:
     UsdImagingDelegate* _delegate;

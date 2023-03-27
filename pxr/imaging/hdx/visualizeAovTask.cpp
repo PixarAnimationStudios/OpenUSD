@@ -216,7 +216,7 @@ HdxVisualizeAovTask::_CreateShaderResources(
 
         HgiShaderFunctionAddTexture(
             &fragDesc, _GetTextureIdentifierForShader().GetString(),
-            /*dimensions*/2, inputAovTextureDesc.format);
+            /*bindIndex = */0, /*dimensions = */2, inputAovTextureDesc.format);
 
         HgiShaderFunctionAddStageOutput(
             &fragDesc, "hd_FragColor", "vec4", "color");
@@ -298,6 +298,7 @@ HdxVisualizeAovTask::_CreateResourceBindings(
     HgiTextureBindDesc texBind0;
     texBind0.bindingIndex = 0;
     texBind0.stageUsage = HgiShaderStageFragment;
+    texBind0.writable = false;
     texBind0.textures.push_back(inputAovTexture);
     texBind0.samplers.push_back(_sampler);
     resourceDesc.textures.push_back(std::move(texBind0));
@@ -510,7 +511,7 @@ HdxVisualizeAovTask::_ApplyVisualizationKernel(
     gfxCmds->PushDebugGroup("Visualize AOV");
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
-    gfxCmds->BindVertexBuffers(0, {_vertexBuffer}, {0});
+    gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);

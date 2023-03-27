@@ -43,7 +43,6 @@ class UsdImagingDataSourceBasisCurvesTopology : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceBasisCurvesTopology);
 
-    bool Has(const TfToken & name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken & name) override;
 
@@ -72,7 +71,6 @@ class UsdImagingDataSourceBasisCurves : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceBasisCurves);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
@@ -101,9 +99,14 @@ class UsdImagingDataSourceBasisCurvesPrim : public UsdImagingDataSourceGprim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceBasisCurvesPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 private:
     UsdImagingDataSourceBasisCurvesPrim(

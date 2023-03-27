@@ -138,19 +138,6 @@ UsdImagingDataSourceCamera::UsdImagingDataSourceCamera(
 {
 }
 
-bool
-UsdImagingDataSourceCamera::Has(const TfToken &name)
-{
-    static TfTokenVector usdNames = 
-        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
-    for (const TfToken &usdName : usdNames) {
-        if (name == usdName) {
-            return true;
-        }
-    }
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceCamera::GetNames()
 {
@@ -164,7 +151,6 @@ UsdImagingDataSourceCamera::Get(const TfToken &name)
     // Note that scene index emulation calls this method with
     // "shutterOpen" (Usd attribute is shutter:open)
     // "shutterClose" (Usd attribute is shutter:close)
-    // "clipPlanes" (Usd attribute is clippingPlanes)
     // "windowPolicy" - does not exist on UsdGeomCamera
     //
     // We need to either do the right translation/ignore these values here
@@ -211,17 +197,6 @@ UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim(
 {
 }
 
-bool 
-UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim::Has(
-    const TfToken & name)
-{
-    if (name == HdCameraSchemaTokens->camera) {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
-}
-
 TfTokenVector 
 UsdImagingDataSourceCameraPrim::GetNames()
 {
@@ -243,5 +218,30 @@ UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
     return UsdImagingDataSourcePrim::Get(name);
 }
 
+HdDataSourceLocatorSet
+UsdImagingDataSourceCameraPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    TRACE_FUNCTION();
+
+    HdDataSourceLocatorSet locators =
+        UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+
+    static TfTokenVector usdNames = 
+        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
+
+    for (const TfToken &propertyName : properties) {
+        for (const TfToken &usdName : usdNames) {
+            if (propertyName == usdName) {
+                locators.insert(
+                    HdCameraSchema::GetDefaultLocator().Append(propertyName));
+            }
+        }
+    }
+
+    return locators;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

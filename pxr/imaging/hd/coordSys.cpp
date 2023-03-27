@@ -25,9 +25,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    (coordSys) 
+    (binding)
+);
+
+TfToken _GetNameFromSdfPath(SdfPath const &path)
+{
+    const std::string &attrName = path.GetName();
+    const std::string &nameSpacedCoordSysName =
+        TfStringEndsWith(attrName, _tokens->binding.GetString())
+        ? TfStringGetBeforeSuffix(
+                attrName, *SdfPathTokens->namespaceDelimiter.GetText())
+        : attrName;
+    return TfToken(SdfPath::StripPrefixNamespace(
+                nameSpacedCoordSysName, _tokens->coordSys).first);
+}
+
 HdCoordSys::HdCoordSys(SdfPath const &id)
  : HdSprim(id)
- , _name(SdfPath::StripNamespace(id.GetName()))
+ , _name(_GetNameFromSdfPath(id))
 {
 }
 

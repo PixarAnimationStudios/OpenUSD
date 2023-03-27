@@ -32,6 +32,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/buffer.h"
 #include "pxr/imaging/hgi/computeCmds.h"
+#include "pxr/imaging/hgi/computeCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
@@ -48,6 +49,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
+class HgiIndirectCommandEncoder;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
@@ -176,7 +178,8 @@ public:
     /// created on the main thread, recorded into (exclusively) by one secondary
     /// thread and be submitted on the main thread. See notes above.
     HGI_API
-    virtual HgiComputeCmdsUniquePtr CreateComputeCmds() = 0;
+    virtual HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeCmdsDesc const& desc) = 0;
 
     /// Create a texture in rendering backend.
     /// Thread safety: Creation must happen on main thread. See notes above.
@@ -294,6 +297,12 @@ public:
     /// Thread safety: This call is thread safe.
     HGI_API
     virtual HgiCapabilities const* GetCapabilities() const = 0;
+
+    /// Returns the device-specific indirect command buffer encoder
+    /// or nullptr if not supported.
+    /// Thread safety: This call is thread safe.
+    HGI_API
+    virtual HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const = 0;
 
     /// Optionally called by client app at the start of a new rendering frame.
     /// We can't rely on StartFrame for anything important, because it is up to

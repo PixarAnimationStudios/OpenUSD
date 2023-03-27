@@ -1,0 +1,53 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    metersPerUnit = 1
+    defaultPrim = "Mesh"
+)
+
+def Material "Material"
+{
+    token outputs:surface.connect = </Material/Surface.outputs:surface>    
+
+    def Shader "Surface"
+    {
+        color3f inputs:diffuseColor.connect = </Material/DiffuseColor.outputs:rgb>
+        token outputs:surface
+    }
+
+    def Shader "DiffuseColor"
+    {
+        float3 outputs:rgb
+    }
+}
+
+def "Mesh"
+{
+    rel material:binding:collection = </Material>
+}
+
+def Mesh "mesh" 
+{
+    rel skel:animationSource = None
+}
+
+def Xform "coord1"
+{
+}
+
+def Xform "coord2"
+{
+}
+
+def Xform "coord3"
+{
+}
+
+def Mesh "coordSysApply"
+{
+    rel coordSys:coord1 = </coord1>
+    rel coordSys:coord2 = </coord2>
+    rel coordSys:binding = </coord3>
+    rel coordSys:coordMissing:binding
+}

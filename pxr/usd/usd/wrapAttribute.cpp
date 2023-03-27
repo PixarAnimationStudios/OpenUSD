@@ -171,8 +171,13 @@ void wrapUsdAttribute()
         .def("Get", _Get, arg("time")=UsdTimeCode::Default())
         .def("Set", _Set, (arg("value"), arg("time")=UsdTimeCode::Default()))
 
-        .def("GetResolveInfo", &UsdAttribute::GetResolveInfo,
-             arg("time")=UsdTimeCode::Default())
+        .def("GetResolveInfo", 
+             (UsdResolveInfo (UsdAttribute::*)(UsdTimeCode) const) 
+                 &UsdAttribute::GetResolveInfo,
+             arg("time"))
+        .def("GetResolveInfo", 
+             (UsdResolveInfo (UsdAttribute::*)() const) 
+                 &UsdAttribute::GetResolveInfo)
 
         .def("Clear", &UsdAttribute::Clear)
         .def("ClearAtTime", &UsdAttribute::ClearAtTime, arg("time"))

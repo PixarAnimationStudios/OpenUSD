@@ -37,6 +37,7 @@ PXR_NAMESPACE_USING_DIRECTIVE
 TF_WRAP_MODULE
 {
     TF_WRAP(Array);
+    TF_WRAP(ArrayDualQuaternion);
     TF_WRAP(ArrayFloat);
     TF_WRAP(ArrayIntegral);
     TF_WRAP(ArrayMatrix);

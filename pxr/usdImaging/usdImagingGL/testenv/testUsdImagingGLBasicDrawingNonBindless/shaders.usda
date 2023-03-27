@@ -101,7 +101,9 @@ def Xform "Parent"
     {
         def Scope "UV"
         {
-            def Mesh "MeshTest_Uv1"
+            def Mesh "MeshTest_Uv1" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingLinearInterpolation = "boundaries"
@@ -124,7 +126,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
 
-            def Mesh "MeshTest_Uv2"
+            def Mesh "MeshTest_Uv2" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingLinearInterpolation = "boundaries"
@@ -141,7 +145,9 @@ def Xform "Parent"
                 uniform token[] xformOpOrder = ["xformOp:translate"]
             }
 
-            def Mesh "MeshTest_Uv3"
+            def Mesh "MeshTest_Uv3" (
+                prepend apiSchemas = ["MaterialBindingAPI"]
+            )
             {
                 float3[] extent = [(-2, -2, -2), (2, 2, 2)]
                 token faceVaryingLinearInterpolation = "boundaries"

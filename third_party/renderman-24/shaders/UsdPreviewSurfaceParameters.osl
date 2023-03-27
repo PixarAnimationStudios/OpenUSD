@@ -90,92 +90,109 @@ shader UsdPreviewSurfaceParameters
         [[ string widget = "null" ]],
 )
 {
-    // Diffuse
-    if (diffuseColor[0] > 0.0 ||
-        diffuseColor[1] > 0.0 ||
-        diffuseColor[2] > 0.0) 
-    {
-        diffuseGainOut = 1.0;
-        diffuseColorOut = diffuseColor;
-    }
+    // To achieve double-sided materials from a geometry-level property,
+    // we set a special user:hydra:doubleSided attribute during renderParam
+    // setup (see hdPrman/renderParam.cpp) and read that here. We also check 
+    // whether we are shading the front or back based on backfacing().
+    // 
+    // NB: We have to do this test in the shader because the *DoubleSided
+    // parameters of PxrSurface are NOT CONNECTABLE, so we cannot just switch
+    // them based on an output from this shader. We have to make the backface-
+    // shading decision here.
+    
+    int isDoubleSided = 0;
+    getattribute("user:hydra:doubleSided", isDoubleSided);
+    int isFrontSide = !backfacing();
 
-    // Opacity Threshold
-    float opacityAdjusted = opacity;
-    if (opacityThreshold > 0.0) {
-        if (opacity < opacityThreshold) {
-            presenceOut = 0.0;
-        } else {
-            opacityAdjusted = 1.0;
+    if (isDoubleSided || isFrontSide) {
+
+        // Normal map
+        // Convert tangent space normalIn to bumpNormalOut
+        {
+            vector Tn = vector (1.0,0.0,0.0);
+            getattribute("builtin", "Tn", Tn);
+            vector Bn = normalize(cross(N, Tn));
+
+            // Convert from tangent-space normal to current space
+            bumpNormalOut = Tn * normalIn[0] +
+                            Bn * normalIn[1] + 
+                            N * normalIn[2];
+            bumpNormalOut = normalize(bumpNormalOut);
         }
-    }
 
-    // Opacity
-    if (opacityAdjusted < 1.0) {
-        glassIorOut = ior;
-        refractionGainOut = 1.0 - opacityAdjusted;
-        diffuseGainOut *= opacityAdjusted;
-    }
+        // This check ensures that the permuted shading normal hasn't altered
+        // the surface's orientation relative to the incident ray. If it has,
+        // we skip shading (except for bumpNormalOut and displacement).
+        int isFrontFacing = (isFrontSide == (dot(bumpNormalOut, I) < 0.0));
+        if (isFrontFacing) {
+        
+            // Diffuse
+            if (diffuseColor[0] > 0.0 ||
+                diffuseColor[1] > 0.0 ||
+                diffuseColor[2] > 0.0)
+            {
+                diffuseGainOut = 1.0;
+                diffuseColorOut = diffuseColor;
+            }
 
-    // Specular
-    // Assumes "Physical" for both Specular and Rough Specular
-    float r = (1.0 - ior) / (1.0 + ior);
-    if (useSpecularWorkflow) {
-        specularFaceColorOut = specularColor;
-        specularEdgeColorOut = color(1.0,1.0,1.0);
-    } else {
-        float metal = clamp(metallic, 0.0, 1.0); 
-        color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
-        specularFaceColorOut = mix(r * r * spec, spec, metal);
-        specularEdgeColorOut = spec;
+            // Opacity Threshold
+            float opacityAdjusted = opacity;
+            if (opacityThreshold > 0.0) {
+                if (opacity < opacityThreshold) {
+                    opacityAdjusted = 0.0;
+                } else {
+                    opacityAdjusted = 1.0;
+                }
+            }
 
-        diffuseGainOut *= 1.0 - metal;
-    }
-    specularIorOut = color(ior);
-    specularRoughnessOut = roughness;
+            // Opacity
+            if (opacityAdjusted < 1.0) {
+                glassIorOut = ior;
+                refractionGainOut = 1.0 - opacityAdjusted;
+                diffuseGainOut *= opacityAdjusted;
+                presenceOut = opacityAdjusted;
+            }
 
-    // Clearcoat
-    if (clearcoat > 0.0) {
-        color clearcoatColor = color(1.0, 1.0, 1.0);
-        clearcoatFaceColorOut = clearcoat * r * r * clearcoatColor;
-        clearcoatEdgeColorOut = clearcoat * clearcoatColor;
-        clearcoatRoughnessOut = clearcoatRoughness;
-    }
+            // Specular
+            // Assumes "Physical" for both Specular and Rough Specular
+            float r = (1.0 - ior) / (1.0 + ior);
+            if (useSpecularWorkflow) {
+                specularFaceColorOut = specularColor;
+                specularEdgeColorOut = color(1.0,1.0,1.0);
+            } else {
+                float metal = clamp(metallic, 0.0, 1.0); 
+                color spec = mix(color(1.0,1.0,1.0), diffuseColor, metal);
+                specularFaceColorOut = mix(r * r * spec, spec, metal);
+                specularEdgeColorOut = spec;
 
-    // Emissive
-    if (emissiveColor[0] > 0.0 ||
-        emissiveColor[1] > 0.0 ||
-        emissiveColor[2] > 0.0)
-    {
-        glowGainOut = 1.0;
-        glowColorOut = emissiveColor;
-    }
+                diffuseGainOut *= 1.0 - metal;
+            }
+            specularIorOut = color(ior);
+            specularRoughnessOut = roughness;
 
-    // Normal map
-    // Convert tangent space normalIn to bumpNormalOut
-    {
-        vector Tn = vector (1.0,0.0,0.0);
-        getattribute("builtin", "Tn", Tn);
-        vector Bn = normalize(cross(N, Tn));
+            // Clearcoat
+            if (clearcoat > 0.0) {
+                color clearcoatColor = color(1.0, 1.0, 1.0);
+                clearcoatFaceColorOut = clearcoat * r * r * clearcoatColor;
+                clearcoatEdgeColorOut = clearcoat * clearcoatColor;
+                clearcoatRoughnessOut = clearcoatRoughness;
+            }
 
-        // Convert from tangent-space normal to current space
-        bumpNormalOut = Tn * normalIn[0] +
-                        Bn * normalIn[1] + 
-                         N * normalIn[2];
-        bumpNormalOut = normalize(bumpNormalOut);
-
-        normal Ngn = N;
-        getattribute("builtin", "Ngn", Ngn);
-
-        // Is it backwards from the geometric normal
-        if (dot(Ngn, bumpNormalOut) < 0.0) {
-            bumpNormalOut = -bumpNormalOut;
+            // Emissive
+            if (emissiveColor[0] > 0.0 ||
+                emissiveColor[1] > 0.0 ||
+                emissiveColor[2] > 0.0)
+            {
+                glowGainOut = 1.0;
+                glowColorOut = emissiveColor;
+            }
         }
-    }
 
-    // Displacement
-    if (displacement != 0.0)
-    {
-        dispAmountOut = 0.1;
-        dispScalarOut = displacement;
+        // Displacement
+        if (displacement != 0.0)
+        {
+            dispAmountOut = 0.1;
+            dispScalarOut = displacement;
+        }
     }
 }

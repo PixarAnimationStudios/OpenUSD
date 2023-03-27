@@ -152,7 +152,7 @@ _GetMeshPrimDataSource()
                     HdPrimvarSchema::BuildInterpolationDataSource(
                         HdPrimvarSchemaTokens->varying))
                 .SetRole(HdPrimvarSchema::BuildRoleDataSource(
-                        HdPrimvarSchemaTokens->Point))
+                        HdPrimvarSchemaTokens->point))
                 .Build(),
             HdTokens->displayColor,
             HdPrimvarSchema::Builder()
@@ -177,7 +177,7 @@ _GetMeshPrimDataSource()
                         HdPrimvarSchemaTokens->faceVarying))
                 .SetRole(
                     HdPrimvarSchema::BuildRoleDataSource(
-                        HdPrimvarSchemaTokens->Color))
+                        HdPrimvarSchemaTokens->color))
                 .Build(),
 
             HdTokens->displayOpacity,

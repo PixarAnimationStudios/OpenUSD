@@ -1,0 +1,58 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <!-- custom node using texture coordinates -->
+  <nodedef name="ND_checker_float" node="checker3">
+    <input name="scale" type="vector2" value="8.0, 8.0" />
+    <output name="out" type="color3" />
+  </nodedef>
+  <nodegraph name="NG_checker_float" nodedef="ND_checker_float">
+    <texcoord name="texcoord1" type="vector2">
+      <input name="index" type="integer" value="0" />
+    </texcoord>
+    <multiply name="mult1" type="vector2">
+      <input name="in1" type="vector2" nodename="texcoord1" />
+      <input name="in2" type="vector2" interfacename="scale" />
+    </multiply>
+    <swizzle name="swizz_x" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="x" />
+    </swizzle>
+    <swizzle name="swizz_y" type="float">
+      <input name="in" type="vector2" nodename="mult1" />
+      <input name="channels" type="string" value="y" />
+    </swizzle>
+    <floor name="floor1" type="float">
+      <input name="in" type="float" nodename="swizz_x" />
+    </floor>
+    <floor name="floor2" type="float">
+      <input name="in" type="float" nodename="swizz_y" />
+    </floor>
+    <add name="add1" type="float">
+      <input name="in1" type="float" nodename="floor1" />
+      <input name="in2" type="float" nodename="floor2" />
+    </add>
+    <modulo name="mod1" type="float">
+      <input name="in1" type="float" nodename="add1" />
+      <input name="in2" type="float" value="2.0" />
+    </modulo>
+    <swizzle name="swizz_xxx" type="color3">
+      <input name="in" type="float" nodename="mod1" />
+      <input name="channels" type="string" value="xxx" />
+    </swizzle>
+    <output name="out" type="color3" nodename="swizz_xxx" />
+  </nodegraph>
+
+  <!-- custom node using textures -->
+  <nodedef name="custom_image_nodedef" node="custom_image_node" nodegroup="texture2d">
+    <input name="file_input" type="filename" />
+    <output name="out_color" type="color3" />
+  </nodedef>
+  <nodegraph name="custom_image_nodegraph" nodedef="custom_image_nodedef">
+    <image name="image_node" type="color3">
+      <input name="file" type="filename" colorspace="gamma22" interfacename="file_input" />
+    </image>
+    <output name="out_color" type="color3" nodename="image_node" />
+  </nodegraph>
+
+</materialx>

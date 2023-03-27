@@ -71,6 +71,10 @@ using HgiBits = uint32_t;
 ///   Supports Metal tessellation shaders</li>
 /// <li>HgiDeviceCapabilitiesBitsBasePrimitiveOffset:
 ///   The device requires workaround for base primitive offset</li>
+/// <li>HgiDeviceCapabilitiesBitsPrimitiveIdEmulation:
+///   The device requires workaround for primitive id</li>
+/// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
+///   Indirect command buffers are supported</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -90,7 +94,9 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsStencilReadback         = 1 << 12,
     HgiDeviceCapabilitiesBitsCustomDepthRange        = 1 << 13,
     HgiDeviceCapabilitiesBitsMetalTessellation       = 1 << 14,
-    HgiDeviceCapabilitiesBasePrimitiveOffset         = 1 << 15,
+    HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
+    HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 16,
+    HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
 };
 
 using HgiDeviceCapabilities = HgiBits;
@@ -713,7 +719,7 @@ enum HgiBindingType
 
 /// \enum HgiInterpolationType
 ///
-/// Describes the type of shader resource binding model to use.
+/// Describes the type of parameter interpolation.
 ///
 /// <ul>
 /// <li>HgiInterpolationDefault:
@@ -737,6 +743,51 @@ enum HgiInterpolationType
     HgiInterpolationNoPerspective,
 };
 
+/// \enum HgiSamplingType
+///
+/// Describes the type of parameter sampling.
+///
+/// <ul>
+/// <li>HgiSamplingDefault:
+///   The shader input will have default sampling.
+///   Glsl example: vec2 parameter;
+///   Msl example: vec2 parameter;</li>
+/// <li>HgiSamplingCentroid:
+///   The shader input will have centroid sampling.
+///   Glsl example: centroid vec2 parameter;
+///   Msl example: vec2 parameter[[centroid_perspective]];</li>
+/// <li>HgiSamplingSample:
+///   The shader input will have per-sample sampling.
+///   Glsl example: sample vec2 parameter;
+///   Msl example: vec2 parameter[[sample_perspective]];</li>
+/// </ul>
+///
+enum HgiSamplingType
+{
+    HgiSamplingDefault = 0,
+    HgiSamplingCentroid,
+    HgiSamplingSample,
+};
+
+/// \enum HgiStorageType
+///
+/// Describes the type of parameter storage.
+///
+/// <ul>
+/// <li>HgiStorageDefault:
+///   The shader input will have default storage.
+///   Glsl example: vec2 parameter;</li>
+/// <li>HgiStoragePatch:
+///   The shader input will have per-patch storage.
+///   Glsl example: patch vec2 parameter;</li>
+/// </ul>
+///
+enum HgiStorageType
+{
+    HgiStorageDefault = 0,
+    HgiStoragePatch,
+};
+
 /// \enum HgiShaderTextureType
 ///
 /// Describes the type of texture to be used in shader gen.
@@ -755,6 +806,23 @@ enum HgiShaderTextureType
     HgiShaderTextureTypeTexture = 0,
     HgiShaderTextureTypeShadowTexture,
     HgiShaderTextureTypeArrayTexture
+};
+
+/// \enum HgiComputeDispatch
+///
+/// Specifies the dispatch method for compute encoders.
+///
+/// <ul>
+/// <li>HgiComputeDispatchSerial:
+///   Kernels are dispatched serially.</li>
+/// <li>HgiComputeDispatchConcurrent:
+///   Kernels are dispatched concurrently, if supported by the API</li>
+/// </ul>
+///
+enum HgiComputeDispatch
+{
+    HgiComputeDispatchSerial = 0,
+    HgiComputeDispatchConcurrent
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -172,6 +172,15 @@ public:
     /// be recycled if they are needed again.
     size_t GarbageCollect(int recycleCount = 0);
 
+    /// Removes unreferenced entries and returns the count
+    /// of remaining entries. If an entry is to be removed, callback function
+    /// "callback" will be called on the entry before removal. When 
+    /// recycleCount is greater than zero, unreferenced entries will not be 
+    /// removed until GarbageCollect() is called that many more times, i.e. 
+    /// allowing unreferenced entries to be recycled if they are needed again.
+    template <typename Callback>
+    size_t GarbageCollect(Callback &&callback, int recycleCount = 0);
+
     /// Returns a const iterator being/end of dictionary. Mainly used for
     /// resource auditing.
     typedef typename InstanceType::Dictionary::const_iterator const_iterator;
@@ -247,6 +256,15 @@ template <typename VALUE>
 size_t
 HdInstanceRegistry<VALUE>::GarbageCollect(int recycleCount)
 {
+    // Call GarbageCollect with empty callback function
+    return GarbageCollect([](void*){}, recycleCount);
+}
+
+template <typename VALUE>
+template <typename Callback>
+size_t
+HdInstanceRegistry<VALUE>::GarbageCollect(Callback &&callback, int recycleCount)
+{
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
@@ -262,6 +280,7 @@ HdInstanceRegistry<VALUE>::GarbageCollect(int recycleCount)
         // erase instance which isn't referred from anyone
         bool isUnique = _IsUnique(it->second.value);
         if (isUnique && (++it->second.recycleCounter > recycleCount)) {
+            std::forward<Callback>(callback)(it->second.value.get());
             it = _dictionary.unsafe_erase(it);
         } else {
             ++it;

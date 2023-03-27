@@ -234,7 +234,10 @@ HgiInteropVulkan::CompositeToInterop(
 
     // Convert textures from Vulkan to GL
     _ConvertVulkanTextureToOpenGL(_hgiVulkan, color, &_glColorTex);
-    _ConvertVulkanTextureToOpenGL(_hgiVulkan, depth, &_glDepthTex);
+
+    if (depth) {
+        _ConvertVulkanTextureToOpenGL(_hgiVulkan, depth, &_glDepthTex);
+    }
 
     if (!ARCH_UNLIKELY(_glColorTex)) {
         TF_CODING_ERROR("A valid color texture handle is required.\n");

@@ -5,17 +5,22 @@
     upAxis = "Y"
 )
 
-def Xform "World"
+def Xform "World" (
+    prepend apiSchemas = ["CoordSysAPI:worldSpace"]
+)
 {
-    rel coordSys:worldSpace = </World/Space>
+    rel coordSys:worldSpace:binding = </World/Space>
     double3 xformOp:translate = (5, 0, 0)
     token[] xformOpOrder = ["xformOp:translate"]
 
-    def Xform "Model"
+    def Xform "Model" (
+        prepend apiSchemas = ["CoordSysAPI:instanceSpace", "CoordSysAPI:modelSpace", "CoordSysAPI:paintSpace", "CoordSysAPI:worldSpace"]
+    )
     {
-        rel coordSys:instanceSpace = </World/Model>
-        rel coordSys:modelSpace = </World/Model/Geom>
-        rel coordSys:paintSpace = </World/Model/Place3dTexture>
+        rel coordSys:instanceSpace:binding = </World/Model>
+        rel coordSys:modelSpace:binding = </World/Model/Geom>
+        rel coordSys:paintSpace:binding = </World/Model/Place3dTexture>
+        rel coordSys:worldSpace:binding
         double3 xformOp:translate = (2, 0, 0)
         token[] xformOpOrder = ["xformOp:translate"]
 

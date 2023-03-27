@@ -9,10 +9,10 @@ usdedit
 *******
 
 :program:`usdedit` is a simple script that converts any single USD-readable
-file into its (temp) .usda ascii equivalent and brings the result up in your
-editor of choice, which is taken from the :envvar:`EDITOR` environment
-variable. Upon quitting the editor, any changes to the temp file will be
-converted back to the original file's format (assuming the
+file into its (temp) :filename:`.usda` text equivalent and brings the
+result up in your editor of choice, which is taken from the :envvar:`EDITOR`
+environment variable. Upon quitting the editor, any changes to the temp file
+will be converted back to the original file's format (assuming the
 :code:`FileFormatPlugin` for the format allows writing), and the original
 file's contents will be replaced with the edited contents.
 
@@ -22,12 +22,12 @@ file's contents will be replaced with the edited contents.
    
    usage: usdedit [-h] [-n] [-f] usdFileName
    
-   Convert a usd-readable file to the usd ascii format in a temporary location
-   and invoke an editor on it. After saving and quitting the editor, the edited
-   file will be converted back to the original format and OVERWRITE the original
-   file, unless you supply the "-n" (--noeffect) flag, in which case no changes
-   will be saved back to the original file. The editor to use will be queried
-   from the EDITOR environment variable.
+   Convert a usd-readable file to the .usda text format in a temporary
+   location and invoke an editor on it. After saving and quitting the editor,
+   the edited file will be converted back to the original format and
+   OVERWRITE the original file, unless you supply the "-n" (--noeffect) flag,
+   in which case no changes will be saved back to the original file. The
+   editor to use will be queried from the EDITOR environment variable.
    
    positional arguments:
      usdFileName           The usd file to edit.
@@ -46,7 +46,7 @@ file's contents will be replaced with the edited contents.
       being used as a source file, since the roundtripping is lossy!
 
     * Running :program:`usdedit` on a very large file with lots of dense,
-      numeric data may take a long time, create a really large ascii file in
+      numeric data may take a long time, create a really large text file in
       your temp area (wherever python's :python:`tempfile` package decides to
       put it), and may push the boundaries of your editor's scalability.
 
@@ -170,13 +170,14 @@ diagnostic and debugging facilities, and an interactive python interpreter.
 
    > usdview -h
    usage: usdview
-          [-h] [--renderer {GL,Embree,Prman,HydraDisabled}]
+          [-h] [--renderer {GL,Embree,Prman}]
           [--select PRIMPATH] [--camera CAMERA] [--mask PRIMPATH[,PRIMPATH...]]
           [--clearsettings] [--defaultsettings] [--norender] [--noplugins]
           [--unloaded] [--timing] [--memstats {none,stage,stageAndImaging}]
           [--numThreads NUMTHREADS] [--ff FIRSTFRAME] [--lf LASTFRAME]
           [--cf CURRENTFRAME] [--complexity {low,medium,high,veryhigh}]
           [--quitAfterStartup] [--sessionLayer SESSIONLAYER]
+          [--mute MUTELAYERSRE]
           usdFile
    
    View a usd file
@@ -186,10 +187,9 @@ diagnostic and debugging facilities, and an interactive python interpreter.
    
    optional arguments:
      -h, --help            show this help message and exit
-     --renderer {GL,Embree,Prman,HydraDisabled}
+     --renderer {GL,Embree,Prman}
                            Which render backend to use (named as it appears in
-                           the menu). Use 'HydraDisabled' to turn off Hydra
-                           renderers.
+                           the menu).
      --select PRIMPATH     A prim path to initially select and frame
      --camera CAMERA, -cam CAMERA
                            Which camera to set the view to on open - may be given
@@ -232,24 +232,17 @@ diagnostic and debugging facilities, and an interactive python interpreter.
                            anonymous to persistent, be aware that layers saved
                            from Export Overrides will include the opinions in the
                            persistent session layer.
-
+     --mute MUTELAYERSRE   Layer identifiers searched against this regular
+                           expression will be muted on the stage prior to, and
+                           after loading. Multiple expressions can be supplied
+                           using the | regex separator operator. Alternatively
+                           the argument may be used multiple times.
+     
 **Further Notes on Command Line Options**
 
     * :option:`--renderer` : Can be used to select any of the render
-      delegates whose plugins have been installed.  The default, "GL"
-      renderer is the HD (hydra) high-performance "Storm" renderer developed
-      for the USD project.  The "HydraDisabled" gl renderer is
-      single-threaded, uses simple VBO's to draw unrefined (only) geometry,
-      and is largely provided for clients whose underlying graphics hardware
-      does not support the features required by the "opt"
-      renderer. "HydraDisabled" also:
-
-      * currently does not support intrinsics like Spheres, Capsules,
-        Cylinders, and Cubes or many of the more recent, advanced schemas
-
-      * uses only the main thread
-
-      * does not support renderer plugins
+      delegates whose plugins have been installed.  The default Hydra
+      renderer is Storm.
 
     * :option:`--select primPath` : loads and images the entire stage,
       but selects *primPath* in the prim browser, and positions the free

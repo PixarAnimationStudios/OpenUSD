@@ -42,6 +42,24 @@ UsdImagingPluginLightAdapter::~UsdImagingPluginLightAdapter()
 {
 }
 
+TfTokenVector
+UsdImagingPluginLightAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingPluginLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->pluginLight;
+    }
+
+    return TfToken();
+}
+
 bool
 UsdImagingPluginLightAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const
@@ -65,6 +83,7 @@ void
 UsdImagingPluginLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
+    _UnregisterLightCollections(cachePath);
     index->RemoveSprim(HdPrimTypeTokens->pluginLight, cachePath);
 }
 

@@ -109,6 +109,23 @@ UsdSkelBindingAPI::_GetTfType() const
 }
 
 UsdAttribute
+UsdSkelBindingAPI::GetSkinningMethodAttr() const
+{
+    return GetPrim().GetAttribute(UsdSkelTokens->primvarsSkelSkinningMethod);
+}
+
+UsdAttribute
+UsdSkelBindingAPI::CreateSkinningMethodAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdSkelTokens->primvarsSkelSkinningMethod,
+                       SdfValueTypeNames->Token,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
 UsdSkelBindingAPI::GetGeomBindTransformAttr() const
 {
     return GetPrim().GetAttribute(UsdSkelTokens->primvarsSkelGeomBindTransform);
@@ -249,6 +266,7 @@ const TfTokenVector&
 UsdSkelBindingAPI::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdSkelTokens->primvarsSkelSkinningMethod,
         UsdSkelTokens->primvarsSkelGeomBindTransform,
         UsdSkelTokens->skelJoints,
         UsdSkelTokens->primvarsSkelJointIndices,
@@ -279,7 +297,7 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 
 #include "pxr/usd/usdGeom/boundable.h"
-#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
 #include "pxr/usd/usdSkel/skeleton.h"
@@ -300,7 +318,7 @@ UsdGeomPrimvar
 UsdSkelBindingAPI::CreateJointIndicesPrimvar(bool constant,
                                              int elementSize) const
 {
-    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+    return UsdGeomPrimvarsAPI(GetPrim()).CreatePrimvar(
         UsdSkelTokens->primvarsSkelJointIndices,
         SdfValueTypeNames->IntArray,
         constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,
@@ -319,7 +337,7 @@ UsdGeomPrimvar
 UsdSkelBindingAPI::CreateJointWeightsPrimvar(bool constant,
                                              int elementSize) const
 {
-    return UsdGeomImageable(GetPrim()).CreatePrimvar(
+    return UsdGeomPrimvarsAPI(GetPrim()).CreatePrimvar(
         UsdSkelTokens->primvarsSkelJointWeights,
         SdfValueTypeNames->FloatArray,
         constant ? UsdGeomTokens->constant : UsdGeomTokens->vertex,

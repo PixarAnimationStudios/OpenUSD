@@ -46,13 +46,15 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdImagingCameraAdapter::~UsdImagingCameraAdapter() = default;
 
 TfTokenVector
-UsdImagingCameraAdapter::GetImagingSubprims()
+UsdImagingCameraAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingCameraAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingCameraAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->camera;
@@ -62,8 +64,8 @@ UsdImagingCameraAdapter::GetImagingSubprimType(TfToken const& subprim)
 
 HdContainerDataSourceHandle
 UsdImagingCameraAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
@@ -73,6 +75,20 @@ UsdImagingCameraAdapter::GetImagingSubprimData(
             stageGlobals);
     }
     return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingCameraAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceCameraPrim::Invalidate(prim, subprim,
+            properties);
+    }
+
+    return HdDataSourceLocatorSet();
 }
 
 bool
@@ -121,115 +137,24 @@ UsdImagingCameraAdapter::TrackVariability(UsdPrim const& prim,
                timeVaryingBits,
                false);
 
-    // Rest of the function is just checking whether any
-    // param is time-varying.
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->projection,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->projection,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->horizontalAperture,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->horizontalAperture,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->verticalAperture,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->verticalAperture,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->horizontalApertureOffset,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->horizontalApertureOffset,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->verticalApertureOffset,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->verticalApertureOffset,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->focalLength,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->focalLength,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->clippingRange,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->clippingRange,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->fStop,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->fStop,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->focusDistance,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->focusDistance,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->shutterOpen,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->shutterOpen,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->shutterClose,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->shutterClose,
-                   timeVaryingBits,
-                   false)) {
-        return;
-    }
-
-    if (_IsVarying(prim,
-                   UsdGeomTokens->exposure,
-                   HdCamera::DirtyParams,
-                   HdCameraTokens->exposure,
-                   timeVaryingBits,
-                   false)) {
-        return;
+    // If any other camera attributes are time varying
+    // we will assume all camera params are time-varying.
+    const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
+    for (UsdAttribute const& attr : attrs) {
+        // Don't double-count clipping-plane or transform attrs.
+        if (attr.GetBaseName() == UsdGeomTokens->clippingPlanes) { continue; }
+        if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
+                attr.GetBaseName())) {
+            continue;
+        }
+        if (_IsVarying(prim,
+                       attr.GetName(),
+                       HdCamera::DirtyParams,
+                       attr.GetName(),
+                       timeVaryingBits,
+                       false)) {
+            return;
+        }
     }
 }
 

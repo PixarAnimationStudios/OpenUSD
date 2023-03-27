@@ -35,7 +35,7 @@ def _testBasic(appController):
     stepSize     = appController._ui.stepSize
     currentFrame = appController._ui.frameField
 
-    forwardControl  = appController._ui.actionFrame_Forward.triggered
+    frameForward  = appController._advanceFrame
 
     # ensure our initial variable time samples are set.
     assert rangeBegin.text() == START_TIME_TEXT 
@@ -45,16 +45,16 @@ def _testBasic(appController):
     assert stageBegin.text() == START_TIME_TEXT
     assert stageEnd.text() == END_TIME_TEXT 
 
-    def testIterateTimeRange(expectedRange, control):
+    def testIterateTimeRange(expectedRange, timeFunction):
         for i in expectedRange:
             assert currentFrame.text() == str(float(i))
             appController._takeShot("bbox_frame_%d.png" % i)
-            control.emit()
+            timeFunction()
             appController._mainWindow.repaint()
 
     # iterate through the default time samples by emitting our 
     # forward control signal.
-    testIterateTimeRange([1, 2, 3], forwardControl)
+    testIterateTimeRange([1, 2, 3], frameForward)
 
 def testUsdviewInputFunction(appController):
     _testBasic(appController)

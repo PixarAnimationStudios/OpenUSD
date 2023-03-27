@@ -72,13 +72,6 @@ def VerifyUsdFileIsASCII(usdFileName):
 def VerifyUsdFileIsCrate(usdFileName):
     VerifyUsdFileFormat(usdFileName, 'usdc')
 
-def GetUnderlyingUsdFileFormat(layer):
-    if Sdf.FileFormat.FindById('usda').CanRead(layer.identifier):
-        return 'usda'
-    elif Sdf.FileFormat.FindById('usdc').CanRead(layer.identifier):
-        return 'usdc'
-    return ''
-
 ############################################################
 
 class TestUsdFileFormats(unittest.TestCase):
@@ -96,7 +89,9 @@ class TestUsdFileFormats(unittest.TestCase):
             # Ensure the layer is saved to disk, then check that its
             # underlying file format matches what we expect.
             self.assertTrue(layer.Save())
-            self.assertEqual(GetUnderlyingUsdFileFormat(layer), expectedFileFormat)
+            self.assertEqual(
+                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                expectedFileFormat)
 
         usdFileFormat = Sdf.FileFormat.FindById('usd')
 
@@ -125,12 +120,16 @@ class TestUsdFileFormats(unittest.TestCase):
             dstFilename = 'testUsdLayerSave_%s.usd' % expectedFileFormat
             shutil.copyfile(srcFilename, dstFilename)
             layer = Sdf.Layer.FindOrOpen(dstFilename)
-            self.assertEqual(GetUnderlyingUsdFileFormat(layer), expectedFileFormat)
+            self.assertEqual(
+                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                expectedFileFormat)
 
             Sdf.PrimSpec(layer, 'TestUsdLayerSave', Sdf.SpecifierDef)
             self.assertTrue(layer.Save())
 
-            self.assertEqual(GetUnderlyingUsdFileFormat(layer), expectedFileFormat)
+            self.assertEqual(
+                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer),
+                expectedFileFormat)
 
         asciiFile = 'ascii.usd'
         _TestLayerOpenAndSave(asciiFile, 'usda')
@@ -143,7 +142,7 @@ class TestUsdFileFormats(unittest.TestCase):
             self.assertTrue(layer)
 
             exportedLayerId = os.path.basename(
-                layer.identifier).replace('.usd', '_exported.usdc')
+                layer.identifier).replace('.usd', '_exported.usd')
             self.assertTrue(layer.Export(exportedLayerId))
 
             exportedLayer = Sdf.Layer.FindOrOpen(exportedLayerId)
@@ -151,7 +150,9 @@ class TestUsdFileFormats(unittest.TestCase):
 
             # Exporting to a new .usd file should produce a binary file,
             # since that's the default format for .usd.
-            self.assertEqual(GetUnderlyingUsdFileFormat(exportedLayer), "usdc")
+            self.assertEqual(
+                Usd.UsdFileFormat.GetUnderlyingFormatForLayer(exportedLayer), 
+                "usdc")
 
             # The contents of the exported layer should equal to the
             # contents of the original layer.
@@ -230,6 +231,27 @@ class TestUsdFileFormats(unittest.TestCase):
         assert s.GetPrimAtPath('/foo')
         assert s.GetPrimAtPath('/foo/bar')
         assert s.GetPrimAtPath('/foo/bar/baz')
+
+    def test_ReloadReplaceUsdUsdaWithUsdc(self):
+        """Test that replacing a .usda-backed .usd file with a .usdc
+        file and reloading it results in a .usdc-backed layer and not
+        a .usda-backed layer with the contents of the .usdc file."""
+
+        shutil.copyfile('ascii.usd', 'test_replace.usd')
+        layer = Sdf.Layer.FindOrOpen('test_replace.usd')
+        self.assertEqual(
+            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            'usda')
+
+        shutil.copyfile('crate.usd', 'test_replace.usd')
+
+        # Force a reload, otherwise the reload is skipped sometimes due
+        # to file mtimes not changing after copyfile.
+        self.assertTrue(layer.Reload(force=True))
+
+        self.assertEqual(
+            Usd.UsdFileFormat.GetUnderlyingFormatForLayer(layer), 
+            'usdc')
 
 if __name__ == "__main__":
     unittest.main()

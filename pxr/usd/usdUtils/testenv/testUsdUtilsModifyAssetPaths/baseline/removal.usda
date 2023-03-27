@@ -1,0 +1,25 @@
+#usda 1.0
+
+def Xform "Model" (
+    payload = None
+    references = None
+)
+{
+    asset[] bar
+    asset foo
+    asset[] varBar
+    asset varFoo
+}
+
+def Xform "Variants" (
+    add variantSets = "standin"
+)
+{
+    variantSet "standin" = {
+        "render" {
+            asset foo
+
+        }
+    }
+}
+

@@ -64,7 +64,7 @@ void main(void)
     vec4 inCol = HgiTexelFetch_colorIn(ivec2(fragCoord));
 
     #if defined(GLSLFX_USE_OCIO)
-        inCol = OCIODisplay(inCol, Lut3DIn);
+        inCol = OCIO_DISPLAY_FUNC(inCol);
     #else
         // Only color, not alpha is gamma corrected!
         inCol.rgb = FloatToSRGB(inCol.rgb);

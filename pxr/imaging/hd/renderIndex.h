@@ -358,12 +358,17 @@ public:
     // ---------------------------------------------------------------------- //
     HD_API
     void InsertSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex,
+            const HdSceneIndexBaseRefPtr &inputScene,
             SdfPath const& scenePathPrefix);
 
     HD_API
     void RemoveSceneIndex(
-            HdSceneIndexBaseRefPtr inputSceneIndex);
+            const HdSceneIndexBaseRefPtr &inputScene);
+
+    /// The terminal scene index that is driving what is in the render index
+    /// through emulation.
+    HD_API
+    HdSceneIndexBaseRefPtr GetTerminalSceneIndex() const;
 
     // ---------------------------------------------------------------------- //
     /// \name Render Delegate
@@ -395,19 +400,16 @@ public:
     /// invalidations to be consolidated into vectorized batches. Calling this
     /// will cause subsequent notices to be be queued.
     /// 
-    /// NOTE: This does not currently track any nested state. Repeated calls
-    ///       prior to a corresponding SceneIndexEmulationNoticeBatchEnd will
-    ///       have no effect.
+    /// NOTE: This tracks depth internally and is safe to call in nested 
+    ///       contexts. It is not safe to call from multiple threads, though.
     HD_API
     void SceneIndexEmulationNoticeBatchBegin();
 
     /// Flushes any queued scene index observer notices and disables further
     /// queueing.
     ///
-    /// NOTE: This does not currently track any nested state. Calling this
-    ///       will immediately flush and disable queueing regardless of the
-    ///       number of times SceneIndexEmulationNoticeBatchBegin is called
-    ///       prior.
+    /// NOTE: This tracks depth internally and is safe to call in nested 
+    ///       contexts. It is not safe to call from multiple threads, though.
     HD_API
     void SceneIndexEmulationNoticeBatchEnd();
 
@@ -424,7 +426,7 @@ private:
     // ---------------------------------------------------------------------- //
 
     // Go through all RPrims and reallocate their instance ids
-    // This is called once we have exhausted all all 24bit instance ids.
+    // This is called once we have exhausted all 24bit instance ids.
     void _CompactPrimIds();
 
     // Allocate the next available instance id to the prim
@@ -498,9 +500,12 @@ private:
 
     HdLegacyPrimSceneIndexRefPtr _emulationSceneIndex;
     HdNoticeBatchingSceneIndexRefPtr _emulationNoticeBatchingSceneIndex;
+    unsigned int _noticeBatchingDepth;
+
     std::unique_ptr<class HdSceneIndexAdapterSceneDelegate> _siSd;
 
     HdMergingSceneIndexRefPtr _mergingSceneIndex;
+    HdSceneIndexBaseRefPtr _terminalSceneIndex;
 
     struct _TaskInfo {
         HdSceneDelegate *sceneDelegate;

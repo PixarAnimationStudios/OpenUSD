@@ -34,7 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGLComputeCmds::HgiGLComputeCmds(HgiGLDevice* device)
+HgiGLComputeCmds::HgiGLComputeCmds(
+    HgiGLDevice* device,
+    HgiComputeCmdsDesc const&)
     : HgiComputeCmds()
     , _pushStack(0)
     , _localWorkGroupSize(GfVec3i(1, 1, 1))
@@ -135,9 +137,15 @@ HgiGLComputeCmds::PopDebugGroup()
 }
 
 void
-HgiGLComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiGLComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
-    _ops.push_back( HgiGLOps::MemoryBarrier(barrier) );
+    _ops.push_back( HgiGLOps::InsertMemoryBarrier(barrier) );
+}
+
+HgiComputeDispatch
+HgiGLComputeCmds::GetDispatchMethod() const
+{
+    return HgiComputeDispatchSerial;
 }
 
 bool

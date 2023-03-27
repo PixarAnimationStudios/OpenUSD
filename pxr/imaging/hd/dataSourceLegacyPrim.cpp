@@ -61,11 +61,16 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/volumeFieldSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/base/tf/stringUtils.h"
 
 #include <algorithm>
 
@@ -77,8 +82,14 @@ TF_DEFINE_PUBLIC_TOKENS(HdLegacyPrimTypeTokens, HD_LEGACY_PRIMTYPE_TOKENS);
 //      define this convention.
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (binding)
+    (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
+    (materialSyncMode)
+
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 // ----------------------------------------------------------------------------
@@ -334,11 +345,6 @@ public:
         _entries[name] = {interpolation, role, indexed};
     }
 
-    bool Has(const TfToken &name) override
-    {
-        return _entries.find(name) != _entries.end();
-    }
-
     TfTokenVector GetNames() override
     {
         TfTokenVector result;
@@ -582,18 +588,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdMeshTopologySchemaTokens->faceVertexCounts
-                || name == HdMeshTopologySchemaTokens->faceVertexIndices
-                || name == HdMeshTopologySchemaTokens->holeIndices
-                || name == HdMeshTopologySchemaTokens->orientation) {
-
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         return {
@@ -638,28 +632,12 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdMeshSchemaTokens->topology) {
-            return true;
-        }
-        if (name == HdMeshSchemaTokens->subdivisionTags) {
-            return true;
-        }
-        if (name == HdMeshSchemaTokens->doubleSided) {
-            return true;
-        }
-        if (name == HdMeshSchemaTokens->geomSubsets) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         return {
             HdMeshSchemaTokens->topology,
             HdMeshSchemaTokens->subdivisionTags,
+            HdMeshSchemaTokens->subdivisionScheme,
             HdMeshSchemaTokens->doubleSided,
             HdMeshSchemaTokens->geomSubsets,
         };
@@ -921,18 +899,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdBasisCurvesTopologySchemaTokens->curveVertexCounts
-                || name == HdBasisCurvesTopologySchemaTokens->curveIndices
-                || name == HdBasisCurvesTopologySchemaTokens->basis
-                || name == HdBasisCurvesTopologySchemaTokens->type
-                || name == HdBasisCurvesTopologySchemaTokens->wrap) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         return {
@@ -982,20 +948,6 @@ public:
     : _id(id)
     , _sceneDelegate(sceneDelegate)
     {
-    }
-
-
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdBasisCurvesSchemaTokens->topology) {
-            return true;
-        }
-
-        if (name == HdBasisCurvesSchemaTokens->geomSubsets) {
-            return true;
-        }
-
-        return false;
     }
 
     TfTokenVector GetNames() override
@@ -1220,12 +1172,6 @@ public:
         TF_VERIFY(_sceneDelegate);
     }
 
-    bool Has(const TfToken &name) override
-    {
-        VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
-        return !v.IsEmpty();
-    }
-
     TfTokenVector GetNames() override
     {
         // HdSceneDelegate has no API for advertising what keys it will provide
@@ -1242,6 +1188,7 @@ public:
         results.push_back(HdCameraSchemaTokens->verticalApertureOffset);
         results.push_back(HdCameraSchemaTokens->focalLength);
         results.push_back(HdCameraSchemaTokens->clippingRange);
+        results.push_back(HdCameraSchemaTokens->clippingPlanes);
 
         return results;
     }
@@ -1280,16 +1227,20 @@ public:
             }
             return HdRetainedTypedSampledDataSource<
                         CameraUtilConformWindowPolicy>::New(wp);
-        } else if (name == HdCameraTokens->clipPlanes) {
-            VtValue v = _sceneDelegate->GetCameraParamValue(_id, name);
-        
-            // XXX: this should probably be in the schema, and a vec4f array.
-            std::vector<GfVec4d> cp;
+        } else if (name == HdCameraSchemaTokens->clippingPlanes) {
+            const VtValue v = _sceneDelegate->GetCameraParamValue(
+                _id, HdCameraTokens->clipPlanes);
+            VtArray<GfVec4d> array;
             if (v.IsHolding<std::vector<GfVec4d>>()) {
-                cp = v.UncheckedGet<std::vector<GfVec4d>>();
+                const std::vector<GfVec4d> &vec =
+                    v.UncheckedGet<std::vector<GfVec4d>>();
+                array.resize(vec.size());
+                for (size_t i = 0; i < vec.size(); i++) {
+                    array[i] = vec[i];
+                }
             }
-            return HdRetainedTypedSampledDataSource<std::vector<GfVec4d>>::New(
-                        cp);
+            return HdRetainedTypedSampledDataSource<VtArray<GfVec4d>>::New(
+                array);
         } else if (std::find(HdCameraSchemaTokens->allTokens.begin(),
                 HdCameraSchemaTokens->allTokens.end(), name)
                     != HdCameraSchemaTokens->allTokens.end()) {
@@ -1321,17 +1272,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        VtValue v;
-        if (_UseGet(name)) {
-            v = _sceneDelegate->Get(_id, name);
-        } else {
-            v = _sceneDelegate->GetLightParamValue(_id, name);
-        }
-        return !v.IsEmpty();
-    }
-
     TfTokenVector GetNames() override
     {
         // XXX: return the schema tokens when we have them.
@@ -1341,6 +1281,11 @@ public:
             HdTokens->lightLink,
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
+            HdTokens->isLight,
+            _tokens->materialSyncMode,  // Part of UsdLux but not yet hydra
+                                        // here just so you can see it in the
+                                        // browser coming from legacy scene
+                                        // delegates.
         };
         return result;
     }
@@ -1401,12 +1346,6 @@ public:
     : _id(id), _sceneDelegate(sceneDelegate)
     {
         TF_VERIFY(_sceneDelegate);
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        VtValue v = _sceneDelegate->Get(_id, name);
-        return !v.IsEmpty();
     }
 
     TfTokenVector GetNames() override
@@ -1512,15 +1451,6 @@ public:
         _protos.assign(protos.begin(), protos.end());
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdInstancerTopologySchemaTokens->prototypes ||
-            name == HdInstancerTopologySchemaTokens->instanceIndices) {
-            return true;
-        }
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         TfTokenVector results;
@@ -1597,22 +1527,6 @@ public:
     : _sceneDelegate(sceneDelegate), _id(id), _displayStyleRead(false)
     {
         TF_VERIFY(_sceneDelegate);
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdLegacyDisplayStyleSchemaTokens->refineLevel ||
-            name == HdLegacyDisplayStyleSchemaTokens->flatShadingEnabled ||
-            name == HdLegacyDisplayStyleSchemaTokens->displacementEnabled ||
-            name == HdLegacyDisplayStyleSchemaTokens->occludedSelectionShowsThrough ||
-            name == HdLegacyDisplayStyleSchemaTokens->pointsShadingEnabled ||
-            name == HdLegacyDisplayStyleSchemaTokens->materialIsFinal ||
-            name == HdLegacyDisplayStyleSchemaTokens->shadingStyle ||
-            name == HdLegacyDisplayStyleSchemaTokens->reprSelector ||
-            name == HdLegacyDisplayStyleSchemaTokens->cullStyle) {
-            return true;
-        }
-        return false;
     }
 
     TfTokenVector GetNames() override
@@ -1802,13 +1716,6 @@ public:
         HdSceneDelegate *sceneDelegate, const SdfPath &id)
     : _sceneDelegate(sceneDelegate), _id(id) {}
 
-    bool Has(const TfToken &name) override
-    {
-        return std::find(_drawTargetTokens->allTokens.begin(),
-            _drawTargetTokens->allTokens.end(), name)
-                != _drawTargetTokens->allTokens.end();
-    }
-
     TfTokenVector GetNames() override
     {
         return _drawTargetTokens->allTokens;
@@ -1833,12 +1740,9 @@ public:
     HD_DECLARE_DATASOURCE(Hd_DataSourceLegacyExtComputationPrimvarsContainer);
 
     Hd_DataSourceLegacyExtComputationPrimvarsContainer(
-        const SdfPath &primId,
-        HdSceneDelegate *sceneDelegate)
+        const SdfPath &primId)
     : _primId(primId)
-    , _sceneDelegate(sceneDelegate)
     {
-        TF_VERIFY(_sceneDelegate);
     }
 
     void AddDesc(const TfToken &name, const TfToken &interpolation,
@@ -1848,11 +1752,6 @@ public:
     {
         _entries[name] = {interpolation, role, sourceComputation,
                           sourceComputationOutputName, valueType};
-    }
-
-    bool Has(const TfToken &name) override
-    {
-        return _entries.find(name) != _entries.end();
     }
 
     TfTokenVector GetNames() override
@@ -1900,7 +1799,6 @@ private:
 
     _EntryMap _entries;
     SdfPath _primId;
-    HdSceneDelegate *_sceneDelegate;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(
@@ -1980,12 +1878,6 @@ public:
             const SdfPath &id, HdSceneDelegate *sceneDelegate)
     : _id(id), _sceneDelegate(sceneDelegate) {}
 
-    bool Has(const TfToken &name) override
-    {
-        TfTokenVector names = GetNames();
-        return std::find(names.begin(), names.end(), name) != names.end();
-    }
-
     TfTokenVector GetNames() override
     {
         return _sceneDelegate->GetExtComputationSceneInputNames(_id);
@@ -2012,18 +1904,6 @@ public:
     Hd_DataSourceLegacyExtComputation(
             const SdfPath &id, HdSceneDelegate *sceneDelegate)
     : _id(id), _sceneDelegate(sceneDelegate) {}
-
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdExtComputationSchemaTokens->inputValues ||
-            name == HdExtComputationSchemaTokens->inputComputations ||
-            name == HdExtComputationSchemaTokens->outputs ||
-            name == HdExtComputationSchemaTokens->glslKernel ||
-            name == HdExtComputationSchemaTokens->cpuCallback) {
-            return true;
-        }
-        return false;
-    }
 
     TfTokenVector GetNames() override
     {
@@ -2117,18 +1997,6 @@ public:
         rb = _sceneDelegate->GetRenderBufferDescriptor(_id);
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (name == HdRenderBufferSchemaTokens->dimensions ||
-            name == HdRenderBufferSchemaTokens->format ||
-            name == HdRenderBufferSchemaTokens->multiSampled) {
-            return true;
-        }
-
-        VtValue v = _sceneDelegate->Get(_id, name);
-        return !v.IsEmpty();
-    }
-
     TfTokenVector GetNames() override
     {
         TfTokenVector v;
@@ -2159,6 +2027,62 @@ private:
     HdSceneDelegate *_sceneDelegate;
     SdfPath _id;
     HdRenderBufferDescriptor rb;
+};
+
+// ----------------------------------------------------------------------------
+
+class Hd_DataSourceRenderSettings : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceRenderSettings);
+
+    Hd_DataSourceRenderSettings(
+        HdSceneDelegate *sceneDelegate, const SdfPath &id)
+    : _sceneDelegate(sceneDelegate), _id(id)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector v;
+        v.push_back(HdRenderSettingsSchemaTokens->sampleFilters);
+        v.push_back(HdRenderSettingsSchemaTokens->displayFilters);
+        return v;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        const std::pair<TfToken, TfToken> outputFilterTokens[] = {
+            {
+                HdRenderSettingsSchemaTokens->sampleFilters,
+                _tokens->outputsRiSampleFilters
+            },
+            {
+                HdRenderSettingsSchemaTokens->displayFilters,
+                _tokens->outputsRiDisplayFilters
+            }
+        };
+        
+        for (const auto tokens : outputFilterTokens) {
+            if (name == tokens.first) {
+                const VtValue filterPathsValue =
+                    _sceneDelegate->Get(_id, tokens.second);
+                SdfPathVector filterPaths = 
+                    filterPathsValue.GetWithDefault<SdfPathVector>();
+                VtArray<SdfPath> pathsArray(filterPaths.begin(), filterPaths.end());
+                return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                    pathsArray);
+            }
+        }
+        
+        return HdSampledDataSourceHandle(
+            Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
+    }
+
+private:
+    HdSceneDelegate *_sceneDelegate;
+    SdfPath _id;
 };
 
 // ----------------------------------------------------------------------------
@@ -2250,122 +2174,27 @@ _IsTypeLightLike(const TfToken &type)
     return false;
 }
 
-bool 
-HdDataSourceLegacyPrim::Has(const TfToken &name)
+bool
+HdDataSourceLegacyPrim::_IsLight()
 {
-    if (_type == HdPrimTypeTokens->mesh) {
-        if (name == HdMeshSchemaTokens->mesh) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->basisCurves) {
-        if (name == HdPrimTypeTokens->basisCurves) {
-            return true;
-        }
-    }
-
-    if (HdPrimTypeIsGprim(_type)) {
-        if (name == HdPrimvarsSchemaTokens->primvars ||
-            name == HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars ||
-            name == HdMaterialBindingSchemaTokens->materialBinding ||
-            name == HdLegacyDisplayStyleSchemaTokens->displayStyle || 
-            name == HdCoordSysBindingSchemaTokens->coordSysBinding ||
-            name == HdPurposeSchemaTokens->purpose ||
-            name == HdVisibilitySchemaTokens->visibility ||
-            name == HdInstancedBySchemaTokens->instancedBy ||
-            name == HdCategoriesSchemaTokens->categories ||
-            name == HdXformSchemaTokens->xform ||
-            name == HdExtentSchemaTokens->extent) {
-            return true;
-        }
-    }
-    
     if (HdPrimTypeIsLight(_type)) {
-        if (name == HdMaterialSchemaTokens->material ||
-            name == HdXformSchemaTokens->xform ||
-            name == HdPrimvarsSchemaTokens->primvars) {
-            return true;
-        }
-    }
-
-    if (_IsTypeLightLike(_type)) {
-        if (name == HdLightSchemaTokens->light ||
-            name == HdMaterialSchemaTokens->material) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->material) {
-        if (name == HdMaterialSchemaTokens->material) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->instancer) {
-        if (name == HdXformSchemaTokens->xform ||
-            name == HdInstancedBySchemaTokens->instancedBy ||
-            name == HdInstancerTopologySchemaTokens->instancerTopology ||
-            name == HdPrimvarsSchemaTokens->primvars ||
-            name == HdInstanceCategoriesSchemaTokens->instanceCategories) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->camera) {
-        if (name == HdCameraSchemaTokens->camera ||
-            name == HdXformSchemaTokens->xform) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->renderBuffer) {
-        if (name == HdRenderBufferSchemaTokens->renderBuffer) {
-            return true;
-        }
-    }
-
-    if (HdLegacyPrimTypeIsVolumeField(_type)) {
-        if (name == HdVolumeFieldSchemaTokens->volumeField) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->volume) {
-        if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->extComputation) {
-        if (name == HdExtComputationSchemaTokens->extComputation) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->coordSys) {
-        if (name == HdXformSchemaTokens->xform) {
-            return true;
-        }
-    }
-
-    if (_type == HdPrimTypeTokens->drawTarget) {
-        if (name == HdPrimTypeTokens->drawTarget) {
-            return true;
-        }
-    }
-
-    if (_type == _tokens->prmanParams) {
-        if (name == _tokens->prmanParams) {
-            return true;
-        }
-    }
-
-    if (name == HdSceneIndexEmulationTokens->sceneDelegate) {
         return true;
     }
 
-    return false;
+    // NOTE: This convention allows for things like meshes to identify
+    //       themselves also as lights.
+    //       
+    //       While downstream consumers might query for this equivalent data
+    //       source directly (see Hd_DataSourceLight), its use here is only
+    //       part of GetNames and Has for the prim-level data source.
+    //       
+    //       This specific method will not be invoked by rendering directly.
+    //       Hydra Scene Browser is the only caller of GetNames for
+    //       a prim-level container data source -- and only for the selected
+    //       prim.
+    const VtValue v = _sceneDelegate->GetLightParamValue(
+        _id, HdTokens->isLight);
+    return v.GetWithDefault<bool>(false);
 }
 
 TfTokenVector 
@@ -2381,8 +2210,14 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
     }
 
+    // Allow all legacy prims to provide primvars as that's the only interface
+    // for advertising what names/values are there.
+    // Abstract prims which may need to be expressed via legacy scene delegate
+    // APIs can make use of it without this code needing to be aware of any
+    // custom types.
+    result.push_back(HdPrimvarsSchemaTokens->primvars);
+
     if (HdPrimTypeIsGprim(_type)) {
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
         result.push_back(HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars);
         result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
         result.push_back(HdLegacyDisplayStyleSchemaTokens->displayStyle); 
@@ -2394,14 +2229,12 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdExtentSchemaTokens->extent);
     }
-    
-    if (HdPrimTypeIsLight(_type)) {
+
+    if (_IsLight()) {
         result.push_back(HdMaterialSchemaTokens->material);
         result.push_back(HdXformSchemaTokens->xform);
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
-    }
-
-    if (_IsTypeLightLike(_type)) {
+        result.push_back(HdLightSchemaTokens->light);
+    } else if (_IsTypeLightLike(_type)) {
         result.push_back(HdLightSchemaTokens->light);
         result.push_back(HdMaterialSchemaTokens->material);
     }
@@ -2414,7 +2247,6 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdInstancedBySchemaTokens->instancedBy);
         result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
-        result.push_back(HdPrimvarsSchemaTokens->primvars);
         result.push_back(HdInstanceCategoriesSchemaTokens->instanceCategories);
     }
 
@@ -2425,6 +2257,18 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_type == HdPrimTypeTokens->renderBuffer) {
         result.push_back(HdRenderBufferSchemaTokens->renderBuffer);
+    }
+
+    if (_type == HdPrimTypeTokens->renderSettings) {
+        result.push_back(HdRenderSettingsSchemaTokens->renderSettings);
+    }
+
+    if (_type == HdPrimTypeTokens->sampleFilter) {
+        result.push_back(HdSampleFilterSchemaTokens->sampleFilter);
+    }
+
+    if (_type == HdPrimTypeTokens->displayFilter) {
+        result.push_back(HdDisplayFilterSchemaTokens->displayFilter);
     }
 
     if (HdLegacyPrimTypeIsVolumeField(_type)) {
@@ -2541,7 +2385,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
                         cNames.data(),
                         cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
-                        node.identifier)));
+                        node.identifier),
+                    nullptr /*renderContextNodeIdentifiers*/));
         }
 
         terminalsValues.push_back(
@@ -2576,6 +2421,38 @@ _ConvertHdMaterialNetworkToHdDataSources(
         &defaultContext, 
         &network);
     
+    return true;
+}
+
+template <typename SchemaType>
+static bool
+_ConvertOutputFilterNodeToHdDataSources(
+    const HdMaterialNode2 &hdNode,
+    HdContainerDataSourceHandle *result)
+{
+    HD_TRACE_FUNCTION();
+
+    std::vector<TfToken> paramsNames;
+    std::vector<HdDataSourceBaseHandle> paramsValues;
+    for (const auto &p : hdNode.parameters) {
+        paramsNames.push_back(p.first);
+        paramsValues.push_back(
+            HdRetainedTypedSampledDataSource<VtValue>::New(p.second)
+        );
+    }
+
+    HdContainerDataSourceHandle nodeDS = HdMaterialNodeSchema::BuildRetained(
+        HdRetainedContainerDataSource::New(
+            paramsNames.size(), 
+            paramsNames.data(),
+            paramsValues.data()),
+        HdRetainedContainerDataSource::New(),
+        HdRetainedTypedSampledDataSource<TfToken>::New(
+            hdNode.nodeTypeId),
+            nullptr /*renderContextNodeIdentifiers*/);
+
+    *result = SchemaType::BuildRetained(nodeDS);
+
     return true;
 }
 
@@ -2640,7 +2517,7 @@ HdDataSourceLegacyPrim::_GetExtComputationPrimvarsDataSource()
             if (!primvarsDs) {
                 primvarsDs =
                     Hd_DataSourceLegacyExtComputationPrimvarsContainer::New(
-                        _id, _sceneDelegate);
+                        _id);
             }
             primvarsDs->AddDesc(
                 primvarDesc.name, interpolationToken, primvarDesc.role,
@@ -2705,6 +2582,46 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 }
 
 HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
+{
+    VtValue sampleFilterValue = _sceneDelegate->Get(
+        _id, HdSampleFilterSchemaTokens->sampleFilterResource);
+
+    if (!sampleFilterValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    HdMaterialNode2 sampleFilterNode =
+        sampleFilterValue.UncheckedGet<HdMaterialNode2>();
+    HdContainerDataSourceHandle sampleFilterDS = nullptr;    
+    if (!_ConvertOutputFilterNodeToHdDataSources<HdSampleFilterSchema>(
+            sampleFilterNode, &sampleFilterDS)) {
+        return nullptr;
+    }
+    return sampleFilterDS;
+}
+
+HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
+{
+    VtValue displayFilterValue = _sceneDelegate->Get(
+        _id, HdDisplayFilterSchemaTokens->displayFilterResource);
+
+    if (!displayFilterValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    HdMaterialNode2 displayFilterNode = 
+        displayFilterValue.UncheckedGet<HdMaterialNode2>();
+    HdContainerDataSourceHandle displayFilterDS = nullptr;
+    if (!_ConvertOutputFilterNodeToHdDataSources<HdDisplayFilterSchema>(
+            displayFilterNode, &displayFilterDS)) {
+        return nullptr;
+    }
+    return displayFilterDS;
+}
+
+HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetDisplayStyleDataSource()
 {
     return Hd_DisplayStyleDataSource::New(_sceneDelegate, _id);
@@ -2717,9 +2634,12 @@ HdDataSourceLegacyPrim::_GetInstancedByDataSource()
     if (instancerId.IsEmpty()) {
         return nullptr;
     }
-    return HdInstancedBySchema::BuildRetained(
-        HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-            VtArray<SdfPath>({instancerId})));
+    return
+        HdInstancedBySchema::Builder()
+            .SetPaths(
+                HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
+                    VtArray<SdfPath>({instancerId})))
+            .Build();
 }
 
 HdDataSourceBaseHandle
@@ -2779,10 +2699,23 @@ HdDataSourceLegacyPrim::_GetCoordSysBindingDataSource()
     for (SdfPath const &path : *coordSysBindings) {
         // Note: the scene delegate API just binds prims to unnamed
         // coord sys objects.  These coord sys objects have paths of the
-        // form /path/to/object.coordSys:foo, where "foo" is the name the
-        // shader gets to access.  We pull these names out to store in the
+        // form /path/to/object.coordSys:foo:binding, where "foo" is the name 
+        // the shader gets to access.  We pull these names out to store in the
         // schema.
-        names.push_back(TfToken(SdfPath::StripNamespace(path.GetName())));
+        // XXX: Note that for backward compatibility of non-applied
+        // UsdShadeCoordSysAPI api schema, a form like 
+        // /path/to/object.coordSys:foo is supporterd!
+        const std::string &attrName = path.GetName();
+        const std::string &nameSpacedCoordSysName =
+            TfStringEndsWith(attrName, _tokens->binding.GetString())
+            ? TfStringGetBeforeSuffix(
+                    attrName, *SdfPathTokens->namespaceDelimiter.GetText())
+            : attrName;
+        names.push_back(
+                TfToken(
+                    SdfPath::StripPrefixNamespace(
+                        nameSpacedCoordSysName, _tokens->coordSys).first));
+
         paths.push_back(HdRetainedTypedSampledDataSource<SdfPath>::New(
             path));
     }
@@ -2939,6 +2872,12 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return _GetInstanceCategoriesDataSource();
     } else if (name == HdRenderBufferSchemaTokens->renderBuffer) {
         return Hd_DataSourceRenderBuffer::New(_sceneDelegate, _id);
+    } else if (name == HdRenderSettingsSchemaTokens->renderSettings) {
+        return Hd_DataSourceRenderSettings::New(_sceneDelegate, _id);
+    } else if (name == HdSampleFilterSchemaTokens->sampleFilter) {
+        return _GetSampleFilterDataSource();
+    } else if (name == HdDisplayFilterSchemaTokens->displayFilter) {
+        return _GetDisplayFilterDataSource();
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {
         return Hd_DataSourceVolumeField::New(_id, _sceneDelegate);
     } else if (name == HdPrimTypeTokens->drawTarget) {

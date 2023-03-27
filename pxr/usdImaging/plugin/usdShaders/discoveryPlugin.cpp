@@ -43,17 +43,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-
-    /* node metadata */
-    (family)
-    (version)
-
-    ((infoNamespace, "info:"))
-    ((baseSourceAsset, ":sourceAsset"))
-);
-
 static std::string
 _GetShaderResourcePath(char const * resourceName="")
 {

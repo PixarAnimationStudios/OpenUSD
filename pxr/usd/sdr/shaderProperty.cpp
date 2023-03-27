@@ -35,8 +35,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTypes, SDR_PROPERTY_TYPE_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(SdrPropertyMetadata, SDR_PROPERTY_METADATA_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole,
-                        SDR_PROPERTY_ROLE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrPropertyRole, SDR_PROPERTY_ROLE_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(SdrPropertyTokens, SDR_PROPERTY_TOKENS);
 
 using ShaderMetadataHelpers::GetRoleFromMetadata;
 using ShaderMetadataHelpers::IsTruthy;
@@ -57,6 +57,7 @@ namespace {
             {SdrPropertyTypes->String,  SdfValueTypeNames->String},
             {SdrPropertyTypes->Float,   SdfValueTypeNames->Float},
             {SdrPropertyTypes->Color,   SdfValueTypeNames->Color3f},
+            {SdrPropertyTypes->Color4,  SdfValueTypeNames->Color4f},
             {SdrPropertyTypes->Point,   SdfValueTypeNames->Point3f},
             {SdrPropertyTypes->Normal,  SdfValueTypeNames->Normal3f},
             {SdrPropertyTypes->Vector,  SdfValueTypeNames->Vector3f},
@@ -73,6 +74,7 @@ namespace {
             {SdrPropertyTypes->String,  SdfValueTypeNames->StringArray},
             {SdrPropertyTypes->Float,   SdfValueTypeNames->FloatArray},
             {SdrPropertyTypes->Color,   SdfValueTypeNames->Color3fArray},
+            {SdrPropertyTypes->Color4,  SdfValueTypeNames->Color4fArray},
             {SdrPropertyTypes->Point,   SdfValueTypeNames->Point3fArray},
             {SdrPropertyTypes->Normal,  SdfValueTypeNames->Normal3fArray},
             {SdrPropertyTypes->Vector,  SdfValueTypeNames->Vector3fArray},
@@ -127,6 +129,11 @@ namespace {
             {SdrPropertyTypes->Color,
                 {
                     {SdrPropertyRole->None, {SdrPropertyTypes->Float, 3}}
+                }
+            },
+            {SdrPropertyTypes->Color4,
+                {
+                    {SdrPropertyRole->None, {SdrPropertyTypes->Float, 4}}
                 }
             },
             {SdrPropertyTypes->Point,
@@ -472,6 +479,12 @@ namespace {
             } else {
                 isSdrValueConformed = sdrDefaultValue.IsHolding<VtArray<GfVec3f>>();
             }
+        } else if (sdrType == SdrPropertyTypes->Color4) {
+            if (!isArray) {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<GfVec4f>();
+            } else {
+                isSdrValueConformed = sdrDefaultValue.IsHolding<VtArray<GfVec4f>>();
+            }
         } else if (sdrType == SdrPropertyTypes->Matrix) {
             if (!isArray) {
                 isSdrValueConformed = sdrDefaultValue.IsHolding<GfMatrix4d>();
@@ -739,6 +752,19 @@ SdrShaderProperty::CanConnectTo(const NdrProperty& other) const
 
     // Connections between float-3 types are possible
     if (inputIsFloat3 && outputIsFloat3) {
+        return true;
+    }
+
+    bool inputIsFloat4 =
+        (inputType == SdrPropertyTypes->Color4) ||
+        (sdfInputType == SdfValueTypeNames->Float4);
+
+    bool outputIsFloat4 =
+        (outputType == SdrPropertyTypes->Color4) ||
+        (sdfOutputType == SdfValueTypeNames->Float4);
+
+    // Connections between float-4 types are possible
+    if (inputIsFloat4 && outputIsFloat4) {
         return true;
     }
 

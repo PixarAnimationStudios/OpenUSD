@@ -21,11 +21,47 @@
                         "priority": 0,
                         "displayName": "Prman MaterialX Filtering Scene Index"
                     },
+                    "HdPrman_TerminalsResolvingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Terminals Resolving Scene Index"
+                    },
                     "HdPrman_VirtualStructResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Vstruct Resolving Scene Index"
+                    },
+                    "HdPrman_ImplicitSurfaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Implicit Surfaces"
+                    },
+                    "HdPrman_DependencyForwardingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Dependency Forwarding Scene Index"
+                    },
+                    "HdPrman_OutputFilterInvalidatingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Output Filter Invalidating Scene Index"
+                    },
+                    "HdPrman_PinnedCurveExpandingSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Pinned Curve Expanding Scene Index"
+                    },
+                    "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
                     }
                 }
             },

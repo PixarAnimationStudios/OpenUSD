@@ -38,9 +38,15 @@
 
 #include "pxr/imaging/hio/glslfx.h"
 #include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgi/capabilities.h"
+#include "pxr/imaging/hgi/computeCmdsDesc.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
+
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+#include <MaterialXGenShader/Shader.h>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -149,6 +155,9 @@ void HdStResourceRegistry::InvalidateShaderRegistry()
 {
     _geometricShaderRegistry.Invalidate();
     _glslfxFileRegistry.Invalidate();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.Invalidate();
+#endif
 }
 
 
@@ -652,6 +661,15 @@ HdStResourceRegistry::RegisterGLSLFXFile(
     return _glslfxFileRegistry.GetInstance(id);
 }
 
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+HdInstance<MaterialX::ShaderPtr>
+HdStResourceRegistry::RegisterMaterialXShader(
+        HdInstance<MaterialX::ShaderPtr>::ID id)
+{
+    return _materialXShaderRegistry.GetInstance(id);
+}
+#endif
+
 HdInstance<HgiResourceBindingsSharedPtr>
 HdStResourceRegistry::RegisterResourceBindings(
     HdInstance<HgiResourceBindingsSharedPtr>::ID id)
@@ -698,11 +716,28 @@ HdStResourceRegistry::GetGlobalBlitCmds()
 }
 
 HgiComputeCmds*
-HdStResourceRegistry::GetGlobalComputeCmds()
+HdStResourceRegistry::GetGlobalComputeCmds(HgiComputeDispatch dispatchMethod)
 {
-    if (!_computeCmds) {
-        _computeCmds = _hgi->CreateComputeCmds();
+    // If the HGI device isn't capable of concurrent dispatch then
+    // only specify serial.
+    bool const concurrentDispatchSupported =
+        _hgi->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsConcurrentDispatch);
+    if (!concurrentDispatchSupported) {
+        dispatchMethod = HgiComputeDispatchSerial;
     }
+
+    if (_computeCmds && _computeCmds->GetDispatchMethod() != dispatchMethod) {
+        SubmitComputeWork();
+        _computeCmds.reset();
+    }
+
+    if (!_computeCmds) {
+        HgiComputeCmdsDesc desc;
+        desc.dispatchMethod = dispatchMethod;
+        _computeCmds = _hgi->CreateComputeCmds(desc);
+    }
+
     return _computeCmds.get();
 }
 
@@ -929,7 +964,7 @@ HdStResourceRegistry::_Commit()
 
         // Make sure the writes are visible to computations that follow
         if (_blitCmds) {
-            _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+            _blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
         }
         SubmitBlitWork();
     }
@@ -956,11 +991,11 @@ HdStResourceRegistry::_Commit()
             // We must ensure that shader writes are visible to computations
             // in the next queue by setting a memory barrier.
             if (_blitCmds) {
-                _blitCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                _blitCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
                 SubmitBlitWork();
             }
             if (_computeCmds) {
-                _computeCmds->MemoryBarrier(HgiMemoryBarrierAll);
+                _computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
                 SubmitComputeWork();
             }
         }
@@ -978,6 +1013,29 @@ HdStResourceRegistry::_Commit()
     for (_PendingComputationList& compVec : _pendingComputations) {
         compVec.clear();
     }
+}
+
+// Callback functions for garbage collecting Hgi resources
+namespace {
+
+void 
+_DestroyResourceBindings(Hgi *hgi, HgiResourceBindingsHandle *resourceBindings)
+{
+    hgi->DestroyResourceBindings(resourceBindings);
+}
+
+void 
+_DestroyGraphicsPipeline(Hgi *hgi, HgiGraphicsPipelineHandle *graphicsPipeline)
+{
+    hgi->DestroyGraphicsPipeline(graphicsPipeline);
+}
+
+void 
+_DestroyComputePipeline(Hgi *hgi, HgiComputePipelineHandle *computePipeline)
+{
+    hgi->DestroyComputePipeline(computePipeline);
+}
+
 }
 
 void
@@ -1035,11 +1093,17 @@ HdStResourceRegistry::_GarbageCollect()
     _geometricShaderRegistry.GarbageCollect();
     _glslProgramRegistry.GarbageCollect();
     _glslfxFileRegistry.GarbageCollect();
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+    _materialXShaderRegistry.GarbageCollect();
+#endif
 
-    // Cleanup Hgi resources bindings and pipelines
-    _resourceBindingsRegistry.GarbageCollect();
-    _graphicsPipelineRegistry.GarbageCollect();
-    _computePipelineRegistry.GarbageCollect();
+    // Cleanup Hgi resources
+    _resourceBindingsRegistry.GarbageCollect(
+        std::bind(&_DestroyResourceBindings, _hgi, std::placeholders::_1));
+    _graphicsPipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyGraphicsPipeline, _hgi, std::placeholders::_1));
+    _computePipelineRegistry.GarbageCollect(
+        std::bind(&_DestroyComputePipeline, _hgi, std::placeholders::_1));
 
     // cleanup buffer array
     // buffer array retains weak_ptrs of range. All unused ranges should be
@@ -1115,11 +1179,24 @@ HdStResourceRegistry::_UpdateBufferArrayRange(
         }
     }
 
-    // Create new BAR ...
-    HdBufferSpecVector newBufferSpecs =
-        HdBufferSpec::ComputeUnion(updatedOrAddedSpecs,
-            HdBufferSpec::ComputeDifference(curBufferSpecs, removedSpecs));
-    
+    // Create new BAR, avoiding changing the order of existing specs, to 
+    // avoid unnecessary invalidation of the shader cache.
+    HdBufferSpecVector newBufferSpecs;
+    {
+        // Compute eXclusive members of the add and remove lists, because 
+        // we can't guarantee here that removedSpecs and updatedOrAddedSpecs
+        // have no elements in common, and ignoring overlaps is required for
+        // order preservation here.
+        const HdBufferSpecVector specsAddX =
+            HdBufferSpec::ComputeDifference(updatedOrAddedSpecs, removedSpecs);
+        const HdBufferSpecVector specsRemoveX =
+            HdBufferSpec::ComputeDifference(removedSpecs, updatedOrAddedSpecs);
+
+        newBufferSpecs = HdBufferSpec::ComputeUnion(
+            HdBufferSpec::ComputeDifference(curBufferSpecs, specsRemoveX),
+                specsAddX);
+    }
+
     HdBufferArrayRangeSharedPtr newRange = _AllocateBufferArrayRange(
         strategy, bufferArrayRegistry, role, newBufferSpecs, usageHint);
 

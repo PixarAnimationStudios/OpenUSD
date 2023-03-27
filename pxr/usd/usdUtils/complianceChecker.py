@@ -244,7 +244,7 @@ should always have upAxis set to 'Y'"""
 
 class TextureChecker(BaseRuleChecker):
     # The most basic formats are those published in the USDZ spec
-    _basicUSDZImageFormats = ("jpg", "png")
+    _basicUSDZImageFormats = ("jpg", "jpeg", "png")
 
     # In non-consumer-content (arkit) mode, OIIO can allow us to 
     # additionaly read other formats from USDZ packages
@@ -259,7 +259,7 @@ class TextureChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
         return """Texture files should be readable by intended client 
-(only .jpg or .png for consumer-level USDZ)."""
+(only .jpg, .jpeg or .png for consumer-level USDZ)."""
 
     def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
         # Check if the prim has an allowed type.
@@ -466,7 +466,7 @@ Specifically:
         from pxr import Ar
         ext = Ar.GetResolver().GetExtension(asset.resolvedPath)
         # not an exhaustive list, but ones we typically can read
-        return ext in ["bmp", "tga", "jpg", "png", "tif"]
+        return ext in ["bmp", "tga", "jpg", "jpeg", "png", "tif"]
         
     def _GetInputValue(self, shader, inputName):
         from pxr import Usd
@@ -576,7 +576,27 @@ Specifically:
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(),
                               str(scale), str(bias)))
-             
+
+class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
+    @staticmethod
+    def GetDescription():
+        return "A prim providing a material binding, must have "\
+                "MaterialBindingAPI applied on the prim."
+
+    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
+        super(MaterialBindingAPIAppliedChecker, self).__init__(verbose, 
+                                                          consumerLevelChecks,
+                                                          assetLevelChecks)
+
+    def CheckPrim(self, prim):
+        from pxr import UsdShade
+        numMaterialBindings = len([rel for rel in prim.GetRelationships() \
+                if rel.GetName().startswith(UsdShade.Tokens.materialBinding)])
+        if ( (numMaterialBindings > 0) and 
+            not prim.HasAPI(UsdShade.MaterialBindingAPI)):
+                self._AddFailedCheck("Found material bindings but no " \
+                    "MaterialBindingAPI applied on the prim <%s>." \
+                    % prim.GetPath())
 
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
@@ -854,7 +874,8 @@ class ComplianceChecker(object):
     def GetBaseRules():
         return [ByteAlignmentChecker, CompressionChecker, 
                 MissingReferenceChecker, StageMetadataChecker, TextureChecker, 
-                PrimEncapsulationChecker, NormalMapTextureChecker]
+                PrimEncapsulationChecker, NormalMapTextureChecker,
+                MaterialBindingAPIAppliedChecker]
 
     @staticmethod
     def GetARKitRules(skipARKitRootLayerCheck=False):

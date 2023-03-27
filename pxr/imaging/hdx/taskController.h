@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdx/renderSetupTask.h"
 #include "pxr/imaging/hdx/shadowTask.h"
 #include "pxr/imaging/hdx/colorCorrectionTask.h"
+#include "pxr/imaging/hdx/boundingBoxTask.h"
 
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderIndex.h"
@@ -40,6 +41,8 @@
 #include "pxr/imaging/cameraUtil/framing.h"
 #include "pxr/imaging/glf/simpleLightingContext.h"
 #include "pxr/usd/sdf/path.h"
+
+#include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/matrix4d.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,7 +57,8 @@ class HdxTaskController final
 public:
     HDX_API
     HdxTaskController(HdRenderIndex *renderIndex,
-                      SdfPath const& controllerId);
+                      SdfPath const& controllerId,
+                      bool gpuEnabled = true);
     HDX_API
     ~HdxTaskController();
 
@@ -208,6 +212,10 @@ public:
     HDX_API
     void SetSelectionColor(GfVec4f const& color);
 
+    /// Set the selection locate (over) color.
+    HDX_API
+    void SetSelectionLocateColor(GfVec4f const& color);
+
     /// Set if the selection highlight should be rendered as an outline around
     /// the selected objects or as a solid color overlaid on top of them.
     HDX_API
@@ -246,6 +254,13 @@ public:
     void SetColorCorrectionParams(HdxColorCorrectionTaskParams const& params);
 
     /// -------------------------------------------------------
+    /// Bounding Box API
+
+    /// Set the bounding box params.
+    HDX_API
+    void SetBBoxParams(const HdxBoundingBoxTaskParams& params);
+
+    /// -------------------------------------------------------
     /// Present API
 
     /// Enable / disable presenting the render to bound framebuffer.
@@ -263,6 +278,7 @@ private:
 
     HdRenderIndex *_index;
     SdfPath const _controllerId;
+    bool _gpuEnabled;
 
     // Create taskController objects. Since the camera is a parameter
     // to the tasks, _CreateCamera() should be called first.
@@ -279,6 +295,7 @@ private:
     void _CreateVisualizeAovTask();
     void _CreatePickTask();
     void _CreatePickFromRenderBufferTask();
+    void _CreateBoundingBoxTask();
     void _CreateAovInputTask();
     void _CreatePresentTask();
 
@@ -314,6 +331,7 @@ private:
     
     // Helper functions to set the parameters of a light, get a particular light 
     // in the scene, replace and remove Sprims from the scene 
+    VtValue _GetDomeLightTexture(GlfSimpleLight const& light);
     void _SetParameters(SdfPath const& pathName, GlfSimpleLight const& light);
     void _SetMaterialNetwork(SdfPath const& pathName, 
                              GlfSimpleLight const& light);
@@ -391,6 +409,7 @@ private:
     SdfPath _visualizeAovTaskId;
     SdfPath _pickTaskId;
     SdfPath _pickFromRenderBufferTaskId;
+    SdfPath _boundingBoxTaskId;
     SdfPath _presentTaskId;
 
     // Current active camera

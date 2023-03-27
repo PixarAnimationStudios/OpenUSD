@@ -244,16 +244,16 @@ class TestUsdSkelUtils(unittest.TestCase):
         for vtType in (Vt.IntArray, Vt.FloatArray):
             array = vtType(vals)
             assert UsdSkel.ExpandConstantInfluencesToVarying(array, 3)
-            self.assertEquals(array, vtType(vals*3))
+            self.assertEqual(array, vtType(vals*3))
 
             array = vtType(vals)
             assert UsdSkel.ExpandConstantInfluencesToVarying(array, 0)
-            self.assertEquals(array, vtType())
+            self.assertEqual(array, vtType())
 
             # Empty array case.
             array = vtType()
             assert UsdSkel.ExpandConstantInfluencesToVarying(array, 3)
-            self.assertEquals(array, vtType())
+            self.assertEqual(array, vtType())
 
 
     def test_ComputeJointLocalTransforms(self):

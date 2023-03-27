@@ -230,6 +230,10 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsScene
     const TfToken physicsGravityMagnitude;
+    /// \brief "physics:invertFilteredGroups"
+    /// 
+    /// UsdPhysicsCollisionGroup
+    const TfToken physicsInvertFilteredGroups;
     /// \brief "physics:jointEnabled"
     /// 
     /// UsdPhysicsJoint
@@ -266,6 +270,10 @@ struct UsdPhysicsTokensType {
     /// 
     /// UsdPhysicsDistanceJoint
     const TfToken physicsMaxDistance;
+    /// \brief "physics:mergeGroup"
+    /// 
+    /// UsdPhysicsCollisionGroup
+    const TfToken physicsMergeGroup;
     /// \brief "physics:minDistance"
     /// 
     /// UsdPhysicsDistanceJoint

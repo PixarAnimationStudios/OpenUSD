@@ -115,22 +115,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Primvars set by the material
     ((displacementBoundSphere, "displacementbound:sphere"))
+
+    // Doublesided PxrSurface parameters
+    (diffuseDoubleSided)
+    (specularDoubleSided)
+    (roughSpecularDoubleSided)
+    (clearcoatDoubleSided)
 );
-
-void
-MatfiltConvertPreviewMaterial(
-    const SdfPath &networkId,
-    HdMaterialNetwork2 &network,
-    const std::map<TfToken, VtValue> &contextValues,
-    const NdrTokenVec &shaderTypePriority,
-    std::vector<std::string> *outputErrorMessages)
-{
-    TF_UNUSED(contextValues);
-    TF_UNUSED(shaderTypePriority);
-
-    HdMaterialNetwork2Interface netInterface(networkId, &network);
-    MatfiltConvertPreviewMaterial(&netInterface, outputErrorMessages);
-}
 
 // Returns a sibling path to nodeName.
 // e.g.: /path/to/foo with suffix _bar would return /path/to/foo_bar
@@ -214,6 +205,25 @@ _ProcessPreviewSurfaceNode(
         // UsdPreviewSurface uses GGX, not Beckmann
         netInterface->SetNodeParameterValue(
             pxrSurfaceNodeName, _tokens->specularModelType, VtValue(int(1)));
+
+        // Set up for backfacing -- the PxrSurface will always expect to shade
+        // both front- and back-facing; UsdPreviewSurfaceParams will determine 
+        // whether it's been called to shade a backface and whether it should.
+        // NB: These parameters are NOT CONNECTABLE, so cannot be switched via
+        // an output from the UsdPreviewSurfaceParameters shader!
+        netInterface->SetNodeParameterValue(
+            pxrSurfaceNodeName, _tokens->diffuseDoubleSided, VtValue(int(1))
+        );
+        netInterface->SetNodeParameterValue(
+            pxrSurfaceNodeName, _tokens->specularDoubleSided, VtValue(int(1))
+        );
+        netInterface->SetNodeParameterValue(
+            pxrSurfaceNodeName, _tokens->roughSpecularDoubleSided, VtValue(int(1))
+        );
+        netInterface->SetNodeParameterValue(
+            pxrSurfaceNodeName, _tokens->clearcoatDoubleSided, VtValue(int(1))
+        );
+
     }
     // connections:
     {

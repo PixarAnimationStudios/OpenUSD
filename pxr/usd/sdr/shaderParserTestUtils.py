@@ -228,8 +228,8 @@ def TestShadingProperties(node):
         # ----------------------------------------------------------------------
         # Check nested page correctness
         # ----------------------------------------------------------------------
-        assert properties["vstruct1"].GetPage() == "VStructs.Nested"
-        assert properties["vstruct1_bump"].GetPage() == "VStructs.Nested.More"
+        assert properties["vstruct1"].GetPage() == "VStructs:Nested"
+        assert properties["vstruct1_bump"].GetPage() == "VStructs:Nested:More"
 
         # ----------------------------------------------------------------------
         # Check VStruct correctness
@@ -355,8 +355,8 @@ def TestShaderSpecificNode(node):
     category = "testing" if isOSL else ""
     vstructNames = [] if isOSL else ["vstruct1"]
     pages = {"", "inputs1", "inputs2", "results"} if isOSL else \
-            {"", "inputs1", "inputs2", "results", "VStructs.Nested",
-             "VStructs.Nested.More"}
+            {"", "inputs1", "inputs2", "results", "VStructs:Nested",
+                "VStructs:Nested:More"}
     # --------------------------------------------------------------------------
 
 
@@ -608,4 +608,25 @@ def TestShaderPropertiesNode(node):
     property = nodeInputs["normal"]
     assert property.GetImplementationName() == "aliasedNormalInput"
     assert Ndr._ValidateProperty(node, property)
+
+    if node.GetName() != "TestShaderPropertiesNodeOSL" and \
+        node.GetName() != "TestShaderPropertiesNodeARGS" :
+        # We will parse color4 in MaterialX and UsdShade. Not currently
+        # supported in OSL. rman Args also do not support / require color4 type.
+        property = nodeInputs["inputColor4"]
+        assert property.GetType() == Sdr.PropertyTypes.Color4
+        assert GetType(property) == Tf.Type.FindByName("GfVec4f")
+        assert Ndr._ValidateProperty(node, property)
+
+        # oslc v1.11.14 does not allow arrays of structs as parameter.
+        property = nodeInputs["inputColor4Array"]
+        assert property.GetType() == Sdr.PropertyTypes.Color4
+        assert GetType(property) ==  Tf.Type.FindByName("VtArray<GfVec4f>")
+        assert Ndr._ValidateProperty(node, property)
+
+        property = nodeInputs["inputColor4RoleNone"]
+        assert property.GetType() == Sdr.PropertyTypes.Float
+        assert GetType(property) == Tf.Type.FindByName("GfVec4f")
+        assert Ndr._ValidateProperty(node, property)
+
 

@@ -220,6 +220,9 @@ protected:
 
     HDST_API
     void _Commit() override;
+
+private:
+    bool _valid;
 };
 
 /// \class HdStFieldTextureObject
@@ -277,6 +280,7 @@ private:
     GfBBox3d _bbox;
     GfMatrix4d _samplingTransform;
     HgiTextureHandle _gpuTexture;
+    bool _valid;
 };
 
 template<HdTextureType textureType>

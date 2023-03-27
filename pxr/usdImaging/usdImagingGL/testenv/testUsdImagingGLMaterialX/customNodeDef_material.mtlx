@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <!-- test_material uses the color3val custom nodedef defined in the included file -->
+  <xi:include href="customNodeDef_nodeDef.mtlx" />
+  <nodegraph name="test_nodegraph">
+    <color3val name="myColor" type="color3" />
+    <constant name="mySpecColor" type="color3">
+      <input name="value" type="color3" value="0,1,0" />
+    </constant>
+    <output name="diffuse_output" type="color3" nodename="myColor" />
+    <output name="specular_output" type="color3" nodename="mySpecColor" />
+  </nodegraph>
+  <UsdPreviewSurface name="test_surface" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="test_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="1" />
+    <input name="specularColor" type="color3" output="specular_output" nodegraph="test_nodegraph" />
+    <input name="roughness" type="float" value="0.15" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="test_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_surface" />
+  </surfacematerial>
+
+  <!-- custom node used below in test_image_material -->
+  <nodedef name="custom_image_nodedef" node="custom_image_node">
+    <input name="file_input" type="filename" />
+    <output name="out_color" type="color3" />
+  </nodedef>
+  <nodegraph name="custom_image_nodegraph" nodedef="custom_image_nodedef">
+    <image name="image_node" type="color3">
+      <input name="file" type="filename" colorspace="gamma22" interfacename="file_input" />
+    </image>
+    <output name="out_color" type="color3" nodename="image_node" />
+  </nodegraph>
+
+  <nodegraph name="test_image_nodegraph">
+    <custom_image_node name="diffColor" type="color3">
+      <input name="file_input" type="filename" value="brass_color.jpg" />
+    </custom_image_node>
+    <output name="diffuse_output" type="color3" nodename="diffColor" />
+  </nodegraph>
+  <UsdPreviewSurface name="test_image_surface" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="test_image_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="test_image_material" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="test_image_surface" />
+  </surfacematerial>
+</materialx>

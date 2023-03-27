@@ -24,8 +24,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/imaging/garch/glApi.h"
-
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
 #include "pxr/base/arch/systemInfo.h"
@@ -90,8 +88,6 @@ private:
     bool _mouseButton[3];
 };
 
-GLuint vao;
-
 void
 My_TestGLDrawing::InitTest()
 {
@@ -102,35 +98,23 @@ My_TestGLDrawing::InitTest()
         IsEnabledUnloadedAsBounds() ? UsdStage::LoadNone : UsdStage::LoadAll);
 
     SdfPathVector excludedPaths;
-    if (UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cout << "Using HD Renderer.\n";
-        _engine.reset(new UsdImagingGLEngine(
-            _stage->GetPseudoRoot().GetPath(), excludedPaths));
-        if (!_GetRenderer().IsEmpty()) {
-            if (!_engine->SetRendererPlugin(_GetRenderer())) {
-                std::cerr << "Couldn't set renderer plugin: " <<
-                    _GetRenderer().GetText() << std::endl;
-                exit(-1);
-            } else {
-                std::cout << "Renderer plugin: " << _GetRenderer().GetText()
-                    << std::endl;
-            }
+    _engine.reset(new UsdImagingGLEngine(
+        _stage->GetPseudoRoot().GetPath(), excludedPaths));
+    if (!_GetRenderer().IsEmpty()) {
+        if (!_engine->SetRendererPlugin(_GetRenderer())) {
+            std::cerr << "Couldn't set renderer plugin: " <<
+                _GetRenderer().GetText() << std::endl;
+            exit(-1);
+        } else {
+            std::cout << "Renderer plugin: " << _GetRenderer().GetText()
+                << std::endl;
         }
-    } else{
-        std::cout << "Using Reference Renderer.\n"; 
-        _engine.reset(
-            new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
-                    excludedPaths));
     }
 
     for (const auto &renderSetting : GetRenderSettings()) {
         _engine->SetRendererSetting(TfToken(renderSetting.first),
                                     renderSetting.second);
     }
-
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
 
     if (_ShouldFrameAll()) {
         TfTokenVector purposes;
@@ -176,43 +160,31 @@ My_TestGLDrawing::InitTest()
     }
 
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGLEngine::IsHydraEnabled()) {
-            // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
-            // OpenGL defaults
-            _lightingContext = GlfSimpleLightingContext::New();
-            if (!IsEnabledSceneLights()) {
-                GlfSimpleLight light;
-                if (IsEnabledCameraLight()) {
-                    light.SetPosition(GfVec4f(_translate[0], _translate[2], _translate[1], 0));
-                } else {
-                    light.SetPosition(GfVec4f(0, -.5, .5, 0));
-                }
-                light.SetDiffuse(GfVec4f(1,1,1,1));
-                light.SetAmbient(GfVec4f(0,0,0,1));
-                light.SetSpecular(GfVec4f(1,1,1,1));
-                GlfSimpleLightVector lights;
-                lights.push_back(light);
-                _lightingContext->SetLights(lights);
-            }
-
-            GlfSimpleMaterial material;
-            material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
-            material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
-            material.SetSpecular(GfVec4f(0,0,0,1));
-            material.SetShininess(0.0001f);
-            _lightingContext->SetMaterial(material);
-            _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
-        } else {
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
+        _lightingContext = GlfSimpleLightingContext::New();
+        // set same parameter as GlfSimpleLightingContext::SetStateFromOpenGL
+        // OpenGL defaults
+        if (!IsEnabledSceneLights()) {
+            GlfSimpleLight light;
             if (IsEnabledCameraLight()) {
-                float position[4] = {_translate[0], _translate[2], _translate[1], 0};
-                glLightfv(GL_LIGHT0, GL_POSITION, position);
+                light.SetPosition(GfVec4f(_translate[0], _translate[2], _translate[1], 0));
             } else {
-                float position[4] = {0,-.5,.5,0};
-                glLightfv(GL_LIGHT0, GL_POSITION, position);
+                light.SetPosition(GfVec4f(0, -.5, .5, 0));
             }
+            light.SetDiffuse(GfVec4f(1,1,1,1));
+            light.SetAmbient(GfVec4f(0,0,0,1));
+            light.SetSpecular(GfVec4f(1,1,1,1));
+            GlfSimpleLightVector lights;
+            lights.push_back(light);
+            _lightingContext->SetLights(lights);
         }
+
+        GlfSimpleMaterial material;
+        material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
+        material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
+        material.SetSpecular(GfVec4f(0,0,0,1));
+        material.SetShininess(0.0001f);
+        _lightingContext->SetMaterial(material);
+        _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
     }
 }
 
@@ -277,12 +249,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetRenderViewport(viewport);
     }
  
-    bool const useAovs = !GetRendererAov().IsEmpty();
-    GfVec4f fboClearColor = useAovs? GfVec4f(0.0f) : GetClearColor();
-    GLfloat clearDepth[1] = { 1.0f };
-    bool const clearOnlyOnce = ShouldClearOnce();
-    bool cleared = false;
-
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting = IsEnabledTestLighting();
@@ -299,32 +265,17 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _SetDisplayUnloadedPrimsWithBounds(_engine.get(), true);
     }
 
-    glViewport(0, 0, width, height);
-
-    glEnable(GL_DEPTH_TEST);
-
-    if (useAovs) {
-        _engine->SetRendererAov(GetRendererAov());
-    }
+    _engine->SetRendererAov(GetRendererAov());
 
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGLEngine::IsHydraEnabled()) {
-            _engine->SetLightingState(_lightingContext);
-        } else {
-            _engine->SetLightingStateFromOpenGL();
-        }
+        _engine->SetLightingState(_lightingContext);
     }
 
     if (PresentDisabled()) {
         _engine->SetEnablePresentation(false);
     }
 
-    if (!GetClipPlanes().empty()) {
-        params.clipPlanes = GetClipPlanes();
-        for (size_t i=0; i<GetClipPlanes().size(); ++i) {
-            glEnable(GL_CLIP_PLANE0 + i);
-        }
-    }
+    params.clipPlanes = GetClipPlanes();
 
     for (double const &t : GetTimes()) {
         UsdTimeCode time = t;
@@ -348,15 +299,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 
                 convergenceIterations++;
 
-                if (cleared && clearOnlyOnce) {
-                    // Don't clear the FBO
-                } else {
-                    glClearBufferfv(GL_COLOR, 0, fboClearColor.data());
-                    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
-                    cleared = true;
-                }
-                
                 _engine->Render(_stage->GetPseudoRoot(), params);
             } while (!_engine->IsConverged());
         
@@ -382,7 +324,7 @@ My_TestGLDrawing::DrawTest(bool offscreen)
                 imageFilePath = TfStringReplace(imageFilePath, ".png", suffix.str());
             }
             std::cout << imageFilePath << "\n";
-            WriteToFile("color", imageFilePath);
+            WriteToFile(_engine.get(), HdAovTokens->color, imageFilePath);
         }
     }
 

@@ -23,15 +23,18 @@
 //
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
+#include "pxr/usdImaging/usdImaging/primvarUtils.h"
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
 #include "pxr/usdImaging/usdImaging/instancerContext.h"
 
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
+#include "pxr/usd/usdRender/settingsBase.h"
 
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -89,7 +92,7 @@ UsdImagingPrimAdapter::~UsdImagingPrimAdapter()
 }
 
 TfTokenVector
-UsdImagingPrimAdapter::GetImagingSubprims()
+UsdImagingPrimAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     TF_WARN("Datasource support not yet added for adapter '%s'",
             TfType::GetCanonicalTypeName(typeid(*this)).c_str());
@@ -97,24 +100,61 @@ UsdImagingPrimAdapter::GetImagingSubprims()
 }
 
 TfToken
-UsdImagingPrimAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingPrimAdapter::GetImagingSubprimType(UsdPrim const& prim,
+    TfToken const& subprim)
 {
     return TfToken();
 }
 
 HdContainerDataSourceHandle
 UsdImagingPrimAdapter::GetImagingSubprimData(
-        TfToken const& subprim,
         UsdPrim const& prim,
+        TfToken const& subprim,
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     return nullptr;
 }
 
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
+UsdImagingPrimAdapter::PopulationMode
+UsdImagingPrimAdapter::GetPopulationMode()
+{
+    return RepresentsSelf;
+}
+
+HdDataSourceLocatorSet
+UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
+        UsdPrim const& prim,
+        UsdPrim const& descendentPrim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+}
+
+// ----------------------------------------------------------------------------
+
+
 /*static*/
 bool
 UsdImagingPrimAdapter::ShouldCullSubtree(UsdPrim const& prim)
 {
+    // Do not skip RenderSettings prims even though they are non-imageable
+    if (prim.IsA<UsdRenderSettingsBase>() && !prim.GetTypeName().IsEmpty()) {
+        return false;
+    }
     // Skip population of non-imageable prims during population traversal
     // (although they can still be populated by reference).
     return (!prim.IsA<UsdGeomImageable>() && !prim.GetTypeName().IsEmpty());
@@ -239,6 +279,14 @@ void
 UsdImagingPrimAdapter::MarkReprDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index)
+{
+}
+
+/*virtual*/
+void
+UsdImagingPrimAdapter::MarkCollectionsDirty(UsdPrim const& prim,
+                                            SdfPath const& cachePath,
+                                            UsdImagingIndexProxy* index)
 {
 }
 
@@ -768,46 +816,6 @@ UsdImagingPrimAdapter::_RemovePrimvar(
     }
 }
 
-/* static */
-HdInterpolation
-UsdImagingPrimAdapter::_UsdToHdInterpolation(TfToken const& usdInterp)
-{
-    if (usdInterp == UsdGeomTokens->uniform) {
-        return HdInterpolationUniform;
-    } else if (usdInterp == UsdGeomTokens->vertex) {
-        return HdInterpolationVertex;
-    } else if (usdInterp == UsdGeomTokens->varying) {
-        return HdInterpolationVarying;
-    } else if (usdInterp == UsdGeomTokens->faceVarying) {
-        return HdInterpolationFaceVarying;
-    } else if (usdInterp == UsdGeomTokens->constant) {
-        return HdInterpolationConstant;
-    }
-    TF_CODING_ERROR("Unknown USD interpolation %s; treating as constant",
-                    usdInterp.GetText());
-    return HdInterpolationConstant;
-}
-
-/* static */
-TfToken
-UsdImagingPrimAdapter::_UsdToHdRole(TfToken const& usdRole)
-{
-    if (usdRole == SdfValueRoleNames->Point) {
-        return HdPrimvarRoleTokens->point;
-    } else if (usdRole == SdfValueRoleNames->Normal) {
-        return HdPrimvarRoleTokens->normal;
-    } else if (usdRole == SdfValueRoleNames->Vector) {
-        return HdPrimvarRoleTokens->vector;
-    } else if (usdRole == SdfValueRoleNames->Color) {
-        return HdPrimvarRoleTokens->color;
-    } else if (usdRole == SdfValueRoleNames->TextureCoordinate) {
-        return HdPrimvarRoleTokens->textureCoordinate;
-    }
-    // Empty token means no role specified
-    return TfToken();
-}
-
-
 void 
 UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     UsdPrim const& gprim,
@@ -827,8 +835,8 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
     // fast as long as we don't touch the returned data.
     if (primvar.Get(&v, time)) {
         HdInterpolation interp = interpOverride ? *interpOverride
-            : _UsdToHdInterpolation(primvar.GetInterpolation());
-        TfToken role = _UsdToHdRole(primvar.GetAttr().GetRoleName());
+            : UsdImagingUsdToHdInterpolation(primvar.GetInterpolation());
+        TfToken role = UsdImagingUsdToHdRole(primvar.GetAttr().GetRoleName());
         TF_DEBUG(USDIMAGING_SHADERS)
             .Msg("UsdImaging: found primvar (%s) %s, interp %s\n",
                  gprim.GetPath().GetText(),
@@ -847,53 +855,11 @@ UsdImagingPrimAdapter::_ComputeAndMergePrimvar(
 
 namespace {
 
-// The types of primvar changes expected
-enum PrimvarChange {
-    PrimvarChangeValue,
-    PrimvarChangeAdd,
-    PrimvarChangeRemove,
-    PrimvarChangeDesc
-};
-
-// Maps the primvar changes (above) to the dirty bit that needs to be set.
+// Figure out what changed about the primvar and update the primvar descriptors
+// if necessary
 /*static*/
-HdDirtyBits
-_GetDirtyBitsForPrimvarChange(
-    PrimvarChange changeType,
-    HdDirtyBits valueChangeDirtyBit)
-{
-    HdDirtyBits dirty = HdChangeTracker::Clean;
-
-    switch (changeType) {
-        case PrimvarChangeAdd:
-        case PrimvarChangeRemove:
-        case PrimvarChangeDesc:
-        {
-            // XXX: Once we have a bit for descriptor changes, we should use
-            // that instead.
-            dirty = HdChangeTracker::DirtyPrimvar;
-            break;
-        }
-        case PrimvarChangeValue:
-        {
-            dirty = valueChangeDirtyBit;
-            break;
-        }
-        default:
-        {
-            TF_CODING_ERROR("Unsupported PrimvarChange %d\n", changeType);
-        }
-    }
-
-    return dirty;
-}
-
-// Figure out what changed about the primvar and returns the appropriate dirty
-// bit.
-/*static*/
-PrimvarChange
+void
 _ProcessPrimvarChange(bool primvarOnPrim,
-                      HdInterpolation primvarInterpOnPrim,
                       TfToken const& primvarName,
                       HdPrimvarDescriptorVector* primvarDescs,
                       SdfPath const& cachePath/*debug*/)
@@ -909,25 +875,14 @@ _ProcessPrimvarChange(bool primvarOnPrim,
     }
     bool primvarInValueCache = primvarIt != primvarDescs->end();
 
-    PrimvarChange changeType = PrimvarChangeValue;
-    if (primvarOnPrim && !primvarInValueCache) {
-        changeType = PrimvarChangeAdd;
-    } else if (!primvarOnPrim && primvarInValueCache) {
-        changeType = PrimvarChangeRemove;
-
+    if (!primvarOnPrim && primvarInValueCache) {
         TF_DEBUG(USDIMAGING_CHANGES).Msg(
             "Removing primvar descriptor %s for cachePath %s.\n",
             primvarIt->name.GetText(), cachePath.GetText());
 
         // Remove the value cache entry.
         primvarDescs->erase(primvarIt);
-
-    } else if (primvarInValueCache && primvarOnPrim &&
-               (primvarIt->interpolation != primvarInterpOnPrim)) {
-        changeType = PrimvarChangeDesc;
     }
-
-    return changeType;
 }
 
 } // anonymous namespace
@@ -939,7 +894,7 @@ UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
         TfToken const& propertyName,
         TfToken const& primvarName,
         HdInterpolation const& primvarInterp,
-        HdDirtyBits valueChangeDirtyBit
+        HdDirtyBits primvarDirtyBit
             /*= HdChangeTracker::DirtyPrimvar*/) const
 {
     // Determine if primvar exists on the prim.
@@ -960,13 +915,11 @@ UsdImagingPrimAdapter::_ProcessNonPrefixedPrimvarPropertyChange(
     }
 
     HdPrimvarDescriptorVector& primvarDescs =
-        _GetPrimvarDescCache()->GetPrimvars(cachePath);  
-    
-    PrimvarChange changeType =
-        _ProcessPrimvarChange(primvarOnPrim, primvarInterp,
-                              primvarName, &primvarDescs, cachePath);
+        _GetPrimvarDescCache()->GetPrimvars(cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);
+    _ProcessPrimvarChange(primvarOnPrim, primvarName, &primvarDescs, cachePath);
+
+    return primvarDirtyBit;
 }
 
 HdDirtyBits
@@ -974,14 +927,13 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
         UsdPrim const& prim,
         SdfPath const& cachePath,
         TfToken const& propertyName,
-        HdDirtyBits valueChangeDirtyBit/*= HdChangeTracker::DirtyPrimvar*/,
+        HdDirtyBits primvarDirtyBit/*= HdChangeTracker::DirtyPrimvar*/,
         bool inherited/*=true*/) const
 {
     // Determine if primvar exists on the prim.
     bool primvarOnPrim = false;
     UsdAttribute attr;
     TfToken interpOnPrim;
-    HdInterpolation hdInterpOnPrim = HdInterpolationConstant;
     UsdGeomPrimvarsAPI api(prim);
     if (inherited) {
         UsdGeomPrimvar pv = api.FindPrimvarWithInheritance(propertyName);
@@ -996,25 +948,29 @@ UsdImagingPrimAdapter::_ProcessPrefixedPrimvarPropertyChange(
     }
     if (attr && attr.HasValue()) {
         primvarOnPrim = true;
-        hdInterpOnPrim = _UsdToHdInterpolation(interpOnPrim);
     }
 
     // Determine if primvar is in the value cache.
     TfToken primvarName = UsdGeomPrimvar::StripPrimvarsName(propertyName);
     HdPrimvarDescriptorVector& primvarDescs =
-        _GetPrimvarDescCache()->GetPrimvars(cachePath);  
-    
-    PrimvarChange changeType = _ProcessPrimvarChange(primvarOnPrim,
-                                 hdInterpOnPrim,
-                                 primvarName, &primvarDescs, cachePath);
+        _GetPrimvarDescCache()->GetPrimvars(cachePath);
 
-    return _GetDirtyBitsForPrimvarChange(changeType, valueChangeDirtyBit);          
+    _ProcessPrimvarChange(primvarOnPrim, primvarName, &primvarDescs,
+                          cachePath);
+
+    return primvarDirtyBit;
 }
 
 UsdImaging_CollectionCache&
 UsdImagingPrimAdapter::_GetCollectionCache() const
 {
     return _delegate->_collectionCache;
+}
+
+UsdStageRefPtr
+UsdImagingPrimAdapter::_GetStage() const
+{
+    return _delegate->_stage;
 }
 
 UsdImaging_CoordSysBindingStrategy::value_type
@@ -1027,6 +983,22 @@ UsdImaging_InheritedPrimvarStrategy::value_type
 UsdImagingPrimAdapter::_GetInheritedPrimvars(UsdPrim const& prim) const
 {
     return _delegate->_inheritedPrimvarCache.GetValue(prim);
+}
+
+UsdGeomPrimvar
+UsdImagingPrimAdapter::_GetInheritedPrimvar(UsdPrim const& prim,
+                                             TfToken const& primvarName) const
+{
+    UsdImaging_InheritedPrimvarStrategy::value_type inheritedPrimvarRecord =
+        _GetInheritedPrimvars(prim.GetParent());
+    if (inheritedPrimvarRecord) {
+        for (UsdGeomPrimvar const& pv : inheritedPrimvarRecord->primvars) {
+            if (pv.GetPrimvarName() == primvarName) {
+                return pv;
+            }
+        }
+    }
+    return UsdGeomPrimvar();
 }
 
 bool
@@ -1113,14 +1085,25 @@ UsdImagingPrimAdapter::GetTransform(UsdPrim const& prim,
     HF_MALLOC_TAG_FUNCTION();
     
     UsdImaging_XformCache &xfCache = _delegate->_xformCache;
+    SdfPath const& xformRoot = xfCache.GetRootPath();
     GfMatrix4d ctm(1.0);
 
-    if (_IsEnabledXformCache() && xfCache.GetTime() == time) {
+    // If the cachePath has the 'coordSys' namespace, it is a coordSys prim
+    // which can point to prims outside the xformRoot. So if 'prim', the
+    // coordSys target, is outside the xformRoot use the identity matrix.
+    std::pair<std::string, bool> isCoordSys = SdfPath::StripPrefixNamespace(
+        cachePath.GetName(), HdPrimTypeTokens->coordSys);
+    if (isCoordSys.second && !prim.GetPath().HasPrefix(xformRoot)) {
+        TF_WARN("Prim associated with '%s' has path <%s> which is not under "
+                "the xformCache root (%s), using the identity matrix.", 
+                cachePath.GetText(), prim.GetPath().GetText(), 
+                xformRoot.GetText());
+    }
+    else if (_IsEnabledXformCache() && xfCache.GetTime() == time) {
         ctm = xfCache.GetValue(prim);
     } else {
         ctm = UsdImaging_XfStrategy::ComputeTransform(
-            prim, xfCache.GetRootPath(), time, 
-            _delegate->_rigidXformOverrides);
+            prim, xformRoot, time, _delegate->_rigidXformOverrides);
     }
 
     return ignoreRootTransform ? ctm : ctm * GetRootTransform();
@@ -1222,12 +1205,11 @@ UsdImagingPrimAdapter::SampleTransform(
     size_t numSamplesToEvaluate = std::min(maxNumSamples, numSamples);
     for (size_t i=0; i < numSamplesToEvaluate; ++i) {
         sampleTimes[i] = timeSamples[i] - time.GetValue();
-        sampleValues[i] = UsdImaging_XfStrategy::ComputeTransform(
-            prim, 
-            _delegate->_xformCache.GetRootPath(), 
-            timeSamples[i],
-            _delegate->_rigidXformOverrides) 
-                * _delegate->_rootXf;
+        sampleValues[i] = 
+            UsdImaging_XfStrategy::ComputeTransform(
+                prim, _delegate->_xformCache.GetRootPath(), timeSamples[i], 
+                _delegate->_rigidXformOverrides) 
+            * _delegate->_rootXf;
     }
 
     // Early out if we can't fit the data in the arrays

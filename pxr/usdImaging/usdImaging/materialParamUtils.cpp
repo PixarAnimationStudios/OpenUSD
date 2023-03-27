@@ -393,38 +393,45 @@ void _WalkGraph(
 
         TfToken inputName = input.GetBaseName();
 
-        // Find the attribute this input is getting its value from, which might
+        // Find the attributes this input is getting its value from, which might
         // be an output or an input, including possibly itself if not connected
-        UsdShadeAttributeType attrType;
-        UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+        
+        const UsdShadeAttributeVector attrs = 
+            input.GetValueProducingAttributes(/*shaderOutputsOnly*/ false);
 
-        if (attrType == UsdShadeAttributeType::Output) {
-            // If it is an output on a shading node we visit the node and also
-            // create a relationship in the network
-            _WalkGraph(UsdShadeConnectableAPI(
-                attr.GetPrim()),
-                materialNetwork,
-                visitedNodes,
-                shaderSourceTypes,
-                renderContexts,
-                time);
+        for (const UsdAttribute& attr : attrs) {
 
-            HdMaterialRelationship relationship;
-            relationship.outputId = node.path;
-            relationship.outputName = inputName;
-            relationship.inputId = attr.GetPrim().GetPath();
-            relationship.inputName = UsdShadeOutput(attr).GetBaseName();
-            materialNetwork->relationships.push_back(relationship);
-        } else if (attrType == UsdShadeAttributeType::Input) {
-            // If it is an input attribute we get the authored value.
-            //
-            // If its type is asset and contains <UDIM>,
-            // we resolve the asset path with the udim pattern to a file
-            // path with a udim pattern, e.g.,
-            // /someDir/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
-            const VtValue value = _ResolveMaterialParamValue(attr, time);
-            if (!value.IsEmpty()) {
-                node.parameters[inputName] = value;
+            UsdShadeAttributeType attrType = 
+                UsdShadeUtils::GetType(attr.GetName());
+
+            if (attrType == UsdShadeAttributeType::Output) {
+                // If it is an output on a shading node we visit the node and also
+                // create a relationship in the network
+                _WalkGraph(UsdShadeConnectableAPI(
+                    attr.GetPrim()),
+                    materialNetwork,
+                    visitedNodes,
+                    shaderSourceTypes,
+                    renderContexts,
+                    time);
+
+                HdMaterialRelationship relationship;
+                relationship.outputId = node.path;
+                relationship.outputName = inputName;
+                relationship.inputId = attr.GetPrim().GetPath();
+                relationship.inputName = UsdShadeOutput(attr).GetBaseName();
+                materialNetwork->relationships.push_back(relationship);
+            } else if (attrType == UsdShadeAttributeType::Input) {
+                // If it is an input attribute we get the authored value.
+                //
+                // If its type is asset and contains <UDIM>,
+                // we resolve the asset path with the udim pattern to a file
+                // path with a udim pattern, e.g.,
+                // /someDir/myImage.<UDIM>.exr to /filePath/myImage.<UDIM>.exr.
+                const VtValue value = _ResolveMaterialParamValue(attr, time);
+                if (!value.IsEmpty()) {
+                    node.parameters[inputName] = value;
+                }
             }
         }
     }
@@ -508,20 +515,25 @@ bool _IsGraphTimeVarying(UsdShadeConnectableAPI const & shadeNode,
 
         // Find the attribute this input is getting its value from, which might
         // be an output or an input, including possibly itself if not connected
-        UsdShadeAttributeType attrType;
-        UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+        
+        const UsdShadeAttributeVector attrs = 
+            input.GetValueProducingAttributes(/*shaderOutputsOnly*/ false);
 
-        if (attrType == UsdShadeAttributeType::Output) {
-            // If it is an output on a shading node we visit the node and also
-            // create a relationship in the network
-            if (_IsGraphTimeVarying(
-                    UsdShadeConnectableAPI(attr.GetPrim()), visitedNodes)) {
-                return true;
-            }
-        } else if (attrType == UsdShadeAttributeType::Input) {
-            // If it is an input attribute we get the authored value.
-            if (attr.ValueMightBeTimeVarying()) {
-                return true;
+        for (const UsdAttribute& attr : attrs) {
+            UsdShadeAttributeType attrType = 
+                UsdShadeUtils::GetType(attr.GetName());
+            if (attrType == UsdShadeAttributeType::Output) {
+                // If it is an output on a shading node we visit the node and 
+                // also create a relationship in the network
+                if (_IsGraphTimeVarying(
+                        UsdShadeConnectableAPI(attr.GetPrim()), visitedNodes)) {
+                    return true;
+                }
+            } else if (attrType == UsdShadeAttributeType::Input) {
+                // If it is an input attribute we get the authored value.
+                if (attr.ValueMightBeTimeVarying()) {
+                    return true;
+                }
             }
         }
     }

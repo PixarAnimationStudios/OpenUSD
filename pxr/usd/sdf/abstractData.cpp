@@ -69,6 +69,12 @@ SdfAbstractData::IsEmpty() const
     return checker.isEmpty;
 }
 
+bool
+SdfAbstractData::IsDetached() const
+{
+    return !StreamsData();
+}
+
 struct SdfAbstractData_CopySpecs : public SdfAbstractDataSpecVisitor
 {
     SdfAbstractData_CopySpecs(SdfAbstractData* dest_) : dest(dest_) { }

@@ -53,15 +53,13 @@ def _search(appController, searchTerm, expectedItems):
         _assertSelectedProp(appController, item)
 
 def _testSearchBasic(appController):
-    intPropName = 'a'
-    relPropName = 'myRel' 
-    stringPropName = 'z'
-    floatPropName = 'y'
-
-    _search(appController, 'a', [intPropName, 'Local to World Xform'])
-    _search(appController, 'myR', [relPropName])
-    _search(appController, 'y', [floatPropName, relPropName])
-    _search(appController, 'z', [stringPropName])
+    _search(appController, 'a', 
+            ['Local to World Xform', 'Resolved Preview Material',
+             'Resolved Full Material', 'a'])
+    _search(appController, 'myR', ['myRel'])
+    _search(appController, 'y', 
+            ['myRel', 'proxyPrim', 'visibility', 'y'])
+    _search(appController, 'z', ['z'])
 
 def testUsdviewInputFunction(appController):
     # Select a prim under which all of our props are authored

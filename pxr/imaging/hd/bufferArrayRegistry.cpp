@@ -100,6 +100,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
     // on check end condition.
 
     _HdBufferArraySharedPtrList::iterator it   = entry.bufferArrays.begin();
+    int numIterations = 0;
     do {
         HdBufferArraySharedPtr currentArray = *it;
 
@@ -121,8 +122,20 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
                 it = prev;
                 ++it;
             }
+        }
+
+        if (++numIterations > 100) {
+            TF_WARN("Too many iterations in attempting to assign range "
+                    "containing buffer %s, likely due to invalid buffer array "
+                    "size.", 
+                    bufferSpecs[0].name.GetText());
+            break;
         }        
     } while (!range->IsAssigned());
+
+    if (!range->IsAssigned()) {
+        return HdBufferArrayRangeSharedPtr();
+    }
 
     return range;
 }

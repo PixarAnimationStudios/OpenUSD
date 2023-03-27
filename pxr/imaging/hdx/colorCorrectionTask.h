@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdx/tokens.h"
 #include "pxr/imaging/hgi/attachmentDesc.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsPipeline.h"
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
@@ -43,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdxColorCorrectionTask
 ///
-/// A task for performing color correction (and optionally color grading) on a 
+/// A task for performing color correction (and optionally color grading) on a
 /// color buffer to transform its color for display.
 ///
 class HdxColorCorrectionTask : public HdxTask
@@ -85,11 +86,18 @@ private:
     // Utility function to create the GL program for color correction
     bool _CreateShaderResources();
 
+    // OCIO version-specific code for shader code generation.
+    std::string _CreateOpenColorIOShaderCode(std::string &ocioGpuShaderText,
+                                             HgiShaderFunctionDesc &fragDesc);
+
     // Utility function to create buffer resources.
     bool _CreateBufferResources();
 
     // Utility to create resource bindings
     bool _CreateResourceBindings(HgiTextureHandle const& aovTexture);
+
+    // OCIO version-specific code for setting LUT bindings.
+    void _CreateOpenColorIOLUTBindings(HgiResourceBindingsDesc &resourceDesc);
 
     // Utility to create a pipeline
     bool _CreatePipeline(HgiTextureHandle const& aovTexture);
@@ -99,6 +107,9 @@ private:
 
     // Apply color correction to the currently bound framebuffer.
     void _ApplyColorCorrection(HgiTextureHandle const& aovTexture);
+
+    // OCIO version-specific code for setting constants.
+    void _SetConstants(HgiGraphicsCmds *gfxCmds);
 
     // Destroy shader program and the shader functions it holds.
     void _DestroyShaderProgram();
@@ -111,6 +122,27 @@ private:
     HgiBufferHandle _vertexBuffer;
     HgiTextureHandle _texture3dLUT;
     HgiSamplerHandle _sampler;
+
+    struct TextureSamplerInfo
+    {
+        unsigned char    dim;
+        std::string      texName;
+        HgiTextureHandle texHandle;
+        std::string      samplerName;
+        HgiSamplerHandle samplerHandle;
+    };
+    std::vector<TextureSamplerInfo> _textureLUTs;
+
+    struct BufferInfo
+    {
+        std::string      typeName;
+        std::string      name;
+        uint32_t         count;
+        HgiBufferHandle  handle;
+    };
+    std::vector<BufferInfo>    _bufferConstants;
+    std::vector<unsigned char> _constantValues;
+
     HgiShaderProgramHandle _shaderProgram;
     HgiResourceBindingsHandle _resourceBindings;
     HgiGraphicsPipelineHandle _pipeline;
@@ -145,7 +177,7 @@ struct HdxColorCorrectionTaskParams
     // still running with sRGB buffers.
     TfToken colorCorrectionMode;
 
-    // 'display', 'view', 'colorspace' and 'look' are options the client may 
+    // 'display', 'view', 'colorspace' and 'look' are options the client may
     // supply to configure OCIO. If one is not provided the default values
     // is substituted. You can find the values for these strings inside the
     // profile/config .ocio file. For example:

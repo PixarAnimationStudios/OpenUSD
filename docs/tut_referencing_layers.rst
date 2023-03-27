@@ -26,7 +26,7 @@ will use as our starting point and all the code for this exercise is in the
       hello = stage.GetPrimAtPath('/hello')
       stage.SetDefaultPrim(hello)
       UsdGeom.XformCommonAPI(hello).SetTranslate((4, 5, 6))
-      print stage.GetRootLayer().ExportToString()
+      print(stage.GetRootLayer().ExportToString())
       stage.GetRootLayer().Save()
 
    produces
@@ -58,7 +58,7 @@ will use as our starting point and all the code for this exercise is in the
 
       refStage = Usd.Stage.CreateNew('RefExample.usda')
       refSphere = refStage.OverridePrim('/refSphere')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
 
    produces
 
@@ -85,7 +85,7 @@ will use as our starting point and all the code for this exercise is in the
    .. code-block:: python
 
       refSphere.GetReferences().AddReference('./HelloWorld.usda')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    produces
@@ -123,7 +123,7 @@ will use as our starting point and all the code for this exercise is in the
    Running usdview on the exported :filename:`RefExample.usda` shows the
    composed result.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/585276477.png
+   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample.png
 
    If it were unselected in the namespace browser, usdview would show
    :sdfpath:`/refSphere` in orange to indicate that it is a referencing point on
@@ -139,7 +139,7 @@ will use as our starting point and all the code for this exercise is in the
 
       refXform = UsdGeom.Xformable(refSphere)
       refXform.SetXformOpOrder([])
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
 
    produces
 
@@ -179,12 +179,12 @@ will use as our starting point and all the code for this exercise is in the
 
       refSphere2 = refStage.OverridePrim('/refSphere2')
       refSphere2.GetReferences().AddReference('./HelloWorld.usda')
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    produces
 
-   .. code-block:: python
+   .. code-block:: usd
 
       #usda 1.0
 
@@ -201,7 +201,7 @@ will use as our starting point and all the code for this exercise is in the
       {
       }
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/565776852.png
+   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample_2.png
 
    We can see that our over has been applied to move the first sphere to the
    origin, while the second sphere is still translated by :code:`(4, 5, 6)`.
@@ -213,7 +213,7 @@ will use as our starting point and all the code for this exercise is in the
 
       overSphere = UsdGeom.Sphere.Get(refStage, '/refSphere2/world')
       overSphere.GetDisplayColorAttr().Set( [(1, 0, 0)] )
-      print refStage.GetRootLayer().ExportToString()
+      print(refStage.GetRootLayer().ExportToString())
       refStage.GetRootLayer().Save()
 
    Note that we don't need to call OverridePrim again because
@@ -243,7 +243,7 @@ will use as our starting point and all the code for this exercise is in the
           }
       }
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/565776853.png
+   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample_3.png
 
 #. We can also flatten the composed results.  All of the scene description
    listings above were of the stage's root layer, where we performed our
@@ -265,7 +265,7 @@ will use as our starting point and all the code for this exercise is in the
 
    .. code-block:: python
 
-      print refStage.ExportToString()
+      print(refStage.ExportToString())
 
    .. code-block:: usd
                        

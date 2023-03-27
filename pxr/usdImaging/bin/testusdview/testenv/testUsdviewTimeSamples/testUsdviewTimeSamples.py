@@ -35,8 +35,8 @@ def _testBasic(appController):
     stepSize     = appController._ui.stepSize
     currentFrame = appController._ui.frameField
 
-    forwardControl  = appController._ui.actionFrame_Forward.triggered
-    backwardControl = appController._ui.actionFrame_Backwards.triggered
+    frameForward  = appController._advanceFrame
+    frameBackward = appController._retreatFrame
 
     # ensure our initial variable time samples are set.
     assert rangeBegin.text() == START_TIME_TEXT 
@@ -46,19 +46,19 @@ def _testBasic(appController):
     assert stageBegin.text() == START_TIME_TEXT
     assert stageEnd.text() == END_TIME_TEXT 
 
-    def testIterateTimeRange(expectedRange, control):
+    def testIterateTimeRange(expectedRange, timeFunction):
         for i in expectedRange:
             assert currentFrame.text() == str(float(i))
-            control.emit()
+            timeFunction()
             appController._mainWindow.repaint()
 
     # iterate through the default time samples by emitting our 
     # forward control signal.
-    testIterateTimeRange([101, 102, 103, 104, 105, 106], forwardControl)
+    testIterateTimeRange([101, 102, 103, 104, 105, 106], frameForward)
 
     # iteratoe through the default time samples by emitting our
     # backward control signal
-    testIterateTimeRange([101, 106, 105, 104, 103, 102], backwardControl)
+    testIterateTimeRange([101, 106, 105, 104, 103, 102], frameBackward)
     
     # set the begin time and ensure it takes
     newBeginValue = "103.0"
@@ -82,8 +82,8 @@ def _testBasic(appController):
     assert stepSize.text() == newStepSize
 
     # use newly set values 
-    testIterateTimeRange([103.0, 103.5, 104.0, 104.5, 105.0], forwardControl)
-    testIterateTimeRange([103.0, 105.0, 104.5, 104.0, 103.5], backwardControl)
+    testIterateTimeRange([103.0, 103.5, 104.0, 104.5, 105.0], frameForward)
+    testIterateTimeRange([103.0, 105.0, 104.5, 104.0, 103.5], frameBackward)
 
 def testUsdviewInputFunction(appController):
     _testBasic(appController)

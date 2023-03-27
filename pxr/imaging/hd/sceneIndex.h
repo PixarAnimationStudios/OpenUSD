@@ -181,6 +181,7 @@ public:
 
     /// Returns the singleton-instance of this registry.
     ///
+    HD_API
     static HdSceneIndexNameRegistry &GetInstance()  {
         return TfSingleton<HdSceneIndexNameRegistry>::GetInstance();
     }

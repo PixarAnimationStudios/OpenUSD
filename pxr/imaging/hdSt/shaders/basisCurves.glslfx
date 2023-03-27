@@ -51,13 +51,17 @@
 //   the other way around.
 
 --- --------------------------------------------------------------------------
--- glsl Curves.Vertex.Patch
+-- layout Curves.Vertex.Patch
 
-out CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
+[
+    ["out block", "CurveVertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.Vertex.Patch
 
 // We will either generate a camera facing normal or use the authored normal.
 FORWARD_DECL(vec3 getNormal(MAT4 transform));
@@ -121,13 +125,6 @@ vec3 getNormal(MAT4 transform)
 --- --------------------------------------------------------------------------
 -- glsl Curves.Vertex.Wire
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-out CurveVertexData
-{
-    vec4 Peye;
-} outData;
-#endif
-
 // Fwd declare methods defined in pointId.glslfx, that are used below.
 FORWARD_DECL(int GetPointId());
 FORWARD_DECL(float GetPointRasterSize(int));
@@ -177,21 +174,22 @@ vec2 projectToScreen(MAT4 projMat, vec4 vertex, vec2 screen_size)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Curves.TessControl.Linear.Patch
+
+[
+    ["out", "HD_NUM_PATCH_EVAL_VERTS"],
+    ["in block array", "CurveVertexData", "inData", "gl_MaxPatchVertices",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block array", "CurveVertexData", "outData", "HD_NUM_PATCH_EVAL_VERTS",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Linear.Patch
-
-layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
-
-in CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[gl_MaxPatchVertices];
-
-out CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
@@ -264,19 +262,20 @@ void determineLODSettings()
 }
 
 --- --------------------------------------------------------------------------
+-- layout Curves.TessControl.Cubic.Wire
+
+[
+    ["out", "HD_NUM_PATCH_EVAL_VERTS"],
+    ["in block array", "CurveVertexData", "inData", "gl_MaxPatchVertices",
+        ["vec4", "Peye"]
+    ],
+    ["out block array", "CurveVertexData", "outData", "HD_NUM_PATCH_EVAL_VERTS",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Cubic.Wire
-
-layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
-
-in CurveVertexData
-{
-    vec4 Peye;
-} inData[gl_MaxPatchVertices];
-
-out CurveVertexData
-{
-    vec4 Peye;
-} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
@@ -312,23 +311,23 @@ void determineLODSettings()
     gl_TessLevelOuter[1] = level;
 }
 
+--- --------------------------------------------------------------------------
+-- layout Curves.TessControl.Cubic.Patch
+
+[
+    ["out", "HD_NUM_PATCH_EVAL_VERTS"],
+    ["in block array", "CurveVertexData", "inData", "gl_MaxPatchVertices",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block array", "CurveVertexData", "outData", "HD_NUM_PATCH_EVAL_VERTS",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessControl.Cubic.Patch
-
-layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
-
-in CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[gl_MaxPatchVertices];
-
-out CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData[HD_NUM_PATCH_EVAL_VERTS];
 
 void determineLODSettings();
 void main(void)
@@ -427,25 +426,27 @@ void determineLODSettings()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Curves.TessEval.Cubic.Wire
+-- layout Curves.TessEval.Cubic.Wire
 
-layout(isolines, fractional_odd_spacing) in;
+[
+    ["in", "isolines"], 
+    ["in", "fractional_odd_spacing"],
+    ["in block array", "CurveVertexData", "inData", "gl_MaxPatchVertices",
+        ["vec4", "Peye"]
+    ],
+    ["out block", "CurveVertexData", "outData",
+        ["vec4", "Peye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessEval.Cubic.Wire
 
 struct Coeffs
 {
   vec4 basis;
   vec4 tangent_basis;
 };
-
-in CurveVertexData
-{
-    vec4 Peye;
-} inData[gl_MaxPatchVertices];
-
-out CurveVertexData
-{
-    vec4 Peye;
-} outData;
 
 FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 
@@ -475,30 +476,32 @@ void main()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Curves.TessEval.Patch
+-- layout Curves.TessEval.Patch
 
-layout(quads, fractional_odd_spacing, ccw) in;
+[
+    ["in", "quads"],
+    ["in", "fractional_odd_spacing"],
+    ["in", "ccw"],
+    ["in block array", "CurveVertexData", "inData", "gl_MaxPatchVertices",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]        
+    ],
+    ["out block", "CurveVertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]        
+    ],
+    ["out", "float", "u"],
+    ["out", "float", "v"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Curves.TessEval.Patch
 
 struct Coeffs
 {
   vec4 basis;
   vec4 tangent_basis;
 };
-
-in CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[gl_MaxPatchVertices];
-
-out CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out float u;
-out float v;
 
 // Predefine so that we can later swap in the correct one depending
 // on what type of curve we have
@@ -555,7 +558,7 @@ void main()
     float x = projMat[0][0];
     float w = position.z * projMat[2][3] + projMat[3][3];
     float viewportSizeX = GetViewport().z;
-    float worldToPixelWidth = (viewportSizeX * 0.5) * (x / w);
+    float worldToPixelWidth = abs((viewportSizeX * 0.5) * (x / w));
 
 #ifdef HD_HAS_screenSpaceWidths
     if (HdGet_screenSpaceWidths()) {
@@ -616,11 +619,6 @@ void evaluate(float u, float v, REF(thread, vec4) position,
 
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Cubic.Patch
-struct Coeffs
-{
-  vec4 basis;
-  vec4 tangent_basis;
-};
 
 FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
 FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
@@ -897,13 +895,6 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 --- --------------------------------------------------------------------------
 -- glsl Curves.Fragment.Wire
 
-#ifndef HDST_ENABLE_GLSLFX_RESOURCE_LAYOUTS
-in CurveVertexData
-{
-    vec4 Peye;
-} inData;
-#endif
-
 void main(void)
 {
     DiscardBasedOnTopologicalVisibility();
@@ -939,18 +930,22 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Curves.Fragment.Patch
+
+[
+    ["in", "float", "u", "centroid"],
+    ["in", "float", "v", "centroid"],
+    ["in block", "CurveVertexData", "inData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.Fragment.Patch
 
 /// In the previous stage, we may have stored the tangent in Neye from which
 /// we plan to compute a normal in the fragment shader.
-in CurveVertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData;
-
-centroid in float u;
-centroid in float v;
 
 FORWARD_DECL(vec3 fragmentNormal(vec3 position, vec3 normal, float v));
 void main(void)

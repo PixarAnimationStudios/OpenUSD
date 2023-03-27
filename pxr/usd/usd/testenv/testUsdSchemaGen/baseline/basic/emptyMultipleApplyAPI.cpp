@@ -66,6 +66,20 @@ UsdContrivedEmptyMultipleApplyAPI::Get(const UsdPrim &prim, const TfToken &name)
     return UsdContrivedEmptyMultipleApplyAPI(prim, name);
 }
 
+/* static */
+std::vector<UsdContrivedEmptyMultipleApplyAPI>
+UsdContrivedEmptyMultipleApplyAPI::GetAll(const UsdPrim &prim)
+{
+    std::vector<UsdContrivedEmptyMultipleApplyAPI> schemas;
+    
+    for (const auto &schemaName :
+         UsdAPISchemaBase::_GetMultipleApplyInstanceNames(prim, _GetStaticTfType())) {
+        schemas.emplace_back(prim, schemaName);
+    }
+
+    return schemas;
+}
+
 
 /* virtual */
 UsdSchemaKind UsdContrivedEmptyMultipleApplyAPI::_GetSchemaKind() const

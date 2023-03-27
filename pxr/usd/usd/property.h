@@ -86,6 +86,24 @@ public:
     SdfPropertySpecHandleVector GetPropertyStack(
         UsdTimeCode time = UsdTimeCode::Default()) const;
 
+    /// Returns a strength-ordered list of property specs that provide
+    /// opinions for this property paired with the cumulative layer offset from
+    /// the stage's root layer to the layer containing the property spec.
+    ///
+    /// This behaves exactly the same as UsdProperty::GetPropertyStack with the 
+    /// addition of providing the cumulative layer offset of each spec's layer.
+    ///
+    /// \note The results returned by this method are meant for debugging
+    /// and diagnostic purposes.  It is **not** advisable to retain a 
+    /// PropertyStack for the purposes of expedited value resolution for 
+    /// properties, since the makeup of an attribute's PropertyStack may
+    /// itself be time-varying.  To expedite repeated value resolution of
+    /// attributes, you should instead retain a \c UsdAttributeQuery .
+    USD_API
+    std::vector<std::pair<SdfPropertySpecHandle, SdfLayerOffset>> 
+    GetPropertyStackWithLayerOffsets(
+        UsdTimeCode time = UsdTimeCode::Default()) const;
+
     /// Return this property's name with all namespace prefixes removed,
     /// i.e. the last component of the return value of GetName()
     ///
@@ -154,30 +172,6 @@ public:
     USD_API
     bool SetNestedDisplayGroups(
         const std::vector<std::string>& nestedGroups) const;
-
-    /// Return this property's display name (metadata).  This returns the
-    /// empty string if no display name has been set.
-    /// \sa SetDisplayName()
-    USD_API
-    std::string GetDisplayName() const;
-
-    /// Sets this property's display name (metadata).  Returns true on success.
-    ///
-    /// DisplayName is meant to be a descriptive label, not necessarily an
-    /// alternate identifier; therefore there is no restriction on which
-    /// characters can appear in it.
-    USD_API
-    bool SetDisplayName(const std::string& name) const;
-
-    /// Clears this property's display name (metadata) in the current EditTarget
-    /// (only).  Returns true on success.
-    USD_API
-    bool ClearDisplayName() const;
-
-    /// Returns true if displayName was explicitly authored and GetMetadata()
-    /// will return a meaningful value for displayName. 
-    USD_API
-    bool HasAuthoredDisplayName() const;
 
     /// Return true if this is a custom property (i.e., not part of a
     /// prim schema).

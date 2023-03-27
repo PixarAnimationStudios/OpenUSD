@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/primCompositionQuery.h"
+#include "pxr/usd/usd/resolveTarget.h"
 
 #include "pxr/base/tf/pyResultConversions.h"
 
@@ -70,18 +71,32 @@ _WrapGetIntroducingListEditor(const UsdPrimCompositionQueryArc &arc)
 void wrapUsdPrimCompositionQueryArc()
 {
     class_<UsdPrimCompositionQueryArc>("CompositionArc", no_init)
-        .def("GetTargetNode", &UsdPrimCompositionQueryArc::GetTargetNode)
-        .def("GetIntroducingNode", &UsdPrimCompositionQueryArc::GetIntroducingNode)
-        .def("GetIntroducingLayer", &UsdPrimCompositionQueryArc::GetIntroducingLayer)
-        .def("GetIntroducingPrimPath", &UsdPrimCompositionQueryArc::GetIntroducingPrimPath)
+        .def("GetTargetNode", 
+             &UsdPrimCompositionQueryArc::GetTargetNode)
+        .def("GetIntroducingNode", 
+             &UsdPrimCompositionQueryArc::GetIntroducingNode)
+        .def("GetTargetLayer", &UsdPrimCompositionQueryArc::GetTargetLayer)
+        .def("GetTargetPrimPath", 
+             &UsdPrimCompositionQueryArc::GetTargetPrimPath)
+        .def("GetIntroducingLayer", 
+             &UsdPrimCompositionQueryArc::GetIntroducingLayer)
+        .def("GetIntroducingPrimPath", 
+             &UsdPrimCompositionQueryArc::GetIntroducingPrimPath)
         .def("GetIntroducingListEditor", &_WrapGetIntroducingListEditor)
         .def("GetArcType", &UsdPrimCompositionQueryArc::GetArcType)
         .def("IsImplicit", &UsdPrimCompositionQueryArc::IsImplicit)
         .def("IsAncestral", &UsdPrimCompositionQueryArc::IsAncestral)
         .def("HasSpecs", &UsdPrimCompositionQueryArc::HasSpecs)
-        .def("IsIntroducedInRootLayerStack", &UsdPrimCompositionQueryArc::IsIntroducedInRootLayerStack)
-        .def("IsIntroducedInRootLayerPrimSpec", &UsdPrimCompositionQueryArc::IsIntroducedInRootLayerPrimSpec)        
-    ;
+        .def("IsIntroducedInRootLayerStack", 
+             &UsdPrimCompositionQueryArc::IsIntroducedInRootLayerStack)
+        .def("IsIntroducedInRootLayerPrimSpec", 
+             &UsdPrimCompositionQueryArc::IsIntroducedInRootLayerPrimSpec)        
+        .def("MakeResolveTargetUpTo", 
+             &UsdPrimCompositionQueryArc::MakeResolveTargetUpTo,
+             arg("subLayer")=object())
+        .def("MakeResolveTargetStrongerThan", 
+             &UsdPrimCompositionQueryArc::MakeResolveTargetStrongerThan,
+             arg("subLayer")=object())    ;
 }
 
 void wrapUsdPrimCompositionQuery()

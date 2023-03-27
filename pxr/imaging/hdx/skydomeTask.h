@@ -79,6 +79,8 @@ private:
     // Optional internal render setup task, for params unpacking.
     // This is used for aov bindings, camera matrices and framing
     HdxRenderSetupTaskSharedPtr _setupTask;
+    unsigned int _settingsVersion;
+    bool _skydomeVisibility;
 
     HdxSkydomeTask() = delete;
     HdxSkydomeTask(const HdxSkydomeTask &) = delete;

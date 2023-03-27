@@ -77,6 +77,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear)                                    \
     (lightLink)                                 \
     (lightFilterLink)                           \
+    (meshLight)                                 \
     (materialParams)                            \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
@@ -109,7 +110,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (transformInverse)                          \
     (velocities)                                \
     (visibility)                                \
-    (widths)
+    (widths)                                    \
+    (isLight)
 
 #define HD_INSTANCER_TOKENS                     \
     (culledInstanceIndices)                     \
@@ -244,13 +246,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_OPTION_TOKENS                        \
     (parallelRprimSync)                        
 
-#define HD_PRIMTYPE_TOKENS                      \
+#define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
+    (capsule)                                   \
+    (cone)                                      \
+    (cube)                                      \
+    (cylinder)                                  \
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \
+    (sphere)                                    \
     (volume)                                    \
-                                                \
+
+#define HD_SPRIMTYPE_TOKENS                     \
     /* Sprims */                                \
     (camera)                                    \
     (drawTarget)                                \
@@ -258,6 +266,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSys)                                  \
     (instancer)                                 \
     (instance)                                  \
+    (sampleFilter)                              \
+    (displayFilter)                             \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \
@@ -266,14 +276,22 @@ PXR_NAMESPACE_OPEN_SCOPE
     (domeLight)                                 \
     (light)                                     \
     (lightFilter)                               \
+    (meshLight)                                 \
     (pluginLight)                               \
     (rectLight)                                 \
     (sphereLight)                               \
     /* Sprims ExtComputations */                \
     (extComputation)                            \
-                                                \
+
+#define HD_BPRIMTYPE_TOKENS                     \
     /* Bprims */                                \
-    (renderBuffer)
+    (renderBuffer)                              \
+    (renderSettings)
+
+#define HD_PRIMTYPE_TOKENS                      \
+    HD_RPRIMTYPE_TOKENS                         \
+    HD_SPRIMTYPE_TOKENS                         \
+    HD_BPRIMTYPE_TOKENS                         \
 
 HD_API
 bool HdPrimTypeIsGprim(TfToken const& primType);
@@ -374,6 +392,7 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (enableShadows)                                   \
     (enableSceneMaterials)                            \
     (enableSceneLights)                               \
+    (domeLightCameraVisibility)                       \
     /* Raytracer sampling settings */                 \
     (convergedVariance)                               \
     (convergedSamplesPerPixel)                        \
@@ -381,6 +400,10 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (threadLimit)                                     \
     /* interactive vs offline */                      \
     (enableInteractive)
+
+#define HD_RENDER_SETTINGS_PRIM_TOKENS                \
+    (active)                                          \
+    (params)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
@@ -401,10 +424,15 @@ TF_DECLARE_PUBLIC_TOKENS(HdMaterialTerminalTokens, HD_API,
 TF_DECLARE_PUBLIC_TOKENS(HdRenderTagTokens, HD_API, HD_RENDERTAG_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderContextTokens, HD_API, HD_RENDER_CONTEXT_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdOptionTokens, HD_API, HD_OPTION_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRprimTypeTokens, HD_API, HD_RPRIMTYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdSprimTypeTokens, HD_API, HD_SPRIMTYPE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdBprimTypeTokens, HD_API, HD_BPRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimTypeTokens, HD_API, HD_PRIMTYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPrimvarRoleTokens, HD_API, HD_PRIMVAR_ROLE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens, HD_API,
+                         HD_RENDER_SETTINGS_PRIM_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);

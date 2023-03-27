@@ -46,6 +46,7 @@ pxr_library(sdf
         mapEditor
         namespaceEdit
         notice
+        opaqueValue
         path
         pathNode
         pathTable
@@ -139,6 +140,7 @@ pxr_library(sdf
         wrapLayerTree.cpp
         wrapNamespaceEdit.cpp
         wrapNotice.cpp
+        wrapOpaqueValue.cpp
         wrapPath.cpp
         wrapPayload.cpp
         wrapPrimSpec.cpp
@@ -192,6 +194,7 @@ pxr_test_scripts(
     testenv/testSdfBatchNamespaceEdit.py
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
+    testenv/testSdfDetachedLayer.py
     testenv/testSdfFileFormat.py
     testenv/testSdfLayer.py
     testenv/testSdfLayerMuting.py
@@ -217,6 +220,28 @@ pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
 
     CPPFILES
         testenv/TestSdfNoAssetFileFormat.cpp
+)
+
+pxr_build_test_shared_lib(TestSdfStreamingFileFormat
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfStreamingFileFormat.cpp
+)
+
+pxr_build_test_shared_lib(TestSdfTargetFileFormat
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfTargetFileFormat.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfResolver
@@ -276,7 +301,7 @@ pxr_build_test(testSdfPathTable
 pxr_build_test(testSdfPathThreading
     LIBRARIES
         sdf
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
+        tf
     CPPFILES
         testenv/testSdfPathThreading.cpp
 )
@@ -343,6 +368,27 @@ pxr_register_test(testSdfCopyUtils
 pxr_register_test(testSdfCustomLayerData
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfCustomLayerData"
+)
+
+pxr_register_test(testSdfDetachedLayer
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDetachedLayer"
+)
+
+pxr_register_test(testSdfDetachedLayerEnvVar1
+    PYTHON
+    ENV
+        SDF_LAYER_INCLUDE_IN_MEMORY=*
+        SDF_LAYER_EXCLUDE_IN_MEMORY=foo,bar
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDetachedLayer"
+)
+
+pxr_register_test(testSdfDetachedLayerEnvVar2
+    PYTHON
+    ENV
+        SDF_LAYER_INCLUDE_IN_MEMORY=foo,bar
+        SDF_LAYER_EXCLUDE_IN_MEMORY=baz,garply
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfDetachedLayer"
 )
 
 pxr_register_test(testSdfHardToReach

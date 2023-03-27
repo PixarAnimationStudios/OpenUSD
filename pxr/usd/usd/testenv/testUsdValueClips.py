@@ -121,12 +121,22 @@ class TestUsdValueClips(unittest.TestCase):
             startClip = min(allTimeSamples) 
             endClip = startClip
 
+            self.assertEqual(
+                attr.GetTimeSamplesInInterval(
+                    Gf.Interval(startClip - 1, endClip, True, False)),
+                [])
+
             while endClip < max(allTimeSamples):
                 self.assertEqual(
                     attr.GetTimeSamplesInInterval(
                         Gf.Interval(startClip, endClip)), 
                     [t for t in allTimeSamples if t <= endClip])
                 endClip += 1
+
+            self.assertEqual(
+                attr.GetTimeSamplesInInterval(
+                    Gf.Interval(endClip, endClip + 1, False, True)),
+                [])
 
     def CheckValue(self, attr, expected, time=None, query=True):
         if time is not None:
@@ -533,6 +543,15 @@ class TestUsdValueClips(unittest.TestCase):
         self.CheckTimeSamples(attr1)
         self.CheckTimeSamples(attr2)
         self.CheckTimeSamples(attr3)
+
+        # Verify GetPropertyStackWithLayerOffsets run on an attribute with 
+        # clips returns the clip spec's layer offset matching the source spec's
+        # layer offset.
+        self.assertEqual(attr3.GetPropertyStackWithLayerOffsets(40),
+            [(Sdf.Find('layerOffsets/clip.usda', '/Model.size'), 
+                Sdf.LayerOffset(20)), 
+             (Sdf.Find('layerOffsets/ref.usda', '/Model.size'), 
+                Sdf.LayerOffset(20))])
 
     def test_TimeCodeClipsWithLayerOffsets(self):
         """Tests behavior of clips when layer offsets are involved and the
@@ -1096,6 +1115,7 @@ class TestUsdValueClips(unittest.TestCase):
 
             self.assertEqual(attrNotInFirstClip.GetTimeSamples(),
                              [2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+                
             self.CheckTimeSamples(attrNotInFirstClip)
 
             # The middle clips that are active in the range [2, 6) have no
@@ -1300,6 +1320,150 @@ class TestUsdValueClips(unittest.TestCase):
         self.assertEqual(attrNotInAnyClip.GetTimeSamples(), 
                          [0.0, 2.0, 4.0, 6.0, 7.0])
         self.CheckTimeSamples(attrNotInAnyClip)
+
+    def test_GetTimeSamplesInIntervalWithoutInterpolation(self):
+        """Tests behavior of GetTimeSamplesInInterval with clip sets
+        that are missing time samples with interpolation between
+        missing clip values turned off."""
+        def _OpenTestStage():
+            # Use the test case from missingValueInterpolation but turn off
+            # the interpolation behavior for this test case.
+            stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+            Sdf.CreatePrimInLayer(stage.GetSessionLayer(), '/Model').SetInfo(
+                'clips', {'default': {'interpolateMissingClipValues' : False}})
+
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+
+            return stage
+
+        # When interpolation is turned off, querying time samples in an
+        # interval should only need to open the clips that are active
+        # during that interval. In this case, only clip 1 is active in
+        # the time interval [0, 1] with time samples at 0.0 and 1.0.
+        stage = _OpenTestStage()
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/Model.attrNotInLastClip')
+        self.assertEqual(
+            attrNotInFirstClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0, 1.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # If there are no values in any clips, we should still only need
+        # to open the clip that is active during that interval, which is
+        # clip 1. This is because each clip introduces a time sample at
+        # its start time when interpolation is turned off, even if it
+        # has no authored samples.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath('/Model.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+    def test_GetTimeSamplesInIntervalWithInterpolation(self):
+        """Tests behavior of GetTimeSamplesInInterval with clip sets
+        that are missing time samples with interpolation between
+        missing clip values turned on."""
+        def _OpenTestStage():
+            stage = Usd.Stage.Open('missingValueInterpolation/root.usda')
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+            self.assertFalse(
+                Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
+            return stage
+
+        # When interpolation is turned on, querying time samples in an
+        # interval should only need to open the clips that are active
+        # during that interval if any of them contain time samples. In
+        # this case, only clip 1 is active in the time interval [0, 1]
+        # with time samples at 0.0 and 1.0.
+        stage = _OpenTestStage()
+        attrNotInFirstClip = stage.GetAttributeAtPath(
+            '/Model.attrNotInLastClip')
+        self.assertEqual(
+            attrNotInFirstClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0, 1.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # However, if the active clip does not contain time samples,
+        # we currently need to scan to see if any other clips provide
+        # time samples. In the worst case, when no clips provide samples,
+        # this will cause all clips to be opened.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath('/Model.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertTrue(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))        
+
+        # This can be mitigated by authoring value blocks in the manifest to
+        # indicate that certain clips do not provide samples. In this case,
+        # we've authored blocks for all clips so none of them should be opened.
+        del stage
+        stage = _OpenTestStage()
+        attrNotInAnyClip = stage.GetAttributeAtPath(
+            '/ModelWithManifestBlocks.attrNotInAnyClip')
+        self.assertEqual(
+            attrNotInAnyClip.GetTimeSamplesInInterval(
+                Gf.Interval(0.0, 1.0)),
+            [0.0])
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip1.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip2.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip3.usda'))
+        self.assertFalse(
+            Sdf.Layer.Find('missingValueInterpolation/clip4.usda'))
 
     def test_AncestralClips(self):
         """Tests that clips specified on a descendant model will override
@@ -2365,6 +2529,99 @@ class TestUsdValueClips(unittest.TestCase):
         layer = Sdf.Layer.Find(layerId)
         self.assertTrue(layer)
         self.assertEqual(layer.GetFileFormatArguments(), {'a': '1', 'b': 'str'})
+
+    def test_SublayerChanges(self):
+        """Test that clip layers are loaded successfully when sublayers
+        are added or removed before the clip layers are pulled on."""
+
+        def _test(stage):
+            # Query our test attribute's property stack and verify that it
+            # contains the opinions we expect. This will open the clip layer.
+            a = stage.GetAttributeAtPath('/SingleClip.attr_1')
+            propertyStack = a.GetPropertyStack(0)
+
+            rootLayer = stage.GetRootLayer()
+            sublayerWithClip = Sdf.Layer.FindRelativeToLayer(
+                rootLayer, 'layers/sublayer.usda')
+            self.assertTrue(sublayerWithClip)
+
+            clipLayer = Sdf.Layer.FindRelativeToLayer(
+                sublayerWithClip, 'clip.usda')
+            self.assertTrue(clipLayer)
+
+            refLayer = Sdf.Layer.FindRelativeToLayer(
+                rootLayer, 'layers/ref.usda')
+            self.assertTrue(refLayer)
+
+            self.assertEqual(
+                propertyStack,
+                [sublayerWithClip.GetAttributeAtPath('/SingleClip.attr_1'),
+                 clipLayer.GetAttributeAtPath('/Model.attr_1'),
+                 refLayer.GetAttributeAtPath('/Model.attr_1')])
+
+        # Test combinations of inserting and removing sublayers prior to
+        # pulling on attributes and opening clip layers. Clip layers are
+        # opened the first time the _test function is called, so these
+        # tests are separated into insert-first and remove-first to cover
+        # both cases. Empty and non-empty sublayers are also tested 
+        # separately since there's an optimization that avoids significant
+        # resyncs in the former case.
+
+        def _TestInsertAndRemoveEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+
+            stage = Usd.Stage.Open(rootLayer)
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+        def _TestRemoveAndInsertEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+
+            stage = Usd.Stage.Open(rootLayer)
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+        def _TestInsertAndRemoveNonEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            Sdf.CreatePrimInLayer(dummySublayer, '/Dummy')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+
+            stage = Usd.Stage.Open(rootLayer)
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+        def _TestRemoveAndInsertNonEmptySublayer():
+            dummySublayer = Sdf.Layer.CreateAnonymous('.usda')
+            Sdf.CreatePrimInLayer(dummySublayer, '/Dummy')
+
+            rootLayer = Sdf.Layer.FindOrOpen('sublayerChanges/root.usda')
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+
+            stage = Usd.Stage.Open(rootLayer)
+            del rootLayer.subLayerPaths[0]
+            _test(stage)
+
+            rootLayer.subLayerPaths.insert(0, dummySublayer.identifier)
+            _test(stage)
+            
+        _TestInsertAndRemoveNonEmptySublayer()
+        _TestRemoveAndInsertNonEmptySublayer()
+        _TestInsertAndRemoveEmptySublayer()
+        _TestRemoveAndInsertEmptySublayer()
 
 if __name__ == "__main__":
     unittest.main()

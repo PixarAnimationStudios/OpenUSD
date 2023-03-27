@@ -28,8 +28,24 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _lensDistortionTokens,
+    ((k1,     "lensDistortion:k1"))
+    ((k2,     "lensDistortion:k2"))
+    ((center, "lensDistortion:center"))
+    ((anaSq,  "lensDistortion:anaSq"))
+    ((asym,   "lensDistortion:asym"))
+    ((scale,  "lensDistortion:scale"))
+);
+
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
-    : HdCamera(id)
+  : HdCamera(id)
+  , _lensDistortionK1(0.0f)
+  , _lensDistortionK2(0.0f)
+  , _lensDistortionCenter(0.0f)
+  , _lensDistortionAnaSq(1.0f)
+  , _lensDistortionAsym(0.0f)
+  , _lensDistortionScale(1.0f)
 {
 }
 
@@ -66,6 +82,31 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
 
     if (bits & DirtyParams) {
+        _lensDistortionK1 =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->k1)
+                .GetWithDefault<float>(0.0f);
+        _lensDistortionK2 =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->k2)
+                .GetWithDefault<float>(0.0f);
+        _lensDistortionCenter =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->center)
+                .GetWithDefault<GfVec2f>(GfVec2f(0.0f));
+        _lensDistortionAnaSq =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->anaSq)
+                .GetWithDefault<float>(1.0f);
+        _lensDistortionAsym =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->asym)
+                .GetWithDefault<GfVec2f>(GfVec2f(0.0f));
+        _lensDistortionScale =
+            sceneDelegate
+                ->GetCameraParamValue(id, _lensDistortionTokens->scale)
+                .GetWithDefault<float>(1.0f);
+
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
             // shutter interval is set before any rprims are synced

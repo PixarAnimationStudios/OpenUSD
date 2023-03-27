@@ -34,7 +34,9 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
+HgiMetalComputeCmds::HgiMetalComputeCmds(
+    HgiMetal* hgi,
+    HgiComputeCmdsDesc const& desc)
     : HgiComputeCmds()
     , _hgi(hgi)
     , _pipelineState(nullptr)
@@ -42,6 +44,8 @@ HgiMetalComputeCmds::HgiMetalComputeCmds(HgiMetal* hgi)
     , _argumentBuffer(nil)
     , _encoder(nil)
     , _secondaryCommandBuffer(false)
+    , _hasWork(false)
+    , _dispatchMethod(desc.dispatchMethod)
 {
     _CreateEncoder();
 }
@@ -55,12 +59,17 @@ void
 HgiMetalComputeCmds::_CreateEncoder()
 {
     if (!_encoder) {
-        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this);
+        _commandBuffer = _hgi->GetPrimaryCommandBuffer(this, false);
         if (_commandBuffer == nil) {
             _commandBuffer = _hgi->GetSecondaryCommandBuffer();
             _secondaryCommandBuffer = true;
         }
-        _encoder = [_commandBuffer computeCommandEncoder];
+        MTLDispatchType dispatchType =
+            (_dispatchMethod == HgiComputeDispatchConcurrent)
+                ? MTLDispatchTypeConcurrent
+                : MTLDispatchTypeSerial;
+        _encoder = [_commandBuffer
+                        computeCommandEncoderWithDispatchType:dispatchType];
     }
 }
 
@@ -163,7 +172,7 @@ HgiMetalComputeCmds::PopDebugGroup()
 }
 
 void
-HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiMetalComputeCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     if (TF_VERIFY(barrier == HgiMemoryBarrierAll)) {
         _CreateEncoder();
@@ -171,6 +180,12 @@ HgiMetalComputeCmds::MemoryBarrier(HgiMemoryBarrier barrier)
                                 MTLBarrierScopeTextures;
         [_encoder memoryBarrierWithScope:scope];
     }
+}
+
+HgiComputeDispatch
+HgiMetalComputeCmds::GetDispatchMethod() const
+{
+    return _dispatchMethod;
 }
 
 bool
@@ -207,6 +222,13 @@ HgiMetalComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     _argumentBuffer = nil;
 
     return submittedWork;
+}
+
+HGIMETAL_API
+id<MTLComputeCommandEncoder> HgiMetalComputeCmds::GetEncoder()
+{
+    _CreateEncoder();
+    return _encoder;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

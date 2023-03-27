@@ -21,20 +21,22 @@ pxr_library(hgiMetal
 
     PUBLIC_HEADERS
         api.h
+        blitCmds.h
+        buffer.h
         capabilities.h
         computeCmds.h
         computePipeline.h
         diagnostic.h
-        hgi.h
-        texture.h
-        blitCmds.h
-        buffer.h
         graphicsCmds.h
         graphicsPipeline.h
+        hgi.h
+        indirectCommandEncoder.h
         resourceBindings.h
         sampler.h
         shaderFunction.h
         shaderProgram.h
+        stepFunctions.h
+        texture.h
 
     PRIVATE_HEADERS
         conversions.h
@@ -52,12 +54,14 @@ pxr_library(hgiMetal
         graphicsCmds.mm
         graphicsPipeline.mm
         hgi.mm
+        indirectCommandEncoder.mm
         resourceBindings.mm
         sampler.mm
         shaderFunction.mm
         shaderGenerator.mm
         shaderProgram.mm
         shaderSection.mm
+        stepFunctions.mm
         texture.mm
 
     RESOURCE_FILES

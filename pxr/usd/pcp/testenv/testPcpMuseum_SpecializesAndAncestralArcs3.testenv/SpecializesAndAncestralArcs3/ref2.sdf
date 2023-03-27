@@ -1,0 +1,19 @@
+#sdf 1.4.32
+
+def "Ref2Root" 
+{
+    def "Ref2Child"
+    {
+        def "Ref2GrandChild"
+        {
+        }
+    }
+}
+
+def "Ref2RootRef" (
+    # Provides an ancestral reference for references to RefChild2
+    prepend references = </Ref2Root>
+)
+{
+}
+

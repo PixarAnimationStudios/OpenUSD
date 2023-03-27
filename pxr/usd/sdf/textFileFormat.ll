@@ -179,8 +179,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
        Note: we handle empty singly quoted strings below, to disambiguate
        them from the beginning of triply-quoted strings.
        Ex: "Foo \"foo\"" */
-'([^'\r\n]|(\\.))+'   |  /* ' //<- unfreak out coloring code */
-\"([^"\r\n]|(\\.))+\" {  /* " //<- unfreak out coloring code */
+'([^'\\\r\n]|(\\.))+'   |  /* ' //<- unfreak out coloring code */
+\"([^"\\\r\n]|(\\.))+\" {  /* " //<- unfreak out coloring code */
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 1);
         return TOK_STRING;
     }
@@ -198,8 +198,8 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
     /* Triply quoted, multi-line strings with escapes.
        Ex: """A\n\"B\"\nC""" */
-'''([^']|(\\.)|('{1,2}[^']))*'''        |  /* ' //<- unfreak out coloring code */
-\"\"\"([^"]|(\\.)|(\"{1,2}[^"]))*\"\"\" {  /* " //<- unfreak out coloring code */
+'''([^'\\]|(\\.)|(\\[\r\n])|('{1,2}[^']))*'''        |  /* ' //<- unfreak out coloring code */
+\"\"\"([^"\\]|(\\.)|(\\[\r\n])|(\"{1,2}[^"]))*\"\"\" {  /* " //<- unfreak out coloring code */
 
         unsigned int numlines = 0;
         (*yylval_param) = Sdf_EvalQuotedString(yytext, yyleng, 3, &numlines);

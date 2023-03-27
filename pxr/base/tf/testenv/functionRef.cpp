@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/functionRef.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -69,6 +70,38 @@ Test_TfFunctionRef()
     TfFunctionRef<int (int)> f3(f2);
     
     TF_AXIOM(f3(1) == f2(1));
+
+    // Copy constructed objects should refer to the original function rather
+    // than forming a reference to a reference.
+    {
+        const auto ok = [] { };
+        const auto error = [] {
+            TF_FATAL_ERROR("Constructed new reference to callable instead of "
+                           "copying");
+        };
+        TfFunctionRef<void()> ref(ok);
+        TfFunctionRef<void()> refCopy(ref);
+        ref = error;
+        refCopy();
+    }
+
+    // Copy assigned objects should refer to the original function rather
+    // than forming a reference to a reference.
+    {
+        const auto ok = [] { };
+        const auto error1 = [] {
+            TF_FATAL_ERROR("Failed to assign reference");
+        };
+        const auto error2 = [] {
+            TF_FATAL_ERROR("Assigned new reference to callable instead of "
+                           "copying");
+        };
+        TfFunctionRef<void()> ref(ok);
+        TfFunctionRef<void()> refCopy(error1);
+        refCopy = ref;
+        ref = error2;
+        refCopy();
+    }
 
     return true;
 }

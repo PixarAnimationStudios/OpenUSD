@@ -134,9 +134,7 @@ public:
 
     HGIGL_API
     static HgiGLOpsFn BindVertexBuffers(
-        uint32_t firstBinding,
-        HgiBufferHandleVector const& buffers,
-        std::vector<uint32_t> const& byteOffsets);
+        HgiVertexBufferBindingVector const &bindings);
 
     HGIGL_API
     static HgiGLOpsFn Draw(
@@ -192,7 +190,7 @@ public:
     static HgiGLOpsFn GenerateMipMaps(HgiTextureHandle const& texture);
 
     HGIGL_API
-    static HgiGLOpsFn MemoryBarrier(HgiMemoryBarrier barrier);
+    static HgiGLOpsFn InsertMemoryBarrier(HgiMemoryBarrier barrier);
 
 };
 

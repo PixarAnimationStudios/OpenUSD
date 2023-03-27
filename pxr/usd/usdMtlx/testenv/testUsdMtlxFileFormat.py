@@ -142,7 +142,8 @@ class TestFileFormat(unittest.TestCase):
         for inputName, source in inputToSource.items():
             input = nodeGraph.GetInput(inputName)
             self.assertEqual(input.HasConnectedSource(), True)
-            self.assertEqual(input.GetConnectedSource()[0].GetPath(), source)
+            self.assertEqual(
+                input.GetConnectedSources()[0][0].source.GetPath(), source)
 
     def test_MultiOutputNodes(self):
         """
@@ -159,11 +160,34 @@ class TestFileFormat(unittest.TestCase):
 
         for path, connNodeName, connectionName in testInfo:
             node = UsdShade.Shader.Get(stage, path)
-            conn = node.GetInput('in').GetConnectedSource()
-            self.assertEqual(conn[0].GetPrim().GetPath().name, connNodeName)
-            self.assertEqual(conn[1], connectionName)
-
+            conn = node.GetInput('in').GetConnectedSources()[0][0]
+            self.assertEqual(conn.source.GetPath().name, connNodeName)
+            self.assertEqual(conn.sourceName, connectionName)
         
+    def test_nodesWithoutNodegraphs(self):
+        """
+        Test MaterialX material with nodes not contained in a nodegraph and no
+        explicit outputs
+        """
+    
+        stage = UsdMtlx._TestFile('GraphlessNodes.mtlx')
+        stage.GetRootLayer().Export('GraphlessNodes.usda')
+
+    def test_NodegraphsWithInputs(self):
+        """
+        Test that inputs on nodegraphs are found and connected when used 
+        inside that nodegraph
+        """
+    
+        stage = UsdMtlx._TestFile('NodeGraphInputs.mtlx')
+
+        path = '/MaterialX/Materials/test_material/test_nodegraph/mult1'
+        node = UsdShade.Shader.Get(stage, path)
+        conn = node.GetInput('in2').GetConnectedSources()[0][0]
+        self.assertEqual(conn.source.GetPath().name, 'test_nodegraph')
+        self.assertEqual(conn.sourceName, 'scale')
+        
+
     def test_Looks(self):
         """
         Test general MaterialX look conversions.
@@ -186,6 +210,14 @@ class TestFileFormat(unittest.TestCase):
         input = material.GetInput("specularColor")
         self.assertTrue(input)
         self.assertEqual(input.GetFullName(),"inputs:specularColor")
+    
+    def test_customNodeDefs(self):
+        """
+        Test that custom nodedefs are flattend out and replaced with 
+        their associated nodegraph
+        """
+        stage = UsdMtlx._TestFile('CustomNodeDef.mtlx')
+        stage.GetRootLayer().Export('CustomNodeDef.usda')
 
     @unittest.skipIf(not hasattr(Ar.Resolver, "CreateIdentifier"),
                      "Requires Ar 2.0")

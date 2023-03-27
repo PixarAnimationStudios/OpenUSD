@@ -55,6 +55,11 @@ TF_DEFINE_ENV_SETTING(
     "The auto-discovery of parser plugins in ndr can be skipped. "
     "This is used mostly for testing purposes.");
 
+TF_DEFINE_ENV_SETTING(
+    PXR_NDR_DISABLE_PLUGINS, "",
+    "Comma separated list of Ndr plugins to disable.  Note that disabling plugins may cause "
+    "shaders in your scenes to malfunction.");
+
 // This function is used for property validation. It explictly is validating 
 // that the sdfType and sdfTypeDefaultValue have the same type. Note how it is
 // calling the methods GetTypeAsSdfType() and GetDefaultValueAsSdfType() 
@@ -346,6 +351,20 @@ NdrRegistry::SetExtraDiscoveryPlugins(const std::vector<TfType>& pluginTypes)
 
     // Add the discovery plugins.
     SetExtraDiscoveryPlugins(std::move(discoveryPlugins));
+}
+
+void NdrRegistry::AddDiscoveryResult(NdrNodeDiscoveryResult&& discoveryResult)
+{
+    std::lock_guard<std::mutex> drLock(_discoveryResultMutex);
+    _AddDiscoveryResultNoLock(std::move(discoveryResult));
+}
+
+void NdrRegistry::AddDiscoveryResult(const NdrNodeDiscoveryResult& discoveryResult)
+{
+    // Explicitly create a copy, otherwise this method will recurse
+    // into itself.
+    NdrNodeDiscoveryResult result = discoveryResult;
+    AddDiscoveryResult(std::move(result));
 }
 
 void
@@ -890,8 +909,20 @@ NdrRegistry::_FindAndInstantiateDiscoveryPlugins()
     PlugRegistry::GetInstance().GetAllDerivedTypes<NdrDiscoveryPlugin>(
         &discoveryPluginTypes);
 
+    // Allow plugins to be disabled.
+    const std::string disabledPluginsStr = TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
+    const std::set<std::string> disabledPlugins = TfStringTokenizeToSet(disabledPluginsStr, ",");
+
     // Instantiate any discovery plugins that were found
     for (const TfType& discoveryPluginType : discoveryPluginTypes) {
+        const std::string& pluginName = discoveryPluginType.GetTypeName();
+        if (disabledPlugins.find(pluginName) != disabledPlugins.end()) {
+            TF_DEBUG(NDR_DISCOVERY).Msg(
+                "[PXR_NDR_DISABLE_PLUGINS] Disabled NdrDiscoveryPlugin '%s'\n",
+                pluginName.c_str());
+            continue;
+        }
+
         TF_DEBUG(NDR_DISCOVERY).Msg(
             "Found NdrDiscoveryPlugin '%s'\n", 
             discoveryPluginType.GetTypeName().c_str());
@@ -926,8 +957,28 @@ void
 NdrRegistry::_InstantiateParserPlugins(
     const std::set<TfType>& parserPluginTypes)
 {
+    // Allow plugins to be disabled.
+    const std::string disabledPluginsStr = TfGetEnvSetting(PXR_NDR_DISABLE_PLUGINS);
+    const std::set<std::string> disabledPlugins = TfStringTokenizeToSet(disabledPluginsStr, ",");
+
+    // Ensure this list is in a consistent order to ensure stable behavior.
+    // TfType's operator< is not stable across runs, so we sort based on
+    // typename instead.
+    std::vector<TfType> orderedPluginTypes {parserPluginTypes.begin(), parserPluginTypes.end()};
+    std::sort(orderedPluginTypes.begin(), orderedPluginTypes.end(),
+        [](const TfType& a, const TfType& b) {
+            return a.GetTypeName() < b.GetTypeName();
+        });
+
     // Instantiate any parser plugins that were found
-    for (const TfType& parserPluginType : parserPluginTypes) {
+    for (const TfType& parserPluginType : orderedPluginTypes) {
+        const std::string& pluginName = parserPluginType.GetTypeName();
+        if (disabledPlugins.find(pluginName) != disabledPlugins.end()) {
+            TF_DEBUG(NDR_DISCOVERY).Msg(
+                "[PXR_NDR_DISABLE_PLUGINS] Disabled NdrParserPlugin '%s'\n",
+                pluginName.c_str());
+            continue;
+        }
         TF_DEBUG(NDR_DISCOVERY).Msg(
             "Found NdrParserPlugin '%s' for discovery types:\n", 
             parserPluginType.GetTypeName().c_str());

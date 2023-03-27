@@ -237,15 +237,13 @@ private:
     static inline Handle _GetHandle(char const *ptr) {
         if (ptr) {
             for (unsigned region = 1; region != NumRegions+1; ++region) {
-                char const *start = _regionStarts[region];
-                ptrdiff_t diff = ptr - start;
-                // Indexes start at 1 to avoid hash collisions when combining
-                // multiple pool indexes in a single hash, so strictly greater
-                // than 0 rather than greater-equal is appropriate here.
-                if (ARCH_LIKELY(start && (diff > 0) &&
-                     (diff < static_cast<ptrdiff_t>(ElemsPerRegion*ElemSize)))){
-                    return Handle(region, 
-                                  static_cast<uint32_t>(diff / ElemSize));
+                // We rely on modular arithmetic so that if ptr is less than
+                // start, the diff will be larger than ElemsPerRegion*ElemSize.
+                uintptr_t start = (uintptr_t)_regionStarts[region];
+                uintptr_t diff = (uintptr_t)ptr - start;
+                if (diff < (uintptr_t)(ElemsPerRegion*ElemSize)) {
+                    return Handle(
+                        region, static_cast<uint32_t>(diff / ElemSize));
                 }
             }
         }

@@ -37,8 +37,6 @@
 
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 
-#include "pxr/imaging/hgi/capabilities.h"
-
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/usd/sdr/declare.h"
@@ -1231,12 +1229,9 @@ HdStMaterialNetwork::ProcessMaterialNetwork(
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
         if (!isVolume) {
-            const bool bindlessTexturesEnabled = 
-                resourceRegistry->GetHgi()->GetCapabilities()->IsSet(
-                    HgiDeviceCapabilitiesBitsBindlessTextures);
             HdSt_ApplyMaterialXFilter(&surfaceNetwork, materialId,
                                       *surfTerminal, surfTerminalPath,
-                                      &_materialParams, bindlessTexturesEnabled);
+                                      &_materialParams, resourceRegistry);
         }
 #endif
         // Extract the glslfx and metadata for surface/volume.

@@ -92,7 +92,8 @@ public:
     HgiBlitCmdsUniquePtr CreateBlitCmds() override;
 
     HGIGL_API
-    HgiComputeCmdsUniquePtr CreateComputeCmds() override;
+    HgiComputeCmdsUniquePtr CreateComputeCmds(
+        HgiComputeCmdsDesc const& desc) override;
 
     HGIGL_API
     HgiTextureHandle CreateTexture(HgiTextureDesc const & desc) override;
@@ -162,6 +163,9 @@ public:
 
     HGIGL_API
     HgiGLCapabilities const* GetCapabilities() const override;
+
+    HGIGL_API
+    HgiIndirectCommandEncoder* GetIndirectCommandEncoder() const override;
 
     HGIGL_API
     void StartFrame() override;
