@@ -38,56 +38,78 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/arch/demangle.h"
 
+#include <thread>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
-template <class T> std::mutex* TfSingleton<T>::_mutex = 0;
-template <class T> T* TfSingleton<T>::_instance = 0;
+template <class T> std::atomic<T *> TfSingleton<T>::_instance;
 
-template <typename T>
-T&
-TfSingleton<T>::_CreateInstance()
+template <class T>
+void
+TfSingleton<T>::SetInstanceConstructed(T &instance)
 {
-    // Why is TfSingleton<T>::_mutex a pointer requiring allocation and
-    // construction and not simply an object?  Because the default 
-    // std::mutex c'tor on MSVC 2015 isn't constexpr .  That means the
-    // mutex is dynamically initialized.  That can be too late for
-    // singletons, which are often accessed via ARCH_CONSTRUCTOR()
-    // functions.
-    static std::once_flag once;
-    std::call_once(once, [](){
-        TfSingleton<T>::_mutex = new std::mutex;
-    });
+    if (_instance.exchange(&instance) != nullptr) {
+        TF_FATAL_ERROR("this function may not be called after "
+                       "GetInstance() or another SetInstanceConstructed() "
+                       "has completed");
+    }
+}
 
-    TfAutoMallocTag2 tag2("Tf", "TfSingleton::_CreateInstance");
-    TfAutoMallocTag tag("Create Singleton " + ArchGetDemangled<T>());
+template <class T>
+T *
+TfSingleton<T>::_CreateInstance(std::atomic<T *> &instance)
+{
+    static std::atomic<bool> isInitializing;
+    
+    TfAutoMallocTag2 tag("Tf", "TfSingleton::_CreateInstance",
+                         "Create Singleton " + ArchGetDemangled<T>());
 
-    std::lock_guard<std::mutex> lock(*TfSingleton<T>::_mutex);
-    if (!TfSingleton<T>::_instance) {
-        ARCH_PRAGMA_PUSH
-        ARCH_PRAGMA_MAY_NOT_BE_ALIGNED
-        T *inst = new T;
-        ARCH_PRAGMA_POP
-
-        // T's constructor could cause this to be created and set
-        // already, so guard against that.
-        if (!TfSingleton<T>::_instance) {
-            TfSingleton<T>::_instance = inst;
+    // Try to take isInitializing false -> true.  If we do it, then check to see
+    // if we don't yet have an instance.  If we don't, then we get to create it.
+    // Otherwise we just wait until the instance shows up.
+    if (isInitializing.exchange(true) == false) {
+        // Do we not yet have an instance?
+        if (!instance) {
+            // Create it.  The constructor may set instance via
+            // SetInstanceConstructed(), so check for that.
+            T *newInst = new T;
+            
+            T *curInst = instance.load();
+            if (curInst) {
+                if (curInst != newInst) {
+                    TF_FATAL_ERROR("race detected setting singleton instance");
+                }
+            }
+            else {
+                TF_AXIOM(instance.exchange(newInst) == nullptr);
+            }                
+        }
+        isInitializing = false;
+    }
+    else {
+        while (!instance) {
+            std::this_thread::yield();
         }
     }
-
-    return *TfSingleton<T>::_instance;
+    
+    return instance.load();
 }
 
 template <typename T>
 void
-TfSingleton<T>::_DestroyInstance()
+TfSingleton<T>::DeleteInstance()
 {
-    std::lock_guard<std::mutex> lock(*TfSingleton<T>::_mutex);
-    delete TfSingleton<T>::_instance;
-    TfSingleton<T>::_instance = 0;
+    // Try to swap out a non-null instance for nullptr -- if we do it, we delete
+    // it.
+    T *instance = _instance.load();
+    while (instance && !_instance.compare_exchange_weak(instance, nullptr)) {
+        std::this_thread::yield();
+    }
+    delete instance;
 }
 
 /// Source file definition that a type is being used as a singleton.

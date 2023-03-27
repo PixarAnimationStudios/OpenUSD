@@ -17,8 +17,6 @@ pxr_library(hdGp
         generativeProceduralPlugin
         generativeProceduralPluginRegistry
         generativeProceduralResolvingSceneIndex
-
-    PRIVATE_CLASSES
         sceneIndexPlugin
 
     RESOURCE_FILES

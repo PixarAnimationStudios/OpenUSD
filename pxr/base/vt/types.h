@@ -190,30 +190,62 @@ VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
 #define VT_VALUE_TYPES \
     VT_BUILTIN_VALUE_TYPES VT_CLASS_VALUE_TYPES
 
-// Provide compile-time value type indexes for types that are "known" to Vt --
-// specifically, those types that appear in VT_VALUE_TYPES.  Note that VtArray
-// and VtValue can work with other types that are not these "known" types.
+namespace Vt_KnownValueTypeDetail
+{
+
+// Implement compile-time value type indexes.
 //
 // Base case -- unknown types get index -1.
 template <class T>
 constexpr int
-VtGetKnownValueTypeIndex() {
+GetIndex() {
     return -1;
 }
 
 // Set indexes for known types.
 #define VT_SET_VALUE_TYPE_INDEX(r, unused, i, elem)                       \
     template <> constexpr int                                             \
-    VtGetKnownValueTypeIndex< VT_TYPE(elem) >() {                         \
+    GetIndex< VT_TYPE(elem) >() {                                         \
         return i;                                                         \
     }
 BOOST_PP_SEQ_FOR_EACH_I(VT_SET_VALUE_TYPE_INDEX, ~, VT_VALUE_TYPES)
 #undef VT_SET_VALUE_TYPE_INDEX
 
+} // Vt_KnownValueTypeDetail
+
 // Total number of 'known' value types.
 constexpr int
 VtGetNumKnownValueTypes() {
     return BOOST_PP_SEQ_SIZE(VT_VALUE_TYPES);
+}
+
+/// Provide compile-time value type indexes for types that are "known" to Vt --
+/// specifically, those types that appear in VT_VALUE_TYPES.  Note that VtArray
+/// and VtValue can work with other types that are not these "known" types.
+///
+/// VtGetKnownValueTypeIndex can only be used with known types.  Querying a
+/// type that is not known to Vt results in a compilation error.  The set of
+/// known types and their indexes are not guaranteed to be stable across
+/// releases of the library.
+///
+/// Most clients should prefer VtVisitValue over direct use of the type index
+/// as VtVisitValue provides convenient and efficient access to the held
+/// value.
+template <class T>
+constexpr int
+VtGetKnownValueTypeIndex()
+{
+    constexpr int index = Vt_KnownValueTypeDetail::GetIndex<T>();
+    static_assert(index != -1, "T is not one of the known VT_VALUE_TYPES.");
+    return index;
+}
+
+/// Returns true if `T` is a type that appears in VT_VALUE_TYPES.
+template <class T>
+constexpr bool
+VtIsKnownValueType()
+{
+    return Vt_KnownValueTypeDetail::GetIndex<T>() != -1;
 }
 
 // None of the VT_VALUE_TYPES are value proxies.  We want to specialize these

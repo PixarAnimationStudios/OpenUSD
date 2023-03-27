@@ -55,6 +55,8 @@ HgiMetalSampler::HgiMetalSampler(HgiMetal *hgi, HgiSamplerDesc const& desc)
     HGIMETAL_DEBUG_LABEL(smpDesc, _descriptor.debugName.c_str());
     
     _samplerId= [hgi->GetPrimaryDevice() newSamplerStateWithDescriptor:smpDesc];
+
+    [smpDesc release];
 }
 
 HgiMetalSampler::~HgiMetalSampler()

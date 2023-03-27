@@ -159,6 +159,7 @@
             <addaction name="actionShow_All_Prototype_Prims"/>
             <addaction name="actionShow_Undefined_Prims"/>
             <addaction name="actionShow_Abstract_Prims"/>
+            <addaction name="actionShow_Prim_DisplayName"/>
            </widget>
            <addaction name="menuNavigation"/>
            <addaction name="menuShow"/>
@@ -1650,7 +1651,7 @@
      <x>0</x>
      <y>0</y>
      <width>1145</width>
-     <height>20</height>
+     <height>21</height>
     </rect>
    </property>
    <property name="minimumSize">
@@ -1724,6 +1725,7 @@
     <addaction name="showInterpreter"/>
     <addaction name="actionPreferences"/>
     <addaction name="showDebugFlags"/>
+    <addaction name="showHydraSceneBrowser"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -2660,6 +2662,14 @@
     <string>Abstract Prims (Classes)</string>
    </property>
   </action>
+  <action name="actionShow_Prim_DisplayName">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Use Display Name (Prims)</string>
+   </property>
+  </action>
   <action name="actionPick_Prims">
    <property name="checkable">
     <bool>true</bool>
@@ -2978,6 +2988,11 @@
    </property>
    <property name="shortcut">
     <string>F</string>
+   </property>
+  </action>
+  <action name="showHydraSceneBrowser">
+   <property name="text">
+    <string>Hydra Scene Browser</string>
    </property>
   </action>
   <actiongroup name="actionGroupCameraMask">

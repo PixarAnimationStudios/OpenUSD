@@ -24,6 +24,9 @@
 
 #include "pxr/imaging/hd/prefixingSceneIndex.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/systemSchema.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -158,15 +161,6 @@ public:
     {
     }
 
-    bool Has(const TfToken &name) override
-    {
-        if (_inputDataSource) {
-            return _inputDataSource->Has(name);
-        }
-
-        return false;
-    }
-
     TfTokenVector GetNames() override
     {
         if (_inputDataSource) {
@@ -215,10 +209,44 @@ private:
     const HdContainerDataSourceHandle _inputDataSource;
 };
 
+// This class is a data source for the inputScene's absolute root prim's data
+// source.  It erases the "system" container, since that will instead be
+// underlayed on the inputScene's root prims.
+class Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource final
+    : public Hd_PrefixingSceneIndexContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(
+        Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource)
+
+    using Parent = Hd_PrefixingSceneIndexContainerDataSource;
+
+    Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource(
+        const SdfPath& prefix, HdContainerDataSourceHandle inputDataSource)
+        : Parent(prefix, inputDataSource)
+    {
+    }
+
+    TfTokenVector GetNames() override
+    {
+        TfTokenVector names = Parent::GetNames();
+        names.erase(
+            std::remove(
+                names.begin(), names.end(), HdSystemSchemaTokens->system),
+            names.end());
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken& name) override
+    {
+        if (name == HdSystemSchemaTokens->system) {
+            return nullptr;
+        }
+        return Parent::Get(name);
+    }
+};
+
 } // anonymous namespace
-
-
-
 
 HdPrefixingSceneIndex::HdPrefixingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene, const SdfPath &prefix)
@@ -234,12 +262,50 @@ HdPrefixingSceneIndex::GetPrim(const SdfPath &primPath) const
         return {TfToken(), nullptr};
     }
 
-    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(
-            _RemovePathPrefix(primPath));
+    const SdfPath inputScenePath = _RemovePathPrefix(primPath);
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(inputScenePath);
 
+    // We'll need to take care of the HdSystemSchema.
+    //
+    // Suppose our input scene index looks like:
+    // / 
+    //   ChildA
+    //   ChildB
+    //
+    // Where the absolute root (/) has the "system" container data.  Suppose
+    // we're prefixing with /X, meaning the resulting sceneIndex will look like:
+    // /
+    //   X
+    //     ChildA 
+    //     ChildB
+    //
+    // We handle these cases:
+    // 1.  We need to make sure /X does *not* have the system container.  If it
+    //     did, then /X/other would errantly get the
+    //     system data applied to it.
+    // 2.  /X/ChildA and /X/ChildB need to get the system container.
     if (prim.dataSource) {
-        prim.dataSource = Hd_PrefixingSceneIndexContainerDataSource::New(
+        const bool isInputSceneAbsoluteRoot = inputScenePath.IsAbsoluteRootPath();
+        if (isInputSceneAbsoluteRoot) {
+            // This takes care of the HdSystemSchema case 1.
+            prim.dataSource
+                = Hd_PrefixingSceneIndexAbsoluteRootPrimContainerDataSource::
+                    New(_prefix, prim.dataSource);
+        }
+        else {
+            // Create a container data source to handle prefixing SdfPath values
+            prim.dataSource = Hd_PrefixingSceneIndexContainerDataSource::New(
                 _prefix, prim.dataSource);
+
+            const bool isRootPrimPath = inputScenePath.IsRootPrimPath();
+            if (isRootPrimPath) {
+                // This takes care of the HdSystemSchema case 2.
+                prim.dataSource = HdOverlayContainerDataSource::New(
+                    HdSystemSchema::ComposeAsPrimDataSource(
+                        _GetInputSceneIndex(), inputScenePath, nullptr),
+                    prim.dataSource);
+            }
+        }
     }
 
     return prim;

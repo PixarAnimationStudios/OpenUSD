@@ -312,6 +312,15 @@ HdPrmanInstancer::GetInstancePrimvars(
             const char *strippedName = entry.first.GetText();
             strippedName += strlen(riAttrPrefix);
             name = RtUString(strippedName);
+
+            // ri:attributes and primvars:ri:attributes primvars end up having
+            // the same name, potentially causing collisions in the primvar list.
+            // When both ri:attributes and primvar:ri:attributes versions of 
+            // the same primvars exist, the primvar:ri:attributes version should
+            // win out.
+            if (attrs.HasParam(name)) {
+                continue;
+            }
         } else if (!strncmp(entry.first.GetText(), primVarsRiAttrPrefix,
                             strlen(primVarsRiAttrPrefix))) {
             const char *strippedName = entry.first.GetText();

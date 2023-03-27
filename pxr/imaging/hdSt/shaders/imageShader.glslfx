@@ -60,9 +60,9 @@ void main(void)
     // 'st' is the geometric UV where the [bottom,left] returns [0, 0].
     // Unlike gl_fragCoord where the [bottom,left] defaults to [0.5, 0.5].
     //
-    //    gl_VertexID=0 -> (-1,-1)
-    //    gl_VertexID=1 -> ( 3,-1)
-    //    gl_VertexID=2 -> (-1, 3)
+    //    hd_VertexID=0 -> (-1,-1)
+    //    hd_VertexID=1 -> ( 3,-1)
+    //    hd_VertexID=2 -> (-1, 3)
     //
     //    glDrawArrays( GL_TRIANGLES, 0, 3 );
     //
@@ -83,8 +83,8 @@ void main(void)
     //    u,v=0,0          u,v=2,0
     //
     //
-    float x = -1.0 + float(((gl_VertexID%3) & 1) << 2);
-    float y = -1.0 + float(((gl_VertexID%3) & 2) << 1);
+    float x = -1.0 + float(((hd_VertexID%3) & 1) << 2);
+    float y = -1.0 + float(((hd_VertexID%3) & 2) << 1);
     outData.uv.x = (x+1.0) * 0.5;
     outData.uv.y = (y+1.0) * 0.5;
 

@@ -363,9 +363,9 @@ ToPtr TfConst_cast(TfWeakPtrFacade<X, Y> const &p) {
 template <class T>
 template <template <class> class X, class U>
 inline TfRefPtr<T>::TfRefPtr(const TfWeakPtrFacade<X, U>& p,
-                             typename boost::enable_if<
-                                 boost::is_convertible<U*, T*>
-                             >::type *dummy)
+                             typename std::enable_if<
+                                 std::is_convertible<U*, T*>::value
+                             >::type *)
     : _refBase(get_pointer(p))
 {
     _AddRef();

@@ -28,6 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
+#include "pxr/usdImaging/usdImaging/representedByAncestorPrimAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -55,16 +56,36 @@ public:
     // ---------------------------------------------------------------------- //
 
     USDIMAGING_API
-    TfTokenVector GetImagingSubprims() override;
+    TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
 
     USDIMAGING_API
-    TfToken GetImagingSubprimType(TfToken const& subprim) override;
+    TfToken GetImagingSubprimType(
+            UsdPrim const& prim,
+            TfToken const& subprim) override;
 
     USDIMAGING_API
     HdContainerDataSourceHandle GetImagingSubprimData(
-            TfToken const& subprim,
             UsdPrim const& prim,
+            TfToken const& subprim,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprim(
+            UsdPrim const& prim,
+            TfToken const& subprim,
+            TfTokenVector const& properties) override;
+
+    /// Returns RepresentsSelfAndDescendents to suppress population of child
+    /// Shader prims and receive notice when their properties change/
+    USDIMAGING_API
+    PopulationMode GetPopulationMode() override;
+
+    USDIMAGING_API
+    HdDataSourceLocatorSet InvalidateImagingSubprimFromDescendent(
+            UsdPrim const& prim,
+            UsdPrim const& descendentPrim,
+            TfToken const& subprim,
+            TfTokenVector const& properties) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization
@@ -139,6 +160,19 @@ protected:
     USDIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) final;
+};
+
+/// \class UsdImagingShaderAdapter
+/// \brief Delegates invalidation responsibility of a Shader prim to an
+/// ancestor Material prim
+class UsdImagingShaderAdapter :
+        public UsdImagingRepresentedByAncestorPrimAdapter
+{
+public:
+    using BaseAdapter = UsdImagingRepresentedByAncestorPrimAdapter;
+
+    UsdImagingShaderAdapter()
+        : UsdImagingRepresentedByAncestorPrimAdapter() {}
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

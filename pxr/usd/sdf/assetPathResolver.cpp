@@ -258,6 +258,12 @@ Sdf_GetAnonLayerIdentifierTemplate(
     const string& tag)
 {
     string idTag = tag.empty() ? tag : TfStringTrim(tag);
+
+    // Ensure that URL-encoded characters are not misinterpreted as
+    // format strings to TfStringPrintf in Sdf_ComputeAnonLayerIdentifier.
+    // See discussion in https://github.com/PixarAnimationStudios/USD/pull/2022
+    idTag = TfStringReplace(idTag, "%", "%%");
+
     return _Tokens->AnonLayerPrefix.GetString() + "%p" +
         (idTag.empty() ? idTag : ":" + idTag);
 }

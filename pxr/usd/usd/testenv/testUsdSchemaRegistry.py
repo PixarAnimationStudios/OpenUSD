@@ -225,11 +225,17 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             Usd.SchemaRegistry.GetAPITypeFromSchemaTypeName("ModelAPI"), 
             modelAPI)
 
-        # A valid type without an associated schema prim definition returns an
-        # empty type name.
-        self.assertTrue(Tf.Type(Usd.Typed))        
+        # Test getting a schema type name from the abstract base schema 
+        # UsdTyped. 
         self.assertEqual(
-            Usd.SchemaRegistry().GetSchemaTypeName(Tf.Type(Usd.Typed)), "")
+            Usd.SchemaRegistry.GetSchemaTypeName(Usd.Typed), 
+            "Typed")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetConcreteSchemaTypeName(abstractTest),
+            "")
+        self.assertEqual(
+            Usd.SchemaRegistry.GetAPISchemaTypeName(abstractTest), 
+            "")
 
     def test_FindConcretePrimDefinition(self):
         # MetadataTest is a concrete prim schama. Can get the prim definition

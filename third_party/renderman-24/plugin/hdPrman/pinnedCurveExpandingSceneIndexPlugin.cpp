@@ -47,7 +47,8 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+    // Should be chained _after_ the extComputationPrimvarPruningSceneIndex.
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 1;
 
     // Register the plugins conditionally.
     HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(

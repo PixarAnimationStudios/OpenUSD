@@ -250,16 +250,43 @@ HdStUdimTextureObject::_Commit()
 {
     TRACE_FUNCTION();
 
-    if (_hgiFormat == HgiFormatInvalid) {
-        return;
-    }
-
     Hgi * const hgi = _GetHgi();
     if (!TF_VERIFY(hgi)) {
         return;
     }
 
     _DestroyTextures();
+
+    if (_hgiFormat == HgiFormatInvalid) {
+        // Create 1x1x1 black fallback texture.
+        HgiTextureDesc texDesc;
+        texDesc.debugName = "UdimTextureFallback";
+        texDesc.usage = HgiTextureUsageBitsShaderRead;
+        texDesc.format = HgiFormatUNorm8Vec4;
+        texDesc.type = HgiTextureType2DArray;
+        texDesc.dimensions = GfVec3i(1, 1, 1);;
+        texDesc.layerCount = 1;
+        texDesc.mipLevels = 1;
+        texDesc.pixelsByteSize = 4 * sizeof(unsigned char);
+        const unsigned char data[4] = {0, 0, 0, 255};
+        texDesc.initialData = &data[0];
+        _texelTexture = hgi->CreateTexture(texDesc);
+        
+        HgiTextureDesc layoutTexDesc;
+        layoutTexDesc.debugName = "UdimLayoutTextureFallback";
+        layoutTexDesc.usage = HgiTextureUsageBitsShaderRead;
+        layoutTexDesc.type = HgiTextureType1D;
+        layoutTexDesc.dimensions = GfVec3i(1, 1, 1);
+        layoutTexDesc.format = HgiFormatFloat32;
+        layoutTexDesc.layerCount = 1;
+        layoutTexDesc.mipLevels = 1;
+        layoutTexDesc.pixelsByteSize = sizeof(float);
+        const float layoutData[1] = {1};
+        layoutTexDesc.initialData = &layoutData[0];
+        _layoutTexture = hgi->CreateTexture(layoutTexDesc);
+
+        return;
+    }
 
     // Texel GPU texture creation
     {

@@ -1346,17 +1346,24 @@ ArchGetStackFrames(size_t maxDepth, vector<uintptr_t> *frames)
     ArchGetStackFrames(maxDepth, /* skip = */ 0, frames);
 }
 
+void
+ArchGetStackFrames(size_t maxDepth, size_t skip, vector<uintptr_t> *frames)
+{
+    frames->resize(maxDepth);
+    frames->resize(ArchGetStackFrames(maxDepth, skip, frames->data()));
+}
+
 #if defined(ARCH_OS_LINUX) && defined(ARCH_BITS_64)
 struct Arch_UnwindContext {
 public:
-    Arch_UnwindContext(size_t inMaxdepth, size_t inSkip,
-                       vector<uintptr_t>* inFrames) :
-        maxdepth(inMaxdepth), skip(inSkip), frames(inFrames) { }
+    Arch_UnwindContext(size_t maxdepth, size_t skip, uintptr_t* frames) :
+        maxdepth(maxdepth), skip(skip), curdepth(0), frames(frames) {}
 
 public:
     size_t maxdepth;
     size_t skip;
-    vector<uintptr_t>* frames;
+    size_t curdepth;
+    uintptr_t* frames;
 };
 
 static _Unwind_Reason_Code
@@ -1367,15 +1374,15 @@ Arch_unwindcb(struct _Unwind_Context *ctx, void *data)
     // never extend frames because it is unsafe to alloc inside a
     // signal handler, and this function is called sometimes (when
     // profiling) from a signal handler.
-    if (context->frames->size() >= context->maxdepth) {
+    if (context->curdepth >= context->maxdepth) {
         return _URC_END_OF_STACK;
     }
     else {
-        if (context->skip > 0) {
+        if (context->skip) {
             --context->skip;
         }
         else {
-            context->frames->push_back(_Unwind_GetIP(ctx));
+            context->frames[context->curdepth++] = _Unwind_GetIP(ctx);
         }
         return _URC_NO_REASON;
     }
@@ -1385,49 +1392,49 @@ Arch_unwindcb(struct _Unwind_Context *ctx, void *data)
  * ArchGetStackFrames
  *  save some of stack into buffer.
  */
-void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+size_t
+ArchGetStackFrames(size_t maxdepth, size_t skip, uintptr_t *frames)
 {
     /* use the exception handling mechanism to unwind our stack.
      * note this is gcc >= 3.3.3 only.
      */
-    frames->reserve(maxdepth);
     Arch_UnwindContext context(maxdepth, skip, frames);
     _Unwind_Backtrace(Arch_unwindcb, (void*)&context);
+    return context.curdepth;
 }
 
 #elif defined(ARCH_OS_WINDOWS)
 
-void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+size_t
+ArchGetStackFrames(size_t maxdepth, size_t skip, uintptr_t *frames)
 {
     void* stack[MAX_STACK_DEPTH];
     size_t frameCount = CaptureStackBackTrace(skip, MAX_STACK_DEPTH, stack, NULL);
     frameCount = std::min(frameCount, maxdepth);
-    frames->reserve(frameCount);
-    for (size_t frame = 0; frame < frameCount; ++frame) {
-        frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
+    for (size_t frame = 0; frame != frameCount; ++frame) {
+        frames[frame] = reinterpret_cast<uintptr_t>(stack[frame]);
     }
+    return frameCount;
 }
 
 #elif defined(ARCH_OS_DARWIN)
 
-void
-ArchGetStackFrames(size_t maxdepth, size_t skip, vector<uintptr_t> *frames)
+size_t
+ArchGetStackFrames(size_t maxdepth, size_t skip, uintptr_t *frames)
 {
     void* stack[MAX_STACK_DEPTH];
-    const size_t frameCount =
-        backtrace(stack, std::max((size_t)MAX_STACK_DEPTH, maxdepth));
-    frames->reserve(frameCount);
-    for (size_t frame = skip; frame < frameCount; ++frame) {
-        frames->push_back(reinterpret_cast<uintptr_t>(stack[frame]));
+    size_t maxFrames = std::min<size_t>(MAX_STACK_DEPTH, maxdepth+skip);
+    const size_t frameCount = backtrace(stack, maxFrames);
+    for (size_t frame = skip; frame != frameCount; ++frame) {
+        *frames++ = reinterpret_cast<uintptr_t>(stack[frame]);
     }
+    return frameCount-skip;
 }
 
 #else
 
-void
-ArchGetStackFrames(size_t, size_t, vector<uintptr_t> *)
+size_t
+ArchGetStackFrames(size_t, size_t, uintptr_t *)
 {
 }
 

@@ -51,6 +51,23 @@ struct HdSt_CullingShaderKey : public HdSt_ShaderKey
     TfToken VS[6];
 };
 
+struct HdSt_CullingComputeShaderKey : public HdSt_ShaderKey
+{
+    HdSt_CullingComputeShaderKey(bool instancing, bool tinyCull, bool counting);
+    ~HdSt_CullingComputeShaderKey();
+
+    TfToken const &GetGlslfxFilename() const override { return glslfx; }
+    TfToken const *GetCS() const override { return CS; }
+
+    bool IsFrustumCullingPass() const override { return true; }
+    HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override {
+        return HdSt_GeometricShader::PrimitiveType::PRIM_COMPUTE;
+    }
+
+    TfToken glslfx;
+    TfToken CS[6];
+};
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

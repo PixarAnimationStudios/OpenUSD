@@ -52,6 +52,8 @@
 
 #include "pxr/imaging/glf/diagnostic.h"
 
+#include "pxr/base/gf/matrix4f.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
@@ -924,6 +926,14 @@ HdSt_IndirectDrawBatch::PrepareDraw(
     }
 }
 
+void
+HdSt_IndirectDrawBatch::EncodeDraw(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    // No implementation.
+}
+
 ////////////////////////////////////////////////////////////
 // GPU Resource Binding
 ////////////////////////////////////////////////////////////
@@ -1423,7 +1433,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
 
         // Make sure the reset-pass memory writes
         // are visible to the culling shader pass.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
         // Perform Culling Pass
         cullParamsInstanced.resetPass = 0;
@@ -1439,7 +1449,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
 
         // Make sure culling memory writes are
         // visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     } else {
         // set cull parameters
         Uniforms cullParams;
@@ -1455,7 +1465,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
         cullGfxCmds->Draw(_dispatchBufferCullInput->GetCount(), 0, 1, 0);
 
         // Make sure culling memory writes are visible to execute draw.
-        cullGfxCmds->MemoryBarrier(HgiMemoryBarrierAll);
+        cullGfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     }
 
     cullGfxCmds->PopDebugGroup();

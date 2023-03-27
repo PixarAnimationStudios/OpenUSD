@@ -121,8 +121,6 @@ void wrapEngine()
             .def("AddSelected", &UsdImagingGLEngine::AddSelected)
             .def("SetSelectionColor", &UsdImagingGLEngine::SetSelectionColor)
             .def("TestIntersection", &_TestIntersection)
-            .def("IsHydraEnabled", &UsdImagingGLEngine::IsHydraEnabled)
-                .staticmethod("IsHydraEnabled")
             .def("IsConverged", &UsdImagingGLEngine::IsConverged)
             .def("GetRendererPlugins", &UsdImagingGLEngine::GetRendererPlugins,
                  return_value_policy< TfPySequenceToList >())

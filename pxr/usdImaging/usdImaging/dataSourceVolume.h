@@ -42,7 +42,6 @@ class UsdImagingDataSourceVolumeFieldBindings : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceVolumeFieldBindings);
 
-    bool Has(const TfToken & name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken & name) override;
 
@@ -72,13 +71,15 @@ class UsdImagingDataSourceVolumePrim : public UsdImagingDataSourceGprim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceVolumePrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
     static
     HdDataSourceLocatorSet
-    Invalidate(const TfToken &subprim, const TfTokenVector &properties);
+    Invalidate(
+        UsdPrim const& prim,
+        const TfToken &subprim,
+        const TfTokenVector &properties);
 
 private:
     // Private constructor, use static New() instead.

@@ -27,9 +27,10 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 
+#include <atomic>
 #include <cstdlib>
+#include <cstdint>
 #include <iosfwd>
-#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -191,7 +192,7 @@ public:
     /// If \c Initialize() has been successfully called, this function returns
     /// \c true.
     static bool IsInitialized() {
-        return TfMallocTag::_doTagging;
+        return TfMallocTag::_isInitialized;
     }
 
     /// Return total number of allocated bytes.
@@ -223,16 +224,6 @@ public:
     TF_API static bool GetCallTree(CallTree* tree, bool skipRepeated = true);
 
 private:
-    // Enum describing whether allocations are being tagged in an associated
-    // thread.
-    enum _Tagging {
-        _TaggingEnabled,   // Allocations are being tagged
-        _TaggingDisabled,  // Allocations are not being tagged
-
-        _TaggingDormant    // Tagging has not been initialized in this
-                           // thread as no malloc tags have been pushed onto
-                           // the stack.
-    };
 
     struct _ThreadData;
 
@@ -248,17 +239,19 @@ public:
     /// local object exists only because its constructor and destructor modify
     /// program state.
     ///
-    /// A \c TfAutoMallocTag object is used to push a memory tag onto the
-    /// current call stack; destruction of the object pops the call stack.
-    /// Note that each thread has its own call-stack.
+    /// A \c TfAutoMallocTag object is used to push memory tags onto the current
+    /// call stack; destruction of the object pops the tags.  Note that each
+    /// thread has its own tag-stack.
     ///
-    /// There is no (measurable) cost to creating or destroying memory tags if
-    /// \c TfMallocTag::Initialize() has not been called; if it has, then
-    /// there is a small (but measurable) cost associated with pushing and
-    /// popping memory tags on the local call stack.  Most of the cost is
-    /// simply locking a mutex; typically, pushing or popping the call stack
-    /// does not actually cause any memory allocation unless this is the first
-    /// time that the given named tag has been encountered.
+    /// There is very little cost to creating or destroying memory tags if \c
+    /// TfMallocTag::Initialize() has not been called: an inline read of a
+    /// global variable and a branch.  If tagging has been initialized, then
+    /// there is a small cost associated with pushing and popping memory tags on
+    /// the local stack.  Most of the cost is taking a shared/read lock on a
+    /// mutex and looking up the tag data structures in hash tables.  Pushing or
+    /// popping the call stack does not actually cause any memory allocation
+    /// unless this is the first time that the given named tag has been
+    /// encountered.
     class Auto {
     public:
         Auto(const Auto &) = delete;
@@ -267,47 +260,34 @@ public:
         Auto(Auto &&) = delete;
         Auto& operator=(Auto &&) = delete;
 
-        /// Push a memory tag onto the local-call stack with name \p name.
+        /// Push one or more memory tags onto the local-call stack with names \p
+        /// name1 ... \p nameN.  The passed names should be either string
+        /// literals, const char pointers, or std::strings.
         ///
         /// If \c TfMallocTag::Initialize() has not been called, this
-        /// constructor does essentially no (measurable) work, assuming \p
-        /// name is a string literal or just a pointer to an existing string.
+        /// constructor does essentially no work, assuming the names are string
+        /// literals or a pointer to an existing c-string.  However if any of
+        /// the names are expressions that evaluate to \c std::string objects,
+        /// the work done constructing those strings will still be incurred.  If
+        /// this is an issue, you can query \c TfMallocTag::IsInitialized() to
+        /// avoid unneeded work when tagging is inactive.
         ///
         /// Objects of this class should only be created as local variables;
         /// never as member variables, global variables, or via \c new.  If
         /// you can't create your object as a local variable, you can make
         /// manual calls to \c TfMallocTag::Push() and \c TfMallocTag::Pop(),
         /// though you should do this only as a last resort.
-        Auto(const char* name) : _threadData(0) {
-            if (TfMallocTag::_doTagging)
-                _Begin(name);
-        }
-
-        /// Push a memory tag onto the local-call stack with name \p name.
-        ///
-        /// If \c TfMallocTag::Initialize() has not been called, this
-        /// constructor does essentially no (measurable) work.  However, any
-        /// work done in constructing the \c std::string object \p name will
-        /// be incurred even if tagging is not active.  If this is an issue,
-        /// you can query \c TfMallocTag::IsInitialized() to avoid unneeded
-        /// work when tagging is inactive.  Note that the case when \p name is
-        /// a string literal does not apply here: instead, the constructor that
-        /// takes a \c const \c char* (above) will be called.
-        ///
-        /// Objects of this class should only be created as local variables;
-        /// never as member variables, global variables, or via \c new.  If
-        /// you can't create your object as a local variable, you can make
-        /// manual calls to \c TfMallocTag::Push() and \c TfMallocTag::Pop(),
-        /// though you should do this only as a last resort.
-        Auto(const std::string& name) : _threadData(0) {
-            if (TfMallocTag::_doTagging)
-                _Begin(name);
-        }
+        template <class Str, class... Strs>
+        explicit Auto(Str &&name1, Strs &&... nameN)
+            : _threadData(TfMallocTag::_Push(_CStr(std::forward<Str>(name1))))
+            , _nTags(_threadData
+                     ? 1 + _PushImpl(std::forward<Strs>(nameN)...)
+                     : 0) {}
 
         /// Pop the tag from the stack before it is destructed.
         ///
         /// Normally you should not use this.  The normal destructor is
-        /// preferable because it insures proper release order.  If you call
+        /// preferable because it ensures proper release order.  If you call
         /// \c Release(), make sure all tags are released in the opposite
         /// order they were declared in.  It is better to use sub-scopes to
         /// control the life span of tags, but if that won't work, \c
@@ -315,10 +295,10 @@ public:
         /// TfMallocTag::Pop() because it isn't vulnerable to early returns or
         /// exceptions.
         inline void Release() {
-            if (_threadData) {
-                _End();
-                _threadData = NULL;
+            while (_nTags--) {
+                TfMallocTag::_End(_threadData);
             }
+            _threadData = nullptr;
         }
 
         /// Pop a memory tag from the local-call stack.
@@ -331,53 +311,31 @@ public:
         }
 
     private:
-        TF_API void _Begin(const char* name);
-        TF_API void _Begin(const std::string& name);
-        TF_API void _End();
 
+        char const *_CStr(char const *cstr) const { return cstr; }
+        char const *_CStr(std::string const &str) const { return str.c_str(); }
+        
+        template <class Str, class... Strs>
+        int _PushImpl(Str &&tag, Strs &&... rest) {
+            TfMallocTag::_Begin(_CStr(std::forward<Str>(tag)), _threadData);
+            return 1 + _PushImpl(std::forward<Strs>(rest)...);
+        }
+
+        int _PushImpl() {
+            // Recursion termination base-case.
+            return 0;
+        }
+        
         _ThreadData* _threadData;
+        int _nTags;
 
         friend class TfMallocTag;
     };
 
-    /// \class Auto2
-    /// \ingroup group_tf_MallocTag
-    ///
-    /// Scoped (i.e. local) object for creating/destroying memory tags.
-    ///
-    /// Auto2 is just like Auto, except it pushes two tags onto the stack.
-    class Auto2 {
-    public:
-        /// Push two memory tags onto the local-call stack.
-        ///
-        /// \see TfMallocTag::Auto(const char* name).
-        Auto2(const char* name1, const char* name2) :
-            _tag1(name1),
-            _tag2(name2)
-        {
-        }
-
-        /// Push two memory tags onto the local-call stack.
-        ///
-        /// \see TfMallocTag::Auto(const std::string& name).
-        Auto2(const std::string& name1, const std::string& name2) :
-            _tag1(name1),
-            _tag2(name2)
-        {
-        }
-
-        /// Pop two memory tags from the local-call stack.
-        ///
-        /// \see TfMallocTag::Auto(const char* name).
-        void Release() {
-            _tag2.Release();
-            _tag1.Release();
-        }
-
-    private:
-        Auto _tag1;
-        Auto _tag2;
-    };
+    // A historical compatibility: before Auto could accept only one argument,
+    // so Auto2 existed to handle two arguments.  Now Auto can accept any number
+    // of arguments, so Auto2 is just an alias for Auto.
+    using Auto2 = Auto;
 
     /// Manually push a tag onto the stack.
     ///
@@ -389,14 +347,12 @@ public:
     /// Push() and \c Pop() is ill-advised, which is yet another reason to
     /// prefer using \c TfAutoMallocTag whenever possible.
     static void Push(const std::string& name) {
-        TfMallocTag::Auto noname(name);
-        noname._threadData = NULL;  // disable destructor
+        _Push(name.c_str());
     }
 
     /// \overload
     static void Push(const char* name) {
-        TfMallocTag::Auto noname(name);
-        noname._threadData = NULL;  // disable destructor
+        _Push(name);
     }
 
     /// Manually pop a tag from the stack.
@@ -404,14 +360,10 @@ public:
     /// This call has the same effect as the destructor for \c
     /// TfMallocTag::Auto; it must properly nest with a matching call to \c
     /// Push(), of course.
-    ///
-    /// If \c name is supplied and does not match the tag at the top of the
-    /// stack, a warning message is issued.
-    TF_API static void Pop(const char* name = NULL);
-
-    /// \overload
-    static void Pop(const std::string& name) {
-        Pop(name.c_str());
+    static void Pop() {
+        if (TfMallocTag::_isInitialized) {
+            _End();
+        }
     }
 
     /// Sets the tags to trap in the debugger.
@@ -464,36 +416,22 @@ public:
     TF_API static std::vector<std::vector<uintptr_t> > GetCapturedMallocStacks();
 
 private:
+    friend struct _TemporaryDisabler;
+
     friend struct Tf_MallocGlobalData;
-    
-    class _TemporaryTaggingState {
-    public:
-        explicit _TemporaryTaggingState(_Tagging state);
-        ~_TemporaryTaggingState();
-
-        _TemporaryTaggingState(const _TemporaryTaggingState &);
-        _TemporaryTaggingState& operator=(const _TemporaryTaggingState &);
-
-        _TemporaryTaggingState(_TemporaryTaggingState &&);
-        _TemporaryTaggingState& operator=(_TemporaryTaggingState &&);
-
-    private:
-        _Tagging _oldState;
-    };
-
-    static void _SetTagging(_Tagging state);
-    static _Tagging _GetTagging();
 
     static bool _Initialize(std::string* errMsg);
 
-    static inline bool _ShouldNotTag(_ThreadData**, _Tagging* t = NULL);
-    static inline Tf_MallocPathNode* _GetCurrentPathNodeNoLock(
-        const _ThreadData* threadData);
+    static inline _ThreadData *_Push(char const *name) {
+        if (TfMallocTag::_isInitialized) {
+            return _Begin(name);
+        }
+        return nullptr;
+    }
 
-    static void* _MallocWrapper_ptmalloc(size_t, const void*);
-    static void* _ReallocWrapper_ptmalloc(void*, size_t, const void*);
-    static void* _MemalignWrapper_ptmalloc(size_t, size_t, const void*);
-    static void  _FreeWrapper_ptmalloc(void*, const void*);
+    TF_API static _ThreadData *_Begin(char const *name,
+                                      _ThreadData *threadData = nullptr);
+    TF_API static void _End(_ThreadData *threadData = nullptr);
 
     static void* _MallocWrapper(size_t, const void*);
     static void* _ReallocWrapper(void*, size_t, const void*);
@@ -503,21 +441,21 @@ private:
     friend class TfMallocTag::Auto;
     class Tls;
     friend class TfMallocTag::Tls;
-    TF_API static bool _doTagging;
+    TF_API static std::atomic<bool> _isInitialized;
 };
 
 /// Top-down memory tagging system.
-typedef TfMallocTag::Auto TfAutoMallocTag;
+using TfAutoMallocTag = TfMallocTag::Auto;
 
 /// Top-down memory tagging system.
-typedef TfMallocTag::Auto2 TfAutoMallocTag2;
+using TfAutoMallocTag2 = TfMallocTag::Auto;
 
 /// Enable lib/tf memory management.
 ///
-/// Invoking this macro inside a class body causes the class operator \c new to push
-/// two \c TfAutoMallocTag objects onto the stack before actually allocating memory for the
-/// class.  The names passed into the tag are used for the two tags; pass NULL if you
-/// don't need the second tag.  For example,
+/// Invoking this macro inside a class body causes the class operator \c new to
+/// push two \c TfAutoMallocTag objects onto the stack before actually
+/// allocating memory for the class.  The names passed into the tag are used for
+/// the two tags; pass NULL if you don't need the second tag.  For example,
 /// \code
 /// class MyBigMeshVertex {
 /// public:
@@ -555,14 +493,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
     }                                                                         \
                                                                               \
     inline void* operator new(::std::size_t s) {                              \
-        PXR_NS::TfAutoMallocTag tag1(name1);                                  \
-        PXR_NS::TfAutoMallocTag tag2(name2);                                  \
+        PXR_NS::TfAutoMallocTag tag(name1, name2);                            \
         return malloc(s);                                                     \
     }                                                                         \
                                                                               \
     inline void* operator new[](::std::size_t s) {                            \
-        PXR_NS::TfAutoMallocTag tag1(name1);                                  \
-        PXR_NS::TfAutoMallocTag tag2(name2);                                  \
+        PXR_NS::TfAutoMallocTag tag(name1, name2);                            \
         return malloc(s);                                                     \
     }                                                                         \
                                                                               \

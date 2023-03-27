@@ -43,13 +43,14 @@ UsdImagingSphereLightAdapter::~UsdImagingSphereLightAdapter()
 }
 
 TfTokenVector
-UsdImagingSphereLightAdapter::GetImagingSubprims()
+UsdImagingSphereLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingSphereLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingSphereLightAdapter::GetImagingSubprimType(
+    UsdPrim const& prim, TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->sphereLight;

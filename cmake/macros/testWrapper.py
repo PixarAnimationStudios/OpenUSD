@@ -184,7 +184,7 @@ def _diff(fileName, baselineDir, verbose, failuresDir=None):
             "Error: could not files matching {0} to diff".format(fileName))
         return False
 
-    for fileToDiff in glob.glob(fileName):
+    for fileToDiff in filesToDiff:
         baselineFile = _resolvePath(baselineDir, fileToDiff)
         cmd = [diff, baselineFile, fileToDiff]
         if verbose:
@@ -229,7 +229,13 @@ def _imageDiff(fileName, baseLineDir, verbose, env, warn=None, warnpercent=None,
     if perceptual:
         cmdArgs.extend(['-p'])
 
-    for image in glob.glob(fileName):
+    filesToDiff = glob.glob(fileName)
+    if not filesToDiff:
+        sys.stderr.write(
+            "Error: could not files matching {0} to diff".format(fileName))
+        return False
+
+    for image in filesToDiff:
         cmd = [imageDiff]
         cmd.extend(cmdArgs)
         baselineImage = _resolvePath(baseLineDir, image)

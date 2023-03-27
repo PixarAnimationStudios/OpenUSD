@@ -94,6 +94,8 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         indices,weights = influences
         assert indices == Vt.IntArray([1,2,3])
         assert weights == Vt.FloatArray([5,6,7])
+        skinningMethodAttr = query.GetSkinningMethodAttr()
+        assert not skinningMethodAttr
 
         influences = query.ComputeVaryingJointInfluences(3)
         assert influences
@@ -110,10 +112,25 @@ class TestUsdSkelSkinningQuery(unittest.TestCase):
         indices,weights = influences
         assert indices == Vt.IntArray([1,2,3,4])
         assert weights == Vt.FloatArray([5,6,7,8])
+        skinningMethodAttr = query.GetSkinningMethodAttr()
+        assert skinningMethodAttr
+        assert skinningMethodAttr.Get() == 'classicLinear'
 
         varyingInfluences = query.ComputeVaryingJointInfluences(2)
         assert influences == varyingInfluences
 
+        query = _GetSkinningQuery(rootPath+"/NonRigidWeightsDQ")
+        assert query
+        assert not query.IsRigidlyDeformed()
+        assert query.GetNumInfluencesPerComponent() == 2
+        influences = query.ComputeJointInfluences()
+        assert influences
+        indices,weights = influences
+        assert indices == Vt.IntArray([1,2,3,4])
+        assert weights == Vt.FloatArray([5,6,7,8])
+        skinningMethodAttr = query.GetSkinningMethodAttr()
+        assert skinningMethodAttr
+        assert skinningMethodAttr.Get() == 'dualQuaternion'
 
 if __name__ == "__main__":
     unittest.main()

@@ -27,6 +27,7 @@ from .qt import QtCore, QtGui, QtWidgets
 from .usdviewContextMenuItem import UsdviewContextMenuItem
 import os, subprocess, sys
 from pxr import Ar
+from pxr.UsdUtils.toolPaths import FindUsdBinary
 
 #
 # Specialized context menu for running commands in the layer stack view.
@@ -76,24 +77,6 @@ class LayerStackContextMenuItem(UsdviewContextMenuItem):
 # Opens the layer using usdedit.
 #
 class OpenLayerMenuItem(LayerStackContextMenuItem):
-    # XXX: Note that this logic is duplicated from usddiff
-    # see bug 150247 for centralizing this API.
-    def _FindUsdEdit(self):
-        import platform
-        from distutils.spawn import find_executable
-        usdedit = find_executable('usdedit')
-        if not usdedit:
-            usdedit = find_executable('usdedit', path=os.path.abspath(os.path.dirname(sys.argv[0])))
-
-        if not usdedit and (platform.system() == 'Windows'):
-            for path in os.environ['PATH'].split(os.pathsep):
-                base = os.path.join(path, 'usdedit')
-                for ext in ['.cmd', '']:
-                    if os.access(base + ext, os.X_OK):
-                        usdedit = base + ext
-
-        return usdedit
-
     def GetText(self):
         from .common import PrettyFormatSize
         fileSize = 0
@@ -126,7 +109,7 @@ class OpenLayerMenuItem(LayerStackContextMenuItem):
         
         layerName += ".tmp"
 
-        usdeditExe = self._FindUsdEdit()
+        usdeditExe = FindUsdBinary('usdedit')
         if not usdeditExe:
             print("Warning: Could not find 'usdedit', expected it to be in PATH.")
             return

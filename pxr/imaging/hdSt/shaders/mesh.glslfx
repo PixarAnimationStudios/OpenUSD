@@ -146,6 +146,7 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- layout Mesh.PostTessVertex.Quad
+
 [
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
@@ -308,22 +309,23 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.TessControl.BSplineQuad
+
+[
+    ["out", "HD_NUM_PATCH_EVAL_VERTS"],
+    ["out", "vec4", "tessOuterLo", "patch"],
+    ["out", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexData", "inpt", "gl_MaxPatchVertices",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block array", "VertexDataTess", "outpt", "HD_NUM_PATCH_EVAL_VERTS",
+        ["OsdPerPatchVertexBezier", "v"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BSplineQuad
-
-layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
-
-patch out vec4 tessOuterLo, tessOuterHi;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inpt[gl_MaxPatchVertices];
-
-out VertexDataTess
-{
-    OsdPerPatchVertexBezier v;
-} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
@@ -366,26 +368,27 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.TessEval.BezierQuad
+
+# XXX: due to NVIDIA shader compiler bug (filed as 1687344)
+# we can't put patchCoord into interface block.
+[
+    ["in", "quads"],
+    ["in", "vec4", "tessOuterLo", "patch"],
+    ["in", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexDataTess", "inpt", "gl_MaxPatchVertices",
+        ["OsdPerPatchVertexBezier", "v"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "tesPatchCoord"],
+    ["out", "vec2", "tesTessCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessEval.BezierQuad
-
-layout(quads) in;
-
-patch in vec4 tessOuterLo, tessOuterHi;
-
-in VertexDataTess {
-    OsdPerPatchVertexBezier v;
-} inpt[gl_MaxPatchVertices];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-// XXX: due to NVIDIA shader compiler bug (filed as 1687344)
-// we can't put patchCoord into interface block.
-out vec4 tesPatchCoord;
-out vec2 tesTessCoord;
 
 void main(void)
 {
@@ -418,22 +421,23 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.TessControl.BoxSplineTriangle
+
+[
+    ["out", "HD_NUM_PATCH_EVAL_VERTS"],
+    ["out", "vec4", "tessOuterLo", "patch"],
+    ["out", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexData", "inpt", "gl_MaxPatchVertices",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block array", "VertexDataTess", "outpt", "HD_NUM_PATCH_EVAL_VERTS",
+        ["OsdPerPatchVertexBezier", "v"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessControl.BoxSplineTriangle
-
-layout(vertices = HD_NUM_PATCH_EVAL_VERTS) out;
-
-patch out vec4 tessOuterLo, tessOuterHi;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inpt[gl_MaxPatchVertices];
-
-out VertexDataTess
-{
-    OsdPerPatchVertexBezier v;
-} outpt[HD_NUM_PATCH_EVAL_VERTS];
 
 void main(void)
 {
@@ -474,26 +478,27 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.TessEval.BezierTriangle
+
+# XXX: due to NVIDIA shader compiler bug (filed as 1687344)
+# we can't put patchCoord into interface block.
+[
+    ["in", "triangles"],
+    ["in", "vec4", "tessOuterLo", "patch"],
+    ["in", "vec4", "tessOuterHi", "patch"],
+    ["in block array", "VertexDataTess", "inpt", "gl_MaxPatchVertices",
+        ["OsdPerPatchVertexBezier", "v"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "tesPatchCoord"],
+    ["out", "vec2", "tesTessCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.TessEval.BezierTriangle
-
-layout(triangles) in;
-
-patch in vec4 tessOuterLo, tessOuterHi;
-
-in VertexDataTess {
-    OsdPerPatchVertexBezier v;
-} inpt[gl_MaxPatchVertices];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-// XXX: due to NVIDIA shader compiler bug (filed as 1687344)
-// we can't put patchCoord into interface block.
-out vec4 tesPatchCoord;
-out vec2 tesTessCoord;
 
 void main(void)
 {
@@ -525,27 +530,27 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.TriangleTess
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["in array", "vec4", "tesPatchCoord", "3"],
+    ["in array", "vec2", "tesTessCoord", "3"],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.TriangleTess
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-in vec4 tesPatchCoord[3];
-in vec2 tesTessCoord[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -648,24 +653,25 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.Triangle
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.Triangle
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -734,22 +740,24 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.TriQuad
+
+[
+    ["in", "triangles"],
+    ["out", "triangle_strip"],
+    ["out", "3"],
+    ["in block array", "VertexData", "inData", "3",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.TriQuad
-
-layout(triangles) in;
-layout(triangle_strip, max_vertices = 3) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[3];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
 
 vec4 GetPatchCoord(int index)
 {
@@ -816,24 +824,25 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.Geometry.Quad
+
+[
+    ["in", "lines_adjacency"],
+    ["out", "triangle_strip"],
+    ["out", "6"],
+    ["in block array", "VertexData", "inData", "4",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out block", "VertexData", "outData",
+        ["vec4", "Peye"],
+        ["vec3", "Neye"]
+    ],
+    ["out", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
 -- glsl Mesh.Geometry.Quad
-
-layout(lines_adjacency) in;
-layout(triangle_strip, max_vertices = 6) out;
-
-in VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} inData[4];
-
-out VertexData
-{
-    vec4 Peye;
-    vec3 Neye;
-} outData;
-
-out vec4 gsPatchCoord;
 
 vec4 GetPatchCoord(int index)
 {
@@ -924,6 +933,7 @@ void main(void)
     EndPrimitive();
 
     // triangle 1: vertices (1,2,0)
+    gl_PrimitiveID = gl_PrimitiveIDIn;
     emit(1, Peye1, Neye1);
     emit(2, Peye2, Neye2);
     emit(0, Peye0, Neye0);
@@ -1015,9 +1025,14 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.PatchCoord
+-- layout Mesh.Fragment.PatchCoord
 
-in vec4 gsPatchCoord;
+[
+    ["in", "vec4", "gsPatchCoord"]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord
 
 vec4 GetInterpolatedPatchCoord()
 {

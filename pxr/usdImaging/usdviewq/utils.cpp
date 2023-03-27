@@ -104,6 +104,8 @@ UsdviewqUtils::PrimInfo::PrimInfo(const UsdPrim &prim, const UsdTimeCode time)
     else
         name = _tokens->root.GetString();
     typeName = prim.GetTypeName().GetString();
+
+    displayName = prim.GetDisplayName();
 }
 
 /*static*/

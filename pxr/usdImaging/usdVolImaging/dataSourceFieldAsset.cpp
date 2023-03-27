@@ -90,17 +90,6 @@ _GetUsdAttributeNames(UsdPrim usdPrim)
     return empty;
 }
 
-bool
-UsdImagingDataSourceFieldAsset::Has(const TfToken &name)
-{
-    for (const TfToken &usdName : _GetUsdAttributeNames(_usdPrim)) {
-        if (name == usdName) {
-            return true;
-        }
-    }
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceFieldAsset::GetNames()
 {
@@ -129,17 +118,6 @@ UsdImagingDataSourceFieldAssetPrim::UsdImagingDataSourceFieldAssetPrim(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
     : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
 {
-}
-
-bool 
-UsdImagingDataSourceFieldAssetPrim::UsdImagingDataSourceFieldAssetPrim::Has(
-    const TfToken & name)
-{
-    if (name == HdVolumeFieldSchemaTokens->volumeField) {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
 }
 
 TfTokenVector 

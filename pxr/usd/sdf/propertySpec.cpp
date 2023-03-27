@@ -179,6 +179,14 @@ SdfPropertySpec::SetDefaultValue(const VtValue &defaultValue)
                         GetTypeName().GetAsToken().GetText());
         return false;
     }
+    static const TfType opaqueType = TfType::Find<SdfOpaqueValue>();
+    if (valueType == opaqueType) {
+        TF_CODING_ERROR("Can't set value on <%s>: %s-typed attributes "
+                        "cannot have an authored default value",
+                        GetPath().GetAsString().c_str(),
+                        GetTypeName().GetAsToken().GetText());
+        return false;
+    }
 
     // valueType may be an enum type provided by a plugin which has not been
     // loaded.

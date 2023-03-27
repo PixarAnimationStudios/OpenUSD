@@ -43,41 +43,94 @@ class UsdImagingDataSourcePrimvars : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimvars);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
-
-    // This map is passed to the constructor to specify non-"primvars:"
-    // attributes to include as primvars (e.g., "points" and "normals").
-    // The first token is the datasource name, and the second the USD name.
-    using CustomPrimvarMapping = std::vector<std::pair<TfToken, TfToken>>;
 
 private:
     UsdImagingDataSourcePrimvars(
             const SdfPath &sceneIndexPath,
+            UsdPrim const &usdPrim,
             UsdGeomPrimvarsAPI usdPrimvars,
-            const CustomPrimvarMapping &customPrimvarMapping,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
-
-    TfToken _GetCustomPrimvarInterpolation(const UsdAttributeQuery &attrQuery);
+    static TfToken _GetPrefixedName(const TfToken &name);
 
     // Path of the owning prim.
     SdfPath _sceneIndexPath;
 
+    UsdPrim _usdPrim;
+
     // Stage globals handle.
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 
-    // Maps to custom & namespace-enumerated primvars, populated at
-    // construction time...
-    using _CustomPrimvarsMap = std::map<TfToken, UsdAttributeQuery>;
-    _CustomPrimvarsMap _customPrimvars;
     using _NamespacedPrimvarsMap = std::map<TfToken, UsdGeomPrimvar>;
     _NamespacedPrimvarsMap _namespacedPrimvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrimvars);
+
+// ----------------------------------------------------------------------------
+
+class UsdImagingDataSourceCustomPrimvars : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceCustomPrimvars);
+
+    USDIMAGING_API
+    TfTokenVector GetNames() override;
+    
+    USDIMAGING_API
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    struct Mapping {
+        Mapping(
+            const TfToken &primvarName,
+            const TfToken &usdAttrName,
+            const TfToken &interpolation = TfToken())
+          : primvarName(primvarName)
+          , usdAttrName(usdAttrName)
+            , interpolation(interpolation)
+        { }
+
+        TfToken primvarName;
+        TfToken usdAttrName;
+        TfToken interpolation;
+    };
+
+    // This map is passed to the constructor to specify non-"primvars:"
+    // attributes to include as primvars (e.g., "points" and "normals").
+    // The first token is the datasource name, and the second the USD name.
+    using Mappings = std::vector<Mapping>;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            const TfTokenVector &properties,
+            const Mappings &mappings);
+
+private:
+    UsdImagingDataSourceCustomPrimvars(
+            const SdfPath &sceneIndexPath,
+            UsdPrim const &usdPrim,
+            const Mappings &mappings,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    // Path of the owning prim.
+    SdfPath _sceneIndexPath;
+
+    UsdPrim _usdPrim;
+
+    // Stage globals handle.
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+
+    using _CustomPrimvarsMap =
+        std::map<TfToken,
+                 std::pair<UsdAttributeQuery,
+                           TfToken /* forced interpolation */>>;
+    _CustomPrimvarsMap _customPrimvars;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceCustomPrimvars);
 
 // ----------------------------------------------------------------------------
 
@@ -98,7 +151,6 @@ class UsdImagingDataSourcePrimvar : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePrimvar);
 
-    bool Has(const TfToken & name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken & name) override;
 

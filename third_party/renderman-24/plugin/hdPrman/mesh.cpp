@@ -54,9 +54,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((displacementBoundSphere, "displacementbound:sphere"))
 );
 
-HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id)
+HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
+    , _isMeshLight(isMeshLight)
 {
+}
+
+bool
+HdPrman_Mesh::_PrototypeOnly()
+{
+    return _isMeshLight;
 }
 
 HdDirtyBits
@@ -80,6 +87,27 @@ HdPrman_Mesh::GetInitialDirtyBitsMask() const
         ;
 
     return (HdDirtyBits)mask;
+}
+
+static
+VtIntArray
+_Union(const VtIntArray &a, const VtIntArray &b)
+{
+    if (a.empty()) {
+        return b;
+    } else if (b.empty()) {
+        return a;
+    } else {
+        VtIntArray aCopy = a;
+        VtIntArray bCopy = b;
+        std::sort(aCopy.begin(), aCopy.end());
+        std::sort(bCopy.begin(), bCopy.end());
+        VtIntArray merged;
+        std::set_union(aCopy.cbegin(), aCopy.cend(),
+                       bCopy.cbegin(), bCopy.cend(),
+                       std::back_inserter(merged));
+        return merged;
+    }
 }
 
 RtPrimVarList
@@ -159,7 +187,13 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         *primType = RixStr.k_Ri_PolygonMesh;
     }
 
-    VtIntArray holeIndices = topology.GetHoleIndices();
+    // Invisible faces will be handled by treating them as holes.  Since there
+    // may also be explicitly specified hole indices, we use the union of the
+    // two lists as the hole indices for the mesh.
+    const VtIntArray invisibleFaces = topology.GetInvisibleFaces();
+    const VtIntArray explicitHoleIndices = topology.GetHoleIndices();
+    const VtIntArray holeIndices = _Union(invisibleFaces, explicitHoleIndices);
+
     if (*primType == RixStr.k_Ri_PolygonMesh &&
         !holeIndices.empty()) {
         // Poly meshes with holes are promoted to bilinear subdivs, to

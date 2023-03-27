@@ -63,18 +63,6 @@ public:
         return names;
     }
 
-    bool Has(const TfToken &name) override {
-        for (const TfToken &hdName : GetNames()) {
-            if (name == hdName) {
-                // We could check here whether the UsdPrim really
-                // has the attribute, but since the attribute is part
-                // of the schema, it should always be there.
-                return true;
-            }
-        }
-        return false;
-    }
-
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         for (const _NameInfo &info : _GetNameInfos()) {
             if (info.hdName == name) {

@@ -32,8 +32,11 @@
 #include <boost/python/enum.hpp>
 #include <boost/python/list.hpp>
 
+#include <chrono>
 #include <string>
+#include <thread>
 
+using namespace std::chrono_literals;
 using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -45,13 +48,16 @@ static void
 TestNestingFunc2()
 {
     TRACE_FUNCTION();
+    std::this_thread::sleep_for(1us);
 }
 
 static void
 TestNestingFunc3()
 {
     TRACE_FUNCTION();
+    std::this_thread::sleep_for(1us);
     TRACE_SCOPE("Foo");
+    std::this_thread::sleep_for(1us);
 
     TraceCollector& gc = TraceCollector::GetInstance();
     TF_UNUSED(gc);
@@ -61,6 +67,8 @@ static void
 TestNestingFunc1()
 {
     TRACE_FUNCTION();
+    std::this_thread::sleep_for(1us);
+
     TestNestingFunc2();
     TestNestingFunc3();
 }
@@ -69,6 +77,8 @@ static void
 TestNesting()
 {
     TRACE_FUNCTION();
+    std::this_thread::sleep_for(1us);
+
     TestNestingFunc1();
 }
 
@@ -79,18 +89,22 @@ static void
 TestAutoFunc2()
 {
     TraceAuto t(TF_FUNC_NAME());
+    std::this_thread::sleep_for(1us);
 }
 
 static void
 TestAutoFunc3()
 {
     TraceAuto t(TF_FUNC_NAME());
+    std::this_thread::sleep_for(1us);
 }
 
 static void
 TestAutoFunc1()
 {
     TraceAuto t(TF_FUNC_NAME());
+    std::this_thread::sleep_for(1us);
+
     TestAutoFunc2();
     TestAutoFunc3();
 }
@@ -99,6 +113,8 @@ static void
 TestAuto()
 {
     TraceAuto t(TF_FUNC_NAME());
+    std::this_thread::sleep_for(1us);
+
     TestAutoFunc1();
 }
 

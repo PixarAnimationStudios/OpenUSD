@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/garch/glApi.h"
 
 #include "pxr/usdImaging/usdImagingGL/unitTestGLDrawing.h"
 
@@ -85,8 +84,6 @@ private:
     bool _mouseButton[3];
 };
 
-GLuint vao;
-
 void
 My_TestGLDrawing::InitTest()
 {
@@ -94,45 +91,30 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath());
     SdfPathVector excludedPaths;
 
-    if (!UsdImagingGLEngine::IsHydraEnabled()) {
-        std::cerr << "Couldn't initialize hydra" << std::endl;
-        exit(-1);
-    }
     _engine.reset(
         new UsdImagingGLEngine(_stage->GetPseudoRoot().GetPath(), 
                 excludedPaths));
 
-    std::cout << glGetString(GL_VENDOR) << "\n";
-    std::cout << glGetString(GL_RENDERER) << "\n";
-    std::cout << glGetString(GL_VERSION) << "\n";
-
     if(IsEnabledTestLighting()) {
-        if(UsdImagingGLEngine::IsHydraEnabled()) {
-            // set same parameter as 
-            // GlfSimpleLightingContext::SetStateFromOpenGL OpenGL defaults
-            _lightingContext = GlfSimpleLightingContext::New();
-            GlfSimpleLight light;
-            light.SetPosition(GfVec4f(0, -.5, .5, 0));
-            light.SetDiffuse(GfVec4f(1,1,1,1));
-            light.SetAmbient(GfVec4f(0,0,0,1));
-            light.SetSpecular(GfVec4f(1,1,1,1));
-            GlfSimpleLightVector lights;
-            lights.push_back(light);
-            _lightingContext->SetLights(lights);
+        // set same parameter as 
+        // GlfSimpleLightingContext::SetStateFromOpenGL OpenGL defaults
+        _lightingContext = GlfSimpleLightingContext::New();
+        GlfSimpleLight light;
+        light.SetPosition(GfVec4f(0, -.5, .5, 0));
+        light.SetDiffuse(GfVec4f(1,1,1,1));
+        light.SetAmbient(GfVec4f(0,0,0,1));
+        light.SetSpecular(GfVec4f(1,1,1,1));
+        GlfSimpleLightVector lights;
+        lights.push_back(light);
+        _lightingContext->SetLights(lights);
 
-            GlfSimpleMaterial material;
-            material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
-            material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
-            material.SetSpecular(GfVec4f(0,0,0,1));
-            material.SetShininess(0.0001f);
-            _lightingContext->SetMaterial(material);
-            _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
-        } else {
-            glEnable(GL_LIGHTING);
-            glEnable(GL_LIGHT0);
-            float position[4] = {0,-.5,.5,0};
-            glLightfv(GL_LIGHT0, GL_POSITION, position);
-        }
+        GlfSimpleMaterial material;
+        material.SetAmbient(GfVec4f(0.2, 0.2, 0.2, 1.0));
+        material.SetDiffuse(GfVec4f(0.8, 0.8, 0.8, 1.0));
+        material.SetSpecular(GfVec4f(0,0,0,1));
+        material.SetShininess(0.0001f);
+        _lightingContext->SetMaterial(material);
+        _lightingContext->SetSceneAmbient(GfVec4f(0.2,0.2,0.2,1.0));
     }
 
     if (_ShouldFrameAll()) {
@@ -203,16 +185,11 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     }
 
     GfVec4d viewport(0, 0, width, height);
-    GLfloat clearColor[4] = { 1.0f, .5f, 0.1f, 1.0f };
-    GLfloat clearDepth[1] = { 1.0f };
 
     _engine->SetCameraState(modelViewMatrix, projMatrix);
     _engine->SetRenderViewport(viewport);
 
-    glViewport(0, 0, width, height);
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-    glEnable(GL_DEPTH_TEST);
+    _engine->SetRendererAov(GetRendererAov());
 
     // Render #1
     UsdImagingGLRenderParams params;
@@ -220,50 +197,39 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.enableLighting =  IsEnabledTestLighting();
     params.complexity = _GetComplexity();
     params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
+    params.clearColor = GetClearColor();
 
     _engine->SetLightingState(_lightingContext);
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out1.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out1.png");
 
     // Render #2
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out2.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out2.png");
 
     // Render #3
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out3.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out3.png");
 
     // Render #4
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.complexity = 1.1;
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out4.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out4.png");
 
     // Render #5
-    glClearBufferfv(GL_COLOR, 0, clearColor);
-    glClearBufferfv(GL_DEPTH, 0, clearDepth);
-
     params.drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     params.complexity = _GetComplexity();
     params.cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
 
     _engine->Render(_stage->GetPseudoRoot(), params);
 
-    WriteToFile("color", "out5.png");
+    WriteToFile(_engine.get(), HdAovTokens->color, "out5.png");
 }
 
 void

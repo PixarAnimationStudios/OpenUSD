@@ -120,24 +120,24 @@ HdRenderIndex::HdRenderIndex(
         _mergingSceneIndex->AddInputScene(
             _emulationNoticeBatchingSceneIndex, SdfPath::AbsoluteRootPath());
 
-        HdSceneIndexBaseRefPtr terminalSceneIndex = _mergingSceneIndex;
+        _terminalSceneIndex = _mergingSceneIndex;
 
-        terminalSceneIndex =
+        _terminalSceneIndex =
             HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
-                terminalSceneIndex, SdfPath::AbsoluteRootPath());
+                _terminalSceneIndex, SdfPath::AbsoluteRootPath());
 
         const std::string &rendererDisplayName =
             renderDelegate->GetRendererDisplayName();
 
         if (!rendererDisplayName.empty()) {
-            terminalSceneIndex =
+            _terminalSceneIndex =
                 HdSceneIndexPluginRegistry::GetInstance()
                     .AppendSceneIndicesForRenderer(
-                        rendererDisplayName, terminalSceneIndex);
+                        rendererDisplayName, _terminalSceneIndex);
         }
 
         _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
-            terminalSceneIndex, 
+            _terminalSceneIndex,
             this, 
             SdfPath::AbsoluteRootPath());
 
@@ -247,6 +247,12 @@ HdRenderIndex::RemoveSceneIndex(
             }
         }
     }
+}
+
+HdSceneIndexBaseRefPtr
+HdRenderIndex::GetTerminalSceneIndex() const
+{
+    return _terminalSceneIndex;
 }
 
 void

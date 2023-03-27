@@ -99,6 +99,10 @@ if (NOT Boost_USE_STATIC_LIBS)
     _add_define("BOOST_ALL_DYN_LINK")
 endif()
 
+# Suppress automatic boost linking via pragmas, as we must not rely on
+# a heuristic, but upon the tool set we have specified in our build.
+_add_define("BOOST_ALL_NO_LIB")
+
 if(${PXR_USE_DEBUG_PYTHON})
     _add_define("BOOST_DEBUG_PYTHON")
     _add_define("BOOST_LINKING_PYTHON")

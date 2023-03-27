@@ -88,15 +88,15 @@ public:
 
     HdDrawingCoord() :
         // default slots:
+        _topology(2),
+        _instancePrimvar(Unassigned),
         _constantPrimvar(0),
         _vertexPrimvar(1),
-        _topology(2),
         _elementPrimvar(3),
         _instanceIndex(4),
         _faceVaryingPrimvar(5),
         _topologyVisibility(6),
-        _varyingPrimvar(7),
-        _instancePrimvar(Unassigned) {
+        _varyingPrimvar(7) {
     }
 
     int GetConstantPrimvarIndex() const    { return _constantPrimvar; }
@@ -124,15 +124,15 @@ public:
     }
 
 private:
+    int16_t _topology;
+    int16_t _instancePrimvar;
     int8_t _constantPrimvar;
     int8_t _vertexPrimvar;
-    int8_t _topology;
     int8_t _elementPrimvar;
     int8_t _instanceIndex;
     int8_t _faceVaryingPrimvar;
     int8_t _topologyVisibility;
     int8_t _varyingPrimvar;
-    int8_t _instancePrimvar;
 };
 
 

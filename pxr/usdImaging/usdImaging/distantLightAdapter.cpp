@@ -43,13 +43,14 @@ UsdImagingDistantLightAdapter::~UsdImagingDistantLightAdapter()
 }
 
 TfTokenVector
-UsdImagingDistantLightAdapter::GetImagingSubprims()
+UsdImagingDistantLightAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdImagingDistantLightAdapter::GetImagingSubprimType(TfToken const& subprim)
+UsdImagingDistantLightAdapter::GetImagingSubprimType(
+        UsdPrim const& prim, TfToken const& subprim)
 {
     if (subprim.IsEmpty()) {
         return HdPrimTypeTokens->distantLight;

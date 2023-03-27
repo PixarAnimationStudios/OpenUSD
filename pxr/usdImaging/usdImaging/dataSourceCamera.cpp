@@ -138,19 +138,6 @@ UsdImagingDataSourceCamera::UsdImagingDataSourceCamera(
 {
 }
 
-bool
-UsdImagingDataSourceCamera::Has(const TfToken &name)
-{
-    static TfTokenVector usdNames = 
-        UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);
-    for (const TfToken &usdName : usdNames) {
-        if (name == usdName) {
-            return true;
-        }
-    }
-    return false;
-}
-
 TfTokenVector
 UsdImagingDataSourceCamera::GetNames()
 {
@@ -210,17 +197,6 @@ UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim(
 {
 }
 
-bool 
-UsdImagingDataSourceCameraPrim::UsdImagingDataSourceCameraPrim::Has(
-    const TfToken & name)
-{
-    if (name == HdCameraSchemaTokens->camera) {
-        return true;
-    }
-
-    return UsdImagingDataSourcePrim::Has(name);
-}
-
 TfTokenVector 
 UsdImagingDataSourceCameraPrim::GetNames()
 {
@@ -244,12 +220,14 @@ UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
 
 HdDataSourceLocatorSet
 UsdImagingDataSourceCameraPrim::Invalidate(
-    const TfToken &subprim, const TfTokenVector &properties)
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
 {
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourcePrim::Invalidate(subprim, properties);
+        UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
 
     static TfTokenVector usdNames = 
         UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);

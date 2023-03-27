@@ -92,7 +92,11 @@ public:
     /// Inserts a barrier so that data written to memory by commands before
     /// the barrier is available to commands after the barrier.
     HGI_API
-    virtual void MemoryBarrier(HgiMemoryBarrier barrier) = 0;
+    virtual void InsertMemoryBarrier(HgiMemoryBarrier barrier) = 0;
+
+    /// Returns the dispatch method for this encoder.
+    HGI_API
+    virtual HgiComputeDispatch GetDispatchMethod() const = 0;
 
 protected:
     HGI_API

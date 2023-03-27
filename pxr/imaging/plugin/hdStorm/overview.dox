@@ -5,8 +5,9 @@
 \publicLib
 \endif
 
-HdStorm implements a Hydra renderer plugin that uses the graphics API
-to produce frames. Currently, it supports OpenGL.
+HdStorm implements a Hydra renderer plugin that wraps the Storm Hydra render
+delegate. Storm supports OpenGL, Metal and Vulkan graphics APIs by utilizing the
+Hydra graphics interface (Hgi).
 This is a thin plugin layer, you will find most rendering functionality 
 in the HdSt library.
 

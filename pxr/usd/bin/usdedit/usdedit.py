@@ -26,48 +26,23 @@
 from __future__ import print_function
 
 import os, sys
-
-import platform
-isWindows = (platform.system() == 'Windows')
-
-def _findExe(name):
-    from distutils.spawn import find_executable
-    cmd = find_executable(name)
-    if cmd:
-        return cmd
-    else:
-        cmd = find_executable(name, path=os.path.abspath(os.path.dirname(sys.argv[0])))
-        if cmd:
-            return cmd
-    
-    if isWindows:
-        # find_executable under Windows only returns *.EXE files
-        # so we need to traverse PATH.
-        for path in os.environ['PATH'].split(os.pathsep):
-            base = os.path.join(path, name)
-            # We need to test for name.cmd first because on Windows, the USD
-            # executables are wrapped due to lack of N*IX style shebang support
-            # on Windows.
-            for ext in ['.cmd', '']:
-                cmd = base + ext
-                if os.access(cmd, os.X_OK):
-                    return cmd
-    return None
+from pxr.UsdUtils.toolPaths import FindUsdBinary
 
 # lookup usdcat and a suitable text editor. if none are available, 
 # this will cause the program to abort with a suitable error message.
 def _findEditorTools(usdFileName, readOnly):
     # Ensure the usdcat executable has been installed
-    usdcatCmd = _findExe("usdcat")
+    usdcatCmd = FindUsdBinary("usdcat")
     if not usdcatCmd:
         sys.exit("Error: Couldn't find 'usdcat'. Expected it to be in PATH.")
 
     # Ensure we have a suitable editor available
+    from distutils.spawn import find_executable
     editorCmd = (os.getenv("USD_EDITOR") or
                  os.getenv("EDITOR") or 
-                 _findExe("emacs") or
-                 _findExe("vim") or
-                 _findExe("notepad"))
+                 find_executable("emacs") or
+                 find_executable("vim") or
+                 find_executable("notepad"))
     
     if not editorCmd:
         sys.exit("Error: Couldn't find a suitable text editor to use. Expected " 

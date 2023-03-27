@@ -28,7 +28,6 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
-#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,19 +43,16 @@ class UsdImagingDataSourceGprim : public UsdImagingDataSourcePrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceGprim);
 
-    /// Returns whether or not this data source can return a meaningful 
-    /// data source for \p name.
-    ///
-    bool Has(const TfToken &name) override;
-
-    /// Returns the names for which this data source can return meaningful
-    /// results.
-    ///
-    TfTokenVector GetNames() override;
-
     /// Returns the data source representing \p name, if valid.
     ///
+    USDIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties);
 
 protected:
 
@@ -70,26 +66,12 @@ protected:
     /// which to evaluate this attribute data source.
     ///
     /// Note: client code calls this via static New.
+    USDIMAGING_API
     UsdImagingDataSourceGprim(
             const SdfPath &sceneIndexPath,
             UsdPrim usdPrim,
             const UsdImagingDataSourceStageGlobals &stageGlobals);
 
-    /// Used by derived classes to add primvars not in the primvars: namespace,
-    /// e.g. "points" and "normals".  Interpolation is taken from metadata,
-    /// or hardcoded to "vertex" for points.  Note that this needs to be called
-    /// before Get("primvars") in order to take effect.
-    ///
-    /// \p primvarName the name of the primvar in the scene index representation
-    ///
-    /// \p attrName the name of a USD attribute to supply data for the primvar;
-    ///             data will come from _GetUsdPrim().GetAttribute(attrName);
-    void _AddCustomPrimvar(const TfToken &primvarName, const TfToken &attrName);
-
-private:
-    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
-
-    UsdImagingDataSourcePrimvars::CustomPrimvarMapping _customPrimvarMapping;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceGprim);

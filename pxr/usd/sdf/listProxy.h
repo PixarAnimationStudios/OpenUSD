@@ -518,6 +518,24 @@ public:
         }
     }
 
+    /// Modify all edits in this list. 
+    ///
+    /// \p callback must be a callable that accepts an argument of type
+    /// value_type and returns a boost::optional<value_type>. 
+    ///
+    /// \p callback is called with every item in the list. If an invalid
+    /// boost::optional is returned, the item is removed. Otherwise it's
+    /// replaced with the returned item. If a returned item matches an
+    /// item that was previously returned, the returned item will be
+    /// removed.
+    template <class CB>
+    void ModifyItemEdits(CB callback)
+    {
+        if (_Validate()) {
+            _listEditor->ModifyItemEdits(std::forward<CB>(callback));
+        }
+    }
+
 private:
     bool _Validate()
     {

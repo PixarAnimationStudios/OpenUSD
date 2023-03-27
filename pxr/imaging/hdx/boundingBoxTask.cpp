@@ -28,6 +28,8 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/imaging/hdSt/renderPassState.h"
+
 #include "pxr/imaging/hf/perfLog.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -75,7 +77,6 @@ HdxBoundingBoxTask::HdxBoundingBoxTask(
   , _resourceBindings()
   , _pipeline()
   , _params()
-  , _camera(nullptr)
 {
 }
 
@@ -132,7 +133,7 @@ HdxBoundingBoxTask::_CreateShaderResources()
     HgiShaderFunctionAddStageInput(
         &vertDesc, "position", "vec3");
     HgiShaderFunctionAddStageInput(
-        &vertDesc, "gl_InstanceID", "uint",
+        &vertDesc, "hd_InstanceID", "uint",
         HgiShaderKeywordTokens->hdInstanceID);
     HgiShaderFunctionAddStageOutput(
         &vertDesc, "gl_Position", "vec4", "position");
@@ -346,31 +347,12 @@ HdxBoundingBoxTask::_CreatePipeline(
 }
 
 GfMatrix4d
-HdxBoundingBoxTask::_ComputeViewProjectionMatrix() const
+HdxBoundingBoxTask::_ComputeViewProjectionMatrix(
+    const HdStRenderPassState& hdStRenderPassState) const
 {
-    // Get the view matrix.
-    const GfMatrix4d view = _camera->GetTransform().GetInverse();
-
-    // Get the projection matrix.
-    // Same logic as in HdRenderPassState::GetProjectionMatrix().
-    GfMatrix4d projection;
-    if (_params.framing.IsValid()) {
-        const CameraUtilConformWindowPolicy policy =
-            _params.overrideWindowPolicy.first
-                ? _params.overrideWindowPolicy.second
-                : _camera->GetWindowPolicy();
-        projection = _params.framing.ApplyToProjectionMatrix(
-                        _camera->ComputeProjectionMatrix(), policy);
-    } else {
-        const double aspect =
-            _params.viewport[3] != 0.0
-                ? _params.viewport[2] / _params.viewport[3]
-                : 1.0;
-        projection = CameraUtilConformedWindow(
-                        _camera->ComputeProjectionMatrix(),
-                        _camera->GetWindowPolicy(),
-                        aspect);
-    }
+    // Get the view and projection matrices.
+    const GfMatrix4d view = hdStRenderPassState.GetWorldToViewMatrix();
+    GfMatrix4d projection = hdStRenderPassState.GetProjectionMatrix();
 
     const HgiCapabilities* capabilities = _GetHgi()->GetCapabilities();
     if (!capabilities->IsSet(
@@ -405,10 +387,12 @@ _GetWorldMatrixFromBBox(const GfBBox3d& bbox)
 void
 HdxBoundingBoxTask::_UpdateShaderConstants(
     HgiGraphicsCmds* gfxCmds,
-    const GfVec4i& gfxViewport)
+    const GfVec4i& gfxViewport,
+    const HdStRenderPassState& hdStRenderPassState)
 {
     // View-Projection matrix is the same for either bbox
-    const GfMatrix4d viewProj = _ComputeViewProjectionMatrix();
+    const GfMatrix4d viewProj =
+        _ComputeViewProjectionMatrix(hdStRenderPassState);
 
     // Populate the transforms based on the provided bboxes
     using TransformVector = std::vector<GfMatrix4f>;
@@ -445,8 +429,7 @@ HdxBoundingBoxTask::_UpdateShaderConstants(
     const GfVec4f viewport(gfxViewport);
 
     // dashSize smaller than 1 pixel disables any line pattern
-    const float dashSize =
-        _params.dashSize < 1.0f ? 0.0f : _params.dashSize;
+    const float dashSize = _params.dashSize < 1.0f ? 0.0f : _params.dashSize;
 
     const _ShaderConstants constants = {
         color,
@@ -464,8 +447,9 @@ HdxBoundingBoxTask::_UpdateShaderConstants(
 
 void
 HdxBoundingBoxTask::_DrawBBoxes(
-    HgiTextureHandle const& colorTexture,
-    HgiTextureHandle const& depthTexture)
+    const HgiTextureHandle& colorTexture,
+    const HgiTextureHandle& depthTexture,
+    const HdStRenderPassState& hdStRenderPassState)
 {
     // Prepare graphics cmds.
     HgiGraphicsCmdsDesc gfxDesc;
@@ -480,11 +464,10 @@ HdxBoundingBoxTask::_DrawBBoxes(
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
 
-    const GfVec3i& colorDimensions = colorTexture->GetDescriptor().dimensions;
-    const GfVec4i viewport(0, 0, colorDimensions[0], colorDimensions[1]);
+    const GfVec4i viewport = hdStRenderPassState.ComputeViewport(gfxDesc);
     gfxCmds->SetViewport(viewport);
 
-    _UpdateShaderConstants(gfxCmds.get(), viewport);
+    _UpdateShaderConstants(gfxCmds.get(), viewport, hdStRenderPassState);
     gfxCmds->BindResources(_resourceBindings);
 
     const uint32_t instanceCount = static_cast<uint32_t>(_params.bboxes.size());
@@ -515,12 +498,6 @@ void
 HdxBoundingBoxTask::Prepare(HdTaskContext* ctx,
                             HdRenderIndex* renderIndex)
 {
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    _camera = static_cast<const HdCamera*>(
-        renderIndex->GetSprim(HdPrimTypeTokens->camera,
-                              _params.cameraId));
 }
 
 void
@@ -558,7 +535,15 @@ HdxBoundingBoxTask::Execute(HdTaskContext* ctx)
         return;
     }
 
-    _DrawBBoxes(colorTexture, depthTexture);
+    HdRenderPassStateSharedPtr renderPassState;
+    _GetTaskContextData(ctx, HdxTokens->renderPassState, &renderPassState);
+    HdStRenderPassState * const hdStRenderPassState =
+        dynamic_cast<HdStRenderPassState*>(renderPassState.get());
+    if (!hdStRenderPassState) {
+        return;
+    }
+
+    _DrawBBoxes(colorTexture, depthTexture, *hdStRenderPassState);
 }
 
 void
@@ -598,8 +583,7 @@ std::ostream& operator<<(
     }
 
     out << pv.color << " "
-        << pv.dashSize << " "
-        << pv.cameraId << " }";
+        << pv.dashSize << " }";
     return out;
 }
 
@@ -609,11 +593,7 @@ bool operator==(const HdxBoundingBoxTaskParams& lhs,
     return lhs.aovName == rhs.aovName &&
            lhs.bboxes == rhs.bboxes &&
            lhs.color == rhs.color &&
-           lhs.dashSize == rhs.dashSize &&
-           lhs.cameraId == rhs.cameraId &&
-           lhs.framing == rhs.framing &&
-           lhs.overrideWindowPolicy == rhs.overrideWindowPolicy &&
-           lhs.viewport == rhs.viewport;
+           lhs.dashSize == rhs.dashSize;
 }
 
 bool operator!=(const HdxBoundingBoxTaskParams& lhs,

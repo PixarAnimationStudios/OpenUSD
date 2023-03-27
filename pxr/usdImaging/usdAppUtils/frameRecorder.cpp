@@ -22,45 +22,59 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-// Must be included before GL headers.
-#include "pxr/imaging/garch/glApi.h"
-
-#include "pxr/pxr.h"
 #include "pxr/usdImaging/usdAppUtils/frameRecorder.h"
 
 #include "pxr/base/gf/camera.h"
+#include "pxr/base/tf/scoped.h"
 
 #include "pxr/imaging/glf/simpleLight.h"
 #include "pxr/imaging/glf/simpleMaterial.h"
+#include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hdSt/hioConversions.h"
+#include "pxr/imaging/hdSt/textureUtils.h"
+#include "pxr/imaging/hdx/tokens.h"
+#include "pxr/imaging/hdx/types.h"
 #include "pxr/imaging/hio/image.h"
+
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
-
-#include "pxr/imaging/hdx/types.h"
-#include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hdSt/textureUtils.h"
 
 #include <string>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder() :
+UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
+    const TfToken& rendererPluginId,
+    bool gpuEnabled) :
+    _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
-    _colorCorrectionMode("disabled"),
+    _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
-{
-    GarchGLApiLoad();
-}
+{}
 
 static bool
 _HasPurpose(const TfTokenVector& purposes, const TfToken& purpose)
 {
     return std::find(purposes.begin(), purposes.end(), purpose) != purposes.end();
+}
+
+void
+UsdAppUtilsFrameRecorder::SetColorCorrectionMode(
+    const TfToken& colorCorrectionMode)
+{
+    if (_imagingEngine.GetGPUEnabled()) {
+        _colorCorrectionMode = colorCorrectionMode;
+    } else {
+        if (colorCorrectionMode != HdxColorCorrectionTokens->disabled) {
+            TF_WARN("Color correction presently unsupported when the GPU is "
+                    "disabled.");
+        }
+        _colorCorrectionMode = HdxColorCorrectionTokens->disabled;
+    }
 }
 
 void
@@ -126,47 +140,135 @@ _ComputeCameraToFrameStage(const UsdStagePtr& stage, UsdTimeCode timeCode,
     return gfCamera;
 }
 
-static bool
-_WriteTextureToFile(HgiTextureDesc const& textureDesc,
-                    uint8_t * buffer,
-                    size_t bufferSize,
-                    std::string const& filename,
-                    const bool flipped)
+namespace
 {
-    const size_t formatByteSize = HgiGetDataSizeOfFormat(textureDesc.format);
-    const size_t width = textureDesc.dimensions[0];
-    const size_t height = textureDesc.dimensions[1];
-    const size_t dataByteSize = width * height * formatByteSize;
-    
-    if (bufferSize < dataByteSize) {
-        return false;
-    }
-    
-    if (textureDesc.format < 0 || textureDesc.format >= HgiFormatCount) {
-        return false;
-    }
-    
-    HioImage::StorageSpec storage;
-    storage.width = width;
-    storage.height = height;
-    storage.format = HdxGetHioFormat(textureDesc.format);
-    storage.flipped = flipped;
-    storage.data = buffer;
 
+class TextureBufferWriter
+{
+public:
+    TextureBufferWriter(
+        UsdImagingGLEngine* engine)
+        : _engine(engine)
+        , _colorRenderBuffer(nullptr)
     {
-        TRACE_FUNCTION_SCOPE("writing image");
-        VtDictionary metadata;
-        
-        HioImageSharedPtr const image = HioImage::OpenForWriting(filename);
-        const bool writeSuccess = image && image->Write(storage, metadata);
-        
-        if (!writeSuccess) {
-            TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
-            return false;
+        // If rendering via Storm or a non-Storm renderer but with the GPU
+        // enabled, we will have a color texture to read from.
+        //
+        // If using a non-Storm renderer with the GPU disabled, we need to
+        // read from the color render buffer.
+
+        if (_engine->GetGPUEnabled()) {
+            _colorTextureHandle = engine->GetAovTexture(HdAovTokens->color);
+            if (!_colorTextureHandle) {
+                TF_CODING_ERROR("No color texture to write out.");
+            }
+        } else {
+            _colorRenderBuffer = engine->GetAovRenderBuffer(HdAovTokens->color);
+            if (_colorRenderBuffer) {
+                _colorRenderBuffer->Resolve();
+            } else {
+                TF_CODING_ERROR("No color buffer to write out.");
+            }
         }
     }
 
-    return true;
+    bool Write(const std::string& filename)
+    {
+        if (!_ValidSource()) {
+            return false;
+        }
+
+        HioImage::StorageSpec storage;
+        storage.width = _GetWidth();
+        storage.height = _GetHeight();
+        storage.format = _GetFormat();
+        storage.flipped = true;
+        storage.data = _Map();
+        TfScoped<> scopedUnmap([this](){ _Unmap(); });
+
+        {
+            TRACE_FUNCTION_SCOPE("writing image");
+
+            const HioImageSharedPtr image = HioImage::OpenForWriting(filename);
+            const bool writeSuccess = image && image->Write(storage);
+            
+            if (!writeSuccess) {
+                TF_RUNTIME_ERROR("Failed to write image to %s",
+                    filename.c_str());
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+private:
+    bool _ValidSource() const
+    {
+        return _colorTextureHandle || _colorRenderBuffer;
+    }
+
+    unsigned int _GetWidth() const
+    {
+        if (_colorTextureHandle) {
+            return _colorTextureHandle->GetDescriptor().dimensions[0];
+        } else if (_colorRenderBuffer) {
+            return _colorRenderBuffer->GetWidth();
+        } else {
+            return 0;
+        }
+    }
+
+    unsigned int _GetHeight() const
+    {
+        if (_colorTextureHandle) {
+            return _colorTextureHandle->GetDescriptor().dimensions[1];
+        } else if (_colorRenderBuffer) {
+            return _colorRenderBuffer->GetHeight();
+        } else {
+            return 0;
+        }
+    }
+
+    HioFormat _GetFormat() const
+    {
+        if (_colorTextureHandle) {
+            return HdxGetHioFormat(_colorTextureHandle->GetDescriptor().format);
+        } else if (_colorRenderBuffer) {
+            return HdStHioConversions::GetHioFormat(
+                _colorRenderBuffer->GetFormat());
+        } else {
+            return HioFormatInvalid;
+        }
+    }
+
+    void* _Map()
+    {
+        if (_colorTextureHandle) {
+            size_t size = 0;
+            _mappedColorTextureBuffer = HdStTextureUtils::HgiTextureReadback(
+                _engine->GetHgi(), _colorTextureHandle, &size);
+            return _mappedColorTextureBuffer.get();
+        } else if (_colorRenderBuffer) {
+            return _colorRenderBuffer->Map();
+        } else {
+            return nullptr;
+        }
+    }
+
+    void _Unmap()
+    {
+        if (_colorRenderBuffer) {
+            _colorRenderBuffer->Unmap();
+        }
+    }
+
+    UsdImagingGLEngine* _engine;
+    HgiTextureHandle _colorTextureHandle;
+    HdRenderBuffer* _colorRenderBuffer;
+    HdStTextureUtils::AlignedBuffer<uint8_t> _mappedColorTextureBuffer;
+};
+
 }
 
 bool
@@ -249,34 +351,25 @@ UsdAppUtilsFrameRecorder::Record(
     renderParams.showRender = _HasPurpose(_purposes, UsdGeomTokens->render);
     renderParams.showGuides = _HasPurpose(_purposes, UsdGeomTokens->guide);
 
-    glEnable(GL_DEPTH_TEST);
-    glViewport(0, 0, _imageWidth, imageHeight);
-
-    const GLfloat CLEAR_DEPTH[1] = { 1.0f };
     const UsdPrim& pseudoRoot = stage->GetPseudoRoot();
 
-    do {
-        glClearBufferfv(GL_COLOR, 0, CLEAR_COLOR.data());
-        glClearBufferfv(GL_DEPTH, 0, CLEAR_DEPTH);
+    unsigned int sleepTime = 10; // Initial wait time of 10 ms
+
+    while (true) {
         _imagingEngine.Render(pseudoRoot, renderParams);
-    } while (!_imagingEngine.IsConverged());
 
-    HgiTextureHandle handle = _imagingEngine.GetAovTexture(HdAovTokens->color);
-    if (!handle) {
-        TF_CODING_ERROR("No color presentation texture");
-        return false;
-    }
-    
-    size_t bufferSize = 0;
-    HdStTextureUtils::AlignedBuffer<uint8_t> buffer =
-        HdStTextureUtils::HgiTextureReadback(
-            _imagingEngine.GetHgi(), handle, &bufferSize);
+        if (_imagingEngine.IsConverged()) {
+            break;
+        } else {
+            // Allow render thread to progress before invoking Render again.
+            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+            // Increase the sleep time up to a max of 100 ms
+            sleepTime = std::min(100u, sleepTime + 5);
+        }
+    };
 
-    return _WriteTextureToFile(handle.Get()->GetDescriptor(),
-                               buffer.get(),
-                               bufferSize,
-                               outputImagePath,
-                               true);
+    TextureBufferWriter writer(&_imagingEngine);
+    return writer.Write(outputImagePath);
 }
 
 

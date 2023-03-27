@@ -63,26 +63,6 @@ public:
     , _stageGlobals(stageGlobals){
     }
 
-    bool Has(const TfToken &name) override {
-        if (name == _tokens->expansionRule) {
-            return bool(_api.GetExpansionRuleAttr());
-        }
-
-        if (name == _tokens->includeRoot) {
-            return bool(_api.GetIncludeRootAttr());
-        }
-
-        if (name == _tokens->includes) {
-            return bool(_api.GetIncludesRel());
-        }
-
-        if (name == _tokens->excludes) {
-            return bool(_api.GetExcludesRel());
-        }
-
-        return false;
-    }
-
     TfTokenVector GetNames() override {
         TfTokenVector result;
         result.reserve(4);
@@ -167,10 +147,6 @@ public:
     , _stageGlobals(stageGlobals) {
     }
 
-    bool Has(const TfToken &name) override {
-        return name == _api.GetName();
-    }
-
     TfTokenVector GetNames() override {
         return {_api.GetName()};
     }
@@ -195,8 +171,8 @@ HD_DECLARE_DATASOURCE_HANDLES(_CollectionsContainerDataSource);
 
 HdContainerDataSourceHandle
 UsdImagingCollectionAPIAdapter::GetImagingSubprimData(
-    TfToken const& subprim,
     UsdPrim const& prim,
+    TfToken const& subprim,
     TfToken const& appliedInstanceName,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
@@ -213,6 +189,7 @@ UsdImagingCollectionAPIAdapter::GetImagingSubprimData(
 
 HdDataSourceLocatorSet
 UsdImagingCollectionAPIAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
     TfTokenVector const& properties)

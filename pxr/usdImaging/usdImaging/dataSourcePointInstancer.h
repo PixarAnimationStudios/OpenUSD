@@ -29,39 +29,9 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
+#include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-/// \class UsdImagingDataSourcePointInstancerXforms
-///
-/// A data source representing a point instancer's computed instance transforms.
-///
-class UsdImagingDataSourcePointInstancerXforms
-    : public HdMatrixArrayDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointInstancerXforms);
-
-    VtValue GetValue(HdSampledDataSource::Time shutterOffset) override;
-
-    VtMatrix4dArray GetTypedValue(
-        HdSampledDataSource::Time shutterOffset) override;
-
-    bool GetContributingSampleTimesForInterval(
-        HdSampledDataSource::Time startTime,
-        HdSampledDataSource::Time endTime,
-        std::vector<HdSampledDataSource::Time> *outSampleTimes);
-
-private:
-    UsdImagingDataSourcePointInstancerXforms(
-        const UsdGeomPointInstancer &usdPI,
-        const UsdImagingDataSourceStageGlobals &stageGlobals);
-
-    UsdGeomPointInstancer _usdPI;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePointInstancerXforms);
 
 // ----------------------------------------------------------------------------
 
@@ -88,6 +58,7 @@ public:
 
 private:
     UsdImagingDataSourcePointInstancerMask(
+        const SdfPath &sceneIndexPath,
         const UsdGeomPointInstancer &usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
@@ -112,16 +83,18 @@ class UsdImagingDataSourcePointInstancerTopology : public HdContainerDataSource
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointInstancerTopology);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
 private:
     // Private constructor, use static New() instead.
-    UsdImagingDataSourcePointInstancerTopology(UsdGeomPointInstancer usdPI,
+    UsdImagingDataSourcePointInstancerTopology(
+        const SdfPath &sceneIndexPath,
+        UsdGeomPointInstancer usdPI,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
 
 private:
+    const SdfPath _sceneIndexPath;
     UsdGeomPointInstancer _usdPI;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
@@ -140,18 +113,25 @@ class UsdImagingDataSourcePointInstancerPrim
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourcePointInstancerPrim);
 
-    bool Has(const TfToken &name) override;
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-    /// TODO: Implement Invalidate method.
+    /// Returns the hydra attribute set we should invalidate if the value of
+    /// the USD properties in \p properties change.
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+        UsdPrim const &prim,
+        const TfToken &subprim,
+        const TfTokenVector &properties);
 
 private:
     // Private constructor, use static New() instead.
+    USDIMAGING_API
     UsdImagingDataSourcePointInstancerPrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
+
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePointInstancerPrim);

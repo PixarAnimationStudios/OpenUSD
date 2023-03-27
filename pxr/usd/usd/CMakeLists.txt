@@ -229,6 +229,7 @@ pxr_test_scripts(
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
+    testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPayloads.py
     testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
@@ -239,6 +240,7 @@ pxr_test_scripts(
     testenv/testUsdResolveTargetPy.py
     testenv/testUsdSchemaBasePy.py
     testenv/testUsdSchemaRegistry.py
+    testenv/testUsdSchemaVersioning.py
     testenv/testUsdSpecializes.py
     testenv/testUsdStage.py
     testenv/testUsdStageCache.py
@@ -379,7 +381,6 @@ pxr_build_test(testUsdStageThreading
         work
         sdf
         usd
-        ${Boost_PROGRAM_OPTIONS_LIBRARY}
     CPPFILES
         testenv/testUsdStageThreading.cpp
 )
@@ -605,6 +606,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSchemaRegistry
     DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSchemaVersioning
+    DEST testUsdSchemaVersioning
 )
 
 pxr_install_test_dir(
@@ -1120,6 +1126,12 @@ pxr_register_test(testUsdSchemaRegistry
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdSchemaVersioning
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaVersioning"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdTimeValueAuthoring
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdTimeValueAuthoring"
@@ -1170,5 +1182,11 @@ pxr_register_test(testUsdZipFile_CPP
 
 pxr_register_test(testUsdUsdzResolver
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUsdzResolver"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdOpaqueAttributes
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdOpaqueAttributes"
     EXPECTED_RETURN_CODE 0
 )

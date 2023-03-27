@@ -111,6 +111,14 @@ protected:
         // No-op
     }
 
+    // We override this member function in mesh.cpp to support the creation
+    // of mesh light prototype geometry.
+    virtual bool
+    _PrototypeOnly()
+    {
+        return false;
+    }
+
     // Provide a fallback material.  Default grabs _fallbackMaterial
     // from the context.
     virtual riley::MaterialId
@@ -292,6 +300,14 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 }
             }
         }
+    }
+
+    //
+    // Stop here, or also create geometry instances?
+    //
+    if (_PrototypeOnly()) {
+        *dirtyBits &= ~HdChangeTracker::AllSceneDirtyBits;
+        return;
     }
 
     //

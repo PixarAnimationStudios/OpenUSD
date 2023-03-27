@@ -1,7 +1,8 @@
 #usda 1.0
 (
     subLayers = [
-        @SUCCESS_foo.usd@
+        @SUCCESS_foo.usd@,
+        @SUCCESS_bar.usd@
     ]
 )
 
@@ -12,14 +13,20 @@ def Xform "Model" (
     }
     customData = {
         dictionary d = {
+            asset[] bar = [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@]
             asset foo = @SUCCESS_foo.usd@
         }
         asset foo = @SUCCESS_foo.usd@
     }
-    payload = @SUCCESS_foo.usd@</foo>
+    payload = [
+        @SUCCESS_foo.usd@</foo>,
+        @SUCCESS_bar.usd@,
+        @SUCCESS_baz.usd@
+    ]
     references = [
         @SUCCESS_foo.usd@</foo>,
-        @SUCCESS_bar.usd@
+        @SUCCESS_bar.usd@,
+        @SUCCESS_baz.usd@
     ]
 )
 {

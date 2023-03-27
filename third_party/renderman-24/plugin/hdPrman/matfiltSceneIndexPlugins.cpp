@@ -23,7 +23,6 @@
 //
 #include "hdPrman/matfiltSceneIndexPlugins.h"
 #include "hdPrman/material.h"
-#include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
 #include "hdPrman/matfiltResolveTerminals.h"
 
@@ -57,6 +56,17 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
 );
 
+/// Ordering of the matfilt operations. This is necessary when using scene
+/// index plugins instead of a filter chain which is populated in the required
+/// order.
+enum _MatfiltOrder
+{
+    Start = 0,
+    ConnectionResolve = 100, // vstruct
+    NodeTranslation = 110, // matx, preview surface
+    End = 200,
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Plugin registrations
 ////////////////////////////////////////////////////////////////////////////////
@@ -82,47 +92,43 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    // Register the plugins conditionally.
-    if (HdPrmanMaterial::GetUseSceneIndexForMatfilt()) {
-        
-        // This one needs to run as early on as possible. This will allow
-        // scene index filters that interact with materials to have access to
-        // terminal names in a renderer agnostic way early on in the scene
-        // index stack, if needed.
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->terminalPluginName,
-            nullptr,
-            MatfiltOrder::Start, // Run as early as possible.
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    // This one needs to run as early on as possible. This will allow
+    // scene index filters that interact with materials to have access to
+    // terminal names in a renderer agnostic way early on in the scene
+    // index stack, if needed.
+    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+        _rendererDisplayName,
+        _tokens->terminalPluginName,
+        nullptr,
+        _MatfiltOrder::Start, // Run as early as possible.
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->previewMatPluginName,
-            nullptr, // no argument data necessary
-            MatfiltOrder::NodeTranslation,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-        
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->materialXPluginName,
-            nullptr, // no argument data necessary
-            MatfiltOrder::NodeTranslation,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-        
-        HdContainerDataSourceHandle const inputArgs =
-            HdRetainedContainerDataSource::New(
-                _tokens->applyConditionals,
-                HdRetainedTypedSampledDataSource<bool>::New(
-                    _resolveVstructsWithConditionals));
+    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+        _rendererDisplayName,
+        _tokens->previewMatPluginName,
+        nullptr, // no argument data necessary
+        _MatfiltOrder::NodeTranslation,
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    
+    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+        _rendererDisplayName,
+        _tokens->materialXPluginName,
+        nullptr, // no argument data necessary
+        _MatfiltOrder::NodeTranslation,
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    
+    HdContainerDataSourceHandle const inputArgs =
+        HdRetainedContainerDataSource::New(
+            _tokens->applyConditionals,
+            HdRetainedTypedSampledDataSource<bool>::New(
+                _resolveVstructsWithConditionals));
 
-        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-            _rendererDisplayName,
-            _tokens->vstructPluginName,
-            inputArgs,                        
-            MatfiltOrder::ConnectionResolve,
-            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
-    }
+    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+        _rendererDisplayName,
+        _tokens->vstructPluginName,
+        inputArgs,                        
+        _MatfiltOrder::ConnectionResolve,
+        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -291,13 +297,12 @@ HdPrman_VirtualStructResolvingSceneIndexPlugin::_AppendSceneIndex(
         const HdContainerDataSourceHandle &inputArgs)
 {
     bool applyConditionals = false;
-    if (!inputArgs->Has(_tokens->applyConditionals)) {
+    if (HdBoolDataSourceHandle val = HdBoolDataSource::Cast(
+            inputArgs->Get(_tokens->applyConditionals))) {
+        applyConditionals = val->GetTypedValue(0.0f);
+    } else {
         TF_CODING_ERROR("Missing argument to plugin %s",
                         _tokens->vstructPluginName.GetText());
-    } else {
-        HdBoolDataSourceHandle val =
-            HdBoolDataSource::Cast(inputArgs->Get(_tokens->applyConditionals));
-        applyConditionals = val->GetTypedValue(0.0f);
     }
     return HdPrman_VirtualStructResolvingSceneIndex::New(
                 inputScene, applyConditionals);

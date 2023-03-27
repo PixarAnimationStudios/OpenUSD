@@ -466,18 +466,22 @@ void
 Sdf_FileIOUtility::WriteDefaultValue(
     Sdf_TextOutput &out, size_t indent, VtValue value)
 {
-    // ---
     // Special case for SdfPath value types
-    // ---
-
     if (value.IsHolding<SdfPath>()) {
         WriteSdfPath(out, indent, value.Get<SdfPath>() );
         return;
     }
 
-    // ---
+    // We never write opaque values to layers; SetDefault and other high-level
+    // APIs should prevent us from ever having an opaque value set on an
+    // attribute, but low-level methods like SetField can still be used to sneak
+    // one in, so we guard against authoring them here as well.
+    if (value.IsHolding<SdfOpaqueValue>()) {
+        TF_CODING_ERROR("Tried to write opaque value to layer");
+        return;
+    }
+
     // General case value to string conversion and write-out.
-    // ---
     std::string valueString = Sdf_FileIOUtility::StringFromVtValue(value);
     Sdf_FileIOUtility::Write(out, 0, " = %s", valueString.c_str());
 }

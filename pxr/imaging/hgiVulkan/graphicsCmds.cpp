@@ -101,7 +101,7 @@ HgiVulkanGraphicsCmds::SetViewport(GfVec4i const& vp)
 
             VkViewport viewport;
             viewport.x = offsetX;
-            viewport.y = height - offsetY;
+            viewport.y = offsetY + height;
             viewport.width = width;
             viewport.height = -height;
             viewport.minDepth = 0.0f;
@@ -229,7 +229,7 @@ HgiVulkanGraphicsCmds::BindVertexBuffers(
 
         vkCmdBindVertexBuffers(
             _commandBuffer->GetVulkanCommandBuffer(),
-            0, // first bindings
+            bindings[0].index, // first binding
             buffers.size(),
             buffers.data(),
             bufferOffsets.data());
@@ -338,10 +338,10 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
 }
 
 void
-HgiVulkanGraphicsCmds::MemoryBarrier(HgiMemoryBarrier barrier)
+HgiVulkanGraphicsCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 {
     _CreateCommandBuffer();
-    _commandBuffer->MemoryBarrier(barrier);
+    _commandBuffer->InsertMemoryBarrier(barrier);
 }
 
 HgiVulkanCommandBuffer*

@@ -37,6 +37,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <mutex>
 #include <shared_mutex>
 #include <vector>
 #include <unordered_map>

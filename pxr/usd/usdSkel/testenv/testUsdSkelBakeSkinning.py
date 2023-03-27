@@ -28,6 +28,25 @@ import unittest
 
 class TestUsdSkelBakeSkinning(unittest.TestCase):
 
+    def test_DQSkinning(self):
+        testFile = "dqs.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        self.assertTrue(UsdSkel.BakeSkinning(stage.Traverse()))
+
+        stage.GetRootLayer().Export("dqs.baked.usda")
+
+
+    def test_DQSkinningWithInterval(self):
+        testFile = "dqs.usda"
+        stage = Usd.Stage.Open(testFile)
+
+        self.assertTrue(UsdSkel.BakeSkinning(
+            stage.Traverse(), Gf.Interval(1, 10)))
+
+        stage.GetRootLayer().Export("dqs.bakedInterval.usda")
+
+
     def test_LinearBlendSkinning(self):
         testFile = "lbs.usda"
         stage = Usd.Stage.Open(testFile)

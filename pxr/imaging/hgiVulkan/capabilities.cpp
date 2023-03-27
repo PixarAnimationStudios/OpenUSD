@@ -57,23 +57,51 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     vkGetPhysicalDeviceFeatures(physicalDevice, &vkDeviceFeatures);
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &vkMemoryProperties);
 
+    // Vertex attribute divisor properties ext
+    vkVertexAttributeDivisorProperties.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_PROPERTIES_EXT;
+    vkVertexAttributeDivisorProperties.pNext = nullptr;
+        
+    vkDeviceProperties2.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    vkDeviceProperties2.properties = vkDeviceProperties;
+    vkDeviceProperties2.pNext = &vkVertexAttributeDivisorProperties;
+    vkGetPhysicalDeviceProperties2(physicalDevice, &vkDeviceProperties2);
+
+    // Vertex attribute divisor features ext
+    vkVertexAttributeDivisorFeatures.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
+    vkVertexAttributeDivisorFeatures.pNext = nullptr;
+
     // Indexing features ext for resource bindings
-    vkIndexingFeatures.pNext = nullptr;
     vkIndexingFeatures.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES_EXT;
+    vkIndexingFeatures.pNext = &vkVertexAttributeDivisorFeatures;
+
+    // Vulkan 1.1 features
+    vkVulkan11Features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    vkVulkan11Features.pNext = &vkIndexingFeatures;
 
     // Query device features
-    vkDeviceFeatures2.pNext = nullptr;
     vkDeviceFeatures2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-    vkDeviceFeatures2.pNext = &vkIndexingFeatures;
+    vkDeviceFeatures2.pNext = &vkVulkan11Features;
     vkGetPhysicalDeviceFeatures2(physicalDevice, &vkDeviceFeatures2);
 
-    // Verify we meet extension requirements
+    // Verify we meet feature and extension requirements
+
+    // Storm with HgiVulkan needs gl_BaseInstance/gl_BaseInstanceARB in shader.
+    TF_VERIFY(
+        vkVulkan11Features.shaderDrawParameters);
+
     #if !defined(VK_USE_PLATFORM_MACOS_MVK)
         TF_VERIFY(
             vkIndexingFeatures.shaderSampledImageArrayNonUniformIndexing &&
             vkIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing);
     #endif
+
+    TF_VERIFY(
+        vkVertexAttributeDivisorFeatures.vertexAttributeInstanceRateDivisor);
 
     if (HgiVulkanIsDebugEnabled()) {
         TF_WARN("Selected GPU %s", vkDeviceProperties.deviceName);
@@ -90,12 +118,13 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
     const bool hasBuiltinBarycentrics = (device->IsSupportedExtension(
         VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME));
-    const bool shaderDrawParametersEnabled = (device->IsSupportedExtension(
-        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME));
+    const bool shaderDrawParametersEnabled =
+        vkVulkan11Features.shaderDrawParameters;
 
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, true);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, 

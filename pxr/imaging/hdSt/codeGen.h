@@ -172,7 +172,7 @@ private:
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
     std::stringstream _procPTCS, _procPTVSDecl, _procPTVSIn, _procPTVSOut;
-    std::stringstream _osdFS, _osdPTCS, _osdPTVS;
+    std::stringstream _osdTCS, _osdTES, _osdFS, _osdPTCS, _osdPTVS;
 
     // resource buckets
     using ElementVector = HdSt_ResourceLayout::ElementVector;
@@ -183,6 +183,7 @@ private:
     ElementVector _resFS;
     ElementVector _resPTCS;
     ElementVector _resPTVS;
+    ElementVector _resCS;
 
     ElementVector _resInterstage;
 

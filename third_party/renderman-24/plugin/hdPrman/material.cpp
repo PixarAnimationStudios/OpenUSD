@@ -25,7 +25,6 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/matfiltFilterChain.h"
 #include "hdPrman/matfiltResolveTerminals.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
@@ -48,10 +47,6 @@
 #include "pxr/usd/sdr/registry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-TF_DEFINE_ENV_SETTING(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT, true,
-                      "Use scene indices rather than matfilt callbacks.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -77,38 +72,6 @@ TfTokenVector const&
 HdPrmanMaterial::GetShaderSourceTypes()
 {
     return *_sourceTypes;
-}
-
-TF_MAKE_STATIC_DATA(MatfiltFilterChain, _filterChain) {
-    *_filterChain = {
-        MatfiltResolveTerminals,
-        MatfiltConvertPreviewMaterial,
-        MatfiltResolveVstructs,
-#ifdef PXR_MATERIALX_SUPPORT_ENABLED
-        MatfiltMaterialX
-#endif
-    };
-}
-
-bool
-HdPrmanMaterial::GetUseSceneIndexForMatfilt()
-{
-    static const bool state =
-        TfGetEnvSetting(HD_PRMAN_USE_SCENE_INDEX_FOR_MATFILT);
-
-    return state && HdRenderIndex::IsSceneIndexEmulationEnabled();
-}
-
-MatfiltFilterChain
-HdPrmanMaterial::GetFilterChain()
-{
-    return *_filterChain;
-}
-
-void
-HdPrmanMaterial::SetFilterChain(MatfiltFilterChain const& chain)
-{
-    *_filterChain = chain;
 }
 
 HdMaterialNetwork2 const&
@@ -766,20 +729,6 @@ HdPrmanMaterial::Sync(HdSceneDelegate *sceneDelegate,
             // Convert HdMaterial to HdMaterialNetwork2 form.
             _materialNetwork = HdConvertToHdMaterialNetwork2(
                     hdMatVal.UncheckedGet<HdMaterialNetworkMap>());
-            // Apply material filter chain to the network conditionally.
-            // NOTE: When use scene index plugins for matfilt transformations,
-            // the matfilt operations are triggered by the GetMaterialResource()
-            // call above.
-            if (!GetUseSceneIndexForMatfilt() && !_filterChain->empty()) {
-                std::vector<std::string> errors;
-                MatfiltExecFilterChain(*_filterChain, id, _materialNetwork, {},
-                                       *_sourceTypes, &errors);
-                if (!errors.empty()) {
-                    TF_RUNTIME_ERROR("HdPrmanMaterial: %s\n",
-                        TfStringJoin(errors).c_str());
-                    // Policy choice: Attempt to use the material, regardless.
-                }
-            }
             if (TfDebug::IsEnabled(HDPRMAN_MATERIALS)) {
                 HdPrman_DumpNetwork(_materialNetwork, id);
             }

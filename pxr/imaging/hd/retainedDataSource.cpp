@@ -43,11 +43,6 @@ namespace
 class Hd_EmptyContainerDataSource : public HdRetainedContainerDataSource
 {
 public:
-    bool Has(const TfToken &name) override 
-    {
-        return false;
-    }
-
     TfTokenVector GetNames() override 
     {
         return {};
@@ -69,16 +64,6 @@ class Hd_SmallRetainedContainerDataSource
 public:
     static const size_t capacity = T;
     HD_DECLARE_DATASOURCE(Hd_SmallRetainedContainerDataSource<T>);
-
-    bool Has(const TfToken &name) override 
-    {
-        for (size_t i = 0; i < _count; ++i) {
-            if (name == _names[i]) {
-                return true;
-            }
-        }
-        return false;
-    }
 
     TfTokenVector GetNames() override 
     {
@@ -141,11 +126,6 @@ class Hd_MappedRetainedContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(Hd_MappedRetainedContainerDataSource<T>);
-
-    bool Has(const TfToken &name) override
-    {
-        return _values.find(name) != _values.end();
-    }
 
     TfTokenVector GetNames() override
     {

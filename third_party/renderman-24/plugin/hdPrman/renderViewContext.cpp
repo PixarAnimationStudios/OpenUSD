@@ -102,7 +102,7 @@ HdPrman_RenderViewContext::CreateRenderView(
             _renderTargetId,
             desc.cameraId,
             desc.integratorId,
-            {0, nullptr},
+            desc.displayFilterList,
             desc.sampleFilterList,
             RtParamList());
 }

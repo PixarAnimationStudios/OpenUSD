@@ -35,7 +35,7 @@ TF_DECLARE_REF_PTRS(HdPrefixingSceneIndex);
 ///
 /// \class HdPrefixingSceneIndex
 ///
-/// A prefixing scene index is one in which the input scene contains data
+/// A prefixing scene index is one in which the input scene contains 
 /// data sources whose paths are all prefixed with a given prefix.
 ///
 class HdPrefixingSceneIndex : public HdSingleInputFilteringSceneIndexBase

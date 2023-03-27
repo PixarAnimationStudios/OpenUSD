@@ -1,0 +1,77 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Scope "UsdMaterialX" {
+    def Sphere "MxUsdEmissive_01" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Emissive_01>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-5.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdEmissive_02" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Emissive_02>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (-2.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdEmissive_03" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Emissive_03>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdEmissive_04" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Emissive_04>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (2.5, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+    def Sphere "MxUsdEmissive_05" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Materials/MaterialX/Materials/USD_Emissive_05>
+        color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+        double3 xformOp:translate = (5.0, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+}
+
+def Scope "Materials" {
+    def Material "MaterialX" (
+        references = [
+            @./mtlxFiles/emissiveMaterials.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" {
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+}
+
+def Camera "Camera" {
+    double3 xformOp:translate = (0, 0, 35)
+    float xformOp:rotateX:Zup = 90
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

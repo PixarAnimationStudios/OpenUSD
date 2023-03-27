@@ -57,6 +57,7 @@ pxr_library(hd
         dependencySchema
         dirtyBitsTranslator
         dirtyList
+        displayFilterSchema
         drawingCoord
         drawItem
         engine
@@ -66,6 +67,7 @@ pxr_library(hd
         extCompPrimvarBufferSource
         extComputation
         extComputationContext
+        extComputationContextInternal
         extComputationInputComputationSchema
         extComputationOutputSchema
         extComputationPrimvarSchema
@@ -81,7 +83,6 @@ pxr_library(hd
         geomSubsetSchema
         geomSubsetsSchema
         instanceCategoriesSchema
-        instancedBySceneIndex
         instancedBySchema
         instancer
         instanceRegistry
@@ -115,6 +116,7 @@ pxr_library(hd
         prefixingSceneIndex
         primDataSourceOverlayCache
         primGather
+        primOriginSchema
         primTypeIndex
         primvarSchema
         primvarsSchema
@@ -128,6 +130,7 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderSettings
         renderSettingsSchema
         renderThread
         repr
@@ -148,12 +151,15 @@ pxr_library(hd
         sceneIndexPluginRegistry
         schema
         selection
+        selectionSchema
+        selectionsSchema
         smoothNormals
         sortedIds
         sphereSchema
         sprim
         strategyBase
         subdivisionTagsSchema
+        systemSchema
         task
         timeSampleArray
         tokens
@@ -163,6 +169,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        vectorSchema
         vertexAdjacency
         visibilitySchema
         volume
@@ -179,7 +186,6 @@ pxr_library(hd
         version.h
 
     PRIVATE_CLASSES
-        extComputationContextInternal
         ${optionalPrivateClasses}
 
     RESOURCE_FILES
@@ -232,6 +238,15 @@ pxr_build_test(testHdDataSourceLocator
 
    CPPFILES
        testenv/testHdDataSourceLocator.cpp
+)
+
+pxr_build_test(testHdDirtyBitsTranslator
+   LIBRARIES
+       hd
+       tf
+
+   CPPFILES
+       testenv/testHdDirtyBitsTranslator.cpp
 )
 
 pxr_build_test(testHdDirtyList
@@ -352,6 +367,10 @@ pxr_register_test(testHdCommand
 
 pxr_register_test(testHdDataSourceLocator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDataSourceLocator"
+)
+
+pxr_register_test(testHdDirtyBitsTranslator
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdDirtyBitsTranslator"
 )
 
 pxr_register_test(testHdDirtyList

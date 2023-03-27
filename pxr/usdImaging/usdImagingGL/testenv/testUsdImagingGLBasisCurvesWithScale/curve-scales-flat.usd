@@ -2,6 +2,7 @@
 (
     endFrame = 40
     startFrame = 1
+    upAxis = "Z"
 )
 
 def Scope "BasisCurves"

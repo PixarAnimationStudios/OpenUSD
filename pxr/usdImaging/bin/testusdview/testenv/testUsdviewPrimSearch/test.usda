@@ -8,6 +8,9 @@ def "foo" {
 
 }
 
-def "g" {
+def "g" (
+    displayName = "testDisplayName"
+)
+{
 
 }

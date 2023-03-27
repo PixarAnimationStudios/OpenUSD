@@ -49,7 +49,7 @@ HdRendererPluginRegistry::HdRendererPluginRegistry()
 HdRendererPluginRegistry::~HdRendererPluginRegistry() = default;
 
 TfToken 
-HdRendererPluginRegistry::GetDefaultPluginId()
+HdRendererPluginRegistry::GetDefaultPluginId(bool gpuEnabled)
 {
     // Get all the available plugins to see if any of them is supported on this
     // platform and use the first one as the default.
@@ -67,7 +67,7 @@ HdRendererPluginRegistry::GetDefaultPluginId()
         // Important to bail out as soon as we found a plugin that works to
         // avoid loading plugins unnecessary as that can be arbitrarily
         // expensive.
-        if (plugin && plugin->IsSupported()) {
+        if (plugin && plugin->IsSupported(gpuEnabled)) {
             HdRendererPluginRegistry::GetInstance().ReleasePlugin(plugin);
             return desc.id;
         }

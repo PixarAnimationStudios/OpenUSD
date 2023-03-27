@@ -25,33 +25,19 @@
 #define EXT_RMANPKG_24_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_MATFILT_RESOLVE_VSTRUCTS_H
 
 #include "pxr/pxr.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/materialNetworkInterface.h"
-#include "hdPrman/matfiltFilterChain.h"
+#include "pxr/usd/ndr/declare.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// MatfiltFilterChain::FilterFnc implementation which expands "virtual struct"
-/// connections -- including evaluation of conditional actions.
-///
-/// Observes an optional boolean value for field "enableVstructConditions"
-/// within \p contextValues. This defaults to true.
-///
-void MatfiltResolveVstructs(
-        const SdfPath &networkId,
-        HdMaterialNetwork2 &network,
-        const std::map<TfToken, VtValue> &contextValues,
-        const NdrTokenVec &shaderTypePriority,
-        std::vector<std::string> *outputErrorMessages);
-
-
-/// Resolves vstructs against an abstract material interface.
+/// Expands "virtual struct" connections for RenderMan.
+/// If requested, conditional actions are evaluated.
 void MatfiltResolveVstructs(
         HdMaterialNetworkInterface *networkInterface,
-        const NdrTokenVec &shaderTypePriority,
-        bool enableConditions);
-
+        bool enableConditions = true);
 
 class MatfiltVstructConditionalEvaluatorImpl;
 

@@ -25,21 +25,17 @@
 
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItemsCache.h"
-#include "pxr/imaging/hdSt/indirectDrawBatch.h"
-#include "pxr/imaging/hdSt/pipelineDrawBatch.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/renderParam.h"
 #include "pxr/imaging/hdSt/renderPassState.h"
 
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hgi/graphicsCmds.h"
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
-#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hd/renderDelegate.h"
 
@@ -141,9 +137,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     // Validate and update draw batches.
     _UpdateCommandBuffer(renderTags);
 
-    // CPU frustum culling (if chosen)
-    _FrustumCullCPU(stRenderPassState);
-
     // Downcast the resource registry
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::dynamic_pointer_cast<HdStResourceRegistry>(
@@ -165,7 +158,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     prepareGfxCmds->PushDebugGroup(prepareName.c_str());
 
     _cmdBuffer.PrepareDraw(prepareGfxCmds.get(),
-                           stRenderPassState, resourceRegistry);
+                           stRenderPassState, GetRenderIndex());
 
     prepareGfxCmds->PopDebugGroup();
     _hgi->SubmitCmds(prepareGfxCmds.get());
@@ -183,11 +176,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     gfxCmds->PushDebugGroup(passName.c_str());
 
-    gfxCmds->SetViewport(
-        stRenderPassState->ComputeViewport(
-            desc,
-            /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
-
+    gfxCmds->SetViewport(stRenderPassState->ComputeViewport(desc));
 
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();
@@ -375,49 +364,6 @@ HdSt_RenderPass::_UpdateCommandBuffer(TfTokenVector const& renderTags)
     }
 
     _cmdBuffer.SetEnableTinyPrimCulling(_useTinyPrimCulling);
-}
-
-void
-HdSt_RenderPass::_FrustumCullCPU(
-    HdStRenderPassStateSharedPtr const &renderPassState)
-{
-    // This process should be moved to HdSt_DrawBatch::PrepareDraw
-    // to be consistent with GPU culling.
-
-    HdChangeTracker const &tracker = GetRenderIndex()->GetChangeTracker();
-    HgiCapabilities const *capabilities = _hgi->GetCapabilities();
-
-    const bool multiDrawIndirectEnabled =
-        capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
-
-    const bool gpuFrustumCullingEnabled =
-        HdSt_PipelineDrawBatch::IsEnabled(capabilities) ?
-            HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling() :
-            HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
-
-    const bool
-       skipCulling = TfDebug::IsEnabled(HDST_DISABLE_FRUSTUM_CULLING) ||
-           (multiDrawIndirectEnabled && gpuFrustumCullingEnabled);
-    bool freezeCulling = TfDebug::IsEnabled(HD_FREEZE_CULL_FRUSTUM);
-
-    if(skipCulling) {
-        // Since culling state is stored across renders,
-        // we need to update all items visible state
-        _cmdBuffer.SyncDrawItemVisibility(tracker.GetVisibilityChangeCount());
-
-        TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: skipped\n");
-    }
-    else {
-        if (!freezeCulling) {
-            // Re-cull the command buffer.
-            _cmdBuffer.FrustumCull(renderPassState->GetCullMatrix());
-        }
-
-        if (TfDebug::IsEnabled(HD_DRAWITEMS_CULLED)) {
-            TF_DEBUG(HD_DRAWITEMS_CULLED).Msg("CULLED: %zu drawItems\n",
-                                              _cmdBuffer.GetCulledSize());
-        }
-    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -42,7 +42,7 @@
 
 void main(void)
 {
-    const vec4 clipPos =  worldViewProj[gl_InstanceID] * vec4(position,1.0);
+    const vec4 clipPos =  worldViewProj[hd_InstanceID] * vec4(position,1.0);
     gl_Position = clipPos;
 
     // Write out a flat (non-interpolated) screen space position for the

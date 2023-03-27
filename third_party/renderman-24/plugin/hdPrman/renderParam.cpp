@@ -119,6 +119,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(const std::string &rileyVariant,
     _riley(nullptr),
     _sceneLightCount(0),
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
+    _displayFiltersId(riley::DisplayFilterId::InvalidId()),
     _lastSettingsVersion(0)
 {
     // Create the stats session
@@ -996,7 +997,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 TfStringStartsWith(primvar.name.GetString(), userAttrPrefix);
             bool hasRiAttributesPrefix =
                 TfStringStartsWith(primvar.name.GetString(), riAttrPrefix);
-            bool hasPrimvarRiAttributesPrefix =
+            const bool hasPrimvarRiAttributesPrefix =
                     TfStringStartsWith(primvar.name.GetString(),primvarsPrefix);
 
             // Strip "primvars:" from the name
@@ -1050,6 +1051,16 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 name = _GetPrmanPrimvarName(TfToken(strippedName), detail);
             } else {
                 name = _GetPrmanPrimvarName(primvarName, detail);
+            }
+
+            // ri:attributes and primvars:ri:attributes primvars end up having
+            // the same name, potentially causing collisions in the primvar list.
+            // When both ri:attributes and primvar:ri:attributes versions of 
+            // the same primvars exist, the primvar:ri:attributes version should
+            // win out.
+            if (hasRiAttributesPrefix && !hasPrimvarRiAttributesPrefix &&
+                params.HasParam(name)) {
+                continue;
             }
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
@@ -1247,10 +1258,8 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     RtParamList& attrs)
 {
     if (categories.empty()) {
-        attrs.SetString( RixStr.k_lightfilter_subset,
-                         RtUString("") );
-        attrs.SetString( RixStr.k_lighting_subset,
-                         RtUString("default") );
+        attrs.SetString( RixStr.k_lightfilter_subset, RtUString("") );
+        attrs.SetString( RixStr.k_lighting_subset, RtUString("default") );
         TF_DEBUG(HDPRMAN_LIGHT_LINKING)
             .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
                  id.GetText());
@@ -1258,7 +1267,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     }
 
     std::string membership;
-    for (TfToken const& category: categories) {
+    for (TfToken const& category : categories) {
         if (!membership.empty()) {
             membership += " ";
         }
@@ -1272,7 +1281,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
         membership += " " + input;
     }
     attrs.SetString( RixStr.k_grouping_membership,
-                       RtUString(membership.c_str()) );
+                     RtUString(membership.c_str()) );
     TF_DEBUG(HDPRMAN_LIGHT_LINKING)
         .Msg("HdPrman: <%s> grouping:membership = \"%s\"\n",
              id.GetText(), membership.c_str());
@@ -1291,7 +1300,7 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
         }
     }
     attrs.SetString( RixStr.k_lighting_subset,
-                      RtUString(lightingSubset.c_str()) );
+                     RtUString(lightingSubset.c_str()) );
     TF_DEBUG(HDPRMAN_LIGHT_LINKING)
         .Msg("HdPrman: <%s> lighting:subset = \"%s\"\n",
              id.GetText(), lightingSubset.c_str());
@@ -1841,6 +1850,7 @@ _ComputeRenderViewDesc(
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
     const riley::SampleFilterList &sampleFilterList,
+    const riley::DisplayFilterList &displayFilterList,
     const GfVec2i &resolution)
 {
     HdPrman_RenderViewDesc renderViewDesc;
@@ -1849,6 +1859,7 @@ _ComputeRenderViewDesc(
     renderViewDesc.integratorId = integratorId;
     renderViewDesc.resolution = resolution;
     renderViewDesc.sampleFilterList = sampleFilterList;
+    renderViewDesc.displayFilterList = displayFilterList;
 
     const std::vector<VtValue> &renderVars =
         VtDictionaryGet<std::vector<VtValue>>(
@@ -1940,6 +1951,7 @@ HdPrman_RenderParam::CreateRenderViewFromSpec(
             GetCameraContext().GetCameraId(),
             GetActiveIntegratorId(),
             GetSampleFilterList(),
+            GetDisplayFilterList(),
             GfVec2i(512, 512));
 
     GetRenderViewContext().CreateRenderView(
@@ -2697,6 +2709,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
     renderViewDesc.sampleFilterList = GetSampleFilterList();
+    renderViewDesc.displayFilterList = GetDisplayFilterList();
 
     GetRenderViewContext().CreateRenderView(
         renderViewDesc, riley);
@@ -2900,6 +2913,34 @@ HdPrman_RenderParam::SetConnectedSampleFilterPaths(
 }
 
 void
+HdPrman_RenderParam::SetConnectedDisplayFilterPaths(
+    HdSceneDelegate *sceneDelegate,
+    SdfPathVector const &connectedDisplayFilterPaths)
+{
+    if (_connectedDisplayFilterPaths != connectedDisplayFilterPaths) {
+        // Reset the Filter Shading Nodes and update the Connected Paths
+        _displayFilterNodes.clear();
+        _connectedDisplayFilterPaths = connectedDisplayFilterPaths;
+
+        if (! HdRenderIndex::IsSceneIndexEmulationEnabled()) {
+            // Mark the DisplayFilter prims Dirty
+            for (const SdfPath &path : connectedDisplayFilterPaths) {
+                sceneDelegate->GetRenderIndex().GetChangeTracker()
+                    .MarkSprimDirty(path, HdChangeTracker::DirtyParams);
+            }
+        }
+    }
+
+    // If there are no connected DisplayFilters, delete the riley DisplayFilter
+    if (_connectedDisplayFilterPaths.size() == 0) {
+        if (_displayFiltersId != riley::DisplayFilterId::InvalidId()) {
+            AcquireRiley()->DeleteDisplayFilter(_displayFiltersId);
+            _displayFiltersId = riley::DisplayFilterId::InvalidId();
+        }
+    }
+}
+
+void
 HdPrman_RenderParam::CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate)
 {
     std::vector<riley::ShadingNode> shadingNodes;
@@ -2957,6 +2998,63 @@ HdPrman_RenderParam::CreateSampleFilterNetwork(HdSceneDelegate *sceneDelegate)
 }
 
 void
+HdPrman_RenderParam::CreateDisplayFilterNetwork(HdSceneDelegate *sceneDelegate)
+{
+    std::vector<riley::ShadingNode> shadingNodes;
+    std::vector<RtUString> filterRefs;
+
+    // Gather shading nodes and reference paths (for combiner) for all connected
+    // and visible DisplayFilters. The filterRefs order needs to match the order
+    // of DisplayFilters specified in the RenderSettings connection.
+    for (const auto& path : _connectedDisplayFilterPaths) {
+        if (sceneDelegate->GetVisible(path)) {
+            const auto it = _displayFilterNodes.find(path);
+            if (!TF_VERIFY(it != _displayFilterNodes.end())) {
+                continue;
+            }
+            if (it->second.name) {
+                shadingNodes.push_back(it->second);
+                filterRefs.push_back(RtUString(path.GetText()));
+            }
+        }
+    }
+
+    // If we have multiple DisplayFilters, create a DisplayFilter Combiner Node
+    if (shadingNodes.size() > 1) {
+        static RtUString filterArrayName("filter");
+        static RtUString pxrDisplayFilterCombiner("PxrDisplayFilterCombiner");
+
+        riley::ShadingNode combinerNode;
+        combinerNode.type = riley::ShadingNode::Type::k_DisplayFilter;
+        combinerNode.handle = pxrDisplayFilterCombiner;
+        combinerNode.name = pxrDisplayFilterCombiner;
+        combinerNode.params.SetDisplayFilterReferenceArray(
+            filterArrayName, filterRefs.data(), filterRefs.size());
+        shadingNodes.push_back(combinerNode);
+    }
+    
+    // Create or update the Riley DisplayFilters
+    riley::ShadingNetwork const displayFilterNetwork = {
+        static_cast<uint32_t>(shadingNodes.size()), &shadingNodes[0] };
+    
+    if (_displayFiltersId == riley::DisplayFilterId::InvalidId()) {
+        _displayFiltersId = AcquireRiley()->CreateDisplayFilter(
+            riley::UserId(stats::AddDataLocation("/displayFilters").
+                              GetValue()),
+            displayFilterNetwork, 
+            RtParamList());
+    }
+    else {
+        AcquireRiley()->ModifyDisplayFilter(
+            _displayFiltersId, &displayFilterNetwork, nullptr);
+    }
+
+    if (_displayFiltersId == riley::DisplayFilterId::InvalidId()) {
+        TF_WARN("Failed to create the Display Filter(s)\n");
+    }
+}
+
+void
 HdPrman_RenderParam::AddSampleFilter(
     HdSceneDelegate *sceneDelegate,
     SdfPath const& path,
@@ -2974,12 +3072,38 @@ HdPrman_RenderParam::AddSampleFilter(
     }
 }
 
+void
+HdPrman_RenderParam::AddDisplayFilter(
+    HdSceneDelegate *sceneDelegate,
+    SdfPath const& path,
+    riley::ShadingNode const& node)
+{
+    // Update or Add the DisplayFilter Shading Node
+    const auto filterIt = _displayFilterNodes.insert({ path, node });
+    if (!filterIt.second) {
+        filterIt.first->second = node;
+    }
+
+    // If we have all the Shading Nodes, creat the DisplayFilters in Riley 
+    if (_displayFilterNodes.size() == _connectedDisplayFilterPaths.size()) {
+        CreateDisplayFilterNetwork(sceneDelegate);
+    }
+}
+
 riley::SampleFilterList
 HdPrman_RenderParam::GetSampleFilterList()
 {
     return (_sampleFiltersId == riley::SampleFilterId::InvalidId()) 
         ? riley::SampleFilterList({ 0, nullptr })
         : riley::SampleFilterList({ 1, &_sampleFiltersId });
+}
+
+riley::DisplayFilterList
+HdPrman_RenderParam::GetDisplayFilterList()
+{
+    return (_displayFiltersId == riley::DisplayFilterId::InvalidId())
+        ? riley::DisplayFilterList({ 0, nullptr })
+        : riley::DisplayFilterList({ 1, &_displayFiltersId });
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

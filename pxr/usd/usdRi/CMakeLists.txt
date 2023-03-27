@@ -19,7 +19,6 @@ pxr_library(usdRi
         rmanUtilities
         splineAPI
         statementsAPI
-        textureAPI
         tokens
 
     PUBLIC_HEADERS
@@ -37,7 +36,6 @@ pxr_library(usdRi
         wrapRmanUtilities.cpp
         wrapSplineAPI.cpp
         wrapStatementsAPI.cpp
-        wrapTextureAPI.cpp
         wrapTokens.cpp
 
     PYMODULE_FILES

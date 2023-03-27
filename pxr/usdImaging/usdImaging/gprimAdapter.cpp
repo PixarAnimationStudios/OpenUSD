@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/gprimAdapter.h"
 
 #include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
+#include "pxr/usdImaging/usdImaging/dataSourceGprim.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
@@ -82,6 +83,15 @@ _GetPrimvarsForMaterial(const VtValue & vtMaterial)
 
 UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
 {
+}
+
+HdDataSourceLocatorSet
+UsdImagingGprimAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties)
+{
+    return UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
 }
 
 /* static */
