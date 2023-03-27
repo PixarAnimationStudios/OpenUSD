@@ -60,7 +60,7 @@ LoFiRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 }
 
 bool 
-LoFiRendererPlugin::IsSupported() const
+LoFiRendererPlugin::IsSupported(bool gpuEnabled) const
 {
     // Nothing more to check for now, we assume if the plugin loads correctly
     // it is supported.
