@@ -45,7 +45,6 @@
 
 #include <atomic>
 #include <memory>
-#include <iostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
