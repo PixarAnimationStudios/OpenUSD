@@ -169,10 +169,10 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
                         subPrimNames.insert(subPrimName);
                     }
                 }
+            }
 
-                if (subPrimNames.find(TfToken()) == subPrimNames.end()) {
-                    subprims.push_back(TfToken());
-                }
+            if (subPrimNames.find(TfToken()) == subPrimNames.end()) {
+                subprims.push_back(TfToken());
             }
 
             return subprims;
