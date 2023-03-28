@@ -78,11 +78,6 @@ public:
     USDIMAGING_API
     void SetStage(UsdStageRefPtr stage);
 
-    // This function is a no-op and will be deprecated.
-    [[ deprecated("This is a no-op and will be removed.") ]]
-    USDIMAGING_API
-    void Populate();
-
     // Set the time, and call PrimsDirtied for any time-varying attributes.
     USDIMAGING_API
     void SetTime(UsdTimeCode time);

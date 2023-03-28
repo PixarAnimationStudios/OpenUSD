@@ -571,11 +571,6 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
     _Populate();
 }
 
-void UsdImagingStageSceneIndex::Populate()
-{
-    // no-op
-}
-
 void UsdImagingStageSceneIndex::_Populate()
 {
     if (!_stage) {
