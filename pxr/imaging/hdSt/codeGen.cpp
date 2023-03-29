@@ -3776,8 +3776,7 @@ _GetDrawingCoord(std::stringstream &ss,
                  std::vector<std::string> const &drawingCoordParams,
                  int const instanceIndexWidth,
                  char const *inputPrefix,
-                 char const *inArraySize,
-                 char const *primitiveCoordOffset)
+                 char const *inArraySize)
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
@@ -3796,10 +3795,6 @@ _GetDrawingCoord(std::stringstream &ss,
            << " = " << inputPrefix
            << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
     }
-    if (primitiveCoordOffset) {
-        ss << "  dc.primitiveCoord"
-           << primitiveCoordOffset << ";\n";
-    }
 
     ss << "  return dc; \n"
        << "}\n";
@@ -3811,8 +3806,7 @@ _ProcessDrawingCoord(std::stringstream &ss,
                      std::vector<std::string> const &drawingCoordParams,
                      int const instanceIndexWidth,
                      char const *outputPrefix,
-                     char const *outArraySize,
-                     char const *primitiveCoordOffset)
+                     char const *outArraySize)
 {
     ss << "  hd_drawingCoord dc = GetDrawingCoord();\n";
     for (std::string const & param : drawingCoordParams) {
@@ -3828,10 +3822,6 @@ _ProcessDrawingCoord(std::stringstream &ss,
         std::string const index = std::to_string(i);
         ss << "  " << outputPrefix << "instanceCoordsI" << index << outArraySize
            << " = " << "dc.instanceCoords[" << index << "]" << ";\n";
-    }
-    if (primitiveCoordOffset) {
-        ss << "  " << outputPrefix << "primitiveCoord" << outArraySize
-           << primitiveCoordOffset << ";\n";
     }
 }
 
@@ -4054,6 +4044,23 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genGS << primitiveID.str();
     _genFS << primitiveID.str();
 
+    // To access per-primitive data we need the primitiveCoord offset
+    // to the start of primitive data for the current draw added to
+    // the PrimitiveID offset to current primitive within the draw.
+    // We don't generate this accessor for VS since VS does not
+    // support PrimitiveID.
+    char const * const primitiveIndex =
+        "int GetPrimitiveIndex() {\n"
+        "  return GetDrawingCoord().primitiveCoord + GetPrimitiveID();\n"
+        "}\n";
+
+    _genPTCS << primitiveIndex;
+    _genPTVS << primitiveIndex;
+    _genTCS << primitiveIndex;
+    _genTES << primitiveIndex;
+    _genGS << primitiveIndex;
+    _genFS << primitiveIndex;
+
     std::stringstream genAttr;
 
     // VS/PTVS specific accessor for the "vertex drawing coordinate"
@@ -4249,7 +4256,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.modelCoord              = drawingCoord0[0].x;\n"
              << "  dc.constantCoord           = drawingCoord0[0].y;\n"
              << "  dc.elementCoord            = drawingCoord0[0].z;\n"
-             << "  dc.primitiveCoord          = drawingCoord0[0].w + patch_id;\n"
+             << "  dc.primitiveCoord          = drawingCoord0[0].w;\n"
              << "  dc.fvarCoord               = drawingCoord1[0].x;\n"
              << "  dc.shaderCoord             = drawingCoord1[0].z;\n"
              << "  dc.vertexCoord             = drawingCoord1[0].w;\n"
@@ -4311,52 +4318,52 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
     // VS/PTVS from attributes
     _ProcessDrawingCoord(_procVS, drawingCoordParams, instanceIndexWidth,
-                         "vs_dc_", "", nullptr);
+                         "vs_dc_", "");
     _ProcessDrawingCoord(_procPTVSOut, drawingCoordParams, instanceIndexWidth,
-                         "vs_dc_", "", " -= patch_id");
+                         "vs_dc_", "");
 
     // TCS from VS
     if (_hasTCS) {
         _GetDrawingCoord(_genTCS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "[0]", " += GetPrimitiveID()");
+                "vs_dc_", "[0]");
         _ProcessDrawingCoord(_procTCS, drawingCoordParams, instanceIndexWidth,
-                "tcs_dc_", "[gl_InvocationID]", " -= GetPrimitiveID()");
+                "tcs_dc_", "[gl_InvocationID]");
     }
 
     // TES from TCS
     if (_hasTES) {
         _GetDrawingCoord(_genTES, drawingCoordParams, instanceIndexWidth,
-                "tcs_dc_", "[0]", " += GetPrimitiveID()");
+                "tcs_dc_", "[0]");
         _ProcessDrawingCoord(_procTES, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "", " -= GetPrimitiveID()");
+                "tes_dc_", "");
     }
 
     // GS
     if (_hasGS && _hasTES) {
         // from TES
         _GetDrawingCoord(_genGS, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "[0]", " += GetPrimitiveID()");
+                "tes_dc_", "[0]");
     } else if (_hasGS) {
         // from VS
         _GetDrawingCoord(_genGS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "[0]", " += GetPrimitiveID()");
+                "vs_dc_", "[0]");
     }
     _ProcessDrawingCoord(_procGS, drawingCoordParams, instanceIndexWidth,
-                "gs_dc_", "", " -= GetPrimitiveID()");
+                "gs_dc_", "");
 
     // FS
     if (_hasGS) {
         // from GS
         _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "gs_dc_", "", " += GetPrimitiveID()");
+                "gs_dc_", "");
     } else if (_hasTES) {
         // from TES
         _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "", " += GetPrimitiveID()");
+                "tes_dc_", "");
     } else {
         // from VS/PTVS
         _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "vs_dc_", "", " += GetPrimitiveID()");
+                "vs_dc_", "");
     }
 }
 
@@ -4570,7 +4577,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
       // --------- indirection accessors ---------
       // Gives us the "coarse" element ID
       int GetElementID() {
-          return primitiveData[GetPrimitiveCoord()].elementID;
+          return primitiveData[GetPrimitiveIndex()].elementID;
       }
       
       // Adds the offset to the start of the uniform primvar data for the prim
@@ -4662,7 +4669,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         _EmitDeclaration(&_resCommon, _metaData.primitiveParamBinding);
         _EmitAccessor(accessors, _metaData.primitiveParamBinding.name,
                         _metaData.primitiveParamBinding.dataType, binding,
-                        "GetDrawingCoord().primitiveCoord");
+                        "GetPrimitiveIndex()");
 
         if (_geometricShader->IsPrimTypeCompute()) {
             // do nothing.
@@ -4858,7 +4865,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         _EmitDeclaration(&_resCommon, _metaData.edgeIndexBinding);
         _EmitAccessor(accessors, _metaData.edgeIndexBinding.name,
                     _metaData.edgeIndexBinding.dataType, binding,
-                    "GetDrawingCoord().primitiveCoord");
+                    "GetPrimitiveIndex()");
     }
 
     if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
@@ -4870,7 +4877,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
         _EmitDeclaration(&_resCommon, _metaData.coarseFaceIndexBinding);
         _EmitAccessor(accessors, _metaData.coarseFaceIndexBinding.name,
                     _metaData.coarseFaceIndexBinding.dataType, binding,
-                    "GetDrawingCoord().primitiveCoord  + localIndex");
+                    "GetPrimitiveIndex() + localIndex");
     }
 
     switch (_geometricShader->GetPrimitiveType()) {
@@ -4943,12 +4950,11 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
             _EmitAccessor(accessors, name,
                 _metaData.fvarIndicesBindings[i].dataType, binding,
-                "GetDrawingCoord().primitiveCoord * HD_NUM_PATCH_VERTS + "
-                "localIndex");
+                "GetPrimitiveIndex() * HD_NUM_PATCH_VERTS + localIndex");
         } else {
             _EmitAccessor(accessors,name,
                 _metaData.fvarIndicesBindings[i].dataType, binding,
-                "GetDrawingCoord().primitiveCoord + localIndex");
+                "GetPrimitiveIndex() + localIndex");
         }
     }
 
@@ -4970,7 +4976,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
             HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
             _EmitAccessor(accessors, name,
                 _metaData.fvarPatchParamBindings[i].dataType, binding,
-                "GetDrawingCoord().primitiveCoord + localIndex");
+                "GetPrimitiveIndex() + localIndex");
         }
     }
 
