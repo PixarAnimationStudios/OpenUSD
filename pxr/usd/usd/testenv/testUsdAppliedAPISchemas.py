@@ -1911,21 +1911,11 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # All three prims have all the same properties since they all have all
         # three API schemas applied.
-        # ordering is slightly different in property names under
-        # ASCII dictionary sort vs. UCA, so reflect that here
-        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            expectedPropNames = [
-                "cycle:int_attr",
-                "cycle1:token_attr",
-                "cycle2:token_attr",
-                "cycle3:token_attr",
-                ]
-        else:
-            expectedPropNames = [
-                "cycle1:token_attr",
-                "cycle2:token_attr",
-                "cycle3:token_attr",
-                "cycle:int_attr"]
+        expectedPropNames = [
+            "cycle1:token_attr",
+            "cycle2:token_attr",
+            "cycle3:token_attr",
+            "cycle:int_attr"]
         self.assertEqual(nestedCyclePrim1.GetPropertyNames(), expectedPropNames)
         self.assertEqual(nestedCyclePrim2.GetPropertyNames(), expectedPropNames)
         self.assertEqual(nestedCyclePrim3.GetPropertyNames(), expectedPropNames)
@@ -1957,12 +1947,11 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
              "TestNestedCycle2API", 
              "TestNestedCycle3API"])
 
-        if not Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            # Python's sorted method will return the names
-            # in ASCII dictionary order, so only test this
-            # under original conditions
-            self.assertEqual(sorted(cycle1APIDef.GetPropertyNames()),
-                            expectedPropNames)
+        # Python's sorted method will return the names
+        # in ASCII dictionary order, so only test this
+        # under original conditions
+        self.assertEqual(sorted(cycle1APIDef.GetPropertyNames()),
+                        expectedPropNames)
 
         self.assertEqual(cycle1APIDef.GetDocumentation(),
             "Test nested single apply API schema with a cycle #1")
@@ -1975,12 +1964,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
              "TestNestedCycle3API", 
              "TestNestedCycle1API"])
 
-        if not Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            # Python's sorted method will return the names
-            # in ASCII dictionary order, so only test this
-            # under original conditions
-            self.assertEqual(sorted(cycle2APIDef.GetPropertyNames()),
-                            expectedPropNames)
+        self.assertEqual(sorted(cycle2APIDef.GetPropertyNames()),
+                        expectedPropNames)
 
         self.assertEqual(cycle2APIDef.GetDocumentation(),
             "Test nested single apply API schema with a cycle #2")
@@ -1993,12 +1978,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
              "TestNestedCycle1API", 
              "TestNestedCycle2API"])
 
-        if not Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            # Python's sorted method will return the names
-            # in ASCII dictionary order, so only test this
-            # under original conditions
-            self.assertEqual(sorted(cycle3APIDef.GetPropertyNames()),
-                            expectedPropNames)
+        self.assertEqual(sorted(cycle3APIDef.GetPropertyNames()),
+                        expectedPropNames)
                             
         self.assertEqual(cycle3APIDef.GetDocumentation(),
             "Test nested single apply API schema with a cycle #3")
@@ -2226,60 +2207,31 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
                          expectedAPISchemas)
 
         # Properties come from the type and all composed built-in APIs
-        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            # ordering is slightly different based on ASCII dictionary
-            # vs. UCA, so reflect that here in the expected names
-            expectedPropNames = [
-                # Properties from expanded built-in TestNestedCycle1API
-                "cycle:int_attr",
-                "cycle1:token_attr",
-                "cycle2:token_attr",
-                "cycle3:token_attr",
-                # Properties from expanded built-in TestNestedOuterSingleApplyAPI
-                "innerSingle:int_attr",
-                "innerSingle:relationship",
-                "innerSingle:token_attr",
-                "multi:bar:bool_attr", 
-                "multi:bar:relationship", 
-                "multi:bar:token_attr",
-                "multi:foo:bool_attr", 
-                "multi:foo:relationship", 
-                "multi:foo:token_attr",
-                "outerSingle:int_attr",
-                "outerSingle:relationship",
-                "outerSingle:token_attr",
-                "single:bool_attr",
-                "single:relationship",
-                "single:token_attr",
-                # Properties from the prim type TestWithBuiltinNestedAppliedSchema
-                "testAttr",
-                "testRel"]
-        else:
-            expectedPropNames = [
-                # Properties from expanded built-in TestNestedCycle1API
-                "cycle1:token_attr",
-                "cycle2:token_attr",
-                "cycle3:token_attr",
-                "cycle:int_attr",
-                # Properties from expanded built-in TestNestedOuterSingleApplyAPI
-                "innerSingle:int_attr",
-                "innerSingle:relationship",
-                "innerSingle:token_attr",
-                "multi:bar:bool_attr", 
-                "multi:bar:relationship", 
-                "multi:bar:token_attr",
-                "multi:foo:bool_attr", 
-                "multi:foo:relationship", 
-                "multi:foo:token_attr",
-                "outerSingle:int_attr",
-                "outerSingle:relationship",
-                "outerSingle:token_attr",
-                "single:bool_attr",
-                "single:relationship",
-                "single:token_attr",
-                # Properties from the prim type TestWithBuiltinNestedAppliedSchema
-                "testAttr",
-                "testRel"]
+        expectedPropNames = [
+            # Properties from expanded built-in TestNestedCycle1API
+            "cycle1:token_attr",
+            "cycle2:token_attr",
+            "cycle3:token_attr",
+            "cycle:int_attr",
+            # Properties from expanded built-in TestNestedOuterSingleApplyAPI
+            "innerSingle:int_attr",
+            "innerSingle:relationship",
+            "innerSingle:token_attr",
+            "multi:bar:bool_attr", 
+            "multi:bar:relationship", 
+            "multi:bar:token_attr",
+            "multi:foo:bool_attr", 
+            "multi:foo:relationship", 
+            "multi:foo:token_attr",
+            "outerSingle:int_attr",
+            "outerSingle:relationship",
+            "outerSingle:token_attr",
+            "single:bool_attr",
+            "single:relationship",
+            "single:token_attr",
+            # Properties from the prim type TestWithBuiltinNestedAppliedSchema
+            "testAttr",
+            "testRel"]
         self.assertEqual(typedPrim.GetPropertyNames(), expectedPropNames)
 
         # Get the prim definition for the concrete typed schema and verify its 
@@ -2291,12 +2243,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertTrue(typedPrimDef)
         self.assertEqual(typedPrimDef.GetAppliedAPISchemas(), 
                          expectedAPISchemas)
-        if not Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            # Python's sorted method will return the properties
-            # in the original ASCII ordering, not UCA
-            # so only test under original conditions
-            self.assertEqual(sorted(typedPrimDef.GetPropertyNames()),
-                             expectedPropNames)
+        self.assertEqual(sorted(typedPrimDef.GetPropertyNames()),
+                            expectedPropNames)
         
         self.assertEqual(typedPrimDef.GetDocumentation(),
             "Test with built-in nested API schemas")

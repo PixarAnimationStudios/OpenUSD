@@ -245,63 +245,38 @@ TfStringContains(const string &s, const TfToken &substring)
 string
 TfStringToLower(const string &source)
 {
-    if (UseUTF8Identifiers())
-    {
-        return TfUnicodeUtils::UTF8StringToLower(source);
+    string lower;
+    size_t length = source.length();
+    
+    lower.reserve(length);
+    for (size_t i = 0; i < length; i++) {
+        lower += tolower(source[i]);
     }
-    else
-    {
-        string lower;
-        size_t length = source.length();
-        
-        lower.reserve(length);
-        for (size_t i = 0; i < length; i++) {
-            lower += tolower(source[i]);
-        }
 
-        return lower;
-    }
+    return lower;
 }
 
 string
 TfStringToUpper(const string &source)
 {
-    if (UseUTF8Identifiers())
-    {
-        return TfUnicodeUtils::UTF8StringToUpper(source);
+    string upper;
+    size_t length = source.length();
+    
+    upper.reserve(length);
+    for (size_t i = 0; i < length; i++) {
+        upper += toupper(source[i]);
     }
-    else
-    {
-        string upper;
-        size_t length = source.length();
-        
-        upper.reserve(length);
-        for (size_t i = 0; i < length; i++) {
-            upper += toupper(source[i]);
-        }
 
-        return upper;
-    }
+    return upper;
 }
 
 string
 TfStringCapitalize(const string& source)
 {
-    if (source.empty()) {
-        return source;
-    }
+    string result(source);
+    result[0] = toupper(result[0]);
 
-    if (UseUTF8Identifiers())
-    {
-        return TfUnicodeUtils::UTF8StringCapitalize(source);
-    }
-    else
-    {
-        string result(source);
-        result[0] = toupper(result[0]);
-
-        return result;
-    }
+    return result;
 }
 
 string
@@ -826,7 +801,8 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         }
         l = *lcur, r = *rcur;
         // If they are letters that differ disregarding case, we're done.
-        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+        // but only if they are ASCII (i.e., the high bit is not set)
+        if ((((l & (1<<7)) == 0) && ((r & (1<<7)) == 0)) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
@@ -908,7 +884,12 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         }
         else if (!IsAlpha(l) || !IsAlpha(r)) {
             // At least one isn't a letter.
-            return l < r;
+            // this either means it's an ASCII symbol (digit was checked above)
+            // or a utf-8 encoded unicode character
+            // we want ASCII symbols to sort first, so we can't treat the
+            // utf-8 characters as unsigned (and all ASCII values remain the same
+            // after the cast)
+            return static_cast<unsigned char>(l) < static_cast<unsigned char>(r);
         }
         else {
             // Both letters, differ by case, continue.
@@ -935,18 +916,6 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
     l = *lcur, r = *rcur;
     return (r == '0') | ((l != '0') & (l < r));
 
-}
-
-bool TfCollationOrder::operator()(const string& lhs, const string& rhs) const
-{
-    if (UseUTF8Identifiers())
-    {
-        return TfUnicodeUtils::TfUTF8UCALessThan()(lhs, rhs);
-    }
-    else
-    {
-        return TfDictionaryLessThan()(lhs, rhs);
-    }
 }
 
 std::string

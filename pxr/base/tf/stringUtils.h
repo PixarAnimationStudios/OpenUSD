@@ -79,6 +79,7 @@ class TfToken;
 /// as opposed to just passing \c caller).
 ///
 /// \note \c TfStringPrintf() is just a wrapper for \c ArchStringPrintf().
+///
 TF_API
 std::string TfStringPrintf(const char *fmt, ...)
 #ifndef doxygen
@@ -276,15 +277,24 @@ TF_API
 bool TfStringContains(const std::string &s, const TfToken& substring);
 
 /// Makes all characters in \p source lowercase, and returns the result.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringToLower(const std::string& source);
 
 /// Makes all characters in \p source uppercase, and returns the result.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringToUpper(const std::string& source);
 
 /// Returns a copy of the \p source string with only its first character
 /// capitalized. This emulates the behavior of Python's \c str.capitalize().
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringCapitalize(const std::string& source);
 
@@ -326,6 +336,9 @@ std::string TfStringGetCommonPrefix(std::string a, std::string b);
 /// Returns characters after the final character \c delimiter (default ".") of
 /// a string.  Thus suffix of "abc.def" is "def" using "." as the delimiter.
 /// If the delimiter does not occur, the empty string is returned.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 
@@ -335,6 +348,9 @@ std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 /// of a string.  Thus not-suffix of "abc.def" is "abc" using "." as the
 /// delimiter.  If the delimiter does not occur, the original string is
 /// returned.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringGetBeforeSuffix(const std::string& name, char delimiter = '.');
 
@@ -366,6 +382,9 @@ std::string TfStringReplace(const std::string& source, const std::string& from,
 /// Returns the concatenation of the strings in the range \p begin to \p end,
 /// with \p separator (by default, a space) added between each successive pair
 /// of strings.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 template <class ForwardIterator>
 std::string TfStringJoin(
     ForwardIterator begin, ForwardIterator end,
@@ -400,6 +419,9 @@ std::string TfStringJoin(
 ///
 /// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringJoin(const std::vector<std::string>& strings,
                          const char* separator = " ");
@@ -408,6 +430,9 @@ std::string TfStringJoin(const std::vector<std::string>& strings,
 ///
 /// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::string TfStringJoin(const std::set<std::string>& strings,
                          const char* separator = " ");
@@ -430,6 +455,9 @@ std::vector<std::string> TfStringSplit(std::string const &src,
 /// No empty strings are returned: delimiters at the start or end are ignored,
 /// consecutive delimiters are treated as though they were one, and an empty
 /// input will result in an empty return vector.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::vector<std::string> TfStringTokenize(const std::string& source,
                                           const char* delimiters = " \t\n");
@@ -437,6 +465,9 @@ std::vector<std::string> TfStringTokenize(const std::string& source,
 /// Breaks the given string apart, returning a set of strings.
 ///
 /// Same as TfStringTokenize, except this one returns a set.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::set<std::string> TfStringTokenizeToSet(const std::string& source,
                                             const char* delimiters = " \t\n");
@@ -450,6 +481,9 @@ std::set<std::string> TfStringTokenizeToSet(const std::string& source,
 /// quotes or are preceded by a backslash character. \p errors, if provided,
 /// contains any error messages. Delimiters default to white space (space,
 /// tab, and newline).
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::vector<std::string> 
 TfQuotedStringTokenize(const std::string& source, 
@@ -466,6 +500,9 @@ TfQuotedStringTokenize(const std::string& source,
 /// return a vector containing "a" and "to {be} split". If \p openDelimiter and
 /// \p closeDelimiter cannot be the same. \p errors, if provided, contains any
 /// error messages.
+///
+/// \note This method is intended to work only for ASCII strings.  Using this
+/// method on Unicode strings results in undefined behavior.
 TF_API
 std::vector<std::string> 
 TfMatchedStringTokenize(const std::string& source, 
@@ -507,6 +544,17 @@ TfMatchedStringTokenize(const std::string& source,
 /// Characters whose ASCII value are inbetween upper- and lowercase letters,
 /// such as underscore, are sorted to come after all letters.
 ///
+/// \note This comparison is used for the runtime to give a deterministic ordering to strings.
+/// ASCII strings will lexicographically sort according to the rules below.
+/// Strings with Unicode characters will follow these same rules until a
+/// Unicode character is encountered in which case it will be byte compared
+/// with the character in the other string.  Multi-byte encoded characters
+/// will operate this way for each of the bytes.
+/// Note that this results in a non-lexicographic ordering of strings that
+/// contain Unicode characters.  Clients interested in sorting strings 
+/// lexicographically should not rely on this function for doing so and should
+/// instead use a custom sort function (or use one provided by an already
+/// existing library such as Qt or ICU).
 struct TfDictionaryLessThan {
     /// Return true if \p lhs is less than \p rhs in dictionary order.
     ///
@@ -528,7 +576,7 @@ struct TfDictionaryLessThan {
         // different cases, or numerical comparisons, so we special-case this
         // first.
         char l = lhs.c_str()[0], r = rhs.c_str()[0];
-        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+        if ((((l & (1<<7)) == 0) && ((r & (1<<7)) == 0)) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
             // This bit about add 5 mod 32 makes it so that '_' sorts less than
             // all letters, which preserves existing behavior.
             return ((l + 5) & 31) < ((r + 5) & 31);
@@ -540,34 +588,6 @@ struct TfDictionaryLessThan {
 private:
     TF_API bool _LessImpl(const std::string &lhs,
                           const std::string &rhs) const;
-};
-
-///
-/// \class TFCollationOrder 
-///
-/// Provides an ordering based on regular ASCII dictionary or Unicode UTF8 UCA
-/// depending on the value of TF_UTF8_IDENTIFIERS.
-/// 
-/// This struct can be used in typedefs to provide an orderer that will access
-/// the right orderer underneath.
-/// 
-struct TfCollationOrder {
-    /// Return true if \p lhs is less than \p rhs based on some ordering.
-    /// The ordering varies based on the value of TF_UTF8_IDENTIFIERS:
-    /// False: ASCII dictionary ordering
-    /// True: Unicode UTF8 UCA (Unicode collation algorithm)
-    ///
-    /// Normally this functor is used to supply an ordering functor for STL
-    /// containers: for example,
-    /// \code
-    ///   map<string, DataType, TfCollationOrder>  table;
-    /// \endcode
-    ///
-    /// If you simply need to compare two strings, you can do so as follows:
-    /// \code
-    ///     bool aIsFirst = TfCollationOrder()(aString, bString);
-    /// \endcode
-    TF_API bool operator()(const std::string& lhs, const std::string& rhs) const;
 };
 
 /// Convert an arbitrary type into a string

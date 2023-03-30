@@ -351,7 +351,7 @@ Sdf_WritePrimMetadata(
 
     // Write out remaining fields in the metadata section in dictionary-sorted
     // order.
-    std::sort(fields.begin(), metadataFieldsEnd, TfCollationOrder());
+    std::sort(fields.begin(), metadataFieldsEnd, TfDictionaryLessThan());
     for (TfTokenVector::const_iterator fieldIt = fields.begin();
          fieldIt != metadataFieldsEnd; ++fieldIt) {
 
@@ -516,7 +516,7 @@ struct _SortByNameThenType {
         std::string const &lhsName = lhs->GetName();
         std::string const &rhsName = rhs->GetName();
         return (lhsName == rhsName && lhs->GetSpecType() < rhs->GetSpecType())
-            || TfCollationOrder()(lhsName, rhsName);
+            || TfDictionaryLessThan()(lhsName, rhsName);
     }
 };
 }
@@ -839,7 +839,7 @@ Sdf_WriteAttribute(
 
         // Write out remaining fields in the metadata section in
         // dictionary-sorted order.
-        std::sort(fields.begin(), metadataFieldsEnd, TfCollationOrder());
+        std::sort(fields.begin(), metadataFieldsEnd, TfDictionaryLessThan());
         for (TfTokenVector::const_iterator fieldIt = fields.begin();
              fieldIt != metadataFieldsEnd; ++fieldIt) {
 
@@ -1034,7 +1034,7 @@ Sdf_WriteRelationship(
 
         // Write out remaining fields in the metadata section in
         // dictionary-sorted order.
-        std::sort(fields.begin(), metadataFieldsEnd, TfCollationOrder());
+        std::sort(fields.begin(), metadataFieldsEnd, TfDictionaryLessThan());
         for (TfTokenVector::const_iterator fieldIt = fields.begin();
              fieldIt != metadataFieldsEnd; ++fieldIt) {
 

@@ -6960,7 +6960,7 @@ UsdStage::_ListMetadataFields(const UsdObject &obj, bool useFallbacks) const
     }
 
     // Sort & remove duplicate fields.
-    std::sort(result.begin(), result.end(), TfCollationOrder());
+    std::sort(result.begin(), result.end(), TfDictionaryLessThan());
     result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;

@@ -322,7 +322,7 @@ public:
     /// Return this prim's property names (attributes and relationships) that
     /// have authored scene description, ordered according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise
-    /// ordered according to TfDictionaryLessThan / TfUTF8UCALessThan.
+    /// ordered according to TfDictionaryLessTha.
     /// 
     /// If a valid \p predicate is passed in, then only the authored properties 
     /// whose names pass the predicate are included in the result. This is 
@@ -339,7 +339,7 @@ public:
     /// Return all of this prim's properties (attributes and relationships),
     /// including all builtin properties, ordered by name according to the
     /// strongest propertyOrder statement in scene description if one exists,
-    /// otherwise ordered according to TfDictionaryLessThan / TfUTF8UCALessThan.
+    /// otherwise ordered according to TfDictionaryLessThan.
     ///
     /// If a valid \p predicate is passed in, then only properties whose names  
     /// pass the predicate are included in the result. This is useful if the 
@@ -386,7 +386,7 @@ public:
     /// Return this prim's properties (attributes and relationships) that have
     /// authored scene description, ordered by name according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise
-    /// ordered according to TfDictionaryLessThan / TfUTF8UCALessThan.
+    /// ordered according to TfDictionaryLessThan.
     ///
     /// If a valid \p predicate is passed in, then only authored properties 
     /// whose names pass the predicate are included in the result. This is 
@@ -403,7 +403,7 @@ public:
     /// Return this prim's properties that are inside the given property
     /// namespace ordered according to the strongest propertyOrder statement in
     /// scene description if one exists, otherwise ordered according to
-    /// TfDictionaryLessThan / TfUTF8UCALessThan.
+    /// TfDictionaryLessThan.
     ///
     /// A \p namespaces argument whose elements are ["ri", "attribute"] will
     /// return all the properties under the namespace "ri:attribute",

@@ -56,30 +56,6 @@ namespace TfUnicodeUtils {
     extern TF_API std::unordered_set<uint32_t> xidContinueClass;
     extern TF_API std::vector<std::pair<uint32_t, uint32_t>> xidStartRangeClass;
     extern TF_API std::vector<std::pair<uint32_t, uint32_t>> xidContinueRangeClass;
-    extern TF_API std::pair<uint32_t, uint32_t> tangutCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> tangutComponentCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> tangutSupplementCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> nushuCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> khitanSmallScriptCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkCompatibilityIdeographsCodePoints;
-    extern TF_API std::unordered_map<uint32_t, uint32_t> unicodeCaseMapUpperToLower;
-    extern TF_API std::unordered_map<uint32_t, uint32_t> unicodeCaseMapLowerToUpper;
-    extern TF_API std::unordered_map<uint32_t, std::vector<uint32_t>> unicodeCaseMapUpperToMultiLower;
-    extern TF_API std::unordered_map<uint32_t, std::vector<uint32_t>> unicodeCaseMapLowerToMultiUpper;
-    extern TF_API std::unordered_map<uint32_t, uint16_t> unicodeCanonicalCombiningClass;
-    extern TF_API std::unordered_map<uint32_t, std::vector<uint32_t>> unicodeDecompositionMapping;
-    extern TF_API std::unordered_map<uint16_t, std::unordered_map<uint32_t, uint64_t>*> unicodeDucetMap;
-    extern TF_API std::unordered_map<uint16_t, std::unordered_map<uint32_t, std::vector<uint64_t>> *> unicodeDucetMultiMap;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsACodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsBCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsCCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsDCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsECodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsFCodePoints;
-    extern TF_API std::pair<uint32_t, uint32_t> cjkUnifiedIdeographsGCodePoints;
-    extern TF_API const uint16_t DUCET_BLOCK_SIZE;
-    extern TF_API const uint16_t DUCET_MULTI_BLOCK_SIZE;
 
     void AppendUTF8Char(uint32_t codePoint, std::string& result);
 
@@ -633,64 +609,6 @@ namespace TfUnicodeUtils {
     /// A prim name is valid according to the rules associated with \a IsValidUTF8PrimName.
     ///
     std::string TF_API MakeValidUTF8PrimName(const std::string& primName);
-
-    ///
-    /// Makes all characters in \p source lowercase according to Unicode case mappings, and returns the result.
-    ///
-    /// This method makes an attempt to case fold using a common + full algorithm.
-    /// It does not account for special cases for upper case I in Turkish languages.
-    ///
-    /// Note that this mapping may return a string of different length than the source
-    ///
-     std::string TF_API UTF8StringToLower(const std::string& source);
-
-    ///
-    /// Makes all characters in \p source uppercase according to Unicode case mappings, and returns the result.
-    ///
-    /// This method makes an attempt to case fold using a common + full algorithm.
-    /// It does not account for special cases for upper case I in Turkish languages.
-    ///
-    /// Note that this mapping may return a string of different length than the source
-    ///
-     std::string TF_API UTF8StringToUpper(const std::string& source);
-
-    ///
-    /// Returns a copy of the \p source string with only its first character
-    /// capitalized according to Unicode case mappings. This emulates the behavior of Python's \c str.capitalize().
-    /// 
-    /// 
-    /// This method makes an attempt to case fold using a common + full algorithm.
-    /// It does not account for special cases for upper case I in Turkish languages.
-    ///
-    /// Note that this mapping may return a string of different length than the source
-    ///
-     std::string TF_API UTF8StringCapitalize(const std::string& source);
-
-    /// \class TfUTF8UCALessThan
-    ///
-    /// Provides dictionary ordering binary predicate function on UTF-8 encoded Unicode strings.
-    ///
-    /// The \c TfUTF8UCALessThan class is a functor as defined by the STL
-    /// standard.  It compares UTF8 encoded Unicode strings according to the
-    /// Unicode Collation Algorithm (UCA).  For details, see Unicode TR10
-    /// at https://unicode.org/reports/tr10/#Main_Algorithm
-    ///
-    struct TfUTF8UCALessThan {
-        /// Return true if \p lhs is less than \p rhs in UCA order.
-        ///
-        /// Normally this functor is used to supply an ordering functor for STL
-        /// containers: for example,
-        /// \code
-        ///   map<string, DataType, TfUTF8UCALessThan>  table;
-        /// \endcode
-        ///
-        /// If you simply need to compare two UTF8 encoded Unicode strings, 
-        /// you can do so as follows:
-        /// \code
-        ///     bool aIsFirst = TfUTF8UCALessThan()(aString, bString);
-        /// \endcode
-        TF_API bool operator()(const std::string& lhs, const std::string& rhs) const;
-    };
 
 } // end namespace TfUnicodeUtils
 

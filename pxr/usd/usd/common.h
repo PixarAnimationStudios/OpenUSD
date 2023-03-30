@@ -77,7 +77,7 @@ std::string UsdDescribe(const UsdStageCache &);
 // Currently used for querying composed values from ascii layers, so VtValue is
 // the optimal value-store, but this may not always be the case.
 typedef std::map<class TfToken, VtValue,
-                 TfCollationOrder
+                 TfDictionaryLessThan
                  > UsdMetadataValueMap;
 
 /// \enum UsdListPosition

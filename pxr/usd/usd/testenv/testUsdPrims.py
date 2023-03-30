@@ -614,19 +614,13 @@ class TestUsdPrim(unittest.TestCase):
         assert po
         attrs = po.GetAttributes()
         # expected order:
-        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            expected = ['A0', 'a1', 'a10', 'a2', 'A20', 'A3', 'a4', 'a5']
-        else:
-            expected = ['A0', 'a1', 'a2', 'A3', 'a4', 'a5', 'a10', 'A20']
+        expected = ['A0', 'a1', 'a2', 'A3', 'a4', 'a5', 'a10', 'A20']
         assert [a.GetName() for a in attrs] == expected, \
             '%s != %s' % ([a.GetName() for a in attrs], expected)
 
         rels = po.GetRelationships()
         # expected order:
-        if Tf.GetEnvSetting('TF_UTF8_IDENTIFIERS'):
-            expected = ['R0', 'r1', 'r10', 'r2', 'R20', 'R3', 'r4', 'r5']
-        else:
-            expected = ['R0', 'r1', 'r2', 'R3', 'r4', 'r5', 'r10', 'R20']
+        expected = ['R0', 'r1', 'r2', 'R3', 'r4', 'r5', 'r10', 'R20']
         assert [r.GetName() for r in rels] == expected, \
             '%s != %s' % ([r.GetName() for r in rels], expected)
         
