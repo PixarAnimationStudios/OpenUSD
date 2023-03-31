@@ -251,7 +251,7 @@ public:
     // Append several objects to the hash state.
     template <class... Args>
     void Append(Args &&... args) {
-        _AppendImpl(args...);
+        _AppendImpl(std::forward<Args>(args)...);
     }
 
     // Append contiguous objects to the hash state.
@@ -275,7 +275,7 @@ private:
     template <class T, class... Args>
     void _AppendImpl(T &&obj, Args &&... rest) {
         this->_AsDerived()._Append(std::forward<T>(obj));
-        _AppendImpl(rest...);
+        _AppendImpl(std::forward<Args>(rest)...);
     }
     void _AppendImpl() const {
         // base case intentionally empty.
@@ -518,7 +518,7 @@ public:
     template <class... Args>
     static size_t Combine(Args &&... args) {
         Tf_HashState h;
-        _CombineImpl(h, args...);
+        _CombineImpl(h, std::forward<Args>(args)...);
         return h.GetCode();
     }
 
@@ -526,7 +526,7 @@ private:
     template <class HashState, class T, class... Args>
     static void _CombineImpl(HashState &h, T &&obj, Args &&... rest) {
         Tf_HashImpl(h, std::forward<T>(obj), 0);
-        _CombineImpl(h, rest...);
+        _CombineImpl(h, std::forward<Args>(rest)...);
     }
     
     template <class HashState>
