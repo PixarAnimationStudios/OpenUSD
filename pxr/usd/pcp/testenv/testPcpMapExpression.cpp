@@ -36,9 +36,21 @@ _GetArcFunction(const std::string & source, const std::string & target)
     return PcpMapFunction::Create(pathMap, SdfLayerOffset());
 }
 
+void TestMapFunctionHash(){
+    TF_AXIOM(TfHash()(PcpMapFunction()) == TfHash()(PcpMapFunction()));
+
+    const auto pair_1 = std::make_pair(SdfPath("/path/source"), SdfPath("/path/target"));
+    const auto pair_2 = std::make_pair(SdfPath("/path/source2"), SdfPath("/path/target2"));
+    TF_AXIOM(TfHash()(PcpMapFunction::Create({pair_1, pair_2}, SdfLayerOffset())) ==
+             TfHash()(PcpMapFunction::Create({pair_1, pair_2}, SdfLayerOffset())));
+    TF_AXIOM(TfHash()(PcpMapFunction::Create({pair_1, pair_2}, SdfLayerOffset(1.0, 2.0))) ==
+             TfHash()(PcpMapFunction::Create({pair_1, pair_2}, SdfLayerOffset(1.0, 2.0))));
+}
+
 int 
 main(int argc, char** argv)
 {
+    TestMapFunctionHash();
     // Here we focus on testing the core PcpMapExpression API;
     // We don't bother testing convenience API that passes
     // queries onto the MapFunction value.
