@@ -2488,15 +2488,24 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     // current camera and needs to set the riley shutter interval
     // which needs to be set before any time-sampled primvars are
     // synced.
-    const VtDictionary &renderSpec =
-        renderDelegate->GetRenderSetting<VtDictionary>(
-            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-            VtDictionary());
-    const SdfPath &cameraPath =
-        VtDictionaryGet<SdfPath>(
-            renderSpec,
-            HdPrmanExperimentalRenderSpecTokens->camera,
-            VtDefault = SdfPath());
+    // 
+    // XXX This would ideally come directly from the Render Settings prim
+    SdfPath cameraPath =
+        renderDelegate->GetRenderSetting<SdfPath>(
+            HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath, 
+            SdfPath()); 
+    // If there was no cameraPath specified, then check the RenderSpec
+    if (cameraPath.IsEmpty()) {
+        const VtDictionary &renderSpec =
+            renderDelegate->GetRenderSetting<VtDictionary>(
+                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                VtDictionary());
+        const SdfPath &cameraPath =
+            VtDictionaryGet<SdfPath>(
+                renderSpec,
+                HdPrmanExperimentalRenderSpecTokens->camera,
+                VtDefault = SdfPath());
+    }
     GetCameraContext().SetCameraPath(cameraPath);
 }
 

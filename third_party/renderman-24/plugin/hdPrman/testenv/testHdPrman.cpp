@@ -70,7 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for testHdPrman.");
 
-TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, false,
+TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
                       "Use the Render Settings Prim instead of the "
                       "UsdRenderSpec for testHdPrman.");
 
@@ -287,6 +287,26 @@ PopulateFallbackRenderSpec(
     };
 }
 
+UsdGeomCamera
+CreateFallbackCamera(
+    UsdStageRefPtr const &stage,
+    SdfPath const &fallbackCameraPath)
+{
+    UsdGeomCamera fallbackCamera =
+        UsdGeomCamera::Define(stage, fallbackCameraPath);
+
+    const GfMatrix4d m =
+        GfMatrix4d().SetDiagonal(GfVec4d(1.0, 1.0, -1.0, 1.0)) *
+        GfMatrix4d().SetTranslate(GfVec3d(0,0,-10));
+    fallbackCamera.AddTransformOp(UsdGeomXformOp::PrecisionFloat).Set(VtValue(m));
+
+    fallbackCamera.CreateFocalLengthAttr(VtValue(1.0f));
+    const float apertureSize = 2.0f * tan(GfDegreesToRadians(60.0f) / 2.0f);
+    fallbackCamera.CreateHorizontalApertureAttr(VtValue(apertureSize));
+    fallbackCamera.CreateVerticalApertureAttr(VtValue(apertureSize));
+    return fallbackCamera;
+}
+
 // Add Fallback values needed for the test, if they are not already authored.
 void
 PopulateFallbackRenderSettings(
@@ -296,7 +316,12 @@ PopulateFallbackRenderSettings(
     UsdRenderSettings *settings)
 {
     fprintf(stdout, "Populate RenderSettings Prim with fallback values.\n");
-    TF_VERIFY(!settings->GetPath().IsEmpty());
+    // If no renderSettings prim was found create a fallback prim.
+    if (settings->GetPath().IsEmpty()) {
+        SdfPath fallbackRenderSettingsPath("/Render/Settings/Fallback");
+        *settings = 
+            UsdRenderSettings::Define(stage, fallbackRenderSettingsPath);
+    }
     
     // Set the fallback Resolution and Aspect Ratio Conform Policy
     if (!settings->GetResolutionAttr().HasAuthoredValue()) {
@@ -311,7 +336,15 @@ PopulateFallbackRenderSettings(
     SdfPathVector cameraTargets; 
     settings->GetCameraRel().GetForwardedTargets(&cameraTargets);
     if (cameraTargets.empty()) {
-        settings->GetCameraRel().AddTarget(sceneCamPath);
+        if (sceneCamPath.IsEmpty()) {
+            SdfPath fallbackCameraPath("/Fallback/Camera");
+            UsdGeomCamera fallbackCamera = 
+                CreateFallbackCamera(stage, fallbackCameraPath);
+            settings->GetCameraRel().AddTarget(fallbackCameraPath);
+        }
+        else {
+            settings->GetCameraRel().AddTarget(sceneCamPath);
+        }
     }
 
     // Check if there are any authored Render Products connected
@@ -321,6 +354,7 @@ PopulateFallbackRenderSettings(
         return;
     }
 
+    fprintf(stdout, "Add Fallback Render Product and Vars.\n");
     // Create the fallback Render Product using the outputFilename
     SdfPath fallbackProductPath("/Render/Products/Fallback");
     UsdRenderProduct fallbackProduct =
@@ -821,6 +855,11 @@ int main(int argc, char *argv[])
         settingsMap[
             HdPrmanRenderSettingsTokens->experimentalRenderSettingsPrimPath] =
             settings.GetPath();
+        
+        // Add the camera Path to the Settings Map as well so that the Render
+        // Delegate can have it before syncing for shutter interval
+        settingsMap[HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath] =
+            camInfo.cameraPath;
 
         AddVisualizerStyle(visualizerStyle, &settingsMap);
         AddNamespacedSettings(
