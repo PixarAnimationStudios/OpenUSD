@@ -30,6 +30,7 @@
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -50,8 +51,6 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/slice.hpp>
-
-#include <boost/functional/hash.hpp>
 
 #include <string>
 
@@ -178,7 +177,7 @@ static string __repr__(GfVec2d const &self) {
 }
 
 static size_t __hash__(GfVec2d const &self) {
-    return boost::hash<GfVec2d>()(self);
+    return TfHash{}(self);
 }
 
 

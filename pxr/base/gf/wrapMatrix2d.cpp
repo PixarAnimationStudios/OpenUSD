@@ -32,6 +32,7 @@
 #include "pxr/base/gf/pyBufferUtils.h"
 
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -264,7 +265,7 @@ struct GfMatrix2d_Pickle_Suite : boost::python::pickle_suite
     }
 };
 
-static size_t __hash__(GfMatrix2d const &m) { return hash_value(m); }
+static size_t __hash__(GfMatrix2d const &m) { return TfHash{}(m); }
 
 static boost::python::tuple get_dimension()
 {

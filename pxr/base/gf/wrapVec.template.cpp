@@ -30,6 +30,7 @@
 
 #include "pxr/base/gf/pyBufferUtils.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyUtils.h"
@@ -52,8 +53,6 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/slice.hpp>
-
-#include <boost/functional/hash.hpp>
 
 #include <string>
 
@@ -180,7 +179,7 @@ static string __repr__({{ VEC }} const &self) {
 }
 
 static size_t __hash__({{ VEC }} const &self) {
-    return boost::hash<{{ VEC }}>()(self);
+    return TfHash{}(self);
 }
 
 {% if IS_FLOATING_POINT(SCL) %}
