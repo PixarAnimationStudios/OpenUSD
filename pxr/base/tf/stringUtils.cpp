@@ -67,6 +67,28 @@ TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS,
     false, 
     "Allow UTF8 strings as identifiers and prim names");
 
+namespace {
+    bool _IsASCIIValue(const char& c)
+    {
+        return(static_cast<int>(c) >=0 && static_cast<int>(c) <=127 );
+    }
+
+    bool _IsInASCIIValueRange(const std::string& str)
+    {
+        for(std::string::const_iterator it = str.begin(); 
+            it != str.end(); it++)
+        {
+            if(static_cast<int>(*it) < 0 
+                || static_cast<int>(*it) > 127)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+}
+
 string
 TfVStringPrintf(const std::string& fmt, va_list ap)
 {
@@ -294,6 +316,8 @@ TfStringGetCommonPrefix(string a, string b)
 string
 TfStringGetSuffix(const string& name, char delimiter)
 {
+    TF_DEV_AXIOM(_IsASCIIValue(delimiter));
+
     size_t i = name.rfind(delimiter);
     if (i == string::npos)
         return "";
@@ -304,6 +328,8 @@ TfStringGetSuffix(const string& name, char delimiter)
 string
 TfStringGetBeforeSuffix(const string& name, char delimiter)
 {
+    TF_DEV_AXIOM(_IsASCIIValue(delimiter));
+
     size_t i = name.rfind(delimiter);
     if (i == string::npos)
         return name;
@@ -484,6 +510,8 @@ TfStringSplit(string const &src, string const &separator)
 vector<string>
 TfStringTokenize(string const &src, const char* delimiters)
 {
+    TF_DEV_AXIOM(_IsInASCIIValueRange(delimiters));
+
     vector<pair<char const *, char const *> > segments;
     _TokenizeToSegments(src, delimiters, segments);
 
@@ -497,6 +525,8 @@ TfStringTokenize(string const &src, const char* delimiters)
 set<string>
 TfStringTokenizeToSet(string const &src, const char* delimiters)
 {
+    TF_DEV_AXIOM(_IsInASCIIValueRange(delimiters));
+
     vector<pair<char const *, char const *> > segments;
     _TokenizeToSegments(src, delimiters, segments);
 
@@ -523,7 +553,9 @@ _FindFirstOfNotEscaped(const string &source, const char *toFind, size_t offset)
 vector<string>
 TfQuotedStringTokenize(const string &source, const char *delimiters, 
                        string *errors)
-{    
+{   
+    TF_DEV_AXIOM(_IsInASCIIValueRange(delimiters));
+
     vector<string> resultVec;
     size_t j, quoteIndex, delimIndex;
     const char *quotes = "\"\'`";

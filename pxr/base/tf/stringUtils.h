@@ -337,8 +337,8 @@ std::string TfStringGetCommonPrefix(std::string a, std::string b);
 /// a string.  Thus suffix of "abc.def" is "def" using "." as the delimiter.
 /// If the delimiter does not occur, the empty string is returned.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c delimiter must be an ASCII character.  If these conditions are met
+/// \c name can be either an ASCII string or a UTF-8 encoded Unicode string.
 TF_API
 std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 
@@ -349,8 +349,8 @@ std::string TfStringGetSuffix(const std::string& name, char delimiter = '.');
 /// delimiter.  If the delimiter does not occur, the original string is
 /// returned.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c delimiter must be an ASCII character.  If these conditions are met
+/// \c name can be either an ASCII string or a UTF-8 encoded Unicode string.
 TF_API
 std::string TfStringGetBeforeSuffix(const std::string& name, char delimiter = '.');
 
@@ -383,8 +383,8 @@ std::string TfStringReplace(const std::string& source, const std::string& from,
 /// with \p separator (by default, a space) added between each successive pair
 /// of strings.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c separator must be either an ASCII string or a UTF-8 encoded
+/// Unicode string.
 template <class ForwardIterator>
 std::string TfStringJoin(
     ForwardIterator begin, ForwardIterator end,
@@ -420,8 +420,8 @@ std::string TfStringJoin(
 /// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c separator must be either an ASCII string or a UTF-8 encoded
+/// Unicode string.
 TF_API
 std::string TfStringJoin(const std::vector<std::string>& strings,
                          const char* separator = " ");
@@ -431,8 +431,8 @@ std::string TfStringJoin(const std::vector<std::string>& strings,
 /// Returns the concatenation of the strings in \p strings, with \p separator
 /// (by default, a space) added between each successive pair of strings.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c separator must be either an ASCII string or a UTF-8 encoded
+/// Unicode string.
 TF_API
 std::string TfStringJoin(const std::set<std::string>& strings,
                          const char* separator = " ");
@@ -442,6 +442,9 @@ std::string TfStringJoin(const std::set<std::string>& strings,
 /// The string \p source is broken apart into individual words, where a word
 /// is delimited by the string \p separator. This function behaves like
 /// pythons string split method.
+///
+/// \note \c separator must be either an ASCII string or a UTF-8 encoded
+/// Unicode string.
 TF_API
 std::vector<std::string> TfStringSplit(std::string const &src,
                                        std::string const &separator);
@@ -456,8 +459,9 @@ std::vector<std::string> TfStringSplit(std::string const &src,
 /// consecutive delimiters are treated as though they were one, and an empty
 /// input will result in an empty return vector.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c delimeters must must be ASCII characters.  If these conditions are
+/// met, \c source can be either an ASCII string or a UTF-8 encoded Unicode
+/// string.
 TF_API
 std::vector<std::string> TfStringTokenize(const std::string& source,
                                           const char* delimiters = " \t\n");
@@ -466,8 +470,9 @@ std::vector<std::string> TfStringTokenize(const std::string& source,
 ///
 /// Same as TfStringTokenize, except this one returns a set.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c delimiters must be ASCII characters. If these conditions are
+/// met, \c source can be either an ASCII string or a UTF-8 encoded Unicode
+/// string.
 TF_API
 std::set<std::string> TfStringTokenizeToSet(const std::string& source,
                                             const char* delimiters = " \t\n");
@@ -482,8 +487,9 @@ std::set<std::string> TfStringTokenizeToSet(const std::string& source,
 /// contains any error messages. Delimiters default to white space (space,
 /// tab, and newline).
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c delimiters must be ASCII characters.  If these conditions are
+/// met, \c source can be either an ASCII string or a UTF-8 encoded Unicode
+/// string.
 TF_API
 std::vector<std::string> 
 TfQuotedStringTokenize(const std::string& source, 
@@ -501,8 +507,9 @@ TfQuotedStringTokenize(const std::string& source,
 /// \p closeDelimiter cannot be the same. \p errors, if provided, contains any
 /// error messages.
 ///
-/// \note This method is intended to work only for ASCII strings.  Using this
-/// method on Unicode strings results in undefined behavior.
+/// \note \c openDelimeter, \c closeDelimiter, and \c escapeCharacter must
+/// be ASCII characters.  If these conditions are met, \c source can be either
+/// an ASCII string or a UTF-8 encoded Unicode string.
 TF_API
 std::vector<std::string> 
 TfMatchedStringTokenize(const std::string& source, 
