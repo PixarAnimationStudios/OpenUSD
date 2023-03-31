@@ -42,6 +42,7 @@
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
@@ -547,16 +548,24 @@ HydraSetupAndRender(
     std::unique_ptr<HdRenderIndex> const hdRenderIndex(
         HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
     
-    UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
     std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
 
     if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+        UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
         usdStageSceneIndex = UsdImagingStageSceneIndex::New();
-        hdRenderIndex->InsertSceneIndex(
-            HdFlatteningSceneIndex::New(usdStageSceneIndex),
-            SdfPath::AbsoluteRootPath());
         usdStageSceneIndex->SetStage(stage);
         usdStageSceneIndex->SetTime(frameNum);
+
+        // Chain scene indices
+        HdSceneIndexBaseRefPtr siChainHead;
+        siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(
+                        usdStageSceneIndex);
+        siChainHead = HdFlatteningSceneIndex::New(siChainHead);
+
+        // Insert scene index chain into the render index.
+        hdRenderIndex->InsertSceneIndex(
+            siChainHead, SdfPath::AbsoluteRootPath());
+
     } else {
         hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
             hdRenderIndex.get(),
@@ -567,18 +576,20 @@ HydraSetupAndRender(
         if (!cameraInfo.cameraPath.IsEmpty()) {
             hdUsdFrontend->SetCameraForSampling(cameraInfo.cameraPath);
         }
-    }
-    if (!cullStyle.empty()) {
-        if (cullStyle == "none") {
-            hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
-        } else if (cullStyle == "back") {
-            hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
-        } else if (cullStyle == "front") {
-            hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
-        } else if (cullStyle == "backUnlessDoubleSided") {
-            hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
-        } else if (cullStyle == "frontUnlessDoubleSided") {
-            hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
+        if (!cullStyle.empty()) {
+            if (cullStyle == "none") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
+            } else if (cullStyle == "back") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
+            } else if (cullStyle == "front") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
+            } else if (cullStyle == "backUnlessDoubleSided") {
+                hdUsdFrontend->SetCullStyleFallback(
+                    HdCullStyleBackUnlessDoubleSided);
+            } else if (cullStyle == "frontUnlessDoubleSided") {
+                hdUsdFrontend->SetCullStyleFallback(
+                    HdCullStyleFrontUnlessDoubleSided);
+            }
         }
     }
 
@@ -783,7 +794,7 @@ int main(int argc, char *argv[])
     TfStopwatch timer_hydra;
 
     if (settings && UseRenderSettingsPrim()) {
-        printf("Rendering <%s>...\n", settings.GetPath().GetText());
+        printf("Rendering using the render settings prim <%s>...\n", settings.GetPath().GetText());
 
         HydraSetupCameraInfo camInfo =
             GetCameraInfo(sceneCamPath, sceneCamAspect, settings);
@@ -821,8 +832,9 @@ int main(int argc, char *argv[])
         // simplicity, we recreate the riley and hydra setup for each product. 
         // Eventually, this path will be deprecated and removed to leverage 
         // hydra's first-class support for render settings scene description.
+        fprintf(stdout, "Rendering using the experimentalRenderSpec dictionary...\n");
         for (auto product: renderSpec.products) {
-            printf("Rendering %s...\n", product.name.GetText());
+            printf("Rendering product %s...\n", product.name.GetText());
 
             HydraSetupCameraInfo camInfo = GetCameraInfoAndUpdateProduct(
                 sceneCamPath, sceneCamAspect, &product);

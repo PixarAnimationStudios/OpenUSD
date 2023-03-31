@@ -131,6 +131,14 @@ public:
     USDIMAGING_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the namespacedsettings data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

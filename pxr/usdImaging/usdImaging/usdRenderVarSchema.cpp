@@ -126,6 +126,18 @@ UsdImagingUsdRenderVarSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderVarSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderVarSchemaTokens->__usdRenderVar,
+        UsdImagingUsdRenderVarSchemaTokens->namespacedSettings
+    );
+    return locator;
+}
+
+
 UsdImagingUsdRenderVarSchema::Builder &
 UsdImagingUsdRenderVarSchema::Builder::SetDataType(
     const HdTokenDataSourceHandle &dataType)

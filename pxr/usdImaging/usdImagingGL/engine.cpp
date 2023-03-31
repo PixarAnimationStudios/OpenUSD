@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 
@@ -984,6 +985,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
         _sceneIndex = _selectionSceneIndex =
             UsdImagingSelectionSceneIndex::New(_sceneIndex);
+
+        _sceneIndex =
+            UsdImagingRenderSettingsFlatteningSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
             HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);

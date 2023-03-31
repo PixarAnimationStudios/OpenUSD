@@ -62,11 +62,13 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->Float2] = _FactoryImpl<GfVec2f>;
     map[SdfValueTypeNames->Float3Array] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Float3] = _FactoryImpl<GfVec3f>;
+    map[SdfValueTypeNames->Float4] = _FactoryImpl<GfVec4f>;
     map[SdfValueTypeNames->Float4Array] = _FactoryImpl<VtArray<GfVec4f>>;
     map[SdfValueTypeNames->FloatArray] = _FactoryImpl<VtArray<float>>;
     map[SdfValueTypeNames->Float] = _FactoryImpl<float>;
     map[SdfValueTypeNames->IntArray] = _FactoryImpl<VtArray<int>>;
     map[SdfValueTypeNames->Int] = _FactoryImpl<int>;
+    map[SdfValueTypeNames->Int2] = _FactoryImpl<GfVec2i>;
     map[SdfValueTypeNames->Matrix4dArray] = _FactoryImpl<VtArray<GfMatrix4d>>;
     map[SdfValueTypeNames->Matrix4d] = _FactoryImpl<GfMatrix4d>;
     map[SdfValueTypeNames->Normal3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
@@ -94,6 +96,7 @@ static _FactoryMap _CreateFactoryMap()
     map[SdfValueTypeNames->TexCoord3hArray] = _FactoryImpl<VtArray<GfVec3h>>;
     map[SdfValueTypeNames->TexCoord3h] = _FactoryImpl<GfVec3h>;
     map[SdfValueTypeNames->Token] = _FactoryImpl<TfToken>;
+    map[SdfValueTypeNames->TokenArray] = _FactoryImpl<VtArray<TfToken>>;
     map[SdfValueTypeNames->Vector3fArray] = _FactoryImpl<VtArray<GfVec3f>>;
     map[SdfValueTypeNames->Vector3f] = _FactoryImpl<GfVec3f>;
 

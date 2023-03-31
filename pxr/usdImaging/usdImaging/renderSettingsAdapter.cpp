@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
-#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRenderPrims.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -39,8 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX Placeholder before the RenderSettings DataSource is added
-using UsdImagingDataSourceRenderSettings = UsdImagingDataSourcePrim;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -88,7 +86,7 @@ UsdImagingRenderSettingsAdapter::GetImagingSubprimData(
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceRenderSettings::New(
+        return UsdImagingDataSourceRenderSettingsPrim::New(
                     prim.GetPath(), prim, stageGlobals);
     }
 
@@ -102,7 +100,7 @@ UsdImagingRenderSettingsAdapter::InvalidateImagingSubprim(
     TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        return UsdImagingDataSourceRenderSettingsPrim::Invalidate(
             prim, subprim, properties);
     }
 

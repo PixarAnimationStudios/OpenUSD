@@ -204,6 +204,18 @@ UsdImagingUsdRenderProductSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderProductSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct,
+        UsdImagingUsdRenderProductSchemaTokens->namespacedSettings
+    );
+    return locator;
+}
+
+
 UsdImagingUsdRenderProductSchema::Builder &
 UsdImagingUsdRenderProductSchema::Builder::SetResolution(
     const HdVec2iDataSourceHandle &resolution)

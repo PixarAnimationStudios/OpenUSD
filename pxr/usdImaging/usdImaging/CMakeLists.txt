@@ -41,6 +41,7 @@ pxr_library(usdImaging
         dataSourcePrim
         dataSourcePrimvars
         dataSourceRelationship
+        dataSourceRenderPrims
         dataSourceStage
         dataSourceStageGlobals
         dataSourceUsdPrimInfo
@@ -102,7 +103,10 @@ pxr_library(usdImaging
         usdRenderSettingsSchema
         usdRenderVarSchema
         rectLightAdapter
+        renderProductAdapter
         renderSettingsAdapter
+        renderSettingsFlatteningSceneIndex
+        renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
         sampleFilterAdapter

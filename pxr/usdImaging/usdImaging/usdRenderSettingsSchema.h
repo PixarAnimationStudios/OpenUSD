@@ -187,6 +187,84 @@ public:
     USDIMAGING_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the resolution data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetResolutionLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the pixelaspectratio data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetPixelAspectRatioLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the aspectratioconformpolicy data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetAspectRatioConformPolicyLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the datawindowndc data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDataWindowNDCLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the disablemotionblur data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetDisableMotionBlurLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the camera data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetCameraLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the includedpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetIncludedPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the materialbindingpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetMaterialBindingPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderingcolorspace data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetRenderingColorSpaceLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the products data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetProductsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the namespacedsettings data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    USDIMAGING_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

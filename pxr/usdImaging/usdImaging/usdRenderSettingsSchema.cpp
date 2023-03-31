@@ -217,6 +217,128 @@ UsdImagingUsdRenderSettingsSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetResolutionLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->resolution
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetPixelAspectRatioLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->pixelAspectRatio
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetAspectRatioConformPolicyLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->aspectRatioConformPolicy
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetDataWindowNDCLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->dataWindowNDC
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetDisableMotionBlurLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->disableMotionBlur
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetCameraLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->camera
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetIncludedPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->includedPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetMaterialBindingPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->materialBindingPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetRenderingColorSpaceLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->renderingColorSpace
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetProductsLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->products
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+UsdImagingUsdRenderSettingsSchema::GetNamespacedSettingsLocator()
+{
+    static const HdDataSourceLocator locator(
+        UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings,
+        UsdImagingUsdRenderSettingsSchemaTokens->namespacedSettings
+    );
+    return locator;
+}
+
+
 UsdImagingUsdRenderSettingsSchema::Builder &
 UsdImagingUsdRenderSettingsSchema::Builder::SetResolution(
     const HdVec2iDataSourceHandle &resolution)
