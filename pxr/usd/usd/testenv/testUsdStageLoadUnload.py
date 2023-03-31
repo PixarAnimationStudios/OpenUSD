@@ -980,5 +980,38 @@ class TestUsdLoadUnload(unittest.TestCase):
             if not (platform.system() == 'Windows' and fmt == 'usdc'):
                 _TestLayerReload(fmt)
 
+    def test_LoadResyncNotice(self):
+        for fmt in allFormats:
+            p = PayloadedScene(fmt)
+            sad = p.stage.GetPrimAtPath('/Sad')
+            with _AssertObjectsChanged(p.stage, {sad.GetPath()}):
+                sad.Load()
+            foobaz = p.stage.GetPrimAtPath('/Foo/Baz')
+            with _AssertObjectsChanged(p.stage, {foobaz.GetPath()}):
+                foobaz.Load()
+            foobazgarply = p.stage.GetPrimAtPath('/Foo/Baz/Garply')
+            # Should have been loaded already in previous step
+            with _AssertObjectsChanged(p.stage, {}):
+                foobazgarply.Load()
+            p.CleanupOnDiskAssets(fmt)
+
+class _AssertObjectsChanged(object):
+    def __init__(self, stage, expectedResyncedPaths):
+        self.stage = stage
+        self.expectedResyncedPaths = set(expectedResyncedPaths)
+        self.resyncedPaths = set()
+
+    def __enter__(self):
+        self.listener = Tf.Notice.Register(
+            Usd.Notice.ObjectsChanged, self.callback, self.stage)
+
+    def callback(self, notice, sender):
+        assert sender == self.stage
+        self.resyncedPaths.update(notice.GetResyncedPaths())
+
+    def __exit__(self, *args):
+        del self.listener
+        assert self.resyncedPaths == self.expectedResyncedPaths
+                
 if __name__ == "__main__":
     unittest.main()

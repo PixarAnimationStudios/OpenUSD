@@ -2167,8 +2167,16 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 
     _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-    // Go through the finalLoadSet, and check ancestors -- if any are loaded,
-    // include the most ancestral which was loaded last in the finalLoadSet.
+    // Now the rules are established, but we need to identify the paths on the
+    // stage where we need to recompose.  In the case of loading (the
+    // finalLoadSet) we cannot just recompose those paths and their descendants.
+    // We also have to consider ancestors, because if we load /foo/bar/baz, that
+    // also implicitly loads /foo and /foo/bar.  To handle this, we need to walk
+    // the ancestors of each path in the finalLoadSet to find the most-ancestral
+    // unloaded prim, and that is where we need to recompose.
+    //
+    // Note that this is potentially a big over-recomposition, since we don't
+    // yet have a way to tell the stage to recompose more granularly.
     for (SdfPath const &p: finalLoadSet) {
         SdfPath curPath = p;
         while (true) {
@@ -2176,8 +2184,10 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
             if (parentPath.IsEmpty())
                 break;
             UsdPrim prim = GetPrimAtPath(parentPath);
-            if (prim && prim.IsLoaded() && p != curPath) {
-                finalLoadSet.insert(curPath);
+            if (prim && prim.IsLoaded()) {
+                if (p != curPath) {
+                    finalLoadSet.insert(curPath);
+                }
                 break;
             }
             curPath = parentPath;
