@@ -43,6 +43,8 @@
 
 #include "pxr/base/tf/getenv.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE

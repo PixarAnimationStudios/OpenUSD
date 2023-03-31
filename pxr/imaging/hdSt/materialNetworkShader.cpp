@@ -40,6 +40,8 @@
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 
