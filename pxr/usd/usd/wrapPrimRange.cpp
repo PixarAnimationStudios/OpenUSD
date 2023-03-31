@@ -261,7 +261,7 @@ void wrapUsdPrimRange()
             // All we want is to return 'self'.
             .def("__iter__", static_cast<void (*)(Usd_PyPrimRangeIterator)>
                      ([](Usd_PyPrimRangeIterator){}), return_self<>())
-            .def(TfPyIteratorNextMethodName, &Usd_PyPrimRangeIterator::next)
+            .def("__next__", &Usd_PyPrimRangeIterator::next)
             .def("IsPostVisit", &Usd_PyPrimRangeIterator::IsPostVisit)
             .def("PruneChildren", &Usd_PyPrimRangeIterator::PruneChildren)
             .def("IsValid", &Usd_PyPrimRangeIterator::IsValid,

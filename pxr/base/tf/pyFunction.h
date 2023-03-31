@@ -81,9 +81,6 @@ struct TfPyFunctionFromPython<Ret (Args...)>
     {
         TfPyObjWrapper func;
         TfPyObjWrapper weakSelf;
-#if PY_MAJOR_VERSION == 2
-        TfPyObjWrapper cls;
-#endif
 
         Ret operator()(Args... args) {
             using namespace boost::python;
@@ -95,11 +92,7 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                 TF_WARN("Tried to call a method on an expired python instance");
                 return Ret();
             }
-#if PY_MAJOR_VERSION == 2
-            object method(handle<>(PyMethod_New(func.ptr(), self, cls.ptr())));
-#else 
             object method(handle<>(PyMethod_New(func.ptr(), self)));
-#endif
             return TfPyCall<Ret>(method)(args...);
         }
     };
@@ -162,9 +155,6 @@ struct TfPyFunctionFromPython<Ret (Args...)>
             if (self) {
                 // Deconstruct the method and attempt to get a weak reference to
                 // the self instance.
-#if PY_MAJOR_VERSION == 2
-                object cls(handle<>(borrowed(PyMethod_GET_CLASS(pyCallable))));
-#endif
                 object func(handle<>(borrowed(PyMethod_GET_FUNCTION(
                                                   pyCallable))));
                 object weakSelf(handle<>(PyWeakref_NewRef(self, NULL)));
@@ -172,9 +162,6 @@ struct TfPyFunctionFromPython<Ret (Args...)>
                     FuncType(CallMethod{
                             TfPyObjWrapper(func),
                                 TfPyObjWrapper(weakSelf)
-#if PY_MAJOR_VERSION == 2
-                                , TfPyObjWrapper(cls)
-#endif
                         });
                 
             } else if (PyObject_HasAttrString(pyCallable, "__name__") &&

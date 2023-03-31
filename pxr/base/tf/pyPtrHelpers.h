@@ -29,7 +29,6 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/tf/py3Compat.h"
 #include "pxr/base/tf/pyIdentity.h"
 #include "pxr/base/tf/pyObjectFinder.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -375,7 +374,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
         c.add_property("expired", _IsPtrExpired<UnwrappedPtrType>,
                        (const char *)
                        "True if this object has expired, False otherwise.");
-        c.def(TfPyBoolBuiltinFuncName, _IsPtrValid<UnwrappedPtrType>,
+        c.def("__bool__", _IsPtrValid<UnwrappedPtrType>,
               (char const *)
               "True if this object has not expired.  False otherwise.");
         c.def("__eq__", _ArePtrsEqual<UnwrappedPtrType>,
