@@ -847,7 +847,7 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
     const _RemovalLevel level =
         _RemoveInstanceFromInfoToInstance(primPath, info);
 
-    if (level >= _RemovalLevel::None) {
+    if (level > _RemovalLevel::None) {
         // Remove instance data source we added in _AddInstance.
         _retainedSceneIndex->RemovePrims(
             { { primPath } });
