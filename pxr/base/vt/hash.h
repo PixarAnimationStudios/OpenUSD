@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
 #include "pxr/base/tf/hash.h"
-#include <boost/functional/hash.hpp>
 #include <typeinfo>
 #include <utility>
 
@@ -38,28 +37,15 @@ namespace Vt_HashDetail {
 // Issue a coding error when we attempt to hash a t.
 VT_API void _IssueUnimplementedHashError(std::type_info const &t);
 
-// We make unqualified calls, intending to pick up boost::hash_value if an
-// overload isn't found by ADL.
-using boost::hash_value;
-
 // A constexpr function that determines hashability.
-template <class T, class = decltype(hash_value(std::declval<T>()))>
-constexpr bool _IsHashable(int) { return true; }
 template <class T, class = decltype(TfHash()(std::declval<T>()))>
 constexpr bool _IsHashable(long) { return true; }
 template <class T>
 constexpr bool _IsHashable(...) { return false; }
 
 // Hash implementations -- We're using an overload resolution ordering trick
-// here (int vs long vs ...) so that we pick hash_value first, if possible,
-// otherwise we do TfHash() if possible, otherwise we issue a runtime error.
-template <class T, class = decltype(hash_value(std::declval<T>()))>
-inline size_t
-_HashValueImpl(T const &val, int)
-{
-    return hash_value(val);
-}
-
+// here (long vs ...) so that we pick TfHash() if possible, otherwise
+// we issue a runtime error.
 template <class T, class = decltype(TfHash()(std::declval<T>()))>
 inline size_t
 _HashValueImpl(T const &val, long)
@@ -79,17 +65,15 @@ _HashValueImpl(T const &val, ...)
 
 
 /// A constexpr function that returns true if T is hashable via VtHashValue,
-/// false otherwise.  This is true if we can either invoke
-/// (boost::)hash_value() or TfHash()() on a T instance.
+/// false otherwise.  This is true if we can invoke TfHash()() on a T instance.
 template <class T>
 constexpr bool
 VtIsHashable() {
     return Vt_HashDetail::_IsHashable<T>(0);
 }
 
-/// Compute a hash code for \p val by invoking (boost::)hash_value(val) if
-/// possible, otherwise by invoking TfHash()(val), or if neither are possible
-/// issue a coding error and return 0.
+/// Compute a hash code for \p val by invoking TfHash()(val) or when not
+/// possible issue a coding error and return 0.
 template <class T>
 size_t VtHashValue(T const &val)
 {
