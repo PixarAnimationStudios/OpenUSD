@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl
 {
-TF_DECLARE_REF_PTRS(_InstanceObserver);
+TF_DECLARE_WEAK_PTRS(_InstanceObserver);
 }
 
 TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
@@ -289,8 +289,9 @@ private:
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot);
 
-    UsdImaging_NiInstanceAggregationSceneIndex_Impl::
-    _InstanceObserverRefPtr const _instanceObserver;
+    std::unique_ptr<
+        UsdImaging_NiInstanceAggregationSceneIndex_Impl::
+        _InstanceObserver> const _instanceObserver;
     _RetainedSceneIndexObserver _retainedSceneIndexObserver;
 };
 

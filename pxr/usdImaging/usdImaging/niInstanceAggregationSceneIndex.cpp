@@ -488,13 +488,11 @@ struct _InstanceInfo {
     }
 };
 
-class _InstanceObserver : public HdSceneIndexObserver,
-                          public TfRefBase
+class _InstanceObserver : public HdSceneIndexObserver
 {
 public:
-    static
-    _InstanceObserverRefPtr New(HdSceneIndexBaseRefPtr const &inputScene,
-                                const SdfPath &prototypeRoot);
+    _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
+                      const SdfPath &prototypeRoot);
 
     HdRetainedSceneIndexRefPtr const &GetRetainedSceneIndex() const {
         return _retainedSceneIndex;
@@ -523,9 +521,6 @@ private:
     using _PathToInt = std::map<SdfPath, int>;
     using _PathToIntSharedPtr = std::shared_ptr<_PathToInt>;
     using _PathToPathToInt = std::map<SdfPath, _PathToIntSharedPtr>;
-
-    _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
-                      const SdfPath &prototypeRoot);
 
     _InstanceInfo _GetInfo(const HdContainerDataSourceHandle &primSource);
     _InstanceInfo _GetInfo(const SdfPath &primPath);
@@ -615,14 +610,6 @@ private:
     // previous instance since its id might have been affected.
     _PathToPathToInt _instancerToInstanceToIndex;
 };
-
-_InstanceObserverRefPtr
-_InstanceObserver::New(
-    HdSceneIndexBaseRefPtr const &inputScene,
-    const SdfPath &prototypeRoot)
-{
-    return TfCreateRefPtr(new _InstanceObserver(inputScene, prototypeRoot));
-}    
 
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
@@ -965,7 +952,23 @@ HdContainerDataSourceHandle
 _InstanceObserver::_GetDataSourceForInstance(
     const SdfPath &primPath)
 {
-    _InstanceObserverRefPtr self(this);
+    // Note that the _InstanceObserver has a strong reference
+    // to the retained scene index which in turn has a strong
+    // reference to the data source returned here.
+    // Thus, the data source should hold on to a weak rather
+    // than a strong reference to avoid a cycle.
+    //
+    // Such a cycle can yield to two problems:
+    // It can obviously create a memory leak. However, it can
+    // also yield a crash because the _InstanceObserver can stay
+    // alive and listen to prims removed messages as scene index
+    // observer. The _InstanceObserver can react to such a
+    // message by deleting a prim from the retained scene index and
+    // thus breaking the cycle causing the _InstanceObserver to
+    // be destroyed while being in the middle of the _PrimsRemoved
+    // call.
+    //
+    _InstanceObserverPtr self(this);
 
     // PrimSource for instance
     return
@@ -973,7 +976,11 @@ _InstanceObserver::_GetDataSourceForInstance(
             HdInstanceSchemaTokens->instance,
             HdLazyContainerDataSource::New(
                 [ self, primPath ] () {
-                    return self->_GetInstanceSchemaDataSource(primPath); }));
+                    if (self) {
+                        return self->_GetInstanceSchemaDataSource(primPath);
+                    } else {
+                        return HdContainerDataSourceHandle();
+                    }}));
 }
 
 HdContainerDataSourceHandle
@@ -1089,7 +1096,7 @@ UsdImaging_NiInstanceAggregationSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot)
   : _instanceObserver(
-        _InstanceObserver::New(inputScene, prototypeRoot))
+        std::make_unique<_InstanceObserver>(inputScene, prototypeRoot))
   , _retainedSceneIndexObserver(this)
 {
     _instanceObserver->GetRetainedSceneIndex()->AddObserver(
