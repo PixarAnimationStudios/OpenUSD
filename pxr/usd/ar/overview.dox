@@ -2,7 +2,6 @@
 \page ar_page_front Ar: Asset Resolution
 \if ( PIXAR_MFB_BUILD )
 \mainpage Ar : Asset Resolution
-\publicLib
 \endif
 
 \section ar_overview Overview

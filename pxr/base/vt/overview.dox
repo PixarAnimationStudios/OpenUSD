@@ -2,7 +2,6 @@
 \page vt_page_front Vt : Value Types
 \if ( PIXAR_MFB_BUILD )
 \mainpage Vt : Value Types
-\publicLib
 \endif
 
 \section vt_overview Overview

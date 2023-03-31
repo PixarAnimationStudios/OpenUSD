@@ -2,7 +2,6 @@
 \page sdf_page_front Sdf : Scene Description Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Sdf : Scene Description Foundations
-\publicLib
 \endif
 
 Sdf provides the foundations for serializing scene description to a reference ascii format, or a (multitude of) plugin-defined format.  It also provides the primitive abstractions for interacting with scene description, such as SdfPath, SdfLayer, SdfPrimSpec.

@@ -3,7 +3,6 @@
 \page usd_page_front Usd : Universal Scene Description (Core)
 \if ( PIXAR_MFB_BUILD )
 \mainpage Usd : Universal Scene Description
-\publicLib
 \endif
 
 <b>Usd</b> is the core client-facing module for authoring, composing, 

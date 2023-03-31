@@ -2,7 +2,6 @@
 \page js_page_front Js: JSON I/O
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Js: JSON I/O
-\publicLib
 \endif
 
 \section js_overview Overview

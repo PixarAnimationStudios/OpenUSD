@@ -1,7 +1,6 @@
 /*!
 \page sdr_page_front Sdr : Shader Definition Registry
 \if ( PIXAR_MFB_BUILD )
-\publicLib
 \mainpage Sdr : Shader Definition Registry
 \endif
 

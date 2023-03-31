@@ -2,7 +2,6 @@
 \page usdShaders_page_front UsdShaders :  Definitions and Implementations of Usd* Shader Nodes
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdShaders : Definitions and Implementations of Usd* Shader Nodes
-\publicLib
 \endif
 
 \section usdShaders_overview Overview
