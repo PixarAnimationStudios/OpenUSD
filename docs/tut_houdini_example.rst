@@ -45,7 +45,7 @@ modify by using the following command line.
 
    $ usdview  USD/extras/usd/tutorials/Houdini/shot.usda
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/563774099/565777102.png
+.. image:: http://openusd.org/images/tut_houdini_example_shot.png
     
 In this case we are interested in the little red house at the origin:
 
@@ -53,7 +53,7 @@ In this case we are interested in the little red house at the origin:
 
     * Next hit 'f' to bring it into frame.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/563774099/565777103.png
+.. image:: http://openusd.org/images/tut_houdini_example_house.png
 
 .. note:: Note that the house appears yellow because we have selected it.
    
@@ -83,7 +83,7 @@ It's time to import the little red house into :program:`Houdini`.
        can also use the Tree view to visually browse through the USD stage to 
        select the prim path.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/563774099/563774112.png
+.. image:: http://openusd.org/images/tut_houdini_example_import.png
 
 In this case we also need to set the "Traversal" parameter to Gprims
 
@@ -129,7 +129,7 @@ Export the USD Overlay
     #. As you are only interested in altering the transform of our model we are
        going to uncheck "Overlay All" and check "Overlay Transforms".
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/563774099/563774113.png
+.. image:: http://openusd.org/images/tut_houdini_example_overlay.png
 
 Hit "Render to Disk"
 

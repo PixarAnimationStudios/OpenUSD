@@ -23,13 +23,11 @@ prim, :filename:`/ExampleModelingVariants` which will populate a pane in the
 lower right hand side called "Meta Data". In this section, we can select 
 different variants. For illustration, click that selector and choose "Torus".
 
-.. image::
-   http://graphics.pixar.com/usd/docs/attachments/401506728/565776863.png
+.. image:: http://openusd.org/images/tut_variants_example_in_katana_sphere.png
 
 From there you will see the variant change.
 
-.. image::
-   http://graphics.pixar.com/usd/docs/attachments/401506728/565776864.png
+.. image:: http://openusd.org/images/tut_variants_example_in_katana_torus.png
 
 Now open :filename:`exampleModelingVariants.katana` in :program:`Katana`. The 
 model, ExampleModelingVariants, can be toggled between its various shapes with 
@@ -38,5 +36,5 @@ location and the authored variant set names will auto-populate. Select
 "modelingVariant" in the variantSetName parameter and the variantSelection list
 will populate with the shape variants.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/401506728/567218713.png
+.. image:: http://openusd.org/images/tut_variants_example_in_katana_nodegraph.png
 
