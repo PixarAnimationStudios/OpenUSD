@@ -171,7 +171,7 @@ private:
     std::stringstream _genPTCS, _genPTVS;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
-    std::stringstream _procPTCS, _procPTVSDecl, _procPTVSIn, _procPTVSOut;
+    std::stringstream _procPTVSOut;
     std::stringstream _osdTCS, _osdTES, _osdFS, _osdPTCS, _osdPTVS;
 
     // resource buckets

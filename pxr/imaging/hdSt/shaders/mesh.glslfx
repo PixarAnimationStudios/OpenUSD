@@ -105,7 +105,6 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
-    ProcessPrimvarsIn();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
@@ -178,7 +177,6 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
-    ProcessPrimvarsIn();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();
@@ -260,7 +258,6 @@ FORWARD_DECL(void ProcessPointId(int));
 
 void main(void)
 {
-    ProcessPrimvarsIn();
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
 
     int pointId = GetPointId();

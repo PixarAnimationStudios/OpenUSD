@@ -707,7 +707,8 @@ _ResourceGenerator::_GenerateHgiResources(
                         param.nameInShader = element.name;
                         param.type = element.dataType;
                         param.location = _GetLocation(element, metaData);
-                    if (shaderStage == HdShaderTokens->postTessVertexShader) {
+                    if (shaderStage == HdShaderTokens->postTessControlShader ||
+                        shaderStage == HdShaderTokens->postTessVertexShader) {
                         param.arraySize = "VERTEX_CONTROL_POINTS_PER_PATCH";
                     }
                     HgiShaderFunctionAddStageInput(funcDesc, param);
@@ -775,7 +776,8 @@ _ResourceGenerator::_GenerateHgiResources(
                     funcDesc->tessellationDescriptor.numVertsPerPatchOut =
                         element.qualifiers.GetString();
                 }
-            } else if (shaderStage == HdShaderTokens->tessEvalShader) {
+            } else if (shaderStage == HdShaderTokens->tessEvalShader ||
+                       shaderStage == HdShaderTokens->postTessVertexShader) {
                 if (element.inOut == InOut::STAGE_IN) {
                     if (element.qualifiers == _tokens->triangles) {
                         funcDesc->tessellationDescriptor.patchType =
@@ -1475,6 +1477,7 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
         HdShaderTokens->tessEvalShader,
         HdShaderTokens->geometryShader,
         HdShaderTokens->fragmentShader,
+        HdShaderTokens->postTessControlShader,
         HdShaderTokens->postTessVertexShader,
         HdShaderTokens->computeShader,
     };
@@ -1496,6 +1499,9 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
 
         HdSt_ResourceLayout::ParseLayout(
                 &_resFS, HdShaderTokens->fragmentShader, layoutDict);
+
+        HdSt_ResourceLayout::ParseLayout(
+                &_resPTCS, HdShaderTokens->postTessControlShader, layoutDict);
 
         HdSt_ResourceLayout::ParseLayout(
                 &_resPTVS, HdShaderTokens->postTessVertexShader, layoutDict);
@@ -1693,8 +1699,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _genPTCS.str(""); _genPTVS.str("");
     _genGS.str(""); _genFS.str(""); _genCS.str("");
     _procVS.str(""); _procTCS.str(""); _procTES.str(""); _procGS.str("");
-    _procPTCS.str("");
-    _procPTVSDecl.str(""), _procPTVSIn.str(""), _procPTVSOut.str("");
+    _procPTVSOut.str("");
 
     _genDefines << "\n// //////// Codegen Defines //////// \n";
     _genDecl << "\n// //////// Codegen Decl //////// \n";
@@ -1976,7 +1981,6 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 "void ProcessPrimvarsOut("
                 "vec4 basis, int i0, int i1, int i2, int i3, vec2 uv) {\n";
 
-    _procPTVSIn  << "void ProcessPrimvarsIn() {\n";
     _procPTVSOut << "template <typename T>\n"
                     "T InterpolatePrimvar("
                     "T inPv0, T inPv1, T inPv2, T inPv3, vec4 basis) {\n"
@@ -2074,16 +2078,13 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _procGS  << "}\n";
     _procTCS << "}\n";
     _procTES << "}\n";
-    _procPTCS << "}\n";
-    _procPTVSIn << "}\n";
     _procPTVSOut << "}\n";
 
     // insert interstage primvar plumbing procs into genVS/TCS/TES/GS
     _genVS  << _procVS.str();
     _genTCS << _procTCS.str();
     _genTES << _procTES.str();
-    _genPTCS << _procPTCS.str();
-    _genPTVS << _procPTVSDecl.str() << _procPTVSIn.str() << _procPTVSOut.str();
+    _genPTVS << _procPTVSOut.str();
     _genGS  << _procGS.str();
 
     // other shaders (renderPass, lighting, surface) first
@@ -3991,9 +3992,11 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         // subtracted from the primitive ID for those cases
         if (requiresBasePrimitiveOffset) {
             primitiveID << "int GetBasePrimitiveOffset() { return vs_dc_primitiveCoord; }\n";
+            _genPTCS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return drawingCoord0[0].w; }\n";
         } else {
             primitiveID << "int GetBasePrimitiveOffset() { return 0; }\n";
+            _genPTCS    << "int GetBasePrimitiveOffset() { return 0; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return 0; }\n";
         }
         if (requiresPrimitiveIdEmulation) {
@@ -4008,6 +4011,12 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                         << "int GetTriQuadID() {\n"
                         << "  return (GetBasePrimitiveId() - GetBasePrimitiveOffset()) & 1;\n"
                         << "}\n";
+            _genPTCS    << "int GetPrimitiveID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset()) / 2;\n"
+                        << "}\n"
+                        << "int GetTriQuadID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset()) & 1;\n"
+                        << "}\n";
             _genPTVS    << "int GetPrimitiveID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset()) / 2;\n"
                         << "}\n"
@@ -4017,6 +4026,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         } else {
             primitiveID << "int GetPrimitiveID() {\n"
                         << "  return (GetBasePrimitiveId() - GetBasePrimitiveOffset());\n"
+                        << "}\n";
+            _genPTCS    << "int GetPrimitiveID() {\n"
+                        << "  return (patch_id - GetBasePrimitiveOffset());\n"
                         << "}\n";
             _genPTVS    << "int GetPrimitiveID() {\n"
                         << "  return (patch_id - GetBasePrimitiveOffset());\n"
@@ -4054,8 +4066,20 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         "  return GetDrawingCoord().primitiveCoord + GetPrimitiveID();\n"
         "}\n";
 
-    _genPTCS << primitiveIndex;
-    _genPTVS << primitiveIndex;
+    // For PTCS/PTVS we index by patch_id when using GS emulation.
+    char const * const primitiveIndexFromPatchID =
+        "int GetPrimitiveIndex() {\n"
+        "  return GetDrawingCoord().primitiveCoord + patch_id;\n"
+        "}\n";
+
+    if (!_geometricShader->IsPrimTypePatches()) {
+        _genPTCS << primitiveIndexFromPatchID;
+        _genPTVS << primitiveIndexFromPatchID;
+    } else {
+        _genPTCS << primitiveIndex;
+        _genPTVS << primitiveIndex;
+    }
+
     _genTCS << primitiveIndex;
     _genTES << primitiveIndex;
     _genGS << primitiveIndex;
@@ -4134,6 +4158,19 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
                << "}\n";
         
+        _genPTCS << "int GetBaseInstanceIndexCoord() {\n"
+               << "  return drawingCoord1[0].y;\n"
+               << "}\n"
+
+               << "int GetCurrentInstance() {\n"
+               << "  return int(hd_InstanceID - hd_BaseInstance);\n"
+               << "}\n"
+
+               << "int GetInstanceIndexCoord() {\n"
+               << "  return GetBaseInstanceIndexCoord() +"
+               << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
+               << "}\n";
+
         _genPTVS << "int GetBaseInstanceIndexCoord() {\n"
                << "  return drawingCoord1[0].y;\n"
                << "}\n"
@@ -4189,6 +4226,10 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex");
+            _EmitAccessor(_genPTCS, _metaData.culledInstanceIndexArrayBinding.name,
+                          _metaData.culledInstanceIndexArrayBinding.dataType,
+                          _metaData.culledInstanceIndexArrayBinding.binding,
+                          "GetInstanceIndexCoord()+localIndex");
             _EmitAccessor(_genPTVS, _metaData.culledInstanceIndexArrayBinding.name,
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
@@ -4238,6 +4279,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     }
 
     _genVS   << genAttr.str();
+    _genPTCS << genAttr.str();
     _genPTVS << genAttr.str();
 
     _genVS   << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
@@ -4250,6 +4292,18 @@ HdSt_CodeGen::_GenerateDrawingCoord(
              << "  dc.vertexCoord             = drawingCoord1.w;\n"
              << "  dc.topologyVisibilityCoord = drawingCoord2.x;\n"
              << "  dc.varyingCoord            = drawingCoord2.y;\n"
+             << "  hd_instanceIndex r = GetInstanceIndex();\n";
+
+    _genPTCS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
+             << "  dc.modelCoord              = drawingCoord0[0].x;\n"
+             << "  dc.constantCoord           = drawingCoord0[0].y;\n"
+             << "  dc.elementCoord            = drawingCoord0[0].z;\n"
+             << "  dc.primitiveCoord          = drawingCoord0[0].w;\n"
+             << "  dc.fvarCoord               = drawingCoord1[0].x;\n"
+             << "  dc.shaderCoord             = drawingCoord1[0].z;\n"
+             << "  dc.vertexCoord             = drawingCoord1[0].w;\n"
+             << "  dc.topologyVisibilityCoord = drawingCoord2[0].x;\n"
+             << "  dc.varyingCoord            = drawingCoord2[0].y;\n"
              << "  hd_instanceIndex r = GetInstanceIndex();\n";
 
     _genPTVS << "hd_drawingCoord GetDrawingCoord() { hd_drawingCoord dc;\n"
@@ -4282,6 +4336,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         std::string const index = std::to_string(i);
         _genVS   << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
+        _genPTCS << "  dc.instanceIndex[" << index << "]"
+                 << " = r.indices[" << index << "];\n";
         _genPTVS << "  dc.instanceIndex[" << index << "]"
                  << " = r.indices[" << index << "];\n";
         _genCS   << "  dc.instanceIndex[" << index << "]"
@@ -4292,6 +4348,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         _genVS   << "  dc.instanceCoords[" << index << "]"
                  << " = drawingCoordI" << index << ""
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
+        _genPTCS << "  dc.instanceCoords[" << index << "]"
+                 << " = drawingCoordI" << index << "[0]"
+                 << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genPTVS << "  dc.instanceCoords[" << index << "]"
                  << " = drawingCoordI" << index << "[0]"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
@@ -4301,6 +4360,9 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     }
 
     _genVS   << "  return dc;\n"
+             << "}\n";
+
+    _genPTCS << "  return dc;\n"
              << "}\n";
     _genPTVS << "  return dc;\n"
              << "}\n";
@@ -4983,6 +5045,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
     _genTCS << accessors.str();
     _genTES << accessors.str();
     _genGS << accessors.str();
+    _genPTCS << accessors.str();
     _genPTVS << accessors.str();
     _genFS << accessors.str();
 }
@@ -5041,7 +5104,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     */
 
     std::stringstream accessorsVS, accessorsTCS, accessorsTES,
-        accessorsPTVS, accessorsGS, accessorsFS;
+        accessorsPTCS, accessorsPTVS, accessorsGS, accessorsFS;
 
     HdSt_ResourceLayout::MemberVector interstagePrimvar;
 
@@ -5071,13 +5134,13 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
 
-        // PTVS vertex primvar is staged in local arrays.
-        _procPTVSDecl << dataType << " " << "ptvs_pv_" << name
-                      << "[VERTEX_CONTROL_POINTS_PER_PATCH];\n";
+        // Access PTCS vertex primvar from input attributes.
+        _EmitStageAccessor(accessorsPTCS, name,
+            name.GetString() + "[localIndex]", dataType);
 
-        // Access PTVS vertex primvar from the staging arrays.
+        // Access PTVS vertex primvar from input attributes.
         _EmitStageAccessor(accessorsPTVS, name,
-            "ptvs_pv_" + name.GetString() + "[localIndex]", dataType);
+            name.GetString() + "[localIndex]", dataType);
 
         // interstage plumbing
         _procVS << "  outPrimvars." << name
@@ -5092,16 +5155,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _procGS  << "  outPrimvars." << name
                  << " = inPrimvars[index]." << name << ";\n";
 
-        _procPTVSIn  << "  for (int i = 0; i < VERTEX_CONTROL_POINTS_PER_PATCH; ++i) {\n"
-                     << "    ptvs_pv_" << name << "[i] = " << name << "[i];\n"
-                     << "  }\n";
         _procPTVSOut << "  outPrimvars." << name
-                     << " = InterpolatePrimvar(ptvs_pv_"
-                     << name << "[i0], ptvs_pv_"
-                     << name << "[i1], ptvs_pv_"
-                     << name << "[i2], ptvs_pv_"
-                     << name << "[i3], basis);\n";
-
+                     << " = InterpolatePrimvar("
+                     << "HdGet_" << name << "(i0), "
+                     << "HdGet_" << name << "(i1), "
+                     << "HdGet_" << name << "(i2), "
+                     << "HdGet_" << name << "(i3), basis);\n";
     }
 
     /*
@@ -5153,11 +5212,11 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
 
-        // PTVS varying primvar is staged in local arrays.
-        _procPTVSDecl << dataType << " " << "ptvs_pv_" << name
-                      << "[VERTEX_CONTROL_POINTS_PER_PATCH];\n";
+        // Access PTCS varying primvar from varying data buffer.
+        _EmitBufferAccessor(accessorsPTCS, name, dataType,
+            "GetDrawingCoord().varyingCoord + patch_id + localIndex");
 
-        // Access PTVS varying primvar from the data buffer.
+        // Access PTVS varying primvar from varying data buffer.
         _EmitBufferAccessor(accessorsPTVS, name, dataType,
             "GetDrawingCoord().varyingCoord + patch_id + localIndex");
         
@@ -5176,15 +5235,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _procGS  << "  outPrimvars." << name
                  << " = inPrimvars[index]." << name << ";\n";
 
-        _procPTVSIn  << "  for (int i = 0; i < VERTEX_CONTROL_POINTS_PER_PATCH; ++i) {\n"
-                     << "    ptvs_pv_" << name << "[i] = HdGet_" << name << "(i);\n"
-                     << "  }\n";
         _procPTVSOut << "  outPrimvars." << name
-                     << " = InterpolatePrimvar(ptvs_pv_"
-                     << name << "[i0], ptvs_pv_"
-                     << name << "[i1], ptvs_pv_"
-                     << name << "[i2], ptvs_pv_"
-                     << name << "[i3], basis);\n";
+                     << " = InterpolatePrimvar("
+                     << "HdGet_" << name << "(i0), "
+                     << "HdGet_" << name << "(i1), "
+                     << "HdGet_" << name << "(i2), "
+                     << "HdGet_" << name << "(i3), basis);\n";
     }
 
     /*
@@ -5326,6 +5382,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                               channel);
 
             _EmitFVarAccessor(false,
+                              accessorsPTCS, name, dataType, binding,
+                              _geometricShader->GetPrimitiveType(),
+                              _geometricShader->GetFvarPatchType(),
+                              channel);
+
+            _EmitFVarAccessor(false,
                               accessorsPTVS, name, dataType, binding,
                               _geometricShader->GetPrimitiveType(),
                               _geometricShader->GetFvarPatchType(),
@@ -5393,6 +5455,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     _genFS    << accessorsFS.str();
     _genTCS   << accessorsTCS.str();
     _genTES   << accessorsTES.str();
+    _genPTCS  << accessorsPTCS.str();
     _genPTVS  << accessorsPTVS.str();
 
     // ---------
@@ -6281,6 +6344,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
     _genGS << accessors.str();
     _genFS << accessors.str();
+    _genPTCS << accessors.str();
     _genPTVS << accessors.str();
 }
 
