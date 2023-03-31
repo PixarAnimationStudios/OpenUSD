@@ -89,17 +89,16 @@ removes the need for their dependencies when building USD.
 
 ##### Python
 
-Python support in USD refers to:
+Some optional USD components use Python:
 - [The USD Toolset](https://graphics.pixar.com/usd/docs/USD-Toolset.html)
 - [Third Party Plugins](https://graphics.pixar.com/usd/docs/USD-3rd-Party-Plugins.html)
 - Python language bindings for the USD C++ API
 - Unit tests using Python
 
+Please refer the [VERSIONS.md](VERSIONS.md) for supported Python versions.
+
 Support for Python can optionally be disabled by specifying the cmake flag
 `PXR_ENABLE_PYTHON_SUPPORT=FALSE`.
-
-Python 3 is enabled by default, Python 2 can be enabled by specifying the cmake
-flag `PXR_USE_PYTHON_3=OFF`.
 
 ##### OpenGL
 
@@ -149,7 +148,8 @@ generation are:
 | DOXYGEN_EXECUTABLE | The location of Doxygen                 |
 | DOT_EXECUTABLE     | The location of Dot(from GraphViz).     |
 
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
+See [3rd Party Library and Application Versions](VERSIONS.md) for version 
+information, including supported Doxygen and GraphViz versions.
 
 ##### Python Documentation
 

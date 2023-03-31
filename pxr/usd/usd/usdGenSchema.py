@@ -1129,8 +1129,7 @@ def _AddToken(tokenDict, classTokenSet, tokenId, val, desc,
     # If token is a reserved word in either language, append with underscore.
     # 'interface' is not a reserved word but is a macro on Windows when using
     # COM so we treat it as reserved.
-    # None is a reserved word for python3, hencing added here for
-    # python3-proofing
+    # None is a reserved word for python3 
     reserved = set(cppReservedKeywords + keyword.kwlist + [
         'interface',
         'None',

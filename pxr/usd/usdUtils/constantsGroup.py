@@ -85,30 +85,10 @@ class _MetaConstantsGroup(type):
         return iter(self._all)
 
 # We want to define a ConstantsGroup class that uses _MetaConstantsGroup
-# as its metaclass. The syntax for doing so in Python 3 is not backwards
-# compatible for Python 2, so we cannot just conditionally define one
-# form or the other because that will cause syntax errors when compiling
-# this file. To avoid this we add a layer of indirection through exec().
-if sys.version_info.major >= 3:
-    defineConstantsGroup = '''
+# as its metaclass.
 class ConstantsGroup(object, metaclass=_MetaConstantsGroup):
     """The base constant group class, intended to be inherited by actual groups
     of constants.
     """
-
     def __new__(cls, *args, **kwargs):
         raise TypeError("ConstantsGroup objects cannot be created.")
-'''
-else:
-    defineConstantsGroup = '''
-class ConstantsGroup(object):
-    """The base constant group class, intended to be inherited by actual groups
-    of constants.
-    """
-    __metaclass__ = _MetaConstantsGroup
-
-    def __new__(cls, *args, **kwargs):
-        raise TypeError("ConstantsGroup objects cannot be created.")
-'''
-
-exec(defineConstantsGroup)

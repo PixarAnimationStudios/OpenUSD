@@ -423,12 +423,7 @@ class TestGfMatrix(unittest.TestCase):
                              5.00666175191934e-06, 1.0000000000332, -2.19113616402155e-07,
                              -2.07635686422463e-06, 2.19131379884019e-07, 1 )
             r = mx.ExtractRotation()
-            # math.isnan won't be available until python 2.6
-            if (sys.version_info[0] >=2 and sys.version_info[1] >= 6):
-                self.assertFalse(math.isnan(r.angle))
-            else:
-                # If this fails, then r.angle is Nan. Works on linux, may not be portable.
-                self.assertEqual(r.angle, r.angle)
+            self.assertFalse(math.isnan(r.angle))
 
     def test_Matrix4Transforms(self):
         Matrices = [(Gf.Matrix4d, Gf.Vec4d, Gf.Matrix3d, Gf.Vec3d, Gf.Quatd),
@@ -804,14 +799,16 @@ class TestGfMatrix(unittest.TestCase):
             AssertDeterminant(m2 * m3 * m4 * m2, det2 * det3 * det4 * det2)
 
     def test_Exceptions(self):
-        # Bug USD-6284 shows that we erroneously implemented the Python 2.x
-        # buffer protocol 'getcharbuffer' method to expose the binary content,
-        # where really a string is expected.  This tests that we correctly raise
-        # instead of treating the binary object representation as a string.
 
-        # We get different exceptions between Python 2 & 3 here, see Python
+        # Some Python 3 builtins like int() will just blindly attempt to treat 
+        # bytes from objects that support the buffer protocol as string 
+        # characters, ignoring what the actual data format is. 
+        # This tests that we correctly raise instead of treating the binary 
+        # object representation as a string.
+        
+        # For python3 we get ValueError instead of a TypeError, see Python
         # issue 41707 (https://bugs.python.org/issue41707).
-        excType = TypeError if sys.version_info.major < 3 else ValueError
+        excType = ValueError
 
         with self.assertRaises(excType):
             int(Gf.Matrix3d(3))

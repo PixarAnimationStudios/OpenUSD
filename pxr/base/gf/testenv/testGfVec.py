@@ -637,14 +637,15 @@ class TestGfVec(unittest.TestCase):
         with self.assertRaises(TypeError):
             Gf.Dot(('a', 'b', 'c', 'd'), (1.0, 1.0, 1.0, 1.0))
 
-        # Bug USD-6284 shows that we erroneously implemented the Python 2.x
-        # buffer protocol 'getcharbuffer' method to expose the binary content,
-        # where really a string is expected.  This tests that we correctly raise
-        # instead of treating the binary object representation as a string.
+        # Some Python 3 builtins like int() will just blindly attempt to treat 
+        # bytes from objects that support the buffer protocol as string 
+        # characters, ignoring what the actual data format is. 
+        # This tests that we correctly raise instead of treating the binary 
+        # object representation as a string.
         
-        # We get different exceptions between Python 2 & 3 here, see Python
+        # For python3 we get ValueError instead of a TypeError, see Python
         # issue 41707 (https://bugs.python.org/issue41707).
-        excType = TypeError if sys.version_info.major < 3 else ValueError
+        excType = ValueError
 
         with self.assertRaises(excType):
             int(Gf.Vec3d(1,2,3))

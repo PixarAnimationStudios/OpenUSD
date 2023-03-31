@@ -22,48 +22,25 @@ set(PXR_VERSION "@PXR_VERSION@")
 # were set. This can be overridden by specifying different values when
 # running cmake.
 if(@PXR_ENABLE_PYTHON_SUPPORT@)
-    if(@PXR_USE_PYTHON_3@)
-        if (NOT DEFINED Python3_EXECUTABLE)
-            if (NOT [[@Python3_EXECUTABLE@]] STREQUAL "")
-                set(Python3_EXECUTABLE [[@Python3_EXECUTABLE@]])
-            endif()
+    if (NOT DEFINED Python3_EXECUTABLE)
+        if (NOT [[@Python3_EXECUTABLE@]] STREQUAL "")
+            set(Python3_EXECUTABLE [[@Python3_EXECUTABLE@]])
         endif()
-
-        if (NOT DEFINED Python3_LIBRARY)
-            if (NOT [[@Python3_LIBRARY@]] STREQUAL "")
-                set(Python3_LIBRARY [[@Python3_LIBRARY@]])
-            endif()
-        endif()
-
-        if (NOT DEFINED Python3_INCLUDE_DIR)
-            if (NOT [[@Python3_INCLUDE_DIR@]] STREQUAL "")
-                set(Python3_INCLUDE_DIR [[@Python3_INCLUDE_DIR@]])
-            endif()
-        endif()
-
-        find_package(Python3 COMPONENTS Development REQUIRED)
-    else()
-        if (NOT DEFINED Python2_EXECUTABLE)
-            if (NOT [[@Python2_EXECUTABLE@]] STREQUAL "")
-                set(Python2_EXECUTABLE [[@Python2_EXECUTABLE@]])
-            endif()
-        endif()
-
-        if (NOT DEFINED Python2_LIBRARY)
-            if (NOT [[@Python2_LIBRARY@]] STREQUAL "")
-                set(Python2_LIBRARY [[@Python2_LIBRARY@]])
-            endif()
-        endif()
-
-        if (NOT DEFINED Python2_INCLUDE_DIR)
-            if (NOT [[@Python2_INCLUDE_DIR@]] STREQUAL "")
-                set(Python2_INCLUDE_DIR [[@Python2_INCLUDE_DIR@]])
-            endif()
-        endif()
-
-        find_package(Python2 COMPONENTS Development REQUIRED)
     endif()
 
+    if (NOT DEFINED Python3_LIBRARY)
+        if (NOT [[@Python3_LIBRARY@]] STREQUAL "")
+            set(Python3_LIBRARY [[@Python3_LIBRARY@]])
+        endif()
+    endif()
+
+    if (NOT DEFINED Python3_INCLUDE_DIR)
+        if (NOT [[@Python3_INCLUDE_DIR@]] STREQUAL "")
+            set(Python3_INCLUDE_DIR [[@Python3_INCLUDE_DIR@]])
+        endif()
+    endif()
+
+    find_package(Python3 COMPONENTS Development REQUIRED)
 endif()
 
 # If MaterialX support was enabled for this USD build, try to find the
