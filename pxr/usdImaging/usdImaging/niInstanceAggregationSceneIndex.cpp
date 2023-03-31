@@ -27,6 +27,7 @@
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -590,7 +591,10 @@ private:
     _PathToIntSharedPtr _ComputeInstanceToIndex(
         const _InstanceInfo &info);
 
-    HdSceneIndexBaseRefPtr const _inputScene;
+    // This observer wants to observe a *flattened* view of the scene.  This
+    // way, it can access the composed transform values for natively instanced
+    // prims.
+    HdSceneIndexBaseRefPtr const _flattenedInputScene;
     HdRetainedSceneIndexRefPtr const _retainedSceneIndex;
     const SdfPath _fallbackPrototypeRoot;
     HdContainerDataSourceHandle const _fallbackInstancedBySource;
@@ -614,7 +618,7 @@ private:
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot)
-  : _inputScene(inputScene)
+  : _flattenedInputScene(HdFlatteningSceneIndex::New(inputScene))
   , _retainedSceneIndex(HdRetainedSceneIndex::New())
   , _fallbackPrototypeRoot(
         prototypeRoot.IsEmpty()
@@ -624,7 +628,7 @@ _InstanceObserver::_InstanceObserver(
         _ComputeFallbackInstancedByDataSource(prototypeRoot))
 {
     _Populate();
-    _inputScene->AddObserver(HdSceneIndexObserverPtr(this));
+    _flattenedInputScene->AddObserver(HdSceneIndexObserverPtr(this));
 }
 
 void
@@ -707,7 +711,7 @@ void
 _InstanceObserver::_Populate()
 {
     for (const SdfPath &primPath
-             : HdSceneIndexPrimView(_inputScene,
+             : HdSceneIndexPrimView(_flattenedInputScene,
                                     SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
@@ -735,7 +739,7 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 _InstanceInfo
 _InstanceObserver::_GetInfo(const SdfPath &primPath)
 {
-    return _GetInfo(_inputScene->GetPrim(primPath).dataSource);
+    return _GetInfo(_flattenedInputScene->GetPrim(primPath).dataSource);
 }
 
 void
@@ -753,7 +757,7 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { info.GetBindingPrimPath(),
                 TfToken(),
                 _MakeBindingCopy(
-                    _inputScene->GetPrim(primPath).dataSource) } } );
+                    _flattenedInputScene->GetPrim(primPath).dataSource) } } );
     }
 
     const SdfPath instancerPath =
@@ -779,7 +783,7 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { instancerPath,
                 HdPrimTypeTokens->instancer,
                 _InstancerPrimSource::New(
-                    _inputScene,
+                    _flattenedInputScene,
                     info.enclosingPrototypeRoot,
                     prototypePath,
                     instances,

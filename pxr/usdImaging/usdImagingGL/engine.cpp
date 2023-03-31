@@ -964,16 +964,6 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        // The native prototype propagating scene index does a lot of
-        // the flattening before inserting copies of the the prototypes
-        // into the scene index. However, the resolved material for a prim
-        // coming from a USD prototype can depend on the prim ancestors of
-        // a corresponding instance. So we need to do one final resolve here.
-        static const HdContainerDataSourceHandle flatteningInputArgs =
-            HdRetainedContainerDataSource::New(
-                HdMaterialBindingSchemaTokens->materialBinding,
-                HdRetainedTypedSampledDataSource<bool>::New(true));
-
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New();
 
@@ -990,7 +980,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
             UsdImagingRenderSettingsFlatteningSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
-            HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
+            HdFlatteningSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
             UsdImagingDrawModeSceneIndex::New(_sceneIndex,
