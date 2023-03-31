@@ -323,7 +323,12 @@ _ToHdRenderVarDS(
         HdRenderVarSchema::Builder()
         .SetPath(HdRetainedTypedSampledDataSource<SdfPath>::New(varPath))
         .SetDataType(var.GetDataType())
-        .SetSourceName(var.GetSourceName())
+        // HdRenderVarSchema uses token for sourceName while
+        // UsdImagingUsdRenderVarSchema mimics the UsdRenderVar schema and
+        // uses string.
+        .SetSourceName(
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                TfToken(var.GetSourceName()->GetTypedValue(0))))
         .SetSourceType(var.GetSourceType())
         .SetNamespacedSettings(var.GetNamespacedSettings())
         .Build();
@@ -500,9 +505,6 @@ public:
                 UsdImagingUsdRenderSettingsSchema::GetFromParent(_input);
             return usdRss.GetRenderingColorSpace();
         }
-
-        TF_WARN("Unhandled property %s in _RenderSettingsDataSource\n",
-                name.GetText());
 
         return _input->Get(name);
     }

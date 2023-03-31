@@ -48,10 +48,10 @@ UsdImagingUsdRenderVarSchema::GetDataType()
         UsdImagingUsdRenderVarSchemaTokens->dataType);
 }
 
-HdTokenDataSourceHandle
+HdStringDataSourceHandle
 UsdImagingUsdRenderVarSchema::GetSourceName()
 {
-    return _GetTypedDataSource<HdTokenDataSource>(
+    return _GetTypedDataSource<HdStringDataSource>(
         UsdImagingUsdRenderVarSchemaTokens->sourceName);
 }
 
@@ -73,7 +73,7 @@ UsdImagingUsdRenderVarSchema::GetNamespacedSettings()
 HdContainerDataSourceHandle
 UsdImagingUsdRenderVarSchema::BuildRetained(
         const HdTokenDataSourceHandle &dataType,
-        const HdTokenDataSourceHandle &sourceName,
+        const HdStringDataSourceHandle &sourceName,
         const HdTokenDataSourceHandle &sourceType,
         const HdContainerDataSourceHandle &namespacedSettings
 )
@@ -148,7 +148,7 @@ UsdImagingUsdRenderVarSchema::Builder::SetDataType(
 
 UsdImagingUsdRenderVarSchema::Builder &
 UsdImagingUsdRenderVarSchema::Builder::SetSourceName(
-    const HdTokenDataSourceHandle &sourceName)
+    const HdStringDataSourceHandle &sourceName)
 {
     _sourceName = sourceName;
     return *this;

@@ -62,7 +62,7 @@ public:
     USDIMAGING_API
     HdTokenDataSourceHandle GetDataType();
     USDIMAGING_API
-    HdTokenDataSourceHandle GetSourceName();
+    HdStringDataSourceHandle GetSourceName();
     USDIMAGING_API
     HdTokenDataSourceHandle GetSourceType();
     USDIMAGING_API
@@ -79,7 +79,7 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdTokenDataSourceHandle &dataType,
-        const HdTokenDataSourceHandle &sourceName,
+        const HdStringDataSourceHandle &sourceName,
         const HdTokenDataSourceHandle &sourceType,
         const HdContainerDataSourceHandle &namespacedSettings
     );
@@ -98,7 +98,7 @@ public:
             const HdTokenDataSourceHandle &dataType);
         USDIMAGING_API
         Builder &SetSourceName(
-            const HdTokenDataSourceHandle &sourceName);
+            const HdStringDataSourceHandle &sourceName);
         USDIMAGING_API
         Builder &SetSourceType(
             const HdTokenDataSourceHandle &sourceType);
@@ -112,7 +112,7 @@ public:
 
     private:
         HdTokenDataSourceHandle _dataType;
-        HdTokenDataSourceHandle _sourceName;
+        HdStringDataSourceHandle _sourceName;
         HdTokenDataSourceHandle _sourceType;
         HdContainerDataSourceHandle _namespacedSettings;
     };
