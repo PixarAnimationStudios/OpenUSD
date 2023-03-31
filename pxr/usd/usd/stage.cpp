@@ -294,6 +294,7 @@ public:
 
     using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+    PathsToChangesMap primTypeInfoChanges;
 };
 
 // ------------------------------------------------------------------------- //
@@ -3026,28 +3027,12 @@ UsdStage::_ComposeSubtreeImpl(
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
-    if (parent && !isPrototypePrim) {
-        // Compose the type info full type ID for the prim which includes
-        // the type name, applied schemas, and a possible mapped fallback type 
-        // if the stage specifies it.
-        Usd_PrimTypeInfoCache::TypeId typeId(
-            _ComposeTypeName(prim->_primIndex));
-        _ComposeAuthoredAppliedSchemas(
-            prim->_primIndex, &typeId.appliedAPISchemas);
-        if (const TfToken *fallbackType = TfMapLookupPtr(
-                _invalidPrimTypeToFallbackMap, typeId.primTypeName)) {
-            typeId.mappedTypeName = *fallbackType;
-        }
-
-        // Ask the type info cache for the type info for our type.
-        prim->_primTypeInfo = 
-            _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(std::move(typeId));
-    } else {
-        prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
-    }
-
-    // Compose type info and flags for prim.
+    // Compose flags for prim.
     prim->_ComposeAndCacheFlags(parent, isPrototypePrim);
+
+    // Compose prim type info after setting the flags as this relies on the 
+    // flags being set.
+    _ComposePrimTypeInfoImpl(prim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.
@@ -3072,6 +3057,31 @@ UsdStage::_ComposeSubtreeImpl(
 
     // Compose the set of children on this prim.
     _ComposeChildren(prim, mask, /*recurse=*/true);
+}
+
+void UsdStage::_ComposePrimTypeInfoImpl(Usd_PrimDataPtr prim) 
+{
+    // The pseudo-root and root prototype prims do not have prim type info.
+    if (prim->IsPseudoRoot() || prim->IsPrototype()) {
+        prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
+        return;
+    }
+
+    // Compose the type info full type ID for the prim which includes
+    // the type name, applied schemas, and a possible mapped fallback type 
+    // if the stage specifies it.
+    Usd_PrimTypeInfoCache::TypeId typeId(
+        _ComposeTypeName(prim->_primIndex));
+    _ComposeAuthoredAppliedSchemas(
+        prim->_primIndex, &typeId.appliedAPISchemas);
+    if (const TfToken *fallbackType = TfMapLookupPtr(
+            _invalidPrimTypeToFallbackMap, typeId.primTypeName)) {
+        typeId.mappedTypeName = *fallbackType;
+    }
+
+    // Ask the type info cache for the type info for our type.
+    prim->_primTypeInfo = 
+        _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(std::move(typeId));
 }
 
 void
@@ -3921,6 +3931,7 @@ UsdStage::_HandleLayersDidChange(
     // have otherwise changed.
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
     _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
@@ -3983,6 +3994,7 @@ UsdStage::_HandleLayersDidChange(
                 sdfPath.IsPrimOrPrimVariantSelectionPath()) {
 
                 bool didChangeActive = false;
+                bool willChangePrimTypeInfo = false;
                 for (const auto& info : entry.infoChanged) {
                     if (info.first == SdfFieldKeys->Active) {
                         TF_DEBUG(USD_CHANGES).Msg(
@@ -3997,10 +4009,11 @@ UsdStage::_HandleLayersDidChange(
                 } else {
                     for (const auto& info : entry.infoChanged) {
                         const auto& infoKey = info.first;
-                        if (infoKey == SdfFieldKeys->Kind ||
-                            infoKey == SdfFieldKeys->TypeName ||
+                        if (infoKey == SdfFieldKeys->TypeName ||
+                            infoKey == UsdTokens->apiSchemas) {
+                            willChangePrimTypeInfo = true;
+                        } else if (infoKey == SdfFieldKeys->Kind ||
                             infoKey == SdfFieldKeys->Specifier ||
-                            infoKey == UsdTokens->apiSchemas ||
                             
                             // XXX: Could be more specific when recomposing due
                             //      to clip changes. E.g., only update the clip
@@ -4025,6 +4038,9 @@ UsdStage::_HandleLayersDidChange(
                 if (willRecompose) {
                     _AddAffectedStagePaths(layer, sdfPath, 
                                            *_cache, &recomposeChanges, &entry);
+                } else if (willChangePrimTypeInfo) {
+                    _AddAffectedStagePaths(layer, sdfPath, 
+                                           *_cache, &primTypeInfoChanges, &entry);
                 }
                 if (didChangeActive) {
                     _AddAffectedStagePaths(layer, sdfPath, 
@@ -4101,6 +4117,7 @@ UsdStage::_ProcessPendingChanges()
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
     _PathsToChangesMap& otherResyncChanges=_pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
+    _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
 
     _Recompose(changes, &recomposeChanges);
 
@@ -4110,6 +4127,7 @@ UsdStage::_ProcessPendingChanges()
 
         otherResyncChanges.clear();
         otherInfoChanges.clear();
+        primTypeInfoChanges.clear();
     }
     else {
         // Filter out all changes to objects beneath instances and remap
@@ -4143,8 +4161,36 @@ UsdStage::_ProcessPendingChanges()
         };
 
         remapChangesToPrototypes(&recomposeChanges);
+        remapChangesToPrototypes(&primTypeInfoChanges);
         remapChangesToPrototypes(&otherResyncChanges);
         remapChangesToPrototypes(&otherInfoChanges);
+
+        // Before processing any prim type info changes, remove any that would
+        // already have been covered by the recomposed prims.
+        _MergeAndRemoveDescendentEntries(
+                &recomposeChanges, &primTypeInfoChanges);
+
+        // Recompose the prim type info for the prims that need it. 
+        for (const auto &entry : primTypeInfoChanges) {
+            PathToNodeMap::const_accessor acc;
+            if (_primMap.find(acc, entry.first)) {
+                auto prim = acc->second.get();
+                if (prim) {
+                    _ComposePrimTypeInfoImpl(prim);
+                }
+            }
+        }
+
+        // Even though we don't actually recompose prims that only have a type
+        // info change, we still treat them as recomposed as far as notification
+        // is concerned. 
+        if (recomposeChanges.empty()) {
+            recomposeChanges.swap(primTypeInfoChanges);
+        } else {
+            for (auto& entry : primTypeInfoChanges) {
+                recomposeChanges[entry.first] = std::move(entry.second);
+            }
+        }
 
         // Add in all other paths that are marked as resynced.
         if (recomposeChanges.empty()) {
