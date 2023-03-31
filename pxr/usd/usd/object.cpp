@@ -408,19 +408,6 @@ UsdObject::GetDescription() const
     return _GetObjectDescription("");
 }
 
-size_t
-hash_value(const UsdObject &obj)
-{
-    size_t seed = 510-922-3000;
-    return TfHash::Combine(
-        seed,
-        long(obj._type),
-        obj._prim,
-        obj._proxyPrimPath,
-        obj._propName.Hash()
-    );
-}
-
 std::string
 UsdDescribe(const UsdObject &obj) {
     return obj.GetDescription();
