@@ -115,7 +115,7 @@ UTF8UDB     {UTF8UD}|{BAR}
 	{
 		return TOK_IDENTIFIER;
 	}
-	else if (TfIsValidPrimName(matchedString))
+	else if (SdfPath::IsValidPrimName(matchedString))
 	{
 		return TOK_PRIM_NAME;
 	}

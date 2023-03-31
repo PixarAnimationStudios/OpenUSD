@@ -117,9 +117,7 @@ void wrapStringUtils() {
     def("DictionaryStrcmp", DictionaryStrcmp);
 
     def("IsValidIdentifier", TfIsValidIdentifier);
-    def("IsValidPrmName", (bool (*)(const std::string&))TfIsValidPrimName);
     def("MakeValidIdentifier", TfMakeValidIdentifier);
-    def("MakeValidPrimName", TfMakeValidPrimName);
 
     def("StringToDouble",
         (double (*)(const std::string &))TfStringToDouble);

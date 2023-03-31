@@ -1133,7 +1133,7 @@ YY_RULE_SETUP
 	{
 		return TOK_IDENTIFIER;
 	}
-	else if (TfIsValidPrimName(matchedString))
+	else if (SdfPath::IsValidPrimName(matchedString))
 	{
 		return TOK_PRIM_NAME;
 	}

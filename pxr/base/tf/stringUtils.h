@@ -820,53 +820,11 @@ _TfIsValidIdentifierSubsequence(const std::string& identifier,
     }
 }
 
-/// Tests whether \a primName is valid.
-///
-/// A prim name is valid if it's at least one character long and all characters
-/// are valid UTF-8 sequences.  This method ignores the value of 
-/// TF_UTF8_IDENTIFIERS and instead uses either UTF-8 or ASCII rules for 
-/// validation based on the value of \a utf8.
-///
-inline bool
-TfIsValidPrimName(const std::string& primName, bool utf8)
-{
-    if (utf8)
-    {
-        // use unicode utils to validate the prim name
-        return TfUnicodeUtils::IsValidUTF8PrimName(primName,
-        primName.begin(), primName.end());
-    }
-    else
-    {
-        return TfIsValidIdentifier(primName);
-    }
-}
-
-/// Tests whether \a primName is valid.
-///
-/// A prim name is valid if it's at least one character long and all characters
-/// are valid UTF-8 sequences.  If not using TF_UTF8_IDENTIFIERS, this method
-/// is equivalent to TfIsValidIdentifer.
-/// Valid UTF-8 sequences here means all characters must be in the XID_Continue
-/// character class (i.e. names can start with a digit, etc.).
-/// 
-inline bool
-TfIsValidPrimName(const std::string& primName)
-{
-    return TfIsValidPrimName(primName, UseUTF8Identifiers());
-}
-
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by
 /// replacing invalid characters with '_'.  If \p in is empty, return "_".
 TF_API
 std::string
 TfMakeValidIdentifier(const std::string &in);
-
-/// Produce a valid prim name (see TfIsValidPrimName) from \p in by
-/// replacing invalid characters with '_'.  If \p in is empty, return "_".
-TF_API
-std::string
-TfMakeValidPrimName(const std::string &in);
 
 /// Escapes characters in \a in so that they are valid XML.
 ///

@@ -368,6 +368,16 @@ void wrapPath() {
         .def("IsValidIdentifier", &This::IsValidIdentifier)
             .staticmethod("IsValidIdentifier")
 
+        .def("IsValidPrimName", 
+             (bool (*)(const std::string&))
+                &This::IsValidPrimName)
+            .staticmethod("IsValidPrimName")
+
+        .def("MakeValidPrimName",
+             (std::string (*)(const std::string&))
+                &This::MakeValidPrimName)
+             .staticmethod("MakeValidPrimName")
+
         .def("IsValidNamespacedIdentifier", &This::IsValidNamespacedIdentifier)
             .staticmethod("IsValidNamespacedIdentifier")
 

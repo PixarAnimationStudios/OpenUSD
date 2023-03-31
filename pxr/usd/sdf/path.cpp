@@ -35,6 +35,7 @@
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
+#include "pxr/base/tf/unicodeUtils.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -1820,7 +1821,7 @@ static inline bool _IsValidIdentifier(TfToken const &name)
 
 static inline bool _IsValidPrimName(const TfToken& name)
 {
-    return TfIsValidPrimName(name.GetString());
+    return SdfPath::IsValidPrimName(name.GetString());
 }
 
 bool
@@ -1832,13 +1833,29 @@ SdfPath::IsValidIdentifier(const std::string &name)
 bool
 SdfPath::IsValidPrimName(const std::string& name)
 {
-    return TfIsValidPrimName(name);
+    return SdfPath::IsValidPrimName(name, UseUTF8Identifiers());
 }
 
 bool
 SdfPath::IsValidPrimName(const std::string& name, bool utf8)
 {
-    return TfIsValidPrimName(name, utf8);
+    if (utf8)
+    {
+        // use unicode utils to validate the prim name
+        return TfUnicodeUtils::IsValidUTF8PrimName(name,
+            name.begin(), name.end());
+    }
+    else
+    {
+        return TfIsValidIdentifier(name);
+    }
+}
+
+std::string SdfPath::MakeValidPrimName(const std::string& name)
+{
+    return (UseUTF8Identifiers() ? 
+        TfUnicodeUtils::MakeValidUTF8PrimName(name) :
+        TfMakeValidIdentifier(name));
 }
 
 // We use our own _IsAlpha and _IsAlnum here for two reasons.  One, we want to

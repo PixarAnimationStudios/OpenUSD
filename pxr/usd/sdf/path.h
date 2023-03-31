@@ -814,6 +814,17 @@ public:
     /// use to validate, regardless of the value of TF_UTF8_IDENTIFIERS.
     SDF_API static bool IsValidPrimName(const std::string& name, bool utf8);
 
+    /// Makes a valid prim name from the given input string \p name.
+    /// Valid prim names include sequences of characters within the
+    /// XID_Start and XID_Continue classes.  Note this is different than
+    /// generic identifiers, which must start with a character in XID_Start
+    /// and continue with characters in XID_Continue.  This replaces all
+    /// invalid characters (i.e., those not in XID_Start / XID_Continue)
+    /// with the '_' character.
+    /// If TF_UTF8_IDENTIFIERS is off, this method falls back to the
+    /// implementation for MakeValidIdentifier.
+    SDF_API static std::string MakeValidPrimName(const std::string& name);
+
     /// Returns whether \p name is a legal variant identifier.
     /// Variant identifiers are more permissive than prim names.
     SDF_API static bool IsValidVariantIdentifier(const std::string& name);

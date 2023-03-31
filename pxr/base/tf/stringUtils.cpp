@@ -1205,12 +1205,6 @@ TfMakeValidIdentifier(const std::string &in)
 }
 
 std::string
-TfMakeValidPrimName(const std::string& in)
-{
-    return (UseUTF8Identifiers() ? TfUnicodeUtils::MakeValidUTF8PrimName(in) : TfMakeValidIdentifier(in));
-}
-
-std::string
 TfGetXmlEscapedString(const std::string &in)
 {
     if (in.find_first_of("&<>\"'") == std::string::npos)
