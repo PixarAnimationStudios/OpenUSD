@@ -1472,7 +1472,7 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
     for (auto const& entry : renderSettings) {
         TfToken token = entry.first;
         VtValue val = entry.second;
-        
+
         if (TfStringStartsWith(token.GetText(), "ri:")) {
             // Skip integrator settings.
             if (TfStringStartsWith(token.GetText(), "ri:integrator")) {
@@ -2055,6 +2055,13 @@ _ComputeRenderViewDesc(
     return renderViewDesc;
 }
 
+// Forward declaration of helper to create Render Output in the RenderViewDesc
+static RtUString
+_AddRenderOutput(RtUString aovName, HdFormat aovFormat,
+    const TfToken &dataType, RtUString sourceName, const RtParamList &params,
+    std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> *renderOutputDescs,
+    std::vector<size_t> *renderOutputIndices);
+
 static
 HdPrman_RenderViewDesc
 _ComputeRenderViewDesc(
@@ -2124,18 +2131,18 @@ _ComputeRenderViewDesc(
                 : renderVar.sourceName;
             const RtUString sourceName(varSourceName.c_str());
 
-            // Create a RenderOutputDesc for this RenderVar
-            HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
-            renderOutputDesc.name = sourceName;
-            renderOutputDesc.type = _ToRenderOutputType(renderVar.dataType);
-            renderOutputDesc.sourceName = sourceName;
-            renderOutputDesc.rule = RixStr.k_filter;
-            renderOutputDesc.params = _ToRtParamList(renderVar.namespacedSettings);
-
-            // Store all the RenderOutputDesc on this RenderViewDesc
-            // The index into this list is what is needed above for the 
-            // DisplayDesc.
-            renderViewDesc.renderOutputDescs.push_back(renderOutputDesc);
+            // Create a RenderOutputDesc for this RenderVar and add it to the 
+            // renderViewDesc.
+            // Note that we are not using the renderOutputIndices passed into 
+            // this function, we are instead relying on the indices stored above
+            std::vector<size_t> renderOutputIndices;
+            _AddRenderOutput(sourceName, 
+                             HdFormatInvalid, // to use the renderVar.dataType
+                             renderVar.dataType, 
+                             sourceName, 
+                             _ToRtParamList(renderVar.namespacedSettings),
+                             &renderViewDesc.renderOutputDescs,
+                             &renderOutputIndices);
         }
         renderViewDesc.displayDescs.push_back(displayDesc);
     }
@@ -2870,7 +2877,7 @@ _ExpandVarsInProductName(const std::string & productName,
 }
 
 static
-void
+RtUString
 _AddRenderOutput(
     RtUString aovName,
     HdFormat aovFormat,
@@ -2878,14 +2885,13 @@ _AddRenderOutput(
     RtUString sourceName,
     const RtParamList& params,
     std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> * renderOutputDescs,
-    std::vector<size_t> * renderOutputIndices,
-    RtUString * rule)
+    std::vector<size_t> * renderOutputIndices)
 {
     static RtUString const k_cpuTime("cpuTime");
     static RtUString const k_sampleCount("sampleCount");
     static RtUString const k_none("none");
-    RtParamList extraParams;
 
+    // Get the Render Type from the given RtParamList
     riley::RenderOutputType rt = _ToRenderOutputTypeFromFormat(aovFormat);
     if(!dataType.IsEmpty()) {
         rt = _ToRenderOutputType(dataType);
@@ -2894,11 +2900,12 @@ _AddRenderOutput(
         rt = riley::RenderOutputType::k_Color;
     }
 
+    // Get the rule, filter, and filterSize from the given RtParamList
+    RtUString rule = RixStr.k_filter;
+    params.GetString(RixStr.k_rule, rule);
+
     RtUString filter = RixStr.k_box;
     params.GetString(RixStr.k_filter, filter);
-
-    *rule = RixStr.k_filter;
-    params.GetString(RixStr.k_rule, *rule);
 
     float filterSize[2] = {1.0f, 1.0f};
     if(float const* filterwidth =
@@ -2907,10 +2914,41 @@ _AddRenderOutput(
         filterSize[1] = filterwidth[1];
     }
 
-    float relativePixelVariance = 1.0f;
-    params.GetFloat(RixStr.k_relativepixelvariance,
-                    relativePixelVariance);
+    // Adjust the rule/filter/filterSize as needed
+    RtUString value;
+    // "cpuTime" and "sampleCount" should use rule "sum"
+    if(aovName == k_cpuTime || aovName == k_sampleCount) {
+        rule = RixStr.k_sum;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    // "id", "id2", and "z" should use rule "zmin"
+    } else if(aovName == RixStr.k_id || aovName == RixStr.k_id2 ||
+              aovName == RixStr.k_z ||
+              rt == riley::RenderOutputType::k_Integer) {
+        rule = RixStr.k_zmin;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    // If statistics are set, use that as the rule
+    } else if(params.GetString(RixStr.k_statistics, value) &&
+              !value.Empty() && value != k_none) {
+        rule = value;
+    // Certain filter types need to be converted to rules
+    } else if(filter == RixStr.k_min  || filter == RixStr.k_max  ||
+              filter == RixStr.k_zmin || filter == RixStr.k_zmax ||
+              filter == RixStr.k_sum  || filter == RixStr.k_average) {
+        rule = filter;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    }
 
+    // Get the relativePixelVariance and remap from the given RtParamList
+    float relativePixelVariance = 1.0f;
+    params.GetFloat(RixStr.k_relativepixelvariance, relativePixelVariance);
+
+    RtParamList extraParams;
     float remap[3] = {0.0f, 0.0f, 0.0f};
     if (float const* remapValue = params.GetFloatArray(RixStr.k_remap, 3)) {
         remap[0] = remapValue[0];
@@ -2919,56 +2957,25 @@ _AddRenderOutput(
         extraParams.SetFloatArray(RixStr.k_remap, remap, 3);
     }
 
-    RtUString value;
-    // "cpuTime" and "sampleCount" should use rule "sum"
-    if(aovName == k_cpuTime || aovName == k_sampleCount) {
-        *rule = RixStr.k_sum;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    // "id", "id2", and "z" should use rule "zmin"
-    } else if(aovName == RixStr.k_id || aovName == RixStr.k_id2 ||
-              aovName == RixStr.k_z ||
-              rt == riley::RenderOutputType::k_Integer) {
-        *rule = RixStr.k_zmin;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    // If statistics are set, use that as the rule
-    } else if(params.GetString(RixStr.k_statistics, value) &&
-              !value.Empty() && value != k_none) {
-        *rule = value;
-    // Certain filter types need to be converted to rules
-    } else if(filter == RixStr.k_min || filter == RixStr.k_max ||
-       filter == RixStr.k_zmin || filter == RixStr.k_zmax ||
-              filter == RixStr.k_sum || filter == RixStr.k_average) {
-        *rule = filter;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    }
-
     {
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = aovName;
         renderOutputDesc.type = rt;
         renderOutputDesc.sourceName = sourceName;
-        renderOutputDesc.rule = *rule;
+        renderOutputDesc.rule = rule;
         renderOutputDesc.filter = filter;
-        renderOutputDesc.params = extraParams;
         renderOutputDesc.filterWidth.Set( filterSize[0], filterSize[1] );
         renderOutputDesc.relativePixelVariance = relativePixelVariance;
+        renderOutputDesc.params = extraParams;
 
-        renderOutputDescs->push_back(
-            std::move(renderOutputDesc));
-        renderOutputIndices->push_back(
-            renderOutputDescs->size()-1);
+        renderOutputDescs->push_back(std::move(renderOutputDesc));
+        renderOutputIndices->push_back(renderOutputDescs->size()-1);
     }
 
     // When a float4 color is requested, assume we require alpha as well.
     // This assumption is reflected in framebuffer.cpp HydraDspyData
     int componentCount = HdGetComponentCount(aovFormat);
-    if(rt == riley::RenderOutputType::k_Color && componentCount == 4) {
+    if (rt == riley::RenderOutputType::k_Color && componentCount == 4) {
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = RixStr.k_a;
         renderOutputDesc.type = riley::RenderOutputType::k_Float;
@@ -2976,11 +2983,10 @@ _AddRenderOutput(
         renderOutputDesc.rule = RixStr.k_filter;
         renderOutputDesc.filter = RixStr.k_box;
 
-        renderOutputDescs->push_back(
-            std::move(renderOutputDesc));
-        renderOutputIndices->push_back(
-            renderOutputDescs->size()-1);
+        renderOutputDescs->push_back(std::move(renderOutputDesc));
+        renderOutputIndices->push_back(renderOutputDescs->size()-1);
     }
+    return rule;
 }
 
 static
@@ -3025,15 +3031,13 @@ _ComputeRenderOutputAndAovDescs(
         }
 
 
-        RtUString rule;
-        _AddRenderOutput(rmanAovName,
-                         aovFormat,
-                         dataType,
-                         rmanSourceName,
-                         renderOutputParams,
-                         renderOutputDescs,
-                         renderOutputIndices,
-                         &rule);
+        RtUString rule = _AddRenderOutput(rmanAovName,
+                                          aovFormat,
+                                          dataType,
+                                          rmanSourceName,
+                                          renderOutputParams,
+                                          renderOutputDescs,
+                                          renderOutputIndices);
 
         {
             HdPrmanFramebuffer::AovDesc aovDesc;
@@ -3282,15 +3286,13 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
                                  &rmanAovName,
                                  &rmanSourceName);
 
-            RtUString rule;
             _AddRenderOutput(rmanAovName,
                              aovFormat,
                              dataType,
                              rmanSourceName,
                              renderOutputParams,
                              &renderViewDesc.renderOutputDescs,
-                             &renderOutputIndices,
-                             &rule);
+                             &renderOutputIndices);
 
         }
 
