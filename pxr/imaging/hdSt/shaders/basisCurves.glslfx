@@ -170,7 +170,7 @@ vec2 projectToScreen(MAT4 projMat, vec4 vertex, vec2 screen_size)
 {
     vec4 res = vec4(projMat * vertex);
     res /= res.w;
-    return (clamp(res.xy, -1.3, 1.3) + 1) * (screen_size * 0.5);
+    return (clamp(res.xy, -1.3f, 1.3f) + 1.0f) * (screen_size * 0.5f);
 }
 
 --- --------------------------------------------------------------------------
@@ -250,7 +250,9 @@ void determineLODSettings()
 
     float maxWidthScreenSpace = max(length(v_w0), length(v_w1));
 
-    float level_w = clamp(maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation, 1, maxTess);
+    float level_w = clamp(
+        maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation,
+        1.0f, maxTess);
 
     gl_TessLevelOuter[0] = 1;
     gl_TessLevelOuter[1] = level_w;
@@ -305,7 +307,7 @@ void determineLODSettings()
 
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
+    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
 
     gl_TessLevelOuter[0] = 1;
     gl_TessLevelOuter[1] = level;
@@ -361,7 +363,7 @@ void determineLODSettings()
 
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
+    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
 
     gl_TessLevelOuter[0] = level;
     gl_TessLevelOuter[1] = 1;
@@ -409,12 +411,14 @@ void determineLODSettings()
 
     // Need to handle off screen
     float dist = distance(v0, v1) + distance(v1, v2) + distance(v2, v3);
-    float level = clamp(dist / GetPixelToTessRatio(), 0, maxTess);
+    float level = clamp(dist / GetPixelToTessRatio(), 0.0f, maxTess);
 
     float maxWidthScreenSpace = 
       max(max(max(length(v_w0), length(v_w1)), length(v_w2)), length(v_w3));
 
-    float level_w = clamp(maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation, 1, maxTess);
+    float level_w = clamp(
+        maxWidthScreenSpace / GetPixelToTessRatio() / widthDecimation,
+        1.0f, maxTess);
 
     gl_TessLevelOuter[0] = level;
     gl_TessLevelOuter[1] = level_w;
@@ -598,7 +602,7 @@ void main()
 vec3 evaluateNormal(float u)
 {
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
-    u = clamp(u, 1e-3, 1.0 - 1e-3);
+    u = clamp(u, 1e-3f, 1.0f - 1e-3f);
     return mix(inData[1].Neye, inData[0].Neye, u);
 }
 
@@ -711,7 +715,7 @@ vec3 evaluateNormal(vec4 basis, float u)
 {   
     // XXX: This clamp is a hack to mask some odd orientation flipping issues 
     // for oriented bezier curves.
-    u = clamp(u, 1e-3, 1.0 - 1e-3);
+    u = clamp(u, 1e-3f, 1.0f - 1e-3f);
     return mix(inData[2].Neye, inData[1].Neye, u);
 }
 
@@ -826,7 +830,9 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -9.0*u2 + 6.0*u;
   tangent_basis[2] = 9.0*u2 - 12.0*u + 3.0;
   tangent_basis[3] = -3.0*u2 + 6.0*u - 3.0;
-  return Coeffs(basis, tangent_basis);
+
+  Coeffs coeffs = { basis, tangent_basis };
+  return coeffs;
 }
 
 --- --------------------------------------------------------------------------
@@ -844,7 +850,9 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -1;
   tangent_basis[2] = 0;
   tangent_basis[3] = 0;
-  return Coeffs(basis, tangent_basis);
+
+  Coeffs coeffs = { basis, tangent_basis };
+  return coeffs;
 }
 
 --- --------------------------------------------------------------------------
@@ -862,7 +870,9 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -4.5*u2 + 4.0*u + 0.5;
   tangent_basis[2] = 4.5*u2 - 5.0*u;
   tangent_basis[3] = -1.5*u2 + 2.0*u - 0.5;
-  return Coeffs(basis, tangent_basis);
+
+  Coeffs coeffs = { basis, tangent_basis };
+  return coeffs;
 }
 
 --- --------------------------------------------------------------------------
@@ -880,7 +890,9 @@ Coeffs evaluateBasis(float u, float u2, float u3)
   tangent_basis[1] = -1.5*u2 + u + 0.5;
   tangent_basis[2] = 1.5*u2 - 2.0*u;
   tangent_basis[3] = -0.5*u2 + u - 0.5;
-  return Coeffs(basis, tangent_basis);
+
+  Coeffs coeffs = { basis, tangent_basis };
+  return coeffs;
 }
 
 --- --------------------------------------------------------------------------

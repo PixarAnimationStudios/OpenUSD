@@ -3662,7 +3662,7 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << " fvarPatchParam.y, 0.0f);\n"
                 << "  float wP[20], wDu[20], wDv[20], wDuu[20], wDuv[20], "
                 << "wDvv[20];\n"
                 << "  OsdEvaluatePatchBasisNormalized(patchType, param,"
@@ -3714,9 +3714,9 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << " fvarPatchParam.y, 0.0f);\n"
                 << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
-                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  float uv[2] = { unnormalized.x, unnormalized.y };\n"
                 << "  OsdPatchParamNormalize(param, uv);\n"
                 << "  vec2 localST = vec2(uv[0], uv[1]);\n";
             break;
@@ -3727,9 +3727,9 @@ static void _EmitFVarAccessor(
             str << "  ivec2 fvarPatchParam = HdGet_fvarPatchParam" 
                 << fvarChannel << "();\n"
                 << "  OsdPatchParam param = OsdPatchParamInit(fvarPatchParam.x,"
-                << " fvarPatchParam.y, 0);\n"
+                << " fvarPatchParam.y, 0.0f);\n"
                 << "  vec2 unnormalized = GetPatchCoord(localIndex).xy;\n"
-                << "  float uv[2] = float[2](unnormalized.x, unnormalized.y);\n"
+                << "  float uv[2] = { unnormalized.x, unnormalized.y };\n"
                 << "  OsdPatchParamNormalizeTriangle(param, uv);\n"
                 << "  vec2 localST = vec2(uv[0], uv[1]);\n";
             break;
