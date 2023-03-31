@@ -1306,8 +1306,9 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
 }
 
 namespace {
+// Note: Utility methods below expect a valid data source handle.
 
-static VtDictionary
+VtDictionary
 _ToDictionary(HdContainerDataSourceHandle const &cds)
 {
     VtDictionary dict;
@@ -1322,13 +1323,9 @@ _ToDictionary(HdContainerDataSourceHandle const &cds)
 
 using _RenderVar = HdRenderSettings::RenderProduct::RenderVar;
 using _RenderVars = std::vector<_RenderVar>;
-static _RenderVars
+_RenderVars
 _ToRenderVars(HdRenderVarVectorSchema vars)
 {
-    if (!vars) {
-        return _RenderVars();
-    }
-
     _RenderVars hdVars;
     const HdVectorDataSourceHandle vds = vars.GetVector();
     const size_t numVars = vds->GetNumElements();
@@ -1339,59 +1336,99 @@ _ToRenderVars(HdRenderVarVectorSchema vars)
             vds->GetElement(idx)));
         
         if (rvSchema) {
-            hdVars.push_back({
-                rvSchema.GetPath()->GetTypedValue(0),
-                rvSchema.GetDataType()->GetTypedValue(0),
-                rvSchema.GetSourceName()->GetTypedValue(0),
-                rvSchema.GetSourceType()->GetTypedValue(0),
-                _ToDictionary(rvSchema.GetNamespacedSettings())
-            });
+            _RenderVar hdVar;
+            if (auto h = rvSchema.GetPath()) {
+                hdVar.varPath = h->GetTypedValue(0);
+            }
+            if (auto h = rvSchema.GetDataType()) {
+                hdVar.dataType = h->GetTypedValue(0);
+            }
+            if (auto h = rvSchema.GetSourceName()) {
+                hdVar.sourceName = h->GetTypedValue(0);
+            }
+            if (auto h = rvSchema.GetSourceType()) {
+                hdVar.sourceType = h->GetTypedValue(0);
+            }
+            if (auto h = rvSchema.GetNamespacedSettings()) {
+                hdVar.namespacedSettings = _ToDictionary(h);
+            }
+            hdVars.push_back(std::move(hdVar));
         }
     }
 
     return hdVars;
 }
 
-static GfRange2f
+GfRange2f
 _ToRange2f(GfVec4f const &v)
 {
     return GfRange2f(GfVec2f(v[0], v[1]), GfVec2f(v[2],v[3]));
 }
 
-static HdRenderSettings::RenderProducts
+HdRenderSettings::RenderProducts
 _ToRenderProducts(HdRenderProductVectorSchema products)
 {
-    HdRenderSettings::RenderProducts hdProducts;
     const HdVectorDataSourceHandle vds = products.GetVector();
-    const size_t numProducts = vds->GetNumElements();
-    hdProducts.reserve(numProducts);
-    for (size_t idx = 0; idx < numProducts; idx++) {
+    if (!vds) {
+        return HdRenderSettings::RenderProducts();
+    }
 
+    const size_t numProducts = vds->GetNumElements();
+    HdRenderSettings::RenderProducts hdProducts;
+    hdProducts.reserve(numProducts);
+
+    for (size_t idx = 0; idx < numProducts; idx++) {
+        
         HdRenderProductSchema rpSchema(HdContainerDataSource::Cast(
             vds->GetElement(idx)));
         
         if (rpSchema) {
-            hdProducts.push_back({
-                rpSchema.GetPath()->GetTypedValue(0),
-                rpSchema.GetType()->GetTypedValue(0),
-                rpSchema.GetName()->GetTypedValue(0),
-                rpSchema.GetResolution()->GetTypedValue(0),
-                _ToRenderVars(rpSchema.GetRenderVars()),
-                rpSchema.GetCameraPrim()->GetTypedValue(0),
-                rpSchema.GetPixelAspectRatio()->GetTypedValue(0),
-                rpSchema.GetAspectRatioConformPolicy()->GetTypedValue(0),
-                rpSchema.GetApertureSize()->GetTypedValue(0),
-                _ToRange2f(rpSchema.GetDataWindowNDC()->GetTypedValue(0)),
-                rpSchema.GetDisableMotionBlur()->GetTypedValue(0),
-                _ToDictionary(rpSchema.GetNamespacedSettings())
-            });
+            HdRenderSettings::RenderProduct hdProd;
+            if (auto h = rpSchema.GetPath()) {
+                hdProd.productPath = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetType()) {
+                hdProd.type = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetName()) {
+                hdProd.name = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetResolution()) {
+                hdProd.resolution = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetRenderVars()) {
+                hdProd.renderVars = _ToRenderVars(h);
+            }
+            if (auto h = rpSchema.GetCameraPrim()) {
+                hdProd.cameraPath = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetPixelAspectRatio()) {
+                hdProd.pixelAspectRatio = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetAspectRatioConformPolicy()) {
+                hdProd.aspectRatioConformPolicy = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetApertureSize()) {
+                hdProd.apertureSize = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetDataWindowNDC()) {
+                hdProd.dataWindowNDC = _ToRange2f(h->GetTypedValue(0));
+            }
+            if (auto h = rpSchema.GetDisableMotionBlur()) {
+                hdProd.disableMotionBlur = h->GetTypedValue(0);
+            }
+            if (auto h = rpSchema.GetNamespacedSettings()) {
+                hdProd.namespacedSettings = _ToDictionary(h);
+            }
+
+            hdProducts.push_back(std::move(hdProd));
         }
     }
 
     return hdProducts;
 }
 
-static VtValue
+VtValue
 _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 {
     HdContainerDataSourceHandle renderSettingsDs =
@@ -1424,7 +1461,7 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 
     if (key == HdRenderSettingsPrimTokens->renderProducts) {
         if (HdRenderProductVectorSchema products =
-            rsSchema.GetRenderProducts()) {
+                rsSchema.GetRenderProducts()) {
             
             return VtValue(_ToRenderProducts(products));
         }
@@ -1457,7 +1494,7 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
     return VtValue();
 }
 
-static VtValue
+VtValue
 _ToOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
     // Convert HdDataSource with material node data to a HdMaterialNode2
     HdMaterialNode2 hdNode2;
@@ -1485,7 +1522,7 @@ _ToOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
     return VtValue(hdNode2);
 }
 
-static VtValue
+VtValue
 _GetSampleFilterResource(HdSceneIndexPrim prim)
 {
     TRACE_FUNCTION();
@@ -1504,7 +1541,7 @@ _GetSampleFilterResource(HdSceneIndexPrim prim)
 }
 
 
-static VtValue
+VtValue
 _GetDisplayFilterResource(HdSceneIndexPrim prim)
 {
     TRACE_FUNCTION();
@@ -1522,7 +1559,6 @@ _GetDisplayFilterResource(HdSceneIndexPrim prim)
     return _ToOutputFilterResource(nodeSchema);
 }
 
-static
 HdInterpolation
 Hd_InterpolationAsEnum(const TfToken &interpolationToken)
 {
@@ -1543,7 +1579,7 @@ Hd_InterpolationAsEnum(const TfToken &interpolationToken)
     return HdInterpolation(-1);
 }
 
-}
+} // anonymous namespace
 
 HdPrimvarDescriptorVector
 HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
