@@ -25,8 +25,7 @@
 #include "pxr/usd/usd/instanceKey.h"
 #include "pxr/usd/usd/resolver.h"
 #include "pxr/usd/pcp/primIndex.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iostream>
 
@@ -140,13 +139,12 @@ Usd_InstanceKey::operator==(const Usd_InstanceKey& rhs) const
 size_t
 Usd_InstanceKey::_ComputeHash() const
 {
-    size_t hash = hash_value(_pcpInstanceKey);
-    for (const Usd_ClipSetDefinition& clipDefs: _clipDefs) {
-        boost::hash_combine(hash, clipDefs.GetHash());
-    }
-    boost::hash_combine(hash, _mask);
-    boost::hash_combine(hash, _loadRules);
-    return hash;
+    return TfHash::Combine(
+        _pcpInstanceKey,
+        _clipDefs,
+        _mask,
+        _loadRules
+    );
 }
 
 std::ostream &

@@ -685,6 +685,15 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(
             Usd.ComputeIncludedPathsFromCollection(query, stage), [])
 
+    def test_HashMembershipQuery(self):
+        self.assertEqual(
+            hash(Usd.UsdCollectionMembershipQuery()),
+            hash(Usd.UsdCollectionMembershipQuery())
+        )
+        self.assertEqual(
+            hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery()),
+            hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery())
+        )
 
 if __name__ == "__main__":
     unittest.main()
