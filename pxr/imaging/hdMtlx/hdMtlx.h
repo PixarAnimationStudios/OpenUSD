@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/token.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hdMtlx/api.h"
 #include <memory>
 #include <set>

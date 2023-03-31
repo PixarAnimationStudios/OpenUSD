@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/imaging/hdMtlx/hdMtlxLibsRegistry.h"
 
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/glslfx.h"
@@ -903,10 +904,10 @@ _GenerateMaterialXShader(
     bool const bindlessTexturesEnabled)
 {
     // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-    mx::FilePathVec libraryFolders;
-    mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-    mx::DocumentPtr stdLibraries = mx::createDocument();
-    mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+    //
+    MtlxLibsRegistry& mtlxLibsRegistry = MtlxLibsRegistry::GetInstance();
+    mx::DocumentPtr stdLibraries = mtlxLibsRegistry.stdLibraries();
+    mx::FileSearchPath searchPath = mtlxLibsRegistry.searchPaths();
 
     // Create the MaterialX Document from the HdMaterialNetwork
     HdSt_MxShaderGenInfo mxHdInfo;
