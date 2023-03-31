@@ -36,11 +36,15 @@ _ReadNamespacedSettings(
     TfTokenVector const& namespaces, 
     VtDictionary *namespacedSettings)
 {
-    std::vector<UsdAttribute> attrs = prim.GetAuthoredAttributes();
+    const std::vector<UsdAttribute> attrs = prim.GetAuthoredAttributes();
+    const TfTokenVector &schemaProps =
+        prim.GetPrimDefinition().GetPropertyNames();
+
     for (UsdAttribute attr: attrs) {
         if (namespaces.empty()) {
-            if (attr.HasFallbackValue()) {
-                // Skip attributes built into schemas.
+            // Skip schema attributes from being aggregated.
+            if (std::find(schemaProps.begin(), schemaProps.end(),
+                          attr.GetBaseName()) != schemaProps.end()) {
                 continue;
             }
         } else {
