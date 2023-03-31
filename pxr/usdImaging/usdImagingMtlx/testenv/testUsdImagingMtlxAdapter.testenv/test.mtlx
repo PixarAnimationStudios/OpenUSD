@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<materialx version="1.38" xmlns:xi="http://www.w3.org/2001/XInclude">
+  <nodegraph name="NG">
+    <texcoord name="texcoord_1" type="vector2" />
+    <image name="image_2" type="color3">
+      <input name="file" type="filename" value="D:\blender\scenes\Untitled.bmp" />
+      <input name="texcoord" type="vector2" nodename="texcoord_1" />
+    </image>
+    <output name="out_image_2" type="color3" nodename="image_2" />
+  </nodegraph>
+  <standard_surface name="standard_surface_3" type="surfaceshader">
+    <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" nodegraph="NG" output="out_image_2" />
+    <input name="diffuse_roughness" type="float" value="0" />
+    <input name="metalness" type="float" value="0.6" />
+  </standard_surface>
+  <surfacematerial name="surfacematerial_4" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="standard_surface_3" />
+  </surfacematerial>
+</materialx>
