@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -22,25 +22,42 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+#include <boost/python/object.hpp>
+#include <boost/python/scope.hpp>
+#include <boost/python/tuple.hpp>
+
+#include "pxr/usd/usdShade/udimUtils.h"
+
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapUsdShadeUdimUtils()
 {
-    TF_WRAP(UsdShadeTypes);
-    TF_WRAP(UsdShadeUtils);
-    TF_WRAP(UsdShadeUdimUtils);
-    TF_WRAP(UsdShadeConnectableAPI);
-    TF_WRAP(UsdShadeCoordSysAPI);
-    TF_WRAP(UsdShadeInput);
-    TF_WRAP(UsdShadeOutput);
-    TF_WRAP(UsdShadeShader);
-    TF_WRAP(UsdShadeShaderDefParser);
-    TF_WRAP(UsdShadeShaderDefUtils);
-    TF_WRAP(UsdShadeNodeDefAPI);
-    TF_WRAP(UsdShadeNodeGraph);
-    TF_WRAP(UsdShadeMaterial); 
-    TF_WRAP(UsdShadeMaterialBindingAPI);
-    TF_WRAP(UsdShadeTokens);
+    class_<UsdShadeUdimUtils>("UdimUtils", no_init)
+        .def("IsUdimIdentifier", 
+            UsdShadeUdimUtils::IsUdimIdentifier,
+            (arg("identifier")))
+        .staticmethod("IsUdimIdentifier")
+
+        .def("ResolveUdimTilePaths", 
+            UsdShadeUdimUtils::ResolveUdimTilePaths,
+            (arg("udimPath"), arg("layer")))
+        .staticmethod("ResolveUdimTilePaths")
+
+        .def("ReplaceUdimPattern",
+            UsdShadeUdimUtils::ReplaceUdimPattern,
+            (arg("identifierWithPattern"), arg("replacement")))
+        .staticmethod("ReplaceUdimPattern")
+
+        .def("ResolveUdimPath",
+            UsdShadeUdimUtils::ResolveUdimPath,
+            (arg("udimPath"), arg("layer")))
+        .staticmethod("ResolveUdimPath")
+        ;
+
 }

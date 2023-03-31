@@ -26,6 +26,7 @@ pxr_library(usdShade
         shaderDefUtils
         nodeGraph
         tokens
+        udimUtils
         utils
 
     PUBLIC_HEADERS
@@ -50,6 +51,7 @@ pxr_library(usdShade
         wrapShaderDefUtils.cpp
         wrapTokens.cpp
         wrapTypes.cpp
+        wrapUdimUtils.cpp
         wrapUtils.cpp
 
     PYMODULE_FILES
@@ -90,6 +92,7 @@ pxr_test_scripts(
     testenv/testUsdShadeNodeGraphs.py
     testenv/testUsdShadeShaders.py
     testenv/testUsdShadeShaderDef.py
+    testenv/testUsdShadeUdimUtils.py
 )
 
 pxr_install_test_dir(
@@ -141,6 +144,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdShadeShaderDef
     DEST testUsdShadeShaderDef
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdShadeUdimUtils
+    DEST testUsdShadeUdimUtils
 )
 
 pxr_register_test(testUsdShadeBinding
@@ -244,5 +252,11 @@ pxr_register_test(testUsdShadeHasConnectableAPI
 pxr_register_test(testUsdShadeConnectability_OldEncoding
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeConnectability"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdShadeUdimUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdShadeUdimUtils"
     EXPECTED_RETURN_CODE 0
 )

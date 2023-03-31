@@ -99,5 +99,32 @@ class TestUsdUtilsDependencies(unittest.TestCase):
         stage.Save()
         UsdUtils.ComputeAllDependencies(stage.GetRootLayer().identifier)
 
+    def test_ComputeAllDependenciesUdims(self):
+        """Test for catching UDIMs with UsdUtils.ComputeAllDependencies.
+        Not included in the main test to keep it cleaner."""
+
+        rootLayer = "computeAllDependenciesUdims/layer.usda"
+        layers, assets, unresolved = \
+            UsdUtils.ComputeAllDependencies(rootLayer)
+
+        self.assertEqual(
+            set(layers), 
+            set([Sdf.Layer.Find(rootLayer)]))
+
+        self.assertEqual(
+            set([os.path.normcase(f) for f in assets]),
+            set([os.path.normcase(
+                    os.path.abspath("computeAllDependenciesUdims/" + f))
+                    for f in ["image_a.1001.exr", 
+                            "image_b.1002.exr", 
+                            "image_c.1003.exr"]]))
+
+        self.assertEqual(
+            set([os.path.normcase(f) for f in unresolved]),
+            set([os.path.normcase(
+                    os.path.abspath("computeAllDependenciesUdims/" + f))
+                    for f in ["image_d.<UDIM>.exr",
+                            "image_e.<UDIM>.exr"]]))
+
 if __name__=="__main__":
     unittest.main()

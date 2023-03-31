@@ -9,6 +9,7 @@ pxr_library(usdUtils
         sdf
         usd
         usdGeom
+        usdShade
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS

@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usd/usdcFileFormat.h"
 #include "pxr/usd/usd/zipFile.h"
+#include "pxr/usd/usdShade/udimUtils.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -692,8 +693,13 @@ public:
             auto &fileAnalyzer = destFilePathAndAnalyzer.second;
 
             if (!fileAnalyzer.GetLayer()) {
-                _fileCopyMap.emplace_back(fileAnalyzer.GetFilePath(),
-                                          destFilePath);
+                const std::string &srcFilePath = fileAnalyzer.GetFilePath();
+                if (UsdShadeUdimUtils::IsUdimIdentifier(srcFilePath)) {
+                    _ResolveUdimPaths(srcFilePath, destFilePath);
+                } else {
+                    _fileCopyMap.emplace_back(srcFilePath, destFilePath);
+                }
+
                 continue;
             }
 
@@ -720,10 +726,17 @@ public:
                 }
 
                 const std::string refAssetPath = 
-                    SdfComputeAssetPathRelativeToLayer(
-                        fileAnalyzer.GetLayer(), ref);
+                        SdfComputeAssetPathRelativeToLayer(
+                            fileAnalyzer.GetLayer(), ref);
+                std::string resolvedRefFilePath;
 
-                std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                // Specially handle UDIM paths
+                if (UsdShadeUdimUtils::IsUdimIdentifier(ref)) {
+                    resolvedRefFilePath = UsdShadeUdimUtils::ResolveUdimPath(
+                        ref, fileAnalyzer.GetLayer());
+                } else {
+                    resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                }
 
                 if (resolvedRefFilePath.empty()) {
                     TF_WARN("Failed to resolve reference @%s@ with computed "
@@ -796,6 +809,26 @@ public:
     }
 
 private:
+    // This function will ensure that all tiles that match the UDIM identifier
+    // contained in src path are correctly added to the file copy map
+    void _ResolveUdimPaths(
+        const std::string &srcFilePath,
+        const std::string &destFilePath) 
+    {
+        // Since the source path should already be pre-resolved,
+        // a proper layer doesn't have to be provided
+        const std::vector<UsdShadeUdimUtils::ResolvedPathAndTile> resolvedPaths =
+            UsdShadeUdimUtils::ResolveUdimTilePaths(srcFilePath, SdfLayerHandle());
+
+        for (const auto & resolvedPath : resolvedPaths) {
+            const std::string destUdimPath = 
+                UsdShadeUdimUtils::ReplaceUdimPattern(
+                    destFilePath, resolvedPath.second);
+            
+            _fileCopyMap.emplace_back(resolvedPath.first, destUdimPath);
+        }
+    }
+
     // This will contain a mapping of SdfLayerRefPtr's mapped to their 
     // desination path inside the destination directory.
     std::vector<LayerAndDestPath> _layerExportMap;
