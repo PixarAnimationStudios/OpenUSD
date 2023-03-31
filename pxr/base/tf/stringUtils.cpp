@@ -64,7 +64,7 @@ using std::vector;
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS, 
-    false, 
+    true, 
     "Allow UTF8 strings as identifiers and prim names");
 
 namespace {
