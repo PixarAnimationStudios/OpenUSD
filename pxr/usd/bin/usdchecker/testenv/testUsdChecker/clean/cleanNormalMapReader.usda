@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    upAxis = "Y"
+    metersPerUnit = 0.01
+    defaultPrim = "World"
+)
+
+def "World"
+{
+    def Material "material"
+    {
+        # No requirements on color readers, identified as such by tracing
+        # connections from PreviewSurface node
+        def Shader "ColorMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        def Shader "NormalMap"
+        {
+            uniform token info:id = "UsdUVTexture"
+            token inputs:sourceColorSpace = "raw"
+            float4 inputs:scale = (2.0, 2.0, 2.0, 1.0)
+            float4 inputs:bias = (-1.0, -1.0, -1.0, 0.0)
+            asset inputs:file = @texture.jpg@
+            float3 outputs:rgb
+        }
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor.connect = </World/material/ColorMap.outputs:rgb>
+            normal3f inputs:normal.connect = </World/material/NormalMap.outputs:rgb>
+        }
+    }
+}
+
