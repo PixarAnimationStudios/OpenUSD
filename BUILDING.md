@@ -95,7 +95,7 @@ Some optional USD components use Python:
 - Python language bindings for the USD C++ API
 - Unit tests using Python
 
-Please refer the [VERSIONS.md](VERSIONS.md) for supported Python versions.
+Please refer to [VERSIONS.md](VERSIONS.md) for supported Python versions.
 
 Support for Python can optionally be disabled by specifying the cmake flag
 `PXR_ENABLE_PYTHON_SUPPORT=FALSE`.
