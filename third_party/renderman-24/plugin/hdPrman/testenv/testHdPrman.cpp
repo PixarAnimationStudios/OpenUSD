@@ -76,6 +76,9 @@ TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, false,
 
 static TfStopwatch timer_prmanRender;
 
+static const GfVec2i _fallbackResolution(512, 512);
+static const TfToken _fallbackConformPolicy(UsdRenderTokens->adjustApertureWidth);
+
 struct HydraSetupCameraInfo {
     SdfPath cameraPath;
     GfVec2i resolution;
@@ -245,6 +248,100 @@ _RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
         "falling back to expandAperture.", usdToken.GetText());
     
     return CameraUtilFit;
+}
+
+void
+PopulateFallbackRenderSpec(
+    std::string const& outputFilename, UsdRenderSpec *renderSpec) 
+{   
+    *renderSpec = {
+        /* products */
+        {
+            UsdRenderSpec::Product {
+                SdfPath("/Render/Products/Fallback"),   // product path
+                TfToken("raster"),                      // type
+                TfToken(outputFilename),                // name
+                SdfPath(),                              // camera path
+                false,                                  // disableMotionBlur
+                _fallbackResolution,                    // resolution
+                1.0f,                                   // PixelAspectRatio
+                _fallbackConformPolicy,                 // aspectRatioConformPolicy 
+                GfVec2f(2.0, 2.0),                      // aperture size
+                GfRange2f(GfVec2f(0.0f), GfVec2f(1.0f)),// data window
+                { 0, 1 },                               // renderVarIndices
+            },
+        },
+        /* renderVars */
+        {
+            UsdRenderSpec::RenderVar {
+                SdfPath("/Render/Vars/Ci"),     // renderVarPath
+                TfToken("color3f"),             // dataType
+                TfToken("Ci")                   // sourceName
+            },
+            UsdRenderSpec::RenderVar {
+                SdfPath("/Render/Vars/Alpha"),  // renderVarPath
+                TfToken("float"),               // dataType
+                TfToken("a")                    // sourceName
+            }
+        }
+    };
+}
+
+// Add Fallback values needed for the test, if they are not already authored.
+void
+PopulateFallbackRenderSettings(
+    UsdStageRefPtr const &stage,
+    std::string const &outputFilename,
+    SdfPath const &sceneCamPath,
+    UsdRenderSettings *settings)
+{
+    fprintf(stdout, "Populate RenderSettings Prim with fallback values.\n");
+    TF_VERIFY(!settings->GetPath().IsEmpty());
+    
+    // Set the fallback Resolution and Aspect Ratio Conform Policy
+    if (!settings->GetResolutionAttr().HasAuthoredValue()) {
+        settings->CreateResolutionAttr(VtValue(_fallbackResolution));
+    }
+    if (!settings->GetAspectRatioConformPolicyAttr().HasAuthoredValue()) {
+        settings->CreateAspectRatioConformPolicyAttr(
+            VtValue(_fallbackConformPolicy));
+    }
+
+    // Set the Camera
+    SdfPathVector cameraTargets; 
+    settings->GetCameraRel().GetForwardedTargets(&cameraTargets);
+    if (cameraTargets.empty()) {
+        settings->GetCameraRel().AddTarget(sceneCamPath);
+    }
+
+    // Check if there are any authored Render Products connected
+    SdfPathVector renderProductTargets; 
+    settings->GetProductsRel().GetForwardedTargets(&renderProductTargets);
+    if (!renderProductTargets.empty()) {
+        return;
+    }
+
+    // Create the fallback Render Product using the outputFilename
+    SdfPath fallbackProductPath("/Render/Products/Fallback");
+    UsdRenderProduct fallbackProduct =
+        UsdRenderProduct::Define(stage, fallbackProductPath);
+    fallbackProduct.CreateProductNameAttr(VtValue(TfToken(outputFilename)));
+    settings->GetProductsRel().AddTarget(fallbackProductPath);
+
+    // Create the fallback Render Vars
+    SdfPath fallbackVarCiPath("/Render/Vars/Ci");
+    UsdRenderVar fallbackVarCi =
+        UsdRenderVar::Define(stage, fallbackVarCiPath);
+    fallbackVarCi.CreateDataTypeAttr(VtValue(TfToken("color3f")));
+    fallbackVarCi.CreateSourceNameAttr(VtValue(std::string("Ci")));
+    fallbackProduct.GetOrderedVarsRel().AddTarget(fallbackVarCiPath);
+
+    SdfPath fallbackVarAlphaPath("/Render/Vars/Alpha");
+    UsdRenderVar fallbackVarAlpha =
+        UsdRenderVar::Define(stage, fallbackVarAlphaPath);
+    fallbackVarAlpha.CreateDataTypeAttr(VtValue(TfToken("float")));
+    fallbackVarAlpha.CreateSourceNameAttr(VtValue(std::string("a")));
+    fallbackProduct.GetOrderedVarsRel().AddTarget(fallbackVarAlphaPath);
 }
 
 VtDictionary
@@ -670,6 +767,12 @@ int main(int argc, char *argv[])
                 settings.GetPath().GetText());
     }
 
+    // If we want to use the Render Settings, make sure it is fully populated
+    if (UseRenderSettingsPrim()) {
+        PopulateFallbackRenderSettings(
+            stage, outputFilename, sceneCamPath, &settings);
+    }
+
     UsdRenderSpec renderSpec;
     const TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
     if (!UseRenderSettingsPrim()) {
@@ -681,46 +784,7 @@ int main(int argc, char *argv[])
         } else {
             // Otherwise, provide a built-in render specification.
             fprintf(stdout, "Create the Fallback UsdRenderSpec.\n");
-            renderSpec = {
-                /* products */
-                {
-                    UsdRenderSpec::Product {
-                        // product path
-                        SdfPath("/Render/Products/Fallback"),
-                        TfToken("raster"),
-                        TfToken(outputFilename),
-                        // camera path
-                        SdfPath(),
-                        // disableMotionBlur
-                        false,
-                        GfVec2i(512,512),
-                        1.0f,
-                        // aspectRatioConformPolicy
-                        //
-                        // Match default value of
-                        // UsdImagingDelegate::_appWindowPolicy -
-                        // which was used to generate the baselines.
-                        UsdRenderTokens->adjustApertureWidth,
-                        // aperture size
-                        GfVec2f(2.0, 2.0),
-                        // data window
-                        GfRange2f(GfVec2f(0.0f), GfVec2f(1.0f)),
-                        // renderVarIndices
-                        { 0, 1 },
-                    },
-                },
-                /* renderVars */
-                {
-                    UsdRenderSpec::RenderVar {
-                        SdfPath("/Render/Vars/Ci"), TfToken("color3f"),
-                        TfToken("Ci")
-                    },
-                    UsdRenderSpec::RenderVar {
-                        SdfPath("/Render/Vars/Alpha"), TfToken("float"),
-                        TfToken("a")
-                    }
-                }
-            };
+            PopulateFallbackRenderSpec(outputFilename, &renderSpec);
         }
     }
 
