@@ -53,6 +53,8 @@
 
 #include "pxr/base/gf/matrix4f.h"
 
+#include "pxr/base/arch/hash.h"
+
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -566,6 +568,38 @@ _GetInstanceCount(HdStDrawItemInstance const * drawItemInstance,
     return instanceCount;
 }
 
+HdStBufferResourceSharedPtr
+_AllocateTessFactorsBuffer(
+    HdStDrawItem const * drawItem,
+    HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    if (!drawItem) { return nullptr; }
+
+    HdStBufferArrayRangeSharedPtr indexBar(
+        std::static_pointer_cast<HdStBufferArrayRange>(
+                drawItem->GetTopologyRange()));
+    if (!indexBar) { return nullptr; }
+
+    HdStBufferResourceSharedPtr indexBuffer =
+         indexBar->GetResource(HdTokens->indices);
+    if (!indexBuffer) { return nullptr; }
+
+    HgiBufferHandle const & indexBufferHandle = indexBuffer->GetHandle();
+    if (!indexBufferHandle) { return nullptr; }
+
+    size_t const byteSizeOfTuple =
+        HdDataSizeOfTupleType(indexBuffer->GetTupleType());
+    size_t const byteSizeOfResource =
+        indexBufferHandle->GetByteSizeOfResource();
+
+    size_t const numElements = byteSizeOfResource / byteSizeOfTuple;
+    size_t const numTessFactorsPerElement = 6;
+
+    return resourceRegistry->RegisterBufferResource(
+        HdTokens->tessFactors,
+        HdTupleType{HdTypeHalfFloat, numElements*numTessFactorsPerElement});
+}
+
 } // annonymous namespace
 
 void
@@ -810,6 +844,16 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                                                  numDrawItemInstances,
                                                  traits.numUInt32);
 
+    // allocate tessFactors buffer for Metal tessellation
+    if (useMetalTessellation &&
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->IsPrimTypePatches()) {
+
+        _tessFactorsBuffer = _AllocateTessFactorsBuffer(
+                                _drawItemInstances[0]->GetDrawItem(),
+                                resourceRegistry);
+    }
+
     // add drawing resource views
     _AddDrawResourceViews(_dispatchBuffer, traits);
 
@@ -995,7 +1039,9 @@ struct _BindingState : public _DrawItemState
 
     // Core resources plus additional resources needed for drawing.
     void GetBindingsForDrawing(
-                HgiResourceBindingsDesc * bindingsDesc) const;
+                HgiResourceBindingsDesc * bindingsDesc,
+                HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+                bool bindTessFactors) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
     HdSt_ResourceBinder const & binder;
@@ -1026,7 +1072,9 @@ _BindingState::GetBindingsForViewTransformation(
 
 void
 _BindingState::GetBindingsForDrawing(
-    HgiResourceBindingsDesc * bindingsDesc) const
+    HgiResourceBindingsDesc * bindingsDesc,
+    HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+    bool bindTessFactors) const
 {
     GetBindingsForViewTransformation(bindingsDesc);
 
@@ -1039,6 +1087,21 @@ _BindingState::GetBindingsForDrawing(
     binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
+
+    if (tessFactorsBuffer) {
+        binder.GetBufferBindingDesc(bindingsDesc,
+                                    HdTokens->tessFactors,
+                                    tessFactorsBuffer,
+                                    tessFactorsBuffer->GetOffset());
+        if (bindTessFactors) {
+            binder.GetBufferBindingDesc(bindingsDesc,
+                                        HdTokens->tessFactors,
+                                        tessFactorsBuffer,
+                                        tessFactorsBuffer->GetOffset());
+            HgiBufferBindDesc &tessFactorBuffDesc = bindingsDesc->buffers.back();
+            tessFactorBuffDesc.resourceType = HgiBindResourceTypeTessFactors;
+        }
+    }
 
     for (HdStShaderCodeSharedPtr const & shader : shaders) {
         HdStBufferArrayRangeSharedPtr shaderBar =
@@ -1202,9 +1265,10 @@ _GetDrawPipeline(
     HgiShaderProgramHandle const & programHandle =
                                         state.glslProgram->GetProgram();
 
-    uint64_t const hash = TfHash::Combine(
-        programHandle.Get(),
-        renderPassState->GetGraphicsPipelineHash());
+    static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
+    uint64_t hash = salt;
+    hash = TfHash::Combine(hash, programHandle.Get());
+    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);
@@ -1212,11 +1276,61 @@ _GetDrawPipeline(
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
 
-        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
                                                   state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+
+        Hgi* hgi = resourceRegistry->GetHgi();
+        HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
+
+        pipelineInstance.SetValue(
+            std::make_shared<HgiGraphicsPipelineHandle>(pso));
+    }
+
+    return pipelineInstance.GetValue();
+}
+
+static
+HgiGraphicsPipelineSharedPtr
+_GetPTCSPipeline(
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    _BindingState const & state)
+{
+    // PTCS pipeline is compatible as long as the shader and
+    // pipeline state are the same.
+    HgiShaderProgramHandle const & programHandle =
+                                        state.glslProgram->GetProgram();
+
+    static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
+    uint64_t hash = salt;
+    hash = TfHash::Combine(hash, programHandle.Get());
+    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
+
+    HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
+        resourceRegistry->RegisterGraphicsPipeline(hash);
+
+    if (pipelineInstance.IsFirstInstance()) {
+        HgiGraphicsPipelineDesc pipeDesc;
+
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
+                                                  state.geometricShader);
+
+        pipeDesc.rasterizationState.rasterizerEnabled = false;
+        pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
+        pipeDesc.multiSampleState.alphaToCoverageEnable = false;
+        pipeDesc.depthState.depthWriteEnabled = false;
+        pipeDesc.depthState.depthTestEnabled = false;
+        pipeDesc.depthState.stencilTestEnabled = false;
+        pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
+        pipeDesc.multiSampleState.multiSampleEnable = false;
+
+        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+        pipeDesc.tessellationState.tessFactorMode =
+            HgiTessellationState::TessControl;
 
         Hgi* hgi = resourceRegistry->GetHgi();
         HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
@@ -1244,6 +1358,14 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     Hgi *hgi = resourceRegistry->GetHgi();
     HgiCapabilities const *capabilities = hgi->GetCapabilities();
+
+    if (_tessFactorsBuffer) {
+        // Metal tessellation tessFactors are computed by PTCS.
+        _ExecutePTCS(gfxCmds, renderPassState, resourceRegistry);
+
+        // Finish computing tessFactors before drawing.
+        gfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
+    }
 
     //
     // If an indirect command buffer was created in the Prepare phase then
@@ -1279,7 +1401,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         gfxCmds->BindPipeline(psoHandle);
 
         HgiResourceBindingsDesc bindingsDesc;
-        state.GetBindingsForDrawing(&bindingsDesc);
+        state.GetBindingsForDrawing(&bindingsDesc,
+                _tessFactorsBuffer, /*bindTessFactors=*/true);
 
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
@@ -1470,7 +1593,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
 
     HgiResourceBindingsDesc bindingsDesc;
-    state.GetBindingsForDrawing(&bindingsDesc);
+    state.GetBindingsForDrawing(&bindingsDesc,
+            _tessFactorsBuffer, /*bindTessFactors=*/true);
 
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
@@ -1630,6 +1754,72 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
     if (IsEnabledGPUCountVisibleInstances()) {
         _EndGPUCountVisibleInstances(resourceRegistry, &_numVisibleItems);
+    }
+
+    hgi->DestroyResourceBindings(&resourceBindings);
+}
+
+
+void
+HdSt_PipelineDrawBatch::_ExecutePTCS(
+        HgiGraphicsCmds *ptcsGfxCmds,
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry)
+{
+    TRACE_FUNCTION();
+
+    if (!TF_VERIFY(!_drawItemInstances.empty())) return;
+
+    if (!TF_VERIFY(_dispatchBuffer)) return;
+
+    if (_HasNothingToDraw()) return;
+
+    HgiCapabilities const *capabilities =
+        resourceRegistry->GetHgi()->GetCapabilities();
+
+    // Drawing can be either direct or indirect. For either case,
+    // the drawing batch and drawing program are prepared to resolve
+    // drawing coordinate state indirectly, i.e. from buffer data.
+    bool const drawIndirect =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
+    _DrawingProgram & program = _GetDrawingProgram(renderPassState,
+                                                   resourceRegistry);
+    if (!TF_VERIFY(program.IsValid())) return;
+
+    _BindingState state(
+            _drawItemInstances.front()->GetDrawItem(),
+            _dispatchBuffer,
+            program.GetBinder(),
+            program.GetGLSLProgram(),
+            program.GetComposedShaders(),
+            program.GetGeometricShader());
+
+    Hgi * hgi = resourceRegistry->GetHgi();
+
+    HgiGraphicsPipelineSharedPtr const & psoTess =
+        _GetPTCSPipeline(renderPassState,
+                         resourceRegistry,
+                         state);
+
+    HgiGraphicsPipelineHandle psoTessHandle = *psoTess.get();
+    ptcsGfxCmds->BindPipeline(psoTessHandle);
+
+    HgiResourceBindingsDesc bindingsDesc;
+    state.GetBindingsForDrawing(&bindingsDesc,
+            _tessFactorsBuffer, /*bindTessFactors=*/false);
+
+    HgiResourceBindingsHandle resourceBindings =
+            hgi->CreateResourceBindings(bindingsDesc);
+    ptcsGfxCmds->BindResources(resourceBindings);
+
+    HgiVertexBufferBindingVector bindings;
+    _GetVertexBufferBindingsForDrawing(&bindings, state);
+    ptcsGfxCmds->BindVertexBuffers(bindings);
+
+    if (drawIndirect) {
+        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);
+    } else {
+        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
     }
 
     hgi->DestroyResourceBindings(&resourceBindings);

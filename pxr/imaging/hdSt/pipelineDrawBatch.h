@@ -156,6 +156,11 @@ private:
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);
 
+    void _ExecutePTCS(
+            HgiGraphicsCmds *ptcsGfxCmds,
+            HdStRenderPassStateSharedPtr const & renderPassState,
+            HdStResourceRegistrySharedPtr const & resourceRegistry);
+
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
@@ -165,6 +170,8 @@ private:
 
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
+
+    HdStBufferResourceSharedPtr _tessFactorsBuffer;
 
     std::vector<uint32_t> _drawCommandBuffer;
     bool _drawCommandBufferDirty;
