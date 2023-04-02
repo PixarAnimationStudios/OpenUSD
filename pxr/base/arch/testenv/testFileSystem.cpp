@@ -219,7 +219,7 @@ int main()
     mfm.get()[0] = 'T'; mfm.get()[2] = 's';
     ARCH_AXIOM(memcmp("Test", mfm.get(), strlen("Test")) == 0);
     mfm.reset();
-    ArchUnlinkFile(firstName.c_str());
+    ARCH_AXIOM(ArchUnlinkFile(firstName.c_str()) == 0);
 
     // Test ArchPWrite and ArchPRead.
     int64_t len = strlen(testContent);
@@ -235,6 +235,8 @@ int main()
     ARCH_AXIOM(ArchPRead(firstFile, buf2.get(), strlen("written in a"),
                      9/*index of 'written in a'*/) == strlen("written in a"));
     ARCH_AXIOM(memcmp("written in a", buf2.get(), strlen("written in a")) == 0);
+    fclose(firstFile);
+    ARCH_AXIOM(ArchUnlinkFile(firstName.c_str()) == 0);
 
     // create and remove a tmp subdir
     std::string retpath;
