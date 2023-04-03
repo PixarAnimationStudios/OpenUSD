@@ -70,7 +70,6 @@ class TfToken;
 /// as opposed to just passing \c caller).
 ///
 /// \note \c TfStringPrintf() is just a wrapper for \c ArchStringPrintf().
-///
 TF_API
 std::string TfStringPrintf(const char *fmt, ...)
 #ifndef doxygen
