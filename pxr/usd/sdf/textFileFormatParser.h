@@ -44,28 +44,30 @@ yy_buffer_state* textFileFormatYy_scan_buffer(char* base, yy_size_t size, yyscan
 yy_buffer_state* textFileFormatUtf8Yy_scan_buffer(char* base, yy_size_t size, yyscan_t yyscanner);
 
 // Generated bison symbols.
-int textFileFormatYyparse(Sdf_TextParserContext *context);
+int textFileFormatYyparse(PXR_NS::Sdf_TextParserContext *context);
 int textFileFormatYylex_init(yyscan_t *yyscanner);
 int textFileFormatYylex_destroy(yyscan_t yyscanner);
 yy_buffer_state *textFileFormatYy_scan_string(const char* str, yyscan_t yyscanner);
 yy_buffer_state *textFileFormatYy_scan_bytes(const char* str, size_t len, 
                                    yyscan_t yyscanner);
 void textFileFormatYy_delete_buffer(yy_buffer_state *b, yyscan_t yyscanner);
-void textFileFormatYyerror(Sdf_TextParserContext* context, const char* s);
-void textFileFormatYyset_extra(Sdf_TextParserContext *context, 
+void textFileFormatYyerror(PXR_NS::Sdf_TextParserContext* context, const char* s);
+void textFileFormatYyset_extra(PXR_NS::Sdf_TextParserContext *context, 
                              yyscan_t yyscanner);
 
 // Generated bison symbols for UTF8 version of the parser
-int textFileFormatUtf8Yyparse(Sdf_TextParserContext *context);
+int textFileFormatUtf8Yyparse(PXR_NS::Sdf_TextParserContext *context);
 int textFileFormatUtf8Yylex_init(yyscan_t *yyscanner);
 int textFileFormatUtf8Yylex_destroy(yyscan_t yyscanner);
 yy_buffer_state* textFileFormatUtf8Yy_scan_string(const char* str, yyscan_t yyscanner);
 yy_buffer_state* textFileFormatUtf8Yy_scan_bytes(const char* str, int len, 
                                     yyscan_t yyscanner);
 void textFileFormatUtf8Yy_delete_buffer(yy_buffer_state* b, yyscan_t yyscanner);
-void textFileFormatUtf8Yyerror(Sdf_TextParserContext *context, const char *s);
-void textFileFormatUtf8Yyset_extra(Sdf_TextParserContext *context, 
+void textFileFormatUtf8Yyerror(PXR_NS::Sdf_TextParserContext *context, const char *s);
+void textFileFormatUtf8Yyset_extra(PXR_NS::Sdf_TextParserContext *context, 
                              yyscan_t yyscanner);
+
+PXR_NAMESPACE_OPEN_SCOPE
 
 // Helper class for generating/managing the buffer used by flex.
 //
@@ -77,7 +79,7 @@ void textFileFormatUtf8Yyset_extra(Sdf_TextParserContext *context,
 struct Sdf_MemoryFlexBuffer : public boost::noncopyable
 {
 public:
-    Sdf_MemoryFlexBuffer(const std::shared_ptr<PXR_NS::ArAsset>& asset,
+    Sdf_MemoryFlexBuffer(const std::shared_ptr<ArAsset>& asset,
                          const std::string& name, yyscan_t scanner);
     ~Sdf_MemoryFlexBuffer();
 
@@ -99,8 +101,8 @@ Sdf_ParseLayer(
     const std::string& magicId,
     const std::string& versionString,
     bool metadataOnly,
-    PXR_NS::SdfDataRefPtr data,
-    PXR_NS::SdfLayerHints *hints);
+    SdfDataRefPtr data,
+    SdfLayerHints *hints);
 
 /// Parse a layer text string into an SdfData
 bool
@@ -108,7 +110,9 @@ Sdf_ParseLayerFromString(
     const std::string & layerString, 
     const std::string & magicId,
     const std::string & versionString,
-    PXR_NS::SdfDataRefPtr data,
-    PXR_NS::SdfLayerHints *hints);
+    SdfDataRefPtr data,
+    SdfLayerHints *hints);
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

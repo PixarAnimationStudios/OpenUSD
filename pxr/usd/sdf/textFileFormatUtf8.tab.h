@@ -119,7 +119,7 @@ int textFileFormatUtf8Yyparse ();
 #endif
 #else /* ! YYPARSE_PARAM */
 #if defined __STDC__ || defined __cplusplus
-int textFileFormatUtf8Yyparse (Sdf_TextParserContext *context);
+int textFileFormatUtf8Yyparse (PXR_NS::Sdf_TextParserContext *context);
 #else
 int textFileFormatUtf8Yyparse ();
 #endif

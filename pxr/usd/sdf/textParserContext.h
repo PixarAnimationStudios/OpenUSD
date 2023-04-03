@@ -47,10 +47,11 @@
 // Lexical scanner type.
 typedef void *yyscan_t;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // This class contains the global state while parsing an sdf file.
 // It contains the data structures that we use to create the scene description
 // from the file.
-
 class Sdf_TextParserContext {
 public:
     // Constructor.
@@ -62,80 +63,80 @@ public:
 
     // State for layer refs, in general
     std::string layerRefPath;
-    PXR_NS::SdfLayerOffset layerRefOffset;
+    SdfLayerOffset layerRefOffset;
 
     // State for sublayers
     std::vector<std::string> subLayerPaths;
 
     // State for sublayer offsets
-    std::vector<PXR_NS::SdfLayerOffset> subLayerOffsets;
+    std::vector<SdfLayerOffset> subLayerOffsets;
 
     // String list currently being built
-    std::vector<PXR_NS::TfToken> nameVector;
+    std::vector<TfToken> nameVector;
 
-    PXR_NS::SdfTimeSampleMap timeSamples;
+    SdfTimeSampleMap timeSamples;
     double timeSampleTime;
 
-    PXR_NS::SdfPath savedPath;
+    SdfPath savedPath;
 
     // Whether the current relationship target being parsed is allowed to
     // have data like relational attributes.
     bool relParsingAllowTargetData;
     // relationship target paths that will be saved in a list op
     // (use a boost::optional to track whether we have seen an opinion at all.)
-    boost::optional<PXR_NS::SdfPathVector> relParsingTargetPaths;
+    boost::optional<SdfPathVector> relParsingTargetPaths;
     // relationship target paths that will be appended to the relationship's
     // list of target children.
-    PXR_NS::SdfPathVector relParsingNewTargetChildren;
+    SdfPathVector relParsingNewTargetChildren;
 
     // helpers for connection path parsing
-    PXR_NS::SdfPathVector connParsingTargetPaths;
+    SdfPathVector connParsingTargetPaths;
     bool connParsingAllowConnectionData;
 
     // helpers for inherit path parsing
-    PXR_NS::SdfPathVector inheritParsingTargetPaths;
+    SdfPathVector inheritParsingTargetPaths;
 
     // helpers for specializes path parsing
-    PXR_NS::SdfPathVector specializesParsingTargetPaths;
+    SdfPathVector specializesParsingTargetPaths;
 
     // helpers for reference parsing
-    PXR_NS::SdfReferenceVector referenceParsingRefs;
+    SdfReferenceVector referenceParsingRefs;
 
     // helpers for payload parsing
-    PXR_NS::SdfPayloadVector payloadParsingRefs;
+    SdfPayloadVector payloadParsingRefs;
 
     // helper for relocates parsing
-    PXR_NS::SdfRelocatesMap relocatesParsingMap;
+    SdfRelocatesMap relocatesParsingMap;
 
     // helpers for generic metadata
-    PXR_NS::TfToken genericMetadataKey;
-    PXR_NS::SdfListOpType listOpType;
+    TfToken genericMetadataKey;
+    SdfListOpType listOpType;
 
     // The value parser context
-    PXR_NS::Sdf_ParserValueContext values;
+    Sdf_ParserValueContext values;
 
     // Last parsed value
-    PXR_NS::VtValue currentValue;
+    VtValue currentValue;
 
     // Vector of dictionaries used to parse nested dictionaries.  
     // The first element in the vector contains the last parsed dictionary.
-    std::vector<PXR_NS::VtDictionary> currentDictionaries;
+    std::vector<VtDictionary> currentDictionaries;
 
     bool seenError;
 
     bool custom;
-    PXR_NS::SdfSpecifier specifier;
-    PXR_NS::SdfDataRefPtr data;
-    PXR_NS::SdfPath path;
-    PXR_NS::TfToken typeName;
-    PXR_NS::VtValue variability;
-    PXR_NS::VtValue assoc;
+    SdfSpecifier specifier;
+    SdfDataRefPtr data;
+    SdfPath path;
+    TfToken typeName;
+    VtValue variability;
+    VtValue assoc;
 
     // Should we only read metadata from the file?
     bool metadataOnly;
 
     // Hints to fill in about the layer's contents.
-    PXR_NS::SdfLayerHints layerHints;
+    SdfLayerHints layerHints;
 
     // Stack for the child names of all the prims currently being parsed
     // For instance if we're currently parsing /A/B then this vector
@@ -143,10 +144,10 @@ public:
     //    names of the root prims
     //    names of A's children
     //    names of B's children.
-    std::vector<std::vector<PXR_NS::TfToken> > nameChildrenStack;
+    std::vector<std::vector<TfToken> > nameChildrenStack;
 
     // Stack for the property names of all the objects currently being parsed
-    std::vector<std::vector<PXR_NS::TfToken> > propertiesStack;
+    std::vector<std::vector<TfToken> > propertiesStack;
 
     // Stack of names of variant sets  being built.
     std::vector<std::string> currentVariantSetNames;
@@ -159,5 +160,7 @@ public:
     // Used by flex for reentrant parsing
     yyscan_t scanner;
 };
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_TEXT_PARSER_CONTEXT_H

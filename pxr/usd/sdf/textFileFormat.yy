@@ -1220,7 +1220,7 @@ _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context)
 // Make this re-entrant
 %define api.pure
 %lex-param { yyscan_t yyscanner }
-%parse-param { Sdf_TextParserContext *context }
+%parse-param { PXR_NS::Sdf_TextParserContext *context }
 
 //--------------------------------------------------------------------
 // Define our tokens and types
