@@ -63,6 +63,13 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// environment setting for defaulting back to standard ASCII rules for 
+// identifiers and prim names.  By default this value is true indicating 
+// that Unicode processing paths will be used on UTF-8 character sequences 
+// to determine identifier validity.  In addition, if this value is true, 
+// slightly different rules will be used to evaluate generic identifiers 
+// vs. prim names.  Setting this value to false will fallback to original
+// ASCII identifier rules.
 TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS, 
     true, 
     "Allow UTF8 strings as identifiers and prim names");
@@ -70,16 +77,14 @@ TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS,
 namespace {
     bool _IsASCIIValue(const char& c)
     {
-        return(static_cast<int>(c) >=0 && static_cast<int>(c) <=127 );
+        return (c & (1<<7)) == 0;
     }
 
     bool _IsInASCIIValueRange(const std::string& str)
     {
-        for(std::string::const_iterator it = str.begin(); 
-            it != str.end(); it++)
+        for (const char &c : str)
         {
-            if(static_cast<int>(*it) < 0 
-                || static_cast<int>(*it) > 127)
+            if ((c & (1<<7)) != 0)
             {
                 return false;
             }
@@ -834,7 +839,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         l = *lcur, r = *rcur;
         // If they are letters that differ disregarding case, we're done.
         // but only if they are ASCII (i.e., the high bit is not set)
-        if ((((l & (1<<7)) == 0) && ((r & (1<<7)) == 0)) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
+        if (_IsASCIIValue(l) && _IsASCIIValue(r) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }

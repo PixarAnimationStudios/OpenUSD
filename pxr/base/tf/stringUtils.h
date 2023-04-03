@@ -48,15 +48,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// environment setting for defaulting back to standard ASCII rules for 
-// identifiers and prim names by default this value is false indicating 
-// that normal USD processing paths will parse and determine identifier
-// validity.  If this value is set to true, Unicode processing paths
-// will be used on UTF-8 character sequences to determine identifier
-// validity.  In addition, if this value is true, slightly different
-// rules will be used to evaluate generic identifiers vs. prim names.
-TF_API extern TfEnvSetting<bool> TF_UTF8_IDENTIFIERS;
-
 class TfToken;
 
 /// \addtogroup group_tf_String

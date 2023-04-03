@@ -322,7 +322,7 @@ public:
     /// Return this prim's property names (attributes and relationships) that
     /// have authored scene description, ordered according to the strongest
     /// propertyOrder statement in scene description if one exists, otherwise
-    /// ordered according to TfDictionaryLessTha.
+    /// ordered according to TfDictionaryLessThan.
     /// 
     /// If a valid \p predicate is passed in, then only the authored properties 
     /// whose names pass the predicate are included in the result. This is 

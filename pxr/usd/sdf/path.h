@@ -809,11 +809,6 @@ public:
     /// Returns whether \p name is a legal prim name for any path component.
     SDF_API static bool IsValidPrimName(const std::string& name);
 
-    /// Returns whether \p name is a legal prim name for any path component.
-    /// This method uses the value of \p utf8 to determine which rules to
-    /// use to validate, regardless of the value of TF_UTF8_IDENTIFIERS.
-    SDF_API static bool IsValidPrimName(const std::string& name, bool utf8);
-
     /// Makes a valid prim name from the given input string \p name.
     /// Valid prim names include sequences of characters within the
     /// XID_Start and XID_Continue classes.  Note this is different than

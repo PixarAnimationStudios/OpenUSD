@@ -1833,13 +1833,7 @@ SdfPath::IsValidIdentifier(const std::string &name)
 bool
 SdfPath::IsValidPrimName(const std::string& name)
 {
-    return SdfPath::IsValidPrimName(name, UseUTF8Identifiers());
-}
-
-bool
-SdfPath::IsValidPrimName(const std::string& name, bool utf8)
-{
-    if (utf8)
+    if (UseUTF8Identifiers())
     {
         // use unicode utils to validate the prim name
         return TfUnicodeUtils::IsValidUTF8PrimName(name,

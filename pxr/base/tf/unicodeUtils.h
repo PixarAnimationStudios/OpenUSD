@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -65,7 +65,15 @@ namespace TfUnicodeUtils {
     /// 1, 2, 3, or 4 bytes.  This iterator takes care of iterating the necessary characters in a string
     /// and extracing the Unicode code point of each UTF-8 encoded character in the sequence.
     ///
-    class utf8_const_iterator : public std::iterator <std::forward_iterator_tag, uint32_t> {
+    class utf8_const_iterator {
+
+    public:
+
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = uint32_t;
+        using difference_type = ptrdiff_t;
+        using pointer = uint32_t*;
+        using reference = uint32_t&;
 
     public:
 

@@ -243,7 +243,7 @@ int main()
     testPaths(bad, 1);
 
     printf("Testing path depending on TF_UTF8_IDENTIFIERS\n");
-    if (TfGetEnvSetting(TF_UTF8_IDENTIFIERS))
+    if (UseUTF8Identifiers())
     {
         // the test foo{1=x} is not valid under original
         // rules, even though the test case passed
