@@ -37,26 +37,35 @@ struct yy_buffer_state;
 // Lexical scanner type.
 typedef void *yyscan_t;
 
+PXR_NAMESPACE_OPEN_SCOPE
+
 // Lexical scanner value type.
 struct Sdf_PathLexerValue {
-    PXR_NS::TfToken token;
-    PXR_NS::SdfPath path;
+    TfToken token;
+    SdfPath path;
 };
-#define YYSTYPE Sdf_PathLexerValue
 
-typedef std::vector< std::pair<PXR_NS::TfToken, 
-                               PXR_NS::TfToken> > Sdf_PathVariantSelections;
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#define YYSTYPE PXR_NS::Sdf_PathLexerValue
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+typedef std::vector< std::pair<TfToken, 
+                               TfToken> > Sdf_PathVariantSelections;
 
 // Lexical scanner context.
 struct Sdf_PathParserContext {
-    PXR_NS::SdfPath path;
+    SdfPath path;
     std::vector<Sdf_PathVariantSelections> variantSelectionStack;
     std::string errStr;
     yyscan_t scanner;
 };
 
+PXR_NAMESPACE_CLOSE_SCOPE
+
 // Generated bison symbols.
-int pathYyparse(Sdf_PathParserContext *context);
+int pathYyparse(PXR_NS::Sdf_PathParserContext *context);
 int pathYylex_init(yyscan_t *yyscanner);
 int pathYylex_destroy(yyscan_t yyscanner);
 yy_buffer_state *pathYy_scan_string(const char* str, yyscan_t yyscanner);
@@ -65,7 +74,7 @@ yy_buffer_state *pathYy_scan_bytes(const char* str, size_t len,
 void pathYy_delete_buffer(yy_buffer_state *b, yyscan_t yyscanner);
 
 // Generated bison symbols for UTF8 version of the parser
-int pathUtf8Yyparse(Sdf_PathParserContext *context);
+int pathUtf8Yyparse(PXR_NS::Sdf_PathParserContext *context);
 int pathUtf8Yylex_init(yyscan_t *yyscanner);
 int pathUtf8Yylex_destroy(yyscan_t yyscanner);
 yy_buffer_state* pathUtf8Yy_scan_string(const char* str, yyscan_t yyscanner);
