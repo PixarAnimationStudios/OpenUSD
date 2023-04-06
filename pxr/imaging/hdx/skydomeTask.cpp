@@ -179,7 +179,8 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
 
     // Get the viewport size
-    GfVec4i viewport = hdStRenderPassState->ComputeViewport(gfxCmdsDesc);
+    GfVec4i viewport = hdStRenderPassState->ComputeViewport(
+        gfxCmdsDesc, /* flip = */ _GetHgi()->GetAPIName() == HgiTokens->OpenGL);
 
     // Get the Color/Depth and Color/Depth Resolve Textures from the gfxCmdsDesc
     // so that the fullscreenShader can use them to create the appropriate
