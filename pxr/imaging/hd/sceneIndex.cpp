@@ -61,9 +61,7 @@ HdSceneIndexBase::_SendPrimsAdded(
             (*it)->PrimsAdded(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
-            ++it;
-            _observers.erase(it2);
+            it = _observers.erase(it);
         }
     }
 }
@@ -81,9 +79,7 @@ HdSceneIndexBase::_SendPrimsRemoved(
             (*it)->PrimsRemoved(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
-            ++it;
-            _observers.erase(it2);
+            it = _observers.erase(it);
         }
     }
 }
@@ -101,9 +97,7 @@ HdSceneIndexBase::_SendPrimsDirtied(
             (*it)->PrimsDirtied(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
-            ++it;
-            _observers.erase(it2);
+            it = _observers.erase(it);
         }
     }
 }
@@ -138,9 +132,7 @@ HdSceneIndexNameRegistry::GetRegisteredNames()
             result.push_back(it->first);
             ++it;
         } else {
-            _NamedInstanceMap::const_iterator it2 = it;
-            ++it;
-            _namedInstances.erase(it2);
+            it = _namedInstances.erase(it);
         }
     }
 
