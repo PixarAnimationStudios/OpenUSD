@@ -284,7 +284,7 @@ public:
     const_iterator begin() const;
     HD_API
     const_iterator end() const;
-    
+
     /// True if and only if locator or any of its descendants is
     /// in the set (closed under descendancy).
     ///
@@ -324,15 +324,91 @@ public:
         const HdDataSourceLocator &oldPrefix,
         const HdDataSourceLocator &newPrefix) const;
 
+    class IntersectionIterator;
+    class IntersectionView;
+
+    /// Returns intersection with a locator as a range-like object so that it
+    /// can be used in a for-loop.
+    ///
+    /// Every element in the intersection has locator as a prefix.
+    ///
+    /// Examples:
+    /// Intersection of { primvars:color } with primvars is
+    ///                 { primvars:color }.
+    /// Intersection of { primvars:color } with primvars:color:interpolation is
+    ///                 { primvars:color:interpolation }.
+    ///
+    HD_API
+    IntersectionView Intersection(const HdDataSourceLocator &locator) const;
+
 private:
     // Sort and uniquify it.
     void _Normalize();
 
     void _InsertAndDeleteSuffixes(_Locators::iterator *position,
                                   const HdDataSourceLocator &locator);
+
+    const_iterator _FirstIntersection(const HdDataSourceLocator &locator) const;
+
     // Lexicographically sorted minimal list of locators generating
     // the set.
     _Locators _locators;
+};
+
+class HdDataSourceLocatorSet::IntersectionIterator
+{
+public:
+    inline IntersectionIterator(const bool isFirst,
+                                const const_iterator &iterator,
+                                const const_iterator &end,
+                                const HdDataSourceLocator &locator)
+      : _isFirst(isFirst)
+      , _iterator(iterator)
+      , _end(end)
+      , _locator(locator)
+    {
+    }
+
+    HD_API
+    const HdDataSourceLocator &operator*() const;
+
+    HD_API
+    IntersectionIterator& operator++();
+
+    bool operator==(const IntersectionIterator &other) const
+    {
+        return _iterator == other._iterator;
+    }
+
+    bool operator!=(const IntersectionIterator &other) const
+    {
+        return _iterator != other._iterator;
+    }
+
+private:
+    bool _isFirst;
+    const_iterator _iterator;
+    const_iterator _end;
+    HdDataSourceLocator _locator;
+};
+
+class HdDataSourceLocatorSet::IntersectionView
+{
+public:
+    IntersectionView(const IntersectionIterator &begin,
+                     const IntersectionIterator &end)
+      : _begin(begin)
+      , _end(end)
+    {
+    }
+
+    const IntersectionIterator &begin() const { return _begin; }
+
+    const IntersectionIterator &end() const { return _end; }
+
+private:
+    const IntersectionIterator _begin;
+    const IntersectionIterator _end;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

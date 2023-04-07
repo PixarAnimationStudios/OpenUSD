@@ -464,8 +464,9 @@ HdDataSourceLocatorSet::end() const
     return _locators.end();
 }
 
-bool
-HdDataSourceLocatorSet::Intersects(const HdDataSourceLocator &locator) const
+HdDataSourceLocatorSet::const_iterator
+HdDataSourceLocatorSet::_FirstIntersection(
+    const HdDataSourceLocator &locator) const
 {
     // Note: operator< and _LessThanNotPrefix are almost as expensive as
     // intersects, so for very small arrays the std::lower_bound can actually
@@ -475,15 +476,15 @@ HdDataSourceLocatorSet::Intersects(const HdDataSourceLocator &locator) const
     constexpr size_t _binarySearchCutoff = 5;
 
     if (_locators.size() < _binarySearchCutoff) {
-        for (const auto &l : _locators) {
-            if (l.Intersects(locator)) {
-                return true;
+        for (const_iterator it = _locators.begin();
+             it != _locators.end();
+             ++it) {
+            if (it->Intersects(locator)) {
+                return it;
             }
         }
-        return false;
+        return _locators.end();
     }
-
-    TRACE_FUNCTION();
 
     // As with insert, we can split the set into 3 disjoint ranges.
     // We want to find the first item such that e > locator or
@@ -494,9 +495,16 @@ HdDataSourceLocatorSet::Intersects(const HdDataSourceLocator &locator) const
             locator, _LessThanNotPrefix);
     if (it != _locators.end() &&
         (locator.HasPrefix(*it) || it->HasPrefix(locator))) {
-        return true;
+        return it;
     }
-    return false;
+
+    return _locators.end();
+}
+
+bool
+HdDataSourceLocatorSet::Intersects(const HdDataSourceLocator &locator) const
+{
+    return _FirstIntersection(locator) != _locators.end();
 }
 
 bool
@@ -663,6 +671,42 @@ HdDataSourceLocatorSet::ReplacePrefix(
     }
  
     return *this;
+}
+
+const HdDataSourceLocator &
+HdDataSourceLocatorSet::IntersectionIterator::operator*() const
+{
+    if (_isFirst && _locator.HasPrefix(*_iterator)) {
+        return _locator;
+    }
+    return *_iterator;
+}
+
+HdDataSourceLocatorSet::IntersectionIterator &
+HdDataSourceLocatorSet::IntersectionIterator::operator++()
+{
+    _isFirst = false;
+    ++_iterator;
+    if (_iterator != _end && !_iterator->HasPrefix(_locator)) {
+        _iterator = _end;
+    }
+    return *this;
+}
+
+HdDataSourceLocatorSet::IntersectionView
+HdDataSourceLocatorSet::Intersection(const HdDataSourceLocator &locator) const
+{
+    return IntersectionView(
+        IntersectionIterator(
+            /* isFirst = */ true,
+            _FirstIntersection(locator),
+            end(),
+            locator),
+        IntersectionIterator(
+            /* isFirst = */ false,
+            end(),
+            end(),
+            locator));
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
