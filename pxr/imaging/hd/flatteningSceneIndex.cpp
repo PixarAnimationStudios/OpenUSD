@@ -353,10 +353,11 @@ bool
 HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         const HdDataSourceLocatorSet &set)
 {
-    bool anyDirtied = false;
     static const HdContainerDataSourceHandle containerNull(nullptr);
     static const HdTokenDataSourceHandle tokenNull(nullptr);
     static const HdDataSourceBaseHandle baseNull(nullptr);
+
+    bool anyDirtied = false;
 
     if (set.Intersects(HdXformSchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedXformDataSource)) {
@@ -380,12 +381,16 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
             _computedPurposeDataSource, containerNull);
     }
     if (set.Intersects(_GetDrawModeLocator())) {
-        anyDirtied = true;
+        if (HdTokenDataSource::AtomicLoad(_computedDrawModeDataSource)) {
+            anyDirtied = true;
+        }
         HdTokenDataSource::AtomicStore(
             _computedDrawModeDataSource, tokenNull);
     }
     if (set.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
-        anyDirtied = true;
+        if (HdDataSourceBase::AtomicLoad(_computedMaterialBindingDataSource)) {
+            anyDirtied = true;
+        }
         HdDataSourceBase::AtomicStore(
             _computedMaterialBindingDataSource, baseNull);
     }
