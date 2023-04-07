@@ -584,7 +584,7 @@ void main(void)
     midPoints[0] = ((transitionMask & 8) == 0)
         ? float3(0)
         : GetPosAtUv(float2(0.0, 0.5), osdParam, &(points[0]));
-    midPoints[1] = ((transitionMask & 2) == 0)
+    midPoints[1] = ((transitionMask & 1) == 0)
         ? float3(0)
         : GetPosAtUv(float2(0.5, 0.0), osdParam, &(points[0]));
     midPoints[2] = ((transitionMask & 2) == 0)
@@ -601,7 +601,7 @@ void main(void)
 
     // Gather bezier control points to compute limit surface tess levels
     Osd_GetTessLevelsFromPatchBoundaries4(
-        renderPassState.tessLevel, GetProjectionMatrix(), transform,
+        GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevels(tessOuterLo, tessOuterHi,
@@ -627,7 +627,6 @@ void main(void)
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-    ["out", "vec2", "ptvsBarycentricCoord"],
     ["out", "vec4", "tesPatchCoord"],
     ["out", "vec2", "tesTessCoord"]
 ]
@@ -635,25 +634,25 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.PostTessVertex.BSplineQuad
 
-float GetTessLevelQuad() {
-    ivec3 patchParam = GetPatchParam();
-    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
-    float tessLevel = min(renderPassState.tessLevel,
+vec2 GetPatchTessUV()
+{
+    const ivec3 patchParam = GetPatchParam();
+
+    const int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
+    const float tessLevel = min(GetTessLevel(),
         (float)OSD_MAX_TESS_LEVEL) / exp2((float)refinementLevel - 1);
-    return tessLevel;
+
+    vec4 tessOuterLo(0), tessOuterHi(0);
+    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
+
+    return OsdGetTessParameterization(gl_TessCoord.xy,
+                                      tessOuterLo,
+                                      tessOuterHi);
 }
 
 vec4 GetPatchCoord(int index)
 {
-    float4 tessOuterLo(0), tessOuterHi(0);
-    ivec3 patchParam = GetPatchParam();
-    float tessLevel = GetTessLevelQuad();
-    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
-    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
-                                         tessOuterLo,
-                                         tessOuterHi);
-
-    return OsdInterpolatePatchCoord(UV, patchParam);
+    return OsdInterpolatePatchCoord(GetPatchTessUV(), GetPatchParam());
 }
 
 void main(void)
@@ -664,19 +663,8 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    ivec3 patchParam = GetPatchParam();
-
-    float4 tessOuterLo(0), tessOuterHi(0);
-    float tessLevel = GetTessLevelQuad();
-    OsdGetTessLevelsUniform(tessLevel, patchParam,
-                            tessOuterLo, tessOuterHi);
-
-    vec2 UV = OsdGetTessParameterization(gl_TessCoord.xy,
-                                         tessOuterLo,
-                                         tessOuterHi);
-
-    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
-    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+    const ivec3 patchParam = GetPatchParam();
+    const vec2 UV = GetPatchTessUV();
 
     float wP[HD_NUM_PATCH_VERTS];
     float wDs[HD_NUM_PATCH_VERTS];
@@ -689,19 +677,20 @@ void main(void)
         osdParam, UV.x, UV.y,
         &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
 
-    vec3 pDS = vec3(0.0);
+    vec3 P = vec3(0.0);
+    vec3 N = vec3(0.0);
+
+    vec3 pDs = vec3(0.0);
     vec3 pDt = vec3(0.0);
 
     for (int i = 0; i < 16; ++i) {
           P +=  points[i] * wP[i];
-        pDS +=  points[i] * wDs[i];
+        pDs +=  points[i] * wDs[i];
         pDt +=  points[i] * wDt[i];
     }
 
-    N = cross(pDt, pDS);
-
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    N = normalize(cross(pDS,pDt));
+    N = normalize(cross(pDs,pDt));
     N = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
                   vec4(N,0)).xyz;
 
@@ -710,23 +699,23 @@ void main(void)
     }
 
     tesPatchCoord = OsdInterpolatePatchCoord(UV, patchParam);
+    tesTessCoord = UV;
+
     P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
     P = (DisplacementTerminal(0, vec4(P,1.0), N, tesPatchCoord)).xyz;
 
     outData.Peye = vec4(P, 1);
     outData.Neye = N; // normalized
 
+    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
     // Bilinear basis
     vec4 basis = vec4(
             (1.0-UV.x) * (1.0-UV.y), UV.x * (1.0-UV.y),
             (1.0-UV.x) * UV.y, UV.x * UV.y );
 
-    tesTessCoord = UV;
-
-    gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
-    ptvsBarycentricCoord = UV;
     ProcessPrimvarsOut(basis, 5, 6, 9, 10, UV);
-    ApplyClipPlanes(outData.Peye);
 }
 
 --- --------------------------------------------------------------------------
@@ -770,9 +759,9 @@ void main(void)
     ivec3 patchParam = GetPatchParam();
     OsdPatchParam osdParam = OsdPatchParamInit(patchParam.x, patchParam.y, 0);
 
-    const vec3 corner0Uv = vec3(1.0, 0.0, 0.0);
-    const vec3 corner1Uv = vec3(0.0, 1.0, 0.0);
-    const vec3 corner2Uv = vec3(0.0, 0.0, 1.0);
+    const vec3 corner0Uv = vec3(0.0, 0.0, 1.0);
+    const vec3 corner1Uv = vec3(1.0, 0.0, 0.0);
+    const vec3 corner2Uv = vec3(0.0, 1.0, 0.0);
 
     vec3 corners[3];
     corners[0] = GetPosAtUv(corner0Uv.xy, osdParam, &(points[0]));
@@ -783,20 +772,20 @@ void main(void)
     vec3 midPoints[3];
     midPoints[0] = ((transitionMask & 4) == 0)
         ? float3(0)
-        : GetPosAtUv(((corner0Uv + corner1Uv)/2.0).xy, osdParam, &(points[0]));
+        : GetPosAtUv(((corner2Uv + corner0Uv)/2.0).xy, osdParam, &(points[0]));
     midPoints[1] = ((transitionMask & 1) == 0)
         ? float3(0)
-        : GetPosAtUv(((corner1Uv + corner2Uv)/2.0).xy, osdParam, &(points[0]));
+        : GetPosAtUv(((corner0Uv + corner1Uv)/2.0).xy, osdParam, &(points[0]));
     midPoints[2] = ((transitionMask & 2) == 0)
         ? float3(0)
-        : GetPosAtUv(((corner2Uv + corner0Uv)/2.0).xy, osdParam, &(points[0]));
+        : GetPosAtUv(((corner1Uv + corner2Uv)/2.0).xy, osdParam, &(points[0]));
 
     vec4 tessLevelOuter = vec4(0);
     vec2 tessLevelInner = vec2(0);
     vec4 tessOuterLo = vec4(0);
     vec4 tessOuterHi = vec4(0);
     Osd_GetTessLevelsFromPatchBoundaries3(
-        renderPassState.tessLevel, GetProjectionMatrix(), transform,
+        GetTessLevel(), GetProjectionMatrix(), transform,
         corners, midPoints, patchParam, tessOuterLo, tessOuterHi);
 
     OsdComputeTessLevelsTriangle(tessOuterLo, tessOuterHi,
@@ -807,6 +796,7 @@ void main(void)
     tessAsHalf[0] = half(tessLevelOuter[0]);
     tessAsHalf[1] = half(tessLevelOuter[1]);
     tessAsHalf[2] = half(tessLevelOuter[2]);
+
     tessAsHalf[3] = half(tessLevelInner[0]);
 }
 
@@ -819,7 +809,6 @@ void main(void)
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-    ["out", "vec3", "ptvsBarycentricCoord"],
     ["out", "vec4", "tesPatchCoord"],
     ["out", "vec2", "tesTessCoord"]
 ]
@@ -827,25 +816,25 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Mesh.PostTessVertex.BoxSplineTriangle
 
-float GetTessLevelTri() {
-    ivec3 patchParam = GetPatchParam();
-    int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
-    float tessLevel = min(renderPassState.tessLevel,
+vec2 GetPatchTessUV()
+{
+    const ivec3 patchParam = GetPatchParam();
+
+    const int refinementLevel = OsdGetPatchRefinementLevel(patchParam);
+    const float tessLevel = min(GetTessLevel(),
         (float)OSD_MAX_TESS_LEVEL) / exp2((float)refinementLevel - 1);
-    return tessLevel;
+
+    vec4 tessOuterLo(0), tessOuterHi(0);
+    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
+
+    return OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
+                                              tessOuterLo,
+                                              tessOuterHi);
 }
 
 vec4 GetPatchCoord(int index)
 {
-    float4 tessOuterLo(0), tessOuterHi(0);
-    ivec3 patchParam = GetPatchParam();
-    float tessLevel = GetTessLevelTri();
-    OsdGetTessLevelsUniform(tessLevel, patchParam, tessOuterLo, tessOuterHi);
-    vec2 UV = OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
-                                                 tessOuterLo,
-                                                 tessOuterHi);
-
-    return OsdInterpolatePatchCoordTriangle(UV, patchParam);
+    return OsdInterpolatePatchCoordTriangle(GetPatchTessUV(), GetPatchParam());
 }
 
 void main(void)
@@ -856,19 +845,8 @@ void main(void)
     gl_PointSize = GetPointRasterSize(pointId);
     ProcessPointId(pointId);
 
-    ivec3 patchParam = GetPatchParam();
-
-    float4 tessOuterLo(0), tessOuterHi(0);
-    float tessLevel = GetTessLevelTri();
-    OsdGetTessLevelsUniformTriangle(tessLevel, patchParam,
-                                    tessOuterLo, tessOuterHi);
-
-    vec2 UV = OsdGetTessParameterizationTriangle(gl_TessCoord.xyz,
-                                                 tessOuterLo,
-                                                 tessOuterHi);
-
-    vec3 P = vec3(0), dPu = vec3(0), dPv = vec3(0);
-    vec3 N = vec3(0), dNu = vec3(0), dNv = vec3(0);
+    const ivec3 patchParam = GetPatchParam();
+    const vec2 UV = GetPatchTessUV();
 
     float wP[HD_NUM_PATCH_VERTS];
     float wDs[HD_NUM_PATCH_VERTS];
@@ -881,19 +859,20 @@ void main(void)
         osdParam, UV.x, UV.y,
         &(wP[0]), &(wDs[0]), &(wDt[0]), &(wDss[0]), &(wDst[0]), &(wDtt[0]));
 
-    vec3 pDS = vec3(0.0);
+    vec3 P = vec3(0.0);
+    vec3 N = vec3(0.0);
+
+    vec3 pDs = vec3(0.0);
     vec3 pDt = vec3(0.0);
 
     for (int i = 0; i < 12; ++i) {
           P +=  points[i] * wP[i];
-        pDS +=  points[i] * wDs[i];
+        pDs +=  points[i] * wDs[i];
         pDt +=  points[i] * wDt[i];
     }
 
-    N = cross(pDt, pDS);
-
     MAT4 transformInv = ApplyInstanceTransformInverse(HdGet_transformInverse());
-    N = normalize(cross(pDS,pDt));
+    N = normalize(cross(pDs,pDt));
     N = vec4(transpose(transformInv * GetWorldToViewInverseMatrix()) *
                   vec4(N,0)).xyz;
 
@@ -902,22 +881,22 @@ void main(void)
     }
 
     tesPatchCoord = OsdInterpolatePatchCoordTriangle(UV, patchParam);
+    tesTessCoord = UV;
+
     P = (GetWorldToViewMatrix() * transform * vec4(P,1.0)).xyz;
     P = (DisplacementTerminal(0, vec4(P,1.0), N, tesPatchCoord)).xyz;
 
     outData.Peye = vec4(P, 1);
     outData.Neye = N; // normalized
 
+    gl_Position =  vec4(GetProjectionMatrix() * outData.Peye);
+    ApplyClipPlanes(outData.Peye);
+
     // Barycentric basis
     vec4 basis = vec4(
             (1.0f-UV.x-UV.y), UV.x, UV.y, 0.0f);
 
-    tesTessCoord = UV;
-
-    gl_Position =  vec4(GetProjectionMatrix() * outData.Peye);
-    ptvsBarycentricCoord = vec3(0.0, UV.y, UV.x);
     ProcessPrimvarsOut(basis, 4, 5, 8, 0, UV);
-    ApplyClipPlanes(outData.Peye);
 }
 
 --- --------------------------------------------------------------------------

@@ -241,6 +241,9 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
 
         stateDesc.tessellationControlPointIndexType =
             MTLTessellationControlPointIndexTypeUInt32;
+
+        // Set maxTessellationFactor to be consistent with GL etc.
+        stateDesc.maxTessellationFactor = 64;
     } else {
         stateDesc.vertexFunction = metalProgram->GetVertexFunction();
     }
