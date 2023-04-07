@@ -96,13 +96,13 @@ HdRenderSettings::GetRenderProducts() const
     return _products;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetIncludedPurposes() const
 {
     return _includedPurposes;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetMaterialBindingPurposes() const
 {
     return _materialBindingPurposes;
@@ -151,8 +151,8 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->includedPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _includedPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _includedPurposes = vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 
@@ -160,8 +160,9 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->materialBindingPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _materialBindingPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _materialBindingPurposes =
+                vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 
