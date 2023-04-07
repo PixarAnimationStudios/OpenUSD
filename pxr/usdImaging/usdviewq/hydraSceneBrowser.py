@@ -411,7 +411,6 @@ class _SceneIndexPrimTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 
         if primPath.IsPropertyPath():
             name = "." + primPath.name
-            self.setText(name)
         else:
             name = primPath.name
 
