@@ -131,6 +131,12 @@ public:
             return;
         }
 
+        // If the newly opened layer is a package, it we do not need to traverse
+        // into it as the entire package will be included as a dependency.
+        if (_layer->GetFileFormat()->IsPackage()) {
+            return;
+        }
+
         _AnalyzeDependencies();
     }
 
@@ -146,7 +152,9 @@ public:
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
-        if (!_layer) {
+        // In the case we have come across a package layer, traversal can be
+        // halted as the entire package will be included as a dependency.
+        if (!_layer || _layer->GetFileFormat()->IsPackage()) {
             return;
         }
 

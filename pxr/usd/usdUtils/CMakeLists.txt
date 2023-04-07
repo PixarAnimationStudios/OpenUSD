@@ -139,6 +139,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageContextDep
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies
     DEST testUsdUtilsDependencies
 )
@@ -396,6 +401,13 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
     DIFF_COMPARE contents.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
+    DIFF_COMPARE contents_usdz_context_dep_assets.txt
     EXPECTED_RETURN_CODE 0
 )
 
