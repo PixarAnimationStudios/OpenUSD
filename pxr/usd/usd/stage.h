@@ -140,9 +140,13 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// considered as permanent mutations to be recorded upon export.  A very 
 /// common use of session layers is to make variant selections, to pick a
 /// specific LOD or shading variation, for example.  The session layer is
-/// also frequently used to perform interactive vising/invsning of geometry
-/// and assets in the scene.   A session layer, if present, contributes to a 
-/// UsdStage's identity, for purposes of stage-caching, etc.
+/// also frequently used to override the visibility of geometry 
+/// and assets in the scene.  A session layer, if present, contributes to a 
+/// UsdStage's identity, for purposes of stage-caching, etc. 
+///
+/// To edit content in a session layer, get the layer's edit target using 
+/// stage->GetEditTargetForLocalLayer(stage->GetSessionLayer()) and set that
+/// target in the stage by calling SetEditTarget() or creating a UsdEditContext.
 ///
 class UsdStage : public TfRefBase, public TfWeakBase {
 public:

@@ -2732,13 +2732,19 @@ creation-time, a session layer participates fully in the stage's `composition
 <#usdglossary-composition>`_, as the strongest layer in the stage's `Root
 LayerStack <#usdglossary-rootlayerstack>`_, and can possess its own `SubLayers
 <#usdglossary-sublayers>`_. Session layers generally embody "application state",
-and, if saved, would saved as part of application state rather than as part of
-the data set they modify. :ref:`toolset:usdview` creates a sesssion layer, into
-which are targeted all `VariantSet <#usdglossary-variantset>`_ selections,
+and, if saved, would be saved as part of application state rather than as part 
+of the data set they modify. :ref:`toolset:usdview` creates a sesssion layer, 
+into which are targeted all `VariantSet <#usdglossary-variantset>`_ selections,
 `vis/invis <#usdglossary-visibility>`_ opinions, and `activation/deactivation
 <#usdglossary-active-inactive>`_ operations provided by the GUI. In keeping with
 the view of session-layer as application state rather than asset data,
 :usdcpp:`UsdStage::Save` **does not save its stage's session layer(s)**.
+
+To edit content in a session layer, get the layer's edit target using 
+:usdcpp:`stage->GetEditTargetForLocalLayer(stage->GetSessionLayer()) 
+<UsdStage::GetEditTargetForLocalLayer>` and set that target in the stage by 
+calling :usdcpp:`UsdStage::SetEditTarget` or creating a 
+:usdcpp:`UsdEditContext`.
 
 .. _usdglossary-specializes:
 
