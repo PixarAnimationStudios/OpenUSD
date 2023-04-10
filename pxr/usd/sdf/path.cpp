@@ -1836,7 +1836,7 @@ SdfPath::IsValidPrimName(const std::string& name)
     if (UseUTF8Identifiers())
     {
         // use unicode utils to validate the prim name
-        return TfUnicodeUtils::IsValidUTF8PrimName(name,
+        return TfUnicodeUtils::IsValidUTF8Name(
             name.begin(), name.end());
     }
     else
@@ -1848,7 +1848,7 @@ SdfPath::IsValidPrimName(const std::string& name)
 std::string SdfPath::MakeValidPrimName(const std::string& name)
 {
     return (UseUTF8Identifiers() ? 
-        TfUnicodeUtils::MakeValidUTF8PrimName(name) :
+        TfUnicodeUtils::MakeValidUTF8Name(name) :
         TfMakeValidIdentifier(name));
 }
 

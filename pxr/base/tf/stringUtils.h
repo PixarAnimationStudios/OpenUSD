@@ -747,7 +747,7 @@ TfIsValidIdentifier(std::string const &identifier)
     if (UseUTF8Identifiers())
     {
         // use unicode utils to validate the identifier
-        return TfUnicodeUtils::IsValidUTF8Identifier(identifier, 
+        return TfUnicodeUtils::IsValidUTF8Identifier( 
             identifier.begin(), identifier.end());
     }
     else
@@ -788,7 +788,7 @@ _TfIsValidIdentifierSubsequence(const std::string& identifier,
     if (UseUTF8Identifiers())
     {
         // use unicode utils to validate the identifier
-        return TfUnicodeUtils::IsValidUTF8Identifier(identifier, 
+        return TfUnicodeUtils::IsValidUTF8Identifier( 
             begin, end);
     }
     else

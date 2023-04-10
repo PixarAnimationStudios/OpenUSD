@@ -75,7 +75,7 @@ TF_DEFINE_ENV_SETTING(TF_UTF8_IDENTIFIERS,
     "Allow UTF8 strings as identifiers and prim names");
 
 namespace {
-    bool _IsASCIIValue(const char& c)
+    bool _IsASCIIValue(char c)
     {
         return (c & (1<<7)) == 0;
     }

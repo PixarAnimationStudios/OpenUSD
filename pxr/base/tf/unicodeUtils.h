@@ -38,6 +38,8 @@
 #include <vector>
 #include <utility>
 
+constexpr uint32_t INVALID_CODE_POINT = 0xFFFD;
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \namespace TfUnicodeUtils
@@ -46,7 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Contains utility methods for processing classes of Unicode characters
 /// according to the Unicode standard.
 ///
-/// Used by \ref page_tf_StringUtils to determine validity of identifiers and prim names.
+/// Used by \ref page_tf_StringUtils to determine validity of identifiers and names.
 ///
 namespace TfUnicodeUtils {
 
@@ -93,7 +95,7 @@ namespace TfUnicodeUtils {
         {
             std::string::const_iterator temp = this->_it;
             uint32_t codePoint = 0;
-            if (!this->GetNextUTF8Character(temp, codePoint))
+            if (!this->_AdvanceUTF8Character(temp, codePoint))
             {
                 // this is an exception case, the next UTF8 character is invalid!
                 // but we don't like exceptions in USD, so we'll signal this is bad
@@ -105,7 +107,7 @@ namespace TfUnicodeUtils {
                 // sequence, but it is invalid because of the second byte signature
                 // by the standard, this should process the C2 as invalid but consume
                 // 41 as a valid 1-byte UTF-8 character
-                codePoint = 0xFFFD;
+                codePoint = INVALID_CODE_POINT;
             }
 
             return codePoint;
@@ -161,7 +163,7 @@ namespace TfUnicodeUtils {
             // note that in cases where the encoding is invalid, we move to the next byte
             // this is necessary because otherwise the iterator would never advanced and
             // the end condition of == iterator::end() would never be satisfied
-            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->GetEncodingLength();
+            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->_GetEncodingLength();
             std::advance(this->_it, (encodingLength != 0) ? encodingLength : 1);
 
             return *this;
@@ -178,7 +180,7 @@ namespace TfUnicodeUtils {
             // this is necessary because otherwise the iterator would never advanced and
             // the end condition of == iterator::end() would never be satisfied
             utf8_const_iterator temp = *this;
-            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->GetEncodingLength();
+            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->_GetEncodingLength();
             std::advance(this->_it, (encodingLength != 0) ? encodingLength : 1);
 
             return temp;
@@ -191,7 +193,7 @@ namespace TfUnicodeUtils {
         /// This can be 1, 2, 3, or 4 depending on the encoding of the UTF-8 character.
         /// If the encoding cannot be determined, this method will return 0.
         ///
-        inline std::iterator_traits<std::string::const_iterator>::difference_type GetEncodingLength() const
+        inline std::iterator_traits<std::string::const_iterator>::difference_type _GetEncodingLength() const
         {
             // already at the end, no valid character sequence
             if (this->_it >= this->_end)
@@ -234,7 +236,7 @@ namespace TfUnicodeUtils {
         /// sequence is valid.
         /// If the encoding is invalid, this method will return \a false and \a codePoint will be set to 0.
         ///
-        inline bool GetNextUTF8Character(std::string::const_iterator& begin, uint32_t& codePoint) const
+        inline bool _AdvanceUTF8Character(std::string::const_iterator& begin, uint32_t& codePoint) const
         {
             codePoint = 0;
             if (begin >= this->_end)
@@ -244,7 +246,7 @@ namespace TfUnicodeUtils {
             }
 
             // determine what encoding length the character is
-            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->GetEncodingLength();
+            std::iterator_traits<std::string::const_iterator>::difference_type encodingLength = this->_GetEncodingLength();
             if (encodingLength == 1)
             {
                 codePoint = static_cast<uint32_t>(static_cast<unsigned char>(*begin));
@@ -401,7 +403,7 @@ namespace TfUnicodeUtils {
         std::string::const_iterator _end;
     };
 
-    /// Determines whether the UTF-8 encoded substring in \a identifier starting at position \a sequenceStart and ending at position \a end is a
+    /// Determines whether the UTF-8 encoded substring in a string starting at position \a sequenceStart and ending at position \a end is a
     /// valid Unicode identifier.  A valid Unicode identifier is a string that starts with something from the XID_Start character class (including the '_'
     /// character) followed by one or more characters in the XID_Continue character class (including the '_' character).
     ///
@@ -417,7 +419,7 @@ namespace TfUnicodeUtils {
     /// strings by passing identifier.begin() and identifier.end(), but also on sub sequences defined by the given iterator ranges to avoid copying
     /// the subsequence to a temporary string for evaluation.
     ///
-    inline TF_API bool IsValidUTF8Identifier(const std::string& identifier, const std::string::const_iterator& sequenceStart, const std::string::const_iterator& end)
+    inline bool IsValidUTF8Identifier(const std::string::const_iterator& sequenceStart, const std::string::const_iterator& end)
     {
         // at least one character
         if (sequenceStart == end)
@@ -477,9 +479,9 @@ namespace TfUnicodeUtils {
         return (utf8Iterator == end);
     }
 
-    /// Determines whether the UTF-8 encoded substring in \a identifier starting at position \a sequenceStart and ending at position \a end is a
-    /// valid Unicode prim name. Prim names are more permissive than identifier names in that all characters can be part of the XID_Continue
-    /// character class, meaning that prim names could start with digits (or be all digits), etc.
+    /// Determines whether the UTF-8 encoded substring in the string starting at position \a sequenceStart and ending at position \a end is a
+    /// valid Unicode name. Names are more permissive than identifier names in that all characters can be part of the XID_Continue
+    /// character class, meaning that names could start with digits (or be all digits), etc.
     ///
     /// The XID_Start class of characters are derived from the Unicode General_Category of uppercase letters, lowercase letters, titlecase letters,
     /// modifier letters, other letters, letters numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
@@ -493,7 +495,7 @@ namespace TfUnicodeUtils {
     /// strings by passing identifier.begin() and identifier.end(), but also on sub sequences defined by the given iterator ranges to avoid copying
     /// the subsequence to a temporary string for evaluation.
     ///
-    inline TF_API bool IsValidUTF8PrimName(const std::string& identifier, const std::string::const_iterator& sequenceStart, const std::string::const_iterator& end)
+    inline bool IsValidUTF8Name(const std::string::const_iterator& sequenceStart, const std::string::const_iterator& end)
     {
         // at least one character
         if (sequenceStart == end)
@@ -544,7 +546,7 @@ namespace TfUnicodeUtils {
     /// modifier letters, other letters, letters numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
     /// That is, the character must have a category of Lu | Ll | Lt | Lm | Lo | Nl | '_'
     ///
-    inline TF_API bool IsUTF8CharXIDStart(const std::string& identifier, const std::string::const_iterator& sequenceStart)
+    inline bool IsUTF8CharXIDStart(const std::string& identifier, const std::string::const_iterator& sequenceStart)
     {
         // extract the unicode code point value from the UTF-8 encoding
         utf8_const_iterator utf8Iterator(sequenceStart, identifier.end());
@@ -574,7 +576,7 @@ namespace TfUnicodeUtils {
     /// spacing combining marks, decimal number, and connector punctuation.
     /// That is, the character must have a category of XID_Start | Nd | Mn | Mc | Pc
     ///
-    inline TF_API bool IsUTF8CharXIDContinue(const std::string& identifier, const std::string::const_iterator& sequenceStart)
+    inline bool IsUTF8CharXIDContinue(const std::string& identifier, const std::string::const_iterator& sequenceStart)
     {
         // extract the unicode code point value from the UTF-8 encoding
         utf8_const_iterator utf8Iterator(sequenceStart, identifier.end());
@@ -611,12 +613,12 @@ namespace TfUnicodeUtils {
     std::string TF_API MakeValidUTF8Identifier(const std::string& identifier);
 
     ///
-    /// Constructs a valid result prim name from \a primName.
-    /// If \a primName is already valid, then return value of this method should be value stored in \a primName.
+    /// Constructs a valid result name from \a name.
+    /// If \a name is already valid, then return value of this method should be value stored in \a name.
     ///
-    /// A prim name is valid according to the rules associated with \a IsValidUTF8PrimName.
+    /// A name is valid according to the rules associated with \a IsValidUTF8Name.
     ///
-    std::string TF_API MakeValidUTF8PrimName(const std::string& primName);
+    std::string TF_API MakeValidUTF8Name(const std::string& name);
 
 } // end namespace TfUnicodeUtils
 

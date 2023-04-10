@@ -111,12 +111,12 @@ namespace TfUnicodeUtils {
         return result;
     }
 
-    std::string MakeValidUTF8PrimName(const std::string& primName)
+    std::string MakeValidUTF8Name(const std::string& name)
     {
         std::string result;
 
         // empty strings are always associated with the '_' identifier
-        if (primName.empty())
+        if (name.empty())
         {
             result.push_back('_');
             return result;
@@ -125,14 +125,14 @@ namespace TfUnicodeUtils {
         // maximum size is always the number of bytes in the UTF-8 encoded string
         // but if a character is invalid it will be replaced by a '_' character, which
         // may compress a e.g., 4-byte UTF-8 invalid character into a single valid 1-byte UTF-8 '_' character
-        result.reserve(primName.size());
-        utf8_const_iterator iterator(primName.begin(), primName.end());
+        result.reserve(name.size());
+        utf8_const_iterator iterator(name.begin(), name.end());
 
         // for prim names the rule is all characters must be in XID_Start / XID_Continue
         // (XID_Start is captured in IsUTF8CharXIDContinue to avoid 2 function calls)
-        for (; iterator != primName.end(); iterator++)
+        for (; iterator != name.end(); iterator++)
         {
-            if (!IsUTF8CharXIDContinue(primName, iterator.Wrapped()))
+            if (!IsUTF8CharXIDContinue(name, iterator.Wrapped()))
             {
                 result.push_back('_');
             }

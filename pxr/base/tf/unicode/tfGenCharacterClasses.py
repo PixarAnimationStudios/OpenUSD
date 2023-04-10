@@ -79,7 +79,7 @@ xid_continue_class = []
 xid_start_range_pairs = []
 xid_continue_range_pairs = []
 
-def _write_cpp_files(destination_directory):
+def _write_cpp_files(destination_directory : str):
     """
     Writes the C++ code file that will initialize character class
     sets with the values read by this script.
@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # the character class, which reside in columns 0 and 2 respectively
     unicode_database_file_name = os.path.join(arguments.srcDir, UNICODE_DATABASE_FILE)
     if not os.path.exists(unicode_database_file_name):
-        raise RuntimeError("Error in script: Could not find 'UnicodeDatabase.txt' at path %s!" % (arguments.srcDir))
+        raise RuntimeError(f"Error in script: Could not find 'UnicodeDatabase.txt' at path {arguments.srcDir}!")
 
     # the UnicodeDatabase is the primary source of mappings
     # this will give us the character classes as well as:

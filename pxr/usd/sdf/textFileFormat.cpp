@@ -374,6 +374,7 @@ SdfTextFileFormat::ReadFromString(
             TfDynamic_cast<SdfDataRefPtr>(data), &hints)) {
         return false;
     }
+    
     _SetLayerData(layer, data, hints);
     return true;
 }
