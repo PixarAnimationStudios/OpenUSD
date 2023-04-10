@@ -232,6 +232,10 @@ int main()
         NULL
     };
 
+    // this test is valid under UTF8 naming
+    // because prim names can be anything in XID_Start +
+    // XID_Continue - this can be integrated with the
+    // above if the runtime switch is removed
     char const* goodUtf8[] = {
         "foo{1=x}",
         NULL

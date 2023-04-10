@@ -29,6 +29,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
+#include "pxr/base/tf/diagnostic.h"
 
 #include <string>
 #include <iterator>
@@ -37,6 +38,7 @@
 #include <unordered_map>
 #include <vector>
 #include <utility>
+#include <algorithm>
 
 constexpr uint32_t INVALID_CODE_POINT = 0xFFFD;
 
@@ -75,7 +77,7 @@ namespace TfUnicodeUtils {
         using value_type = uint32_t;
         using difference_type = ptrdiff_t;
         using pointer = uint32_t*;
-        using reference = uint32_t&;
+        using reference = uint32_t;
 
     public:
 
@@ -427,22 +429,25 @@ namespace TfUnicodeUtils {
             return false;
         }
 
+        auto not_valid = [](uint32_t codePoint, bool is_start) {
+            return is_start ? (xidStartClass.find(codePoint) == xidStartClass.end() && 
+                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                })) :
+                (xidContinueClass.find(codePoint) == xidContinueClass.end() &&
+                std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                }));
+        };
+
         // first character in the XID_Start character class
         utf8_const_iterator utf8Iterator(sequenceStart, end);
-        uint32_t codePoint = *utf8Iterator;
-        bool found = xidStartClass.find(codePoint) != xidStartClass.end();
-        if (!found)
+        if (not_valid(*utf8Iterator, true))
         {
-            // not in the singular set, need to check the range sets
-            for (size_t i = 0; i < xidStartRangeClass.size() && !found; i++)
-            {
-                found = (codePoint >= xidStartRangeClass[i].first && codePoint <= xidStartRangeClass[i].second);
-            }
-        }
-
-        if (!found)
-        {
-            // wasn't in the XID start class single or range classes
+            // in this case, the character wasn't in either the start code point
+            // singular set or the range of code points in the range sets
             return false;
         }
 
@@ -450,33 +455,15 @@ namespace TfUnicodeUtils {
         utf8Iterator++;
         for (; utf8Iterator != end; utf8Iterator++)
         {
-            codePoint = *utf8Iterator;
-            bool found = (xidStartClass.find(codePoint) != xidStartClass.end()) || (xidContinueClass.find(codePoint) != xidContinueClass.end());
-            if (!found)
+            if (not_valid(*utf8Iterator, true) && not_valid(*utf8Iterator, false))
             {
-                // not in the singular set, need to check the range sets
-                for (size_t i = 0; i < xidStartRangeClass.size() && !found; i++)
-                {
-                    found = (codePoint >= xidStartRangeClass[i].first && codePoint <= xidStartRangeClass[i].second);
-                }
-
-                if (!found)
-                {
-                    for (size_t i = 0; i < xidContinueRangeClass.size() && !found; i++)
-                    {
-                        found = (codePoint >= xidContinueRangeClass[i].first && codePoint <= xidContinueRangeClass[i].second);
-                    }
-                }
-            }
-
-            if (!found)
-            {
-                // it's not in either the XID_Start class or the XID_Continue class so it's invalid
                 return false;
             }
         }
 
-        return (utf8Iterator == end);
+        TF_AXIOM(utf8Iterator == end);
+
+        return true;
     }
 
     /// Determines whether the UTF-8 encoded substring in the string starting at position \a sequenceStart and ending at position \a end is a
@@ -503,37 +490,32 @@ namespace TfUnicodeUtils {
             return false;
         }
 
-        uint32_t codePoint;
+        auto not_valid = [](uint32_t codePoint, bool is_start) {
+            return is_start ? (xidStartClass.find(codePoint) == xidStartClass.end() && 
+                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                })) :
+                (xidContinueClass.find(codePoint) == xidContinueClass.end() &&
+                std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                }));
+        };
+
         utf8_const_iterator utf8Iterator(sequenceStart, end);
         for (; utf8Iterator != end; utf8Iterator++)
         {
-            codePoint = *utf8Iterator;
-            bool found = (xidStartClass.find(codePoint) != xidStartClass.end()) || (xidContinueClass.find(codePoint) != xidContinueClass.end());
-            if (!found)
-            {
-                // not in the singular set, need to check the range sets
-                for (size_t i = 0; i < xidStartRangeClass.size() && !found; i++)
-                {
-                    found = (codePoint >= xidStartRangeClass[i].first && codePoint <= xidStartRangeClass[i].second);
-                }
-
-                if (!found)
-                {
-                    for (size_t i = 0; i < xidContinueRangeClass.size() && !found; i++)
-                    {
-                        found = (codePoint >= xidContinueRangeClass[i].first && codePoint <= xidContinueRangeClass[i].second);
-                    }
-                }
-            }
-
-            if (!found)
+            if (not_valid(*utf8Iterator, true) && not_valid(*utf8Iterator, false))
             {
                 // it's not in either the XID_Start class or the XID_Continue class so it's invalid
                 return false;
             }
         }
 
-        return (utf8Iterator == end);
+        TF_AXIOM(utf8Iterator == end);
+
+        return true;
     }
 
     /// Determines whether a UTF-8 character in \a identifier starting at position \a sequenceStart is part of the XID_Start character class.
