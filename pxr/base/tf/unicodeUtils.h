@@ -76,7 +76,7 @@ namespace TfUnicodeUtils {
         using iterator_category = std::forward_iterator_tag;
         using value_type = uint32_t;
         using difference_type = ptrdiff_t;
-        using pointer = uint32_t*;
+        using pointer = void;
         using reference = uint32_t;
 
     public:
@@ -405,6 +405,44 @@ namespace TfUnicodeUtils {
         std::string::const_iterator _end;
     };
 
+    /// Determines whether the given Unicode \a codePoint is in the XID_Start charaacter class.
+    ///
+    /// The XID_Start class of characters are derived from the Unicode General_Category of uppercase letters, lowercase letters, titlecase letters,
+    /// modifier letters, other letters, letters numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
+    /// That is, the character must have a category of Lu | Ll | Lt | Lm | Lo | Nl | '_'
+    ///
+    inline bool IsUTF8CharXIDStart(uint32_t codePoint)
+    {
+        return !(xidStartClass.find(codePoint) == xidStartClass.end() && 
+                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                }));
+    }
+
+    /// Determines whether the given Unicode \a codePoint is in the XID_Continue character class.
+    ///
+    /// The XID_Continue class of characters include those in XID_Start plus characters having the Unicode General Category of nonspacing marks,
+    /// spacing combining marks, decimal number, and connector punctuation.
+    /// That is, the character must have a category of XID_Start | Nd | Mn | Mc | Pc
+    ///
+    inline bool IsUTF8CharXIDContinue(uint32_t codePoint)
+    {
+        bool not_in_start = (xidStartClass.find(codePoint) == xidStartClass.end() && 
+                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                }));
+
+        bool not_in_continue = (xidContinueClass.find(codePoint) == xidContinueClass.end() && 
+                std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
+                [codePoint](const auto& range) {
+                    return codePoint >= range.first && codePoint <= range.second;
+                }));
+
+        return !(not_in_start && not_in_continue);
+    }
+
     /// Determines whether the UTF-8 encoded substring in a string starting at position \a sequenceStart and ending at position \a end is a
     /// valid Unicode identifier.  A valid Unicode identifier is a string that starts with something from the XID_Start character class (including the '_'
     /// character) followed by one or more characters in the XID_Continue character class (including the '_' character).
@@ -429,22 +467,9 @@ namespace TfUnicodeUtils {
             return false;
         }
 
-        auto not_valid = [](uint32_t codePoint, bool is_start) {
-            return is_start ? (xidStartClass.find(codePoint) == xidStartClass.end() && 
-                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
-                [codePoint](const auto& range) {
-                    return codePoint >= range.first && codePoint <= range.second;
-                })) :
-                (xidContinueClass.find(codePoint) == xidContinueClass.end() &&
-                std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
-                [codePoint](const auto& range) {
-                    return codePoint >= range.first && codePoint <= range.second;
-                }));
-        };
-
         // first character in the XID_Start character class
         utf8_const_iterator utf8Iterator(sequenceStart, end);
-        if (not_valid(*utf8Iterator, true))
+        if (!IsUTF8CharXIDStart(*utf8Iterator))
         {
             // in this case, the character wasn't in either the start code point
             // singular set or the range of code points in the range sets
@@ -455,7 +480,7 @@ namespace TfUnicodeUtils {
         utf8Iterator++;
         for (; utf8Iterator != end; utf8Iterator++)
         {
-            if (not_valid(*utf8Iterator, true) && not_valid(*utf8Iterator, false))
+            if (!IsUTF8CharXIDContinue(*utf8Iterator))
             {
                 return false;
             }
@@ -490,23 +515,10 @@ namespace TfUnicodeUtils {
             return false;
         }
 
-        auto not_valid = [](uint32_t codePoint, bool is_start) {
-            return is_start ? (xidStartClass.find(codePoint) == xidStartClass.end() && 
-                std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
-                [codePoint](const auto& range) {
-                    return codePoint >= range.first && codePoint <= range.second;
-                })) :
-                (xidContinueClass.find(codePoint) == xidContinueClass.end() &&
-                std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
-                [codePoint](const auto& range) {
-                    return codePoint >= range.first && codePoint <= range.second;
-                }));
-        };
-
         utf8_const_iterator utf8Iterator(sequenceStart, end);
         for (; utf8Iterator != end; utf8Iterator++)
         {
-            if (not_valid(*utf8Iterator, true) && not_valid(*utf8Iterator, false))
+            if (!IsUTF8CharXIDContinue(*utf8Iterator))
             {
                 // it's not in either the XID_Start class or the XID_Continue class so it's invalid
                 return false;
@@ -516,74 +528,6 @@ namespace TfUnicodeUtils {
         TF_AXIOM(utf8Iterator == end);
 
         return true;
-    }
-
-    /// Determines whether a UTF-8 character in \a identifier starting at position \a sequenceStart is part of the XID_Start character class.
-    ///
-    /// UTF-8 characters are variable encoded, so \a sequenceStart defines the first byte in the UTF8 character sequence.
-    /// This method will advance \a sequenceStart iterator to the first byte of the next UTF8 character and evaluate
-    /// if the UTF8 character it read is part of the XID_Start character class.
-    ///
-    /// The XID_Start class of characters are derived from the Unicode General_Category of uppercase letters, lowercase letters, titlecase letters,
-    /// modifier letters, other letters, letters numbers, plus Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
-    /// That is, the character must have a category of Lu | Ll | Lt | Lm | Lo | Nl | '_'
-    ///
-    inline bool IsUTF8CharXIDStart(const std::string& identifier, const std::string::const_iterator& sequenceStart)
-    {
-        // extract the unicode code point value from the UTF-8 encoding
-        utf8_const_iterator utf8Iterator(sequenceStart, identifier.end());
-
-        // check to see whether the code point is in any of the valid singular sets
-        uint32_t codePoint = *utf8Iterator;
-        bool found = xidStartClass.find(codePoint) != xidStartClass.end();
-        if (!found)
-        {
-            // not in the singular set, need to check the range sets
-            for (size_t i = 0; i < xidStartRangeClass.size() && !found; i++)
-            {
-                found = (codePoint >= xidStartRangeClass[i].first && codePoint <= xidStartRangeClass[i].second);
-            }
-        }
-
-        return found;
-    }
-
-    /// Determines whether a UTF-8 character in \a identifier starting at position \a sequenceStart is part of the XID_Continue character class.
-    ///
-    /// UTF8 characters are variable encoded, so \a sequenceStart defines the first byte in the UTF8 character sequence.
-    /// This method will advance \a sequenceStart iterator to the first byte of the next UTF8 character and evaluate
-    /// if the UTF8 character it read is part of the XID_Continue character class.
-    ///
-    /// The XID_Continue class of characters include those in XID_Start plus characters having the Unicode General Category of nonspacing marks,
-    /// spacing combining marks, decimal number, and connector punctuation.
-    /// That is, the character must have a category of XID_Start | Nd | Mn | Mc | Pc
-    ///
-    inline bool IsUTF8CharXIDContinue(const std::string& identifier, const std::string::const_iterator& sequenceStart)
-    {
-        // extract the unicode code point value from the UTF-8 encoding
-        utf8_const_iterator utf8Iterator(sequenceStart, identifier.end());
-
-        // check to see whether the code point is in any of the valid sets
-        uint32_t codePoint = *utf8Iterator;
-        bool found = (xidStartClass.find(codePoint) != xidStartClass.end()) || (xidContinueClass.find(codePoint) != xidContinueClass.end());
-        if (!found)
-        {
-            // not in the singular set, need to check the range sets
-            for (size_t i = 0; i < xidStartRangeClass.size() && !found; i++)
-            {
-                found = (codePoint >= xidStartRangeClass[i].first && codePoint <= xidStartRangeClass[i].second);
-            }
-
-            if (!found)
-            {
-                for (size_t i = 0; i < xidContinueRangeClass.size() && !found; i++)
-                {
-                    found = (codePoint >= xidContinueRangeClass[i].first && codePoint <= xidContinueRangeClass[i].second);
-                }
-            }
-        }
-        
-        return found;
     }
 
     ///

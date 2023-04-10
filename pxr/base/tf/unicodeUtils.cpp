@@ -87,7 +87,7 @@ namespace TfUnicodeUtils {
         utf8_const_iterator iterator(identifier.begin(), identifier.end());
 
         // first UTF-8 character must be in XID_Start
-        if (!IsUTF8CharXIDStart(identifier, iterator.Wrapped()))
+        if (!IsUTF8CharXIDStart(*iterator))
         {
             result.push_back('_');
         }
@@ -98,7 +98,7 @@ namespace TfUnicodeUtils {
 
         for (++iterator; iterator != identifier.end(); iterator++)
         {
-            if (!IsUTF8CharXIDContinue(identifier, iterator.Wrapped()))
+            if (!IsUTF8CharXIDContinue(*iterator))
             {
                 result.push_back('_');
             }
@@ -132,7 +132,7 @@ namespace TfUnicodeUtils {
         // (XID_Start is captured in IsUTF8CharXIDContinue to avoid 2 function calls)
         for (; iterator != name.end(); iterator++)
         {
-            if (!IsUTF8CharXIDContinue(name, iterator.Wrapped()))
+            if (!IsUTF8CharXIDContinue(*iterator))
             {
                 result.push_back('_');
             }

@@ -1947,7 +1947,7 @@ bool SdfPath::IsValidVariantIdentifier(const std::string& name)
         {
             // valid variant identifier characters are '|' or '-'
             // in addition to standard identifier characters
-            if (!(TfUnicodeUtils::IsUTF8CharXIDContinue(name, iterator.Wrapped()) || *(iterator.Wrapped()) == '|' || *(iterator.Wrapped()) == '-'))
+            if (!(TfUnicodeUtils::IsUTF8CharXIDContinue(*iterator) || *(iterator.Wrapped()) == '|' || *(iterator.Wrapped()) == '-'))
             {
                 return false;
             }
