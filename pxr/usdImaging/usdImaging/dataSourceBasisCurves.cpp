@@ -151,8 +151,6 @@ UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
 
     HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
     if (name == HdPrimvarsSchemaTokens->primvars) {
-
-        HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
         HdContainerDataSourceHandle customPvs =
             UsdImagingDataSourceCustomPrimvars::New(
                 _GetSceneIndexPath(),
@@ -184,10 +182,8 @@ UsdImagingDataSourceBasisCurvesPrim::Invalidate(
         result = UsdImagingDataSourceGprim::Invalidate(
             prim, subprim, properties);
 
-        if (subprim.IsEmpty()) {
-            result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
-                properties, _GetCustomPrimvarMappings(prim)));
-        }
+        result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
+            properties, _GetCustomPrimvarMappings(prim)));
 
         for (const TfToken &propertyName : properties) {
             if (propertyName == UsdGeomTokens->curveVertexCounts) {
