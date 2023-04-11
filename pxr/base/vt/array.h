@@ -39,12 +39,12 @@
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/iterator_adaptors.hpp>
-#include <boost/iterator/reverse_iterator.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <new>
@@ -242,9 +242,9 @@ class VtArray : public Vt_ArrayBase {
     using const_iterator = ElementType const *;
     
     /// Reverse iterator type.
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     /// Reverse const iterator type.
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     /// Reference type.
     typedef ElementType &reference;
