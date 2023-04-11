@@ -33,11 +33,28 @@
 
 #include "pxr/base/trace/trace.h"
 
+#include "pxr/imaging/hd/sceneIndex.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens,
     HDSCENEGLOBALS_SCHEMA_TOKENS);
+
+
+
+/* static */
+HdSceneGlobalsSchema
+HdSceneGlobalsSchema::GetFromSceneIndex(
+    const HdSceneIndexBaseRefPtr &si)
+{
+    if (!si) {
+        TF_CODING_ERROR("Invalid input scene index provided.");
+        return HdSceneGlobalsSchema(nullptr);
+    }
+
+    return GetFromParent(si->GetPrim(GetDefaultPrimPath()).dataSource);
+}
 
 
 
