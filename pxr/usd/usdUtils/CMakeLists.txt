@@ -144,6 +144,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies
     DEST testUsdUtilsDependencies
 )
@@ -408,6 +413,13 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
     DIFF_COMPARE contents_usdz_context_dep_assets.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_filter_metadata_keys.txt filter_metadata_keys.usdz filterMetadataKeys/filter_metadata_keys.usda"
+    DIFF_COMPARE contents_filter_metadata_keys.txt
     EXPECTED_RETURN_CODE 0
 )
 

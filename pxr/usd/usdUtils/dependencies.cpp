@@ -109,10 +109,12 @@ public:
     _FileAnalyzer(const std::string &resolvedFilePath,
                   _ReferenceTypesToInclude refTypesToInclude=
                         _ReferenceTypesToInclude::All,
+                  bool enableMetadataFiltering = false,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
         _filePath(resolvedFilePath),
         _refTypesToInclude(refTypesToInclude),
+        _metadataFilteringEnabled(enableMetadataFiltering),
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
@@ -145,10 +147,12 @@ public:
     _FileAnalyzer(const SdfLayerHandle& layer,
                   _ReferenceTypesToInclude refTypesToInclude=
                         _ReferenceTypesToInclude::All,
+                  bool enableMetadataFiltering = false,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
         _layer(layer),
         _refTypesToInclude(refTypesToInclude),
+        _metadataFilteringEnabled(enableMetadataFiltering),
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
@@ -174,6 +178,12 @@ public:
     }
 
 private:
+    // This function returns a boolean value indicating whether an asset path
+    // should be processed.  Currently this is used when processing metadata
+    // to filter out specific keys
+    using ShouldProcessAssetValueFunc = std::function<bool
+            (const std::string &key)>;
+
     // Open the layer, updates references to point to relative or search paths
     // and accumulates all references.
     void _AnalyzeDependencies();
@@ -183,6 +193,10 @@ private:
     // can update the source reference to point to the remapped path.
     std::string _ProcessDependency(const std::string &rawRefPath,
                                    const _DepType &depType);
+
+    // Invokes the path remapping function if one has been supplied, otherwise
+    // returns the passed in raw reference path
+    std::string _RemapDependency(const std::string &rawRefPath);
 
     // Processes any sublayers in the SdfLayer associated with the file.
     void _ProcessSublayers();
@@ -202,6 +216,15 @@ private:
     // Returns the given VtValue with any asset paths remapped to point to 
     // destination-relative path.
     VtValue _UpdateAssetValue(const VtValue &val);
+
+    // Returns the given VtValue with any asset paths remapped to point to 
+    // destination-relative path.
+    // This overload supports filtering asset path processing based on their
+    // key. The processing callback is not invoked for filtered keys, however
+    // the remapping callback is invoked in all cases.
+    VtValue _UpdateAssetValue(const std::string &key, 
+                              const VtValue &val, 
+                              const ShouldProcessAssetValueFunc shouldProcessFunc);
 
     // Callback function that's passed into SdfPayloadsProxy::ModifyItemEdits()
     // or SdfReferencesProxy::ModifyItemEdits() to update all payloads or 
@@ -223,6 +246,9 @@ private:
     // metadata and non-composition prim metadata) are ignored.
     _ReferenceTypesToInclude _refTypesToInclude;
 
+    // if true, will filter ignore path processing for specified metadata keys.
+    bool _metadataFilteringEnabled;
+
     // Remap and process path callback functions.
     RemapAssetPathFunc _remapPathFunc;
     ProcessAssetPathFunc _processPathFunc;
@@ -236,6 +262,11 @@ _FileAnalyzer::_ProcessDependency(const std::string &rawRefPath,
         _processPathFunc(rawRefPath, GetLayer(), depType);
     }
 
+    return _RemapDependency(rawRefPath);
+}
+
+std::string 
+_FileAnalyzer::_RemapDependency(const std::string &rawRefPath) {
     if (_remapPathFunc) {
         return _remapPathFunc(rawRefPath, GetLayer());
     }
@@ -246,14 +277,28 @@ _FileAnalyzer::_ProcessDependency(const std::string &rawRefPath,
 }
 
 VtValue 
-_FileAnalyzer::_UpdateAssetValue(const VtValue &val) 
+_FileAnalyzer::_UpdateAssetValue(const VtValue &val)
+{
+    return _UpdateAssetValue(
+        std::string(),
+        val,
+        [](const std::string &) { return true; }
+    );
+}
+
+VtValue 
+_FileAnalyzer::_UpdateAssetValue(const std::string &key, 
+                            const VtValue &val, 
+                            const ShouldProcessAssetValueFunc shouldProcessFunc)
 {
     if (val.IsHolding<SdfAssetPath>()) {
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
         const std::string& rawAssetPath = assetPath.GetAssetPath();
         if (!rawAssetPath.empty()) {
-            const std::string remappedPath =
-                _ProcessDependency(rawAssetPath, _DepType::Reference);
+            const std::string remappedPath = shouldProcessFunc(key)
+                ? _ProcessDependency(rawAssetPath, _DepType::Reference)
+                : _RemapDependency(rawAssetPath);
+
             return remappedPath.empty() ? 
                 VtValue() : VtValue(SdfAssetPath(remappedPath));
         }
@@ -263,8 +308,10 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
             val.UncheckedGet< VtArray<SdfAssetPath> >()) {                
             const std::string& rawAssetPath = assetPath.GetAssetPath();
             if (!rawAssetPath.empty()) {
-                const std::string remappedPath =
-                    _ProcessDependency(rawAssetPath, _DepType::Reference);
+                const std::string remappedPath = shouldProcessFunc(key)
+                    ? _ProcessDependency(rawAssetPath, _DepType::Reference)
+                    : _RemapDependency(rawAssetPath);
+
                 if (!remappedPath.empty()) {
                     updatedArray.push_back(SdfAssetPath(remappedPath));
                 }
@@ -275,7 +322,9 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
     else if (val.IsHolding<VtDictionary>()) {
         VtDictionary updatedDict;
         for (const auto& p : val.UncheckedGet<VtDictionary>()) {
-            VtValue updatedVal = _UpdateAssetValue(p.second);
+            const std::string dictKey = key.empty() ? key : key + ':' + p.first;
+            VtValue updatedVal = 
+                _UpdateAssetValue(dictKey, p.second, shouldProcessFunc);
             if (!updatedVal.IsEmpty()) {
                 updatedDict[p.first] = std::move(updatedVal);
             }
@@ -437,13 +486,23 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
     }
 }
 
+// Determines if a metadata key should be processed.
+// XXX: Currently operates on a single hardcoded value, but in the future we
+//      would like to give users the ability to specify keys to filter.
+static
+bool _IgnoreAssetInfoIdentifier(const std::string &key) {
+    return !TfStringEndsWith(key, "assetInfo:identifier");
+}
+
 void
 _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
 {
     if (_refTypesToInclude == _ReferenceTypesToInclude::All) {
         for (const TfToken& infoKey : primSpec->GetMetaDataInfoKeys()) {
             VtValue value = primSpec->GetInfo(infoKey);
-            VtValue updatedValue = _UpdateAssetValue(value);
+            VtValue updatedValue = _metadataFilteringEnabled
+                 ? _UpdateAssetValue(infoKey, value, _IgnoreAssetInfoIdentifier)
+                 : _UpdateAssetValue(value);
             if (_remapPathFunc && value != updatedValue) {
                 if (updatedValue.IsEmpty()) {
                     primSpec->ClearInfo(infoKey);
@@ -620,6 +679,8 @@ public:
     // the information needed to localize the asset.
     // If \p destDir is empty, none of the asset layers are modified, allowing
     // this class to be used purely as a recursive dependency finder.
+    // \p enableMetadataFiltering if true, will instruct FileAnalyzer to skip
+    // processing asset paths that match a list of predefined names
     // \p firstLayerName if non-empty, holds desired the name of the root layer 
     // in the localized asset. 
     // 
@@ -636,6 +697,7 @@ public:
     // the transitive dependencies referenced by the skipped dependency are 
     // processed and may be missing in the created package.
     _AssetLocalizer(const SdfAssetPath &assetPath, const std::string &destDir,
+                    bool enableMetadataFiltering,
                     const std::string &firstLayerName=std::string(),
                     const std::string &origRootFilePath=std::string(),
                     const std::vector<std::string> 
@@ -688,6 +750,7 @@ public:
                     TfGetBaseName(rootFilePath));
             filesToLocalize.emplace(destFilePath, _FileAnalyzer(rootFilePath, 
                     /*refTypesToInclude*/ _ReferenceTypesToInclude::All,
+                    /*enableMetadataFiltering*/ enableMetadataFiltering,
                     remapAssetPathFunc, processPathFunc));
         }
 
@@ -794,6 +857,7 @@ public:
                 filesToLocalize.emplace(destFilePathForRef, _FileAnalyzer(
                         resolvedRefFilePath, 
                         /* refTypesToInclude */ _ReferenceTypesToInclude::All,
+                        /*enableMetadataFiltering*/ enableMetadataFiltering,
                         remapAssetPathFunc, processPathFunc));
             }
         }
@@ -1060,6 +1124,7 @@ _ExtractExternalReferences(
     // We only care about knowing what the dependencies are. Hence, set 
     // remapPathFunc to empty.
     _FileAnalyzer(filePath, refTypesToInclude,
+        /*enableMetadataFiltering*/ false,
         /*remapPathFunc*/ {}, 
         [&subLayers, &references, &payloads](
             const std::string &assetPath, const SdfLayerRefPtr &layer,
@@ -1114,8 +1179,11 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     std::string destDir = TfGetPathName(usdzFilePath);
     destDir = destDir.empty() ? "./" : destDir;
-    _AssetLocalizer localizer(assetPath, destDir, firstLayerName, 
-                              origRootFilePath, dependenciesToSkip);
+    _AssetLocalizer localizer(assetPath, destDir, 
+                            /* enableMetadataFiltering */ true,
+                            firstLayerName, 
+                            origRootFilePath, 
+                            dependenciesToSkip);
 
     auto &layerExportMap = localizer.GetLayerExportMap();
     auto &fileCopyMap = localizer.GetFileCopyMap();
@@ -1374,7 +1442,9 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 {
     // We are not interested in localizing here, hence pass in the empty string
     // for destination directory.
-    _AssetLocalizer localizer(assetPath, /* destDir */ std::string());
+    _AssetLocalizer localizer(assetPath, 
+                              /* destDir */ std::string(), 
+                              /* enableMetadataFiltering */ true);
 
     // Clear the vectors before we start.
     layers->clear();
@@ -1404,7 +1474,8 @@ UsdUtilsModifyAssetPaths(
         const UsdUtilsModifyAssetPathFn& modifyFn)
 {
     _FileAnalyzer(layer,
-        _ReferenceTypesToInclude::All, 
+        _ReferenceTypesToInclude::All,
+        /* enableMetadataFiltering*/ false, 
         [&modifyFn](const std::string& assetPath, 
                     const SdfLayerRefPtr& layer) { 
             return modifyFn(assetPath);

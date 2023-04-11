@@ -1,0 +1,19 @@
+#usda 1.0
+(
+    defaultPrim = "prim1"
+    metersPerUnit = 0.01
+    upAxis = "Y"
+)
+
+def "prim1" (
+    assetInfo = {
+        asset identifier = @should_not_appear.usda@
+        string name = "should_not_appear"
+    }
+)
+{
+}
+
+# This file tests that filtered metadata keys are not processed by the
+# File Analyzer.  By default the`assetInfo.identifier` metadata key is filtered.
+# As a result, should_not_appear.usda should not be in the resulting usdz file.
