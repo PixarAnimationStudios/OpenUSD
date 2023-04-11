@@ -75,6 +75,7 @@ class UsdImagingDelegate;
 TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
 /// \class UsdImagingGLEngine
@@ -639,6 +640,7 @@ private:
     // at a time...
     UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
     UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
+    HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
     HdSceneIndexBaseRefPtr _sceneIndex;
 
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;

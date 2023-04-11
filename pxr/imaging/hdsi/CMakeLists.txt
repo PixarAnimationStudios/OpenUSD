@@ -18,6 +18,7 @@ pxr_library(hdsi
     PUBLIC_CLASSES
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
+        legacyDisplayStyleOverrideSceneIndex
         materialBindingResolvingSceneIndex
         materialPrimvarTransferSceneIndex
         pinnedCurveExpandingSceneIndex

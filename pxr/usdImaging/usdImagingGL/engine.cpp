@@ -31,16 +31,17 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
+#include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -986,6 +987,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
             UsdImagingDrawModeSceneIndex::New(_sceneIndex,
                                               /* inputArgs = */ nullptr);
 
+        _sceneIndex = _displayStyleSceneIndex =
+            HdsiLegacyDisplayStyleOverrideSceneIndex::New(_sceneIndex);
+
         _renderIndex->InsertSceneIndex(_sceneIndex, _sceneDelegateId);
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(
@@ -1399,7 +1403,10 @@ UsdImagingGLEngine::_PreSetTime(const UsdImagingGLRenderParams& params)
     const int refineLevel = _GetRefineLevel(params.complexity);
 
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7115): fallback refine level
+        // The UsdImagingStageSceneIndex has no complexity opinion.
+        // We force the value here upon all prims.
+        _displayStyleSceneIndex->SetRefineLevel({true, refineLevel});
+
         _stageSceneIndex->ApplyPendingUpdates();
     } else {
         // Set the fallback refine level; if this changes from the
