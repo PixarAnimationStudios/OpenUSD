@@ -75,29 +75,50 @@ HdDependencyForwardingSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
+
+    _VisitedNodeSet visited;
+    HdSceneIndexObserver::DirtiedPrimEntries affectedEntries;
+
     for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
         const SdfPath &primPath = entry.primPath;
 
+        // Clear this prim's dependencies.
         _ClearDependencies(primPath);
 
-        //_potentiallyDeletedDependedOnPaths(primPath);
-
-        // if this is depended on, flag its map of affected paths/locators
-        // for deletion
-
+        // If this prim is depended on, flag its map of affected paths/locators
+        // for deletion. Also, send a dirty notice for each affected entry.
+        // Note: The affected path/locator isn't notified explicitly of this 
+        //       prim's removal. It needs to query the scene index and handle
+        //       the absence of the prim to detect the removal.
+        //
         _DependedOnPrimsAffectedPrimsMap::iterator it =
             _dependedOnPrimToDependentsMap.find(primPath);
 
         if (it != _dependedOnPrimToDependentsMap.end()) {
-            for (auto &dependedOnPair : (*it).second) {
-                dependedOnPair.second.flaggedForDeletion = true;
-            }
-
             _potentiallyDeletedDependedOnPaths.insert(primPath);
+
+            for (auto &affectedPair : (*it).second) {
+                affectedPair.second.flaggedForDeletion = true;
+
+                const SdfPath &affectedPrimPath = affectedPair.first;
+
+                for (const auto &keyEntryPair :
+                        affectedPair.second.locatorsEntryMap) {
+                    const _LocatorsEntry &entry = keyEntryPair.second;
+
+                    _PrimDirtied(affectedPrimPath,
+                                 entry.affectedDataSourceLocator,
+                                 &visited, &affectedEntries);
+                }
+            }
         }
     }
 
     _SendPrimsRemoved(entries);
+
+    if (!affectedEntries.empty()) {
+        _SendPrimsDirtied(affectedEntries);
+    }
 }
 
 void
