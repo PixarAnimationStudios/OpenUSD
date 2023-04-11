@@ -61,7 +61,8 @@ namespace
 static SdfPath
 _RelativePath(const SdfPath &prefix, const SdfPath &path)
 {
-    return path.ReplacePrefix(prefix, SdfPath::ReflexiveRelativePath());
+    return prefix.IsEmpty() ? path
+        : path.ReplacePrefix(prefix, SdfPath::ReflexiveRelativePath());
 }
 
 class _UsdImagingDataSourceShadingNodeParameters : public HdContainerDataSource
@@ -543,7 +544,7 @@ _WalkGraph(
     const UsdImagingDataSourceStageGlobals &stageGlobals,
     const SdfPath &sceneIndexPath,
     const HdDataSourceLocator &locatorPrefix,
-    const SdfPath &materialPrefix)
+    const SdfPath &materialPrefix = SdfPath())
 {
     if (!shadeNode) {
         return;
@@ -602,8 +603,7 @@ _BuildNetwork(
                 locatorPrefix.IsEmpty()
                     ? locatorPrefix
                     : locatorPrefix.Append(
-                        HdMaterialNetworkSchemaTokens->nodes),
-                terminalNode.GetPrim().GetPath());
+                        HdMaterialNetworkSchemaTokens->nodes));
 
     TfTokenVector nodeNames;
     std::vector<HdDataSourceBaseHandle> nodeValues;
