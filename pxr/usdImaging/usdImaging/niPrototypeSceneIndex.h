@@ -81,9 +81,9 @@ private:
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &prototypeRoot);
 
-    HdContainerDataSourceHandle const _underlaySource;
-
     const SdfPath _prototypeRoot;
+    HdContainerDataSourceHandle const _prototypeRootOverlaySource;
+    HdContainerDataSourceHandle const _underlaySource;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -60,22 +60,41 @@ _ResetXformToIdentityDataSource()
 }
 
 HdContainerDataSourceHandle
+_InstancedByDataSource(const SdfPath &prototypeRoot)
+{
+    using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+
+    return
+        HdInstancedBySchema::Builder()
+            .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
+            .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
+            .Build();
+}
+
+HdContainerDataSourceHandle
 _ComputeUnderlaySource(const SdfPath &prototypeRoot)
 {
     if (prototypeRoot.IsEmpty()) {
         return nullptr;
     }
 
-    using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+    return
+        HdRetainedContainerDataSource::New(
+            HdInstancedBySchemaTokens->instancedBy,
+            _InstancedByDataSource(prototypeRoot));
+}
+
+HdContainerDataSourceHandle
+_ComputePrototypeRootOverlaySource(const SdfPath &prototypeRoot)
+{
+    if (prototypeRoot.IsEmpty()) {
+        return nullptr;
+    }
 
     return
         HdRetainedContainerDataSource::New(
             HdInstancedBySchemaTokens->instancedBy,
-            HdInstancedBySchema::Builder()
-                .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
-                .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build(),
-
+            _InstancedByDataSource(prototypeRoot),
             // The prototypes should always be defined at the origin.
             HdXformSchemaTokens->xform,
             _ResetXformToIdentityDataSource());
@@ -98,7 +117,11 @@ UsdImaging_NiPrototypeSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
     const SdfPath &prototypeRoot)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-  , _underlaySource(_ComputeUnderlaySource(prototypeRoot))
+  , _prototypeRoot(prototypeRoot)
+  , _prototypeRootOverlaySource(
+      _ComputePrototypeRootOverlaySource(prototypeRoot))
+  , _underlaySource(
+      _ComputeUnderlaySource(prototypeRoot))
 {
 }
 
@@ -117,17 +140,27 @@ UsdImaging_NiPrototypeSceneIndex::GetPrim(
         return prim;
     }
 
+    if (_prototypeRoot.IsEmpty()) {
+        return prim;
+    }
+
     if (primPath.IsAbsoluteRootPath()) {
         return prim;
     }
 
-    if (!_underlaySource) {
-        return prim;
+    if (primPath == _prototypeRoot) {
+        if (_prototypeRootOverlaySource) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                _prototypeRootOverlaySource,
+                prim.dataSource);
+        }
+    } else {
+        if (_underlaySource) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                prim.dataSource,
+                _underlaySource);
+        }
     }
-
-    prim.dataSource = HdOverlayContainerDataSource::New(
-        prim.dataSource,
-        _underlaySource);
 
     return prim;
 }
