@@ -238,17 +238,18 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetCameraPath(SdfPath(GetCameraPath()));
     }
 
+    _engine->SetOverrideWindowPolicy({true, GetWindowPolicy()});
+
     const CameraUtilFraming framing(
         GetDisplayWindow(), GetDataWindow(), GetPixelAspectRatio());
     if (framing.IsValid()) {
         _engine->SetRenderBufferSize(GfVec2i(width, height));
         _engine->SetFraming(framing);
-        _engine->SetOverrideWindowPolicy({true, CameraUtilFit});
     } else {
         const GfVec4d viewport(0, 0, width, height);
         _engine->SetRenderViewport(viewport);
     }
- 
+
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting = IsEnabledTestLighting();

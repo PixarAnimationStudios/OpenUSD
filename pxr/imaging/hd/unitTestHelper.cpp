@@ -263,8 +263,9 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
                 HdPrimTypeTokens->camera,
                 _cameraId));
     TF_VERIFY(camera);
-    _renderPassState->SetCameraAndFraming(
-        camera, framing, { false, CameraUtilFit });
+    _renderPassState->SetCamera(camera);
+    _renderPassState->SetFraming(framing);
+    _renderPassState->SetOverrideWindowPolicy({ false, CameraUtilFit });
 }
 
 void

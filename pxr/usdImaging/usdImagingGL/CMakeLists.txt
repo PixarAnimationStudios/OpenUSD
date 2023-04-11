@@ -4222,7 +4222,7 @@ pxr_register_test(testUsdImagingGLPresentDisabled
 )
 
 pxr_register_test(testUsdImagingGLFraming_1
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 640 480 -write testUsdImagingGLFraming1.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 640 480 -windowPolicy fit -write testUsdImagingGLFraming1.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming1.png
     FAIL 0.01
@@ -4235,7 +4235,7 @@ pxr_register_test(testUsdImagingGLFraming_1
 
 
 pxr_register_test(testUsdImagingGLFraming_2
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 40 640 430 -displayWindow 0 0 1280 960 -write testUsdImagingGLFraming2.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 40 640 430 -displayWindow 0 0 1280 960 -windowPolicy fit -write testUsdImagingGLFraming2.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming2.png
     FAIL 0.01
@@ -4248,7 +4248,7 @@ pxr_register_test(testUsdImagingGLFraming_2
 
 
 pxr_register_test(testUsdImagingGLFraming_3
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -write testUsdImagingGLFraming3.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -windowPolicy fit -write testUsdImagingGLFraming3.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming3.png
     FAIL 0.01
@@ -4261,7 +4261,7 @@ pxr_register_test(testUsdImagingGLFraming_3
 
 
 pxr_register_test(testUsdImagingGLFraming_4
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -pixelAspectRatio 1.5 -write testUsdImagingGLFraming4.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -windowPolicy fit -pixelAspectRatio 1.5 -write testUsdImagingGLFraming4.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming4.png
     FAIL 0.01
@@ -4274,7 +4274,7 @@ pxr_register_test(testUsdImagingGLFraming_4
 
 
 pxr_register_test(testUsdImagingGLFraming_5
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFraming5.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -windowPolicy fit -write testUsdImagingGLFraming5.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming5.png
     FAIL 0.01
@@ -4287,7 +4287,7 @@ pxr_register_test(testUsdImagingGLFraming_5
 
 
 pxr_register_test(testUsdImagingGLFraming_6
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /OrthoCam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFraming6.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /OrthoCam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -windowPolicy fit -write testUsdImagingGLFraming6.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLFraming6.png
     FAIL 0.01
@@ -4538,7 +4538,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
     )
 
     pxr_register_test(testUsdImagingGLFramingEmbree_1
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 640 480 -write testUsdImagingGLFramingEmbree1.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 640 480 -windowPolicy fit -write testUsdImagingGLFramingEmbree1.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree1.png
         FAIL 1
@@ -4556,7 +4556,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
 
 
     pxr_register_test(testUsdImagingGLFramingEmbree_2
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 40 640 430 -displayWindow 0 0 1280 960 -write testUsdImagingGLFramingEmbree2.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 40 640 430 -displayWindow 0 0 1280 960 -windowPolicy fit -write testUsdImagingGLFramingEmbree2.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree2.png
         FAIL 1
@@ -4574,7 +4574,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
 
 
     pxr_register_test(testUsdImagingGLFramingEmbree_3
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -write testUsdImagingGLFramingEmbree3.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -windowPolicy fit -write testUsdImagingGLFramingEmbree3.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree3.png
         FAIL 1
@@ -4592,7 +4592,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
 
 
     pxr_register_test(testUsdImagingGLFramingEmbree_4
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -pixelAspectRatio 1.5 -write testUsdImagingGLFramingEmbree4.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 0 0 640 480 -displayWindow 0 0 320 480 -windowPolicy fit -pixelAspectRatio 1.5 -write testUsdImagingGLFramingEmbree4.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree4.png
         FAIL 1
@@ -4610,7 +4610,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
 
 
     pxr_register_test(testUsdImagingGLFramingEmbree_5
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFramingEmbree5.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /main_cam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -windowPolicy fit -write testUsdImagingGLFramingEmbree5.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree5.png
         FAIL 1
@@ -4628,7 +4628,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
 
 
     pxr_register_test(testUsdImagingGLFramingEmbree_6
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /OrthoCam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -write testUsdImagingGLFramingEmbree6.png"
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -renderer HdEmbreeRendererPlugin -rendererAov color -offscreen -stage framing.usda -clear 0 0 0 1 -lighting -camera /OrthoCam -dataWindow 25 136 367 298 -displayWindow 50 80 320 400 -windowPolicy fit -write testUsdImagingGLFramingEmbree6.png"
         IMAGE_DIFF_COMPARE
             testUsdImagingGLFramingEmbree6.png
         FAIL 1

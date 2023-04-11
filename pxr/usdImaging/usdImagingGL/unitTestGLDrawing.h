@@ -88,6 +88,8 @@ public:
     float GetPixelAspectRatio() const { return _pixelAspectRatio; }
     GfRange2f const & GetDisplayWindow() const { return _displayWindow; }
     GfRect2i const & GetDataWindow() const { return _dataWindow; }
+    CameraUtilConformWindowPolicy const &
+    GetWindowPolicy() const { return _windowPolicy; }
     UsdImagingGLCullStyle GetCullStyle() const { return _cullStyle; }
 
     void RunTest(int argc, char *argv[]);
@@ -164,6 +166,8 @@ private:
     float _pixelAspectRatio;
     GfRange2f _displayWindow;
     GfRect2i _dataWindow;
+    CameraUtilConformWindowPolicy _windowPolicy;
+
     VtDictionary _renderSettings;
     TfToken _rendererAov;
     std::string _perfStatsFile;
