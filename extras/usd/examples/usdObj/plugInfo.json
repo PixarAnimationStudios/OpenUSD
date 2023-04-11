@@ -13,6 +13,7 @@
                         ],
                         "formatId": "obj",
                         "primary": true,
+                        "supportsWriting": false,
                         "target": "usd"
                     }
                 }

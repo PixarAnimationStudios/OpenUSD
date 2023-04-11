@@ -425,7 +425,7 @@ struct {
     {HgiPrimitiveTypeLineList,     MTLPrimitiveTopologyClassLine},
     {HgiPrimitiveTypeLineStrip,    MTLPrimitiveTopologyClassLine},
     {HgiPrimitiveTypeTriangleList, MTLPrimitiveTopologyClassTriangle},
-    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassUnspecified},
+    {HgiPrimitiveTypePatchList,    MTLPrimitiveTopologyClassTriangle},
     {HgiPrimitiveTypeLineListWithAdjacency,
                                 MTLPrimitiveTopologyClassUnspecified}
 };
@@ -441,7 +441,7 @@ struct {
     {HgiPrimitiveTypeTriangleList, MTLPrimitiveTypeTriangle},
     {HgiPrimitiveTypePatchList,    MTLPrimitiveTypeTriangle /*Invalid*/},
     {HgiPrimitiveTypeLineListWithAdjacency,
-                                MTLPrimitiveTypeTriangle /*Invalid*/}
+                                   MTLPrimitiveTypeTriangle /*Invalid*/}
 };
 
 MTLPixelFormat

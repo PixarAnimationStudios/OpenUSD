@@ -694,10 +694,15 @@ public:
         return lhs.GetAttr().GetPath() < rhs.GetAttr().GetPath();
     }
 
+    // Specialize TfHashAppend for TfHash
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const UsdGeomPrimvar& obj) {
+        h.Append(obj.GetAttr());
+    }
+
     // hash_value overload for std/boost hash.
-    USDGEOM_API
     friend size_t hash_value(const UsdGeomPrimvar &obj) {
-        return hash_value(obj.GetAttr());
+        return TfHash{}(obj);
     }
 
 

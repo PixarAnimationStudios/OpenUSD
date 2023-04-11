@@ -35,6 +35,7 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -66,7 +67,9 @@ using UsdSchemaVersion = unsigned int;
 /// classes, to enumerate all properties for a given schema class, and finally 
 /// to provide fallback values for unauthored built-in properties.
 ///
-class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
+class UsdSchemaRegistry : public TfWeakBase {
+    UsdSchemaRegistry(const UsdSchemaRegistry&) = delete;
+    UsdSchemaRegistry& operator=(const UsdSchemaRegistry&) = delete;
 public:
     using TokenToTokenVectorMap = 
         std::unordered_map<TfToken, TfTokenVector, TfHash>;
@@ -574,7 +577,7 @@ private:
     // registry.
     class _SchemaDefInitHelper;
 
-    SdfLayerRefPtr _schematics;
+    std::vector<SdfLayerRefPtr> _schematicsLayers;
 
     std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
          TfHash> _concreteTypedPrimDefinitions;

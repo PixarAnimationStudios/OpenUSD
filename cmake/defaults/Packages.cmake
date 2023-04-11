@@ -107,11 +107,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         endif()
     endmacro()
 
-    if(PXR_USE_PYTHON_3)
-        setup_python_package(Python3)
-    else()
-        setup_python_package(Python2)
-    endif()
+    # USD builds only work with Python3
+    setup_python_package(Python3)
 
     if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
@@ -147,13 +144,9 @@ else()
     if (PXR_BUILD_DOCUMENTATION OR PXR_BUILD_TESTS
         OR PXR_VALIDATE_GENERATED_CODE)
 
-        if(PXR_USE_PYTHON_3)
-            find_package(Python3 COMPONENTS Interpreter)
-            set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
-        else()
-            find_package(Python2 COMPONENTS Interpreter)
-            set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
-        endif()
+        # We only need to check for Python3 components
+        find_package(Python3 COMPONENTS Interpreter)
+        set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
     endif()
 endif()
 

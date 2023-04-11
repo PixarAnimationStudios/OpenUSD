@@ -99,7 +99,7 @@ void wrapAssetPath()
         .def(init<const std::string &, const std::string &>())
 
         .def("__repr__", _Repr)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
+        .def("__bool__", _Nonzero)
         .def("__hash__", _Hash)
 
         .def( self == self )

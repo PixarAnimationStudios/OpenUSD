@@ -261,7 +261,7 @@ private:
     // Mapping from instance key <-> prototype prim path.
     // This stores the path of the prototype prim that should be used
     // for all instanceable prim indexes with the given instance key.
-    typedef TfHashMap<Usd_InstanceKey, SdfPath, boost::hash<Usd_InstanceKey> >
+    typedef TfHashMap<Usd_InstanceKey, SdfPath, TfHash>
         _InstanceKeyToPrototypeMap;
     typedef TfHashMap<SdfPath, Usd_InstanceKey, SdfPath::Hash>
         _PrototypeToInstanceKeyMap;
@@ -288,7 +288,7 @@ private:
     // These maps contain lists of pending changes and are the only containers 
     // that should be modified during registration and unregistration.
     typedef TfHashMap<
-        Usd_InstanceKey, _PrimIndexPaths, boost::hash<Usd_InstanceKey> > 
+        Usd_InstanceKey, _PrimIndexPaths, TfHash>
         _InstanceKeyToPrimIndexesMap;
     _InstanceKeyToPrimIndexesMap _pendingAddedPrimIndexes;
     _InstanceKeyToPrimIndexesMap _pendingRemovedPrimIndexes;

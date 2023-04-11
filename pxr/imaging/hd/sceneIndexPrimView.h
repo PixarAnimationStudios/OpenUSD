@@ -21,10 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_IMAGING_PI_SCENE_INDEX_PRIM_VIEW_H
-#define PXR_USD_IMAGING_USD_IMAGING_PI_SCENE_INDEX_PRIM_VIEW_H
+#ifndef PXR_IMAGING_HD_SCENE_INDEX_PRIM_VIEW_H
+#define PXR_IMAGING_HD_SCENE_INDEX_PRIM_VIEW_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
+
+#include "pxr/imaging/hd/api.h"
 
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/declarePtrs.h"
@@ -33,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
-/// \class UsdImaging_SceneIndexPrimView
+/// \class HdSceneIndexPrimView
 ///
 /// A range to iterate over all descendants of a given prim (including
 /// the prim itself) in a scene index in depth-first order.
@@ -44,11 +46,11 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 /// \code
 ///
 /// for (const SdfPath &primPath :
-///           UsdImaging_SceneIndexPrimView(mySceneIndex, myRootPath)) {
+///           HdSceneIndexPrimView(mySceneIndex, myRootPath)) {
 ///     ...
 /// }
 ///
-/// UsdImaging_SceneIndexPrimView view(mySceneIndex, myRootPath);
+/// HdSceneIndexPrimView view(mySceneIndex, myRootPath);
 /// for (auto it = view.begin(); it != view.end(); ++it) {
 ///      const SdfPath &primPath = *it;
 ///      ...
@@ -59,13 +61,15 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 ///
 /// \endcode
 ///
-class UsdImaging_SceneIndexPrimView
+class HdSceneIndexPrimView
 {
 public:
     class const_iterator
     {
     public:
         inline const SdfPath &operator*() const;
+
+        HD_API
         const_iterator& operator++();
 
         inline void SkipDescendants();
@@ -73,7 +77,7 @@ public:
         inline bool operator!=(const const_iterator &other) const;
 
     private:
-        friend class UsdImaging_SceneIndexPrimView;
+        friend class HdSceneIndexPrimView;
         struct _StackFrame;
 
         const_iterator(HdSceneIndexBaseRefPtr const &inputSceneIndex,
@@ -85,10 +89,14 @@ public:
         bool _skipDescendants;
     };
 
-    UsdImaging_SceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex,
-                                  const SdfPath &root);
+    HD_API
+    HdSceneIndexPrimView(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+                         const SdfPath &root);
 
+    HD_API
     const const_iterator &begin() const;
+
+    HD_API
     const const_iterator &end() const;
 
 private:
@@ -97,7 +105,7 @@ private:
 };
 
 struct
-UsdImaging_SceneIndexPrimView::const_iterator::_StackFrame
+HdSceneIndexPrimView::const_iterator::_StackFrame
 {
     std::vector<SdfPath> paths;
     size_t index;
@@ -108,27 +116,27 @@ UsdImaging_SceneIndexPrimView::const_iterator::_StackFrame
 };
 
 const SdfPath &
-UsdImaging_SceneIndexPrimView::const_iterator::operator*() const
+HdSceneIndexPrimView::const_iterator::operator*() const
 {
     const _StackFrame &frame = _stack.back();
     return frame.paths[frame.index];
 }
 
 void
-UsdImaging_SceneIndexPrimView::const_iterator::SkipDescendants()
+HdSceneIndexPrimView::const_iterator::SkipDescendants()
 {
     _skipDescendants = true;
 }
 
 bool
-UsdImaging_SceneIndexPrimView::const_iterator::operator==(
+HdSceneIndexPrimView::const_iterator::operator==(
     const const_iterator &other) const
 {
     return _stack == other._stack;
 }
 
 bool
-UsdImaging_SceneIndexPrimView::const_iterator::operator!=(
+HdSceneIndexPrimView::const_iterator::operator!=(
     const const_iterator &other) const
 {
     return !(*this == other);

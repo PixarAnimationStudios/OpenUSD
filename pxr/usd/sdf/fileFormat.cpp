@@ -438,6 +438,13 @@ SdfFileFormat::FindAllFileFormatExtensions()
 }
 
 /* static */
+std::set<std::string>
+SdfFileFormat::FindAllDerivedFileFormatExtensions(const TfType& baseType)
+{
+    return _FileFormatRegistry->FindAllDerivedFileFormatExtensions(baseType);
+}
+
+/* static */
 bool SdfFileFormat::FormatSupportsReading(
     const std::string& extension,
     const std::string& target)

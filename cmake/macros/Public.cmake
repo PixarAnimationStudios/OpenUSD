@@ -1257,3 +1257,25 @@ function(pxr_tests_prologue)
         COMMENT "Copying CTestCustom.cmake"
     )
 endfunction() # pxr_tests_prologue
+
+function(pxr_build_python_documentation)
+    set(BUILT_XML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_xml")
+    set(CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT 
+       "${PROJECT_SOURCE_DIR}/docs/python/convertDoxygen.py")
+    set(INSTALL_PYTHON_PXR_ROOT "${CMAKE_INSTALL_PREFIX}/lib/python/pxr")
+
+    # Get the list of pxr python modules and run a install command for each
+    get_property(pxrPythonModules GLOBAL PROPERTY PXR_PYTHON_MODULES)
+    # Create string of module names, joined with ","
+    string(REPLACE ";" "," pxrPythonModulesStr "${pxrPythonModules}")
+    # Run convertDoxygen on the module list, setting PYTHONPATH 
+    # to the install path for the USD Python modules
+    install(CODE "execute_process(\
+        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
+        COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
+        --package pxr --module ${pxrPythonModulesStr} \
+        --inputIndex ${BUILT_XML_DOCS}/index.xml \
+        --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
+        --output ${INSTALL_PYTHON_PXR_ROOT})")
+
+endfunction() # pxr_build_python_documentation

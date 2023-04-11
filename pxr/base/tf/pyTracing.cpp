@@ -124,8 +124,8 @@ static int _TracePythonFn(PyObject *, PyFrameObject *frame,
     TfPyTraceInfo info;
     PyCodeObject * code = PyFrame_GetCode(frame);
     info.arg = arg;
-    info.funcName = TfPyString_AsString(code->co_name);
-    info.fileName = TfPyString_AsString(code->co_filename);
+    info.funcName = PyUnicode_AsUTF8(code->co_name);
+    info.fileName = PyUnicode_AsUTF8(code->co_filename);
     info.funcLine = code->co_firstlineno;
     info.what = what;
     Py_DECREF(code);

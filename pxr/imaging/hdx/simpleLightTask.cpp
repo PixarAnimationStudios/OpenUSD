@@ -360,7 +360,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                 for (int shadowId = shadowStart; shadowId <= shadowEnd; 
                      ++shadowId) {
                     shadows->SetViewMatrix(shadowId,
-                        _glfSimpleLights[lightId].GetTransform());
+                        _glfSimpleLights[lightId].GetTransform().GetInverse());
                     shadows->SetProjectionMatrix(shadowId,
                         shadowMatrices[shadowId - shadowStart]);
                 }

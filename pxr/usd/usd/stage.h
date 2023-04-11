@@ -1820,6 +1820,10 @@ private:
         const std::vector<Usd_PrimDataPtr> &prims,
         const std::vector<SdfPath> *primIndexPaths = nullptr);
 
+    // Composes the full prim type info for the prim based on its type name
+    // and applied API schemas.
+    void _ComposePrimTypeInfoImpl(Usd_PrimDataPtr prim);
+
     // Compose subtree rooted at \p prim under \p parent.  This function
     // ensures that the appropriate prim index is specified for \p prim if
     // \p parent is in a prototype.

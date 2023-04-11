@@ -755,20 +755,10 @@ WARN_LOGFILE           =
 # to be ordered by "package" and low-to-high-level module order.
 
 INPUT                  = docs/doxygen/externalOverview.dox \
-                         \
-                         ## "base" package \
                          docs/include/pxr/base \
-                         \
-                         ## "usd" package \
                          docs/include/pxr/usd \
-                         \
-                         ## "imaging" package \
                          docs/include/pxr/imaging \
-                         \
-                         ## "usdImaging" package \
                          docs/include/pxr/usdImaging \
-                         \
-                         ## Everything else \
                          docs/include
 
 # This tag can be used to specify the character encoding of the source files

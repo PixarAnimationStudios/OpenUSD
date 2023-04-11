@@ -24,10 +24,11 @@
 #include "pxr/usd/usdShade/coordSysAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
+
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +42,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (CoordSysAPI)
     (coordSys)
 );
 
@@ -249,6 +249,8 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
 
+#include "pxr/base/trace/trace.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(USD_SHADE_COORD_SYS_IS_MULTI_APPLY, "Warn",
@@ -284,27 +286,37 @@ _UsdShadeCoordSysAPIMultiApplyChecker()
         (usdShadeCoordSysMultApply == _tokens->True.GetString()) ? 1 :
         (usdShadeCoordSysMultApply == _tokens->Warn.GetString()) ? 2 : 1;
 
-    // A warning is thrown if deprecated API when UsdShadeCoordSysAPI is
-    // expected. Clients should be using appropriate member function with
-    // multi-apply UsdShadeCoordSysAPI and when
-    // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True.
-    if (checker != 0) {
-        TF_WARN("Using deprecated method from non-applied UsdShadeCoordSysAPI. "
-                "UsdShadeCoordSysAPI schema has been updated to be a "
-                "multi-apply API.");
-    }
-
     return checker;
+}
+
+void
+_WarnOnUseOfDeprecatedNonAppliedAPI(const char* deprecatedAPI)
+{
+    TF_WARN("Using deprecated method (%s) from non-applied "
+            "UsdShadeCoordSysAPI. UsdShadeCoordSysAPI schema has been updated "
+            "to be a multi-apply API.", deprecatedAPI);
+}
+
+void
+_WarnOnDeprecatedAsset(const UsdPrim &prim)
+{
+    TF_WARN("Prim at path (%s) is using old style non-applied "
+            "UsdShadeCoordSysAPI coordSys bindings. UsdShadeCoordSysAPI schema "
+            "has been updated to be a multi-apply API.", 
+            prim.GetPath().GetText());
 }
 
 /* deprecated */
 std::vector<UsdShadeCoordSysAPI::Binding> 
 UsdShadeCoordSysAPI::GetLocalBindings() const
 {
+    TRACE_FUNCTION();
+
     std::vector<Binding> result;
     SdfPathVector targets;
     static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
 
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True.
     if (checker == 1) {
         return UsdShadeCoordSysAPI::GetLocalBindingsForPrim(GetPrim());
@@ -329,6 +341,12 @@ UsdShadeCoordSysAPI::GetLocalBindings() const
             }
         }
     }
+
+    // If result is not empty old style coordSysBindings are found
+    if (!result.empty() && checker == 2) {
+        _WarnOnDeprecatedAsset(GetPrim());
+    }
+
     return result;
 }
 
@@ -405,10 +423,13 @@ UsdShadeCoordSysAPI::GetLocalBinding() const
 std::vector<UsdShadeCoordSysAPI::Binding> 
 UsdShadeCoordSysAPI::FindBindingsWithInheritance() const
 {
+    TRACE_FUNCTION();
+
     std::vector<Binding> result;
     SdfPathVector targets;
     static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
 
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True.
     if (checker == 1) {
         return 
@@ -449,6 +470,12 @@ UsdShadeCoordSysAPI::FindBindingsWithInheritance() const
             }
         }
     }
+
+    // If result is not empty old style coordSysBindings are found
+    if (!result.empty() && checker == 2) {
+        _WarnOnDeprecatedAsset(GetPrim());
+    }
+
     return result;
 }
 
@@ -495,8 +522,11 @@ UsdShadeCoordSysAPI::FindBindingWithInheritance() const
 bool
 UsdShadeCoordSysAPI::HasLocalBindings() const
 {
-    static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
+    TRACE_FUNCTION();
     
+    static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
+
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True.
     if (checker == 1) {
         return UsdShadeCoordSysAPI::HasLocalBindingsForPrim(GetPrim());
@@ -515,6 +545,9 @@ UsdShadeCoordSysAPI::HasLocalBindings() const
          GetPrim().GetAuthoredPropertiesInNamespace(_schemaTokens->coordSys)) {
         if (UsdRelationship rel = prop.As<UsdRelationship>()) {
             if (rel) {
+                if (checker == 2) {
+                    _WarnOnDeprecatedAsset(GetPrim());
+                }
                 return true;
             }
         }
@@ -533,9 +566,12 @@ UsdShadeCoordSysAPI::HasLocalBindingsForPrim(const UsdPrim &prim)
 bool 
 UsdShadeCoordSysAPI::Bind(const TfToken &name, const SdfPath &path) const
 {
+    TRACE_FUNCTION();
+
     bool bound = false;
     static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
     
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True.
     if (checker == 1) {
         return UsdShadeCoordSysAPI::Apply(GetPrim(), name).Bind(path);
@@ -551,6 +587,9 @@ UsdShadeCoordSysAPI::Bind(const TfToken &name, const SdfPath &path) const
 
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
+        if (checker == 2) {
+            _WarnOnUseOfDeprecatedNonAppliedAPI("UsdShadeCoordSysAPI::Bind");
+        }
         bound |= rel.SetTargets(SdfPathVector(1, path));
     }
     return bound;
@@ -580,9 +619,12 @@ UsdShadeCoordSysAPI::Bind(const SdfPath &path) const
 bool 
 UsdShadeCoordSysAPI::ClearBinding(const TfToken &name, bool removeSpec) const
 {
+    TRACE_FUNCTION();
+
     bool cleared = false;
     static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
 
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True
     if (checker == 1) {
         return UsdShadeCoordSysAPI::Apply(GetPrim(), name).
@@ -600,6 +642,10 @@ UsdShadeCoordSysAPI::ClearBinding(const TfToken &name, bool removeSpec) const
 
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().GetRelationship(relName)) {
+        if (checker == 2) {
+            _WarnOnUseOfDeprecatedNonAppliedAPI(
+                    "UsdShadeCoordSysAPI::ClearBinding");
+        }
         cleared |= rel.ClearTargets(removeSpec);
     }
     return cleared;
@@ -623,6 +669,9 @@ UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 
     static const int checker = _UsdShadeCoordSysAPIMultiApplyChecker();
 
+    TRACE_FUNCTION()
+
+    // First try new multi-applied UsdShadeCoordSysAPI
     // USD_SHADE_COORD_SYS_IS_MULTI_APPLY is set to True
     if (checker == 1) {
         return UsdShadeCoordSysAPI::Apply(GetPrim(), name).BlockBinding();
@@ -639,6 +688,10 @@ UsdShadeCoordSysAPI::BlockBinding(const TfToken &name) const
 
     TfToken relName = GetCoordSysRelationshipName(name);
     if (UsdRelationship rel = GetPrim().CreateRelationship(relName)) {
+        if (checker == 2) {
+            _WarnOnUseOfDeprecatedNonAppliedAPI(
+                    "UsdShadeCoordSysAPI::BlockBinding");
+        }
         blocked |= rel.SetTargets({});
     }
     return blocked;

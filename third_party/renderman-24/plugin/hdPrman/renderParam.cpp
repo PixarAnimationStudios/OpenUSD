@@ -27,6 +27,7 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/material.h"
 #include "hdPrman/renderDelegate.h"
+#include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/camera.h"
 #include "hdPrman/cameraContext.h"
@@ -83,6 +84,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceName)
     (sourceType)
     (primvar)
+    (lpe)
 );
 
 
@@ -1470,17 +1472,13 @@ HdPrman_RenderParam::SetOptionsFromRenderSettings(
     for (auto const& entry : renderSettings) {
         TfToken token = entry.first;
         VtValue val = entry.second;
-        
-        bool hasRiPrefix = TfStringStartsWith(token.GetText(), "ri:");
-        if (hasRiPrefix) {
-            bool hasIntegratorPrefix =
-                TfStringStartsWith(token.GetText(), "ri:integrator");
-            if (hasIntegratorPrefix)
-            {
-                // This is an integrator setting. Skip.
+
+        if (TfStringStartsWith(token.GetText(), "ri:")) {
+            // Skip integrator settings.
+            if (TfStringStartsWith(token.GetText(), "ri:integrator")) {
                 continue;
             }
-            
+
             // Strip "ri:" namespace from USD.
             RtUString riName;
             riName = RtUString(token.GetText()+3);
@@ -2035,8 +2033,8 @@ _ComputeRenderViewDesc(
         };
         
         const std::string outputExt = TfGetExtension(name.GetString());
-        const TfToken dspyFormat = extToDisplayDriver.at(outputExt);
-        displayDesc.driver = RtUString(dspyFormat.GetText());
+        const TfToken displayFormat = extToDisplayDriver.at(outputExt);
+        displayDesc.driver = RtUString(displayFormat.GetText());
 
         displayDesc.params = _ToRtParamList(
             VtDictionaryGet<VtDictionary>(
@@ -2057,8 +2055,103 @@ _ComputeRenderViewDesc(
     return renderViewDesc;
 }
 
+// Forward declaration of helper to create Render Output in the RenderViewDesc
+static RtUString
+_AddRenderOutput(RtUString aovName, HdFormat aovFormat,
+    const TfToken &dataType, RtUString sourceName, const RtParamList &params,
+    std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> *renderOutputDescs,
+    std::vector<size_t> *renderOutputIndices);
+
+static
+HdPrman_RenderViewDesc
+_ComputeRenderViewDesc(
+    const HdPrman_RenderSettings &renderSettingsPrim,
+    const riley::CameraId cameraId,
+    const riley::IntegratorId integratorId,
+    const riley::SampleFilterList &sampleFilterList,
+    const riley::DisplayFilterList &displayFilterList)
+{
+    HdPrman_RenderViewDesc renderViewDesc;
+    renderViewDesc.cameraId = cameraId;
+    renderViewDesc.integratorId = integratorId;
+    renderViewDesc.sampleFilterList = sampleFilterList;
+    renderViewDesc.displayFilterList = displayFilterList;
+    // XXX Note that the resolution can be different for the Render Settings 
+    // and the Render Product. However, both the resolution and cameraId are 
+    // set on the renderViewDesc instead of the DisplayDesc (the riley
+    // counterpart to the Render Output). So Render Products with changes to 
+    // attributes affecting the resolution/cameraId would need separate 
+    // RenderViewDesc's
+    const HdRenderSettings::RenderProducts &renderProducts =
+        renderSettingsPrim.GetRenderProducts();
+    renderViewDesc.resolution = !renderProducts.empty()
+        ? renderSettingsPrim.GetRenderProducts().at(0).resolution
+        : GfVec2i(512, 512);
+
+    /* RenderProduct */
+    int renderVarIndex = 0;
+    std::map<SdfPath, int> seenRenderVars;
+    for (HdRenderSettings::RenderProduct product : renderProducts) {
+
+        // Create a DisplayDesc for this RenderProduct
+        HdPrman_RenderViewDesc::DisplayDesc displayDesc;
+        displayDesc.name = RtUString(product.name.GetText());
+        displayDesc.params = _ToRtParamList(product.namespacedSettings);
+
+        // get output display driver type
+        // TODO this is not a robust solution
+        static const std::map<std::string,TfToken> extToDisplayDriver{
+            { std::string("exr"),  TfToken("openexr") },
+            { std::string("tif"),  TfToken("tiff") },
+            { std::string("tiff"), TfToken("tiff") },
+            { std::string("png"),  TfToken("png") }
+        };
+        const std::string outputExt = TfGetExtension(product.name.GetString());
+        const TfToken displayFormat = extToDisplayDriver.at(outputExt);
+        displayDesc.driver = RtUString(displayFormat.GetText());
+
+        /* RenderVar */
+        for (const HdRenderSettings::RenderProduct::RenderVar &renderVar :
+                product.renderVars) {
+            // Store the index to this RenderVar from all the renderOutputDesc's 
+            // saved on this renderViewDesc
+            auto renderVarIt = seenRenderVars.find(renderVar.varPath);
+            if (renderVarIt != seenRenderVars.end()) {
+                displayDesc.renderOutputIndices.push_back(renderVarIt->second);
+                continue;
+            } 
+            seenRenderVars.insert(
+                std::pair<SdfPath, int>(renderVar.varPath, renderVarIndex));
+            displayDesc.renderOutputIndices.push_back(renderVarIndex);
+            renderVarIndex++;
+
+            // Map source to Ri name.
+            std::string varSourceName = (renderVar.sourceType == _tokens->lpe) 
+                ? _tokens->lpe.GetString() + ":" + renderVar.sourceName
+                : renderVar.sourceName;
+            const RtUString sourceName(varSourceName.c_str());
+
+            // Create a RenderOutputDesc for this RenderVar and add it to the 
+            // renderViewDesc.
+            // Note that we are not using the renderOutputIndices passed into 
+            // this function, we are instead relying on the indices stored above
+            std::vector<size_t> renderOutputIndices;
+            _AddRenderOutput(sourceName, 
+                             HdFormatInvalid, // to use the renderVar.dataType
+                             renderVar.dataType, 
+                             sourceName, 
+                             _ToRtParamList(renderVar.namespacedSettings),
+                             &renderViewDesc.renderOutputDescs,
+                             &renderOutputIndices);
+        }
+        renderViewDesc.displayDescs.push_back(displayDesc);
+    }
+
+    return renderViewDesc;
+}
+
 void
-HdPrman_RenderParam::CreateRenderViewFromSpec(
+HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
     const VtDictionary &renderSpec)
 {
     const HdPrman_RenderViewDesc renderViewDesc =
@@ -2070,8 +2163,25 @@ HdPrman_RenderParam::CreateRenderViewFromSpec(
             GetDisplayFilterList(),
             GfVec2i(512, 512));
 
-    GetRenderViewContext().CreateRenderView(
-        renderViewDesc, AcquireRiley());
+    GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
+}
+
+/// XXX This should eventually replace the above use of the RenderSpec
+void 
+HdPrman_RenderParam::CreateRenderViewFromRenderSettingsPrim(
+    HdPrman_RenderSettings const &renderSettingsPrim)
+{
+    // XXX The additonal arguments, apart from the Render Settings prim,
+    // should eventually come from the Render Settings prim itself.
+    const HdPrman_RenderViewDesc renderViewDesc =
+        _ComputeRenderViewDesc(
+            renderSettingsPrim,
+            GetCameraContext().GetCameraId(), 
+            GetActiveIntegratorId(), 
+            GetSampleFilterList(),
+            GetDisplayFilterList());
+
+    GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
 
 void
@@ -2222,15 +2332,13 @@ HdPrman_RenderParam::_CreateIntegrator(HdRenderDelegate * const renderDelegate)
 }
 
 void
-HdPrman_RenderParam::UpdateIntegrator(
-    const HdRenderIndex * const renderIndex)
+HdPrman_RenderParam::UpdateIntegrator(const HdRenderIndex * const renderIndex)
 {
     const riley::ShadingNode node = _ComputeIntegratorNode(
         renderIndex->GetRenderDelegate(),
         _cameraContext.GetCamera(renderIndex));
 
-    AcquireRiley()->ModifyIntegrator(
-        _integratorId, &node);
+    AcquireRiley()->ModifyIntegrator(_integratorId, &node);
 }
 
 void 
@@ -2387,15 +2495,24 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     // current camera and needs to set the riley shutter interval
     // which needs to be set before any time-sampled primvars are
     // synced.
-    const VtDictionary &renderSpec =
-        renderDelegate->GetRenderSetting<VtDictionary>(
-            HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-            VtDictionary());
-    const SdfPath &cameraPath =
-        VtDictionaryGet<SdfPath>(
-            renderSpec,
-            HdPrmanExperimentalRenderSpecTokens->camera,
-            VtDefault = SdfPath());
+    // 
+    // XXX This would ideally come directly from the Render Settings prim
+    SdfPath cameraPath =
+        renderDelegate->GetRenderSetting<SdfPath>(
+            HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath, 
+            SdfPath()); 
+    // If there was no cameraPath specified, then check the RenderSpec
+    if (cameraPath.IsEmpty()) {
+        const VtDictionary &renderSpec =
+            renderDelegate->GetRenderSetting<VtDictionary>(
+                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                VtDictionary());
+        const SdfPath &cameraPath =
+            VtDictionaryGet<SdfPath>(
+                renderSpec,
+                HdPrmanExperimentalRenderSpecTokens->camera,
+                VtDefault = SdfPath());
+    }
     GetCameraContext().SetCameraPath(cameraPath);
 }
 
@@ -2760,7 +2877,7 @@ _ExpandVarsInProductName(const std::string & productName,
 }
 
 static
-void
+RtUString
 _AddRenderOutput(
     RtUString aovName,
     HdFormat aovFormat,
@@ -2768,14 +2885,13 @@ _AddRenderOutput(
     RtUString sourceName,
     const RtParamList& params,
     std::vector<HdPrman_RenderViewDesc::RenderOutputDesc> * renderOutputDescs,
-    std::vector<size_t> * renderOutputIndices,
-    RtUString * rule)
+    std::vector<size_t> * renderOutputIndices)
 {
     static RtUString const k_cpuTime("cpuTime");
     static RtUString const k_sampleCount("sampleCount");
     static RtUString const k_none("none");
-    RtParamList extraParams;
 
+    // Get the Render Type from the given RtParamList
     riley::RenderOutputType rt = _ToRenderOutputTypeFromFormat(aovFormat);
     if(!dataType.IsEmpty()) {
         rt = _ToRenderOutputType(dataType);
@@ -2784,11 +2900,12 @@ _AddRenderOutput(
         rt = riley::RenderOutputType::k_Color;
     }
 
+    // Get the rule, filter, and filterSize from the given RtParamList
+    RtUString rule = RixStr.k_filter;
+    params.GetString(RixStr.k_rule, rule);
+
     RtUString filter = RixStr.k_box;
     params.GetString(RixStr.k_filter, filter);
-
-    *rule = RixStr.k_filter;
-    params.GetString(RixStr.k_rule, *rule);
 
     float filterSize[2] = {1.0f, 1.0f};
     if(float const* filterwidth =
@@ -2797,10 +2914,41 @@ _AddRenderOutput(
         filterSize[1] = filterwidth[1];
     }
 
-    float relativePixelVariance = 1.0f;
-    params.GetFloat(RixStr.k_relativepixelvariance,
-                    relativePixelVariance);
+    // Adjust the rule/filter/filterSize as needed
+    RtUString value;
+    // "cpuTime" and "sampleCount" should use rule "sum"
+    if(aovName == k_cpuTime || aovName == k_sampleCount) {
+        rule = RixStr.k_sum;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    // "id", "id2", and "z" should use rule "zmin"
+    } else if(aovName == RixStr.k_id || aovName == RixStr.k_id2 ||
+              aovName == RixStr.k_z ||
+              rt == riley::RenderOutputType::k_Integer) {
+        rule = RixStr.k_zmin;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    // If statistics are set, use that as the rule
+    } else if(params.GetString(RixStr.k_statistics, value) &&
+              !value.Empty() && value != k_none) {
+        rule = value;
+    // Certain filter types need to be converted to rules
+    } else if(filter == RixStr.k_min  || filter == RixStr.k_max  ||
+              filter == RixStr.k_zmin || filter == RixStr.k_zmax ||
+              filter == RixStr.k_sum  || filter == RixStr.k_average) {
+        rule = filter;
+        filter = RixStr.k_box;
+        filterSize[0] = 1;
+        filterSize[1] = 1;
+    }
 
+    // Get the relativePixelVariance and remap from the given RtParamList
+    float relativePixelVariance = 1.0f;
+    params.GetFloat(RixStr.k_relativepixelvariance, relativePixelVariance);
+
+    RtParamList extraParams;
     float remap[3] = {0.0f, 0.0f, 0.0f};
     if (float const* remapValue = params.GetFloatArray(RixStr.k_remap, 3)) {
         remap[0] = remapValue[0];
@@ -2809,56 +2957,25 @@ _AddRenderOutput(
         extraParams.SetFloatArray(RixStr.k_remap, remap, 3);
     }
 
-    RtUString value;
-    // "cpuTime" and "sampleCount" should use rule "sum"
-    if(aovName == k_cpuTime || aovName == k_sampleCount) {
-        *rule = RixStr.k_sum;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    // "id", "id2", and "z" should use rule "zmin"
-    } else if(aovName == RixStr.k_id || aovName == RixStr.k_id2 ||
-              aovName == RixStr.k_z ||
-              rt == riley::RenderOutputType::k_Integer) {
-        *rule = RixStr.k_zmin;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    // If statistics are set, use that as the rule
-    } else if(params.GetString(RixStr.k_statistics, value) &&
-              !value.Empty() && value != k_none) {
-        *rule = value;
-    // Certain filter types need to be converted to rules
-    } else if(filter == RixStr.k_min || filter == RixStr.k_max ||
-       filter == RixStr.k_zmin || filter == RixStr.k_zmax ||
-              filter == RixStr.k_sum || filter == RixStr.k_average) {
-        *rule = filter;
-        filter = RixStr.k_box;
-        filterSize[0] = 1;
-        filterSize[1] = 1;
-    }
-
     {
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = aovName;
         renderOutputDesc.type = rt;
         renderOutputDesc.sourceName = sourceName;
-        renderOutputDesc.rule = *rule;
+        renderOutputDesc.rule = rule;
         renderOutputDesc.filter = filter;
-        renderOutputDesc.params = extraParams;
         renderOutputDesc.filterWidth.Set( filterSize[0], filterSize[1] );
         renderOutputDesc.relativePixelVariance = relativePixelVariance;
+        renderOutputDesc.params = extraParams;
 
-        renderOutputDescs->push_back(
-            std::move(renderOutputDesc));
-        renderOutputIndices->push_back(
-            renderOutputDescs->size()-1);
+        renderOutputDescs->push_back(std::move(renderOutputDesc));
+        renderOutputIndices->push_back(renderOutputDescs->size()-1);
     }
 
     // When a float4 color is requested, assume we require alpha as well.
     // This assumption is reflected in framebuffer.cpp HydraDspyData
     int componentCount = HdGetComponentCount(aovFormat);
-    if(rt == riley::RenderOutputType::k_Color && componentCount == 4) {
+    if (rt == riley::RenderOutputType::k_Color && componentCount == 4) {
         HdPrman_RenderViewDesc::RenderOutputDesc renderOutputDesc;
         renderOutputDesc.name = RixStr.k_a;
         renderOutputDesc.type = riley::RenderOutputType::k_Float;
@@ -2866,11 +2983,10 @@ _AddRenderOutput(
         renderOutputDesc.rule = RixStr.k_filter;
         renderOutputDesc.filter = RixStr.k_box;
 
-        renderOutputDescs->push_back(
-            std::move(renderOutputDesc));
-        renderOutputIndices->push_back(
-            renderOutputDescs->size()-1);
+        renderOutputDescs->push_back(std::move(renderOutputDesc));
+        renderOutputIndices->push_back(renderOutputDescs->size()-1);
     }
+    return rule;
 }
 
 static
@@ -2915,15 +3031,13 @@ _ComputeRenderOutputAndAovDescs(
         }
 
 
-        RtUString rule;
-        _AddRenderOutput(rmanAovName,
-                         aovFormat,
-                         dataType,
-                         rmanSourceName,
-                         renderOutputParams,
-                         renderOutputDescs,
-                         renderOutputIndices,
-                         &rule);
+        RtUString rule = _AddRenderOutput(rmanAovName,
+                                          aovFormat,
+                                          dataType,
+                                          rmanSourceName,
+                                          renderOutputParams,
+                                          renderOutputDescs,
+                                          renderOutputIndices);
 
         {
             HdPrmanFramebuffer::AovDesc aovDesc;
@@ -3006,8 +3120,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.sampleFilterList = GetSampleFilterList();
     renderViewDesc.displayFilterList = GetDisplayFilterList();
 
-    GetRenderViewContext().CreateRenderView(
-        renderViewDesc, riley);
+    GetRenderViewContext().CreateRenderView(renderViewDesc, riley);
 }
 
 void
@@ -3173,15 +3286,13 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
                                  &rmanAovName,
                                  &rmanSourceName);
 
-            RtUString rule;
             _AddRenderOutput(rmanAovName,
                              aovFormat,
                              dataType,
                              rmanSourceName,
                              renderOutputParams,
                              &renderViewDesc.renderOutputDescs,
-                             &renderOutputIndices,
-                             &rule);
+                             &renderOutputIndices);
 
         }
 
@@ -3199,8 +3310,7 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
 
-    GetRenderViewContext().CreateRenderView(
-        renderViewDesc, _riley);
+    GetRenderViewContext().CreateRenderView(renderViewDesc, _riley);
 }
 
 bool

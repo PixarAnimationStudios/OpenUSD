@@ -77,6 +77,7 @@ pxr_plugin(${PXR_PACKAGE}
         cylinder
         coordSys
         debugCodes
+        debugUtil
         dependencyForwardingSceneIndexPlugin
         displayFilter
         gprim

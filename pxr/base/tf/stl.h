@@ -35,8 +35,6 @@
 #include "pxr/base/tf/hashset.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/call_traits.hpp>
-
 #include <algorithm>
 #include <iterator>
 #include <map>
@@ -221,17 +219,6 @@ inline void TfReset(TfHashSet<Value, Hash, Equal, Alloc> &hash) {
         TfHashSet<Value, Hash, Equal, Alloc>(0).swap(hash);
     else if (!hash.empty())
         hash.clear();
-}
-
-
-/// An unary function that represents the identity function; it takes a single
-/// argument \a arg, and returns \a arg.
-///
-/// This is similar to the sgi extension std::identity<T>.
-template <class T>
-inline typename boost::call_traits<T>::param_type
-TfIdentity(typename boost::call_traits<T>::param_type arg) {
-    return arg;
 }
 
 /// Produce a sequence consisting of the set difference of [\a first1, \a

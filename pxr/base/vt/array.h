@@ -38,7 +38,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
@@ -923,14 +922,18 @@ class VtArray : public Vt_ArrayBase {
     extern template class VtArray< VT_TYPE(elem) >;
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
+template <class HashState, class ELEM>
+inline std::enable_if_t<VtIsHashable<ELEM>()>
+TfHashAppend(HashState &h, VtArray<ELEM> const &array)
+{
+    h.Append(array.size());
+    h.AppendContiguous(array.cdata(), array.size());
+}
+
 template <class ELEM>
 typename std::enable_if<VtIsHashable<ELEM>(), size_t>::type
 hash_value(VtArray<ELEM> const &array) {
-    size_t h = array.size();
-    for (auto const &x: array) {
-        boost::hash_combine(h, x);
-    }
-    return h;
+    return TfHash()(array);
 }
 
 // Specialize traits so others can figure out that VtArray is an array.

@@ -2,7 +2,6 @@
 \page usdUtils_page_front UsdUtils: USD Utilities 
 \if ( PIXAR_MFB_BUILD )
 \mainpage  UsdUtils: USD Utility Libraries 
-\publicLib
 \endif
 
 \section usdUtils_overview Overview

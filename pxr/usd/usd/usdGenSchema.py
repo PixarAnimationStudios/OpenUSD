@@ -119,6 +119,11 @@ API_SCHEMA_INSTANCES = "apiSchemaInstances"
 # class type.
 FALLBACK_TYPES = "fallbackTypes"
 
+# The instance name placeholder for multiple apply schema template properties.
+# This has a special meaning if found in a schema.usda.
+INSTANCE_NAME_PLACEHOLDER = \
+    Usd.SchemaRegistry.MakeMultipleApplyNameTemplate("", "")
+
 #------------------------------------------------------------------------------#
 # Parsed Objects                                                               #
 #------------------------------------------------------------------------------#
@@ -287,14 +292,15 @@ def _CamelCase(aString):
     
 Token = namedtuple('Token', ['id', 'value', 'desc'])
 
-def _GetNameAndRawNameForPropInfo(sdfProp, classInfo):
+def _GetNameAndGeneratedSchemaPropNameForPropInfo(sdfPropName, classInfo):
     if classInfo.propertyNamespacePrefix:
         # A property namespace prefix will only exist for multiple apply API
         # schemas and is used to create the instanceable namespace prefix 
         # prepended to all its properties. We prepend this instanceable 
         # prefix to the raw name here.
-        rawName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-            classInfo.propertyNamespacePrefix, sdfProp.name)
+        generatedSchemaPropName = \
+            Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+                classInfo.propertyNamespacePrefix, sdfPropName)
         # Since the property info's name is used to create the identifier 
         # used for tokens and such, we make it from the instanced property 
         # name with the instance name placeholder replaced with 
@@ -303,16 +309,16 @@ def _GetNameAndRawNameForPropInfo(sdfProp, classInfo):
         # itself.
         name = _CamelCase(
             Usd.SchemaRegistry.MakeMultipleApplyNameInstance(
-                rawName, "_MultipleApplyTemplate_"))
+                generatedSchemaPropName, "_MultipleApplyTemplate_"))
     else:
-        rawName = sdfProp.name
+        generatedSchemaPropName = sdfPropName
         # For property names, camelCase all tokens irrespective of
         # useLiteralIdentifier, so that we are consistent in our attribute
         # naming when namespace prefix are provided and respect our coding
         # convention. (Example: namespacePrefix:attrName ->
         # namespacePrefixAttrName)
-        name = _MakeValidToken(rawName, False)
-    return (name, rawName)
+        name = _MakeValidToken(sdfPropName, False)
+    return (name, generatedSchemaPropName)
 
 class PropInfo(object):
     class CodeGen:
@@ -329,8 +335,21 @@ class PropInfo(object):
     def __init__(self, sdfProp, classInfo):
         # Allow user to specify custom naming through customData metadata.
         self.customData = dict(sdfProp.customData)
-        self.name, self.rawName = _GetNameAndRawNameForPropInfo(
-            sdfProp, classInfo)
+
+        sdfPropName = sdfProp.name
+        # If the property name in the layer exactly matches the multiple apply 
+        # API schema instance name placeholder, it indicates the special intention
+        # defining the "{nameSpacePrefix}:{instanceName}" property in the 
+        # generatedSchema. This would be the equivalent of definining a property
+        # with an empty base name in the source schema.usda, but since an empty
+        # property name is not allowed, we treat this case as if it were an empty
+        # property name for generation purposes.
+        if sdfPropName == INSTANCE_NAME_PLACEHOLDER:
+            sdfPropName = ""
+
+        self.name, self.generatedSchemaPropName = \
+            _GetNameAndGeneratedSchemaPropNameForPropInfo(
+                sdfPropName, classInfo)
 
         # Determine if this property will be an API schema override in the 
         # flattened stage.
@@ -343,7 +362,7 @@ class PropInfo(object):
             self.apiName = ''
         else:
             self.apiName = self.customData.get(
-                'apiName', _CamelCase(sdfProp.name))
+                'apiName', _CamelCase(sdfPropName))
         self.apiGet = self.customData.get(
             'apiGetImplementation', self.CodeGen.Generated)
         if self.apiGet not in [self.CodeGen.Generated, self.CodeGen.Custom]:
@@ -1110,8 +1129,7 @@ def _AddToken(tokenDict, classTokenSet, tokenId, val, desc,
     # If token is a reserved word in either language, append with underscore.
     # 'interface' is not a reserved word but is a macro on Windows when using
     # COM so we treat it as reserved.
-    # None is a reserved word for python3, hencing added here for
-    # python3-proofing
+    # None is a reserved word for python3 
     reserved = set(cppReservedKeywords + keyword.kwlist + [
         'interface',
         'None',
@@ -1188,7 +1206,8 @@ def GatherTokens(classes, libName, libTokens,
             # naming when namespace prefix are provided and respect our coding
             # convention. (Example: namespacePrefix:attrName ->
             # namespacePrefixAttrName)
-            _AddToken(tokenDict, cls.tokens, attr.name, attr.rawName, cls.cppClassName)
+            _AddToken(tokenDict, cls.tokens, attr.name, 
+                      attr.generatedSchemaPropName, cls.cppClassName)
 
             # Add fallback value (if token type) to token set
             addTokenForFallback = (
@@ -1199,7 +1218,7 @@ def GatherTokens(classes, libName, libTokens,
                            (cls.cppClassName, _ProperCase(attr.apiName))
                 else:
                     desc = 'Fallback value for %s schema attribute %s' % \
-                           (cls.cppClassName, attr.rawName)
+                           (cls.cppClassName, attr.generatedSchemaPropName)
                 _AddToken(tokenDict, cls.tokens, attr.fallback,
                         attr.fallback, desc, cls.useLiteralIdentifier)
             
@@ -1220,7 +1239,7 @@ def GatherTokens(classes, libName, libTokens,
                                    (cls.cppClassName, _ProperCase(attr.apiName))
                         else:
                             desc = 'Possible value for %s schema attribute %s' % \
-                                   (cls.cppClassName, attr.rawName)
+                                   (cls.cppClassName, attr.generatedSchemaPropName)
                         _AddToken(tokenDict, cls.tokens, val, val, desc, 
                                 cls.useLiteralIdentifier)
 
@@ -1233,7 +1252,8 @@ def GatherTokens(classes, libName, libTokens,
 
         # Add tokens from relationships to the token set
         for rel in cls.rels.values():
-            _AddToken(tokenDict, cls.tokens, rel.name, rel.rawName, cls.cppClassName, True)
+            _AddToken(tokenDict, cls.tokens, rel.name, 
+                      rel.generatedSchemaPropName, cls.cppClassName, True)
             
         # Add schema tokens to token set
         schemaTokens = cls.customData.get("schemaTokens", {})
@@ -1571,8 +1591,12 @@ def _RenamePropertiesWithInstanceablePrefix(usdPrim):
     # For each property create a copy with the prefixed instanceable property
     # name.
     for prop in usdPrim.GetProperties():
-        newPropName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
-            namespacePrefix, prop.GetName())
+        if prop.GetName() == INSTANCE_NAME_PLACEHOLDER:
+            newPropName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+                namespacePrefix, "")
+        else:
+            newPropName = Usd.SchemaRegistry.MakeMultipleApplyNameTemplate(
+                namespacePrefix, prop.GetName())
         if usdPrim.HasProperty(newPropName):
             raise _GetSchemaDefException("Prefixed property name '%s' already "
                 "exists as property base name in the schema." % newPropName, 

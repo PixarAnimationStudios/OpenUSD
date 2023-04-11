@@ -30,6 +30,7 @@
 #include "pxr/base/gf/dualQuatf.h"
 #include "pxr/base/gf/dualQuath.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -70,7 +71,7 @@ static GfDualQuath& __itruediv__(GfDualQuath &self, GfHalf value)
 }
 
 static size_t __hash__(GfDualQuath const &self) {
-    return hash_value(self);
+    return TfHash{}(self);
 }
 
 // Zero-initialized default ctor for python.

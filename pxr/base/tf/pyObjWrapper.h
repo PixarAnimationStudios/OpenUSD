@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/api.h"
+#include "pxr/base/arch/pragmas.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 // Include this header first to pick up additional mitigations
@@ -57,7 +58,10 @@ public:
     static constexpr std::size_t Align = 8;
 
 private:
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
     std::aligned_storage<Size, Align>::type _stub;
+    ARCH_PRAGMA_POP
 };
 
 

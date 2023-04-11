@@ -1147,6 +1147,10 @@ HdStRenderPassState::_InitPrimitiveState(
                 geometricShader->IsPrimTypeTriangles()
                     ? HgiTessellationState::PatchType::Triangle
                     : HgiTessellationState::PatchType::Quad;
+            pipeDesc->tessellationState.tessFactorMode =
+                geometricShader->IsPrimTypePatches()
+                    ? HgiTessellationState::TessVertex
+                    : HgiTessellationState::Constant;
         }
     }
 }

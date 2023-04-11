@@ -62,7 +62,9 @@
 // 45 -> 46: New signatures for HdRendererPlugin::IsSupported and
 //           HdRendererPluginRegistry::GetDefaultPluginId
 // 46 -> 47: Adding HdRenderDelegate::GetRenderSettingsNamespaces()
-#define HD_API_VERSION 47
+// 47 -> 48: New signature for HdRenderIndex::InsertSceneIndex: added optional 
+//           argument needsPrefixing
+#define HD_API_VERSION 48
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

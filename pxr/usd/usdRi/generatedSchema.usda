@@ -63,3 +63,32 @@ class "RiSplineAPI" (
 {
 }
 
+class "RiRenderPassAPI" (
+    apiSchemas = ["CollectionAPI:matte", "CollectionAPI:cameraVisibility"]
+    customData = {
+        token[] apiSchemaOverridePropertyNames = ["collection:cameraVisibility:includeRoot"]
+    }
+    doc = """
+    RiRenderPassAPI is an API schema that provides a mechanism
+    to set certain Ri statements on each prim in a collection,
+    for a given RenderPass prim.
+
+    \\anchor usdRi_cameraVisibility
+    The objects that are relevant to the render is specified via the 
+    cameraVisibility collection (UsdCollectionAPI) and can be accessed via 
+    GetCameraVisibilityCollectionAPI(). Each prim in the collection will have
+    ri:visible:camera set to 1.  By default everything in the scene should be 
+    visible to camera, so this collection sets includeRoot to 1.
+
+    \\anchor usdRi_matte
+    The objects that are relevant to the render is specified via the 
+    matte collection (UsdCollectionAPI) and can be accessed via 
+    GetMatteCollectionAPI().  Each prim in the collection will have
+    ri:matte set to 1.  By default everything in the scene should render
+    normally, so this collection sets includeRoot to 0.
+    """
+)
+{
+    uniform bool collection:cameraVisibility:includeRoot = 1
+}
+

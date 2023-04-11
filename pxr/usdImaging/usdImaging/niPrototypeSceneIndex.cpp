@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/xformSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -47,6 +48,18 @@ _IsUsdInstance(HdContainerDataSourceHandle const &primSource)
 }
 
 HdContainerDataSourceHandle
+_ResetXformToIdentityDataSource()
+{
+    static HdMatrixDataSourceHandle const identity
+        = HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
+            GfMatrix4d(1.0));
+    return HdXformSchema::Builder()
+        .SetMatrix(identity)
+        .SetResetXformStack(HdRetainedTypedSampledDataSource<bool>::New(true))
+        .Build();
+}
+
+HdContainerDataSourceHandle
 _ComputeUnderlaySource(const SdfPath &prototypeRoot)
 {
     if (prototypeRoot.IsEmpty()) {
@@ -61,7 +74,11 @@ _ComputeUnderlaySource(const SdfPath &prototypeRoot)
             HdInstancedBySchema::Builder()
                 .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build()); 
+                .Build(),
+
+            // The prototypes should always be defined at the origin.
+            HdXformSchemaTokens->xform,
+            _ResetXformToIdentityDataSource());
 }
 
 }

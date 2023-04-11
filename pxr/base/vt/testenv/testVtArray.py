@@ -359,10 +359,6 @@ class TestVtArray(unittest.TestCase):
         _TestDivision(Vt.QuatdArray, Gf.Quatd, Gf.Vec3d)
         _TestDivision(Vt.QuaternionArray, Gf.Quaternion, Gf.Vec3d)
 
-    # The test is disabled for py2 because array in py2 doesn't support old py2
-    # buffer protocol.
-    @unittest.skipIf(sys.version_info.major == 2,
-            "Array in py2 doesn't support old py2 buffer protocol")
     def test_LargeBuffer(self):
         '''VtArray can be created from a buffer with item count
            greater than maxint'''

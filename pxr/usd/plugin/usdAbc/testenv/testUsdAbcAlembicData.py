@@ -147,5 +147,10 @@ class TestUsdAbcAlembicData(unittest.TestCase):
             #       to the stage to close the file.
             del stage
 
+    def test_Capabilities(self):
+        self.assertTrue(Sdf.FileFormat.FormatSupportsReading('.abc'))
+        self.assertTrue(Sdf.FileFormat.FormatSupportsWriting('.abc'))
+        self.assertFalse(Sdf.FileFormat.FormatSupportsEditing('.abc'))
+
 if __name__ == "__main__":
     unittest.main()

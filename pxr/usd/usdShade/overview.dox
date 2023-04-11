@@ -1,7 +1,6 @@
 /*!
 \page usdShade_page_front UsdShade : USD Shading Schema
 \if ( PIXAR_MFB_BUILD )
-\publicLib
 \mainpage UsdShade : USD Shading Schema
 \endif
 

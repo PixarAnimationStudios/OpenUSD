@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/renderSettingsAdapter.h"
-#include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
+#include "pxr/usdImaging/usdImaging/dataSourceRenderPrims.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -39,8 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX Placeholder before the RenderSettings DataSource is added
-using UsdImagingDataSourceRenderSettings = UsdImagingDataSourcePrim;
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -88,7 +86,7 @@ UsdImagingRenderSettingsAdapter::GetImagingSubprimData(
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourceRenderSettings::New(
+        return UsdImagingDataSourceRenderSettingsPrim::New(
                     prim.GetPath(), prim, stageGlobals);
     }
 
@@ -102,7 +100,7 @@ UsdImagingRenderSettingsAdapter::InvalidateImagingSubprim(
     TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingPrimAdapter::InvalidateImagingSubprim(
+        return UsdImagingDataSourceRenderSettingsPrim::Invalidate(
             prim, subprim, properties);
     }
 
@@ -285,7 +283,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
             hdVar.dataType = rv.dataType;
             hdVar.sourceName = rv.sourceName;
             hdVar.sourceType = rv.sourceType;
-            hdVar.extraSettings = rv.extraSettings;
+            hdVar.namespacedSettings = rv.namespacedSettings;
 
             hdProduct.renderVars.push_back(std::move(hdVar));
         }
@@ -298,7 +296,7 @@ _ToHdRenderProducts(UsdRenderSpec const &renderSpec)
         hdProduct.dataWindowNDC = product.dataWindowNDC;
 
         hdProduct.disableMotionBlur = product.disableMotionBlur;
-        hdProduct.extraSettings = product.extraSettings;
+        hdProduct.namespacedSettings = product.namespacedSettings;
 
         hdProducts.push_back(std::move(hdProduct));
     }
@@ -317,9 +315,10 @@ UsdImagingRenderSettingsAdapter::Get(
     VtIntArray *outIndices) const
 {
     // Gather authored settings attributes on the render settings prim.
-    if (key == HdRenderSettingsPrimTokens->settings) {
-        return VtValue(UsdRenderComputeExtraSettings(
-            prim, _GetRenderSettingsNamespaces()));
+    if (key == HdRenderSettingsPrimTokens->namespacedSettings) {
+        return VtValue(
+            UsdRenderComputeNamespacedSettings(
+                prim, _GetRenderSettingsNamespaces()));
     }
 
     if (key == HdRenderSettingsPrimTokens->renderProducts) {
@@ -327,6 +326,24 @@ UsdImagingRenderSettingsAdapter::Get(
             UsdRenderSettings(prim), _GetRenderSettingsNamespaces());
 
         return VtValue(_ToHdRenderProducts(renderSpec));
+    }
+
+    if (key == HdRenderSettingsPrimTokens->includedPurposes) {
+        VtArray<TfToken> purposes;
+        UsdRenderSettings(prim).GetIncludedPurposesAttr().Get(&purposes);
+        return VtValue(purposes);
+    }
+
+    if (key == HdRenderSettingsPrimTokens->materialBindingPurposes) {
+        VtArray<TfToken> purposes;
+        UsdRenderSettings(prim).GetMaterialBindingPurposesAttr().Get(&purposes);
+        return VtValue(purposes);
+    }
+
+    if (key == HdRenderSettingsPrimTokens->renderingColorSpace) {
+        TfToken colorSpace;
+        UsdRenderSettings(prim).GetRenderingColorSpaceAttr().Get(&colorSpace);
+        return VtValue(colorSpace);
     }
 
     TF_CODING_ERROR(

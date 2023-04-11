@@ -163,6 +163,7 @@ pxr_library(sdf
 
     DOXYGEN_FILES
         overview.dox
+        doxygen/fileFormatPlugin.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires

@@ -182,7 +182,8 @@ HdRenderIndex::New(
 void
 HdRenderIndex::InsertSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
-    SdfPath const& scenePathPrefix)
+    SdfPath const& scenePathPrefix,
+    bool needsPrefixing/* = true*/)
 {
     if (!_IsEnabledSceneIndexEmulation()) {
         TF_WARN("Unable to add scene index at prefix %s because emulation is off.",
@@ -191,7 +192,7 @@ HdRenderIndex::InsertSceneIndex(
     }
 
     HdSceneIndexBaseRefPtr resolvedScene = inputScene;
-    if (scenePathPrefix != SdfPath::AbsoluteRootPath()) {
+    if (needsPrefixing && scenePathPrefix != SdfPath::AbsoluteRootPath()) {
         resolvedScene = HdPrefixingSceneIndex::New(
             inputScene, scenePathPrefix);
     }

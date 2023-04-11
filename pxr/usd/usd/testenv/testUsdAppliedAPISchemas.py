@@ -131,7 +131,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
-            "single:bool_attr", "single:token_attr", "single:relationship"])
+            "single:bool_attr", "single:relationship", "single:token_attr"])
         self.assertEqual(singleApplyAPIDef.GetDocumentation(),
             "Test single apply API schema")
 
@@ -145,8 +145,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             ["TestMultiApplyAPI:__INSTANCE_NAME__"])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "multi:__INSTANCE_NAME__:bool_attr", 
-            "multi:__INSTANCE_NAME__:token_attr", 
-            "multi:__INSTANCE_NAME__:relationship"])
+            "multi:__INSTANCE_NAME__:relationship",
+            "multi:__INSTANCE_NAME__:token_attr"])
         self.assertEqual(multiApplyAPIDef.GetDocumentation(),
             "Test multi-apply API schema")
 

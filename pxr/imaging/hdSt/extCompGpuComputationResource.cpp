@@ -27,6 +27,8 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 static size_t _Hash(HdBufferSpecVector const &specs) {

@@ -3062,28 +3062,16 @@ class AppController(QtCore.QObject):
             # with targets etc etc.
             role = item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
             if role in (PropertyViewDataRoles.CONNECTION, PropertyViewDataRoles.TARGET):
-
-                # Get the owning property's set of selected targets.
-                propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                targets = selectedProperties.setdefault(prop, set())
-
-                # Add the target to the set of targets.
                 targetPath = Sdf.Path(str(item.text(PropertyViewIndex.NAME)))
-                if role == PropertyViewDataRoles.CONNECTION:
-                    prim = self._dataModel.stage.GetPrimAtPath(
-                        targetPath.GetPrimPath())
-                    target = prim.GetProperty(targetPath.name)
-                else: # role == PropertyViewDataRoles.TARGET
-                    target = self._dataModel.stage.GetPrimAtPath(
-                        targetPath)
-                targets.add(target)
-
+                propName = str(item.parent().text(PropertyViewIndex.NAME))
             else:
-
+                targetPath = None
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                selectedProperties.setdefault(prop, set())
+
+            prop = self._propertiesDict[propName]
+            targetPaths = selectedProperties.setdefault(prop, [])
+            if targetPath:
+                targetPaths.append(targetPath)
 
         with self._dataModel.selection.batchPropChanges:
             self._dataModel.selection.clearProps()
@@ -3091,7 +3079,8 @@ class AppController(QtCore.QObject):
                 if not isinstance(prop, CustomAttribute):
                     self._dataModel.selection.addProp(prop)
                     for target in targets:
-                        self._dataModel.selection.addPropTarget(prop, target)
+                        self._dataModel.selection.addPropTargetPath(
+                            prop.GetPath(), target)
 
         with self._dataModel.selection.batchComputedPropChanges:
             self._dataModel.selection.clearComputedProps()

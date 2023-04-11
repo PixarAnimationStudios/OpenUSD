@@ -399,11 +399,20 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyActive) {
             set->append(HdRenderSettingsSchema::GetActiveLocator());
         }
-        if (bits & HdRenderSettings::DirtySettings) {
+        if (bits & HdRenderSettings::DirtyNamespacedSettings) {
             set->append(HdRenderSettingsSchema::GetNamespacedSettingsLocator());
         }
         if (bits & HdRenderSettings::DirtyRenderProducts) {
             set->append(HdRenderSettingsSchema::GetRenderProductsLocator());
+        }
+        if (bits & HdRenderSettings::DirtyIncludedPurposes) {
+            set->append(HdRenderSettingsSchema::GetIncludedPurposesLocator());
+        }
+        if (bits & HdRenderSettings::DirtyMaterialBindingPurposes) {
+            set->append(HdRenderSettingsSchema::GetMaterialBindingPurposesLocator());
+        }
+        if (bits & HdRenderSettings::DirtyRenderingColorSpace) {
+            set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -908,11 +917,25 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         }
         if (_FindLocator(HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
                  end, &it)) {
-            bits |= HdRenderSettings::DirtySettings;
+            bits |= HdRenderSettings::DirtyNamespacedSettings;
         }
         if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyRenderProducts;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetIncludedPurposesLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyIncludedPurposes;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetMaterialBindingPurposesLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyMaterialBindingPurposes;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyRenderingColorSpace;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

@@ -40,6 +40,10 @@ class ArResolver;
 /// Helper object for managing the binding and unbinding of 
 /// ArResolverContext objects with the asset resolver.
 ///
+/// Context binding and unbinding are thread-specific. If you bind a context in
+/// a thread, that binding will only be visible to that thread.
+/// See \ref ar_resolver_contexts "Resolver Contexts" for more details.
+///
 /// \see \ref ArResolver_context "Asset Resolver Context Operations"
 class ArResolverContextBinder
 {

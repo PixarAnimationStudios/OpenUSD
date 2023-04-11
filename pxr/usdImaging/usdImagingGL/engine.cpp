@@ -30,6 +30,7 @@
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 
@@ -208,7 +209,6 @@ UsdImagingGLEngine::PrepareBatch(
             if (_GetUseSceneIndices()) {
                 TF_VERIFY(_stageSceneIndex);
                 _stageSceneIndex->SetStage(root.GetStage());
-                _stageSceneIndex->Populate();
 
                 // XXX(USD-7113): Add pruning based on _rootPath,
                 // _excludedPrimPaths
@@ -964,16 +964,6 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     // Create the new scene API
     if (_GetUseSceneIndices()) {
-        // The native prototype propagating scene index does a lot of
-        // the flattening before inserting copies of the the prototypes
-        // into the scene index. However, the resolved material for a prim
-        // coming from a USD prototype can depend on the prim ancestors of
-        // a corresponding instance. So we need to do one final resolve here.
-        static const HdContainerDataSourceHandle flatteningInputArgs =
-            HdRetainedContainerDataSource::New(
-                HdMaterialBindingSchemaTokens->materialBinding,
-                HdRetainedTypedSampledDataSource<bool>::New(true));
-
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New();
 
@@ -987,7 +977,10 @@ UsdImagingGLEngine::_SetRenderDelegate(
             UsdImagingSelectionSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
-            HdFlatteningSceneIndex::New(_sceneIndex, flatteningInputArgs);
+            UsdImagingRenderSettingsFlatteningSceneIndex::New(_sceneIndex);
+
+        _sceneIndex =
+            HdFlatteningSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
             UsdImagingDrawModeSceneIndex::New(_sceneIndex,

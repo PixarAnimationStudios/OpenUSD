@@ -147,11 +147,13 @@ pxr_library(hd
         sampleFilterSchema
         sceneDelegate
         sceneExtCompInputSource
+        sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema

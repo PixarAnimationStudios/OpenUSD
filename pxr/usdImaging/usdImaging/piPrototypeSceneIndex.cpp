@@ -23,13 +23,13 @@
 //
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -127,7 +127,7 @@ UsdImaging_PiPrototypeSceneIndex(
 void
 UsdImaging_PiPrototypeSceneIndex::_Populate()
 {
-    UsdImaging_SceneIndexPrimView view(_GetInputSceneIndex(), _prototypeRoot);
+    HdSceneIndexPrimView view(_GetInputSceneIndex(), _prototypeRoot);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
         

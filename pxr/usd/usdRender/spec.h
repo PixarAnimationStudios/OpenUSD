@@ -83,7 +83,7 @@ struct UsdRenderSpec {
         /// top-level renderVars array.
         std::vector<size_t> renderVarIndices;
         /// Any extra settings values discovered in requested namespaces.
-        VtDictionary extraSettings;
+        VtDictionary namespacedSettings;
     };
     /// Specification of a render variable (aka AOV).  See UsdRenderVar.
     struct RenderVar {
@@ -94,7 +94,7 @@ struct UsdRenderSpec {
         std::string sourceName;
         TfToken sourceType;
         /// Any extra settings values discovered in requested namespaces.
-        VtDictionary extraSettings;
+        VtDictionary namespacedSettings;
     };
     /// The full list of products requested by this render.
     std::vector<Product> products;
@@ -105,19 +105,19 @@ struct UsdRenderSpec {
     /// List of material binding purposes.
     VtArray<TfToken> materialBindingPurposes;
     /// Any extra settings values discovered in requested namespaces.
-    VtDictionary extraSettings;
+    VtDictionary namespacedSettings;
 };
 
 /// Computes the specification of the render settings.
 /// For each product, applies the aspectRatioConformPolicy
 /// and computes a final screenWindow and pixelAspectRatio.
 ///
-/// Any other attributes encountered are returned in extraSettings.
+/// Any other attributes encountered are returned in namespacedSettings.
 /// If a non-empty list of namespaces is provided, only attributes
 /// within those namespaces are returned.
 /// If an empty list of namespaces is provided, all custom
 /// (non-schema) attributes are returned.
-/// The same list of namespaces is used for finding extraSettings
+/// The same list of namespaces is used for finding namespacedSettings
 /// in all UsdRender prim types.
 USDRENDER_API
 UsdRenderSpec
@@ -133,8 +133,8 @@ UsdRenderComputeSpec(UsdRenderSettings const& settings,
 ///       to represent node graph outputs.
 USDRENDER_API
 VtDictionary
-UsdRenderComputeExtraSettings(UsdPrim const& prim,
-                              TfTokenVector const& namespaces);
+UsdRenderComputeNamespacedSettings(UsdPrim const& prim,
+                                   TfTokenVector const& namespaces);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

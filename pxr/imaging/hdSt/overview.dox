@@ -2,7 +2,6 @@
 \page hdSt_page_front HdSt : Rendering functionality for HdStorm
 \if ( PIXAR_MFB_BUILD )
 \mainpage  HdSt : Rendering functionality for HdStorm
-\publicLib
 \endif
 
 HdSt is responsible for the core rendering functionality of the 

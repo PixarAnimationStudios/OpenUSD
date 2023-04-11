@@ -289,16 +289,9 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
     
-    // For the time being, don't use complex curves on Metal. Support for this
-    // is planned for the future.
-    const bool hasMetalTessellation =
-        resourceRegistry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
-    
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
-    bool supportsRefinement = _SupportsRefinement(_refineLevel) &&
-        !hasMetalTessellation;
+    bool supportsRefinement = _SupportsRefinement(_refineLevel);
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
         // when unrefined can be confusing. Should we continue to do this?
@@ -329,8 +322,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     case HdBasisCurvesGeomStylePatch:
     {
         if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem) &&
-            !hasMetalTessellation) {
+            _SupportsUserWidths(drawItem)) {
             if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
@@ -381,6 +373,10 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         }
     }
 
+    bool const hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
@@ -389,7 +385,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         _basisNormalInterpolation,
                                         shadingTerminal,
                                         hasAuthoredTopologicalVisiblity,
-                                        _pointsShadingEnabled);
+                                        _pointsShadingEnabled,
+                                        hasMetalTessellation);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",

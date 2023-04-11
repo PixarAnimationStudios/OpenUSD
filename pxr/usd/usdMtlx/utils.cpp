@@ -585,7 +585,12 @@ UsdMtlxGetPackedUsdValues(const std::string& values, const std::string& type)
 std::vector<std::string>
 UsdMtlxSplitStringArray(const std::string& s)
 {
-    return mx::splitString(s, mx::ARRAY_VALID_SEPARATORS);
+    static const std::string _CommaSeparator = ",";
+    std::vector<std::string> strs = mx::splitString(s, _CommaSeparator);
+    for (std::string &str : strs) {
+        str = mx::trimSpaces(str);
+    }
+    return strs;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

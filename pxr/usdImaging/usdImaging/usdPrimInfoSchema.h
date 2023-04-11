@@ -44,6 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (niPrototypePath) \
     (isNiPrototype) \
     (specifier) \
+    (piPropagatedPrototypes) \
     (def) \
     (over) \
     ((class_, "class")) \
@@ -67,6 +68,8 @@ public:
     HdBoolDataSourceHandle GetIsNiPrototype();
     USDIMAGING_API
     HdTokenDataSourceHandle GetSpecifier();
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetPiPropagatedPrototypes();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -80,7 +83,8 @@ public:
     BuildRetained(
         const HdPathDataSourceHandle &niPrototypePath,
         const HdBoolDataSourceHandle &isNiPrototype,
-        const HdTokenDataSourceHandle &specifier
+        const HdTokenDataSourceHandle &specifier,
+        const HdContainerDataSourceHandle &piPropagatedPrototypes
     );
 
     /// \class UsdImagingUsdPrimInfoSchema::Builder
@@ -101,6 +105,9 @@ public:
         USDIMAGING_API
         Builder &SetSpecifier(
             const HdTokenDataSourceHandle &specifier);
+        USDIMAGING_API
+        Builder &SetPiPropagatedPrototypes(
+            const HdContainerDataSourceHandle &piPropagatedPrototypes);
 
         /// Returns a container data source containing the members set thus far.
         USDIMAGING_API
@@ -110,6 +117,7 @@ public:
         HdPathDataSourceHandle _niPrototypePath;
         HdBoolDataSourceHandle _isNiPrototype;
         HdTokenDataSourceHandle _specifier;
+        HdContainerDataSourceHandle _piPropagatedPrototypes;
     };
 
     /// Retrieves a container data source with the schema's default name token

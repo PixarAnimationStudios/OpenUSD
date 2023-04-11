@@ -71,6 +71,13 @@ public:
     /// all registered file formats.
     std::set<std::string> FindAllFileFormatExtensions();
 
+    /// Returns a set containing the extension(s) corresponding to
+    /// all registered file formats that derive from \p baseType.
+    ///
+    /// \p baseType must derive from SdfFileFormat.
+    std::set<std::string> FindAllDerivedFileFormatExtensions(
+        const TfType& baseType);
+
     /// Returns the id of the file format plugin that is registered as
     /// the primary format for the given file extension.
     TfToken GetPrimaryFormatForExtension(const std::string& ext);

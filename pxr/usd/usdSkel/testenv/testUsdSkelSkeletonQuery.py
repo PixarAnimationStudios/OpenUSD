@@ -112,6 +112,9 @@ class TestUsdSkelSkeletonQuery(unittest.TestCase):
         query = skelCache.GetSkelQuery(skel)
         self.assertTrue(query)
 
+        self.assertEqual(hash(query), hash(query))
+        self.assertEqual(hash(query), hash(skelCache.GetSkelQuery(skel)))
+
         # Validate joint rest xform computations.
 
         xforms = query.ComputeJointLocalTransforms(0, atRest=True)

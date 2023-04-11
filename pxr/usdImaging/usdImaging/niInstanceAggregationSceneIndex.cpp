@@ -23,11 +23,11 @@
 //
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/xformSchema.h"
 
@@ -488,13 +489,11 @@ struct _InstanceInfo {
     }
 };
 
-class _InstanceObserver : public HdSceneIndexObserver,
-                          public TfRefBase
+class _InstanceObserver : public HdSceneIndexObserver
 {
 public:
-    static
-    _InstanceObserverRefPtr New(HdSceneIndexBaseRefPtr const &inputScene,
-                                const SdfPath &prototypeRoot);
+    _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
+                      const SdfPath &prototypeRoot);
 
     HdRetainedSceneIndexRefPtr const &GetRetainedSceneIndex() const {
         return _retainedSceneIndex;
@@ -523,9 +522,6 @@ private:
     using _PathToInt = std::map<SdfPath, int>;
     using _PathToIntSharedPtr = std::shared_ptr<_PathToInt>;
     using _PathToPathToInt = std::map<SdfPath, _PathToIntSharedPtr>;
-
-    _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
-                      const SdfPath &prototypeRoot);
 
     _InstanceInfo _GetInfo(const HdContainerDataSourceHandle &primSource);
     _InstanceInfo _GetInfo(const SdfPath &primPath);
@@ -595,7 +591,10 @@ private:
     _PathToIntSharedPtr _ComputeInstanceToIndex(
         const _InstanceInfo &info);
 
-    HdSceneIndexBaseRefPtr const _inputScene;
+    // This observer wants to observe a *flattened* view of the scene.  This
+    // way, it can access the composed transform values for natively instanced
+    // prims.
+    HdSceneIndexBaseRefPtr const _flattenedInputScene;
     HdRetainedSceneIndexRefPtr const _retainedSceneIndex;
     const SdfPath _fallbackPrototypeRoot;
     HdContainerDataSourceHandle const _fallbackInstancedBySource;
@@ -616,18 +615,10 @@ private:
     _PathToPathToInt _instancerToInstanceToIndex;
 };
 
-_InstanceObserverRefPtr
-_InstanceObserver::New(
-    HdSceneIndexBaseRefPtr const &inputScene,
-    const SdfPath &prototypeRoot)
-{
-    return TfCreateRefPtr(new _InstanceObserver(inputScene, prototypeRoot));
-}    
-
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot)
-  : _inputScene(inputScene)
+  : _flattenedInputScene(HdFlatteningSceneIndex::New(inputScene))
   , _retainedSceneIndex(HdRetainedSceneIndex::New())
   , _fallbackPrototypeRoot(
         prototypeRoot.IsEmpty()
@@ -637,7 +628,7 @@ _InstanceObserver::_InstanceObserver(
         _ComputeFallbackInstancedByDataSource(prototypeRoot))
 {
     _Populate();
-    _inputScene->AddObserver(HdSceneIndexObserverPtr(this));
+    _flattenedInputScene->AddObserver(HdSceneIndexObserverPtr(this));
 }
 
 void
@@ -720,8 +711,8 @@ void
 _InstanceObserver::_Populate()
 {
     for (const SdfPath &primPath
-             : UsdImaging_SceneIndexPrimView(_inputScene,
-                                             SdfPath::AbsoluteRootPath())) {
+             : HdSceneIndexPrimView(_flattenedInputScene,
+                                    SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
 }
@@ -748,7 +739,7 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 _InstanceInfo
 _InstanceObserver::_GetInfo(const SdfPath &primPath)
 {
-    return _GetInfo(_inputScene->GetPrim(primPath).dataSource);
+    return _GetInfo(_flattenedInputScene->GetPrim(primPath).dataSource);
 }
 
 void
@@ -766,7 +757,7 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { info.GetBindingPrimPath(),
                 TfToken(),
                 _MakeBindingCopy(
-                    _inputScene->GetPrim(primPath).dataSource) } } );
+                    _flattenedInputScene->GetPrim(primPath).dataSource) } } );
     }
 
     const SdfPath instancerPath =
@@ -792,7 +783,7 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { instancerPath,
                 HdPrimTypeTokens->instancer,
                 _InstancerPrimSource::New(
-                    _inputScene,
+                    _flattenedInputScene,
                     info.enclosingPrototypeRoot,
                     prototypePath,
                     instances,
@@ -847,7 +838,7 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
     const _RemovalLevel level =
         _RemoveInstanceFromInfoToInstance(primPath, info);
 
-    if (level >= _RemovalLevel::None) {
+    if (level > _RemovalLevel::None) {
         // Remove instance data source we added in _AddInstance.
         _retainedSceneIndex->RemovePrims(
             { { primPath } });
@@ -965,7 +956,23 @@ HdContainerDataSourceHandle
 _InstanceObserver::_GetDataSourceForInstance(
     const SdfPath &primPath)
 {
-    _InstanceObserverRefPtr self(this);
+    // Note that the _InstanceObserver has a strong reference
+    // to the retained scene index which in turn has a strong
+    // reference to the data source returned here.
+    // Thus, the data source should hold on to a weak rather
+    // than a strong reference to avoid a cycle.
+    //
+    // Such a cycle can yield to two problems:
+    // It can obviously create a memory leak. However, it can
+    // also yield a crash because the _InstanceObserver can stay
+    // alive and listen to prims removed messages as scene index
+    // observer. The _InstanceObserver can react to such a
+    // message by deleting a prim from the retained scene index and
+    // thus breaking the cycle causing the _InstanceObserver to
+    // be destroyed while being in the middle of the _PrimsRemoved
+    // call.
+    //
+    _InstanceObserverPtr self(this);
 
     // PrimSource for instance
     return
@@ -973,7 +980,11 @@ _InstanceObserver::_GetDataSourceForInstance(
             HdInstanceSchemaTokens->instance,
             HdLazyContainerDataSource::New(
                 [ self, primPath ] () {
-                    return self->_GetInstanceSchemaDataSource(primPath); }));
+                    if (self) {
+                        return self->_GetInstanceSchemaDataSource(primPath);
+                    } else {
+                        return HdContainerDataSourceHandle();
+                    }}));
 }
 
 HdContainerDataSourceHandle
@@ -1089,7 +1100,7 @@ UsdImaging_NiInstanceAggregationSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot)
   : _instanceObserver(
-        _InstanceObserver::New(inputScene, prototypeRoot))
+        std::make_unique<_InstanceObserver>(inputScene, prototypeRoot))
   , _retainedSceneIndexObserver(this)
 {
     _instanceObserver->GetRetainedSceneIndex()->AddObserver(

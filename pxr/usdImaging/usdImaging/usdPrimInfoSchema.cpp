@@ -62,16 +62,24 @@ UsdImagingUsdPrimInfoSchema::GetSpecifier()
         UsdImagingUsdPrimInfoSchemaTokens->specifier);
 }
 
+HdContainerDataSourceHandle
+UsdImagingUsdPrimInfoSchema::GetPiPropagatedPrototypes()
+{
+    return _GetTypedDataSource<HdContainerDataSource>(
+        UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingUsdPrimInfoSchema::BuildRetained(
         const HdPathDataSourceHandle &niPrototypePath,
         const HdBoolDataSourceHandle &isNiPrototype,
-        const HdTokenDataSourceHandle &specifier
+        const HdTokenDataSourceHandle &specifier,
+        const HdContainerDataSourceHandle &piPropagatedPrototypes
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken names[4];
+    HdDataSourceBaseHandle values[4];
 
     size_t count = 0;
     if (niPrototypePath) {
@@ -87,6 +95,11 @@ UsdImagingUsdPrimInfoSchema::BuildRetained(
     if (specifier) {
         names[count] = UsdImagingUsdPrimInfoSchemaTokens->specifier;
         values[count++] = specifier;
+    }
+
+    if (piPropagatedPrototypes) {
+        names[count] = UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes;
+        values[count++] = piPropagatedPrototypes;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -149,13 +162,22 @@ UsdImagingUsdPrimInfoSchema::Builder::SetSpecifier(
     return *this;
 }
 
+UsdImagingUsdPrimInfoSchema::Builder &
+UsdImagingUsdPrimInfoSchema::Builder::SetPiPropagatedPrototypes(
+    const HdContainerDataSourceHandle &piPropagatedPrototypes)
+{
+    _piPropagatedPrototypes = piPropagatedPrototypes;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdImagingUsdPrimInfoSchema::Builder::Build()
 {
     return UsdImagingUsdPrimInfoSchema::BuildRetained(
         _niPrototypePath,
         _isNiPrototype,
-        _specifier
+        _specifier,
+        _piPropagatedPrototypes
     );
 }
 

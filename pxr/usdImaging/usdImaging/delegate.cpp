@@ -2969,7 +2969,8 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo)) {
+    if (TF_VERIFY(primInfo, "No primInfo for <%s> <%s>",
+        rprimId.GetText(), cachePath.GetText())) {
         pathValue = primInfo->adapter->GetMaterialId(
             primInfo->usdPrim, cachePath, _time);
     }
@@ -3005,7 +3006,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     // but should do the proper transformation.  Maybe we can use
     // the primInfo.usdPrim
     UsdPrim prim = _GetUsdPrim(cachePath);
-    if (!TF_VERIFY(prim)) {
+    if (!TF_VERIFY(prim, "No primInfo for <%s>", id.GetText())) {
         return VtValue();
     }
     UsdLuxLightAPI light = UsdLuxLightAPI(prim);

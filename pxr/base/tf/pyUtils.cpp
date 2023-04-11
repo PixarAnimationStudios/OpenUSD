@@ -180,7 +180,7 @@ TfPyEvaluate(std::string const &expr, dict const& extraGlobals)
             TfScriptModuleLoader::GetInstance().GetModulesDict();
 
         // Make sure the builtins are available
-        handle<> modHandle(PyImport_ImportModule(TfPyBuiltinModuleName));
+        handle<> modHandle(PyImport_ImportModule("builtins"));
         modulesDict["__builtins__"] = object(modHandle);
         modulesDict.update(extraGlobals);
 
