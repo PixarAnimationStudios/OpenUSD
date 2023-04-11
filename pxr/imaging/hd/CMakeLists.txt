@@ -77,6 +77,7 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
+        flattenedPrimvarsDataSource
         flatteningSceneIndex
         flatNormals
         geomSubset

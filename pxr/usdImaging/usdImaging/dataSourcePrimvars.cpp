@@ -64,7 +64,7 @@ UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
 , _usdPrim(usdPrim)
 , _stageGlobals(stageGlobals)
 {
-    const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetAuthoredPrimvars();
     for (const UsdGeomPrimvar & p : primvars) {
         _namespacedPrimvars[p.GetPrimvarName()] = p;
     }
