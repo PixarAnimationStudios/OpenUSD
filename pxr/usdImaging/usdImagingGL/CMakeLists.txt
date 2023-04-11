@@ -311,6 +311,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLInstancing
+    DEST testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLPickAndHighlight
     DEST testUsdImagingGLPickAndHighlight
 )
@@ -1383,6 +1388,90 @@ pxr_register_test(testUsdImagingGLInstancing_internal_ni
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInstancing
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage instancedCubes.usda -write testUsdImagingGLInstancing_instancedCubes.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_instancedCubes.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2.usda -write testUsdImagingGLInstancing_instancedCubes2.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_instancedCubes2.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instancedCubes2NoInstancing
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage instancedCubes2NoInstancing.usda -write testUsdImagingGLInstancing_instancedCubes2NoInstancing.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_instancedCubes2NoInstancing.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_nestedInstancedCubes
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage nestedInstancedCubes.usda -write testUsdImagingGLInstancing_nestedInstancedCubes.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_nestedInstancedCubes.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_nestedInstance
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage nestedInstance.usda -write testUsdImagingGLInstancing_nestedInstance.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_nestedInstance.png
+    FAIL 0.02
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_ni_pi
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage ni_pi.usda -write testUsdImagingGLInstancing_ni_pi.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_ni_pi.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
+)
+
+pxr_register_test(testUsdImagingGLInstancing_SceneIndex_internal_ni
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage internal_ni.usda -write testUsdImagingGLInstancing_internal_ni.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancing_internal_ni.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancing_SceneIndex
 )
 
 pxr_register_test(testUsdImagingGLPickAndHighlight
@@ -4823,6 +4912,42 @@ if (PTEX_FOUND AND ${PXR_ENABLE_PTEX_SUPPORT})
         WARN_PERCENT 0.0025
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLInstancing
+    )
+
+    pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instance
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance.usda -write testUsdImagingGLInstancing_instance.png"
+        IMAGE_DIFF_COMPARE
+            testUsdImagingGLInstancing_instance.png
+        FAIL 0.01
+        FAIL_PERCENT 0.005
+        WARN 0.02
+        WARN_PERCENT 0.0025
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLInstancing_SceneIndex
+    )
+
+    pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instance2
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance2.usda -write testUsdImagingGLInstancing_instance2.png"
+        IMAGE_DIFF_COMPARE
+            testUsdImagingGLInstancing_instance2.png
+        FAIL 0.01
+        FAIL_PERCENT 0.005
+        WARN 0.02
+        WARN_PERCENT 0.0025
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLInstancing_SceneIndex
+    )
+
+    pxr_register_test(testUsdImagingGLInstancing_SceneIndex_instance3
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage instance3.usda -write testUsdImagingGLInstancing_instance3.png"
+        IMAGE_DIFF_COMPARE
+            testUsdImagingGLInstancing_instance3.png
+        FAIL 0.02
+        FAIL_PERCENT 0.005
+        WARN 0.02
+        WARN_PERCENT 0.0025
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLInstancing_SceneIndex
     )
 
     pxr_register_test(testUsdImagingGLBasicDrawingNonBindless_shaders
