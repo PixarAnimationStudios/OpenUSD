@@ -129,15 +129,12 @@ class StateSource(object):
         # Make sure the value has the correct type.
         valueType = type(value)
         if valueType is not prop.propType:
-            if sys.version_info.major >= 3:
-                str_types = [str]
-            else:
-                str_types = [str, unicode]
+            str_types = [str]
 
             if valueType is int and prop.propType is float:
                 pass # ints are valid for float types.
-            elif prop.propType in str_types and valueType in str_types:
-                pass # str and unicode can be used interchangeably.
+            elif prop.propType is str and valueType is str:
+                pass # str can be used interchangeably.
             else:
                 print("Value {} has type {} but state property {} has type {}.".format(
                         repr(value), valueType, repr(prop.name), prop.propType),

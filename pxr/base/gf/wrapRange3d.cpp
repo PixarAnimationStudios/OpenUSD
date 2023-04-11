@@ -29,6 +29,7 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/range3f.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -65,7 +66,7 @@ static GfRange3d& __itruediv__(GfRange3d &self, double value)
     return self /= value;
 }
 
-static size_t __hash__(GfRange3d const &r) { return hash_value(r); }
+static size_t __hash__(GfRange3d const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 
@@ -81,6 +82,8 @@ void wrapRange3d()
     cls
         .def(init<GfRange3d>())
         .def(init<const GfVec3d &, const GfVec3d &>())
+
+        .def(init<GfRange3f>())
         
         .def(TfTypePythonClass())
 

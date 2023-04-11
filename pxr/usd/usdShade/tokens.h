@@ -88,11 +88,11 @@ struct UsdShadeTokensType {
     const TfToken fallbackStrength;
     /// \brief "full"
     /// 
-    /// Possible value for 'connectability' metadata on a UsdShadeInput. When connectability of an input is set to "full", it implies that it can be connected to any input or output. , Possible value for the 'materialPurpose' parameter in UsdShadeMaterialBindingAPI, to be used when the purpose of the render is entirely about visualizing the truest representation of a scene, considering all lighting and material information, at highest fidelity. 
+    /// Possible value for the 'materialPurpose' parameter in UsdShadeMaterialBindingAPI, to be used when the purpose of the render is entirely about visualizing the truest representation of a scene, considering all lighting and material information, at highest fidelity. , Possible value for 'connectability' metadata on a UsdShadeInput. When connectability of an input is set to "full", it implies that it can be connected to any input or output. 
     const TfToken full;
     /// \brief "id"
     /// 
-    /// Possible value for UsdShadeNodeDefAPI::GetImplementationSourceAttr(), Default value for UsdShadeNodeDefAPI::GetImplementationSourceAttr()
+    /// Fallback value for UsdShadeNodeDefAPI::GetImplementationSourceAttr()
     const TfToken id;
     /// \brief "info:id"
     /// 
@@ -186,6 +186,34 @@ struct UsdShadeTokensType {
     /// 
     /// Possible value for 'bindMaterialAs' metadata on the  collection-based material binding relationship. Indicates  that the binding represented by the relationship is weaker than  any bindings authored on the descendants.
     const TfToken weakerThanDescendants;
+    /// \brief "ConnectableAPI"
+    /// 
+    /// Schema identifer and family for UsdShadeConnectableAPI
+    const TfToken ConnectableAPI;
+    /// \brief "CoordSysAPI"
+    /// 
+    /// Schema identifer and family for UsdShadeCoordSysAPI
+    const TfToken CoordSysAPI;
+    /// \brief "Material"
+    /// 
+    /// Schema identifer and family for UsdShadeMaterial
+    const TfToken Material;
+    /// \brief "MaterialBindingAPI"
+    /// 
+    /// Schema identifer and family for UsdShadeMaterialBindingAPI
+    const TfToken MaterialBindingAPI;
+    /// \brief "NodeDefAPI"
+    /// 
+    /// Schema identifer and family for UsdShadeNodeDefAPI
+    const TfToken NodeDefAPI;
+    /// \brief "NodeGraph"
+    /// 
+    /// Schema identifer and family for UsdShadeNodeGraph
+    const TfToken NodeGraph;
+    /// \brief "Shader"
+    /// 
+    /// Schema identifer and family for UsdShadeShader
+    const TfToken Shader;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

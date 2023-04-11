@@ -29,8 +29,7 @@
 
 #include "pxr/base/js/types.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/refPtr.h"
-#include "pxr/base/tf/weakPtr.h"
+#include "pxr/base/tf/weakBase.h"
 
 #include <atomic>
 #include <string>
@@ -39,7 +38,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DECLARE_WEAK_AND_REF_PTRS(PlugPlugin);
+TF_DECLARE_WEAK_PTRS(PlugPlugin);
 
 class Plug_RegistrationMetadata;
 class TfType;
@@ -55,9 +54,9 @@ class TfType;
 /// the plugin and to retrieve information about the
 /// classes implemented by the plugin.
 ///
-class PlugPlugin : public TfRefBase, public TfWeakBase {
+class PlugPlugin : public TfWeakBase {
 public:
-    PLUG_API virtual ~PlugPlugin();
+    PLUG_API ~PlugPlugin();
 
     /// Loads the plugin.
     /// This is a noop if the plugin is already loaded.

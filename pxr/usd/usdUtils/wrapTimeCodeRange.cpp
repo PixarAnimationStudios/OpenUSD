@@ -167,7 +167,7 @@ void wrapTimeCodeRange()
     class_<UsdUtils_PyTimeCodeRangeIterator>("_Iterator", no_init)
         .def("__iter__", &UsdUtils_PyTimeCodeRangeIterator::iter,
             return_self<>())
-        .def(TfPyIteratorNextMethodName, &UsdUtils_PyTimeCodeRangeIterator::next,
+        .def("__next__", &UsdUtils_PyTimeCodeRangeIterator::next,
             return_value_policy<return_by_value>())
         ;
 }

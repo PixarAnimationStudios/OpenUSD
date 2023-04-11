@@ -38,7 +38,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/iterator_adaptors.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
@@ -46,7 +45,9 @@
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <limits>
 #include <memory>
+#include <new>
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -439,12 +440,15 @@ class VtArray : public Vt_ArrayBase {
                 _foreignSource || !_IsUnique() || curSize == capacity())) {
             value_type *newData = _AllocateCopy(
                 _data, _CapacityForSize(curSize + 1), curSize);
+            ::new (static_cast<void*>(newData + curSize)) value_type(
+                std::forward<Args>(args)...);
             _DecRef();
             _data = newData;
         }
-        // Copy the value.
-        ::new (static_cast<void*>(_data + curSize)) value_type(
-            std::forward<Args>(args)...);
+        else {
+            ::new (static_cast<void*>(_data + curSize)) value_type(
+                std::forward<Args>(args)...);
+        }
         // Adjust size.
         ++_shapeData.totalSize;
     }
@@ -496,6 +500,16 @@ class VtArray : public Vt_ArrayBase {
         // We do not allow mutation to foreign source data, so always report
         // foreign sourced arrays as at capacity.
         return ARCH_UNLIKELY(_foreignSource) ? size() : _GetCapacity(_data);
+    }
+
+    /// Return a theoretical maximum size limit for the container.  In practice
+    /// this size is unachievable due to the amount of available memory or other
+    /// system limitations.
+    constexpr size_t max_size() const {
+        // The number of value_type elements that can be fit into maximum size_t
+        // bytes minus the size of _ControlBlock.
+        return (std::numeric_limits<size_t>::max() - sizeof(_ControlBlock))
+            / sizeof(value_type);
     }
 
     /// Return true if this array contains no elements, false otherwise.
@@ -798,23 +812,21 @@ class VtArray : public Vt_ArrayBase {
     }
 
   private:
-    class _Streamer : public VtStreamOutIterator {
+    class _Streamer {
     public:
-        _Streamer(const_pointer data) : _p(data) { }
-        virtual ~_Streamer() { }
-        virtual void Next(std::ostream &out)
-        {
+        explicit _Streamer(const_pointer data) : _p(data) { }
+        void operator()(std::ostream &out) const {
             VtStreamOut(*_p++, out);
         }
 
     private:
-        const_pointer _p;
+        mutable const_pointer _p;
     };
 
     /// Outputs a comma-separated list of the values in the array.
     friend std::ostream &operator <<(std::ostream &out, const VtArray &self) {
         VtArray::_Streamer streamer(self.cdata());
-        VtStreamOutArray(&streamer, self.size(), self._GetShapeData(), out);
+        VtStreamOutArray(out, self._GetShapeData(), streamer);
         return out;
     }
 
@@ -850,8 +862,13 @@ class VtArray : public Vt_ArrayBase {
     value_type *_AllocateNew(size_t capacity) {
         TfAutoMallocTag2 tag("VtArray::_AllocateNew", __ARCH_PRETTY_FUNCTION__);
         // Need space for the control block and capacity elements.
-        void *data = malloc(
-            sizeof(_ControlBlock) + capacity * sizeof(value_type));
+        // Exceptionally large capacity requests can overflow the arithmetic
+        // here.  If that happens we'll just attempt to allocate the max size_t
+        // value and let new() throw.
+        size_t numBytes = (capacity <= max_size())
+            ? sizeof(_ControlBlock) + capacity * sizeof(value_type)
+            : std::numeric_limits<size_t>::max();
+        void *data = ::operator new(numBytes);
         // Placement-new a control block.
         ::new (data) _ControlBlock(/*count=*/1, capacity);
         // Data starts after the block.
@@ -879,7 +896,8 @@ class VtArray : public Vt_ArrayBase {
                      p != e; ++p) {
                     p->~value_type();
                 }
-                free(std::addressof(_GetControlBlock(_data)));
+                ::operator delete(static_cast<void *>(
+                                      std::addressof(_GetControlBlock(_data))));
             }
         }
         else {
@@ -904,14 +922,18 @@ class VtArray : public Vt_ArrayBase {
     extern template class VtArray< VT_TYPE(elem) >;
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
+template <class HashState, class ELEM>
+inline std::enable_if_t<VtIsHashable<ELEM>()>
+TfHashAppend(HashState &h, VtArray<ELEM> const &array)
+{
+    h.Append(array.size());
+    h.AppendContiguous(array.cdata(), array.size());
+}
+
 template <class ELEM>
 typename std::enable_if<VtIsHashable<ELEM>(), size_t>::type
 hash_value(VtArray<ELEM> const &array) {
-    size_t h = array.size();
-    for (auto const &x: array) {
-        boost::hash_combine(h, x);
-    }
-    return h;
+    return TfHash()(array);
 }
 
 // Specialize traits so others can figure out that VtArray is an array.

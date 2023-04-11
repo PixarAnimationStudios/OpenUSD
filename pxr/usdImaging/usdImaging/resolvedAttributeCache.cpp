@@ -38,7 +38,7 @@ UsdImaging_MaterialBindingImplData::ClearCaches()
         []( decltype(_bindingsCache)::range_type &range) {
             for (auto entryIt = range.begin(); entryIt != range.end(); 
                     ++entryIt) {
-                entryIt->second.release();
+                entryIt->second.reset();
             }
         }
     );
@@ -47,7 +47,7 @@ UsdImaging_MaterialBindingImplData::ClearCaches()
         []( decltype(_collQueryCache)::range_type &range) {
             for (auto entryIt = range.begin(); entryIt != range.end(); 
                     ++entryIt) {
-                entryIt->second.release();
+                entryIt->second.reset();
             }
         }
     );

@@ -28,6 +28,7 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
+#include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -73,8 +74,12 @@ HdPrman_RenderPass::IsConverged() const
     return _converged;
 }
 
+namespace {
+
+using RenderProducts = VtArray<HdRenderSettingsMap>;
+
 // Return the seconds between now and then.
-static double
+double
 _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
 {
     std::chrono::duration<double> diff;
@@ -83,7 +88,7 @@ _DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
     return(diff.count());
 }
 
-static void
+void
 _Blit(HdPrmanFramebuffer * const framebuffer,
       HdRenderPassAovBindingVector const &aovBindings,
       const bool converged)
@@ -116,7 +121,6 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     }
 }
 
-static
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding& aov,
                  const HdRenderIndex * const renderIndex)
@@ -132,7 +136,6 @@ _GetRenderBuffer(const HdRenderPassAovBinding& aov,
                 aov.renderBufferId));
 }
 
-static
 bool
 _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
                      const HdRenderIndex * const renderIndex,
@@ -153,7 +156,6 @@ _GetRenderBufferSize(const HdRenderPassAovBindingVector &aovBindings,
     return false;
 }
 
-static
 bool
 _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 {
@@ -166,6 +168,17 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
         integrator == HdPrmanIntegratorTokens->PbsPathTracer.GetString();
 }
 
+bool
+_HasRenderProducts( const RenderProducts& renderProducts)
+{
+    for (const auto &renderProduct : renderProducts) {
+        if (!renderProduct.empty()) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Update visibility settings of riley instances for the active render tags.
 //
 // The render pass's _Execute method takes a list of renderTags,
@@ -176,7 +189,6 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 // to deal with this, but they only do when they first become visible.
 // After that tag based visibility is a per-pass problem.
 
-static
 void
 _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
                              HdRenderIndex *index,
@@ -199,6 +211,8 @@ _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
         }
     }
 }
+
+} // end anonymous namespace
 
 void
 HdPrman_RenderPass::_Execute(
@@ -299,9 +313,18 @@ HdPrman_RenderPass::_Execute(
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
 
+    const RenderProducts& renderProducts =
+        renderDelegate->GetRenderSetting<RenderProducts>(
+            HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
     const int lastVersion = _renderParam->GetLastSettingsVersion();
 
-    if (aovBindings.empty()) {
+    if (_HasRenderProducts(renderProducts)) {
+        // Code path for Solaris render products
+        int frame =
+            renderDelegate->GetRenderSetting<int>(
+                HdPrmanRenderSettingsTokens->houdiniFrame, 1);
+        _renderParam->CreateRenderViewFromProducts(renderProducts, frame);
+    } else if (aovBindings.empty()) {
         // When there are no AOV-bindings, use render spec from
         // render settings to create render view.
 
@@ -312,17 +335,38 @@ HdPrman_RenderPass::_Execute(
         
         bool createRenderView = _renderParam->DeleteFramebuffer();
         if (lastVersion != currentSettingsVersion) {
-            // Re-create new render view since render spec might have
-            // changed.
+            // Re-create new render view since render spec might have changed.
             createRenderView = true;
         }
 
         if (createRenderView) {
-            const VtDictionary &renderSpec =
-                renderDelegate->GetRenderSetting<VtDictionary>(
-                    HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-                    VtDictionary());
-            _renderParam->CreateRenderViewFromSpec(renderSpec);
+            // Use the Render Settings Prim if possible.
+            bool useRenderSettingsPrim = false;
+            const SdfPath &renderSettingsPath =
+                renderDelegate->GetRenderSetting<SdfPath>(
+                    HdPrmanRenderSettingsTokens->experimentalRenderSettingsPrimPath, 
+                    SdfPath());
+
+            if (!renderSettingsPath.IsEmpty()) {
+                const HdPrman_RenderSettings *rsPrim = 
+                        dynamic_cast<const HdPrman_RenderSettings*>(
+                            GetRenderIndex()->GetBprim(
+                                HdPrimTypeTokens->renderSettings, 
+                                renderSettingsPath));
+                if (rsPrim->GetRenderProducts().size() != 0) {
+                    _renderParam->CreateRenderViewFromRenderSettingsPrim(*rsPrim);
+                    useRenderSettingsPrim = true;
+                }
+            }
+            
+            // Otherwise use the RenderSpec
+            if (!useRenderSettingsPrim) {
+                const VtDictionary &renderSpec =
+                    renderDelegate->GetRenderSetting<VtDictionary>(
+                        HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                        VtDictionary());
+                _renderParam->CreateRenderViewFromRenderSpec(renderSpec);
+            }
         }
 
         resolution = cameraContext.GetResolutionFromDisplayWindow();

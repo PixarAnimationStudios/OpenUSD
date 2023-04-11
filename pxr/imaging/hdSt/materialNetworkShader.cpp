@@ -22,13 +22,13 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
 #include "pxr/imaging/hdSt/textureHandle.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
@@ -39,6 +39,8 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
+
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -164,7 +166,8 @@ HdSt_MaterialNetworkShader::UnbindResources(const int program,
 }
 /*virtual*/
 void
-HdSt_MaterialNetworkShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_MaterialNetworkShader::AddBindings(
+    HdStBindingRequestVector *customBindings)
 {
 }
 

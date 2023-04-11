@@ -372,6 +372,7 @@ class AppController(QtCore.QObject):
         with self._makeTimer('bring up the UI'):
 
             self._primToItemMap = {}
+            self._allSceneCameras = None
             self._itemsToPush = []
             self._currentSpec = None
             self._currentLayer = None
@@ -960,7 +961,11 @@ class AppController(QtCore.QObject):
             self._ui.actionAmbient_Only.triggered[bool].connect(
                 self._ambientOnlyClicked)
 
-            self._ui.actionDomeLight.triggered[bool].connect(self._onDomeLightClicked)
+            self._ui.actionDomeLight.triggered[bool].connect(
+                self._onDomeLightClicked)
+
+            self._ui.actionDomeLightTexturesVisible.triggered[bool].connect(
+                self._onDomeLightTexturesVisibleClicked)
 
             self._ui.colorGroup.triggered.connect(self._changeBgColor)
 
@@ -1279,6 +1284,7 @@ class AppController(QtCore.QObject):
         if self._stageView:
             self._stageView.closeRenderer()
         self._dataModel.stage = None
+        self._allSceneCameras = None
 
     def _startQtShutdownTimer(self):
         self._qtShutdownTimer = self._makeTimer('tear down the UI')
@@ -1749,7 +1755,7 @@ class AppController(QtCore.QObject):
         def setOcioConfig(action):
             display = str(action.parent().title())
             view = str(action.text())
-            if config.hasattr('getDisplayViewColorSpaceName'):
+            if hasattr(config, 'getDisplayViewColorSpaceName'):
                 # OCIO version 2
                 colorSpace = config.getDisplayViewColorSpaceName(display, view)
             else:
@@ -1820,11 +1826,15 @@ class AppController(QtCore.QObject):
 
         if not self._stageView:
 
-            # The second child is self._ui.glFrame, which disappears if
+            # The second child is self._ui.renderFrame, which disappears if
             # its size is set to zero.
             if self._noRender:
-                # remove glFrame from the ui
-                self._ui.glFrame.setParent(None)
+                # hiding the widget would usually be sufficient,
+                # but _cacheViewerModeEscapeSizes() assumes the splitter has
+                # only two children, so we additionally remove renderFrame 
+                # from the ui
+                self._ui.renderFrame.hide()
+                self._ui.renderFrame.setParent(None)
 
                 # move the attributeBrowser into the primSplitter instead
                 self._ui.primStageSplitter.addWidget(self._ui.attributeBrowserFrame)
@@ -2471,6 +2481,9 @@ class AppController(QtCore.QObject):
 
         self._hasPrimResync = hasPrimResync or self._hasPrimResync
 
+        # Scene cameras may need to update when something in the stage changes
+        self._allSceneCameras = None
+
         self._clearCaches(preserveCamera=True)
 
         # Update the UIs (it gets all of them) and StageView on a timer
@@ -2575,6 +2588,10 @@ class AppController(QtCore.QObject):
     def _onDomeLightClicked(self, checked=None):
         if self._stageView and checked is not None:
             self._dataModel.viewSettings.domeLightEnabled = checked
+    
+    def _onDomeLightTexturesVisibleClicked(self, checked=None):
+        if self._stageView and checked is not None:
+            self._dataModel.viewSettings.domeLightTexturesVisible = checked
 
     def _changeBgColor(self, mode):
         self._dataModel.viewSettings.clearColorText = str(mode.text())
@@ -2964,8 +2981,11 @@ class AppController(QtCore.QObject):
         self._dataModel.viewSettings.cameraPrim = camera
 
     def _refreshCameraListAndMenu(self, preserveCurrCamera):
-        self._allSceneCameras = Utils._GetAllPrimsOfType(
-            self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
+    	# Scene cameras should only change when something in the stage
+    	# changes so only update them if needed.
+        if self._allSceneCameras is None:
+            self._allSceneCameras = Utils._GetAllPrimsOfType(
+                self._dataModel.stage, Tf.Type.Find(UsdGeom.Camera))
         currCamera = self._startingPrimCamera
         if self._stageView:
             currCamera = self._dataModel.viewSettings.cameraPrim
@@ -3042,28 +3062,16 @@ class AppController(QtCore.QObject):
             # with targets etc etc.
             role = item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
             if role in (PropertyViewDataRoles.CONNECTION, PropertyViewDataRoles.TARGET):
-
-                # Get the owning property's set of selected targets.
-                propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                targets = selectedProperties.setdefault(prop, set())
-
-                # Add the target to the set of targets.
                 targetPath = Sdf.Path(str(item.text(PropertyViewIndex.NAME)))
-                if role == PropertyViewDataRoles.CONNECTION:
-                    prim = self._dataModel.stage.GetPrimAtPath(
-                        targetPath.GetPrimPath())
-                    target = prim.GetProperty(targetPath.name)
-                else: # role == PropertyViewDataRoles.TARGET
-                    target = self._dataModel.stage.GetPrimAtPath(
-                        targetPath)
-                targets.add(target)
-
+                propName = str(item.parent().text(PropertyViewIndex.NAME))
             else:
-
+                targetPath = None
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                selectedProperties.setdefault(prop, set())
+
+            prop = self._propertiesDict[propName]
+            targetPaths = selectedProperties.setdefault(prop, [])
+            if targetPath:
+                targetPaths.append(targetPath)
 
         with self._dataModel.selection.batchPropChanges:
             self._dataModel.selection.clearProps()
@@ -3071,7 +3079,8 @@ class AppController(QtCore.QObject):
                 if not isinstance(prop, CustomAttribute):
                     self._dataModel.selection.addProp(prop)
                     for target in targets:
-                        self._dataModel.selection.addPropTarget(prop, target)
+                        self._dataModel.selection.addPropTargetPath(
+                            prop.GetPath(), target)
 
         with self._dataModel.selection.batchComputedPropChanges:
             self._dataModel.selection.clearComputedProps()
@@ -5280,6 +5289,8 @@ class AppController(QtCore.QObject):
             self._dataModel.viewSettings.displayPrimId)
         self._ui.actionCull_Backfaces.setChecked(
             self._dataModel.viewSettings.cullBackfaces)
+        self._ui.actionDomeLightTexturesVisible.setChecked(
+            self._dataModel.viewSettings.domeLightTexturesVisible)
         self._ui.actionAuto_Compute_Clipping_Planes.setChecked(
             self._dataModel.viewSettings.autoComputeClippingPlanes)
 

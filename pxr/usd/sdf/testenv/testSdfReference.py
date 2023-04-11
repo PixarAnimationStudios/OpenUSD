@@ -110,5 +110,15 @@ class TestSdfReferences(unittest.TestCase):
             p = Sdf.AssetPath('\x01\x02\x03')
             p = Sdf.AssetPath('foobar', '\x01\x02\x03')
 
+    def test_Hash(self):
+        reference = Sdf.Reference(
+            "//path/to/asset",
+            "/path/to/prim",
+            layerOffset=Sdf.LayerOffset(1.5, 2.8),
+            customData={"key" : "value"}
+        )
+        self.assertEqual(hash(reference), hash(reference))
+        self.assertEqual(hash(reference), hash(Sdf.Reference(reference)))
+
 if __name__ == "__main__":
     unittest.main()

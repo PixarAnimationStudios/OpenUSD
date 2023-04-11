@@ -26,6 +26,7 @@ class "EmptyMultipleApplyAPI"
 
 class "MultipleApplyAPI"
 {
+    opaque test:__INSTANCE_NAME__
     int test:__INSTANCE_NAME__:testAttrOne
     double test:__INSTANCE_NAME__:testAttrTwo
 }
@@ -34,6 +35,7 @@ class "PublicMultipleApplyAPI" (
     apiSchemas = ["MultiApplyAPI:__INSTANCE_NAME__", "BuiltinMultiApplyAPI:__INSTANCE_NAME__:builtin"]
 )
 {
+    opaque testo:__INSTANCE_NAME__
     int testo:__INSTANCE_NAME__:testAttrOne
     double testo:__INSTANCE_NAME__:testAttrTwo
 }
@@ -389,5 +391,27 @@ class TestPxHairman "TestPxHairman"
         doc = "This exercises custom API naming."
     )
     custom float temp
+}
+
+class TestPxHairman_1 "TestPxHairman_1"
+{
+    custom double temp
+}
+
+class TestNoVersion0_2 "TestNoVersion0_2"
+{
+    custom double temp
+}
+
+class "SingleApplyAPI_1" (
+    apiSchemas = ["BuiltinAPI"]
+)
+{
+}
+
+class "MultipleApplyAPI_1"
+{
+    int testNewVersion:__INSTANCE_NAME__:testAttrOne
+    double testNewVersion:__INSTANCE_NAME__:testAttrTwo
 }
 

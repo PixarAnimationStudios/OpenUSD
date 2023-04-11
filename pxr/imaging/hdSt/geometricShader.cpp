@@ -24,10 +24,10 @@
 
 #include "pxr/imaging/hdSt/geometricShader.h"
 
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/shaderKey.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
@@ -133,7 +133,7 @@ HdSt_GeometricShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_GeometricShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_GeometricShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     // no-op
 }

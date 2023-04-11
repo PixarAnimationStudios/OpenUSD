@@ -25,12 +25,12 @@
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/ar/resolverContext.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>

@@ -44,6 +44,8 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

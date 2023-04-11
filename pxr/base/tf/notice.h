@@ -291,10 +291,12 @@ public:
     /// Register a probe that will be invoked when notices are sent and
     /// delivered.  
     /// \see TfNotice::Probe
+    TF_API
     static void InsertProbe(const WeakProbePtr &probe);
 
     /// Remove a probe that was previously registered with \c InsertProbe.
     /// \see TfNotice::Probe
+    TF_API
     static void RemoveProbe(const WeakProbePtr &probe);
 
     /// Register a listener as being interested in a \c TfNotice.

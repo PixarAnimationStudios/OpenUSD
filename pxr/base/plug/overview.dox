@@ -2,7 +2,6 @@
 \page plug_page_front Plug: Plugin Framework
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Plug: Plugin Framework
-\publicLib
 \endif
 
 

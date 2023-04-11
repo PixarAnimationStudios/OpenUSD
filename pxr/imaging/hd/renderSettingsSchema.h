@@ -41,8 +41,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDRENDERSETTINGS_SCHEMA_TOKENS \
     (renderSettings) \
-    (sampleFilters) \
-    (displayFilters) \
+    (namespacedSettings) \
+    (active) \
+    (renderProducts) \
+    (includedPurposes) \
+    (materialBindingPurposes) \
+    (renderingColorSpace) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HDRENDERSETTINGS_SCHEMA_TOKENS);
@@ -58,9 +62,17 @@ public:
     //ACCESSORS
 
     HD_API
-    HdPathArrayDataSourceHandle GetSampleFilters();
+    HdContainerDataSourceHandle GetNamespacedSettings();
     HD_API
-    HdPathArrayDataSourceHandle GetDisplayFilters();
+    HdBoolDataSourceHandle GetActive();
+    HD_API
+    HdRenderProductVectorSchema GetRenderProducts();
+    HD_API
+    HdTokenArrayDataSourceHandle GetIncludedPurposes();
+    HD_API
+    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes();
+    HD_API
+    HdTokenDataSourceHandle GetRenderingColorSpace();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -72,8 +84,12 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathArrayDataSourceHandle &sampleFilters,
-        const HdPathArrayDataSourceHandle &displayFilters
+        const HdContainerDataSourceHandle &namespacedSettings,
+        const HdBoolDataSourceHandle &active,
+        const HdVectorDataSourceHandle &renderProducts,
+        const HdTokenArrayDataSourceHandle &includedPurposes,
+        const HdTokenArrayDataSourceHandle &materialBindingPurposes,
+        const HdTokenDataSourceHandle &renderingColorSpace
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -86,19 +102,35 @@ public:
     {
     public:
         HD_API
-        Builder &SetSampleFilters(
-            const HdPathArrayDataSourceHandle &sampleFilters);
+        Builder &SetNamespacedSettings(
+            const HdContainerDataSourceHandle &namespacedSettings);
         HD_API
-        Builder &SetDisplayFilters(
-            const HdPathArrayDataSourceHandle &displayFilters);
+        Builder &SetActive(
+            const HdBoolDataSourceHandle &active);
+        HD_API
+        Builder &SetRenderProducts(
+            const HdVectorDataSourceHandle &renderProducts);
+        HD_API
+        Builder &SetIncludedPurposes(
+            const HdTokenArrayDataSourceHandle &includedPurposes);
+        HD_API
+        Builder &SetMaterialBindingPurposes(
+            const HdTokenArrayDataSourceHandle &materialBindingPurposes);
+        HD_API
+        Builder &SetRenderingColorSpace(
+            const HdTokenDataSourceHandle &renderingColorSpace);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdPathArrayDataSourceHandle _sampleFilters;
-        HdPathArrayDataSourceHandle _displayFilters;
+        HdContainerDataSourceHandle _namespacedSettings;
+        HdBoolDataSourceHandle _active;
+        HdVectorDataSourceHandle _renderProducts;
+        HdTokenArrayDataSourceHandle _includedPurposes;
+        HdTokenArrayDataSourceHandle _materialBindingPurposes;
+        HdTokenDataSourceHandle _renderingColorSpace;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -114,6 +146,49 @@ public:
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the namespacedsettings data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the active data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetActiveLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderproducts data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetRenderProductsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the includedpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetIncludedPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the materialbindingpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetMaterialBindingPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderingcolorspace data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetRenderingColorSpaceLocator();
 
 };
 

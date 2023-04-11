@@ -81,24 +81,10 @@ TfPyInitialize()
 
         const std::string s = ArchGetExecutablePath();
 
-#if PY_MAJOR_VERSION == 2
-        // In Python 2 it is safe to call this before Py_Initialize(), but this
-        // is no longer true in python 3.
-        //
-        // Initialize Python threading.  This grabs the GIL.  We'll release it
-        // at the end of this function.
-        PyEval_InitThreads();
-#endif
-
         // Setting the program name is necessary in order for python to 
         // find the correct built-in modules. 
-#if PY_MAJOR_VERSION == 2
-        static std::string programName(s.begin(), s.end());
-        Py_SetProgramName(const_cast<char*>(programName.c_str()));
-#else
         static std::wstring programName(s.begin(), s.end());
         Py_SetProgramName(const_cast<wchar_t*>(programName.c_str()));
-#endif
 
         // We're here when this is a C++ program initializing python (i.e. this
         // is a case of "embedding" a python interpreter, as opposed to
@@ -127,13 +113,8 @@ TfPyInitialize()
         PyEval_InitThreads();
 #endif
 
-#if PY_MAJOR_VERSION == 2
-        char emptyArg[] = {'\0'};
-        char *empty[] = { emptyArg };
-#else
         wchar_t emptyArg[] = { '\0' };
         wchar_t *empty[] = { emptyArg };
-#endif
         PySys_SetArgv(1, empty);
 
         // Kick the module loading mechanism for any loaded libs that have

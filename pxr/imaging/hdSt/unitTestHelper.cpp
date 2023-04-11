@@ -286,16 +286,16 @@ HdSt_TestLightingShader::Prepare()
 }
 
 static
-HdBindingRequest
+HdStBindingRequest
 _GetBindingRequest(HdBufferArrayRangeSharedPtr lightingBar)
 {
-    return HdBindingRequest(HdBinding::UBO,
-                            _tokens->lighting,
-                            lightingBar,
-                            /*interleaved=*/true,
-                            /*writable=*/false,
-                            /*arraySize=*/1,
-                            /*concatenateNames=*/true);
+    return HdStBindingRequest(HdStBinding::UBO,
+                              _tokens->lighting,
+                              lightingBar,
+                              /*interleaved=*/true,
+                              /*writable=*/false,
+                              /*arraySize=*/1,
+                              /*concatenateNames=*/true);
 }
 
 /* virtual */
@@ -316,7 +316,7 @@ HdSt_TestLightingShader::UnbindResources(const int program,
 
 /*virtual*/
 void
-HdSt_TestLightingShader::AddBindings(HdBindingRequestVector *customBindings)
+HdSt_TestLightingShader::AddBindings(HdStBindingRequestVector *customBindings)
 {
     customBindings->push_back(_GetBindingRequest(_lightingBar));
 }

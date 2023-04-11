@@ -366,7 +366,14 @@ struct HgiTessellationState
 {
     enum PatchType {
         Triangle,
-        Quad
+        Quad,
+        Isoline
+    };
+
+    enum TessFactorMode {
+        Constant,
+        TessControl,
+        TessVertex
     };
 
     HGI_API
@@ -374,6 +381,7 @@ struct HgiTessellationState
 
     PatchType patchType;
     int primitiveIndexSize;
+    TessFactorMode tessFactorMode = TessFactorMode::Constant;
     HgiTessellationLevel tessellationLevel;
 };
 

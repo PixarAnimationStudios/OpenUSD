@@ -295,7 +295,8 @@ class TestGfRange(unittest.TestCase):
             with self.assertRaises(Tf.ErrorException):
                 rf.GetOctant(8)
 
-        # now test comparisons between ranges of different types.
+        # now test comparisons between ranges of different types
+        # and constructors converting between different types.
         Ranges = [(Gf.Range1f, float,    Gf.Range1d, float),
                 (Gf.Range2f, Gf.Vec2f, Gf.Range2d, Gf.Vec2d),
                 (Gf.Range3f, Gf.Vec3f, Gf.Range3d, Gf.Vec3d)]
@@ -321,6 +322,20 @@ class TestGfRange(unittest.TestCase):
             self.assertEqual(Rangef.GetIntersection(r1f, r2f), Ranged(v1d, v4d))
             self.assertEqual(Ranged.GetIntersection(r1d, r2d), Rangef(v1f, v4f))
 
+            # Construct double from float type
+            self.assertEqual(Ranged(r1f), r1d)
+
+            # Construct float from double type
+            self.assertEqual(Rangef(r1d), r1f)
+
+    def test_Hash(self):
+        for RangeType, ValueType in self.Ranges:
+            r = RangeType(
+                makeValue(ValueType, [-1.0, -2.0, -3.0, -4.0]),
+                makeValue(ValueType, [4.0, 3.0, 2.0, 1.0])
+            )
+            self.assertEqual(hash(r), hash(r))
+            self.assertEqual(hash(r), hash(RangeType(r)))
 
 if __name__ == '__main__':
     unittest.main()

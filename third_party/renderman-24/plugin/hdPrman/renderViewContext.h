@@ -30,6 +30,7 @@
 #include "Riley.h"
 
 #include "pxr/base/gf/vec2i.h"
+#include "pxr/base/gf/vec2f.h"
 
 #include <vector>
 
@@ -54,6 +55,9 @@ struct HdPrman_RenderViewDesc
         riley::RenderOutputType type;
         RtUString sourceName;
         RtUString rule;
+        RtUString filter;
+        GfVec2f filterWidth;
+        float relativePixelVariance;
         RtParamList params;
     };
 

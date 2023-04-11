@@ -34,6 +34,7 @@
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
@@ -255,9 +256,8 @@ public:
     /// @}
 
     /// Hash.
-    friend size_t hash_value(const SdfSpec &x) {
-        return hash_value(x._id);
-    }
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, const SdfSpec& x);
 
 private:
     SDF_API
@@ -270,6 +270,15 @@ protected:
 private:
     Sdf_IdentityRefPtr _id;
 };
+
+template <class HashState>
+void TfHashAppend(HashState &h, const SdfSpec& x) {
+    h.Append(x._id.get());
+}
+
+inline size_t hash_value(const SdfSpec &x) {
+    return TfHash()(x);
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

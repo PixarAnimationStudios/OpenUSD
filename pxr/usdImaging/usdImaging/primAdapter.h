@@ -739,6 +739,11 @@ protected:
     USDIMAGING_API
     TfTokenVector _GetMaterialRenderContexts() const;
 
+    // Returns the namespace prefixes for render settings attributes relevant 
+    // to a renderer delegate.
+    USDIMAGING_API
+    TfTokenVector _GetRenderSettingsNamespaces() const;
+
     /// Returns whether custom shading of prims is enabled.
     USDIMAGING_API
     bool _GetSceneMaterialsEnabled() const;

@@ -240,17 +240,17 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
             = vc.Get<HdBufferArrayRangeSharedPtr>();
 
         renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->selectionOffsets, obar,
-                             /*interleave*/false));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->selectionOffsets, obar,
+                               /*interleave*/false));
         renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO,
-                             HdxTokens->selectionUniforms, ubar,
-                             /*interleave*/true));
+            HdStBindingRequest(HdStBinding::UBO,
+                               HdxTokens->selectionUniforms, ubar,
+                               /*interleave*/true));
         renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::SSBO,
-                             HdxTokens->selectionPointColors, cbar,
-                             /*interleave*/false));
+            HdStBindingRequest(HdStBinding::SSBO,
+                               HdxTokens->selectionPointColors, cbar,
+                               /*interleave*/false));
     } else {
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);

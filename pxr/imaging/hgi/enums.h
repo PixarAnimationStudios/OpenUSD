@@ -393,6 +393,8 @@ using HgiShaderStage = HgiBits;
 ///   Uniform buffer (UBO).</li>
 /// <li>HgiBindResourceTypeStorageBuffer:
 ///   Shader storage buffer (SSBO).</li>
+/// <li>HgiBindResourceTypeTessFactors:
+///   Tessellation factors for Metal tessellation.</li>
 /// </ul>
 ///
 enum HgiBindResourceType
@@ -403,6 +405,7 @@ enum HgiBindResourceType
     HgiBindResourceTypeStorageImage,
     HgiBindResourceTypeUniformBuffer,
     HgiBindResourceTypeStorageBuffer,
+    HgiBindResourceTypeTessFactors,
 
     HgiBindResourceTypeCount
 };

@@ -311,11 +311,17 @@ private: // Data
 };
 
 /// Typedefs and support functions
+template <typename HashState>
+inline
+void
+TfHashAppend(HashState& h, const PcpNodeRef& x){
+    h.Append((size_t)(x.GetUniqueIdentifier()));
+}
 inline
 size_t
 hash_value(const PcpNodeRef& x)
 {
-    return (size_t)x.GetUniqueIdentifier();
+    return TfHash{}(x);
 }
 
 typedef TfHashSet<PcpNodeRef, PcpNodeRef::Hash> PcpNodeRefHashSet;

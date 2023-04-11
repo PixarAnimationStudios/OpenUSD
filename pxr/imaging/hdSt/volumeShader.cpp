@@ -56,7 +56,7 @@ HdSt_VolumeShader::HdSt_VolumeShader()
 HdSt_VolumeShader::~HdSt_VolumeShader() = default;
 
 void 
-HdSt_VolumeShader::AddBindings(HdBindingRequestVector * const customBindings)
+HdSt_VolumeShader::AddBindings(HdStBindingRequestVector * const customBindings)
 {
     HdSt_MaterialNetworkShader::AddBindings(customBindings);
 }

@@ -2,8 +2,6 @@
 \page hio_page_front Hio: Hydra Resource I/O
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Hio: Hydra Resource I/O
-
-\publicLib
 \endif
 
 Utility classes for loading resources used by Hydra.

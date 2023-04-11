@@ -95,4 +95,11 @@ void wrapUsdShadeTokens()
     _AddToken(cls, "universalSourceType", UsdShadeTokens->universalSourceType);
     _AddToken(cls, "volume", UsdShadeTokens->volume);
     _AddToken(cls, "weakerThanDescendants", UsdShadeTokens->weakerThanDescendants);
+    _AddToken(cls, "ConnectableAPI", UsdShadeTokens->ConnectableAPI);
+    _AddToken(cls, "CoordSysAPI", UsdShadeTokens->CoordSysAPI);
+    _AddToken(cls, "Material", UsdShadeTokens->Material);
+    _AddToken(cls, "MaterialBindingAPI", UsdShadeTokens->MaterialBindingAPI);
+    _AddToken(cls, "NodeDefAPI", UsdShadeTokens->NodeDefAPI);
+    _AddToken(cls, "NodeGraph", UsdShadeTokens->NodeGraph);
+    _AddToken(cls, "Shader", UsdShadeTokens->Shader);
 }

@@ -53,6 +53,18 @@ public:
     void AddLegacyPrim(SdfPath const &id, TfToken const &type,
         HdSceneDelegate *sceneDelegate);
 
+    /// Remove only the prim at \p id without affecting children.
+    ///
+    /// If \p id has children, it is replaced by an entry with no type
+    /// and no data source.  If \p id does not have children, it is
+    /// removed from the retained scene index.
+    ///
+    /// This is called by HdRenderIndex on behalf of legacy
+    /// HdSceneDelegates to emulate the original behavior of
+    /// Remove{B,R,S}Prim, which did not remove children.
+    ///
+    void RemovePrim(SdfPath const &id);
+
     /// extends to also call DirtyPrim on HdDataSourceLegacyPrim
     void DirtyPrims(
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;

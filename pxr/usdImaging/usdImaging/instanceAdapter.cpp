@@ -1541,21 +1541,62 @@ UsdImagingInstanceAdapter::MarkVisibilityDirty(UsdPrim const& prim,
     }
 }
 
+struct UsdImagingInstanceAdapter::_GetInstanceCategoriesFn
+{
+    _GetInstanceCategoriesFn(
+        const UsdImagingInstanceAdapter* adapter,
+        const UsdImaging_CollectionCache* cc, 
+        std::vector<VtTokenArray>* result) : 
+        _adapter(adapter),
+        _cc(cc),
+        _result(result)
+    { }
+
+    void Initialize(size_t numInstances)
+    { 
+        _result->resize(numInstances);
+    }
+
+    bool operator()(const std::vector<UsdPrim>& ctx, size_t idx)
+    {
+        // We must query the collections cache using the instance's stage path, 
+        // not its proxy path. _GetStagePath() reconstructs the stage path
+        // from the instancing context.)
+        const SdfPath& path = _GetStagePath(ctx);
+        if (path.IsEmpty()) {
+            return false;
+        }
+        _result->at(idx) = _cc->ComputeCollectionsContainingPath(path);
+        return true;
+    }
+
+    SdfPath _GetStagePath(const std::vector<UsdPrim>& ctx)
+    {
+        SdfPathVector chain;
+        chain.reserve(ctx.size());
+        for (const UsdPrim& prim : ctx) {
+            chain.push_back(prim.GetPath());
+        }
+        return _adapter->_GetPrimPathFromInstancerChain(chain);
+    }
+
+    const UsdImagingInstanceAdapter* _adapter;
+    const UsdImaging_CollectionCache* _cc;
+    std::vector<VtTokenArray>* _result;
+};
+
 /*virtual*/
 std::vector<VtArray<TfToken>>
 UsdImagingInstanceAdapter::GetInstanceCategories(UsdPrim const& prim) 
 {
     HD_TRACE_FUNCTION();
-    std::vector<VtArray<TfToken>> categories;
-    if (const _InstancerData* instancerData = 
-        TfMapLookupPtr(_instancerData, prim.GetPath())) {
-        UsdImaging_CollectionCache& cc = _GetCollectionCache();
-        categories.reserve(instancerData->instancePaths.size());
-        for (SdfPath const& p: instancerData->instancePaths) {
-            categories.push_back(cc.ComputeCollectionsContainingPath(p));
-        }
+    std::vector<VtTokenArray> result;
+    if (TfMapLookupPtr(_instancerData, prim.GetPath())) {
+        const UsdImaging_CollectionCache& cc = _GetCollectionCache();
+        _GetInstanceCategoriesFn catsFn(this, &cc, &result);
+        _RunForAllInstancesToDraw(prim, &catsFn);
     }
-    return categories;
+    return result;
 }
 
 /*virtual*/
@@ -2626,7 +2667,7 @@ UsdImagingInstanceAdapter::GetScenePrimPaths(
 
             // set bits for all requested indices to true
             for (size_t i = 0; i < instanceIndices.size(); i++) {
-                requestedIndicesMap[instanceIndices[i]] = i;
+                requestedIndicesMap[instanceIndices[i] - minIdx] = i;
             }
 
             result.resize(instanceIndices.size());

@@ -320,6 +320,18 @@ class TestArDefaultResolver(unittest.TestCase):
 
         self.assertNotEqual(emptyContext, context)
 
+    def test_ResolverContextHash(self):
+        self.assertEqual(
+            hash(Ar.DefaultResolverContext()),
+            hash(Ar.DefaultResolverContext())
+        )
+
+        paths = ["/path1", "/path2", "/path3", "/path4"]
+        self.assertEqual(
+            hash(Ar.DefaultResolverContext(paths)),
+            hash(Ar.DefaultResolverContext(paths))
+        )
+
     def test_ResolveForNewAsset(self):
         resolver  = Ar.GetResolver()
 

@@ -609,10 +609,10 @@ nonLockingLinux__execve (const char *file,
 
 #if defined (ARCH_CPU_ARM)
     {
-        register long __file_result asm ("x0") = (long)file;
-        register char* const* __argv asm ("x1") = argv;
-        register char* const* __envp asm ("x2") = envp;
-        register long __num_execve asm ("x8") = 221;
+        long __file_result asm ("x0") = (long)file;
+        char* const* __argv asm ("x1") = argv;
+        char* const* __envp asm ("x2") = envp;
+        long __num_execve asm ("x8") = 221;
         __asm__ __volatile__ (
             "svc 0"
             : "=r" (__file_result)

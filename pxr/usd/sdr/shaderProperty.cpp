@@ -255,7 +255,9 @@ namespace {
             }
 
             if (type == SdrPropertyTypes->Vstruct) {
-                return std::make_pair(SdfValueTypeNames->Float, type);
+                return std::make_pair(isArray ? SdfValueTypeNames->FloatArray 
+                                              : SdfValueTypeNames->Float,
+                                      type);
             }
 
             return _GetTypeIndicatorFromDefaultMapping(type, isArray);
@@ -292,7 +294,9 @@ namespace {
             if (type == SdrPropertyTypes->Terminal ||
                 type == SdrPropertyTypes->Struct ||
                 type == SdrPropertyTypes->Vstruct) {
-                return std::make_pair(SdfValueTypeNames->Token, type);
+                return std::make_pair(isArray ? SdfValueTypeNames->TokenArray
+                                              : SdfValueTypeNames->Token, 
+                                      type);
             }
 
             // We prefer more specific types, so if the arraySize is 2, 3, or 4,

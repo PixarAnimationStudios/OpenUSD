@@ -253,3 +253,12 @@ PXR_NAMESPACE_CLOSE_SCOPE
 // 'PXR_NAMESPACE_OPEN_SCOPE', 'PXR_NAMESPACE_CLOSE_SCOPE'.
 // ===================================================================== //
 // --(BEGIN CUSTOM CODE)--
+PXR_NAMESPACE_OPEN_SCOPE
+
+UsdCollectionAPI
+UsdRenderPass::GetRenderVisibilityCollectionAPI() const
+{
+    return UsdCollectionAPI(GetPrim(), UsdRenderTokens->renderVisibility);
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE

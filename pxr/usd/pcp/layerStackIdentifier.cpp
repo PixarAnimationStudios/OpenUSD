@@ -29,7 +29,6 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/functional/hash.hpp>
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -95,11 +94,7 @@ PcpLayerStackIdentifier::operator<(const This &rhs) const
 size_t
 PcpLayerStackIdentifier::_ComputeHash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, TfHash()(rootLayer));
-    boost::hash_combine(hash, TfHash()(sessionLayer));
-    boost::hash_combine(hash, pathResolverContext);
-    return hash;
+    return TfHash::Combine(rootLayer, sessionLayer, pathResolverContext);
 }
 
 PcpLayerStackIdentifierStr::PcpLayerStackIdentifierStr(
@@ -156,11 +151,7 @@ PcpLayerStackIdentifierStr::operator<(const This &rhs) const
 size_t
 PcpLayerStackIdentifierStr::_ComputeHash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, TfHash()(rootLayerId));
-    boost::hash_combine(hash, TfHash()(sessionLayerId));
-    boost::hash_combine(hash, pathResolverContext);
-    return hash;
+    return TfHash::Combine(rootLayerId, sessionLayerId, pathResolverContext);
 }
 
 enum Pcp_IdentifierFormat {

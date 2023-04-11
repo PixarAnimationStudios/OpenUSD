@@ -53,23 +53,23 @@ void HdPrman_RenderSettings::_Sync(
 {
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
 
-    if (*dirtyBits & HdChangeTracker::DirtyParams) {
-        // XXX For the time-being, continue to pull sample and display filters
-        //     from the scene delegate via Get. This will be updated to use
-        //     _params instead.
-        {
-            const VtValue filterPaths = sceneDelegate->Get(GetId(),
-                _tokens->outputsRiSampleFilters);
+    if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        // NamespacedSettings contains all the Prman-specific Render Settings
+        const VtDictionary& namespacedSettings = GetNamespacedSettings();
 
+        // Set the SampleFilters connected to this Render Settings prim
+        const auto sampleFilterIt = namespacedSettings.find(
+            _tokens->outputsRiSampleFilters.GetString());
+        if (sampleFilterIt != namespacedSettings.end()) {
             param->SetConnectedSampleFilterPaths(sceneDelegate,
-                filterPaths.GetWithDefault<SdfPathVector>());
+                sampleFilterIt->second.GetWithDefault<SdfPathVector>());
         }
-        {
-            const VtValue filterPaths = sceneDelegate->Get(GetId(), 
-                _tokens->outputsRiDisplayFilters);
-
+        // Set the DisplayFilters connected to this Render Settings prim
+        const auto displayFilterIt = namespacedSettings.find(
+            _tokens->outputsRiDisplayFilters.GetString());
+        if (displayFilterIt != namespacedSettings.end()) {
             param->SetConnectedDisplayFilterPaths(sceneDelegate, 
-                filterPaths.GetWithDefault<SdfPathVector>());
+                displayFilterIt->second.GetWithDefault<SdfPathVector>());
         }
     }
 }

@@ -30,6 +30,7 @@ UsdTokensType::UsdTokensType() :
     clips("clips", TfToken::Immortal),
     clipSets("clipSets", TfToken::Immortal),
     collection("collection", TfToken::Immortal),
+    collection_MultipleApplyTemplate_("collection:__INSTANCE_NAME__", TfToken::Immortal),
     collection_MultipleApplyTemplate_Excludes("collection:__INSTANCE_NAME__:excludes", TfToken::Immortal),
     collection_MultipleApplyTemplate_ExpansionRule("collection:__INSTANCE_NAME__:expansionRule", TfToken::Immortal),
     collection_MultipleApplyTemplate_IncludeRoot("collection:__INSTANCE_NAME__:includeRoot", TfToken::Immortal),
@@ -39,11 +40,17 @@ UsdTokensType::UsdTokensType() :
     expandPrimsAndProperties("expandPrimsAndProperties", TfToken::Immortal),
     explicitOnly("explicitOnly", TfToken::Immortal),
     fallbackPrimTypes("fallbackPrimTypes", TfToken::Immortal),
+    APISchemaBase("APISchemaBase", TfToken::Immortal),
+    ClipsAPI("ClipsAPI", TfToken::Immortal),
+    CollectionAPI("CollectionAPI", TfToken::Immortal),
+    ModelAPI("ModelAPI", TfToken::Immortal),
+    Typed("Typed", TfToken::Immortal),
     allTokens({
         apiSchemas,
         clips,
         clipSets,
         collection,
+        collection_MultipleApplyTemplate_,
         collection_MultipleApplyTemplate_Excludes,
         collection_MultipleApplyTemplate_ExpansionRule,
         collection_MultipleApplyTemplate_IncludeRoot,
@@ -52,7 +59,12 @@ UsdTokensType::UsdTokensType() :
         expandPrims,
         expandPrimsAndProperties,
         explicitOnly,
-        fallbackPrimTypes
+        fallbackPrimTypes,
+        APISchemaBase,
+        ClipsAPI,
+        CollectionAPI,
+        ModelAPI,
+        Typed
     })
 {
 }

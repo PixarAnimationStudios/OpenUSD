@@ -24,10 +24,11 @@
 #include "pxr/usd/usdContrived/publicMultipleApplyAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
+
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +42,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (PublicMultipleApplyAPI)
     (testo)
 );
 
@@ -96,6 +96,8 @@ UsdContrivedPublicMultipleApplyAPI::IsSchemaPropertyBaseName(const TfToken &base
             UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdContrivedTokens->testo_MultipleApplyTemplate_),
     };
 
     return find(attrsAndRels.begin(), attrsAndRels.end(), baseName)
@@ -235,6 +237,29 @@ UsdContrivedPublicMultipleApplyAPI::CreateTestAttrTwoAttr(VtValue const &default
                        writeSparsely);
 }
 
+UsdAttribute
+UsdContrivedPublicMultipleApplyAPI::GetPublicAPIAttr() const
+{
+    return GetPrim().GetAttribute(
+        _GetNamespacedPropertyName(
+            GetName(),
+            UsdContrivedTokens->testo_MultipleApplyTemplate_));
+}
+
+UsdAttribute
+UsdContrivedPublicMultipleApplyAPI::CreatePublicAPIAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+                       _GetNamespacedPropertyName(
+                            GetName(),
+                           UsdContrivedTokens->testo_MultipleApplyTemplate_),
+                       SdfValueTypeNames->Opaque,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -254,6 +279,7 @@ UsdContrivedPublicMultipleApplyAPI::GetSchemaAttributeNames(bool includeInherite
     static TfTokenVector localNames = {
         UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne,
         UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo,
+        UsdContrivedTokens->testo_MultipleApplyTemplate_,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(

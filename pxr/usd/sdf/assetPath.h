@@ -28,8 +28,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 #include <iosfwd>
 #include <string>
@@ -86,10 +86,7 @@ public:
 
     /// Hash function
     size_t GetHash() const {
-        size_t hash = 0;
-        boost::hash_combine(hash, _assetPath);
-        boost::hash_combine(hash, _resolvedPath);
-        return hash;
+        return TfHash::Combine(_assetPath, _resolvedPath);
     }
 
     /// \class Hash

@@ -37,6 +37,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <mutex>
 #include <shared_mutex>
 #include <vector>
 #include <unordered_map>
@@ -90,6 +91,11 @@ struct _InputStream {
     {
         _cur += offset;
     }
+
+    inline void Seek(size_t offset)
+    {
+        _cur = _buffer + offset;
+    }            
 
     inline size_t Tell() const
     {
@@ -197,9 +203,10 @@ _ReadLocalFileHeader(_InputStream& src)
 
     // If signature is not the expected value, reset the source back to
     // its original position and bail.
+    const size_t signaturePos = src.Tell();
     src.Read(&h.f.signature);
     if (!h.IsValid()) {
-        src.Advance(-sizeof(decltype(h.f.signature)));
+        src.Seek(signaturePos);
         return _LocalFileHeader();
     }
 

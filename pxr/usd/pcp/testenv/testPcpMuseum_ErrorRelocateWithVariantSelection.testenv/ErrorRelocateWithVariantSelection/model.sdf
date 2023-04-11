@@ -1,0 +1,23 @@
+#sdf 1.4.32
+
+def Prim "Model" (
+    add variantSets = ["vset"]
+    variants = {
+        string vset = "vsel"
+    }
+)
+{
+    variantSet "vset" = {
+        "vsel" {
+            def Prim "PrimOnlyInVariantSet" {
+            }
+        }
+    }
+
+    def Prim "A"
+    {
+        def Prim "B"
+        {
+        }
+    }
+}

@@ -854,7 +854,7 @@ UsdImagingPointInstancerAdapter::_ProcessPrimRemoval(SdfPath const& cachePath,
     // If the affected instancer is populated, delete it by finding the
     // top-level instancer and calling _UnloadInstancer on that.
     // XXX: It would be nice if we could just remove *this* prim and rely on
-    // the resync code to propertly resync it with the right parent instancer.
+    // the resync code to properly resync it with the right parent instancer.
 
     _InstancerDataMap::iterator instIt = _instancerData.find(affectedInstancer);
 

@@ -24,7 +24,6 @@
 #include "pxr/usd/usdShade/materialBindingAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -38,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (MaterialBindingAPI)
-);
 
 /* virtual */
 UsdShadeMaterialBindingAPI::~UsdShadeMaterialBindingAPI()
@@ -239,13 +233,15 @@ _GetMaterialPurpose(const UsdRelationship &bindingRel)
 UsdShadeMaterialBindingAPI::DirectBinding::DirectBinding(
     const UsdRelationship &directBindingRel):
     _bindingRel(directBindingRel),
-    _materialPurpose(_GetMaterialPurpose(directBindingRel))
+    _materialPurpose(_GetMaterialPurpose(directBindingRel)),
+    _isBound(false)
 {
     SdfPathVector targetPaths;
     _bindingRel.GetForwardedTargets(&targetPaths);
     if (targetPaths.size() == 1 && 
         targetPaths.front().IsPrimPath()) {
         _materialPath = targetPaths.front();
+        _isBound = true;
     }
 }
 

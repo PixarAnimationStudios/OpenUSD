@@ -75,3 +75,8 @@ assert dynamicLayers[0].ExportToString().rstrip() == "#usda 1.0"
 dynamicLayers[0].SetMuted(False)
 assert dynamicLayers[0].ExportToString() == premuteLayerString
 
+# Verify Capabilities
+assert Sdf.FileFormat.FormatSupportsReading('.usddancingcubesexample') == True
+assert Sdf.FileFormat.FormatSupportsWriting('.usddancingcubesexample') == False
+assert Sdf.FileFormat.FormatSupportsEditing('.usddancingcubesexample') == False
+

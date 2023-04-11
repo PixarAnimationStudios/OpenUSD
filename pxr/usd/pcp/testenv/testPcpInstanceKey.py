@@ -76,6 +76,14 @@ class TestPcpInstanceKey(unittest.TestCase):
         notAnInstanceKey = self._GetInstanceKey(cache, '/NotAnInstance')
         self.assertEqual(notAnInstanceKey, Pcp.InstanceKey())
 
+    def test_Hashing(self):
+        cache = self._LoadPcpCache("basic.sdf")
+
+        self.assertEqual(
+            hash(self._GetInstanceKey(cache, "/Set_1")),
+            hash(self._GetInstanceKey(cache, "/Set_1"))
+        )
+
     def test_Variants(self):
         """Test instance key functionality on asset
         structure involving references and variants."""

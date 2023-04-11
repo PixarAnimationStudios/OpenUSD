@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl
 {
-using _InstanceObserverUniquePtr = std::unique_ptr<class _InstanceObserver>;
+TF_DECLARE_WEAK_PTRS(_InstanceObserver);
 }
 
 TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
@@ -114,6 +114,21 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///
 /// UsdImaging_NiInstanceAggregationSceneIndex (with empty prototype root)
 ///
+/// /Cube_1
+///     primType: ""
+///     dataSource:
+///         instance: # Not relevant for rendering,
+///                   # but useful to translate Usd proxy path for, e.g.,
+///                   # selection
+///             instancer: /__Usd_Prototypes/NoBindings/__Prototype_1
+///             prototypeId: 0 # Index into instancer's instanceIndices vector
+///                            # data source, always 0 since instancer never
+///                            # has more than one prototype.
+///             instanceId: 0 # Index into VtIntArray at
+///                           # instancer's instanceIndices i0.
+///                           # The indexed element in VtIntArray was added by
+///                           # the instance aggregation because of this
+///                           # instance.
 /// /__Usd_Prototypes
 ///     primType: ""
 /// /__Usd_Prototypes/NoBindings
@@ -123,7 +138,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///     dataSource:
 ///         instancerTopology:
 ///             instanceIndices:
-///                 i0: 0
+///                 i0: [ 0 ]
 ///             prototypes: [ /__Usd_Prototypes/NoBindings/__Prototype_1/__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
@@ -151,6 +166,8 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///
 /// UsdImaging_NiInstanceAggregationSceneIndex (with empty prototype root)
 ///
+/// /Cube_1
+///     ... # Similar to above
 /// /__Usd_Prototypes
 ///     primType: ""
 /// /__Usd_Prototypes/Binding312...436
@@ -201,6 +218,12 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 /// /MyPointInstancer/MyPointPrototype
 /// /MyPointInstancer/MyPointPrototype/ForInstancer434...256 # Where point instancer inserted copy of /MyPointPrototype
 ///                                                          # It will be the enclosing prototype root for the instance.
+///     primType: ""
+///     dataSource:
+///         instance:
+///             instancer: /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings/__Prototype_1
+///             prototypeId: 0
+///             instanceId: 0
 /// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes
 /// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings
 ///     primType: ""
@@ -208,7 +231,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///     primType: instancer
 ///         instancerTopology:
 ///             instanceIndices:
-///                 i0: 0
+///                 i0: [ 0 ]
 ///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings/__Prototype_1__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
@@ -266,8 +289,9 @@ private:
         HdSceneIndexBaseRefPtr const &inputScene,
         const SdfPath &prototypeRoot);
 
-    UsdImaging_NiInstanceAggregationSceneIndex_Impl::
-    _InstanceObserverUniquePtr const _instanceObserver;
+    std::unique_ptr<
+        UsdImaging_NiInstanceAggregationSceneIndex_Impl::
+        _InstanceObserver> const _instanceObserver;
     _RetainedSceneIndexObserver _retainedSceneIndexObserver;
 };
 

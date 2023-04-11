@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -61,7 +62,9 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/renderBufferSchema.h"
+#include "pxr/imaging/hd/renderProductSchema.h"
 #include "pxr/imaging/hd/renderSettingsSchema.h"
+#include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
@@ -2031,6 +2034,83 @@ private:
 
 // ----------------------------------------------------------------------------
 
+static HdContainerDataSourceHandle
+_ToContainerDS(const VtDictionary &dict)
+{
+    std::vector<TfToken> names;
+    std::vector<HdDataSourceBaseHandle> values;
+    const size_t numDictEntries = dict.size();
+    names.reserve(numDictEntries);
+    values.reserve(numDictEntries);
+
+    for (const auto &pair : dict) {
+        names.push_back(TfToken(pair.first));
+        values.push_back(
+            HdRetainedSampledDataSource::New(pair.second));
+    }
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
+}
+
+using HdRenderProducts = HdRenderSettings::RenderProducts;
+static HdVectorDataSourceHandle
+_ToVectorDS(const HdRenderProducts &hdProducts)
+{
+    std::vector<HdDataSourceBaseHandle> productsDs;
+    productsDs.reserve(hdProducts.size());
+
+    for (const auto & hdProduct : hdProducts) {
+        // Construct render var ds.
+        std::vector<HdDataSourceBaseHandle> varsDs;
+        for (const auto & hdVar : hdProduct.renderVars) {
+            varsDs.push_back(
+                HdRenderVarSchema::BuildRetained(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        hdVar.varPath),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.dataType),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        TfToken(hdVar.sourceName)),
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        hdVar.sourceType),
+                    _ToContainerDS(hdVar.namespacedSettings)));
+        }
+
+        productsDs.push_back(
+            HdRenderProductSchema::BuildRetained(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.productPath),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.type),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.name),
+                HdRetainedTypedSampledDataSource<GfVec2i>::New(
+                    hdProduct.resolution),
+                HdRetainedSmallVectorDataSource::New(
+                    varsDs.size(), varsDs.data()),
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    hdProduct.cameraPath),
+                HdRetainedTypedSampledDataSource<float>::New(
+                    hdProduct.pixelAspectRatio),
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    hdProduct.aspectRatioConformPolicy),
+                HdRetainedTypedSampledDataSource<GfVec2f>::New(
+                    hdProduct.apertureSize),
+                HdRetainedTypedSampledDataSource<GfVec4f>::New(
+                    GfVec4f(
+                        hdProduct.dataWindowNDC.GetMin()[0],
+                        hdProduct.dataWindowNDC.GetMin()[1],
+                        hdProduct.dataWindowNDC.GetMax()[0],
+                        hdProduct.dataWindowNDC.GetMax()[1])),
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    hdProduct.disableMotionBlur),
+                _ToContainerDS(hdProduct.namespacedSettings)));
+    }
+
+    return HdRetainedSmallVectorDataSource::New(
+                productsDs.size(), productsDs.data());
+}
+
 class Hd_DataSourceRenderSettings : public HdContainerDataSource
 {
 public:
@@ -2045,37 +2125,64 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector v;
-        v.push_back(HdRenderSettingsSchemaTokens->sampleFilters);
-        v.push_back(HdRenderSettingsSchemaTokens->displayFilters);
-        return v;
+        static TfTokenVector names = {
+            HdRenderSettingsSchemaTokens->namespacedSettings,
+            HdRenderSettingsSchemaTokens->renderProducts,
+            HdRenderSettingsSchemaTokens->includedPurposes,
+            HdRenderSettingsSchemaTokens->materialBindingPurposes,
+            HdRenderSettingsSchemaTokens->renderingColorSpace};
+        return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        const std::pair<TfToken, TfToken> outputFilterTokens[] = {
-            {
-                HdRenderSettingsSchemaTokens->sampleFilters,
-                _tokens->outputsRiSampleFilters
-            },
-            {
-                HdRenderSettingsSchemaTokens->displayFilters,
-                _tokens->outputsRiDisplayFilters
-            }
-        };
-        
-        for (const auto tokens : outputFilterTokens) {
-            if (name == tokens.first) {
-                const VtValue filterPathsValue =
-                    _sceneDelegate->Get(_id, tokens.second);
-                SdfPathVector filterPaths = 
-                    filterPathsValue.GetWithDefault<SdfPathVector>();
-                VtArray<SdfPath> pathsArray(filterPaths.begin(), filterPaths.end());
-                return HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
-                    pathsArray);
+        if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->namespacedSettings);
+            if (value.IsHolding<VtDictionary>()) {
+                return _ToContainerDS(
+                    value.UncheckedGet<VtDictionary>());
             }
         }
-        
+
+        if (name == HdRenderSettingsSchemaTokens->renderProducts) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderProducts);
+            if (value.IsHolding<HdRenderProducts>()) {
+                return _ToVectorDS(value.UncheckedGet<HdRenderProducts>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->includedPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->includedPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->materialBindingPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->materialBindingPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->renderingColorSpace) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderingColorSpace);
+            if (value.IsHolding<TfToken>()) {
+                return HdRetainedTypedSampledDataSource<TfToken>::New(
+                    value.UncheckedGet<TfToken>());
+            }
+        }
+
+        // Note: active can be skipped (instead of hardcoding it to false here)
+        //       since a downstream scene index will author its opinion.
+
         return HdSampledDataSourceHandle(
             Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
     }

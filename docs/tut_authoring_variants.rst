@@ -334,14 +334,14 @@ these files to a working directory and make them writable.
 
 #. Run :ref:`toolset:usdview` on :filename:`HelloWorldWithVariants.usda`.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/369066703/HelloWorldWithVariants.png
+   .. image:: http://openusd.org/images/tut_authoring_variants_helloworld1.png
 
    Click the :usda:`hello` prim in the tree view on the left.  Then click the
    :guilabel:`Meta Data` tab in the lower right.  You will see the authored
    variant set with a combo box that can toggle the variant selection between
    red, blue, and green.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/369066703/HelloWorldWithVariants_2.png
+   .. image:: http://openusd.org/images/tut_authoring_variants_helloworld2.png
                 
 #. In the interpreter you can see the variant selections that usdview authors to
    the session layer. This is the same sparse override you would see if you

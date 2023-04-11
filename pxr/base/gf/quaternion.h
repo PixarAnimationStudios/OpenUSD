@@ -30,8 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/vec3d.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -125,10 +124,7 @@ class GfQuaternion
 
     /// Hash.
     friend inline size_t hash_value(const GfQuaternion &q) {
-        size_t h = 0;
-        boost::hash_combine(h, q.GetReal());
-        boost::hash_combine(h, q.GetImaginary());
-        return h;
+        return TfHash::Combine(q.GetReal(), q.GetImaginary());
     }
 
     /// Component-wise quaternion equality test. The real and imaginary parts

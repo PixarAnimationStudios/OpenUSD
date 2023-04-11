@@ -121,7 +121,7 @@ HdxPresentTask::Execute(HdTaskContext* ctx)
         // Eg. This allows us to render with HgiMetal and present the images
         // into a opengl based application (such as usdview).
         _interop.TransferToApp(
-            _hgi,
+            _GetHgi(),
             aovTexture, depthTexture,
             _params.dstApi,
             _params.dstFramebuffer, _params.dstRegion);

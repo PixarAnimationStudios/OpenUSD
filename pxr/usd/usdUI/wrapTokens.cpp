@@ -76,4 +76,7 @@ void wrapUsdUITokens()
     _AddToken(cls, "uiNodegraphNodePos", UsdUITokens->uiNodegraphNodePos);
     _AddToken(cls, "uiNodegraphNodeSize", UsdUITokens->uiNodegraphNodeSize);
     _AddToken(cls, "uiNodegraphNodeStackingOrder", UsdUITokens->uiNodegraphNodeStackingOrder);
+    _AddToken(cls, "Backdrop", UsdUITokens->Backdrop);
+    _AddToken(cls, "NodeGraphNodeAPI", UsdUITokens->NodeGraphNodeAPI);
+    _AddToken(cls, "SceneGraphPrimAPI", UsdUITokens->SceneGraphPrimAPI);
 }

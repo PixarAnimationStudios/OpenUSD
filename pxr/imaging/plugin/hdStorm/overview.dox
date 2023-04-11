@@ -2,7 +2,6 @@
 \page hdStorm_page_front HdStorm : Real-time Hydra renderer plugin
 \if ( PIXAR_MFB_BUILD )
 \mainpage  HdStorm : Real-time Hydra renderer plugin
-\publicLib
 \endif
 
 HdStorm implements a Hydra renderer plugin that wraps the Storm Hydra render

@@ -98,6 +98,9 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             case HgiShaderStageCompute:
                 entryPoint = @"computeEntryPoint";
                 break;
+            case HgiShaderStagePostTessellationControl:
+                entryPoint = @"vertexEntryPoint";
+                break;
             case HgiShaderStagePostTessellationVertex:
                 entryPoint = @"vertexEntryPoint";
                 break;

@@ -16,7 +16,7 @@ Our test machines have the following software versions installed
 | OS            | CentOS Linux 7       | 10.15.7                      | Windows 10                     |
 | C++ Compiler  | gcc 6.3.1            | Apple clang 12.0.0 (Xcode 12.4) | Visual Studio 2017 15.9     |
 | CMake         | 3.14.6               | 3.19.5                       | 3.16.5                         |
-| Python        | 2.7.16, 3.6.8        | 2.7.10, 3.7.7                | 2.7.12, 3.7.4, 3.8.10          |
+| Python        | 3.6.8                | 3.7.7                        | 3.7.4, 3.8.10                  |
 | Boost         | 1.70.0               | 1.76.0                       | 1.70.0                         |
 | Intel TBB     | 2019 Update 6        | 2018 Update 1, 2019 Update 6 | 2019 Update 6                  |
 | OpenSubdiv    | 3.5.0                | 3.5.0                        | 3.5.0                          |

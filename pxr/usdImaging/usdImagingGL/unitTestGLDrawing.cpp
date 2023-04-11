@@ -380,6 +380,8 @@ UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
 struct UsdImagingGL_UnitTestGLDrawing::_Args {
     _Args()
       : offscreen(false)
+      , shading("smooth")
+      , cullStyle("nothing")
       , clearColor{1.0f, 0.5f, 0.1f, 1.0f}
       , translate{0.0f, -1000.0f, -2500.0f}
       , widgetSize{640, 480}
@@ -467,7 +469,7 @@ static void Usage(int argc, char *argv[])
 "                      Set the fallback complexity [1]\n"
 "  -renderer rendererName\n"
 "                      use the specified renderer plugin []\n"
-"  -shading [flat|smooth|wire|wireOnSurface]\n"
+"  -shading [flat|smooth|wire|wireOnSurface|points]\n"
 "                      force specific type of shading\n"
 "                      [flat|smooth|wire|wireOnSurface|points] []\n"
 "  -frameAll           set the view to frame all root prims on the stage\n"
@@ -815,26 +817,30 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
 
     _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 
-    if (args.shading.compare("wireOnSurface") == 0) {
+    if (args.shading.compare("points") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    } else if (args.shading.compare("wire") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
+    } else if (args.shading.compare("wireOnSurface") == 0) {
         _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME_ON_SURFACE;
     } else if (args.shading.compare("flat") == 0 ) {
         _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_FLAT;
-    } else if (args.shading.compare("wire") == 0 ) {
-        _drawMode = UsdImagingGLDrawMode::DRAW_WIREFRAME;
-    } else if (args.shading.compare("points") == 0 ) {
-        _drawMode = UsdImagingGLDrawMode::DRAW_POINTS;
+    } else if (args.shading.compare("smooth") == 0 ) {
+        _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
     } else {
-        TF_WARN("Draw mode %s not supported!", args.shading.c_str());
+        TF_WARN("Shading mode %s not supported!", args.shading.c_str());
     }
 
     _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
 
-    if (args.cullStyle.compare("back") == 0) {
+    if (args.cullStyle.compare("nothing") == 0) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_NOTHING;
+    } else if (args.cullStyle.compare("back") == 0) {
         _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK;
-    } else if (args.cullStyle.compare("backUnlessDoubleSided") == 0 ) {
-        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
     } else if (args.cullStyle.compare("front") == 0 ) {
         _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_FRONT;
+    } else if (args.cullStyle.compare("backUnlessDoubleSided") == 0 ) {
+        _cullStyle = UsdImagingGLCullStyle::CULL_STYLE_BACK_UNLESS_DOUBLE_SIDED;
     } else {
         TF_WARN("Cull style %s not supported!", args.cullStyle.c_str());
     }

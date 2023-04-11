@@ -40,6 +40,7 @@ TF_DEFINE_PUBLIC_TOKENS(HdInstancerTopologySchemaTokens,
     HDINSTANCERTOPOLOGY_SCHEMA_TOKENS);
 
 
+
 VtArray<int>
 HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
 {
@@ -49,8 +50,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     VtArray<int> matchingPrototypes;
 
     // If we can't get the instance indices datasource, not much point...
-    HdVectorDataSourceHandle indicesVecDs = GetInstanceIndices();
-    if (!indicesVecDs) {
+    HdTypedVectorSchema<VtArray<int>> indicesSchema = GetInstanceIndices();
+    if (!indicesSchema) {
         return result;
     }
 
@@ -74,8 +75,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     // Map from matchingPrototypes -> instanceIndices, taking mask into account.
     for (int protoIndex : matchingPrototypes) {
         VtArray<int> instanceIndices;
-        if (HdIntArrayDataSourceHandle indicesDs = HdIntArrayDataSource::Cast(
-                indicesVecDs->GetElement(protoIndex))) {
+        if (HdIntArrayDataSourceHandle indicesDs =
+                indicesSchema.GetElement(protoIndex)) {
             instanceIndices = indicesDs->GetTypedValue(0);
         }
 
@@ -110,11 +111,11 @@ HdInstancerTopologySchema::GetPrototypes()
         HdInstancerTopologySchemaTokens->prototypes);
 }
 
-HdVectorDataSourceHandle
+HdIntArrayVectorSchema
 HdInstancerTopologySchema::GetInstanceIndices()
 {
-    return _GetTypedDataSource<HdVectorDataSource>(
-        HdInstancerTopologySchemaTokens->instanceIndices);
+    return HdIntArrayVectorSchema(_GetTypedDataSource<HdVectorDataSource>(
+        HdInstancerTopologySchemaTokens->instanceIndices));
 }
 
 HdBoolArrayDataSourceHandle

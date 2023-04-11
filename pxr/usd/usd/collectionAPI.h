@@ -101,15 +101,14 @@ class SdfAssetPath;
 /// attribute indicating whether the pseudo-root path &lt;/&gt; should
 /// be counted as one of the included target paths.  The fallback is false.
 /// This separate attribute is required because relationships cannot
-/// directly target the root.
+/// directly target the root.  When expansionRule is explicitOnly, this
+/// attribute is ignored.
 /// <li><b>rel collection:<i>collectionName</i>:includes</b> - specifies a list 
 /// of targets that are included in the collection. This can target prims or 
 /// properties directly. A collection can insert the rules of another
 /// collection by making its <i>includes</i> relationship target the
 /// <b>collection:{collectionName}</b> property on the owning prim of the
-/// collection to be included.
-/// Such a property may not (and typically does not) exist on the UsdStage, but 
-/// it is the path that is used to refer to the collection.
+/// collection to be included (see UsdCollectionAPI::GetCollectionAttr).
 /// It is important to note that including another collection does not
 /// guarantee the contents of that collection will be in the final collection;
 /// instead, the rules are merged.  This means, for example, an exclude
@@ -130,6 +129,13 @@ class SdfAssetPath;
 /// a path in the collection (see UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
 /// or of enumerating the objects belonging to the collection (see 
 /// UsdCollectionAPI::GetIncludedObjects).
+/// </li>
+/// <li><b>uniform opaque collection:<i>collectionName</i></b> - opaque 
+/// attribute (meaning it can never have a value) that represents the collection
+/// for the purpose of allowing another collection to include it. When this
+/// property is targeted by another collection's <i>includes</i> relationship,
+/// the rules of this collection will be inserted into the rules of the collection
+/// that includes it.
 /// </li></ul>
 /// 
 /// <b>Implicit inclusion</b>
@@ -364,6 +370,34 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // COLLECTION 
+    // --------------------------------------------------------------------- //
+    /// This property represents the collection for the purpose of 
+    /// allowing another collection to include it. When this property is 
+    /// targeted by another collection's <i>includes</i> relationship, the rules
+    /// of this collection will be inserted into the rules of the collection
+    /// that includes it.
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform opaque __INSTANCE_NAME__` |
+    /// | C++ Type | SdfOpaqueValue |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Opaque |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USD_API
+    UsdAttribute GetCollectionAttr() const;
+
+    /// See GetCollectionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USD_API
+    UsdAttribute CreateCollectionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // INCLUDES 
     // --------------------------------------------------------------------- //
     /// Specifies a list of targets that are included in the collection.
@@ -436,11 +470,11 @@ public:
     static std::vector<UsdCollectionAPI> GetAllCollections(const UsdPrim &prim);
 
     /// Returns the canonical path that represents this collection. 
-    /// This points to a property named "collection:{collectionName}" on the 
-    /// prim defining the collection (which won't really exist as a property 
-    /// on the UsdStage, but will be used to refer to the collection).
-    /// This is the path to be used to "include" this collection in another
-    /// collection.
+    /// This points to the property named "collection:{collectionName}" on the 
+    /// prim defining the collection. This is the path to be used to "include" 
+    /// this collection in another collection.
+    ///
+    /// \sa GetCollectionAttr()
     USD_API
     SdfPath GetCollectionPath() const;
 
@@ -570,11 +604,6 @@ public:
     static bool CanContainPropertyName(const TfToken &name);
 
 private:
-
-    // Returns the name of the property belonging to this collection, given the
-    // base name of the attribute. Eg, if baseName is 'includes', this
-    // returns 'collection:<name>:includes'.
-    TfToken _GetCollectionPropertyName(const TfToken &baseName=TfToken()) const;
 
     // Helper method for computing the UsdCollectionMembershipQuery object for
     // a collection.

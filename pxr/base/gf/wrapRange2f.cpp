@@ -29,6 +29,7 @@
 #include "pxr/base/gf/range2f.h"
 #include "pxr/base/gf/range2d.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -65,7 +66,7 @@ static GfRange2f& __itruediv__(GfRange2f &self, double value)
     return self /= value;
 }
 
-static size_t __hash__(GfRange2f const &r) { return hash_value(r); }
+static size_t __hash__(GfRange2f const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 
@@ -81,6 +82,8 @@ void wrapRange2f()
     cls
         .def(init<GfRange2f>())
         .def(init<const GfVec2f &, const GfVec2f &>())
+
+        .def(init<GfRange2d>())
         
         .def(TfTypePythonClass())
 

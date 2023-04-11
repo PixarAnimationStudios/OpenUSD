@@ -122,7 +122,6 @@
 #include <vector>
 #include <boost/any.hpp>
 #include <boost/assign.hpp>
-#include <boost/assign/list_of.hpp>
 #include <boost/call_traits.hpp>
 #include <boost/compressed_pair.hpp>
 #include <boost/function.hpp>

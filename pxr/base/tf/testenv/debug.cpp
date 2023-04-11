@@ -29,7 +29,6 @@
 
 #include <iostream>
 #include <map>
-#include <boost/assign/list_of.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -94,14 +93,14 @@ Test_TfDebugTestEnv()
 
     std::vector<std::string> symNames = TfDebug::GetDebugSymbolNames();
     std::sort(symNames.begin(), symNames.end());
-    std::vector<std::string> expSymNames =
-        boost::assign::list_of
-            ("FLAM")
-            ("FLIM")
-            ("FLIMFLAM")
-            ("FOO")
-            ("FOOFLAM")
-            ("FOOFLIMFLAM");
+    std::vector<std::string> expSymNames {{ 
+        "FLAM",
+        "FLIM",
+        "FLIMFLAM",
+        "FOO",
+        "FOOFLAM",
+        "FOOFLIMFLAM" }};
+
     std::vector<std::string> result;
     std::set_intersection(
         symNames.begin(), symNames.end(),
@@ -112,14 +111,14 @@ Test_TfDebugTestEnv()
         return false;
     }
 
-    std::map<std::string, std::string> expDescriptions =
-        boost::assign::map_list_of
-            ("FOO",         "fake foo env var")
-            ("FOOFLAM",     "fake fooflam env var")
-            ("FOOFLIMFLAM", "fake fooflimflam env var")
-            ("FLIMFLAM",    "fake flimflam env var")
-            ("FLIM",        "fake flim env var")
-            ("FLAM",        "fake flam env var");
+    std::map<std::string, std::string> expDescriptions = {
+    	{ "FOO", "fake foo env var" },
+	{ "FOOFLAM", "fake fooflam env var" },
+        { "FOOFLIMFLAM", "fake fooflimflam env var" },
+    	{ "FLIMFLAM", "fake flimflam env var" },
+	{ "FLIM", "fake flim env var" },
+    	{ "FLAM", "fake flam env var" }};
+    
     for (std::map<std::string, std::string>::const_iterator i =
          expDescriptions.begin(); i != expDescriptions.end(); ++i) {
         std::string description = TfDebug::GetDebugSymbolDescription(i->first);

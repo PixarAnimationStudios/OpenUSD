@@ -1435,6 +1435,7 @@ class StageView(QGLWidget):
         self._renderParams.enableSampleAlphaToCoverage = not self._dataModel.viewSettings.displayPrimId
         self._renderParams.highlight = renderSelHighlights
         self._renderParams.enableSceneMaterials = self._dataModel.viewSettings.enableSceneMaterials
+        self._renderParams.domeLightCameraVisibility = self._dataModel.viewSettings.domeLightTexturesVisible
         self._renderParams.enableSceneLights = self._dataModel.viewSettings.enableSceneLights
         self._renderParams.clearColor = Gf.Vec4f(self._dataModel.viewSettings.clearColor)
 
@@ -1449,6 +1450,9 @@ class StageView(QGLWidget):
         pseudoRoot = self._dataModel.stage.GetPseudoRoot()
 
         renderer.SetSelectionColor(self._dataModel.viewSettings.highlightColor)
+        renderer.SetRendererSetting(
+            "domeLightCameraVisibility",
+            self._dataModel.viewSettings.domeLightTexturesVisible)
 
         self._processBBoxes()
 

@@ -82,9 +82,13 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken camera;
+    /// \brief "collection:renderVisibility:includeRoot"
+    /// 
+    /// UsdRenderPass
+    const TfToken collectionRenderVisibilityIncludeRoot;
     /// \brief "color3f"
     /// 
-    /// Default value for UsdRenderVar::GetDataTypeAttr()
+    /// Fallback value for UsdRenderVar::GetDataTypeAttr()
     const TfToken color3f;
     /// \brief "command"
     /// 
@@ -116,7 +120,7 @@ struct UsdRenderTokensType {
     const TfToken disableMotionBlur;
     /// \brief "expandAperture"
     /// 
-    /// Possible value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr(), Default value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()
+    /// Fallback value for UsdRenderSettingsBase::GetAspectRatioConformPolicyAttr()
     const TfToken expandAperture;
     /// \brief "fileName"
     /// 
@@ -184,11 +188,11 @@ struct UsdRenderTokensType {
     const TfToken productType;
     /// \brief "raster"
     /// 
-    /// RenderProduct productType value that indicates a 2D raster image of pixels., Default value for UsdRenderProduct::GetProductTypeAttr()
+    /// Fallback value for UsdRenderProduct::GetProductTypeAttr(), RenderProduct productType value that indicates a 2D raster image of pixels.
     const TfToken raster;
     /// \brief "raw"
     /// 
-    /// Possible value for UsdRenderVar::GetSourceTypeAttr(), Default value for UsdRenderVar::GetSourceTypeAttr()
+    /// Fallback value for UsdRenderVar::GetSourceTypeAttr()
     const TfToken raw;
     /// \brief "renderingColorSpace"
     /// 
@@ -202,6 +206,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderPass
     const TfToken renderSource;
+    /// \brief "renderVisibility"
+    /// 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent renderVisibility of a RenderPass prim. 
+    const TfToken renderVisibility;
     /// \brief "resolution"
     /// 
     /// UsdRenderSettingsBase
@@ -214,6 +222,30 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderVar
     const TfToken sourceType;
+    /// \brief "RenderDenoisePass"
+    /// 
+    /// Schema identifer and family for UsdRenderDenoisePass
+    const TfToken RenderDenoisePass;
+    /// \brief "RenderPass"
+    /// 
+    /// Schema identifer and family for UsdRenderPass
+    const TfToken RenderPass;
+    /// \brief "RenderProduct"
+    /// 
+    /// Schema identifer and family for UsdRenderProduct
+    const TfToken RenderProduct;
+    /// \brief "RenderSettings"
+    /// 
+    /// Schema identifer and family for UsdRenderSettings
+    const TfToken RenderSettings;
+    /// \brief "RenderSettingsBase"
+    /// 
+    /// Schema identifer and family for UsdRenderSettingsBase
+    const TfToken RenderSettingsBase;
+    /// \brief "RenderVar"
+    /// 
+    /// Schema identifer and family for UsdRenderVar
+    const TfToken RenderVar;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

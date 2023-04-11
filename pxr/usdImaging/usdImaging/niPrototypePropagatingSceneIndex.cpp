@@ -27,11 +27,10 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -75,11 +74,11 @@ public:
 
         _SceneIndices &sceneIndices = _prototypeToSceneIndices[prototypeName];
 
-        HdSceneIndexBaseRefPtr flatteningSceneIndex =
-            sceneIndices.flatteningSceneIndex;
-        if (!flatteningSceneIndex) {
-            flatteningSceneIndex =
-                _ComputeFlatteningSceneIndex(
+        HdSceneIndexBaseRefPtr isolatingSceneIndex =
+            sceneIndices.isolatingSceneIndex;
+        if (!isolatingSceneIndex) {
+            isolatingSceneIndex =
+                _ComputeIsolatingSceneIndex(
                     prototypeName);
         }
 
@@ -87,7 +86,7 @@ public:
         if (!result.prototypeSceneIndex) {
             result.prototypeSceneIndex =
                 _ComputePrototypeSceneIndex(
-                    prototypeName, flatteningSceneIndex);
+                    prototypeName, isolatingSceneIndex);
             sceneIndices.prototypeSceneIndex = result.prototypeSceneIndex;
         }
 
@@ -96,7 +95,7 @@ public:
         if (!result.instanceAggregationSceneIndex) {
             result.instanceAggregationSceneIndex =
                 _ComputeInstanceAggregationSceneIndex(
-                    prototypeName, flatteningSceneIndex);
+                    prototypeName, isolatingSceneIndex);
             sceneIndices.instanceAggregationSceneIndex = result.instanceAggregationSceneIndex;
         }
 
@@ -116,16 +115,6 @@ private:
             return UsdImagingRerootingSceneIndex::New(
                 _inputSceneIndex, prototypePath, prototypePath);
         }
-    }
-
-    HdSceneIndexBaseRefPtr
-    _ComputeFlatteningSceneIndex(const TfToken &prototypeName) const
-    {
-        // Needed for, e.g., to get the composed transform or resolved
-        // material binding of a native instance (resolved within the
-        // prototype).
-        return HdFlatteningSceneIndex::New(
-            _ComputeIsolatingSceneIndex(prototypeName));
     }
 
     HdSceneIndexBaseRefPtr
@@ -160,7 +149,7 @@ private:
 
     struct _SceneIndices
     {
-        HdSceneIndexBasePtr flatteningSceneIndex;
+        HdSceneIndexBasePtr isolatingSceneIndex;
         HdSceneIndexBasePtr instanceAggregationSceneIndex;
         HdSceneIndexBasePtr prototypeSceneIndex;
     };
@@ -251,8 +240,8 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
     HdSceneIndexBaseRefPtr const &instanceAggregationSceneIndex)
 {
     for (const SdfPath &primPath
-             : UsdImaging_SceneIndexPrimView(instanceAggregationSceneIndex,
-                                             SdfPath::AbsoluteRootPath())) {
+             : HdSceneIndexPrimView(instanceAggregationSceneIndex,
+                                    SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
 }
@@ -271,7 +260,7 @@ UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
     // Path has __Usd_Prototypes at correct place.
     const TfToken parentParentName =
         primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != UsdImagingNativeInstancingTokens->prototypesScope) {
+    if (parentParentName != UsdImagingTokens->propagatedPrototypesScope) {
         return;
     }
 

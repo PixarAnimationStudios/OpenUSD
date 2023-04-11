@@ -70,7 +70,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class Tf_NoticeRegistry : boost::noncopyable {
 public:
-    TF_API
     void _BeginDelivery(const TfNotice &notice,
                         const TfWeakBase *sender,
                         const std::type_info &senderType,
@@ -78,45 +77,35 @@ public:
                         const std::type_info &listenerType,
                         const std::vector<TfNotice::WeakProbePtr> &probes);
 
-    TF_API
     void _EndDelivery(const std::vector<TfNotice::WeakProbePtr> &probes);
     
     // Register a particular deliverer, return the key created for the
     // registration.
-    TF_API
     TfNotice::Key _Register(TfNotice::_DelivererBase* deliverer);
 
     // Send notice n to all interested listeners.
-    TF_API
     size_t _Send(const TfNotice &n, const TfType &noticeType,
                  const TfWeakBase *s, const void *senderUniqueId,
                  const std::type_info &senderType);
 
     // Remove listener instance indicated by \p key.  This is pass by
     // reference so we can mark the key as having been revoked.
-    TF_API
     void _Revoke(TfNotice::Key& key);
 
     // Abort if casting of a notice failed; warn if it succeeded but
     // TfSafeDynamic_cast was required.
-    TF_API
     void _VerifyFailedCast(const std::type_info& toType,
                            const TfNotice& notice, const TfNotice* castNotice);
     
     // Return reference to singleton object.
-    TF_API
     static Tf_NoticeRegistry& _GetInstance() {
         return TfSingleton<Tf_NoticeRegistry>::GetInstance();
     }
 
-    TF_API
     void _InsertProbe(const TfNotice::WeakProbePtr &probe);
-    TF_API
     void _RemoveProbe(const TfNotice::WeakProbePtr &probe);
 
-    TF_API
     void _IncrementBlockCount();
-    TF_API
     void _DecrementBlockCount();
 
 private:
@@ -254,8 +243,6 @@ private:
     std::atomic<size_t> _globalBlockCount;
     tbb::enumerable_thread_specific<size_t> _perThreadBlockCount;
 };
-
-TF_API_TEMPLATE_CLASS(TfSingleton<Tf_NoticeRegistry>);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
