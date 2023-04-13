@@ -34,6 +34,8 @@
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
+#include "pxr/usd/usdRender/tokens.h"
+#include "pxr/usd/usdRender/settings.h"
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -41,7 +43,9 @@
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
+#include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
 #include "pxr/imaging/hdx/taskController.h"
 #include "pxr/imaging/hdx/tokens.h"
@@ -179,6 +183,12 @@ UsdImagingGLEngine::_DestroyHydraObjects()
     } else {
         _sceneDelegate = nullptr;
     }
+
+    if (_sceneGlobalsSceneIndex) {
+        _renderIndex->RemoveSceneIndex(_sceneGlobalsSceneIndex);
+        _sceneGlobalsSceneIndex = nullptr;
+    }
+
     _renderIndex = nullptr;
     _renderDelegate = nullptr;
 }
@@ -207,9 +217,10 @@ UsdImagingGLEngine::PrepareBatch(
 
     if (_CanPrepare(root)) {
         if (!_isPopulated) {
+            auto stage = root.GetStage();
             if (_GetUseSceneIndices()) {
                 TF_VERIFY(_stageSceneIndex);
-                _stageSceneIndex->SetStage(root.GetStage());
+                _stageSceneIndex->SetStage(stage);
 
                 // XXX(USD-7113): Add pruning based on _rootPath,
                 // _excludedPrimPaths
@@ -221,12 +232,17 @@ UsdImagingGLEngine::PrepareBatch(
             } else {
                 TF_VERIFY(_sceneDelegate);
                 _sceneDelegate->SetUsdDrawModesEnabled(
-                        params.enableUsdDrawModes);
+                    params.enableUsdDrawModes);
                 _sceneDelegate->Populate(
-                        root.GetStage()->GetPrimAtPath(_rootPath),
-                        _excludedPrimPaths);
+                    stage->GetPrimAtPath(_rootPath),
+                    _excludedPrimPaths);
                 _sceneDelegate->SetInvisedPrimPaths(_invisedPrimPaths);
+
+                // This is only necessary when using the legacy scene delegate.
+                // The stage scene index provides this functionality.
+                _SetActiveRenderSettingsPrimFromStageMetadata(stage);
             }
+
             _isPopulated = true;
         }
 
@@ -263,6 +279,34 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
     } else {
         _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
         _sceneDelegate->SetSceneLightsEnabled(params.enableSceneLights);
+    }
+}
+
+void
+UsdImagingGLEngine::_SetActiveRenderSettingsPrimFromStageMetadata(
+    UsdStageWeakPtr stage)
+{
+    if (!TF_VERIFY(_renderIndex) || !TF_VERIFY(stage)) {
+        return;
+    }
+
+    // If we already have an opinion, skip the stage metadata.
+    if (!HdUtils::HasActiveRenderSettingsPrim(
+            _renderIndex->GetTerminalSceneIndex())) {
+
+        std::string pathStr;
+        if (stage->HasAuthoredMetadata(
+                UsdRenderTokens->renderSettingsPrimPath)) {
+            stage->GetMetadata(
+                UsdRenderTokens->renderSettingsPrimPath, &pathStr);
+        }
+        // Add the delegateId prefix since the scene globals scene index is 
+        // inserted into the merging scene index.
+        if (!pathStr.empty()) {
+            SetActiveRenderSettingsPrimPath(
+                SdfPath(pathStr).ReplacePrefix(
+                    SdfPath::AbsoluteRootPath(), _sceneDelegateId));
+        }
     }
 }
 
@@ -963,8 +1007,17 @@ UsdImagingGLEngine::_SetRenderDelegate(
         HdRenderIndex::New(
             _renderDelegate.Get(), {&_hgiDriver}));
 
-    // Create the new scene API
+    // Create and insert the scene globals scene index (regardless of whether 
+    // the delegate or stage scene index chain is used).
+    // Note: The order of insertion below matters! This scene index needs to
+    //       inserted prior to the UsdStageSceneIndex when used to have a
+    //       stronger precedence.
+    _sceneGlobalsSceneIndex = HdsiSceneGlobalsSceneIndex::New();
+    _renderIndex->InsertSceneIndex(
+        _sceneGlobalsSceneIndex, SdfPath::AbsoluteRootPath());
+
     if (_GetUseSceneIndices()) {
+        // Create the scene index graph.
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New();
 
@@ -996,7 +1049,6 @@ UsdImagingGLEngine::_SetRenderDelegate(
                 _renderIndex.get(), _sceneDelegateId);
     }
 
-    // Create the new task controller
     _taskController = std::make_unique<HdxTaskController>(
         _renderIndex.get(),
         _ComputeControllerPath(_renderDelegate),
@@ -1142,6 +1194,37 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
     }
 
     _renderDelegate->SetRenderSetting(id, value);
+}
+
+void
+UsdImagingGLEngine::SetActiveRenderSettingsPrimPath(SdfPath const &path)
+{
+    if (ARCH_UNLIKELY(!_sceneGlobalsSceneIndex)) {
+        return;
+    }
+
+    _sceneGlobalsSceneIndex->SetActiveRenderSettingsPrimPath(path);
+}
+
+/* static */
+SdfPathVector
+UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths(UsdPrim const& root)
+{
+    // UsdRender OM uses the convention that all render settings prims must
+    // live under /Render.
+    static const SdfPath renderRoot("/Render");
+
+    const auto stage = root.GetStage();
+
+    SdfPathVector paths;
+    if (UsdPrim render = stage->GetPrimAtPath(renderRoot)) {
+        for (const UsdPrim child : render.GetChildren()) {
+            if (child.IsA<UsdRenderSettings>()) {
+                paths.push_back(child.GetPrimPath());
+            }
+        }
+    }
+    return paths;
 }
 
 void

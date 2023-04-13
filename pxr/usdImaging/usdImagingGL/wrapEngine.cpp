@@ -144,6 +144,12 @@ void wrapEngine()
                  return_value_policy< TfPySequenceToList >())
             .def("GetRendererSetting", &UsdImagingGLEngine::GetRendererSetting)
             .def("SetRendererSetting", &UsdImagingGLEngine::SetRendererSetting)
+            .def("SetActiveRenderSettingsPrimPath",
+                 &UsdImagingGLEngine::SetActiveRenderSettingsPrimPath)
+            .def("GetAvailableRenderSettingsPrimPaths",
+                 &UsdImagingGLEngine::GetAvailableRenderSettingsPrimPaths,
+                 return_value_policy< TfPySequenceToList >())
+                 .staticmethod("GetAvailableRenderSettingsPrimPaths")
             .def("SetColorCorrectionSettings", 
                     &UsdImagingGLEngine::SetColorCorrectionSettings)
             .def("IsColorCorrectionCapable", 

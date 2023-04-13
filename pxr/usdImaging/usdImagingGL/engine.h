@@ -76,7 +76,10 @@ TF_DECLARE_WEAK_AND_REF_PTRS(GlfSimpleLightingContext);
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+
+using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 
 /// \class UsdImagingGLEngine
 ///
@@ -347,7 +350,7 @@ public:
     /// @}
     
     // ---------------------------------------------------------------------
-    /// \name AOVs and Renderer Settings
+    /// \name AOVs
     /// @{
     // ---------------------------------------------------------------------
 
@@ -367,6 +370,11 @@ public:
     USDIMAGINGGL_API
     HdRenderBuffer* GetAovRenderBuffer(TfToken const& name) const;
         
+    // ---------------------------------------------------------------------
+    /// \name Render Settings (Legacy)
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Returns the list of renderer settings.
     USDIMAGINGGL_API
     UsdImagingGLRendererSettingsList GetRendererSettingsList() const;
@@ -379,7 +387,31 @@ public:
     USDIMAGINGGL_API
     void SetRendererSetting(TfToken const& id,
                             VtValue const& value);
+    
+    /// @}
 
+    // ---------------------------------------------------------------------
+    /// \name Render Settings (Scene description driven)
+    /// \note Support is WIP.
+    /// @{
+    // ---------------------------------------------------------------------
+    
+    /// Set active render settings prim to use to drive rendering.
+    USDIMAGINGGL_API
+    void SetActiveRenderSettingsPrimPath(SdfPath const &);
+
+    /// Utility method to query available render settings prims.
+    USDIMAGINGGL_API
+    static SdfPathVector
+    GetAvailableRenderSettingsPrimPaths(UsdPrim const &root);
+
+    /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Presentation
+    /// @{
+    // ---------------------------------------------------------------------
+    
     /// Enable / disable presenting the render to bound framebuffer.
     /// An application may choose to manage the AOVs that are rendered into
     /// itself and skip the engine's presentation.
@@ -541,6 +573,9 @@ protected:
     void _PrepareRender(const UsdImagingGLRenderParams& params);
 
     USDIMAGINGGL_API
+    void _SetActiveRenderSettingsPrimFromStageMetadata(UsdStageWeakPtr stage);
+
+    USDIMAGINGGL_API
     void _UpdateDomeLightCameraVisibility();
 
     using BBoxVector = std::vector<GfBBox3d>;
@@ -637,11 +672,15 @@ private:
     void _DestroyHydraObjects();
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
-    // at a time...
+    // at a time.
     UsdImagingStageSceneIndexRefPtr _stageSceneIndex;
     UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
     HdSceneIndexBaseRefPtr _sceneIndex;
+    
+    // Scene indices that are used (i.e., inserted into the render index)
+    // always:
+    HdsiSceneGlobalsSceneIndexRefPtr _sceneGlobalsSceneIndex;
 
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 

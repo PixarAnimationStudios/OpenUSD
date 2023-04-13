@@ -176,6 +176,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        utils
         vectorSchema
         vertexAdjacency
         visibilitySchema

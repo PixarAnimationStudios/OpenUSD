@@ -22,6 +22,7 @@ pxr_library(hdsi
         materialBindingResolvingSceneIndex
         materialPrimvarTransferSceneIndex
         pinnedCurveExpandingSceneIndex
+        sceneGlobalsSceneIndex
         terminalsResolvingSceneIndex
 
     PUBLIC_HEADERS
