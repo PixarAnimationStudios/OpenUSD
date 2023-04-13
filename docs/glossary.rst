@@ -3350,6 +3350,38 @@ with the addition of allowing the "-" character, and an optional leading ".".
    {
    }
 
+A variant can contain overriding opinions (for properties, metadata, and more),
+as well as any arbitrary scene description (entire child prim subtrees, etc).
+Variants can also **include additional composition arcs**. This gives us great
+flexibility in building up variations out of existing, modular pieces that
+can be `referenced <#usdglossary-references>`_, `inherited
+<#usdglossary-inherits>`_, etc. In the following example snippet, the 
+"referenceVariantSet" VariantSet contains two variants that reference different
+USD assets. Changing the variant selection controls which asset is referenced in 
+the scene.
+
+.. code-block:: usda
+   :caption: VariantSet with references
+
+   over "Model" (
+       prepend variantSets = "referenceVariantSet"
+       variants = {
+          string referenceVariantSet = "asset1"
+       }
+   )
+   {
+       variantSet "referenceVariantSet" = {
+           "asset1" (
+               prepend references = @Asset1.usda@
+           ) {          
+           }
+           "asset2" (
+               prepend references = @Asset2.usda@
+           ) {          
+           }
+       }
+   }
+
 .. _usdglossary-variantset:
 
 VariantSet
@@ -3444,14 +3476,6 @@ Here is an example of a very simple VariantSet:
       order) as part of their `List Editing <#usdglossary-listediting>`_ nature,
       and the final order of the VariantSets provides their relative strength
       with respect to each other, should their opinions overlap.
-
-       ..
-
-    * Each Variant can contain arbitrary scene description **including the
-      introduction of additional composition arcs**. This gives us great
-      flexibility in building up variations out of existing, modular pieces that
-      can be `referenced <#usdglossary-references>`_, `inherited
-      <#usdglossary-inherits>`_, etc.
 
        ..
 
