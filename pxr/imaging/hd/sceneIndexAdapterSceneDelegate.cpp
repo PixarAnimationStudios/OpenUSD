@@ -67,6 +67,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -1495,7 +1496,8 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 }
 
 VtValue
-_ToOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
+_ToRenderTerminalOutputResource(HdMaterialNodeSchema &nodeSchema)
+{
     // Convert HdDataSource with material node data to a HdMaterialNode2
     HdMaterialNode2 hdNode2;
     HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
@@ -1523,6 +1525,24 @@ _ToOutputFilterResource(HdMaterialNodeSchema &nodeSchema) {
 }
 
 VtValue
+_GetIntegratorResource(HdSceneIndexPrim prim)
+{
+    TRACE_FUNCTION();
+
+    HdIntegratorSchema integratorSchema = 
+        HdIntegratorSchema::GetFromParent(prim.dataSource);
+    if (!integratorSchema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = integratorSchema.GetIntegratorResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    return _ToRenderTerminalOutputResource(nodeSchema);
+}
+
+VtValue
 _GetSampleFilterResource(HdSceneIndexPrim prim)
 {
     TRACE_FUNCTION();
@@ -1537,9 +1557,8 @@ _GetSampleFilterResource(HdSceneIndexPrim prim)
         return VtValue();
     }
 
-    return _ToOutputFilterResource(nodeSchema);
+    return _ToRenderTerminalOutputResource(nodeSchema);
 }
-
 
 VtValue
 _GetDisplayFilterResource(HdSceneIndexPrim prim)
@@ -1556,7 +1575,7 @@ _GetDisplayFilterResource(HdSceneIndexPrim prim)
         return VtValue();
     }
 
-    return _ToOutputFilterResource(nodeSchema);
+    return _ToRenderTerminalOutputResource(nodeSchema);
 }
 
 HdInterpolation
@@ -1848,12 +1867,20 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         return VtValue();
     }
 
-    // renderSettings usd of Get().
+    // renderSettings use of Get().
     if (prim.primType == HdPrimTypeTokens->renderSettings) {
         return _GetRenderSettings(prim, key);
     }
 
-    // sampleFilter usd of Get().
+    // integrator use of Get().
+    if (prim.primType == HdPrimTypeTokens->integrator) {
+        if (key == HdIntegratorSchemaTokens->integratorResource) {
+            return _GetIntegratorResource(prim);
+        }
+        return VtValue();
+    }
+
+    // sampleFilter use of Get().
     if (prim.primType == HdPrimTypeTokens->sampleFilter) {
         if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
             return _GetSampleFilterResource(prim);
@@ -1861,6 +1888,7 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
         return VtValue();
     }
 
+    // displayFilter use of Get().
     if (prim.primType == HdPrimTypeTokens->displayFilter) {
         if (key == HdDisplayFilterSchemaTokens->displayFilterResource) {
             return _GetDisplayFilterResource(prim);

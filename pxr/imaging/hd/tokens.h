@@ -267,6 +267,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSys)                                  \
     (instancer)                                 \
     (instance)                                  \
+    (integrator)                                \
     (sampleFilter)                              \
     (displayFilter)                             \
     /* Sprims Lights */                         \

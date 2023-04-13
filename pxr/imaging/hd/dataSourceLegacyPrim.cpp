@@ -49,6 +49,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -90,9 +91,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (prmanParams)
     ((prmanParamsNames, ""))
     (materialSyncMode)
-
-    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
-    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 // ----------------------------------------------------------------------------
@@ -2370,6 +2368,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdRenderSettingsSchemaTokens->renderSettings);
     }
 
+    if (_type == HdPrimTypeTokens->integrator) {
+        result.push_back(HdIntegratorSchemaTokens->integrator);
+    }
+
     if (_type == HdPrimTypeTokens->sampleFilter) {
         result.push_back(HdSampleFilterSchemaTokens->sampleFilter);
     }
@@ -2533,7 +2535,7 @@ _ConvertHdMaterialNetworkToHdDataSources(
 
 template <typename SchemaType>
 static bool
-_ConvertOutputFilterNodeToHdDataSources(
+_ConvertRenderTerminalOutputNodeToHdDataSources(
     const HdMaterialNode2 &hdNode,
     HdContainerDataSourceHandle *result)
 {
@@ -2689,6 +2691,26 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 }
 
 HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetIntegratorDataSource()
+{
+    VtValue integratorValue = _sceneDelegate->Get(
+        _id, HdIntegratorSchemaTokens->integratorResource);
+
+    if (!integratorValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    HdMaterialNode2 integratorNode =
+        integratorValue.UncheckedGet<HdMaterialNode2>();
+    HdContainerDataSourceHandle integratorDS = nullptr;    
+    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdIntegratorSchema>(
+            integratorNode, &integratorDS)) {
+        return nullptr;
+    }
+    return integratorDS;
+}
+
+HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
 {
     VtValue sampleFilterValue = _sceneDelegate->Get(
@@ -2701,7 +2723,7 @@ HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
     HdMaterialNode2 sampleFilterNode =
         sampleFilterValue.UncheckedGet<HdMaterialNode2>();
     HdContainerDataSourceHandle sampleFilterDS = nullptr;    
-    if (!_ConvertOutputFilterNodeToHdDataSources<HdSampleFilterSchema>(
+    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdSampleFilterSchema>(
             sampleFilterNode, &sampleFilterDS)) {
         return nullptr;
     }
@@ -2721,7 +2743,7 @@ HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
     HdMaterialNode2 displayFilterNode = 
         displayFilterValue.UncheckedGet<HdMaterialNode2>();
     HdContainerDataSourceHandle displayFilterDS = nullptr;
-    if (!_ConvertOutputFilterNodeToHdDataSources<HdDisplayFilterSchema>(
+    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdDisplayFilterSchema>(
             displayFilterNode, &displayFilterDS)) {
         return nullptr;
     }
@@ -2983,6 +3005,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return Hd_DataSourceRenderSettings::New(_sceneDelegate, _id);
     } else if (name == HdSampleFilterSchemaTokens->sampleFilter) {
         return _GetSampleFilterDataSource();
+    } else if (name == HdIntegratorSchemaTokens->integrator) {
+        return _GetIntegratorDataSource();
     } else if (name == HdDisplayFilterSchemaTokens->displayFilter) {
         return _GetDisplayFilterDataSource();
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {

@@ -99,6 +99,7 @@ private:
     HdDataSourceBaseHandle _GetMaterialBindingDataSource();
     HdDataSourceBaseHandle _GetXformDataSource();
     HdDataSourceBaseHandle _GetMaterialDataSource();
+    HdDataSourceBaseHandle _GetIntegratorDataSource();
     HdDataSourceBaseHandle _GetSampleFilterDataSource();
     HdDataSourceBaseHandle _GetDisplayFilterDataSource();
     HdDataSourceBaseHandle _GetDisplayStyleDataSource();

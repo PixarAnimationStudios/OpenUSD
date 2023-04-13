@@ -234,6 +234,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdviewIntegratorEdits
+    DEST testUsdviewIntegratorEdits
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewSampleFilterEdits
     DEST testUsdviewSampleFilterEdits
 )

@@ -1,0 +1,156 @@
+#usda 1.0
+(
+    upAxis = "Y"
+)
+
+def Scope "World"
+{
+    float xyz = 123
+
+    def Cube "GroundPlane" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Grid>
+        double xformOp:rotateY = -90
+        float3 xformOp:scale = (5, 0.05, 5)
+        token[] xformOpOrder = ["xformOp:scale", "xformOp:rotateY"]
+    }
+
+    def Sphere "ReflSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Chrome>
+        double radius = 0.5
+        double3 xformOp:translate = (2.5, 0.55, 3.5)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "GlowSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/Glow>
+        double radius = 0.6
+        double3 xformOp:translate = (0, 0.65, -3.85)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Sphere "DiffuseSphere" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        rel material:binding = </Material/White>
+        double radius = 0.5
+        double3 xformOp:translate = (-2.5, 0.55, 3.5)
+        token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Scope "Lights"
+    {
+        def RectLight "Light"
+        {
+            float inputs:focus = 1
+            float inputs:height = 2
+            float inputs:intensity = 1
+            float inputs:width = 9
+            double3 xformOp:rotateXYZ = (-60, 31.5, 0)
+            double3 xformOp:translate = (3.6, 11.4, 6)
+            token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateXYZ"]
+        }
+    }
+}
+
+def Camera "main_cam"
+{
+    float2 clippingRange = (0.1, 10000)
+    float focalLength = 25
+    float focusDistance = 21
+    float fStop = 22
+    double3 xformOp:rotateXYZ = (-18.9, 17.76, 0)
+    double3 xformOp:translate = (-1, 0, 21)
+    token[] xformOpOrder = ["xformOp:rotateXYZ", "xformOp:translate"]
+}
+
+def Scope "Material"
+{
+    def Material "Grid"
+    {
+        token outputs:surface.connect = </Material/Grid/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor.connect = </Material/Grid/Texture.outputs:resultRGB>
+            token outputs:out
+        }
+
+        def Shader "Texture"
+        {
+            uniform token info:id = "PxrTexture"
+            token inputs:filename = "grid_t"
+            color3f outputs:resultRGB
+        }
+    }
+
+    def Material "White"
+    {
+        token outputs:surface.connect = </Material/White/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:diffuseColor = (1, 1, 1)
+            float inputs:diffuseGain = 0.5
+            token outputs:out
+        }
+    }
+
+    def Material "Chrome"
+    {
+        token outputs:ri:surface.connect = </Material/Chrome/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:specularEdgeColor = (1, 1, 1)
+            color3f inputs:specularFaceColor = (1, 1, 1)
+            float inputs:specularRoughness = 0.1
+            token outputs:out
+        }
+    }
+
+    def Material "Glow"
+    {
+        token outputs:ri:surface.connect = </Material/Glow/Surface.outputs:out>
+
+        def Shader "Surface"
+        {
+            uniform token info:id = "PxrSurface"
+            color3f inputs:glowColor = (0.9896, 0.5945, 0.2092)
+            float inputs:glowGain = 6
+            token outputs:out
+        }
+    }
+}
+
+def Scope "Render"
+{
+    def RenderSettings "RenderSettings"
+    {
+        token outputs:ri:integrator.connect = </Render/DirectLightingIntegrator.outputs:result>
+    }
+
+    def PxrDirectLighting "DirectLightingIntegrator"
+    {
+        token outputs:result
+    }
+
+    def PxrPathTracer "PathTracerIntegrator"
+    {
+        bool inputs:ri:allowCaustics = 1
+        token outputs:result
+    }
+}
+

@@ -80,6 +80,7 @@ pxr_library(usdImaging
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils
         instanceAdapter
+        integratorAdapter
         lightAdapter
         lightAPIAdapter
         lightFilterAdapter
