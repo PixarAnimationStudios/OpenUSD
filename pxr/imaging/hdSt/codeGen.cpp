@@ -77,6 +77,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sample)
     (centroid)
     (patch)
+    (hd_barycentricCoord)
+    (hd_patchID)
     (hd_vec3)
     (hd_vec3_get)
     (hd_vec3_set)
@@ -1947,13 +1949,13 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         if (_hasGS) {
             _AddInterstageElement(&_resGS,
                 HdSt_ResourceLayout::InOut::STAGE_OUT,
-                /*name=*/TfToken("hd_barycentricCoord"),
+                /*name=*/_tokens->hd_barycentricCoord,
                 /*dataType=*/_tokens->vec3,
                 TfToken(),
                 TfToken("noperspective"));
             _AddInterstageElement(&_resFS,
                 HdSt_ResourceLayout::InOut::STAGE_IN,
-                /*name=*/TfToken("hd_barycentricCoord"),
+                /*name=*/_tokens->hd_barycentricCoord,
                 /*dataType=*/_tokens->vec3,
                 TfToken(),
                 TfToken("noperspective"));
@@ -1965,6 +1967,20 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             _genFS << "vec3 GetBarycentricCoord() {\n"
                       "  return vec3(0);\n"
                       "}\n";
+        }
+    }
+
+    // PrimitiveID emulation
+    if (requiresPrimitiveIdEmulation) {
+        if (_hasPTVS) {
+            _AddInterstageElement(&_resPTVS,
+                HdSt_ResourceLayout::InOut::STAGE_OUT,
+                /*name=*/_tokens->hd_patchID,
+                /*dataType=*/_tokens->_uint);
+            _AddInterstageElement(&_resFS,
+                HdSt_ResourceLayout::InOut::STAGE_IN,
+                /*name=*/_tokens->hd_patchID,
+                /*dataType=*/_tokens->_uint);
         }
     }
 
@@ -2067,6 +2083,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 // do nothing. no additional code needs to be generated.
                 ;
         }
+    }
+    if (requiresPrimitiveIdEmulation) {
+        _procPTVSOut << "  hd_patchID = patch_id;\n";
     }
 
     // generate drawing coord and accessors
@@ -4075,8 +4094,10 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             _genPTCS    << "int GetBasePrimitiveOffset() { return 0; }\n";
             _genPTVS    << "int GetBasePrimitiveOffset() { return 0; }\n";
         }
+        // A driver bug causes primitive_id in FS to be incorrect when PTVS
+        // is active. As a workaround we plumb patch_id from PTVS to FS.
         if (requiresPrimitiveIdEmulation) {
-            primitiveID << "int GetBasePrimitiveId() { return ptvsPatchId; }\n";
+            primitiveID << "int GetBasePrimitiveId() { return hd_patchID; }\n";
         } else {
             primitiveID << "int GetBasePrimitiveId() { return gl_PrimitiveID; }\n";
         }

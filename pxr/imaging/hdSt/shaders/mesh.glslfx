@@ -80,8 +80,7 @@ void main(void)
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-    ["out", "vec3", "ptvsBarycentricCoord"],
-    ["out", "uint", "ptvsPatchId"]
+    ["out", "vec3", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -137,7 +136,6 @@ void main(void)
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ptvsBarycentricCoord = gl_TessCoord;
-    ptvsPatchId = patch_id;
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(basis, 0, 1, 2, 0);
@@ -151,8 +149,7 @@ void main(void)
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-    ["out", "vec2", "ptvsBarycentricCoord"],
-    ["out", "uint", "ptvsPatchId"]
+    ["out", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -218,7 +215,6 @@ void main(void)
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ptvsBarycentricCoord = gl_TessCoord;
-    ptvsPatchId = patch_id;
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(basis, 0, 1, 2, 3);
@@ -232,8 +228,7 @@ void main(void)
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-    ["out", "vec2", "ptvsBarycentricCoord"],
-    ["out", "uint", "ptvsPatchId"]
+    ["out", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -299,7 +294,6 @@ void main(void)
 
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
     ptvsBarycentricCoord = gl_TessCoord;
-    ptvsPatchId = patch_id;
     ApplyClipPlanes(outData.Peye);
 
     ProcessPrimvarsOut(basis, 0, 1, 2, 4);
@@ -1322,8 +1316,7 @@ vec3 GetPatchControlPoint()
 -- layout Mesh.Fragment.PatchCoord.ControlPointTessCoord.Triangle
 
 [
-    ["in", "vec3", "ptvsBarycentricCoord"],
-    ["in", "uint", "ptvsPatchId"]
+    ["in", "vec3", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -1338,8 +1331,7 @@ vec3 GetPatchControlPoint()
 -- layout Mesh.Fragment.PatchCoord.ControlPointTessCoord.Quad
 
 [
-    ["in", "vec2", "ptvsBarycentricCoord"],
-    ["in", "uint", "ptvsPatchId"]
+    ["in", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
@@ -1457,8 +1449,7 @@ vec4 GetInterpolatedPatchCoord()
 -- layout Mesh.Fragment.PatchCoord.TriQuadPTVS
 
 [
-    ["in", "vec2", "ptvsBarycentricCoord"],
-    ["in", "uint", "ptvsPatchId"]
+    ["in", "vec2", "ptvsBarycentricCoord"]
 ]
 
 --- --------------------------------------------------------------------------
