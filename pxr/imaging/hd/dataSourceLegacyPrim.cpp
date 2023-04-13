@@ -2534,16 +2534,21 @@ _ConvertHdMaterialNetworkToHdDataSources(
 }
 
 template <typename SchemaType>
-static bool
-_ConvertRenderTerminalOutputNodeToHdDataSources(
-    const HdMaterialNode2 &hdNode,
-    HdContainerDataSourceHandle *result)
+static HdContainerDataSourceHandle
+_ConvertRenderTerminalOutputToHdDataSource(const VtValue &outputNodeValue)
 {
     HD_TRACE_FUNCTION();
 
+    if (!outputNodeValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    const HdMaterialNode2 outputNode =
+        outputNodeValue.UncheckedGet<HdMaterialNode2>();
+
     std::vector<TfToken> paramsNames;
     std::vector<HdDataSourceBaseHandle> paramsValues;
-    for (const auto &p : hdNode.parameters) {
+    for (const auto &p : outputNode.parameters) {
         paramsNames.push_back(p.first);
         paramsValues.push_back(
             HdRetainedTypedSampledDataSource<VtValue>::New(p.second)
@@ -2557,12 +2562,10 @@ _ConvertRenderTerminalOutputNodeToHdDataSources(
             paramsValues.data()),
         HdRetainedContainerDataSource::New(),
         HdRetainedTypedSampledDataSource<TfToken>::New(
-            hdNode.nodeTypeId),
+            outputNode.nodeTypeId),
             nullptr /*renderContextNodeIdentifiers*/);
 
-    *result = SchemaType::BuildRetained(nodeDS);
-
-    return true;
+    return SchemaType::BuildRetained(nodeDS);
 }
 
 HdDataSourceBaseHandle
@@ -2696,18 +2699,8 @@ HdDataSourceLegacyPrim::_GetIntegratorDataSource()
     VtValue integratorValue = _sceneDelegate->Get(
         _id, HdIntegratorSchemaTokens->integratorResource);
 
-    if (!integratorValue.IsHolding<HdMaterialNode2>()) {
-        return nullptr;
-    }
-
-    HdMaterialNode2 integratorNode =
-        integratorValue.UncheckedGet<HdMaterialNode2>();
-    HdContainerDataSourceHandle integratorDS = nullptr;    
-    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdIntegratorSchema>(
-            integratorNode, &integratorDS)) {
-        return nullptr;
-    }
-    return integratorDS;
+    return _ConvertRenderTerminalOutputToHdDataSource<HdIntegratorSchema>(
+                integratorValue);
 }
 
 HdDataSourceBaseHandle
@@ -2716,18 +2709,8 @@ HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
     VtValue sampleFilterValue = _sceneDelegate->Get(
         _id, HdSampleFilterSchemaTokens->sampleFilterResource);
 
-    if (!sampleFilterValue.IsHolding<HdMaterialNode2>()) {
-        return nullptr;
-    }
-
-    HdMaterialNode2 sampleFilterNode =
-        sampleFilterValue.UncheckedGet<HdMaterialNode2>();
-    HdContainerDataSourceHandle sampleFilterDS = nullptr;    
-    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdSampleFilterSchema>(
-            sampleFilterNode, &sampleFilterDS)) {
-        return nullptr;
-    }
-    return sampleFilterDS;
+    return _ConvertRenderTerminalOutputToHdDataSource<HdSampleFilterSchema>(
+                sampleFilterValue);
 }
 
 HdDataSourceBaseHandle
@@ -2736,18 +2719,8 @@ HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
     VtValue displayFilterValue = _sceneDelegate->Get(
         _id, HdDisplayFilterSchemaTokens->displayFilterResource);
 
-    if (!displayFilterValue.IsHolding<HdMaterialNode2>()) {
-        return nullptr;
-    }
-
-    HdMaterialNode2 displayFilterNode = 
-        displayFilterValue.UncheckedGet<HdMaterialNode2>();
-    HdContainerDataSourceHandle displayFilterDS = nullptr;
-    if (!_ConvertRenderTerminalOutputNodeToHdDataSources<HdDisplayFilterSchema>(
-            displayFilterNode, &displayFilterDS)) {
-        return nullptr;
-    }
-    return displayFilterDS;
+    return _ConvertRenderTerminalOutputToHdDataSource<HdDisplayFilterSchema>(
+                displayFilterValue);
 }
 
 HdDataSourceBaseHandle
