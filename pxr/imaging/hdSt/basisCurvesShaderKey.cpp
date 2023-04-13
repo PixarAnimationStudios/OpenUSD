@@ -151,7 +151,7 @@ static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
         return _tokens->curvesBezier;
     else if (basis == HdTokens->catmullRom)
         return _tokens->curvesCatmullRom;
-    else if (basis == HdTokens->bSpline)
+    else if (basis == HdTokens->bspline)
         return _tokens->curvesBspline;
     TF_WARN("Unknown basis");
     return _tokens->curvesFallback;

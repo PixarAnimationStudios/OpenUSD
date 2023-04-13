@@ -38,7 +38,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bboxLocalMax)                              \
     (bbox)                                      \
     (bezier)                                    \
-    (bSpline)                                   \
+    (bspline)                                   \
     (blurScale)                                 \
     (camera)                                    \
     (catmullRom)                                \
@@ -111,7 +111,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (velocities)                                \
     (visibility)                                \
     (widths)                                    \
-    (isLight)
+    (isLight)                                   \
+                                                \
+    /* Legacy tokens. */                        \
+                                                \
+    /* bSpline is a legacy alias so that */     \
+    /* render delegates can compile without */  \
+    /* code change. The new token for */        \
+    /* bspline follows USD and has no */        \
+    /* capital letters. */                      \
+    ((bSpline, "bspline"))
 
 #define HD_INSTANCER_TOKENS                     \
     (culledInstanceIndices)                     \
