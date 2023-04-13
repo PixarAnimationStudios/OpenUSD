@@ -281,6 +281,10 @@ UsdImagingStageSceneIndex::_AdapterSetLookup(
         UsdPrim prim,
         UsdImagingPrimAdapterSharedPtr *outputPrimAdapter) const
 {
+    if (!prim) {
+        return {};
+    }
+
     const UsdPrimTypeInfo &typeInfo = prim.GetPrimTypeInfo();
 
     // check for previously cached value of full array
