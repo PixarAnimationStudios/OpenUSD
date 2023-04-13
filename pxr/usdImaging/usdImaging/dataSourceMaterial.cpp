@@ -253,7 +253,7 @@ private:
         const T &t)
     : _t(t){}
 
-    UsdLuxLightAPI _t;
+    T _t;
 };
 
 // returns true if the name is of the form "info:<sourceType>:<leafName>".
