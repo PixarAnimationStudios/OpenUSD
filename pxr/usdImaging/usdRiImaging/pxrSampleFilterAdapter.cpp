@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/displayFilterAdapter.h"
+#include "pxr/usdImaging/usdRiImaging/pxrSampleFilterAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -35,32 +35,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (inputs)
-    ((displayFilterShaderId, "ri:displayfilter:shaderId"))
-    (displayFilterResource)
+    ((sampleFilterShaderId, "ri:sampleFilter:shaderId"))
+    (sampleFilterResource)
 );
 
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingDisplayFilterAdapter Adapter;
+    typedef UsdRiImagingPxrSampleFilterAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingDisplayFilterAdapter::~UsdImagingDisplayFilterAdapter()
+UsdRiImagingPxrSampleFilterAdapter::~UsdRiImagingPxrSampleFilterAdapter() 
 {
 }
 
 bool
-UsdImagingDisplayFilterAdapter::IsSupported(
+UsdRiImagingPxrSampleFilterAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->displayFilter);
+    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->sampleFilter);
     return supported;
 }
 
 SdfPath
-UsdImagingDisplayFilterAdapter::Populate(
+UsdRiImagingPxrSampleFilterAdapter::Populate(
     UsdPrim const& prim, 
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
@@ -70,29 +70,29 @@ UsdImagingDisplayFilterAdapter::Populate(
         return cachePath;
     }
 
-    index->InsertSprim(HdPrimTypeTokens->displayFilter, cachePath, prim);
+    index->InsertSprim(HdPrimTypeTokens->sampleFilter, cachePath, prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return cachePath;
 }
 
 void
-UsdImagingDisplayFilterAdapter::_RemovePrim(
+UsdRiImagingPxrSampleFilterAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(HdPrimTypeTokens->displayFilter, cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->sampleFilter, cachePath);
 }
 
 void 
-UsdImagingDisplayFilterAdapter::TrackVariability(
+UsdRiImagingPxrSampleFilterAdapter::TrackVariability(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits* timeVaryingBits,
     UsdImagingInstancerContext const* instancerContext) const
 {
-    // If any of the DisplayFilter attributes are time varying 
-    // we will assume all DisplayFilter params are time-varying.
+    // If any of the SampleFilter attributes are time varying 
+    // we will assume all SampleFilter params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     TF_FOR_ALL(attrIter, attrs) {
         const UsdAttribute& attr = *attrIter;
@@ -105,7 +105,7 @@ UsdImagingDisplayFilterAdapter::TrackVariability(
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
 void 
-UsdImagingDisplayFilterAdapter::UpdateForTime(
+UsdRiImagingPxrSampleFilterAdapter::UpdateForTime(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     UsdTimeCode time,
@@ -116,7 +116,7 @@ UsdImagingDisplayFilterAdapter::UpdateForTime(
 }
 
 HdDirtyBits
-UsdImagingDisplayFilterAdapter::ProcessPropertyChange(
+UsdRiImagingPxrSampleFilterAdapter::ProcessPropertyChange(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     TfToken const& propertyName)
@@ -125,7 +125,7 @@ UsdImagingDisplayFilterAdapter::ProcessPropertyChange(
 }
 
 void
-UsdImagingDisplayFilterAdapter::MarkDirty(
+UsdRiImagingPxrSampleFilterAdapter::MarkDirty(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits dirty,
@@ -144,7 +144,7 @@ _RemoveInputsPrefix(UsdAttribute const& attr)
 static TfToken
 _GetNodeTypeId(UsdPrim const& prim)
 {
-    UsdAttribute attr = prim.GetAttribute(_tokens->displayFilterShaderId);
+    UsdAttribute attr = prim.GetAttribute(_tokens->sampleFilterShaderId);
     if (attr) {
         VtValue value;
         if (attr.Get(&value)) {
@@ -153,39 +153,39 @@ _GetNodeTypeId(UsdPrim const& prim)
             }
         }
     }
-    return HdPrimTypeTokens->displayFilter;
+    return HdPrimTypeTokens->sampleFilter;
 }
 
 static HdMaterialNode2
-_CreateDisplayFilterAsHdMaterialNode2(UsdPrim const& prim)
+_CreateSampleFilterAsHdMaterialNode2(UsdPrim const& prim)
 {
-    HdMaterialNode2 displayFilterNode;
-    displayFilterNode.nodeTypeId = _GetNodeTypeId(prim);
+    HdMaterialNode2 sampleFilterNode;
+    sampleFilterNode.nodeTypeId = _GetNodeTypeId(prim);
 
     UsdAttributeVector attrs = prim.GetAuthoredAttributes();
     for (const auto& attr : attrs) {
         VtValue value;
         if (attr.Get(&value)) {
-            displayFilterNode.parameters[_RemoveInputsPrefix(attr)] = value;
+            sampleFilterNode.parameters[_RemoveInputsPrefix(attr)] = value;
         }
     }
-    return displayFilterNode;
+    return sampleFilterNode;
 }
 
 VtValue
-UsdImagingDisplayFilterAdapter::Get(
+UsdRiImagingPxrSampleFilterAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (key == _tokens->displayFilterResource) {
-        return VtValue(_CreateDisplayFilterAsHdMaterialNode2(prim));
+    if (key == _tokens->sampleFilterResource) {
+        return VtValue(_CreateSampleFilterAsHdMaterialNode2(prim));
     }
 
     TF_CODING_ERROR(
-        "Property %s not supported for DisplayFilter by UsdImaging, path: %s",
+        "Property %s not supported for SampleFilter by UsdImaging, path: %s",
         key.GetText(), cachePath.GetText());
     return VtValue();
 }

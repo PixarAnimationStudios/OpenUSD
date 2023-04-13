@@ -71,7 +71,6 @@ pxr_library(usdImaging
         cylinderAdapter
         cylinderLightAdapter
         diskLightAdapter
-        displayFilterAdapter
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
@@ -80,7 +79,6 @@ pxr_library(usdImaging
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils
         instanceAdapter
-        integratorAdapter
         lightAdapter
         lightAPIAdapter
         lightFilterAdapter
@@ -110,7 +108,6 @@ pxr_library(usdImaging
         renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
-        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils

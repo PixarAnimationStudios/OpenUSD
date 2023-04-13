@@ -26,8 +26,11 @@ pxr_library(usdRiImaging
 
     PUBLIC_CLASSES
         pxrBarnLightFilterAdapter
+        pxrDisplayFilterAdapter
+        pxrIntegratorAdapter
         pxrIntMultLightFilterAdapter
         pxrRodLightFilterAdapter
+        pxrSampleFilterAdapter
         tokens
 
     PUBLIC_HEADERS

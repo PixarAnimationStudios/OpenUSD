@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/integratorAdapter.h"
+#include "pxr/usdImaging/usdRiImaging/pxrDisplayFilterAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -35,32 +35,32 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (inputs)
-    ((integratorShaderId, "ri:integrator:shaderId"))
-    (integratorResource)
+    ((displayFilterShaderId, "ri:displayfilter:shaderId"))
+    (displayFilterResource)
 );
 
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingIntegratorAdapter Adapter;
+    typedef UsdRiImagingPxrDisplayFilterAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingIntegratorAdapter::~UsdImagingIntegratorAdapter() 
+UsdRiImagingPxrDisplayFilterAdapter::~UsdRiImagingPxrDisplayFilterAdapter()
 {
 }
 
 bool
-UsdImagingIntegratorAdapter::IsSupported(
+UsdRiImagingPxrDisplayFilterAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
-    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->integrator);
+    bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->displayFilter);
     return supported;
 }
 
 SdfPath
-UsdImagingIntegratorAdapter::Populate(
+UsdRiImagingPxrDisplayFilterAdapter::Populate(
     UsdPrim const& prim, 
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
@@ -70,29 +70,29 @@ UsdImagingIntegratorAdapter::Populate(
         return cachePath;
     }
 
-    index->InsertSprim(HdPrimTypeTokens->integrator, cachePath, prim);
+    index->InsertSprim(HdPrimTypeTokens->displayFilter, cachePath, prim);
     HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
 
     return cachePath;
 }
 
 void
-UsdImagingIntegratorAdapter::_RemovePrim(
+UsdRiImagingPxrDisplayFilterAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
-    index->RemoveSprim(HdPrimTypeTokens->integrator, cachePath);
+    index->RemoveSprim(HdPrimTypeTokens->displayFilter, cachePath);
 }
 
 void 
-UsdImagingIntegratorAdapter::TrackVariability(
+UsdRiImagingPxrDisplayFilterAdapter::TrackVariability(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits* timeVaryingBits,
     UsdImagingInstancerContext const* instancerContext) const
 {
-    // If any of the Integrator attributes are time varying 
-    // we will assume all Integrator params are time-varying.
+    // If any of the DisplayFilter attributes are time varying 
+    // we will assume all DisplayFilter params are time-varying.
     const std::vector<UsdAttribute> &attrs = prim.GetAttributes();
     TF_FOR_ALL(attrIter, attrs) {
         const UsdAttribute& attr = *attrIter;
@@ -105,7 +105,7 @@ UsdImagingIntegratorAdapter::TrackVariability(
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
 void 
-UsdImagingIntegratorAdapter::UpdateForTime(
+UsdRiImagingPxrDisplayFilterAdapter::UpdateForTime(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     UsdTimeCode time,
@@ -116,7 +116,7 @@ UsdImagingIntegratorAdapter::UpdateForTime(
 }
 
 HdDirtyBits
-UsdImagingIntegratorAdapter::ProcessPropertyChange(
+UsdRiImagingPxrDisplayFilterAdapter::ProcessPropertyChange(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     TfToken const& propertyName)
@@ -125,7 +125,7 @@ UsdImagingIntegratorAdapter::ProcessPropertyChange(
 }
 
 void
-UsdImagingIntegratorAdapter::MarkDirty(
+UsdRiImagingPxrDisplayFilterAdapter::MarkDirty(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits dirty,
@@ -144,7 +144,7 @@ _RemoveInputsPrefix(UsdAttribute const& attr)
 static TfToken
 _GetNodeTypeId(UsdPrim const& prim)
 {
-    UsdAttribute attr = prim.GetAttribute(_tokens->integratorShaderId);
+    UsdAttribute attr = prim.GetAttribute(_tokens->displayFilterShaderId);
     if (attr) {
         VtValue value;
         if (attr.Get(&value)) {
@@ -153,39 +153,39 @@ _GetNodeTypeId(UsdPrim const& prim)
             }
         }
     }
-    return HdPrimTypeTokens->integrator;
+    return HdPrimTypeTokens->displayFilter;
 }
 
 static HdMaterialNode2
-_CreateIntegratorAsHdMaterialNode2(UsdPrim const& prim)
+_CreateDisplayFilterAsHdMaterialNode2(UsdPrim const& prim)
 {
-    HdMaterialNode2 integratorNode;
-    integratorNode.nodeTypeId = _GetNodeTypeId(prim);
+    HdMaterialNode2 displayFilterNode;
+    displayFilterNode.nodeTypeId = _GetNodeTypeId(prim);
 
     UsdAttributeVector attrs = prim.GetAuthoredAttributes();
     for (const auto& attr : attrs) {
         VtValue value;
         if (attr.Get(&value)) {
-            integratorNode.parameters[_RemoveInputsPrefix(attr)] = value;
+            displayFilterNode.parameters[_RemoveInputsPrefix(attr)] = value;
         }
     }
-    return integratorNode;
+    return displayFilterNode;
 }
 
 VtValue
-UsdImagingIntegratorAdapter::Get(
+UsdRiImagingPxrDisplayFilterAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (key == _tokens->integratorResource) {
-        return VtValue(_CreateIntegratorAsHdMaterialNode2(prim));
+    if (key == _tokens->displayFilterResource) {
+        return VtValue(_CreateDisplayFilterAsHdMaterialNode2(prim));
     }
 
     TF_CODING_ERROR(
-        "Property %s not supported for Integrator by UsdImaging, path: %s",
+        "Property %s not supported for DisplayFilter by UsdImaging, path: %s",
         key.GetText(), cachePath.GetText());
     return VtValue();
 }
