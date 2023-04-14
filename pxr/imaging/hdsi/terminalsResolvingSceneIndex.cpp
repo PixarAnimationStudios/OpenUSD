@@ -28,40 +28,54 @@ PXR_NAMESPACE_OPEN_SCOPE
 // static
 HdsiTerminalsResolvingSceneIndexRefPtr
 HdsiTerminalsResolvingSceneIndex::New(
-    const HdSceneIndexBaseRefPtr& inputSceneIndex,
-    const std::map<TfToken, TfToken>& terminalRemappings)
+    HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    const TfTokenVector &contextNames)
 {
-    return TfCreateRefPtr(new HdsiTerminalsResolvingSceneIndex(
-        inputSceneIndex, terminalRemappings));
+    return TfCreateRefPtr(
+        new HdsiTerminalsResolvingSceneIndex(inputSceneIndex, contextNames));
+}
+
+static TfToken
+_WithoutPrefixOrEmpty(
+    const TfToken &sToken,
+    const TfToken &prefixToken)
+{
+    const std::string &s = sToken.GetString();
+    const std::string &prefix = prefixToken.GetString();
+
+    if (TfStringStartsWith(s, prefix)) {
+        return TfToken(s.substr(prefix.size()));
+    } else {
+        return TfToken();
+    }
 }
 
 static void
 _RenameTerminal(
-    HdMaterialNetworkInterface* interface,
+    HdMaterialNetworkInterface* const interface,
     const TfToken& oldName,
     const TfToken& newName)
 {
     interface->SetTerminalConnection(
         newName, interface->GetTerminalConnection(oldName).second);
-    interface->DeleteTerminal(oldName);
 }
 
-// static
+static
 void
-HdsiTerminalsResolvingSceneIndex::ResolveTerminals(
-    HdMaterialNetworkInterface* interface,
-    const std::map<TfToken, TfToken>& terminalRemappings)
+_ResolveTerminals(
+    HdMaterialNetworkInterface* const interface,
+    const TfTokenVector& reversedContextPrefixes)
 {
     if (!interface) {
         return;
     }
 
-    for (const TfToken& terminalName : interface->GetTerminalNames()) {
-        auto iter = terminalRemappings.find(terminalName);
-        if (iter != terminalRemappings.end()) {
-            const TfToken& oldName = iter->first;
-            const TfToken& newName = iter->second;
-            _RenameTerminal(interface, oldName, newName);
+    for (const TfToken& prefix : reversedContextPrefixes) {
+        for (const TfToken& terminalName : interface->GetTerminalNames()) {
+            const TfToken newName = _WithoutPrefixOrEmpty(terminalName, prefix);
+            if (!newName.IsEmpty()) {
+                _RenameTerminal(interface, terminalName, newName);
+            }
         }
     }
 }
@@ -69,17 +83,22 @@ HdsiTerminalsResolvingSceneIndex::ResolveTerminals(
 HdsiTerminalsResolvingSceneIndex::FilteringFnc
 HdsiTerminalsResolvingSceneIndex::_GetFilteringFunction() const
 {
-    return [this](HdMaterialNetworkInterface* interface) {
-        ResolveTerminals(interface, this->_terminalRemappings);
+    return [this](HdMaterialNetworkInterface* const interface) {
+        _ResolveTerminals(interface, this->_reversedContextPrefixes);
     };
 }
 
 HdsiTerminalsResolvingSceneIndex::HdsiTerminalsResolvingSceneIndex(
-    const HdSceneIndexBaseRefPtr& inputSceneIndex,
-    const std::map<TfToken, TfToken>& terminalRemappings)
-    : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
-    , _terminalRemappings(terminalRemappings)
+    HdSceneIndexBaseRefPtr const &inputSceneIndex,
+    const TfTokenVector &contextNames)
+  : HdMaterialFilteringSceneIndexBase(inputSceneIndex)
 {
+    _reversedContextPrefixes.reserve(contextNames.size());
+
+    for (auto it = contextNames.rbegin(); it != contextNames.rend(); ++it) {
+        _reversedContextPrefixes.push_back(
+            TfToken(it->GetString() + ":"));
+    }
 }
 
 HdsiTerminalsResolvingSceneIndex::~HdsiTerminalsResolvingSceneIndex() = default;

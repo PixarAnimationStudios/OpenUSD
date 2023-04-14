@@ -25,11 +25,13 @@
 #include "pxr/imaging/hdsi/terminalsResolvingSceneIndex.h"
 
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hio/glslfx.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (mtlx)
     ((sceneIndexPluginName, "HdSt_TerminalsResolvingSceneIndexPlugin")));
 
 static const char* const _pluginDisplayName = "GL";
@@ -65,8 +67,10 @@ HdSt_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
     TF_UNUSED(inputArgs);
     return HdsiTerminalsResolvingSceneIndex::New(
         inputSceneIndex,
-        {
-            { TfToken("glslfx:surface"), TfToken("surface") },
+        { HioGlslfxTokens->glslfx
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+          , _tokens->mtlx
+#endif
         });
 }
 

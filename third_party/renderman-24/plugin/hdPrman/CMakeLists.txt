@@ -88,7 +88,6 @@ pxr_plugin(${PXR_PACKAGE}
         lightFilterUtils
         material
         matfiltConvertPreviewMaterial
-        matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
         outputFilterInvalidatingSceneIndexPlugin

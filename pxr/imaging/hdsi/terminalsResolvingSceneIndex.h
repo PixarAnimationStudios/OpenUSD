@@ -36,37 +36,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_REF_PTRS(HdsiTerminalsResolvingSceneIndex);
 
-/// SceneIndex that "resolves" terminals by renaming them from their context
-/// specific names (i.e. "ri:surface") to the HdMaterialTerminalToken
-/// ("surface").  The mapping is provided by a `terminalRemappings` parameter
-/// that is passed to the constructor.
+///
+/// \class HdsiTerminalsResolvingSceneIndex
+///
+/// SceneIndex that "resolves" terminals by stripping the context prefix
+/// of a terminal name for the best maching context (e.g., "ri:surface"
+/// becomes "surface") among the context names passed to the constructor
+/// (starting with the most preferred one).
+///
 class HdsiTerminalsResolvingSceneIndex final
     : public HdMaterialFilteringSceneIndexBase
 {
 public:
     HDSI_API
     static HdsiTerminalsResolvingSceneIndexRefPtr
-    New(const HdSceneIndexBaseRefPtr& inputSceneIndex,
-        const std::map<TfToken, TfToken>& terminalRemappings);
-
-    // This static function is provided to allow some
-    // backwards-compatibility....
-    HDSI_API
-    static void ResolveTerminals(
-        HdMaterialNetworkInterface* interface,
-        const std::map<TfToken, TfToken>& terminalRemappings);
+    New(HdSceneIndexBaseRefPtr const &inputSceneIndex,
+        const TfTokenVector &contextNames);
 
 protected: // HdMaterialFilteringSceneIndexBase overrides
     FilteringFnc _GetFilteringFunction() const override;
 
-protected:
+private:
     HdsiTerminalsResolvingSceneIndex(
-        const HdSceneIndexBaseRefPtr& inputSceneIndex,
-        const std::map<TfToken, TfToken>& terminalRemappings);
+        const HdSceneIndexBaseRefPtr &inputSceneIndex,
+        const TfTokenVector &contextNames);
     ~HdsiTerminalsResolvingSceneIndex() override;
 
-private:
-    const std::map<TfToken, TfToken> _terminalRemappings;
+    // Store prefixes (e.g., "ri:" for "ri") in reversed order.
+    // This is since we set the terminal when looping through the prefixes,
+    // so it is the last matching prefix that wins.
+    TfTokenVector _reversedContextPrefixes;
 };
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
 #endif

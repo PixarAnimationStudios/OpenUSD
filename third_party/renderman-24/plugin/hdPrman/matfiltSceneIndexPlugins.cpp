@@ -24,7 +24,6 @@
 #include "hdPrman/matfiltSceneIndexPlugins.h"
 #include "hdPrman/material.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/matfiltResolveTerminals.h"
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"
@@ -54,6 +53,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((materialXPluginName,  "HdPrman_MaterialXFilteringSceneIndexPlugin"))
     ((terminalPluginName,   "HdPrman_TerminalsResolvingSceneIndexPlugin"))
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
+);
+
+TF_DEFINE_PRIVATE_TOKENS(
+    _materialContextTokens,
+    (ri)
+    (mtlx)
 );
 
 /// Ordering of the matfilt operations. This is necessary when using scene
@@ -283,7 +288,12 @@ HdPrman_TerminalsResolvingSceneIndexPlugin::_AppendSceneIndex(
 {
     return HdsiTerminalsResolvingSceneIndex::New(
         inputScene,
-        MatfiltResolveTerminalsGetTerminalMappings());
+        {
+            _materialContextTokens->ri
+#ifdef PXR_MATERIALX_SUPPORT_ENABLED
+            , _materialContextTokens->mtlx
+#endif
+        });
 }
 
 /// ----------------------------------------------------------------------------
