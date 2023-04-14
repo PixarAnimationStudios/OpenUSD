@@ -33,6 +33,9 @@ pxr_library(usdRiImaging
         pxrSampleFilterAdapter
         tokens
 
+    PRIVATE_CLASSES
+        pxrRenderTerminalHelper
+
     PUBLIC_HEADERS
         api.h
         version.h

@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdRiImaging/pxrIntegratorAdapter.h"
+#include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -34,7 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (inputs)
     ((integratorShaderId, "ri:integrator:shaderId"))
     (integratorResource)
 );
@@ -134,43 +134,6 @@ UsdRiImagingPxrIntegratorAdapter::MarkDirty(
     index->MarkSprimDirty(cachePath, dirty);
 }
 
-static TfToken
-_RemoveInputsPrefix(UsdAttribute const& attr)
-{
-    return TfToken(
-        SdfPath::StripPrefixNamespace(attr.GetName(), _tokens->inputs).first);
-}
-
-static TfToken
-_GetNodeTypeId(UsdPrim const& prim)
-{
-    UsdAttribute attr = prim.GetAttribute(_tokens->integratorShaderId);
-    if (attr) {
-        VtValue value;
-        if (attr.Get(&value)) {
-            if (value.IsHolding<TfToken>()) {
-                return value.UncheckedGet<TfToken>();
-            }
-        }
-    }
-    return HdPrimTypeTokens->integrator;
-}
-
-static HdMaterialNode2
-_CreateIntegratorAsHdMaterialNode2(UsdPrim const& prim)
-{
-    HdMaterialNode2 integratorNode;
-    integratorNode.nodeTypeId = _GetNodeTypeId(prim);
-
-    UsdAttributeVector attrs = prim.GetAuthoredAttributes();
-    for (const auto& attr : attrs) {
-        VtValue value;
-        if (attr.Get(&value)) {
-            integratorNode.parameters[_RemoveInputsPrefix(attr)] = value;
-        }
-    }
-    return integratorNode;
-}
 
 VtValue
 UsdRiImagingPxrIntegratorAdapter::Get(
@@ -181,7 +144,11 @@ UsdRiImagingPxrIntegratorAdapter::Get(
     VtIntArray *outIndices) const
 {
     if (key == _tokens->integratorResource) {
-        return VtValue(_CreateIntegratorAsHdMaterialNode2(prim));
+        return VtValue(
+            UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
+                prim,
+                _tokens->integratorShaderId,
+                HdPrimTypeTokens->integrator));
     }
 
     TF_CODING_ERROR(

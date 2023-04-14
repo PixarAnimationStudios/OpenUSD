@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdRiImaging/pxrDisplayFilterAdapter.h"
+#include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -34,7 +35,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    (inputs)
     ((displayFilterShaderId, "ri:displayfilter:shaderId"))
     (displayFilterResource)
 );
@@ -134,44 +134,6 @@ UsdRiImagingPxrDisplayFilterAdapter::MarkDirty(
     index->MarkSprimDirty(cachePath, dirty);
 }
 
-static TfToken
-_RemoveInputsPrefix(UsdAttribute const& attr)
-{
-    return TfToken(
-        SdfPath::StripPrefixNamespace(attr.GetName(), _tokens->inputs).first);
-}
-
-static TfToken
-_GetNodeTypeId(UsdPrim const& prim)
-{
-    UsdAttribute attr = prim.GetAttribute(_tokens->displayFilterShaderId);
-    if (attr) {
-        VtValue value;
-        if (attr.Get(&value)) {
-            if (value.IsHolding<TfToken>()) {
-                return value.UncheckedGet<TfToken>();
-            }
-        }
-    }
-    return HdPrimTypeTokens->displayFilter;
-}
-
-static HdMaterialNode2
-_CreateDisplayFilterAsHdMaterialNode2(UsdPrim const& prim)
-{
-    HdMaterialNode2 displayFilterNode;
-    displayFilterNode.nodeTypeId = _GetNodeTypeId(prim);
-
-    UsdAttributeVector attrs = prim.GetAuthoredAttributes();
-    for (const auto& attr : attrs) {
-        VtValue value;
-        if (attr.Get(&value)) {
-            displayFilterNode.parameters[_RemoveInputsPrefix(attr)] = value;
-        }
-    }
-    return displayFilterNode;
-}
-
 VtValue
 UsdRiImagingPxrDisplayFilterAdapter::Get(
     UsdPrim const& prim,
@@ -181,7 +143,11 @@ UsdRiImagingPxrDisplayFilterAdapter::Get(
     VtIntArray *outIndices) const
 {
     if (key == _tokens->displayFilterResource) {
-        return VtValue(_CreateDisplayFilterAsHdMaterialNode2(prim));
+        return VtValue(
+            UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
+                prim,
+                _tokens->displayFilterShaderId,
+                HdPrimTypeTokens->displayFilter));
     }
 
     TF_CODING_ERROR(
