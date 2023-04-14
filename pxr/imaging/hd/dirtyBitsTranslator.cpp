@@ -293,6 +293,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdLight::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
+        if (bits & HdLight::DirtyInstancer) {
+            set->append(HdInstancedBySchema::GetDefaultLocator());
+        }
     } else if (primType == HdPrimTypeTokens->drawTarget) {
         const static HdDataSourceLocator locator(
                 HdPrimTypeTokens->drawTarget);
@@ -758,6 +761,9 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdCamera::DirtyTransform;
         }
     } else if (HdPrimTypeIsLight(primType)) {
+        if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdLight::DirtyInstancer;
+        }
         if (_FindLocator(HdLightSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyParams |
                 HdLight::DirtyShadowParams |
