@@ -45,15 +45,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (info)
-    (sdrMetadata)
-    (sourceAsset)
-    (subIdentifier)
-    ((infoSdrMetadata, "info:sdrMetadata"))
-);
-
 namespace
 {
 
@@ -251,58 +242,25 @@ private:
     T _t;
 };
 
-// returns true if the name is of the form "info:<sourceType>:<leafName>".
-static bool
-_ParseInfoName(const std::string& name, TfToken* sourceType, TfToken* leafName)
-{
-    auto nameTokens = SdfPath::TokenizeIdentifierAsTokens(name);
-    if (nameTokens.size() != 3 || nameTokens[0] != _tokens->info) {
-        return false;
-    }
-
-    if (sourceType) {
-        *sourceType = nameTokens[1];
-    }
-
-    if (leafName) {
-        *leafName = nameTokens[2];
-    }
-    return true;
-}
-
-// For things that are "sourceAsset", we populate the
-// renderContextNodeIdentifier with the known "info:" attributes as well as some
-// other relevant data.
-class _UsdImagingRenderContextNodeIdentifiersForSourceAsset
-    : public HdContainerDataSource
+// Populate the "nodeTypeInfo" of a node using the "info:" attributes and
+// the meta data (skipping info:id).
+class _UsdImagingNodeTypeInfoSource : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(
-        _UsdImagingRenderContextNodeIdentifiersForSourceAsset);
+    HD_DECLARE_DATASOURCE(_UsdImagingNodeTypeInfoSource);
 
     TfTokenVector GetNames() override
     {
-        UsdShadeNodeDefAPI nodeDef(_shaderNode);
-
         TfTokenVector names;
-        names.push_back(_tokens->infoSdrMetadata);
-        for (const UsdAttribute& attr : _GetSourceAssetAttributes()) {
-            names.push_back(attr.GetName());
-
-            TfToken sourceType;
-            if (!_ParseInfoName(attr.GetName(), &sourceType, nullptr)) {
-                continue;
-            }
-
-            // the per-sourceType subidentifier gets saved as
-            // "info:<sourceType>:subIdentifier".
-            if (nodeDef
-                && nodeDef.GetSourceAssetSubIdentifier(nullptr, sourceType)) {
-                // info:<sourceType>:subIdentifier
-                const TfToken subIdentifier(SdfPath::JoinIdentifier(
-                    TfTokenVector({ _tokens->info, sourceType,
-                                    _tokens->subIdentifier })));
-                names.push_back(subIdentifier);
+        names.push_back(UsdShadeTokens->sdrMetadata);
+        // Missing metadata:
+        // subIdentifier
+        for (const TfToken &propNameToken :
+                 _shaderNode.GetPrim().GetPropertyNames()) {
+            const std::string &propName = propNameToken.GetString();
+            if (propNameToken != UsdShadeTokens->infoId &&
+                TfStringStartsWith(propName, _GetPrefix())) {
+                names.push_back(TfToken(propName.substr(_GetPrefix().size())));
             }
         }
         return names;
@@ -310,90 +268,38 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken& name) override
     {
-        if (name == _tokens->infoSdrMetadata) {
+        if (name == UsdShadeTokens->sdrMetadata) {
             VtDictionary metadata;
-            _shaderNode.GetPrim().GetMetadata(
-                UsdShadeTokens->sdrMetadata, &metadata);
+            _shaderNode.GetPrim().GetMetadata(name, &metadata);
             return HdRetainedTypedSampledDataSource<VtDictionary>::New(
                 metadata);
         }
 
-        TfToken sourceType, leafName;
-        if (!_ParseInfoName(name, &sourceType, &leafName)) {
-            return nullptr;
-        }
+        const TfToken attrName(_GetPrefix() + name.GetString());
 
-        if (leafName == _tokens->subIdentifier) {
-            TfToken subIdentifier;
-            if (UsdShadeNodeDefAPI nodeDef = UsdShadeNodeDefAPI(_shaderNode)) {
-                if (nodeDef.GetSourceAssetSubIdentifier(
-                        &subIdentifier, sourceType)) {
-                    return HdRetainedTypedSampledDataSource<TfToken>::New(
-                        subIdentifier);
-                }
-            }
-            return nullptr;
-        }
-
-        if (leafName == _tokens->sourceAsset) {
-            SdfAssetPath sourceAssetPath;
-            UsdAttribute attr = _shaderNode.GetPrim().GetAttribute(name);
-            if (!attr || !attr.Get(&sourceAssetPath)
-                || sourceAssetPath.GetAssetPath().empty()) {
-                return nullptr;
-            }
-
-            // XXX we want to have usd do the resolution.. do we noed to do
-            // something special to do that?
-            const std::string& resolvedUri = sourceAssetPath.GetResolvedPath();
-
-            // Create a discoveryResult only if the referenced
-            // sourceAsset can be resolved.
-            // XXX: Should we do this regardless and expect the parser
-            // to be able to resolve the unresolved asset path?
-            if (resolvedUri.empty()) {
-                TF_WARN(
-                    "Unable to resolve info:sourceAsset <%s> with value "
-                    "@%s@.",
-                    attr.GetPath().GetText(),
-                    sourceAssetPath.GetAssetPath().c_str());
-                return nullptr;
-            }
-
-            return HdRetainedTypedSampledDataSource<SdfAssetPath>::New(
-                sourceAssetPath);
+        if (UsdAttribute attr = _shaderNode.GetPrim().GetAttribute(attrName)) {
+            return UsdImagingDataSourceAttributeNew(attr, _stageGlobals);
         }
 
         return nullptr;
     }
 
 private:
-    _UsdImagingRenderContextNodeIdentifiersForSourceAsset(
-        const UsdShadeShader& shaderNode)
-        : _shaderNode(shaderNode)
+    _UsdImagingNodeTypeInfoSource(
+        const UsdShadeShader& shaderNode,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+      : _shaderNode(shaderNode)
+      , _stageGlobals(stageGlobals)
     {
     }
 
-    // returns all of the info:<sourceType>:sourceAsset attributes.
-    std::vector<UsdAttribute> _GetSourceAssetAttributes() const
-    {
-        std::vector<UsdAttribute> attrs
-            = _shaderNode.GetPrim().GetAuthoredAttributes();
-        attrs.erase(
-            std::remove_if(
-                attrs.begin(), attrs.end(),
-                [](const UsdAttribute& attr) {
-                    auto nameTokens
-                        = SdfPath::TokenizeIdentifierAsTokens(attr.GetName());
-                    TfToken leafName;
-                    return _ParseInfoName(attr.GetName(), nullptr, &leafName)
-                        && leafName != _tokens->sourceAsset;
-                }),
-            attrs.end());
-        return attrs;
+    static const std::string &_GetPrefix() {
+        static const std::string prefix = "info:";
+        return prefix;
     }
 
     UsdShadeShader _shaderNode;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 class _UsdImagingDataSourceShadingNode : public HdContainerDataSource
@@ -433,19 +339,20 @@ public:
                     UsdLuxLightAPI(_shaderNode.GetPrim())) {
                 return _UsdImagingDataSourceRenderContextIdentifiers<
                     UsdLuxLightAPI>::New(light);
-            } else if (UsdLuxLightFilter lightFilter =
+            }
+            if (UsdLuxLightFilter lightFilter =
                     UsdLuxLightFilter(_shaderNode.GetPrim())) {
                 return _UsdImagingDataSourceRenderContextIdentifiers<
                     UsdLuxLightFilter>::New(lightFilter);
             }
-            else {
-                if (_shaderNode.GetImplementationSource()
-                    == UsdShadeTokens->sourceAsset) {
-                    return _UsdImagingRenderContextNodeIdentifiersForSourceAsset::
-                        New(_shaderNode);
-                }
+            return nullptr;
+            
+        }
+        if (name == HdMaterialNodeSchemaTokens->nodeTypeInfo) {
+            if (_shaderNode.GetImplementationSource() != UsdShadeTokens->id) {
+                return _UsdImagingNodeTypeInfoSource::New(
+                    _shaderNode, _stageGlobals);
             }
-
             return nullptr;
         }
 

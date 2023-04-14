@@ -2495,7 +2495,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
                         cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         node.identifier),
-                    nullptr /*renderContextNodeIdentifiers*/));
+                        /* renderContextNodeIdentifiers = */ nullptr,
+                        /* nodeTypeInfo = */ nullptr));
         }
 
         terminalsValues.push_back(
@@ -2563,7 +2564,8 @@ _ConvertRenderTerminalOutputToHdDataSource(const VtValue &outputNodeValue)
         HdRetainedContainerDataSource::New(),
         HdRetainedTypedSampledDataSource<TfToken>::New(
             outputNode.nodeTypeId),
-            nullptr /*renderContextNodeIdentifiers*/);
+            /* renderContextNodeIdentifiers = */ nullptr,
+            /* nodeTypeInfo = */ nullptr);
 
     return SchemaType::BuildRetained(nodeDS);
 }
