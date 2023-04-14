@@ -1,6 +1,6 @@
 # Change Log
 
-## [23.05] - 2023-04-10
+## [23.05] - 2023-04-18
 
 Support for Python 2 has been removed in this release.
 
@@ -67,8 +67,8 @@ Support for Python 2 has been removed in this release.
   .usdz file.
 
 - Fixed a bug where UsdStage::LoadAndUnload() could over invalidate and
-  recompose. 
-  (PR: [#2287](https://github.com/PixarAnimationStudios/USD/pull/2287))
+  recompose.
+  (Issue: [#2286](https://github.com/PixarAnimationStudios/USD/issues/2286))
 
 - Fixed deadlock when opening and closing layers from multiple threads in 
   Python. 
@@ -175,35 +175,36 @@ Support for Python 2 has been removed in this release.
 
 - Replaced uses of boost::hash with TfHash throughout the base and usd packages 
   of pxr. 
-  (PR: [#2329](https://github.com/PixarAnimationStudios/USD/pull/2329)), 
+  (PR: [#2173](https://github.com/PixarAnimationStudios/USD/pull/2173),
+   [#2176](https://github.com/PixarAnimationStudios/USD/pull/2176), 
+   [#2181](https://github.com/PixarAnimationStudios/USD/pull/2181), 
+   [#2182](https://github.com/PixarAnimationStudios/USD/pull/2182), 
+   [#2184](https://github.com/PixarAnimationStudios/USD/pull/2184), 
+   [#2185](https://github.com/PixarAnimationStudios/USD/pull/2185), 
+   [#2186](https://github.com/PixarAnimationStudios/USD/pull/2186), 
+   [#2187](https://github.com/PixarAnimationStudios/USD/pull/2187), 
    [#2190](https://github.com/PixarAnimationStudios/USD/pull/2190), 
    [#2191](https://github.com/PixarAnimationStudios/USD/pull/2191), 
-   [#2187](https://github.com/PixarAnimationStudios/USD/pull/2187), 
-   [#2176](https://github.com/PixarAnimationStudios/USD/pull/2176), 
-   [#2186](https://github.com/PixarAnimationStudios/USD/pull/2186), 
-   [#2304](https://github.com/PixarAnimationStudios/USD/pull/2304), 
-   [#2298](https://github.com/PixarAnimationStudios/USD/pull/2298), 
-   [#2184](https://github.com/PixarAnimationStudios/USD/pull/2184), 
-   [#2182](https://github.com/PixarAnimationStudios/USD/pull/2182), 
-   [#2181](https://github.com/PixarAnimationStudios/USD/pull/2181), 
-   [#2185](https://github.com/PixarAnimationStudios/USD/pull/2185), 
    [#2289](https://github.com/PixarAnimationStudios/USD/pull/2289), 
-   [#2173](https://github.com/PixarAnimationStudios/USD/pull/2173) )
+   [#2298](https://github.com/PixarAnimationStudios/USD/pull/2298), 
+   [#2304](https://github.com/PixarAnimationStudios/USD/pull/2304), 
+   [#2329](https://github.com/PixarAnimationStudios/USD/pull/2329))
 
 - Removed use of "register" keyword, which is no longer supported as of C++17. 
   (PR: [#2204](https://github.com/PixarAnimationStudios/USD/pull/2204))
 
 - Various changes to remove uses of boost. 
-  (Issue: [#2247](https://github.com/PixarAnimationStudios/USD/issues/2247), 
-   [#2203](https://github.com/PixarAnimationStudios/USD/issues/2203), 
+  (Issue: [#2203](https://github.com/PixarAnimationStudios/USD/issues/2203), 
    [#2211](https://github.com/PixarAnimationStudios/USD/issues/2211),
-   [#2217](https://github.com/PixarAnimationStudios/USD/issues/2217)
+   [#2217](https://github.com/PixarAnimationStudios/USD/issues/2217),
    [#2221](https://github.com/PixarAnimationStudios/USD/issues/2221), 
+   [#2247](https://github.com/PixarAnimationStudios/USD/issues/2247), 
    [#2290](https://github.com/PixarAnimationStudios/USD/issues/2290) 
-   PR: [#2249](https://github.com/PixarAnimationStudios/USD/pull/2249), 
+   PR: 
    [#2210](https://github.com/PixarAnimationStudios/USD/pull/2210), 
    [#2213](https://github.com/PixarAnimationStudios/USD/pull/2213),
    [#2213](https://github.com/PixarAnimationStudios/USD/pull/2224), 
+   [#2249](https://github.com/PixarAnimationStudios/USD/pull/2249), 
    [#2291](https://github.com/PixarAnimationStudios/USD/pull/2291))
 
 - Fixed a bug where UsdUtilsCreateNewUsdzPackage would not correctly handle 
@@ -408,6 +409,9 @@ Support for Python 2 has been removed in this release.
 
 - Added HdCoordSysSchema which provides "name" member field and its builder 
   interface.  
+
+- Fixed a memory leak during framebuffer resize.
+  (PR: [#2342](https://github.com/PixarAnimationStudios/USD/pull/2342))
 
 ### Renderman Hydra Plugin
 
