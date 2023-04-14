@@ -217,19 +217,14 @@ public:
     TfTokenVector GetNames() override
     {
         TfTokenVector result;
-        for (const TfToken &propName :  _t.GetPrim().GetPropertyNames()) {
-            const std::string &tokenStr = propName.GetString();
-            std::size_t firstDelimIndex = tokenStr.find(':');
-            if (firstDelimIndex == std::string::npos) {
-                continue;
+        for (const TfToken &propNameToken : _t.GetPrim().GetPropertyNames()) {
+            const std::string &propName = propNameToken.GetString();
+            static const std::string suffix =
+                ":" + UsdLuxTokens->lightShaderId.GetString();
+            if (TfStringEndsWith(propName, suffix)) {
+                result.push_back(
+                    TfToken(propName.substr(0, propName.size() - suffix.size())));
             }
-
-            if (tokenStr.substr(firstDelimIndex + 1) !=
-                    UsdLuxTokens->lightShaderId.GetString()) {
-                continue;
-            }
-
-            result.push_back(TfToken(tokenStr.substr(0, firstDelimIndex)));
         }
 
         return result;
