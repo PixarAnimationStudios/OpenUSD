@@ -23,6 +23,14 @@
 #
 from __future__ import print_function
 
+# Check whether this script is being run under Python 2 first. Otherwise,
+# any Python 3-only code below will cause the script to fail with an
+# unhelpful error message.
+import sys
+if sys.version_info.major == 2:
+    sys.exit("ERROR: USD does not support Python 2. Use a supported version "
+             "of Python 3 instead.")
+
 import argparse
 import codecs
 import contextlib
