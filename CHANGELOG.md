@@ -7,6 +7,7 @@ Support for Python 2 has been removed in this release.
 ### Build
 
 - Changes and fixes for build_usd.py:
+  - MaterialX support is now enabled by default.
   - Updated to use libpng version v1.6.38.
     (PR: [#1946](https://github.com/PixarAnimationStudios/USD/pull/1946))
   - Fixed error when using Visual Studio 2019 or later with 
@@ -475,7 +476,7 @@ Support for Python 2 has been removed in this release.
 - Updated usdview Hydra Scene Browser to be compatible with more PySide 
   versions and macOS
 
-### MaterialX plugin
+### MaterialX
 
 - Fixed MaterialX materials with the name 'material' 
   (Issue: [#2076](https://github.com/PixarAnimationStudios/USD/issues/2076))

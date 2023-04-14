@@ -126,6 +126,23 @@ the build process.
 Support for Vulkan can optionally be enabled by specifying the cmake flag
 `PXR_ENABLE_VULKAN_SUPPORT=TRUE`.
 
+##### MaterialX
+
+Enable [MaterialX](https://github.com/materialx/materialx) support in the 
+build by specifying the cmake flag `PXR_ENABLE_MATERIALX_SUPPORT=TRUE` when
+invoking cmake. Note that MaterialX with shared library support is required.
+
+When building via build_usd.py, MaterialX support is enabled by default. The
+default can be overriden using the --materialx and --no-materialx flags.
+
+The additional dependencies that must be supplied when invoking cmake are:
+
+| Dependency Name    | Description                                                 |
+| ------------------ |-----------------------------------------------------------  |
+| MaterialX_DIR      | Path to the CMake package config of a MaterialX SDK install.|
+
+See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
+
 ##### OSL (OpenShadingLanguage)
 
 Support for OSL is disabled by default, and can optionally be enabled by
@@ -301,20 +318,6 @@ support requires the following dependencies:
 | HDF5_LOCATION      | The location of [HDF5](https://www.hdfgroup.org/HDF5/) |
 
 For further information see the documentation on the Alembic plugin [here](http://openusd.org/docs/Alembic-USD-Plugin.html).
-
-##### MaterialX Plugin
-
-Enable [MaterialX](https://github.com/materialx/materialx) support in the 
-build by specifying the cmake flag `PXR_ENABLE_MATERIALX_SUPPORT=TRUE` when
-invoking cmake. Note that MaterialX with shared library support is required.
-
-The additional dependencies that must be supplied when invoking cmake are:
-
-| Dependency Name    | Description                                                 |
-| ------------------ |-----------------------------------------------------------  |
-| MaterialX_DIR      | Path to the CMake package config of a MaterialX SDK install.|
-
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
 ##### Draco Plugin
 

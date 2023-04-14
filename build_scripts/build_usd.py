@@ -2090,10 +2090,10 @@ group.add_argument("--draco-location", type=str,
 group = parser.add_argument_group(title="MaterialX Plugin Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
-                      default=False,
-                      help="Build MaterialX plugin for USD")
+                      default=True,
+                      help="MaterialX support (default)")
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
-                      help="Do not build MaterialX plugin for USD (default)")
+                      help="Do not build MaterialX plugin for USD")
 
 args = parser.parse_args()
 
