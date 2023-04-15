@@ -1510,7 +1510,7 @@ _BuildMeshObjectAttribute(
     ss << "max_total_threads_per_threadgroup(";
     ss << meshDesc.maxTotalThreadsPerObjectThreadgroup << "),";
     ss << "max_total_threadgroups_per_mesh_grid(";
-    ss << meshDesc.maxTotalThreadgroupsPerMeshObject << ")]]";
+    ss << "128" << ")]]";
 }
 
 void
@@ -1802,8 +1802,8 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
     std::stringstream returnSS;
     
     if (outputs && _GetShaderStage() != HgiShaderStageMeshObject
-        && _GetShaderStage() != HgiShaderStageMeshlet)
-        && _GetShaderStage() != HgiShaderStagePostTessellationControl {
+        && _GetShaderStage() != HgiShaderStageMeshlet
+        && _GetShaderStage() != HgiShaderStagePostTessellationControl) {
         const HgiMetalStructTypeDeclarationShaderSection* const decl =
             outputs->GetStructTypeDeclaration();
         decl->WriteIdentifier(returnSS);

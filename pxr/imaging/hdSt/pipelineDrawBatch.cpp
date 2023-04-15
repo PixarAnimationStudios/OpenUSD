@@ -109,10 +109,6 @@ HdSt_PipelineDrawBatch::HdSt_PipelineDrawBatch(
     , _cullInstanceCountOffset(0)
     , _drawCoordOffset(0)
     , _patchBaseVertexByteOffset(0)
-    , _drawCoord0Offset(0)
-    , _drawCoord1Offset(0)
-    , _drawCoord2Offset(0)
-    , _drawCoordIOffset(0)
 {
     _Init(drawItemInstance);
 }
@@ -836,7 +832,6 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     // cache the offset needed for compute culling.
     _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
-    _drawCoordIOffset = traits.drawingCoordI_offset / sizeof(uint32_t);
 
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
@@ -1286,6 +1281,17 @@ _GetDrawPipeline(
         renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
                                                   state.geometricShader);
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
+        if (pipeDesc.meshState.useMeshShader) {
+            for (const auto& fun : programHandle->GetDescriptor().shaderFunctions) {
+                if (fun->GetDescriptor().shaderStage == HgiShaderStageMeshlet) {
+                    pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = fun->GetDescriptor().meshDescriptor.maxTotalThreadsPerMeshletThreadgroup;
+                }
+                if (fun->GetDescriptor().shaderStage == HgiShaderStageMeshObject) {
+                    pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = fun->GetDescriptor().meshDescriptor.maxTotalThreadgroupsPerMeshObject;
+                }
+            }
+        }
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
@@ -1293,6 +1299,56 @@ _GetDrawPipeline(
 
         pipelineInstance.SetValue(
             std::make_shared<HgiGraphicsPipelineHandle>(pso));
+    }
+
+    return pipelineInstance.GetValue();
+}
+
+static
+HgiGraphicsPipelineSharedPtr
+_GetPTCSPipeline(
+        HdStRenderPassStateSharedPtr const & renderPassState,
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        _BindingState const & state)
+{
+    // PTCS pipeline is compatible as long as the shader and
+    // pipeline state are the same.
+    HgiShaderProgramHandle const & programHandle =
+            state.glslProgram->GetProgram();
+
+    static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
+    uint64_t hash = salt;
+    hash = TfHash::Combine(hash, programHandle.Get());
+    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
+
+    HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
+            resourceRegistry->RegisterGraphicsPipeline(hash);
+
+    if (pipelineInstance.IsFirstInstance()) {
+        HgiGraphicsPipelineDesc pipeDesc;
+
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
+                                                  state.geometricShader);
+
+        pipeDesc.rasterizationState.rasterizerEnabled = false;
+        pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
+        pipeDesc.multiSampleState.alphaToCoverageEnable = false;
+        pipeDesc.depthState.depthWriteEnabled = false;
+        pipeDesc.depthState.depthTestEnabled = false;
+        pipeDesc.depthState.stencilTestEnabled = false;
+        pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
+        pipeDesc.multiSampleState.multiSampleEnable = false;
+
+        pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
+        pipeDesc.tessellationState.tessFactorMode =
+                HgiTessellationState::TessControl;
+
+        Hgi* hgi = resourceRegistry->GetHgi();
+        HgiGraphicsPipelineHandle pso = hgi->CreateGraphicsPipeline(pipeDesc);
+
+        pipelineInstance.SetValue(
+                std::make_shared<HgiGraphicsPipelineHandle>(pso));
     }
 
     return pipelineInstance.GetValue();
@@ -1360,10 +1416,22 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         HgiResourceBindingsDesc bindingsDesc;
         state.GetBindingsForDrawing(&bindingsDesc,
                 _tessFactorsBuffer, /*bindTessFactors=*/true);
-
+        bool const useMeshShaders =
+                _drawItemInstances[0]->GetDrawItem()->
+                        GetGeometricShader()->GetUseMeshShaders();
+        if (useMeshShaders) {
+            // bind destination buffer
+            // (using entire buffer bind to start from offset=0)
+            //todo improve so only in mesh obj
+            state.binder.GetBufferBindingDesc(
+                    &bindingsDesc,
+                    TfToken("drawCullInput"),
+                    _dispatchBuffer->GetEntireResource(),
+                    _dispatchBuffer->GetEntireResource()->GetOffset());
+        }
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
-        gfxCmds->BindResources(resourceBindings);
+        gfxCmds->BindResources(resourceBindings, useMeshShaders);
 
         HgiVertexBufferBindingVector bindings;
         _GetVertexBufferBindingsForDrawing(&bindings, state);
@@ -1416,21 +1484,15 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         if (!TF_VERIFY(indexBuffer)) return;
         if (useMeshShaders) {
             struct Uniforms {
-                GfMatrix4f cullMatrix;
-                GfVec2f drawRangeNDC;
-                uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
                 uint32_t drawCoordOffset;
-                uint32_t drawCoordIOffset;
             };
 
             if (useMeshShaders) {
                 // set instanced cull parameters
                 Uniforms cullParams;
-                cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
                 cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                 cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
-                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                 gfxCmds->SetConstantValues(
                         psoHandle, 0, 27,
@@ -1510,7 +1572,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         uint32_t drawIndexCount;
                         uint32_t drawCommandNumUints;
                         uint32_t drawCoordOffset;
-                        uint32_t drawCoordIOffset;
                     };
                     
                     if (useMeshShaders) {
@@ -1519,7 +1580,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         //cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
                         cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                         cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
-                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                         gfxCmds->SetConstantValues(
                             psoHandle, 0, 27,
@@ -1850,9 +1910,9 @@ HdSt_PipelineDrawBatch::_ExecutePTCS(
     ptcsGfxCmds->BindVertexBuffers(bindings);
 
     if (drawIndirect) {
-        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);
+        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar, psoTessHandle, renderPassState);
     } else {
-        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
+        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar, psoTessHandle);
     }
 
     hgi->DestroyResourceBindings(&resourceBindings);

@@ -203,10 +203,6 @@ private:
     size_t _cullInstanceCountOffset;
     size_t _drawCoordOffset;
     size_t _patchBaseVertexByteOffset;
-    size_t _drawCoord0Offset;
-    size_t _drawCoord1Offset;
-    size_t _drawCoord2Offset;
-    size_t _drawCoordIOffset;
     
     std::unique_ptr<HgiIndirectCommands> _indirectCommands;
 };

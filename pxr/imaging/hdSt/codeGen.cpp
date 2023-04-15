@@ -2973,7 +2973,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         mosDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
         mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
         mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
-        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
+        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 1;
         
         mosDesc.meshDescriptor.maxMeshletVertexCount = 96;
         mosDesc.meshDescriptor.maxPrimitiveCount = mosDesc.meshDescriptor.maxMeshletVertexCount/3;
@@ -4135,10 +4135,6 @@ _GetDrawingCoord(std::stringstream &ss,
            << " = " << inputPrefix
            << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
     }
-    if (primitiveCoordOffset) {
-        ss << "  dc.primitiveCoord"
-           << primitiveCoordOffset << ";\n";
-    }
     ss << "  return dc; \n"
        << "}\n";
 }
@@ -4148,8 +4144,7 @@ _GetDrawingCoordMS(std::stringstream &ss,
                  std::vector<std::string> const &drawingCoordParams,
                  int const instanceIndexWidth,
                  char const *inputPrefix,
-                 char const *inArraySize,
-                 char const *primitiveCoordOffset)
+                 char const *inArraySize)
 {
     ss << "hd_drawingCoord GetDrawingCoord() { \n"
        << "  hd_drawingCoord dc; \n";
@@ -4166,10 +4161,6 @@ _GetDrawingCoordMS(std::stringstream &ss,
             ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
             << " = vertexOut." << inputPrefix
             << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
-        }
-        if (primitiveCoordOffset) {
-            ss << "  dc.primitiveCoord"
-            << primitiveCoordOffset << ";\n";
         }
     ss << "  return dc; \n"
        << "}\n";
@@ -4493,6 +4484,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genTES << primitiveIndex;
     _genGS << primitiveIndex;
     _genFS << primitiveIndex;
+    _genMS << primitiveIndex;
+    //_genMOS << primitiveIndex;
 
     std::stringstream genAttr;
 
@@ -4941,6 +4934,12 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
         << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
         << "  dc.varyingCoord            = GetDrawingCoordField(9);\n";
+    } else {
+        _genFS   << "// Compute shaders read the drawCommands buffer directly.\n"
+        << "hd_drawingCoord GetDrawingCoordFull() {\n"
+        << "hd_drawingCoord dc;\n"
+        << "return dc;\n"
+        << "}\n";
     }
 
     for(int i = 0; i < instanceIndexWidth; ++i) {
@@ -5069,7 +5068,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     } else if (_hasTES) {
         // from TES
         _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
-                "tes_dc_", "", " += GetPrimitiveID()");
+                "tes_dc_", "");
     } else if (!_hasMS) {
         // from VS/PTVS
         _GetDrawingCoord(_genFS, drawingCoordParams, instanceIndexWidth,
@@ -5580,17 +5579,6 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                     _metaData.edgeIndexBinding.dataType, binding,
                     "GetPrimitiveIndex()");
     }
-    
-    if (_metaData.indexBinding.binding.IsValid()) {
-        HdBinding binding = _metaData.indexBinding.binding;
-
-        _EmitDeclaration(&_resCommon, _metaData.indexBinding);
-        //TODO Thor consider an accessor
-        //TODO Thor maybe not bind to fragment stage?
-        //_EmitAccessor(accessors, _metaData.indexBinding.name,
-        //            _metaData.indexBinding.dataType, binding,
-        //            "indices[localIndex]");
-    }
 
     if (_metaData.coarseFaceIndexBinding.binding.IsValid()) {
         _genDefines << "#define HD_HAS_" 
@@ -5831,11 +5819,11 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _procMSOut << "  vertexOut." << name
                   << " = ms_ms_" << name << ";\n";
         _procPTVSOut << "  outPrimvars." << name
-                     << " = InterpolatePrimvar(ptvs_pv_"
+                     << " = InterpolatePrimvar("
                      << "HdGet_" << name << "(i0), "
                      << "HdGet_" << name << "(i1), "
                      << "HdGet_" << name << "(i2), "
-                     << "HdGet_" << name << "(i3), basis, uv);\n
+                     << "HdGet_" << name << "(i3), basis, uv);\n";
         _procMSIn  << "    ms_ms_" << name << " = HdGet_" << name << "(index);\n";
     }
 
@@ -5877,6 +5865,18 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                          indexBufferBinding.name,
                          indexBufferBinding.dataType,
                          indexBufferBinding.binding);
+        
+        _EmitDeclaration(&_resMS,
+                         indexBufferBinding.name,
+                         indexBufferBinding.dataType,
+                         indexBufferBinding.binding);
+        _EmitDeclaration(&_resMS, _metaData.indexBufferBinding);
+        
+        _EmitBufferAccessor(accessorsMS,
+                            indexBufferBinding.name,
+                            indexBufferBinding.dataType,
+            "baseIndex + hd_VertexID");
+         
 
         _EmitBufferAccessor(accessorsPTCS,
                             indexBufferBinding.name,

@@ -312,8 +312,7 @@ void main(void)
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ]
 ]
 
@@ -378,8 +377,7 @@ void main(void)
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ]
 ]
 
@@ -1797,8 +1795,7 @@ vec4 GetInterpolatedPatchCoord()
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ]
 ]
 

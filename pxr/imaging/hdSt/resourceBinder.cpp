@@ -225,11 +225,6 @@ HdSt_ResourceBinder::ResolveBindings(
     } else {
         structBufferBindingType = HdStBinding::SSBO;
     }
-    
-    HdBinding::Type vertexAttrBindingType = HdBinding::VERTEX_ATTR;
-    if (useMeshShaders) {
-        vertexAttrBindingType = HdBinding::SSBO;
-    }
 
     metaDataOut->drawingCoordBufferBinding = dcBinding;
 
@@ -393,7 +388,7 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBufferResourceSharedPtr const& resource = it->second;
 
             if (name == HdTokens->indices) {
-                if (isMetal && (drawItem->GetVaryingPrimvarRange() || drawItem->GetGeometricShader()->GetUseMeshShaders()) {
+                if (isMetal && (drawItem->GetVaryingPrimvarRange() || drawItem->GetGeometricShader()->GetUseMeshShaders())) {
                     // Bind index buffer as an SSBO so that we can
                     // access varying data by index.
                     HdStBinding const binding =
@@ -918,7 +913,7 @@ HdSt_ResourceBinder::ResolveBindings(
     
     if (useMeshShaders) {
         auto name = TfToken("drawCullInput");
-        HdBinding cullInput = locator.GetBinding(vertexAttrBindingType, name);
+        HdStBinding cullInput = locator.GetBinding(HdStBinding::SSBO, name);
         _bindingMap[name] = cullInput;
         MetaData::BindingDeclaration b(name,
             TfToken("uint"),

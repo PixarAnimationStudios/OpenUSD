@@ -353,9 +353,10 @@ HgiMetalGraphicsPipeline::_CreateMeshRenderPipelineState(HgiMetal *hgi)
 
     HgiMetalShaderProgram const *metalProgram =
         static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
-    stateDesc.maxTotalThreadsPerObjectThreadgroup = _descriptor.meshState.maxTotalThreadsPerObjectThreadgroup;
+    stateDesc.maxTotalThreadsPerObjectThreadgroup = 1;
     //stateDesc.maxTotalThreadgroupsPerMeshGrid =
     stateDesc.maxTotalThreadsPerMeshThreadgroup = _descriptor.meshState.maxTotalThreadsPerMeshThreadgroup;
+    stateDesc.maxTotalThreadgroupsPerMeshGrid = 1024;
 
     stateDesc.objectFunction = metalProgram->GetMeshObjectFunction();
     stateDesc.meshFunction = metalProgram->GetMeshletFunction();
