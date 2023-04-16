@@ -293,6 +293,7 @@ by Hydra and are equivalent to those displayed in the viewer in `usdview`_ .
                     [--colorCorrectionMode {disabled,sRGB,openColorIO}]
                     [--renderer {GL,Embree,Prman}]
                     [--imageWidth IMAGEWIDTH]
+                    [--multithreaded | --mt]
                     usdFilePath outputImagePath
    
    Generates images from a USD file
@@ -344,6 +345,13 @@ by Hydra and are equivalent to those displayed in the viewer in `usdview`_ .
                            Width of the output image. The height will be computed
                            from this value and the camera's aspect ratio
                            (default=960)
+     --multithreaded, -mt
+                           The time taken to export a large number of frames from
+                           an animated stage can be improved by enabling multithreaded
+                           renderering with this option.  This creates a single instance
+                           of the Storm engine, saving the setup time for each frame.
+                           The frames are then written to storage in parallel.
+                           (default=disabled)
 
 **Further Notes on Command Line Options**
 

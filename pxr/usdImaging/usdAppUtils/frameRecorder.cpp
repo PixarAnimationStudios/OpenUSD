@@ -41,7 +41,9 @@
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
 
+#include <mutex>
 #include <string>
+#include <thread>
 
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -174,37 +176,36 @@ public:
                 TF_CODING_ERROR("No color buffer to write out.");
             }
         }
+  
+        // Copy data from framebuffer to local storage.
+        _CopyToStorage();
     }
 
-    bool Write(const std::string& filename)
+    // TODO(mayank): Do we need this? How to clean up storage.data? Do we need to?
+    ~TextureBufferWriter() {
+      _Unmap();
+    }
+
+    bool WriteFromTemporaryStorage(const std::string& filename) const
     {
         if (!_ValidSource()) {
             return false;
         }
 
-        HioImage::StorageSpec storage;
-        storage.width = _GetWidth();
-        storage.height = _GetHeight();
-        storage.format = _GetFormat();
-        storage.flipped = true;
-        storage.data = _Map();
-        TfScoped<> scopedUnmap([this](){ _Unmap(); });
-
         {
             TRACE_FUNCTION_SCOPE("writing image");
 
             const HioImageSharedPtr image = HioImage::OpenForWriting(filename);
-            const bool writeSuccess = image && image->Write(storage);
+            const bool writeSuccess = image && image->Write(_storage);
             
             if (!writeSuccess) {
-                TF_RUNTIME_ERROR("Failed to write image to %s",
-                    filename.c_str());
+                TF_RUNTIME_ERROR("Failed to write image to %s", filename.c_str());
                 return false;
             }
         }
-
         return true;
     }
+
 
 private:
     bool _ValidSource() const
@@ -267,10 +268,20 @@ private:
         }
     }
 
+    void _CopyToStorage() {
+        _storage.width = _GetWidth();
+        _storage.height = _GetHeight();
+        _storage.format = _GetFormat();
+        _storage.flipped = true;
+        _storage.data = _Map();
+    }
+
+
     UsdImagingGLEngine* _engine;
     HgiTextureHandle _colorTextureHandle;
     HdRenderBuffer* _colorRenderBuffer;
     HdStTextureUtils::AlignedBuffer<uint8_t> _mappedColorTextureBuffer;
+    HioImage::StorageSpec _storage;
 };
 
 }
@@ -279,17 +290,34 @@ bool
 UsdAppUtilsFrameRecorder::Record(
         const UsdStagePtr& stage,
         const UsdGeomCamera& usdCamera,
-        const UsdTimeCode timeCode,
-        const std::string& outputImagePath)
+        const std::vector<UsdTimeCode>& timeCode,
+        const std::vector<std::string>& outputImagePath)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
         return false;
     }
 
-    if (outputImagePath.empty()) {
-        TF_CODING_ERROR("Invalid empty output image path");
+    if (timeCode.empty()) {
+        TF_CODING_ERROR("Invalid lis (empty). No frames to render.");
         return false;
+    }
+
+    if (outputImagePath.empty()) {
+        TF_CODING_ERROR("Invalid list (empty). No output image paths.");
+        return false;
+    }
+
+    if (timeCode.size() != outputImagePath.size()) {
+        TF_CODING_ERROR("FrameRecorder needs an output image path for each time code.");
+        return false;
+    }
+
+    for (const std::string& each : outputImagePath) {
+        if (each.empty()) {
+          TF_CODING_ERROR("Invalid (empty) output image path.");
+          return false;
+        }
     }
 
     const GfVec4f CLEAR_COLOR(0.0f);
@@ -297,45 +325,6 @@ UsdAppUtilsFrameRecorder::Record(
     const GfVec4f SPECULAR_DEFAULT(0.1f, 0.1f, 0.1f, 1.0f);
     const GfVec4f AMBIENT_DEFAULT(0.2f, 0.2f, 0.2f, 1.0f);
     const float   SHININESS_DEFAULT(32.0);
-    
-    // XXX: If the camera's aspect ratio is animated, then a range of calls to
-    // this function may generate a sequence of images with different sizes.
-    GfCamera gfCamera;
-    if (usdCamera) {
-        gfCamera = usdCamera.GetCamera(timeCode);
-    } else {
-        gfCamera = _ComputeCameraToFrameStage(stage, timeCode, _purposes);
-    }
-    float aspectRatio = gfCamera.GetAspectRatio();
-    if (GfIsClose(aspectRatio, 0.0f, 1e-4)) {
-        aspectRatio = 1.0f;
-    }
-
-    const size_t imageHeight = std::max<size_t>(
-        static_cast<size_t>(static_cast<float>(_imageWidth) / aspectRatio),
-        1u);
-    const GfVec2i renderResolution(_imageWidth, imageHeight);
-
-    const GfFrustum frustum = gfCamera.GetFrustum();
-    const GfVec3d cameraPos = frustum.GetPosition();
-
-    _imagingEngine.SetRendererAov(HdAovTokens->color);
-
-    _imagingEngine.SetCameraState(
-        frustum.ComputeViewMatrix(),
-        frustum.ComputeProjectionMatrix());
-    _imagingEngine.SetRenderViewport(
-        GfVec4d(
-            0.0,
-            0.0,
-            static_cast<double>(_imageWidth),
-            static_cast<double>(imageHeight)));
-
-    GlfSimpleLight cameraLight(
-        GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
-    cameraLight.SetAmbient(SCENE_AMBIENT);
-
-    const GlfSimpleLightVector lights({cameraLight});
 
     // Make default material and lighting match usdview's defaults... we expect 
     // GlfSimpleMaterial to go away soon, so not worth refactoring for sharing
@@ -344,10 +333,7 @@ UsdAppUtilsFrameRecorder::Record(
     material.SetSpecular(SPECULAR_DEFAULT);
     material.SetShininess(SHININESS_DEFAULT);
 
-    _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
-
     UsdImagingGLRenderParams renderParams;
-    renderParams.frame = timeCode;
     renderParams.complexity = _complexity;
     renderParams.colorCorrectionMode = _colorCorrectionMode;
     renderParams.clearColor = CLEAR_COLOR;
@@ -357,23 +343,127 @@ UsdAppUtilsFrameRecorder::Record(
 
     const UsdPrim& pseudoRoot = stage->GetPseudoRoot();
 
-    unsigned int sleepTime = 10; // Initial wait time of 10 ms
 
-    while (true) {
-        _imagingEngine.Render(pseudoRoot, renderParams);
+    std::mutex mtx;
+    bool successAll = true;
 
-        if (_imagingEngine.IsConverged()) {
-            break;
+    // Render 'one' frame.
+    const auto renderOneFrame = [&](
+        const UsdPrim& pseudoRoot,
+        const UsdImagingGLRenderParams &renderParams,
+        const UsdTimeCode& timeCode) {
+
+        // XXX: If the camera's aspect ratio is animated, then a range of calls to
+        // this function may generate a sequence of images with different sizes.
+        GfCamera gfCamera;
+        if (usdCamera) {
+            gfCamera = usdCamera.GetCamera(timeCode);
         } else {
-            // Allow render thread to progress before invoking Render again.
-            std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
-            // Increase the sleep time up to a max of 100 ms
-            sleepTime = std::min(100u, sleepTime + 5);
+            gfCamera = _ComputeCameraToFrameStage(stage, timeCode, _purposes);
         }
+        float aspectRatio = gfCamera.GetAspectRatio();
+        if (GfIsClose(aspectRatio, 0.0f, 1e-4)) {
+            aspectRatio = 1.0f;
+        }
+
+        const size_t imageHeight = std::max<size_t>(
+            static_cast<size_t>(static_cast<float>(_imageWidth) / aspectRatio),
+            1u);
+        const GfVec2i renderResolution(_imageWidth, imageHeight);
+
+        const GfFrustum frustum = gfCamera.GetFrustum();
+        const GfVec3d cameraPos = frustum.GetPosition();
+          
+        _imagingEngine.SetRendererAov(HdAovTokens->color);
+
+        _imagingEngine.SetCameraState(
+            frustum.ComputeViewMatrix(),
+            frustum.ComputeProjectionMatrix());
+        _imagingEngine.SetRenderViewport(
+            GfVec4d(
+                0.0,
+                0.0,
+                static_cast<double>(_imageWidth),
+                static_cast<double>(imageHeight)));
+
+        GlfSimpleLight cameraLight(GfVec4f(cameraPos[0], cameraPos[1], cameraPos[2], 1.0f));
+        cameraLight.SetAmbient(SCENE_AMBIENT);
+
+        const GlfSimpleLightVector lights({cameraLight});
+
+        _imagingEngine.SetLightingState(lights, material, SCENE_AMBIENT);
+      
+        unsigned int sleepTime = 10; // Initial wait time of 10 ms
+
+        while (true) {
+            _imagingEngine.Render(pseudoRoot, renderParams);
+
+            if (_imagingEngine.IsConverged()) {
+                break;
+            } else {
+                // Allow render thread to progress before invoking Render again.
+                std::this_thread::sleep_for(std::chrono::milliseconds(sleepTime));
+                // Increase the sleep time up to a max of 100 ms
+                sleepTime = std::min(100u, sleepTime + 5);
+            }
+        };
     };
 
-    TextureBufferWriter writer(&_imagingEngine);
-    return writer.Write(outputImagePath);
+    // Write 'one' frame to disk.
+    const auto writeOneFrame = [&mtx, &successAll](
+        TextureBufferWriter *writer,
+        const std::string& outputImagePath) -> void {
+        bool success = writer->WriteFromTemporaryStorage(outputImagePath);
+        mtx.lock();
+        successAll &= success;
+        mtx.unlock();
+    };
+
+    // For each timeCode - Render + Write loop.
+    std::vector<std::thread> threads;
+    std::vector<TextureBufferWriter*> writers;
+    const std::size_t numTimeCodes = timeCode.size();
+    for (int i = 0; i < numTimeCodes; ++i) {
+
+        const UsdTimeCode& thisTimeCode = timeCode[i];
+        const std::string& thisOutputImagePath = outputImagePath[i];
+
+        // Render frame for given time-code.
+        renderParams.frame = thisTimeCode;
+        renderOneFrame(pseudoRoot, renderParams, thisTimeCode);
+
+        // If the image writing plugins, like EXR, are loaded from a worker
+        // thread then the system will hang.
+        // To prevent this, always write out the first frame on the main thread.
+        if (i == 0) {
+          TextureBufferWriter writer(&_imagingEngine);
+          successAll = writer.WriteFromTemporaryStorage(thisOutputImagePath);
+        } else {
+          // Copy data from GPU to CPU.
+          // Writers are created on heap, we need to keep them until thread
+          // finishes writing to disk.
+          writers.emplace_back(new TextureBufferWriter(&_imagingEngine));
+
+          // Write data to disk (via threads).
+          threads.emplace_back(std::thread(writeOneFrame, writers.back(),
+                               thisOutputImagePath));
+        }
+      
+    }
+
+    // Wait for all threads to join main thread.
+    for (std::size_t i = 0; i < threads.size(); ++i) {
+        threads[i].join();
+    }
+
+    // Clean up (writers on heap) memory.
+    for (std::size_t i = 0; i < writers.size(); ++i) {
+        delete writers[i];
+        writers[i] = nullptr;
+    }
+    writers.clear();
+
+    return successAll;
 }
 
 
