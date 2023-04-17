@@ -1586,10 +1586,10 @@ MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.4.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
-
-        cmakeOptions += buildArgs;
-
+        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
+                        '-DMATERIALX_BUILD_TESTS=OFF'
+        ]
+        cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
