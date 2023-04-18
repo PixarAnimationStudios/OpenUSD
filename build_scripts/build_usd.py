@@ -1588,7 +1588,11 @@ def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
         cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
 
-        cmakeOptions += buildArgs;
+        # Disable MaterialX tests on macOS until it is upgraded to Catch2 due
+        # to Xcode 14.3 incompatibility with the RandomNumberGenerator
+        if MacOS():
+            cmakeOptions += ['-DMATERIALX_BUILD_TESTS=OFF']
+        cmakeOptions += buildArgs
 
         RunCMake(context, force, cmakeOptions)
 
