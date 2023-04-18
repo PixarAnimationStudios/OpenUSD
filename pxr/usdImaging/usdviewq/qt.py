@@ -38,7 +38,17 @@ def GetPySideModule():
             return module.__name__.split('.')[0]
 
     return None
-        
+
+def QObjectInit(self):
+    # In PySide 6.5.0 there was a breaking API change to the QObject __init__
+    if not hasattr(QObjectInit, 'QtVersion'):
+        QtVersion = [int(s) for s in QtCore.qVersion().split('.') if s.isdigit()]
+
+    if len(QtVersion) >= 2 and QtVersion[0] >= 6 and QtVersion[1] >= 5:
+        QtCore.QObject.__init__(self, parent=None, name=None)
+    else:
+        QtCore.QObject.__init__(self)
+
 PySideModule = GetPySideModule()
 if PySideModule == 'PySide':
     from PySide import QtCore, QtGui, QtOpenGL

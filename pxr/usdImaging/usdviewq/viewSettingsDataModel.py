@@ -22,7 +22,7 @@
 # language governing permissions and limitations under the Apache License.
 #
 
-from .qt import QtCore
+from .qt import QtCore, QObjectInit
 from pxr import UsdGeom, Sdf
 from pxr.UsdAppUtils.complexityArgs import RefinementComplexities
 
@@ -133,7 +133,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     signalStyleSettingsChanged = QtCore.Signal()
 
     def __init__(self, rootDataModel, parent):
-        QtCore.QObject.__init__(self)
+        QObjectInit(self)
         StateSource.__init__(self, parent, "model")
 
         self._rootDataModel = rootDataModel
