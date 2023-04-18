@@ -17,16 +17,62 @@
 #include "pxr/base/tf/envSetting.h"
 
 #if defined(ARCH_OS_WINDOWS)
+#include "pxr/base/tf/envSetting.h"
 #include <Windows.h>
+#include <algorithm>
 #include <io.h>
+#include <thread>
 #endif
 
 #include <string>
 #include <cerrno>
 
+#if defined(ARCH_OS_WINDOWS)
+namespace {
+    PXR_NAMESPACE_USING_DIRECTIVE
+
+    bool TryMove(std::wstring const &wsrc, std::wstring const &wdst) {
+        return MoveFileExW(wsrc.c_str(), wdst.c_str(),
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_COPY_ALLOWED) != FALSE;
+    }
+
+    bool HaveMovePermissions(std::string const &src, std::string const &dst) {
+        // Docs for MovFileExW say:
+        //    To delete or rename a file, you must have either delete permission
+        //    on the file or delete child permission in the parent directory.
+        // https://learn.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-movefileexa
+
+        if (ArchWindowsFileAccess(src.c_str(), DELETE) != 0) {
+            // Don't have delete perms on file, check for FILE_DELETE_CHILD on parent dir
+            std::string srcParent = TfGetPathName(src);
+            if (ArchWindowsFileAccess(srcParent.c_str(), FILE_DELETE_CHILD) != 0) {
+                return false;
+            }
+        }
+        // presumably you need create child permission in the parent directory of dst
+        std::string dstParent = TfGetPathName(dst);
+        return ArchWindowsFileAccess(dstParent.c_str(), FILE_ADD_FILE) == 0;
+    }
+}
+#endif
+
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(ARCH_OS_WINDOWS)
+
+    // On Windows, it's not uncommon for some external process to grab a handle to
+    // newly created files (ie, Anti-Virus, Windows File Indexing), which can make
+    // that file inaccessible, and make the move fail.  The duration of the lock
+    // is usually brief, though, so add a short-ish retry period if it's locked.
+
+    // By default, we wait ~.3 seconds before giving up
+    TF_DEFINE_ENV_SETTING(TF_FILE_LOCK_NUM_RETRIES, 15,
+        "Number of times to retry file renaming if a lock held");
+
+    TF_DEFINE_ENV_SETTING(TF_FILE_LOCK_RETRY_WAIT_MS, 20,
+        "Time in microseconds to wait between retries when lock held on renamed file");
+
     // Older networked filesystems have reported incorrect file permissions
     // on Windows so the write permissions check has been disabled as a default
     static const bool requireWritePermissionDefault = false;
@@ -53,16 +99,44 @@ Tf_AtomicRenameFileOver(std::string const &srcFileName,
 #if defined(ARCH_OS_WINDOWS)
     const std::wstring wsrc{ ArchWindowsUtf8ToUtf16(srcFileName) };
     const std::wstring wdst{ ArchWindowsUtf8ToUtf16(dstFileName) };
-    bool moved = MoveFileExW(wsrc.c_str(),
-                            wdst.c_str(),
-                            MOVEFILE_REPLACE_EXISTING |
-                            MOVEFILE_COPY_ALLOWED) != FALSE;
+
+    // On Windows, it's not uncommon for some external process to grab a handle to
+    // newly created files (ie, Anti-Virus, Windows File Indexing), which can make
+    // that file inaccessible, and make the move fail.  The duration of the lock
+    // is usually brief, though, so add a short-ish retry period if it's locked.
+
+    static const int numRetries = std::max(TfGetEnvSetting(TF_FILE_LOCK_NUM_RETRIES), 0);
+    static const int waitMS = std::max(TfGetEnvSetting(TF_FILE_LOCK_RETRY_WAIT_MS), 0);
+
+    bool moved = false;
+    DWORD lastError = 0;
+
+    for (int i = 0; i <= numRetries; i++) {
+        moved = TryMove(wsrc, wdst);
+        if (moved) {
+            break;
+        }
+        lastError = ::GetLastError();
+        // Only check file perms the first time as an optimization - it's a
+        // filesystem operation, and possibly slow
+        if (i == 0 && !HaveMovePermissions(srcFileName, dstFileName)) {
+            break;
+        }
+        if (lastError != ERROR_SHARING_VIOLATION
+            && lastError != ERROR_LOCK_VIOLATION
+            && lastError != ERROR_ACCESS_DENIED
+        ) {
+            break;
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(waitMS));
+    }
+
     if (!moved) {
         *error = TfStringPrintf(
             "Failed to rename temporary file '%s' to '%s': %s",
             srcFileName.c_str(),
             dstFileName.c_str(),
-            ArchStrSysError(::GetLastError()).c_str());
+            ArchStrSysError(lastError).c_str());
         result = false;
     }
 #else
