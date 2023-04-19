@@ -60,7 +60,7 @@ _Repr(SdfTimeCode const &self)
     return repr.str();
 }
 
-static bool _Nonzero(SdfTimeCode const &self)
+static bool _HasNonZeroTimeCode(SdfTimeCode const &self)
 {
     return self != SdfTimeCode(0.0);
 }
@@ -83,7 +83,7 @@ void wrapTimeCode()
 
         .def("__repr__", _Repr)
         .def("__str__", _Str)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
+        .def("__bool__", _HasNonZeroTimeCode)
         .def("__hash__", &This::GetHash)
         .def("__float__", _Float)
 
@@ -109,12 +109,6 @@ void wrapTimeCode()
         .def( self - self )
         .def( double() - self )
         ;
-
-#if PY_MAJOR_VERSION == 2
-    // Needed to support "from __future__ import division" in python 2.
-    selfCls.attr("__truediv__") = selfCls.attr("__div__");
-    selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
-#endif
 
     implicitly_convertible<double, This>();
 

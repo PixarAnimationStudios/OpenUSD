@@ -127,8 +127,8 @@ discussed above, there are many disadvantages to this that made us decide
 against that approach; in further detail:
 
 - The separate attribute/metadata value would need to be resolved separately
-  from the  type name in order to get the full identifier of the schema which
-  has negative  performance implications over just being able to resolve the
+  from the type name in order to get the full identifier of the schema which
+  has negative performance implications over just being able to resolve the
   type name. 
 - The separate version would be subject to unintended consequences from
   composition in that overs could change the version without knowing what
@@ -194,6 +194,14 @@ could require new versions of dozens if not hundreds of other schemas. Thus,
 **tremendous care must be taken when deciding whether a base schema should be
 versioned**. 
 
+We also will not allow a Typed schema to inherit from another version of 
+the schema from the same family. For example, if we were to add a new version
+of the Sphere schema as "Sphere_1", Sphere_1 would *not* be allowed to inherit
+the Sphere schema itself. This is to prevent the situation of a prim with 
+TypeName "Sphere_1" being both a Sphere and Sphere_1 and therefore version 0
+and version 1 at the same time. This inheritance restriction will be enforced
+by usdGenSchema.
+
 Explicit Built-in API Schemas (not auto-apply)
 ==============================================
 
@@ -215,8 +223,9 @@ API Schema Version Conflicts
 ============================
 
 Any given prim can possess exactly one version of a Typed schema, since a
-composed USD prim has a single TypeName.  However, a prim can apply multiple
-API schemas, and therefore can end up with multiple versions *of the same API
+composed USD prim has a single TypeName (with the schema inheritance 
+restriction we've already mentioned).  However, a prim can have many API schemas
+applied, and therefore can end up with more than one version *of the same API
 schema family* applied to it in scene description. Precisely because a prim
 cannot be made to be two versions of a Typed schema at the same time, a
 composed prim definition will not be allowed to contain multiple versions of
@@ -235,6 +244,18 @@ one version of an applied API schema in a prim definition, the first version
 of the API schema encountered (i.e. the strongest API schema) will win and
 all other versions of that same API schema family will be ignored by the
 UsdPrimDefinition. 
+
+In the case where the inclusion of an API schema would cause a version 
+conflict and the API is included because it is a built-in of another API schema,
+the whole of the API schema that includes it is considered a version conflict 
+and is rejected from the prim definition. For example, the existing LightAPI in
+UsdLux includes the built-in API schemas CollectionAPI:lightLink and 
+CollectionAPI:shadowLink. Let's say that we've also added a new version of 
+CollectionAPI, namely CollectionAPI_1. If a prim, had version 1 of CollectionAPI,
+"CollectionAPI_1:lightLink" applied, and then LightAPI applied (in that
+strength order), **LightAPI and both of its included schemas, CollectionAPI:lightLink
+and CollectionAPI:shadowLink would be rejected** because its included 
+CollectionAPI:lightLink would cause a version conflict.
 
 Although not addressed in detail here, we do note that allowing multiple
 versions of an API schema to be applied to the same prim might facilitate
@@ -301,22 +322,23 @@ each schema type:
        UsdSchemaKind kind;
    };
 
-We'll provide API for getting the :cpp:`SchemaInfo` from type, identifier, or
-family and version:
+We'll provide API for getting the :cpp:`SchemaInfo` from type, identifier, 
+family and version, or templated C++ schema class:
 
-- :cpp:`SchemaInfo GetSchemaInfo(TfType schemaType)`
-- :cpp:`SchemaInfo GetSchemaInfo(TfToken schemaIdentifier)`
-- :cpp:`SchemaInfo GetSchemaInfo(TfToken schemaFamily, UsdSchemaVersion version)`
+- :cpp:`const SchemaInfo *FindSchemaInfo(TfType schemaType)`
+- :cpp:`const SchemaInfo *FindSchemaInfo(TfToken schemaIdentifier)`
+- :cpp:`const SchemaInfo *FindSchemaInfo(TfToken schemaFamily, UsdSchemaVersion version)`
+- :cpp:`template <class SchemaType> const SchemaInfo *FindSchemaInfo()`
 
 We'll also provide API for getting the schema info for all or a subset of all 
 versions of a schemas in a schema family:
 
-- :cpp:`bool GetSchemasInFamily(TfToken schemaFamily, vector<SchemaInfo> *outSchemas)`
-- :cpp:`bool GetSchemasInFamily(TfToken schemaFamily, UsdSchemaVersion version, MatchVersions matchVersions, vector<SchemaInfo> *outSchemas)`
+- :cpp:`const std::vector<const SchemaInfo *> &FindSchemaInfosInFamily(TfToken schemaFamily)`
+- :cpp:`std::vector<const SchemaInfo *> FindSchemaInfosInFamily(TfToken schemaFamily, UsdSchemaVersion version, VersionPolicy versionPolicy)`
 
-The latter of these two functions takes the additional - :cpp:`MatchVersions` 
+The latter of these two functions takes the additional - :cpp:`VersionPolicy` 
 enum parameter which, along with the provided version, specifies which subset of
-the schema family's versioned schemas should be returned. The MatchVersions enum
+the schema family's versioned schemas should be returned. The VersionPolicy enum
 options will be:
 
 - :cpp:`All` - Return all schemas in the schema family regardless of version.
@@ -348,9 +370,9 @@ find a match for the given schema type. In other words, they will not
 automatically be aware of how schema types may be versions within a schema
 family. 
 
-However, additional functions related functions, namely :cpp:`IsAnyVersion`
-and :cpp:`HasAnyAPIVersion`, will be added that are schema family and version
-aware. These two functions will take the same :cpp:`MatchVersions` enum 
+However, additional related functions, namely :cpp:`IsInFamily`
+and :cpp:`HasAPIInFamily`, will be added that are schema family and version
+aware. These two functions will take the same :cpp:`VersionPolicy` enum 
 parameter that will be added for the schema registry in order to specify
 which schema types to check for based on the schema family and version of the
 schema type provided.
@@ -358,43 +380,43 @@ schema type provided.
 For example, if the “Sphere” schema has 3 versions, “Sphere” “Sphere_1” and
 “Sphere_2”, with the TfTypes :cpp:`UsdGeomSphere`, :cpp:`UsdGeomSphere_1`,
 and :cpp:`UsdGeomSphere_2` respectively then we can have the following
-:cpp:`IsA`/:cpp:`IsAnyVersion` queries: 
+:cpp:`IsA`/:cpp:`IsInFamily` queries: 
 
 - :cpp:`IsA<UsdGeomSphere_1>()` returns true for “Sphere_1” only
-- :cpp:`IsAnyVersion<UsdGeomSphere_1>(All)` returns true for “Sphere”,
+- :cpp:`IsInFamily<UsdGeomSphere_1>(All)` returns true for “Sphere”,
   “Sphere_1”, and “Sphere_2” 
-- :cpp:`IsAnyVersion<UsdGeomSphere_1>(GreaterThanOrEqual)` returns true for
+- :cpp:`IsInFamily<UsdGeomSphere_1>(GreaterThanOrEqual)` returns true for
   “Sphere_1” and “Sphere_2” 
-- :cpp:`IsAnyVersion<UsdGeomSphere_1>(LessThan)` returns true for “Sphere”
+- :cpp:`IsInFamily<UsdGeomSphere_1>(LessThan)` returns true for “Sphere”
   only
 
 A similar example can be created for an API schema and 
-:cpp:`HasAPI`/:cpp:`HasAnyAPIVersion`, e.g if UsdGeom’s “VisibilityAPI” has
+:cpp:`HasAPI`/:cpp:`HasAPIInFamily`, e.g if UsdGeom’s “VisibilityAPI” has
 “VisilbiltyAPI_1” and “VisibilityAPI_2” we’d similarly be able to have the
 following queries: 
 
 - :cpp:`HasAPI<UsdGeomVisibilityAPI_1>()` returns true for “VisibilityAPI_1”
   only
-- :cpp:`HasAnyAPIVersion<UsdGeomVisibilityAPI_1>(All)` returns true for
+- :cpp:`HasAPIInFamily<UsdGeomVisibilityAPI_1>(All)` returns true for
   “VisibilityAPI”, “VisibilityAPI_1”, and “VisibilityAPI_2” 
-- :cpp:`HasAnyAPIVersion<UsdGeomVisibilityAPI_1>(GreaterThanOrEqual)` 
+- :cpp:`HasAPIInFamily<UsdGeomVisibilityAPI_1>(GreaterThanOrEqual)` 
   returns true for “VisibilityAPI_1” and “VisibilityAPI_2” 
-- :cpp:`HasAnyAPIVersion<UsdGeomVisibilityAPI_1>(LessThan)` returns true for
+- :cpp:`HasAPIInFamily<UsdGeomVisibilityAPI_1>(LessThan)` returns true for
   “VisibilityAPI” only
 
 Additionally, since API schemas may be multiple apply, which therefore must
 be applied with an instance name, we’ll have the following semantics for
-:cpp:`HasAPI`/:cpp:`HasAnyAPIVersion` with multiple apply schema types. If
+:cpp:`HasAPI`/:cpp:`HasAPIInFamily` with multiple apply schema types. If
 for example “CollectionAPI” has versioned schemas “CollectionAPI_1” and
 “CollectionAPI_2”: 
 
 - :cpp:`HasAPI<UsdCollectionAPI_1>()` returns true for any instance of
   “CollectionAPI_1” but not instances of “CollectionAPI” or “CollectionAPI_2” 
-- :cpp:`HasAnyAPIVersion<UsdCollectionAPI_1>(“foo”)` returns true for only the
+- :cpp:`HasAPI<UsdCollectionAPI_1>(“foo”)` returns true for only the
   specific API schema instance “Collection_1:foo” 
-- :cpp:`HasAnyAPIVersion<UsdCollectionAPI_1>(All)` returns true for any instance
+- :cpp:`HasAPIInFamily<UsdCollectionAPI_1>(All)` returns true for any instance
   of any of “CollectionAPI”, “CollectionAPI_1”, and “CollectionAPI_2” 
-- :cpp:`HasAnyAPIVersion<UsdCollectionAPI_1>(“foo”, All)` returns true for only
+- :cpp:`HasAPIInFamily<UsdCollectionAPI_1>(“foo”, All)` returns true for only
   “foo” instances of any version of “CollectionAPI”, so “CollectionAPI:foo”,
   “CollectionAPI_1:foo”, and “CollectionAPI_2:foo” only 
 
@@ -412,41 +434,45 @@ schema identifier token. So we propose adding additional overloads for
 - :cpp:`HasAPI(TfToken schemaIdentifer, TfToken instanceName)`
 - :cpp:`HasAPI(TfToken schemaFamily, UsdSchemaVersion version, TfToken instanceName)`
 
-And as logically follows, these similar overloads for :cpp:`IsAnyVersion` and 
-:cpp:`HasAnyAPIVersion`
+And as logically follows, these similar overloads for :cpp:`IsInFamily` and 
+:cpp:`HasAPIInFamily`
 
-- :cpp:`IsAnyVersion(TfToken schemaIdentifer, MatchVersions matchVersions)`
-- :cpp:`IsAnyVersion(TfToken schemaFamily, UsdSchemaVersion version, MatchVersions matchVersions)`
-- :cpp:`HasAnyAPIVersion(TfToken schemaIdentifer, MatchVersions matchVersions)` 
-- :cpp:`HasAnyAPIVersion(TfToken schemaFamily, UsdSchemaVersion version, MatchVersions matchVersions)`
-- :cpp:`HasAnyAPIVersion(TfToken schemaIdentifer, TfToken instanceName, MatchVersions matchVersions)`
-- :cpp:`HasAnyAPIVersion(TfToken schemaFamily, UsdSchemaVersion version, TfToken  instanceName, MatchVersions matchVersions)`
+- :cpp:`IsInFamily(TfToken schemaIdentifer, VersionPolicy versionPolicy)`
+- :cpp:`IsInFamily(TfToken schemaFamily)`
+- :cpp:`IsInFamily(TfToken schemaFamily, UsdSchemaVersion version, VersionPolicy versionPolicy)`
+- :cpp:`HasAPIInFamily(TfToken schemaIdentifer, VersionPolicy versionPolicy)` 
+- :cpp:`HasAPIInFamily(TfToken schemaFamily)`
+- :cpp:`HasAPIInFamily(TfToken schemaFamily, UsdSchemaVersion version, VersionPolicy versionPolicy)`
+- :cpp:`HasAPIInFamily(TfToken schemaIdentifer, VersionPolicy versionPolicy, TfToken instanceName)`
+- :cpp:`HasAPIInFamily(TfToken schemaFamily, TfToken  instanceName)`
+- :cpp:`HasAPIInFamily(TfToken schemaFamily, UsdSchemaVersion version, VersionPolicy versionPolicy, TfToken  instanceName)`
 
 Example queries with schema identifier:
 
 - :cpp:`IsA(“Sphere”)` returns true for “Sphere” only
 - :cpp:`IsA(“Sphere_1”)` returns true for “Sphere_1” only
-- :cpp:`IsAnyVersion(“Sphere_1”, All)` returns true for “Sphere”, “Sphere_1”, 
+- :cpp:`IsInFamily(“Sphere_1”, All)` returns true for “Sphere”, “Sphere_1”, 
   and “Sphere_2”
 
 Example queries with family and version:
 
 - :cpp:`IsA(“Sphere”, 0)` returns true for “Sphere” only
 - :cpp:`IsA(“Sphere”, 1)` returns true for “Sphere_1” only
-- :cpp:`IsAnyVersion(“Sphere”, 1, GreaterThanOrEqual)` returns true for 
+- :cpp:`IsInFamily(“Sphere”, 1, GreaterThanOrEqual)` returns true for 
   “Sphere_1” and “Sphere_2” 
 
 We expect that there will be use cases where it is useful to check if a prim
 is a schema or has an API schema of a certain family and get the particular
-version of the compatible schema directly. Instead of overloading IsAnyVersion
-and HasAnyAPIVersion further, we propose adding the following new functions to
+version of the compatible schema directly. Instead of overloading IsInFamily
+and HasAPIInFamily further, we propose adding the following new functions to
 UsdPrim to get the version if a compatible schema is present on a prim: 
 
-- :cpp:`bool GetTypeVersion(TfToken schemaFamily, UsdSchemaVersion *version)`
-- :cpp:`bool GetAppliedAPIVersion(TfToken schemaFamily, UsdSchemaVersion *version)`
+- :cpp:`bool GetVersionIfIsInFamily(TfToken schemaFamily, UsdSchemaVersion *version)`
+- :cpp:`bool GetVersionIfHasAPIInFamily(TfToken schemaFamily, UsdSchemaVersion *version)`
+- :cpp:`bool GetVersionIfHasAPIInFamily(TfToken schemaFamily, TfToken instanceName, UsdSchemaVersion *version)`
 
-These two functions are the equivalent of calling IsAnyVersion or 
-HasAnyAPIVersion with a schema family name and matchVersions = All with the
+These functions are the equivalent of calling IsInFamily or 
+HasAPIInFamily with a schema family name and versionPolicy = All with the
 addition of parsing and outputting the version from the prim's compatible schema
 type if the function would return true. 
 
@@ -455,22 +481,32 @@ the ordered set of API schemas applied to a prim. Like HasAPI, these methods
 also either take a TfType parameter representing the schema type, or are
 templated on the C++ schema class type. So, like HasAPI, these will have
 additional overloads introduced that take a schema identifier and take a
-schema family and version. For example ApplyAPI will additionally have: 
+schema family and version:
 
 - :cpp:`ApplyAPI(TfToken schemaIdentifer)`
 - :cpp:`ApplyAPI(TfToken schemaFamily, UsdVersion version)`
 - :cpp:`ApplyAPI(TfToken schemaIdentifer, TfToken &instanceName)`
 - :cpp:`ApplyAPI(TfToken schemaFamily, UsdSchemaVersion version, TfToken instanceName)`
 
+- :cpp:`CanApplyAPI(TfToken schemaIdentifer, std::string *whyNot = nullptr)`
+- :cpp:`CanApplyAPI(TfToken schemaFamily, UsdVersion version, std::string *whyNot = nullptr)`
+- :cpp:`CanApplyAPI(TfToken schemaIdentifer, TfToken &instanceName, std::string *whyNot = nullptr)`
+- :cpp:`CanApplyAPI(TfToken schemaFamily, UsdSchemaVersion version, TfToken instanceName, std::string *whyNot = nullptr)`
 
-Lastly, while there are additional version-aware updates that could be made
-to CanApplyAPI and RemoveAPI that seem sensible, we do not plan, at this
-time, to implement them. A possible update to CanApplyAPI would be to check
-for an existing applied schema of the same family but different version in
-the prim’s current applied API schemas, and return false if one is found (see
-`API Schema Version Conflicts <#api-schema-version-conflicts>`_). A possible
-update to RemoveAPI would be to provide an overload that allows the same enum
-value as HasAnyAPIVersion in order to remove any or all versions in a schema
+- :cpp:`RemoveAPI(TfToken schemaIdentifer)`
+- :cpp:`RemoveAPI(TfToken schemaFamily, UsdVersion version)`
+- :cpp:`RemoveAPI(TfToken schemaIdentifer, TfToken &instanceName)`
+- :cpp:`RemoveAPI(TfToken schemaFamily, UsdSchemaVersion version, TfToken instanceName)`
+
+
+In addition to the new overloads, there are additional version-aware updates
+that could be made to CanApplyAPI and RemoveAPI that seem sensible, but we do 
+not plan, at this time, to implement them. A possible update to CanApplyAPI
+would be to check for an existing applied schema of the same family but
+different version in the prim’s current applied API schemas, and return false
+if one is found (see `API Schema Version Conflicts <#api-schema-version-conflicts>`_). 
+A possible update to RemoveAPI would be to provide an overload that allows the same
+enum value as HasAPIInFamily in order to remove any or all versions in a schema
 family or for all versions greater than or less than a version within the schema
 family. While these changes could be useful, we are deferring consideration
 of these particular changes to maintain the current simplicity of these
@@ -481,13 +517,20 @@ list in their current implementation.
 Considerations for Auto-apply API Schemas
 *****************************************
 
-The behaviors necessary for supporting versioning in auto-apply API schemas
-are best explained through an example. Right now, we have an API schema
+In this section, we call out the *possible* full support we could provide
+for auto-apply API schema versioning. However, we only plan to implement the
+necessities right now, outlined in *Case 2* below. I.e., the support we will
+provide for auto-apply API schemas is that we will ensure that if more than one
+version of an auto-applied API schema are applied to the same schema, the 
+**latest version** of the auto-applied API schema will always be the version applied.
+
+The full set of behaviors we could have for supporting versioning in auto-apply
+API schemas are best explained through an example. Right now, we have an API schema
 called PxrMeshLightAPI, which exists in the USD RenderMan plugin, to extend
 RenderMan properties to MeshLightAPI and VolumeLightAPI in usdLux. Thus
 `PxrMeshLightAPI is set to auto-apply to MeshLightAPI and VolumeLightAPI
 <https://github.com/PixarAnimationStudios/USD/blob/v22.05/third_party/renderman-24/plugin/usdRiPxr/schema.usda#L1649-L1651>`_
-and becomes a built-in API of those schemas at runtime. Here, we  run this
+and becomes a built-in API of those schemas at runtime. Here, we run this
 schema, PxrMeshLIghtAPI, through a hypothetical versioning scenario to
 explain the behaviors we need to support. 
 

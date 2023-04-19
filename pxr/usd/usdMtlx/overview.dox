@@ -2,7 +2,6 @@
 \page usdMtlx_page_front UsdMtlx : MaterialX File Format and Shader Plugins
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdMtlx : MaterialX File Format and Shader Plugins
-\publicLib
 \endif
 
 \section usdMtlx_overview Overview

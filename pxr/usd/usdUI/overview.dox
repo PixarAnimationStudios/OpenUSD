@@ -2,7 +2,6 @@
 \page usdUI_page_front UsdUI: USD UI Schemas
 \if ( PIXAR_MFB_BUILD )
 \mainpage  UsdUI: USD UI Schemas
-\publicLib
 \endif
 
 \section usdUI_overview Overview

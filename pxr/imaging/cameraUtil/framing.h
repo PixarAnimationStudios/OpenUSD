@@ -110,6 +110,27 @@ public:
     CAMERAUTIL_API
     bool operator!=(const CameraUtilFraming& other) const;
 
+    /// The filmback window is the rectangle in pixel space corresponding
+    /// to the filmback plane. It is obtained by conforming the display
+    /// window using the camera's aspect ratio.
+    ///
+    /// Note that the window policy describes how the camera frustum is
+    /// modified to match the display window's aspect ratio. The filmback
+    /// window is transforming differently: if, e.g., the camera frustum's
+    /// height had to be increased to match the displayWindow's aspect ratio
+    /// (since it is less than the camera's aspect ratio and the policy is
+    /// CameraUtilFit), then the filmback window height will be less than
+    /// that of the displayWindow. In other words, imagine an application
+    /// window too tall to display the camera. We will increase the camera
+    /// frustum's height to fill the entire window. To show only what the
+    /// camera would see, we need to add slates on the bottom and top.
+    /// The filmback window is the rect cut out by the slates.
+    ///
+    CAMERAUTIL_API
+    GfRange2f ComputeFilmbackWindow(
+        float cameraAspectRatio,
+        CameraUtilConformWindowPolicy windowPolicy) const;
+
     /// Given the projectionMatrix computed from a camera, applies
     /// the framing. To obtain a correct result, a rasterizer needs
     /// to use the resulting projection matrix and set the viewport
@@ -120,8 +141,7 @@ public:
         const GfMatrix4d &projectionMatrix,
         CameraUtilConformWindowPolicy windowPolicy) const;
 
-    /// The display window. It will be conformed to the camera's
-    /// aspect ratio and then mapped to the filmback plane.
+    /// The display window.
     GfRange2f displayWindow;
     
     /// The data window. That is the rect of pixels that the renderer

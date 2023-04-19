@@ -38,4 +38,6 @@ TF_WRAP_MODULE
     TF_WRAP(UsdRiTokens);
 
     TF_WRAP(UsdRiRmanUtilities);
+
+    TF_WRAP(UsdRiRenderPassAPI);
 }

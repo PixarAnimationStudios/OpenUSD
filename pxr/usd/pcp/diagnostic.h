@@ -33,8 +33,7 @@
 #include "pxr/usd/pcp/errors.h"
 
 #include "pxr/base/arch/hints.h"
-
-#include <boost/preprocessor/cat.hpp>
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <string>
 
@@ -90,7 +89,7 @@ Pcp_ToIndex(T const &obj) { return obj->GetOriginatingIndex(); }
 
 /// Opens a scope indicating a particular phase during prim indexing.
 #define PCP_INDEXING_PHASE(indexer, node, ...)                                 \
-    auto BOOST_PP_CAT(_pcpIndexingPhase, __LINE__) =                           \
+    auto TF_PP_CAT(_pcpIndexingPhase, __LINE__) =                              \
         ARCH_UNLIKELY(TfDebug::IsEnabled(PCP_PRIM_INDEX)) ?                    \
         Pcp_IndexingPhaseScope(Pcp_ToIndex(indexer),                           \
                                node, TfStringPrintf(__VA_ARGS__)) :            \

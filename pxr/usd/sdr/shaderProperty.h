@@ -69,6 +69,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((Options, "options"))                           \
     ((IsDynamicArray, "isDynamicArray"))             \
     ((Connectable, "connectable"))                   \
+    ((Tag, "tag"))                                   \
     ((ValidConnectionTypes, "validConnectionTypes")) \
     ((VstructMemberOf, "vstructMemberOf"))           \
     ((VstructMemberName, "vstructMemberName"))       \

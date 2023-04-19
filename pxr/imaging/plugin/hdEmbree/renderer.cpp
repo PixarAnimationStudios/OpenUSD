@@ -34,6 +34,8 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/base/work/loops.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <chrono>
 #include <thread>
 

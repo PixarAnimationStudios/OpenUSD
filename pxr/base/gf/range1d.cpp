@@ -50,6 +50,12 @@ operator<<(std::ostream &out, GfRange1d const &r)
                << ']';
 }
 
+GfRange1d::GfRange1d(class GfRange1f const &other)
+    : _min( (other.GetMin()))
+    , _max( (other.GetMax()))
+{
+}
+
 double
 GfRange1d::GetDistanceSquared(double p) const
 {

@@ -237,9 +237,16 @@ private:
     static inline Handle _GetHandle(char const *ptr) {
         if (ptr) {
             for (unsigned region = 1; region != NumRegions+1; ++region) {
+                // Suppress undefined-var-template warnings from clang; _regionStarts
+                // is expected to be instantiated in another translation unit via 
+                // the SDF_INSTANTIATE_POOL macro.
+                ARCH_PRAGMA_PUSH
+                ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
+                uintptr_t start = (uintptr_t)_regionStarts[region];
+                ARCH_PRAGMA_POP
+
                 // We rely on modular arithmetic so that if ptr is less than
                 // start, the diff will be larger than ElemsPerRegion*ElemSize.
-                uintptr_t start = (uintptr_t)_regionStarts[region];
                 uintptr_t diff = (uintptr_t)ptr - start;
                 if (diff < (uintptr_t)(ElemsPerRegion*ElemSize)) {
                     return Handle(

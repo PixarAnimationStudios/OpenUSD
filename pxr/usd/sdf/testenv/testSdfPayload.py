@@ -83,7 +83,22 @@ class TestSdfPayload(unittest.TestCase):
         with self.assertRaises(Tf.ErrorException):
             p = Sdf.AssetPath('\x01\x02\x03')
             p = Sdf.AssetPath('foobar', '\x01\x02\x03')
-            
+
+    def test_Hash(self):
+        self.assertEqual(
+            hash(Sdf.Payload()),
+            hash(Sdf.Payload("", Sdf.Path(), Sdf.LayerOffset()))
+        )
+        payload = Sdf.Payload(
+            "/path/to/asset",
+            Sdf.Path("/path/to/prim"),
+            Sdf.LayerOffset(offset = 10.0, scale = 1.5)
+        )
+        self.assertEqual(
+            hash(payload),
+            hash(Sdf.Payload(payload))
+        )
+
 
 
 if __name__ == "__main__":

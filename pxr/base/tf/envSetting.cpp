@@ -133,7 +133,9 @@ public:
             // lock.  It's entirely possible that another thread may have
             // initialized our TfEnvSetting while we were waiting.
             if (cachedValue->load()) {
-                return _printAlerts;
+                // Only the caller that successfully set the value
+                // should print the alert.
+                return false;
             }
 
             TfHashMap<string, VariantType, TfHash>::iterator it;
@@ -230,17 +232,6 @@ boost::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const& name)
 {
     return Tf_EnvSettingRegistry::GetInstance().LookupByName(name);
-}
-
-void TF_API Tf_InitEnvSettings()
-{
-    // Cause the registry to be created.  Crucially, this subscribes to
-    // Tf_EnvSettingRegistry, ensuring that all env settings are defined
-    // before we return.  If we don't do this TfGetEnvSetting() will call
-    // Tf_InitializeEnvSetting() which will do the subscribe which will
-    // call TfGetEnvSetting() again which will do Tf_InitializeEnvSetting()
-    // and both Tf_InitializeEnvSetting() will try to define the setting.
-    Tf_EnvSettingRegistry::GetInstance();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

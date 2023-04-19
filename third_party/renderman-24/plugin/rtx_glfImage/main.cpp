@@ -71,7 +71,7 @@ private:
 };
 
 RtxHioImagePlugin::RtxHioImagePlugin(RixContext *rixCtx, const char *pluginName) :
-    m_msgHandler((RixMessages *)rixCtx->GetRixInterface(k_RixMessages))
+    m_msgHandler(rixCtx ? (RixMessages *)rixCtx->GetRixInterface(k_RixMessages) : nullptr)
 {
 }
 
@@ -90,22 +90,26 @@ _ConvertWrapMode(HioAddressMode hioWrapMode, RixMessages *msgs,
         *rmanWrapMode = RtxPlugin::TextureCtx::k_Periodic;
         return true;
     case HioAddressModeMirrorRepeat:
-        msgs->ErrorAlways(
-            "RtxHioImagePlugin: "
-            "Texture %s has unsupported HioAddressModeMirrorRepeat; using "
-            "k_Periodic instead.",
-            filename.c_str());
+        if(msgs) {
+            msgs->ErrorAlways(
+                "RtxHioImagePlugin: "
+                "Texture %s has unsupported HioAddressModeMirrorRepeat; using "
+                "k_Periodic instead.",
+                filename.c_str());
+        }
         *rmanWrapMode = RtxPlugin::TextureCtx::k_Periodic;
         return true;
     case HioAddressModeClampToEdge:
         *rmanWrapMode = RtxPlugin::TextureCtx::k_Clamp;
         return true;
     case HioAddressModeClampToBorderColor:
-        msgs->ErrorAlways(
-            "RtxHioImagePlugin: "
-            "Texture %s has unsupported HioAddressModeClampToBorderColor; using "
-            "k_Black instead.",
-            filename.c_str());
+        if(msgs) {
+            msgs->ErrorAlways(
+                "RtxHioImagePlugin: "
+                "Texture %s has unsupported HioAddressModeClampToBorderColor; using "
+                "k_Black instead.",
+                filename.c_str());
+        }
         *rmanWrapMode = RtxPlugin::TextureCtx::k_Black;
         return true;
     default:
@@ -209,9 +213,11 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
     HioImageSharedPtr image = HioImage::OpenForReading(filename, 0, 0, 
         sourceColorSpace);
     if (!image) {
-        m_msgHandler->ErrorAlways(
-            "RtxHioImagePlugin %p: "
-            "failed to open '%s'\n", this, filename.c_str());
+        if(m_msgHandler) {
+            m_msgHandler->ErrorAlways(
+                "RtxHioImagePlugin %p: "
+                "failed to open '%s'\n", this, filename.c_str());
+        }
         return 1;
     }
 
@@ -243,9 +249,11 @@ RtxHioImagePlugin::Open(TextureCtx& tCtx)
         tCtx.dataType = TextureCtx::k_Byte;
         break;
     default:
-        m_msgHandler->ErrorAlways(
-            "RtxHioImagePlugin %p: "
-            "unsupported data type for %s\n", this, filename.c_str());
+        if(m_msgHandler) {
+            m_msgHandler->ErrorAlways(
+                "RtxHioImagePlugin %p: "
+                "unsupported data type for %s\n", this, filename.c_str());
+        }
         return 1;
     }
     // Wrapping mode.
@@ -318,8 +326,10 @@ RtxHioImagePlugin::Fill(TextureCtx& tCtx, FillRequest& fillReq)
 
             if (tCtx.dataType != TextureCtx::k_Byte && 
                 tCtx.dataType != TextureCtx::k_Float) {
-                m_msgHandler->ErrorAlways(
-                    "RtxHioImagePlugin %p: unsupported data type\n", this);
+                if(m_msgHandler) {
+                    m_msgHandler->ErrorAlways(
+                        "RtxHioImagePlugin %p: unsupported data type\n", this);
+                }
                 return 1;
             }
 

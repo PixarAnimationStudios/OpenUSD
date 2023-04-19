@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/lightingShader.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/glf/simpleLightingContext.h"
@@ -76,7 +76,7 @@ public:
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
-    void AddBufferBinding(HdBindingRequest const& req);
+    void AddBufferBinding(HdStBindingRequest const& req);
 
     /// Remove \p name from custom binding.
     HDST_API
@@ -87,7 +87,7 @@ public:
     void ClearBufferBindings();
 
     HDST_API
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     /// Adds computations to create the dome light textures that
     /// are pre-calculated from the environment map texture.
@@ -151,7 +151,7 @@ private:
     bool _useLighting;
     std::unique_ptr<class HioGlslfx> _glslfx;
 
-    TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
+    TfHashMap<TfToken, HdStBindingRequest, TfToken::HashFunctor> _customBuffers;
 
     // The environment map used as source for the dome light textures.
     //

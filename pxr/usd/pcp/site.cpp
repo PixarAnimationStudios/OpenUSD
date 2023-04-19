@@ -25,6 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/site.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/base/tf/hash.h"
 
 #include <ostream>
 
@@ -87,10 +88,10 @@ PcpSite::operator<(const PcpSite &rhs) const
 size_t
 PcpSite::Hash::operator()(const PcpSite &site) const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, site.layerStackIdentifier);
-    boost::hash_combine(hash, site.path);
-    return hash;
+    return TfHash::Combine(
+        site.layerStackIdentifier,
+        site.path
+    );
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -153,10 +154,10 @@ PcpSiteStr::operator<(const PcpSiteStr &rhs) const
 size_t
 PcpSiteStr::Hash::operator()(const PcpSiteStr &site) const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, site.layerStackIdentifierStr);
-    boost::hash_combine(hash, site.path);
-    return hash;
+    return TfHash::Combine(
+        site.layerStackIdentifierStr,
+        site.path
+    );
 }
 
 
@@ -192,10 +193,10 @@ PcpLayerStackSite::operator<(const PcpLayerStackSite &rhs) const
 size_t
 PcpLayerStackSite::Hash::operator()(const PcpLayerStackSite &site) const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, site.layerStack);
-    boost::hash_combine(hash, site.path);
-    return hash;
+    return TfHash::Combine(
+        site.layerStack,
+        site.path
+    );
 }
 
 ////////////////////////////////////////////////////////////////////////

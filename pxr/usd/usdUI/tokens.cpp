@@ -38,6 +38,9 @@ UsdUITokensType::UsdUITokensType() :
     uiNodegraphNodePos("ui:nodegraph:node:pos", TfToken::Immortal),
     uiNodegraphNodeSize("ui:nodegraph:node:size", TfToken::Immortal),
     uiNodegraphNodeStackingOrder("ui:nodegraph:node:stackingOrder", TfToken::Immortal),
+    Backdrop("Backdrop", TfToken::Immortal),
+    NodeGraphNodeAPI("NodeGraphNodeAPI", TfToken::Immortal),
+    SceneGraphPrimAPI("SceneGraphPrimAPI", TfToken::Immortal),
     allTokens({
         closed,
         minimized,
@@ -50,7 +53,10 @@ UsdUITokensType::UsdUITokensType() :
         uiNodegraphNodeIcon,
         uiNodegraphNodePos,
         uiNodegraphNodeSize,
-        uiNodegraphNodeStackingOrder
+        uiNodegraphNodeStackingOrder,
+        Backdrop,
+        NodeGraphNodeAPI,
+        SceneGraphPrimAPI
     })
 {
 }

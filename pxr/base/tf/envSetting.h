@@ -156,9 +156,6 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *);
 template <class T>
 inline T const &
 TfGetEnvSetting(TfEnvSetting<T>& setting) {
-    extern void Tf_InitEnvSettings();
-    Tf_InitEnvSettings();
-
     T *val = setting._value->load();
     if (ARCH_UNLIKELY(!val)) {
         Tf_InitializeEnvSetting(&setting);

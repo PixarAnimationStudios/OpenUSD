@@ -86,6 +86,18 @@ struct UsdSchemaExamplesTokensType {
     /// 
     /// UsdSchemaExamplesSimple
     const TfToken target;
+    /// \brief "ComplexPrim"
+    /// 
+    /// Schema identifer and family for UsdSchemaExamplesComplex
+    const TfToken ComplexPrim;
+    /// \brief "ParamsAPI"
+    /// 
+    /// Schema identifer and family for UsdSchemaExamplesParamsAPI
+    const TfToken ParamsAPI;
+    /// \brief "SimplePrim"
+    /// 
+    /// Schema identifer and family for UsdSchemaExamplesSimple
+    const TfToken SimplePrim;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

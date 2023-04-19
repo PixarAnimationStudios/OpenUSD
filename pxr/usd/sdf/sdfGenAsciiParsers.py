@@ -215,14 +215,27 @@ def _canonicalizeFiles(sourceFiles, generatedFiles):
         replacements.append((oldFileName, newFileName))
 
     for renamedFile in renamed:
-        print('Fixing line directives in ' + basename(renamedFile))
+        print('Canonicalizing ' + basename(renamedFile))
 
         with open(renamedFile, 'r+') as inputFile:
             data = inputFile.read()
             
             # find and replace all generated file names
+            print('... Fixing line directives')
             for oldFileName, newFileName in replacements:
                 data = data.replace(oldFileName, newFileName)
+
+            # flex versions older than 2.6 emit the register keyword
+            # which is no longer supported as of C++17. To support
+            # these versions, we manually strip 'register' from each
+            # .lex.cpp file. This is hacky, since it could affect 
+            # hand-written parser code that uses the word "register".
+            # In practice, none of our parser code does this.
+            #
+            # XXX: Remove this when we stop supporting older flex versions
+            if renamedFile.endswith('.lex.cpp'):
+                print('... Removing register keyword')
+                data = data.replace("register ", "")
             
             # we seek to 0 and truncate as we intend 
             # to overwrite the existing data in the file

@@ -29,9 +29,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/math.h"
-#include "pxr/base/gf/api.h" 
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/gf/api.h"
+#include "pxr/base/tf/hash.h"
 
 #include <float.h>
 #include <iosfwd>
@@ -103,10 +102,7 @@ public:
     size_t Hash() const { return hash_value(*this); }
 
     friend inline size_t hash_value(GfInterval const &i) {
-        size_t h = 0;
-        boost::hash_combine(h, i._min);
-        boost::hash_combine(h, i._max);
-        return h;
+        return TfHash::Combine(i._min, i._max);
     }
 
     /// Minimum value
@@ -391,10 +387,7 @@ private:
             return _Bound( value * rhs.value, closed & rhs.closed );
         }
         friend inline size_t hash_value(const _Bound &b) {
-            size_t h = 0;
-            boost::hash_combine(h, b.value);
-            boost::hash_combine(h, b.closed);
-            return h;
+            return TfHash::Combine(b.value, b.closed);
         }
     };
 

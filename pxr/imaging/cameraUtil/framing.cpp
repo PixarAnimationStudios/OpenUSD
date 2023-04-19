@@ -120,6 +120,35 @@ CameraUtilFraming::ApplyToProjectionMatrix(
         GfMatrix4d(GfVec4d(1.0 / dataSize[0], 1.0 / dataSize[1], 1.0, 1.0));
 }
 
+// Switch CameraUtilFit <-> CameraUtilCrop.
+//
+static
+CameraUtilConformWindowPolicy
+_InvertPolicy(const CameraUtilConformWindowPolicy windowPolicy)
+{
+    switch(windowPolicy) {
+    case CameraUtilFit:
+        return CameraUtilCrop;
+    case CameraUtilCrop:
+        return CameraUtilFit;
+    default:
+        return windowPolicy;
+    }
+}
+
+GfRange2f
+CameraUtilFraming::ComputeFilmbackWindow(
+     const float cameraAspectRatio,
+     const CameraUtilConformWindowPolicy windowPolicy) const
+{
+    return
+        GfRange2f(
+            CameraUtilConformedWindow(
+                displayWindow,
+                _InvertPolicy(windowPolicy),
+                _SafeDiv(cameraAspectRatio, pixelAspectRatio)));
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 

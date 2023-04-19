@@ -359,7 +359,8 @@ public:
     HD_API
     void InsertSceneIndex(
             const HdSceneIndexBaseRefPtr &inputScene,
-            SdfPath const& scenePathPrefix);
+            SdfPath const& scenePathPrefix,
+            bool needsPrefixing = true);
 
     HD_API
     void RemoveSceneIndex(

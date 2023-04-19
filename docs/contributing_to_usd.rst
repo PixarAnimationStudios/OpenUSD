@@ -42,34 +42,27 @@ Pull Request Guidelines
       to the "**dev**" branch when filing your pull request.
 
     * Please make sure all tests are passing with your change prior to
-      submitting a pull request.
-
-    * We highly recommend posting issues on GitHub for features or bug fixes
-      that you intend to work on before beginning any development. That way, if
-      someone else is working on a similar project, you can collaborate, or you
-      can get early feedback which can sometimes save time.
+      submitting a pull request. Keep in mind the current github CI pipeline 
+      does not run any tests, however tests will be run when reviewing your
+      submitted change for consideration.
 
     * Please make sure that your pull requests are clean. Use the rebase and
       squash git facilities as needed to ensure that the pull request is as
       clean as possible.
 
-    * Please make pull requests that are small and atomic - in general, it is
-      easier for us to merge pull requests that are small and serve a single
-      purpose than those that are sweeping and combine several functional pieces
-      in a single PR.
+    * Please make pull requests that are small and atomic. In general, it is
+      easier for us to merge pull requests that serve a single
+      purpose than those that combine several functional pieces.
+
+    * Please search through existing open github issues and associate your PR
+      with issues that your change addresses, as described in :ref:`github_issues`.
+      If there are no issues related to your change, you do not need to create 
+      a new issue.
 
 Git Workflow
 ************
 
-Here is the workflow we recommend for working on USD if you intend on
-contributing changes back:
-
-    #. Post an issue on github to let folks know about the feature or bug that
-       you found, and mention that you intend to work on it. That way, if
-       someone else is working on a similar project, you can collaborate, or you
-       can get early feedback which can sometimes save time.
-
-        .. | space |
+Here is the workflow we recommend for contributing changes to USD:
 
     #. Use the github website to fork your own private repository.
 
@@ -137,3 +130,20 @@ contributing changes back:
     #. Now your remote branch will have your dev_mybugfix branch, which you can
        now pull request (to USD's dev branch) using the github UI.
 
+.. _github_issues:
+
+Github Issues
+#############
+
+Use github issues to report problems or suggestions that need discussion, or 
+that you might not be able to address yourself.
+
+You do not need to log an issue for contributing changes, or if your change
+fixes an unreported issue. However, if your change requires multiple pull 
+requests, a single issue can be created and referenced from those PRs to 
+organize them.
+
+Before sending your change in for consideration, search through the list of
+`open issues on github <https://github.com/PixarAnimationStudios/USD/issues>`_ 
+and check if your change addresses any issue. If so, associate your pull
+request with that issue.

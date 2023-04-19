@@ -45,6 +45,8 @@
 #include "pxr/base/tf/weakBase.h"
 #include "pxr/base/tf/weakPtr.h"
 
+#include "pxr/base/arch/pragmas.h"
+
 #include <atomic>
 #include <string>
 #include <vector>
@@ -619,8 +621,18 @@ private:
 
     TimeStamp _measuredScopeOverhead;
 
+    // These members are unused if Python support is disabled. However, we
+    // leave them in place and just mark them unused to provide ABI
+    // compatibility between USD builds with and without Python enabled.
+#ifndef PXR_PYTHON_SUPPORT_ENABLED    
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
+#endif
     std::atomic<int> _isPythonTracingEnabled;
     TfPyTraceFnId _pyTraceFnId;
+#ifndef PXR_PYTHON_SUPPORT_ENABLED
+    ARCH_PRAGMA_POP
+#endif
 };
  
 TRACE_API_TEMPLATE_CLASS(TfSingleton<TraceCollector>);

@@ -46,7 +46,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((disableMotionBlur,              "disableMotionBlur"))            \
     ((shutterOpen,                    "shutter:open"))                 \
     ((shutterClose,                   "shutter:close"))                \
-    ((experimentalRenderSpec,         "experimental:renderSpec"))
+    ((experimentalRenderSettingsPrimPath,"experimental:renderSettingsPrimPath"))\
+    ((experimentalSettingsCameraPath, "experimental:settingsCameraPath"))\
+    ((experimentalRenderSpec,         "experimental:renderSpec"))      \
+    ((delegateRenderProducts,         "delegateRenderProducts"))       \
+    ((batchCommandLine,               "batchCommandLine"))             \
+    ((houdiniFrame,                   "houdini:frame"))                \
+    ((checkpointInterval,             "ri:checkpoint:interval"))
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens, HDPRMAN_API,
     HDPRMAN_RENDER_SETTINGS_TOKENS);
@@ -70,6 +76,29 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanExperimentalRenderSpecTokens, HDPRMAN_API,
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanIntegratorTokens, HDPRMAN_API,
     HDPRMAN_INTEGRATOR_TOKENS);
+
+#define HDPRMAN_RENDER_PRODUCT_TOKENS \
+    (productName) \
+    (productType) \
+    (orderedVars) \
+    (sourcePrim)
+
+TF_DECLARE_PUBLIC_TOKENS(
+    HdPrmanRenderProductTokens, HDPRMAN_API,
+    HDPRMAN_RENDER_PRODUCT_TOKENS);
+
+#define HDPRMAN_AOV_SETTINGS_TOKENS \
+    ((dataType,                       "dataType"))                   \
+    ((sourceName,                     "sourceName"))                 \
+    ((sourceType,                     "sourceType"))                 \
+    ((format,                         "aovDescriptor.format"))       \
+    ((multiSampled,                   "aovDescriptor.multiSampled")) \
+    ((aovSettings,                    "aovDescriptor.aovSettings"))  \
+    ((clearValue,                     "aovDescriptor.clearValue"))
+
+TF_DECLARE_PUBLIC_TOKENS(
+    HdPrmanAovSettingsTokens, HDPRMAN_API,
+    HDPRMAN_AOV_SETTINGS_TOKENS);
 
 class HdPrmanRenderDelegate : public HdRenderDelegate 
 {
@@ -143,6 +172,11 @@ public:
 #endif
     HDPRMAN_API 
     TfTokenVector GetShaderSourceTypes() const override;
+
+#if HD_API_VERSION > 46
+    HDPRMAN_API 
+    TfTokenVector GetRenderSettingsNamespaces() const override;
+#endif
 
     HDPRMAN_API 
     void SetRenderSetting(TfToken const &key, VtValue const &value) override;

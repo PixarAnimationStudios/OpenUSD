@@ -131,7 +131,7 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(singleApplyAPIDef.GetAppliedAPISchemas(), 
                          ["TestSingleApplyAPI"])
         self.assertEqual(singleApplyAPIDef.GetPropertyNames(), [
-            "single:bool_attr", "single:token_attr", "single:relationship"])
+            "single:bool_attr", "single:relationship", "single:token_attr"])
         self.assertEqual(singleApplyAPIDef.GetDocumentation(),
             "Test single apply API schema")
 
@@ -145,8 +145,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             ["TestMultiApplyAPI:__INSTANCE_NAME__"])
         self.assertEqual(multiApplyAPIDef.GetPropertyNames(), [
             "multi:__INSTANCE_NAME__:bool_attr", 
-            "multi:__INSTANCE_NAME__:token_attr", 
-            "multi:__INSTANCE_NAME__:relationship"])
+            "multi:__INSTANCE_NAME__:relationship",
+            "multi:__INSTANCE_NAME__:token_attr"])
         self.assertEqual(multiApplyAPIDef.GetDocumentation(),
             "Test multi-apply API schema")
 
@@ -599,8 +599,8 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(typedPrim.GetTypeName(), 'TestTypedSchemaForAutoApply')
         self.assertEqual(typedPrim.GetAppliedSchemas(), 
                          ["TestMultiApplyAPI:builtin", 
-                          "TestMultiApplyAPI:autoFoo",
-                          "TestSingleApplyAPI"])
+                          "TestSingleApplyAPI",
+                          "TestMultiApplyAPI:autoFoo"])
         self.assertEqual(typedPrim.GetPrimTypeInfo().GetTypeName(), 
                          'TestTypedSchemaForAutoApply')
         # Note that prim type info does NOT contain the applied API
@@ -2259,12 +2259,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
         self.assertTrue(prim.HasAPI(self.AutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "builtin"))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "autoFoo"))
@@ -2308,12 +2308,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
         self.assertTrue(prim.HasAPI(self.NestedAutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.AutoAppliedToAPIType))
         self.assertTrue(prim.HasAPI(self.MultiApplyAPIType, "foo"))
@@ -2363,12 +2363,12 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
             "TestAutoAppliedToAPI",
             # Built-in API of 'TestAutoAppliedToAPI'
             "TestMultiApplyAPI:builtin",
-            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
-            # applies to 'TestAutoAppliedToAPI'
-            "TestMultiApplyAPI:autoFoo",
             # 'TestSingleApplyAPI' defines in its schema def that it auto 
             # applies to 'TestAutoAppliedToAPI'
-            "TestSingleApplyAPI"])
+            "TestSingleApplyAPI",
+            # Defined in plugin metadata that 'TestMultiApplyAPI:autoFoo' auto
+            # applies to 'TestAutoAppliedToAPI'
+            "TestMultiApplyAPI:autoFoo"])
 
         # Prim's authored applied API schemas is empty as the API schemas are
         # part of the type (through auto apply).

@@ -404,7 +404,7 @@ Create a usd file named Test.usda with the following content:
 You should be able to load the above usda file in usdview without warnings or 
 errors.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/368705840/565776867.png
+.. image:: http://openusd.org/images/tut_generating_new_schema_usdview.png
 
 C++ Example
 ***********

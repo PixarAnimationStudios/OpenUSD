@@ -276,6 +276,13 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin discovered "
                         "'%s'\n", 
                         typeIt->GetTypeName().c_str());
+
+        // sort the keyless types into a vector
+        if (apiSchemaName.IsEmpty()) {
+            _keylessApiSchemaAdapterTypes.push_back(*typeIt);
+            continue;
+        }
+
         _apiSchemaTypeMap[apiSchemaName] = *typeIt;
 
         // Adapters can opt in to being used as the adapter for any derived
@@ -335,7 +342,7 @@ UsdImagingAdapterRegistry::_ConstructAdapter(
     // Lookup the plug-in type name based on the prim type.
     _TypeMap::const_iterator typeIt = tm.find(adapterKey);
 
-    if (typeIt == _typeMap.end()) {
+    if (typeIt == tm.end()) {
         // Unknown prim type.
         TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginLoad] Unknown prim "
                 "type '%s'\n",
@@ -343,22 +350,34 @@ UsdImagingAdapterRegistry::_ConstructAdapter(
         return NULL_ADAPTER;
     }
 
+    return _ConstructAdapter<T, factoryT>(adapterKey, typeIt->second);
+}
+
+template <typename T, typename factoryT>
+std::shared_ptr<T>
+UsdImagingAdapterRegistry::_ConstructAdapter(
+    TfToken const& adapterKey, const TfType &adapterType)
+{
+    using _SharedPtr = std::shared_ptr<T>;
+
+    static _SharedPtr NULL_ADAPTER;
+
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
-    PlugPluginPtr plugin = plugReg.GetPluginForType(typeIt->second);
+    PlugPluginPtr plugin = plugReg.GetPluginForType(adapterType);
     if (!plugin || !plugin->Load()) {
         TF_CODING_ERROR("[PluginLoad] PlugPlugin could not be loaded for "
                 "TfType '%s'\n",
-                typeIt->second.GetTypeName().c_str());
+                adapterType.GetTypeName().c_str());
         return NULL_ADAPTER;
     }
 
     factoryT* factory =
-        typeIt->second.GetFactory<factoryT>();
+        adapterType.GetFactory<factoryT>();
     if (!factory) {
         TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' "
                 "for Usd prim type '%s'\n",
-                typeIt->second.GetTypeName().c_str(),
-                typeIt->first.GetText());
+                adapterType.GetTypeName().c_str(),
+                adapterKey.GetText());
 
         return NULL_ADAPTER;
     }
@@ -367,17 +386,18 @@ UsdImagingAdapterRegistry::_ConstructAdapter(
     if (!instance) {
         TF_CODING_ERROR("[PluginLoad] Failed to instantiate type '%s' "
                 "for Usd prim type '%s'\n",
-                typeIt->second.GetTypeName().c_str(),
-                typeIt->first.GetText());
+                adapterType.GetTypeName().c_str(),
+                adapterKey.GetText());
         return NULL_ADAPTER;
     }
 
     TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginLoad] Loaded plugin '%s' > '%s'\n",
                 adapterKey.GetText(),
-                typeIt->second.GetTypeName().c_str());
+                adapterType.GetTypeName().c_str());
 
     return instance;
 }
+
 
 UsdImagingPrimAdapterSharedPtr
 UsdImagingAdapterRegistry::ConstructAdapter(TfToken const& adapterKey)
@@ -411,6 +431,25 @@ const TfTokenVector&
 UsdImagingAdapterRegistry::GetAPISchemaAdapterKeys()
 {
     return _apiSchemaAdapterKeys;
+}
+
+
+UsdImagingAdapterRegistry::ApiSchemaAdapters
+UsdImagingAdapterRegistry::ConstructKeylessAPISchemaAdapters()
+{
+    ApiSchemaAdapters result;
+    result.reserve(_keylessApiSchemaAdapterTypes.size());
+
+    for (const TfType &adapterType : _keylessApiSchemaAdapterTypes) {
+        if (UsdImagingAPISchemaAdapterSharedPtr instance =
+                _ConstructAdapter<UsdImagingAPISchemaAdapter,
+                    UsdImagingAPISchemaAdapterFactoryBase>(
+                        TfToken(), adapterType)) {
+            result.push_back(instance);
+        }
+    }
+
+    return result;
 }
 
 

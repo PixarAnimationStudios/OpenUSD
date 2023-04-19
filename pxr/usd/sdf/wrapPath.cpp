@@ -135,7 +135,7 @@ _WrapGetAllTargetPathsRecursively(SdfPath const self)
 }
 
 static bool
-__nonzero__(SdfPath const &self)
+_NonEmptyPath(SdfPath const &self)
 {
     return !self.IsEmpty();
 }
@@ -236,7 +236,7 @@ void Sdf_wrapAncestorsRange()
 
     using Iter = Sdf_PyPathAncestorsRangeIterator;
     class_<Iter>("_iterator", no_init)
-        .def(TfPyIteratorNextMethodName, &Iter::next)
+        .def("__next__", &Iter::next)
         ;
 }
 
@@ -404,7 +404,7 @@ void wrapPath() {
 
         .def("__str__", make_function(&This::GetAsString))
 
-        .def(TfPyBoolBuiltinFuncName, __nonzero__)
+        .def("__bool__", _NonEmptyPath)
 
         .def(self == self)
         .def(self != self)

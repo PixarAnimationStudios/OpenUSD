@@ -31,8 +31,8 @@
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/operators.hpp>
 
 #include <iosfwd>
@@ -113,11 +113,11 @@ public:
 
 private:
     friend inline size_t hash_value(const SdfPayload &p) {
-        size_t h = 0;
-        boost::hash_combine(h, p._assetPath);
-        boost::hash_combine(h, p._primPath);
-        boost::hash_combine(h, p._layerOffset);
-        return h;
+        return TfHash::Combine(
+            p._assetPath,
+            p._primPath,
+            p._layerOffset
+        );
     }
 
     // The asset path to the external layer.

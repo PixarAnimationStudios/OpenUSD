@@ -75,7 +75,7 @@ folder to a working directory and make its contents writable.
    :menuselection:`Edit --> Deactivate` from the menu. The result should look
    like this.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/369066623/RefExample_Trav_Stage.png
+   .. image:: http://openusd.org/images/tut_traversing_stage_refexample.png
 
    You can inspect the contents of the session layer in the interpreter to see
    the authored deactivation opinion.

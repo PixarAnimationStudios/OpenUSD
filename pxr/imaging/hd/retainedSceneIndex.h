@@ -45,6 +45,7 @@ class HdRetainedSceneIndex : public HdSceneIndexBase
 public:
 
     /// Creates a new retained scene index.
+    HD_API
     static HdRetainedSceneIndexRefPtr New() {
         return TfCreateRefPtr(new HdRetainedSceneIndex);
     }
@@ -64,10 +65,12 @@ public:
     /// type, and datasource; the retained scene index assumes ownership of
     /// these and uses them to answer scene queries. This will also generate
     /// a PrimsAdded notification, if applicable.
+    HD_API
     virtual void AddPrims(const AddedPrimEntries &entries);
 
     /// Removes a prim subtree from the retained scene index. This will also
     /// generate a PrimsRemoved notification, if applicable.
+    HD_API
     virtual void RemovePrims(
         const HdSceneIndexObserver::RemovedPrimEntries &entries);
 
@@ -75,13 +78,17 @@ public:
     /// doesn't have any internal invalidation mechanisms, but it generates
     /// a PrimsDirtied notification, if applicable. Subclasses can use it for
     /// invalidation of caches or retained data.
+    HD_API
     virtual void DirtyPrims(
             const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
     // ------------------------------------------------------------------------
     // HdSceneIndexBase implementations.
 
+    HD_API
     HdSceneIndexPrim GetPrim(const SdfPath & primPath) const override;
+
+    HD_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:

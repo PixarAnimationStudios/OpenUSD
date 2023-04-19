@@ -428,7 +428,7 @@ HdxColorizeSelectionTask::_CreateTexture(
     texDesc.pixelsByteSize = width * height * pixelByteSize;
     texDesc.sampleCount = HgiSampleCount1;
     texDesc.usage = HgiTextureUsageBitsShaderRead;
-    _texture = _hgi->CreateTexture(texDesc);
+    _texture = _GetHgi()->CreateTexture(texDesc);
 }
 
 // -------------------------------------------------------------------------- //

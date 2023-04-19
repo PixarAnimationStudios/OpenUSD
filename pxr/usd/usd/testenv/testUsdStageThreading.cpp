@@ -39,8 +39,7 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <boost/random.hpp>
-
+#include <random>
 #include <thread>
 
 using std::string;
@@ -151,14 +150,12 @@ _WorkTask(size_t msecsToRun, bool runForever)
     // Use a local random number generator to minimize synchronization
     // between threads, as would happen with using libc's random().
     const std::thread::id threadId = std::this_thread::get_id();
-    boost::mt19937 mt(std::hash<std::thread::id>()(threadId));
-    boost::uniform_int<unsigned int> dist(0, _testCases.size()-1);
-    boost::variate_generator< boost::mt19937, boost::uniform_int<unsigned int> >
-        gen(mt, dist);
+    std::mt19937 mt(std::hash<std::thread::id>()(threadId));
+    std::uniform_int_distribution<unsigned int> dist(0, _testCases.size()-1);
 
     while (runForever || static_cast<size_t>(sw.GetMilliseconds()) < msecsToRun) {
         sw.Start();
-        const int i = gen();
+        const int i = dist(mt);
 
         printf("  Thread %s running test case %d\n",
                TfStringify(threadId).c_str(), i);

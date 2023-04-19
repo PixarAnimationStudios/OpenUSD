@@ -35,6 +35,7 @@
 
 #include <set>
 #include <string>
+#include <utility>
 
 namespace bp = boost::python;
 
@@ -94,6 +95,12 @@ void wrapToken()
     // Tokens are represented directly as Python strings in Python.
     bp::to_python_converter<TfToken, Tf_TokenToPythonString>();
     Tf_TokenFromPythonString();
+
+    bp::to_python_converter<
+        std::pair<TfToken, TfToken>,
+        TfPyContainerConversions::to_tuple<std::pair<TfToken, TfToken>>>();
+    TfPyContainerConversions::from_python_tuple_pair<
+        std::pair<TfToken, TfToken>>();
 
     // Stats.
     bp::def("DumpTokenStats", TfDumpTokenStats);

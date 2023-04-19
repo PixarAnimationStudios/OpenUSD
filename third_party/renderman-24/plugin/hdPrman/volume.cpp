@@ -163,15 +163,15 @@ _DetermineOpenVDBFieldType(HdSceneDelegate *sceneDelegate,
             vectorDataRoleHint = roleHint.UncheckedGet<TfToken>();
         }
 
-        if (vectorDataRoleHint == UsdVolTokens->color) {
+        if (vectorDataRoleHint == UsdVolTokens->Color) {
             return HdPrman_Volume::FieldType::ColorType;
-        } else if (vectorDataRoleHint == UsdVolTokens->point) {
+        } else if (vectorDataRoleHint == UsdVolTokens->Point) {
             return HdPrman_Volume::FieldType::PointType;
-        } else if (vectorDataRoleHint == UsdVolTokens->normal) {
+        } else if (vectorDataRoleHint == UsdVolTokens->Normal) {
             return HdPrman_Volume::FieldType::NormalType;
-        } else if (vectorDataRoleHint == UsdVolTokens->vector) {
+        } else if (vectorDataRoleHint == UsdVolTokens->Vector) {
             return HdPrman_Volume::FieldType::VectorType;
-        } else if (vectorDataRoleHint == UsdVolTokens->none) {
+        } else if (vectorDataRoleHint == UsdVolTokens->None_) {
             // Fall through
         } else if (!vectorDataRoleHint.IsEmpty()) {
             TF_WARN("Unknown vectorDataRoleHint value '%s' on volume field prim"

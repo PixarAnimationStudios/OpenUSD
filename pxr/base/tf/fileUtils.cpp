@@ -35,8 +35,8 @@
 #include "pxr/base/arch/errno.h"
 
 #include <boost/assign.hpp>
-#include <boost/functional/hash.hpp>
 #include <boost/noncopyable.hpp>
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
 
 #include <set>
@@ -492,13 +492,10 @@ struct Tf_FileId {
 };
 
 static size_t hash_value(const Tf_FileId& fileId) {
-    size_t seed = 0;
-    boost::hash_combine(seed, fileId.dev);
-    boost::hash_combine(seed, fileId.ino);
-    return seed;
+    return TfHash::Combine(fileId.dev, fileId.ino);
 }
 
-typedef TfHashSet<Tf_FileId, boost::hash<Tf_FileId> > Tf_FileIdSet;
+typedef TfHashSet<Tf_FileId, TfHash> Tf_FileIdSet;
 
 static bool
 Tf_WalkDirsRec(

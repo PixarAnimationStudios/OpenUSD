@@ -48,15 +48,25 @@
 #include <map>
 #include <set>
 #include <type_traits>
-
-#include <boost/type_traits/has_left_shift.hpp>
+#include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 template <class T>
+constexpr auto Tf_IsOstreamable_Impl(int) ->
+    decltype(std::declval<std::ostream &>() << std::declval<T>(), bool())
+{
+    return true;
+}
+
+template <class T>
+constexpr bool Tf_IsOstreamable_Impl(...) {
+    return false;
+}
+
+template <class T>
 constexpr bool Tf_IsOstreamable() {
-    return boost::has_left_shift<
-        std::ostream &, /* << */ T, /* -> */ std::ostream &>::value;
+    return Tf_IsOstreamable_Impl<T>(0);
 }
 
 /// Output a TfSmallVector using [ ] as delimiters.

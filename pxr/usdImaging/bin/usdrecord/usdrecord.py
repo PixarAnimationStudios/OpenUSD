@@ -41,6 +41,11 @@ def _Err(msg):
 def _SetupOpenGLContext(width=100, height=100):
     try:
         from PySide6.QtOpenGLWidgets import QOpenGLWidget
+        from PySide6.QtOpenGL import QOpenGLFramebufferObject
+        from PySide6.QtOpenGL import QOpenGLFramebufferObjectFormat
+        from PySide6.QtCore import QSize
+        from PySide6.QtGui import QOffscreenSurface
+        from PySide6.QtGui import QOpenGLContext
         from PySide6.QtGui import QSurfaceFormat
         from PySide6.QtWidgets import QApplication
         PySideModule = 'PySide6'
@@ -59,20 +64,37 @@ def _SetupOpenGLContext(width=100, height=100):
     if PySideModule == 'PySide6':
         glFormat = QSurfaceFormat()
         glFormat.setSamples(4)
-        glWidget = QOpenGLWidget()
+
+        # Create an off-screen surface and bind a gl context to it.
+        glWidget = QOffscreenSurface()
         glWidget.setFormat(glFormat)
+        glWidget.create()
+
+        glWidget._offscreenContext = QOpenGLContext()
+        glWidget._offscreenContext.setFormat(glFormat)
+        glWidget._offscreenContext.create()
+
+        glWidget._offscreenContext.makeCurrent(glWidget)
+
+        # Create and bind a framebuffer for the frameRecorder's present task.
+        # Since the frameRecorder uses AOVs directly, this is just
+        # a 1x1 default format FBO.
+        glFBOFormat = QOpenGLFramebufferObjectFormat()
+        glWidget._fbo = QOpenGLFramebufferObject(QSize(1, 1), glFBOFormat)
+        glWidget._fbo.bind()
+
     else:
         glFormat = QtOpenGL.QGLFormat()
         glFormat.setSampleBuffers(True)
         glFormat.setSamples(4)
         glWidget = QtOpenGL.QGLWidget(glFormat)
 
-    glWidget.setFixedSize(width, height)
+        glWidget.setFixedSize(width, height)
 
-    # note that we need to bind the gl context here, instead of explicitly
-    # showing the glWidget. Binding the gl context will make sure framebuffer is
-    # ready for gl operations.
-    glWidget.makeCurrent()
+        # note that we need to bind the gl context here, instead of explicitly
+        # showing the glWidget. Binding the gl context will make sure
+        # framebuffer is ready for gl operations.
+        glWidget.makeCurrent()
 
     return glWidget
 

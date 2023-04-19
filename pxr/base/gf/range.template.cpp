@@ -52,6 +52,14 @@ operator<<(std::ostream &out, {{ RNG }} const &r)
                << ']';
 }
 
+{% for S in SCALARS if S != SCL %}
+{{ RNG }}::{{ RNG }}(class {{ RNGNAME(DIM, S) }} const &other)
+    : _min( {{ '' if ALLOW_IMPLICIT_CONVERSION(S, SCL) else MINMAX }}(other.GetMin()))
+    , _max( {{ '' if ALLOW_IMPLICIT_CONVERSION(S, SCL) else MINMAX }}(other.GetMax()))
+{
+}
+{% endfor %}
+
 double
 {{ RNG }}::GetDistanceSquared({{ MINMAXPARM }}p) const
 {

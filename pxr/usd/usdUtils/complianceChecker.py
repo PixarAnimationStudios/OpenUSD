@@ -397,12 +397,10 @@ class PrimEncapsulationChecker(BaseRuleChecker):
                 if not parent.GetTypeName():
                     pConnectable = None
                 if pConnectable and not pConnectable.IsContainer():
-                    # XXX This should be a failure as it is a violation of the
-                    # UsdShade OM.  But pragmatically, there are many 
-                    # authoring tools currently producing this structure, which
-                    # does not _currently_ perturb Hydra, so we need to start
-                    # with a warning
-                    self._AddWarning("Connectable %s <%s> cannot reside "
+                    # It is a violation of the UsdShade OM which enforces
+                    # encapsulation of connectable prims under a Container-type
+                    # connectable prim.
+                    self._AddFailedCheck("Connectable %s <%s> cannot reside "
                                      "under a non-Container Connectable %s"
                                      % (prim.GetTypeName(),
                                         prim.GetPath(),
@@ -441,14 +439,12 @@ UsdPreviewSurface must ensure that the data is encoded and scaled properly.
 Specifically:
    - Since normals are expected to be in the range [(-1,-1,-1), (1,1,1)],
      the Texture node must transform 8-bit textures from their [0..1] range by
-     setting its _inputs:scale_ to [2, 2, 2, 1] and 
-     _inputs:bias_ to [-1, -1, -1, 0]
+     setting its _inputs:scale_ to (2, 2, 2, 1) and 
+     _inputs:bias_ to (-1, -1, -1, 0)
    - Normal map data is commonly expected to be linearly encoded.  However, many
      image-writing tools automatically set the profile of three-channel, 8-bit
      images to SRGB.  To prevent an unwanted transformation, the UsdUVTexture's
-     _inputs:sourceColorSpace_ must be set to "raw".  This program cannot
-     currently read the texture metadata itself, so for now we emit warnings
-     about this potential infraction for all 8 bit image formats.
+     _inputs:sourceColorSpace_ must be set to "raw".
 """
     def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
         super(NormalMapTextureChecker, self).__init__(verbose, 
@@ -539,11 +535,12 @@ Specifically:
             # which we assume FOR NOW, are floating point
             return
 
-        if not self._GetInputValue(sourceShader, ShaderProps.SourceColorSpace):
-            self._AddWarning("%s prim <%s> that reads Normal Map @%s@ may need "
-                             "to set inputs:sourceColorSpace to 'raw' as some "
-                             "8-bit image writers always indicate an SRGB "
-                             "encoding." % \
+        # -- 8-bit texture validations --
+        colorSpace = self._GetInputValue(sourceShader,
+                ShaderProps.SourceColorSpace)
+        if not colorSpace or not colorSpace == 'raw':
+            self._AddError("%s prim <%s> that reads Normal Map @%s@ should "
+                             "set inputs:sourceColorSpace to 'raw'." % \
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(),
                               texAsset.path))
@@ -551,37 +548,60 @@ Specifically:
         bias = self._GetInputValue(sourceShader, ShaderProps.Bias)
  
         scale = self._GetInputValue(sourceShader, ShaderProps.Scale)
-        
+
         if not (bias and scale and 
                 isinstance(bias, Gf.Vec4f) and isinstance(scale, Gf.Vec4f)):
-            # XXX This should be a failure, as it results in broken normal
-            # maps in Storm and hdPrman, at least.  But for the same reason
-            # as the shader-under-shader check, we cannot fail until at least
-            # the major authoring tools have been updated.
-            self._AddWarning("%s prim <%s> reads 8 bit Normal Map @%s@, "
-                             "which requires that inputs:scale be set to "
-                             "[2, 2, 2, 1] and inputs:bias be set to "
-                             "[-1, -1, -1, 0] for proper interpretation." %\
+            self._AddError("%s prim <%s> reads 8 bit Normal Map @%s@, "
+                           "which requires that inputs:scale be set to "
+                           "(2, 2, 2, 1) and inputs:bias be set to "
+                           "(-1, -1, -1, 0) for proper interpretation as per "
+                           "the UsdPreviewSurface and UsdUVTexture docs." %\
                              (NodeTypes.UsdUVTexture,
                               sourcePrim.GetPath(),
                               texAsset.path))
             return
 
+        # We still warn for inputs:scale not conforming to UsdPreviewSurface
+        # guidelines, as some authoring tools may rely on this to scale an
+        # effect of normal perturbations.
         # don't really care about fourth components...
-        if (bias[0] != -1 or bias[1] != -1 or bias[2] != -1 or
-            scale[0] != 2 or scale[1] != 2 or scale[2] != 2):
+        nonCompliantScaleValues = \
+                (scale[0] != 2 or scale[1] != 2 or scale[2] != 2)
+        if nonCompliantScaleValues:
             self._AddWarning("%s prim <%s> reads an 8 bit Normal Map, "
-                             "but has non-standard inputs:scale and "
-                             "inputs:bias values of %s and %s" %\
+                             "but has non-standard inputs:scale value of %s." 
+                             "inputs:scale must be set to (2, 2, 2, 1) so as " 
+                             "fullfill the requirements of the normals to be " 
+                             "in tangent space of [(-1,-1,-1), (1,1,1)] as "
+                             "documented in the UsdPreviewSurface and "
+                             "UsdUVTexture docs." %\
                              (NodeTypes.UsdUVTexture,
-                              sourcePrim.GetPath(),
-                              str(scale), str(bias)))
+                              sourcePrim.GetPath(), str(scale)))
+
+        
+
+        # Note that for a 8bit normal map, inputs:bias must be appropriately
+        # set to [-1, -1, -1, 0] so as to fullfill the requirements of the
+        # normals to be in tangent space of [(-1,-1,-1), (1,1,1)] as documented 
+        # in the UsdPreviewSurface docs. Note this is true only when scale
+        # values are respecting the requirements laid in the
+        # UsdPreviewSurface / UsdUVTexture docs. We continue to warn!
+        if (not nonCompliantScaleValues and 
+                (bias[0] != -1 or bias[1] != -1 or bias[2] != -1)):
+            self._AddError("%s prim <%s> reads an 8 bit Normal Map, but has "
+                           "non-standard inputs:bias value of %s. inputs:bias "
+                           "must be set to [-1,-1,-1,0] so as to fullfill "
+                           "the requirements of the normals to be in tangent "
+                           "space of [(-1,-1,-1), (1,1,1)] as documented "
+                           "in the UsdPreviewSurface and UsdUVTexture docs." %\
+                             (NodeTypes.UsdUVTexture,
+                              sourcePrim.GetPath(), str(bias)))
 
 class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
-        return "A prim providing a material binding, must have "\
-                "MaterialBindingAPI applied on the prim."
+        return "A prim providing a material binding, must have " \
+               "MaterialBindingAPI applied on the prim."
 
     def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
         super(MaterialBindingAPIAppliedChecker, self).__init__(verbose, 
@@ -597,6 +617,46 @@ class MaterialBindingAPIAppliedChecker(BaseRuleChecker):
                 self._AddFailedCheck("Found material bindings but no " \
                     "MaterialBindingAPI applied on the prim <%s>." \
                     % prim.GetPath())
+
+class SkelBindingAPIAppliedChecker(BaseRuleChecker):
+    @staticmethod
+    def GetDescription():
+        return "A prim providing skelBinding properties, must have " \
+               "SkelBindingAPI applied on the prim."
+
+    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
+        from pxr import Usd
+        usdSchemaRegistry = Usd.SchemaRegistry()
+        primDef = usdSchemaRegistry.BuildComposedPrimDefinition("",
+                ["SkelBindingAPI"])
+        self._skelBindingAPIProps = primDef.GetPropertyNames()
+        super(SkelBindingAPIAppliedChecker, self).__init__(verbose,
+                consumerLevelChecks, assetLevelChecks)
+
+    def CheckPrim(self, prim):
+        from pxr import UsdSkel
+        if not prim.HasAPI(UsdSkel.BindingAPI):
+            primProperties = prim.GetPropertyNames()
+            for skelProperty in self._skelBindingAPIProps:
+                if skelProperty in primProperties:
+                    self._AddFailedCheck("Found a UsdSkelBinding property " \
+                        "(%s) , but no SkelBindingAPI applied on the prim " \
+                        "<%s>." %(skelProperty, prim.GetPath()))
+                    return
+        else:
+            # If the API is already applied make sure this prim is either
+            # SkelRoot type or is rooted under a SkelRoot prim, else prim won't
+            # be considered for any UsdSkel Skinning.
+            if prim.GetTypeName() == UsdSkel.Tokens.SkelRoot:
+                return
+            parentPrim = prim.GetParent()
+            while not parentPrim.IsPseudoRoot():
+                if parentPrim.GetTypeName() == UsdSkel.Tokens.SkelRoot:
+                    return
+                parentPrim = parentPrim.GetParent()
+            self._AddFailedCheck("UsdSkelBindingAPI applied on a prim, which " \
+                    "is not of type SkelRoot or is not rooted at a prim of " \
+                    "type SkelRoot, as required by the UsdSkel schema.");
 
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
@@ -875,7 +935,7 @@ class ComplianceChecker(object):
         return [ByteAlignmentChecker, CompressionChecker, 
                 MissingReferenceChecker, StageMetadataChecker, TextureChecker, 
                 PrimEncapsulationChecker, NormalMapTextureChecker,
-                MaterialBindingAPIAppliedChecker]
+                MaterialBindingAPIAppliedChecker, SkelBindingAPIAppliedChecker]
 
     @staticmethod
     def GetARKitRules(skipARKitRootLayerCheck=False):

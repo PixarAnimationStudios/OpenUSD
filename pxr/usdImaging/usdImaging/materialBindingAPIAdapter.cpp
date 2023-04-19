@@ -57,9 +57,10 @@ public:
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name)) {
             UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
-
-            return HdRetainedTypedSampledDataSource<SdfPath>::New(
-                db.GetMaterialPath());
+            if (db.IsBound()) {
+                return HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    db.GetMaterialPath());
+            }
         }
         return nullptr;
     }

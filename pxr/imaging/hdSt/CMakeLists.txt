@@ -54,6 +54,7 @@ pxr_library(hdSt
 
     PUBLIC_CLASSES
         basisCurves
+        binding
         bufferArrayRange
         bufferResource
         commandBuffer

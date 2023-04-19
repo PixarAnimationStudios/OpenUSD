@@ -207,6 +207,11 @@ protected:
     virtual bool _IsCompatible() const;
 
 private:
+    // needs to invoke _GetStaticTfType.
+    friend class UsdSchemaRegistry;
+    USD_API
+    static const TfType &_GetStaticTfType();
+
     // Subclasses should not override _GetTfType.  It is implemented by the
     // schema class code generator.
     USD_API

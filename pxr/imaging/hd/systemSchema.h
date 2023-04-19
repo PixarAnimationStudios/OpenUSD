@@ -74,7 +74,7 @@ public:
 
     /// Composes the system container in at \p fromPath by walking up the
     /// prim.dataSources in \p inputScene and composing any system containers
-    /// it encounters.  
+    /// it encounters. Note that \p fromPath must be an absolute path.
     ///
     /// If no system containers were found, this returns null.
     /// Otherwise, this will return a container data source with the composed

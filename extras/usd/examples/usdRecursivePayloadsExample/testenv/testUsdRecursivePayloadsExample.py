@@ -51,3 +51,8 @@ p.SetMetadata("UsdExample_depth", 3)
 newFlattened = stage.Flatten(addSourceFileComment=False)
 newFlattened.Export("newFlattenedContents.usda")
 
+# Verify Capabilities
+assert Sdf.FileFormat.FormatSupportsReading('.usdrecursivepayloadsexample') == True
+assert Sdf.FileFormat.FormatSupportsWriting('.usdrecursivepayloadsexample') == False
+assert Sdf.FileFormat.FormatSupportsEditing('.usdrecursivepayloadsexample') == False
+

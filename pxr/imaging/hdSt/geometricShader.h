@@ -175,7 +175,7 @@ public:
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
     HDST_API
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     /// Returns true if this geometric shader is used for GPU frustum culling.
     bool IsFrustumCullingPass() const {

@@ -89,6 +89,9 @@ class "MultipleApplyAPI" (
 {
     int testAttrOne
     double testAttrTwo
+    # Special attribute name to define a multiple apply property with no base
+    # name
+    opaque __INSTANCE_NAME__
 }
 
 class "PublicMultipleApplyAPI" (
@@ -102,6 +105,13 @@ class "PublicMultipleApplyAPI" (
 {
     int testAttrOne
     double testAttrTwo
+    # Special attribute name to define a multiple apply property with no base
+    # name
+    opaque __INSTANCE_NAME__ (
+        customData = {
+            string apiName = "PublicAPI"
+        }
+    )
 }
 
 class "Base" (
@@ -482,4 +492,64 @@ class TestPxHairman "TestPxHairman" (
             string apiName = ""
         }
     )
+}
+
+class TestPxHairman_1 "TestPxHairman_1" (
+    inherits = </Typed>
+    customData = {
+        string className = "TestHairman_1"
+        dictionary extraPlugInfo = {
+            string extraInfo = "ExtraInfo"
+        }
+    }
+)
+{
+    custom double temp
+}
+
+# Tests class token generation for schema family when there's no version 0.
+class TestNoVersion0_2 "TestNoVersion0_2" (
+    inherits = </Typed>
+)
+{
+    custom double temp
+}
+
+class "SingleApplyAPI_1" (
+    inherits = </APISchemaBase>
+    prepend apiSchemas = ["BuiltinAPI"]
+    customData = {
+        token apiSchemaType = "singleApply"
+        token[] apiSchemaAutoApplyTo = ["Derived", "ExternalPluginType"]
+        token[] apiSchemaCanOnlyApplyTo = ["Base", "ExternalPluginType"]
+    }
+)
+{
+}
+
+class "MultipleApplyAPI_1" (
+    inherits = </APISchemaBase>
+    customData = {
+        token apiSchemaType = "multipleApply"
+        token propertyNamespacePrefix  = "testNewVersion"
+        token[] apiSchemaAllowedInstanceNames = ["foo", "bar", "baz"]
+        token[] apiSchemaCanOnlyApplyTo = [
+            "Base", "ExternalPluginType"
+        ] 
+        dictionary apiSchemaInstances = {
+            dictionary foo = {
+                token[] apiSchemaCanOnlyApplyTo = ["Derived"] 
+            }
+            dictionary bar = {
+                token[] apiSchemaCanOnlyApplyTo = [
+                    "Derived", 
+                    "ExternalPluginType"
+                ] 
+            }
+        }
+    }
+)
+{
+    int testAttrOne
+    double testAttrTwo
 }

@@ -39,6 +39,7 @@
 #include "pxr/imaging/hdSt/shaderCode.h"
 
 #include "pxr/imaging/hd/aov.h"
+#include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -61,6 +62,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (renderPassState)
 );
+
+static
+double
+_SafeDiv(const double a, const double b)
+{
+    if (b == 0.0) {
+        return 1.0;
+    }
+    return a / b;
+}
 
 HdStRenderPassState::HdStRenderPassState()
     : HdStRenderPassState(std::make_shared<HdStRenderPassShader>())
@@ -89,6 +100,94 @@ bool
 HdStRenderPassState::_UseAlphaMask() const
 {
     return (_alphaThreshold > 0.0f);
+}
+
+unsigned int
+HdStRenderPassState::_GetFramebufferHeight() const
+{
+    for (const HdRenderPassAovBinding &aov : GetAovBindings()) {
+        if (aov.renderBuffer) {
+            if (aov.renderBuffer->GetHeight() > 0) {
+                return aov.renderBuffer->GetHeight();
+            }
+        }
+    }
+    return 0;
+}
+
+static
+float
+_CameraAspectRatio(const HdCamera * const camera)
+{
+    if (!camera) {
+        return 1.0f;
+    }
+    const float v = camera->GetVerticalAperture();
+    const float h = camera->GetHorizontalAperture();
+    return fabs(_SafeDiv(h, v));
+}
+
+static
+GfRange2f
+_FlipWindow(const GfRange2f &window,
+          const unsigned int framebufferHeight)
+{
+    if (framebufferHeight > 0) {
+        const GfVec2f &min = window.GetMin();
+        const GfVec2f &max = window.GetMax();
+
+        const float minX = min[0];
+        const float minY = framebufferHeight - max[1];
+        const float maxX = max[0];
+        const float maxY = framebufferHeight - min[1];
+        return GfRange2f(GfVec2f(minX, minY), GfVec2f(maxX, maxY));
+    } else {
+        return window;
+    }
+
+}
+
+GfRange2f
+HdStRenderPassState::_ComputeFlippedFilmbackWindow() const
+{
+    if (_framing.IsValid()) {
+        return
+            _FlipWindow(
+                _framing.ComputeFilmbackWindow(
+                    _CameraAspectRatio(_camera),
+                    GetWindowPolicy()),
+                _GetFramebufferHeight());
+    } else {
+        const GfVec2f origin(_viewport[0], _viewport[1]);
+        const GfVec2f size(_viewport[2], _viewport[3]);
+        return GfRange2f(origin, origin + size);
+    };
+}
+
+HdStRenderPassState::_AxisAlignedAffineTransform
+HdStRenderPassState::_ComputeImageToHorizontallyNormalizedFilmback() const
+{
+    const GfRange2f window = _ComputeFlippedFilmbackWindow();
+
+    // Recall the documentation of
+    // _ComputeImageToHorizontallyNormalizedFilmback.
+    //
+    // To achieve 1., we need x to change by 2 when moving from the
+    // left to the right edge of window.
+    const float xScale = _SafeDiv(2.0, window.GetSize()[0]);
+
+    // To achieve 3., we need to take the pixel aspect ratio into account.
+    const float yScale =
+        _framing.IsValid()
+            ? _SafeDiv(xScale, _framing.pixelAspectRatio)
+            : xScale;
+
+    // We need the midpoint of window to go to (0,0) for 2.
+    const GfVec2f midPoint = window.GetMidpoint();
+
+    return GfVec4f(
+        xScale, yScale,
+        -midPoint[0] * xScale, -midPoint[1] * yScale);
 }
 
 static
@@ -151,6 +250,10 @@ _ComputeViewport(const GfRect2i &dataWindow, const GfVec3i &framebufferSize)
 GfVec4i
 HdStRenderPassState::ComputeViewport(const HgiGraphicsCmdsDesc &desc) const
 {
+    // TODO: Use _GetFramebufferHeight (using HdRenderBuffer::GetHeight())
+    // instead of _GetFramebufferSize here to be consistent with the above
+    // methods.
+
     const CameraUtilFraming &framing = GetFraming();
     // Use data window for clients using the new camera framing API.
     if (framing.IsValid()) {
@@ -198,7 +301,7 @@ HdStRenderPassState::Prepare(
         // note: InterleavedMemoryManager computes the offsets in the packed
         // struct of following entries, which CodeGen generates the struct
         // definition into GLSL source in accordance with.
-        HdType matType = HdVtBufferSource::GetDefaultMatrixType();
+        const HdType matType = HdVtBufferSource::GetDefaultMatrixType();
 
         bufferSpecs.emplace_back(
             HdShaderTokens->worldToViewMatrix,
@@ -212,6 +315,9 @@ HdStRenderPassState::Prepare(
         bufferSpecs.emplace_back(
             HdShaderTokens->imageToWorldMatrix,
             HdTupleType{matType, 1});
+        bufferSpecs.emplace_back(
+            HdShaderTokens->imageToHorizontallyNormalizedFilmback,
+            HdTupleType{HdTypeFloatVec4, 1});
         bufferSpecs.emplace_back(
             HdShaderTokens->overrideColor,
             HdTupleType{HdTypeFloatVec4, 1});
@@ -274,8 +380,8 @@ HdStRenderPassState::Prepare(
 
         // add buffer binding request
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
+            HdStBindingRequest(HdStBinding::UBO, _tokens->renderPassState,
+                               _renderPassStateBar_, /*interleaved=*/true));
     }
 
     // Lighting hack supports different blending amounts, but we are currently
@@ -318,6 +424,9 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->imageToWorldMatrix,
             GetImageToWorldMatrix(),
             doublesSupported),
+        std::make_shared<HdVtBufferSource>(
+            HdShaderTokens->imageToHorizontallyNormalizedFilmback,
+            VtValue(_ComputeImageToHorizontallyNormalizedFilmback())),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(
@@ -416,8 +525,8 @@ HdStRenderPassState::SetRenderPassShader(HdStRenderPassShaderSharedPtr const &re
             std::static_pointer_cast<HdStBufferArrayRange> (_renderPassStateBar);
 
         _renderPassShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, _tokens->renderPassState,
-                             _renderPassStateBar_, /*interleaved=*/true));
+            HdStBindingRequest(HdStBinding::UBO, _tokens->renderPassState,
+                               _renderPassStateBar_, /*interleaved=*/true));
     }
 }
 
@@ -1038,6 +1147,10 @@ HdStRenderPassState::_InitPrimitiveState(
                 geometricShader->IsPrimTypeTriangles()
                     ? HgiTessellationState::PatchType::Triangle
                     : HgiTessellationState::PatchType::Quad;
+            pipeDesc->tessellationState.tessFactorMode =
+                geometricShader->IsPrimTypePatches()
+                    ? HgiTessellationState::TessVertex
+                    : HgiTessellationState::Constant;
         }
     }
 }

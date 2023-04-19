@@ -78,10 +78,6 @@ public:
     USDIMAGING_API
     void SetStage(UsdStageRefPtr stage);
 
-    // Traverse the scene collecting imaging prims, and then call PrimsAdded.
-    USDIMAGING_API
-    void Populate();
-
     // Set the time, and call PrimsDirtied for any time-varying attributes.
     USDIMAGING_API
     void SetTime(UsdTimeCode time);
@@ -175,7 +171,8 @@ private:
     _StageGlobals _stageGlobals;
 
     // Population
-    void _Populate(UsdPrim subtreeRoot);
+    void _Populate();
+    void _PopulateSubtree(UsdPrim subtreeRoot);
 
     // Edit processing
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice,
@@ -216,6 +213,7 @@ private:
 
     mutable _AdapterSetMap _adapterSetMap;
 
+    _APISchemaAdapters _keylessAdapters;
 
     using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
     _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim);

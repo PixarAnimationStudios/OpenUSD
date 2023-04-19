@@ -1,7 +1,6 @@
 /*!
 \page usdRender_page_front UsdRender : USD Render Schema
 \if ( PIXAR_MFB_BUILD )
-\publicLib
 \mainpage UsdRender : USD Render Schema
 \endif
 

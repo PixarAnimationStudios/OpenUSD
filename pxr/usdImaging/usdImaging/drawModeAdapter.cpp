@@ -71,12 +71,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     (displayRoughness)
     (diffuseColor)
     (opacity)
+    (opacityThreshold)
 
     (file)
     (st)
     (rgb)
     (a)
     (fallback)
+    (wrapS)
+    (wrapT)
+    (clamp)
 
     (varname)
     (result)
@@ -767,6 +771,8 @@ UsdImagingDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
             textureNode.identifier = UsdImagingTokens->UsdUVTexture;
             textureNode.parameters[_tokens->st] = _tokens->cardsUv;
             textureNode.parameters[_tokens->fallback] = fallback;
+            textureNode.parameters[_tokens->wrapS] = _tokens->clamp;
+            textureNode.parameters[_tokens->wrapT] = _tokens->clamp;
             textureNode.parameters[_tokens->file] = textureFile;
             network.nodes.emplace_back(std::move(textureNode));
 
@@ -802,6 +808,12 @@ UsdImagingDrawModeAdapter::GetMaterialResource(UsdPrim const& prim,
             uvPrimvarRel.outputId = textureNodePath;
             uvPrimvarRel.outputName = _tokens->st;
             network.relationships.emplace_back(std::move(uvPrimvarRel));
+
+            // opacityThreshold must be > 0 to achieve desired performance for
+            // cutouts in storm, but will produce artifacts around the edges of
+            // cutouts in both storm and prman. Per the preview surface spec,
+            // cutouts are not combinable with translucency/partial presence.
+            terminal.parameters[_tokens->opacityThreshold] = VtValue(0.1f);
         } else {
             terminal.parameters[_tokens->diffuseColor] = drawModeColor;
             terminal.parameters[_tokens->opacity] = VtValue(1.f);

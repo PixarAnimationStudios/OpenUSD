@@ -104,7 +104,7 @@ struct UsdMediaTokensType {
     const TfToken nonSpatial;
     /// \brief "onceFromStart"
     /// 
-    /// Possible value for UsdMediaSpatialAudio::GetPlaybackModeAttr(), Default value for UsdMediaSpatialAudio::GetPlaybackModeAttr()
+    /// Fallback value for UsdMediaSpatialAudio::GetPlaybackModeAttr()
     const TfToken onceFromStart;
     /// \brief "onceFromStartToEnd"
     /// 
@@ -128,7 +128,7 @@ struct UsdMediaTokensType {
     const TfToken previewThumbnailsDefault;
     /// \brief "spatial"
     /// 
-    /// Possible value for UsdMediaSpatialAudio::GetAuralModeAttr(), Default value for UsdMediaSpatialAudio::GetAuralModeAttr()
+    /// Fallback value for UsdMediaSpatialAudio::GetAuralModeAttr()
     const TfToken spatial;
     /// \brief "startTime"
     /// 
@@ -138,6 +138,14 @@ struct UsdMediaTokensType {
     /// 
     /// Dictionary key in the assetInfo["previews"]  dictionary for thumbnails previews sub-dictionary. 
     const TfToken thumbnails;
+    /// \brief "AssetPreviewsAPI"
+    /// 
+    /// Schema identifer and family for UsdMediaAssetPreviewsAPI
+    const TfToken AssetPreviewsAPI;
+    /// \brief "SpatialAudio"
+    /// 
+    /// Schema identifer and family for UsdMediaSpatialAudio
+    const TfToken SpatialAudio;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

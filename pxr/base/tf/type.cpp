@@ -53,7 +53,6 @@
 
 #include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
-#include <boost/utility/in_place_factory.hpp>
 
 #include <atomic>
 #include <algorithm>
@@ -279,11 +278,11 @@ public:
         }
 
         if (!base->aliasToDerivedTypeMap)
-            base->aliasToDerivedTypeMap = boost::in_place(0);
+            base->aliasToDerivedTypeMap.emplace(0);
         (*base->aliasToDerivedTypeMap)[alias] = derived;
 
         if (!base->derivedTypeToAliasesMap)
-            base->derivedTypeToAliasesMap = boost::in_place(0);
+            base->derivedTypeToAliasesMap.emplace(0);
         (*base->derivedTypeToAliasesMap)[derived].push_back(alias);
     }
 
@@ -632,9 +631,14 @@ void
 TfType::GetAllDerivedTypes(std::set<TfType> *result) const
 {
     ScopedLock lock(GetRegistryMutex(), /*write=*/false);
-    for (auto derivedType: _info->derivedTypes) {
-        result->insert(derivedType);
-        derivedType.GetAllDerivedTypes(result);
+    TypeVector stack { _info->derivedTypes };
+    while (!stack.empty()) {
+        TfType derivedType = std::move(stack.back());
+        stack.pop_back();
+        stack.insert(stack.end(),
+                     derivedType._info->derivedTypes.begin(),
+                     derivedType._info->derivedTypes.end());
+        result->insert(std::move(derivedType));
     }
 }
 

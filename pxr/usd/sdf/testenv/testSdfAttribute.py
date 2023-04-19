@@ -143,10 +143,6 @@ class TestSdfAttribute(unittest.TestCase):
         # assign a default value, otherwise after ClearInfo, attr will expire.
         attr.default = 1
 
-        self.assertEqual(attr.HasInfo('bogus_key_test'), False)
-        with self.assertRaises(Tf.ErrorException):
-            attr.ClearInfo('bogus_key_test')
-
         self.assertEqual(attr.custom, False)
         attr.custom = True
         self.assertEqual(attr.custom, True)
@@ -246,6 +242,24 @@ class TestSdfAttribute(unittest.TestCase):
         attr.ClearInfo('displayGroup')
         self.assertFalse(attr.HasInfo('displayGroup'))
         self.assertEqual(attr.displayGroup, '')
+
+    def test_ClearUnexpectedField(self):
+        layer = Sdf.Layer.CreateAnonymous("ClearUnexpected")
+        layer.ImportFromString(
+'''#sdf 1.4.32
+def Sphere "Foo"
+{
+    double radius (
+        displayName = "Radius"
+        unrecognized = "Test"
+    )
+}
+''')
+
+        spec = layer.GetPropertyAtPath("/Foo.radius")
+        self.assertTrue(spec.HasInfo("unrecognized"))
+        spec.ClearInfo("unrecognized")
+        self.assertFalse(spec.HasInfo("unrecognized"))
 
     def test_Connections(self):
         layer = Sdf.Layer.CreateAnonymous()

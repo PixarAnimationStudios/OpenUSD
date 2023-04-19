@@ -30,8 +30,6 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/functional/hash.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 ArDefaultResolverContext::ArDefaultResolverContext(
@@ -91,11 +89,7 @@ ArDefaultResolverContext::GetAsString() const
 size_t 
 hash_value(const ArDefaultResolverContext& context)
 {
-    size_t hash = 0;
-    for (const std::string& p : context.GetSearchPath()) {
-        boost::hash_combine(hash, TfHash()(p));
-    }
-    return hash;
+    return TfHash()(context.GetSearchPath());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

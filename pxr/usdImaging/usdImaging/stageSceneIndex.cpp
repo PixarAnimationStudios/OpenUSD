@@ -169,10 +169,10 @@ UsdImagingStageSceneIndex::_GetImagingSubprims(
                         subPrimNames.insert(subPrimName);
                     }
                 }
+            }
 
-                if (subPrimNames.find(TfToken()) == subPrimNames.end()) {
-                    subprims.push_back(TfToken());
-                }
+            if (subPrimNames.find(TfToken()) == subPrimNames.end()) {
+                subprims.push_back(TfToken());
             }
 
             return subprims;
@@ -299,10 +299,16 @@ UsdImagingStageSceneIndex::_AdapterSetLookup(
     // contains only the manually applied API schemas
     TfTokenVector appliedAPISchemas = typeInfo.GetAppliedAPISchemas();
 
-    result.allAdapters.reserve(allAppliedSchemas.size() + 1);
+    result.allAdapters.reserve(allAppliedSchemas.size() + 1 +
+        _keylessAdapters.size());
 
-    // first add the manually applied API schemas as they have the strongest
-    // opinion
+    // first add keyless adapters as they have a stronger opinion than any
+    // keyed adapter
+    result.allAdapters.insert(result.allAdapters.end(),
+        _keylessAdapters.begin(), _keylessAdapters.end());
+
+    // then add the manually applied API schemas as they have the strongest
+    // opinion of the keyed adapters
     for (const TfToken &schemaToken : appliedAPISchemas) {
         std::pair<TfToken, TfToken> tokenPair =
             UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
@@ -399,6 +405,12 @@ UsdImagingStageSceneIndex::_APIAdapterLookup(
 
 UsdImagingStageSceneIndex::UsdImagingStageSceneIndex()
 {
+    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
+    
+    for (UsdImagingAPISchemaAdapterSharedPtr &adapter :
+            reg.ConstructKeylessAPISchemaAdapters()) {
+        _keylessAdapters.emplace_back(adapter, TfToken());
+    }
 }
 
 UsdImagingStageSceneIndex::~UsdImagingStageSceneIndex()
@@ -555,23 +567,25 @@ void UsdImagingStageSceneIndex::SetStage(UsdStageRefPtr stage)
             TfNotice::Register(TfCreateWeakPtr(this),
                 &UsdImagingStageSceneIndex::_OnUsdObjectsChanged, _stage);
     }
+
+    _Populate();
 }
 
-void UsdImagingStageSceneIndex::Populate()
+void UsdImagingStageSceneIndex::_Populate()
 {
     if (!_stage) {
         return;
     }
 
-    _Populate(_stage->GetPseudoRoot());
+    _PopulateSubtree(_stage->GetPseudoRoot());
 
     for (const UsdPrim &prim : _stage->GetPrototypes()) {
-        _Populate(prim);
+        _PopulateSubtree(prim);
     }
 
 }
 
-void UsdImagingStageSceneIndex::_Populate(UsdPrim subtreeRoot)
+void UsdImagingStageSceneIndex::_PopulateSubtree(UsdPrim subtreeRoot)
 {
     TRACE_FUNCTION();
     if (!subtreeRoot) {
@@ -793,7 +807,7 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Population] Repopulating <%s>\n",
                 _usdPrimsToResync[i].GetText());
         _SendPrimsRemoved({_usdPrimsToResync[i]});
-        _Populate(prim);
+        _PopulateSubtree(prim);
 
         // Prune property updates of resynced prims, which are redundant.
         auto start = _usdPropertiesToUpdate.lower_bound(_usdPrimsToResync[i]);

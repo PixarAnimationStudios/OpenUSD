@@ -66,6 +66,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 ////////////////////////////////////////////////////////////////////////////////
 
+UsdImaging_DrawModeStandin::~UsdImaging_DrawModeStandin() = default;
+
 const HdSceneIndexPrim &
 UsdImaging_DrawModeStandin::GetPrim() const
 {
@@ -117,9 +119,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     (fallback)
     (file)
     (st)
+    (wrapS)
+    (wrapT)
 
     (rgb)
     (a)
+    (clamp)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -135,6 +140,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (diffuseColor)
     (opacity)
+    (opacityThreshold)
 );
 
 TfTokenVector
@@ -1556,6 +1562,8 @@ _CardsTextureNode(const HdAssetPathDataSourceHandle &file,
             _materialNodeNameTokens->cardUvCoords, 
             _UsdPrimvarReaderTokens->result) };
 
+
+
     return
         HdMaterialNodeSchema::Builder()
             .SetNodeIdentifier(
@@ -1563,6 +1571,12 @@ _CardsTextureNode(const HdAssetPathDataSourceHandle &file,
                     UsdImagingTokens->UsdUVTexture))
             .SetParameters(
                 HdRetainedContainerDataSource::New(
+                    _UsdUVTextureTokens->wrapS,
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        _UsdUVTextureTokens->clamp),
+                    _UsdUVTextureTokens->wrapT,
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        _UsdUVTextureTokens->clamp),
                     _UsdUVTextureTokens->fallback,
                     fallback,
                     _UsdUVTextureTokens->file,
@@ -1586,6 +1600,8 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
             UsdImagingTokens->UsdPreviewSurface);
     static const HdDataSourceBaseHandle one =
         HdRetainedTypedSampledDataSource<float>::New(1.0f);
+    static const HdDataSourceBaseHandle pointOne =
+        HdRetainedTypedSampledDataSource<float>::New(0.1f);
 
     std::vector<TfToken> parameterNames;
     std::vector<HdDataSourceBaseHandle> parameters;
@@ -1601,6 +1617,13 @@ _CardsSurfaceNode(const bool hasTexture, const HdDataSourceBaseHandle& fallback)
         inputConnections.push_back(_ComputeConnection(
             _materialNodeNameTokens->cardTexture,
             _UsdUVTextureTokens->a));
+
+        // opacityThreshold must be > 0 to achieve desired performance for
+        // cutouts in storm, but will produce artifacts around the edges of
+        // cutouts in both storm and prman. Per the preview surface spec,
+        // cutouts are not combinable with translucency/partial presence.
+        parameterNames.push_back(_UsdPreviewSurfaceTokens->opacityThreshold);
+        parameters.push_back(pointOne);
     } else {
         parameterNames.push_back(_UsdPreviewSurfaceTokens->diffuseColor);
         parameters.push_back(fallback);

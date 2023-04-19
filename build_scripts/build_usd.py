@@ -23,6 +23,14 @@
 #
 from __future__ import print_function
 
+# Check whether this script is being run under Python 2 first. Otherwise,
+# any Python 3-only code below will cause the script to fail with an
+# unhelpful error message.
+import sys
+if sys.version_info.major == 2:
+    sys.exit("ERROR: USD does not support Python 2. Use a supported version "
+             "of Python 3 instead.")
+
 import argparse
 import codecs
 import contextlib
@@ -41,7 +49,6 @@ import shutil
 import subprocess
 import sys
 import sysconfig
-import tarfile
 import zipfile
 
 if sys.version_info.major >= 3:
@@ -387,7 +394,8 @@ def RunCMake(context, force, extraArgs = None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
-    if IsVisualStudio2019OrGreater():
+    # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
+    if IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
         generator = generator + " -A x64"
 
     toolset = context.cmakeToolset
@@ -579,24 +587,14 @@ def DownloadURL(url, context, force, extractDir = None,
         rootDir = None
         members = None
         try:
-            if tarfile.is_tarfile(filename):
-                archive = tarfile.open(filename)
-                if extractDir:
-                    rootDir = extractDir
-                else:
-                    rootDir = archive.getnames()[0].split('/')[0]
-                if dontExtract != None:
-                    members = (m for m in archive.getmembers() 
-                               if not any((fnmatch.fnmatch(m.name, p)
-                                           for p in dontExtract)))
-            elif zipfile.is_zipfile(filename):
+            if zipfile.is_zipfile(filename):
                 archive = zipfile.ZipFile(filename)
                 if extractDir:
                     rootDir = extractDir
                 else:
                     rootDir = archive.namelist()[0].split('/')[0]
                 if dontExtract != None:
-                    members = (m for m in archive.getnames() 
+                    members = (m for m in archive.namelist() 
                                if not any((fnmatch.fnmatch(m, p)
                                            for p in dontExtract)))
             else:
@@ -689,6 +687,11 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
+if Windows():
+    BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
+else:
+    BOOST_VERSION_FILE = "include/boost/version.hpp"
+
 def InstallBoost_Helper(context, force, buildArgs):
 
     # In general we use boost 1.70.0 to adhere to VFX Reference Platform CY2020.
@@ -702,13 +705,13 @@ def InstallBoost_Helper(context, force, buildArgs):
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
     if context.buildPython and pyVer >= (3, 10):
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif MacOS():
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.tar.gz"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.zip"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -724,7 +727,13 @@ def InstallBoost_Helper(context, force, buildArgs):
 
     with CurrentWorkingDirectory(DownloadURL(BOOST_URL, context, force, 
                                              dontExtract=dontExtract)):
-        bootstrap = "bootstrap.bat" if Windows() else "./bootstrap.sh"
+        if Windows():
+            bootstrap = "bootstrap.bat"
+        else:
+            bootstrap = "./bootstrap.sh"
+            # zip doesn't preserve file attributes, so force +x manually.
+            Run('chmod +x ' + bootstrap)
+            Run('chmod +x ./tools/build/src/engine/build.sh')
 
         # For cross-compilation on macOS we need to specify the architecture
         # for both the bootstrap and the b2 phase of building boost.
@@ -920,10 +929,10 @@ elif MacOS():
     # On MacOS Intel systems we experience various crashes in tests during
     # teardown starting with 2018 Update 2. Until we figure that out, we use
     # 2018 Update 1 on this platform.
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
-    TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
+    TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.tar.gz"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -1000,22 +1009,19 @@ def InstallTBB_MacOS(context, force, buildArgs):
             x86Dir = os.path.dirname(x86Files[0])
             armDir = os.path.dirname(armFiles[0])
 
-            lipoCommandsRelease = apple_utils.CreateUniversalBinaries(
-                                        context, libNames, x86Dir, armDir)
+            apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
 
             x86Files = glob.glob(
                 os.getcwd() + "/build/*intel64*_debug/libtbb*.*")
             armFiles = glob.glob(
                 os.getcwd() + "/build/*{0}*_debug/libtbb*.*".format(
                         apple_utils.GetTargetArmArch()))
-            lipoCommandsDebug = None
             if x86Files and armFiles:
                 libNames = [os.path.basename(x) for x in x86Files]
                 x86Dir = os.path.dirname(x86Files[0])
                 armDir = os.path.dirname(armFiles[0])
 
-                lipoCommandsDebug = apple_utils.CreateUniversalBinaries(
-                                        context, libNames, x86Dir, armDir)
+                apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
         else:
             CopyFiles(context, "build/*_release/libtbb*.*", "lib")
             try:
@@ -1060,45 +1066,23 @@ TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 ############################################################
 # JPEG
 
-if Windows():
-    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/1.5.1.zip"
-elif MacOS():
-    JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
-else:
-    JPEG_URL = "https://www.ijg.org/files/jpegsrc.v9b.tar.gz"
+JPEG_URL = "https://github.com/libjpeg-turbo/libjpeg-turbo/archive/2.0.1.zip"
 
 def InstallJPEG(context, force, buildArgs):
-    if Windows() or MacOS():
-        InstallJPEG_Turbo(context, force, buildArgs)
-    else:
-        InstallJPEG_Lib(context, force, buildArgs)
-
-def InstallJPEG_Turbo(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
         extraJPEGArgs = buildArgs
-        if MacOS():
+        if not which("nasm"):
             extraJPEGArgs.append("-DWITH_SIMD=FALSE")
 
         RunCMake(context, force, extraJPEGArgs)
         return os.getcwd()
-
-
-def InstallJPEG_Lib(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(JPEG_URL, context, force)):
-        Run('./configure --prefix="{instDir}" '
-            '--disable-static --enable-shared '
-            '{buildArgs}'
-            .format(instDir=context.instDir,
-                    buildArgs=" ".join(buildArgs)))
-        Run('make -j{procs} install'
-            .format(procs=context.numJobs))
 
 JPEG = Dependency("JPEG", InstallJPEG, "include/jpeglib.h")
         
 ############################################################
 # TIFF
 
-TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.0.7/libtiff-v4.0.7.tar.gz"
+TIFF_URL = "https://gitlab.com/libtiff/libtiff/-/archive/v4.0.7/libtiff-v4.0.7.zip"
 
 def InstallTIFF(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TIFF_URL, context, force)):
@@ -1130,7 +1114,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.tar.gz"
+PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
@@ -1602,10 +1586,10 @@ MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.4.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
-
-        cmakeOptions += buildArgs;
-
+        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
+                        '-DMATERIALX_BUILD_TESTS=OFF'
+        ]
+        cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
@@ -1615,9 +1599,9 @@ MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Lib
 # For MacOS we use version 3.13.3 to include a fix from Intel
 # to build on Apple Silicon.
 if MacOS():
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.tar.gz"
+    EMBREE_URL = "https://github.com/embree/embree/archive/v3.13.3.zip"
 else:
-    EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.tar.gz"
+    EMBREE_URL = "https://github.com/embree/embree/archive/v3.2.2.zip"
 
 def InstallEmbree(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(EMBREE_URL, context, force)):
@@ -1798,6 +1782,11 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+
+        if context.buildPythonDocs:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=OFF')
 
         if Windows():
             # Increase the precompiled header buffer limit.
@@ -1991,6 +1980,11 @@ subgroup.add_argument("--docs", dest="build_docs", action="store_true",
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
                       help="Do not build documentation (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--python-docs", dest="build_python_docs", action="store_true",
+                      default=False, help="Build Python docs")
+subgroup.add_argument("--no-python-docs", dest="build_python_docs", action="store_false",
+                      help="Do not build Python documentation (default)")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--python", dest="build_python", action="store_true",
                       default=True, help="Build python based components "
                                          "(default)")
@@ -2101,13 +2095,13 @@ subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
 group.add_argument("--draco-location", type=str,
                    help="Directory where Draco is installed.")
 
-group = parser.add_argument_group(title="MaterialX Plugin Options")
+group = parser.add_argument_group(title="MaterialX Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
-                      default=False,
-                      help="Build MaterialX plugin for USD")
+                      default=True,
+                      help="Enable MaterialX support (default)")
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
-                      help="Do not build MaterialX plugin for USD (default)")
+                      help="Disable MaterialX support")
 
 args = parser.parse_args()
 
@@ -2248,6 +2242,9 @@ class InstallContext:
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
 
+        # - Python docs
+        self.buildPythonDocs = args.build_python_docs        
+
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
        
@@ -2381,8 +2378,8 @@ if which("cmake"):
         # Apple Silicon is not supported prior to 3.19
         cmake_required_version = (3, 19)
     else:
-        # Linux, and vfx platform CY2020, are verified to work correctly with 3.12
-        cmake_required_version = (3, 12)
+        # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
+        cmake_required_version = (3, 14)
 
     cmake_version = GetCMakeVersion()
     if not cmake_version:
@@ -2411,6 +2408,16 @@ if context.buildDocs:
                    "PATH")
         sys.exit(1)
 
+# Require having built both Python support and Doxygen docs before we can 
+# build Python docs
+if context.buildPythonDocs:
+    if not context.buildDocs:
+        PrintError("Cannot build Python docs when doxygen docs are disabled.")
+        sys.exit(1)
+    if not context.buildPython:
+        PrintError("Cannot build Python docs when Python support is disabled.")
+        sys.exit(1)        
+
 if PYSIDE in requiredDependencies:
     # Special case - we are given the PYSIDEUICBINARY as cmake arg.
     usdBuildArgs = context.GetBuildArguments(USD)
@@ -2419,9 +2426,9 @@ if PYSIDE in requiredDependencies:
     # The USD build will skip building usdview if pyside2-uic or pyside-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pyside6Uic = ["pyside6-uic", "uic"]
+    pyside6Uic = ["pyside6-uic"]
     found_pyside6Uic = any([which(p) for p in pyside6Uic])
-    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7", "uic"]
+    pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
     found_pysideUic = any([which(p) for p in pysideUic])
@@ -2437,12 +2444,6 @@ if PYSIDE in requiredDependencies:
                        " adjust your PATH. (Note that this program may be"
                        " named {0} depending on your platform)"
                        .format(" or ".join(set(pyside2Uic+pyside6Uic))))
-        sys.exit(1)
-
-if JPEG in requiredDependencies:
-    # NASM is required to build libjpeg-turbo
-    if (Windows() and not which("nasm")):
-        PrintError("nasm not found -- please install it and adjust your PATH")
         sys.exit(1)
 
 # Summarize
@@ -2479,6 +2480,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python 3:                 {enablePython3}
+      Python docs:              {buildPythonDocs}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
@@ -2540,6 +2542,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     enablePython3=("On" if Python3() else "Off"),
+    buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),

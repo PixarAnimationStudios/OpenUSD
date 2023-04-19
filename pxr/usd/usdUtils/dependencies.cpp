@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usd/usdcFileFormat.h"
 #include "pxr/usd/usd/zipFile.h"
+#include "pxr/usd/usdShade/udimUtils.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -692,8 +693,13 @@ public:
             auto &fileAnalyzer = destFilePathAndAnalyzer.second;
 
             if (!fileAnalyzer.GetLayer()) {
-                _fileCopyMap.emplace_back(fileAnalyzer.GetFilePath(),
-                                          destFilePath);
+                const std::string &srcFilePath = fileAnalyzer.GetFilePath();
+                if (UsdShadeUdimUtils::IsUdimIdentifier(srcFilePath)) {
+                    _ResolveUdimPaths(srcFilePath, destFilePath);
+                } else {
+                    _fileCopyMap.emplace_back(srcFilePath, destFilePath);
+                }
+
                 continue;
             }
 
@@ -720,10 +726,17 @@ public:
                 }
 
                 const std::string refAssetPath = 
-                    SdfComputeAssetPathRelativeToLayer(
-                        fileAnalyzer.GetLayer(), ref);
+                        SdfComputeAssetPathRelativeToLayer(
+                            fileAnalyzer.GetLayer(), ref);
+                std::string resolvedRefFilePath;
 
-                std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                // Specially handle UDIM paths
+                if (UsdShadeUdimUtils::IsUdimIdentifier(ref)) {
+                    resolvedRefFilePath = UsdShadeUdimUtils::ResolveUdimPath(
+                        ref, fileAnalyzer.GetLayer());
+                } else {
+                    resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                }
 
                 if (resolvedRefFilePath.empty()) {
                     TF_WARN("Failed to resolve reference @%s@ with computed "
@@ -796,6 +809,26 @@ public:
     }
 
 private:
+    // This function will ensure that all tiles that match the UDIM identifier
+    // contained in src path are correctly added to the file copy map
+    void _ResolveUdimPaths(
+        const std::string &srcFilePath,
+        const std::string &destFilePath) 
+    {
+        // Since the source path should already be pre-resolved,
+        // a proper layer doesn't have to be provided
+        const std::vector<UsdShadeUdimUtils::ResolvedPathAndTile> resolvedPaths =
+            UsdShadeUdimUtils::ResolveUdimTilePaths(srcFilePath, SdfLayerHandle());
+
+        for (const auto & resolvedPath : resolvedPaths) {
+            const std::string destUdimPath = 
+                UsdShadeUdimUtils::ReplaceUdimPattern(
+                    destFilePath, resolvedPath.second);
+            
+            _fileCopyMap.emplace_back(resolvedPath.first, destUdimPath);
+        }
+    }
+
     // This will contain a mapping of SdfLayerRefPtr's mapped to their 
     // desination path inside the destination directory.
     std::vector<LayerAndDestPath> _layerExportMap;
@@ -885,22 +918,47 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     const bool isContextDependentPath =
         resolver.IsContextDependentPath(refPath);
 
-    // We determine if refPath is relative by creating identifiers with
-    // and without the anchoring layer and seeing if they're the same.
-    // If they aren't, then refPath depends on the anchor, so we assume
-    // it's relative.
-    const bool isRelativePath =
-        !isContextDependentPath &&
-        (resolver.CreateIdentifier(refPath, layer->GetResolvedPath()) !=
-         resolver.CreateIdentifier(refPath));
+    // We want to maintain relative paths where possible to keep localized
+    // assets as close as possible to their original layout. However, we
+    // skip this for context-dependent paths because those must be resolved
+    // to determine what asset is being referred to.
+    if (!isContextDependentPath) {
+        // We determine if refPath is relative by creating identifiers with
+        // and without the anchoring layer and seeing if they're the same.
+        // If they aren't, then refPath depends on the anchor, so we assume
+        // it's relative.
+        const std::string anchored = 
+            resolver.CreateIdentifier(refPath, layer->GetResolvedPath());
+        const std::string unanchored =
+            resolver.CreateIdentifier(refPath);
+        const bool isRelativePath = (anchored != unanchored);
 
-    // Return relative paths unmodified.
-    if (isRelativePathOut) {
-        *isRelativePathOut = isRelativePath;
+        if (isRelativePath) {
+            // Asset localization is rooted at the location of the root layer.
+            // If this relative path points somewhere outside that location
+            // (e.g., a relative path like "../foo.jpg"). there will be nowhere
+            // to put this asset in the localized asset structure. In that case,
+            // we need to remap this path. Otherwise, we can keep the relative
+            // asset path as-is.
+            const ArResolvedPath resolvedRefPath = resolver.Resolve(anchored);
+            const bool refPathIsOutsideAssetLocation = 
+                !TfStringStartsWith(
+                    TfNormPath(TfGetPathName(resolvedRefPath)),
+                    TfNormPath(TfGetPathName(rootFilePath)));
+
+            if (!refPathIsOutsideAssetLocation) {
+                if (isRelativePathOut) {
+                    *isRelativePathOut = true;
+                }
+
+                // Return relative paths unmodified.
+                return refPath;
+            }
+        }
     }
 
-    if (isRelativePath) {
-        return refPath;
+    if (isRelativePathOut) {
+        *isRelativePathOut = false;
     }
 
     std::string result = refPath;

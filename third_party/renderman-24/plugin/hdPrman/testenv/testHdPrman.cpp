@@ -42,11 +42,13 @@
 #include "pxr/usd/usdRender/spec.h"
 #include "pxr/usd/usdRender/var.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
+#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stopwatch.h"
+#include "pxr/base/arch/env.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/work/threadLimits.h"
 
@@ -69,7 +71,31 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for testHdPrman.");
 
+TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
+                      "Use the Render Settings Prim instead of the "
+                      "UsdRenderSpec for testHdPrman.");
+
 static TfStopwatch timer_prmanRender;
+
+static const GfVec2i _fallbackResolution(512, 512);
+static const TfToken _fallbackConformPolicy(UsdRenderTokens->adjustApertureWidth);
+
+struct HydraSetupCameraInfo {
+    SdfPath cameraPath;
+    GfVec2i resolution;
+    float pixelAspectRatio;
+    TfToken aspectRatioConformPolicy;
+    GfRange2f dataWindowNDC;
+};
+
+static
+bool
+UseRenderSettingsPrim()
+{
+    static const bool useRenderSettingsPrim =
+        TfGetEnvSetting(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM);
+    return useRenderSettingsPrim;
+}
 
 // Simple Hydra task to Sync and Render the data provided to this test.
 class Hd_DrawTask final : public HdTask
@@ -125,9 +151,9 @@ MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
 }
 
 CameraUtilFraming
-ComputeFraming(const UsdRenderSpec::Product &product)
+ComputeFraming(const HydraSetupCameraInfo &cameraInfo)
 {
-    const GfRange2f displayWindow(GfVec2f(0.0f), GfVec2f(product.resolution));
+    const GfRange2f displayWindow(GfVec2f(0.0f), GfVec2f(cameraInfo.resolution));
 
     // We use rounding to nearest integer when computing the dataWindow
     // from the dataWindowNDC. This is to conform about the UsdRenderSpec's
@@ -139,65 +165,13 @@ ComputeFraming(const UsdRenderSpec::Product &product)
     // unusual API.
     const GfRect2i dataWindow(
         MultiplyAndRound(
-            product.dataWindowNDC.GetMin(), product.resolution),
+            cameraInfo.dataWindowNDC.GetMin(), cameraInfo.resolution),
         MultiplyAndRound(
-            product.dataWindowNDC.GetMax(), product.resolution) - GfVec2i(1));
+            cameraInfo.dataWindowNDC.GetMax(), cameraInfo.resolution) - GfVec2i(1));
 
     return CameraUtilFraming(
-        displayWindow, dataWindow, product.pixelAspectRatio);
+        displayWindow, dataWindow, cameraInfo.pixelAspectRatio);
 }
-
-// Provides a fallback camera for test cases that don't provide a camera.
-class CameraDelegate : public HdSceneDelegate
-{
-public:
-    CameraDelegate(HdRenderIndex * const parentIndex)
-      : HdSceneDelegate(parentIndex, SdfPath("/_cameraDelegate"))
-    {
-        GetRenderIndex().InsertSprim(
-            HdPrimTypeTokens->camera,
-            this,
-            GetCameraId());
-    }
-
-    ~CameraDelegate() override
-    {
-        GetRenderIndex().RemoveSprim(
-            HdPrimTypeTokens->camera,
-            GetCameraId());
-    }
-
-    SdfPath GetCameraId() const
-    {
-        static const TfToken name("camera");
-        return GetDelegateID().AppendChild(name);
-    }
-    
-    GfMatrix4d GetTransform(const SdfPath &id) override
-    {
-        static const GfMatrix4d m =
-            GfMatrix4d().SetDiagonal(GfVec4d(1.0, 1.0, -1.0, 1.0)) *
-            GfMatrix4d().SetTranslate(GfVec3d(0,0,-10));
-        return m;
-    }
-
-    VtValue GetCameraParamValue(
-        const SdfPath &id,
-        const TfToken &key) override
-    {
-        if (key == HdCameraTokens->focalLength) {
-            return VtValue(1.0f);
-        } 
-        if (key == HdCameraTokens->horizontalAperture ||
-            key == HdCameraTokens->verticalAperture) {
-            static const float fieldOfView = 60.0f;
-            static const float apertureSize =
-                2.0f * tan(GfDegreesToRadians(fieldOfView) / 2.0f);
-            return VtValue(apertureSize);
-        }
-        return VtValue();
-    }
-};
 
 CameraUtilConformWindowPolicy
 _RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
@@ -226,18 +200,454 @@ _RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
 }
 
 void
+PopulateFallbackRenderSpec(
+    std::string const& outputFilename, UsdRenderSpec *renderSpec) 
+{   
+    *renderSpec = {
+        /* products */
+        {
+            UsdRenderSpec::Product {
+                SdfPath("/Render/Products/Fallback"),   // product path
+                TfToken("raster"),                      // type
+                TfToken(outputFilename),                // name
+                SdfPath(),                              // camera path
+                false,                                  // disableMotionBlur
+                _fallbackResolution,                    // resolution
+                1.0f,                                   // PixelAspectRatio
+                _fallbackConformPolicy,                 // aspectRatioConformPolicy 
+                GfVec2f(2.0, 2.0),                      // aperture size
+                GfRange2f(GfVec2f(0.0f), GfVec2f(1.0f)),// data window
+                { 0, 1 },                               // renderVarIndices
+            },
+        },
+        /* renderVars */
+        {
+            UsdRenderSpec::RenderVar {
+                SdfPath("/Render/Vars/Ci"),     // renderVarPath
+                TfToken("color3f"),             // dataType
+                TfToken("Ci")                   // sourceName
+            },
+            UsdRenderSpec::RenderVar {
+                SdfPath("/Render/Vars/Alpha"),  // renderVarPath
+                TfToken("float"),               // dataType
+                TfToken("a")                    // sourceName
+            }
+        }
+    };
+}
+
+UsdGeomCamera
+CreateFallbackCamera(
+    UsdStageRefPtr const &stage,
+    SdfPath const &fallbackCameraPath)
+{
+    UsdGeomCamera fallbackCamera =
+        UsdGeomCamera::Define(stage, fallbackCameraPath);
+
+    const GfMatrix4d m =
+        GfMatrix4d().SetDiagonal(GfVec4d(1.0, 1.0, -1.0, 1.0)) *
+        GfMatrix4d().SetTranslate(GfVec3d(0,0,-10));
+    fallbackCamera.AddTransformOp(UsdGeomXformOp::PrecisionFloat).Set(VtValue(m));
+
+    fallbackCamera.CreateFocalLengthAttr(VtValue(1.0f));
+    const float apertureSize = 2.0f * tan(GfDegreesToRadians(60.0f) / 2.0f);
+    fallbackCamera.CreateHorizontalApertureAttr(VtValue(apertureSize));
+    fallbackCamera.CreateVerticalApertureAttr(VtValue(apertureSize));
+    return fallbackCamera;
+}
+
+// Add Fallback values needed for the test, if they are not already authored.
+void
+PopulateFallbackRenderSettings(
+    UsdStageRefPtr const &stage,
+    std::string const &outputFilename,
+    SdfPath const &sceneCamPath,
+    UsdRenderSettings *settings)
+{
+    fprintf(stdout, "Populate RenderSettings Prim with fallback values.\n");
+    // If no renderSettings prim was found create a fallback prim.
+    if (settings->GetPath().IsEmpty()) {
+        SdfPath fallbackRenderSettingsPath("/Render/Settings/Fallback");
+        *settings = 
+            UsdRenderSettings::Define(stage, fallbackRenderSettingsPath);
+    }
+    
+    // Set the fallback Resolution and Aspect Ratio Conform Policy
+    if (!settings->GetResolutionAttr().HasAuthoredValue()) {
+        settings->CreateResolutionAttr(VtValue(_fallbackResolution));
+    }
+    if (!settings->GetAspectRatioConformPolicyAttr().HasAuthoredValue()) {
+        settings->CreateAspectRatioConformPolicyAttr(
+            VtValue(_fallbackConformPolicy));
+    }
+
+    // Set the Camera
+    SdfPathVector cameraTargets; 
+    settings->GetCameraRel().GetForwardedTargets(&cameraTargets);
+    if (cameraTargets.empty()) {
+        if (sceneCamPath.IsEmpty()) {
+            SdfPath fallbackCameraPath("/Fallback/Camera");
+            UsdGeomCamera fallbackCamera = 
+                CreateFallbackCamera(stage, fallbackCameraPath);
+            settings->GetCameraRel().AddTarget(fallbackCameraPath);
+        }
+        else {
+            settings->GetCameraRel().AddTarget(sceneCamPath);
+        }
+    }
+
+    // Check if there are any authored Render Products connected
+    SdfPathVector renderProductTargets; 
+    settings->GetProductsRel().GetForwardedTargets(&renderProductTargets);
+    if (!renderProductTargets.empty()) {
+        return;
+    }
+
+    fprintf(stdout, "Add Fallback Render Product and Vars.\n");
+    // Create the fallback Render Product using the outputFilename
+    SdfPath fallbackProductPath("/Render/Products/Fallback");
+    UsdRenderProduct fallbackProduct =
+        UsdRenderProduct::Define(stage, fallbackProductPath);
+    fallbackProduct.CreateProductNameAttr(VtValue(TfToken(outputFilename)));
+    settings->GetProductsRel().AddTarget(fallbackProductPath);
+
+    // Create the fallback Render Vars
+    SdfPath fallbackVarCiPath("/Render/Vars/Ci");
+    UsdRenderVar fallbackVarCi =
+        UsdRenderVar::Define(stage, fallbackVarCiPath);
+    fallbackVarCi.CreateDataTypeAttr(VtValue(TfToken("color3f")));
+    fallbackVarCi.CreateSourceNameAttr(VtValue(std::string("Ci")));
+    fallbackProduct.GetOrderedVarsRel().AddTarget(fallbackVarCiPath);
+
+    SdfPath fallbackVarAlphaPath("/Render/Vars/Alpha");
+    UsdRenderVar fallbackVarAlpha =
+        UsdRenderVar::Define(stage, fallbackVarAlphaPath);
+    fallbackVarAlpha.CreateDataTypeAttr(VtValue(TfToken("float")));
+    fallbackVarAlpha.CreateSourceNameAttr(VtValue(std::string("a")));
+    fallbackProduct.GetOrderedVarsRel().AddTarget(fallbackVarAlphaPath);
+}
+
+VtDictionary
+CreateRenderSpecDict(
+    UsdRenderSpec const &renderSpec, UsdRenderSpec::Product const &product)
+{
+    // RenderSpecDict contains: camera, renderVars, and renderProducts
+    VtDictionary renderSpecDict;
+
+    // Camera
+    renderSpecDict[HdPrmanExperimentalRenderSpecTokens->camera] =
+        product.cameraPath;
+    // Render Vars
+    {
+        std::vector<VtValue> renderVarDicts;
+
+        // Displays & Display Channels
+        for (size_t index: product.renderVarIndices) {
+            auto const& renderVar = renderSpec.renderVars[index];
+
+            // Map source to Ri name.
+            std::string name = renderVar.sourceName;
+            if (renderVar.sourceType == UsdRenderTokens->lpe) {
+                name = "lpe:" + name;
+            }
+
+            VtDictionary renderVarDict;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
+                name;
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
+                renderVar.dataType.GetString();
+            renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
+                renderVar.namespacedSettings;
+
+            renderVarDicts.push_back(VtValue(renderVarDict));
+        }
+        
+        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
+            renderVarDicts;
+    }
+    // Render Products
+    {
+        std::vector<VtValue> renderProducts;
+        {
+            VtDictionary renderProduct;
+            renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
+                product.name.GetString();
+            {
+                VtIntArray renderVarIndices;
+                const size_t num = product.renderVarIndices.size();
+                for (size_t i = 0; i < num; i++) {
+                    renderVarIndices.push_back(i);
+                }
+                renderProduct[
+                    HdPrmanExperimentalRenderSpecTokens->renderVarIndices] =
+                    renderVarIndices;
+            }
+            renderProducts.push_back(VtValue(renderProduct));
+        }
+        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
+            renderProducts;
+    }
+    return renderSpecDict;
+}
+
+// Add the integratorName and any associated values to the settingsMap based 
+// on the VisualizerStyle
+void
+AddVisualizerStyle(
+    std::string const &visualizerStyle, HdRenderSettingsMap *settingsMap)
+{
+    if (!visualizerStyle.empty()) {
+        const std::string integratorName("PxrVisualizer");
+        
+        // TODO Figure out how to represent this in UsdRi.
+        // Perhaps a UsdRiIntegrator prim, plus an adapter
+        // in UsdImaging that adds it as an sprim?
+        (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
+            integratorName;
+        
+        const std::string prefix = 
+            "ri:integrator:" + integratorName + ":";
+        
+        (*settingsMap)[TfToken(prefix + "wireframe")] = 1;
+        (*settingsMap)[TfToken(prefix + "style")] = visualizerStyle;
+    } else {
+        const std::string integratorName("PxrPathTracer");
+        (*settingsMap)[HdPrmanRenderSettingsTokens->integratorName] =
+            integratorName;
+    }
+}
+
+// Add the Namespaced Settings to the settingsMap making sure to add the 
+// fallback settings specific to testHdPrman
+void 
+AddNamespacedSettings(
+    VtDictionary const &namespacedSettings, HdRenderSettingsMap *settingsMap)
+{
+    // Add fallback settings specific to testHdPrman 
+    // Note: 'ri:trace:maxdepth' cannot be found in the applied schemas 
+    (*settingsMap)[TfToken("ri:trace:maxdepth")] = 10; 
+    (*settingsMap)[TfToken("ri:hider:jitter")] = 1;
+    (*settingsMap)[TfToken("ri:hider:minsamples")] = 32;
+    (*settingsMap)[TfToken("ri:hider:maxsamples")] = 64;
+    (*settingsMap)[TfToken("ri:Ri:PixelVariance")] = 0.01;
+
+    // Set namespaced settings 
+    for (const auto &item : namespacedSettings) {
+        (*settingsMap)[TfToken(item.first)] = item.second;
+    }
+}
+
+// Get the Camera information from the Render Spec and the command line, and
+// apply those command line overrides to the product itself. 
+HydraSetupCameraInfo
+GetCameraInfoAndUpdateProduct(
+    SdfPath const &sceneCamPath,
+    float const sceneCamAspect,
+    UsdRenderSpec::Product *product)
+{
+    // Apply Command line overrides to the product since it will be used to 
+    // create the RenderSpecDict that HdPrman_RenderPass will use.
+    if (!sceneCamPath.IsEmpty()) {
+        product->cameraPath = sceneCamPath;
+    }
+    if (sceneCamAspect > 0.0) {
+        product->resolution[1] = (int)(product->resolution[0]/sceneCamAspect);
+        product->apertureSize[1] = product->apertureSize[0]/sceneCamAspect;
+    }
+
+    HydraSetupCameraInfo camInfo;
+    camInfo.cameraPath = product->cameraPath;
+    camInfo.resolution = product->resolution;
+    camInfo.pixelAspectRatio = product->pixelAspectRatio;
+    camInfo.aspectRatioConformPolicy = product->aspectRatioConformPolicy;
+    camInfo.dataWindowNDC = product->dataWindowNDC;
+
+    return camInfo;
+}
+
+
+// Get the Camera info from the RenderSettings prim and the command line. 
+HydraSetupCameraInfo
+GetCameraInfo(
+    SdfPath const &sceneCamPath,
+    float const sceneCamAspect,
+    UsdRenderSettings const &settings)
+{
+    // XXX These attributes are populated from the Render Settings Prim, and  
+    // they should eventually come from the Render Product instead.
+    HydraSetupCameraInfo camInfo;
+    if (sceneCamPath.IsEmpty()) {
+        SdfPathVector targets; 
+        settings.GetCameraRel().GetForwardedTargets(&targets);
+        if (!targets.empty()) {
+            camInfo.cameraPath = targets[0];
+        }
+    }
+    settings.GetResolutionAttr().Get(&camInfo.resolution);
+    settings.GetPixelAspectRatioAttr().Get(&camInfo.pixelAspectRatio);
+    settings.GetAspectRatioConformPolicyAttr().Get(&camInfo.aspectRatioConformPolicy);
+
+    // Convert dataWindowNDC from vec4 to range2.
+    GfVec4f dataWindowNDCVec;
+    if (settings.GetDataWindowNDCAttr().Get(&dataWindowNDCVec)) {
+        camInfo.dataWindowNDC = GfRange2f(
+            GfVec2f(dataWindowNDCVec[0], dataWindowNDCVec[1]),
+            GfVec2f(dataWindowNDCVec[2], dataWindowNDCVec[3]));
+    }
+
+    // Apply Command line overrides.
+    if (!sceneCamPath.IsEmpty()) {
+        camInfo.cameraPath = sceneCamPath;
+    }
+    if (sceneCamAspect > 0.0) {
+        camInfo.resolution[1] = (int)(camInfo.resolution[0]/sceneCamAspect);
+        // camInfo.apertureSize[1] = camInfo.apertureSize[0]/sceneCamAspect;
+    }
+
+    return camInfo;
+}
+
+void
+HydraSetupAndRender(
+    HdRenderSettingsMap const &settingsMap, 
+    UsdStageRefPtr const &stage, 
+    HydraSetupCameraInfo const &cameraInfo,
+    const int frameNum, 
+    const std::string &cullStyle,
+    TfStopwatch *timer_hydra)
+{
+    // Create the RenderDelegate, passing in the HdRenderSettingsMap
+    // Set up frontend -> index -> backend
+    // TODO We should configure the render delegate to request
+    // the appropriate materialBindingPurposes from the USD scene.
+    // We should also configure the scene to filter for the
+    // requested includedPurposes.
+    // 
+    // In order to pick up the plugin scene indices, we need to instantiate
+    // the HdPrmanRenderDelegate through the renderer plugin registry.
+    HdPluginRenderDelegateUniqueHandle const renderDelegate =
+        HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
+            TfToken("HdPrmanLoaderRendererPlugin"),
+            settingsMap);
+
+    // Hydra setup
+    //
+    // Assemble a Hydra pipeline to feed USD data to Riley. 
+    // Scene data flows left-to-right:
+    //
+    //     => UsdStage
+    //       => UsdImagingDelegate (hydra "frontend")
+    //         => HdRenderIndex
+    //           => HdPrmanRenderDelegate (hydra "backend")
+    //             => Riley
+    //
+    // Note that Hydra is flexible, but that means it takes a few steps
+    // to configure the details. This might seem out of proportion in a
+    // simple usage example like this, if you don't consider the range of
+    // other scenarios Hydra is meant to handle.
+    std::unique_ptr<HdRenderIndex> const hdRenderIndex(
+        HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
+    
+    std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
+
+    if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
+        UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
+        usdStageSceneIndex = UsdImagingStageSceneIndex::New();
+        usdStageSceneIndex->SetStage(stage);
+        usdStageSceneIndex->SetTime(frameNum);
+
+        // Chain scene indices
+        HdSceneIndexBaseRefPtr siChainHead;
+        siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(
+                        usdStageSceneIndex);
+        siChainHead = HdFlatteningSceneIndex::New(siChainHead);
+
+        // Insert scene index chain into the render index.
+        hdRenderIndex->InsertSceneIndex(
+            siChainHead, SdfPath::AbsoluteRootPath());
+
+    } else {
+        hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
+            hdRenderIndex.get(),
+            SdfPath::AbsoluteRootPath());
+        hdUsdFrontend->Populate(stage->GetPseudoRoot());
+        hdUsdFrontend->SetTime(frameNum);
+        hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
+        if (!cameraInfo.cameraPath.IsEmpty()) {
+            hdUsdFrontend->SetCameraForSampling(cameraInfo.cameraPath);
+        }
+        if (!cullStyle.empty()) {
+            if (cullStyle == "none") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
+            } else if (cullStyle == "back") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
+            } else if (cullStyle == "front") {
+                hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
+            } else if (cullStyle == "backUnlessDoubleSided") {
+                hdUsdFrontend->SetCullStyleFallback(
+                    HdCullStyleBackUnlessDoubleSided);
+            } else if (cullStyle == "frontUnlessDoubleSided") {
+                hdUsdFrontend->SetCullStyleFallback(
+                    HdCullStyleFrontUnlessDoubleSided);
+            }
+        }
+    }
+
+    const TfTokenVector renderTags{HdRenderTagTokens->geometry};
+    // The collection of scene contents to render
+    HdRprimCollection hdCollection(
+        _tokens->testCollection,
+        HdReprSelector(HdReprTokens->smoothHull));
+    HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
+    tracker.AddCollection(_tokens->testCollection);
+
+    // We don't need multi-pass rendering with a pathtracer
+    // so we use a single, simple render pass.
+    HdRenderPassSharedPtr const hdRenderPass =
+        renderDelegate->CreateRenderPass(hdRenderIndex.get(),
+                                            hdCollection);
+    HdRenderPassStateSharedPtr const hdRenderPassState =
+        renderDelegate->CreateRenderPassState();
+
+    const HdCamera * const camera = 
+        dynamic_cast<const HdCamera*>(
+            hdRenderIndex->GetSprim(HdTokens->camera, cameraInfo.cameraPath));
+
+    hdRenderPassState->SetCameraAndFraming(
+        camera,
+        ComputeFraming(cameraInfo),
+        { true, _RenderSettingsTokenToConformWindowPolicy(
+                                cameraInfo.aspectRatioConformPolicy) });
+
+    // The task execution graph and engine configuration is also simple.
+    HdTaskSharedPtrVector tasks = {
+        std::make_shared<Hd_DrawTask>(hdRenderPass,
+                                      hdRenderPassState,
+                                      renderTags)
+    };
+    HdEngine hdEngine;
+    timer_hydra->Start();
+    hdEngine.Execute(hdRenderIndex.get(), &tasks);
+    timer_hydra->Stop();
+}
+
+
+void
 PrintUsage(const char* cmd, const char *err=nullptr)
 {
     if (err) {
         fprintf(stderr, "%s\n", err);
     }
     fprintf(stderr, "Usage: %s INPUT.usd "
-            "[--out OUTPUT] [--frame FRAME] "
-            "[--sceneCamPath CAM_PATH] [--settings RENDERSETTINGS_PATH] "
-            "[--sceneCamAspect aspectRatio] [--cullStyle CULL_STYLE] "
-            "[--visualize STYLE] [--perf PERF] [--trace TRACE]\n"
+            "[--out|-o OUTPUT] [--frame|-f FRAME] [--env|-e NAME=VALUE]"
+            "[--sceneCamPath|-c CAM_PATH] [--settings|-s RENDERSETTINGS_PATH] "
+            "[--sceneCamAspect|-a aspectRatio] [--cullStyle|-k CULL_STYLE] "
+            "[--visualize|-z STYLE] [--perf|-p PERF] [--trace|-t TRACE]\n"
+            "Single-hyphen options still need a space before the value!\n"
             "OUTPUT defaults to UsdRenderSettings if not specified.\n"
             "FRAME defaults to 0 if not specified.\n"
+            "NAME & VALUE are an environment variable and value to set with "
+            "ArchSetEnv; use multiple --env tags to set multiple variables\n"
             "CAM_PATH defaults to empty path if not specified\n"
             "RENDERSETTINGS_PATH defaults to empty path is not specified\n"
             "STYLE indicates a PxrVisualizer style to use instead of "
@@ -271,26 +681,37 @@ int main(int argc, char *argv[])
     SdfPath sceneCamPath, renderSettingsPath;
     float sceneCamAspect = -1.0;
     std::string visualizerStyle;
+    std::vector<std::pair<std::string, std::string>> env;
 
     for (int i=2; i<argc-1; ++i) {
-        if (std::string(argv[i]) == "--frame") {
+        const std::string arg(argv[i]);
+        if (arg == "--frame" || arg == "-f") {
             frameNum = atoi(argv[++i]);
-        } else if (std::string(argv[i]) == "--sceneCamPath") {
+        } else if (arg == "--sceneCamPath" || arg == "-c") {
             sceneCamPath = SdfPath(argv[++i]);
-        } else if (std::string(argv[i]) == "--sceneCamAspect") {
+        } else if (arg == "--sceneCamAspect" || arg == "-a") {
             sceneCamAspect = atof(argv[++i]);
-        } else if (std::string(argv[i]) == "--out") {
+        } else if (arg == "--out" || arg == "-o") {
             outputFilename = argv[++i];
-        } else if (std::string(argv[i]) == "--settings") {
+        } else if (arg == "--settings" || arg == "-s") {
             renderSettingsPath = SdfPath(argv[++i]);
-        } else if (std::string(argv[i]) == "--visualize") {
+        } else if (arg == "--visualize" || arg == "-z") {
             visualizerStyle = argv[++i];
-        } else if (std::string(argv[i]) == "--perf") {
+        } else if (arg == "--perf" || arg == "-p") {
             perfOutput = argv[++i];
-        } else if (std::string(argv[i]) == "--trace") {
+        } else if (arg == "--trace" || arg == "-t") {
             traceOutput = argv[++i];
-        } else if (std::string(argv[i]) == "--cullStyle") {
+        } else if (arg == "--cullStyle" || arg == "-k") {
             cullStyle = argv[++i];
+        } else if (arg == "--env" || arg == "-e") {
+            std::vector<std::string> parts = TfStringSplit(argv[++i], "=");
+            env.push_back({parts[0], parts[1]});
+        }
+    }
+
+    if (!env.empty()) {
+        for (auto p : env) {
+            ArchSetEnv(p.first, p.second, true);
         }
     }
 
@@ -319,77 +740,39 @@ int main(int argc, char *argv[])
 
     UsdRenderSettings settings;
     if (renderSettingsPath.IsEmpty()) {
+        // Get the RenderSettings prim indicated in the stage metadata
+        fprintf(stdout, "Looking for Render Settings based on the metadata.\n");
         settings = UsdRenderSettings::GetStageRenderSettings(stage);
     } else {
         // If a path was specified, try to use the requested settings prim.
+        fprintf(stdout, "Looking for Render Settings at the path <%s>.\n",
+                renderSettingsPath.GetText());
         settings = UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPath));
+    }
+    if (settings) {
+        fprintf(stdout, "Found the Render Settings Prim <%s>.\n", 
+                settings.GetPath().GetText());
+    }
+
+    // If we want to use the Render Settings, make sure it is fully populated
+    if (UseRenderSettingsPrim()) {
+        PopulateFallbackRenderSettings(
+            stage, outputFilename, sceneCamPath, &settings);
     }
 
     UsdRenderSpec renderSpec;
-    if (settings) {
-        // If we found USD settings, read those.
-        renderSpec = UsdRenderComputeSpec(settings, frameNum, {"ri:"});
-    } else {
-        // Otherwise, provide a built-in render specification.
-        renderSpec = {
-            /* products */
-            {
-                UsdRenderSpec::Product {
-                    TfToken("raster"),
-                    TfToken(outputFilename),
-                    // camera path
-                    SdfPath(),
-                    // disableMotionBlur
-                    false,
-                    GfVec2i(512,512),
-                    1.0f,
-                    // aspectRatioConformPolicy
-                    //
-                    // Match default value of
-                    // UsdImagingDelegate::_appWindowPolicy -
-                    // which was used to generate the baselines.
-                    UsdRenderTokens->adjustApertureWidth,
-                    // aperture size
-                    GfVec2f(2.0, 2.0),
-                    // data window
-                    GfRange2f(GfVec2f(0.0f), GfVec2f(1.0f)),
-                    // renderVarIndices
-                    { 0, 1 },
-                },
-            },
-            /* renderVars */
-            {
-                UsdRenderSpec::RenderVar {
-                    SdfPath("/Render/Vars/Ci"), TfToken("color3f"),
-                    TfToken("Ci")
-                },
-                UsdRenderSpec::RenderVar {
-                    SdfPath("/Render/Vars/Alpha"), TfToken("float"),
-                    TfToken("a")
-                }
-            }
-        };
-    }
-
-    // Merge fallback settings specific to testHdPrman.
-    VtDictionary defaultSettings;
-    defaultSettings["ri:hider:jitter"] = 1;
-    defaultSettings["ri:hider:minsamples"] = 32;
-    defaultSettings["ri:hider:maxsamples"] = 64;
-    defaultSettings["ri:trace:maxdepth"] = 10;
-    defaultSettings["ri:Ri:PixelVariance"] = 0.01f;
-
-    // Update product settings.
-    for (auto &product: renderSpec.products) {
-        // Command line overrides built-in paths.
-        if (!sceneCamPath.IsEmpty()) {
-            product.cameraPath = sceneCamPath;
+    const TfTokenVector prmanNamespaces{TfToken("ri"), TfToken("outputs:ri")};
+    if (!UseRenderSettingsPrim()) {
+        if (settings) {
+            // Create the RenderSpec from the Render Settings Prim 
+            fprintf(stdout, "Create a UsdRenderSpec from the Render Settings "
+                    "Prim <%s>.\n", settings.GetPath().GetText());
+            renderSpec = UsdRenderComputeSpec(settings, prmanNamespaces);
+        } else {
+            // Otherwise, provide a built-in render specification.
+            fprintf(stdout, "Create the Fallback UsdRenderSpec.\n");
+            PopulateFallbackRenderSpec(outputFilename, &renderSpec);
         }
-        if (sceneCamAspect > 0.0) {
-            product.resolution[1] = (int)(product.resolution[0]/sceneCamAspect);
-            product.apertureSize[1] = product.apertureSize[0]/sceneCamAspect;
-        }
-        VtDictionaryOver(&product.extraSettings, defaultSettings);
     }
 
     //////////////////////////////////////////////////////////////////////// 
@@ -405,245 +788,76 @@ int main(int argc, char *argv[])
 
     //////////////////////////////////////////////////////////////////////// 
     //
-    // Render loop for products
+    // Render
     //
 
     TfStopwatch timer_hydra;
 
-    // XXX In the future, we should be able to produce multiple
-    // products directly from one Riley session.
-    for (auto product: renderSpec.products) {
-        printf("Rendering %s...\n", product.name.GetText());
+    if (settings && UseRenderSettingsPrim()) {
+        printf("Rendering using the render settings prim <%s>...\n", settings.GetPath().GetText());
 
+        HydraSetupCameraInfo camInfo =
+            GetCameraInfo(sceneCamPath, sceneCamAspect, settings);
+
+        // Create HdRenderSettingsMap for the RenderDelegate
         HdRenderSettingsMap settingsMap;
 
-        // Shutter settings from studio production.
-        //
-        // XXX Up to RenderMan 22, there is a global Ri:Shutter interval
-        // that specifies the time when (all) camera shutters begin opening,
-        // and when they (all) finish closing.  This is shutterInterval.
-        // Then, per-camera, there is a shutterCurve, which use normalized
-        // (0..1) time relative to the global shutterInterval.  This forces
-        // all the cameras to have the same shutter interval, so in the
-        // future the shutterInterval will be moved to new attributes on
-        // the cameras, and shutterCurve will exist an a UsdRi schema.
-        //
-
-        VtDictionary renderSpecDict;
-
-        renderSpecDict[HdPrmanExperimentalRenderSpecTokens->camera] =
-            product.cameraPath;
-
-        {
-            std::vector<VtValue> renderVarDicts;
-
-            // Displays & Display Channels
-            for (size_t index: product.renderVarIndices) {
-                auto const& renderVar = renderSpec.renderVars[index];
-
-                // Map source to Ri name.
-                std::string name = renderVar.sourceName;
-                if (renderVar.sourceType == UsdRenderTokens->lpe) {
-                    name = "lpe:" + name;
-                }
-
-                VtDictionary renderVarDict;
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->name] =
-                    name;
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->type] =
-                    renderVar.dataType.GetString();
-                renderVarDict[HdPrmanExperimentalRenderSpecTokens->params] =
-                    renderVar.extraSettings;
-
-                renderVarDicts.push_back(VtValue(renderVarDict));
-            }
-            
-            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderVars] =
-                renderVarDicts;
-        }
-
-        {
-            std::vector<VtValue> renderProducts;
-
-            {
-                VtDictionary renderProduct;
-                renderProduct[HdPrmanExperimentalRenderSpecTokens->name] =
-                    product.name.GetString();
-
-                {
-                    VtIntArray renderVarIndices;
-                    const size_t num = product.renderVarIndices.size();
-                    for (size_t i = 0; i < num; i++) {
-                        renderVarIndices.push_back(i);
-                    }
-
-                    renderProduct[
-                        HdPrmanExperimentalRenderSpecTokens->renderVarIndices] =
-                        renderVarIndices;
-                }
-
-                renderProducts.push_back(VtValue(renderProduct));
-            }
+        // Add the Render Settings Prim path to the HdRenderSettingsMap
+        // This is what triggers using this prim instead of the RenderSpec
+        // inside HdPrman_RenderPass.
+        settingsMap[
+            HdPrmanRenderSettingsTokens->experimentalRenderSettingsPrimPath] =
+            settings.GetPath();
         
-            renderSpecDict[HdPrmanExperimentalRenderSpecTokens->renderProducts]=
-                renderProducts;
-        }
-        
+        // Add the camera Path to the Settings Map as well so that the Render
+        // Delegate can have it before syncing for shutter interval
+        settingsMap[HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath] =
+            camInfo.cameraPath;
 
-        settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
-            renderSpecDict;
-
-        // Only allow "raster" for now.
-        TF_VERIFY(product.type == TfToken("raster"));
-
-        // Set up frontend -> index -> backend
-        // TODO We should configure the render delegate to request
-        // the appropriate materialBindingPurposes from the USD scene.
-        // We should also configure the scene to filter for the
-        // requested includedPurposes.
-        if (!visualizerStyle.empty()) {
-            const std::string integratorName("PxrVisualizer");
-            
-            // TODO Figure out how to represent this in UsdRi.
-            // Perhaps a UsdRiIntegrator prim, plus an adapter
-            // in UsdImaging that adds it as an sprim?
-            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
-                integratorName;
-            
-            const std::string prefix = 
-                "ri:integrator:" + integratorName + ":";
-            
-            settingsMap[TfToken(prefix + "wireframe")] = 1;
-            settingsMap[TfToken(prefix + "style")] = visualizerStyle;
-        } else {
-            const std::string integratorName("PxrPathTracer");
-            settingsMap[HdPrmanRenderSettingsTokens->integratorName] =
-                integratorName;
-        }
-
-        for (const auto &item : product.extraSettings) {
-            const std::string &key =
-                TfStringStartsWith(item.first, "ri:")
-                ? item.first
-                : "ri:" + item.first;
-            settingsMap[TfToken(key)] = item.second;
-        }
-
+        AddVisualizerStyle(visualizerStyle, &settingsMap);
+        AddNamespacedSettings(
+            UsdRenderComputeNamespacedSettings(
+                settings.GetPrim(), prmanNamespaces),
+            &settingsMap);
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
-        // Set up frontend -> index -> backend
-        // TODO We should configure the render delegate to request
-        // the appropriate materialBindingPurposes from the USD scene.
-        // We should also configure the scene to filter for the
-        // requested includedPurposes.
+        HydraSetupAndRender(
+            settingsMap, stage, camInfo, frameNum, cullStyle, &timer_hydra);
 
-        // In order to pick up the plugin scene indices, we need to
-        // instantiate the HdPrmanRenderDelegate through the
-        // renderer plugin registry.
-        HdPluginRenderDelegateUniqueHandle const renderDelegate =
-            HdRendererPluginRegistry::GetInstance().CreateRenderDelegate(
-                TfToken("HdPrmanLoaderRendererPlugin"),
-                settingsMap);
-        
-        // Hydra setup
-        //
-        // Assemble a Hydra pipeline to feed USD data to Riley. 
-        // Scene data flows left-to-right:
-        //
-        //     => UsdStage
-        //       => UsdImagingDelegate (hydra "frontend")
-        //         => HdRenderIndex
-        //           => HdPrmanRenderDelegate (hydra "backend")
-        //             => Riley
-        //
-        // Note that Hydra is flexible, but that means it takes a few steps
-        // to configure the details. This might seem out of proportion in a
-        // simple usage example like this, if you don't consider the range of
-        // other scenarios Hydra is meant to handle.
-        {
-            std::unique_ptr<HdRenderIndex> const hdRenderIndex(
-                HdRenderIndex::New(renderDelegate.Get(), HdDriverVector()));
-            
-            UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
-            std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
+        printf("Rendered <%s>\n", settings.GetPath().GetText());
+    }
+    else {
+        // When using the Render Spec dictionary in the legacy render settings
+        // map to plumb settings, we specify the settings per product. For 
+        // simplicity, we recreate the riley and hydra setup for each product. 
+        // Eventually, this path will be deprecated and removed to leverage 
+        // hydra's first-class support for render settings scene description.
+        fprintf(stdout, "Rendering using the experimentalRenderSpec dictionary...\n");
+        for (auto product: renderSpec.products) {
+            printf("Rendering product %s...\n", product.name.GetText());
 
-            if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
-                usdStageSceneIndex = UsdImagingStageSceneIndex::New();
-                hdRenderIndex->InsertSceneIndex(
-                    HdFlatteningSceneIndex::New(usdStageSceneIndex),
-                    SdfPath::AbsoluteRootPath());
-                usdStageSceneIndex->SetStage(stage);
-                usdStageSceneIndex->Populate();
-                usdStageSceneIndex->SetTime(frameNum);
-            } else {
-                hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
-                    hdRenderIndex.get(),
-                    SdfPath::AbsoluteRootPath());
-                hdUsdFrontend->Populate(stage->GetPseudoRoot());
-                hdUsdFrontend->SetTime(frameNum);
-                hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-                if (!product.cameraPath.IsEmpty()) {
-                    hdUsdFrontend->SetCameraForSampling(product.cameraPath);
-                }
-            }
-            if (!cullStyle.empty()) {
-                if (cullStyle == "none") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleNothing);
-                } else if (cullStyle == "back") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBack);
-                } else if (cullStyle == "front") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFront);
-                } else if (cullStyle == "backUnlessDoubleSided") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleBackUnlessDoubleSided);
-                } else if (cullStyle == "frontUnlessDoubleSided") {
-                    hdUsdFrontend->SetCullStyleFallback(HdCullStyleFrontUnlessDoubleSided);
-                }
-            }
+            HydraSetupCameraInfo camInfo = GetCameraInfoAndUpdateProduct(
+                sceneCamPath, sceneCamAspect, &product);
 
-            const TfTokenVector renderTags{HdRenderTagTokens->geometry};
-            // The collection of scene contents to render
-            HdRprimCollection hdCollection(
-                _tokens->testCollection,
-                HdReprSelector(HdReprTokens->smoothHull));
-            HdChangeTracker &tracker = hdRenderIndex->GetChangeTracker();
-            tracker.AddCollection(_tokens->testCollection);
+            // Create HdRenderSettingsMap for the RenderDelegate
+            HdRenderSettingsMap settingsMap;
 
-            // We don't need multi-pass rendering with a pathtracer
-            // so we use a single, simple render pass.
-            HdRenderPassSharedPtr const hdRenderPass =
-                renderDelegate->CreateRenderPass(hdRenderIndex.get(),
-                                                 hdCollection);
-            HdRenderPassStateSharedPtr const hdRenderPassState =
-                renderDelegate->CreateRenderPassState();
+            // Create and save the RenderSpecDict to the HdRenderSettingsMap
+            settingsMap[HdPrmanRenderSettingsTokens->experimentalRenderSpec] =
+                CreateRenderSpecDict(renderSpec, product);
 
-            CameraDelegate cameraDelegate(hdRenderIndex.get());
+            // Only allow "raster" for now.
+            TF_VERIFY(product.type == TfToken("raster"));
 
-            const HdCamera * const camera = 
-                dynamic_cast<const HdCamera*>(
-                    hdRenderIndex->GetSprim(
-                        HdTokens->camera,
-                        product.cameraPath.IsEmpty()
-                            ? cameraDelegate.GetCameraId()
-                            : product.cameraPath));
+            AddVisualizerStyle(visualizerStyle, &settingsMap);
+            AddNamespacedSettings(product.namespacedSettings, &settingsMap);
+            settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
-            hdRenderPassState->SetCameraAndFraming(
-                camera,
-                ComputeFraming(product),
-                { true, _RenderSettingsTokenToConformWindowPolicy(
-                                        product.aspectRatioConformPolicy) });
+            HydraSetupAndRender(
+                settingsMap, stage, camInfo, frameNum, cullStyle, &timer_hydra);
 
-            // The task execution graph and engine configuration is also simple.
-            HdTaskSharedPtrVector tasks = {
-                std::make_shared<Hd_DrawTask>(hdRenderPass,
-                                              hdRenderPassState,
-                                              renderTags)
-            };
-            HdEngine hdEngine;
-            timer_hydra.Start();
-            hdEngine.Execute(hdRenderIndex.get(), &tasks);
-            timer_hydra.Stop();
+            printf("Rendered %s\n", product.name.GetText());
         }
-        printf("Rendered %s\n", product.name.GetText());
     }
 
     if (!traceOutput.empty()) {

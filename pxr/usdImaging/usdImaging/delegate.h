@@ -209,6 +209,14 @@ public:
     /// Returns the root visibility for the entire delegate.
     bool GetRootVisibility() const { return _rootIsVisible; }
 
+    /// Sets the root instancer id for the entire delegate, which is used as a 
+    /// fallback value for GetInstancerId.
+    USDIMAGING_API
+    void SetRootInstancerId(SdfPath const& instancerId);
+
+    /// Returns the root instancer id for the entire delegate.
+    SdfPath GetRootInstancerId() const { return _rootInstancerId; }
+
     /// Set the list of paths that must be invised.
     USDIMAGING_API
     void SetInvisedPrimPaths(SdfPathVector const &invisedPaths);
@@ -741,6 +749,7 @@ private:
 
     GfMatrix4d _rootXf;
     bool _rootIsVisible;
+    SdfPath _rootInstancerId;
 
     /// The current time from which the delegate will read data.
     UsdTimeCode _time;

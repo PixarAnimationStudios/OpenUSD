@@ -2,8 +2,8 @@
 
 \page UsdSkel_SchemaOverview Schema Intro By Example
 
-This page provides an overview of the UsdSkel schemas, using example
-scene description. The examples here only deal with the scene description
+This page provides an overview of the UsdSkel schemas, using several 
+scene description examples. The examples here only deal with the scene description
 itself. For coding examples, see the \ref UsdSkel_API_Intro "API Introduction"
 page. For a more an more in-depth look at the schemas themselves, see the
 \ref UsdSkel_Schemas page.
@@ -35,13 +35,13 @@ encapsulated within a UsdSkelRoot primitive. This serves two purposes:
   primitives (a UsdSkelRoot is a subclass of `UsdGeomBoundable`). This allows
   renderers to determine where in space the result of skinning resides without
   having to apply skinning first. For example, a renderer is capable of
-  efficiently culling objects that are not visibile in camera without paying
+  efficiently culling objects that are not visible in camera without paying
   the cost of computing skinning.
 
 Secondly, we see that the UsdSkelBindingAPI schema has been applied to the prim.
 This informs the runtime that skel-related data is being specified on the prim.
-"skel-related data" include binding SkelAnimation or Skeleton prims, 
-BlendShapes, or specifiying skel weighting or joint influences primvars.
+"skel-related data" includes binding SkelAnimation or Skeleton prims, 
+BlendShapes, or specifying skel weighting or joint influences primvars.
 
 \sa \ref UsdSkel_SkelRoot
 
@@ -53,7 +53,7 @@ BlendShapes, or specifiying skel weighting or joint influences primvars.
 A Skeleton encodes a joint hierarchy. The actual joints and their parent<->child
 relationships are encoded in a compact, vectorized token array. Each token in
 the array is the token-valued form of a relative path to that joint. The paths
-follow the same syntax rules are other prim paths and in USD, and may be
+follow the same syntax rules as other prim paths in USD, and may be
 constructed using the `SdfPath` API.
 
 The tokens authored for _joints_ may be considered as defining the *topology*
@@ -95,7 +95,7 @@ same encoding tends to simplify IO.
 
 The entries of the _bindTransforms_ array are ordered according to the order of
 the _joints_ attribute. So for this example, the first entry in the array
-corresponds to joint `Shoulder`, the second to `Shoulder/Eblow`, and so forth.
+corresponds to joint `Shoulder`, the second to `Shoulder/Elbow`, and so forth.
 
 \subsubsection UsdSkel_SchemaOverview_DefiningSkeletons_RestTransforms Rest Transforms
 
@@ -112,9 +112,9 @@ _restTransforms_ are ordered according to the order of the _joints_ attribute.
 
 The _restTransforms_ may be considered optional, but if left unspecified,
 the Skeleton must be bound to a *complete*, non-sparse animation.
-It is common for the _restTransforms_ to be refer to the same pose as the
+It is common for the _restTransforms_ to refer to the same pose as the
 _bindTransforms_, only in joint-local space, rather than world space, but this
-is not requried.
+is not required.
 
 \sa \ref UsdSkel_Skeleton
 
@@ -145,7 +145,7 @@ has been setup to affect only a single joint (`Shoulder/Elbow`).
 Currently, UsdSkel encodes joint animations as arrays of translation, rotation
 and scale components. The encoding is vectorized for scalability reasons, and
 with consideration for IO performance on large-scale crowds. It is broken into
-these separate components primarily for the sake interpolation, but this also
+these separate components primarily for the sake of interpolation, but this also
 has storage benefits -- such as enabling separate run-length encoding for
 different components. For example, if only the rotations are changing over time,
 as is often the case, then we need only store animated values for those
@@ -153,7 +153,7 @@ rotations, and need not store unique scale/translation samples per frame.
 
 These transform components combine to describe the *local space* transforms
 of a set of joints. Helper methods UsdSkelDecomposeTransforms() and
-UsdSkelMakeTransforms() can be used to convert inbetween these components
+UsdSkelMakeTransforms() can be used to convert between these components
 and arrays of matrices.
 
 Note that this encoding implies that joint local transforms must have an
@@ -194,7 +194,7 @@ def Scope "Scope" {
 \endcode
 
 In that case, the Skeleton at `</Scope/Skel>` inherits the animation source
-defined at `</Scope>`.
+binding established at `</Scope>`.
 The primary motivation for this inheritance property is that it is the
 means by which UsdSkel allows _instanced_ primitives to be driven by
 different joint animations. The \ref UsdSkel_Instancing "instancing" section

@@ -189,6 +189,12 @@ and :usda:`opacity`.
   Expects normal in tangent space [(-1,-1,-1), (1,1,1)]. This means your texture
   reader implementation should provide data to this node that is properly scaled
   and ready to be consumed as a tangent space normal.
+  If the texture has 8 bits per component, then scale and bias must be adjusted 
+  to be (2.0, 2.0, 2.0, 1.0) and (-1, -1, -1, 0) respectively in order to 
+  satisfy tangent space requirements. Normal map data is commonly expected to be 
+  linearly encoded. However, many image-writing tools automatically set the 
+  profile of three-channel, 8-bit images to SRGB. To prevent an unwanted 
+  transformation, the sourceColorSpace must also be set to "raw".
 
 * **displacement - float - 0.0** 
 
@@ -309,7 +315,15 @@ typeName information that may be useful to a renderer or shading system.
            doc = """Expects normal in tangent space [(-1,-1,-1), (1,1,1)]
                This means your texture reader implementation should provide
                data to this node that is properly scaled and ready
-               to be consumed as a tangent space normal."""
+               to be consumed as a tangent space normal.
+               If the texture has 8 bits per component, then scale and bias 
+               must be adjusted to be (2.0, 2.0, 2.0, 1.0) and (-1, -1, -1, 0) 
+               respectively in order to satisfy tangent space requirements. 
+               Normal map data is commonly expected to be linearly encoded. 
+               However, many image-writing tools automatically set the profile 
+               of three-channel, 8-bit images to SRGB. To prevent an unwanted 
+               transformation, the sourceColorSpace must also be set to "raw".
+               """
        )
    
        float inputs:displacement = 0.0 (

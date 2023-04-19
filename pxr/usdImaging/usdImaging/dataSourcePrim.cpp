@@ -24,8 +24,10 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
+#include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/extentSchema.h"
@@ -604,53 +606,11 @@ UsdImagingDataSourcePrim::GetNames()
         vec.push_back(UsdImagingModelSchemaTokens->model);
     }
 
-    if (_GetUsdPrim().IsInstance()) {
-        vec.push_back(UsdImagingNativeInstancingTokens->usdPrototypePath);
-    }
-
-    if (_GetUsdPrim().IsPrototype()) {
-        vec.push_back(UsdImagingNativeInstancingTokens->isUsdPrototype);
-    }
-    vec.push_back(UsdImagingSpecifierTokens->usdSpecifier);
+    vec.push_back(UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo);
     vec.push_back(HdPrimOriginSchemaTokens->primOrigin);
     vec.push_back(HdPrimvarsSchemaTokens->primvars);
 
     return vec;
-}
-
-static
-HdDataSourceBaseHandle
-_SpecifierToDataSource(const SdfSpecifier specifier)
-{
-    struct DataSources {
-        using DataSource = HdRetainedTypedSampledDataSource<TfToken>;
-
-        DataSources()
-          : def(DataSource::New(UsdImagingSpecifierTokens->def))
-          , over(DataSource::New(UsdImagingSpecifierTokens->over))
-          , class_(DataSource::New(UsdImagingSpecifierTokens->class_))
-        {
-        }
-
-        HdDataSourceBaseHandle def;
-        HdDataSourceBaseHandle over;
-        HdDataSourceBaseHandle class_;
-    };
-
-    static const DataSources dataSources;
-
-    switch(specifier) {
-    case SdfSpecifierDef:
-        return dataSources.def;
-    case SdfSpecifierOver:
-        return dataSources.over;
-    case SdfSpecifierClass:
-        return dataSources.class_;
-    case SdfNumSpecifiers:
-        break;
-    }
-    
-    return nullptr;
 }
 
 HdDataSourceBaseHandle
@@ -732,23 +692,9 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
         return UsdImagingDataSourceModel::New(
             model, _sceneIndexPath, _GetStageGlobals());
-    } else if (name == UsdImagingNativeInstancingTokens->usdPrototypePath) {
-        if (!_GetUsdPrim().IsInstance()) {
-            return nullptr;
-        }
-        const UsdPrim prototype(_GetUsdPrim().GetPrototype());
-        if (!prototype) {
-            return nullptr;
-        }
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(
-            prototype.GetPath());
-    } else if (name == UsdImagingNativeInstancingTokens->isUsdPrototype) {
-        if (!_GetUsdPrim().IsPrototype()) {
-            return nullptr;
-        }
-        return HdRetainedTypedSampledDataSource<bool>::New(true);
-    } else if (name == UsdImagingSpecifierTokens->usdSpecifier) {
-        return _SpecifierToDataSource(_GetUsdPrim().GetSpecifier());
+    } else if (name == UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo) {
+        return UsdImagingDataSourceUsdPrimInfo::New(
+            _GetUsdPrim());
     } else if (name == HdPrimOriginSchemaTokens->primOrigin) {
         return UsdImagingDataSourcePrimOrigin::New(
             _GetUsdPrim());

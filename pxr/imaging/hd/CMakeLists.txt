@@ -25,7 +25,6 @@ pxr_library(hd
         basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
-        binding
         bprim
         bufferArray
         bufferArrayRange
@@ -44,6 +43,7 @@ pxr_library(hd
         coneSchema
         containerDataSourceEditor
         coordSys
+        coordSysSchema
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
@@ -84,6 +84,7 @@ pxr_library(hd
         geomSubsetsSchema
         instanceCategoriesSchema
         instancedBySchema
+        instanceIndicesSchema
         instancer
         instanceRegistry
         instancerTopologySchema
@@ -130,8 +131,10 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderProductSchema
         renderSettings
         renderSettingsSchema
+        renderVarSchema
         renderThread
         repr
         resource
@@ -144,11 +147,13 @@ pxr_library(hd
         sampleFilterSchema
         sceneDelegate
         sceneExtCompInputSource
+        sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema
@@ -183,6 +188,7 @@ pxr_library(hd
         dataSourceTypeDefs.h
         driver.h
         materialNetworkInterface.h
+        vectorSchemaTypeDefs.h
         version.h
 
     PRIVATE_CLASSES

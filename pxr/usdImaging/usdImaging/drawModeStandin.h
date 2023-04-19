@@ -38,6 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImaging_DrawModeStandin
 {
 public:
+    virtual ~UsdImaging_DrawModeStandin();
+
     virtual TfToken GetDrawMode() const = 0;
 
     /// Get prim replacing the original prim.

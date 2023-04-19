@@ -1,0 +1,15 @@
+#usda 1.0
+(
+    endFrame = 10
+    startFrame = 1
+    upAxis = "Y"
+    metersPerUnit = 1
+    defaultPrim = "Mesh"
+)
+
+def "Mesh" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    rel skel:animationSource = None
+}

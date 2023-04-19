@@ -1148,22 +1148,19 @@ _GatherMaterialParams(
     // generating the appropriate glsl code.
 
     SdrRegistry &shaderReg = SdrRegistry::GetInstance();
-    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifierAndType(
-        node.nodeTypeId, HioGlslfxTokens->glslfx);
+    SdrShaderNodeConstPtr const sdrNode =
+        shaderReg.GetShaderNodeByIdentifierAndType(
+            node.nodeTypeId, HioGlslfxTokens->glslfx);
 
-    SdfPathSet visitedNodes;
-
-    TfTokenVector parameters;
     if (sdrNode) {
-        parameters = sdrNode->GetInputNames();
+        SdfPathSet visitedNodes;
+        for (TfToken const& inputName : sdrNode->GetInputNames()) {
+            _MakeParamsForInputParameter(
+                network, node, inputName, &visitedNodes,
+                params, textureDescriptors, materialTag);
+        }
     } else {
         TF_WARN("Unrecognized node: %s", node.nodeTypeId.GetText());
-    }
-
-    for (TfToken const& inputName : parameters) {
-        _MakeParamsForInputParameter(
-            network, node, inputName, &visitedNodes,
-            params, textureDescriptors, materialTag);
     }
 
     // Set fallback values for the inputs on the terminal (excepting
@@ -1175,19 +1172,22 @@ _GatherMaterialParams(
         }
     }
 
-    // Create HdSt_MaterialParams for each primvar the terminal says it needs.
-    // Primvars come from 'attributes' in the glslfx and are seperate from
-    // the input 'parameters'. We need to create a material param for them so
-    // that these primvars survive 'primvar filtering' that discards any unused
-    // primvars on the mesh.
-    // If the network lists additional primvars, we add those too.
-    NdrTokenVec pv = sdrNode->GetPrimvars();
-    pv.insert(pv.end(), network.primvars.begin(), network.primvars.end());
-    std::sort(pv.begin(), pv.end());
-    pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
+    if (sdrNode) {
+        // Create HdSt_MaterialParams for each primvar the terminal says it
+        // needs.
+        // Primvars come from 'attributes' in the glslfx and are seperate from
+        // the input 'parameters'. We need to create a material param for them
+        // so that these primvars survive 'primvar filtering' that discards any
+        // unused primvars on the mesh.
+        // If the network lists additional primvars, we add those too.
+        NdrTokenVec pv = sdrNode->GetPrimvars();
+        pv.insert(pv.end(), network.primvars.begin(), network.primvars.end());
+        std::sort(pv.begin(), pv.end());
+        pv.erase(std::unique(pv.begin(), pv.end()), pv.end());
 
-    for (TfToken const& primvarName : pv) {
-        _MakeMaterialParamsForAdditionalPrimvar(primvarName, params);
+        for (TfToken const& primvarName : pv) {
+            _MakeMaterialParamsForAdditionalPrimvar(primvarName, params);
+        }
     }
 }
 

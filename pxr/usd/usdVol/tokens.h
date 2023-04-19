@@ -69,18 +69,18 @@ struct UsdVolTokensType {
     /// \brief "Color"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken color;
+    const TfToken Color;
     /// \brief "double2"
     /// 
     /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken double2;
     /// \brief "double3"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken double3;
     /// \brief "double"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken double_;
     /// \brief "field"
     /// 
@@ -92,7 +92,7 @@ struct UsdVolTokensType {
     const TfToken fieldClass;
     /// \brief "fieldDataType"
     /// 
-    /// UsdVolOpenVDBAsset, UsdVolField3DAsset, UsdVolFieldAsset
+    /// UsdVolFieldAsset, UsdVolField3DAsset, UsdVolOpenVDBAsset
     const TfToken fieldDataType;
     /// \brief "fieldIndex"
     /// 
@@ -116,11 +116,11 @@ struct UsdVolTokensType {
     const TfToken float2;
     /// \brief "float3"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken float3;
     /// \brief "float"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken float_;
     /// \brief "fogVolume"
     /// 
@@ -128,7 +128,7 @@ struct UsdVolTokensType {
     const TfToken fogVolume;
     /// \brief "half"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken half;
     /// \brief "half2"
     /// 
@@ -136,7 +136,7 @@ struct UsdVolTokensType {
     const TfToken half2;
     /// \brief "half3"
     /// 
-    /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr(), Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr()
+    /// Possible value for UsdVolField3DAsset::GetFieldDataTypeAttr(), Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
     const TfToken half3;
     /// \brief "int2"
     /// 
@@ -172,16 +172,16 @@ struct UsdVolTokensType {
     const TfToken matrix4d;
     /// \brief "None"
     /// 
-    /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr(), Default value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken none;
+    /// Fallback value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
+    const TfToken None_;
     /// \brief "Normal"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken normal;
+    const TfToken Normal;
     /// \brief "Point"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken point;
+    const TfToken Point;
     /// \brief "quatd"
     /// 
     /// Possible value for UsdVolOpenVDBAsset::GetFieldDataTypeAttr()
@@ -205,11 +205,31 @@ struct UsdVolTokensType {
     /// \brief "Vector"
     /// 
     /// Possible value for UsdVolFieldAsset::GetVectorDataRoleHintAttr()
-    const TfToken vector;
+    const TfToken Vector;
     /// \brief "vectorDataRoleHint"
     /// 
     /// UsdVolFieldAsset
     const TfToken vectorDataRoleHint;
+    /// \brief "Field3DAsset"
+    /// 
+    /// Schema identifer and family for UsdVolField3DAsset
+    const TfToken Field3DAsset;
+    /// \brief "FieldAsset"
+    /// 
+    /// Schema identifer and family for UsdVolFieldAsset
+    const TfToken FieldAsset;
+    /// \brief "FieldBase"
+    /// 
+    /// Schema identifer and family for UsdVolFieldBase
+    const TfToken FieldBase;
+    /// \brief "OpenVDBAsset"
+    /// 
+    /// Schema identifer and family for UsdVolOpenVDBAsset
+    const TfToken OpenVDBAsset;
+    /// \brief "Volume"
+    /// 
+    /// Schema identifer and family for UsdVolVolume
+    const TfToken Volume;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };
