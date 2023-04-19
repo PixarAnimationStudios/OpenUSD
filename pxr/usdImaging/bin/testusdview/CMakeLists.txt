@@ -234,26 +234,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdviewIntegratorEdits
-    DEST testUsdviewIntegratorEdits
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdviewSampleFilterEdits
-    DEST testUsdviewSampleFilterEdits
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdviewDisplayFilterEdits
-    DEST testUsdviewDisplayFilterEdits
-)
-
-pxr_install_test_dir(
-    SRC testenv/testUsdviewSampleAndDisplayFilters
-    DEST testUsdviewSampleAndDisplayFilters
-)
-
-pxr_install_test_dir(
     SRC testenv/testUsdviewAnimatedBounds
     DEST testUsdviewAnimatedBounds
 )
