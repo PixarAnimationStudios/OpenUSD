@@ -693,6 +693,14 @@ HdDataSourceLocatorSet::IntersectionIterator::operator++()
     return *this;
 }
 
+HdDataSourceLocatorSet::IntersectionIterator
+HdDataSourceLocatorSet::IntersectionIterator::operator++(int)
+{
+    IntersectionIterator result(*this);
+    operator++();
+    return result;
+}
+
 HdDataSourceLocatorSet::IntersectionView
 HdDataSourceLocatorSet::Intersection(const HdDataSourceLocator &locator) const
 {

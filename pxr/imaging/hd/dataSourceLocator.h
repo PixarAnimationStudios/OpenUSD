@@ -358,10 +358,21 @@ private:
 class HdDataSourceLocatorSet::IntersectionIterator
 {
 public:
-    inline IntersectionIterator(const bool isFirst,
-                                const const_iterator &iterator,
-                                const const_iterator &end,
-                                const HdDataSourceLocator &locator)
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = const HdDataSourceLocator;
+    using reference = value_type&;
+    using pointer = value_type*;
+    using difference_type = std::ptrdiff_t;
+
+    IntersectionIterator()
+      : _isFirst(false)
+    {
+    }
+
+    IntersectionIterator(const bool isFirst,
+                         const const_iterator &iterator,
+                         const const_iterator &end,
+                         const HdDataSourceLocator &locator)
       : _isFirst(isFirst)
       , _iterator(iterator)
       , _end(end)
@@ -372,15 +383,23 @@ public:
     HD_API
     const HdDataSourceLocator &operator*() const;
 
+    const HdDataSourceLocator* operator->() const
+    {
+        return std::addressof(**this);
+    }
+
     HD_API
     IntersectionIterator& operator++();
 
-    bool operator==(const IntersectionIterator &other) const
+    HD_API
+    IntersectionIterator operator++(int);
+
+    bool operator==(const IntersectionIterator &other) const noexcept
     {
         return _iterator == other._iterator;
     }
 
-    bool operator!=(const IntersectionIterator &other) const
+    bool operator!=(const IntersectionIterator &other) const noexcept
     {
         return _iterator != other._iterator;
     }
