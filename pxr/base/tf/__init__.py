@@ -44,7 +44,8 @@ if sys.version_info >= (3, 8) and platform.system() == "Windows":
             # Calling add_dll_directory raises an exception if paths don't
             # exist, or if you pass in dot
             if os.path.exists(path) and path != '.':
-                dirs.append(os.add_dll_directory(path))
+                abs_path = os.path.abspath(path)
+                dirs.append(os.add_dll_directory(abs_path))
         # This block guarantees we clear the dll directories if an exception
         # is raised in the with block.
         try:
