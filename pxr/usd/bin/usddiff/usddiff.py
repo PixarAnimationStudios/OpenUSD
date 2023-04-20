@@ -40,7 +40,7 @@ def _exit(msg, exitCode):
     sys.exit(exitCode)
 
 # generates a command list representing a call which will generate
-# a temporary ascii file used during diffing. 
+# a temporary text file used during diffing.
 def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
     command = [usdcatCmd, inPath, '--out', outPath]
     if flatten:
