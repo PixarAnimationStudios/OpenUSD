@@ -33,13 +33,6 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 
 static TfToken
-_RemoveInputsPrefix(UsdAttribute const& attr)
-{
-    return TfToken(
-        SdfPath::StripPrefixNamespace(attr.GetName(), _tokens->inputs).first);
-}
-
-static TfToken
 _GetNodeTypeId(
     UsdPrim const& prim,
     TfToken const& shaderIdToken,
@@ -70,8 +63,10 @@ UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
     UsdAttributeVector attrs = prim.GetAuthoredAttributes();
     for (const auto& attr : attrs) {
         VtValue value;
-        if (attr.Get(&value)) {
-            materialNode.parameters[_RemoveInputsPrefix(attr)] = value;
+        const std::pair<std::string, bool> inputName =
+            SdfPath::StripPrefixNamespace(attr.GetName(), _tokens->inputs);
+        if (inputName.second && attr.Get(&value)) {
+            materialNode.parameters[TfToken(inputName.first)] = value;
         }
     }
     return materialNode;
