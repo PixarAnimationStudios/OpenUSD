@@ -105,7 +105,7 @@ HdSt_ExpandVarying(const SdfPath &id, const TfToken &name,
 
     if (basis == HdTokens->catmullRom || 
         basis == HdTokens->centripetalCatmullRom ||
-        basis == HdTokens->bSpline) {
+        basis == HdTokens->bspline) {
         for (const int nVerts : vertexCounts) {
             // Handling for the case of potentially incorrect vertex counts 
             if (nVerts < 1) {

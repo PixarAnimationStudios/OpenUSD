@@ -347,7 +347,7 @@ UsdImagingBasisCurvesAdapter::GetTopology(UsdPrim const& prim,
         topoCurveBasis = HdTokens->bezier;
     }
     else if(curveBasis == UsdGeomTokens->bspline) {
-        topoCurveBasis = HdTokens->bSpline;
+        topoCurveBasis = HdTokens->bspline;
     }
     else if(curveBasis == UsdGeomTokens->catmullRom) {
         topoCurveBasis = HdTokens->catmullRom;
