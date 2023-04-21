@@ -154,7 +154,7 @@ void wrapUsdPhysicsCollisionGroup()
 namespace {
 
 static SdfPathVector
-_WrapCollisionGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
+_WrapGetCollisionGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
 {
     return table.GetCollisionGroups();
 }
