@@ -264,6 +264,24 @@ _WrapLocatorGetLastElement(const HdDataSourceLocator &self)
     return self.GetLastElement();
 }
 
+static
+std::string
+_WrapHdDataSourceLocatorStr(const HdDataSourceLocator &self)
+{
+    std::ostringstream buffer;
+    buffer << self;
+    return buffer.str();
+}
+
+static
+std::string
+_WrapHdDataSourceLocatorSetStr(const HdDataSourceLocatorSet &self)
+{
+    std::ostringstream buffer;
+    buffer << self;
+    return buffer.str();
+}
+
 void wrapHydraObserver()
 {
     {
@@ -325,7 +343,7 @@ void wrapHydraObserver()
             .def(self == self)
             .def(self != self)
             .def("__hash__", &This::Hash)
-            
+            .def("__str__", &_WrapHdDataSourceLocatorStr)
             // TODO, further methods not needed for browser case
             ;
     }
@@ -346,7 +364,7 @@ void wrapHydraObserver()
             .def("insert", (Sig3)&This::insert)
             .def("insert", (Sig4)&This::insert)
             .def("AsString", &_WrapLocatorSetAsString)
-            
+            .def("__str__", &_WrapHdDataSourceLocatorSetStr)
             // TODO, further methods not needed for browser case
             ;
     }

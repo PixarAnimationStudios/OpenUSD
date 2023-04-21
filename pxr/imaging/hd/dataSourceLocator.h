@@ -31,6 +31,8 @@
 
 #include "pxr/imaging/hd/api.h"
 
+#include <iosfwd>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdDataSourceLocator
@@ -211,6 +213,9 @@ HdDataSourceLocator::Hash() const
 {
     return TfHash()(*this);
 }
+
+HD_API std::ostream& operator<<(std::ostream& out,
+    const HdDataSourceLocator &self);
 
 //-----------------------------------------------------------------------------
 
@@ -429,6 +434,9 @@ private:
     const IntersectionIterator _begin;
     const IntersectionIterator _end;
 };
+
+HD_API std::ostream& operator<<(std::ostream& out,
+    const HdDataSourceLocatorSet &self);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

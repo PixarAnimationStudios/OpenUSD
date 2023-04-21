@@ -287,6 +287,13 @@ HdDataSourceLocator::operator<(const HdDataSourceLocator &rhs) const
     return lhslen < rhslen;
 }
 
+
+std::ostream&
+operator<<(std::ostream& out, const HdDataSourceLocator &self)
+{
+    return out << self.GetString();
+}
+
 //-----------------------------------------------------------------------------
 
 void
@@ -715,6 +722,24 @@ HdDataSourceLocatorSet::Intersection(const HdDataSourceLocator &locator) const
             end(),
             end(),
             locator));
+}
+
+std::ostream&
+operator<<(std::ostream& out, const HdDataSourceLocatorSet &self) 
+{
+    out << "{ ";
+    bool separator = false;
+    for (auto const& l : self) {
+        if (separator) {
+            out << ", ";
+        } else {
+            separator = true;
+        }
+        out << l;
+    }
+    out << " }";
+    return out;
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

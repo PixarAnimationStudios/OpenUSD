@@ -45,30 +45,6 @@ _LocatorCompare(const char *msg, const HdDataSourceLocator &loc,
 
 // clang expects these functions to be forward declared or defined before
 // the template definition (_ValueCompare) call.
-static std::ostream & 
-operator<<(
-        std::ostream &out, const HdDataSourceLocator &locator)
-{
-    return out << locator.GetString();
-}
-
-static std::ostream &
-operator<<(std::ostream &out, const HdDataSourceLocatorSet &locatorSet)
-{
-    out << "{ ";
-    bool separator = false;
-    for (auto const& l : locatorSet) {
-        if (separator) {
-           out << ", ";
-        } else {
-            separator = true;
-        }
-        out << l;
-    }
-    out << " }";
-    return out;
-}
-
 template<typename T>
 static std::ostream &
 operator<<(std::ostream &out, const std::vector<T> &vec)
