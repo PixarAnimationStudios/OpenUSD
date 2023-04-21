@@ -1062,14 +1062,28 @@ Coeffs evaluateBasis(float u, const vec4 cv[4])
 
 Coeffs evaluateBasis(float u, const vec4 cv[4])
 {
+  // centripetal arc-length
+  float d01 = sqrt(length(cv[1] - cv[0]));
+  float d12 = sqrt(length(cv[2] - cv[1]));
+  float d23 = sqrt(length(cv[3] - cv[2]));
+
+  // handling generate CVs.
+  if (d12 < 1.e-4) d12 = 1.;
+  if (d01 < 1.e-4) d01 = d12;
+  if (d23 < 1.e-4) d23 = d12;
+
+  // centripetal reparametrization
   vec4 w;
   w[0] = 0.;
-  w[1] = w[0] + sqrt(length(cv[1] - cv[0]));
-  w[2] = w[1] + sqrt(length(cv[2] - cv[1]));
-  w[3] = w[2] + sqrt(length(cv[3] - cv[2]));
+  w[1] = w[0] + d01;
+  w[2] = w[1] + d12;
+  w[3] = w[2] + d23;
 
-  float t = (1.-u)*w[1] + u*w[2];
-  float dtdu = w[2] - w[1];
+  // remap parameter value to reparametrized values.
+  const float t = (1.-u)*w[1] + u*w[2];
+  const float dtdu = w[2] - w[1];
+
+  // coefficients (and derivatives) for recursive evaluation.
 
   vec2 P01, dP01;
   vec2 P12, dP12;
@@ -1078,54 +1092,24 @@ Coeffs evaluateBasis(float u, const vec4 cv[4])
   vec2 P123, dP123;
   vec2 P0123, dP0123;
 
-  if (w[1] > w[0]) {
-    P01[0] = (w[1] - t) / (w[1] - w[0]);
-    dP01[0] = - dtdu / (w[1] - w[0]);
-  } else {
-    P01[0] = 0.;
-    dP01[0] = 0.;
-  }
+  P01[0] = (w[1] - t) / (w[1] - w[0]);
+  dP01[0] = - dtdu / (w[1] - w[0]);
+  
+  P12[0] = (w[2] - t) / (w[2] - w[1]);
+  dP12[0] = - dtdu / (w[2] - w[1]);
 
-  if (w[2] > w[1]) {
-    P12[0] = (w[2] - t) / (w[2] - w[1]);
-    dP12[0] = - dtdu / (w[2] - w[1]);
-  } else {
-    P12[0] = 0.;
-    dP12[0] = 0.;
-  }
-
-  if (w[3] > w[2]) {
-    P23[0] = (w[3] - t) / (w[3] - w[2]);
-    dP23[0] = - dtdu / (w[3] - w[2]);
-  } else {
-    P23[0] = 0.;
-    dP23[0] = 0.;
-  }
-
-  if (w[2] > w[0]) {
-      P012[0] = (w[2] - t) / (w[2] - w[0]);
-      dP012[0] = - dtdu / (w[2] - w[0]);
-  } else {
-      P012[0] = 0.;
-      dP012[0] = 0.;
-  }
-
-  if (w[3] > w[1]) {
-    P123[0] = (w[3] - t) / (w[3] - w[1]);
-    dP123[0] = - dtdu / (w[3] - w[1]);
-  } else {
-    P123[0] = 0.;
-    dP123[0] = 0.;
-  }
-
-  if (w[2] > w[1]) {
-    P0123[0] = (w[2] - t) / (w[2] - w[1]);
-    dP0123[0] = - dtdu / (w[2] - w[1]);
-  } else {
-    P0123[0] = 0.;
-    dP0123[0] = 0.;
-  }
-
+  P23[0] = (w[3] - t) / (w[3] - w[2]);
+  dP23[0] = - dtdu / (w[3] - w[2]);
+  
+  P012[0] = (w[2] - t) / (w[2] - w[0]);
+  dP012[0] = - dtdu / (w[2] - w[0]);
+  
+  P123[0] = (w[3] - t) / (w[3] - w[1]);
+  dP123[0] = - dtdu / (w[3] - w[1]);
+  
+  P0123[0] = (w[2] - t) / (w[2] - w[1]);
+  dP0123[0] = - dtdu / (w[2] - w[1]);
+  
   P01[1] = 1. - P01[0]; 
   P12[1] = 1. - P12[0]; 
   P23[1] = 1. - P23[0]; 
