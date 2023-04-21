@@ -62,6 +62,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
+                    },
+                    "HdPrman_RenderSettingsFilteringSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Render Settings Filtering Scene Index"
                     }
                 }
             },

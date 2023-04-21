@@ -113,6 +113,7 @@ pxr_plugin(${PXR_PACKAGE}
         pinnedCurveExpandingSceneIndexPlugin
         renderBuffer
         renderParam
+        renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
         velocityMotionBlurSceneIndexPlugin
