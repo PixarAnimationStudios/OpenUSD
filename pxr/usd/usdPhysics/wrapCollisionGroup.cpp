@@ -154,7 +154,7 @@ void wrapUsdPhysicsCollisionGroup()
 namespace {
 
 static SdfPathVector
-_WrapGetGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
+_WrapCollisionGroups(const UsdPhysicsCollisionGroup::CollisionGroupTable &table)
 {
     return table.GetCollisionGroups();
 }
@@ -208,7 +208,7 @@ WRAP_CUSTOM {
         ;
 
     class_<UsdPhysicsCollisionGroup::CollisionGroupTable>("CollisionGroupTable")
-        .def("GetGroups", &_WrapGetGroups,
+        .def("GetCollisionGroups", &_WrapGetCollisionGroups,
              return_value_policy<TfPySequenceToList>())
         .def("IsCollisionEnabled", &_WrapIsCollisionEnabled)
         ;
