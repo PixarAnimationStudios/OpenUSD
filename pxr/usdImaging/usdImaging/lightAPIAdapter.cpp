@@ -36,14 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX currently private while experimenting with this convention.
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (isLight)
-    (materialSyncMode)
-);
-
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingLightAPIAdapter Adapter;
@@ -118,9 +110,9 @@ public:
             //       collection.
             return HdRetainedTypedSampledDataSource<TfToken>::New(
                 c.GetCollectionPath().GetToken());
-        } else if (name == _tokens->isLight) {
+        } else if (name == HdTokens->isLight) {
             return HdRetainedTypedSampledDataSource<bool>::New(true);
-        } else if (name == _tokens->materialSyncMode) {
+        } else if (name == HdTokens->materialSyncMode) {
             if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
                 TfToken v;
                 if (attr.Get(&v)) {
@@ -140,8 +132,8 @@ private:
             HdTokens->filters,
             HdTokens->lightLink,
             HdTokens->shadowLink,
-            _tokens->isLight,
-            _tokens->materialSyncMode,
+            HdTokens->isLight,
+            HdTokens->materialSyncMode,
         };
 
         return names;
@@ -216,13 +208,13 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
         //       instance. Let's assume collections defined here are linking
         //       related.
         if (!dirtiedLight
-                && UsdCollectionAPI::CanContainPropertyName(propertyName)){
+                && (UsdCollectionAPI::CanContainPropertyName(propertyName)
+                    // This will capture other contents of light data source
+                    || TfStringStartsWith(propertyName.GetString(), "light:"))){
             dirtiedLight = true;
             result.insert(HdLightSchema::GetDefaultLocator());
         }
     }
-
-    // TODO: contents of light data source
 
     return result;
 }
