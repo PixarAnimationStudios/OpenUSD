@@ -764,10 +764,11 @@ public:
 
             if (wrap == HdTokens->pinned &&
                 (basis == HdTokens->bspline ||
-                 basis == HdTokens->catmullRom)) {
+                 basis == HdTokens->catmullRom ||
+                 basis == HdTokens->centripetalCatmullRom)) {
 
                 // Add 2 additional end points for bspline and
-                // 1 for catmullRom.
+                // 1 for catmullRom|centripetalCatmullRom.
                 const size_t numExtraEnds =
                     (basis == HdTokens->bspline)? 2 : 1;
                 

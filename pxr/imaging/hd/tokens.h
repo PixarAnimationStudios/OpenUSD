@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (blurScale)                                 \
     (camera)                                    \
     (catmullRom)                                \
+    (centripetalCatmullRom)                     \
     (collection)                                \
     (computeShader)                             \
     (coordSysBindings)                          \

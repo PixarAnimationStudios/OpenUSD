@@ -70,6 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((curvesBezier,                    "Curves.BezierBasis"))
     ((curvesBspline,                   "Curves.BsplineBasis"))
     ((curvesCatmullRom,                "Curves.CatmullRomBasis"))
+    ((curvesCentripetalCatmullRom,     "Curves.CentripetalCatmullRomBasis"))
     ((curvesFallback,                  "Curves.LinearBasis"))
 
     // point id mixins (for point picking & selection)
@@ -153,6 +154,8 @@ static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
         return _tokens->curvesCatmullRom;
     else if (basis == HdTokens->bspline)
         return _tokens->curvesBspline;
+    else if (basis == HdTokens->centripetalCatmullRom)
+        return _tokens->curvesCentripetalCatmullRom;
     TF_WARN("Unknown basis");
     return _tokens->curvesFallback;
 }

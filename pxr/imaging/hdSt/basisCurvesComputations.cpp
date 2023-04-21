@@ -120,7 +120,9 @@ HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
     const TfToken basis = _topology->GetCurveBasis();
-    const bool skipFirstAndLastSegs = (basis == HdTokens->catmullRom);
+    const bool skipFirstAndLastSegs = 
+        (basis == HdTokens->catmullRom ||
+         basis == HdTokens->centripetalCatmullRom);
 
     std::vector<GfVec2i> indices;
     // primIndices stores the curve index that generated each line segment.
