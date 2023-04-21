@@ -75,7 +75,7 @@ HdStVBOMemoryManager::CreateBufferArrayRange()
 }
 
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStVBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const

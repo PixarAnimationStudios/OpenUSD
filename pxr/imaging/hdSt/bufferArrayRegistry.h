@@ -21,17 +21,16 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_BUFFER_ARRAY_REGISTRY_H
-#define PXR_IMAGING_HD_BUFFER_ARRAY_REGISTRY_H
+#ifndef PXR_IMAGING_HD_ST_BUFFER_ARRAY_REGISTRY_H
+#define PXR_IMAGING_HD_ST_BUFFER_ARRAY_REGISTRY_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/perfLog.h"
-#include "pxr/imaging/hd/strategyBase.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -49,52 +48,52 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 using HdBufferArraySharedPtr = std::shared_ptr<class HdBufferArray>;
 
-/// \class HdBufferArrayRegistry
+/// \class HdStBufferArrayRegistry
 ///
 /// Manages the pool of buffer arrays.
 ///
-class HdBufferArrayRegistry 
+class HdStBufferArrayRegistry 
 {
 public:
-    HF_MALLOC_TAG_NEW("new HdBufferArrayRegistry");
+    HF_MALLOC_TAG_NEW("new HdStBufferArrayRegistry");
 
-    HD_API
-    HdBufferArrayRegistry();
-    ~HdBufferArrayRegistry()   = default;
+    HDST_API
+    HdStBufferArrayRegistry();
+    ~HdStBufferArrayRegistry() = default;
 
     /// Allocate new buffer array range using strategy
     /// Thread-Safe
-    HD_API
+    HDST_API
     HdBufferArrayRangeSharedPtr AllocateRange(
-        HdAggregationStrategy *strategy,
+        HdStAggregationStrategy *strategy,
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
 
     /// Triggers reallocation on all buffers managed by the registry.
-    HD_API
-    void   ReallocateAll(HdAggregationStrategy *strategy);
+    HDST_API
+    void   ReallocateAll(HdStAggregationStrategy *strategy);
 
     /// Frees up buffers that no longer contain any allocated ranges.
-    HD_API
+    HDST_API
     void   GarbageCollect();
 
     /// Generate a report on resources consumed by the managed
     /// buffer array.  The returned size is an esitmate of the 
     /// gpu memory consumed by the buffers
-    HD_API
-    size_t GetResourceAllocation(HdAggregationStrategy *strategy, 
+    HDST_API
+    size_t GetResourceAllocation(HdStAggregationStrategy *strategy, 
                                  VtDictionary &result) const;
     
     /// Debug dump
-    HD_API
+    HDST_API
     friend std::ostream &operator <<(std::ostream &out,
-                                     const HdBufferArrayRegistry& self);
+                                     const HdStBufferArrayRegistry& self);
 
 private:
 
-    HdBufferArrayRegistry(const HdBufferArrayRegistry &) = delete;
-    HdBufferArrayRegistry &operator=(const HdBufferArrayRegistry &) = delete;
+    HdStBufferArrayRegistry(const HdStBufferArrayRegistry &) = delete;
+    HdStBufferArrayRegistry &operator=(const HdStBufferArrayRegistry &)=delete;
 
     typedef std::list<HdBufferArraySharedPtr> _HdBufferArraySharedPtrList;
 
@@ -136,8 +135,8 @@ private:
         const _Entry &_entry;
     };
 
-    typedef tbb::concurrent_unordered_map< HdAggregationStrategy::AggregationId, _Entry> _BufferArrayIndex;
-
+    using _BufferArrayIndex = tbb::concurrent_unordered_map<
+                                HdStAggregationStrategy::AggregationId, _Entry>;
     _BufferArrayIndex _entries;
 
     /// Concurrently adds a new buffer to an entry in the cache.
@@ -149,7 +148,7 @@ private:
     /// role and bufferSpecs are parameters to the BufferArray creation.
     void _InsertNewBufferArray(_Entry &entry,
                                const HdBufferArraySharedPtr &expectedTail,
-                               HdAggregationStrategy *strategy,
+                               HdStAggregationStrategy *strategy,
                                TfToken const &role,
                                HdBufferSpecVector const &bufferSpecs,
                                HdBufferArrayUsageHint usageHint);
@@ -158,4 +157,4 @@ private:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_BUFFER_ARRAY_REGISTRY_H
+#endif // PXR_IMAGING_HD_ST_BUFFER_ARRAY_REGISTRY_H

@@ -21,22 +21,21 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/bufferArrayRegistry.h"
+#include "pxr/imaging/hdSt/bufferArrayRegistry.h"
 #include "pxr/imaging/hd/bufferArray.h"
 
-#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdBufferArrayRegistry::HdBufferArrayRegistry()
+HdStBufferArrayRegistry::HdStBufferArrayRegistry()
  : _entries()
 {
 }
 
 
-HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
-        HdAggregationStrategy *strategy,
+HdBufferArrayRangeSharedPtr HdStBufferArrayRegistry::AllocateRange(
+        HdStAggregationStrategy *strategy,
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint)
@@ -55,7 +54,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
     }
 
     // compute an aggregation Id on current aggregation strategy
-    HdAggregationStrategy::AggregationId aggrId =
+    HdStAggregationStrategy::AggregationId aggrId =
         strategy->ComputeAggregationId(bufferSpecs, usageHint);
 
     // We use insert to do a find and insert operation
@@ -142,7 +141,7 @@ HdBufferArrayRangeSharedPtr HdBufferArrayRegistry::AllocateRange(
 
 
 void
-HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
+HdStBufferArrayRegistry::ReallocateAll(HdStAggregationStrategy *strategy)
 {
     for (auto& entry : _entries) {
         for (auto bufferIt = entry.second.bufferArrays.begin(), 
@@ -214,7 +213,7 @@ HdBufferArrayRegistry::ReallocateAll(HdAggregationStrategy *strategy)
 }
 
 void
-HdBufferArrayRegistry::GarbageCollect()
+HdStBufferArrayRegistry::GarbageCollect()
 {
     _BufferArrayIndex::iterator entryIt = _entries.begin();
 
@@ -240,8 +239,9 @@ HdBufferArrayRegistry::GarbageCollect()
 }
 
 size_t
-HdBufferArrayRegistry::GetResourceAllocation(HdAggregationStrategy *strategy,
-                                             VtDictionary &result) const
+HdStBufferArrayRegistry::GetResourceAllocation(
+    HdStAggregationStrategy *strategy,
+    VtDictionary &result) const
 {
     size_t gpuMemoryUsed = 0;
     TF_FOR_ALL (entryIt, _entries) {
@@ -255,10 +255,10 @@ HdBufferArrayRegistry::GetResourceAllocation(HdAggregationStrategy *strategy,
 }
 
 void
-HdBufferArrayRegistry::_InsertNewBufferArray(
+HdStBufferArrayRegistry::_InsertNewBufferArray(
     _Entry &entry,
     const HdBufferArraySharedPtr &expectedTail,
-    HdAggregationStrategy *strategy,
+    HdStAggregationStrategy *strategy,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
@@ -289,9 +289,9 @@ HdBufferArrayRegistry::_InsertNewBufferArray(
 
 HD_API
 std::ostream &
-operator <<(std::ostream &out, const HdBufferArrayRegistry& self)
+operator <<(std::ostream &out, const HdStBufferArrayRegistry& self)
 {
-    out << "HdBufferArrayRegistry " << &self << " :\n";
+    out << "HdStBufferArrayRegistry " << &self << " :\n";
     TF_FOR_ALL (entryIt, self._entries) {
         out << "  _Entry aggrId = " << entryIt->first << ": \n";
         

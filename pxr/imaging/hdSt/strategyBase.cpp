@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/strategyBase.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdAggregationStrategy::~HdAggregationStrategy()
+HdStAggregationStrategy::~HdStAggregationStrategy()
 {
 }
 

@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/strategyBase.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
+
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -44,7 +44,7 @@ class HdStResourceRegistry;
 ///
 /// This class doesn't perform any aggregation.
 ///
-class HdStVBOSimpleMemoryManager : public HdAggregationStrategy
+class HdStVBOSimpleMemoryManager : public HdStAggregationStrategy
 {
 public:
     HdStVBOSimpleMemoryManager(HdStResourceRegistry* resourceRegistry)
@@ -64,7 +64,7 @@ public:
 
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
-    virtual HdAggregationStrategy::AggregationId ComputeAggregationId(
+    virtual HdStAggregationStrategy::AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint) const;
 

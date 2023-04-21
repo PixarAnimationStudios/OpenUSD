@@ -28,7 +28,6 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRegistry
         bufferResource
         bufferSource
         bufferSpec
@@ -164,7 +163,6 @@ pxr_library(hd
         sortedIds
         sphereSchema
         sprim
-        strategyBase
         subdivisionTagsSchema
         systemSchema
         task

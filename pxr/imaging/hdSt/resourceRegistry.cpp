@@ -1120,8 +1120,8 @@ HdStResourceRegistry::_GarbageCollect()
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_AllocateBufferArrayRange(
-    HdAggregationStrategy *strategy,
-    HdBufferArrayRegistry &bufferArrayRegistry,
+    HdStAggregationStrategy *strategy,
+    HdStBufferArrayRegistry &bufferArrayRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
@@ -1135,8 +1135,8 @@ HdStResourceRegistry::_AllocateBufferArrayRange(
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_UpdateBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
+        HdStAggregationStrategy *strategy,
+        HdStBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferArrayRangeSharedPtr const& curRange,
         HdBufferSpecVector const &updatedOrAddedSpecs,

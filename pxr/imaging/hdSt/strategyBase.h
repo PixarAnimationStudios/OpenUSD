@@ -21,12 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_STRATEGY_BASE_H
-#define PXR_IMAGING_HD_STRATEGY_BASE_H
+#ifndef PXR_IMAGING_HD_ST_STRATEGY_BASE_H
+#define PXR_IMAGING_HD_ST_STRATEGY_BASE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
+
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferArray.h"
 
@@ -41,17 +41,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdBufferArraySharedPtr = std::shared_ptr<class HdBufferArray>;
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
 
-/// \class HdAggregationStrategy
+/// \class HdStAggregationStrategy
 ///
 /// Aggregation strategy base class.
 ///
-class HdAggregationStrategy {
+class HdStAggregationStrategy {
 public:
     /// Aggregation ID
     typedef size_t AggregationId;
 
-    HD_API
-    virtual ~HdAggregationStrategy();
+    HDST_API
+    virtual ~HdStAggregationStrategy();
 
     /// Factory for creating HdBufferArray
     virtual HdBufferArraySharedPtr CreateBufferArray(
@@ -79,11 +79,11 @@ public:
         VtDictionary &result) const = 0;
 
     /// (Optional) called to Flush consolidated / staging buffers.
-    HD_API
+    HDST_API
     virtual void Flush() {}
 };
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HD_STRATEGY_BASE_H
+#endif  // PXR_IMAGING_HD_ST_STRATEGY_BASE_H

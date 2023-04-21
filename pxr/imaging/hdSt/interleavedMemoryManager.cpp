@@ -135,7 +135,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
             HdPerfTokens->garbageCollectedUbo);
 }
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStInterleavedUBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const
@@ -176,7 +176,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
             HdPerfTokens->garbageCollectedSsbo);
 }
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const

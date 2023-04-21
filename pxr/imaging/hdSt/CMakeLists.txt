@@ -57,6 +57,7 @@ pxr_library(hdSt
         binding
         bufferArrayRange
         bufferResource
+        bufferArrayRegistry
         commandBuffer
         copyComputation
         debugCodes
@@ -110,6 +111,7 @@ pxr_library(hdSt
         simpleLightingShader
         smoothNormals
         stagingBuffer
+        strategyBase
         subtextureIdentifier
         textureBinder
         textureCpuData
