@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/kind/registry.h"
@@ -123,7 +124,17 @@ HdDataSourceBaseHandle
 UsdImagingDataSourcePurpose::Get(const TfToken &name)
 {
     if (name == HdPurposeSchemaTokens->purpose) {
-        return UsdImagingDataSourceAttributeNew(_purposeQuery, _stageGlobals);
+        TfToken purpose;
+        // Purpose is uniform, so just use a retained data source.
+        if (_purposeQuery.Get<TfToken>(&purpose)) {
+            if (purpose == UsdGeomTokens->default_) {
+                static HdDataSourceBaseHandle const ds =
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        HdTokens->geometry);
+                return ds;
+            }
+            return HdRetainedTypedSampledDataSource<TfToken>::New(purpose);
+        }
     }
 
     return nullptr;
