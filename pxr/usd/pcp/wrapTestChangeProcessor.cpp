@@ -102,8 +102,7 @@ public:
 private:
     void _HandleLayerDidChange(const SdfNotice::LayersDidChange& n)
     {
-        _changes.DidChange(
-            TfSpan<const PcpCache *>(&_cache, 1), n.GetChangeListVec());
+        _changes.DidChange(_cache, n.GetChangeListVec());
         _changes.Apply();
     }
 

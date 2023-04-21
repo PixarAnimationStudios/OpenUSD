@@ -4088,8 +4088,7 @@ UsdStage::_HandleLayersDidChange(
 
     PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
-    changes.DidChange(
-        TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
+    changes.DidChange(cache, n.GetChangeListVec());
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
