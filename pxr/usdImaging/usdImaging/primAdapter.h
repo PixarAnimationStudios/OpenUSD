@@ -470,6 +470,18 @@ public:
                               UsdTimeCode time) const;
 
     // ---------------------------------------------------------------------- //
+    /// \name Light Params
+    // ---------------------------------------------------------------------- //
+
+    USDIMAGING_API
+    virtual VtValue
+    GetLightParamValue(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        const TfToken& paramName,
+        UsdTimeCode time) const;
+
+    // ---------------------------------------------------------------------- //
     /// \name Utilities 
     // ---------------------------------------------------------------------- //
 

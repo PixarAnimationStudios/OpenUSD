@@ -1034,6 +1034,42 @@ UsdImagingPointInstancerAdapter::MarkVisibilityDirty(
 }
 
 void
+UsdImagingPointInstancerAdapter::MarkLightParamsDirty(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        SdfPath instancerPath = cachePath.GetParentPath();
+        const _ProtoPrim& proto = _GetProtoPrim(instancerPath, cachePath);
+        
+        proto.adapter->MarkLightParamsDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits lightParamsDirty =
+            HdChangeTracker::DirtyParams;
+        index->MarkInstancerDirty(cachePath, lightParamsDirty);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkCollectionsDirty(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        SdfPath instancerPath = cachePath.GetParentPath();
+        const _ProtoPrim& proto = _GetProtoPrim(instancerPath, cachePath);
+
+        proto.adapter->MarkCollectionsDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits collectionsDirty =
+            HdChangeTracker::DirtyCategories;
+        index->MarkInstancerDirty(cachePath, collectionsDirty);
+    }
+}
+
+void
 UsdImagingPointInstancerAdapter::_UnloadInstancer(SdfPath const& instancerPath,
                                             UsdImagingIndexProxy* index)
 {
@@ -1958,6 +1994,39 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
         return GetMaterialUsdPath(instanceProxyPrim);
     }
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetLightParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        const _ProtoPrim proto = _GetProtoPrim(prim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetLightParamValue(
+            protoPrim, cachePath, paramName, time);
+    }
+    return BaseAdapter::GetLightParamValue(prim, cachePath, paramName, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetMaterialResource(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        const _ProtoPrim& proto = _GetProtoPrim(prim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetMaterialResource(protoPrim, cachePath, time);
+    }
+    return BaseAdapter::GetMaterialResource(prim, cachePath, time);
 }
 
 /*virtual*/
