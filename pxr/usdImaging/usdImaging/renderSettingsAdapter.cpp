@@ -242,12 +242,18 @@ UsdImagingRenderSettingsAdapter::ProcessPropertyChange(
     SdfPath const& cachePath, 
     TfToken const& propertyName)
 {
-    // XXX Process property changes on RenderSettings prim, as well as changes
-    //     to targeted RenderProduct and RenderVar prims.
-    //     For now, return AllDirty as a catch-all.
-    //     This should be HdRenderSettings::AllDirty, but UsdImagingDelegate
-    //     relies on the enum value below instead to flag resync.
-    return HdChangeTracker::AllDirty;
+    if (propertyName == UsdRenderTokens->includedPurposes) {
+        return HdRenderSettings::DirtyIncludedPurposes;
+    }
+    if (propertyName == UsdRenderTokens->materialBindingPurposes) {
+        return HdRenderSettings::DirtyMaterialBindingPurposes;
+    }
+    if (propertyName == UsdRenderTokens->renderingColorSpace) {
+        return HdRenderSettings::DirtyRenderingColorSpace;
+    }
+    // XXX Bucket all other changes as product or namespaced setting related.
+    return HdRenderSettings::DirtyNamespacedSettings |
+           HdRenderSettings::DirtyRenderProducts;
 }
 
 void
