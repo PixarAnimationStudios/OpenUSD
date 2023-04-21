@@ -30,12 +30,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfDebug)
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_LAYER, "SdfLayer loading and lifetime");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_CHANGES, "Sdf change notification");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_ASSET, "Sdf asset resolution");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_ASSET_TRACE_INVALID_CONTEXT,
-        "Post stack trace when opening an SdfLayer with no path resolver context");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(SDF_FILE_FORMAT, "Sdf file format plugins");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        SDF_ASSET, "Sdf asset resolution diagnostics");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        SDF_CHANGES, "Sdf layer change notifications");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        SDF_FILE_FORMAT, "Sdf file format registration");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(
+        SDF_LAYER, "Sdf layer loading and lifetime");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
