@@ -87,6 +87,7 @@ pxr_library(hdSt
         hioConversions
         imageShaderRenderPass
         implicitSurfaceSceneIndexPlugin
+        nurbsApproximatingSceneIndexPlugin
         instancer
         interleavedMemoryManager
         light      

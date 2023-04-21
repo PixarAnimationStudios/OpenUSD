@@ -266,7 +266,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cube)                                      \
     (cylinder)                                  \
     (mesh)                                      \
+    (nurbsPatch)                                \
     (basisCurves)                               \
+    (nurbsCurves)                               \
     (points)                                    \
     (sphere)                                    \
     (volume)                                    \

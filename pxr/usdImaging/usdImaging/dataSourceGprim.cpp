@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/dataSourceGprim.h"
 
+#include "pxr/usd/usdGeom/curves.h"
 #include "pxr/usd/usdGeom/pointBased.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 
@@ -33,13 +34,25 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 static
+UsdImagingDataSourceCustomPrimvars::Mappings
+_Merge(const UsdImagingDataSourceCustomPrimvars::Mappings &a,
+       const UsdImagingDataSourceCustomPrimvars::Mappings &b)
+{
+    UsdImagingDataSourceCustomPrimvars::Mappings result = a;
+    for (const auto &mapping : b) {
+        result.push_back(mapping);
+    }
+    return result;
+}
+
+static
 const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
     if (usdPrim.IsA<UsdGeomPointBased>()) {
         static const UsdImagingDataSourceCustomPrimvars::Mappings
             forPointBased = {
-                {HdTokens->points,
+                {HdPrimvarsSchemaTokens->points,
                     UsdGeomTokens->points},
                 {HdTokens->velocities,
                     UsdGeomTokens->velocities},
@@ -49,9 +62,19 @@ _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
                     UsdGeomTokens->motionNonlinearSampleCount},
                 {HdTokens->blurScale,
                     UsdGeomTokens->motionBlurScale},
-                {HdTokens->normals,
+                {HdPrimvarsSchemaTokens->normals,
                     UsdGeomTokens->normals},
             };
+
+        if (usdPrim.IsA<UsdGeomCurves>()) {
+            static const UsdImagingDataSourceCustomPrimvars::Mappings
+                forCurves = _Merge(
+                    forPointBased,
+                    {
+                        {HdPrimvarsSchemaTokens->widths,
+                             UsdGeomTokens->widths}});
+            return forCurves;
+        }
 
         return forPointBased;
     }

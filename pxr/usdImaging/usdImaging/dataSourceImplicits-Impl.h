@@ -103,6 +103,7 @@ private:
     using _DataSource =
         UsdImagingDataSourceSchemaBased<
             UsdSchemaType,
+            /* UsdSchemaBaseTypes = */ std::tuple<>,
             UsdImagingImplicitsSchemaTranslator<HdSchemaType>>;
 
     // Private constructor, use static New() instead.

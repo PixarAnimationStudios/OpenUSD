@@ -36,6 +36,8 @@ pxr_library(usdImaging
         dataSourceGprim
         dataSourceMaterial
         dataSourceMesh
+        dataSourceNurbsCurves
+        dataSourceNurbsPatch
         dataSourcePointInstancer
         dataSourcePoints
         dataSourcePrim

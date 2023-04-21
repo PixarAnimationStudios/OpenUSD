@@ -111,6 +111,9 @@ pxr_library(hd
         meshTopologySchema
         meshUtil
         noticeBatchingSceneIndex
+        nurbsCurvesSchema
+        nurbsPatchSchema
+        nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle

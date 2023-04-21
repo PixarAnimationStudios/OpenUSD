@@ -128,17 +128,6 @@ UsdImagingDataSourceBasisCurvesPrim::GetNames()
 }
 
 
-static
-const UsdImagingDataSourceCustomPrimvars::Mappings &
-_GetCustomPrimvarMappings(const UsdPrim &usdPrim)
-{
-    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        {HdTokens->widths, HdTokens->widths},
-    };
-
-    return mappings;
-}
-
 HdDataSourceBaseHandle 
 UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
 {
@@ -149,24 +138,7 @@ UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
                 _GetStageGlobals());
     }
 
-    HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
-    if (name == HdPrimvarsSchemaTokens->primvars) {
-        HdContainerDataSourceHandle customPvs =
-            UsdImagingDataSourceCustomPrimvars::New(
-                _GetSceneIndexPath(),
-                _GetUsdPrim(),
-                _GetCustomPrimvarMappings(_GetUsdPrim()),
-                _GetStageGlobals());
-
-        if (HdContainerDataSourceHandle basePvs =
-                HdContainerDataSource::Cast(result)) {
-            result = HdOverlayContainerDataSource::New(basePvs, customPvs);
-        } else {
-            result = customPvs;
-        }
-    }
-
-    return result;
+    return UsdImagingDataSourceGprim::Get(name);
 }
 
 /*static*/
@@ -181,9 +153,6 @@ UsdImagingDataSourceBasisCurvesPrim::Invalidate(
     if (subprim.IsEmpty()) {
         result = UsdImagingDataSourceGprim::Invalidate(
             prim, subprim, properties);
-
-        result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
-            properties, _GetCustomPrimvarMappings(prim)));
 
         for (const TfToken &propertyName : properties) {
             if (propertyName == UsdGeomTokens->curveVertexCounts) {
