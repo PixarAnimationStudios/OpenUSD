@@ -79,6 +79,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (patch)
     (hd_barycentricCoord)
     (hd_patchID)
+    (hd_tessCoord)
     (hd_vec3)
     (hd_vec3_get)
     (hd_vec3_set)
@@ -1970,6 +1971,31 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
+    // We plumb the evaluated position in patch from PTVS to FS since this
+    // is more consistent than using built-in barycentric coords and can be
+    // used even when builtin barycentric coords are not available. We pass
+    // only the first two components between stages and provide an accessor
+    // which can reconstruct the full three component barycentric form.
+    if (_hasPTVS) {
+        _AddInterstageElement(&_resPTVS,
+            HdSt_ResourceLayout::InOut::STAGE_OUT,
+            /*name=*/_tokens->hd_tessCoord,
+            /*dataType=*/_tokens->vec2);
+        _AddInterstageElement(&_resFS,
+            HdSt_ResourceLayout::InOut::STAGE_IN,
+            /*name=*/_tokens->hd_tessCoord,
+            /*dataType=*/_tokens->vec2);
+
+        _genFS << "vec2 GetTessCoord() {\n"
+                  "  return hd_tessCoord;\n"
+                  "}\n"
+                  "vec3 GetTessCoordTriangle() {\n"
+                  "  return vec3("
+                  "hd_tessCoord.x, hd_tessCoord.y, "
+                  "1 - hd_tessCoord.x - hd_tessCoord.y);\n"
+                  "}\n";
+    }
+
     // PrimitiveID emulation
     if (requiresPrimitiveIdEmulation) {
         if (_hasPTVS) {
@@ -2056,11 +2082,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             {
                 // These correspond to built-in fragment shader barycentric
                 // coords except reversed for the second triangle in the quad.
-                // Each quad is split into two triangles with indices (3,0,2)
-                // and (1,2,0).
+                // Each quad is split into two triangles with indices (0,1,2)
+                // and (2,3,0).
                 _procGS << "  const vec3 coords[4] = vec3[](\n"
-                        << "   vec3(0,0,1), vec3(1,0,0), "
-                        << "vec3(0,1,0), vec3(1,0,0)\n"
+                        << "   vec3(1,0,0), vec3(0,1,0), "
+                        << "vec3(0,0,1), vec3(0,1,0)\n"
                         << "  );\n"
                         << "  hd_barycentricCoord = coords[index];\n";
                 break;
@@ -2084,6 +2110,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 ;
         }
     }
+
+    if (_hasPTVS) {
+        _procPTVSOut << "  hd_tessCoord = gl_TessCoord.xy;\n";
+    }
+
     if (requiresPrimitiveIdEmulation) {
         _procPTVSOut << "  hd_patchID = patch_id;\n";
     }
