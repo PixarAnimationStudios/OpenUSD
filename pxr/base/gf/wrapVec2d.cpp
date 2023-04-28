@@ -223,7 +223,7 @@ static list __getslice__(const GfVec2d &self, slice indices) {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
         //
-        bounds = indices.get_indicies<>(begin, end);
+        bounds = indices.get_indices<>(begin, end);
     } catch (std::invalid_argument const &) {
         return result;
     }
@@ -283,7 +283,7 @@ static void __setslice__(GfVec2d &self, slice indices, object values) {
         // This appears to be a typo in the boost headers.  The method
         // name should be "get_indices".
         //
-        bounds = indices.get_indicies<>(begin, end);
+        bounds = indices.get_indices<>(begin, end);
     } catch (std::invalid_argument const &) {
         sliceLength = 0;
     }

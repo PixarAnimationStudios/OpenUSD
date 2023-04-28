@@ -128,7 +128,7 @@ private:
         if (x._Validate()) {
             try {
                 slice::range<typename Type::const_iterator> range =
-                    index.get_indicies(x.begin(), x.end());
+                    index.get_indices(x.begin(), x.end());
                 for (; range.start != range.stop; range.start += range.step) {
                     result.append(*range.start);
                 }
@@ -160,7 +160,7 @@ private:
         size_t start, step, count;
         try {
             slice::range<typename Type::iterator> range =
-                index.get_indicies(x.begin(), x.end());
+                index.get_indices(x.begin(), x.end());
             start = range.start - x.begin();
             step  = range.step;
             count = 1 + (range.stop - range.start) / range.step;
@@ -211,7 +211,7 @@ private:
             try {
                 // Get the range and the number of items in the slice.
                 slice::range<typename Type::iterator> range =
-                    index.get_indicies(x.begin(), x.end());
+                    index.get_indices(x.begin(), x.end());
                 size_t start = range.start - x.begin();
                 size_t step  = range.step;
                 size_t count = 1 + (range.stop - range.start) / range.step;

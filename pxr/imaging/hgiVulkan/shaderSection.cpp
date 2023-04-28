@@ -46,7 +46,7 @@ void
 HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
-    //identifiers and indicies
+    //identifiers and indices
     const HgiShaderSectionAttributeVector &attributes = GetAttributes();
 
     if(!attributes.empty()) {
@@ -462,7 +462,7 @@ bool
 HgiVulkanBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
     //If it has attributes, write them with corresponding layout
-    //identifiers and indicies
+    //identifiers and indices
     const HgiShaderSectionAttributeVector &attributes = GetAttributes();
 
     if(!attributes.empty()) {

@@ -46,7 +46,7 @@ void
 HgiGLShaderSection::WriteDeclaration(std::ostream &ss) const
 {
     //If it has attributes, write them with corresponding layout
-    //identifiers and indicies
+    //identifiers and indices
     const HgiShaderSectionAttributeVector &attributes = GetAttributes();
 
     if (!attributes.empty()) {
@@ -463,7 +463,7 @@ bool
 HgiGLBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
 {
     //If it has attributes, write them with corresponding layout
-    //identifiers and indicies
+    //identifiers and indices
     const HgiShaderSectionAttributeVector &attributes = GetAttributes();
 
     if(!attributes.empty()) {

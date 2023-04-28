@@ -44,7 +44,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// The hydra prim type used to identify generative procedurals can be
 /// configured per instance of this scene index to allow for a pipeline to
 /// stage when certain procedural prims are resolved within the chain of scene
-/// indicies. By default that type is "generativeProcedural".
+/// indices. By default that type is "generativeProcedural".
 /// 
 /// This scene index also re-types (to its observers) any procedural prim it
 /// acts upon to be of type "resolvedGenerativeProcedural" to avoid potentially

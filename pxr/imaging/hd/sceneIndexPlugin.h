@@ -42,7 +42,7 @@ public:
 
 protected:
 
-    /// Subclasses implement this to instantiate one or more scene indicies
+    /// Subclasses implement this to instantiate one or more scene indices
     /// which take the provided scene as input. The return value should be
     /// the final scene created -- or the inputScene itself if nothing is
     /// created.
