@@ -2869,7 +2869,7 @@ _ExpandVarsInProductName(const std::string & productName,
                                 sourcePrimName);
         }
     }
-    // Support printf style formating in file name, like %04d
+    // Support printf style formatting in file name, like %04d
     if(expandedName.find('%') != std::string::npos) {
         expandedName = TfStringPrintf( expandedName.c_str(), frame);
     }
@@ -3161,7 +3161,7 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
 
         // for each display setting
         // productType or productName not guarunteed to exist
-        // order not guarunteed so must save relavant settings
+        // order not guarunteed so must save relevant settings
         std::vector<TfToken> driverParameters;
         for (auto const& productSetting : renderProduct) {
             const TfToken& settingName = productSetting.first;

@@ -317,7 +317,7 @@ static GfVec3f& __itruediv__(GfVec3f &self, float value)
 
 template <class V>
 static V *__init__() {
-    // Default contstructor zero-initializes from python.
+    // Default constructor zero-initializes from python.
     return new V(0);
 }
 

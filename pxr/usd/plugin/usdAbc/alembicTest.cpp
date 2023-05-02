@@ -56,7 +56,7 @@ public:
         : _visitor(wrapped) {}
     virtual ~UsdAbc_SortedDataSpecVisitor() {}
 
-    // SdfAbstractDataSpecVisitor overrids
+    // SdfAbstractDataSpecVisitor overrides
     virtual bool VisitSpec(const SdfAbstractData& data,
                            const SdfPath& path) {
         if (_visitor)

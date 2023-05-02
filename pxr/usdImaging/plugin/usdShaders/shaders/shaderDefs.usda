@@ -223,14 +223,14 @@ def Shader "UsdUVTexture" (
     )
 
     float outputs:b (
-        doc = "Outputs the blue channnel."
+        doc = "Outputs the blue channel."
         sdrMetadata = {
             token swizzle = "z"
         }
     )
 
     float outputs:a (
-        doc = "Outputs the alpha channnel."
+        doc = "Outputs the alpha channel."
         sdrMetadata = {
             token swizzle = "w"
         }

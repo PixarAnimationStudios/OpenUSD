@@ -1402,7 +1402,7 @@ class "PxrPrimvarsAPI" (
         displayGroup = "Curves"
         displayName = "Opacity Samples"
         doc = """
-                number of opacity/presence shading samples along a curve for opacity caching, if equal to zero then the value is determined using the dicing oracle and the lenght of each curve.
+                number of opacity/presence shading samples along a curve for opacity caching, if equal to zero then the value is determined using the dicing oracle and the length of each curve.
             """
     )
     bool primvars:ri:curve:widthaffectscurvature = 1 (
@@ -3138,7 +3138,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         displayGroup = "Basic"
         displayName = "Latitude"
         doc = """
-                latitude: Latitude in degrees.  Positive for north, negative for south.  Ranges frmo -90 to +90 degrees.
+                latitude: Latitude in degrees.  Positive for north, negative for south.  Ranges from -90 to +90 degrees.
 
                 This is ignored if month is 0.
             """
@@ -3157,7 +3157,7 @@ class PxrEnvDayLight "PxrEnvDayLight" (
         displayGroup = "Basic"
         displayName = "Longitude"
         doc = """
-                longitude: Longitude in degrees.  Positive for east, negative for west.  Ranges frmo -180 to +180 degrees.
+                longitude: Longitude in degrees.  Positive for east, negative for west.  Ranges from -180 to +180 degrees.
 
                 This is ignored if month is 0.
             """
@@ -4270,7 +4270,7 @@ class PxrCombinerLightFilter "PxrCombinerLightFilter" (
     token inputs:ri:lightFilter:min (
         displayName = "Min"
         doc = """
-            min: Combining light filters by returning the mininum result.
+            min: Combining light filters by returning the minimum result.
         """
     )
     token inputs:ri:lightFilter:mult (

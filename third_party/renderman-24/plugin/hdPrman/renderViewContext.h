@@ -76,7 +76,7 @@ struct HdPrman_RenderViewDesc
 };
 
 /// Manages a render man render view together with associated
-/// render target, render ouputs and displays.
+/// render target, render outputs and displays.
 ///
 class HdPrman_RenderViewContext final
 {

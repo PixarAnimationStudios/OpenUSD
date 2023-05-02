@@ -338,7 +338,7 @@ is "namespace paths" by which overrides bind to their defining
 prims/properties. In consequence, when the internal namespace of a referenced
 asset changes, *higher-level overrides previously recorded in referencing assets
 will fall off*. One solution to this problem is to identify data by a
-"globally unique identifer" (GUID), and then associate overrides with the same
+"globally unique identifier" (GUID), and then associate overrides with the same
 GUID as the defining prim. While solving the namespace-editing problem, GUIDs
 introduce other problems into a pipeline, and potentially limitations on
 flexibility of composition. In past iterations of USD, Pixar used a form of

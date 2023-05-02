@@ -2895,7 +2895,7 @@ struct _CopyFaceSetFamilyType : _CopyFaceSetBase {
         // getFaceExclusivity()).
         //
         // This is a bug in Alembic that has been fixed in Alembic 1.7.2, but 
-        // the mininum required version for USD is 1.5.2. This workaround must 
+        // the minimum required version for USD is 1.5.2. This workaround must 
         // remain until the required Alembic version is changed for USD.
         //
         // The Alembic issue can be tracked here:

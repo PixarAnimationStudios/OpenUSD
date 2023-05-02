@@ -184,7 +184,7 @@ public:
     /// NOTE: RenderMan has no notion of pausing the render threads.
     ///       We don't return true, because otherwise start/stop causes
     ///       the renderer to reset to increment zero, which gives a poor
-    ///       user experience and poor peformance. 
+    ///       user experience and poor performance. 
     HDPRMAN_API 
     bool IsPauseSupported() const override { return false; }
 

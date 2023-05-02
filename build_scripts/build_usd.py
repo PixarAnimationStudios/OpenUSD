@@ -457,7 +457,7 @@ def RunCMake(context, force, extraArgs = None):
 def GetCMakeVersion():
     """
     Returns the CMake version as tuple of integers (major, minor) or
-    (major, minor, patch) or None if an error occured while launching cmake and
+    (major, minor, patch) or None if an error occurred while launching cmake and
     parsing its output.
     """
 

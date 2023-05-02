@@ -356,7 +356,7 @@ UsdDracoAttributeDescriptor UsdDracoAttributeDescriptor::FromUsdAttribute(
     if (dataType == draco::DT_INVALID)
         return Invalid();
 
-    // Get data shape, whcih can be vector, quaternion, or matrix.
+    // Get data shape, which can be vector, quaternion, or matrix.
     const UsdDracoAttributeDescriptor::Shape shape =
         UsdDracoAttributeFactory::GetShape(typeInfo);
 
