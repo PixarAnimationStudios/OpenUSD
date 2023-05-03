@@ -141,6 +141,14 @@ and :usda:`opacity`.
   that roughness applies **only** to the specular lobe, and the transmissive
   lobe (if any) always assumes roughness 0.0.
 
+* **anisotropyStrength - float - 0.0** 
+
+  Anisotropy strength of the specular lobe. 0 means isotropic, 1 means fully anisotropic.
+
+* **anisotropyRotation - float - 0.0**
+
+  Anisotropy rotation of the specular lobe. Orientation of anisotropy; range [0,1] (1 means 360°)
+
 * **clearcoat - float - 0.0** 
 
   Second specular lobe amount. The color is white.
@@ -148,6 +156,15 @@ and :usda:`opacity`.
 * **clearcoatRoughness - float - 0.01**
 
   Roughness for the second specular lobe.
+
+* **clearcoatTint - color3f - (1.0, 1.0, 1.0)** 
+
+  The color to tint the clearcoat layer.
+
+* **clearcoatNormal - normal3f - (0.0, 0.0, 1.0)** 
+
+  The normal of the clearcoat layer.  The same format and restrictions that apply
+  to *normal* also apply to this clearcoat normal.
 
 * **opacity - float - 1.0** 
 
@@ -208,6 +225,31 @@ and :usda:`opacity`.
   of 0.0 means the surface point is fully occluded by other parts of the
   surface, and a value of 1.0 means the surface point is completely unoccluded
   by other parts of the surface.
+
+* **sheen - color3f - (0.0, 0.0, 0.0)** 
+
+  Sheen color.  This tints the specular highlight of the surface.  The sheen effect
+  is most noticeable on cloth-like materials.
+
+* **sheenRoughness - float - 0.0**
+
+  Roughness of the sheen highlight.  This is a separate roughness control for the
+  sheen highlight, which is useful for cloth-like materials.
+
+* **transmission - float - (0.0, 0.0, 0.0)** 
+
+  Transmission color.  This is the color of light that is transmitted through the
+  surface.  This is useful for glass-like materials.
+
+* **attenuationColor - color3f - (1.0, 1.0, 1.0)** 
+
+  Attenuation color.  This is the color of light that is attenuated as it passes
+  through the surface.  This is useful for glass-like materials.
+
+* **attenuationDistance - float - 0.0**
+
+  Attenuation distance.  This is the distance that light travels through the
+  surface before it is attenuated.  This is useful for glass-like materials.
 
 **Outputs (name - type)** 
 

@@ -50,7 +50,7 @@ def Shader "UsdPreviewSurface" (
              Transition between the two colors according to Schlick fresnel 
              approximation."""
     )
- 
+
     float inputs:metallic = 0.0 (
         doc = """Used only in the metalness workflow.
             1 for metallic surfaces and 0 for non-metallic.
@@ -69,6 +69,14 @@ def Shader "UsdPreviewSurface" (
         GGX or Beckmann lobe."""
     )
  
+    float inputs:anisotropyStrength = 0.0 (
+        doc = """Anisotropy strength of the specular lobe. 0 means isotropic, 1 means fully anisotropic."""
+    )
+ 
+    float inputs:anisotropyRotation = 0.0 (
+        doc = """Anisotropy rotation of the specular lobe. Orientation of anisotropy; range [0,1] (1 means 360°)"""
+    )
+ 
     float inputs:clearcoat = 0.0 (
         doc = """Second specular lobe amount. The color is white."""
     )
@@ -76,7 +84,16 @@ def Shader "UsdPreviewSurface" (
     float inputs:clearcoatRoughness = 0.01 (
         doc = """Roughness for the second specular lobe."""
     )
- 
+  
+    color3f inputs:clearcoatTint = (1.0, 1.0, 1.0) (
+        doc = """The color to tint the clearcoat layer."""
+    ) 
+    
+    normal3f inputs:clearcoatNormal = (0.0, 0.0, 1.0) (
+        doc = """The normal of the clearcoat layer.  The same format and restrictions
+        that apply to *normal* also apply to this clearcoat normal."""
+    )
+
     float inputs:opacity = 1.0 (
         doc = """Opacity of the material."""
     )
@@ -123,6 +140,30 @@ def Shader "UsdPreviewSurface" (
         means the surface point is fully occluded by other parts of the surface, 
         and a value of 1.0 means the surface point is completely unoccluded by 
         other parts of the surface. """
+    )
+
+    color3f inputs:sheen = (0.0, 0.0, 0.0) (
+        doc = """This tints the specular highlight of the surface.  The sheen effect
+        is most noticeable on cloth-like materials."""
+    ) 
+
+    float inputs:sheenRoughness = 0.0 (
+        doc = """Roughness of the sheen highlight.  This is a separate roughness control
+        for the sheen highlight, which is useful for cloth-like materials."""
+    )
+      
+    float inputs:transmission = 0.0 (
+        doc = """The base percentage of light that is transmitted through the surface."""
+    )
+
+    color3f inputs:attenuationColor = (1.0, 1.0, 1.0) (
+        doc = """Attenuation color.  This is the color of light that is attenuated as it passes
+        through the surface.  This is useful for glass-like materials."""
+    ) 
+
+    float inputs:attenuationDistance = +Inf (
+        doc = """Attenuation distance.  This is the distance that light travels through the
+        surface before it is attenuated.  This is useful for glass-like materials.."""
     )
 }
 
