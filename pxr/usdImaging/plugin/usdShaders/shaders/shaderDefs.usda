@@ -78,20 +78,26 @@ def Shader "UsdPreviewSurface" (
     )
  
     float inputs:clearcoat = 0.0 (
-        doc = """Second specular lobe amount. The color is white."""
+        doc = """Second specular lobe amount. The color is white.  Equivalent to 
+        clearcoatFactor from KHR_materials_clearcoat and coat from Autodesk Standard Surface."""
     )
  
     float inputs:clearcoatRoughness = 0.01 (
-        doc = """Roughness for the second specular lobe."""
+        doc = """Roughness for the second specular lobe.  Equivalent to 
+        clearcoatRoughnessFactor from KHR_materials_clearcoat and coat_roughness from
+        Autodesk Standard Surface."""
     )
   
     color3f inputs:clearcoatTint = (1.0, 1.0, 1.0) (
-        doc = """The color to tint the clearcoat layer."""
+        doc = """The color to tint the clearcoat layer.  Equivalent to 
+        coat_color from Autodesk Standard Surface."""
     ) 
     
     normal3f inputs:clearcoatNormal = (0.0, 0.0, 1.0) (
         doc = """The normal of the clearcoat layer.  The same format and restrictions
-        that apply to *normal* also apply to this clearcoat normal."""
+        that apply to *normal* also apply to this clearcoat normal.  Equivalent to 
+        clearcoatNormalTexture from KHR_materials_clearcoat and coat_normal from
+        Autodesk Standard Surface."""
     )
 
     float inputs:opacity = 1.0 (
@@ -112,6 +118,18 @@ def Shader "UsdPreviewSurface" (
 
     float inputs:ior = 1.5 (
         doc = """Index of Refraction to be used for translucent objects."""
+    )
+
+    float inputs:specularFactor = 1.0 (
+        doc = """Used only in the metalness workflow.  Scales the strength of the specular
+        reflection at both F0 and F90.  Equivalent to specularFactor from KHR_materials_specular
+        and specular from Autodesk Standard Surface."""
+    )
+
+    color3f inputs:specularColorFactor =  (1.0, 1.0, 1.0) (
+        doc = """Used only in the metalness workflow.  Specifies the color at F0 of
+        the specular reflection.  Equivalent to specularColorFactor from KHR_materials_specular
+        and specular_color from Autodesk Standard Surface."""
     )
 
     normal3f inputs:normal = (0.0, 0.0, 1.0) (
@@ -144,26 +162,55 @@ def Shader "UsdPreviewSurface" (
 
     color3f inputs:sheen = (0.0, 0.0, 0.0) (
         doc = """This tints the specular highlight of the surface.  The sheen effect
-        is most noticeable on cloth-like materials."""
+        is most noticeable on cloth-like materials.  Equivalent to sheen from
+        KHR_materials_sheen and sheen_color from Autodesk Standard Surface."""
     ) 
 
     float inputs:sheenRoughness = 0.0 (
         doc = """Roughness of the sheen highlight.  This is a separate roughness control
-        for the sheen highlight, which is useful for cloth-like materials."""
+        for the sheen highlight, which is useful for cloth-like materials.  Equivalent to 
+        sheenRoughness from KHR_materials_sheen and sheen_roughness from Autodek Standard
+        Surface."""
     )
       
     float inputs:transmission = 0.0 (
-        doc = """The base percentage of light that is transmitted through the surface."""
+        doc = """The base percentage of light that is transmitted through the surface.
+        Equivalent to transmission from KHR_materials_transmission and transmission
+        from Autodesk Standard Surface."""
     )
 
     color3f inputs:attenuationColor = (1.0, 1.0, 1.0) (
         doc = """Attenuation color.  This is the color of light that is attenuated as it passes
-        through the surface.  This is useful for glass-like materials."""
+        through the surface.  This is useful for glass-like materials.  Equivalent to 
+        attenuationColor from KHR_materials_volume and transmission_color from Autodesk
+        Standard Surface."""
     ) 
 
     float inputs:attenuationDistance = +Inf (
         doc = """Attenuation distance.  This is the distance that light travels through the
-        surface before it is attenuated.  This is useful for glass-like materials.."""
+        surface before it is attenuated.  This is useful for glass-like materials.  Equivalent to 
+        attenuationDistance from KHR_materials_volume and transmission_depth from Autodesk
+        Standard Surfaced."""
+    )
+
+    float inputs:iridescenceFactor = 0.0 (
+        doc = """The iridescence intensity factor."""
+    )
+
+    float inputs:iridescenceIor = 1.3 (
+        doc = """The index of refraction of the dielectric thin-film layer.  This is equivalent t"""
+    )
+
+    float inputs:iridescenceThicknessMinimum = 200 (
+        doc = """The minimum thickness of the thin-film layer given in nanometers."""
+    )
+
+    float inputs:iridescenceThicknessMaximum = 400 (
+        doc = """The maximum thickness of the thin-film layer given in nanometers."""
+    )
+
+    float inputs:iridescenceThickness = 1.0 (
+        doc = """The thickness of the thin-film layer, linear interpolates between the minimum and maximum thickness values."""
     )
 }
 
