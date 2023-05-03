@@ -50,6 +50,7 @@ wrapFrameRecorder()
         .def("SetColorCorrectionMode", &This::SetColorCorrectionMode)
         .def("SetIncludedPurposes", &This::SetIncludedPurposes,
              (arg("purposes")))
+        .def("SetEnableCameraLight", &This::SetEnableCameraLight)
         .def(
             "Record",
             &This::Record,

@@ -122,6 +122,16 @@ public:
     USDAPPUTILS_API
     void SetIncludedPurposes(const TfTokenVector& purposes);
 
+    /// Turns the build-in camera light on and off.
+    ///
+    /// When on, Storm will make a direct light at the camera's origin facing
+    /// the same direction as the camera. This is sometimes called a 
+    /// "headlight."
+    USDAPPUTILS_API
+    void SetEnableCameraLight(const bool enabled) {
+        _cameraLightEnabled = enabled;
+    }
+
     /// Records an image and writes the result to \p outputImagePath.
     ///
     /// The recorded image will represent the view from \p usdCamera looking at
@@ -145,6 +155,7 @@ private:
     float _complexity;
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
+    bool _cameraLightEnabled;
 };
 
 

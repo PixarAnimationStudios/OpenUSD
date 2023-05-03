@@ -153,6 +153,9 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--disableCameraLight', action='store_true', default=False,
+        help='Disables the default camera light.')
+    
     args = parser.parse_args()
 
     UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
@@ -197,9 +200,13 @@ def main():
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)
     frameRecorder.SetIncludedPurposes(purposes)
+    frameRecorder.SetEnableCameraLight(not args.disableCameraLight)
 
     _Msg('Camera: %s' % usdCamera.GetPath().pathString)
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
+
+    if args.disableCameraLight:
+        _Msg('Camera light disabled')
 
     for timeCode in args.frames:
         _Msg('Recording time code: %s' % timeCode)
