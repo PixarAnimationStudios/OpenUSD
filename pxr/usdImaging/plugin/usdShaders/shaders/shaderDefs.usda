@@ -68,13 +68,27 @@ def Shader "UsdPreviewSurface" (
         of the specular lobe. This value is usually squared before use with a 
         GGX or Beckmann lobe."""
     )
- 
-    float inputs:anisotropyStrength = 0.0 (
-        doc = """Anisotropy strength of the specular lobe. 0 means isotropic, 1 means fully anisotropic."""
+
+    float inputs:specularFactor = 1.0 (
+        doc = """Used only in the metalness workflow.  Scales the strength of the specular
+        reflection at both F0 and F90.  Equivalent to specularFactor from KHR_materials_specular
+        and specular from Autodesk Standard Surface."""
+    )
+
+    color3f inputs:specularColorFactor =  (1.0, 1.0, 1.0) (
+        doc = """Used only in the metalness workflow.  Specifies the color at F0 of
+        the specular reflection.  Equivalent to specularColorFactor from KHR_materials_specular
+        and specular_color from Autodesk Standard Surface."""
     )
  
-    float inputs:anisotropyRotation = 0.0 (
-        doc = """Anisotropy rotation of the specular lobe. Orientation of anisotropy; range [0,1] (1 means 360°)"""
+    float inputs:specularAnisotropy = 0.0 (
+        doc = """Anisotropy strength of the specular lobe. 0 means isotropic, 1 means fully anisotropic.
+        Equivalent to specular_anisotropy from Autodesk Standard Surface."""
+    )
+ 
+    float inputs:specularRotation = 0.0 (
+        doc = """Anisotropy rotation of the specular lobe. Orientation of anisotropy; range [0,1] (1 means 360°.
+        Equivalent to specular_rotation from Autodesk Standard Surface."""
     )
  
     float inputs:clearcoat = 0.0 (
@@ -88,7 +102,7 @@ def Shader "UsdPreviewSurface" (
         Autodesk Standard Surface."""
     )
   
-    color3f inputs:clearcoatTint = (1.0, 1.0, 1.0) (
+    color3f inputs:clearcoatColor = (1.0, 1.0, 1.0) (
         doc = """The color to tint the clearcoat layer.  Equivalent to 
         coat_color from Autodesk Standard Surface."""
     ) 
@@ -118,18 +132,6 @@ def Shader "UsdPreviewSurface" (
 
     float inputs:ior = 1.5 (
         doc = """Index of Refraction to be used for translucent objects."""
-    )
-
-    float inputs:specularFactor = 1.0 (
-        doc = """Used only in the metalness workflow.  Scales the strength of the specular
-        reflection at both F0 and F90.  Equivalent to specularFactor from KHR_materials_specular
-        and specular from Autodesk Standard Surface."""
-    )
-
-    color3f inputs:specularColorFactor =  (1.0, 1.0, 1.0) (
-        doc = """Used only in the metalness workflow.  Specifies the color at F0 of
-        the specular reflection.  Equivalent to specularColorFactor from KHR_materials_specular
-        and specular_color from Autodesk Standard Surface."""
     )
 
     normal3f inputs:normal = (0.0, 0.0, 1.0) (
