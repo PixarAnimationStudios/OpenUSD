@@ -91,7 +91,7 @@ private:
 
         // Search the node's layer stack in strength order for the field on
         // the spec.
-        for (const SdfLayerHandle &layer : node.GetLayerStack()->GetLayers()) {
+        for (const auto &layer : node.GetLayerStack()->GetLayers()) {
             VtValue value;
             if (layer->HasField(path, fieldName, &value)) {
                 // Process the value and mark found
