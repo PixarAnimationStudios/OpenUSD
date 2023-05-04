@@ -30,7 +30,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/atomic.h>

@@ -30,7 +30,6 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/ptr_container/ptr_map.hpp>
 #include <boost/ptr_container/ptr_set.hpp>
 #include <boost/variant.hpp>
@@ -53,7 +52,9 @@ TF_REGISTRY_FUNCTION(TfEnum)
 // This class is used to track edits to a namespace without modifying the
 // namespace.  Using it we can see what would've been changed and how.
 //
-class SdfNamespaceEdit_Namespace : boost::noncopyable {
+class SdfNamespaceEdit_Namespace {
+    SdfNamespaceEdit_Namespace(const SdfNamespaceEdit_Namespace&) = delete;
+    SdfNamespaceEdit_Namespace& operator=(const SdfNamespaceEdit_Namespace&) = delete;
 public:
     SdfNamespaceEdit_Namespace(bool fixBackpointers) :
         _fixBackpointers(fixBackpointers) { }
@@ -103,7 +104,9 @@ private:
     // namespace edits.  Simulating edits in an SdfPathTable would mean lots
     // of edits, while for this object it means moving pointers around
     // and/or changing a key.
-    class _Node : boost::noncopyable {
+    class _Node {
+        _Node(const _Node&) = delete;
+        _Node& operator=(const _Node&) = delete;
         typedef boost::ptr_set<_Node> _Children;
     public:
         // Create the root node.

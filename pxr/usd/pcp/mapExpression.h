@@ -198,7 +198,9 @@ private: // data
         _OpAddRootIdentity
     };
 
-    class _Node : public boost::noncopyable {
+    class _Node {
+        _Node(const _Node&) = delete;
+        _Node& operator=(const _Node&) = delete;
     public:
         // The Key holds all the state needed to uniquely identify
         // this (sub-)expression.

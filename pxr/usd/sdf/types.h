@@ -66,7 +66,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
 #include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
@@ -521,7 +520,9 @@ private:
 /// Writes the string representation of \c SdfUnregisteredValue to \a out.
 SDF_API std::ostream &operator << (std::ostream &out, const SdfUnregisteredValue &value);
 
-class Sdf_ValueTypeNamesType : boost::noncopyable {
+class Sdf_ValueTypeNamesType {
+    Sdf_ValueTypeNamesType(const Sdf_ValueTypeNamesType&) = delete;
+    Sdf_ValueTypeNamesType& operator=(const Sdf_ValueTypeNamesType&) = delete;
 public:
     SdfValueTypeName Bool;
     SdfValueTypeName UChar, Int, UInt, Int64, UInt64;
