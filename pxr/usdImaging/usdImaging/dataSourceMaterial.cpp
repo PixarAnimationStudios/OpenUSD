@@ -70,6 +70,12 @@ _GetRenderContextForShaderOutput(UsdShadeOutput const& output)
     return TfToken();
 }
 
+static bool
+_Contains(const TfTokenVector &v, const TfToken &t)
+{
+    return std::find(v.begin(), v.end(), t) != v.end();
+}
+
 
 class _UsdImagingDataSourceShadingNodeParameters : public HdContainerDataSource
 {
@@ -437,18 +443,22 @@ UsdImagingDataSourceMaterial::~UsdImagingDataSourceMaterial()
 TfTokenVector 
 UsdImagingDataSourceMaterial::GetNames()
 {
-    UsdShadeNodeGraph usdMat(_usdPrim);
-    TfTokenVector terminalsNames;
-    for (UsdShadeOutput &output : usdMat.GetOutputs()) {
-        TfToken context = _GetRenderContextForShaderOutput(output);
-        // There may be multiple outputs for a given context, so only
-        // return each unique context found.
-        if (std::find(terminalsNames.begin(), terminalsNames.end(), context)
-            == terminalsNames.end()) {
-            terminalsNames.push_back(context);
+    if (!_fixedTerminalName.IsEmpty()) {
+        return { HdMaterialSchemaTokens->universalRenderContext };
+    }
+
+    TfTokenVector renderContexts;
+    for (const UsdShadeOutput &output :
+             UsdShadeNodeGraph(_usdPrim).GetOutputs()) {
+        const TfToken renderContext = _GetRenderContextForShaderOutput(output);
+        // Only add a renderContext if it has not been added before so
+        // we do not have duplicates (there may be multiple outputs for
+        // the same context).
+        if (!_Contains(renderContexts, renderContext)) {
+            renderContexts.push_back(renderContext);
         }
     }
-    return terminalsNames;
+    return renderContexts;
 }
 
 using _TokenDataSourceMap =
