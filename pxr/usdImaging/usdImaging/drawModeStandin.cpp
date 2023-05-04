@@ -55,6 +55,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
 
+#include <array>
 #include <functional>
 #include <bitset>
 
