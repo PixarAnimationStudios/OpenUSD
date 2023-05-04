@@ -100,7 +100,7 @@ public:
         /// multiple UsdImagingGLEngine's that wish to use the same HdDriver / Hgi.
         HdDriver driver;
         /// The \p rendererPluginId argument indicates the renderer plugin that
-        /// Hyrda should use. If the empty token is passed in, a default renderer
+        /// Hydra should use. If the empty token is passed in, a default renderer
         /// plugin will be chosen depending on the value of \p gpuEnabled.
         TfToken rendererPluginId;
         /// The \p gpuEnabled argument determines if this instance will allow Hydra
