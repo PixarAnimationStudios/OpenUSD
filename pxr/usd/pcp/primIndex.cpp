@@ -4143,6 +4143,73 @@ _ComputedAssetPathWouldCreateDifferentNode(
     return nodeRootLayer != newLayer;
 }
 
+template <PcpArcType RefOrPayload>
+auto _GetSourceArcs(const PcpNodeRef& node, PcpSourceArcInfoVector* info);
+
+template <>
+auto _GetSourceArcs<PcpArcTypeReference>(
+    const PcpNodeRef& node, PcpSourceArcInfoVector* info)
+{
+    SdfReferenceVector refs;
+    PcpComposeSiteReferences(node, &refs, info);
+    return refs;
+}
+
+template <>
+auto _GetSourceArcs<PcpArcTypePayload>(
+    const PcpNodeRef& node, PcpSourceArcInfoVector* info)
+{
+    SdfPayloadVector payloads;
+    PcpComposeSitePayloads(node, &payloads, info);
+    return payloads;
+}
+
+// Check the reference or payload arcs on the given node to determine if
+// their asset paths now resolve to a different layer. See _EvalNodeReferences
+// and _EvalNodePaylods.
+template <PcpArcType RefOrPayload>
+static bool
+_NeedToRecomputeDueToAssetPathChange(
+    const PcpNodeRef& node)
+{
+    auto arcRange = _GetDirectChildRange(node, RefOrPayload);
+    if (arcRange.first != arcRange.second) {
+        PcpSourceArcInfoVector sourceInfo;
+        const auto sourceArcs = _GetSourceArcs<RefOrPayload>(node, &sourceInfo);
+        TF_VERIFY(sourceArcs.size() == sourceInfo.size());
+
+        const size_t numArcs = std::distance(arcRange.first, arcRange.second);
+        if (numArcs != sourceArcs.size()) {
+            // This could happen if there was some scene description
+            // change that added/removed arcs, but also if a 
+            // layer couldn't be opened when this index was computed. 
+            // We conservatively mark this index as needing recomputation
+            // in the latter case to simplify things.
+            return true;
+        }
+
+        for (size_t i = 0; i < sourceArcs.size(); ++i, ++arcRange.first) {
+            // Skip internal references/payloads since there's no asset path
+            // computation that occurs when processing them.
+            if (sourceArcs[i].GetAssetPath().empty()) {
+                continue;
+            }
+
+            // PcpComposeSiteReferences/Payloads will have filled in each
+            // object with the same asset path that would be used
+            // during composition to open layers.
+            const std::string& anchoredAssetPath = sourceArcs[i].GetAssetPath();
+
+            if (_ComputedAssetPathWouldCreateDifferentNode(
+                    *arcRange.first, anchoredAssetPath)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool
 Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
 {
@@ -4156,82 +4223,9 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
             continue;
         }
 
-        // Handle reference arcs. See _EvalNodeReferences.
-        auto refNodeRange = _GetDirectChildRange(node, PcpArcTypeReference);
-        if (refNodeRange.first != refNodeRange.second) {
-            SdfReferenceVector refs;
-            PcpSourceArcInfoVector sourceInfo;
-            PcpComposeSiteReferences(node, &refs, &sourceInfo);
-            TF_VERIFY(refs.size() == sourceInfo.size());
-            
-            const size_t numReferenceArcs = 
-                std::distance(refNodeRange.first, refNodeRange.second) ;
-            if (numReferenceArcs != refs.size()) {
-                // This could happen if there was some scene description
-                // change that added/removed references, but also if a 
-                // layer couldn't be opened when this index was computed. 
-                // We conservatively mark this index as needing recomputation
-                // in the latter case to simplify things.
-                return true;
-            }
-            
-            for (size_t i = 0; i < refs.size(); ++i, ++refNodeRange.first) {
-                // Skip internal references since there's no asset path
-                // computation that occurs when processing them.
-                if (refs[i].GetAssetPath().empty()) {
-                    continue;
-                }
-
-                // PcpComposeSiteReferences will have filled in each
-                // SdfReference with the same asset path that would be used
-                // during composition to open layers.
-                const std::string& anchoredAssetPath = refs[i].GetAssetPath();
-
-                if (_ComputedAssetPathWouldCreateDifferentNode(
-                        *refNodeRange.first, anchoredAssetPath)) {
-                    return true;
-                }
-            }
-        }
-
-        // Handle payload arcs. See _EvalNodePayloads.
-        // XXX: This is identical to the loop for references except for the 
-        // type and PcpComposeSite* function. When payloads are fully conformed
-        // to references, it would be worth refactoring this.
-        auto payloadNodeRange = _GetDirectChildRange(node, PcpArcTypePayload);
-        if (payloadNodeRange.first != payloadNodeRange.second) {
-            SdfPayloadVector payloads;
-            PcpSourceArcInfoVector sourceInfo;
-            PcpComposeSitePayloads(node, &payloads, &sourceInfo);
-
-            const size_t numPayloadArcs = 
-                std::distance(payloadNodeRange.first, payloadNodeRange.second) ;
-            if (numPayloadArcs != payloads.size()) {
-                // This could happen if there was some scene description
-                // change that added/removed payloads, but also if a 
-                // layer couldn't be opened when this index was computed. 
-                // We conservatively mark this index as needing recomputation
-                // in the latter case to simplify things.
-                return true;
-            }
-
-            for (size_t i = 0; i < payloads.size(); ++i, ++payloadNodeRange.first) {
-                // Skip internal payloads since there's no asset path
-                // computation that occurs when processing them.
-                if (payloads[i].GetAssetPath().empty()) {
-                    continue;
-                }
-
-                // PcpComposeSitePayloads will have filled in each
-                // SdfPayload with the same asset path that would be used
-                // during composition to open layers.
-                const std::string& anchoredAssetPath = payloads[i].GetAssetPath();
-
-                if (_ComputedAssetPathWouldCreateDifferentNode(
-                        *payloadNodeRange.first, anchoredAssetPath)) {
-                    return true;
-                }
-            }
+        if (_NeedToRecomputeDueToAssetPathChange<PcpArcTypeReference>(node) ||
+            _NeedToRecomputeDueToAssetPathChange<PcpArcTypePayload>(node)) {
+            return true;
         }
     }
 
