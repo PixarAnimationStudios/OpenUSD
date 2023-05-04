@@ -113,6 +113,14 @@ public:
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the resource data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetResourceLocator();
+
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

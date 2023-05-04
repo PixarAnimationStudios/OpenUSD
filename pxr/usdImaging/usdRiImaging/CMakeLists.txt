@@ -25,6 +25,7 @@ pxr_library(usdRiImaging
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
+        dataSourcePxrRenderTerminalPrims
         pxrBarnLightFilterAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter

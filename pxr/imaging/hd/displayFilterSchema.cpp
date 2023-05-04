@@ -93,6 +93,18 @@ HdDisplayFilterSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+HdDisplayFilterSchema::GetResourceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdDisplayFilterSchemaTokens->displayFilter,
+        HdDisplayFilterSchemaTokens->displayFilterResource
+    );
+    return locator;
+}
+
+
 HdDisplayFilterSchema::Builder &
 HdDisplayFilterSchema::Builder::SetDisplayFilterResource(
     const HdContainerDataSourceHandle &displayFilterResource)

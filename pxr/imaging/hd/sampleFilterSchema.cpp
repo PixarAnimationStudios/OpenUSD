@@ -93,6 +93,18 @@ HdSampleFilterSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+HdSampleFilterSchema::GetResourceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdSampleFilterSchemaTokens->sampleFilter,
+        HdSampleFilterSchemaTokens->sampleFilterResource
+    );
+    return locator;
+}
+
+
 HdSampleFilterSchema::Builder &
 HdSampleFilterSchema::Builder::SetSampleFilterResource(
     const HdContainerDataSourceHandle &sampleFilterResource)

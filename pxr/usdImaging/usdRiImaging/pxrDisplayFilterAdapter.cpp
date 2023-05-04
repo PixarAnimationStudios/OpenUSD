@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdRiImaging/pxrDisplayFilterAdapter.h"
 #include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
+#include "pxr/usdImaging/usdRiImaging/dataSourcePxrRenderTerminalPrims.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -50,6 +51,60 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdRiImagingPxrDisplayFilterAdapter::~UsdRiImagingPxrDisplayFilterAdapter()
 {
 }
+
+
+// -------------------------------------------------------------------------- //
+// 2.0 Prim adapter API
+// -------------------------------------------------------------------------- //
+
+TfTokenVector
+UsdRiImagingPxrDisplayFilterAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdRiImagingPxrDisplayFilterAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->displayFilter;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdRiImagingPxrDisplayFilterAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdRiImagingDataSourceDisplayFilterPrim::New(
+                    prim.GetPath(), prim, stageGlobals);
+    }
+
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdRiImagingPxrDisplayFilterAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdRiImagingDataSourceDisplayFilterPrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
+// -------------------------------------------------------------------------- //
+// 1.0 Prim adapter API
+// -------------------------------------------------------------------------- //
 
 bool
 UsdRiImagingPxrDisplayFilterAdapter::IsSupported(

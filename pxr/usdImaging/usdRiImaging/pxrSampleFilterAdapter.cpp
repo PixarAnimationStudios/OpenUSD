@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdRiImaging/pxrSampleFilterAdapter.h"
 #include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
+#include "pxr/usdImaging/usdRiImaging/dataSourcePxrRenderTerminalPrims.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -50,6 +51,60 @@ TF_REGISTRY_FUNCTION(TfType)
 UsdRiImagingPxrSampleFilterAdapter::~UsdRiImagingPxrSampleFilterAdapter() 
 {
 }
+
+
+// -------------------------------------------------------------------------- //
+// 2.0 Prim adapter API
+// -------------------------------------------------------------------------- //
+
+TfTokenVector
+UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimType(
+    UsdPrim const& prim,
+    TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->sampleFilter;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimData(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdRiImagingDataSourceSampleFilterPrim::New(
+                    prim.GetPath(), prim, stageGlobals);
+    }
+
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
+    UsdPrim const& prim,
+    TfToken const& subprim,
+    TfTokenVector const& properties)
+{
+    if (subprim.IsEmpty()) {
+        return UsdRiImagingDataSourceSampleFilterPrim::Invalidate(
+            prim, subprim, properties);
+    }
+
+    return HdDataSourceLocatorSet();
+}
+
+// -------------------------------------------------------------------------- //
+// 1.0 Prim adapter API
+// -------------------------------------------------------------------------- //
 
 bool
 UsdRiImagingPxrSampleFilterAdapter::IsSupported(

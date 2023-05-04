@@ -93,6 +93,18 @@ HdIntegratorSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+HdIntegratorSchema::GetResourceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdIntegratorSchemaTokens->integrator,
+        HdIntegratorSchemaTokens->integratorResource
+    );
+    return locator;
+}
+
+
 HdIntegratorSchema::Builder &
 HdIntegratorSchema::Builder::SetIntegratorResource(
     const HdContainerDataSourceHandle &integratorResource)
