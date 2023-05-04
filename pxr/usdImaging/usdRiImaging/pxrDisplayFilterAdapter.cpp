@@ -35,7 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((displayFilterShaderId, "ri:displayfilter:shaderId"))
+    ((displayFilterShaderId, "ri:displayFilter:shaderId"))
     (displayFilterResource)
 );
 
