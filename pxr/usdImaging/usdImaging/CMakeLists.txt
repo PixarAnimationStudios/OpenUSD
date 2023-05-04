@@ -116,6 +116,7 @@ pxr_library(usdImaging
         volumeAdapter
 
     PRIVATE_CLASSES
+        adapterManager
         drawModeStandin
         niInstanceAggregationSceneIndex
         niPrototypePruningSceneIndex
