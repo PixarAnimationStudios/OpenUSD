@@ -2798,7 +2798,7 @@ class AppController(QtCore.QObject):
             caption,
             './' + recommendedFilename,
             'USD Files (*.usd)'
-            ';;USD ASCII Files (*.usda)'
+            ';;USD Text Files (*.usda)'
             ';;USD Crate Files (*.usdc)'
             ';;Any USD File (*.usd *.usda *.usdc)',
             'Any USD File (*.usd *.usda *.usdc)')
