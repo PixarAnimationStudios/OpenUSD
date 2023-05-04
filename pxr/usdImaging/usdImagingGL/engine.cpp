@@ -119,6 +119,19 @@ _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
 //----------------------------------------------------------------------------
 
 UsdImagingGLEngine::UsdImagingGLEngine(
+    const Parameters &params)
+  : UsdImagingGLEngine(
+      params.rootPath,
+      params.excludedPaths,
+      params.invisedPaths,
+      params.sceneDelegateID,
+      params.driver,
+      params.rendererPluginId,
+      params.gpuEnabled)
+{
+}
+
+UsdImagingGLEngine::UsdImagingGLEngine(
     const HdDriver& driver,
     const TfToken& rendererPluginId,
     bool gpuEnabled)

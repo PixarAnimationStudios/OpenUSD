@@ -88,11 +88,33 @@ using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 class UsdImagingGLEngine
 {
 public:
+    /// Parameters to construct UsdImagingGLEngine.
+    struct Parameters
+    {
+        SdfPath rootPath = SdfPath::AbsoluteRootPath();
+        SdfPathVector excludedPaths;
+        SdfPathVector invisedPaths;
+        SdfPath sceneDelegateID = SdfPath::AbsoluteRootPath();
+        /// An HdDriver, containing the Hgi of your choice, can be optionally passed
+        /// in during construction. This can be helpful if your application creates
+        /// multiple UsdImagingGLEngine's that wish to use the same HdDriver / Hgi.
+        HdDriver driver;
+        /// The \p rendererPluginId argument indicates the renderer plugin that
+        /// Hyrda should use. If the empty token is passed in, a default renderer
+        /// plugin will be chosen depending on the value of \p gpuEnabled.
+        TfToken rendererPluginId;
+        /// The \p gpuEnabled argument determines if this instance will allow Hydra
+        /// to use the GPU to produce images.
+        bool gpuEnabled = true;
+    };
 
     // ---------------------------------------------------------------------
     /// \name Construction
     /// @{
     // ---------------------------------------------------------------------
+
+    USDIMAGINGGL_API
+    UsdImagingGLEngine(const Parameters &params);
 
     /// An HdDriver, containing the Hgi of your choice, can be optionally passed
     /// in during construction. This can be helpful if you application creates
