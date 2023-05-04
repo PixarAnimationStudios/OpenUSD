@@ -21,43 +21,45 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hdSt/extCompPrimvarBufferSource.h"
 
 #include "pxr/imaging/hd/extCompCpuComputation.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
-#include <limits>
 PXR_NAMESPACE_OPEN_SCOPE
 
-HdExtCompPrimvarBufferSource::HdExtCompPrimvarBufferSource(
-                                 const TfToken &primvarName,
-                                 const HdExtCompCpuComputationSharedPtr &source,
-                                 const TfToken &sourceOutputName,
-                                 const HdTupleType &valueType)
- : HdBufferSource()
- , _primvarName(primvarName)
- , _source(source)
- , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
- , _tupleType(valueType)
- , _rawDataPtr(nullptr)
+
+HdStExtCompPrimvarBufferSource::HdStExtCompPrimvarBufferSource(
+    const TfToken &primvarName,
+    const HdExtCompCpuComputationSharedPtr &source,
+    const TfToken &sourceOutputName,
+    const HdTupleType &valueType)
+    : HdBufferSource()
+    , _primvarName(primvarName)
+    , _source(source)
+    , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
+    , _tupleType(valueType)
+    , _rawDataPtr(nullptr)
 {
     _sourceOutputIdx = source->GetOutputIndex(sourceOutputName);
 }
 
+HdStExtCompPrimvarBufferSource::~HdStExtCompPrimvarBufferSource() = default;
+
 TfToken const &
-HdExtCompPrimvarBufferSource::GetName() const
+HdStExtCompPrimvarBufferSource::GetName() const
 {
     return _primvarName;
 }
 
 void
-HdExtCompPrimvarBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
+HdStExtCompPrimvarBufferSource::GetBufferSpecs(HdBufferSpecVector *specs) const
 {
     specs->emplace_back(_primvarName, _tupleType);
 }
 
 template <class HashState>
-void TfHashAppend(HashState &h, HdExtCompPrimvarBufferSource const &bs)
+void TfHashAppend(HashState &h, HdStExtCompPrimvarBufferSource const &bs)
 {
     // Simply return a hash based on the computation and primvar names, 
     // instead of hashing the contents of the inputs to the computation.
@@ -67,13 +69,13 @@ void TfHashAppend(HashState &h, HdExtCompPrimvarBufferSource const &bs)
 }
 
 size_t
-HdExtCompPrimvarBufferSource::ComputeHash() const
+HdStExtCompPrimvarBufferSource::ComputeHash() const
 {
     return TfHash()(*this);
 }
 
 bool
-HdExtCompPrimvarBufferSource::Resolve()
+HdStExtCompPrimvarBufferSource::Resolve()
 {
     bool sourceValid = _source->IsValid();
     if (sourceValid) {
@@ -112,25 +114,25 @@ HdExtCompPrimvarBufferSource::Resolve()
 
 
 void const *
-HdExtCompPrimvarBufferSource::GetData() const
+HdStExtCompPrimvarBufferSource::GetData() const
 {
     return _rawDataPtr;
 }
 
 HdTupleType
-HdExtCompPrimvarBufferSource::GetTupleType() const
+HdStExtCompPrimvarBufferSource::GetTupleType() const
 {
     return _tupleType;
 }
 
 size_t
-HdExtCompPrimvarBufferSource::GetNumElements() const
+HdStExtCompPrimvarBufferSource::GetNumElements() const
 {
     return _source->GetNumElements();
 }
 
 bool
-HdExtCompPrimvarBufferSource::_CheckValid() const
+HdStExtCompPrimvarBufferSource::_CheckValid() const
 {
     return (_source &&
             (_sourceOutputIdx !=
@@ -138,4 +140,6 @@ HdExtCompPrimvarBufferSource::_CheckValid() const
             (_tupleType.type != HdTypeInvalid));
 }
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+

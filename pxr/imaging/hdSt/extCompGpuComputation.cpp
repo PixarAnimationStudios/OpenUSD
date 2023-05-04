@@ -23,14 +23,14 @@
 //
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
-#include "pxr/imaging/hdSt/extCompGpuPrimvarBufferSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
+#include "pxr/imaging/hdSt/extCompGpuPrimvarBufferSource.h"
+#include "pxr/imaging/hdSt/extCompPrimvarBufferSource.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/extCompPrimvarBufferSource.h"
 #include "pxr/imaging/hd/extCompCpuComputation.h"
 #include "pxr/imaging/hd/sceneExtCompInputSource.h"
 #include "pxr/imaging/hd/compExtCompInputSource.h"
@@ -482,7 +482,7 @@ HdSt_GetExtComputationPrimvarsComputations(
 
                     // Create a primvar buffer source for the computation
                     HdBufferSourceSharedPtr primvarBufferSource =
-                        std::make_shared<HdExtCompPrimvarBufferSource>(
+                        std::make_shared<HdStExtCompPrimvarBufferSource>(
                             compPrimvar.name,
                             cpuComputation,
                             compPrimvar.sourceComputationOutputName,

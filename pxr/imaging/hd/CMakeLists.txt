@@ -62,7 +62,6 @@ pxr_library(hd
         enums
         extCompCpuComputation
         extCompInputSource
-        extCompPrimvarBufferSource
         extComputation
         extComputationContext
         extComputationContextInternal

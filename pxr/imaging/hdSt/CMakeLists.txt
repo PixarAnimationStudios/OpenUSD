@@ -75,6 +75,7 @@ pxr_library(hdSt
         extCompGpuComputation
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
+        extCompPrimvarBufferSource
         fallbackLightingShader
         field
         fieldSubtextureIdentifier

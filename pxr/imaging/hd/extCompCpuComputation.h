@@ -60,6 +60,7 @@ using HdExtCompCpuComputationSharedPtr =
 /// many outputs, but each output has the same number of elements in it.
 class HdExtCompCpuComputation final : public HdNullBufferSource {
 public:
+    HD_API
     static const size_t INVALID_OUTPUT_INDEX;
 
     /// Constructs a new Cpu ExtComputation source.
