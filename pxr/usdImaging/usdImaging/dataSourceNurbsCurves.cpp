@@ -98,14 +98,14 @@ TfTokenVector
 UsdImagingDataSourceNurbsCurvesPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdNurbsCurvesSchemaTokens->nurbsCurves);
+    result.push_back(HdNurbsCurvesSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceNurbsCurvesPrim::Get(const TfToken & name)
 {
-    if (name == HdNurbsCurvesSchemaTokens->nurbsCurves) {
+    if (name == HdNurbsCurvesSchema::GetSchemaToken()) {
         return
             _NurbsCurvesDataSource::New(
                 _GetSceneIndexPath(),
@@ -113,7 +113,7 @@ UsdImagingDataSourceNurbsCurvesPrim::Get(const TfToken & name)
                 _GetStageGlobals());
     }
 
-    if (name == HdPrimvarsSchemaTokens->primvars) {
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
                 UsdImagingDataSourceCustomPrimvars::New(

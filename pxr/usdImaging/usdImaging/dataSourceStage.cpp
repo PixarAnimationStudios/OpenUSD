@@ -39,15 +39,15 @@ TfTokenVector
 UsdImagingDataSourceStage::GetNames()
 {
     return {
-        HdSystemSchemaTokens->system,
-        HdSceneGlobalsSchemaTokens->sceneGlobals
+        HdSystemSchema::GetSchemaToken(),
+        HdSceneGlobalsSchema::GetSchemaToken()
     };
 }
 
 HdDataSourceBaseHandle
 UsdImagingDataSourceStage::Get(const TfToken& name)
 {
-    if (name == HdSystemSchemaTokens->system) {
+    if (name == HdSystemSchema::GetSchemaToken()) {
         return HdRetainedContainerDataSource::New(
             HdarSystemSchemaTokens->assetResolution,
             HdarSystemSchema::Builder()
@@ -56,7 +56,7 @@ UsdImagingDataSourceStage::Get(const TfToken& name)
                         _stage->GetPathResolverContext()))
                 .Build());
     }
-    if (name == HdSceneGlobalsSchemaTokens->sceneGlobals) {
+    if (name == HdSceneGlobalsSchema::GetSchemaToken()) {
         // Update the sceneGlobals locator if we have stage metadata for the
         // the render settings prim to use for rendering.
         std::string pathStr;
@@ -67,10 +67,11 @@ UsdImagingDataSourceStage::Get(const TfToken& name)
         }
 
         return HdSceneGlobalsSchema::Builder()
-                .SetActiveRenderSettingsPrim(pathStr.empty()
-                    ? nullptr
-                    : HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        SdfPath(pathStr)))
+                .SetActiveRenderSettingsPrim(
+                    pathStr.empty()
+                        ? nullptr
+                        : HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            SdfPath(pathStr)))
                 .Build();
     }
     return nullptr;

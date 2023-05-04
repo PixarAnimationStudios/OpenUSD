@@ -201,14 +201,14 @@ TfTokenVector
 UsdImagingDataSourceCameraPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourcePrim::GetNames();
-    result.push_back(HdCameraSchemaTokens->camera);
+    result.push_back(HdCameraSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceCameraPrim::Get(const TfToken & name)
 {
-    if (name == HdCameraSchemaTokens->camera) {
+    if (name == HdCameraSchema::GetSchemaToken()) {
         return UsdImagingDataSourceCamera::New(
                 _GetSceneIndexPath(),
                 UsdGeomCamera(_GetUsdPrim()),

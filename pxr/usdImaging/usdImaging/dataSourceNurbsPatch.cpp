@@ -136,14 +136,14 @@ TfTokenVector
 UsdImagingDataSourceNurbsPatchPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdNurbsPatchSchemaTokens->nurbsPatch);
+    result.push_back(HdNurbsPatchSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceNurbsPatchPrim::Get(const TfToken & name)
 {
-    if (name == HdNurbsPatchSchemaTokens->nurbsPatch) {
+    if (name == HdNurbsPatchSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
                 // Container for locator nurbsPatch
@@ -159,7 +159,7 @@ UsdImagingDataSourceNurbsPatchPrim::Get(const TfToken & name)
                         UsdGeomNurbsPatch(_GetUsdPrim()),
                         _GetStageGlobals())));
     } 
-    if (name == HdPrimvarsSchemaTokens->primvars) {
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
                 UsdImagingDataSourceCustomPrimvars::New(

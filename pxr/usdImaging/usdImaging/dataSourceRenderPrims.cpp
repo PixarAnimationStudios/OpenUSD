@@ -182,13 +182,13 @@ TfTokenVector
 UsdImagingDataSourceRenderSettingsPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
-    return { UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings };
+    return { UsdImagingUsdRenderSettingsSchema::GetSchemaToken() };
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceRenderSettingsPrim::Get(const TfToken & name)
 {
-    if (name == UsdImagingUsdRenderSettingsSchemaTokens->__usdRenderSettings) {
+    if (name == UsdImagingUsdRenderSettingsSchema::GetSchemaToken()) {
         return _DataSourceRenderSettings::New(
                     _GetSceneIndexPath(),
                     UsdRenderSettings(_GetUsdPrim()),
@@ -344,13 +344,13 @@ TfTokenVector
 UsdImagingDataSourceRenderProductPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
-    return { UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct };
+    return { UsdImagingUsdRenderProductSchema::GetSchemaToken() };
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceRenderProductPrim::Get(const TfToken & name)
 {
-    if (name == UsdImagingUsdRenderProductSchemaTokens->__usdRenderProduct) {
+    if (name == UsdImagingUsdRenderProductSchema::GetSchemaToken()) {
         return _DataSourceRenderProduct::New(
                     _GetSceneIndexPath(),
                     UsdRenderProduct(_GetUsdPrim()),
@@ -487,13 +487,13 @@ TfTokenVector
 UsdImagingDataSourceRenderVarPrim::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
-    return { UsdImagingUsdRenderVarSchemaTokens->__usdRenderVar };
+    return { UsdImagingUsdRenderVarSchema::GetSchemaToken() };
 }
 
 HdDataSourceBaseHandle 
 UsdImagingDataSourceRenderVarPrim::Get(const TfToken & name)
 {
-    if (name == UsdImagingUsdRenderVarSchemaTokens->__usdRenderVar) {
+    if (name == UsdImagingUsdRenderVarSchema::GetSchemaToken()) {
         return _DataSourceRenderVar::New(
                     _GetSceneIndexPath(),
                     UsdRenderVar(_GetUsdPrim()),

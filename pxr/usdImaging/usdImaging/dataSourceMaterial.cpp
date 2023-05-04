@@ -686,14 +686,14 @@ UsdImagingDataSourceMaterial::Get(const TfToken &name)
     if (_fixedTerminalName.IsEmpty()) {
         networkDs = _BuildMaterial(
             UsdShadeNodeGraph(_usdPrim), _stageGlobals, name,
-                _usdPrim.GetPath(), HdDataSourceLocator(
-                    HdMaterialSchemaTokens->material, name));
+            _usdPrim.GetPath(),
+            HdMaterialSchema::GetDefaultLocator().Append(name));
     } else {
         networkDs = _BuildNetwork(
             UsdShadeConnectableAPI(_usdPrim),
             _fixedTerminalName, _stageGlobals, name,
-                _usdPrim.GetPath(), HdDataSourceLocator(
-                    HdMaterialSchemaTokens->material, name));
+            _usdPrim.GetPath(),
+            HdMaterialSchema::GetDefaultLocator().Append(name));
     }
 
 

@@ -82,7 +82,7 @@ TfTokenVector
 UsdImagingDataSourceVolumePrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
+    result.push_back(HdVolumeFieldBindingSchema::GetSchemaToken());
 
     return result;
 }
@@ -90,7 +90,7 @@ UsdImagingDataSourceVolumePrim::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceVolumePrim::Get(const TfToken &name)
 {
-    if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
+    if (name == HdVolumeFieldBindingSchema::GetSchemaToken()) {
         return UsdImagingDataSourceVolumeFieldBindings::New(
             UsdVolVolume(_GetUsdPrim()), _GetStageGlobals());
     } else {

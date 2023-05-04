@@ -160,20 +160,20 @@ TfTokenVector
 UsdImagingDataSourcePointInstancerPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourcePrim::GetNames();
-    result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
-    result.push_back(HdPrimvarsSchemaTokens->primvars);
+    result.push_back(HdInstancerTopologySchema::GetSchemaToken());
+    result.push_back(HdPrimvarsSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle
 UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
 {
-    if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
+    if (name == HdInstancerTopologySchema::GetSchemaToken()) {
         return UsdImagingDataSourcePointInstancerTopology::New(
                 _GetSceneIndexPath(),
                 UsdGeomPointInstancer(_GetUsdPrim()),
                 _GetStageGlobals());
-    } else if (name == HdPrimvarsSchemaTokens->primvars) {
+    } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
 
         // Note that we are not yet handling velocities, accelerations
         // and angularVelocities.

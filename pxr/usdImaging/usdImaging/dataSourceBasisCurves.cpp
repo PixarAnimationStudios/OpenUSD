@@ -122,7 +122,7 @@ TfTokenVector
 UsdImagingDataSourceBasisCurvesPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
+    result.push_back(HdBasisCurvesSchema::GetSchemaToken());
 
     return result;
 }
@@ -131,7 +131,7 @@ UsdImagingDataSourceBasisCurvesPrim::GetNames()
 HdDataSourceBaseHandle 
 UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
 {
-    if (name == HdBasisCurvesSchemaTokens->basisCurves) {
+    if (name == HdBasisCurvesSchema::GetSchemaToken()) {
         return UsdImagingDataSourceBasisCurves::New(
                 _GetSceneIndexPath(),
                 UsdGeomBasisCurves(_GetUsdPrim()),
