@@ -1959,7 +1959,11 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     // "primvars" use of Get()
     if (HdPrimvarsSchema primvars =
             HdPrimvarsSchema::GetFromParent(prim.dataSource)) {
-        return _GetPrimvar(primvars.GetContainer(), key, nullptr);
+
+        VtValue result = _GetPrimvar(primvars.GetContainer(), key, nullptr);
+        if (!result.IsEmpty()) {
+            return result;
+        }
     }
 
     // Fallback for unknown prim conventions provided by emulated scene
