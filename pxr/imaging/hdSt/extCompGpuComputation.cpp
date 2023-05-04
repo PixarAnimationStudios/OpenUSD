@@ -83,15 +83,16 @@ HdStExtCompGpuComputation::HdStExtCompGpuComputation(
         HdExtComputationPrimvarDescriptorVector const &compPrimvars,
         int dispatchCount,
         int elementCount)
- : HdComputation()
+ : HdStComputation()
  , _id(id)
  , _resource(resource)
  , _compPrimvars(compPrimvars)
  , _dispatchCount(dispatchCount)
  , _elementCount(elementCount)
 {
-    
 }
+
+HdStExtCompGpuComputation::~HdStExtCompGpuComputation() = default;
 
 static std::string
 _GetDebugPrimvarNames(
@@ -392,7 +393,7 @@ HdSt_GetExtComputationPrimvarsComputations(
     HdBufferSourceSharedPtrVector *sources,
     HdBufferSourceSharedPtrVector *reserveOnlySources,
     HdBufferSourceSharedPtrVector *separateComputationSources,
-    HdStComputationSharedPtrVector *computations)
+    HdStComputationComputeQueuePairVector *computations)
 {
     TF_VERIFY(sources);
     TF_VERIFY(reserveOnlySources);

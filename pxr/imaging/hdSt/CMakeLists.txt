@@ -59,6 +59,7 @@ pxr_library(hdSt
         bufferResource
         bufferArrayRegistry
         commandBuffer
+        computation
         copyComputation
         debugCodes
         dependencyForwardingSceneIndexPlugin

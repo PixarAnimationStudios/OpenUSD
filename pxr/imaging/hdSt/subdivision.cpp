@@ -955,7 +955,7 @@ HdSt_Subdivision::CreateRefineComputationCPU(HdSt_MeshTopology *topology,
         topology, source, osdTopology, interpolation, fvarChannel);
 }
 
-HdComputationSharedPtr
+HdStComputationSharedPtr
 HdSt_Subdivision::CreateRefineComputationGPU(
     HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology,

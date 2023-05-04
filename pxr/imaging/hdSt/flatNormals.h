@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/computation.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/flatNormals.h"
 
 #include "pxr/base/tf/token.h"
@@ -74,7 +74,7 @@ private:
 ///
 /// Flat normal computation GPU.
 ///
-class HdSt_FlatNormalsComputationGPU : public HdComputation
+class HdSt_FlatNormalsComputationGPU : public HdStComputation
 {
 public:
     HDST_API

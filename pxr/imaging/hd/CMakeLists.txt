@@ -38,7 +38,6 @@ pxr_library(hd
         changeTracker
         command
         compExtCompInputSource
-        computation
         coneSchema
         containerDataSourceEditor
         coordSys

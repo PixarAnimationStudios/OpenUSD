@@ -505,7 +505,7 @@ HdStResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 
 void
 HdStResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                                   HdComputationSharedPtr const &computation,
+                                   HdStComputationSharedPtr const &computation,
                                    HdStComputeQueue const queue)
 {
     HD_TRACE_FUNCTION();
@@ -871,7 +871,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 if (dstRange) {
                     // ask the size of destination buffer of the gpu computation
@@ -979,7 +979,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 comp->Execute(dstRange, this);
                 HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);

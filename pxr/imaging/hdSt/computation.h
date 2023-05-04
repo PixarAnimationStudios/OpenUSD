@@ -21,14 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_COMPUTATION_H
-#define PXR_IMAGING_HD_COMPUTATION_H
+#ifndef PXR_IMAGING_HD_ST_COMPUTATION_H
+#define PXR_IMAGING_HD_ST_COMPUTATION_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/bufferSpec.h"
-#include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hdSt/api.h"
 
 #include <memory>
 #include <vector>
@@ -36,12 +33,15 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
+class HdResourceRegistry;
+
 using HdBufferArrayRangeSharedPtr = std::shared_ptr<class HdBufferArrayRange>;
+using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
-using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
+using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
+using HdStComputationSharedPtrVector = std::vector<HdStComputationSharedPtr>;
 
-/// \class HdComputation
+/// \class HdStComputation
 ///
 /// An interface class for GPU computation.
 ///
@@ -49,11 +49,11 @@ using HdComputationSharedPtrVector = std::vector<HdComputationSharedPtr>;
 /// using buffer specs determined by GetBufferSpecs, and registered as a pair
 /// of computation and range.
 ///
-class HdComputation
+class HdStComputation
 {
 public:
-    HD_API
-    virtual ~HdComputation();
+    HDST_API
+    virtual ~HdStComputation();
 
     /// Execute computation.
     virtual void Execute(
@@ -72,8 +72,8 @@ public:
     /// BufferSpecs, and passes the range when registering the computation.
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const = 0;
 
-    /// This function is needed as HdComputation shares a templatized interface
-    /// with HdBufferSource.
+    /// This function is needed as HdStComputation shares a templatized
+    /// interface with HdBufferSource.
     ///
     /// It is a check to see if the GetBufferSpecs would produce a valid result.
     bool IsValid() { return true; }
@@ -82,4 +82,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HD_COMPUTATION_H
+#endif  // PXR_IMAGING_HD_ST_COMPUTATION_H

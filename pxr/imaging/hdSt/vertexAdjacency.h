@@ -29,7 +29,6 @@
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
 
 #include "pxr/base/vt/array.h"

@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/primUtils.h"
 
+#include "pxr/imaging/hdSt/computation.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/glslfxShader.h"
@@ -40,7 +41,6 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/renderIndex.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/rprim.h"
@@ -398,7 +398,7 @@ HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range)
 bool
 HdStCanSkipBARAllocationOrUpdate(
     HdBufferSourceSharedPtrVector const& sources,
-    HdStComputationSharedPtrVector const& computations,
+    HdStComputationComputeQueuePairVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits)
 {
@@ -424,7 +424,7 @@ HdStCanSkipBARAllocationOrUpdate(
     HdDirtyBits dirtyBits)
 {
     return HdStCanSkipBARAllocationOrUpdate(
-        sources, HdStComputationSharedPtrVector(), curRange, dirtyBits);
+        sources, HdStComputationComputeQueuePairVector(), curRange, dirtyBits);
 }
 
 HdBufferSpecVector
@@ -1258,7 +1258,7 @@ uint64_t
 HdStComputeSharedPrimvarId(
     uint64_t baseId,
     HdBufferSourceSharedPtrVector const &sources,
-    HdStComputationSharedPtrVector const &computations)
+    HdStComputationComputeQueuePairVector const &computations)
 {
     size_t primvarId = baseId;
     for (HdBufferSourceSharedPtr const &bufferSource : sources) {
@@ -1295,11 +1295,11 @@ HdStComputeSharedPrimvarId(
 
 void 
 HdStGetBufferSpecsFromCompuations(
-    HdStComputationSharedPtrVector const& computations,
+    HdStComputationComputeQueuePairVector const& computations,
     HdBufferSpecVector *bufferSpecs) 
 {
     for (auto const &compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         if (comp->IsValid()) {
             comp->GetBufferSpecs(bufferSpecs);
         }

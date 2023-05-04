@@ -21,14 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hdSt/computation.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-HdComputation::~HdComputation()
-{
-}
+HdStComputation::~HdStComputation() = default;
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

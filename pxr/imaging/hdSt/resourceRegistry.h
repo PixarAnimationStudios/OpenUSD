@@ -54,7 +54,7 @@ MATERIALX_NAMESPACE_END
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
 using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
 using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
@@ -110,8 +110,8 @@ enum HdStComputeQueue {
     HdStComputeQueueThree,
     HdStComputeQueueCount};
 
-using HdStComputationSharedPtrVector = 
-    std::vector<std::pair<HdComputationSharedPtr, HdStComputeQueue>>;
+using HdStComputationComputeQueuePairVector = 
+    std::vector<std::pair<HdStComputationSharedPtr, HdStComputeQueue>>;
 
 
 /// \class HdStResourceRegistry
@@ -313,7 +313,7 @@ public:
     /// they are registered.
     HDST_API
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                        HdComputationSharedPtr const &computation,
+                        HdStComputationSharedPtr const &computation,
                         HdStComputeQueue const queue);
 
     /// ------------------------------------------------------------------------
@@ -591,10 +591,10 @@ private:
     
     struct _PendingComputation{
         _PendingComputation(HdBufferArrayRangeSharedPtr const &range,
-                            HdComputationSharedPtr const &computation)
+                            HdStComputationSharedPtr const &computation)
             : range(range), computation(computation) { }
         HdBufferArrayRangeSharedPtr range;
-        HdComputationSharedPtr computation;
+        HdStComputationSharedPtr computation;
     };
 
     // If we need more 'compute queues' we can increase HdStComputeQueueCount.
