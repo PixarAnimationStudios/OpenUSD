@@ -130,7 +130,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// exercized with large scenes, as flattening defeats some of the benefits of
 /// referenced scene description, and may produce very large results, 
 /// especially in file formats that do not support data de-duplication, like
-/// the usda ASCII format!
+/// the usda text format!
 ///
 /// \section Usd_SessionLayer Stage Session Layers
 ///
