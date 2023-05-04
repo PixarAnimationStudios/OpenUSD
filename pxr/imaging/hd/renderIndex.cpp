@@ -55,6 +55,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pyLock.h"
 
+#include "pxr/base/arch/vsnprintf.h"
+
 #include <iostream>
 #include <mutex>
 #include <unordered_set>
@@ -83,10 +85,12 @@ HdRenderIndex::IsSceneIndexEmulationEnabled()
 
 HdRenderIndex::HdRenderIndex(
     HdRenderDelegate *renderDelegate,
-    HdDriverVector const& drivers)
+    HdDriverVector const& drivers,
+    const std::string &instanceName)
     : _noticeBatchingDepth(0)
     , _renderDelegate(renderDelegate)
     , _drivers(drivers)
+    , _instanceName(instanceName)
     , _rprimDirtyList(*this)
 {
     // Note: HdRenderIndex::New(...) guarantees renderDelegate is non-null.
@@ -133,7 +137,7 @@ HdRenderIndex::HdRenderIndex(
             _terminalSceneIndex =
                 HdSceneIndexPluginRegistry::GetInstance()
                     .AppendSceneIndicesForRenderer(
-                        rendererDisplayName, _terminalSceneIndex);
+                        rendererDisplayName, _terminalSceneIndex, instanceName);
         }
 
         _siSd = std::make_unique<HdSceneIndexAdapterSceneDelegate>(
@@ -169,14 +173,15 @@ HdRenderIndex::~HdRenderIndex()
 HdRenderIndex*
 HdRenderIndex::New(
     HdRenderDelegate *renderDelegate,
-    HdDriverVector const& drivers)
+    HdDriverVector const& drivers,
+    const std::string &instanceName)
 {
     if (renderDelegate == nullptr) {
         TF_CODING_ERROR(
             "Null Render Delegate provided to create render index");
         return nullptr;
     }
-    return new HdRenderIndex(renderDelegate, drivers);
+    return new HdRenderIndex(renderDelegate, drivers, instanceName);
 }
 
 void
@@ -791,6 +796,16 @@ HdRenderIndex::SceneIndexEmulationNoticeBatchEnd()
             TF_CODING_ERROR("Imbalanced batch begin/end calls");
         }
     }
+}
+
+std::string
+HdRenderIndex::GetInstanceName() const
+{
+    if (!_instanceName.empty()) {
+        return _instanceName;
+    }
+
+    return ArchStringPrintf("%p", (void *)this);
 }
 
 bool

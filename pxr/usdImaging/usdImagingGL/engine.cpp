@@ -1018,7 +1018,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
     // Recreate the render index
     _renderIndex.reset(
         HdRenderIndex::New(
-            _renderDelegate.Get(), {&_hgiDriver}));
+            _renderDelegate.Get(), {&_hgiDriver}, "UsdImagingGLEngine"));
 
     // Create and insert the scene globals scene index (regardless of whether 
     // the delegate or stage scene index chain is used).

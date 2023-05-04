@@ -68,6 +68,11 @@ public:
     void PrimsRemoved(
         const HdSceneIndexBase &sender,
         const RemovedPrimEntries &entries) override;
+    
+    HDX_API
+    void PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries) override;
 
 private:
     HdSelectionSharedPtr _ComputeSelection();

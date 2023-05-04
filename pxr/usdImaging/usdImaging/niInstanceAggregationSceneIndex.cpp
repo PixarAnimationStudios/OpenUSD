@@ -870,6 +870,11 @@ public:
     PrimsRemoved(const HdSceneIndexBase &sender,
                  const RemovedPrimEntries &entries) override;
 
+    void
+    PrimsRenamed(const HdSceneIndexBase &sender,
+                 const RenamedPrimEntries &entries) override;
+
+
 private:
     using _Map0 = std::map<TfToken, std::shared_ptr<SdfPathSet>>;
     using _Map1 = std::map<TfToken, _Map0>;
@@ -1101,6 +1106,16 @@ _InstanceObserver::PrimsRemoved(const HdSceneIndexBase &sender,
         }
     }
 }
+
+void
+_InstanceObserver::PrimsRenamed(const HdSceneIndexBase &sender,
+                                const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
+
+
 
 void
 _InstanceObserver::_Populate()
@@ -1582,6 +1597,17 @@ _RetainedSceneIndexObserver::PrimsRemoved(
 {
     _owner->_SendPrimsRemoved(entries);
 }
+
+void
+UsdImaging_NiInstanceAggregationSceneIndex::
+_RetainedSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

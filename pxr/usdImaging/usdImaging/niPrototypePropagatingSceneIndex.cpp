@@ -359,6 +359,15 @@ _InstanceAggregationSceneIndexObserver::PrimsRemoved(
     }
 }
 
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_InstanceAggregationSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 UsdImagingNiPrototypePropagatingSceneIndex::
 _MergingSceneIndexObserver::_MergingSceneIndexObserver(
     UsdImagingNiPrototypePropagatingSceneIndex * const owner)
@@ -391,6 +400,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -277,6 +277,10 @@ private:
         void PrimsRemoved(
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) override;
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
     private:
         UsdImaging_NiInstanceAggregationSceneIndex * const _owner;
     };

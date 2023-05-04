@@ -275,6 +275,11 @@ public:
         const HdSceneIndexBase &sender,
         const RemovedPrimEntries &entries) override;
 
+    void PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries) override;
+
+
 private:
     // For point instancers nested within this prototype, we store the map
     // instancer -> prototype -> _InstancerObserver.
@@ -613,6 +618,14 @@ _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
     }
 }
 
+
+void
+_InstancerObserver::PrimsRenamed(const HdSceneIndexBase &sender,
+                                 const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 }
 
 using namespace UsdImagingPiPrototypePropagatingSceneIndex_Impl;
@@ -694,6 +707,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingPiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

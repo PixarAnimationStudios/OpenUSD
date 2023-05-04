@@ -96,6 +96,15 @@ public:
         }
     }
 
+    void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+    {
+        ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+    }
+
+
+
 private:
 
     std::string _prefix;
@@ -179,6 +188,13 @@ public:
                     entry.primPath, TfToken(), locator});
             }
         }
+    }
+
+    void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+    {
+        ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
     }
 
     EventVector GetEvents()

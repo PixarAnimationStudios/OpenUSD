@@ -144,9 +144,9 @@ HdSceneIndexAdapterSceneDelegate::HdSceneIndexAdapterSceneDelegate(
 {
 
     std::string registeredName = ArchStringPrintf(
-        "HdSceneIndexAdapterSceneDelegate scene: %s@%p",
+        "delegate adapter: %s @ %s",
             delegateID.GetString().c_str(),
-            (void *) parentIndex);
+            parentIndex->GetInstanceName().c_str());
 
     HdSceneIndexNameRegistry::GetInstance().RegisterNamedSceneIndex(
         registeredName, inputSceneIndex);
@@ -384,6 +384,14 @@ HdSceneIndexAdapterSceneDelegate::PrimsDirtied(
                 _PrimCacheEntry::ReadStateUnread);
         }
     }
+}
+
+void
+HdSceneIndexAdapterSceneDelegate::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 // ----------------------------------------------------------------------------
