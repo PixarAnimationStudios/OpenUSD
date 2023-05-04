@@ -31,6 +31,7 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -459,21 +460,21 @@ UsdImagingGLEngine::SetRootTransform(GfMatrix4d const& xf)
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7115): root transform
+        _rootOverridesSceneIndex->SetRootTransform(xf);
     } else {
         _sceneDelegate->SetRootTransform(xf);
     }
 }
 
 void
-UsdImagingGLEngine::SetRootVisibility(bool isVisible)
+UsdImagingGLEngine::SetRootVisibility(const bool isVisible)
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;
     }
 
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7115): root visibility
+        _rootOverridesSceneIndex->SetRootVisibility(isVisible);
     } else {
         _sceneDelegate->SetRootVisibility(isVisible);
     }
@@ -1033,6 +1034,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
         // Create the scene index graph.
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New();
+
+        _sceneIndex = _rootOverridesSceneIndex =
+            UsdImagingRootOverridesSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
             UsdImagingPiPrototypePropagatingSceneIndex::New(_sceneIndex);

@@ -99,6 +99,7 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        rootOverridesSceneIndex
         usdPrimInfoSchema
         usdRenderProductSchema
         usdRenderSettingsSchema
