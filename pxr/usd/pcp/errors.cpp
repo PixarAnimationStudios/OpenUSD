@@ -24,6 +24,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/errors.h"
+
+#include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -60,7 +62,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PcpErrorBase::PcpErrorBase(TfEnum errorType) :
+PcpErrorBase::PcpErrorBase(PcpErrorType errorType) :
     errorType(errorType)
 {
 }
@@ -226,8 +228,8 @@ PcpErrorCapacityExceeded::ToString() const
 ///////////////////////////////////////////////////////////////////////////////
 
 PcpErrorInconsistentPropertyBase::PcpErrorInconsistentPropertyBase(
-    TfEnum errorType) :
-    PcpErrorBase(errorType)
+    PcpErrorType errorType)
+    : PcpErrorBase(errorType)
 {
 }
 
@@ -381,8 +383,8 @@ PcpErrorInvalidPrimPath::ToString() const
 ///////////////////////////////////////////////////////////////////////////////
 
 PcpErrorInvalidAssetPathBase::PcpErrorInvalidAssetPathBase(
-    TfEnum errorType) :
-    PcpErrorBase(errorType)
+    PcpErrorType errorType)
+    : PcpErrorBase(errorType)
 {
 }
 
@@ -450,7 +452,7 @@ PcpErrorMutedAssetPath::ToString() const
 
 ///////////////////////////////////////////////////////////////////////////////
 
-PcpErrorTargetPathBase::PcpErrorTargetPathBase(TfEnum errorType)
+PcpErrorTargetPathBase::PcpErrorTargetPathBase(PcpErrorType errorType)
     : PcpErrorBase(errorType)
 {
 }
@@ -616,13 +618,14 @@ PcpErrorInvalidReferenceOffset::~PcpErrorInvalidReferenceOffset()
 std::string
 PcpErrorInvalidReferenceOffset::ToString() const
 {
-    return TfStringPrintf("Invalid %s offset %s for @%s@<%s> introduced by %s. "
-                          "Using no offset instead.",
-                          TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(offset).c_str(),
-                          assetPath.c_str(),
-                          targetPath.GetText(),
-                          TfStringify(PcpSite(sourceLayer, sourcePath)).c_str());
+    return TfStringPrintf(
+        "Invalid %s offset %s for @%s@<%s> introduced by %s. "
+        "Using no offset instead.",
+        TfEnum::GetDisplayName(arcType).c_str(), 
+        TfStringify(offset).c_str(),
+        assetPath.c_str(),
+        targetPath.GetText(),
+        TfStringify(PcpSite(sourceLayer, sourcePath)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -863,10 +866,11 @@ PcpErrorUnresolvedPrimPath::~PcpErrorUnresolvedPrimPath()
 std::string
 PcpErrorUnresolvedPrimPath::ToString() const
 {
-    return TfStringPrintf("Unresolved %s prim path %s introduced by %s",
-                          TfEnum::GetDisplayName(arcType).c_str(), 
-                          TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
-                          TfStringify(PcpSite(sourceLayer, site.path)).c_str());
+    return TfStringPrintf(
+        "Unresolved %s prim path %s introduced by %s",
+        TfEnum::GetDisplayName(arcType).c_str(), 
+        TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
+        TfStringify(PcpSite(sourceLayer, site.path)).c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

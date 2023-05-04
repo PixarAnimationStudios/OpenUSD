@@ -1125,7 +1125,10 @@ struct Pcp_PrimIndexer
                             PcpPrimIndex *primIndex,
                             PcpErrorVector *allErrors) {
         // Capacity errors are reported at most once.
-        if (err->ShouldReportAtMostOnce()) {
+        if (err->errorType == PcpErrorType_IndexCapacityExceeded ||
+            err->errorType == PcpErrorType_ArcCapacityExceeded ||
+            err->errorType == PcpErrorType_ArcNamespaceDepthCapacityExceeded) {
+
             for (PcpErrorBasePtr const& e: *allErrors) {
                 if (e->errorType == err->errorType) {
                     // Already reported.
@@ -1133,6 +1136,7 @@ struct Pcp_PrimIndexer
                 }
             }
         }
+
         allErrors->push_back(err);
         if (!primIndex->_localErrors) {
             primIndex->_localErrors.reset(new PcpErrorVector);
