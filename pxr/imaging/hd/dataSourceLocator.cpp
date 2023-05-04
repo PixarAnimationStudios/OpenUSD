@@ -449,6 +449,27 @@ HdDataSourceLocatorSet::insert(const HdDataSourceLocatorSet &locatorSet)
 }
 
 void
+HdDataSourceLocatorSet::insert(HdDataSourceLocatorSet &&locatorSet)
+{
+    if (_locators.empty()) {
+        _locators = std::move(locatorSet._locators);
+        return;
+    }
+
+    // Note that the swapping the two small vectors might be expensive
+    // itself, so introducing a cut-off.
+    // This is a guess - we have not run performance tests to find the
+    // optimal value for this cut-off.
+    constexpr size_t _swapCutoff = 5;
+
+    if (_locators.size() + _swapCutoff < locatorSet._locators.size()) {
+        _locators.swap(locatorSet._locators);
+    }
+
+    insert(locatorSet);
+}
+
+void
 HdDataSourceLocatorSet::append(const HdDataSourceLocator &locator)
 {
     if (_locators.size() == 0 ||

@@ -270,6 +270,10 @@ public:
     HD_API
     void insert(const HdDataSourceLocatorSet &locatorSet);
 
+    /// Changes this set to be the union of this set and the given set.
+    HD_API
+    void insert(HdDataSourceLocatorSet &&locatorSet);
+
     /// append() is semantically equivalent to insert(), but works much faster
     /// if \p locator would be added to the end of the set, lexicographically.
     HD_API
