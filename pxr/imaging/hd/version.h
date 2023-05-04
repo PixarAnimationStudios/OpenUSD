@@ -64,7 +64,9 @@
 // 46 -> 47: Adding HdRenderDelegate::GetRenderSettingsNamespaces()
 // 47 -> 48: New signature for HdRenderIndex::InsertSceneIndex: added optional 
 //           argument needsPrefixing
-#define HD_API_VERSION 48
+// 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
+//           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
+#define HD_API_VERSION 49
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

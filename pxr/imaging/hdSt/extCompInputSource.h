@@ -22,56 +22,58 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXR_IMAGING_HD_EXT_COMP_INPUT_SOURCE_H
-#define PXR_IMAGING_HD_EXT_COMP_INPUT_SOURCE_H
+#ifndef PXR_IMAGING_HD_ST_EXT_COMP_INPUT_SOURCE_H
+#define PXR_IMAGING_HD_ST_EXT_COMP_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
+#include "pxr/imaging/hdSt/api.h"
+
 #include "pxr/imaging/hd/bufferSource.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 class VtValue;
+
+using HdSt_ExtCompInputSourceSharedPtr =
+        std::shared_ptr<class HdSt_ExtCompInputSource>;
+using HdSt_ExtCompInputSourceSharedPtrVector =
+        std::vector<HdSt_ExtCompInputSourceSharedPtr>;
 
 ///
 /// Abstract base class for a Buffer Source that represents a binding to an
 /// input to an ExtComputation.
 ///
-///
-class Hd_ExtCompInputSource : public HdNullBufferSource {
+class HdSt_ExtCompInputSource : public HdNullBufferSource {
 public:
     /// Constructs the input binding with the name inputName
-    HD_API
-    Hd_ExtCompInputSource(const TfToken &inputName);
+    HDST_API
+    HdSt_ExtCompInputSource(const TfToken &inputName);
 
-    HD_API
-    virtual ~Hd_ExtCompInputSource() = default;
+    HDST_API
+    ~HdSt_ExtCompInputSource() override;
 
     /// Returns the name of the input.
-    HD_API
-    virtual TfToken const &GetName() const final;
+    HDST_API
+    const TfToken &GetName() const override final;
 
     /// Returns the value associated with the input.
-    HD_API
+    HDST_API
     virtual const VtValue &GetValue() const = 0;
 
 private:
     TfToken _inputName;
 
-    Hd_ExtCompInputSource()                                            = delete;
-    Hd_ExtCompInputSource(const Hd_ExtCompInputSource &)               = delete;
-    Hd_ExtCompInputSource &operator = (const Hd_ExtCompInputSource &)  = delete;
+    HdSt_ExtCompInputSource() = delete;
+    HdSt_ExtCompInputSource(
+        const HdSt_ExtCompInputSource &) = delete;
+    HdSt_ExtCompInputSource &operator = (
+        const HdSt_ExtCompInputSource &) = delete;
 };
-
-using Hd_ExtCompInputSourceSharedPtr = 
-   std::shared_ptr<Hd_ExtCompInputSource>;
-using Hd_ExtCompInputSourceSharedPtrVector =
-    std::vector<Hd_ExtCompInputSourceSharedPtr>;
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_EXT_COMP_INPUT_SOURCE_H
+#endif // PXR_IMAGING_HD_ST_EXT_COMP_INPUT_SOURCE_H

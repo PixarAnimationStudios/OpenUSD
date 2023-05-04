@@ -21,53 +21,57 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_SCENE_EXT_COMP_INPUT_SOURCE_H
-#define PXR_IMAGING_HD_SCENE_EXT_COMP_INPUT_SOURCE_H
+#ifndef PXR_IMAGING_HD_ST_EXT_COMP_SCENE_INPUT_SOURCE_H
+#define PXR_IMAGING_HD_ST_EXT_COMP_SCENE_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/extCompInputSource.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/extCompInputSource.h"
 
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 ///
 /// An Hd Buffer Source Computation that is used to bind an ExtComputation input
 /// to a value provided by the scene delegate.
 ///
-class Hd_SceneExtCompInputSource : public Hd_ExtCompInputSource {
+class HdSt_ExtCompSceneInputSource final : public HdSt_ExtCompInputSource
+{
 public:
     /// Constructs the computation, binding inputName to the provided value.
-    HD_API
-    Hd_SceneExtCompInputSource(const TfToken &inputName, const VtValue &value);
+    HDST_API
+    HdSt_ExtCompSceneInputSource(
+        const TfToken &inputName, const VtValue &value);
 
-    HD_API
-    virtual ~Hd_SceneExtCompInputSource() = default;
+    HDST_API
+    ~HdSt_ExtCompSceneInputSource() override;
 
     /// Set the state of the computation to resolved and returns true.
-    HD_API
-    virtual bool Resolve() override;
+    HDST_API
+    bool Resolve() override;
 
     /// Returns the value associated with this input.
-    HD_API
-    virtual const VtValue &GetValue() const override;
+    HDST_API
+    const VtValue &GetValue() const override;
 
 protected:
     /// Returns if this computation binding is valid.
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
     VtValue _value;
 
     // No copying, assignment or default construction.
-    Hd_SceneExtCompInputSource()                                       = delete;
-    Hd_SceneExtCompInputSource(const Hd_SceneExtCompInputSource &)     = delete;
-    Hd_SceneExtCompInputSource &operator = (const Hd_SceneExtCompInputSource &)
-                                                                       = delete;
+    HdSt_ExtCompSceneInputSource() = delete;
+    HdSt_ExtCompSceneInputSource(
+        const HdSt_ExtCompSceneInputSource &) = delete;
+    HdSt_ExtCompSceneInputSource &operator = (
+        const HdSt_ExtCompSceneInputSource &) = delete;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_SCENE_EXT_COMP_INPUT_SOURCE_H
+#endif // PXR_IMAGING_HD_ST_EXT_COMP_SCENE_INPUT_SOURCE_H

@@ -23,23 +23,26 @@
 //
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
+#include "pxr/imaging/hdSt/extCompCpuComputation.h"
+#include "pxr/imaging/hdSt/extCompComputedInputSource.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/extCompGpuPrimvarBufferSource.h"
 #include "pxr/imaging/hdSt/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hdSt/extCompSceneInputSource.h"
 #include "pxr/imaging/hdSt/extComputation.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hd/sceneDelegate.h"
+
 #include "pxr/imaging/hd/extComputation.h"
-#include "pxr/imaging/hd/extCompCpuComputation.h"
-#include "pxr/imaging/hd/sceneExtCompInputSource.h"
-#include "pxr/imaging/hd/compExtCompInputSource.h"
+#include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
+
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/computeCmds.h"
 #include "pxr/imaging/hgi/computePipeline.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/tokens.h"
+
 #include "pxr/base/tf/hash.h"
 
 #include <limits>
@@ -463,7 +466,7 @@ HdSt_GetExtComputationPrimvarsComputations(
 
         } else {
 
-            HdExtCompCpuComputationSharedPtr cpuComputation;
+            HdStExtCompCpuComputationSharedPtr cpuComputation;
             for (HdExtComputationPrimvarDescriptor const & compPrimvar:
                                                                 compPrimvars) {
 
@@ -473,7 +476,7 @@ HdSt_GetExtComputationPrimvarsComputations(
                     if (!cpuComputation) {
                        // Create the computation for the first dirty primvar
                         cpuComputation =
-                            HdExtCompCpuComputation::CreateComputation(
+                            HdStExtCompCpuComputation::CreateComputation(
                                 sceneDelegate,
                                 *sourceComp,
                                 separateComputationSources);

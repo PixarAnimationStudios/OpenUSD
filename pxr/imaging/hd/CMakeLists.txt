@@ -37,7 +37,6 @@ pxr_library(hd
         categoriesSchema
         changeTracker
         command
-        compExtCompInputSource
         coneSchema
         containerDataSourceEditor
         coordSys
@@ -60,8 +59,6 @@ pxr_library(hd
         drawItem
         engine
         enums
-        extCompCpuComputation
-        extCompInputSource
         extComputation
         extComputationContext
         extComputationContextInternal
@@ -148,7 +145,6 @@ pxr_library(hd
         rprimSharedData
         sampleFilterSchema
         sceneDelegate
-        sceneExtCompInputSource
         sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate

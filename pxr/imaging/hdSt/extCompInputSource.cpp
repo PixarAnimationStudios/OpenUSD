@@ -22,23 +22,26 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hd/extCompInputSource.h"
+#include "pxr/imaging/hdSt/extCompInputSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-Hd_ExtCompInputSource::Hd_ExtCompInputSource(const TfToken &inputName)
- : HdNullBufferSource()
- , _inputName(inputName)
+HdSt_ExtCompInputSource::HdSt_ExtCompInputSource(const TfToken &inputName)
+    : HdNullBufferSource()
+    , _inputName(inputName)
 {
 
 }
 
+HdSt_ExtCompInputSource::~HdSt_ExtCompInputSource() = default;
+
 TfToken const &
-Hd_ExtCompInputSource::GetName() const
+HdSt_ExtCompInputSource::GetName() const
 {
     return _inputName;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

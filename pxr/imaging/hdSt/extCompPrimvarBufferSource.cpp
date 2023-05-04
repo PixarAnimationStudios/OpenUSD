@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/extCompPrimvarBufferSource.h"
+#include "pxr/imaging/hdSt/extCompCpuComputation.h"
 
-#include "pxr/imaging/hd/extCompCpuComputation.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,13 +31,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtCompPrimvarBufferSource::HdStExtCompPrimvarBufferSource(
     const TfToken &primvarName,
-    const HdExtCompCpuComputationSharedPtr &source,
+    const HdStExtCompCpuComputationSharedPtr &source,
     const TfToken &sourceOutputName,
     const HdTupleType &valueType)
     : HdBufferSource()
     , _primvarName(primvarName)
     , _source(source)
-    , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
+    , _sourceOutputIdx(HdStExtCompCpuComputation::INVALID_OUTPUT_INDEX)
     , _tupleType(valueType)
     , _rawDataPtr(nullptr)
 {
@@ -136,7 +136,7 @@ HdStExtCompPrimvarBufferSource::_CheckValid() const
 {
     return (_source &&
             (_sourceOutputIdx !=
-                               HdExtCompCpuComputation::INVALID_OUTPUT_INDEX) &&
+                        HdStExtCompCpuComputation::INVALID_OUTPUT_INDEX) &&
             (_tupleType.type != HdTypeInvalid));
 }
 

@@ -22,38 +22,42 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#include "pxr/imaging/hd/extCompCpuComputation.h"
+#include "pxr/imaging/hdSt/extCompCpuComputation.h"
+#include "pxr/imaging/hdSt/extCompComputedInputSource.h"
+#include "pxr/imaging/hdSt/extCompSceneInputSource.h"
+
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/extComputationContextInternal.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#include "pxr/imaging/hd/sceneExtCompInputSource.h"
-#include "pxr/imaging/hd/compExtCompInputSource.h"
 
 #include <limits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-const size_t HdExtCompCpuComputation::INVALID_OUTPUT_INDEX =
-                                             std::numeric_limits<size_t>::max();
 
-HdExtCompCpuComputation::HdExtCompCpuComputation(
-                             const SdfPath &id,
-                             const Hd_ExtCompInputSourceSharedPtrVector &inputs,
-                             const TfTokenVector &outputs,
-                             int numElements,
-                             HdSceneDelegate *sceneDelegate)
- : HdNullBufferSource()
- , _id(id)
- , _inputs(inputs)
- , _outputs(outputs)
- , _numElements(numElements)
- , _sceneDelegate(sceneDelegate)
- , _outputValues()
+const size_t HdStExtCompCpuComputation::INVALID_OUTPUT_INDEX =
+                                        std::numeric_limits<size_t>::max();
+
+HdStExtCompCpuComputation::HdStExtCompCpuComputation(
+    const SdfPath &id,
+    const HdSt_ExtCompInputSourceSharedPtrVector &inputs,
+    const TfTokenVector &outputs,
+    int numElements,
+    HdSceneDelegate *sceneDelegate)
+    : HdNullBufferSource()
+    , _id(id)
+    , _inputs(inputs)
+    , _outputs(outputs)
+    , _numElements(numElements)
+    , _sceneDelegate(sceneDelegate)
+    , _outputValues()
 {
 }
 
-HdExtCompCpuComputationSharedPtr
-HdExtCompCpuComputation::CreateComputation(
+HdStExtCompCpuComputation::~HdStExtCompCpuComputation() = default;
+
+HdStExtCompCpuComputationSharedPtr
+HdStExtCompCpuComputation::CreateComputation(
     HdSceneDelegate *sceneDelegate,
     const HdExtComputation &computation,
     HdBufferSourceSharedPtrVector *computationSources)
@@ -62,12 +66,13 @@ HdExtCompCpuComputation::CreateComputation(
 
     const SdfPath &id = computation.GetId();
 
-    Hd_ExtCompInputSourceSharedPtrVector inputs;
+    HdSt_ExtCompInputSourceSharedPtrVector inputs;
     for (const TfToken &inputName: computation.GetSceneInputNames()) {
         VtValue inputValue = sceneDelegate->GetExtComputationInput(
                                                 id, inputName);
-        Hd_ExtCompInputSourceSharedPtr inputSource(
-                         new Hd_SceneExtCompInputSource(inputName, inputValue));
+        HdSt_ExtCompInputSourceSharedPtr inputSource =
+            std::make_shared<HdSt_ExtCompSceneInputSource>(
+                                                inputName, inputValue);
         computationSources->push_back(inputSource);
         inputs.push_back(inputSource);
     }
@@ -90,36 +95,36 @@ HdExtCompCpuComputation::CreateComputation(
                     sceneDelegate->GetExtComputationInput(
                             compInput.sourceComputationId,
                             compInput.name);
-                Hd_ExtCompInputSourceSharedPtr inputSource(
-                        new Hd_SceneExtCompInputSource(compInput.name,
-                                                       inputValue));
+                HdSt_ExtCompInputSourceSharedPtr inputSource =
+                    std::make_shared<HdSt_ExtCompSceneInputSource>(
+                                                compInput.name, inputValue);
                 computationSources->push_back(inputSource);
                 inputs.push_back(inputSource);
                 continue;
             }
 
-            HdExtCompCpuComputationSharedPtr sourceComputation =
+            HdStExtCompCpuComputationSharedPtr sourceComputation =
                 CreateComputation(sceneDelegate,
                                   *sourceComp,
                                   computationSources);
 
-            Hd_ExtCompInputSourceSharedPtr inputSource(
-                new Hd_CompExtCompInputSource(
+            HdSt_ExtCompInputSourceSharedPtr inputSource =
+                std::make_shared<HdSt_ExtCompComputedInputSource>(
                         compInput.name,
                         sourceComputation,
-                        compInput.sourceComputationOutputName));
+                        compInput.sourceComputationOutputName);
 
             computationSources->push_back(inputSource);
             inputs.push_back(inputSource);
         }
     }
 
-    HdExtCompCpuComputationSharedPtr result(
-            new HdExtCompCpuComputation(id,
+    HdStExtCompCpuComputationSharedPtr result =
+        std::make_shared<HdStExtCompCpuComputation>(id,
                                         inputs,
                                         computation.GetOutputNames(),
                                         computation.GetElementCount(),
-                                        sceneDelegate));
+                                        sceneDelegate);
 
     computationSources->push_back(result);
 
@@ -127,13 +132,13 @@ HdExtCompCpuComputation::CreateComputation(
 }
 
 TfToken const &
-HdExtCompCpuComputation::GetName() const
+HdStExtCompCpuComputation::GetName() const
 {
     return _id.GetToken();
 }
 
 bool
-HdExtCompCpuComputation::Resolve()
+HdStExtCompCpuComputation::Resolve()
 {
     size_t numInputs = _inputs.size();
 
@@ -163,7 +168,7 @@ HdExtCompCpuComputation::Resolve()
     HdExtComputationContextInternal context;
 
     for (size_t inputNum = 0; inputNum < numInputs; ++inputNum) {
-        const Hd_ExtCompInputSourceSharedPtr &input = _inputs[inputNum];
+        const HdSt_ExtCompInputSourceSharedPtr &input = _inputs[inputNum];
         context.SetInputValue(input->GetName(), input->GetValue());
     }
 
@@ -191,13 +196,13 @@ HdExtCompCpuComputation::Resolve()
 }
 
 size_t
-HdExtCompCpuComputation::GetNumElements() const
+HdStExtCompCpuComputation::GetNumElements() const
 {
     return _numElements;
 }
 
 size_t
-HdExtCompCpuComputation::GetOutputIndex(const TfToken &outputName) const
+HdStExtCompCpuComputation::GetOutputIndex(const TfToken &outputName) const
 {
     size_t numOutputs = _outputs.size();
     for (size_t outputNum = 0; outputNum < numOutputs; ++outputNum) {
@@ -210,16 +215,17 @@ HdExtCompCpuComputation::GetOutputIndex(const TfToken &outputName) const
 }
 
 const VtValue &
-HdExtCompCpuComputation::GetOutputByIndex(size_t index) const
+HdStExtCompCpuComputation::GetOutputByIndex(size_t index) const
 {
     return _outputValues[index];
 }
 
 bool
-HdExtCompCpuComputation::_CheckValid() const
+HdStExtCompCpuComputation::_CheckValid() const
 {
     return _sceneDelegate != nullptr;
 }
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

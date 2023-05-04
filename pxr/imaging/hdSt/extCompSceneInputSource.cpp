@@ -21,55 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hd/compExtCompInputSource.h"
-#include "pxr/imaging/hd/extCompCpuComputation.h"
+
+#include "pxr/imaging/hdSt/extCompSceneInputSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-Hd_CompExtCompInputSource::Hd_CompExtCompInputSource(
-                                 const TfToken &name,
-                                 const HdExtCompCpuComputationSharedPtr &source,
-                                 const TfToken &sourceOutputName)
- : Hd_ExtCompInputSource(name)
- , _source(source)
- , _sourceOutputIdx(HdExtCompCpuComputation::INVALID_OUTPUT_INDEX)
+
+HdSt_ExtCompSceneInputSource::HdSt_ExtCompSceneInputSource(
+    const TfToken &inputName,
+    const VtValue &value)
+    : HdSt_ExtCompInputSource(inputName)
+    , _value(value)
 {
-    _sourceOutputIdx = source->GetOutputIndex(sourceOutputName);
 }
 
+HdSt_ExtCompSceneInputSource::~HdSt_ExtCompSceneInputSource() = default;
+
 bool
-Hd_CompExtCompInputSource::Resolve()
+HdSt_ExtCompSceneInputSource::Resolve()
 {
-    bool sourceValid = _source->IsValid();
-    if (sourceValid) {
-        if (!_source->IsResolved()) {
-            return false;
-        }
-    }
-
     if (!_TryLock()) return false;
-
-    if (!sourceValid || _source->HasResolveError()) {
-        _SetResolveError();
-        return true;
-    }
 
     _SetResolved();
     return true;
 }
 
 const VtValue &
-Hd_CompExtCompInputSource::GetValue() const
+HdSt_ExtCompSceneInputSource::GetValue() const
 {
-    return _source->GetOutputByIndex(_sourceOutputIdx);
+    return _value;
 }
-
 
 bool
-Hd_CompExtCompInputSource::_CheckValid() const
+HdSt_ExtCompSceneInputSource::_CheckValid() const
 {
-    return (_source &&
-           (_sourceOutputIdx != HdExtCompCpuComputation::INVALID_OUTPUT_INDEX));
+    return true;
 }
 
+
 PXR_NAMESPACE_CLOSE_SCOPE
+

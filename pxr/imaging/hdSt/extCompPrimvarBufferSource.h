@@ -36,14 +36,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdExtCompCpuComputation;
 
-using HdExtCompCpuComputationSharedPtr = 
-    std::shared_ptr<HdExtCompCpuComputation>;
+using HdStExtCompCpuComputationSharedPtr = 
+    std::shared_ptr<class HdStExtCompCpuComputation>;
 
 /// Hd Buffer Source that binds a primvar to a Ext Computation output.
 /// This buffer source is compatible with being bound to a Bar.
-class HdStExtCompPrimvarBufferSource final : public HdBufferSource {
+class HdStExtCompPrimvarBufferSource final : public HdBufferSource
+{
 public:
 
     /// Constructs a new primvar buffer source called primvarName and
@@ -55,7 +55,7 @@ public:
     HDST_API
     HdStExtCompPrimvarBufferSource(
         const TfToken &primvarName,
-        const HdExtCompCpuComputationSharedPtr &source,
+        const HdStExtCompCpuComputationSharedPtr &source,
         const TfToken &sourceOutputName,
         const HdTupleType &valueType);
 
@@ -101,11 +101,11 @@ private:
     friend void TfHashAppend(HashState &h,
                              HdStExtCompPrimvarBufferSource const &);
 
-    TfToken                          _primvarName;
-    HdExtCompCpuComputationSharedPtr _source;
-    size_t                           _sourceOutputIdx;
-    HdTupleType                      _tupleType;
-    void const                      *_rawDataPtr;
+    TfToken                            _primvarName;
+    HdStExtCompCpuComputationSharedPtr _source;
+    size_t                             _sourceOutputIdx;
+    HdTupleType                        _tupleType;
+    void const                        *_rawDataPtr;
 
     HdStExtCompPrimvarBufferSource() = delete;
     HdStExtCompPrimvarBufferSource(

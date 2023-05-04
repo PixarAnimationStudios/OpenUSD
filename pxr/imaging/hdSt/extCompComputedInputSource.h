@@ -22,61 +22,63 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXR_IMAGING_HD_COMP_EXT_COMP_INPUT_SOURCE_H
-#define PXR_IMAGING_HD_COMP_EXT_COMP_INPUT_SOURCE_H
+#ifndef PXR_IMAGING_HD_ST_EXT_COMP_COMPUTED_INPUT_SOURCE_H
+#define PXR_IMAGING_HD_ST_EXT_COMP_COMPUTED_INPUT_SOURCE_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/extCompInputSource.h"
+#include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/extCompInputSource.h"
 
 #include <memory>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HdExtCompCpuComputation;
 
-using HdExtCompCpuComputationSharedPtr = 
-    std::shared_ptr<HdExtCompCpuComputation>;
+using HdStExtCompCpuComputationSharedPtr =
+    std::shared_ptr<class HdStExtCompCpuComputation>;
 
 ///
-/// An Hd Buffer Source Computation that is used to bind an ExtComputation input
-/// to a specific output of another ExtComputation.
+/// An Hd Buffer Source Computation that is used to bind an ExtComputation
+/// input to a specific output of another ExtComputation.
 ///
-class Hd_CompExtCompInputSource final : public Hd_ExtCompInputSource {
+class HdSt_ExtCompComputedInputSource final : public HdSt_ExtCompInputSource
+{
 public:
     /// Constructs the computation, binding inputName to sourceOutputName
     /// on buffer source representation of the source computation.
-    HD_API
-    Hd_CompExtCompInputSource(const TfToken &inputName,
-                              const HdExtCompCpuComputationSharedPtr &source,
-                              const TfToken &sourceOutputName);
+    HDST_API
+    HdSt_ExtCompComputedInputSource(
+        const TfToken &inputName,
+        const HdStExtCompCpuComputationSharedPtr &source,
+        const TfToken &sourceOutputName);
 
-    HD_API
-    virtual ~Hd_CompExtCompInputSource() = default;
+    HDST_API
+    ~HdSt_ExtCompComputedInputSource() override;
 
     /// Returns true once the source computation has been resolved.
-    HD_API
-    virtual bool Resolve() override;
+    HDST_API
+    bool Resolve() override;
 
     /// Obtains the value of the output from the source computation.
-    HD_API
-    virtual const VtValue &GetValue() const override;
+    HDST_API
+    const VtValue &GetValue() const override;
 
 protected:
     /// Returns true if the binding is successful.
-    virtual bool _CheckValid() const override;
+    bool _CheckValid() const override;
 
 private:
-    HdExtCompCpuComputationSharedPtr _source;
-    size_t                           _sourceOutputIdx;
+    HdStExtCompCpuComputationSharedPtr _source;
+    size_t                             _sourceOutputIdx;
 
-    Hd_CompExtCompInputSource()                                        = delete;
-    Hd_CompExtCompInputSource(const Hd_CompExtCompInputSource &)       = delete;
-    Hd_CompExtCompInputSource &operator = (const Hd_CompExtCompInputSource &)
-                                                                       = delete;
+    HdSt_ExtCompComputedInputSource() = delete;
+    HdSt_ExtCompComputedInputSource(
+        const HdSt_ExtCompComputedInputSource &) = delete;
+    HdSt_ExtCompComputedInputSource &operator = (
+        const HdSt_ExtCompComputedInputSource &) = delete;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_COMP_EXT_COMP_INPUT_SOURCE_H
+#endif // PXR_IMAGING_HD_ST_EXT_COMP_COMPUTED_INPUT_SOURCE_H

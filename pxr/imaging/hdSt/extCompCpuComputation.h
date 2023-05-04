@@ -21,12 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_EXT_COMP_CPU_COMPUTATION_H
-#define PXR_IMAGING_HD_EXT_COMP_CPU_COMPUTATION_H
+#ifndef PXR_IMAGING_HD_ST_EXT_COMP_CPU_COMPUTATION_H
+#define PXR_IMAGING_HD_ST_EXT_COMP_CPU_COMPUTATION_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/extCompInputSource.h"
+#include "pxr/imaging/hdSt/api.h"
+
+#include "pxr/imaging/hd/bufferSource.h"
 
 #include "pxr/usd/sdf/path.h"
 
@@ -34,15 +35,20 @@
 #include "pxr/base/vt/value.h"
 
 #include <memory>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+
 class HdSceneDelegate;
 class HdExtComputation;
-class HdExtCompCpuComputation;
 
-using HdExtCompCpuComputationSharedPtr = 
-    std::shared_ptr<HdExtCompCpuComputation>;
+using HdStExtCompCpuComputationSharedPtr =
+    std::shared_ptr<class HdStExtCompCpuComputation>;
+using HdSt_ExtCompInputSourceSharedPtr =
+    std::shared_ptr<class HdSt_ExtCompInputSource>;
+using HdSt_ExtCompInputSourceSharedPtrVector =
+    std::vector<HdSt_ExtCompInputSourceSharedPtr>;
 
 ///
 /// A Buffer Source that represents a CPU implementation of a ExtComputation.
@@ -58,9 +64,10 @@ using HdExtCompCpuComputationSharedPtr =
 ///
 /// Outputs to a computation are in SOA form, so a computation may have
 /// many outputs, but each output has the same number of elements in it.
-class HdExtCompCpuComputation final : public HdNullBufferSource {
+class HdStExtCompCpuComputation final : public HdNullBufferSource
+{
 public:
-    HD_API
+    HDST_API
     static const size_t INVALID_OUTPUT_INDEX;
 
     /// Constructs a new Cpu ExtComputation source.
@@ -72,65 +79,68 @@ public:
     ///
     /// sceneDelegate and id are used to callback to the scene delegate
     /// in order to invoke computation processing.
-    HdExtCompCpuComputation(const SdfPath &id,
-                            const Hd_ExtCompInputSourceSharedPtrVector &inputs,
-                            const TfTokenVector &outputs,
-                            int numElements,
-                            HdSceneDelegate *sceneDelegate);
+    HdStExtCompCpuComputation(
+        const SdfPath &id,
+        const HdSt_ExtCompInputSourceSharedPtrVector &inputs,
+        const TfTokenVector &outputs,
+        int numElements,
+        HdSceneDelegate *sceneDelegate);
 
-    /// Create a CPU computation implementing the given abstract computation. 
+    HDST_API
+    ~HdStExtCompCpuComputation() override;
+
+    /// Create a CPU computation implementing the given abstract computation.
     /// The scene delegate identifies which delegate to pull scene inputs from.
-    HD_API
-    static HdExtCompCpuComputationSharedPtr
+    HDST_API
+    static HdStExtCompCpuComputationSharedPtr
     CreateComputation(HdSceneDelegate *sceneDelegate,
                       const HdExtComputation &computation,
                       HdBufferSourceSharedPtrVector *computationSources);
 
-    HD_API
-    virtual ~HdExtCompCpuComputation() = default;
-
     /// Returns the id for this computation as a token.
-    HD_API
-    virtual TfToken const &GetName() const override;
+    HDST_API
+    TfToken const &GetName() const override;
 
     /// Ask the scene delegate to run the computation and captures the output
     /// signals.
-    HD_API
-    virtual bool Resolve() override;
+    HDST_API
+    bool Resolve() override;
 
-    HD_API
-    virtual size_t GetNumElements() const override;
+    HDST_API
+    size_t GetNumElements() const override;
 
 
     /// Converts a output name token into an index.
-    HD_API
+    HDST_API
     size_t GetOutputIndex(const TfToken &outputName) const;
 
     /// Returns the value of the specified output
     /// (after the computations been Resolved).
-    HD_API
+    HDST_API
     const VtValue &GetOutputByIndex(size_t index) const;
 
 protected:
     /// Returns if the computation is specified correctly.
-    HD_API
-    virtual bool _CheckValid() const override;
+    HDST_API
+    bool _CheckValid() const override;
 
 private:
-    SdfPath                               _id;
-    Hd_ExtCompInputSourceSharedPtrVector  _inputs;
-    TfTokenVector                         _outputs;
-    size_t                                _numElements;
-    HdSceneDelegate                      *_sceneDelegate;
+    SdfPath                                 _id;
+    HdSt_ExtCompInputSourceSharedPtrVector  _inputs;
+    TfTokenVector                           _outputs;
+    size_t                                  _numElements;
+    HdSceneDelegate                        *_sceneDelegate;
 
-    std::vector<VtValue>                  _outputValues;
+    std::vector<VtValue>                    _outputValues;
 
-    HdExtCompCpuComputation()                                          = delete;
-    HdExtCompCpuComputation(const HdExtCompCpuComputation &)           = delete;
-    HdExtCompCpuComputation &operator = (const HdExtCompCpuComputation &)
-                                                                       = delete;
+    HdStExtCompCpuComputation() = delete;
+    HdStExtCompCpuComputation(
+        const HdStExtCompCpuComputation &) = delete;
+    HdStExtCompCpuComputation &operator = (
+        const HdStExtCompCpuComputation &) = delete;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_IMAGING_HD_EXT_COMP_CPU_COMPUTATION_H
+#endif // PXR_IMAGING_HD_ST_EXT_COMP_CPU_COMPUTATION_H

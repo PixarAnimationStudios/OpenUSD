@@ -72,6 +72,7 @@ pxr_library(hdSt
         drawTargetRenderPassState
         dynamicUvTextureObject
         extComputation
+        extCompCpuComputation
         extCompGpuComputation
         extCompGpuComputationResource
         extCompGpuPrimvarBufferSource
@@ -146,6 +147,9 @@ pxr_library(hdSt
         drawBatch
         drawItemsCache
         extCompComputeShader
+        extCompComputedInputSource
+        extCompInputSource
+        extCompSceneInputSource
         fieldTextureCpuData
         imageShaderShaderKey
         indirectDrawBatch
