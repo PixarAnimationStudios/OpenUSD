@@ -56,7 +56,7 @@ UsdImagingDataSourcePointsPrim::Get(const TfToken &name)
 {
     HdDataSourceBaseHandle const result = UsdImagingDataSourceGprim::Get(name);
 
-    if (name == HdPrimvarsSchema::GetDefaultLocator().GetFirstElement()) {
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
                 UsdImagingDataSourceCustomPrimvars::New(

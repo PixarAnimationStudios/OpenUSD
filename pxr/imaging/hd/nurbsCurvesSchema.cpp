@@ -118,6 +118,12 @@ HdNurbsCurvesSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdNurbsCurvesSchema::GetSchemaToken()
+{
+    return HdNurbsCurvesSchemaTokens->nurbsCurves;
+} 
+/*static*/
 const HdDataSourceLocator &
 HdNurbsCurvesSchema::GetDefaultLocator()
 {

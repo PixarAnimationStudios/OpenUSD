@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -180,6 +180,12 @@ HdInstancerTopologySchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+HdInstancerTopologySchema::GetSchemaToken()
+{
+    return HdInstancerTopologySchemaTokens->instancerTopology;
+} 
 /*static*/
 const HdDataSourceLocator &
 HdInstancerTopologySchema::GetDefaultLocator()

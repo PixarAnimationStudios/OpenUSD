@@ -118,6 +118,12 @@ UsdImagingUsdPrimInfoSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+UsdImagingUsdPrimInfoSchema::GetSchemaToken()
+{
+    return UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo;
+} 
+/*static*/
 const HdDataSourceLocator &
 UsdImagingUsdPrimInfoSchema::GetDefaultLocator()
 {

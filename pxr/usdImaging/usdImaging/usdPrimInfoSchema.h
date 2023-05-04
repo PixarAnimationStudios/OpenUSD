@@ -129,6 +129,11 @@ public:
     static UsdImagingUsdPrimInfoSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
+
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.
     USDIMAGING_API

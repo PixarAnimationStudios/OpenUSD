@@ -95,7 +95,7 @@ HdDataSourceBaseHandle
 UsdImagingDataSourceGprim::Get(const TfToken &name)
 {
     HdDataSourceBaseHandle result = UsdImagingDataSourcePrim::Get(name);
-    if (name == HdPrimvarsSchema::GetDefaultLocator().GetFirstElement()) {
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
         const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 
             _GetCustomPrimvarMappings(_GetUsdPrim());
         if (!mappings.empty()) {

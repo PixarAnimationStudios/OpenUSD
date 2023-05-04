@@ -235,6 +235,12 @@ HdNurbsPatchSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdNurbsPatchSchema::GetSchemaToken()
+{
+    return HdNurbsPatchSchemaTokens->nurbsPatch;
+} 
+/*static*/
 const HdDataSourceLocator &
 HdNurbsPatchSchema::GetDefaultLocator()
 {

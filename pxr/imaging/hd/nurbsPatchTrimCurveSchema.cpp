@@ -145,6 +145,12 @@ HdNurbsPatchTrimCurveSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdNurbsPatchTrimCurveSchema::GetSchemaToken()
+{
+    return HdNurbsPatchTrimCurveSchemaTokens->trimCurve;
+} 
+/*static*/
 const HdDataSourceLocator &
 HdNurbsPatchTrimCurveSchema::GetDefaultLocator()
 {

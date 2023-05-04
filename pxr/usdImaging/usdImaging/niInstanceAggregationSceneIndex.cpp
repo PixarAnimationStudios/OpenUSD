@@ -603,13 +603,13 @@ public:
     HD_DECLARE_DATASOURCE(_InstancerPrimSource);
 
     TfTokenVector GetNames() override {
-        return { HdInstancedBySchemaTokens->instancedBy,
-                 HdInstancerTopologySchemaTokens->instancerTopology,
-                 HdPrimvarsSchemaTokens->primvars};
+        return { HdInstancedBySchema::GetSchemaToken(),
+                 HdInstancerTopologySchema::GetSchemaToken(),
+                 HdPrimvarsSchema::GetSchemaToken()};
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdInstancedBySchemaTokens->instancedBy) {
+        if (name == HdInstancedBySchema::GetSchemaToken()) {
             if (HdInstancedBySchema schema = HdInstancedBySchema::GetFromParent(
                     _inputSceneIndex->GetPrim(_enclosingPrototypeRoot)
                         .dataSource)) {
@@ -617,11 +617,11 @@ public:
             }
             return _fallbackInstancedByDataSource;
         }
-        if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
+        if (name == HdInstancerTopologySchema::GetSchemaToken()) {
             return _InstancerTopologyDataSource::New(
                 _prototypePath, _instances);
         }
-        if (name == HdPrimvarsSchemaTokens->primvars) {
+        if (name == HdPrimvarsSchema::GetSchemaToken()) {
             return _PrimvarsDataSource::New(
                     _inputSceneIndex, _instances);
         }
@@ -819,7 +819,7 @@ _MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
     HdMaterialBindingSchema schema = HdMaterialBindingSchema::GetFromParent(
         primSource);
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingSchemaTokens->materialBinding,
+        HdMaterialBindingSchema::GetSchemaToken(),
         _MakeCopy(schema.GetContainer()));
 }
 
@@ -1394,7 +1394,7 @@ _InstanceObserver::_GetDataSourceForInstance(
     // PrimSource for instance
     return
         HdRetainedContainerDataSource::New(
-            HdInstanceSchemaTokens->instance,
+            HdInstanceSchema::GetSchemaToken(),
             HdLazyContainerDataSource::New(
                 [ self, primPath ] () {
                     if (self) {

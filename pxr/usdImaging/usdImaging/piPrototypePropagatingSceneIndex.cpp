@@ -157,7 +157,7 @@ _UsdPrimInfoSceneIndex::_CreateDataSource(
         { { prototype,
               TfToken(),
               HdRetainedContainerDataSource::New(
-                  UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo,
+                  UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
                   UsdImagingUsdPrimInfoSchema::Builder()
                       .SetPiPropagatedPrototypes(ds)
                       .Build()) } } );
@@ -426,7 +426,7 @@ _InstancerTopology(const VtArray<SdfPath> &prototypes)
 {
     return
         HdRetainedContainerDataSource::New(
-            HdInstancerTopologySchemaTokens->instancerTopology,
+            HdInstancerTopologySchema::GetSchemaToken(),
             HdInstancerTopologySchema::Builder()
                 .SetPrototypes(
                     HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(

@@ -80,7 +80,7 @@ _ComputeUnderlaySource(const SdfPath &prototypeRoot)
 
     return
         HdRetainedContainerDataSource::New(
-            HdInstancedBySchemaTokens->instancedBy,
+            HdInstancedBySchema::GetSchemaToken(),
             _InstancedByDataSource(prototypeRoot));
 }
 
@@ -93,10 +93,10 @@ _ComputePrototypeRootOverlaySource(const SdfPath &prototypeRoot)
 
     return
         HdRetainedContainerDataSource::New(
-            HdInstancedBySchemaTokens->instancedBy,
+            HdInstancedBySchema::GetSchemaToken(),
             _InstancedByDataSource(prototypeRoot),
             // The prototypes should always be defined at the origin.
-            HdXformSchemaTokens->xform,
+            HdXformSchema::GetSchemaToken(),
             _ResetXformToIdentityDataSource());
 }
 
