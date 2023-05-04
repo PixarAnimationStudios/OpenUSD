@@ -1650,6 +1650,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     const HgiCapabilities *capabilities = registry->GetHgi()->GetCapabilities();
     const bool bindlessTextureEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    const bool bindlessBuffersEnabled = 
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
     const bool shaderDrawParametersEnabled =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDrawParameters);
     const bool builtinBarycentricsEnabled =
@@ -1741,6 +1743,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     }
     if (minusOneToOneDepth) {
         _genFS << "#define HD_MINUS_ONE_TO_ONE_DEPTH_RANGE\n";
+    }
+    if (bindlessBuffersEnabled) {
+        _genVS << "#define HD_BINDLESS_BUFFERS_ENABLED\n";
     }
 
     // ------------------
@@ -4332,16 +4337,16 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                 "  int offset = GetInstanceIndexCoord();\n"
                 "  hd_instanceIndex r;\n"
                 "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                "    r.indices[i] = instanceIndices[offset+i];\n"
+                "    r.indices[i] = instanceIndices[offset+i + 1];\n"
                 "  return r;\n"
                 "}\n"
 
                 "void SetCulledInstanceIndex(uint instanceID) {\n"
                 "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
                 "    culledInstanceIndices[GetBaseInstanceIndexCoord()"
-                " + instanceID*HD_INSTANCE_INDEX_WIDTH + i]"
+                " + instanceID*HD_INSTANCE_INDEX_WIDTH + i + 1]"
                 "        = instanceIndices[GetBaseInstanceIndexCoord()"
-                " + GetCurrentInstance()*HD_INSTANCE_INDEX_WIDTH + i];\n"
+                " + GetCurrentInstance()*HD_INSTANCE_INDEX_WIDTH + i + 1];\n"
                 "}\n";
 
             genAttr << instanceIndexAccessors;
@@ -4353,15 +4358,15 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             _EmitAccessor(_genVS, _metaData.culledInstanceIndexArrayBinding.name,
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
-                          "GetInstanceIndexCoord()+localIndex");
+                          "GetInstanceIndexCoord()+localIndex + 1");
             _EmitAccessor(_genPTCS, _metaData.culledInstanceIndexArrayBinding.name,
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
-                          "GetInstanceIndexCoord()+localIndex");
+                          "GetInstanceIndexCoord()+localIndex + 1");
             _EmitAccessor(_genPTVS, _metaData.culledInstanceIndexArrayBinding.name,
                           _metaData.culledInstanceIndexArrayBinding.dataType,
                           _metaData.culledInstanceIndexArrayBinding.binding,
-                          "GetInstanceIndexCoord()+localIndex");
+                          "GetInstanceIndexCoord()+localIndex + 1");
 
             genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
                     << "  hd_instanceIndex r;\n"

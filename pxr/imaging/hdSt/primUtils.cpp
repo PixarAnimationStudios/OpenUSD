@@ -1023,9 +1023,22 @@ HdStUpdateInstancerData(
             }
 
             // update instance indices
-            VtIntArray instanceIndices =
+            //
+            // We add a zero as the first value in instanceIndices. This is 
+            // added as a way of avoiding correctness issues in the instance
+            // frustum cull vertex shader. This issue happens when an instanced 
+            // prim has geom subsets resulting in multiple draw items. See
+            // ViewFrustumCull.VertexInstancing in frustumCull.glslfx for
+            // details.
+            VtIntArray const originalInstanceIndices =
                 static_cast<HdStInstancer*>(instancer)->
                 GetInstanceIndices(prim->GetId());
+            VtIntArray instanceIndices =
+                VtIntArray(originalInstanceIndices.size() + 1);
+            instanceIndices[0] = 0;
+            std::copy(originalInstanceIndices.cbegin(),
+                      originalInstanceIndices.cend(),
+                      instanceIndices.begin() + 1);
 
             HdStResourceRegistry* const resourceRegistry =
                 static_cast<HdStResourceRegistry*>(
