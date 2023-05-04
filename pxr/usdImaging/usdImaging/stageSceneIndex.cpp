@@ -517,7 +517,7 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
 }
 
 UsdImagingStageSceneIndex::_PrimAdapterPair
-UsdImagingStageSceneIndex::_FindResponsibleAncestor(const UsdPrim &prim)
+UsdImagingStageSceneIndex::_FindResponsibleAncestor(const UsdPrim &prim) const
 {
     UsdPrim parentPrim = prim.GetParent();
     while (parentPrim) {
@@ -537,7 +537,20 @@ UsdImagingStageSceneIndex::_FindResponsibleAncestor(const UsdPrim &prim)
     return {UsdPrim(), nullptr};
 }
 
-
+static
+void
+_DeletePrefix(const SdfPath &prefix,
+              std::map<SdfPath, TfTokenVector> * const m)
+{
+    auto start = m->lower_bound(prefix);
+    auto end = start;
+    while (end != m->end() && end->first.HasPrefix(prefix)) {
+        ++end;
+    }
+    if (start != end) {
+        m->erase(start, end);
+    }
+}
 
 void
 UsdImagingStageSceneIndex::_ApplyPendingResyncs()
@@ -549,20 +562,19 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
     std::sort(_usdPrimsToResync.begin(), _usdPrimsToResync.end());
     size_t lastResynced = 0;
     for (size_t i = 0; i < _usdPrimsToResync.size(); ++i) {
+        const SdfPath &primPath = _usdPrimsToResync[i];
         // Coalesce paths with a common prefix, so as not to resync /A and /A/B,
         // since due to their hierarchical nature the latter is redundant.
         // Thanks to the sort, all suffixes of path[i] are in a contiguous block
         // to the right of i.  We skip all resync paths until we find one that's
         // not a suffix of path[i], which marks the start of a new (possibly
         // 1-element) contiguous block of suffixes of some path.
-        if (i > 0 && _usdPrimsToResync[i].HasPrefix(
-                _usdPrimsToResync[lastResynced])) {
+        if (i > 0 && primPath.HasPrefix(_usdPrimsToResync[lastResynced])) {
             continue;
         }
         lastResynced = i;
 
-        UsdPrim prim =
-            _stage->GetPrimAtPath(_usdPrimsToResync[i]);
+        UsdPrim prim = _stage->GetPrimAtPath(primPath);
 
 
         // For prims represented by an ancestor, we don't want to repopulate
@@ -580,27 +592,19 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
                 TF_DEBUG(USDIMAGING_CHANGES).Msg(
                     "Invalidating <%s> due to resync of descendant <%s>\n",
                         ancestor.first.GetPrimPath().GetText(),
-                        _usdPrimsToResync[i].GetText());
-                _usdPropertiesToUpdate[_usdPrimsToResync[i]] = {TfToken()};
+                        primPath.GetText());
+                _usdPropertiesToUpdate[primPath] = {TfToken()};
                 continue;
             }
         }
 
         TF_DEBUG(USDIMAGING_CHANGES).Msg("[Population] Repopulating <%s>\n",
-                _usdPrimsToResync[i].GetText());
-        _SendPrimsRemoved({_usdPrimsToResync[i]});
+                                         primPath.GetText());
+        _SendPrimsRemoved({primPath});
         _PopulateSubtree(prim);
 
         // Prune property updates of resynced prims, which are redundant.
-        auto start = _usdPropertiesToUpdate.lower_bound(_usdPrimsToResync[i]);
-        auto end = start;
-        while (end != _usdPropertiesToUpdate.end() &&
-               end->first.HasPrefix(_usdPrimsToResync[i])) {
-            ++end;
-        }
-        if (start != end) {
-            _usdPropertiesToUpdate.erase(start, end);
-        }
+        _DeletePrefix(primPath, &_usdPropertiesToUpdate);
     }
 
     _usdPrimsToResync.clear();
@@ -620,7 +624,30 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
 
     // Changed properties...
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrims;
-    for (auto const& pair : _usdPropertiesToUpdate) {
+
+    _ComputeDirtiedEntries(_usdPropertiesToUpdate,
+                           &_usdPrimsToResync,
+                           &dirtiedPrims);
+    _usdPropertiesToUpdate.clear();
+
+    // Resync any prims whose property invalidation indicated repopulation
+    // was necessary
+    if (!_usdPrimsToResync.empty()) {
+        _ApplyPendingResyncs();
+    }
+
+    if (!dirtiedPrims.empty()) {
+        _SendPrimsDirtied(dirtiedPrims);
+    }
+}    
+
+void
+UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
+    const std::map<SdfPath, TfTokenVector> &pathToUsdProperties,
+    SdfPathVector * const primPathsToResync,
+    HdSceneIndexObserver::DirtiedPrimEntries * const dirtiedPrims) const
+{
+    for (auto const& pair : pathToUsdProperties) {
         const SdfPath &primPath = pair.first;
         const TfTokenVector &properties = pair.second;
         // XXX: We could sort/unique the properties here...
@@ -653,9 +680,8 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
                     if (!dirtyLocators.IsEmpty()) {
                         const SdfPath path = subprim.IsEmpty()
                             ? parentPrim.GetPrimPath()
-                            : parentPrim.GetPrimPath().AppendProperty(
-                                subprim);
-                        dirtiedPrims.emplace_back(path, dirtyLocators);
+                            : parentPrim.GetPrimPath().AppendProperty(subprim);
+                        dirtiedPrims->emplace_back(path, dirtyLocators);
                     }
                 }
 
@@ -682,30 +708,18 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
                     UsdImagingTokens->stageSceneIndexRepopulate);
 
                 if (dirtyLocators.Contains(repopulateLocator)) {
-                    _usdPrimsToResync.push_back(primPath);
+                    primPathsToResync->push_back(primPath);
                 } else {
                     SdfPath const subpath =
                         subprim.IsEmpty()
                             ? primPath
                             : primPath.AppendProperty(subprim);
-                    dirtiedPrims.emplace_back(subpath, dirtyLocators);
+                    dirtiedPrims->emplace_back(subpath, dirtyLocators);
                 }
-
             }
         }
     }
 
-    _usdPropertiesToUpdate.clear();
-
-    // Resync any prims whose property invalidation indicated repopulation
-    // was necessary
-    if (!_usdPrimsToResync.empty()) {
-        _ApplyPendingResyncs();
-    }
-
-    if (dirtiedPrims.size() > 0) {
-        _SendPrimsDirtied(dirtiedPrims);
-    }
 }
 
 // ---------------------------------------------------------------------------

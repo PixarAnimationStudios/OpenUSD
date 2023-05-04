@@ -93,6 +93,10 @@ private:
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
     void _ApplyPendingResyncs();
+    void _ComputeDirtiedEntries(
+        const std::map<SdfPath, TfTokenVector> &pathToUsdProperties,
+        SdfPathVector * primPathsToResync,
+        HdSceneIndexObserver::DirtiedPrimEntries * dirtiedPrims) const;
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {
@@ -143,7 +147,7 @@ private:
     std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
 
     using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
-    _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim);
+    _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim) const;
 
     std::unique_ptr<UsdImaging_AdapterManager> const _adapterManager;
 };
