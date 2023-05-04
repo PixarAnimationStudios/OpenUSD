@@ -634,6 +634,61 @@ _GetUsdPrimAttribute(
     return value;
 }
 
+/*static*/
+UsdAttribute
+UsdImagingPrimAdapter::LookupLightParamAttribute(
+    UsdPrim const& prim,
+    TfToken const& paramName)
+{
+    // Fallback to USD attributes.
+    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
+        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
+        { HdLightTokens->color, UsdLuxTokens->inputsColor },
+        { HdLightTokens->colorTemperature, 
+            UsdLuxTokens->inputsColorTemperature },
+        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
+        { HdLightTokens->enableColorTemperature, 
+            UsdLuxTokens->inputsEnableColorTemperature },
+        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
+        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
+        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
+        { HdLightTokens->length, UsdLuxTokens->inputsLength },
+        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
+        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
+        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
+        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
+        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
+        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
+
+        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
+        { HdLightTokens->shapingFocusTint, 
+            UsdLuxTokens->inputsShapingFocusTint },
+        { HdLightTokens->shapingConeAngle, 
+            UsdLuxTokens->inputsShapingConeAngle },
+        { HdLightTokens->shapingConeSoftness, 
+            UsdLuxTokens->inputsShapingConeSoftness },
+        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
+        { HdLightTokens->shapingIesAngleScale, 
+            UsdLuxTokens->inputsShapingIesAngleScale },
+        { HdLightTokens->shapingIesNormalize, 
+            UsdLuxTokens->inputsShapingIesNormalize },
+        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
+        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
+        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
+        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
+        { HdLightTokens->shadowFalloffGamma, 
+            UsdLuxTokens->inputsShadowFalloffGamma }
+    });
+
+    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
+
+    if (prim.HasAttribute(attrName ? *attrName : paramName)) {
+        return prim.GetAttribute(attrName ? *attrName : paramName);
+    }
+
+    return UsdAttribute();
+}
+
 VtValue
 UsdImagingPrimAdapter::GetLightParamValue(
     const UsdPrim& prim,
@@ -692,50 +747,12 @@ UsdImagingPrimAdapter::GetLightParamValue(
     }
 
     // Fallback to USD attributes.
-    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
-        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
-        { HdLightTokens->color, UsdLuxTokens->inputsColor },
-        { HdLightTokens->colorTemperature, 
-            UsdLuxTokens->inputsColorTemperature },
-        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
-        { HdLightTokens->enableColorTemperature, 
-            UsdLuxTokens->inputsEnableColorTemperature },
-        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
-        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
-        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
-        { HdLightTokens->length, UsdLuxTokens->inputsLength },
-        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
-        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
-        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
-        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
-        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
-        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
+    VtValue value;
+    if (UsdAttribute attr = LookupLightParamAttribute(prim, paramName)) {
+        attr.Get(&value, time);
+    }
 
-        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
-        { HdLightTokens->shapingFocusTint, 
-            UsdLuxTokens->inputsShapingFocusTint },
-        { HdLightTokens->shapingConeAngle, 
-            UsdLuxTokens->inputsShapingConeAngle },
-        { HdLightTokens->shapingConeSoftness, 
-            UsdLuxTokens->inputsShapingConeSoftness },
-        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
-        { HdLightTokens->shapingIesAngleScale, 
-            UsdLuxTokens->inputsShapingIesAngleScale },
-        { HdLightTokens->shapingIesNormalize, 
-            UsdLuxTokens->inputsShapingIesNormalize },
-        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
-        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
-        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
-        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
-        { HdLightTokens->shadowFalloffGamma, 
-            UsdLuxTokens->inputsShadowFalloffGamma }
-    });
-
-    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
-    return _GetUsdPrimAttribute(
-        prim,
-        attrName ? *attrName : paramName,
-        time);
+    return value;
 }
 
 void

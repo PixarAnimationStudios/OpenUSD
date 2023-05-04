@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/lightAPIAdapter.h"
+#include "pxr/usdImaging/usdImaging/primAdapter.h"
+
 
 #include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
 
@@ -119,6 +121,22 @@ public:
                     return HdRetainedTypedSampledDataSource<TfToken>::New(v);
                 }
             }
+        } else {
+
+            // fallback to UsdAttribute lookup so that we still support
+            // render delegates which query via GetLightParamValue rather
+            // than GetMaterialResource.
+            if (UsdAttribute attr =
+                    UsdImagingPrimAdapter::LookupLightParamAttribute(
+                        _lightApi.GetPrim(), name)) {
+                return  UsdImagingDataSourceAttributeNew(
+                    attr,
+                    _stageGlobals,
+                    _lightApi.GetPrim().GetPath(),
+                    HdLightSchema::GetDefaultLocator().Append(name));
+            }
+
+
         }
 
         return nullptr;
@@ -139,11 +157,15 @@ private:
         return names;
     }
 
-    _LightDataSource(const UsdLuxLightAPI &lightApi)
+    _LightDataSource(
+        const UsdLuxLightAPI &lightApi,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
     : _lightApi(lightApi)
+    , _stageGlobals(stageGlobals)
     {}
 
     UsdLuxLightAPI _lightApi;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 } // namespace anonymous
@@ -167,7 +189,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
                 stageGlobals,
                 HdMaterialTerminalTokens->light),
             HdLightSchemaTokens->light,
-            _LightDataSource::New(UsdLuxLightAPI(prim)));
+            _LightDataSource::New(UsdLuxLightAPI(prim), stageGlobals));
     }
 
     return nullptr;
@@ -200,6 +222,11 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
             //             in the material network have a fixed name for the
             //             light case so that we could.
             result.insert(HdMaterialSchema::GetDefaultLocator());
+
+            // since we report parameter values in the "light" data source
+            // also, we need to invalidate it also
+            result.insert(HdLightSchema::GetDefaultLocator());
+            
         }
 
         // NOTE: Having to make assumptions regarding relevant linking

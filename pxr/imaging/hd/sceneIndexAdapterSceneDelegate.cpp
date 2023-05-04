@@ -1230,62 +1230,6 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     }
 }
 
-// Render delegates which retrieve light params (such as "intensity") via 
-// GetLightParamValue rather than from a light's material resource need to be
-// mapped back to the "material" data source for cases when the data is not
-// provided by a legacy scene delegate. Because filtering scene indices may
-// be modifying the "material" data source value, this mapping can happen only
-// when adapting to legacy render delegates.
-static
-VtValue
-_GetLightParamValueFromMaterial(
-    const HdContainerDataSourceHandle &primDataSource,
-    TfToken const &paramName)
-{
-
-    // these appear with "light" data source but are not expected to be within
-    // a light's shader within a material data source
-    if (paramName == HdTokens->filters
-            || paramName == HdTokens->lightLink
-            || paramName == HdTokens->shadowLink
-            || paramName == HdTokens->lightFilterLink
-            || paramName == HdTokens->isLight) {
-        return VtValue();
-    }
-
-    if (auto mat = HdMaterialSchema::GetFromParent(primDataSource)) {
-        HdMaterialNetworkSchema network(mat.GetMaterialNetwork());
-        if (HdContainerDataSourceHandle terminals = network.GetTerminals()) {
-            if (HdMaterialConnectionSchema connection =
-                    HdMaterialConnectionSchema(
-                        HdContainerDataSource::Cast(
-                            terminals->Get(HdLightSchemaTokens->light)))) {
-                if (HdTokenDataSourceHandle nodeNameDs =
-                        connection.GetUpstreamNodePath()) {
-                     if (HdContainerDataSourceHandle nodes =
-                            network.GetNodes()) {
-                        if (HdContainerDataSourceHandle params =
-                                HdMaterialNodeSchema(
-                                    HdContainerDataSource::Cast(
-                                        nodes->Get(
-                                            nodeNameDs->GetTypedValue(0.0f)))
-                                                ).GetParameters()) {
-
-                            if (auto param = HdSampledDataSource::Cast(
-                                    params->Get(paramName))) {
-
-                                return param->GetValue(0.0f);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    return VtValue();
-}
-
 VtValue
 HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         SdfPath const &id, TfToken const &paramName)
@@ -1297,14 +1241,6 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         return VtValue();
     }
 
-    // Prioritize retrieving light parameters from the material and fallback
-    // on "light" data source.
-    VtValue result = _GetLightParamValueFromMaterial(prim.dataSource, paramName);
-
-    if (!result.IsEmpty()) {
-        return result;
-    }
-
     HdContainerDataSourceHandle light =
         HdContainerDataSource::Cast(
             prim.dataSource->Get(HdLightSchemaTokens->light));
@@ -1312,11 +1248,11 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
         HdSampledDataSourceHandle valueDs = HdSampledDataSource::Cast(
                 light->Get(paramName));
         if (valueDs) {
-            result = valueDs->GetValue(0);
+            return valueDs->GetValue(0);
         }
     }
 
-    return result;
+    return VtValue();
 }
 
 namespace {

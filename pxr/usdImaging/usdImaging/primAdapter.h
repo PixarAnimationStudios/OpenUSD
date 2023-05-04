@@ -681,6 +681,17 @@ public:
         return true;
     }
 
+
+    // ---------------------------------------------------------------------- //
+    /// \name Utilties
+    // ---------------------------------------------------------------------- //
+
+    /// Provides to paramName->UsdAttribute value mappings
+    USDIMAGING_API
+    static UsdAttribute LookupLightParamAttribute(
+            UsdPrim const& prim,
+            TfToken const& paramName);
+
 protected:
     using Keys = UsdImagingPrimvarDescCache::Key;
 
