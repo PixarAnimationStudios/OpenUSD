@@ -40,6 +40,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/vertexAdjacency.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
 
@@ -56,7 +57,6 @@
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hf/diagnostic.h"
@@ -89,7 +89,7 @@ namespace {
 HdStMesh::HdStMesh(SdfPath const& id)
     : HdMesh(id)
     , _topology()
-    , _vertexAdjacency()
+    , _vertexAdjacencyBuilder()
     , _topologyId(0)
     , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
@@ -727,7 +727,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             TF_VERIFY(*topology == *_topology);
         }
 
-        _vertexAdjacency.reset();
+        _vertexAdjacencyBuilder.reset();
     }
 
     // here, we have _topology up-to-date.
@@ -1053,7 +1053,8 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
 }
 
 void
-HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStMesh::_PopulateAdjacency(
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1062,38 +1063,41 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
     if (!_topology) return;
 
     // ask registry if there's a sharable vertex adjacency
-    HdInstance<Hd_VertexAdjacencySharedPtr> adjacencyInstance =
-        resourceRegistry->RegisterVertexAdjacency(_topologyId);
+    HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+        vertexAdjacencyBuilderInstance =
+            resourceRegistry->RegisterVertexAdjacencyBuilder(_topologyId);
 
-    if (adjacencyInstance.IsFirstInstance()) {
-         Hd_VertexAdjacencySharedPtr adjacency =
-             std::make_shared<Hd_VertexAdjacency>();
+    if (vertexAdjacencyBuilderInstance.IsFirstInstance()) {
+         HdSt_VertexAdjacencyBuilderSharedPtr vertexAdjacencyBuilder =
+             std::make_shared<HdSt_VertexAdjacencyBuilder>();
 
         // create adjacency table for smooth normals
-        HdBufferSourceSharedPtr adjacencyComputation =
-            adjacency->GetSharedAdjacencyBuilderComputation(_topology.get());
+        HdBufferSourceSharedPtr vertexAdjacencyComputation =
+            vertexAdjacencyBuilder->
+                GetSharedVertexAdjacencyBuilderComputation(_topology.get());
 
-        resourceRegistry->AddSource(adjacencyComputation);
+        resourceRegistry->AddSource(vertexAdjacencyComputation);
 
         // also send adjacency table to gpu
-        HdBufferSourceSharedPtr adjacencyForGpuComputation =
-            std::make_shared<Hd_AdjacencyBufferSource>(
-                adjacency.get(), adjacencyComputation);
+        HdBufferSourceSharedPtr vertexAdjacencyBufferSource =
+            std::make_shared<HdSt_VertexAdjacencyBufferSource>(
+                vertexAdjacencyBuilder->GetVertexAdjacency(),
+                vertexAdjacencyComputation);
 
         HdBufferSpecVector bufferSpecs;
-        adjacencyForGpuComputation->GetBufferSpecs(&bufferSpecs);
+        vertexAdjacencyBufferSource->GetBufferSpecs(&bufferSpecs);
 
-        HdBufferArrayRangeSharedPtr adjRange =
+        HdBufferArrayRangeSharedPtr vertexAdjacencyRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
-        adjacency->SetAdjacencyRange(adjRange);
-        resourceRegistry->AddSource(adjRange,
-                                    adjacencyForGpuComputation);
+        vertexAdjacencyBuilder->SetVertexAdjacencyRange(vertexAdjacencyRange);
+        resourceRegistry->AddSource(vertexAdjacencyRange,
+                                    vertexAdjacencyBufferSource);
 
-        adjacencyInstance.SetValue(adjacency);
+        vertexAdjacencyBuilderInstance.SetValue(vertexAdjacencyBuilder);
     }
-    _vertexAdjacency = adjacencyInstance.GetValue();
+    _vertexAdjacencyBuilder = vertexAdjacencyBuilderInstance.GetValue();
 }
 
 
@@ -1488,7 +1492,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // clear DirtySmoothNormals (this is not a scene dirtybit)
         *dirtyBits &= ~DirtySmoothNormals;
 
-        TF_VERIFY(_vertexAdjacency);
+        TF_VERIFY(_vertexAdjacencyBuilder);
 
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
@@ -1504,7 +1508,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // This is unfortunate; can we force them to be float?
             HdComputationSharedPtr smoothNormalsComputation =
                 std::make_shared<HdSt_SmoothNormalsComputationGPU>(
-                    _vertexAdjacency.get(),
+                    _vertexAdjacencyBuilder.get(),
                     HdTokens->points,
                     generatedNormalsName,
                     _pointsDataType,
@@ -2328,7 +2332,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         requireFlatNormals = false;
     }
 
-    if (requireSmoothNormals && !_vertexAdjacency) {
+    if (requireSmoothNormals && !_vertexAdjacencyBuilder) {
         _PopulateAdjacency(resourceRegistry);
     }
 

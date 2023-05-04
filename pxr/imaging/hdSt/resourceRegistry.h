@@ -75,8 +75,8 @@ using HdStBufferResourceSharedPtr =
     std::shared_ptr<class HdStBufferResource>;
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
-using Hd_VertexAdjacencySharedPtr = 
-    std::shared_ptr<class Hd_VertexAdjacency>;
+using HdSt_VertexAdjacencyBuilderSharedPtr = 
+    std::shared_ptr<class HdSt_VertexAdjacencyBuilder>;
 using HdSt_MeshTopologySharedPtr = 
     std::shared_ptr<class HdSt_MeshTopology>;
 using HgiResourceBindingsSharedPtr = 
@@ -370,8 +370,9 @@ public:
         HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id);
 
     HDST_API
-    HdInstance<Hd_VertexAdjacencySharedPtr>
-    RegisterVertexAdjacency(HdInstance<Hd_VertexAdjacencySharedPtr>::ID id);
+    HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+    RegisterVertexAdjacencyBuilder(
+        HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id);
 
     /// Topology Index buffer array range instancing
     /// Returns the HdInstance points to shared HdBufferArrayRange,
@@ -634,8 +635,8 @@ private:
         _basisCurvesTopologyRegistry;
 
     // Register vertex adjacency.
-    HdInstanceRegistry<Hd_VertexAdjacencySharedPtr>
-        _vertexAdjacencyRegistry;
+    HdInstanceRegistry<HdSt_VertexAdjacencyBuilderSharedPtr>
+        _vertexAdjacencyBuilderRegistry;
 
     // Register topology index buffers.
     typedef HdInstanceRegistry<HdBufferArrayRangeSharedPtr>

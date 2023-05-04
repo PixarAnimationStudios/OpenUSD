@@ -49,7 +49,6 @@
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "pxr/base/vt/value.h"
 

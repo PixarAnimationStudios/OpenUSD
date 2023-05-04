@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/vertexAdjacency.h"
 
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/vertexAdjacency.h"
@@ -235,10 +236,12 @@ _CreatePipeline(
 } // Anonymous namespace
 
 HdSt_SmoothNormalsComputationGPU::HdSt_SmoothNormalsComputationGPU(
-    Hd_VertexAdjacency const *adjacency,
+    HdSt_VertexAdjacencyBuilder const *vertexAdjacencyBuilder,
     TfToken const &srcName, TfToken const &dstName,
     HdType srcDataType, bool packed)
-    : _adjacency(adjacency), _srcName(srcName), _dstName(dstName)
+    : _vertexAdjacencyBuilder(vertexAdjacencyBuilder)
+    , _srcName(srcName)
+    , _dstName(dstName)
     , _srcDataType(srcDataType)
 {
     if (srcDataType != HdTypeFloatVec3 && srcDataType != HdTypeDoubleVec3) {
@@ -261,13 +264,13 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     if (_srcDataType == HdTypeInvalid)
         return;
 
-    TF_VERIFY(_adjacency);
+    TF_VERIFY(_vertexAdjacencyBuilder);
     HdBufferArrayRangeSharedPtr const &adjacencyRange_ =
-        _adjacency->GetAdjacencyRange();
+        _vertexAdjacencyBuilder->GetVertexAdjacencyRange();
     TF_VERIFY(adjacencyRange_);
 
     HdStBufferArrayRangeSharedPtr adjacencyRange =
-        std::static_pointer_cast<HdStBufferArrayRange> (adjacencyRange_);
+        std::static_pointer_cast<HdStBufferArrayRange>(adjacencyRange_);
 
     // select shader by datatype
     TfToken shaderToken;
@@ -392,7 +395,8 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     // Therefore, we need to clamp the number of points
     // to the number of entries in the adjancency table.
     const int numDestPoints = range->GetNumElements();
-    const int numSrcPoints = _adjacency->GetNumPoints();
+    const int numSrcPoints =
+        _vertexAdjacencyBuilder->GetVertexAdjacency()->GetNumPoints();
 
     const int numPoints = std::min(numSrcPoints, numDestPoints);
     uniform.indexEnd = numPoints;

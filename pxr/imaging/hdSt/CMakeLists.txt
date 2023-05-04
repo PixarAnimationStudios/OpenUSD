@@ -163,6 +163,7 @@ pxr_library(hdSt
         subdivision
         triangulate
         unitTestHelper
+        vertexAdjacency
         volumeShader
         volumeShaderKey
         ${optionalPrivateClasses}

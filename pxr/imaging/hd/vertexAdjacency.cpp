@@ -25,7 +25,6 @@
 #include "pxr/imaging/hd/meshTopology.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hf/perfLog.h"
 
@@ -35,8 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 Hd_VertexAdjacency::Hd_VertexAdjacency()
     : _numPoints(0)
     , _adjacencyTable()
-    , _adjacencyRange()
-    , _sharedAdjacencyBuilder()
 {
 }
 
@@ -139,101 +136,6 @@ Hd_VertexAdjacency::BuildAdjacencyTable(HdMeshTopology const *topology)
     }
 }
 
-HdBufferSourceSharedPtr
-Hd_VertexAdjacency::GetSharedAdjacencyBuilderComputation(
-    HdMeshTopology const *topology)
-{
-    // if there's a already requested (and unresolved) adjacency computation,
-    // just returns it to make a dependency.
-    if (Hd_AdjacencyBuilderComputationSharedPtr builder =
-        _sharedAdjacencyBuilder.lock()) {
-
-        return builder;
-    }
-
-    // if cpu adjacency table exists, no need to compute again
-    if (!(GetAdjacencyTable().empty())) {
-        return Hd_AdjacencyBuilderComputationSharedPtr();
-    }
-
-    Hd_AdjacencyBuilderComputationSharedPtr builder =
-        Hd_AdjacencyBuilderComputationSharedPtr(
-            new Hd_AdjacencyBuilderComputation(this, topology));
-
-    // store the computation as weak ptr so that it can be referenced
-    // by another computation.
-    _sharedAdjacencyBuilder = builder;
-
-    return builder;
-}
-
-// ---------------------------------------------------------------------------
-
-Hd_AdjacencyBuilderComputation::Hd_AdjacencyBuilderComputation(
-    Hd_VertexAdjacency *adjacency, HdMeshTopology const *topology)
-    : _adjacency(adjacency), _topology(topology)
-{
-}
-
-bool
-Hd_AdjacencyBuilderComputation::Resolve()
-{
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    _adjacency->BuildAdjacencyTable(_topology);
-
-    // call base class to mark as resolved.
-    _SetResolved();
-    return true;
-}
-
-bool
-Hd_AdjacencyBuilderComputation::_CheckValid() const
-{
-    return true;
-}
-
-// ---------------------------------------------------------------------------
-
-Hd_AdjacencyBufferSource::Hd_AdjacencyBufferSource(
-    Hd_VertexAdjacency const *adjacency,
-    HdBufferSourceSharedPtr const &adjacencyBuilder)
-    : _adjacency(adjacency), _adjacencyBuilder(adjacencyBuilder)
-{
-}
-
-bool
-Hd_AdjacencyBufferSource::Resolve()
-{
-    if (!_adjacencyBuilder->IsResolved()) return false;
-    if (!_TryLock()) return false;
-
-    HD_TRACE_FUNCTION();
-    HF_MALLOC_TAG_FUNCTION();
-
-    // prepare buffer source to be transferred.
-    VtIntArray const &adjacency = _adjacency->GetAdjacencyTable();
-    _SetResult(HdBufferSourceSharedPtr(
-        new HdVtBufferSource(HdTokens->adjacency, VtValue(adjacency))));
-    _SetResolved();
-    return true;
-}
-
-void
-Hd_AdjacencyBufferSource::GetBufferSpecs(
-    HdBufferSpecVector *specs) const
-{
-    specs->emplace_back(HdTokens->adjacency, HdTupleType{HdTypeInt32, 1});
-}
-
-bool
-Hd_AdjacencyBufferSource::_CheckValid() const
-{
-    return true;
-}
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

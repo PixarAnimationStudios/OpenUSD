@@ -600,11 +600,11 @@ HdStResourceRegistry::RegisterBasisCurvesTopology(
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
-HdInstance<Hd_VertexAdjacencySharedPtr>
-HdStResourceRegistry::RegisterVertexAdjacency(
-        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
+HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+HdStResourceRegistry::RegisterVertexAdjacencyBuilder(
+        HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id)
 {
-    return _Register(id, _vertexAdjacencyRegistry,
+    return _Register(id, _vertexAdjacencyBuilderRegistry,
                      HdPerfTokens->instVertexAdjacency);
 }
 
@@ -1059,7 +1059,7 @@ HdStResourceRegistry::_GarbageCollect()
     }
 
     {
-        size_t count = _vertexAdjacencyRegistry.GarbageCollect();
+        size_t count = _vertexAdjacencyBuilderRegistry.GarbageCollect();
         HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
     }
 

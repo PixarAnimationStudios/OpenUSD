@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 
 class Hd_VertexAdjacency;
+class HdSt_VertexAdjacencyBuilder;
 
 /// \class HdSt_SmoothNormalsComputationCPU
 ///
@@ -82,7 +83,7 @@ class HdSt_SmoothNormalsComputationGPU : public HdComputation
 public:
     HDST_API
     HdSt_SmoothNormalsComputationGPU(
-        Hd_VertexAdjacency const *adjacency,
+        HdSt_VertexAdjacencyBuilder const *vertexAdjacencyBuilder,
         TfToken const &srcName,
         TfToken const &dstName,
         HdType srcDataType,
@@ -98,10 +99,10 @@ public:
     /// This computation doesn't generate buffer source (i.e. 2nd phase)
     /// This is a gpu computation, but no need to resize the destination
     /// since it belongs the same range as src buffer.
-    virtual int GetNumOutputElements() const override { return 0; }
+    int GetNumOutputElements() const override { return 0; }
 
 private:
-    Hd_VertexAdjacency const *_adjacency;
+    HdSt_VertexAdjacencyBuilder const *_vertexAdjacencyBuilder;
     TfToken _srcName;
     TfToken _dstName;
     HdType _srcDataType;
