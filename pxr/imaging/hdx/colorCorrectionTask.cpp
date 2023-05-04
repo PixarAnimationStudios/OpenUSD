@@ -261,6 +261,9 @@ void _RGBtoRGBA(float const* lutValues,
 std::string
 HdxColorCorrectionTask::_CreateOpenColorIOResources()
 {
+    // This function can take 850+ msec.
+    HD_TRACE_FUNCTION();
+
     // Use client provided OCIO values, or use default fallback values
     OCIO::ConstConfigRcPtr config = OCIO::GetCurrentConfig();
 
@@ -371,6 +374,9 @@ HdxColorCorrectionTask::_SetConstants(HgiGraphicsCmds *gfxCmds)
 std::string
 HdxColorCorrectionTask::_CreateOpenColorIOResources()
 {
+    // This function can take 850+ msec.
+    HD_TRACE_FUNCTION();
+
     // Use client provided OCIO values, or use default fallback values
     OCIO::ConstConfigRcPtr config = OCIO::GetCurrentConfig();
 
