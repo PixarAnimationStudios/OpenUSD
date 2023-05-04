@@ -766,6 +766,7 @@ UsdZipFile::Iterator::GetFileInfo() const
         f.dataOffset = h.dataStart - _data->impl->buffer;
         f.size = h.f.compressedSize;
         f.uncompressedSize = h.f.uncompressedSize;
+        f.crc = h.f.crc32;
         f.compressionMethod = h.f.compressionMethod;
         f.encrypted = h.f.bits & 0x1; // Per 4.4.4, bit 0 is set if encrypted
     }
