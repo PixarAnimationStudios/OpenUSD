@@ -90,7 +90,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
-    (materialSyncMode)
 );
 
 // ----------------------------------------------------------------------------
@@ -1283,10 +1282,7 @@ public:
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
             HdTokens->isLight,
-            _tokens->materialSyncMode,  // Part of UsdLux but not yet hydra
-                                        // here just so you can see it in the
-                                        // browser coming from legacy scene
-                                        // delegates.
+            HdTokens->materialSyncMode
         };
         return result;
     }
