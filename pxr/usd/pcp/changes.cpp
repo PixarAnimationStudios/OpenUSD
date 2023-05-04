@@ -359,7 +359,7 @@ Pcp_ChangeMayAffectDynamicFileFormatArguments(
     std::string* debugSummary)
 {
     // Early out if the cache has no dynamic file format dependencies.
-    if (cache->HasAnyDynamicFileFormatArgumentDependencies()) {
+    if (cache->HasAnyDynamicFileFormatArgumentFieldDependencies()) {
         for (const auto& change : entry.infoChanged) {
             if (cache->IsPossibleDynamicFileFormatArgumentField(change.first)) {
                 PCP_APPEND_DEBUG("  Info change for field '%s' may affect "
@@ -440,6 +440,191 @@ Pcp_DoesInfoChangeAffectFileFormatArguments(
 
     return false;
 }
+
+namespace {
+
+// Helper struct for storing info about about an attribute change that may 
+// affect the file format arguments for a dynamic payload and will need to be
+// processed for possible dependencies.
+struct AttributeMayAffectFileFormatArgumentsChange {
+    // Property path affected.
+    SdfPath propertyPath;
+
+    // If the change was a info change on the default value field, that info
+    // change will be stored here.
+    const SdfChangeList::Entry::InfoChange *defaultFieldChange;
+};
+};
+
+using AttributeMayAffectFileFormatArgumentsChangeVector = 
+    std::vector<AttributeMayAffectFileFormatArgumentsChange>;
+
+static void
+Pcp_CollectAttributeMayAffectDynamicFileFormatArgumentsChanges(
+    const PcpCache* cache,
+    const SdfLayerHandle &layer,
+    const SdfPath &path,
+    const SdfChangeList::Entry &entry,
+    AttributeMayAffectFileFormatArgumentsChangeVector *changes,
+    std::string *debugSummary)
+{
+    // Only properties on a prim are relevant.
+    if (!path.IsPrimPropertyPath()) {
+        return;
+    }
+
+    auto addChangeFn = [&](
+        const SdfPath &propPath, 
+        const SdfChangeList::Entry::InfoChange *defaultFieldChange) 
+    {
+        // Check that the layer is actually present in the cache before 
+        // adding the possible change.
+        if (!cache->FindAllLayerStacksUsingLayer(layer).empty()) {
+            changes->push_back({propPath, defaultFieldChange});
+        }
+    };
+
+    // For rename, we have to check both the old path and the new path
+    // to see if the change may be relevant. The rename is equivalent to the
+    // a property at the new path being added and the property at the old
+    // path being removed.
+    if (entry.flags.didRename) {
+
+        // For the added property, there is a potential change only if it is
+        // a possible dependency for the cache and has a default value.
+        if (cache->IsPossibleDynamicFileFormatArgumentAttribute(
+                    path.GetNameToken()) && 
+                layer->HasField(path, SdfFieldKeys->Default)) {
+            addChangeFn(path, nullptr);
+            PCP_APPEND_DEBUG("Property renamed to @%s@<%s> may affect "
+                                "file format arguments in cache %s\n",
+                                layer->GetIdentifier().c_str(),
+                                path.GetText(),
+                                cache->GetLayerStackIdentifier().rootLayer
+                                    ->GetIdentifier().c_str());
+        } 
+
+        // For the removed property, if it is a possible dependency, we
+        // always treat is as a potential arguments chagne.
+        if (cache->IsPossibleDynamicFileFormatArgumentAttribute(
+                entry.oldPath.GetNameToken())) {
+            addChangeFn(entry.oldPath, nullptr);
+            PCP_APPEND_DEBUG("Property renamed from @%s@<%s> may affect "
+                                "file format arguments in cache %s\n",
+                                layer->GetIdentifier().c_str(),
+                                entry.oldPath.GetText(),
+                                cache->GetLayerStackIdentifier().rootLayer
+                                    ->GetIdentifier().c_str());
+        }
+
+        return;
+    }
+
+    // If the property name hasn't been used by any dynamic file format 
+    // dependency, we skip it.
+    if (!cache->IsPossibleDynamicFileFormatArgumentAttribute(
+            path.GetNameToken())) {
+        return;
+    }
+
+    // If a property is added, there is a potential change only if it has
+    // a default value.
+    if (entry.flags.didAddProperty) {
+        if (layer->HasField(path, SdfFieldKeys->Default)) {
+            addChangeFn(path, nullptr);
+            PCP_APPEND_DEBUG("Added property @%s@<%s> may affect "
+                                "file format arguments in cache %s\n",
+                                layer->GetIdentifier().c_str(),
+                                path.GetText(),
+                                cache->GetLayerStackIdentifier().rootLayer
+                                    ->GetIdentifier().c_str());
+        } 
+        return;
+    }
+
+    // If a property is removed, there is nothing in the change list that
+    // indicates the value of the default field before the remove, so 
+    // there's always a potential change.
+    if (entry.flags.didRemoveProperty) {
+        PCP_APPEND_DEBUG("Removed property @%s@<%s> may affect "
+                            "file format arguments in cache %s\n",
+                            layer->GetIdentifier().c_str(),
+                            path.GetText(),
+                            cache->GetLayerStackIdentifier().rootLayer
+                                ->GetIdentifier().c_str());
+        addChangeFn(path, nullptr);
+        return;
+    }
+
+    // Otherwise, we have a potential file format argument change if the 
+    // default value field of the property has changed.
+    const auto it = entry.FindInfoChange(SdfFieldKeys->Default);
+    if (it != entry.infoChanged.end()) {
+        PCP_APPEND_DEBUG("Default value change for property @%s@<%s> may "
+                            "affect file format arguments in cache %s\n",
+                            layer->GetIdentifier().c_str(),
+                            path.GetText(),
+                            cache->GetLayerStackIdentifier().rootLayer
+                                ->GetIdentifier().c_str());
+        addChangeFn(path, &it->second);
+    }
+}
+
+// Returns true if the given attribute change actually affects the file
+// format arguments of for a dynamic file format under the prim index at path. 
+static bool 
+Pcp_DoesAttributeChangeAffectFileFormatArguments(
+    PcpCache const *cache, const SdfPath& primIndexPath,
+    const AttributeMayAffectFileFormatArgumentsChange &change,
+    std::string *debugSummary)
+{
+    PCP_APPEND_DEBUG(
+        "Pcp_DoesAttributeChangeAffectFileFormatArguments %s:%s?\n",
+        cache->GetLayerStackIdentifier().rootLayer->GetIdentifier().c_str(),
+        primIndexPath.GetText());
+
+    // Get the cached dynamic file format dependency data for the prim index.
+    // This will exist if the prim index exists and has any direct arcs that 
+    // used a dynamic file format.
+    const PcpDynamicFileFormatDependencyData &depData =
+        cache->GetDynamicFileFormatArgumentDependencyData(primIndexPath);
+    if (depData.IsEmpty()) {
+        PCP_APPEND_DEBUG("  Prim index has no dynamic file format dependencies\n");
+        return false;
+    }
+
+    const TfToken &propName = change.propertyPath.GetNameToken();
+
+    // If the change was not a default value change, it was a namespace change
+    // like a remove or rename. In this case we have no information about what
+    // the default field's value was (if it even existed before) so we just
+    // check if the attribute is a dependency at all and assume this is affects
+    // the file format arguments if it is.
+    if (!change.defaultFieldChange) {
+        return bool(depData.GetRelevantAttributeNames().count(propName));
+    }
+
+    // Ask the dependency data if the default field value change can affect
+    // the file format args of any node in the prim index graph.
+    const bool isRelevantChange =
+        depData.CanAttributeDefaultValueChangeAffectFileFormatArguments(
+            propName, 
+            /* oldValue = */ change.defaultFieldChange->first, 
+            /* newValue = */ change.defaultFieldChange->second);
+    PCP_APPEND_DEBUG("Field '%s' change: %s -> %s %s relevant for prim index "
+                     "path '%s'\n",
+                     propName.GetText(),
+                     TfStringify(change.defaultFieldChange->first).c_str(),
+                     TfStringify(change.defaultFieldChange->second).c_str(),
+                     isRelevantChange ? "IS" : "is NOT",
+                     primIndexPath.GetText());
+    if (isRelevantChange) {
+        return true;
+    }
+
+    return false;
+}
+
 
 // DepFunc is a function type void (const PcpDependency &)
 template <typename DepFunc>
@@ -530,6 +715,9 @@ PcpChanges::DidChange(const PcpCache* cache,
     SdfPathVector oldPaths, newPaths;
     SdfPathSet fallbackToAncestorPaths;
 
+    AttributeMayAffectFileFormatArgumentsChangeVector 
+        attributeMayAffectFileFormatArgumentsChanges;
+
     // As we process each layer below, we'll look for changes that
     // affect entire layer stacks, then process those in one pass
     // at the end.
@@ -545,16 +733,41 @@ PcpChanges::DidChange(const PcpCache* cache,
 
     const bool cacheInUsdMode = cache->IsUsd();
 
+    const bool cacheHasDynamicFileFormatAttributeDependencies =
+        cache->HasAnyDynamicFileFormatArgumentAttributeDependencies(); 
+
     // Process all changes, first looping over all layers.
     for (auto const &i: changes) {
         const SdfLayerHandle& layer     = i.first;
         const SdfChangeList& changeList = i.second;
 
+        const SdfChangeList::EntryList& entries = changeList.GetEntryList();
+
+        // Gather attribute changes that may affect dynamic file
+        // format arguments so we can check dependencies on these
+        // changes later. These are the only property changes we process
+        // for caches in USD mode.
+        if (cacheHasDynamicFileFormatAttributeDependencies) {
+            attributeMayAffectFileFormatArgumentsChanges.clear();
+            for (const auto &entry : entries) {
+                Pcp_CollectAttributeMayAffectDynamicFileFormatArgumentsChanges(
+                    cache,
+                    layer,
+                    entry.first,
+                    entry.second,
+                    &attributeMayAffectFileFormatArgumentsChanges,
+                    debugSummary);
+            }
+        }
+
         // PcpCaches in USD mode only cache prim indexes, so they only
-        // care about prim changes. We can do a pre-scan of the entries
-        // and bail early if none of the changes are for prims, skipping
-        // over unnecessary work.
-        if (cacheInUsdMode) {
+        // care about prim changes (unless there are dynamic payloads that 
+        // depend on composed attribute default values). We can do a pre-scan of
+        // the entries and bail early if none of the changes are for prims and 
+        // we don't need to look at attributes, skipping over unnecessary work.
+        if (cacheInUsdMode && 
+                attributeMayAffectFileFormatArgumentsChanges.empty()) {
+
             using _Entries = SdfChangeList::EntryList;
 
             const _Entries& entries = changeList.GetEntryList();
@@ -955,6 +1168,31 @@ PcpChanges::DidChange(const PcpCache* cache,
                     const PcpDependency &dep) {
                     if (Pcp_DoesInfoChangeAffectFileFormatArguments(
                             cache, dep.indexPath, changes, debugSummary)) {
+                        DidChangeSignificantly(cache, dep.indexPath);
+                    }
+                },
+                debugSummary);
+        }
+
+        for (const auto& p : attributeMayAffectFileFormatArgumentsChanges) {
+            const bool onlyExistingDependentPaths =
+                fallbackToAncestorPaths.count(p.propertyPath.GetPrimPath()) == 0;
+
+            // We need to recurse on prim descendants for dynamic file format
+            // argument changes. This is to catch the case where there's
+            // a reference to a subroot prim who has an ancestor with a dynamic
+            // file format dependency. Changes that affect the ancestor may 
+            // affect the descendant prim's prim index but that dependency will
+            // be stored with the descendant as the ancestor prim index is not
+            // itself cached when it is only used to compute subroot references.
+            Pcp_DidChangeDependents(
+                cache, layer, p.propertyPath.GetPrimPath(), 
+                /*processPrimDescendants*/ true, 
+                onlyExistingDependentPaths,
+                [this, &cache, &p, &debugSummary](
+                    const PcpDependency &dep) {
+                    if (Pcp_DoesAttributeChangeAffectFileFormatArguments(
+                            cache, dep.indexPath, p, debugSummary)) {
                         DidChangeSignificantly(cache, dep.indexPath);
                     }
                 },

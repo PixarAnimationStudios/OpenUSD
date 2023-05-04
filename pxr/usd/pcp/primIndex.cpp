@@ -1735,7 +1735,7 @@ _GetDefaultPrimPath(SdfLayerHandle const &layer)
 // implemented in dynamicFileFormatContext.cpp
 PcpDynamicFileFormatContext
 Pcp_CreateDynamicFileFormatContext(
-    const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
+    const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *, TfToken::Set *);
 
 // Generates dynamic file format arguments for a payload's asset path if the 
 // asset's file format supports it.
@@ -1758,8 +1758,9 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
         // state of the index. This context will also populate a list of the
         // fields that it composed for dependency tracking
         TfToken::Set composedFieldNames;
+        TfToken::Set composedAttributeNames;
         PcpDynamicFileFormatContext context = Pcp_CreateDynamicFileFormatContext(
-            node, indexer.previousFrame, &composedFieldNames);
+            node, indexer.previousFrame, &composedFieldNames, &composedAttributeNames);
         // Ask the file format to generate dynamic file format arguments for 
         // the asset in this context.
         VtValue dependencyContextData;
@@ -1769,7 +1770,7 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
         // Add this dependency context to dynamic file format dependency object.
         indexer.outputs->dynamicFileFormatDependency.AddDependencyContext(
             dynamicFileFormat, std::move(dependencyContextData), 
-            std::move(composedFieldNames));
+            std::move(composedFieldNames), std::move(composedAttributeNames));
     }
 }
 

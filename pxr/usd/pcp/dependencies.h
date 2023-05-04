@@ -200,15 +200,25 @@ public:
     static const PcpCulledDependencyVector&
     GetCulledDependencies(const PcpCache& cache, const SdfPath &primIndexPath);
 
-    /// Returns true if there are any dynamic file format argument dependencies
-    /// in this dependencies object. 
-    bool HasAnyDynamicFileFormatArgumentDependencies() const;
+    /// Returns true if there are any dynamic file format argument field
+    /// dependencies in this dependencies object. 
+    bool HasAnyDynamicFileFormatArgumentFieldDependencies() const;
+
+    /// Returns true if there are any dynamic file format argument attribute
+    /// default value dependencies in this dependencies object. 
+    bool HasAnyDynamicFileFormatArgumentAttributeDependencies() const;
 
     /// Returns true if the given \p field name is a field that was 
     /// composed while generating dynamic file format arguments for any prim 
     /// index that was added to this dependencies object. 
     bool IsPossibleDynamicFileFormatArgumentField(
         const TfToken &field) const;
+
+    /// Returns true if the given \p attribute name is an attribute whose 
+    /// default field was composed while generating dynamic file format
+    /// arguments for any prim index that was added to this dependencies object. 
+    bool IsPossibleDynamicFileFormatArgumentAttribute(
+        const TfToken &attributeName) const;
 
     /// Returns the dynamic file format dependency data object for the prim
     /// index with the given \p primIndexPath. This will return an empty 
@@ -258,6 +268,7 @@ private:
     using _FileFormatArgumentFieldDepMap = 
         std::unordered_map<TfToken, int, TfToken::HashFunctor>;
     _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentFields; 
+    _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentAttributes; 
 
     ConcurrentPopulationContext *_concurrentPopulationContext;
 };
