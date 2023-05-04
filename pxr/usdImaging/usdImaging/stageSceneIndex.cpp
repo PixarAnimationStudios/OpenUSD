@@ -43,25 +43,44 @@ namespace
 using APISchemaEntry = UsdImaging_AdapterManager::APISchemaEntry;
 using APISchemaAdapters = UsdImaging_AdapterManager::APISchemaAdapters;
 
+bool
+_Contains(const TfTokenVector &vec, const TfToken &t)
+{
+    return std::find(vec.begin(), vec.end(), t) != vec.end();
+}
+
 TfTokenVector
 _GetImagingSubprims(
     UsdPrim const& prim,
     const APISchemaAdapters &adapters)
 {
-    TfTokenVector subprims;
-
     switch (adapters.size())
     {
     case 0:
-        break;
+        {
+            // If this prim isn't handled by any adapters, make sure we
+            // include the trivial subprim "".
+            static const TfTokenVector s_default = { TfToken() };
+            return s_default;
+        }
     case 1:
-        subprims = adapters[0].first->GetImagingSubprims(
-            prim, adapters[0].second);
-        break;
-
+        {
+            TfTokenVector subprims = adapters[0].first->GetImagingSubprims(
+                prim, adapters[0].second);
+            // Enforce that the trivial subprim "" always exists, to pick up
+            // inherited attributes and for traversal purposes.
+            if (!_Contains(subprims, TfToken())) {
+                subprims.push_back(TfToken());
+            }
+            return subprims;
+        }
     default:
         {
-            TfDenseHashSet<TfToken, TfHash> subPrimNames;
+            // We always add the empty token here and skip it in the loop below.
+            // This ensures that we pick up the prim for inherited attributes
+            // and for traversal purposes.
+            TfTokenVector subprims = { TfToken() };
+            TfDenseHashSet<TfToken, TfHash> subprimsSet;
 
             for (const APISchemaEntry &entry : adapters) {
                 UsdImagingAPISchemaAdapterSharedPtr const &apiAdapter =
@@ -71,38 +90,18 @@ _GetImagingSubprims(
                     continue;
                 }
                 const TfToken &instanceName = entry.second;
-                for (const TfToken &subPrimName :
+                for (const TfToken &subprim :
                         apiAdapter->GetImagingSubprims(prim, instanceName)) {
-                    if (!subPrimName.IsEmpty()
-                            && subPrimNames.find(subPrimName)
-                                == subPrimNames.end()) {
-                        subprims.push_back(subPrimName);
-                        subPrimNames.insert(subPrimName);
+                    if ( !subprim.IsEmpty()
+                         && subprimsSet.find(subprim) == subprimsSet.end()) {
+                        subprims.push_back(subprim);
+                        subprimsSet.insert(subprim);
                     }
                 }
             }
 
-            if (subPrimNames.find(TfToken()) == subPrimNames.end()) {
-                subprims.push_back(TfToken());
-            }
-
             return subprims;
         }
-    }
-
-    if (subprims.empty()) {
-        // If this prim isn't handled by any adapters, make sure we
-        // include the trivial subprim "".
-        static const TfTokenVector s_default = { TfToken() };
-        return s_default;
-    } else {
-        // Enforce that the trivial subprim "" always exists, to pick up
-        // inherited attributes and for traversal purposes.
-        if (std::find(subprims.begin(), subprims.end(), TfToken())
-                == subprims.end()) {
-            subprims.push_back(TfToken());
-        }
-        return subprims;
     }
 }
 
