@@ -94,26 +94,21 @@ UsdImagingDataSourceGprim::UsdImagingDataSourceGprim(
 HdDataSourceBaseHandle
 UsdImagingDataSourceGprim::Get(const TfToken &name)
 {
-    HdDataSourceBaseHandle result = UsdImagingDataSourcePrim::Get(name);
+    HdDataSourceBaseHandle const result = UsdImagingDataSourcePrim::Get(name);
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 
             _GetCustomPrimvarMappings(_GetUsdPrim());
-        if (!mappings.empty()) {
-
-            HdContainerDataSourceHandle customPvs =
+        if (mappings.empty()) {
+            return result;
+        }
+        return
+            HdOverlayContainerDataSource::New(
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     mappings,
-                    _GetStageGlobals());
-
-            if (HdContainerDataSourceHandle basePvs =
-                    HdContainerDataSource::Cast(result)) {
-                result = HdOverlayContainerDataSource::New(basePvs, customPvs);
-            } else {
-                result = customPvs;
-            }
-        }
+                    _GetStageGlobals()),
+                HdContainerDataSource::Cast(result));
     }
 
     return result;
