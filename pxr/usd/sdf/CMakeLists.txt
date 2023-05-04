@@ -90,6 +90,7 @@ pxr_library(sdf
         api.h
         accessorHelpers.h
         declareSpec.h
+        invoke.hpp
         layerHints.h
         schemaTypeRegistration.h
 
