@@ -106,6 +106,24 @@ HdSceneIndexBase::_SendPrimsDirtied(
     }
 }
 
+void
+HdSceneIndexBase::_SendPrimsRenamed(
+    const HdSceneIndexObserver::RenamedPrimEntries & entries)
+{
+    if (entries.empty()) {
+        return;
+    }
+    _ObserverSet::const_iterator it = _observers.begin();
+    while (it != _observers.end()) {
+        if (*it) {
+            (*it)->PrimsRenamed(*this, entries);
+            ++it;
+        } else {
+            it = _observers.erase(it);
+        }
+    }
+}
+
 bool
 HdSceneIndexBase::_IsObserved() const
 {

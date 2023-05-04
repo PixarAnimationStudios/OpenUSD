@@ -193,6 +193,16 @@ protected:
     void _SendPrimsDirtied(
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
+
+    /// Notify attached observers of prims (and their descendents) which have
+    /// been renamed or reparented.
+    /// This function is not threadsafe; some observers expect it to be called
+    /// from a single thread.
+    HD_API
+    void _SendPrimsRenamed(
+        const HdSceneIndexObserver::RenamedPrimEntries &entries);
+
+
     /// Returns whether the scene index has any registered observers; this
     /// information can be used to skip work preparing notices when there are
     /// no observers.
