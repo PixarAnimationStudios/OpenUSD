@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/computation.h"
 
@@ -36,24 +37,63 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class Hd_VertexAdjacency;
 
-/// smooth normal computation GPU
+/// \class HdSt_SmoothNormalsComputationCPU
 ///
+/// Smooth normal computation CPU.
 ///
-class HdSt_SmoothNormalsComputationGPU : public HdComputation {
+class HdSt_SmoothNormalsComputationCPU : public HdComputedBufferSource
+{
 public:
-    /// Constructor
     HDST_API
-    HdSt_SmoothNormalsComputationGPU(Hd_VertexAdjacency const *adjacency,
-                                 TfToken const &srcName,
-                                 TfToken const &dstName,
-                                 HdType srcDataType,
-                                 bool packed);
+    HdSt_SmoothNormalsComputationCPU(
+        Hd_VertexAdjacency const *adjacency,
+        HdBufferSourceSharedPtr const &points,
+        TfToken const &dstName,
+        HdBufferSourceSharedPtr const &adjacencyBuilder,
+        bool packed);
 
     HDST_API
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+
     HDST_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry) override;
+    bool Resolve() override;
+
+    HDST_API
+    TfToken const &GetName() const override;
+
+protected:
+    HDST_API
+    bool _CheckValid() const override;
+
+private:
+    Hd_VertexAdjacency const *_adjacency;
+    HdBufferSourceSharedPtr _points;
+    TfToken _dstName;
+    HdBufferSourceSharedPtr _adjacencyBuilder;
+    bool _packed;
+};
+
+/// \class HdSt_SmoothNormalsComputationGPU
+///
+/// Smooth normal computation GPU.
+///
+class HdSt_SmoothNormalsComputationGPU : public HdComputation
+{
+public:
+    HDST_API
+    HdSt_SmoothNormalsComputationGPU(
+        Hd_VertexAdjacency const *adjacency,
+        TfToken const &srcName,
+        TfToken const &dstName,
+        HdType srcDataType,
+        bool packed);
+
+    HDST_API
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+
+    HDST_API
+    void Execute(HdBufferArrayRangeSharedPtr const &range,
+                 HdResourceRegistry *resourceRegistry) override;
 
     /// This computation doesn't generate buffer source (i.e. 2nd phase)
     /// This is a gpu computation, but no need to resize the destination
