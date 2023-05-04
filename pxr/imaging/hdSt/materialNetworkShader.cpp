@@ -152,16 +152,12 @@ HdSt_MaterialNetworkShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder)
 {
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder)
 {
-    binder.UnbindShaderResources(this);
-
     HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 /*virtual*/

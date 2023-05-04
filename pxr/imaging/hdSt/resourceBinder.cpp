@@ -1487,16 +1487,6 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
 }
 
 void
-HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
-{
-}
-
-void
-HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
-{
-}
-
-void
 HdSt_ResourceBinder::BindBufferArray(HdStBufferArrayRangeSharedPtr const &bar) const
 {
     if (!bar) return;

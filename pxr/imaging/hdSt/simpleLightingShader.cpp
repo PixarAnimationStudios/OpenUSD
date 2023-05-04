@@ -169,8 +169,6 @@ HdStSimpleLightingShader::BindResources(const int program,
     }
     
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 
 /* virtual */
