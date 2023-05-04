@@ -1028,15 +1028,20 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
         return VtValue();
     }
 
-    TfToken networkSelector =
-        GetRenderIndex().GetRenderDelegate()->GetMaterialNetworkSelector();
-    HdContainerDataSourceHandle matDS =
-        matSchema.GetMaterialNetwork(networkSelector);
-    HdMaterialNetworkSchema netSchema = HdMaterialNetworkSchema(matDS);
+    // Query for a material network to match the requested render contexts
+    HdContainerDataSourceHandle matDS;
+    for (TfToken const& networkSelector:
+        GetRenderIndex().GetRenderDelegate()->GetMaterialRenderContexts()) {
+        matDS = matSchema.GetMaterialNetwork(networkSelector);
+        if (matDS) {
+            // Found a matching network
+            break;
+        }
+    }
+    HdMaterialNetworkSchema netSchema(matDS);
     if (!netSchema.IsDefined()) {
         return VtValue();
     }
-
 
     // Some legacy render delegates may require all shading nodes
     // to be included regardless of whether they are reachable via

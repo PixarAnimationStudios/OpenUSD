@@ -27,12 +27,6 @@
                         "priority": 0,
                         "displayName": "Scene Index to resolve nodeIdentifier from glslfx sourceAsset."
                     },
-                    "HdSt_TerminalsResolvingSceneIndexPlugin" : {
-                        "bases": ["HdSceneIndexPlugin"],
-                        "loadWithRenderer" : "GL",
-                        "priority": 0,
-                        "displayName": "Scene Index to resolve terminal names."
-                    },
                     "HdSt_ImplicitSurfaceSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer" : "GL",

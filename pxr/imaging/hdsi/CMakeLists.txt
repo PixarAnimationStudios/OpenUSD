@@ -25,7 +25,6 @@ pxr_library(hdsi
         pinnedCurveExpandingSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
-        terminalsResolvingSceneIndex
 
     PUBLIC_HEADERS
         api.h

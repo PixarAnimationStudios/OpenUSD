@@ -161,7 +161,6 @@ pxr_library(hdSt
         resourceLayout
         shaderKey
         subdivision
-        terminalsResolvingSceneIndexPlugin
         triangulate
         unitTestHelper
         volumeShader

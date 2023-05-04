@@ -56,6 +56,21 @@ _RelativePath(const SdfPath &prefix, const SdfPath &path)
         : path.ReplacePrefix(prefix, SdfPath::ReflexiveRelativePath());
 }
 
+// Extract the render context from an output name, ex:
+// "outputs:surface" -> ""
+// "outputs:ri:surface" -> "ri"
+static TfToken
+_GetRenderContextForShaderOutput(UsdShadeOutput const& output)
+{
+    TfToken ns = output.GetAttr().GetNamespace();
+    if (TfStringStartsWith(ns, UsdShadeTokens->outputs)) {
+        return TfToken(ns.GetString().substr(UsdShadeTokens->outputs.size()));
+    }
+    // Empty namespace, e.g. "outputs:foo" -> ""
+    return TfToken();
+}
+
+
 class _UsdImagingDataSourceShadingNodeParameters : public HdContainerDataSource
 {
 public:
@@ -422,18 +437,18 @@ UsdImagingDataSourceMaterial::~UsdImagingDataSourceMaterial()
 TfTokenVector 
 UsdImagingDataSourceMaterial::GetNames()
 {
-    // Just return the universal render context here, though we may return
-    // networks for other protocols.
-
-    // NOTE: We do want to be able to return all render contexts but don't
-    //       want to rely on the render delegate answering this question as
-    //       scene indices may be observed by multiple render delegates at
-    //       once. We will likely need to base this on available connections
-    //       of the material prim itself.
-
-    TfTokenVector result;
-    result.push_back(HdMaterialSchemaTokens->universalRenderContext);
-    return result;
+    UsdShadeNodeGraph usdMat(_usdPrim);
+    TfTokenVector terminalsNames;
+    for (UsdShadeOutput &output : usdMat.GetOutputs()) {
+        TfToken context = _GetRenderContextForShaderOutput(output);
+        // There may be multiple outputs for a given context, so only
+        // return each unique context found.
+        if (std::find(terminalsNames.begin(), terminalsNames.end(), context)
+            == terminalsNames.end()) {
+            terminalsNames.push_back(context);
+        }
+    }
+    return terminalsNames;
 }
 
 using _TokenDataSourceMap =
@@ -562,8 +577,20 @@ _BuildMaterial(
     _TokenDataSourceMap nodeDataSources;
 
     for (UsdShadeOutput &output : usdMat.GetOutputs()) {
-        // E.g. "surface", "displacement"
+        // Skip terminals from other contexts.
+        if (_GetRenderContextForShaderOutput(output) != context) {
+            continue;
+        }
+
+        // E.g. "ri:surface"
         TfToken outputName = output.GetBaseName();
+
+        // Strip the context, if there is one.
+        if (!context.IsEmpty()) {
+            // Skip the context and subsequent ':'
+            outputName = TfToken(
+                outputName.GetString().substr(context.size()+1));
+        }
 
         for (const UsdShadeConnectionSourceInfo &sourceInfo :
                 output.GetConnectedSources()) {
