@@ -389,9 +389,14 @@ template <class Int>
 size_t _DecompressIntegers(char const *compressed, size_t compressedSize,
                            Int *ints, size_t numInts, char *workingSpace)
 {
+    using Compressor = typename std::conditional<
+            sizeof(Int) == 4,
+            Usd_IntegerCompression,
+            Usd_IntegerCompression64>::type;
+
     // Working space.
     size_t workingSpaceSize =
-        Usd_IntegerCompression::GetDecompressionWorkingSpaceSize(numInts);
+        Compressor::GetDecompressionWorkingSpaceSize(numInts);
     std::unique_ptr<char[]> tmpSpace;
     if (!workingSpace) {
         tmpSpace.reset(new char[workingSpaceSize]);
