@@ -94,7 +94,7 @@ public:
     /// the error was encountered.  (Note that some error types
     /// contain an additional site to capture more specific information
     /// about the site of the error.)
-    PcpSiteStr rootSite;
+    PcpSite rootSite;
 
 protected:
     /// Constructor.
@@ -717,9 +717,9 @@ public:
     PCP_API std::string ToString() const override;
     
     /// The site where the invalid arc was expressed.
-    PcpSiteStr site;
+    PcpSite site;
     /// The private, invalid target of the arc.
-    PcpSiteStr privateSite;
+    PcpSite privateSite;
 
 private:
     /// Constructor is private. Use New() instead.
@@ -828,7 +828,7 @@ public:
     PCP_API std::string ToString() const override;
     
     /// The site where the invalid arc was expressed.
-    PcpSiteStr site;
+    PcpSite site;
 
     /// The source layer of the spec that caused this arc to be introduced.
     /// This may be a sublayer of the site.

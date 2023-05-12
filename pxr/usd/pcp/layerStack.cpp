@@ -159,8 +159,8 @@ _ApplyOwnedSublayerOrder(
             if (std::distance(first, last) > 1) {
                 PcpErrorInvalidSublayerOwnershipPtr error =
                     PcpErrorInvalidSublayerOwnership::New();
-                error->rootSite = PcpSiteStr(identifier,
-                                             SdfPath::AbsoluteRootPath());
+                error->rootSite = 
+                    PcpSite(identifier, SdfPath::AbsoluteRootPath());
                 error->owner = sessionOwner;
                 error->layer = layer;
                 for (; first != last; ++first) {
