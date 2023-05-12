@@ -375,7 +375,7 @@ HdSt_SmoothNormalsComputationGPU::Execute(
     // float/double, float/int etc.
     //
     // The offset and stride values we pass to the shader are in terms
-    // of indexes, not bytes, so we must convert the HdBufferResource
+    // of indexes, not bytes, so we must convert the HdStBufferResource
     // offset/stride (which are in bytes) to counts of float[]/double[]
     // entries.
     const size_t pointComponentSize =

@@ -1130,8 +1130,7 @@ HdSt_ResourceBinder::GetBindingRequestBindingDesc(
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdStBufferResourceSharedPtr resource =
-            std::static_pointer_cast<HdStBufferResource>(req.GetResource());
+        HdStBufferResourceSharedPtr const &resource = req.GetResource();
 
         GetBufferBindingDesc(bindingsDesc,
                              req.GetName(),
@@ -1502,9 +1501,7 @@ HdSt_ResourceBinder::Bind(HdStBindingRequest const& req) const
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdBufferResourceSharedPtr res_ = req.GetResource();
-        HdStBufferResourceSharedPtr res =
-            std::static_pointer_cast<HdStBufferResource> (res_);
+        HdStBufferResourceSharedPtr const &res = req.GetResource();
 
         BindBuffer(req.GetName(), res, req.GetByteOffset());
     } else if (req.IsInterleavedBufferArray()) {
@@ -1528,9 +1525,7 @@ HdSt_ResourceBinder::Unbind(HdStBindingRequest const& req) const
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdBufferResourceSharedPtr res_ = req.GetResource();
-        HdStBufferResourceSharedPtr res =
-            std::static_pointer_cast<HdStBufferResource> (res_);
+        HdStBufferResourceSharedPtr const &res = req.GetResource();
 
         UnbindBuffer(req.GetName(), res);
     } else if (req.IsInterleavedBufferArray()) {

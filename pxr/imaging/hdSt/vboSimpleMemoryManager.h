@@ -261,13 +261,8 @@ protected:
             return _capacity;
         }
 
-        /// TODO: We need to distinguish between the primvar types here, we should
-        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
-        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
-        /// buffer types.
-
-        /// Returns the GPU resource. If the buffer array contains more than one
-        /// resource, this method raises a coding error.
+        /// Returns the GPU resource. If the buffer array contains more
+        /// than one resource, this method raises a coding error.
         HDST_API
         HdStBufferResourceSharedPtr GetResource() const;
 

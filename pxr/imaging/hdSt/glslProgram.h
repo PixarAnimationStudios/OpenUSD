@@ -68,7 +68,7 @@ public:
     HDST_API
     bool Validate() const;
 
-    /// Returns HdResource of the program object.
+    /// Returns HgiShaderProgramHandle for the shader program.
     HgiShaderProgramHandle const &GetProgram() const { return _program; }
 
     /// Convenience method to get a shared compute shader program

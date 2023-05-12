@@ -28,7 +28,6 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
-        bufferResource
         bufferSource
         bufferSpec
         camera
@@ -136,7 +135,6 @@ pxr_library(hd
         renderVarSchema
         renderThread
         repr
-        resource
         resourceRegistry
         retainedDataSource
         retainedSceneIndex
