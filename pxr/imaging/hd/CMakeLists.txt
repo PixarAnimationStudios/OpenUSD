@@ -104,6 +104,7 @@ pxr_library(hd
         meshTopology
         meshTopologySchema
         meshUtil
+        modelSchema
         noticeBatchingSceneIndex
         nurbsCurvesSchema
         nurbsPatchSchema

@@ -24,7 +24,7 @@
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/imaging/hd/modelSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -41,8 +41,8 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
 
-    UsdImagingModelSchema modelSchema =
-        UsdImagingModelSchema::GetFromParent(prim.dataSource);
+    HdModelSchema modelSchema =
+        HdModelSchema::GetFromParent(prim.dataSource);
 
     HdBoolDataSourceHandle const applySrc = modelSchema.GetApplyDrawMode();
     if (!applySrc) {
@@ -318,10 +318,10 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     std::set<SdfPath> paths;
 
     static const HdDataSourceLocatorSet drawModeLocators{
-        UsdImagingModelSchema::GetDefaultLocator().Append(
-            UsdImagingModelSchemaTokens->drawMode),
-        UsdImagingModelSchema::GetDefaultLocator().Append(
-            UsdImagingModelSchemaTokens->applyDrawMode)};
+        HdModelSchema::GetDefaultLocator().Append(
+            HdModelSchemaTokens->drawMode),
+        HdModelSchema::GetDefaultLocator().Append(
+            HdModelSchemaTokens->applyDrawMode)};
             
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         if (drawModeLocators.Intersects(entry.dirtyLocators)) {

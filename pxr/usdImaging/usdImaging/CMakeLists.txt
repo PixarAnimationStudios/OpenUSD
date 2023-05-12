@@ -54,7 +54,6 @@ pxr_library(usdImaging
         drawModeSceneIndex
         indexProxy
         materialParamUtils
-        modelSchema
         primvarUtils
         resolvedAttributeCache
         instancerContext

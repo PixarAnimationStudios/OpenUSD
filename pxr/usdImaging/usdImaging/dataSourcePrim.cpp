@@ -25,12 +25,12 @@
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/modelSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/primOriginSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
@@ -386,33 +386,33 @@ TfTokenVector
 UsdImagingDataSourceModel::GetNames()
 {
     return {
-        UsdImagingModelSchemaTokens->drawMode,
-        UsdImagingModelSchemaTokens->applyDrawMode,
-        UsdImagingModelSchemaTokens->drawModeColor,
-        UsdImagingModelSchemaTokens->cardGeometry,
-        UsdImagingModelSchemaTokens->cardTextureXPos,
-        UsdImagingModelSchemaTokens->cardTextureYPos,
-        UsdImagingModelSchemaTokens->cardTextureZPos,
-        UsdImagingModelSchemaTokens->cardTextureXNeg,
-        UsdImagingModelSchemaTokens->cardTextureYNeg,
-        UsdImagingModelSchemaTokens->cardTextureZNeg
+        HdModelSchemaTokens->drawMode,
+        HdModelSchemaTokens->applyDrawMode,
+        HdModelSchemaTokens->drawModeColor,
+        HdModelSchemaTokens->cardGeometry,
+        HdModelSchemaTokens->cardTextureXPos,
+        HdModelSchemaTokens->cardTextureYPos,
+        HdModelSchemaTokens->cardTextureZPos,
+        HdModelSchemaTokens->cardTextureXNeg,
+        HdModelSchemaTokens->cardTextureYNeg,
+        HdModelSchemaTokens->cardTextureZNeg
     };
 }
 
 HdDataSourceBaseHandle
 UsdImagingDataSourceModel::Get(const TfToken &name)
 {
-    if (name == UsdImagingModelSchemaTokens->drawMode) {
+    if (name == HdModelSchemaTokens->drawMode) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawMode);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->drawMode);
         return UsdImagingDataSourceAttribute<TfToken>::New(
             _model.GetModelDrawModeAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->applyDrawMode) {
+    if (name == HdModelSchemaTokens->applyDrawMode) {
         UsdPrim prim = _model.GetPrim();
         if (prim.IsModel()) {
             if (UsdModelAPI(prim).IsKind(KindTokens->component)) {
@@ -421,88 +421,88 @@ UsdImagingDataSourceModel::Get(const TfToken &name)
         }
 
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->applyDrawMode);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->applyDrawMode);
         return UsdImagingDataSourceAttribute<bool>::New(
             _model.GetModelApplyDrawModeAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->drawModeColor) {
+    if (name == HdModelSchemaTokens->drawModeColor) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->drawModeColor);
         return UsdImagingDataSourceAttribute<GfVec3f>::New(
             _model.GetModelDrawModeColorAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardGeometry) {
+    if (name == HdModelSchemaTokens->cardGeometry) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardGeometry);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardGeometry);
         return UsdImagingDataSourceAttribute<TfToken>::New(
             _model.GetModelCardGeometryAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureXPos) {
+    if (name == HdModelSchemaTokens->cardTextureXPos) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXPos);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureXPos);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureXPosAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureYPos) {
+    if (name == HdModelSchemaTokens->cardTextureYPos) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYPos);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureYPos);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureYPosAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureZPos) {
+    if (name == HdModelSchemaTokens->cardTextureZPos) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZPos);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureZPos);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureZPosAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureXNeg) {
+    if (name == HdModelSchemaTokens->cardTextureXNeg) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXNeg);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureXNeg);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureXNegAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureYNeg) {
+    if (name == HdModelSchemaTokens->cardTextureYNeg) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYNeg);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureYNeg);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureYNegAttr(),
             _stageGlobals,
             _sceneIndexPath,
             locator);
     }
-    if (name == UsdImagingModelSchemaTokens->cardTextureZNeg) {
+    if (name == HdModelSchemaTokens->cardTextureZNeg) {
         static const HdDataSourceLocator locator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZNeg);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureZNeg);
         return UsdImagingDataSourceAttribute<SdfAssetPath>::New(
             _model.GetModelCardTextureZNegAttr(),
             _stageGlobals,
@@ -614,7 +614,7 @@ UsdImagingDataSourcePrim::GetNames()
     }
 
     if (_GetUsdPrim().HasAPI<UsdGeomModelAPI>()) {
-        vec.push_back(UsdImagingModelSchemaTokens->model);
+        vec.push_back(HdModelSchemaTokens->model);
     }
 
     vec.push_back(UsdImagingUsdPrimInfoSchema::GetSchemaToken());
@@ -696,7 +696,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         } else {
             return nullptr;
         }
-    } else if (name == UsdImagingModelSchemaTokens->model) {
+    } else if (name == HdModelSchemaTokens->model) {
         UsdGeomModelAPI model(_GetUsdPrim());
         if (!model) {
             return nullptr;
@@ -743,71 +743,71 @@ UsdImagingDataSourcePrim::Invalidate(
 
         if (propertyName == UsdGeomTokens->modelDrawMode) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->drawMode);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->drawMode);
             locators.insert(locator);  
         }
 
         if (propertyName == UsdGeomTokens->modelApplyDrawMode) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->applyDrawMode);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->applyDrawMode);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelDrawModeColor) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->drawModeColor);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->drawModeColor);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardGeometry) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardGeometry);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardGeometry);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureXPos) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureXPos);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureXPos);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureXNeg) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureXNeg);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureXNeg);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureYPos) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureYPos);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureYPos);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureYNeg) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureYNeg);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureYNeg);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureZPos) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureZPos);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureZPos);
             locators.insert(locator);
         }
 
         if (propertyName == UsdGeomTokens->modelCardTextureZNeg) {
             static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureZNeg);
+                HdModelSchemaTokens->model,
+                HdModelSchemaTokens->cardTextureZNeg);
             locators.insert(locator);
         }
 
