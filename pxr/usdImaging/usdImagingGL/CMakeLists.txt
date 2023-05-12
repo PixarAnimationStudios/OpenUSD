@@ -3635,6 +3635,30 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         TESTENV testUsdImagingGLMaterialX
     )
 
+    pxr_register_test(testUsdImagingGLMaterialX_mxFallbackDome
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxFallbackDome.usda -write mxFallbackDome.png"
+        IMAGE_DIFF_COMPARE
+            mxFallbackDome.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialX
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialX_mxLights
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxLights.usda -write mxLights.png"
+        IMAGE_DIFF_COMPARE
+            mxLights.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialX
+    )
+
     pxr_register_test(testUsdImagingGLMaterialX_mxTextured
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxTextured.usda -write mxTextured.png"
         IMAGE_DIFF_COMPARE
@@ -3687,18 +3711,6 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxTexcoord.usda -write mxTexcoord.png"
         IMAGE_DIFF_COMPARE
             mxTexcoord.png
-        FAIL 0.5
-        FAIL_PERCENT 0.005
-        WARN 0.05
-        WARN_PERCENT 0.02
-        EXPECTED_RETURN_CODE 0
-        TESTENV testUsdImagingGLMaterialX
-    )
-
-    pxr_register_test(testUsdImagingGLMaterialX_mxFallbackDome
-        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxFallbackDome.usda -write mxFallbackDome.png"
-        IMAGE_DIFF_COMPARE
-            mxFallbackDome.png
         FAIL 0.5
         FAIL_PERCENT 0.005
         WARN 0.05

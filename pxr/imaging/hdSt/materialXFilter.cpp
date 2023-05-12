@@ -97,9 +97,11 @@ _GenMaterialXShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 static const std::string mxDirectLightString = 
 R"(
 <?xml version="1.0"?>
-<materialx version="1.37">
+<materialx version="1.38">
   <point_light name="pt_light" type="lightshader">
   </point_light>
+  <directional_light name="dir_light" type="lightshader">
+  </directional_light>
 </materialx>
 )";
 

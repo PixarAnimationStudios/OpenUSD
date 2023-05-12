@@ -82,12 +82,24 @@ R"(#if NUM_LIGHTS > 0
         }
         // Save the direct light data
         else {
-            // Type Only supporting Point Lights
-            $lightData[u_numActiveLightSources].type = 1; // point
+            // Light Type and Position/Direction
+            // Distant lights have Hydra attenuation = vec3(0.0, 0.0, 0.0)
+            if (light.attenuation.x == 0.0 && light.attenuation.y == 0.0 && 
+                light.attenuation.z == 0.0) {
+                $lightData[u_numActiveLightSources].type = 2; // directional
 
-            // Position (Hydra position in ViewSpace)
-            $lightData[u_numActiveLightSources].position = 
-                (HdGet_worldToViewInverseMatrix() * light.position).xyz;
+                // Direction (Hydra position in ViewSpace)
+                $lightData[u_numActiveLightSources].direction = 
+                    (HdGet_worldToViewInverseMatrix() * -light.position).xyz;
+            }
+            // Treat all other lights as Point lights
+            else {
+                $lightData[u_numActiveLightSources].type = 1; // point
+
+                // Position (Hydra position in ViewSpace)
+                $lightData[u_numActiveLightSources].position = 
+                    (HdGet_worldToViewInverseMatrix() * light.position).xyz;
+            }
 
             // Color and Intensity 
             // Note: in Storm, diffuse = lightColor * intensity;
