@@ -263,8 +263,6 @@ _RGBtoRGBA(float const* lutValues,
     }
 }
 
-namespace {
-
 // Helper struct to hold a templated helper method using a type
 // (_UniformBufferDesc) private to HdxColorCorrectionTask.
 struct HdxColorCorrectionTask_UboBuilder {
@@ -289,8 +287,6 @@ struct HdxColorCorrectionTask_UboBuilder {
         memcpy(ubos.back().data.data(), v, dataSize);
     }
 };
-
-}
 
 void
 HdxColorCorrectionTask::_CreateOpenColorIOResources(
