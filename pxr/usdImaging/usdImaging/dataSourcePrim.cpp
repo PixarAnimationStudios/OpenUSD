@@ -587,7 +587,6 @@ UsdImagingDataSourcePrim::UsdImagingDataSourcePrim(
     : _sceneIndexPath(sceneIndexPath)
     , _usdPrim(usdPrim)
     , _stageGlobals(stageGlobals)
-    , _primvars(nullptr)
 {
 }
 
@@ -647,16 +646,11 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
             return nullptr;
         }
     } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
-        auto primvars = UsdImagingDataSourcePrimvars::AtomicLoad(_primvars);
-        if (!primvars) {
-            primvars = UsdImagingDataSourcePrimvars::New(
+        return UsdImagingDataSourcePrimvars::New(
                 _GetSceneIndexPath(),
                 _GetUsdPrim(),
                 UsdGeomPrimvarsAPI(_GetUsdPrim()),
                 _GetStageGlobals());
-            UsdImagingDataSourcePrimvars::AtomicStore(_primvars, primvars);
-        }
-        return primvars;
     } else if (name == HdVisibilitySchema::GetSchemaToken()) {
         UsdGeomImageable imageable(_GetUsdPrim());
         if (!imageable) {
@@ -813,10 +807,15 @@ UsdImagingDataSourcePrim::Invalidate(
         }
 
         if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {
-            static const int prefixLength = 9; // "primvars:"
-            locators.insert(
-                HdPrimvarsSchema::GetDefaultLocator().Append(TfToken(
-                    propertyName.data() + prefixLength)));
+            if (invalidationType == UsdImagingPropertyInvalidationType::Resync) {
+                locators.insert(
+                    HdPrimvarsSchema::GetDefaultLocator());
+            } else {
+                static const int prefixLength = 9; // "primvars:"
+                locators.insert(
+                    HdPrimvarsSchema::GetDefaultLocator()
+                        .Append(TfToken(propertyName.data() + prefixLength)));
+            }
         }
     }
 

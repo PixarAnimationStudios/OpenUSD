@@ -504,8 +504,6 @@ private:
     const SdfPath _sceneIndexPath;
     UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
-
-    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrim);
