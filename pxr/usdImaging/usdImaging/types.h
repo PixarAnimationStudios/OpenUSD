@@ -21,48 +21,22 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
+#ifndef PXR_USD_IMAGING_USD_IMAGING_TYPES_H
+#define PXR_USD_IMAGING_USD_IMAGING_TYPES_H
+
+#include "pxr/pxr.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-UsdImagingAPISchemaAdapter::~UsdImagingAPISchemaAdapter() = default;
-
-TfTokenVector
-UsdImagingAPISchemaAdapter::GetImagingSubprims(
-    UsdPrim const& prim,
-    TfToken const& appliedInstanceName)
+/// Given to an invalidation call to indicate whether the property was
+/// added or removed or whether one of its fields changed.
+///
+enum class UsdImagingPropertyInvalidationType
 {
-    return TfTokenVector();
-}
-
-TfToken
-UsdImagingAPISchemaAdapter::GetImagingSubprimType(
-    UsdPrim const& prim,
-    TfToken const& subprim,
-    TfToken const& appliedInstanceName)
-{
-    return TfToken();
-}
-
-HdContainerDataSourceHandle
-UsdImagingAPISchemaAdapter::GetImagingSubprimData(
-    UsdPrim const& prim,
-    TfToken const& subprim,
-    TfToken const& appliedInstanceName,
-    const UsdImagingDataSourceStageGlobals &stageGlobals)
-{
-    return nullptr;
-}
-
-HdDataSourceLocatorSet
-UsdImagingAPISchemaAdapter::InvalidateImagingSubprim(
-    UsdPrim const& prim,
-    TfToken const& subprim,
-    TfToken const& appliedInstanceName,
-    TfTokenVector const& properties,
-    const UsdImagingPropertyInvalidationType invalidationType)
-{
-    return HdDataSourceLocatorSet();
-}
+    Update,
+    Resync
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

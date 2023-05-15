@@ -37,7 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for Sample Filter Prims.
 ///
-class UsdRiImagingPxrSampleFilterAdapter : public UsdImagingPrimAdapter {
+class UsdRiImagingPxrSampleFilterAdapter : public UsdImagingPrimAdapter
+{
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
@@ -70,7 +71,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

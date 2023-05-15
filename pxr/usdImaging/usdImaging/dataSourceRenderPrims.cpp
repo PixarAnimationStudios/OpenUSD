@@ -203,7 +203,9 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceRenderSettingsPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
+
 {
     TRACE_FUNCTION();
 
@@ -365,7 +367,8 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceRenderProductPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 
@@ -508,7 +511,8 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceRenderVarPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 

@@ -43,14 +43,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdRiImagingPxrSampleFilterAdapter Adapter;
+    using Adapter = UsdRiImagingPxrSampleFilterAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdRiImagingPxrSampleFilterAdapter::~UsdRiImagingPxrSampleFilterAdapter() 
-{
-}
+UsdRiImagingPxrSampleFilterAdapter::
+~UsdRiImagingPxrSampleFilterAdapter() = default;
 
 
 // -------------------------------------------------------------------------- //
@@ -94,12 +93,14 @@ HdDataSourceLocatorSet
 UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return 
             UsdRiImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
-                Invalidate(prim, subprim, properties);
+            Invalidate(
+                prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();

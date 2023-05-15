@@ -168,7 +168,8 @@ _InvalidateImagingSubprim(
         const APISchemaAdapters &adapters,
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (adapters.empty()) {
         return HdDataSourceLocatorSet();
@@ -176,14 +177,15 @@ _InvalidateImagingSubprim(
 
     if (adapters.size() == 1) {
         return adapters[0].first->InvalidateImagingSubprim(
-            prim, subprim, adapters[0].second, properties);
+            prim, subprim, adapters[0].second, properties, invalidationType);
     }
 
     HdDataSourceLocatorSet result;
 
     for (const APISchemaEntry &entry : adapters) {
-        result.insert(entry.first->InvalidateImagingSubprim(
-                    prim, subprim, entry.second, properties));
+        result.insert(
+            entry.first->InvalidateImagingSubprim(
+                prim, subprim, entry.second, properties, invalidationType));
     }
 
     return result;
@@ -473,7 +475,7 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
             TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Resync queued: %s\n",
                     it->GetText());
         } else if (it->IsPropertyPath()) {
-            _usdPropertiesToUpdate[it->GetPrimPath()]
+            _usdPropertiesToResync[it->GetPrimPath()]
                 .push_back(it->GetNameToken());
             TF_DEBUG(USDIMAGING_CHANGES).Msg(
                     " - Property update due to property resync queued: %s\n",
@@ -593,7 +595,7 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
                     "Invalidating <%s> due to resync of descendant <%s>\n",
                         ancestor.first.GetPrimPath().GetText(),
                         primPath.GetText());
-                _usdPropertiesToUpdate[primPath] = {TfToken()};
+                _usdPropertiesToResync[primPath] = {TfToken()};
                 continue;
             }
         }
@@ -604,6 +606,7 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
         _PopulateSubtree(prim);
 
         // Prune property updates of resynced prims, which are redundant.
+        _DeletePrefix(primPath, &_usdPropertiesToResync);
         _DeletePrefix(primPath, &_usdPropertiesToUpdate);
     }
 
@@ -613,8 +616,13 @@ UsdImagingStageSceneIndex::_ApplyPendingResyncs()
 void
 UsdImagingStageSceneIndex::ApplyPendingUpdates()
 {
-    if (!_stage ||
-        (_usdPrimsToResync.empty() && _usdPropertiesToUpdate.empty())) {
+    if (!_stage) {
+        return;
+    }
+
+    if (_usdPropertiesToUpdate.empty() &&
+        _usdPropertiesToResync.empty() &&
+        _usdPrimsToResync.empty()) {
         return;
     }
 
@@ -625,8 +633,15 @@ UsdImagingStageSceneIndex::ApplyPendingUpdates()
     // Changed properties...
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedPrims;
 
+    _ComputeDirtiedEntries(_usdPropertiesToResync,
+                           &_usdPrimsToResync,
+                           UsdImagingPropertyInvalidationType::Resync,
+                           &dirtiedPrims);
+    _usdPropertiesToResync.clear();
+
     _ComputeDirtiedEntries(_usdPropertiesToUpdate,
                            &_usdPrimsToResync,
+                           UsdImagingPropertyInvalidationType::Update,
                            &dirtiedPrims);
     _usdPropertiesToUpdate.clear();
 
@@ -645,6 +660,7 @@ void
 UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
     const std::map<SdfPath, TfTokenVector> &pathToUsdProperties,
     SdfPathVector * const primPathsToResync,
+    UsdImagingPropertyInvalidationType const invalidationType,
     HdSceneIndexObserver::DirtiedPrimEntries * const dirtiedPrims) const
 {
     for (auto const& pair : pathToUsdProperties) {
@@ -675,7 +691,8 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
                      HdDataSourceLocatorSet dirtyLocators = 
                         parentAdapter->
                             InvalidateImagingSubprimFromDescendent(
-                                parentPrim, prim, subprim, properties);
+                                parentPrim, prim, subprim,
+                                properties, invalidationType);
 
                     if (!dirtyLocators.IsEmpty()) {
                         const SdfPath path = subprim.IsEmpty()
@@ -700,7 +717,8 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
         for (TfToken const& subprim : subprims) {
             const HdDataSourceLocatorSet dirtyLocators =
                 _InvalidateImagingSubprim(
-                    adapters, prim, subprim, properties);
+                    adapters, prim, subprim,
+                    properties, invalidationType);
 
             if (!dirtyLocators.IsEmpty()) {
 
@@ -719,7 +737,6 @@ UsdImagingStageSceneIndex::_ComputeDirtiedEntries(
             }
         }
     }
-
 }
 
 // ---------------------------------------------------------------------------

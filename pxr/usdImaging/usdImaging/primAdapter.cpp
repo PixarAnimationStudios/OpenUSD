@@ -122,10 +122,12 @@ HdDataSourceLocatorSet
 UsdImagingPrimAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+        return UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();
@@ -142,9 +144,11 @@ UsdImagingPrimAdapter::InvalidateImagingSubprimFromDescendent(
         UsdPrim const& prim,
         UsdPrim const& descendentPrim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    return InvalidateImagingSubprim(descendentPrim, subprim, properties);
+    return InvalidateImagingSubprim(
+        descendentPrim, subprim, properties, invalidationType);
 }
 
 // ----------------------------------------------------------------------------

@@ -97,7 +97,8 @@ UsdImagingMaterialBindingAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
 
     // QUESTION: We aren't ourselves creating any subprims but do we need to

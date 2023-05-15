@@ -54,9 +54,7 @@ bool UsdImagingLightAdapter::IsEnabledSceneLights() {
     return _v;
 }
 
-UsdImagingLightAdapter::~UsdImagingLightAdapter() 
-{
-}
+UsdImagingLightAdapter::~UsdImagingLightAdapter() = default;
 
 HdContainerDataSourceHandle
 UsdImagingLightAdapter::GetImagingSubprimData(
@@ -76,9 +74,11 @@ HdDataSourceLocatorSet
 UsdImagingLightAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    UsdImagingPropertyInvalidationType invalidationType)
 {
-    return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    return UsdImagingDataSourcePrim::Invalidate(
+        prim, subprim, properties, invalidationType);
 }
 
 bool

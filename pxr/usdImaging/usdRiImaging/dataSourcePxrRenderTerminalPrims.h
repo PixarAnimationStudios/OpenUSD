@@ -60,7 +60,8 @@ public:
     Invalidate(
         UsdPrim const& prim,
         const TfToken &subprim,
-        const TfTokenVector &properties);
+        const TfTokenVector &properties,
+        UsdImagingPropertyInvalidationType invalidationType);
 
 private:
     // Private constructor, use static New() instead.
@@ -144,7 +145,6 @@ _ComputeResourceDS(
 
 }
 
-
 template <typename TerminalSchema>
 UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::
 UsdRiImaging_DataSourceRenderTerminalPrim(
@@ -186,7 +186,8 @@ HdDataSourceLocatorSet
 UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 
@@ -202,7 +203,6 @@ UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
 
     return locators;
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

@@ -201,7 +201,8 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (!subprim.IsEmpty() || !appliedInstanceName.IsEmpty()) {
         return HdDataSourceLocatorSet();

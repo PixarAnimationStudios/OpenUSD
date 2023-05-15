@@ -36,6 +36,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -464,7 +465,8 @@ public:
     static HdDataSourceLocatorSet Invalidate(
             UsdPrim const& prim,
             const TfToken &subprim,
-            const TfTokenVector &properties);
+            const TfTokenVector &properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.

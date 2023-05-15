@@ -28,6 +28,7 @@
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
@@ -96,6 +97,7 @@ private:
     void _ComputeDirtiedEntries(
         const std::map<SdfPath, TfTokenVector> &pathToUsdProperties,
         SdfPathVector * primPathsToResync,
+        UsdImagingPropertyInvalidationType invalidationType,
         HdSceneIndexObserver::DirtiedPrimEntries * dirtiedPrims) const;
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
@@ -145,6 +147,7 @@ private:
     SdfPathVector _usdPrimsToResync;
     // Property changes get converted into PrimsDirtied messages.
     std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
+    std::map<SdfPath, TfTokenVector> _usdPropertiesToResync;
 
     using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
     _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim) const;

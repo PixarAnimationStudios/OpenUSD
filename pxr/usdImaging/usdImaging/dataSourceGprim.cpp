@@ -119,10 +119,12 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceGprim::Invalidate(
         UsdPrim const& prim,
         const TfToken &subprim,
-        const TfTokenVector &properties)
+        const TfTokenVector &properties,
+        UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result =
-        UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     if (subprim.IsEmpty()) {
         const UsdImagingDataSourceCustomPrimvars::Mappings &mappings = 

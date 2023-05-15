@@ -41,7 +41,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///       scenario, UsdImagingRenderSettingsAdapter handles the flattening of
 ///       products and vars. 
 ///
-class UsdImagingRenderProductAdapter : public UsdImagingPrimAdapter {
+class UsdImagingRenderProductAdapter : public UsdImagingPrimAdapter
+{
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
@@ -74,7 +75,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

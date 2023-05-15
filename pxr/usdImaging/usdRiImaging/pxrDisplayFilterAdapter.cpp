@@ -43,14 +43,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdRiImagingPxrDisplayFilterAdapter Adapter;
+    using Adapter = UsdRiImagingPxrDisplayFilterAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdRiImagingPxrDisplayFilterAdapter::~UsdRiImagingPxrDisplayFilterAdapter()
-{
-}
+UsdRiImagingPxrDisplayFilterAdapter::
+~UsdRiImagingPxrDisplayFilterAdapter() = default;
 
 
 // -------------------------------------------------------------------------- //
@@ -94,12 +93,13 @@ HdDataSourceLocatorSet
 UsdRiImagingPxrDisplayFilterAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return
             UsdRiImaging_DataSourceRenderTerminalPrim<HdDisplayFilterSchema>::
-                Invalidate(prim, subprim, properties);
+            Invalidate(
+                prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();

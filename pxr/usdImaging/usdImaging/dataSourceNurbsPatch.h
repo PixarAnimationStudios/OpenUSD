@@ -46,7 +46,8 @@ public:
     Invalidate(
         UsdPrim const& prim,
         const TfToken &subprim,
-        const TfTokenVector &properties);
+        const TfTokenVector &properties,
+        UsdImagingPropertyInvalidationType invalidationType);
 
 private:
     // Private constructor, use static New() instead.

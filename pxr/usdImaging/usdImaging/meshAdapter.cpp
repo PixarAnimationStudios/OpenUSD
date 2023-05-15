@@ -94,9 +94,11 @@ HdDataSourceLocatorSet
 UsdImagingMeshAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    return UsdImagingDataSourceMeshPrim::Invalidate(prim, subprim, properties);
+    return UsdImagingDataSourceMeshPrim::Invalidate(
+        prim, subprim, properties, invalidationType);
 }
 
 bool

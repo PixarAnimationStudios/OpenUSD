@@ -178,7 +178,8 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceNurbsPatchPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 
@@ -191,7 +192,8 @@ UsdImagingDataSourceNurbsPatchPrim::Invalidate(
             subprim, properties));
 
     locators.insert(
-        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType));
 
     locators.insert(
         UsdImagingDataSourceCustomPrimvars::Invalidate(

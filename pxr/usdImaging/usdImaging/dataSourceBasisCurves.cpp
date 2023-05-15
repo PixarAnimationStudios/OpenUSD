@@ -146,13 +146,14 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceBasisCurvesPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result;
 
     if (subprim.IsEmpty()) {
         result = UsdImagingDataSourceGprim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
 
         for (const TfToken &propertyName : properties) {
             if (propertyName == UsdGeomTokens->curveVertexCounts) {

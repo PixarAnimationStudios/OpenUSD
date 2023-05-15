@@ -222,12 +222,14 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceCameraPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     TRACE_FUNCTION();
 
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     static TfTokenVector usdNames = 
         UsdGeomCamera::GetSchemaAttributeNames(/* includeInherited = */ false);

@@ -32,6 +32,7 @@
 #include "pxr/usdImaging/usdImaging/collectionCache.h"
 #include "pxr/usdImaging/usdImaging/primvarDescCache.h"
 #include "pxr/usdImaging/usdImaging/resolvedAttributeCache.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/selection.h"
@@ -96,7 +97,8 @@ public:
     virtual HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties);
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
     /// \enum Scope
     ///
@@ -139,7 +141,8 @@ public:
             UsdPrim const& prim,
             UsdPrim const& descendentPrim,
             TfToken const& subprim,
-            TfTokenVector const& properties);
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

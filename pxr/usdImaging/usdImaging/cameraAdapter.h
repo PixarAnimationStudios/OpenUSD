@@ -42,14 +42,14 @@ class UsdPrim;
 class UsdImagingCameraAdapter : public UsdImagingPrimAdapter 
 {
 public:
-    typedef UsdImagingPrimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingPrimAdapter;
 
     UsdImagingCameraAdapter()
         : UsdImagingPrimAdapter()
     {}
 
     USDIMAGING_API
-    ~UsdImagingCameraAdapter();
+    ~UsdImagingCameraAdapter() override;
 
     // ---------------------------------------------------------------------- //
     /// \name Scene Index Support
@@ -73,7 +73,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties) override;
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

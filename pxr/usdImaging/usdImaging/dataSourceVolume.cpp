@@ -102,10 +102,12 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceVolumePrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     static const std::string fieldPrefix =
         UsdVolTokens->field.GetString() + ":";

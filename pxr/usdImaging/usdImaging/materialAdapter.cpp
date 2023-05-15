@@ -108,11 +108,12 @@ HdDataSourceLocatorSet
 UsdImagingMaterialAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result =
         UsdImagingPrimAdapter::InvalidateImagingSubprim(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
 
     if (subprim.IsEmpty()) {
         UsdShadeMaterial material(prim);
@@ -139,7 +140,8 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
         UsdPrim const& prim,
         UsdPrim const& descendentPrim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result;
 
