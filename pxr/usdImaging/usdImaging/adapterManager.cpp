@@ -140,14 +140,20 @@ void UsdImaging_AdapterManager::Reset()
 UsdImaging_AdapterManager::APISchemaAdapters
 UsdImaging_AdapterManager::AdapterSetLookup(
         const UsdPrim &prim,
-        UsdImagingPrimAdapterSharedPtr *outputPrimAdapter) const
+        UsdImagingPrimAdapterSharedPtr * const outputPrimAdapter) const
 {
     if (!prim) {
         return {};
     }
 
-    const UsdPrimTypeInfo &typeInfo = prim.GetPrimTypeInfo();
+    return _AdapterSetLookup(prim.GetPrimTypeInfo(), outputPrimAdapter);
+}
 
+UsdImaging_AdapterManager::APISchemaAdapters
+UsdImaging_AdapterManager::_AdapterSetLookup(
+        const UsdPrimTypeInfo &typeInfo,
+        UsdImagingPrimAdapterSharedPtr * const outputPrimAdapter) const
+{
     // check for previously cached value of full array
     const _AdapterSetMap::const_iterator it = _adapterSetMap.find(&typeInfo);
     if (it != _adapterSetMap.end()) {
@@ -160,10 +166,11 @@ UsdImaging_AdapterManager::AdapterSetLookup(
     _AdapterSetEntry result;
 
     // contains both auto-applied and manually applied schemas
-    const TfTokenVector allAppliedSchemas = prim.GetAppliedSchemas();
+    const TfTokenVector appliedSchemas =
+        typeInfo.GetPrimDefinition().GetAppliedAPISchemas();
 
-    result.allAdapters.reserve(allAppliedSchemas.size() + 1 +
-        _keylessAdapters.size());
+    result.allAdapters.reserve(
+        _keylessAdapters.size() + 1 + appliedSchemas.size());
 
     // first add keyless adapters as they have a stronger opinion than any
     // keyed adapter
@@ -198,9 +205,9 @@ UsdImaging_AdapterManager::AdapterSetLookup(
     }
 
     // then the applied API schemas which are already in their strength order
-    for (const TfToken &schemaToken: allAppliedSchemas) {
+    for (const TfToken &schemaToken: appliedSchemas) {
 
-        std::pair<TfToken, TfToken> tokenPair =
+        const std::pair<TfToken, TfToken> tokenPair =
             UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
             
         if (UsdImagingAPISchemaAdapterSharedPtr a =

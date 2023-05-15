@@ -59,6 +59,9 @@ public:
             UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
 
 private:
+    APISchemaAdapters _AdapterSetLookup(const UsdPrimTypeInfo &primTypeInfo,
+            UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
+
     UsdImagingAPISchemaAdapterSharedPtr _APIAdapterLookup(
             const TfToken &adapterKey) const;
 
