@@ -1933,7 +1933,8 @@ HdRenderIndex::GetSceneDelegateAndInstancerIds(SdfPath const &id,
                     }
                 }
             } else {
-                return false;
+                // fallback value is the back-end emulation delegate
+                *delegateId = _siSd->GetDelegateID();
             }
         } else {
             *delegateId  = rprimInfo.sceneDelegate->GetDelegateID();
