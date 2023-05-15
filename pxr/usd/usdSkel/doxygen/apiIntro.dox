@@ -553,7 +553,9 @@ objects, skinning queries are accessed through the UsdSkelCache. But before
 they are accessed, we need to `Populate()` the UsdSkelCache with the section
 of the scene graph that contains the skinnable primitive. Cache population
 causes the cache to be pre-populated with information about inherited bindings,
-which is necessary when accessing skinning queries.
+which is necessary when accessing skinning queries.  All prims which have
+authored UsdSkel attributes must also have the SkelBindingAPI schema applied at
+time of cache population.
 
 Passing the predicate produced by UsdTraverseInstanceProxies() ensures that
 instanced, skinnable prims are populated on the cache. If there is no need
