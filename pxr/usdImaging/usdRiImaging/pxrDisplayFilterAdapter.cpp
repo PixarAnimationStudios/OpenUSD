@@ -28,6 +28,7 @@
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/gf/vec4f.h"
@@ -36,8 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((displayFilterShaderId, "ri:displayFilter:shaderId"))
-    (displayFilterResource)
+    ((riDisplayFilterShaderId, "ri:displayFilter:shaderId"))
 );
 
 
@@ -81,8 +81,10 @@ UsdRiImagingPxrDisplayFilterAdapter::GetImagingSubprimData(
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceDisplayFilterPrim::New(
-                    prim.GetPath(), prim, stageGlobals);
+        return 
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdDisplayFilterSchema>::
+                New(prim.GetPath(), prim,
+                    _tokens->riDisplayFilterShaderId, stageGlobals);
     }
 
     return nullptr;
@@ -95,8 +97,9 @@ UsdRiImagingPxrDisplayFilterAdapter::InvalidateImagingSubprim(
     TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceDisplayFilterPrim::Invalidate(
-            prim, subprim, properties);
+        return
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdDisplayFilterSchema>::
+                Invalidate(prim, subprim, properties);
     }
 
     return HdDataSourceLocatorSet();
@@ -197,11 +200,11 @@ UsdRiImagingPxrDisplayFilterAdapter::Get(
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (key == _tokens->displayFilterResource) {
+    if (key == HdDisplayFilterSchemaTokens->resource) {
         return VtValue(
             UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
                 prim,
-                _tokens->displayFilterShaderId,
+                _tokens->riDisplayFilterShaderId,
                 HdPrimTypeTokens->displayFilter));
     }
 

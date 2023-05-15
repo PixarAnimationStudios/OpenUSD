@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDINTEGRATOR_SCHEMA_TOKENS \
     (integrator) \
-    (integratorResource) \
+    (resource) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdIntegratorSchemaTokens, HD_API,
     HDINTEGRATOR_SCHEMA_TOKENS);
@@ -58,7 +58,7 @@ public:
     //ACCESSORS
 
     HD_API
-    HdMaterialNodeSchema GetIntegratorResource();
+    HdMaterialNodeSchema GetResource();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -70,7 +70,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &integratorResource
+        const HdContainerDataSourceHandle &resource
     );
 
     /// \class HdIntegratorSchema::Builder
@@ -83,15 +83,15 @@ public:
     {
     public:
         HD_API
-        Builder &SetIntegratorResource(
-            const HdContainerDataSourceHandle &integratorResource);
+        Builder &SetResource(
+            const HdContainerDataSourceHandle &resource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdContainerDataSourceHandle _integratorResource;
+        HdContainerDataSourceHandle _resource;
     };
 
     /// Retrieves a container data source with the schema's default name token

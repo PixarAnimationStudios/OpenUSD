@@ -42,25 +42,25 @@ TF_DEFINE_PUBLIC_TOKENS(HdIntegratorSchemaTokens,
 
 
 HdMaterialNodeSchema
-HdIntegratorSchema::GetIntegratorResource()
+HdIntegratorSchema::GetResource()
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdIntegratorSchemaTokens->integratorResource));
+        HdIntegratorSchemaTokens->resource));
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdIntegratorSchema::BuildRetained(
-        const HdContainerDataSourceHandle &integratorResource
+        const HdContainerDataSourceHandle &resource
 )
 {
     TfToken names[1];
     HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (integratorResource) {
-        names[count] = HdIntegratorSchemaTokens->integratorResource;
-        values[count++] = integratorResource;
+    if (resource) {
+        names[count] = HdIntegratorSchemaTokens->resource;
+        values[count++] = resource;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -99,17 +99,17 @@ HdIntegratorSchema::GetResourceLocator()
 {
     static const HdDataSourceLocator locator(
         HdIntegratorSchemaTokens->integrator,
-        HdIntegratorSchemaTokens->integratorResource
+        HdIntegratorSchemaTokens->resource
     );
     return locator;
 }
 
 
 HdIntegratorSchema::Builder &
-HdIntegratorSchema::Builder::SetIntegratorResource(
-    const HdContainerDataSourceHandle &integratorResource)
+HdIntegratorSchema::Builder::SetResource(
+    const HdContainerDataSourceHandle &resource)
 {
-    _integratorResource = integratorResource;
+    _resource = resource;
     return *this;
 }
 
@@ -117,7 +117,7 @@ HdContainerDataSourceHandle
 HdIntegratorSchema::Builder::Build()
 {
     return HdIntegratorSchema::BuildRetained(
-        _integratorResource
+        _resource
     );
 }
 

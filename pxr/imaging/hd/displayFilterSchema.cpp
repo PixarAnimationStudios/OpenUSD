@@ -42,25 +42,25 @@ TF_DEFINE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens,
 
 
 HdMaterialNodeSchema
-HdDisplayFilterSchema::GetDisplayFilterResource()
+HdDisplayFilterSchema::GetResource()
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdDisplayFilterSchemaTokens->displayFilterResource));
+        HdDisplayFilterSchemaTokens->resource));
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdDisplayFilterSchema::BuildRetained(
-        const HdContainerDataSourceHandle &displayFilterResource
+        const HdContainerDataSourceHandle &resource
 )
 {
     TfToken names[1];
     HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (displayFilterResource) {
-        names[count] = HdDisplayFilterSchemaTokens->displayFilterResource;
-        values[count++] = displayFilterResource;
+    if (resource) {
+        names[count] = HdDisplayFilterSchemaTokens->resource;
+        values[count++] = resource;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -99,17 +99,17 @@ HdDisplayFilterSchema::GetResourceLocator()
 {
     static const HdDataSourceLocator locator(
         HdDisplayFilterSchemaTokens->displayFilter,
-        HdDisplayFilterSchemaTokens->displayFilterResource
+        HdDisplayFilterSchemaTokens->resource
     );
     return locator;
 }
 
 
 HdDisplayFilterSchema::Builder &
-HdDisplayFilterSchema::Builder::SetDisplayFilterResource(
-    const HdContainerDataSourceHandle &displayFilterResource)
+HdDisplayFilterSchema::Builder::SetResource(
+    const HdContainerDataSourceHandle &resource)
 {
-    _displayFilterResource = displayFilterResource;
+    _resource = resource;
     return *this;
 }
 
@@ -117,7 +117,7 @@ HdContainerDataSourceHandle
 HdDisplayFilterSchema::Builder::Build()
 {
     return HdDisplayFilterSchema::BuildRetained(
-        _displayFilterResource
+        _resource
     );
 }
 

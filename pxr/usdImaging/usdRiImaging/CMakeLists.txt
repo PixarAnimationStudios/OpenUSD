@@ -25,7 +25,6 @@ pxr_library(usdRiImaging
         ${TBB_INCLUDE_DIRS}
 
     PUBLIC_CLASSES
-        dataSourcePxrRenderTerminalPrims
         pxrBarnLightFilterAdapter
         pxrDisplayFilterAdapter
         pxrIntegratorAdapter
@@ -36,6 +35,9 @@ pxr_library(usdRiImaging
 
     PRIVATE_CLASSES
         pxrRenderTerminalHelper
+
+    PRIVATE_HEADERS
+        dataSourcePxrRenderTerminalPrims.h
 
     PUBLIC_HEADERS
         api.h

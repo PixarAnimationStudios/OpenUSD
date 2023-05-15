@@ -2532,7 +2532,7 @@ _ConvertHdMaterialNetworkToHdDataSources(
 
 template <typename SchemaType>
 static HdContainerDataSourceHandle
-_ConvertRenderTerminalOutputToHdDataSource(const VtValue &outputNodeValue)
+_ConvertRenderTerminalResourceToHdDataSource(const VtValue &outputNodeValue)
 {
     HD_TRACE_FUNCTION();
 
@@ -2694,31 +2694,22 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetIntegratorDataSource()
 {
-    VtValue integratorValue = _sceneDelegate->Get(
-        _id, HdIntegratorSchemaTokens->integratorResource);
-
-    return _ConvertRenderTerminalOutputToHdDataSource<HdIntegratorSchema>(
-                integratorValue);
+    return _ConvertRenderTerminalResourceToHdDataSource<HdIntegratorSchema>(
+                _sceneDelegate->Get(_id, HdIntegratorSchemaTokens->resource));
 }
 
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
 {
-    VtValue sampleFilterValue = _sceneDelegate->Get(
-        _id, HdSampleFilterSchemaTokens->sampleFilterResource);
-
-    return _ConvertRenderTerminalOutputToHdDataSource<HdSampleFilterSchema>(
-                sampleFilterValue);
+    return _ConvertRenderTerminalResourceToHdDataSource<HdSampleFilterSchema>(
+                _sceneDelegate->Get(_id, HdSampleFilterSchemaTokens->resource));
 }
 
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
 {
-    VtValue displayFilterValue = _sceneDelegate->Get(
-        _id, HdDisplayFilterSchemaTokens->displayFilterResource);
-
-    return _ConvertRenderTerminalOutputToHdDataSource<HdDisplayFilterSchema>(
-                displayFilterValue);
+    return _ConvertRenderTerminalResourceToHdDataSource<HdDisplayFilterSchema>(
+                _sceneDelegate->Get(_id, HdDisplayFilterSchemaTokens->resource));
 }
 
 HdDataSourceBaseHandle

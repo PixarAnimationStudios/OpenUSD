@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDSAMPLEFILTER_SCHEMA_TOKENS \
     (sampleFilter) \
-    (sampleFilterResource) \
+    (resource) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdSampleFilterSchemaTokens, HD_API,
     HDSAMPLEFILTER_SCHEMA_TOKENS);
@@ -58,7 +58,7 @@ public:
     //ACCESSORS
 
     HD_API
-    HdMaterialNodeSchema GetSampleFilterResource();
+    HdMaterialNodeSchema GetResource();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -70,7 +70,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &sampleFilterResource
+        const HdContainerDataSourceHandle &resource
     );
 
     /// \class HdSampleFilterSchema::Builder
@@ -83,15 +83,15 @@ public:
     {
     public:
         HD_API
-        Builder &SetSampleFilterResource(
-            const HdContainerDataSourceHandle &sampleFilterResource);
+        Builder &SetResource(
+            const HdContainerDataSourceHandle &resource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdContainerDataSourceHandle _sampleFilterResource;
+        HdContainerDataSourceHandle _resource;
     };
 
     /// Retrieves a container data source with the schema's default name token

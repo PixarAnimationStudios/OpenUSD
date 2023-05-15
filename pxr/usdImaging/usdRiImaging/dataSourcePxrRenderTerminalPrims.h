@@ -28,20 +28,25 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 
 #include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/usdImaging/usdRiImaging/api.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdRiImagingDataSourceIntegratorPrim
+/// \class UsdRiImaging_DataSourceRenderTerminalPrim
 ///
-/// A prim data source representing prims inheriting from 
-/// PxrSampleFilterPluginBase.
+/// A prim data source representing Render Terminal prims inheriting from 
+///     PxrDisplayFilterPluginBase, 
+///     PxrIntegratorPluginBase, 
+///     PxrSampleFilterPluginBase
 ///
-class UsdRiImagingDataSourceIntegratorPrim : public UsdImagingDataSourcePrim
+template <typename TerminalSchema>
+class UsdRiImaging_DataSourceRenderTerminalPrim : public UsdImagingDataSourcePrim
 {
 public:
-    HD_DECLARE_DATASOURCE(UsdRiImagingDataSourceIntegratorPrim);
+    HD_DECLARE_DATASOURCE(UsdRiImaging_DataSourceRenderTerminalPrim);
 
     USDRIIMAGING_API
     TfTokenVector GetNames() override;
@@ -59,84 +64,145 @@ public:
 
 private:
     // Private constructor, use static New() instead.
-    UsdRiImagingDataSourceIntegratorPrim(
+    UsdRiImaging_DataSourceRenderTerminalPrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
+        const TfToken &shaderId,
         const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+    TfToken _shaderId;
 };
 
-HD_DECLARE_DATASOURCE_HANDLES(UsdRiImagingDataSourceIntegratorPrim);
 
+namespace {
 
-/// \class UsdRiImagingDataSourceSampleFilterPrim
-///
-/// A prim data source representing prims inheriting from 
-/// PxrIntegratorPluginBase.
-///
-class UsdRiImagingDataSourceSampleFilterPrim : public UsdImagingDataSourcePrim
+static bool
+_HasInputPrefix(const TfToken &attrName, std::string *inputName=nullptr)
 {
-public:
-    HD_DECLARE_DATASOURCE(UsdRiImagingDataSourceSampleFilterPrim);
+    const std::pair<std::string, bool> strippedInputName =
+        SdfPath::StripPrefixNamespace(attrName, "inputs");
 
-    USDRIIMAGING_API
-    TfTokenVector GetNames() override;
+    if (inputName) {
+        *inputName = strippedInputName.first;
+    }
+    return strippedInputName.second;
+}
 
-    USDRIIMAGING_API
-    HdDataSourceBaseHandle Get(const TfToken &name) override;
-
-    USDRIIMAGING_API
-    static
-    HdDataSourceLocatorSet
-    Invalidate(
-        UsdPrim const& prim,
-        const TfToken &subprim,
-        const TfTokenVector &properties);
-
-private:
-    // Private constructor, use static New() instead.
-    UsdRiImagingDataSourceSampleFilterPrim(
-        const SdfPath &sceneIndexPath,
-        UsdPrim usdPrim,
-        const UsdImagingDataSourceStageGlobals &stageGlobals);
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(UsdRiImagingDataSourceSampleFilterPrim);
-
-
-/// \class UsdRiImagingDataSourceDisplayFilterPrim
-///
-/// A prim data source representing prims inheriting from 
-/// PxrDisplayFilterPluginBase.
-///
-class UsdRiImagingDataSourceDisplayFilterPrim : public UsdImagingDataSourcePrim
+static TfToken
+_GetNodeTypeId(
+    UsdPrim const& prim,
+    TfToken const& shaderId,
+    TfToken const& primType)
 {
-public:
-    HD_DECLARE_DATASOURCE(UsdRiImagingDataSourceDisplayFilterPrim);
+    UsdAttribute attr = prim.GetAttribute(shaderId);
+    if (attr) {
+        VtValue value;
+        if (attr.Get(&value)) {
+            if (value.IsHolding<TfToken>()) {
+                return value.UncheckedGet<TfToken>();
+            }
+        }
+    }
+    return primType;
+}
 
-    USDRIIMAGING_API
-    TfTokenVector GetNames() override;
+static HdContainerDataSourceHandle
+_ComputeResourceDS(
+    UsdPrim const& prim,
+    TfToken const& shaderId,
+    TfToken const& primType)
+{
+    std::vector<TfToken> paramsNames;
+    std::vector<HdDataSourceBaseHandle> paramsValues;
 
-    USDRIIMAGING_API
-    HdDataSourceBaseHandle Get(const TfToken &name) override;
+    UsdAttributeVector attrs = prim.GetAuthoredAttributes();
+    for (const auto& attr : attrs) {
+        VtValue value;
+        std::string inputName;
+        if (_HasInputPrefix(attr.GetName(), &inputName) && attr.Get(&value)) {
+            paramsNames.push_back(TfToken(inputName));
+            paramsValues.push_back(
+                HdRetainedTypedSampledDataSource<VtValue>::New(value)
+            );
+        }
+    }
 
-    USDRIIMAGING_API
-    static
-    HdDataSourceLocatorSet
-    Invalidate(
-        UsdPrim const& prim,
-        const TfToken &subprim,
-        const TfTokenVector &properties);
+    HdContainerDataSourceHandle nodeDS =
+        HdMaterialNodeSchema::Builder()
+            .SetParameters(
+                HdRetainedContainerDataSource::New(
+                    paramsNames.size(), 
+                    paramsNames.data(),
+                    paramsValues.data()))
+            .SetNodeIdentifier(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    _GetNodeTypeId(prim, shaderId, primType)))
+        .Build();
+    
+    return nodeDS;
+}
 
-private:
+}
 
-    // Private constructor, use static New() instead.
-    UsdRiImagingDataSourceDisplayFilterPrim(
-        const SdfPath &sceneIndexPath,
-        UsdPrim usdPrim,
-        const UsdImagingDataSourceStageGlobals &stageGlobals);
-};
 
-HD_DECLARE_DATASOURCE_HANDLES(UsdRiImagingDataSourceDisplayFilterPrim);
+template <typename TerminalSchema>
+UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::
+UsdRiImaging_DataSourceRenderTerminalPrim(
+    const SdfPath &sceneIndexPath,
+    UsdPrim usdPrim,
+    const TfToken &shaderId,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+    : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
+    , _shaderId(shaderId)
+{
+}
+
+template <typename TerminalSchema>
+TfTokenVector 
+UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::GetNames()
+{
+    // Note: Skip properties on UsdImagingDataSourcePrim.
+    return { TerminalSchema::GetSchemaToken() };
+}
+
+template <typename TerminalSchema>
+HdDataSourceBaseHandle 
+UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Get(
+    const TfToken & name)
+{
+    if (name == TerminalSchema::GetSchemaToken()) {
+        return 
+            HdRetainedContainerDataSource::New(
+                TfToken("resource"),
+                _ComputeResourceDS(_GetUsdPrim(), _shaderId, name));
+    }
+
+    // Note: Skip properties on UsdImagingDataSourcePrim.
+    return nullptr;
+}
+
+template <typename TerminalSchema>
+HdDataSourceLocatorSet
+UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties)
+{
+    TRACE_FUNCTION();
+
+    HdDataSourceLocatorSet locators;
+    for (const TfToken &propertyName : properties) {
+        // Properties with the "inputs" prefix are aggregated under the Resource
+        if (_HasInputPrefix(propertyName)) {
+            locators.insert(TerminalSchema::GetResourceLocator());
+        }
+        // Note: Skip UsdImagingDataSourcePrim::Invalidate(...)
+        // since none of the "base" set of properties are relevant here.
+    }
+
+    return locators;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

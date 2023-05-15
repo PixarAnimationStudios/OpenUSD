@@ -42,25 +42,25 @@ TF_DEFINE_PUBLIC_TOKENS(HdSampleFilterSchemaTokens,
 
 
 HdMaterialNodeSchema
-HdSampleFilterSchema::GetSampleFilterResource()
+HdSampleFilterSchema::GetResource()
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdSampleFilterSchemaTokens->sampleFilterResource));
+        HdSampleFilterSchemaTokens->resource));
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdSampleFilterSchema::BuildRetained(
-        const HdContainerDataSourceHandle &sampleFilterResource
+        const HdContainerDataSourceHandle &resource
 )
 {
     TfToken names[1];
     HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (sampleFilterResource) {
-        names[count] = HdSampleFilterSchemaTokens->sampleFilterResource;
-        values[count++] = sampleFilterResource;
+    if (resource) {
+        names[count] = HdSampleFilterSchemaTokens->resource;
+        values[count++] = resource;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -99,17 +99,17 @@ HdSampleFilterSchema::GetResourceLocator()
 {
     static const HdDataSourceLocator locator(
         HdSampleFilterSchemaTokens->sampleFilter,
-        HdSampleFilterSchemaTokens->sampleFilterResource
+        HdSampleFilterSchemaTokens->resource
     );
     return locator;
 }
 
 
 HdSampleFilterSchema::Builder &
-HdSampleFilterSchema::Builder::SetSampleFilterResource(
-    const HdContainerDataSourceHandle &sampleFilterResource)
+HdSampleFilterSchema::Builder::SetResource(
+    const HdContainerDataSourceHandle &resource)
 {
-    _sampleFilterResource = sampleFilterResource;
+    _resource = resource;
     return *this;
 }
 
@@ -117,7 +117,7 @@ HdContainerDataSourceHandle
 HdSampleFilterSchema::Builder::Build()
 {
     return HdSampleFilterSchema::BuildRetained(
-        _sampleFilterResource
+        _resource
     );
 }
 

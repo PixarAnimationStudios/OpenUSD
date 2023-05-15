@@ -29,6 +29,7 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/sampleFilterSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/gf/vec4f.h"
 
@@ -36,8 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((sampleFilterShaderId, "ri:sampleFilter:shaderId"))
-    (sampleFilterResource)
+    ((riSampleFilterShaderId, "ri:sampleFilter:shaderId"))
 );
 
 
@@ -81,8 +81,10 @@ UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimData(
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceSampleFilterPrim::New(
-                    prim.GetPath(), prim, stageGlobals);
+        return 
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
+                New(prim.GetPath(), prim,
+                    _tokens->riSampleFilterShaderId, stageGlobals);
     }
 
     return nullptr;
@@ -95,8 +97,9 @@ UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
     TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceSampleFilterPrim::Invalidate(
-            prim, subprim, properties);
+        return 
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
+                Invalidate(prim, subprim, properties);
     }
 
     return HdDataSourceLocatorSet();
@@ -197,11 +200,11 @@ UsdRiImagingPxrSampleFilterAdapter::Get(
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (key == _tokens->sampleFilterResource) {
+    if (key == HdSampleFilterSchemaTokens->resource) {
         return VtValue(
             UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
                 prim,
-                _tokens->sampleFilterShaderId,
+                _tokens->riSampleFilterShaderId,
                 HdPrimTypeTokens->sampleFilter));
     }
 

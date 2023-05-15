@@ -28,6 +28,7 @@
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/gf/vec4f.h"
@@ -36,8 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((integratorShaderId, "ri:integrator:shaderId"))
-    (integratorResource)
+    ((riIntegratorShaderId, "ri:integrator:shaderId"))
 );
 
 
@@ -80,8 +80,10 @@ UsdRiImagingPxrIntegratorAdapter::GetImagingSubprimData(
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceIntegratorPrim::New(
-                    prim.GetPath(), prim, stageGlobals);
+        return 
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdIntegratorSchema>::New(
+                prim.GetPath(), prim,
+                _tokens->riIntegratorShaderId, stageGlobals);
     }
 
     return nullptr;
@@ -94,8 +96,9 @@ UsdRiImagingPxrIntegratorAdapter::InvalidateImagingSubprim(
     TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return UsdRiImagingDataSourceIntegratorPrim::Invalidate(
-            prim, subprim, properties);
+        return 
+            UsdRiImaging_DataSourceRenderTerminalPrim<HdIntegratorSchema>::
+                Invalidate(prim, subprim, properties);
     }
 
     return HdDataSourceLocatorSet();
@@ -197,11 +200,11 @@ UsdRiImagingPxrIntegratorAdapter::Get(
     UsdTimeCode time,
     VtIntArray *outIndices) const
 {
-    if (key == _tokens->integratorResource) {
+    if (key == HdIntegratorSchemaTokens->resource) {
         return VtValue(
             UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
                 prim,
-                _tokens->integratorShaderId,
+                _tokens->riIntegratorShaderId,
                 HdPrimTypeTokens->integrator));
     }
 

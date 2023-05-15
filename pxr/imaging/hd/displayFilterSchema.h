@@ -42,7 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDDISPLAYFILTER_SCHEMA_TOKENS \
     (displayFilter) \
-    (displayFilterResource) \
+    (resource) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens, HD_API,
     HDDISPLAYFILTER_SCHEMA_TOKENS);
@@ -58,7 +58,7 @@ public:
     //ACCESSORS
 
     HD_API
-    HdMaterialNodeSchema GetDisplayFilterResource();
+    HdMaterialNodeSchema GetResource();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -70,7 +70,7 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &displayFilterResource
+        const HdContainerDataSourceHandle &resource
     );
 
     /// \class HdDisplayFilterSchema::Builder
@@ -83,15 +83,15 @@ public:
     {
     public:
         HD_API
-        Builder &SetDisplayFilterResource(
-            const HdContainerDataSourceHandle &displayFilterResource);
+        Builder &SetResource(
+            const HdContainerDataSourceHandle &resource);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdContainerDataSourceHandle _displayFilterResource;
+        HdContainerDataSourceHandle _resource;
     };
 
     /// Retrieves a container data source with the schema's default name token

@@ -1444,10 +1444,23 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
     return VtValue();
 }
 
+template <typename TerminalSchema>
 VtValue
-_ToRenderTerminalOutputResource(HdMaterialNodeSchema &nodeSchema)
+_GetRenderTerminalResource(HdSceneIndexPrim prim)
 {
-    // Convert HdDataSource with material node data to a HdMaterialNode2
+    TRACE_FUNCTION();
+
+    // Get Render Terminal Resource as a HdMaterialNodeSchema
+    TerminalSchema schema = TerminalSchema::GetFromParent(prim.dataSource);
+    if (!schema.IsDefined()) {
+        return VtValue();
+    }
+    HdMaterialNodeSchema nodeSchema = schema.GetResource();
+    if (!nodeSchema.IsDefined()) {
+        return VtValue();
+    }
+
+    // Convert Terminal Resource with material node data to a HdMaterialNode2
     HdMaterialNode2 hdNode2;
     HdTokenDataSourceHandle nodeTypeDS = nodeSchema.GetNodeIdentifier();
     if (nodeTypeDS) {
@@ -1471,60 +1484,6 @@ _ToRenderTerminalOutputResource(HdMaterialNodeSchema &nodeSchema)
     hdNode2.parameters = hdParams;
 
     return VtValue(hdNode2);
-}
-
-VtValue
-_GetIntegratorResource(HdSceneIndexPrim prim)
-{
-    TRACE_FUNCTION();
-
-    HdIntegratorSchema integratorSchema = 
-        HdIntegratorSchema::GetFromParent(prim.dataSource);
-    if (!integratorSchema.IsDefined()) {
-        return VtValue();
-    }
-    HdMaterialNodeSchema nodeSchema = integratorSchema.GetIntegratorResource();
-    if (!nodeSchema.IsDefined()) {
-        return VtValue();
-    }
-
-    return _ToRenderTerminalOutputResource(nodeSchema);
-}
-
-VtValue
-_GetSampleFilterResource(HdSceneIndexPrim prim)
-{
-    TRACE_FUNCTION();
-
-    HdSampleFilterSchema filterSchema = 
-        HdSampleFilterSchema::GetFromParent(prim.dataSource);
-    if (!filterSchema.IsDefined()) {
-        return VtValue();
-    }
-    HdMaterialNodeSchema nodeSchema = filterSchema.GetSampleFilterResource();
-    if (!nodeSchema.IsDefined()) {
-        return VtValue();
-    }
-
-    return _ToRenderTerminalOutputResource(nodeSchema);
-}
-
-VtValue
-_GetDisplayFilterResource(HdSceneIndexPrim prim)
-{
-    TRACE_FUNCTION();
-
-    HdDisplayFilterSchema filterSchema =
-        HdDisplayFilterSchema::GetFromParent(prim.dataSource);
-    if (!filterSchema.IsDefined()) {
-        return VtValue();
-    }
-    HdMaterialNodeSchema nodeSchema = filterSchema.GetDisplayFilterResource();
-    if (!nodeSchema.IsDefined()) {
-        return VtValue();
-    }
-
-    return _ToRenderTerminalOutputResource(nodeSchema);
 }
 
 HdInterpolation
@@ -1823,24 +1782,24 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
 
     // integrator use of Get().
     if (prim.primType == HdPrimTypeTokens->integrator) {
-        if (key == HdIntegratorSchemaTokens->integratorResource) {
-            return _GetIntegratorResource(prim);
+        if (key == HdIntegratorSchemaTokens->resource) {
+            return _GetRenderTerminalResource<HdIntegratorSchema>(prim);
         }
         return VtValue();
     }
 
     // sampleFilter use of Get().
     if (prim.primType == HdPrimTypeTokens->sampleFilter) {
-        if (key == HdSampleFilterSchemaTokens->sampleFilterResource) {
-            return _GetSampleFilterResource(prim);
+        if (key == HdSampleFilterSchemaTokens->resource) {
+            return _GetRenderTerminalResource<HdSampleFilterSchema>(prim);
         }
         return VtValue();
     }
 
     // displayFilter use of Get().
     if (prim.primType == HdPrimTypeTokens->displayFilter) {
-        if (key == HdDisplayFilterSchemaTokens->displayFilterResource) {
-            return _GetDisplayFilterResource(prim);
+        if (key == HdDisplayFilterSchemaTokens->resource) {
+            return _GetRenderTerminalResource<HdDisplayFilterSchema>(prim);
         }
         return VtValue();
     }
