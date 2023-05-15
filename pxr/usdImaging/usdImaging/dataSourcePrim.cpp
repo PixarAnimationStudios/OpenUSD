@@ -143,10 +143,10 @@ UsdImagingDataSourcePurpose::Get(const TfToken &name)
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourceExtentCoordinate::UsdImagingDataSourceExtentCoordinate(
-        const HdVec3fArrayDataSourceHandle &extentAttr,
+        const HdVec3fArrayDataSourceHandle &extentDs,
         const SdfPath &attrPath,
         unsigned int index)
-    : _extentAttr(extentAttr)
+    : _extentDs(extentDs)
     , _attrPath(attrPath)
     , _index(index)
 {
@@ -167,7 +167,7 @@ UsdImagingDataSourceExtentCoordinate::GetTypedValue(
     // datasource code if it were only doing the indexing.  Here, we're jumping
     // through some extra hoops to cast it up to vec3d rather than vec3f,
     // since that's what hydra expects.
-    VtVec3fArray raw = _extentAttr->GetTypedValue(shutterOffset);
+    const VtVec3fArray raw = _extentDs->GetTypedValue(shutterOffset);
     if (_index >= raw.size()) {
         TF_WARN("<%s> Attribute does not have expected index entry %d",
                 _attrPath.GetText(), _index);
@@ -184,7 +184,7 @@ UsdImagingDataSourceExtentCoordinate::GetContributingSampleTimesForInterval(
         HdSampledDataSource::Time endTime,
         std::vector<HdSampledDataSource::Time> * outSampleTimes)
 {
-    return _extentAttr->GetContributingSampleTimesForInterval(
+    return _extentDs->GetContributingSampleTimesForInterval(
             startTime, endTime, outSampleTimes);
 }
 
@@ -201,14 +201,14 @@ UsdImagingDataSourceExtent::UsdImagingDataSourceExtent(
     }
 
     _attrPath = extentQuery.GetAttribute().GetPath();
-    _extentAttr = HdVec3fArrayDataSource::Cast(
+    _extentDs = HdVec3fArrayDataSource::Cast(
             UsdImagingDataSourceAttributeNew(extentQuery, stageGlobals));
 }
 
 TfTokenVector
 UsdImagingDataSourceExtent::GetNames()
 {
-    if (!_extentAttr) {
+    if (!_extentDs) {
         return {};
     }
 
@@ -222,19 +222,66 @@ HdDataSourceBaseHandle
 UsdImagingDataSourceExtent::Get(const TfToken &name)
 {
     // If the extents attr hasn't been defined, this prim has no extents.
-    if (!_extentAttr) {
+    if (!_extentDs) {
         return nullptr;
     }
 
     if (name == HdExtentSchemaTokens->min) {
         return UsdImagingDataSourceExtentCoordinate::New(
-                _extentAttr, _attrPath, 0);
+                _extentDs, _attrPath, 0);
     } else if (name == HdExtentSchemaTokens->max) {
         return UsdImagingDataSourceExtentCoordinate::New(
-                _extentAttr, _attrPath, 1);
+                _extentDs, _attrPath, 1);
     }
 
     return nullptr;
+}
+
+// ----------------------------------------------------------------------------
+
+UsdImagingDataSourceExtentsHint::UsdImagingDataSourceExtentsHint(
+        const UsdAttributeQuery &extentQuery,
+        const SdfPath &sceneIndexPath,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (extentQuery.ValueMightBeTimeVarying()) {
+        static const HdDataSourceLocator locator(
+            UsdImagingTokens->extentsHint);
+        stageGlobals.FlagAsTimeVarying(sceneIndexPath, locator);
+    }
+
+    _attrPath = extentQuery.GetAttribute().GetPath();
+    _extentDs = HdVec3fArrayDataSource::Cast(
+            UsdImagingDataSourceAttributeNew(extentQuery, stageGlobals));
+}
+
+size_t
+UsdImagingDataSourceExtentsHint::GetNumElements()
+{
+    if (!_extentDs) {
+        return {};
+    }
+
+    return _extentDs->GetTypedValue(0.0f).size() / 2;
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourceExtentsHint::GetElement(const size_t element)
+{
+    // If the extents attr hasn't been defined, this prim has no extents.
+    if (!_extentDs) {
+        return nullptr;
+    }
+
+    return
+        HdExtentSchema::Builder()
+            .SetMin(
+                UsdImagingDataSourceExtentCoordinate::New(
+                    _extentDs, _attrPath, 2 * element))
+            .SetMax(
+                UsdImagingDataSourceExtentCoordinate::New(
+                    _extentDs, _attrPath, 2 * element + 1))
+            .Build();
 }
 
 // ----------------------------------------------------------------------------
@@ -616,6 +663,10 @@ UsdImagingDataSourcePrim::GetNames()
         vec.push_back(HdModelSchemaTokens->model);
     }
 
+    if (_GetUsdPrim().IsModel()) {
+        vec.push_back(UsdImagingTokens->extentsHint);
+    }
+
     vec.push_back(UsdImagingUsdPrimInfoSchema::GetSchemaToken());
     vec.push_back(HdPrimOriginSchema::GetSchemaToken());
     vec.push_back(HdPrimvarsSchema::GetSchemaToken());
@@ -686,7 +737,9 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         UsdAttributeQuery extentQuery(boundable.GetExtentAttr());
         if (extentQuery.HasAuthoredValue()) {
             return UsdImagingDataSourceExtent::New(
-                extentQuery, _sceneIndexPath, _GetStageGlobals());
+                extentQuery,
+                _sceneIndexPath,
+                _GetStageGlobals());
         } else {
             return nullptr;
         }
@@ -697,6 +750,20 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         }
         return UsdImagingDataSourceModel::New(
             model, _sceneIndexPath, _GetStageGlobals());
+    } else if (name == UsdImagingTokens->extentsHint) {
+        if (!_GetUsdPrim().IsModel()) {
+            return nullptr;
+        }
+
+        UsdGeomModelAPI model(_GetUsdPrim());
+        UsdAttributeQuery extentsHintQuery(model.GetExtentsHintAttr());
+        if (!extentsHintQuery.HasAuthoredValue()) {
+            return nullptr;
+        }
+        return UsdImagingDataSourceExtentsHint::New(
+            extentsHintQuery,
+            _sceneIndexPath,
+            _stageGlobals);
     } else if (name == UsdImagingUsdPrimInfoSchema::GetSchemaToken()) {
         return UsdImagingDataSourceUsdPrimInfo::New(
             _GetUsdPrim());
@@ -734,7 +801,13 @@ UsdImagingDataSourcePrim::Invalidate(
             locators.insert(HdExtentSchema::GetDefaultLocator());
         }
 
-        // TODO: Should all this model stuff go somewhere else?
+        if (propertyName == UsdGeomTokens->extentsHint) {
+            static const HdDataSourceLocator locator(
+                UsdImagingTokens->extentsHint);
+            locators.insert(locator);
+        }
+
+        // TODO: Move these into UsdImagingDataSourceModel::Invalidate.
 
         if (propertyName == UsdGeomTokens->modelDrawMode) {
             static const HdDataSourceLocator locator(

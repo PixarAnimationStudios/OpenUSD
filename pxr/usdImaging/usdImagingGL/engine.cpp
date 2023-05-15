@@ -26,10 +26,12 @@
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
 
@@ -128,22 +130,22 @@ UsdImagingGLEngine::UsdImagingGLEngine(
       params.sceneDelegateID,
       params.driver,
       params.rendererPluginId,
-      params.gpuEnabled)
+      params.gpuEnabled,
+      params.displayUnloadedPrimsWithBounds)
 {
 }
 
 UsdImagingGLEngine::UsdImagingGLEngine(
     const HdDriver& driver,
     const TfToken& rendererPluginId,
-    bool gpuEnabled)
+    const bool gpuEnabled)
     : UsdImagingGLEngine(SdfPath::AbsoluteRootPath(),
             {},
             {},
             _GetUsdImagingDelegateId(),
             driver,
             rendererPluginId,
-            gpuEnabled
-        )
+            gpuEnabled)
 {
 }
 
@@ -154,9 +156,11 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const SdfPath& sceneDelegateID,
     const HdDriver& driver,
     const TfToken& rendererPluginId,
-    bool gpuEnabled)
+    const bool gpuEnabled,
+    const bool displayUnloadedPrimsWithBounds)
     : _hgi()
     , _hgiDriver(driver)
+    , _displayUnloadedPrimsWithBounds(displayUnloadedPrimsWithBounds)
     , _gpuEnabled(gpuEnabled)
     , _sceneDelegateId(sceneDelegateID)
     , _selTracker(std::make_shared<HdxSelectionTracker>())
@@ -191,7 +195,9 @@ UsdImagingGLEngine::_DestroyHydraObjects()
         if (_renderIndex && _sceneIndex) {
             _renderIndex->RemoveSceneIndex(_sceneIndex);
             _stageSceneIndex = nullptr;
+            _rootOverridesSceneIndex = nullptr;
             _selectionSceneIndex = nullptr;
+            _displayStyleSceneIndex = nullptr;
             _sceneIndex = nullptr;
         }
     } else {
@@ -1031,9 +1037,31 @@ UsdImagingGLEngine::_SetRenderDelegate(
         _sceneGlobalsSceneIndex, SdfPath::AbsoluteRootPath());
 
     if (_GetUseSceneIndices()) {
+        HdContainerDataSourceHandle const stageInputArgs =
+            HdRetainedContainerDataSource::New(
+                UsdImagingStageSceneIndexTokens->includeUnloadedPrims,
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    _displayUnloadedPrimsWithBounds));
+
         // Create the scene index graph.
         _sceneIndex = _stageSceneIndex =
-            UsdImagingStageSceneIndex::New();
+            UsdImagingStageSceneIndex::New(stageInputArgs);
+
+        // Use extentsHint for default_/geometry purpose
+        HdContainerDataSourceHandle const extentInputArgs =
+            HdRetainedContainerDataSource::New(
+                UsdGeomTokens->purpose,
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    UsdGeomTokens->default_));
+
+        _sceneIndex =
+            UsdImagingExtentResolvingSceneIndex::New(
+                _sceneIndex, extentInputArgs);
+
+        if (_displayUnloadedPrimsWithBounds) {
+            _sceneIndex =
+                UsdImagingUnloadedDrawModeSceneIndex::New(_sceneIndex);
+        }
 
         _sceneIndex = _rootOverridesSceneIndex =
             UsdImagingRootOverridesSceneIndex::New(_sceneIndex);
@@ -1064,6 +1092,9 @@ UsdImagingGLEngine::_SetRenderDelegate(
     } else {
         _sceneDelegate = std::make_unique<UsdImagingDelegate>(
                 _renderIndex.get(), _sceneDelegateId);
+
+        _sceneDelegate->SetDisplayUnloadedPrimsWithBounds(
+            _displayUnloadedPrimsWithBounds);
     }
 
     _taskController = std::make_unique<HdxTaskController>(

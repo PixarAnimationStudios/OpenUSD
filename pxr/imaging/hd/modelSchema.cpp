@@ -200,7 +200,8 @@ const TfToken &
 HdModelSchema::GetSchemaToken()
 {
     return HdModelSchemaTokens->model;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdModelSchema::GetDefaultLocator()

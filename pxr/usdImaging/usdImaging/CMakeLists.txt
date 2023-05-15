@@ -52,6 +52,7 @@ pxr_library(usdImaging
         delegate
         drawModeAdapter
         drawModeSceneIndex
+        extentResolvingSceneIndex
         indexProxy
         materialParamUtils
         primvarUtils
@@ -99,6 +100,7 @@ pxr_library(usdImaging
         primAdapter
         primvarDescCache
         rootOverridesSceneIndex
+        unloadedDrawModeSceneIndex
         usdPrimInfoSchema
         usdRenderProductSchema
         usdRenderSettingsSchema

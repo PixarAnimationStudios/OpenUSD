@@ -107,6 +107,9 @@ public:
         /// The \p gpuEnabled argument determines if this instance will allow Hydra
         /// to use the GPU to produce images.
         bool gpuEnabled = true;
+        /// \p displayUnloadedPrimsWithBounds draws bounding boxes for unloaded
+        /// prims if they have extents/extentsHint authored.
+        bool displayUnloadedPrimsWithBounds = false;
     };
 
     // ---------------------------------------------------------------------
@@ -138,7 +141,8 @@ public:
                                         SdfPath::AbsoluteRootPath(),
                        const HdDriver& driver = HdDriver(),
                        const TfToken& rendererPluginId = TfToken(),
-                       bool gpuEnabled = true);
+                       bool gpuEnabled = true,
+                       bool displayUnloadedPrimsWithBounds = false);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -668,6 +672,7 @@ protected:
     VtValue _userFramebuffer;
 
 protected:
+    bool _displayUnloadedPrimsWithBounds;
     bool _gpuEnabled;
     HdPluginRenderDelegateUniqueHandle _renderDelegate;
     std::unique_ptr<HdRenderIndex> _renderIndex;

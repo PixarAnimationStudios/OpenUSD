@@ -45,7 +45,8 @@ class UsdImagingGL_UnitTestWindow;
 ///
 /// A helper class for unit tests which need to perform GL drawing.
 ///
-class UsdImagingGL_UnitTestGLDrawing {
+class UsdImagingGL_UnitTestGLDrawing
+{
 public:
     UsdImagingGL_UnitTestGLDrawing();
     virtual ~UsdImagingGL_UnitTestGLDrawing();
@@ -127,11 +128,6 @@ protected:
                  const UsdImagingGLRenderParams &params) {
         SdfPathVector roots(1, SdfPath::AbsoluteRootPath());
         engine->RenderBatch(roots, params);
-    }
-
-    void _SetDisplayUnloadedPrimsWithBounds(UsdImagingGLEngine *engine,
-                                            bool enable) {
-        engine->_sceneDelegate->SetDisplayUnloadedPrimsWithBounds(enable);
     }
 
 private:

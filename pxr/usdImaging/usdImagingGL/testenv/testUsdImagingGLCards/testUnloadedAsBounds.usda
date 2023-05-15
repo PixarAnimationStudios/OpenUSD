@@ -7,11 +7,13 @@ def Xform "World" (
     kind = "group"
 )
 {
+    # The UsdImagingDelegate honored extentsHint if a prim was a model
+    # even if the GeomModelAPI was not applied.
+    # Test for this behavior here to ensure backwards compatibility.
     def Xform "Sphere2" (
         kind = "component"
         prepend payload = @./sphere.usda@</Sphere>
         instanceable = true
-        prepend apiSchemas = ["GeomModelAPI"]
     )
     {
         custom double3 xformOp:translate = (-2, 0, 0)

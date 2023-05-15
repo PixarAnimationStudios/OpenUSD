@@ -37,6 +37,12 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#define USDIMAGING_STAGE_SCENE_INDEX_TOKENS \
+    (includeUnloadedPrims)                  \
+
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingStageSceneIndexTokens, USDIMAGING_API,
+                         USDIMAGING_STAGE_SCENE_INDEX_TOKENS);
+
 using UsdImagingPrimAdapterSharedPtr =
     std::shared_ptr<class UsdImagingPrimAdapter>;
 class UsdImaging_AdapterManager;
@@ -46,9 +52,9 @@ TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 class UsdImagingStageSceneIndex : public HdSceneIndexBase
 {
 public:
-
-    static UsdImagingStageSceneIndexRefPtr New() {
-        return TfCreateRefPtr(new UsdImagingStageSceneIndex());
+    static UsdImagingStageSceneIndexRefPtr New(
+                    HdContainerDataSourceHandle const &inputArgs = nullptr) {
+        return TfCreateRefPtr(new UsdImagingStageSceneIndex(inputArgs));
     }
 
     USDIMAGING_API
@@ -89,7 +95,7 @@ public:
 
 private:
     USDIMAGING_API
-    UsdImagingStageSceneIndex();
+    UsdImagingStageSceneIndex(HdContainerDataSourceHandle const &inputArgs);
 
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
@@ -130,6 +136,8 @@ private:
 
         UsdTimeCode _time;
     };
+
+    const bool _includeUnloadedPrims;
 
     UsdStageRefPtr _stage;
     _StageGlobals _stageGlobals;

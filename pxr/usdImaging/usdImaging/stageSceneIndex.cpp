@@ -32,10 +32,14 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
 #include "pxr/base/tf/denseHashSet.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_PUBLIC_TOKENS(UsdImagingStageSceneIndexTokens,
+                        USDIMAGING_STAGE_SCENE_INDEX_TOKENS);
 
 namespace
 {
@@ -191,12 +195,30 @@ _InvalidateImagingSubprim(
     return result;
 }
 
+bool
+_GetIncludeUnloadedPrims(HdContainerDataSourceHandle const &inputArgs)
+{
+    if (!inputArgs) {
+        return false;
+    }
+    HdBoolDataSourceHandle const ds =
+        HdBoolDataSource::Cast(
+            inputArgs->Get(
+                UsdImagingStageSceneIndexTokens->includeUnloadedPrims));
+    if (!ds) {
+        return false;
+    }
+    return ds->GetTypedValue(0.0f);
+}
+
 }
 
 // ---------------------------------------------------------------------------
 
-UsdImagingStageSceneIndex::UsdImagingStageSceneIndex()
-  : _adapterManager(std::make_unique<UsdImaging_AdapterManager>())
+UsdImagingStageSceneIndex::UsdImagingStageSceneIndex(
+        HdContainerDataSourceHandle const &inputArgs)
+  : _includeUnloadedPrims(_GetIncludeUnloadedPrims(inputArgs))
+  , _adapterManager(std::make_unique<UsdImaging_AdapterManager>())
 {
 }
 
@@ -442,7 +464,15 @@ UsdImagingStageSceneIndex::_GetTraversalPredicate() const
     // The UsdImaging_NiPrototypeSceneIndex is doing something similar for
     // native instances.
     //
-    return UsdPrimIsActive && UsdPrimIsLoaded && !UsdPrimIsAbstract;
+
+    static const Usd_PrimFlagsConjunction commonFlags =
+        UsdPrimIsActive && !UsdPrimIsAbstract;
+
+    if (_includeUnloadedPrims) {
+        return commonFlags;
+    } else {
+        return commonFlags && UsdPrimIsLoaded;
+    }
 }
 
 // ---------------------------------------------------------------------------
