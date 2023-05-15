@@ -467,9 +467,9 @@ _HgiTextureCanBeFiltered(HgiTextureDesc descriptor)
     bool const is3DTex = (type == HgiTextureType3D);
     HgiFormat const format = descriptor.format;
     bool const dimensionsCompatible =
-        (is1DTex && dims[0] > 1) ||
-        (is2DTex && dims[0] > 1 && dims[1] > 1) ||
-        (is3DTex && dims[0] > 1 && dims[1] > 1 && dims[2] > 1);
+        (is1DTex && (dims[0] > 1)) ||
+        (is2DTex && (dims[0] > 1 || dims[1] > 1)) ||
+        (is3DTex && (dims[0] > 1 || dims[1] > 1 || dims[2] > 1));
 
     return dimensionsCompatible;
 }
