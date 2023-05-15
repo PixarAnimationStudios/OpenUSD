@@ -567,6 +567,11 @@ public:
     USDIMAGING_API
     TfToken GetModelDrawMode(UsdPrim const& prim);
 
+    /// Gets the model draw mode object for the given prim, walking up the 
+    /// namespace if necessary.
+    USDIMAGING_API
+    HdModelDrawMode GetFullModelDrawMode(UsdPrim const& prim);
+
     /// Computes the per-prototype instance indices for a UsdGeomPointInstancer.
     /// XXX: This needs to be defined on the base class, to have access to the
     /// delegate, but it's a clear violation of abstraction.  This call is only

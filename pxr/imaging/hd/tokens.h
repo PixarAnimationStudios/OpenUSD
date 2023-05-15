@@ -156,6 +156,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (backUnlessDoubleSided) \
     (frontUnlessDoubleSided)
 
+#define HD_MODEL_DRAWMODE_TOKENS                \
+    (inherited)                                 \
+    (origin)                                    \
+    (bounds)                                    \
+    (cards)                                     \
+    ((default_, "default"))                     \
+    (cross)                                     \
+    (box)                                       \
+    (fromTexture)     
+
 #define HD_PERF_TOKENS                          \
     (adjacencyBufSize)                          \
     (basisCurvesTopology)                       \
@@ -436,6 +446,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdCullStyleTokens, HD_API, HD_CULLSTYLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdModelDrawModeTokens, HD_API,
+                         HD_MODEL_DRAWMODE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);

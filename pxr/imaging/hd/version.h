@@ -66,7 +66,8 @@
 //           argument needsPrefixing
 // 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
 //           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
-#define HD_API_VERSION 49
+// 49 -> 50: Added HdModelDrawMode struct and getter API to HdSceneDelegate.
+#define HD_API_VERSION 50
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

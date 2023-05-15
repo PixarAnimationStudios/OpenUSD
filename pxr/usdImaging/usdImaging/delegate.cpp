@@ -2115,6 +2115,21 @@ UsdImagingDelegate::GetDisplayStyle(SdfPath const& id)
     return HdDisplayStyle(GetRefineLevelFallback());
 }
 
+/*virtual*/ 
+HdModelDrawMode 
+UsdImagingDelegate::GetModelDrawMode(SdfPath const& id) 
+{
+    HdModelDrawMode model;
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        model = primInfo->adapter->GetFullModelDrawMode(primInfo->usdPrim);
+    }
+    
+    return model;
+}
+
 void
 UsdImagingDelegate::SetRefineLevelFallback(int level) 
 { 

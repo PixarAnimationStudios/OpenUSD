@@ -1479,6 +1479,63 @@ UsdImagingPrimAdapter::GetModelDrawMode(UsdPrim const& prim)
     return _delegate->_GetModelDrawMode(prim);
 }
 
+namespace {
+template<typename T>
+T
+_GetAttrValue(UsdAttribute const& attr, T defaultVal) {
+    if (attr) {
+        VtValue val;
+        attr.Get(&val);
+        if (!val.IsEmpty()) {
+            return val.UncheckedGet<T>();
+        }
+    }
+    return defaultVal;
+}
+} // anonymous namespace
+
+HdModelDrawMode
+UsdImagingPrimAdapter::GetFullModelDrawMode(UsdPrim const& prim)
+{
+    HdModelDrawMode modelDrawMode;
+
+    if (!prim.IsModel()) {
+        return modelDrawMode;
+    }
+
+    // Use UsdImagingDelegate methods for consistency of logic.
+    modelDrawMode.drawMode = GetModelDrawMode(prim);
+    modelDrawMode.applyDrawMode = _delegate->_IsDrawModeApplied(prim);
+
+    UsdGeomModelAPI geomModelAPI(prim);
+
+    modelDrawMode.drawModeColor = _GetAttrValue<GfVec3f>(
+        geomModelAPI.GetModelDrawModeColorAttr(), GfVec3f(0.18));
+
+    modelDrawMode.cardGeometry = _GetAttrValue<TfToken>(
+        geomModelAPI.GetModelCardGeometryAttr(), modelDrawMode.cardGeometry);
+
+    modelDrawMode.cardTextureXPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureXPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureYPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureYPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureZPos = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureZPosAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureXNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureXNegAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureYNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureYNegAttr(), SdfAssetPath());
+    
+    modelDrawMode.cardTextureZNeg = _GetAttrValue<SdfAssetPath>(
+        geomModelAPI.GetModelCardTextureZNegAttr(), SdfAssetPath());  
+
+    return modelDrawMode;
+}
+
 /*virtual*/ 
 VtValue 
 UsdImagingPrimAdapter::GetTopology(UsdPrim const& prim,

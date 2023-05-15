@@ -328,6 +328,9 @@ public:
     virtual HdDisplayStyle GetDisplayStyle(SdfPath const& id) override;
 
     USDIMAGING_API
+    HdModelDrawMode GetModelDrawMode(SdfPath const& id) override;
+
+    USDIMAGING_API
     virtual VtValue Get(SdfPath const& id, TfToken const& key) override;
     USDIMAGING_API
     virtual VtValue GetIndexedPrimvar(SdfPath const& id, 
