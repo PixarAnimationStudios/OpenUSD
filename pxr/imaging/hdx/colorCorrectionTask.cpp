@@ -1059,6 +1059,11 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
             }
 
             // Start a background task to prepare OCIO resources.
+            // It is possible for the prior prep task to have not
+            // yet completed, so cancel and wait on it before enqueuing
+            // a new task with updated parameters.
+            _workDispatcher.Cancel();
+            _workDispatcher.Wait();
             _workDispatcher.Run(&_CreateOpenColorIOResources,
                                 _GetHgi(),
                                 _params,
