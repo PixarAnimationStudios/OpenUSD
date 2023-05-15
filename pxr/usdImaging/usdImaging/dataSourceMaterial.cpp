@@ -426,7 +426,7 @@ private:
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourceMaterial::UsdImagingDataSourceMaterial(
-    UsdPrim usdPrim,
+    const UsdPrim &usdPrim,
     const UsdImagingDataSourceStageGlobals & stageGlobals,
     const TfToken &fixedTerminalName)
 : _usdPrim(usdPrim)
@@ -701,5 +701,63 @@ UsdImagingDataSourceMaterial::Get(const TfToken &name)
     return networkDs;
 }
 
+UsdImagingDataSourceMaterialPrim::UsdImagingDataSourceMaterialPrim(
+    const SdfPath &sceneIndexPath,
+    const UsdPrim &usdPrim,
+    const UsdImagingDataSourceStageGlobals &stageGlobals)
+ : UsdImagingDataSourcePrim(sceneIndexPath, usdPrim, stageGlobals)
+{
+}
+
+UsdImagingDataSourceMaterialPrim::~UsdImagingDataSourceMaterialPrim() = default;
+
+TfTokenVector
+UsdImagingDataSourceMaterialPrim::GetNames()
+{
+    TfTokenVector result = UsdImagingDataSourcePrim::GetNames();
+    result.push_back(HdMaterialSchema::GetSchemaToken());
+    return result;
+}
+
+HdDataSourceBaseHandle
+UsdImagingDataSourceMaterialPrim::Get(const TfToken &name)
+{
+    if (name == HdMaterialSchema::GetSchemaToken()) {
+        return UsdImagingDataSourceMaterial::New(
+            _GetUsdPrim(),
+            _GetStageGlobals());
+    }
+    return UsdImagingDataSourcePrim::Get(name);
+}
+
+HdDataSourceLocatorSet
+UsdImagingDataSourceMaterialPrim::Invalidate(
+    UsdPrim const& prim,
+    const TfToken &subprim,
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
+{
+    HdDataSourceLocatorSet result =
+        UsdImagingDataSourcePrim::Invalidate(
+            prim, subprim, properties, invalidationType);
+
+    if (subprim.IsEmpty()) {
+        UsdShadeMaterial material(prim);
+        if (material) {
+            // Public interface values changes
+            for (const TfToken &propertyName : properties) {
+                if (UsdShadeInput::IsInterfaceInputName(
+                        propertyName.GetString())) {
+                    // TODO, invalidate specifically connected node parameters.
+                    // FOR NOW: just dirty the whole material.
+
+                    result.insert(HdMaterialSchema::GetDefaultLocator());
+                    break;
+                }
+            }
+        }
+    }
+    return result;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
