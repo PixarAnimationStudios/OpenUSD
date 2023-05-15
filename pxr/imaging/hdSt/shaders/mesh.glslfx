@@ -93,7 +93,7 @@ vec4 GetPatchCoord(int index)
     uv[2] = vec2(0, 1); // (0, 1, 0);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
+    return InterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
 vec2 GetPatchCoordLocalST()
@@ -166,7 +166,7 @@ vec4 GetPatchCoord(int index)
     uv[3] = vec2(0, 1);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoord(uv[index], patchParam);
+    return InterpolatePatchCoord(uv[index], patchParam);
 }
 
 vec2 GetPatchCoordLocalST()
@@ -248,7 +248,7 @@ vec4 GetPatchCoord(int index)
     uv[3] = vec2(0, 1);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoord(uv[index], patchParam);
+    return InterpolatePatchCoord(uv[index], patchParam);
 }
 
 vec2 GetPatchCoordLocalST()
@@ -1054,7 +1054,7 @@ vec4 GetPatchCoord(int index)
     uv[2] = vec2(0, 1); // (0, 1, 0);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoordTriangle(uv[index], patchParam);
+    return InterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye)
@@ -1141,7 +1141,7 @@ vec4 GetPatchCoord(int index)
     uv[3] = vec2(0, 1);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoord(uv[index], patchParam);
+    return InterpolatePatchCoord(uv[index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye)
@@ -1226,7 +1226,7 @@ vec4 GetPatchCoord(int index)
     uv[3] = vec2(0, 1);
 
     ivec3 patchParam = GetPatchParam();
-    return OsdInterpolatePatchCoord(uv[index], patchParam);
+    return InterpolatePatchCoord(uv[index], patchParam);
 }
 
 void emit(int index, vec4 Peye, vec3 Neye)
@@ -1353,7 +1353,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoordTriangle(
+    return InterpolatePatchCoordTriangle(
                         GetPatchCoordLocalST(), GetPatchParam());
 }
 
@@ -1367,7 +1367,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
+    return InterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
@@ -1387,7 +1387,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
+    return InterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
@@ -1400,7 +1400,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoordTriangle(
+    return InterpolatePatchCoordTriangle(
                         GetPatchCoordLocalST(), GetPatchParam());
 }
 
@@ -1414,7 +1414,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
+    return InterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
@@ -1427,7 +1427,7 @@ vec2 GetPatchCoordLocalST()
 
 vec4 GetInterpolatedPatchCoord()
 {
-    return OsdInterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
+    return InterpolatePatchCoord(GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------

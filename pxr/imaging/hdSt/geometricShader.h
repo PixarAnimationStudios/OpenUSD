@@ -239,6 +239,10 @@ public:
         return IsPrimTypeTriQuads(_primType);
     }
 
+    bool IsPrimTypeRefinedMesh() const {
+        return IsPrimTypeRefinedMesh(_primType);
+    }
+
     bool IsPrimTypePatches() const {
         return IsPrimTypePatches(_primType);
     }

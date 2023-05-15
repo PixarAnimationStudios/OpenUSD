@@ -1924,6 +1924,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
 
+    // Needed for patch-based position and primvar refinement
     if (_geometricShader->IsPrimTypeMesh() &&
         _geometricShader->IsPrimTypePatches()) {
         if (_hasPTCS) {
@@ -2183,27 +2184,33 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         }
     }
     
-    if (tessControlShader.find("OsdComputePerPatch") != std::string::npos) {
-        _osdTCS << _GetOSDCommonShaderSource();
-    }
-    if (tessEvalShader.find("OsdEvalPatch") != std::string::npos) {
-        _osdTES << _GetOSDCommonShaderSource();
-    }
-    if (postTessControlShader.find("OsdComputeTessLevels") != std::string::npos
-        || postTessControlShader.find("OsdInterpolatePatchCoord")
-                                                != std::string::npos) {
-        _osdPTCS << _GetOSDCommonShaderSource();
-    }
-    if (postTessVertexShader.find("OsdEvaluatePatchBasis") != std::string::npos
-        || postTessVertexShader.find("OsdInterpolatePatchCoord")
-                                                != std::string::npos) {
-        _osdPTVS << _GetOSDCommonShaderSource();
-    }
-    if (geometryShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _genGS << _GetOSDCommonShaderSource();
-    }
-    if (fragmentShader.find("OsdInterpolatePatchCoord") != std::string::npos) {
-        _osdFS << _GetOSDCommonShaderSource();
+    // We need to include OpenSubdiv shader source only when processing
+    // refined meshes. For all other meshes we need only a simplified
+    // method of patch coord interpolation.
+    if (_geometricShader->IsPrimTypeRefinedMesh()) {
+        // Include OpenSubdiv shader source and use full patch interpolation.
+        _osd << _GetOSDCommonShaderSource();
+        _osd <<
+            "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
+            "{\n"
+            "    return OsdInterpolatePatchCoord(uv, patchParam);\n"
+            "}\n"
+            "vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)\n"
+            "{\n"
+            "    return OsdInterpolatePatchCoordTriangle(uv, patchParam);\n"
+            "}\n";
+    } else if (_geometricShader->IsPrimTypeMesh()) {
+        // Use simplified patch interpolation since all mesh faces are level 0.
+        _osd <<
+            "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
+            "{\n"
+            "    // add 0.5 to integer values for more robust interpolation\n"
+            "    return vec4(uv.x, uv.y, 0, patchParam.x+0.5f);\n"
+            "}\n"
+            "vec4 InterpolatePatchCoordTriangle(vec2 uv, ivec3 patchParam)\n"
+            "{\n"
+            "    return InterpolatePatchCoord(uv, patchParam);\n"
+            "}\n";
     }
 
     // geometric shader
@@ -2446,7 +2453,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HdShaderTokens->fragmentShader, _resTextures, _metaData);
 
         std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() + _osdFS.str() +
+            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
             _genAccessors.str() + _genFS.str();
 
         desc.shaderStage = HgiShaderStageFragment;
@@ -2467,7 +2474,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HdShaderTokens->tessControlShader, _resTCS, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _osdTCS.str();
+            _genDefines.str() + _osd.str();
         std::string const source =
             _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genTCS.str();
@@ -2491,7 +2498,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HdShaderTokens->tessEvalShader, _resTES, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _osdTES.str();
+            _genDefines.str() + _osd.str();
         std::string const source =
             _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genTES.str();
@@ -2521,7 +2528,7 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             HdShaderTokens->geometryShader, _resTextures, _metaData);
 
         std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() +
+            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
             _genAccessors.str() + _genGS.str();
 
         desc.shaderStage = HgiShaderStageGeometry;
@@ -2630,7 +2637,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->fragmentShader, _resTextures, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osdFS.str();
+            _genDefines.str() + _genDecl.str() + _osd.str();
         std::string const source = _genAccessors.str() + _genFS.str();
 
         fsDesc.shaderCodeDeclarations = declarations.c_str();
@@ -2670,7 +2677,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->tessControlShader, _resTCS, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osdTCS.str();
+            _genDefines.str() + _genDecl.str() + _osd.str();
         std::string const source = _genAccessors.str() + _genTCS.str();
 
         tcsDesc.shaderCodeDeclarations = declarations.c_str();
@@ -2694,7 +2701,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->tessEvalShader, _resTES, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osdTES.str();
+            _genDefines.str() + _genDecl.str() + _osd.str();
         std::string const source = _genAccessors.str() + _genTES.str();
 
         tesDesc.shaderCodeDeclarations = declarations.c_str();
@@ -2752,7 +2759,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->postTessControlShader, _resTextures, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osdPTCS.str();
+            _genDefines.str() + _genDecl.str() + _osd.str();
         std::string const source = _genAccessors.str() + _genPTCS.str();
 
         ptcsDesc.shaderCodeDeclarations = declarations.c_str();
@@ -2838,7 +2845,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             HdShaderTokens->postTessVertexShader, _resTextures, _metaData);
 
         std::string const declarations =
-            _genDefines.str() + _genDecl.str() + _osdPTVS.str();
+            _genDefines.str() + _genDecl.str() + _osd.str();
         std::string const source = _genAccessors.str() + _genPTVS.str();
 
         ptvsDesc.shaderCodeDeclarations = declarations.c_str();
