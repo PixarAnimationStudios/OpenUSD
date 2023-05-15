@@ -52,6 +52,8 @@ pxr_library(sdf
         pathTable
         payload
         pool
+        predicateExpression
+        predicateLibrary
         primSpec
         propertySpec
         proxyPolicies
@@ -92,6 +94,8 @@ pxr_library(sdf
         declareSpec.h
         invoke.hpp
         layerHints.h
+        predicateExpressionParser.h
+        predicateProgram.h
         schemaTypeRegistration.h
 
     PRIVATE_CLASSES
@@ -144,6 +148,7 @@ pxr_library(sdf
         wrapOpaqueValue.cpp
         wrapPath.cpp
         wrapPayload.cpp
+        wrapPredicateExpression.cpp
         wrapPrimSpec.cpp
         wrapPropertySpec.cpp
         wrapPseudoRootSpec.cpp
@@ -320,6 +325,14 @@ pxr_build_test(testSdfPathThreading
         testenv/testSdfPathThreading.cpp
 )
 
+pxr_build_test(testSdfPredicateExpression_Cpp
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfPredicateExpression.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testSdfBatchNamespaceEdit.testenv
     DEST testSdfBatchNamespaceEdit/testSdfBatchNamespaceEdit.testenv
@@ -477,6 +490,11 @@ pxr_register_test(testSdfPathTable
 pxr_register_test(testSdfPathThreading
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathThreading"
 )
+
+pxr_register_test(testSdfPredicateExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPredicateExpression_Cpp"
+)
+
 pxr_register_test(testSdfPayload
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload"
