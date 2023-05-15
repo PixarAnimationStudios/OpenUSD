@@ -1024,7 +1024,8 @@ HdxPickResult::_GetHash(int index) const
     if (_pickTarget == HdxPickTokens->pickEdges) {
         boost::hash_combine(hash, _GetEdgeId(index));
     }
-    if (_pickTarget == HdxPickTokens->pickPoints) {
+    if (_pickTarget == HdxPickTokens->pickPoints ||
+        _pickTarget == HdxPickTokens->pickPointsAndInstances) {
         boost::hash_combine(hash, _GetPointId(index));
     }
     return hash;
