@@ -642,7 +642,7 @@ HdStRenderPassState::ApplyStateFromGeometricShader(
         HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
-    _SetGLCullState(geometricShader.ResolveCullMode(_cullStyle));
+    _SetGLCullState(geometricShader->ResolveCullMode(_cullStyle));
     _SetGLPolygonMode(_lineWidth, geometricShader);
 }
 
@@ -1200,7 +1200,7 @@ HdStRenderPassState::_InitRasterizationState(
     }
 
     rasterizationState->cullMode =
-        _ResolveCullMode(_cullStyle, geometricShader);
+        geometricShader->ResolveCullMode(_cullStyle);
 
     if (GetEnableDepthClamp()) {
         rasterizationState->depthClampEnabled = true;
