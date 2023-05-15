@@ -430,11 +430,14 @@ Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
 
 PcpLayerStack::PcpLayerStack(
     const PcpLayerStackIdentifier& identifier,
-    const std::string &fileFormatTarget,
-    const Pcp_MutedLayers &mutedLayers,
-    bool isUsd) :
-    _identifier(identifier),
-    _isUsd(isUsd)
+    const Pcp_LayerStackRegistry& registry)
+    : _identifier(identifier)
+    , _isUsd(registry._IsUsd())
+
+    // Note that we do not set the _registry member here. This will be
+    // done by Pcp_LayerStackRegistry itself when it decides to register
+    // this layer stack.
+    // , _registry(TfCreateWeakPtr(&registry))
 {
     TfAutoMallocTag2 tag("Pcp", "PcpLayerStack::PcpLayerStack");
     TRACE_FUNCTION();
@@ -443,7 +446,7 @@ PcpLayerStack::PcpLayerStack(
         return;
     }
 
-    _Compute(fileFormatTarget, mutedLayers);
+    _Compute(registry._GetFileFormatTarget(), registry._GetMutedLayers());
 
     if (!_isUsd) {
         Pcp_ComputeRelocationsForLayerStack(_layers, 
