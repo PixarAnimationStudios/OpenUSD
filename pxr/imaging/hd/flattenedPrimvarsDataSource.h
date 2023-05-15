@@ -113,7 +113,7 @@ private:
     using _NameToPrimvarDataSource = 
         tbb::concurrent_hash_map<
             TfToken,
-            HdDataSourceBaseHandle,
+            HdDataSourceBaseAtomicHandle,
             _TokenHashCompare>;
     // Cached data sources.
     //

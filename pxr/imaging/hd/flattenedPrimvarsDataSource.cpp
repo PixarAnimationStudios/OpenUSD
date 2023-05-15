@@ -167,14 +167,15 @@ HdFlattenedPrimvarsDataSource::Get(const TfToken &name)
     _NameToPrimvarDataSource::accessor a;
     _nameToPrimvarDataSource.insert(a, name);
 
-    if (a->second) {
+    if (HdDataSourceBaseHandle const ds =
+            HdDataSourceBase::AtomicLoad(a->second)) {
         // Cache hit.
-        return HdContainerDataSource::Cast(a->second);
+        return HdContainerDataSource::Cast(ds);
     }
 
     // Cache miss.
     HdDataSourceBaseHandle const result = _Get(name);
-    a->second = result;
+    HdDataSourceBase::AtomicStore(a->second, result);
 
     return HdContainerDataSource::Cast(result);
 }
