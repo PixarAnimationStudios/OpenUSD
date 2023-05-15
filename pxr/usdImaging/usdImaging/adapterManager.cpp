@@ -158,8 +158,6 @@ UsdImaging_AdapterManager::AdapterSetLookup(
 
     // contains both auto-applied and manually applied schemas
     const TfTokenVector allAppliedSchemas = prim.GetAppliedSchemas();
-    // contains only the manually applied API schemas
-    const TfTokenVector appliedAPISchemas = typeInfo.GetAppliedAPISchemas();
 
     result.allAdapters.reserve(allAppliedSchemas.size() + 1 +
         _keylessAdapters.size());
@@ -168,17 +166,6 @@ UsdImaging_AdapterManager::AdapterSetLookup(
     // keyed adapter
     result.allAdapters.insert(result.allAdapters.end(),
         _keylessAdapters.begin(), _keylessAdapters.end());
-
-    // then add the manually applied API schemas as they have the strongest
-    // opinion of the keyed adapters
-    for (const TfToken &schemaToken : appliedAPISchemas) {
-        std::pair<TfToken, TfToken> tokenPair =
-            UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
-        if (UsdImagingAPISchemaAdapterSharedPtr a =
-                _APIAdapterLookup(tokenPair.first)) {
-            result.allAdapters.emplace_back(a, tokenPair.second);
-        }
-    }
 
     // then any prim-type schema
     const TfToken adapterKey = typeInfo.GetSchemaTypeName();
@@ -207,12 +194,9 @@ UsdImaging_AdapterManager::AdapterSetLookup(
         result.allAdapters.emplace_back(basePrimAdapter, TfToken());
     }
 
-    // then the auto-applied/built-in schemas which will start after the entries
-    // which are (also) found (in isolation) within allAppliedSchemas
-    for (size_t i = appliedAPISchemas.size(); i < allAppliedSchemas.size();
-            ++i) {
-        
-        const TfToken &schemaToken = allAppliedSchemas[i];
+    // then the applied API schemas which are already in their strength order
+    for (const TfToken &schemaToken: allAppliedSchemas) {
+
         std::pair<TfToken, TfToken> tokenPair =
             UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
             

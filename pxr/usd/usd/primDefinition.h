@@ -292,6 +292,18 @@ private:
             return layer->HasFieldDictKey(path, fieldName, keyPath, value);
         }
 
+        SdfVariability GetVariability() const {
+            SdfVariability variability;
+            HasField(SdfFieldKeys->Variability, &variability);
+            return variability;
+        }
+
+        TfToken GetTypeName() const {
+            TfToken typeName;
+            HasField(SdfFieldKeys->TypeName, &typeName);
+            return typeName;
+        }
+
         USD_API
         TfTokenVector ListMetadataFields() const;
     };
@@ -325,6 +337,7 @@ private:
     }
 
     UsdPrimDefinition() = default;
+    UsdPrimDefinition(const UsdPrimDefinition &) = default;
 
     USD_API
     void _IntializeForTypedSchema(
@@ -358,15 +371,25 @@ private:
     TfTokenVector _ListMetadataFields(const TfToken &propName) const;
 
     // Helpers for constructing the prim definition.
-    USD_API
     void _ComposePropertiesFromPrimDef(
-        const UsdPrimDefinition &weakerPrimDef, 
-        bool useWeakerPropertyForTypeConflict = false);
+        const UsdPrimDefinition &weakerPrimDef);
 
-    USD_API
     void _ComposePropertiesFromPrimDefInstance(
         const UsdPrimDefinition &weakerPrimDef, 
         const std::string &instanceName);
+
+    void _AddOrComposeProperty(
+        const TfToken &propName,
+        const _LayerAndPath &layerAndPath);
+
+    SdfPropertySpecHandle _FindOrCreatePropertySpecForComposition(
+        const TfToken &propName,
+        const _LayerAndPath &srcLayerAndPath);
+
+    SdfPropertySpecHandle _CreatedComposedPropertyIfNeeded(
+        const TfToken &propName,
+        const _LayerAndPath &strongProp, 
+        const _LayerAndPath &weakProp);
 
     USD_API
     void _ComposeOverAndReplaceExistingProperty(
@@ -381,10 +404,8 @@ private:
     bool _ComposeWeakerAPIPrimDefinition(
         const UsdPrimDefinition &apiPrimDef,
         const TfToken &instanceName,
-        _FamilyAndInstanceToVersionMap *alreadyAppliedSchemaFamilyVersions,
-        bool allowDupes = false);
+        _FamilyAndInstanceToVersionMap *alreadyAppliedSchemaFamilyVersions);
 
-    USD_API
     static bool _PropertyTypesMatch(
         const _LayerAndPath &strongerProp,
         const _LayerAndPath &weakerProp);
@@ -401,6 +422,11 @@ private:
 
     // Cached list of property names.
     TfTokenVector _properties;
+
+    // Layer that may be created for this prim definition if it's necessary to
+    // compose any new property specs for this definition from multiple 
+    // property specs from other definitions.
+    SdfLayerRefPtr _composedPropertyLayer;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
