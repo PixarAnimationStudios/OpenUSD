@@ -38,6 +38,7 @@
 #include "pxr/imaging/hd/retainedSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
@@ -559,6 +560,38 @@ private:
     std::shared_ptr<SdfPathSet> const _instances;
 };
 
+bool
+_GetVisibility(HdSceneIndexBaseRefPtr const &sceneIndex,
+               const SdfPath &primPath)
+{
+    if (!sceneIndex) {
+        return true;
+    }
+
+    HdContainerDataSourceHandle const primDs =
+        sceneIndex->GetPrim(primPath).dataSource;        
+    HdBoolDataSourceHandle const ds =
+        HdVisibilitySchema::GetFromParent(primDs).GetVisibility();
+    if (!ds) {
+        return true;
+    }
+    return ds->GetTypedValue(0.0f);
+}
+
+VtBoolArray
+_ComputeMask(HdSceneIndexBaseRefPtr const &sceneIndex,
+             std::shared_ptr<SdfPathSet> const &instances)
+{
+    VtBoolArray result(instances->size());
+
+    int i = 0;
+    for (const SdfPath &instance : *instances) {
+        result[i] = _GetVisibility(sceneIndex, instance);
+        i++;
+    }
+    return result;
+}
+
 class _InstancerTopologyDataSource : public HdContainerDataSource
 {
 public:
@@ -567,7 +600,8 @@ public:
     TfTokenVector GetNames() override {
         return { HdInstancerTopologySchemaTokens->instanceIndices,
                  HdInstancerTopologySchemaTokens->prototypes,
-                 HdInstancerTopologySchemaTokens->instanceLocations};
+                 HdInstancerTopologySchemaTokens->instanceLocations,
+                 HdInstancerTopologySchemaTokens->mask };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
@@ -581,18 +615,25 @@ public:
         if (name == HdInstancerTopologySchemaTokens->instanceLocations) {
             return _InstanceLocationsDataSource::New(_instances);
         }
+        if (name == HdInstancerTopologySchemaTokens->mask) {
+            return HdRetainedTypedSampledDataSource<VtBoolArray>::New(
+                _ComputeMask(_inputSceneIndex, _instances));
+        }
         return nullptr;
     }
 
 private:
     _InstancerTopologyDataSource(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &prototypePath,
         std::shared_ptr<SdfPathSet> const &instances)
-      : _prototypePath(prototypePath)
+      : _inputSceneIndex(inputSceneIndex)
+      , _prototypePath(prototypePath)
       , _instances(instances)
     {
     }
 
+    HdSceneIndexBaseRefPtr const _inputSceneIndex;
     const SdfPath _prototypePath;
     std::shared_ptr<SdfPathSet> const _instances;
 };
@@ -619,7 +660,7 @@ public:
         }
         if (name == HdInstancerTopologySchema::GetSchemaToken()) {
             return _InstancerTopologyDataSource::New(
-                _prototypePath, _instances);
+                    _inputSceneIndex, _prototypePath, _instances);
         }
         if (name == HdPrimvarsSchema::GetSchemaToken()) {
             return _PrimvarsDataSource::New(
@@ -1084,6 +1125,15 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
             } else if (!primvarValueLocators.IsEmpty()) {
                 // Only the primvar values have changed. Update instancer.
                 _DirtyInstancerForInstance(path, primvarValueLocators);
+            }
+        }
+
+        {
+            if (locators.Intersects(HdVisibilitySchema::GetDefaultLocator())) {
+                static const HdDataSourceLocatorSet maskLocators{
+                    HdInstancerTopologySchema::GetDefaultLocator()
+                        .Append(HdInstancerTopologySchemaTokens->mask) };
+                _DirtyInstancerForInstance(path, maskLocators);
             }
         }
     }
