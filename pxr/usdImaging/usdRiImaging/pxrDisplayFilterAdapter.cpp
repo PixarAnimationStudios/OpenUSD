@@ -97,6 +97,7 @@ UsdRiImagingPxrDisplayFilterAdapter::InvalidateImagingSubprim(
     const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
+        return
             UsdRiImaging_DataSourceRenderTerminalPrim<HdDisplayFilterSchema>::
             Invalidate(
                 prim, subprim, properties, invalidationType);
