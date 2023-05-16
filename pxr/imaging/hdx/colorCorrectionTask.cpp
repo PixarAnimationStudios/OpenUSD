@@ -358,7 +358,6 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources(
         const char* textureName;
         const char* samplerName;
         uint32_t edgeLen;
-        OCIO::GpuShaderCreator::TextureType channel;
         OCIO::Interpolation interpolation;
 
         shaderDesc->get3DTextureValues(i, lutValues);
