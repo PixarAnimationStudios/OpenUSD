@@ -31,7 +31,6 @@ pxr_library(pcp
         errors
         instanceKey
         iterator
-        layerPrefetchRequest
         layerStack
         layerStackIdentifier
         mapExpression

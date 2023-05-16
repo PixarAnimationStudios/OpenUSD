@@ -266,6 +266,7 @@ private:
 
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
+        _SublayerSourceInfo() = default;
         _SublayerSourceInfo(
             const SdfLayerHandle& layer_,
             const std::string& authoredSublayerPath_,
