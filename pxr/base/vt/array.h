@@ -557,12 +557,28 @@ class VtArray : public Vt_ArrayBase {
     /// 5 elements would be left unchanged and the last 5 elements would be
     /// value-initialized.
     void resize(size_t newSize) {
-        struct _Filler {
-            inline void operator()(pointer b, pointer e) const {
-                std::uninitialized_fill(b, e, value_type());
-            }
-        };
-        return resize(newSize, _Filler());
+        return resize(newSize, value_type());
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type const &value) {
+        return resize(newSize,
+                      [&value](pointer b, pointer e) {
+                          std::uninitialized_fill(b, e, value);
+                      });
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &value) {
+        return resize(newSize, const_cast<value_type const &>(value));
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &&value) {
+        return resize(newSize, const_cast<value_type const &>(value));
     }
 
     /// Resize this array.  Preserve existing elements that remain, initialize
