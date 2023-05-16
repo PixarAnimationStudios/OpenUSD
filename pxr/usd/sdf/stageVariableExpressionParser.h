@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,26 +21,40 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_PARSER_H
+#define PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_PARSER_H
+
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/debugCodes.h"
-#include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/registryManager.h"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_REGISTRY_FUNCTION(TfDebug)
+namespace Sdf_StageVariableExpressionImpl
 {
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_ASSET, "Sdf asset resolution diagnostics");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_CHANGES, "Sdf layer change notifications");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_FILE_FORMAT, "Sdf file format registration");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_LAYER, "Sdf layer loading and lifetime");
-    TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_STAGE_VARIABLE_EXPRESSION_PARSING, 
-        "Sdf stage variable expression parsing");
+    class Node;
 }
 
+/// \class Sdf_StageVariableExpressionParserResult
+/// Object containing results of parsing an expression.
+class Sdf_StageVariableExpressionParserResult
+{
+public:
+    std::unique_ptr<Sdf_StageVariableExpressionImpl::Node> expression;
+    std::vector<std::string> errors;
+};
+
+/// Parse the given expression.
+Sdf_StageVariableExpressionParserResult
+Sdf_ParseStageVariableExpression(const std::string& expr);
+
+/// Returns true if \p s is recognized as a stage variable expression.
+/// This does not check the syntax of the expression.
+bool Sdf_IsStageVariableExpression(const std::string& s);
+
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
+
