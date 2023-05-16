@@ -102,7 +102,7 @@ _GetImagingSubprims(
                     if (subprim.IsEmpty()) {
                         continue;
                     }
-                    if (_Contains(subprimsSet, subprim)) {
+                    if (!_Contains(subprimsSet, subprim)) {
                         subprims.push_back(subprim);
                         subprimsSet.insert(subprim);
                     }
