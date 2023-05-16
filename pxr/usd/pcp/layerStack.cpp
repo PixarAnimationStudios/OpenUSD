@@ -55,7 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 // - FileFormat plugins
 // - value type plugins for parsing AnimSplines
 TF_DEFINE_ENV_SETTING(
-    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, false,
+    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, true,
     "Enables parallel, threaded pre-fetch of sublayers.");
 
 TF_DEFINE_ENV_SETTING(
@@ -742,16 +742,17 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
     const SdfLayer::FileFormatArguments layerArgs =
         Pcp_GetArgumentsForFileFormatTarget(fileFormatTarget);
 
-    // Do a parallel pre-fetch request of the shot layer stack. This
-    // resolves and parses the layers, retaining them until we do a
-    // serial pass below to stitch them into a layer tree. The post-pass
-    // is serial in order to get deterministic ordering of errors,
-    // and to keep the layer stack composition algorithm as simple as
-    // possible while doing the high-latency work up front in parallel.
-    PcpLayerPrefetchRequest prefetch;
-    if (TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH)) {
+    if (_isUsd && TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH)) {
+        // Do a parallel pre-fetch request of the shot layer stack. This
+        // resolves and parses the layers, retaining them until we do a
+        // serial pass below to stitch them into a layer tree. The post-pass
+        // is serial in order to get deterministic ordering of errors,
+        // and to keep the layer stack composition algorithm as simple as
+        // possible while doing the high-latency work up front in parallel.
+        PcpLayerPrefetchRequest prefetch;
         if (_identifier.sessionLayer) {
-            prefetch.RequestSublayerStack(_identifier.sessionLayer, layerArgs);
+            prefetch.RequestSublayerStack(_identifier.sessionLayer,
+                                          layerArgs);
         }
         prefetch.RequestSublayerStack(_identifier.rootLayer, layerArgs);
         prefetch.Run(mutedLayers);

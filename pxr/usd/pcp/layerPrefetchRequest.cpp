@@ -46,9 +46,9 @@ struct _Opener
 
     void OpenSublayers(const SdfLayerRefPtr &layer,
                        const SdfLayer::FileFormatArguments &layerArgs) {
-        TF_FOR_ALL(path, layer->GetSubLayerPaths()) {
+        for (std::string path: layer->GetSubLayerPaths()) {
             _dispatcher.Run(
-                &_Opener::_OpenSublayer, this, *path, layer, layerArgs);
+                &_Opener::_OpenSublayer, this, path, layer, layerArgs);
         }
     }
 
