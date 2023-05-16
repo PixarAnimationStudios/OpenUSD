@@ -76,7 +76,6 @@ pxr_library(sdf
         variantSpec
 
         # Flex/Bison generated code
-        path.tab
         textFileFormat.tab
    
     PYTHON_PUBLIC_CLASSES
@@ -112,7 +111,6 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
-        pathParser
         stageVariableExpressionImpl
         stageVariableExpressionParser
         subLayerListEditor
@@ -126,7 +124,6 @@ pxr_library(sdf
 
     CPPFILES
         # Flex/Bison generated code
-        path.lex.cpp
         textFileFormat.lex.cpp
 
     PYTHON_CPPFILES
@@ -195,7 +192,7 @@ else()
             --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
             --bison ${BISON_EXECUTABLE}
             --flex ${FLEX_EXECUTABLE}
-            --bases textFileFormat path 
+            --bases textFileFormat
             --validate
     )
 endif()
