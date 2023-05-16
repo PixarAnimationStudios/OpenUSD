@@ -98,21 +98,24 @@ public:
              const SdfLayerRefPtr &layer,
              const _DepType &depType)>;
 
-    // Opens the file at \p resolvedFilePath and analyzes its external 
-    // dependencies.
+    // Attempts to open the file at \p referencePath and analyzes its external 
+    // dependencies.  Opening the layer using this non-resolved path ensures
+    // that layer metadata is correctly set.  If the file cannot be opened then
+    // the analyzer simply retains the \p resolvedPath for later use.
     // 
     // For each dependency that is detected, the provided (optional) callback 
     // functions are invoked. 
     // 
     // \p processPathFunc is invoked first with the raw (un-remapped) path. 
     // Then \p remapPathFunc is invoked. 
-    _FileAnalyzer(const std::string &resolvedFilePath,
+    _FileAnalyzer(const std::string &referencePath,
+                  const std::string &resolvedPath,
                   _ReferenceTypesToInclude refTypesToInclude=
                         _ReferenceTypesToInclude::All,
                   bool enableMetadataFiltering = false,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
-        _filePath(resolvedFilePath),
+        _filePath(resolvedPath),
         _refTypesToInclude(refTypesToInclude),
         _metadataFilteringEnabled(enableMetadataFiltering),
         _remapPathFunc(remapPathFunc),
@@ -121,15 +124,16 @@ public:
         // If this file can be opened on a USD stage or referenced into a USD 
         // stage via composition, then analyze the file, collect & update all 
         // references. If not, return early.
-        if (!UsdStage::IsSupportedFile(_filePath)) {
+        if (!UsdStage::IsSupportedFile(referencePath)) {
             return;
         }
 
         TRACE_FUNCTION();
 
-        _layer = SdfLayer::FindOrOpen(_filePath);
+        _layer = SdfLayer::FindOrOpen(referencePath);
         if (!_layer) {
-            TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
+            TF_WARN("Unable to open layer at path @%s@.", 
+                referencePath.c_str());
             return;
         }
 
@@ -709,7 +713,8 @@ public:
 
         auto &resolver = ArGetResolver();
 
-        std::string rootFilePath = resolver.Resolve(assetPath.GetAssetPath());
+        const std::string assetPathStr = assetPath.GetAssetPath();
+        std::string rootFilePath = resolver.Resolve(assetPathStr);
 
         // Ensure that the resolved path is not empty.
         if (rootFilePath.empty()) {
@@ -748,7 +753,8 @@ public:
             seenFiles.insert(rootFilePath);
             std::string destFilePath = TfStringCatPaths(destDir, 
                     TfGetBaseName(rootFilePath));
-            filesToLocalize.emplace(destFilePath, _FileAnalyzer(rootFilePath, 
+            filesToLocalize.emplace(destFilePath, _FileAnalyzer(
+                    assetPathStr, rootFilePath, 
                     /*refTypesToInclude*/ _ReferenceTypesToInclude::All,
                     /*enableMetadataFiltering*/ enableMetadataFiltering,
                     remapAssetPathFunc, processPathFunc));
@@ -855,7 +861,7 @@ public:
                         destDirForRef, remappedRef);
 
                 filesToLocalize.emplace(destFilePathForRef, _FileAnalyzer(
-                        resolvedRefFilePath, 
+                        refAssetPath, resolvedRefFilePath,
                         /* refTypesToInclude */ _ReferenceTypesToInclude::All,
                         /*enableMetadataFiltering*/ enableMetadataFiltering,
                         remapAssetPathFunc, processPathFunc));
@@ -1121,9 +1127,11 @@ _ExtractExternalReferences(
     std::vector<std::string>* references,
     std::vector<std::string>* payloads)
 {
+    auto &resolver = ArGetResolver();
+
     // We only care about knowing what the dependencies are. Hence, set 
     // remapPathFunc to empty.
-    _FileAnalyzer(filePath, refTypesToInclude,
+    _FileAnalyzer(filePath, resolver.Resolve(filePath), refTypesToInclude,
         /*enableMetadataFiltering*/ false,
         /*remapPathFunc*/ {}, 
         [&subLayers, &references, &payloads](
