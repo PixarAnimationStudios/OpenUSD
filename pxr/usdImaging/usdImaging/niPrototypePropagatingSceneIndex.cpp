@@ -74,12 +74,17 @@ public:
 
         _SceneIndices &sceneIndices = _prototypeToSceneIndices[prototypeName];
 
+        // Check whether weak ptr references valid scene index.
         HdSceneIndexBaseRefPtr isolatingSceneIndex =
             sceneIndices.isolatingSceneIndex;
         if (!isolatingSceneIndex) {
+            // Allocate new scene index if not.
             isolatingSceneIndex =
                 _ComputeIsolatingSceneIndex(
                     prototypeName);
+            // Store weak ptr so that it can be re-used in the future.
+            sceneIndices.isolatingSceneIndex =
+                isolatingSceneIndex;
         }
 
         result.prototypeSceneIndex = sceneIndices.prototypeSceneIndex;
@@ -87,7 +92,8 @@ public:
             result.prototypeSceneIndex =
                 _ComputePrototypeSceneIndex(
                     prototypeName, isolatingSceneIndex);
-            sceneIndices.prototypeSceneIndex = result.prototypeSceneIndex;
+            sceneIndices.prototypeSceneIndex =
+                result.prototypeSceneIndex;
         }
 
         result.instanceAggregationSceneIndex =
@@ -96,7 +102,8 @@ public:
             result.instanceAggregationSceneIndex =
                 _ComputeInstanceAggregationSceneIndex(
                     prototypeName, isolatingSceneIndex);
-            sceneIndices.instanceAggregationSceneIndex = result.instanceAggregationSceneIndex;
+            sceneIndices.instanceAggregationSceneIndex =
+                result.instanceAggregationSceneIndex;
         }
 
         return result;
