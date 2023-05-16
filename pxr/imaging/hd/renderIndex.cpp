@@ -528,20 +528,7 @@ HdRenderIndex::_Clear()
     _bprimIndex.Clear(_tracker, _renderDelegate);
 
     // Clear instancers.
-    for (const auto &pair : _instancerMap) {
-        SdfPath const &id = pair.first;
-        HdInstancer *instancer = pair.second;
-
-        SdfPath const &instancerId = instancer->GetParentId();
-        if (!instancerId.IsEmpty()) {
-            _tracker.RemoveInstancerInstancerDependency(instancerId, id);
-        }
-
-        _tracker.InstancerRemoved(id);
-
-        instancer->Finalize(_renderDelegate->GetRenderParam());
-        _renderDelegate->DestroyInstancer(instancer);
-    }
+    _RemoveInstancerSubtree(SdfPath::AbsoluteRootPath(), nullptr);
     _instancerMap.clear();
 }
 
@@ -1795,9 +1782,9 @@ HdRenderIndex::_RemoveInstancer(SdfPath const& id)
     _tracker.InstancerRemoved(id);
 
     instancer->Finalize(_renderDelegate->GetRenderParam());
+    _instancerMap.erase(it);
     _renderDelegate->DestroyInstancer(instancer);
 
-    _instancerMap.erase(it);
 }
 
 void
@@ -1812,8 +1799,8 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
         const SdfPath &id = it->first;
         HdInstancer *instancer = it->second;
 
-        if ((instancer->GetDelegate() == sceneDelegate) &&
-            (id.HasPrefix(root))) {
+        if (id.HasPrefix(root) && 
+            (sceneDelegate == nullptr || sceneDelegate == instancer->GetDelegate())) {
 
             HdInstancer *instancer = it->second;
             SdfPath const& instancerId = instancer->GetParentId();
@@ -1824,8 +1811,6 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
             _tracker.InstancerRemoved(id);
 
             instancer->Finalize(_renderDelegate->GetRenderParam());
-            _renderDelegate->DestroyInstancer(instancer);
-
             // Need to capture the iterator and increment it because
             // TfHashMap::erase() doesn't return the next iterator, like
             // the stl version does.
@@ -1833,6 +1818,11 @@ HdRenderIndex::_RemoveInstancerSubtree(const SdfPath &root,
             ++nextIt;
             _instancerMap.erase(it);
             it = nextIt;
+
+            // To prevent GetInstancer from handing back a non-null pointer to
+            // a destroyed instancer, we remove the instancer from _instancerMap
+            // BEFORE sending it for destruction.
+            _renderDelegate->DestroyInstancer(instancer);
         } else {
             ++it;
         }
