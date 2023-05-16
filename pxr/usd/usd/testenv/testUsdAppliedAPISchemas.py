@@ -105,17 +105,17 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
         self.assertEqual(primDef.GetAppliedAPISchemas(), [])
         self.assertEqual(primDef.GetDocumentation(), "Testing typed schema")
 
-        # Verify property specs for named properties.
+        # Verify properties exist for all named properties.
         for propName in primDef.GetPropertyNames():
-            self.assertTrue(primDef.GetSchemaPropertySpec(propName))
+            self.assertTrue(primDef.GetPropertyDefinition(propName))
 
-        # Verify the attribute spec and its fallback value and type
-        testAttr = primDef.GetSchemaAttributeSpec("testAttr")
-        self.assertEqual(testAttr.default, "foo")
-        self.assertEqual(testAttr.typeName.cppTypeName, "std::string")
+        # Verify the attribute definition and its fallback value and type
+        testAttr = primDef.GetAttributeDefinition("testAttr")
+        self.assertEqual(testAttr.GetFallbackValue(), "foo")
+        self.assertEqual(testAttr.GetTypeName(), "string")
 
         # Verify the relationship spec
-        self.assertTrue(primDef.GetSchemaRelationshipSpec("testRel"))
+        self.assertTrue(primDef.GetRelationshipDefinition("testRel"))
 
     def test_TypedSchemaWithBuiltinAPISchemas(self):
         """
@@ -174,69 +174,76 @@ class TestUsdAppliedAPISchemas(unittest.TestCase):
 
         # Verify property specs for all named properties.
         for propName in primDef.GetPropertyNames():
-            self.assertTrue(primDef.GetSchemaPropertySpec(propName))
+            self.assertTrue(primDef.GetPropertyDefinition(propName))
 
         # Verify fallback value and type for properties defined in the 
         # concrete prim
-        testAttr = primDef.GetSchemaAttributeSpec("testAttr")
-        self.assertEqual(testAttr.default, "foo")
-        self.assertEqual(testAttr.typeName.cppTypeName, "std::string")
+        testAttr = primDef.GetAttributeDefinition("testAttr")
+        self.assertEqual(testAttr.GetFallbackValue(), "foo")
+        self.assertEqual(testAttr.GetTypeName(), Sdf.ValueTypeNames.String)
 
-        self.assertTrue(primDef.GetSchemaRelationshipSpec("testRel"))
+        self.assertTrue(primDef.GetRelationshipDefinition("testRel"))
+
+        def _VerifySameMetadata(prop1, prop2):
+            self.assertEqual(prop1.ListMetadataFields(), 
+                             prop2.ListMetadataFields())
+            for field in prop1.ListMetadataFields():
+                self.assertEqual(prop1.GetMetadata(field),
+                                 prop2.GetMetadata(field))
 
         # Verify fallback value and type for properties from the single applied
         # schema. These properties will return the same property spec as the
         # API schema prim definition.
-        singleBoolAttr = primDef.GetSchemaAttributeSpec("single:bool_attr")
-        self.assertEqual(singleBoolAttr, 
-            singleApplyAPIDef.GetSchemaAttributeSpec("single:bool_attr"))
-        self.assertEqual(singleBoolAttr.default, True)
-        self.assertEqual(singleBoolAttr.typeName.cppTypeName, "bool")
+        singleBoolAttr = primDef.GetAttributeDefinition("single:bool_attr")
+        _VerifySameMetadata(singleBoolAttr, 
+            singleApplyAPIDef.GetAttributeDefinition("single:bool_attr"))
+        self.assertEqual(singleBoolAttr.GetFallbackValue(), True)
+        self.assertEqual(singleBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
 
-        singleTokenAttr = primDef.GetSchemaAttributeSpec("single:token_attr")
-        self.assertEqual(singleTokenAttr, 
-            singleApplyAPIDef.GetSchemaAttributeSpec("single:token_attr"))
-        self.assertEqual(singleTokenAttr.default, "bar")
-        self.assertEqual(singleTokenAttr.typeName.cppTypeName, "TfToken")
 
-        singleRelationship = primDef.GetSchemaRelationshipSpec(
+        singleTokenAttr = primDef.GetAttributeDefinition("single:token_attr")
+        _VerifySameMetadata(singleTokenAttr, 
+            singleApplyAPIDef.GetAttributeDefinition("single:token_attr"))
+        self.assertEqual(singleTokenAttr.GetFallbackValue(), "bar")
+        self.assertEqual(singleTokenAttr.GetTypeName(), Sdf.ValueTypeNames.Token)
+
+        singleRelationship = primDef.GetRelationshipDefinition(
             "single:relationship")
         self.assertTrue(singleRelationship)
-        self.assertEqual(singleRelationship, 
-            singleApplyAPIDef.GetSchemaRelationshipSpec("single:relationship"))
+        _VerifySameMetadata(singleRelationship, 
+            singleApplyAPIDef.GetRelationshipDefinition("single:relationship"))
 
         # Verify fallback value and type for properties from the multi applied
         # schema. These properties will return the same property spec as the
         # API schema prim definition even the properties on the concrete prim
         # definion are namespace prefixed.
-        multiTokenAttr = primDef.GetSchemaAttributeSpec(
+        multiTokenAttr = primDef.GetAttributeDefinition(
             "multi:builtin:token_attr")
-        self.assertEqual(multiTokenAttr, 
-            multiApplyAPIDef.GetSchemaAttributeSpec(
+        _VerifySameMetadata(multiTokenAttr, 
+            multiApplyAPIDef.GetAttributeDefinition(
                 "multi:__INSTANCE_NAME__:token_attr"))
-        self.assertEqual(multiTokenAttr.default, "foo")
-        self.assertEqual(multiTokenAttr.typeName.cppTypeName, "TfToken")
+        self.assertEqual(multiTokenAttr.GetFallbackValue(), "foo")
+        self.assertEqual(multiTokenAttr.GetTypeName(), Sdf.ValueTypeNames.Token)
 
-        multiRelationship = primDef.GetSchemaRelationshipSpec(
+        multiRelationship = primDef.GetRelationshipDefinition(
             "multi:builtin:relationship")
         self.assertTrue(multiRelationship)
-        self.assertEqual(multiRelationship, 
-            multiApplyAPIDef.GetSchemaRelationshipSpec(
+        _VerifySameMetadata(multiRelationship, 
+            multiApplyAPIDef.GetRelationshipDefinition(
                 "multi:__INSTANCE_NAME__:relationship"))
 
         # Verify the case where the concrete type overrides a property from 
         # one of its applied API schemas. In this case the property spec from
         # the concrete prim is returned instead of the property spec from the
         # API schema.
-        multiBoolAttr = primDef.GetSchemaAttributeSpec(
+        multiBoolAttr = primDef.GetAttributeDefinition(
             "multi:builtin:bool_attr")
-        apiBoolAttr = multiApplyAPIDef.GetSchemaAttributeSpec(
+        apiBoolAttr = multiApplyAPIDef.GetAttributeDefinition(
             "multi:__INSTANCE_NAME__:bool_attr")
-        self.assertNotEqual(multiBoolAttr, apiBoolAttr)
-        self.assertEqual(multiBoolAttr.default, False)
-        self.assertEqual(apiBoolAttr.default, True)
-        self.assertEqual(multiBoolAttr.typeName.cppTypeName, "bool")
-        self.assertEqual(apiBoolAttr.typeName.cppTypeName, "bool")
+        self.assertEqual(multiBoolAttr.GetFallbackValue(), False)
+        self.assertEqual(apiBoolAttr.GetFallbackValue(), True)
+        self.assertEqual(multiBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
+        self.assertEqual(apiBoolAttr.GetTypeName(), Sdf.ValueTypeNames.Bool)
 
     def test_UntypedPrimOnStage(self):
         """

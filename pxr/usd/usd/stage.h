@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
+#include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/primFlags.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -1648,21 +1649,28 @@ private:
     static std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
     _GetPrimStackWithLayerOffsets(const UsdPrim &prim);
 
-    SdfPropertySpecHandle
-    _GetSchemaPropertySpec(const UsdPrim &prim, const TfToken &propName) const;
+    UsdPrimDefinition::Property
+    _GetSchemaProperty(const UsdProperty &prop) const;
 
-    SdfPropertySpecHandle
-    _GetSchemaPropertySpec(const UsdProperty &prop) const;
+    UsdPrimDefinition::Attribute
+    _GetSchemaAttribute(const UsdAttribute &attr) const;
 
-    template <class PropType>
-    SdfHandle<PropType>
-    _GetSchemaPropertySpec(const UsdProperty &prop) const;
+    UsdPrimDefinition::Relationship
+    _GetSchemaRelationship(const UsdRelationship &rel) const;
 
     SdfAttributeSpecHandle
-    _GetSchemaAttributeSpec(const UsdAttribute &attr) const;
+    _CreateNewSpecFromSchemaAttribute(
+        const UsdPrim &prim,
+        const UsdPrimDefinition::Attribute &attrDef);
 
     SdfRelationshipSpecHandle
-    _GetSchemaRelationshipSpec(const UsdRelationship &rel) const;
+    _CreateNewSpecFromSchemaRelationship(
+        const UsdPrim &prim,
+        const UsdPrimDefinition::Relationship &relDef);
+
+    template <class PropType> 
+    SdfHandle<PropType>
+    _CreateNewPropertySpecFromSchema(const UsdProperty &prop);
 
     SdfPrimSpecHandle
     _CreatePrimSpecForEditing(const UsdPrim& prim);

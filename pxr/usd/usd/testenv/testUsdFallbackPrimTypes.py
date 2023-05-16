@@ -98,8 +98,13 @@ class TestUsdFallbackPrimTypes(unittest.TestCase):
             self.assertEqual(primDef1.GetPropertyNames(), 
                              primDef2.GetPropertyNames())
             for propName in primDef1.GetPropertyNames():
-                self.assertEqual(primDef1.GetSchemaPropertySpec(propName), 
-                                 primDef2.GetSchemaPropertySpec(propName))
+                propDef1 = primDef1.GetPropertyDefinition(propName)
+                propDef2 = primDef2.GetPropertyDefinition(propName)
+                self.assertEqual(propDef1.ListMetadataFields(), 
+                                 propDef2.ListMetadataFields())
+                for fieldName in propDef1.ListMetadataFields():
+                    self.assertEqual(propDef1.GetMetadata(fieldName), 
+                                     propDef2.GetMetadata(fieldName))
             self.assertEqual(primDef1.ListMetadataFields(), 
                              primDef2.ListMetadataFields())
             for fieldName in primDef1.ListMetadataFields():
