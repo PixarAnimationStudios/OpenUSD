@@ -3081,6 +3081,18 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_o
     TESTENV testUsdImagingGLInstancingWithMaterials
 )
 
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -camera /camera -stage ni_ni_material_outside_prototype.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials
+)
+
 pxr_register_test(testUsdImagingGLFaceVarying_Uniform_Low
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -complexity 1.1 -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage testUsdImagingGLFaceVarying.usda -write testUsdImagingGLFaceVarying_Uniform_Low.png"
     IMAGE_DIFF_COMPARE
