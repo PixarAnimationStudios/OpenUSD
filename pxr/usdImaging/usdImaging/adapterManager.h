@@ -48,56 +48,85 @@ public:
     UsdImaging_AdapterManager();
     void Reset();
 
-    using APISchemaEntry =
-        std::pair<UsdImagingAPISchemaAdapterSharedPtr, TfToken>;
-    using APISchemaAdapters = TfSmallVector<APISchemaEntry, 8>;
-
-    // Adapter delegation.
-    APISchemaAdapters AdapterSetLookup(const UsdPrim &prim,
-            // optionally return the prim adapter (which will also be
-            // included in wrapped form as  part of the ordered main result)
-            UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
-
-private:
-    APISchemaAdapters _AdapterSetLookup(const UsdPrimTypeInfo &primTypeInfo,
-            UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
-
-    UsdImagingAPISchemaAdapterSharedPtr _APIAdapterLookup(
-            const TfToken &adapterKey) const;
-
-    UsdImagingPrimAdapterSharedPtr _PrimAdapterLookup(
-            const TfToken &adapterKey) const;
-
-    // Usd Prim Type to Adapter lookup table, concurrent because it could
-    // be potentially filled during concurrent GetPrim calls rather than
-    // just during single-threaded population.
-    using _PrimAdapterMap = tbb::concurrent_unordered_map<
-        TfToken, UsdImagingPrimAdapterSharedPtr, TfHash>;
-
-    mutable _PrimAdapterMap _primAdapterMap;
-
-    using _ApiAdapterMap = tbb::concurrent_unordered_map<
-        TfToken, UsdImagingAPISchemaAdapterSharedPtr, TfHash>;
-
-    mutable _ApiAdapterMap _apiAdapterMap;
-
-    struct _AdapterSetEntry
+    struct AdapterEntry
     {
-         // ordered and inclusive of primAdapter
-        APISchemaAdapters allAdapters;
+        AdapterEntry(
+            const UsdImagingAPISchemaAdapterSharedPtr &adapter,
+            const TfToken &appliedInstanceName = TfToken())
+          : adapter(adapter)
+          , appliedInstanceName(appliedInstanceName)
+        {
+        }
 
-        // for identifying prim adapter within same lookup
-        UsdImagingPrimAdapterSharedPtr primAdapter; 
+        // This is either an API schema adapter or the prim adapter
+        // wrapped as an API schema adapter.
+        UsdImagingAPISchemaAdapterSharedPtr adapter;
+        // Instance name for an multi-apply API schema.
+        //
+        // For example the prepending the apiSchema to CollectionAPI:lightLink
+        // a USD prim will use the CollectionAPI adapter with
+        // appliedInstancedName "lightLink".
+        TfToken appliedInstanceName;
     };
 
+    using AdapterEntries = TfSmallVector<AdapterEntry, 8>;
+
+    struct AdaptersEntry
+    {
+        // Ordered. And includes the primAdapter wrapped as a an
+        // API schema adapter.
+        AdapterEntries allAdapters;
+
+        // Just the prim adapter for the prim type.
+        UsdImagingPrimAdapterSharedPtr primAdapter;
+    };
+
+    // Look-up all adapters needed to serve a prim.
+    const AdaptersEntry &LookupAdapters(const UsdPrim &prim);
+
+private:
+    const AdaptersEntry &_LookupAdapters(const UsdPrimTypeInfo &typeInfo);
+
+    // A prim adapter together with an API schema wrapping the prim
+    // adapter.
+    struct _WrappedPrimAdapterEntry
+    {
+        UsdImagingPrimAdapterSharedPtr primAdapter;
+        UsdImagingAPISchemaAdapterSharedPtr apiSchemaAdapter;
+    };
+
+    // Concurrent because it could
+    // be potentially filled during concurrent GetPrim calls rather than
+    // just during single-threaded population.
+    using _PrimTypeToWrappedPrimAdapterEntry = tbb::concurrent_unordered_map<
+        TfToken, _WrappedPrimAdapterEntry, TfHash>;
+    using _SchemaNameToAPISchemaAdapter = tbb::concurrent_unordered_map<
+        TfToken, UsdImagingAPISchemaAdapterSharedPtr, TfHash>;
     // Use UsdPrimTypeInfo pointer as key because they are guaranteed to be
     // cached at least as long as the stage is open.
-    using _AdapterSetMap = tbb::concurrent_unordered_map<
-        const UsdPrimTypeInfo *, _AdapterSetEntry, TfHash>;
+    using _TypeInfoToAdaptersEntry = tbb::concurrent_unordered_map<
+        const UsdPrimTypeInfo *, AdaptersEntry, TfHash>;
 
-    mutable _AdapterSetMap _adapterSetMap;
+    const _WrappedPrimAdapterEntry &
+    _LookupWrappedPrimAdapter(
+        const TfToken &primType);
 
-    APISchemaAdapters _keylessAdapters;
+    UsdImagingAPISchemaAdapterSharedPtr
+    _LookupAPISchemaAdapter(
+        const TfToken &schemaName);
+
+    AdaptersEntry _ComputeAdapters(const UsdPrimTypeInfo &typeInfo);
+
+    _WrappedPrimAdapterEntry
+    _ComputeWrappedPrimAdapter(
+        const TfToken &schemaName);
+
+    _PrimTypeToWrappedPrimAdapterEntry _primTypeToWrappedPrimAdapterEntry;
+    _SchemaNameToAPISchemaAdapter _schemaNameToAPISchemaAdapter;
+    _TypeInfoToAdaptersEntry _typeInfoToAdaptersEntry;
+
+    const std::vector<UsdImagingAPISchemaAdapterSharedPtr>
+        _keylessAPISchemaAdapters;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

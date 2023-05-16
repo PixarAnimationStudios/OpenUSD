@@ -121,138 +121,139 @@ public:
 } //anonymous namespace
 
 UsdImaging_AdapterManager::UsdImaging_AdapterManager()
+  : _keylessAPISchemaAdapters(
+      UsdImagingAdapterRegistry::GetInstance()
+        .ConstructKeylessAPISchemaAdapters())
 {
-    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
-    
-    for (UsdImagingAPISchemaAdapterSharedPtr &adapter :
-            reg.ConstructKeylessAPISchemaAdapters()) {
-        _keylessAdapters.emplace_back(adapter, TfToken());
-    }
 }
 
 void UsdImaging_AdapterManager::Reset()
 {
-    _primAdapterMap.clear();
-    _apiAdapterMap.clear();
-    _adapterSetMap.clear();
+    _primTypeToWrappedPrimAdapterEntry.clear();
+    _schemaNameToAPISchemaAdapter.clear();
+    _typeInfoToAdaptersEntry.clear();
 }
 
-UsdImaging_AdapterManager::APISchemaAdapters
-UsdImaging_AdapterManager::AdapterSetLookup(
-        const UsdPrim &prim,
-        UsdImagingPrimAdapterSharedPtr * const outputPrimAdapter) const
+const UsdImaging_AdapterManager::AdaptersEntry &
+UsdImaging_AdapterManager::LookupAdapters(const UsdPrim &prim)
 {
     if (!prim) {
-        return {};
+        static const AdaptersEntry empty;
+        return empty;
     }
 
-    return _AdapterSetLookup(prim.GetPrimTypeInfo(), outputPrimAdapter);
+    return _LookupAdapters(prim.GetPrimTypeInfo());
 }
 
-UsdImaging_AdapterManager::APISchemaAdapters
-UsdImaging_AdapterManager::_AdapterSetLookup(
-        const UsdPrimTypeInfo &typeInfo,
-        UsdImagingPrimAdapterSharedPtr * const outputPrimAdapter) const
+const UsdImaging_AdapterManager::AdaptersEntry &
+UsdImaging_AdapterManager::_LookupAdapters(const UsdPrimTypeInfo &typeInfo)
 {
+    const UsdPrimTypeInfo * const key = std::addressof(typeInfo);
+    
     // check for previously cached value of full array
-    const _AdapterSetMap::const_iterator it = _adapterSetMap.find(&typeInfo);
-    if (it != _adapterSetMap.end()) {
-        if (outputPrimAdapter) {
-            *outputPrimAdapter = it->second.primAdapter;
-        }
-        return it->second.allAdapters;
+    const auto it = _typeInfoToAdaptersEntry.find(key);
+    if (it != _typeInfoToAdaptersEntry.end()) {
+        return it->second;
     }
 
-    _AdapterSetEntry result;
+    const auto itAndBool =
+        _typeInfoToAdaptersEntry.insert(
+            { key, _ComputeAdapters(typeInfo) } );
+
+    return itAndBool.first->second;
+}
+
+UsdImaging_AdapterManager::AdaptersEntry
+UsdImaging_AdapterManager::_ComputeAdapters(
+    const UsdPrimTypeInfo &typeInfo)
+{
+    AdaptersEntry result;
 
     // contains both auto-applied and manually applied schemas
     const TfTokenVector appliedSchemas =
         typeInfo.GetPrimDefinition().GetAppliedAPISchemas();
 
     result.allAdapters.reserve(
-        _keylessAdapters.size() + 1 + appliedSchemas.size());
+        _keylessAPISchemaAdapters.size() + 1 + appliedSchemas.size());
 
     // first add keyless adapters as they have a stronger opinion than any
     // keyed adapter
-    result.allAdapters.insert(result.allAdapters.end(),
-        _keylessAdapters.begin(), _keylessAdapters.end());
+    result.allAdapters.insert(
+        result.allAdapters.end(),
+        _keylessAPISchemaAdapters.begin(), _keylessAPISchemaAdapters.end());
 
-    // then any prim-type schema
-    const TfToken adapterKey = typeInfo.GetSchemaTypeName();
-    // If there is an adapter for the type name, include it.
-    if (UsdImagingPrimAdapterSharedPtr adapter =
-            _PrimAdapterLookup(adapterKey)) {
-        // wrap and cache the prim adapter in an API schema interface
-        UsdImagingAPISchemaAdapterSharedPtr adapterAdapter;
+    // Then any prim-type schema - using the _BasePrimAdapterAPISchemaAdapter
+    // If no prim adapter was registered.
+    const _WrappedPrimAdapterEntry &entry = _LookupWrappedPrimAdapter(
+        typeInfo.GetSchemaTypeName());
+    result.primAdapter = entry.primAdapter;
+    // Adds prim adapter wrapped as API schema adapter.
+    result.allAdapters.emplace_back(entry.apiSchemaAdapter);
 
-        const auto it = _apiAdapterMap.find(adapterKey);
-        if (it == _apiAdapterMap.end()) {
-            adapterAdapter = std::make_shared<
-                _PrimAdapterAPISchemaAdapter>(adapter);
-            _apiAdapterMap[adapterKey] = adapterAdapter;
-        } else {
-            adapterAdapter = it->second;
+    for (const TfToken &schemaToken : appliedSchemas) {
+        const std::pair<TfToken, TfToken> tokenPair =
+            UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
+        if (UsdImagingAPISchemaAdapterSharedPtr const a =
+                _LookupAPISchemaAdapter(tokenPair.first)) {
+            result.allAdapters.emplace_back(a, tokenPair.second);
         }
-        result.primAdapter = adapter;
-        result.allAdapters.emplace_back(adapterAdapter, TfToken());
+    }
+
+    return result;
+}
+
+const UsdImaging_AdapterManager::_WrappedPrimAdapterEntry &
+UsdImaging_AdapterManager::_LookupWrappedPrimAdapter(
+    const TfToken &primType)
+{
+    // Look-up adapter in cache.
+    const auto it = _primTypeToWrappedPrimAdapterEntry.find(primType);
+    if (it != _primTypeToWrappedPrimAdapterEntry.end()) {
+        return it->second;
+    }
+
+    const auto itAndBool =
+        _primTypeToWrappedPrimAdapterEntry.insert(
+            {primType, _ComputeWrappedPrimAdapter(primType)});
+    
+    return itAndBool.first->second;
+}
+
+UsdImaging_AdapterManager::_WrappedPrimAdapterEntry
+UsdImaging_AdapterManager::_ComputeWrappedPrimAdapter(
+    const TfToken &schemaName)
+{
+    // Construct and store in cache if not in cache yet.
+    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
+    UsdImaging_AdapterManager::_WrappedPrimAdapterEntry entry;
+    entry.primAdapter = reg.ConstructAdapter(schemaName);
+    if (entry.primAdapter) {
+        entry.apiSchemaAdapter =
+            std::make_shared<_PrimAdapterAPISchemaAdapter>(entry.primAdapter);
     } else {
         // use a fallback adapter which calls directly to
         // UsdImagingDataSourcePrim where appropriate
         static const UsdImagingAPISchemaAdapterSharedPtr basePrimAdapter =
              std::make_shared<_BasePrimAdapterAPISchemaAdapter>();
-
-        result.allAdapters.emplace_back(basePrimAdapter, TfToken());
+        entry.apiSchemaAdapter = basePrimAdapter;
     }
 
-    // then the applied API schemas which are already in their strength order
-    for (const TfToken &schemaToken: appliedSchemas) {
-
-        const std::pair<TfToken, TfToken> tokenPair =
-            UsdSchemaRegistry::GetTypeNameAndInstance(schemaToken);
-            
-        if (UsdImagingAPISchemaAdapterSharedPtr a =
-                _APIAdapterLookup(tokenPair.first)) {
-            result.allAdapters.emplace_back(a, tokenPair.second);
-        }
-    }
-
-    _adapterSetMap.insert({&typeInfo, result});
-    if (outputPrimAdapter) {
-        *outputPrimAdapter = result.primAdapter;
-    }
-    return result.allAdapters;
-}
-
-UsdImagingPrimAdapterSharedPtr
-UsdImaging_AdapterManager::_PrimAdapterLookup(const TfToken &adapterKey) const
-{
-    // Look-up adapter in cache.
-    _PrimAdapterMap::const_iterator const it = _primAdapterMap.find(adapterKey);
-    if (it != _primAdapterMap.end()) {
-        return it->second;
-    }
-
-    // Construct and store in cache if not in cache yet.
-    UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
-    UsdImagingPrimAdapterSharedPtr adapter = reg.ConstructAdapter(adapterKey);
-    _primAdapterMap[adapterKey] = adapter;
-    return adapter;
+    return entry;
 }
 
 UsdImagingAPISchemaAdapterSharedPtr
-UsdImaging_AdapterManager::_APIAdapterLookup(
-    const TfToken &adapterKey) const
+UsdImaging_AdapterManager::_LookupAPISchemaAdapter(const TfToken &schemaName)
 {
-    _ApiAdapterMap::const_iterator const it = _apiAdapterMap.find(adapterKey);
-    if (it != _apiAdapterMap.end()) {
+    const auto it = _schemaNameToAPISchemaAdapter.find(schemaName);
+    if (it != _schemaNameToAPISchemaAdapter.end()) {
         return it->second;
     }
 
     // Construct and store in cache if not in cache yet.
     UsdImagingAdapterRegistry &reg = UsdImagingAdapterRegistry::GetInstance();
-    UsdImagingAPISchemaAdapterSharedPtr adapter =
-        reg.ConstructAPISchemaAdapter(adapterKey);
-    _apiAdapterMap[adapterKey] = adapter;
+    UsdImagingAPISchemaAdapterSharedPtr const adapter =
+        reg.ConstructAPISchemaAdapter(schemaName);
+    _schemaNameToAPISchemaAdapter[schemaName] = adapter;
     return adapter;
 }
 
