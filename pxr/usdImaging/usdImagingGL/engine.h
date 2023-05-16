@@ -82,6 +82,11 @@ TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
 using UsdStageWeakPtr = TfWeakPtr<class UsdStage>;
 
+namespace UsdImagingGLEngine_Impl
+{
+    using _AppSceneIndicesSharedPtr = std::shared_ptr<struct _AppSceneIndices>;
+}
+
 /// \class UsdImagingGLEngine
 ///
 /// The UsdImagingGLEngine is the main entry point API for rendering USD scenes.
@@ -697,6 +702,22 @@ protected:
     bool _isPopulated;
 
 private:
+    // Registers app-managed scene indices with the scene index plugin registry.
+    // This needs to be called once *before* the render index is constructed.
+    static void _RegisterApplicationSceneIndices();
+
+    // Creates and returns the scene globals scene index. This callback is
+    // registered prior to render index construction and is invoked during
+    // render index construction via
+    // HdSceneIndexPluginRegistry::AppendSceneIndicesForRenderer(..).
+    static HdSceneIndexBaseRefPtr
+    _AppendSceneGlobalsSceneIndexCallback(
+        const std::string &renderInstanceId,
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs);
+    
+    UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr _appSceneIndices;
+
     void _DestroyHydraObjects();
 
     // Note that we'll only ever use one of _sceneIndex/_sceneDelegate
@@ -707,10 +728,6 @@ private:
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
     HdSceneIndexBaseRefPtr _sceneIndex;
     
-    // Scene indices that are used (i.e., inserted into the render index)
-    // always:
-    HdsiSceneGlobalsSceneIndexRefPtr _sceneGlobalsSceneIndex;
-
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     std::unique_ptr<HdEngine> _engine;

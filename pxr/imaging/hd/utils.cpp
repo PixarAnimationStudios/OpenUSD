@@ -41,7 +41,6 @@ HasActiveRenderSettingsPrim(
     SdfPath *primPath /* = nullptr */)
 {
     if (!si) {
-        TF_CODING_ERROR("Invalid input scene index provided.");
         return false;
     }
 
@@ -52,19 +51,10 @@ HasActiveRenderSettingsPrim(
     }
 
     if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        const SdfPath path = pathHandle->GetTypedValue(0);
-
-        // Check if there is a valid render settings scene index prim
-        // at that path.
-        HdSceneIndexPrim prim = si->GetPrim(path);
-        if (prim.primType == HdPrimTypeTokens->renderSettings &&
-            prim.dataSource) {
-
-            if (primPath) {
-                *primPath = path;
-            }
-            return true;
+        if (primPath) {
+            *primPath = pathHandle->GetTypedValue(0);
         }
+        return true;
     }
 
     return false;

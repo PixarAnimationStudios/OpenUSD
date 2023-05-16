@@ -24,7 +24,9 @@
 
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/sceneGlobalsSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -63,14 +65,21 @@ HdDataSourceBaseHandle
 _SceneGlobalsDataSource::Get(const TfToken &name)
 {
     if (name == HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim) {
+
         SdfPath const &path = _si->_activeRenderSettingsPrimPath;
-        // XXX Ideally, this should check if an opinion was set rather than use
-        //     a non-empty path to imply that.
+
         if (!path.IsEmpty()) {
-            return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+            // Validate that a render settings prim exists at the given path.
+            HdSceneIndexPrim prim = _si->GetPrim(path);
+            if (prim.primType == HdRenderSettingsSchemaTokens->renderSettings &&
+                prim.dataSource) {
+
+                return HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+            }
         }
     }
 
+    // If a valid render settings prim was never set, return nullptr.
     return nullptr;
 }
 
@@ -80,9 +89,9 @@ _SceneGlobalsDataSource::Get(const TfToken &name)
 
 /* static */
 HdsiSceneGlobalsSceneIndexRefPtr
-HdsiSceneGlobalsSceneIndex::New()
+HdsiSceneGlobalsSceneIndex::New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
 {
-    return TfCreateRefPtr(new HdsiSceneGlobalsSceneIndex());
+    return TfCreateRefPtr(new HdsiSceneGlobalsSceneIndex(inputSceneIndex));
 }
 
 void
@@ -93,6 +102,8 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
         return;
     }
 
+    // Note: Don't validate here since this could be called before scene indices
+    //       are populated.
     _activeRenderSettingsPrimPath = path;
 
     if (_IsObserved()) {
@@ -106,25 +117,65 @@ HdsiSceneGlobalsSceneIndex::SetActiveRenderSettingsPrimPath(
 HdSceneIndexPrim
 HdsiSceneGlobalsSceneIndex::GetPrim(const SdfPath &primPath) const
 {
-    // This scene index services only the root prim path.
+    HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
+
+    // Overlay a data source at the scene globals locator for the default prim.
     if (primPath == HdSceneGlobalsSchema::GetDefaultPrimPath()) {
-        return { 
-            TfToken() /*primType*/,
+        HdContainerDataSourceHandle sceneGlobalsContainerDS =
             HdRetainedContainerDataSource::New(
                 HdSceneGlobalsSchemaTokens->sceneGlobals,
-                _SceneGlobalsDataSource::New(this))};
+                _SceneGlobalsDataSource::New(this));
+
+        if (prim.dataSource) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                sceneGlobalsContainerDS, prim.dataSource);
+        } else {
+            prim.dataSource = sceneGlobalsContainerDS;
+        }
     }
 
-    return HdSceneIndexPrim();
+    return prim;
 }
 
 SdfPathVector
 HdsiSceneGlobalsSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    return {};
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
 }
 
-HdsiSceneGlobalsSceneIndex::HdsiSceneGlobalsSceneIndex() = default;
+HdsiSceneGlobalsSceneIndex::HdsiSceneGlobalsSceneIndex(
+    const HdSceneIndexBaseRefPtr &inputSceneIndex)
+: HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+{}
+
+void
+HdsiSceneGlobalsSceneIndex::_PrimsAdded(
+    const HdSceneIndexBase &sender,
+    const HdSceneIndexObserver::AddedPrimEntries &entries)
+{
+    _SendPrimsAdded(entries);
+}
+
+void
+HdsiSceneGlobalsSceneIndex::_PrimsRemoved(
+    const HdSceneIndexBase &sender,
+    const HdSceneIndexObserver::RemovedPrimEntries &entries)
+{
+    // XXX Since this is now a filtering scene index, handle removals of
+    //     the active render settings prim.
+    _SendPrimsRemoved(entries);
+}
+
+void
+HdsiSceneGlobalsSceneIndex::_PrimsDirtied(
+    const HdSceneIndexBase &sender,
+    const HdSceneIndexObserver::DirtiedPrimEntries &entries)
+{
+    _SendPrimsDirtied(entries);
+}
+
+// XXX Handle renames by sending a dirty notice that the active render settings
+//     prim has changed.
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -46,6 +46,7 @@
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
@@ -58,6 +59,7 @@
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 
 #include "pxr/base/gf/matrix4d.h"
@@ -73,7 +75,27 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for imaging scene input");
 
+namespace UsdImagingGLEngine_Impl
+{
+
+// Struct that holds application scene indices created via the
+// scene index plugin registration callback facility.
+struct _AppSceneIndices {
+    HdsiSceneGlobalsSceneIndexRefPtr sceneGlobalsSceneIndex;
+};
+
+};
+
 namespace {
+
+// Use a static tracker to accommodate the use-case where an application spawns
+// multiple engines.
+using _RenderInstanceAppSceneIndicesTracker =
+    HdUtils::RenderInstanceTracker<UsdImagingGLEngine_Impl::_AppSceneIndices>;
+TfStaticData<_RenderInstanceAppSceneIndicesTracker>
+    s_renderInstanceTracker;
+
+// ----------------------------------------------------------------------------
 
 SdfPath const&
 _GetUsdImagingDelegateId()
@@ -204,9 +226,14 @@ UsdImagingGLEngine::_DestroyHydraObjects()
         _sceneDelegate = nullptr;
     }
 
-    if (_sceneGlobalsSceneIndex) {
-        _renderIndex->RemoveSceneIndex(_sceneGlobalsSceneIndex);
-        _sceneGlobalsSceneIndex = nullptr;
+    // Drop the reference to application scene indices so they are destroyed
+    // during render index destruction.
+    {
+        _appSceneIndices = nullptr;
+        if (_renderIndex) {
+            s_renderInstanceTracker->UnregisterInstance(
+                _renderIndex->GetInstanceName());
+        }
     }
 
     _renderIndex = nullptr;
@@ -1007,6 +1034,53 @@ UsdImagingGLEngine::_ComputeControllerPath(
 }
 
 void
+UsdImagingGLEngine::_RegisterApplicationSceneIndices()
+{
+    // SGSI
+    {
+        // Insert earlier so downstream scene indices can query and be notified
+        // of changes and also declare their dependencies (e.g., to support
+        // rendering color spaces).
+        const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+
+        // Note:
+        // The pattern used below registers the static member fn as a callback,
+        // which retreives the scene index instance using the
+        // renderInstanceId argument of the callback.
+
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            std::string(), // empty string implies all renderers
+            &UsdImagingGLEngine::_AppendSceneGlobalsSceneIndexCallback,
+            /* inputArgs = */ nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart
+        );
+    }
+}
+
+/* static */
+HdSceneIndexBaseRefPtr
+UsdImagingGLEngine::_AppendSceneGlobalsSceneIndexCallback(
+        const std::string &renderInstanceId,
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs)
+{
+    UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr appSceneIndices =
+        s_renderInstanceTracker->GetInstance(renderInstanceId);
+    
+    if (appSceneIndices) {
+        auto &sgsi = appSceneIndices->sceneGlobalsSceneIndex;
+        sgsi = HdsiSceneGlobalsSceneIndex::New(inputScene);
+        sgsi->SetDisplayName("Scene Globals Scene Index");
+        return sgsi;
+    }
+
+    TF_CODING_ERROR("Did not find appSceneIndices instance for %s,",
+                    renderInstanceId.c_str());
+    return inputScene;
+}
+
+void
 UsdImagingGLEngine::_SetRenderDelegate(
     HdPluginRenderDelegateUniqueHandle &&renderDelegate)
 {
@@ -1017,24 +1091,38 @@ UsdImagingGLEngine::_SetRenderDelegate(
 
     _isPopulated = false;
 
-    // Creation
+    // Use the render delegate ptr (rather than 'this' ptr) for generating
+    // the unique id.
+    const std::string renderInstanceId =
+        TfStringPrintf("UsdImagingGLEngine_%s_%p",
+            renderDelegate.GetPluginId().GetText(),
+            (void *) renderDelegate.Get());
 
+    // Application scene index callback registration and
+    // engine-renderInstanceId tracking.
+    {
+        // Register application managed scene indices via the callback
+        // facility which will be invoked during render index construction.
+        static std::once_flag registerOnce;
+        std::call_once(registerOnce, _RegisterApplicationSceneIndices);
+
+        _appSceneIndices =
+            std::make_shared<UsdImagingGLEngine_Impl::_AppSceneIndices>();
+
+        // Register the app scene indices with the render instance id
+        // that is provided to the render index constructor below.
+        s_renderInstanceTracker->RegisterInstance(
+            renderInstanceId, _appSceneIndices);
+    }
+
+    // Creation
     // Use the new render delegate.
     _renderDelegate = std::move(renderDelegate);
 
     // Recreate the render index
     _renderIndex.reset(
         HdRenderIndex::New(
-            _renderDelegate.Get(), {&_hgiDriver}, "UsdImagingGLEngine"));
-
-    // Create and insert the scene globals scene index (regardless of whether 
-    // the delegate or stage scene index chain is used).
-    // Note: The order of insertion below matters! This scene index needs to
-    //       inserted prior to the UsdStageSceneIndex when used to have a
-    //       stronger precedence.
-    _sceneGlobalsSceneIndex = HdsiSceneGlobalsSceneIndex::New();
-    _renderIndex->InsertSceneIndex(
-        _sceneGlobalsSceneIndex, SdfPath::AbsoluteRootPath());
+            _renderDelegate.Get(), {&_hgiDriver}, renderInstanceId));
 
     if (_GetUseSceneIndices()) {
         HdContainerDataSourceHandle const stageInputArgs =
@@ -1247,11 +1335,15 @@ UsdImagingGLEngine::SetRendererSetting(TfToken const& id, VtValue const& value)
 void
 UsdImagingGLEngine::SetActiveRenderSettingsPrimPath(SdfPath const &path)
 {
-    if (ARCH_UNLIKELY(!_sceneGlobalsSceneIndex)) {
+    if (ARCH_UNLIKELY(!_appSceneIndices)) {
+        return;
+    }
+    auto &sgsi = _appSceneIndices->sceneGlobalsSceneIndex;
+    if (ARCH_UNLIKELY(!sgsi)) {
         return;
     }
 
-    _sceneGlobalsSceneIndex->SetActiveRenderSettingsPrimPath(path);
+    sgsi->SetActiveRenderSettingsPrimPath(path);
 }
 
 /* static */

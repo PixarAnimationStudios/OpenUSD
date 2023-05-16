@@ -25,37 +25,35 @@
 #define PXR_IMAGING_HDSI_SCENE_GLOBALS_SCENE_INDEX_H
 
 #include "pxr/imaging/hdsi/api.h"
-#include "pxr/imaging/hd/sceneIndex.h"
+
+#include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_WEAK_AND_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 
+// undefined -> 2 : Make SGSI a filtering scene index.
+#define HDSI_SGSI_API_VERSION 2
+
 /// \class HdsiSceneGlobalsSceneIndex
 ///
-/// Standalone scene index that populates a "sceneGlobals" data source as
-/// modeled by HdSceneGlobalsSchema and provides public API to mutate it.
+/// Scene index that populates a "sceneGlobals" data source as modeled
+/// by HdSceneGlobalsSchema and provides public API to mutate it.
 ///
-class HdsiSceneGlobalsSceneIndex : public HdSceneIndexBase
+class HdsiSceneGlobalsSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
 public:
     HDSI_API
     static HdsiSceneGlobalsSceneIndexRefPtr
-    New();
+    New(const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
     // ------------------------------------------------------------------------
     // Public (non-virtual) API
     // ------------------------------------------------------------------------
     
-    /// Caches the active render settings prim path and notifies any observers
-    /// of the invalidation for the associated locator.
-    ///
-    /// \note Since this isn't a filtering scene index, we don't have a way to
-    ///       validate the path provided here. Use the utility method
-    ///       HdUtils::GetActiveRenderSettingsPrimPath to do so.
-    ///
-    /// \sa hd/utils.h
+    /// Caches the provided path and notifies any observers when the active 
+    /// render settings prim path is modified.
     ///
     HDSI_API
     void SetActiveRenderSettingsPrimPath(const SdfPath &);
@@ -73,7 +71,25 @@ public:
 
 protected:
     HDSI_API
-    HdsiSceneGlobalsSceneIndex();
+    HdsiSceneGlobalsSceneIndex(const HdSceneIndexBaseRefPtr &inputSceneIndex);
+
+    // ------------------------------------------------------------------------
+    // Satisfying HdSingleInputFilteringSceneIndexBase
+    // ------------------------------------------------------------------------
+    HDSI_API
+    void _PrimsAdded(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::AddedPrimEntries &entries) override;
+
+    HDSI_API
+    void _PrimsRemoved(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
+
+    HDSI_API
+    void _PrimsDirtied(
+        const HdSceneIndexBase &sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
     friend class _SceneGlobalsDataSource;
