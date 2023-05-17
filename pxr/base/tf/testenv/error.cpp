@@ -29,7 +29,7 @@
 
 #include "pxr/base/arch/functionLite.h"
 
-#include <tbb/tbb_thread.h>
+#include <thread>
 
 #define FILENAME   "error.cpp"
 
@@ -195,7 +195,7 @@ Test_TfErrorThreadTransport()
     printf("Creating TfErrorMark\n");
     TfErrorMark m;
     printf("Launching thread\n");
-    tbb::tbb_thread t([&transport]() { _ThreadTask(&transport); });
+    std::thread t([&transport]() { _ThreadTask(&transport); });
     TF_AXIOM(m.IsClean());
     t.join();
     printf("Thread completed, posting error.\n");
