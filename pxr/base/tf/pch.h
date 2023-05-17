@@ -242,7 +242,6 @@
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>
-#include <tbb/atomic.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 #include <tbb/spin_rw_mutex.h>
