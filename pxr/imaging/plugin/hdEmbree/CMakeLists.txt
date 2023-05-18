@@ -30,6 +30,7 @@ pxr_plugin(hdEmbree
 
     PUBLIC_CLASSES
         config
+        implicitSurfaceSceneIndexPlugin
         instancer
         mesh
         meshSamplers
