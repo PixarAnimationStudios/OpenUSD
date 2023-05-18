@@ -170,7 +170,7 @@ protected:
         HdStResourceRegistrySharedPtr resourceRegistry,
         HdChangeTracker &changeTracker, 
         HdRenderParam *renderParam, 
-        HdDrawItem *drawItem, 
+        HdStDrawItem *drawItem, 
         const TfToken &indexToken,
         HdBufferSourceSharedPtr indicesSource, 
         HdBufferSourceSharedPtr fvarIndicesSource, 

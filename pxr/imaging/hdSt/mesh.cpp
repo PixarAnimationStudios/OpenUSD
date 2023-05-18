@@ -937,8 +937,9 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             const size_t numGeomSubsets = geomSubsets.size();
             for (size_t i = 0; i < geomSubsets.size(); ++i) {
                 HdGeomSubset geomSubset = geomSubsets[i];
-                HdDrawItem * subsetDrawItem = repr->GetDrawItemForGeomSubset(
-                    geomSubsetDescIndex, numGeomSubsets, i);
+                HdStDrawItem *subsetDrawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItemForGeomSubset(
+                        geomSubsetDescIndex, numGeomSubsets, i));
                 _CreateTopologyRangeForGeomSubset(resourceRegistry, 
                     changeTracker, renderParam, subsetDrawItem, indexToken, 
                     indicesSource, fvarIndicesSource, 
@@ -954,7 +955,7 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
     HdStResourceRegistrySharedPtr resourceRegistry,
     HdChangeTracker &changeTracker, 
     HdRenderParam *renderParam, 
-    HdDrawItem *drawItem, 
+    HdStDrawItem *drawItem, 
     const TfToken &indexToken,
     HdBufferSourceSharedPtr indicesSource, 
     HdBufferSourceSharedPtr fvarIndicesSource, 

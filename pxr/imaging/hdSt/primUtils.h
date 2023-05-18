@@ -221,7 +221,7 @@ void HdStPopulateConstantPrimvars(
     HdRprimSharedData *sharedData,
     HdSceneDelegate *delegate,
     HdRenderParam *renderParam,
-    HdDrawItem *drawItem,
+    HdStDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
     HdPrimvarDescriptorVector const& constantPrimvars,
     bool *hasMirroredTransform = nullptr);
