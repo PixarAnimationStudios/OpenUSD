@@ -1507,6 +1507,8 @@ pxr_register_test(testUsdImagingGLPickAndHighlight
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPickAndHighlight
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
