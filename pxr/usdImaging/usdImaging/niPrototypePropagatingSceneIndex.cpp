@@ -209,7 +209,7 @@ public:
               // stuff outside the prototype will not be changed.
               SdfPath::AbsoluteRootPath().AppendChild(
                   UsdImagingTokens->niInstancer),
-              prefix.AppendChild(UsdImagingTokens->niInstancer)))
+              prefix))
       , _mergingSceneIndex(mergingSceneIndex)
     {
         _mergingSceneIndex->AddInputScene(_rerootingSceneIndex, prefix);
@@ -286,7 +286,7 @@ UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
 {
     const TfToken prototypeName =
         UsdImaging_NiInstanceAggregationSceneIndex::
-        GetPrototypeNameFromPrototypeBasePrim(primPath);
+        GetPrototypeNameFromInstancerPath(primPath);
     if (prototypeName.IsEmpty()) {
         return;
     }

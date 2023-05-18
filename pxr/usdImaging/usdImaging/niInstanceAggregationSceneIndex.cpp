@@ -1638,24 +1638,22 @@ UsdImaging_NiInstanceAggregationSceneIndex::GetChildPrimPaths(
 /* static */
 TfToken
 UsdImaging_NiInstanceAggregationSceneIndex::
-GetPrototypeNameFromPrototypeBasePrim(const SdfPath &primPath)
+GetPrototypeNameFromInstancerPath(const SdfPath &primPath)
 {
     // Use the convention that the prototype base will be at a path such as
     // that instancers will have paths such as
-    // /Foo/UsdNiPropatedPrototypes/Binding435..f52/__Prototype_1
+    // /Foo/UsdNiPropatedPrototypes/Binding435..f52/__Prototype_1/UsdNiInstancer
     // find them.
-    if (primPath.GetPathElementCount() < 3) {
+    if (primPath.GetPathElementCount() < 4) {
         return TfToken();
     }
 
-    // Path has __Usd_Prototypes at correct place.
-    const TfToken parentParentName =
-        primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != _tokens->propagatedPrototypesScope) {
+    if (primPath.GetNameToken() != UsdImagingTokens->niInstancer) {
         return TfToken();
     }
 
-    return primPath.GetNameToken();
+    // Get second last element, e.g., __Prototype_1
+    return primPath.GetParentPath().GetNameToken();
 }
 
 UsdImaging_NiInstanceAggregationSceneIndex::
