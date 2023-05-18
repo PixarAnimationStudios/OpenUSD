@@ -49,4 +49,5 @@ pxr_library(usdRender
         images/dataWindow.svg
         images/nonSquarePixels.svg
         images/pixelAspectRatio.svg
+        doxygen/renderSettings.usda
 )
