@@ -110,6 +110,33 @@ public:
     }
 
 private:
+    // Get path of prototype in UsdImagingStageSceneIndex.
+    static SdfPath
+    _GetPrototypePath(const TfToken &prototypeName)
+    {
+        if (prototypeName.IsEmpty()) {
+            return SdfPath::AbsoluteRootPath();
+        } else {
+            return SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
+        }
+    }
+
+    // Get path of propagated prototype within the prototype and instance
+    // aggregation scene index. We will add another re-rooting scene index
+    // to put it into its final place.
+    static SdfPath
+    _GetPropagatedPrototypePath(const TfToken &prototypeName)
+     {
+         if (prototypeName.IsEmpty()) {
+             return SdfPath();
+         } else {
+             static const SdfPath instancerPath =
+                 SdfPath::AbsoluteRootPath().AppendChild(
+                     UsdImagingTokens->niInstancer);
+             return instancerPath.AppendChild(prototypeName);
+         }
+     }
+
     HdSceneIndexBaseRefPtr
     _ComputeIsolatingSceneIndex(const TfToken &prototypeName) const
     {
@@ -117,10 +144,12 @@ private:
             return UsdImaging_NiPrototypePruningSceneIndex::New(
                 _inputSceneIndex);
         } else {
-            const SdfPath prototypePath =
-                SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
+            // Isolate prototype from UsdImagingStageSceneIndex and
+            // move it under the instancer.
             return UsdImagingRerootingSceneIndex::New(
-                _inputSceneIndex, prototypePath, prototypePath);
+                _inputSceneIndex,
+                _GetPrototypePath(prototypeName),
+                _GetPropagatedPrototypePath(prototypeName));
         }
     }
 
@@ -129,13 +158,9 @@ private:
         const TfToken &prototypeName,
         HdSceneIndexBaseRefPtr const &commonSceneIndex) const
     {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
-        
         return UsdImaging_NiPrototypeSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
+            commonSceneIndex,
+            _GetPropagatedPrototypePath(prototypeName));
     }
 
     HdSceneIndexBaseRefPtr
@@ -143,13 +168,9 @@ private:
         const TfToken &prototypeName,
         HdSceneIndexBaseRefPtr const &commonSceneIndex) const
     {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
-
         return UsdImaging_NiInstanceAggregationSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
+            commonSceneIndex,
+            _GetPropagatedPrototypePath(prototypeName));
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
@@ -181,7 +202,14 @@ public:
         HdMergingSceneIndexRefPtr const &mergingSceneIndex)
       : _rerootingSceneIndex(
           UsdImagingRerootingSceneIndex::New(
-              sceneIndex, SdfPath::AbsoluteRootPath(), prefix))
+              sceneIndex,
+              // Re-root, but only prims under the instancer,
+              // i.e., the instancer and the prototype.
+              // This way paths inside the prototype pointing to
+              // stuff outside the prototype will not be changed.
+              SdfPath::AbsoluteRootPath().AppendChild(
+                  UsdImagingTokens->niInstancer),
+              prefix.AppendChild(UsdImagingTokens->niInstancer)))
       , _mergingSceneIndex(mergingSceneIndex)
     {
         _mergingSceneIndex->AddInputScene(_rerootingSceneIndex, prefix);

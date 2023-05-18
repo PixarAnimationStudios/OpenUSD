@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -64,9 +65,14 @@ _InstancedByDataSource(const SdfPath &prototypeRoot)
 {
     using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
 
+    static const DataSource::Handle paths =
+        DataSource::New(
+            { SdfPath::AbsoluteRootPath()
+                  .AppendChild(UsdImagingTokens->niInstancer) });
+
     return
         HdInstancedBySchema::Builder()
-            .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
+            .SetPaths(paths)
             .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
             .Build();
 }
@@ -144,11 +150,12 @@ UsdImaging_NiPrototypeSceneIndex::GetPrim(
         return prim;
     }
 
-    if (primPath.IsAbsoluteRootPath()) {
+    if (!primPath.HasPrefix(_prototypeRoot)) {
         return prim;
     }
 
-    if (primPath == _prototypeRoot) {
+    if (primPath.GetPathElementCount() ==
+                    _prototypeRoot.GetPathElementCount()) {
         if (_prototypeRootOverlaySource) {
             prim.dataSource = HdOverlayContainerDataSource::New(
                 _prototypeRootOverlaySource,

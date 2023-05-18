@@ -61,6 +61,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdTransform2d)         \
     ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate")) \
     ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes")) \
+    ((niInstancer, "UsdNiInstancer")) \
     (extentsHint)
 
 TF_DECLARE_PUBLIC_TOKENS(

@@ -699,9 +699,14 @@ _ComputeFallbackInstancedByDataSource(const SdfPath &prototypeRoot)
     } else {
         using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
 
+        static const DataSource::Handle paths =
+            DataSource::New(
+                { SdfPath::AbsoluteRootPath()
+                      .AppendChild(UsdImagingTokens->niInstancer) });
+
         return
             HdInstancedBySchema::Builder()
-                .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
+                .SetPaths(paths)
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
                 .Build();
     }
@@ -882,10 +887,16 @@ struct _InstanceInfo {
                 .AppendChild(bindingHash);
     }
 
-    SdfPath GetInstancerPath() const {
+    SdfPath GetPropagatedPrototypeBase() const {
         return
             GetBindingPrimPath()
                 .AppendChild(prototypeName);
+    }
+
+    SdfPath GetInstancerPath() const {
+        return
+            GetPropagatedPrototypeBase()
+                .AppendChild(UsdImagingTokens->niInstancer);
     }
 };
 
@@ -1240,7 +1251,12 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             instancerPath.AppendChild(info.prototypeName);
 
         _retainedSceneIndex->AddPrims(
-            { { instancerPath,
+            { // Add propagated prototype base prim
+              { instancerPath.GetParentPath(),
+                TfToken(),
+                HdRetainedContainerDataSource::New() },
+              // instancer which is child of base prim.
+              { instancerPath,
                 HdPrimTypeTokens->instancer,
                 _InstancerPrimSource::New(
                     _flattenedInputScene,
