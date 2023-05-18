@@ -145,7 +145,7 @@ public:
         _poolHandle = Handle { nullptr };
     }
 
-    Sdf_PathNode const *
+    inline Sdf_PathNode const *
     get() const noexcept {
         return reinterpret_cast<Sdf_PathNode *>(_poolHandle.GetPtr());
     }
@@ -179,17 +179,17 @@ public:
     }
 private:
 
-    void _AddRef(Sdf_PathNode const *p) const {
+    inline void _AddRef(Sdf_PathNode const *p) const {
         if (Counted) {
             intrusive_ptr_add_ref(p);
         }
     }
 
-    void _AddRef() const {
+    inline void _AddRef() const {
         _AddRef(get());
     }
 
-    void _DecRef() const {
+    inline void _DecRef() const {
         if (Counted) {
             intrusive_ptr_release(get());
         }

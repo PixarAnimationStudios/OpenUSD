@@ -32,8 +32,6 @@
 
 #include <boost/intrusive_ptr.hpp>
 
-#include <tbb/atomic.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 // Sdf_PathNode
@@ -62,10 +60,18 @@ class Sdf_PathNode {
     Sdf_PathNode(Sdf_PathNode const &) = delete;
     Sdf_PathNode &operator=(Sdf_PathNode const &) = delete;
 public:
+
+    static constexpr uint8_t IsAbsoluteFlag = 1 << 0;
+    static constexpr uint8_t ContainsPrimVarSelFlag = 1 << 1;
+    static constexpr uint8_t ContainsTargetPathFlag = 1 << 2;
+
+    static constexpr uint32_t HasTokenBit = 1u << 31;
+    static constexpr uint32_t RefCountMask = ~HasTokenBit;
+    
     // Node types identify what kind of path node a given instance is.
     // There are restrictions on what type of children each node type 
     // can have,
-    enum NodeType {
+    enum NodeType : uint8_t {
         
         /********************************************************/
         /******************************* Prim portion nodes *****/
@@ -171,19 +177,23 @@ public:
                        bool stopAtRootPrim);
 
     // This method returns a node pointer
-    Sdf_PathNode const *GetParentNode() const { return _parent.get(); }
+    inline Sdf_PathNode const *GetParentNode() const { return _parent.get(); }
 
-    size_t GetElementCount() const { return size_t(_elementCount); }
-    bool IsAbsolutePath() const { return _isAbsolute; }
-    bool IsAbsoluteRoot() const { return (_isAbsolute) & (!_elementCount); }
-    bool ContainsTargetPath() const { return _containsTargetPath; }
+    size_t GetElementCount() const { return _elementCount; }
+    bool IsAbsolutePath() const { return _nodeFlags & IsAbsoluteFlag; }
+    bool IsAbsoluteRoot() const { return IsAbsolutePath() & (!_elementCount); }
+    bool ContainsTargetPath() const {
+        return _nodeFlags & ContainsTargetPathFlag;
+    }
     bool IsNamespaced() const {
-        return (_nodeType == PrimPropertyNode ||
-                _nodeType == RelationalAttributeNode) && _IsNamespacedImpl();
+        // Bitwise-or to avoid branching in the node type comparisons, but
+        // logical and to avoid calling _IsNamespacedImpl() unless necessary.
+        return ((_nodeType == PrimPropertyNode) |
+                (_nodeType == RelationalAttributeNode)) && _IsNamespacedImpl();
     }
 
     bool ContainsPrimVariantSelection() const {
-        return _containsPrimVariantSelection;
+        return _nodeFlags & ContainsPrimVarSelFlag;
     }
 
     // For PrimNode, PrimPropertyNode, RelationalAttributeNode, and 
@@ -229,7 +239,9 @@ public:
 
     // Return the current ref-count.
     // Meant for diagnostic use.
-    unsigned int GetCurrentRefCount() const { return _refCount; }
+    uint32_t GetCurrentRefCount() const {
+        return _refCount.load(std::memory_order_relaxed) & RefCountMask;
+    }
 
 protected:
     Sdf_PathNode(Sdf_PathNode const *parent, NodeType nodeType)
@@ -237,22 +249,18 @@ protected:
         , _refCount(1)
         , _elementCount(parent ? parent->_elementCount + 1 : 1)
         , _nodeType(nodeType)
-        , _isAbsolute(parent && parent->IsAbsolutePath())
-        , _containsPrimVariantSelection(
-            nodeType == PrimVariantSelectionNode ||
-            (parent && parent->_containsPrimVariantSelection))
-        , _containsTargetPath(nodeType == TargetNode ||
-                              nodeType == MapperNode ||
-                              (parent && parent->_containsTargetPath))
-        , _hasToken(false)
-        {}
+        , _nodeFlags(
+            (parent ? parent->_nodeFlags : 0) | _NodeTypeToFlags(nodeType))
+        {
+        }
     
     // This constructor is used only to create the two special root nodes.
     explicit Sdf_PathNode(bool isAbsolute);
 
     ~Sdf_PathNode() {
-        if (_hasToken)
+        if (_refCount.load(std::memory_order_relaxed) & HasTokenBit) {
             _RemovePathTokenFromTable();
+        }
     }
 
     // Helper to downcast and destroy the dynamic type of this object -- this is
@@ -295,6 +303,16 @@ protected:
     friend void intrusive_ptr_release(const Sdf_PathNode*);
 
 private:
+    static constexpr uint8_t _NodeTypeToFlags(NodeType nt) {
+        if (nt == PrimVariantSelectionNode) {
+            return ContainsPrimVarSelFlag;
+        }
+        if (nt == TargetNode || nt == MapperNode) {
+            return ContainsTargetPathFlag;
+        }
+        return 0;
+    }
+
     // Downcast helper, just sugar to static_cast this to Derived const *.
     template <class Derived>
     Derived const *_Downcast() const {
@@ -310,23 +328,15 @@ private:
     // Instance variables.  PathNode's size is important to keep small.  Please
     // be mindful of that when making any changes here.
     const Sdf_PathNodeConstRefPtr _parent;
-    mutable tbb::atomic<unsigned int> _refCount;
 
-    const short _elementCount;
-    const unsigned char _nodeType;
-    const bool _isAbsolute:1;
-    const bool _containsPrimVariantSelection:1;
-    const bool _containsTargetPath:1;
+    // The high-order bit of _refCount (HasTokenBit) indicates whether or not
+    // we've created a token for this path node.
+    mutable std::atomic<uint32_t> _refCount;
 
-    // This is racy -- we ensure that the token creation code carefully
-    // synchronizes so that if we read 'true' from this flag, it guarantees that
-    // there's a token for this path node in the token table.  If we read
-    // 'false' it means there may or may not be, unless we're in the destructor,
-    // which must run exclusively, then reading 'false' guarantees there is no
-    // token in the table.  We use this flag to do that optimization in the
-    // destructor so we can avoid looking in the table in the case where we
-    // haven't created a token.
-    mutable bool _hasToken:1;
+    const uint16_t _elementCount;
+    const NodeType _nodeType;
+    const uint8_t _nodeFlags;
+    
 };
 
 class Sdf_PrimPartPathNode : public Sdf_PathNode {
@@ -747,11 +757,12 @@ Sdf_PathNode::GetElement() const
 SDF_API void Sdf_DumpPathStats();
 
 inline void intrusive_ptr_add_ref(const PXR_NS::Sdf_PathNode* p) {
-    ++p->_refCount;
+    p->_refCount.fetch_add(1, std::memory_order_relaxed);
 }
 inline void intrusive_ptr_release(const PXR_NS::Sdf_PathNode* p) {
-    if (p->_refCount.fetch_and_decrement() == 1)
+    if ((p->_refCount.fetch_sub(1) & PXR_NS::Sdf_PathNode::RefCountMask) == 1) {
         p->_Destroy();
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
