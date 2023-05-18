@@ -286,6 +286,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLShadeMaterial_Delegate
+    DEST testUsdImagingGLShadeMaterial_Delegate
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLSphere
     DEST testUsdImagingGLSphere
 )
@@ -1231,6 +1236,21 @@ pxr_register_test(testUsdImagingGLShadeMaterial
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLShadeMaterial
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLShadeMaterial_Delegate
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage coloredCubes.usda -write testUsdImagingGLShadeMaterial.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLShadeMaterial.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLShadeMaterial_Delegate
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLSphere

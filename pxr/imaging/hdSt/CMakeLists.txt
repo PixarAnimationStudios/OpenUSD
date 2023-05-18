@@ -160,6 +160,7 @@ pxr_library(hdSt
         indirectDrawBatch
         materialNetworkShader
         materialBindingResolvingSceneIndexPlugin
+        materialPrimvarTransferSceneIndexPlugin
         materialParam
         meshShaderKey
         meshTopology 
