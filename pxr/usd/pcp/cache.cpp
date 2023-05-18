@@ -1557,6 +1557,7 @@ struct PcpCache::_ParallelIndexer
                      
 
     void _PublishOutputs() {
+        TRACE_FUNCTION();
         // Publish.
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs> outputItem;
         while (_toPublish.try_pop(outputItem)) {
