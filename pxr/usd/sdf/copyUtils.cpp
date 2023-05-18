@@ -552,7 +552,7 @@ SdfCopySpec(
         const SdfSpecType specType = srcLayer->GetSpecType(toCopy.srcPath);
         if (specType == SdfSpecTypeUnknown) {
             TF_CODING_ERROR("Cannot copy unknown spec at <%s> from layer <%s>",
-                srcPath.GetText(), srcLayer->GetIdentifier().c_str());
+                toCopy.srcPath.GetText(), srcLayer->GetIdentifier().c_str());
             return false;
         }
 
