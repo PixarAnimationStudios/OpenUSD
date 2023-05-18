@@ -464,7 +464,8 @@ HgiVulkanTexture::CopyBufferToTexture(
 
         const HgiMipInfo &mipInfo = mipInfos[mip];
         VkBufferImageCopy bufferCopyRegion = {};
-        bufferCopyRegion.imageSubresource.aspectMask= VK_IMAGE_ASPECT_COLOR_BIT;
+        const bool isDepthBuffer = _descriptor.usage & HgiTextureUsageBitsDepthTarget;
+        bufferCopyRegion.imageSubresource.aspectMask= isDepthBuffer ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
         bufferCopyRegion.imageSubresource.mipLevel = (uint32_t) mip;
         bufferCopyRegion.imageSubresource.baseArrayLayer = 0;
         bufferCopyRegion.imageSubresource.layerCount = _descriptor.layerCount;
