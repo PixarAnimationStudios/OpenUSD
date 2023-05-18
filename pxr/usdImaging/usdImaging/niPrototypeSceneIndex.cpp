@@ -156,12 +156,14 @@ UsdImaging_NiPrototypeSceneIndex::GetPrim(
 
     if (primPath.GetPathElementCount() ==
                     _prototypeRoot.GetPathElementCount()) {
+        // primPath is _prototypeRoot
         if (_prototypeRootOverlaySource) {
             prim.dataSource = HdOverlayContainerDataSource::New(
                 _prototypeRootOverlaySource,
                 prim.dataSource);
         }
     } else {
+        // primPath is an ancestor of _prototypeRoot.
         if (_underlaySource) {
             prim.dataSource = HdOverlayContainerDataSource::New(
                 prim.dataSource,

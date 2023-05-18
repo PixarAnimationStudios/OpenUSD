@@ -156,20 +156,20 @@ private:
     HdSceneIndexBaseRefPtr
     _ComputePrototypeSceneIndex(
         const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
+        HdSceneIndexBaseRefPtr const &isolatingSceneIndex) const
     {
         return UsdImaging_NiPrototypeSceneIndex::New(
-            commonSceneIndex,
+            isolatingSceneIndex,
             _GetPropagatedPrototypePath(prototypeName));
     }
 
     HdSceneIndexBaseRefPtr
     _ComputeInstanceAggregationSceneIndex(
         const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
+        HdSceneIndexBaseRefPtr const &isolatingSceneIndex) const
     {
         return UsdImaging_NiInstanceAggregationSceneIndex::New(
-            commonSceneIndex,
+            isolatingSceneIndex,
             _GetPropagatedPrototypePath(prototypeName));
     }
 
@@ -284,22 +284,12 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
 void
 UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
 {
-    // Use the convention from the UsdImaging_NiInstanceAggregationSceneIndex
-    // that instancers will have paths such as
-    // /Foo/__Usd_Prototypes/Binding435..f52/__Prototype_1
-    // find them.
-    if (primPath.GetPathElementCount() < 3) {
+    const TfToken prototypeName =
+        UsdImaging_NiInstanceAggregationSceneIndex::
+        GetPrototypeNameFromPrototypeBasePrim(primPath);
+    if (prototypeName.IsEmpty()) {
         return;
     }
-
-    // Path has __Usd_Prototypes at correct place.
-    const TfToken parentParentName =
-        primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != UsdImagingTokens->propagatedPrototypesScope) {
-        return;
-    }
-
-    const TfToken prototypeName = primPath.GetNameToken();
 
     _MergingSceneIndexEntryUniquePtr &entry =
         _instancersToMergingSceneIndexEntry[primPath];

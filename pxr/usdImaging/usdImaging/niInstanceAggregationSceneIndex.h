@@ -262,6 +262,13 @@ public:
 
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
 
+    // Given a path in this scene index, returns the name of the prototype
+    // if it is a path to base prim added to host an instancer instancing
+    // particular prototype. If not the path to such a base prim, return
+    // empty token.
+    static
+    TfToken GetPrototypeNameFromPrototypeBasePrim(const SdfPath &primPath);
+
 private:
     friend class _RetainedSceneIndexObserver;
     class _RetainedSceneIndexObserver : public HdSceneIndexObserver

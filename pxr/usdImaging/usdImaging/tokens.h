@@ -60,7 +60,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     (UsdPrimvarReader_int)   \
     (UsdTransform2d)         \
     ((stageSceneIndexRepopulate,  "__usdStageSceneIndexRepopulate")) \
-    ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes")) \
     ((niInstancer, "UsdNiInstancer")) \
     (extentsHint)
 

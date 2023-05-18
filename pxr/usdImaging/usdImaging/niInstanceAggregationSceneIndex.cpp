@@ -47,6 +47,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    ((propagatedPrototypesScope, "UsdNiPropagatedPrototypes")));
+                         
+
 namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl {
 
 // Gets primvars from prim at given path in scene index.
@@ -883,7 +888,7 @@ struct _InstanceInfo {
     SdfPath GetBindingPrimPath() const {
         return
             enclosingPrototypeRoot
-                .AppendChild(UsdImagingTokens->propagatedPrototypesScope)
+                .AppendChild(_tokens->propagatedPrototypesScope)
                 .AppendChild(bindingHash);
     }
 
@@ -1628,6 +1633,29 @@ UsdImaging_NiInstanceAggregationSceneIndex::GetChildPrimPaths(
 {
     return
         _instanceObserver->GetRetainedSceneIndex()->GetChildPrimPaths(primPath);
+}
+
+/* static */
+TfToken
+UsdImaging_NiInstanceAggregationSceneIndex::
+GetPrototypeNameFromPrototypeBasePrim(const SdfPath &primPath)
+{
+    // Use the convention that the prototype base will be at a path such as
+    // that instancers will have paths such as
+    // /Foo/UsdNiPropatedPrototypes/Binding435..f52/__Prototype_1
+    // find them.
+    if (primPath.GetPathElementCount() < 3) {
+        return TfToken();
+    }
+
+    // Path has __Usd_Prototypes at correct place.
+    const TfToken parentParentName =
+        primPath.GetParentPath().GetParentPath().GetNameToken();
+    if (parentParentName != _tokens->propagatedPrototypesScope) {
+        return TfToken();
+    }
+
+    return primPath.GetNameToken();
 }
 
 UsdImaging_NiInstanceAggregationSceneIndex::
