@@ -1250,7 +1250,7 @@ pxr_register_test(testUsdImagingGLShadeMaterial_Delegate
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLShadeMaterial_Delegate
     ENV
-        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
 )
 
 pxr_register_test(testUsdImagingGLSphere
