@@ -576,8 +576,6 @@ HdStMaterialXShaderGen<Base>::_EmitMxVertexDataLine(
     return hdVariableDef.empty() ? mx::EMPTY_STRING : hdVariableDef;
 }
 
-#if MATERIALX_MAJOR_VERSION <= 1 && MATERIALX_MINOR_VERSION <= 38 && \
-    MATERIALX_BUILD_VERSION <= 4
 template <typename Base>
 void
 HdStMaterialXShaderGen<Base>::emitLibraryInclude(
@@ -588,13 +586,17 @@ HdStMaterialXShaderGen<Base>::emitLibraryInclude(
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
     MATERIALX_BUILD_VERSION == 3
     mx::ShaderGenerator::emitInclude(filename, context, stage);
-#else
+#elif MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 4 
     // Starting from MaterialX 1.38.4 at PR 877, we must add the "libraries" part:
     mx::ShaderGenerator::emitInclude(
         mx::FilePath("libraries") / filename, context, stage);
-#endif
+#else 
+    // emitLibraryInclude was introduced in MaterialX 1.38.5 and replaced
+    // the emitInclude method. 
+    mx::ShaderGenerator::emitLibraryInclude(filename, context, stage);
+#endif 
 }
-#endif
 
 template<typename Base>
 void
@@ -667,6 +669,170 @@ HdStMaterialXShaderGen<Base>::emitLine(
 }
 
 
+template<typename Base>
+void
+HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
+    mx::GenContext& mxContext,
+    mx::ShaderStage& mxStage,
+    const std::string& constQualifier) const
+{
+    // Add global constants and type definitions
+    emitLine("#if NUM_LIGHTS > 0", mxStage, false);
+    emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
+    emitLine("#else", mxStage, false);
+    emitLine("#define MAX_LIGHT_SOURCES 1", mxStage, false);
+    emitLine("#endif", mxStage, false);
+    emitLine("#define DIRECTIONAL_ALBEDO_METHOD " +
+            std::to_string(int(
+                mxContext.getOptions().hwDirectionalAlbedoMethod)),
+            mxStage, false);
+    Base::emitLineBreak(mxStage);
+    Base::emitTypeDefinitions(mxContext, mxStage);
+
+    // Add all constants
+    const mx::VariableBlock& constants = mxStage.getConstantBlock();
+    if (!constants.empty()) {
+        emitVariableDeclarations(constants, constQualifier,
+                                 mx::Syntax::SEMICOLON,
+                                 mxContext, mxStage, false);
+        Base::emitLineBreak(mxStage);
+    }
+
+    // Add all uniforms
+    for (mx::VariableBlockMap::const_reference it : mxStage.getUniformBlocks()){
+        const mx::VariableBlock& uniforms = *it.second;
+
+        // Skip light uniforms as they are handled separately
+        if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
+            Base::emitComment("Uniform block: " + uniforms.getName(), mxStage);
+            emitVariableDeclarations(uniforms, mx::EMPTY_STRING,
+                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
+            Base::emitLineBreak(mxStage);
+        }
+    }
+}
+
+template<typename Base>
+void
+HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
+    const mx::ShaderGraph& mxGraph,
+    mx::GenContext& mxContext,
+    mx::ShaderStage& mxStage,
+    MaterialX::StringMap* tokenSubstitutions) const
+{
+    const bool lighting =
+        mxGraph.hasClassification(mx::ShaderNode::Classification::SHADER |
+                                  mx::ShaderNode::Classification::SURFACE)
+        || mxGraph.hasClassification(mx::ShaderNode::Classification::BSDF);
+    const bool shadowing =
+        (lighting && mxContext.getOptions().hwShadowMap)
+        || mxContext.getOptions().hwWriteDepthMoments;
+
+    // Add light data block if needed
+    if (lighting) {
+        const mx::VariableBlock& lightData =
+            mxStage.getUniformBlock(mx::HW::LIGHT_DATA);
+        emitLine("struct " + lightData.getName(), mxStage, false);
+        Base::emitScopeBegin(mxStage);
+        emitVariableDeclarations(lightData, mx::EMPTY_STRING,
+                                 mx::Syntax::SEMICOLON,
+                                 mxContext, mxStage, false);
+        Base::emitScopeEnd(mxStage, true);
+        Base::emitLineBreak(mxStage);
+        emitLine(lightData.getName() + " "
+                + lightData.getInstance() + "[MAX_LIGHT_SOURCES]", mxStage);
+        Base::emitLineBreak(mxStage);
+        Base::emitLineBreak(mxStage);
+    }
+
+    // Add vertex data struct and the mxInit function which initializes mx
+    // values with the Hd equivalents
+    const mx::VariableBlock& vertexData =
+        mxStage.getInputBlock(mx::HW::VERTEX_DATA);
+    if (!vertexData.empty()) {
+
+        // add Mx VertexData
+        Base::emitComment("MaterialX's VertexData", mxStage);
+        std::string mxVertexDataName = "mx" + vertexData.getName();
+        emitLine("struct " + mxVertexDataName, mxStage, false);
+        Base::emitScopeBegin(mxStage);
+        emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
+                                 mx::Syntax::SEMICOLON,
+                                 mxContext, mxStage, false);
+        Base::emitScopeEnd(mxStage, false, false);
+        Base::emitString(mx::Syntax::SEMICOLON, mxStage);
+        Base::emitLineBreak(mxStage);
+
+        // Add the vd declaration
+        emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
+        Base::emitLineBreak(mxStage);
+        Base::emitLineBreak(mxStage);
+
+        // add the mxInit function to convert Hd -> Mx data
+        _EmitMxInitFunction(vertexData, mxStage);
+    }
+
+    // Emit lighting and shadowing code
+    if (lighting) {
+        Base::emitSpecularEnvironment(mxContext, mxStage);
+#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
+    MATERIALX_BUILD_VERSION >= 5
+        Base::emitTransmissionRender(mxContext, mxStage);
+#endif
+    }
+    if (shadowing) {
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                                 + "/lib/mx_shadow.glsl", mxContext, mxStage);
+    }
+
+    // Emit directional albedo table code.
+    if (mxContext.getOptions().hwDirectionalAlbedoMethod ==
+            mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
+        mxContext.getOptions().hwWriteAlbedoTable) {
+        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
+                                 + "/lib/mx_table.glsl", mxContext, mxStage);
+        Base::emitLineBreak(mxStage);
+    }
+
+    // Set the include file to use for uv transformations,
+    // depending on the vertical flip flag.
+    if (mxContext.getOptions().fileTextureVerticalFlip) {
+        (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
+            "mx_transform_uv_vflip.glsl";
+    }
+    else {
+        (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
+            "mx_transform_uv.glsl";
+    }
+
+    // Emit uv transform code globally if needed.
+    if (mxContext.getOptions().hwAmbientOcclusion) {
+        emitLibraryInclude(
+            "stdlib/" + Base::TARGET + "/lib/" +
+                (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV],
+            mxContext, mxStage);
+    }
+
+    // Prior to MaterialX 1.38.5 the token substitutions need to
+    // include the full path to the .glsl files, so we prepend that
+    // here.
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38
+    #if MATERIALX_BUILD_VERSION < 4
+        (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "stdlib/" + Base::TARGET + "/lib/");
+    #elif MATERIALX_BUILD_VERSION == 4
+        (*tokenSubstitutions)[mx::ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
+            0, "libraries/stdlib/" + Base::TARGET + "/lib/");
+    #endif
+#endif
+
+    // Add light sampling functions
+    Base::emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
+
+    // Add all functions for node implementations
+    Base::emitFunctionDefinitions(mxGraph, mxContext, mxStage);
+}
+
 // ----------------------------------------------------------------------------
 //                          HdSt MaterialX ShaderGen GLSL
 // ----------------------------------------------------------------------------
@@ -710,8 +876,10 @@ HdStMaterialXShaderGen<mx::GlslShaderGenerator>::HdStMaterialXShaderGen(
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)
 {
-    _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
-                            "st" : mxHdInfo.defaultTexcoordName;
+    _defaultTexcoordName =
+        (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING)
+            ? "st" : mxHdInfo.defaultTexcoordName;
+
 }
 
 HdStMaterialXShaderGenGlsl::HdStMaterialXShaderGenGlsl(
@@ -719,7 +887,7 @@ HdStMaterialXShaderGenGlsl::HdStMaterialXShaderGenGlsl(
     : HdStMaterialXShaderGen<mx::GlslShaderGenerator>(mxHdInfo)
 {
     // Register the customized version of the Surface node generator
-    registerImplementation("IM_surface_" + GlslShaderGenerator::TARGET,
+    registerImplementation("IM_surface_" + mx::GlslShaderGenerator::TARGET,
         HdStMaterialXSurfaceNodeGenGlsl::create);
 }
 
@@ -769,41 +937,10 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    // Add global constants and type definitions
     emitLibraryInclude("stdlib/" + mx::GlslShaderGenerator::TARGET
                        + "/lib/mx_math.glsl", mxContext, mxStage);
-    emitLine("#if NUM_LIGHTS > 0", mxStage, false);
-    emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
-    emitLine("#else", mxStage, false);
-    emitLine("#define MAX_LIGHT_SOURCES 1", mxStage, false);
-    emitLine("#endif", mxStage, false);
-    emitLine("#define DIRECTIONAL_ALBEDO_METHOD " +
-            std::to_string(int(mxContext.getOptions().hwDirectionalAlbedoMethod)),
-            mxStage, false);
-    emitLineBreak(mxStage);
-    emitTypeDefinitions(mxContext, mxStage);
-
-    // Add all constants
-    const mx::VariableBlock& constants = mxStage.getConstantBlock();
-    if (!constants.empty()) {
-        emitVariableDeclarations(constants, _syntax->getConstantQualifier(),
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitLineBreak(mxStage);
-    }
-
-    // Add all uniforms
-    for (mx::VariableBlockMap::const_reference it : mxStage.getUniformBlocks()) {
-        const mx::VariableBlock& uniforms = *it.second;
-
-        // Skip light uniforms as they are handled separately
-        if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
-            emitComment("Uniform block: " + uniforms.getName(), mxStage);
-            emitVariableDeclarations(uniforms, mx::EMPTY_STRING,
-                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
-            emitLineBreak(mxStage);
-        }
-    }
+    _EmitConstantsUniformsAndTypeDefs(
+        mxContext, mxStage, _syntax->getConstantQualifier());
 
     // If bindlessTextures are not enabled, the above for loop skips
     // initializing textures. Initialize them here by defining mappings
@@ -841,115 +978,8 @@ HdStMaterialXShaderGenGlsl::_EmitMxFunctions(
         }
     }
 
-    const bool lighting = mxGraph.hasClassification(
-                              mx::ShaderNode::Classification::SHADER |
-                              mx::ShaderNode::Classification::SURFACE)
-                          || mxGraph.hasClassification(
-                              mx::ShaderNode::Classification::BSDF);
-    const bool shadowing = (lighting && mxContext.getOptions().hwShadowMap) ||
-                           mxContext.getOptions().hwWriteDepthMoments;
-
-    // Add light data block if needed
-    if (lighting) {
-        const mx::VariableBlock& lightData = mxStage.getUniformBlock(mx::HW::LIGHT_DATA);
-        emitLine("struct " + lightData.getName(), mxStage, false);
-        emitScopeBegin(mxStage);
-        emitVariableDeclarations(lightData, mx::EMPTY_STRING,
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitScopeEnd(mxStage, true);
-        emitLineBreak(mxStage);
-        emitLine(lightData.getName() + " "
-                + lightData.getInstance() + "[MAX_LIGHT_SOURCES]", mxStage);
-        emitLineBreak(mxStage);
-        emitLineBreak(mxStage);
-    }
-
-    // Add vertex data struct and the mxInit function which initializes mx
-    // values with the Hd equivalents
-    const mx::VariableBlock& vertexData = mxStage.getInputBlock(mx::HW::VERTEX_DATA);
-    if (!vertexData.empty()) {
-
-        // add Mx VertexData
-        emitComment("MaterialX's VertexData", mxStage);
-        std::string mxVertexDataName = "mx" + vertexData.getName();
-        emitLine("struct " + mxVertexDataName, mxStage, false);
-        emitScopeBegin(mxStage);
-        emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitScopeEnd(mxStage, false, false);
-        emitString(mx::Syntax::SEMICOLON, mxStage);
-        emitLineBreak(mxStage);
-
-        // Add the vd declaration
-        emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
-        emitLineBreak(mxStage);
-        emitLineBreak(mxStage);
-
-        // add the mxInit function to convert Hd -> Mx data
-        _EmitMxInitFunction(vertexData, mxStage);
-    }
-
-    // Emit lighting and shadowing code
-    if (lighting) {
-        emitSpecularEnvironment(mxContext, mxStage);
-#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
-    MATERIALX_BUILD_VERSION >= 5
-        emitTransmissionRender(mxContext, mxStage);
-#endif
-    }
-    if (shadowing) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_shadow.glsl", mxContext, mxStage);
-    }
-
-    // Emit directional albedo table code.
-    if (mxContext.getOptions().hwDirectionalAlbedoMethod ==
-            mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
-        mxContext.getOptions().hwWriteAlbedoTable) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_table.glsl", mxContext, mxStage);
-        emitLineBreak(mxStage);
-    }
-
-    // Set the include file to use for uv transformations,
-    // depending on the vertical flip flag.
-    if (mxContext.getOptions().fileTextureVerticalFlip) {
-        _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
-            "mx_transform_uv_vflip.glsl";
-    }
-    else {
-        _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
-            "mx_transform_uv.glsl";
-    }
-
-    // Emit uv transform code globally if needed.
-    if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitLibraryInclude(
-            "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/" +
-            _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV],
-            mxContext, mxStage);
-    }
-
-    // Prior to MaterialX 1.38.5 the token substitutions need to
-    // include the full path to the .glsl files, so we prepend that
-    // here.
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38
-    #if MATERIALX_BUILD_VERSION < 4
-        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
-            0, "stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
-    #elif MATERIALX_BUILD_VERSION == 4
-        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
-            0, "libraries/stdlib/" + mx::GlslShaderGenerator::TARGET + "/lib/");
-    #endif
-#endif
-
-    // Add light sampling functions
-    emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
-
-    // Add all functions for node implementations
-    emitFunctionDefinitions(mxGraph, mxContext, mxStage);
+    _EmitDataStructsAndFunctionDefinitions(
+        mxGraph, mxContext, mxStage, &_tokenSubstitutions);
 }
 
 
@@ -999,8 +1029,9 @@ HdStMaterialXShaderGen<mx::MslShaderGenerator>::HdStMaterialXShaderGen(
       _bindlessTexturesEnabled(mxHdInfo.bindlessTexturesEnabled),
       _emittingSurfaceNode(false)
 {
-    _defaultTexcoordName = (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING) ?
-                            "st" : mxHdInfo.defaultTexcoordName;
+    _defaultTexcoordName =
+        (mxHdInfo.defaultTexcoordName == mx::EMPTY_STRING)
+            ? "st" : mxHdInfo.defaultTexcoordName;
 }
 
 HdStMaterialXShaderGenMsl::HdStMaterialXShaderGenMsl(
@@ -1008,7 +1039,7 @@ HdStMaterialXShaderGenMsl::HdStMaterialXShaderGenMsl(
     : HdStMaterialXShaderGen<mx::MslShaderGenerator>(mxHdInfo)
 {
     // Register the customized version of the Surface node generator
-    registerImplementation("IM_surface_" + MslShaderGenerator::TARGET,
+    registerImplementation("IM_surface_" + mx::MslShaderGenerator::TARGET,
         HdStMaterialXSurfaceNodeGenMsl::create);
 }
 
@@ -1033,6 +1064,7 @@ HdStMaterialXShaderGenMsl::generate(
     _EmitGlslfxMetalShader(shader->getGraph(), mxContext, shaderStage);
     replaceTokens(_tokenSubstitutions, shaderStage);
 
+    // Metalize the glslfx shader
     MetalizeGeneratedShader(shaderStage);
 
     // USD has its own decleration of radians function.
@@ -1040,8 +1072,7 @@ HdStMaterialXShaderGenMsl::generate(
     {
         std::string sourceCode = shaderStage.getSourceCode();
         size_t loc = sourceCode.find("float radians(float degree)");
-        if(loc != std::string::npos)
-        {
+        if(loc != std::string::npos) {
             sourceCode.insert(loc, "//");
         }
         shaderStage.setSourceCode(sourceCode);
@@ -1114,42 +1145,12 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
     mx::GenContext& mxContext,
     mx::ShaderStage& mxStage) const
 {
-    // Add global constants and type definitions
     emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
                        + "/lib/mx_microfacet.glsl", mxContext, mxStage);
     emitLibraryInclude("stdlib/" + mx::MslShaderGenerator::TARGET
                        + "/lib/mx_math.metal", mxContext, mxStage);
-    emitLine("#if NUM_LIGHTS > 0", mxStage, false);
-    emitLine("#define MAX_LIGHT_SOURCES NUM_LIGHTS", mxStage, false);
-    emitLine("#else", mxStage, false);
-    emitLine("#define MAX_LIGHT_SOURCES 1", mxStage, false);
-    emitLine("#endif", mxStage, false);
-    emitLine("#define DIRECTIONAL_ALBEDO_METHOD " +
-            std::to_string(int(mxContext.getOptions().hwDirectionalAlbedoMethod)),
-            mxStage, false);
-    emitLineBreak(mxStage);
-
-    // Add all constants
-    const mx::VariableBlock& constants = mxStage.getConstantBlock();
-    if (!constants.empty()) {
-        emitVariableDeclarations(constants, _syntax->getConstantQualifier(),
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitLineBreak(mxStage);
-    }
-
-    // Add all uniforms
-    for (mx::VariableBlockMap::const_reference it : mxStage.getUniformBlocks()) {
-        const mx::VariableBlock& uniforms = *it.second;
-
-        // Skip light uniforms as they are handled separately
-        if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
-            emitComment("Uniform block: " + uniforms.getName(), mxStage);
-            emitVariableDeclarations(uniforms, mx::EMPTY_STRING,
-                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
-            emitLineBreak(mxStage);
-        }
-    }
+    _EmitConstantsUniformsAndTypeDefs(
+        mxContext, mxStage,_syntax->getConstantQualifier());
 
     // If bindlessTextures are not enabled, the above for loop skips
     // initializing textures. Initialize them here by defining mappings
@@ -1192,112 +1193,8 @@ HdStMaterialXShaderGenMsl::_EmitMxFunctions(
         }
     }
 
-    const bool lighting = mxGraph.hasClassification(
-                              mx::ShaderNode::Classification::SHADER |
-                              mx::ShaderNode::Classification::SURFACE)
-                          || mxGraph.hasClassification(
-                              mx::ShaderNode::Classification::BSDF);
-    const bool shadowing = (lighting && mxContext.getOptions().hwShadowMap) ||
-                           mxContext.getOptions().hwWriteDepthMoments;
-
-    // Add light data block if needed
-    if (lighting) {
-        const mx::VariableBlock& lightData = mxStage.getUniformBlock(mx::HW::LIGHT_DATA);
-        emitLine("struct " + lightData.getName(), mxStage, false);
-        emitScopeBegin(mxStage);
-        emitVariableDeclarations(lightData, mx::EMPTY_STRING,
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitScopeEnd(mxStage, true);
-        emitLineBreak(mxStage);
-        emitLine(lightData.getName() + " "
-                + lightData.getInstance() + "[MAX_LIGHT_SOURCES]", mxStage);
-        emitLineBreak(mxStage);
-        emitLineBreak(mxStage);
-    }
-
-    // Add vertex data struct and the mxInit function which initializes mx
-    // values with the Hd equivalents
-    const mx::VariableBlock& vertexData = mxStage.getInputBlock(mx::HW::VERTEX_DATA);
-    if (!vertexData.empty()) {
-
-        // add Mx VertexData
-        emitComment("MaterialX's VertexData", mxStage);
-        std::string mxVertexDataName = "mx" + vertexData.getName();
-        emitLine("struct " + mxVertexDataName, mxStage, false);
-        emitScopeBegin(mxStage);
-        emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
-                                 mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
-        emitScopeEnd(mxStage, false, false);
-        emitString(mx::Syntax::SEMICOLON, mxStage);
-        emitLineBreak(mxStage);
-
-        // Add the vd declaration
-        emitLine(mxVertexDataName + " " + vertexData.getInstance(), mxStage);
-        emitLineBreak(mxStage);
-        emitLineBreak(mxStage);
-
-        // add the mxInit function to convert Hd -> Mx data
-        _EmitMxInitFunction(vertexData, mxStage);
-    }
-
-    // Emit lighting and shadowing code
-    if (lighting) {
-        emitSpecularEnvironment(mxContext, mxStage);
-        emitTransmissionRender(mxContext, mxStage);
-    }
-    if (shadowing) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_shadow.glsl", mxContext, mxStage);
-    }
-
-    // Emit directional albedo table code.
-    if (mxContext.getOptions().hwDirectionalAlbedoMethod ==
-            mx::HwDirectionalAlbedoMethod::DIRECTIONAL_ALBEDO_TABLE ||
-        mxContext.getOptions().hwWriteAlbedoTable) {
-        emitLibraryInclude("pbrlib/" + mx::GlslShaderGenerator::TARGET
-                           + "/lib/mx_table.glsl", mxContext, mxStage);
-        emitLineBreak(mxStage);
-    }
-
-    // Set the include file to use for uv transformations,
-    // depending on the vertical flip flag.
-    if (mxContext.getOptions().fileTextureVerticalFlip) {
-        _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
-            "mx_transform_uv_vflip.glsl";
-    }
-    else {
-        _tokenSubstitutions[mx::ShaderGenerator::T_FILE_TRANSFORM_UV] =
-            "mx_transform_uv.glsl";
-    }
-
-    // Emit uv transform code globally if needed.
-    if (mxContext.getOptions().hwAmbientOcclusion) {
-        emitLibraryInclude(
-            "stdlib/" + mx::MslShaderGenerator::TARGET + "/lib/" +
-            _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV],
-            mxContext, mxStage);
-    }
-
-    // Prior to MaterialX 1.38.5 the token substitutions need to
-    // include the full path to the .metal files, so we prepend that
-    // here.
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38
-    #if MATERIALX_BUILD_VERSION < 4
-        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
-            0, "stdlib/" + mx::MslShaderGenerator::TARGET + "/lib/");
-    #elif MATERIALX_BUILD_VERSION == 4
-        _tokenSubstitutions[ShaderGenerator::T_FILE_TRANSFORM_UV].insert(
-            0, "libraries/stdlib/" + mx::MslShaderGenerator::TARGET + "/lib/");
-    #endif
-#endif
-
-    // Add light sampling functions
-    emitLightFunctionDefinitions(mxGraph, mxContext, mxStage);
-
-    // Add all functions for node implementations
-    emitFunctionDefinitions(mxGraph, mxContext, mxStage);
+    _EmitDataStructsAndFunctionDefinitions(
+        mxGraph, mxContext, mxStage, &_tokenSubstitutions);
 }
 #endif
 

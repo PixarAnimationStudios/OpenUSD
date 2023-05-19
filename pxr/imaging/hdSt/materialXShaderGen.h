@@ -95,12 +95,20 @@ protected:
     // This method was introduced in MaterialX 1.38.5 and replaced the
     // emitInclude method. We add this method for older versions of MaterialX
     // for backwards compatibility.
-#if MATERIALX_MAJOR_VERSION <= 1 && MATERIALX_MINOR_VERSION <= 38 && \
-    MATERIALX_BUILD_VERSION <= 4
     void emitLibraryInclude(const MaterialX::FilePath& filename,
                             MaterialX::GenContext& context,
                             MaterialX::ShaderStage& stage) const;
-#endif
+
+    void _EmitConstantsUniformsAndTypeDefs(
+        MaterialX::GenContext& mxContext,
+        MaterialX::ShaderStage& mxStage,
+        const std::string& constQualifier) const;
+
+    void _EmitDataStructsAndFunctionDefinitions(
+        const MaterialX::ShaderGraph& mxGraph,
+        MaterialX::GenContext& mxContext,
+        MaterialX::ShaderStage& mxStage,
+        MaterialX::StringMap* tokenSubstitutions) const;
 
     // Store MaterialX and Hydra counterparts and other Hydra specific info
     // to generate an appropriate glslfx header and properly initialize 
