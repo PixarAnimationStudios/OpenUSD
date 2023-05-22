@@ -202,6 +202,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , lineWidth(lineWidth)
     , fvarPatchType(fvarPatchType)
     , glslfx(_tokens->baseGLSLFX)
+
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
@@ -307,7 +308,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     useMetalTessellation = false;
 
-    bool useMeshShading = !isPrimTypePoints;
+    bool useMeshShading = UseMeshShaders();
 
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =

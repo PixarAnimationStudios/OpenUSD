@@ -312,7 +312,8 @@ void main(void)
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"]
+["uint", "drawCoordOffset"],
+["uint", "drawCoordIOffset"]
 ]
 ]
 
@@ -377,7 +378,8 @@ void main(void)
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"]
+["uint", "drawCoordOffset"],
+["uint", "drawCoordIOffset"]
 ]
 ]
 
@@ -478,14 +480,14 @@ void main(void) {
 
         uint totalIndOff = (ind % 3);
 
-        uint usedBaseIndex = (baseIndex / 3);
+        uint usedBaseIndex = baseIndex;
 
         if (totalIndOff % 3 == 0) {
-            globalIndex = (indices + (usedBaseIndex))[ind/3].x;
+            globalIndex = (indices + (usedBaseIndex))[ind];
         } else if (totalIndOff % 3 == 1) {
-            globalIndex = (indices + (usedBaseIndex))[ind/3].y;
+            globalIndex = (indices + (usedBaseIndex))[ind];
         } else if (totalIndOff % 3 == 2) {
-            globalIndex = (indices + (usedBaseIndex))[ind/3].z;
+            globalIndex = (indices + (usedBaseIndex))[ind];
         } else {
         globalIndex = 0;
         }
@@ -1795,7 +1797,8 @@ vec4 GetInterpolatedPatchCoord()
 ["vec2", "drawRangeNDC"],
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"]
+["uint", "drawCoordOffset"],
+["uint", "drawCoordIOffset"]
 ]
 ]
 

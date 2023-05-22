@@ -1510,7 +1510,7 @@ _BuildMeshObjectAttribute(
     ss << "max_total_threads_per_threadgroup(";
     ss << meshDesc.maxTotalThreadsPerObjectThreadgroup << "),";
     ss << "max_total_threadgroups_per_mesh_grid(";
-    ss << "128" << ")]]";
+    ss << meshDesc.maxTotalThreadgroupsPerMeshObject << ")]]";
 }
 
 void

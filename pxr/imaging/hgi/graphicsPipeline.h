@@ -390,6 +390,8 @@ struct HgiMeshState
     bool useMeshShader = false;
     uint32_t maxTotalThreadsPerObjectThreadgroup;
     uint32_t maxTotalThreadsPerMeshThreadgroup;
+    uint32_t maxTotalThreadGroupsPerObject;
+    uint32_t maxTotalThreadGroupsPerMesh;
 };
 
 /// \struct HgiGraphicsPipelineDesc

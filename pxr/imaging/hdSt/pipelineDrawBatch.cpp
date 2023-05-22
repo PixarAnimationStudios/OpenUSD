@@ -832,6 +832,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     // cache the offset needed for compute culling.
     _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
+    _drawCoordIOffset = traits.drawingCoordI_offset / sizeof(uint32_t);
 
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
@@ -1288,7 +1289,8 @@ _GetDrawPipeline(
                     pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup = fun->GetDescriptor().meshDescriptor.maxTotalThreadsPerMeshletThreadgroup;
                 }
                 if (fun->GetDescriptor().shaderStage == HgiShaderStageMeshObject) {
-                    pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = fun->GetDescriptor().meshDescriptor.maxTotalThreadgroupsPerMeshObject;
+                    pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup = fun->GetDescriptor().meshDescriptor.maxTotalThreadsPerObjectThreadgroup;
+                    pipeDesc.meshState.maxTotalThreadGroupsPerObject = fun->GetDescriptor().meshDescriptor.maxTotalThreadgroupsPerMeshObject;
                 }
             }
         }
@@ -1423,11 +1425,13 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             // bind destination buffer
             // (using entire buffer bind to start from offset=0)
             //todo improve so only in mesh obj
+            
             state.binder.GetBufferBindingDesc(
                     &bindingsDesc,
                     TfToken("drawCullInput"),
                     _dispatchBuffer->GetEntireResource(),
                     _dispatchBuffer->GetEntireResource()->GetOffset());
+             
         }
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
@@ -1484,8 +1488,12 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         if (!TF_VERIFY(indexBuffer)) return;
         if (useMeshShaders) {
             struct Uniforms {
+                GfMatrix4f cullMatrix;
+                GfVec2f drawRangeNDC;
+                uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
                 uint32_t drawCoordOffset;
+                uint32_t drawCoordIOffset;
             };
 
             if (useMeshShaders) {
@@ -1493,6 +1501,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 Uniforms cullParams;
                 cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                 cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
+                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                 gfxCmds->SetConstantValues(
                         psoHandle, 0, 27,
@@ -1572,6 +1581,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         uint32_t drawIndexCount;
                         uint32_t drawCommandNumUints;
                         uint32_t drawCoordOffset;
+                        uint32_t drawCoordIOffset;
                     };
                     
                     if (useMeshShaders) {
@@ -1580,6 +1590,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                         //cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
                         cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                         cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
+                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                         gfxCmds->SetConstantValues(
                             psoHandle, 0, 27,

@@ -2973,7 +2973,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         mosDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
         mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
         mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
-        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 1;
+        mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
         
         mosDesc.meshDescriptor.maxMeshletVertexCount = 96;
         mosDesc.meshDescriptor.maxPrimitiveCount = mosDesc.meshDescriptor.maxMeshletVertexCount/3;
@@ -4455,6 +4455,11 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genMS << "int GetPrimitiveID() {\n"
            << "  return primitive_id;\n"
            << "}\n";
+    
+    //this is a stub
+    _genMOS << "int GetPrimitiveID() {\n"
+           << "  return 0;\n"
+           << "}\n";
 
     // To access per-primitive data we need the primitiveCoord offset
     // to the start of primitive data for the current draw added to
@@ -4479,12 +4484,12 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         _genPTCS << primitiveIndex;
         _genPTVS << primitiveIndex;
     }
-
+    _genMS << primitiveIndex;
+    _genMOS << primitiveIndex;
     _genTCS << primitiveIndex;
     _genTES << primitiveIndex;
     _genGS << primitiveIndex;
     _genFS << primitiveIndex;
-    _genMS << primitiveIndex;
     //_genMOS << primitiveIndex;
 
     std::stringstream genAttr;
@@ -5941,6 +5946,12 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                      << name << "[i1], ptvs_pv_"
                      << name << "[i2], ptvs_pv_"
                      << name << "[i3], basis);\n";
+
+        _procMSIn << "    ms_ms_" << name << "[hd_LocalIndexID] = HdGet_" << name << "(hd_LocalIndexID);\n"
+                     << "  }\n";
+        _procMSOut << "  vertexOut." << name
+                     << " = (ms_ms_" << name << ";\n;";
+
     }
 
     /*
