@@ -23,6 +23,8 @@
 //
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
+
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
@@ -657,12 +659,23 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == HdInstancedBySchema::GetSchemaToken()) {
+            // If this instancer is inside a point instanced prototype, use
+            // the instancedBy schema from the prototype root so that this
+            // instancer will be instanced by the the point instancer.
             if (HdInstancedBySchema schema = HdInstancedBySchema::GetFromParent(
                     _inputSceneIndex->GetPrim(_enclosingPrototypeRoot)
                         .dataSource)) {
                 return schema.GetContainer();
             }
-            return _fallbackInstancedByDataSource;
+            if (_forPrototype) {
+                // This instancer is itself within a native prototype which
+                // in turn is instanced by an instancer. Use respective
+                // instancedBy data source.
+                return
+                    UsdImaging_NiPrototypeSceneIndex::
+                    GetInstancedByDataSource();
+            }
+            return nullptr;
         }
         if (name == HdInstancerTopologySchema::GetSchemaToken()) {
             return _InstancerTopologyDataSource::New(
@@ -681,12 +694,12 @@ private:
         const SdfPath &enclosingPrototypeRoot,
         const SdfPath &prototypePath,
         std::shared_ptr<SdfPathSet> const &instances,
-        HdContainerDataSourceHandle const &fallbackInstancedByDataSource)
+        const bool forPrototype)
       : _inputSceneIndex(inputSceneIndex)
       , _enclosingPrototypeRoot(enclosingPrototypeRoot)
       , _prototypePath(prototypePath)
       , _instances(instances)
-      , _fallbackInstancedByDataSource(fallbackInstancedByDataSource)
+      , _forPrototype(forPrototype)
     {
     }
 
@@ -694,29 +707,8 @@ private:
     const SdfPath _enclosingPrototypeRoot;
     const SdfPath _prototypePath;
     std::shared_ptr<SdfPathSet> const _instances;
-    HdContainerDataSourceHandle const _fallbackInstancedByDataSource;
+    const bool _forPrototype;
 };
-
-HdContainerDataSourceHandle
-_ComputeFallbackInstancedByDataSource(const SdfPath &prototypeRoot)
-{
-    if (prototypeRoot.IsEmpty()) {
-        return nullptr;
-    } else {
-        using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
-
-        static const DataSource::Handle paths =
-            DataSource::New(
-                { SdfPath::AbsoluteRootPath()
-                      .AppendChild(UsdImagingTokens->niInstancer) });
-
-        return
-            HdInstancedBySchema::Builder()
-                .SetPaths(paths)
-                .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build();
-    }
-}
 
 // We can only group together native instances to be realized by the same
 // instancer if each has the same set of constant primvars authored.
@@ -912,6 +904,9 @@ struct _InstanceInfo {
 
     bool IsInstance() const { return !prototypeName.IsEmpty(); }
 
+    // A path like /MyPiPrototype/UsdNiPropagtedPrototypes/Binding312...436
+    // that serves for all instancers of instances with the same, e.g.,
+    // material binding.
     SdfPath GetBindingPrimPath() const {
         return
             enclosingPrototypeRoot
@@ -919,16 +914,32 @@ struct _InstanceInfo {
                 .AppendChild(bindingHash);
     }
 
+    // A path like /MyPiPrototype/UsdNiPropagtedPrototypes/Binding312...436/__Prototype_1
+    // that is the parent prim for the instancer for a particular USD
+    // prototype.
     SdfPath GetPropagatedPrototypeBase() const {
         return
             GetBindingPrimPath()
                 .AppendChild(prototypeName);
     }
 
+    // A path like /MyPiPrototype/UsdNiPropagtedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer
+    // that is where the instancer actually is.
     SdfPath GetInstancerPath() const {
         return
             GetPropagatedPrototypeBase()
-                .AppendChild(UsdImagingTokens->niInstancer);
+                .AppendChild(
+                    UsdImaging_NiPrototypeSceneIndexTokens->instancer);
+    }
+
+    // A path like /MyPiPrototype/UsdNiPropagtedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/UsdNiPrototype
+    // the path where the propagating scene index needs to insert a copy
+    // of the USD prototype.
+    SdfPath GetPrototypePath() const {
+        return
+            GetInstancerPath()
+                .AppendChild(
+                    UsdImaging_NiPrototypeSceneIndexTokens->prototype);
     }
 };
 
@@ -936,7 +947,7 @@ class _InstanceObserver : public HdSceneIndexObserver
 {
 public:
     _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
-                      const SdfPath &prototypeRoot);
+                      const bool forPrototype);
 
     HdRetainedSceneIndexRefPtr const &GetRetainedSceneIndex() const {
         return _retainedSceneIndex;
@@ -1047,8 +1058,7 @@ private:
     // prims.
     HdSceneIndexBaseRefPtr const _flattenedInputScene;
     HdRetainedSceneIndexRefPtr const _retainedSceneIndex;
-    const SdfPath _fallbackPrototypeRoot;
-    HdContainerDataSourceHandle const _fallbackInstancedBySource;
+    const bool _forPrototype;
     _CurriedInstanceInfoToInstance _infoToInstance;
     _PathToInstanceInfo _instanceToInfo;
 
@@ -1068,15 +1078,10 @@ private:
 
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const SdfPath &prototypeRoot)
+        const bool forPrototype)
   : _flattenedInputScene(HdFlatteningSceneIndex::New(inputScene))
   , _retainedSceneIndex(HdRetainedSceneIndex::New())
-  , _fallbackPrototypeRoot(
-        prototypeRoot.IsEmpty()
-        ? SdfPath::AbsoluteRootPath()
-        : prototypeRoot)
-  , _fallbackInstancedBySource(
-        _ComputeFallbackInstancedByDataSource(prototypeRoot))
+  , _forPrototype(forPrototype)
 {
     _Populate();
     _flattenedInputScene->AddObserver(HdSceneIndexObserverPtr(this));
@@ -1232,7 +1237,13 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 
     result.enclosingPrototypeRoot = _GetPrototypeRoot(primSource);
     if (result.enclosingPrototypeRoot.IsEmpty()) {
-        result.enclosingPrototypeRoot = _fallbackPrototypeRoot;
+        if (_forPrototype) {
+            result.enclosingPrototypeRoot =
+                UsdImaging_NiPrototypeSceneIndex::GetPrototypePath();
+        } else {
+            result.enclosingPrototypeRoot =
+                SdfPath::AbsoluteRootPath();
+        }
     }
     result.bindingHash = _ComputeBindingHash(primSource);
 
@@ -1279,12 +1290,9 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
     } else {
         instances = std::make_shared<SdfPathSet>();
 
-        const SdfPath prototypePath =
-            instancerPath.AppendChild(info.prototypeName);
-
         _retainedSceneIndex->AddPrims(
             { // Add propagated prototype base prim
-              { instancerPath.GetParentPath(),
+              { info.GetPropagatedPrototypeBase(),
                 TfToken(),
                 HdRetainedContainerDataSource::New() },
               // instancer which is child of base prim.
@@ -1293,9 +1301,9 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
                 _InstancerPrimSource::New(
                     _flattenedInputScene,
                     info.enclosingPrototypeRoot,
-                    prototypePath,
+                    info.GetPrototypePath(),
                     instances,
-                    _fallbackInstancedBySource) } });
+                    _forPrototype) } });
     }
 
     instances->insert(primPath);
@@ -1348,7 +1356,6 @@ _InstanceObserver::_RemoveInstance(const SdfPath &primPath,
     const _InstanceInfo &info = it->second;
 
     const SdfPath instancerPath = info.GetInstancerPath();
-
 
     const _RemovalLevel level =
         _RemoveInstanceFromInfoToInstance(primPath, info);
@@ -1628,9 +1635,9 @@ using namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl;
 UsdImaging_NiInstanceAggregationSceneIndex::
 UsdImaging_NiInstanceAggregationSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const SdfPath &prototypeRoot)
+        const bool forPrototype)
   : _instanceObserver(
-        std::make_unique<_InstanceObserver>(inputScene, prototypeRoot))
+        std::make_unique<_InstanceObserver>(inputScene, forPrototype))
   , _retainedSceneIndexObserver(this)
 {
     _instanceObserver->GetRetainedSceneIndex()->AddObserver(
@@ -1675,7 +1682,8 @@ GetPrototypeNameFromInstancerPath(const SdfPath &primPath)
         return TfToken();
     }
 
-    if (primPath.GetNameToken() != UsdImagingTokens->niInstancer) {
+    if (primPath.GetNameToken() !=
+                    UsdImaging_NiPrototypeSceneIndexTokens->instancer) {
         return TfToken();
     }
 

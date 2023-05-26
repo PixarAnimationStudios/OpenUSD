@@ -91,14 +91,14 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///
 ///     * HdMergingSceneIndex
 ///         * UsdImaging_NiPrototypeSceneIndex
-///           prototypeRoot = ""
-///             * HdFlatteningSceneIndex
-///                 * UsdImaging_NiPrototypePruningSceneIndex
-///                   prototypeRoot = ""
-///                     * inputSceneIndex (typically a UsdImagingPiPrototypePropagatingSceneIndex)
+///           forPrototype = false
+///              * UsdImaging_NiPrototypePruningSceneIndex
+///                forPrototype = false
+///                  * inputSceneIndex (typically a UsdImagingPiPrototypePropagatingSceneIndex)
 ///         * UsdImaging_NiInstanceAggregationSceneIndex 
-///             * HdFlatteningSceneIndex
-///                 [... as above]
+///           forPrototype = false
+///              * UsdImaging_NiPrototypePruningSceneIndex
+///                [... as above]
 ///         * UsdImagingRerootingSceneIndex
 ///           (inserted by _InstanceAggregationSceneIndexObserver::PrimsAdded
 ///            through _MergingSceneIndexEntry)
@@ -108,16 +108,15 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///               prototypeName = __Prototype_1
 ///                 * HdMergingSceneIndex
 ///                     * UsdImaging_NiPrototypeSceneIndex
-///                       prototypeRoot = /__PrototypeRoot1
-///                         * HdFlatteningSceneIndex
-///                             * UsdImagingRerootingSceneIndex
-///                               srcPrefix = /__PrototypeRoot1
-///                               dstPrefix = /UsdNiInstancer/__PrototypeRoot1
-///                                 * inputSceneIndex
+///                       forPrototype = true
+///                         * UsdImagingRerootingSceneIndex
+///                           srcPrefix = /__PrototypeRoot1
+///                           dstPrefix = /UsdNiInstancer/UsdNiPrototype
+///                             * inputSceneIndex
 ///                     * UsdImaging_NiInstanceAggregationSceneIndex
-///                       prototypeRoot = ""
-///                         * HdFlatteningSceneIndex
-///                             [... as just above]
+///                       forPrototype = true
+///                         * UsdImagingRerootingSceneIndex
+///                           [... as just above]
 ///
 /// UsdImagingNiPrototypePropagatingSceneIndex
 ///
@@ -127,7 +126,7 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///         instance: # Useful for translating Usd proxy paths for selection.
 ///                   # See corresponding example in niInstanceAggregationIndex
 ///                   # for more details.
-///             instancer: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
+///             instancer: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///             prototypeId: 0
 ///             instanceId: 0
 /// /MyPrototype # Not referenced from a different file, so appears here
@@ -145,24 +144,24 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: [ 0 ]
-///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
+///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
 ///                 primvarValue: [ identity matrix ]
 ///                 interpolation: instance
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Prototype_1
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype
 ///     primType: ""
 ///     dataSource:
 ///         instancedBy:
 ///             paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer ]
-///             prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1 /UsdNiInstancer/__Prototype_1
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/__Prototype_1/MyCube
+///             prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1 /UsdNiInstancer/UsdNiPrototype
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype/MyCube
 ///     primType: cube
 ///     dataSource:
 ///         instancedBy:
 ///             paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer ]
-///             prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1 /UsdNiInstancer/__Prototype_1
+///             prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1 /UsdNiInstancer/UsdNiPrototype
 ///
 /// Example 2:
 ///
@@ -207,41 +206,41 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///    primType: instancer
 ///    dataSource:
 ///        instanerTopology:
-///            prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/__Prototype_2 ]
+///            prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype ]
 ///        ...
 /// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2
 ///    primType: ""
 /// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/MyNestedInstance
 ///    primType: ""
 ///    dataSource:
-///             instancer: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
+///             instancer: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///             prototypeId: 0
 ///             instanceId: 0
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
 ///    primType: ""
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///    primType: instancer
 ///    dataSource:
 ///        instanerTopology:
-///            prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Prototype_1 ]
+///            prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdPiPrototype ]
 ///        ...
 ///        instancedBy:
 ///            paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer ]
-///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/__Prototype_2
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
+///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdPiPrototype
 ///    primType: ""
 ///    dataSource:
 ///        instancedBy:
-///            paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer ]
-///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Prototype_1
-/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Prototype_1/MyCube
+///            paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer ]
+///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdPiPrototype
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdPiPrototype/MyCube
 ///    primType: "cube"
 ///    dataSource:
 ///        instancedBy:
-///            paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer ]
-///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/_Prototype_2/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Prototype_1
+///            paths: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/UsdPiPrototype/UsdNiInstancer ]
+///            prototypeRoot: /UsdNiPropagatedPrototypes/NoBindings/__Prototype_2/UsdNiInstancer/UsdPiPrototype/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdPiPrototype
 /// ...
 ///
 ///

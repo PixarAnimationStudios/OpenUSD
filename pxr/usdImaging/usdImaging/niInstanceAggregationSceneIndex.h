@@ -139,7 +139,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: [ 0 ]
-///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
+///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -183,7 +183,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: 0
-///             prototypes: [ /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
+///             prototypes: [ /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -234,7 +234,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: [ 0 ]
-///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
+///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/UsdNiPrototype ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -245,13 +245,18 @@ class UsdImaging_NiInstanceAggregationSceneIndex final
                 : public HdFilteringSceneIndexBase
 {
 public:
+    // forPrototype = false indicates that this scene index is instantiated
+    // for the USD stage with all USD prototypes filtered out.
+    // forPrototype = true indicates that it is instantiated for a USD
+    // prototype and the instancers it adds for the instancers within this
+    // prototype need to have the instancedBy data source populated in turn.
     static UsdImaging_NiInstanceAggregationSceneIndexRefPtr New(
             HdSceneIndexBaseRefPtr const &inputScene,
-            const SdfPath &prototypeRoot)
+            const bool forPrototype)
     {
         return TfCreateRefPtr(
             new UsdImaging_NiInstanceAggregationSceneIndex(
-                inputScene, prototypeRoot));
+                inputScene, forPrototype));
     }
 
     ~UsdImaging_NiInstanceAggregationSceneIndex() override;
@@ -295,7 +300,7 @@ private:
 
     UsdImaging_NiInstanceAggregationSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const SdfPath &prototypeRoot);
+        bool forPrototype);
 
     std::unique_ptr<
         UsdImaging_NiInstanceAggregationSceneIndex_Impl::
