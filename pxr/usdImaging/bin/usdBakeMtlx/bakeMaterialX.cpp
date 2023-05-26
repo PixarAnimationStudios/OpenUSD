@@ -144,7 +144,7 @@ void _BakeMtlxDocument(
         : mx::Image::BaseType::UINT8;
 
     // Construct a Texture Baker.
-    mx::TextureBakerPtr baker = mx::TextureBaker::create(
+    mx::TextureBakerPtr baker = mx::TextureBakerGlsl::create(
         textureWidth, textureHeight, baseType);
     baker->setupUnitSystem(stdLibraries);
     baker->setAverageImages(bakeAverage);
