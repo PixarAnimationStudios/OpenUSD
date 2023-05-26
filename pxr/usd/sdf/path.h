@@ -28,6 +28,7 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/pool.h"
 #include "pxr/usd/sdf/tokens.h"
+#include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/traits.h"
@@ -305,11 +306,15 @@ public:
     
     /// Constructs the default, empty path.
     ///
+#if defined(ARCH_COMPILER_GCC) && ARCH_COMPILER_GCC_MAJOR <= 6
     SdfPath() noexcept {
         // This generates a single instruction instead of 2 on gcc 6.3.  Seems
-        // to be fixed on gcc 7+ and newer clangs.  Remove when we're there!
+        // to be fixed on gcc 7+ and newer clangs.
         memset(this, 0, sizeof(*this));
     }
+#else
+    SdfPath() noexcept = default;
+#endif
 
     /// Creates a path from the given string.
     ///
