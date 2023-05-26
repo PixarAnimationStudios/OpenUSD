@@ -54,7 +54,11 @@ UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
     _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
-{}
+{
+    // Disable presentation to avoid the need to create an OpenGL context when
+    // using other graphics APIs such as Metal and Vulkan.
+    _imagingEngine.SetEnablePresentation(false);
+}
 
 static bool
 _HasPurpose(const TfTokenVector& purposes, const TfToken& purpose)
