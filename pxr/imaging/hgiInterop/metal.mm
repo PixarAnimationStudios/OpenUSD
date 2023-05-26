@@ -805,7 +805,7 @@ HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
     glBlendFuncSeparate(/*srcColor*/GL_ONE,
                         /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
                         /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE);
+                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     
     ShaderContext &shader = _shaderProgramContext[shaderIndex];
