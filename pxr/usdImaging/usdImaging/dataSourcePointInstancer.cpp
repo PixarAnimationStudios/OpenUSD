@@ -51,7 +51,7 @@ UsdImagingDataSourcePointInstancerMask::UsdImagingDataSourcePointInstancerMask(
         if (attr.ValueMightBeTimeVarying()) {
             static const HdDataSourceLocator locator =
                 HdInstancerTopologySchema::GetDefaultLocator()
-                .Append(HdInstancerTopologySchemaTokens->mask);
+                    .Append(HdInstancerTopologySchemaTokens->mask);
             _stageGlobals.FlagAsTimeVarying(sceneIndexPath, locator);
         }
     }
@@ -138,9 +138,20 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
         return UsdImagingDataSourceRelationship::New(
                 _usdPI.GetPrototypesRel(), _stageGlobals);
     } else if (name == HdInstancerTopologySchemaTokens->instanceIndices) {
+        UsdAttribute attr = _usdPI.GetProtoIndicesAttr();
+        if (!attr) {
+            return nullptr;
+        }
+
+        if (attr.ValueMightBeTimeVarying()) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                    .Append(HdInstancerTopologySchemaTokens->instanceIndices);
+            _stageGlobals.FlagAsTimeVarying(_sceneIndexPath, locator);
+        }
+
         VtIntArray protoIndices;
-        _usdPI.GetProtoIndicesAttr().Get(
-            &protoIndices, _stageGlobals.GetTime());
+        attr.Get(&protoIndices, _stageGlobals.GetTime());
 
         // We need to flip the protoIndices: [0,1,0] -> 0: [0,2], 1: [1].
         std::vector<VtIntArray> instanceIndices;
