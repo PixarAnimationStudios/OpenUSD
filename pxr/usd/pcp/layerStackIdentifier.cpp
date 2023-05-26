@@ -30,6 +30,7 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <ostream>
+#include <tuple>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,11 +42,11 @@ PcpLayerStackIdentifier::PcpLayerStackIdentifier() : _hash(0)
 PcpLayerStackIdentifier::PcpLayerStackIdentifier(
     const SdfLayerHandle& rootLayer_,
     const SdfLayerHandle& sessionLayer_,
-    const ArResolverContext& pathResolverContext_) :
-    rootLayer(rootLayer_),
-    sessionLayer(sessionLayer_),
-    pathResolverContext(pathResolverContext_),
-    _hash(rootLayer ? _ComputeHash() : 0)
+    const ArResolverContext& pathResolverContext_)
+    : rootLayer(rootLayer_)
+    , sessionLayer(sessionLayer_)
+    , pathResolverContext(pathResolverContext_)
+    , _hash(rootLayer ? _ComputeHash() : 0)
 {
     // Do nothing
 }
@@ -63,32 +64,29 @@ PcpLayerStackIdentifier::operator=(const PcpLayerStackIdentifier& rhs)
     return *this;
 }
 
-PcpLayerStackIdentifier::operator UnspecifiedBoolType() const
+PcpLayerStackIdentifier::operator bool() const
 {
-    return rootLayer ? &This::_hash : NULL;
+    return static_cast<bool>(rootLayer);
 }
 
 bool
 PcpLayerStackIdentifier::operator==(const This &rhs) const
 {
-    return _hash           == rhs._hash         &&
-           rootLayer       == rhs.rootLayer     &&
-           sessionLayer    == rhs.sessionLayer  &&
-           pathResolverContext == rhs.pathResolverContext;
+    return
+        std::tie(
+            _hash, rootLayer, sessionLayer,
+            pathResolverContext) ==
+        std::tie(
+            rhs._hash, rhs.rootLayer, rhs.sessionLayer,
+            rhs.pathResolverContext);
 }
 
 bool
 PcpLayerStackIdentifier::operator<(const This &rhs) const
 {
-    if (sessionLayer < rhs.sessionLayer)
-        return true;
-    if (rhs.sessionLayer < sessionLayer)
-        return false;
-    if (rootLayer < rhs.rootLayer)
-        return true;
-    if (rhs.rootLayer < rootLayer)
-        return false;
-    return pathResolverContext < rhs.pathResolverContext;
+    return
+        std::tie(sessionLayer, rootLayer, pathResolverContext) <
+        std::tie(rhs.sessionLayer, rhs.rootLayer, rhs.pathResolverContext);
 }
 
 size_t

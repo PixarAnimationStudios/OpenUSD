@@ -68,11 +68,8 @@ public:
     PcpLayerStackIdentifier& operator=(const PcpLayerStackIdentifier&);
 
     // Validity.
-#if !defined(doxygen)
-    typedef const size_t This::*UnspecifiedBoolType;
-#endif
     PCP_API
-    operator UnspecifiedBoolType() const;
+    explicit operator bool() const;
 
     // Comparison.
     PCP_API
