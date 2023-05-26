@@ -4435,11 +4435,12 @@ pxr_register_test(testUsdImagingGLFraming_6
 )
 
 pxr_register_test(testUsdImagingGLHWFaceCulling
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -times 0 1 2 -cullStyle backUnlessDoubleSided -shading smooth -frameAll -stage testHWFaceCulling.usda -write testHWFaceCulling.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -times 0 1 2 3 -cullStyle backUnlessDoubleSided -shading smooth -frameAll -stage testHWFaceCulling.usda -write testHWFaceCulling.png"
     IMAGE_DIFF_COMPARE
         testHWFaceCulling_000.png
         testHWFaceCulling_001.png
         testHWFaceCulling_002.png
+        testHWFaceCulling_003.png
     FAIL 0.05
     FAIL_PERCENT 0.001
     WARN 0.05
