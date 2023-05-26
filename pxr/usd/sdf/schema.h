@@ -602,6 +602,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((DisplayUnit, "displayUnit"))                           \
     ((Documentation, "documentation"))                       \
     ((EndTimeCode, "endTimeCode"))                           \
+    ((ExpressionVariables, "expressionVariables"))           \
     ((FramePrecision, "framePrecision"))                     \
     ((FramesPerSecond, "framesPerSecond"))                   \
     ((Hidden, "hidden"))                                     \

@@ -57,6 +57,20 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertFalse(expr)
         self.assertTrue(expr.GetErrors())
 
+    def test_AuthoringExpressionVariables(self):
+        layer = Sdf.Layer.CreateAnonymous()
+        self.assertFalse(layer.HasExpressionVariables())
+        self.assertEqual(layer.expressionVariables, {})
+
+        expressionVars = { "str" :"Y", "num": 0, "b" : False }
+        layer.expressionVariables = expressionVars
+        self.assertTrue(layer.HasExpressionVariables())
+        self.assertEqual(layer.expressionVariables, expressionVars)
+
+        layer.ClearExpressionVariables()
+        self.assertFalse(layer.HasExpressionVariables())
+        self.assertEqual(layer.expressionVariables, {})
+
     def test_Default(self):
         e = Sdf.VariableExpression()
         self.assertFalse(e)

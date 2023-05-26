@@ -1847,6 +1847,30 @@ SdfLayer::ClearCustomLayerData()
     EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->CustomLayerData);
 }
 
+VtDictionary
+SdfLayer::GetExpressionVariables() const
+{
+    return _GetValue<VtDictionary>(SdfFieldKeys->ExpressionVariables);
+}
+
+void
+SdfLayer::SetExpressionVariables(const VtDictionary& dict)
+{
+    _SetValue(SdfFieldKeys->ExpressionVariables, dict);
+}
+
+bool 
+SdfLayer::HasExpressionVariables() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
+void 
+SdfLayer::ClearExpressionVariables()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
 SdfPrimSpecHandle
 SdfLayer::GetPseudoRoot() const
 {
