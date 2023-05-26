@@ -48,6 +48,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hdsi/materialPruningSceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
@@ -322,7 +323,11 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
 
     // Forward scene materials enable option.
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7116): params.enableSceneMaterials, params.enableSceneLights
+        // XXX(USD-7116): params.enableSceneLights
+        if (_materialPruningSceneIndex) {
+            _materialPruningSceneIndex->SetSceneMaterialsEnabled(
+                params.enableSceneMaterials);
+        }
     } else {
         _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
         _sceneDelegate->SetSceneLightsEnabled(params.enableSceneLights);
@@ -1134,6 +1139,11 @@ UsdImagingGLEngine::_SetRenderDelegate(
         // Create the scene index graph.
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New(stageInputArgs);
+
+        // Prune scene materials prior to flattening inherited
+        // materials bindings and resolving material bindings
+        _sceneIndex = _materialPruningSceneIndex =
+            HdsiMaterialPruningSceneIndex::New(_sceneIndex);
 
         // Use extentsHint for default_/geometry purpose
         HdContainerDataSourceHandle const extentInputArgs =
