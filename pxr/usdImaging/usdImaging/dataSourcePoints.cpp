@@ -59,12 +59,12 @@ UsdImagingDataSourcePointsPrim::Get(const TfToken &name)
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
+                HdContainerDataSource::Cast(result),
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     _GetCustomPrimvarMappings(_GetUsdPrim()),
-                    _GetStageGlobals()),
-                HdContainerDataSource::Cast(result));
+                    _GetStageGlobals()));
     }
 
     return result;

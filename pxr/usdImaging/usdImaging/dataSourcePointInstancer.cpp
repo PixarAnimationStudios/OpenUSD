@@ -211,13 +211,13 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
         // and angularVelocities.
         return
             HdOverlayContainerDataSource::New(
+                HdContainerDataSource::Cast(
+                    UsdImagingDataSourcePrim::Get(name)),
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     _GetCustomPrimvarMappings(_GetUsdPrim()),
-                    _GetStageGlobals()),
-                HdContainerDataSource::Cast(
-                    UsdImagingDataSourcePrim::Get(name)));
+                    _GetStageGlobals()));
     } else {
         return UsdImagingDataSourcePrim::Get(name);
     }

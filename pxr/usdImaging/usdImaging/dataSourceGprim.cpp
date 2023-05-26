@@ -103,12 +103,17 @@ UsdImagingDataSourceGprim::Get(const TfToken &name)
         }
         return
             HdOverlayContainerDataSource::New(
+                HdContainerDataSource::Cast(result),
+                // Note that a attribute such as "normals" (which we
+                // get through the custom primvars data source) is
+                // weaker than the preferred form "primvars:normals"
+                // (which we get from the base implementation
+                // UsdImagingDataSourcePrim::Get).
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     mappings,
-                    _GetStageGlobals()),
-                HdContainerDataSource::Cast(result));
+                    _GetStageGlobals()));
     }
 
     return result;
