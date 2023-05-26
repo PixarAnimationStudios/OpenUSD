@@ -111,7 +111,6 @@ def main():
         _Err("Input file ('%s') doesn't exist." %(inputFile))
         return 0
 
-    currentWorkingDir = os.getcwd()
     if isUsdzFile:
         shutil.copyfile(inputFile, backupFile)
         # UsdzAssetIterator will make sure to extract and pack when done!
@@ -142,7 +141,6 @@ def main():
     if not success:
         _Err("Unable to fix or no fixes required for input layer '%s'." \
                 %inputFile)
-        os.chdir(currentWorkingDir)
         shutil.move(backupFile, inputFile)
 
 if __name__ == '__main__':

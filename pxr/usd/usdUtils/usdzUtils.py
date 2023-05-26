@@ -231,6 +231,7 @@ class UsdzAssetIterator(object):
         # If extraction failed, we won't have a extractDir, exit early
         if not os.path.exists(self.extractDir):
             return 
+        restoreDir = os.getcwd()
         os.chdir(self.extractDir)
         filesToAdd = self._ExtractedFiles()
         if self.verbose:
@@ -244,7 +245,7 @@ class UsdzAssetIterator(object):
                         self.verbose)
         finally:
             # Make sure context is not on the directory being removed
-            os.chdir(os.path.dirname(self.extractDir))
+            os.chdir(restoreDir)
             shutil.rmtree(self.extractDir)
 
     def UsdAssets(self):
@@ -258,6 +259,7 @@ class UsdzAssetIterator(object):
         allowedExtensions = _AllowedUsdzExtensions() + _AllowedUsdExtensions()
         extractedFiles = [f for f in self._ExtractedFiles() if \
                 os.path.splitext(f)[1] in allowedExtensions]
+        restoreDir = os.getcwd()
         os.chdir(self.extractDir)
         for extractedFile in extractedFiles:
             if os.path.splitext(extractedFile)[1] in _AllowedUsdzExtensions():
@@ -274,6 +276,7 @@ class UsdzAssetIterator(object):
                 if self.verbose:
                     _Print("Iterating usd asset: %s" %extractedFile)
                 yield extractedFile 
+        os.chdir(restoreDir)
 
     def AllAssets(self):
         """
@@ -285,6 +288,7 @@ class UsdzAssetIterator(object):
             return
         # generator that yields all assets
         extractedFiles = self._ExtractedFiles()
+        restoreDir = os.getcwd()
         os.chdir(self.extractDir)
         for extractedFile in extractedFiles:
             if os.path.splitext(extractedFile)[1] in _AllowedUsdzExtensions():
@@ -300,3 +304,4 @@ class UsdzAssetIterator(object):
                 if self.verbose:
                     _Print("Iterating usd asset: %s" %extractedFile)
                 yield extractedFile 
+        os.chdir(restoreDir)
