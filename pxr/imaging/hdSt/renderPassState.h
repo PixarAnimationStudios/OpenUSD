@@ -179,7 +179,7 @@ public:
     /// This is either using the modern camera framing, which is always y-down,
     /// or the legacy viewport.
     HDST_API
-    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc) const;
+    GfVec4i ComputeViewport() const;
 
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
