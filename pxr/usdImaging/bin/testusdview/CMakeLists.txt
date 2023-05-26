@@ -631,7 +631,7 @@ pxr_register_test(testUsdviewFreeCamera
         truck_-1_-1.png
         truck_1_1.png
         end.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.00002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -644,7 +644,7 @@ pxr_register_test(testUsdviewFreeCameraAspect
         aspect185.png
         aspect239.png
         aspect05.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -659,7 +659,7 @@ pxr_register_test(testUsdviewSelectionHighlighting
         sel_highlight_double.png
         sel_highlight_instance.png
         sel_highlight_color.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -678,7 +678,7 @@ pxr_register_test(testUsdviewRenderMode
         geom_smooth.png
         geom_flat.png
         render_mode_hidden_surface_wireframe.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -692,7 +692,7 @@ pxr_register_test(testUsdviewLights
         noLights.png
         dome.png
         bothLights.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -704,7 +704,7 @@ pxr_register_test(testUsdviewLights_yup
     IMAGE_DIFF_COMPARE
         domeYup.png
         bothLightsYup.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -718,7 +718,7 @@ pxr_register_test(testUsdviewLightVisibility
         singleInvisible2.png
         allVisible.png
         allInvisible.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -730,7 +730,7 @@ pxr_register_test(testUsdviewLightVisibility_varying
     IMAGE_DIFF_COMPARE
         visible.png
         invisible.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -744,7 +744,7 @@ pxr_register_test(testUsdviewBackgroundColor
         grey_dark.png
         grey_light.png
         white.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -758,7 +758,7 @@ pxr_register_test(testUsdviewComplexity
         medium.png
         high.png
         very_high.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -771,7 +771,7 @@ pxr_register_test(testUsdviewFieldOfView
         fov45.png
         fov60.png
         fov90.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -787,7 +787,7 @@ pxr_register_test(testUsdviewClippingPlanes
         override_both.png
         before_recompute.png
         after_recompute.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -801,7 +801,7 @@ pxr_register_test(testUsdviewDefaultMaterial
         ambient.png
         specular.png
         both.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -815,7 +815,7 @@ pxr_register_test(testUsdviewCameraMaskMode
         outline_gl.png
         partial_gl.png
         full_gl.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -830,7 +830,7 @@ if (EMBREE_FOUND AND ${PXR_BUILD_EMBREE_PLUGIN})
             outline_embree.png
             partial_embree.png
             full_embree.png
-        FAIL 1
+        FAIL 0.01
         FAIL_PERCENT 0.0002
         PERCEPTUAL
         EXPECTED_RETURN_CODE 0
@@ -846,7 +846,7 @@ pxr_register_test(testUsdviewFrameSelection
         toggleToStart.png
         rotatedStart.png
         toggleToFramed.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -859,7 +859,7 @@ pxr_register_test(testUsdviewReloadReopen
         coloredAndFramed.png
         reloaded.png
         reopened.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -872,7 +872,7 @@ pxr_register_test(testUsdviewMaterialEdits
         1.png
         2.png
         3.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     EXPECTED_RETURN_CODE 0
 )
@@ -882,7 +882,7 @@ pxr_register_test(testUsdviewUpAxis_zUp
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewUpAxis_zUp.py testZUp.usda"
     IMAGE_DIFF_COMPARE
         zUp.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -896,7 +896,7 @@ pxr_register_test(testUsdviewDeactivate
         parentDeactivate.png
         parentChildDeactivate1.png
         parentChildDeactivate2.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.2
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -914,7 +914,7 @@ pxr_register_test(testUsdviewCPUSkinning
         post_skinned_prim_resync_frame_2.png
         pre_skel_resync_frame_6.png
         post_skel_resync_frame_6.png
-    FAIL 1
+    FAIL 0.01
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -933,7 +933,7 @@ pxr_register_test(testUsdviewGPUSkinning
         post_skinned_prim_resync_frame_2.png
         pre_skel_resync_frame_6.png
         post_skel_resync_frame_6.png
-    FAIL 1
+    FAIL 0.01
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     ENV
@@ -946,7 +946,7 @@ pxr_register_test(testUsdviewInfGeom
     IMAGE_DIFF_COMPARE
         infGeom.png
         fixedGeom.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.06
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -976,7 +976,7 @@ pxr_register_test(testUsdviewPrimvarEdits
         remove_fallback_primvar_wireOnSurf.png
         add_unused_primvars.png
         remove_unused_primvars.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -987,7 +987,7 @@ pxr_register_test(testUsdviewOIT
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewOIT.py test.usda"
     IMAGE_DIFF_COMPARE
         oit.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -998,7 +998,7 @@ pxr_register_test(testUsdviewAdditive
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewAdditive.py test.usda"
     IMAGE_DIFF_COMPARE
         additive.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -1016,7 +1016,7 @@ pxr_register_test(testUsdviewVariantSelection
         cone2.png
         cube2.png
         cylinder2.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -1031,7 +1031,7 @@ pxr_register_test(testUsdviewPointWidths
         set_point_widths_050.png
         set_point_widths_primvar_075.png
         end.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
@@ -1043,7 +1043,7 @@ pxr_register_test(testUsdviewPointInstancerVariant
     IMAGE_DIFF_COMPARE
         variantB.png
         variantA.png
-    FAIL 1
+    FAIL 0.01
     FAIL_PERCENT 0.0002
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
