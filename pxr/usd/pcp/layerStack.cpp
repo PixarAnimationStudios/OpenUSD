@@ -896,6 +896,37 @@ PcpLayerStack::_BuildLayerStack(
     }
 
     std::vector<_SublayerSourceInfo> localSourceInfo(numSublayers);
+
+    auto loadSublayer = [&](size_t i) {
+        // Resolve and open sublayer.
+        TfErrorMark m;
+                
+        SdfLayer::FileFormatArguments localArgs;
+        const SdfLayer::FileFormatArguments& layerArgs = 
+            Pcp_GetArgumentsForFileFormatTarget(
+                sublayers[i], &defaultLayerArgs, &localArgs);
+                
+        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
+        // but we want to keep track of the final sublayer path after
+        // anchoring it to the layer.
+        string sublayerPath = SdfComputeAssetPathRelativeToLayer(
+            layer, sublayers[i]);
+        sublayerRefPtrs[i] = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
+                
+        localSourceInfo[i] =
+            _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
+                
+        // Produce commentary for eventual PcpError created below.
+        if (!m.IsClean()) {
+            vector<string> commentary;
+            for (auto const &err: m) {
+                commentary.push_back(err.GetCommentary());
+            }
+            m.Clear();
+            errCommentary[i] = TfStringJoin(commentary.begin(),
+                                            commentary.end(), "; ");
+        }
+    };
     
     // Open all the layers in parallel.
     WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
@@ -908,42 +939,18 @@ PcpLayerStack::_BuildLayerStack(
             if (isMuted[i]) {
                 continue;
             }
-            auto code = [&, i]() {
-                // Resolve and open sublayer.
-                TfErrorMark m;
-                
-                SdfLayer::FileFormatArguments localArgs;
-                const SdfLayer::FileFormatArguments& layerArgs = 
-                    Pcp_GetArgumentsForFileFormatTarget(
-                        sublayers[i], &defaultLayerArgs, &localArgs);
-                
-                // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
-                // but we want to keep track of the final sublayer path after
-                // anchoring it to the layer.
-                string sublayerPath = SdfComputeAssetPathRelativeToLayer(
-                    layer, sublayers[i]);
-                sublayerRefPtrs[i] =
-                    SdfLayer::FindOrOpen(sublayerPath, layerArgs);
-                
-                localSourceInfo[i] =
-                    _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
-                
-                // Produce commentary for eventual PcpError created below.
-                if (!m.IsClean()) {
-                    vector<string> commentary;
-                    for (auto const &err: m) {
-                        commentary.push_back(err.GetCommentary());
-                    }
-                    m.Clear();
-                    errCommentary[i] = TfStringJoin(commentary.begin(),
-                                                    commentary.end(), "; ");
-                }
-            };
+
             if (goParallel) {
-                wd.Run(code);
+                wd.Run(
+                    [i, &loadSublayer, &pathResolverContext]() { 
+                        // Context binding is thread-specific, so we need to
+                        // bind the context here.
+                        ArResolverContextBinder binder(pathResolverContext);
+                        loadSublayer(i);
+                    });
             }
             else {
-                code();
+                loadSublayer(i);
             }
         }
     });
