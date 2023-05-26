@@ -105,9 +105,9 @@ public:
     /// multi-sampled aovs, the aovs will be resolved at the end of the render
     /// pass. If false or the aov is not multi-sampled or the render pass is not
     /// rendering into the multi-sampled aov, no resolution takes place.
-    HD_API
+    HDST_API
     void SetResolveAovMultiSample(bool state);
-    HD_API
+    HDST_API
     bool GetResolveAovMultiSample() const;
 
     /// Set lighting shader
