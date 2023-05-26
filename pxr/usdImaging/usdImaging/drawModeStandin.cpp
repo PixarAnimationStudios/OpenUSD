@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/basisCurvesSchema.h"
 #include "pxr/imaging/hd/basisCurvesTopologySchema.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
@@ -373,23 +374,15 @@ public:
             HdXformSchemaTokens->xform,
             HdPurposeSchemaTokens->purpose,
             HdVisibilitySchemaTokens->visibility,
+            HdInstancedBySchemaTokens->instancedBy,
             HdLegacyDisplayStyleSchemaTokens->displayStyle };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdXformSchemaTokens->xform) {
-            if (_primSource) {
-                return _primSource->Get(name);
-            }
-            return nullptr;
-        }
-        if (name == HdPurposeSchemaTokens->purpose) {
-            if (_primSource) {
-                return _primSource->Get(name);
-            }
-            return nullptr;
-        }
-        if (name == HdVisibilitySchemaTokens->visibility) {
+        if (name == HdXformSchemaTokens->xform ||
+            name == HdPurposeSchemaTokens->purpose ||
+            name == HdVisibilitySchemaTokens->visibility ||
+            name == HdInstancedBySchemaTokens->instancedBy) {
             if (_primSource) {
                 return _primSource->Get(name);
             }
