@@ -2542,85 +2542,31 @@ UsdImagingPointInstancerAdapter::GetRelativeInstancerTransform(
     SdfPath const &cachePath,
     UsdTimeCode time) const
 {
-    GfMatrix4d transformRoot(1); // target to world.
+    const UsdPrim& target = _GetPrim(cachePath.GetPrimPath());
+    const GfMatrix4d targetXf =
+        BaseAdapter::GetTransform(target, cachePath, time);
+    if (parentInstancerCachePath.IsEmpty()) {
 
-    // XXX: isProtoRoot detection shouldn't be needed since UsdGeomPointInstaner
-    // doesn't have a convention of ignoring protoRoot transform unlike the ones
-    // in PxUsdGeomGL.
-    // 2 test cases in testUsdImagingGLPointInstancer
-    //   pi_pi_usda, time=1 and 2
-    // are wrongly configured, and we need to be updated together when fixing.
-    //
-    bool isProtoRoot = false;
-    UsdPrim prim = _GetPrim(cachePath.GetPrimPath());
-    bool inPrototype = prim.IsInPrototype();
+        // When there is no parent instancer, we simply return the target
+        // point instancer's world transform.
 
-    if (!parentInstancerCachePath.IsEmpty()) {
-        // this instancer has a parent instancer. see if this instancer 
-        // is a protoRoot or not.
-        _ProtoPrim const& proto
-            = _GetProtoPrim(parentInstancerCachePath, cachePath);
-        if (proto.protoRootPath == cachePath) {
-            // this instancer is a proto root.
-            isProtoRoot = true;
-        } else {
-            // this means instancer(cachePath) is a member of a
-            // prototype of the parent instacer, but not a proto root.
-            //
-            // we need to extract relative transform to root.
-            //
-            if (inPrototype) {
-                // if the instancer is in prototype, set the target
-                // root transform to world, since the parent
-                // instancer (if the parent is also in prototype,
-                // native instancer which instances that parent) 
-                // has delegate's root transform.
-                transformRoot = GetRootTransform();
-            } else {
-                // set the target root to proto root.
-                transformRoot
-                    = BaseAdapter::GetTransform(
-                        _GetPrim(proto.protoRootPath),
-                        proto.protoRootPath,
-                        time);
-            }
-        }
+        return targetXf;
     }
 
-    if (isProtoRoot) {
-        // instancer is a protoroot of parent instancer.
-        // ignore instancer transform.
-        return GfMatrix4d(1);
-    } else {
-        // set protoRoot-to-instancer relative transform
+    // When there is a parent instancer, we need the transform of the target
+    // point instancer relative to the parent of the prototype root in which the
+    // target point instancer resides. To get this, we multiply the target
+    // point instancer's world transform by the inverse of the prototype root's
+    // parent's world transform. This ensures we pick up any transform authored
+    // on the prototype root itself, and does not include any transform that
+    // might be authored on the prototype root's parent.
 
-        // note that GetTransform() includes GetRootTransform().
-        //   GetTransform(prim) : InstancerXfm * RootTransform
-        //
-        // 1. If the instancer doesn't have a parent,
-        //    transformRoot is identity.
-        //
-        //    val = InstancerXfm * RootTransform * 1^-1
-        //        = InstancerXfm * RootTransform
-        //
-        // 2. If the instancer has a parent and in prototype,
-        //    transformRoot is RootTransform.
-        //
-        //    val = InstancerXfm * RootTransform * (RootTransform)^-1
-        //        = InstancerXfm
-        //
-        // 3. If the instaner has a parent but not in prototype,
-        //    transformRoot is (ProtoRoot * RootTransform).
-        //
-        //    val = InstancerXfm * RootTransform * (ProtoRoot * RootTransform)^-1
-        //        = InstancerXfm * (ProtoRoot)^-1
-        //
-        // in case 2 and 3, RootTransform will be applied on the parent
-        // instancer.
-        //
-        return BaseAdapter::GetTransform(prim, prim.GetPath(), time) * 
-            transformRoot.GetInverse();
-    }
+    const _ProtoPrim& proto = _GetProtoPrim(parentInstancerCachePath, cachePath);
+    const SdfPath protoRootParentPath = proto.protoRootPath.GetParentPath();
+    const UsdPrim& protoRootParent = _GetPrim(protoRootParentPath);
+    const GfMatrix4d protoRootParentXf = 
+        BaseAdapter::GetTransform(protoRootParent, protoRootParentPath, time);
+    return targetXf * protoRootParentXf.GetInverse();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
