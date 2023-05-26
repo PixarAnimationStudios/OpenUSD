@@ -33,6 +33,7 @@
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
 #include "pxr/imaging/hd/lazyContainerDataSource.h"
+#include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
@@ -782,6 +783,19 @@ _ComputeMaterialBindingHash(HdMaterialBindingSchema schema)
         "MaterialBindings%zx", _ComputeHash(schema.GetContainer()));
 }
 
+std::string
+_ComputePurposeBindingHash(HdPurposeSchema schema)
+{
+    if (HdTokenDataSourceHandle const ds = schema.GetPurpose()) {
+        const TfToken purpose = ds->GetTypedValue(0.0f);
+        if (!purpose.IsEmpty()) {
+            return "_" + purpose.GetString();
+        }
+    }
+
+    return "";
+}
+
 TfToken
 _ComputeBindingHash(HdContainerDataSourceHandle const &primSource)
 {
@@ -790,7 +804,9 @@ _ComputeBindingHash(HdContainerDataSourceHandle const &primSource)
             HdPrimvarsSchema::GetFromParent(primSource)) +
         "_" +
         _ComputeMaterialBindingHash(
-            HdMaterialBindingSchema::GetFromParent(primSource)));
+            HdMaterialBindingSchema::GetFromParent(primSource)) +
+        _ComputePurposeBindingHash(
+            HdPurposeSchema::GetFromParent(primSource)));
 }
 
 
@@ -858,6 +874,11 @@ _MakeCopy(HdDataSourceBaseHandle const &ds)
         return HdRetainedTypedSampledDataSource<SdfPath>::New(
             pathDs->GetTypedValue(0.0f));
     }
+    if (HdTokenDataSourceHandle const tokenDs =
+           HdTokenDataSource::Cast(ds)) {
+        return HdRetainedTypedSampledDataSource<TfToken>::New(
+            tokenDs->GetTypedValue(0.0f));
+    }
 
     TF_CODING_ERROR("Unknown data source type");
 
@@ -867,11 +888,17 @@ _MakeCopy(HdDataSourceBaseHandle const &ds)
 HdContainerDataSourceHandle
 _MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
 {
-    HdMaterialBindingSchema schema = HdMaterialBindingSchema::GetFromParent(
-        primSource);
+    HdMaterialBindingSchema materialBindingSchema =
+        HdMaterialBindingSchema::GetFromParent(primSource);
+    HdPurposeSchema purposeSchema =
+        HdPurposeSchema::GetFromParent(primSource);
+
     return HdRetainedContainerDataSource::New(
         HdMaterialBindingSchema::GetSchemaToken(),
-        _MakeCopy(schema.GetContainer()));
+        _MakeCopy(materialBindingSchema.GetContainer()),
+        HdPurposeSchema::GetSchemaToken(),
+        _MakeCopy(purposeSchema.GetContainer()));
+
 }
 
 struct _InstanceInfo {
