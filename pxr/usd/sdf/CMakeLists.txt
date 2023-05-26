@@ -66,12 +66,12 @@ pxr_library(sdf
         siteUtils
         spec
         specType
-        stageVariableExpression
         textFileFormat
         timeCode
         tokens
         types
         valueTypeName
+        variableExpression
         variantSetSpec
         variantSpec
 
@@ -111,11 +111,11 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
-        stageVariableExpressionImpl
-        stageVariableExpressionParser
         subLayerListEditor
         textParserContext
         valueTypeRegistry
+        variableExpressionImpl
+        variableExpressionParser
         vectorListEditor
 
     PRIVATE_HEADERS
@@ -155,7 +155,7 @@ pxr_library(sdf
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
-        wrapStageVariableExpression.cpp
+        wrapVariableExpression.cpp
         wrapTimeCode.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
@@ -171,7 +171,7 @@ pxr_library(sdf
     DOXYGEN_FILES
         overview.dox
         doxygen/fileFormatPlugin.dox
-        doxygen/stageVariableExpressions.dox
+        doxygen/variableExpressions.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires
@@ -217,7 +217,7 @@ pxr_test_scripts(
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
-    testenv/testSdfStageVariableExpression.py
+    testenv/testSdfVariableExpression.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
 )
@@ -514,9 +514,9 @@ pxr_register_test(testSdfSpecHash
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
 )
-pxr_register_test(testSdfStageVariableExpression
+pxr_register_test(testSdfVariableExpression
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfStageVariableExpression"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariableExpression"
 )
 pxr_register_test(testSdfTimeCode
     PYTHON

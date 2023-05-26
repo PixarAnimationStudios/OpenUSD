@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION
-#define PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION
+#ifndef PXR_USD_SDF_VARIABLE_EXPRESSION
+#define PXR_USD_SDF_VARIABLE_EXPRESSION
 
-/// \file sdf/stageVariableExpression.h
+/// \file sdf/variableExpression.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/api.h"
@@ -39,17 +39,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace Sdf_StageVariableExpressionImpl {
+namespace Sdf_VariableExpressionImpl {
     class Node;
 }
 
-/// \class SdfStageVariableExpression
+/// \class SdfVariableExpression
 ///
-/// Class responsible for parsing and evaluating stage variable expressions.
+/// Class responsible for parsing and evaluating variable expressions.
 ///
-/// Stage variable expressions are written in a custom language and 
+/// Variable expressions are written in a custom language and 
 /// represented in scene description as a string surrounded by backticks (`).
-/// These expressions may refer to "stage variables", which are key-value
+/// These expressions may refer to "expression variables", which are key-value
 /// pairs authored as layer metadata. For example, when evaluating an 
 /// expression like:
 ///
@@ -57,35 +57,35 @@ namespace Sdf_StageVariableExpressionImpl {
 /// `"a_${NAME}_string"`
 /// \endcode
 ///
-/// The "${NAME}" portion of the string with the value of stage variable
+/// The "${NAME}" portion of the string with the value of expression variable
 /// "NAME".
 ///
 /// Higher levels of the system (e.g., composition) are responsible for
-/// examining fields that support stage variable expressions, evaluating them
-/// with the appropriate stage variables (via this class) and consuming the
+/// examining fields that support variable expressions, evaluating them
+/// with the appropriate variables (via this class) and consuming the
 /// results.
 ///
-/// See \ref Sdf_Page_StageVariableExpressions "Stage Variable Expressions"
+/// See \ref Sdf_Page_VariableExpressions "Variable Expressions"
 /// or more information on the expression language and areas of the system
 /// where expressions may be used.
-class SdfStageVariableExpression
+class SdfVariableExpression
 {
 public:
     /// Construct using the expression \p expr. If the expression cannot be
     /// parsed, this object represents an invalid expression. Parsing errors
     /// will be accessible via GetErrors.
     SDF_API
-    explicit SdfStageVariableExpression(const std::string& expr);
+    explicit SdfVariableExpression(const std::string& expr);
 
     /// Construct an object representing an invalid expression.
     SDF_API
-    SdfStageVariableExpression();
+    SdfVariableExpression();
 
     SDF_API
-    ~SdfStageVariableExpression();
+    ~SdfVariableExpression();
 
-    /// Returns true if \p s is a stage variable expression, false otherwise.
-    /// A stage variable expression is a string surrounded by backticks (`).
+    /// Returns true if \p s is a variable expression, false otherwise.
+    /// A variable expression is a string surrounded by backticks (`).
     ///
     /// A return value of true does not guarantee that \p s is a valid
     /// expression. This function is meant to be used as an initial check
@@ -93,18 +93,19 @@ public:
     SDF_API
     static bool IsExpression(const std::string& s);
 
-    /// Returns true if \p value holds a type that is supported by stage
+    /// Returns true if \p value holds a type that is supported by
     /// variable expressions, false otherwise. If this function returns
-    /// true, \p value may be authored into the "stageVariables" dictionary.
+    /// true, \p value may be authored into the expression variables
+    /// dictionary.
     SDF_API
-    static bool IsValidStageVariableType(const VtValue& value);
+    static bool IsValidVariableType(const VtValue& value);
 
     /// Returns true if this object represents a valid expression, false
     /// if it represents an invalid expression.
     ///
     /// A return value of true does not mean that evaluation of this
     /// expression is guaranteed to succeed. For example, an expression may
-    /// refer to a stage variable whose value is an invalid expression.
+    /// refer to a variable whose value is an invalid expression.
     /// Errors like this can only be discovered by calling Evaluate.
     SDF_API
     explicit operator bool() const;
@@ -134,19 +135,19 @@ public:
         /// Errors encountered while evaluating the expression.
         std::vector<std::string> errors;
 
-        /// Set of stage variables that were used while evaluating
+        /// Set of variables that were used while evaluating
         /// the expression. For example, for an expression like
         /// `"example_${VAR}_expression"`, this set will contain "VAR".
         ///
-        /// This set will also contain stage variables from subexpressions.
+        /// This set will also contain variables from subexpressions.
         /// In the above example, if the value of "VAR" was another
         /// expression like `"sub_${SUBVAR}_expression"`, this set will
         /// contain both "VAR" and "SUBVAR".
-        std::unordered_set<std::string> usedStageVariables;
+        std::unordered_set<std::string> usedVariables;
     };
 
-    /// Evaluates this expression using the stage variables in
-    /// \p stageVariables and returns a Result object with the final
+    /// Evaluates this expression using the variables in
+    /// \p variables and returns a Result object with the final
     /// value. If an error occurs during evaluation, the value field
     /// in the Result object will be an empty VtValue and error messages
     /// will be added to the errors field.
@@ -155,16 +156,16 @@ public:
     /// function will return a Result object with an empty value and the
     /// errors from GetErrors().
     ///
-    /// If any values in \p stageVariables used by this expression
+    /// If any values in \p variables used by this expression
     /// are themselves expressions, they will be parsed and evaluated.
     /// If an error occurs while evaluating any of these subexpressions,
     /// evaluation of this expression fails and the encountered errors
     /// will be added in the Result's list of errors.
     SDF_API
-    Result Evaluate(const VtDictionary& stageVariables) const;
+    Result Evaluate(const VtDictionary& variables) const;
 
-    /// Evaluates this expression using the stage variables in
-    /// \p stageVariables and returns a Result object with the final
+    /// Evaluates this expression using the variables in
+    /// \p variables and returns a Result object with the final
     /// value.
     ///
     /// This is a convenience function that calls Evaluate and ensures that
@@ -174,9 +175,9 @@ public:
     /// indicating the unexpected type will be added to the Result's error
     /// list. Otherwise, the Result will be returned as-is.
     template <class ResultType>
-    Result EvaluateTyped(const VtDictionary& stageVariables) const
+    Result EvaluateTyped(const VtDictionary& variables) const
     {
-        Result r = Evaluate(stageVariables);
+        Result r = Evaluate(variables);
         if (!r.value.IsEmpty() && !r.value.IsHolding<ResultType>()) {
             r.errors.push_back(
                 _FormatUnexpectedTypeError(r.value, VtValue(ResultType())));
@@ -191,7 +192,7 @@ private:
     _FormatUnexpectedTypeError(const VtValue& got, const VtValue& expected);
 
     std::vector<std::string> _errors;
-    std::shared_ptr<Sdf_StageVariableExpressionImpl::Node> _expression;
+    std::shared_ptr<Sdf_VariableExpressionImpl::Node> _expression;
     std::string _expressionStr;
 };
 

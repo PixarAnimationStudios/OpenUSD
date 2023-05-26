@@ -22,9 +22,9 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/stageVariableExpressionImpl.h"
+#include "pxr/usd/sdf/variableExpressionImpl.h"
 
-#include "pxr/usd/sdf/stageVariableExpressionParser.h"
+#include "pxr/usd/sdf/variableExpressionParser.h"
 
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
@@ -35,7 +35,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace Sdf_StageVariableExpressionImpl
+namespace Sdf_VariableExpressionImpl
 {
 
 class _TypeVisitor
@@ -59,73 +59,71 @@ GetValueType(const VtValue& value)
 
 // ------------------------------------------------------------
 
-EvalContext::EvalContext(const VtDictionary* stageVariables)
-    : _stageVariables(stageVariables)
+EvalContext::EvalContext(const VtDictionary* variables)
+    : _variables(variables)
 {
 }
 
 std::pair<EvalResult, bool>
-EvalContext::GetStageVariable(const std::string& stageVar)
+EvalContext::GetVariable(const std::string& var)
 {
-    // Check if we have circular stage variable substitutions.
-    if (std::find(
-            _stageVariableStack.begin(), _stageVariableStack.end(),
-            stageVar) != _stageVariableStack.end()) {
+    // Check if we have circular variable substitutions.
+    if (std::find(_variableStack.begin(), _variableStack.end(), var) 
+        != _variableStack.end()) {
 
-        std::vector<std::string> formattedStageVars;
-        for (const std::string& s : _stageVariableStack) {
-            formattedStageVars.push_back("'" + s + "'");
+        std::vector<std::string> formattedVars;
+        for (const std::string& s : _variableStack) {
+            formattedVars.push_back("'" + s + "'");
         }
 
         return { 
             EvalResult::Error({ 
                 TfStringPrintf(
-                    "Encountered circular stage variable substitutions: "
-                    "[%s, '%s']",
+                    "Encountered circular variable substitutions: [%s, '%s']",
                     TfStringJoin(
-                        formattedStageVars.begin(), 
-                        formattedStageVars.end(), ", ").c_str(),
-                    stageVar.c_str()) }),
+                        formattedVars.begin(),  formattedVars.end(), ", ")
+                        .c_str(),
+                    var.c_str()) }),
             true
         };
     }
 
-    _requestedStageVariables.insert(stageVar);
+    _requestedVariables.insert(var);
 
-    const VtValue* value = TfMapLookupPtr(*_stageVariables, stageVar);
+    const VtValue* value = TfMapLookupPtr(*_variables, var);
     if (!value) {
         return { EvalResult::NoValue(), false };
     }
 
-    // If the stage variable isn't a supported type, return an error.
+    // If the variable isn't a supported type, return an error.
     if (GetValueType(*value) == ValueType::Unknown) {
         return { 
             EvalResult::Error({
                 TfStringPrintf(
-                    "Stage variable '%s' has unsupported type %s",
-                    stageVar.c_str(), value->GetTypeName().c_str()) }),
+                    "Variable '%s' has unsupported type %s",
+                    var.c_str(), value->GetTypeName().c_str()) }),
             true
         };
     }
 
-    // If the value of the stage variable is itself an expression,
+    // If the value of the variable is itself an expression,
     // parse and evaluate it and return the result.
     if (value->IsHolding<std::string>()) {
         const std::string& strValue = value->UncheckedGet<std::string>();
-        if (Sdf_IsStageVariableExpression(strValue)) {
-            Sdf_StageVariableExpressionParserResult subExpr =
-                Sdf_ParseStageVariableExpression(strValue);
+        if (Sdf_IsVariableExpression(strValue)) {
+            Sdf_VariableExpressionParserResult subExpr =
+                Sdf_ParseVariableExpression(strValue);
             if (subExpr.expression) {
-                _stageVariableStack.push_back(stageVar);
+                _variableStack.push_back(var);
                 TfScoped<> popStack(
-                    [this]() { _stageVariableStack.pop_back(); });
+                    [this]() { _variableStack.pop_back(); });
 
                 return { subExpr.expression->Evaluate(this), true };
             }
             else if (!subExpr.errors.empty()) {
                 for (std::string& err : subExpr.errors) {
                     err += TfStringPrintf(
-                        " (in stage variable '%s')", stageVar.c_str());
+                        " (in variable '%s')", var.c_str());
                 }
 
                 return { EvalResult::Error(std::move(subExpr.errors)), true };
@@ -151,7 +149,7 @@ StringNode::StringNode(std::vector<Part>&& parts)
     // Handle escape sequences in the expression here so we don't have to
     // do it every time we evaluate this node.
     for (Part& part : _parts) {
-        if (!part.isStageVariable) {
+        if (!part.isVariable) {
             part.content = TfEscapeString(part.content);
         }
     }
@@ -162,49 +160,48 @@ StringNode::Evaluate(EvalContext* ctx) const
 {
     std::string result;
     for (const Part& part : _parts) {
-        if (part.isStageVariable) {
-            const std::string& stageVariable = part.content;
+        if (part.isVariable) {
+            const std::string& variable = part.content;
 
-            EvalResult stageVarResult;
-            bool stageVarHasValue = false;
-            std::tie(stageVarResult, stageVarHasValue) =
-                ctx->GetStageVariable(stageVariable);
+            EvalResult varResult;
+            bool varHasValue = false;
+            std::tie(varResult, varHasValue) = ctx->GetVariable(variable);
 
-            if (!stageVarHasValue) {
-                // No value for stage variable. Leave the substitution
+            if (!varHasValue) {
+                // No value for variable. Leave the substitution
                 // string in place in case downstream clients want to
                 // handle it.
                 result += part.content;
             }
-            else if (!stageVarResult.value.IsEmpty()) {
-                if (stageVarResult.value.IsHolding<std::string>()) {
-                    // Substitute the value of the stage variable into the
+            else if (!varResult.value.IsEmpty()) {
+                if (varResult.value.IsHolding<std::string>()) {
+                    // Substitute the value of the variable into the
                     // result string.
-                    result += stageVarResult.value.UncheckedGet<std::string>();
+                    result += varResult.value.UncheckedGet<std::string>();
                 }
                 else {
-                    // The value of the stage variable was not a string.
+                    // The value of the variable was not a string.
                     // Flag an error and abort evaluation.
                     return EvalResult::Error({
                        TfStringPrintf(
-                           "String value required for substituting stage "
+                           "String value required for substituting "
                            "variable '%s', got %s.",
-                           stageVariable.c_str(),
-                           stageVarResult.value.GetTypeName().c_str())
+                           variable.c_str(),
+                           varResult.value.GetTypeName().c_str())
                     });
                 }
             }
-            else if (!stageVarResult.errors.empty()) {
+            else if (!varResult.errors.empty()) {
                 // There was an error when obtaining the value for the
-                // stage variable. For example, the value was itself an
+                // variable. For example, the value was itself an
                 // expression but could not be evaluated due to a syntax
                 // error. In this case we copy the errors to the result
                 // and abort evaluation with an error.
-                return EvalResult::Error(std::move(stageVarResult.errors));
+                return EvalResult::Error(std::move(varResult.errors));
             }
             else {
-                // The stage variable value was empty, but no errors occurred.
-                // This could happen if the stage variable was a subexpression
+                // The variable value was empty, but no errors occurred.
+                // This could happen if the variable was a subexpression
                 // that returned no value. We treat this as though it were the
                 // empty string.
             }
@@ -219,26 +216,25 @@ StringNode::Evaluate(EvalContext* ctx) const
 
 // ------------------------------------------------------------
 
-StageVariableNode::StageVariableNode(std::string&& stageVar)
-    : _stageVar(std::move(stageVar))
+VariableNode::VariableNode(std::string&& var)
+    : _var(std::move(var))
 {
 }
 
 EvalResult
-StageVariableNode::Evaluate(EvalContext* ctx) const
+VariableNode::Evaluate(EvalContext* ctx) const
 {
-    std::pair<EvalResult, bool> stageVarResult =
-        ctx->GetStageVariable(_stageVar);
+    std::pair<EvalResult, bool> varResult = ctx->GetVariable(_var);
 
-    if (!stageVarResult.second) {
+    if (!varResult.second) {
         return EvalResult::Error({
-            TfStringPrintf("No value for stage var '%s'", _stageVar.c_str())
+            TfStringPrintf("No value for variable '%s'", _var.c_str())
         });
     }
 
-    return stageVarResult.first;
+    return varResult.first;
 }
 
-} // end namespace Sdf_StageVariableExpressionImpl
+} // end namespace Sdf_VariableExpressionImpl
 
 PXR_NAMESPACE_CLOSE_SCOPE

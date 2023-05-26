@@ -25,74 +25,72 @@
 from pxr import Sdf
 import unittest
 
-class TestSdfStageVariableExpression(unittest.TestCase):
-    def assertEvaluates(self, e, stageVars, expected,
-                          expectedUsedStageVars=None):
-        expr = Sdf.StageVariableExpression(e)
+class TestSdfVariableExpression(unittest.TestCase):
+    def assertEvaluates(self, e, exprVars, expected,
+                          expectedUsedVars=None):
+        expr = Sdf.VariableExpression(e)
         self.assertTrue(expr)
 
-        result = expr.Evaluate(stageVars)
+        result = expr.Evaluate(exprVars)
         self.assertFalse(result.errors)
         self.assertEqual(result.value, expected)
  
-        if expectedUsedStageVars:
-            self.assertEqual(set(result.usedStageVariables),
-                             set(expectedUsedStageVars))
+        if expectedUsedVars:
+            self.assertEqual(set(result.usedVariables), set(expectedUsedVars))
 
-    def assertEvaluationErrors(self, e, stageVars, expectedErrors):
-        expr = Sdf.StageVariableExpression(e)
+    def assertEvaluationErrors(self, e, exprVars, expectedErrors):
+        expr = Sdf.VariableExpression(e)
         self.assertTrue(expr)
 
-        result = expr.Evaluate(stageVars)
+        result = expr.Evaluate(exprVars)
         self.assertIsNone(result.value)
         self.assertTrue(result.errors)
         self.assertEqual(set(result.errors), set(expectedErrors))
 
     def assertValid(self, e):
-        expr = Sdf.StageVariableExpression(e)
+        expr = Sdf.VariableExpression(e)
         self.assertTrue(expr)
         self.assertFalse(expr.GetErrors())
 
     def assertInvalid(self, e):
-        expr = Sdf.StageVariableExpression(e)
+        expr = Sdf.VariableExpression(e)
         self.assertFalse(expr)
         self.assertTrue(expr.GetErrors())
 
     def test_Default(self):
-        e = Sdf.StageVariableExpression()
+        e = Sdf.VariableExpression()
         self.assertFalse(e)
         self.assertEqual(str(e), "")
         self.assertEqual(e.GetErrors(), ["No expression specified"])
 
     def test_IsExpression(self):
-        """Test Sdf.StageVariableExpression.IsExpression"""
-        self.assertTrue(Sdf.StageVariableExpression.IsExpression("`foo`"))
-        self.assertFalse(Sdf.StageVariableExpression.IsExpression("foo"))
+        """Test Sdf.VariableExpression.IsExpression"""
+        self.assertTrue(Sdf.VariableExpression.IsExpression("`foo`"))
+        self.assertFalse(Sdf.VariableExpression.IsExpression("foo"))
 
-    def test_IsValidStageVariableType(self):
-        """Test Sdf.StageVariableExpression.IsValidStageVariableType"""
-        IsValidStageVariableType = \
-            Sdf.StageVariableExpression.IsValidStageVariableType
+    def test_IsValidVariableType(self):
+        """Test Sdf.VariableExpression.IsValidVariableType"""
+        IsValidVariableType = Sdf.VariableExpression.IsValidVariableType
 
-        self.assertTrue(IsValidStageVariableType("string"))
-        self.assertFalse(IsValidStageVariableType(1.23))
+        self.assertTrue(IsValidVariableType("string"))
+        self.assertFalse(IsValidVariableType(1.23))
 
-    def test_StageVarExpressions(self):
-        """Test stage variable expressions consisting of just a top-level
+    def test_VarExpressions(self):
+        """Test variable expressions consisting of just a top-level
         substitution."""
 
-        # Evaluating a top-level stage variable substitution should
-        # yield the exact value given in the stage variables dictionary.
+        # Evaluating a top-level variable substitution should
+        # yield the exact value given in the variables dictionary.
         self.assertEvaluates(
             "`${FOO}`", {"FOO" : "string"}, 
             expected="string",
-            expectedUsedStageVars=["FOO"])
+            expectedUsedVars=["FOO"])
 
-        # If no value is found for the specified stage var, we should
+        # If no value is found for the specified var, we should
         # get an error.
         self.assertEvaluationErrors(
             "`${FOO}`", { },
-            ["No value for stage var 'FOO'"])
+            ["No value for variable 'FOO'"])
 
         # Test invalid expressions
         self.assertInvalid("`${FO-O}`")
@@ -105,44 +103,44 @@ class TestSdfStageVariableExpression(unittest.TestCase):
         self.assertEvaluates(
             '''`''`''', {},
             expected='',
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             '''`""`''', {},
             expected='',
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             '''`"basic_string"`''', {}, 
             expected="basic_string",
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             '''`'basic_string'`''', {}, 
             expected="basic_string",
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             r'''`"quoted_\"double\"_'single'_test"`''', {},
             expected='''quoted_"double"_'single'_test''',
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             r'''`'quoted_"double"_\'single\'_test'`''', {},
             expected='''quoted_"double"_'single'_test''',
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             '''`"string_${A}_${B}"`''',
             {"A" : "substitution", "B" : "works"},
             expected="string_substitution_works",
-            expectedUsedStageVars=["A", "B"])
+            expectedUsedVars=["A", "B"])
 
         self.assertEvaluates(
             '''`'string_${A}_${B}'`''',
             {"A" : "substitution", "B" : "works"},
             expected="string_substitution_works",
-            expectedUsedStageVars=["A", "B"])
+            expectedUsedVars=["A", "B"])
 
         # No substitutions occur here since the '$' is escaped,
         # so \${A} and \${B} aren't recognized as subsitutions.
@@ -150,13 +148,13 @@ class TestSdfStageVariableExpression(unittest.TestCase):
             r'''`"nosubs_\${A}_\${B}"`''',
             {"A" : "substitution", "B" : "works"},
             expected="nosubs_${A}_${B}",
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         self.assertEvaluates(
             r'''`'nosubs_\${A}_\${B}'`''',
             {"A" : "substitution", "B" : "works"},
             expected="nosubs_${A}_${B}",
-            expectedUsedStageVars=[])
+            expectedUsedVars=[])
 
         # Test invalid expressions
         self.assertInvalid('''`"unescaped_"quotes"_are_bad"`''')
@@ -169,8 +167,8 @@ class TestSdfStageVariableExpression(unittest.TestCase):
         self.assertInvalid('`"`')
 
     def test_NestedExpressions(self):
-        """Test evaluating expressions with stage variable substitutions
-        when the stage variables are expressions themselves."""
+        """Test evaluating expressions with variable substitutions
+        when the variables are expressions themselves."""
         self.assertEvaluates(
             "`${FOO}`",
             {"FOO" : "`${BAR}`", "BAR" : "ok"}, 
@@ -192,14 +190,14 @@ class TestSdfStageVariableExpression(unittest.TestCase):
             "subexpression_works_ok_subexpression_works_ok")
 
     def test_CircularSubstitutions(self):
-        """Test that circular stage variable substitutions result in an
+        """Test that circular variable substitutions result in an
         error and not an infinite loop."""
         self.assertEvaluationErrors(
             "`${FOO}`",
             {"FOO" : "`${BAR}`",
              "BAR" : "`${BAZ}`",
              "BAZ" : "`${FOO}`"},
-            ["Encountered circular stage variable substitutions: "
+            ["Encountered circular variable substitutions: "
              "['FOO', 'BAR', 'BAZ', 'FOO']"])
     
     def test_ErrorInNestedExpression(self):
@@ -208,20 +206,20 @@ class TestSdfStageVariableExpression(unittest.TestCase):
             "`${FOO}`",
             {"FOO" : "`'${BAR}'`",
              "BAR" : "`${BAZ`"},
-            ["Missing ending '}' at character 6 (in stage variable 'BAR')"])
+            ["Missing ending '}' at character 6 (in variable 'BAR')"])
 
-    def test_UnsupportedStageVariableType(self):
-        """Test that references to stage variables whose values are an
+    def test_UnsupportedVariableType(self):
+        """Test that references to variables whose values are an
         unsupported type result in an error."""
         self.assertEvaluationErrors(
             "`${FOO}`",
             {"FOO" : 1.234},
-            ["Stage variable 'FOO' has unsupported type double"])
+            ["Variable 'FOO' has unsupported type double"])
 
         self.assertEvaluationErrors(
             "`'test_${FOO}'`",
             {"FOO" : 1.234},
-            ["Stage variable 'FOO' has unsupported type double"])
+            ["Variable 'FOO' has unsupported type double"])
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,10 +47,10 @@ TF_WRAP_MODULE
     TF_WRAP( PredicateExpression );
     TF_WRAP( Payload );
     TF_WRAP( Reference );
-    TF_WRAP( StageVariableExpression );
     TF_WRAP( TimeCode );
     TF_WRAP( Types );
     TF_WRAP( ValueType );
+    TF_WRAP( VariableExpression );
 
     TF_WRAP( Spec );
     TF_WRAP( VariantSpec );

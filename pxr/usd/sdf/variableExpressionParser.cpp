@@ -22,10 +22,10 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/stageVariableExpressionParser.h"
+#include "pxr/usd/sdf/variableExpressionParser.h"
 
 #include "pxr/usd/sdf/debugCodes.h"
-#include "pxr/usd/sdf/stageVariableExpressionImpl.h"
+#include "pxr/usd/sdf/variableExpressionImpl.h"
 
 #include "pxr/base/tf/pxrPEGTL/pegtl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -37,7 +37,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace
 {
 
-namespace Impl = Sdf_StageVariableExpressionImpl;
+namespace Impl = Sdf_VariableExpressionImpl;
 
 // Node creators -----------------------------------------------
 // These objects are responsible for saving intermediate values as
@@ -66,16 +66,16 @@ public:
     std::vector<Part> parts;
 };
 
-class StageVariableNodeCreator
+class VariableNodeCreator
     : public NodeCreator
 {
 public:
     std::unique_ptr<Impl::Node> CreateNode() override
     {
-        return std::make_unique<Impl::StageVariableNode>(std::move(stageVar));
+        return std::make_unique<Impl::VariableNode>(std::move(var));
     }
     
-    std::string stageVar;
+    std::string var;
 };
 
 // Parser state -----------------------------------------------
@@ -110,45 +110,45 @@ private:
 // Parsing rules for the expression grammar.
 
 // XXX: 
-// When given a stage variable with illegal characters, like "${FO-OO}",
+// When given a variable with illegal characters, like "${FO-OO}",
 // this rule yields a confusing error message stating that there's a
 // missing "}". This is because it recognizes everything up to the
-// illegal character as the stage variable and expects to find the
+// illegal character as the variable and expects to find the
 // closing "}" after it. It'd be nice to fix this.
-struct StageVariableStart 
+struct VariableStart 
     : string<'$', '{'>
 {};
 
-struct StageVariableEnd
+struct VariableEnd
     : string<'}'>
 {};
 
 template <class C>
-struct StageVariableName
+struct VariableName
     : identifier
 {};
 
 template <class C>
-struct StageVariableImpl
+struct VariableImpl
     : if_must<
-        StageVariableStart,
-        StageVariableName<C>,
-        StageVariableEnd
+        VariableStart,
+        VariableName<C>,
+        VariableEnd
     > 
 {
-    using Name = StageVariableName<C>;
+    using Name = VariableName<C>;
 };
 
-// Stage variable reference at the top level of an expression.
-struct StageVariable
-    : StageVariableImpl<StageVariable>
+// Variable reference at the top level of an expression.
+struct Variable
+    : VariableImpl<Variable>
 {};
 
 // ----------------------------------------
 
-// Stage variable reference in a quoted string.
-struct QuotedStringStageVariable
-    : StageVariableImpl<QuotedStringStageVariable>
+// Variable reference in a quoted string.
+struct QuotedStringVariable
+    : VariableImpl<QuotedStringVariable>
 {};
 
 // Characters that must be escaped in a quoted string.
@@ -170,7 +170,7 @@ struct QuotedStringChars
             // variable or the quote character, since those are handled
             // by different rules.
             seq<
-                not_at<sor<StageVariableStart, one<QuoteChar>>>, 
+                not_at<sor<VariableStart, one<QuoteChar>>>, 
                 any
             >
         >
@@ -191,7 +191,7 @@ template <char QuoteChar>
 struct QuotedStringBody
     : star<
         sor<
-            QuotedStringStageVariable,
+            QuotedStringVariable,
             QuotedStringChars<QuoteChar>
         >
     >
@@ -225,7 +225,7 @@ struct ExpressionEnd
 
 struct ExpressionBody
     : sor<
-        StageVariable,
+        Variable,
         DoubleQuotedString,
         SingleQuotedString
     >
@@ -254,18 +254,18 @@ struct Action<QuotedStringChars<QuoteChar>>
     static void apply(const ActionInput& in, ParserContext& context)
     {
         context.GetNodeCreator<StringNodeCreator>()
-            ->parts.push_back({ in.string(), /* isStageVar = */ false });
+            ->parts.push_back({ in.string(), /* isVar = */ false });
     }
 };
 
 template <>
-struct Action<QuotedStringStageVariable::Name>
+struct Action<QuotedStringVariable::Name>
 {
     template <typename ActionInput>
     static void apply(const ActionInput& in, ParserContext& context)
     {
         context.GetNodeCreator<StringNodeCreator>()
-            ->parts.push_back({ in.string(), /* isStageVar = */ true });
+            ->parts.push_back({ in.string(), /* isVar = */ true });
     }
 };
 
@@ -285,13 +285,12 @@ struct Action<QuotedStringStart<QuoteChar>>
 };
 
 template <>
-struct Action<StageVariable::Name>
+struct Action<Variable::Name>
 {
     template <typename ActionInput>
     static void apply(const ActionInput& in, ParserContext& context)
     {
-        context.GetNodeCreator<StageVariableNodeCreator>()
-            ->stageVar = in.string();
+        context.GetNodeCreator<VariableNodeCreator>()->var = in.string();
     }
 };
 
@@ -329,10 +328,10 @@ MATCH_ERROR(ExpressionBody, "Unexpected expression");
 MATCH_ERROR(ExpressionEnd, "Missing ending '`'");
 
 MATCH_ERROR(
-    StageVariable::Name, "Stage variables must be a C identifier");
+    Variable::Name, "Variables must be a C identifier");
 MATCH_ERROR(
-    QuotedStringStageVariable::Name, "Stage variables must be a C identifier");
-MATCH_ERROR(StageVariableEnd, "Missing ending '}'");
+    QuotedStringVariable::Name, "Variables must be a C identifier");
+MATCH_ERROR(VariableEnd, "Missing ending '}'");
 
 MATCH_ERROR(DoubleQuotedString::Body, "Invalid string contents");
 MATCH_ERROR(DoubleQuotedString::End, R"(Missing ending '"')");
@@ -342,8 +341,8 @@ MATCH_ERROR(SingleQuotedString::End, R"(Missing ending "'")");
 
 } // end anonymous namespace
 
-Sdf_StageVariableExpressionParserResult
-Sdf_ParseStageVariableExpression(const std::string& expr)
+Sdf_VariableExpressionParserResult
+Sdf_ParseVariableExpression(const std::string& expr)
 {
     namespace pegtl = tao::TAO_PEGTL_NAMESPACE;
 
@@ -353,7 +352,7 @@ Sdf_ParseStageVariableExpression(const std::string& expr)
 
     try {
         const bool parseSuccess =
-            TfDebug::IsEnabled(SDF_STAGE_VARIABLE_EXPRESSION_PARSING) ?
+            TfDebug::IsEnabled(SDF_VARIABLE_EXPRESSION_PARSING) ?
             pegtl::parse<Expression, Action, 
                          pegtl::trace<Errors>::control>(in, context) :
             pegtl::parse<Expression, Action, Errors>(in, context);
@@ -379,7 +378,7 @@ Sdf_ParseStageVariableExpression(const std::string& expr)
 }
 
 bool
-Sdf_IsStageVariableExpression(const std::string& s)
+Sdf_IsVariableExpression(const std::string& s)
 {
     return s.length() > 2 && s.front() == '`' && s.back() == '`';
 }

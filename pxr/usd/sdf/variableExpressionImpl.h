@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_IMPL_H
-#define PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_IMPL_H
+#ifndef PXR_USD_SDF_VARIABLE_EXPRESSION_IMPL_H
+#define PXR_USD_SDF_VARIABLE_EXPRESSION_IMPL_H
 
 #include "pxr/pxr.h"
 
@@ -36,11 +36,11 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace Sdf_StageVariableExpressionImpl
+namespace Sdf_VariableExpressionImpl
 {
 
 /// \enum ValueType
-/// Enumeration of value types supported by stage variable expressions.
+/// Enumeration of value types supported by variable expressions.
 enum class ValueType
 {
     Unknown,
@@ -48,7 +48,7 @@ enum class ValueType
 };
 
 /// Returns the value type held by \p val. If \p val is empty or is holding
-/// a value type that is not supported by stage variable expressions, returns
+/// a value type that is not supported by variable expressions, returns
 /// ValueType::Unknown.
 ValueType 
 GetValueType(const VtValue& val);
@@ -77,23 +77,22 @@ public:
 class EvalContext
 {
 public:
-    explicit EvalContext(const VtDictionary* stageVariables);
+    explicit EvalContext(const VtDictionary* variables);
 
-    /// Returns value of stage variable named \p stageVar. 
+    /// Returns value of variable named \p var. 
     ///
-    /// If the value of \p stageVar is itself an expression, that expression
+    /// If the value of \p var is itself an expression, that expression
     /// will be evaluated and the result returned.
-    std::pair<EvalResult, bool> GetStageVariable(const std::string& stageVar);
+    std::pair<EvalResult, bool> GetVariable(const std::string& var);
 
-    /// Returns the set of stage variables that were queried using
-    /// GetStageVariable.
-    std::unordered_set<std::string>& GetRequestedStageVariables()
-    { return _requestedStageVariables; }
+    /// Returns the set of variables that were queried using GetVariable.
+    std::unordered_set<std::string>& GetRequestedVariables()
+    { return _requestedVariables; }
 
 private:
-    const VtDictionary* _stageVariables;
-    std::unordered_set<std::string> _requestedStageVariables;
-    std::deque<std::string> _stageVariableStack;
+    const VtDictionary* _variables;
+    std::unordered_set<std::string> _requestedVariables;
+    std::deque<std::string> _variableStack;
 };
 
 /// \class Node
@@ -106,8 +105,8 @@ public:
 };
 
 /// \class StringNode
-/// Expression node for string values with embedded stage variable references,
-/// e.g. `"a_${STAGEVAR}_string"`.
+/// Expression node for string values with embedded variable references,
+/// e.g. `"a_${VAR}_string"`.
 class StringNode
     : public Node
 {
@@ -115,7 +114,7 @@ public:
     struct Part
     {
         std::string content;
-        bool isStageVariable = false;
+        bool isVariable = false;
     };
 
     StringNode(std::vector<Part>&& parts);
@@ -125,20 +124,20 @@ private:
     std::vector<Part> _parts;
 };
 
-/// \class StageVariableNode
-/// Expression node for raw stage variable references, e.g. `${STAGEVAR}`.
-class StageVariableNode
+/// \class VariableNode
+/// Expression node for raw variable references, e.g. `${VAR}`.
+class VariableNode
     : public Node
 {
 public:
-    StageVariableNode(std::string&& stageVar);
+    VariableNode(std::string&& var);
     EvalResult Evaluate(EvalContext* ctx) const override;
 
 private:
-    std::string _stageVar;
+    std::string _var;
 };
 
-} // end namespace Sdf_StageVariableExpressionImpl
+} // end namespace Sdf_VariableExpressionImpl
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

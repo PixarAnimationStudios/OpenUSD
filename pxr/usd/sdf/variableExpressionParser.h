@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_PARSER_H
-#define PXR_USD_SDF_STAGE_VARIABLE_EXPRESSION_PARSER_H
+#ifndef PXR_USD_SDF_VARIABLE_EXPRESSION_PARSER_H
+#define PXR_USD_SDF_VARIABLE_EXPRESSION_PARSER_H
 
 #include "pxr/pxr.h"
 
@@ -32,27 +32,27 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace Sdf_StageVariableExpressionImpl
+namespace Sdf_VariableExpressionImpl
 {
     class Node;
 }
 
-/// \class Sdf_StageVariableExpressionParserResult
+/// \class Sdf_VariableExpressionParserResult
 /// Object containing results of parsing an expression.
-class Sdf_StageVariableExpressionParserResult
+class Sdf_VariableExpressionParserResult
 {
 public:
-    std::unique_ptr<Sdf_StageVariableExpressionImpl::Node> expression;
+    std::unique_ptr<Sdf_VariableExpressionImpl::Node> expression;
     std::vector<std::string> errors;
 };
 
 /// Parse the given expression.
-Sdf_StageVariableExpressionParserResult
-Sdf_ParseStageVariableExpression(const std::string& expr);
+Sdf_VariableExpressionParserResult
+Sdf_ParseVariableExpression(const std::string& expr);
 
-/// Returns true if \p s is recognized as a stage variable expression.
+/// Returns true if \p s is recognized as a variable expression.
 /// This does not check the syntax of the expression.
-bool Sdf_IsStageVariableExpression(const std::string& s);
+bool Sdf_IsVariableExpression(const std::string& s);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

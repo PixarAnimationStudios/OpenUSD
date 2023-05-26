@@ -22,67 +22,67 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/stageVariableExpression.h"
+#include "pxr/usd/sdf/variableExpression.h"
 
-#include "pxr/usd/sdf/stageVariableExpressionImpl.h"
-#include "pxr/usd/sdf/stageVariableExpressionParser.h"
+#include "pxr/usd/sdf/variableExpressionImpl.h"
+#include "pxr/usd/sdf/variableExpressionParser.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-SdfStageVariableExpression::SdfStageVariableExpression()
+SdfVariableExpression::SdfVariableExpression()
 {
     _errors.push_back("No expression specified");
 }
 
-SdfStageVariableExpression::SdfStageVariableExpression(
+SdfVariableExpression::SdfVariableExpression(
     const std::string& expr)
     : _expressionStr(expr)
 {
-    using ParserResult = Sdf_StageVariableExpressionParserResult;
+    using ParserResult = Sdf_VariableExpressionParserResult;
 
-    ParserResult parseResult = Sdf_ParseStageVariableExpression(expr);
+    ParserResult parseResult = Sdf_ParseVariableExpression(expr);
     _expression.reset(parseResult.expression.release());
     _errors = std::move(parseResult.errors);
 }
 
-SdfStageVariableExpression::~SdfStageVariableExpression() = default;
+SdfVariableExpression::~SdfVariableExpression() = default;
 
 bool
-SdfStageVariableExpression::IsExpression(const std::string& s)
+SdfVariableExpression::IsExpression(const std::string& s)
 {
-    return Sdf_IsStageVariableExpression(s);
+    return Sdf_IsVariableExpression(s);
 }
 
 bool
-SdfStageVariableExpression::IsValidStageVariableType(const VtValue& value)
+SdfVariableExpression::IsValidVariableType(const VtValue& value)
 {
-    using namespace Sdf_StageVariableExpressionImpl;
+    using namespace Sdf_VariableExpressionImpl;
     return GetValueType(value) != ValueType::Unknown;
 }
 
-SdfStageVariableExpression::operator bool() const
+SdfVariableExpression::operator bool() const
 {
     return static_cast<bool>(_expression);
 }
 
 const std::string&
-SdfStageVariableExpression::GetString() const
+SdfVariableExpression::GetString() const
 {
     return _expressionStr;
 }
 
 const std::vector<std::string>&
-SdfStageVariableExpression::GetErrors() const
+SdfVariableExpression::GetErrors() const
 {
     return _errors;
 }
 
-SdfStageVariableExpression::Result
-SdfStageVariableExpression::Evaluate(const VtDictionary& stageVariables) const
+SdfVariableExpression::Result
+SdfVariableExpression::Evaluate(const VtDictionary& stageVariables) const
 {
-    namespace Impl = Sdf_StageVariableExpressionImpl;
+    namespace Impl = Sdf_VariableExpressionImpl;
 
     if (!_expression) {
         return { VtValue(), GetErrors() };
@@ -93,11 +93,11 @@ SdfStageVariableExpression::Evaluate(const VtDictionary& stageVariables) const
 
     return { std::move(result.value), 
              std::move(result.errors),
-             std::move(ctx.GetRequestedStageVariables()) };
+             std::move(ctx.GetRequestedVariables()) };
 }
 
 std::string
-SdfStageVariableExpression::_FormatUnexpectedTypeError(
+SdfVariableExpression::_FormatUnexpectedTypeError(
     const VtValue& got, const VtValue& expected)
 {
     return TfStringPrintf(
