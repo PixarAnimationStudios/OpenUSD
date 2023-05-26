@@ -225,6 +225,11 @@ HdSt_ResourceBinder::ResolveBindings(
     } else {
         structBufferBindingType = HdStBinding::SSBO;
     }
+    
+    HdStBinding::Type vertexAttrBindingType = HdStBinding::VERTEX_ATTR;
+    if (useMeshShaders) {
+        vertexAttrBindingType = HdStBinding::SSBO;
+    }
 
     metaDataOut->drawingCoordBufferBinding = dcBinding;
 
@@ -332,7 +337,7 @@ HdSt_ResourceBinder::ResolveBindings(
             TfToken const& name = it->first;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdStBinding vertexPrimvarBinding =
-                locator.GetBinding(HdStBinding::VERTEX_ATTR, name);
+                locator.GetBinding(vertexAttrBindingType, name);
             _bindingMap[name] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
@@ -1694,6 +1699,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
+    boost::hash_combine(hash, indexBufferBinding.binding.GetValue());
+    boost::hash_combine(hash, indexBufferBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
     boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
 

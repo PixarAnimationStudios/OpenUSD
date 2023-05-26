@@ -1428,7 +1428,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             
             state.binder.GetBufferBindingDesc(
                     &bindingsDesc,
-                    TfToken("drawCullInput"),
+                    _tokens->drawCullInput,
                     _dispatchBuffer->GetEntireResource(),
                     _dispatchBuffer->GetEntireResource()->GetOffset());
              
@@ -1488,8 +1488,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         if (!TF_VERIFY(indexBuffer)) return;
         if (useMeshShaders) {
             struct Uniforms {
-                GfMatrix4f cullMatrix;
-                GfVec2f drawRangeNDC;
                 uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
                 uint32_t drawCoordOffset;
@@ -1576,8 +1574,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
             if (cmd->common.count && cmd->common.instanceCount) {
                 if (useMeshShaders) {
                     struct Uniforms {
-                        GfVec2f drawRangeNDC;
-                        GfMatrix4f cullMatrix;
                         uint32_t drawIndexCount;
                         uint32_t drawCommandNumUints;
                         uint32_t drawCoordOffset;

@@ -1705,8 +1705,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     _hasVS  = (!vertexShader.empty());
     _hasTCS = (!tessControlShader.empty());
     _hasTES = (!tessEvalShader.empty());
-    _hasMOS = (!meshObjectShader.empty()) && metalTessellationEnabled;
-    _hasMS = (!meshletShader.empty()) && metalTessellationEnabled;
+    _hasMOS = (!meshObjectShader.empty()) && metalTessellationEnabled
+        && _geometricShader->GetUseMeshShaders();
+    _hasMS = (!meshletShader.empty()) && metalTessellationEnabled
+        && _geometricShader->GetUseMeshShaders();
     if (_hasMOS) {
         _hasVS = false;
     }
@@ -5924,7 +5926,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
         _EmitBufferAccessor(accessorsPTVS, name, dataType,
             "GetDrawingCoord().varyingCoord + HdGet_indices(localIndex)");
         _EmitBufferAccessor(accessorsMS, name, dataType,
-            "GetDrawingCoord().varyingCoord + vertex_id + localIndex");
+            "GetDrawingCoord().varyingCoord + HdGet_indices(localIndex)");
         // interstage plumbing
         _procVS << "  outPrimvars." << name
                 << " = " << "HdGet_" << name << "();\n";
