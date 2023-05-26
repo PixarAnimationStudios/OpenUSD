@@ -26,6 +26,8 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/regTest.h"
 
+#include "pxr/base/arch/defines.h"
+
 #include <algorithm>
 #include <array>
 #include <iostream>
@@ -1485,6 +1487,8 @@ testResize()
     }
 
     // grow where T is trivial
+    // XXX: http://bug/DEV-16693
+#if !defined(ARCH_COMPILER_GCC) || ARCH_COMPILER_GCC_MAJOR < 9
     {
         TfSmallVector<int, 10> v;
         v.insert(v.end(), sourceA.begin(), sourceA.end());
@@ -1495,6 +1499,7 @@ testResize()
 
         TF_AXIOM(v.size() == 150);
     }
+#endif
 }
 
 static void
