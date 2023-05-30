@@ -1208,15 +1208,6 @@ HgiMetalParameterMeshInputShaderSection::VisitGlobalMemberDeclarations(
     ss << "VertexOut vertexOut;\n";
     ss << "PrimOut primOut;\n";
     ss << "};\n";
-        /*
-    GetStructTypeDeclaration()->WriteParameter(ss);
-    ss << ";\n";
-    GetStructTypeDeclaration()->WriteType(ss);
-    ss << "{\n";
-    GetStructTypeDeclaration()->WriteDeclaration(ss);
-    ss << "};\n";
-    ss << "\n";
-         */
     return true;
 }
 
@@ -1429,8 +1420,6 @@ HgiMetalKeywordInputShaderSection::VisitEntryPointFunctionExecutions(
     ss << ";";
     return true;
 }
-
-
 
 HgiMetalStageOutputShaderSection::HgiMetalStageOutputShaderSection(
     const std::string &identifier,

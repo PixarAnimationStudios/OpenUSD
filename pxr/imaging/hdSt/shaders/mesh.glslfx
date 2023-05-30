@@ -310,9 +310,7 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- layout Mesh.MeshObject.Main
 [
-["uniform block", "Uniforms", "ulocCullParams",
-["mat4", "cullMatrix"],
-["vec2", "drawRangeNDC"],
+["uniform block", "Uniforms", "meshObjectParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"],
@@ -376,7 +374,7 @@ void main(void)
 ["vec4", "Peye"],
 ["vec3", "Neye"]
 ],
-["uniform block", "Uniforms", "ulocCullParams",
+["uniform block", "Uniforms", "meshObjectParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"],
@@ -481,18 +479,7 @@ void main(void) {
         hd_VertexID = ind;
 
         uint totalIndOff = (ind % 3);
-
-        uint usedBaseIndex = baseIndex;
-
-        if (totalIndOff % 3 == 0) {
-            globalIndex = (indices + (usedBaseIndex))[ind];
-        } else if (totalIndOff % 3 == 1) {
-            globalIndex = (indices + (usedBaseIndex))[ind];
-        } else if (totalIndOff % 3 == 2) {
-            globalIndex = (indices + (usedBaseIndex))[ind];
-        } else {
-        globalIndex = 0;
-        }
+        globalIndex = (indices + (usedBaseIndex))[ind];
     }
     else
     {

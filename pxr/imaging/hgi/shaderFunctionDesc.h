@@ -463,8 +463,7 @@ struct HgiShaderFunctionDesc
     HGI_API
     HgiShaderFunctionDesc();
     std::string debugName;
-    HgiShaderStage
-    shaderStage;
+    HgiShaderStage shaderStage;
     const char *shaderCodeDeclarations;
     const char *shaderCode;
     std::string *generatedShaderCodeOut;

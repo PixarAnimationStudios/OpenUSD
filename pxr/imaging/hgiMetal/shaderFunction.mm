@@ -30,18 +30,10 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/tf/diagnostic.h"
 
-#include <fstream>
-#include <string>
-#include <iostream>
-
 #include <unordered_map>
 
-#include <fstream>
-#include <string>
-#include <iostream>
-
 PXR_NAMESPACE_OPEN_SCOPE
-static int counter = 0;
+
 HgiMetalShaderFunction::HgiMetalShaderFunction(
     HgiMetal *hgi,
     HgiShaderFunctionDesc const& desc)
@@ -67,12 +59,6 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         options.preprocessorMacros = @{
                 @"ARCH_GFX_METAL": @1,
         };
-        
-        std::string input = std::string(shaderCode);
-        std::ofstream out("/Users/ecosystemadmin/shaders/" + std::to_string(desc.shaderStage) + "_" + std::to_string(counter));
-        out << input;
-        out.close();
-        counter++;
 
         NSError *error = NULL;
         id<MTLLibrary> library =

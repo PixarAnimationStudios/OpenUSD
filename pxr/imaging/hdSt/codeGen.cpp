@@ -146,7 +146,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (early_fragment_tests)
 );
 
-TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, true,
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
                       "Enable Hgi resource generation for codeGen");
 
 /* static */
@@ -2715,12 +2715,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
-        //if (!_hasMS) {
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FragCoord", "vec4",
             HgiShaderKeywordTokens->hdPosition);
-        
-        //}
 
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
@@ -2996,15 +2993,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseInstance", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "indexCount", "uint");
         
-        /*
-        HgiShaderFunctionAddBuffer(
-            &mosDesc,
-            "drawCullInput",
-            "uint",
-            26,
-            HgiBindingTypePointer);
-        */
-        
         HgiShaderFunctionAddStageInput(
             &mosDesc, "hd_GlobalInvocationID", "uvec3",
             HgiShaderKeywordTokens->hdGlobalInvocationID);
@@ -3022,8 +3010,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &mosDesc, "hd_LocalIndexID", "uint",
             HgiShaderKeywordTokens->hdLocalIndexID);
-        
-        
+
         //TODO Thor something better than this
         mosDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
         mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
@@ -3031,8 +3018,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
         
         mosDesc.meshDescriptor.maxMeshletVertexCount = 96;
-        mosDesc.meshDescriptor.maxPrimitiveCount = mosDesc.meshDescriptor.maxMeshletVertexCount/3;
-        mosDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
+        mosDesc.meshDescriptor.maxPrimitiveCount =
+                mosDesc.meshDescriptor.maxMeshletVertexCount/3;
+        mosDesc.meshDescriptor.meshTopology =
+                HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         
         if (!glslProgram->CompileShader(mosDesc)) {
             return nullptr;
@@ -3100,40 +3089,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageOutput(
                 &msDesc, "drawIndexVS", "uint",
                 "");
-        /*
-
-        HgiShaderFunctionAddStageInput(
-                &msDesc, "gl_BaseInstance", "uint",
-                HgiShaderKeywordTokens->hdBaseInstance);
-        HgiShaderFunctionAddStageInput(
-                &msDesc, "patch_id", "uint",
-                HgiShaderKeywordTokens->hdPatchID);
-
-        std::string tessCoordType =
-                _geometricShader->IsPrimTypeTriangles() ?
-                "vec3" : "vec2";
-
-        HgiShaderFunctionAddStageInput(
-                &msDesc, "gl_TessCoord", tessCoordType,
-                HgiShaderKeywordTokens->hdPositionInPatch);
-
-        HgiShaderFunctionAddStageInput(
-                &msDesc, "gl_InstanceID", "uint",
-                HgiShaderKeywordTokens->hdInstanceID);
-
-        HgiShaderFunctionAddStageOutput(
-                &msDesc, "gl_Position", "vec4",
-                "position");
-
-        char const* pointRole =
-                (_geometricShader->GetPrimitiveType() ==
-                 HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
-                ? "point_size" : "";
-
-        HgiShaderFunctionAddStageOutput(
-                &msDesc, "gl_PointSize", "float",
-                pointRole);
-         */
 
         if (!glslProgram->CompileShader(msDesc)) {
             return nullptr;
@@ -3254,19 +3209,10 @@ static void _EmitDeclaration(
         case HdStBinding::VERTEX_ATTR:
         case HdStBinding::DRAW_INDEX:
         case HdStBinding::DRAW_INDEX_INSTANCE:
-            
-            //if (hasMOS) {
-            //    _AddBufferElement(elements,
-            //                      /*name=*/name,
-            //                      /*dataType=*/_GetPackedType(type, true),
-            //                      location);
-            //} else {
             _AddVertexAttribElement(elements,
                                     /*name=*/name,
                                     /*dataType=*/_GetPackedType(type, false),
                                     location);
-            //}
-
             break;
         case HdStBinding::DRAW_INDEX_INSTANCE_ARRAY:
         {
@@ -4547,7 +4493,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
     _genTES << primitiveIndex;
     _genGS << primitiveIndex;
     _genFS << primitiveIndex;
-    //_genMOS << primitiveIndex;
 
     std::stringstream genAttr;
 
@@ -4677,21 +4622,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "[base + offset]);\n"
         << "}\n";
     }
-    /*
-    _genFS << "int GetDrawIndexoffset() {\n"
-    << "  const int drawIndexOffset = "
-    << "drawCoordOffset"
-    << ";\n"
-    << "return payload.drawCommandNumUintLocal;\n"
-    << "}\n";
-    
-    _genFS << "int GetDrawIndexStride() {\n"
-    << "  const int drawIndexStride = "
-    << "payload.drawCommandNumUintLocal"
-    << ";\n"
-    << "return drawIndexStride;\n"
-    << "}\n";
-     */
     
     if (_hasMS) {
         _genFS  << "int GetDrawingCoordField(int offset) {\n"
@@ -4777,13 +4707,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "  return GetBaseInstanceIndexCoord() + "
                << " GetCurrentInstance() * HD_INSTANCE_INDEX_WIDTH;\n"
                << "}\n";
-        /*
-        _genMOS << "int g_instanceID;          // Set from calling code.\n"
-                       << "FORWARD_DECL(int GetDrawingCoordField(uint coordIndex, uint fieldIndex));\n"
-                       << "int GetInstanceIndexCoord() {\n"
-                       << "return GetDrawingCoordField(1, 1) + g_instanceID * HD_INSTANCE_INDEX_WIDTH;\n"
-                       << "}\n";
-         */
 
         _genCS << "int GetBaseInstanceIndexCoord() {\n"
                << "  return GetDrawingCoordField(5);\n"
@@ -4875,6 +4798,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             genAttr << "void SetCulledInstanceIndex(uint instance) "
                     "{ /*no-op*/ }\n";
         }
+        _genCS << "hd_instanceIndex GetInstanceIndex() {"
+               << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
     }
 
     if (!_hasCS) {
@@ -5578,9 +5503,6 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "  + GetDrawingCoord().elementCoord;\n"
                 << "}\n";
         }
-        else if (_geometricShader->IsPrimTypeCompute()) {
-            // do nothing.
-        }
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
                   "unexpected in _GenerateElementPrimvar().",
@@ -5847,14 +5769,6 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                             name, dataType, /*arraySize=*/1, "localIndex");
         _EmitStructAccessor(accessorsFS,  _tokens->inPrimvars,
                             name, dataType, /*arraySize=*/1);
-
-        // Access PTCS varying primvar from varying data buffer.
-        _EmitBufferAccessor(accessorsPTCS, name, dataType,
-                            "GetDrawingCoord().varyingCoord + HdGet_indices(localIndex)");
-
-        // Access PTVS varying primvar from varying data buffer.
-        _EmitBufferAccessor(accessorsPTVS, name, dataType,
-                            "GetDrawingCoord().varyingCoord + HdGet_indices(localIndex)");
 
         //TODO Thor align
         // PTVS vertex primvar is staged in local arrays.

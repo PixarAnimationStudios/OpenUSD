@@ -1757,14 +1757,9 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
     if (!TF_VERIFY(_cullingProgram.IsValid())) return;
 
     struct Uniforms {
-        GfVec4i dummyVertexOffset; // See codeGen.cpp _GenerateComputeParameters
         GfMatrix4f cullMatrix;
         GfVec2f drawRangeNDC;
         uint32_t drawCommandNumUints;
-        uint32_t drawCoord0Offset;
-        uint32_t drawCoord1Offset;
-        uint32_t drawCoord2Offset;
-        uint32_t drawCoordIOffset;      // Unused in non-instanced culling.
     };
 
     // We perform frustum culling in a compute shader, stomping the
