@@ -344,4 +344,12 @@ HdxSelectionSceneIndexObserver::PrimsRemoved(
     ++_version;
 }
 
+void
+HdxSelectionSceneIndexObserver::PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

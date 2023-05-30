@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/usdImaging/usdImaging/lightAPIAdapter.h"
+#include "pxr/usdImaging/usdImaging/primAdapter.h"
+
 
 #include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
 
@@ -35,14 +37,6 @@
 #include "pxr/base/tf/stringUtils.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-// XXX currently private while experimenting with this convention.
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (isLight)
-    (materialSyncMode)
-);
-
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -118,15 +112,31 @@ public:
             //       collection.
             return HdRetainedTypedSampledDataSource<TfToken>::New(
                 c.GetCollectionPath().GetToken());
-        } else if (name == _tokens->isLight) {
+        } else if (name == HdTokens->isLight) {
             return HdRetainedTypedSampledDataSource<bool>::New(true);
-        } else if (name == _tokens->materialSyncMode) {
+        } else if (name == HdTokens->materialSyncMode) {
             if (UsdAttribute attr = _lightApi.GetMaterialSyncModeAttr()) {
                 TfToken v;
                 if (attr.Get(&v)) {
                     return HdRetainedTypedSampledDataSource<TfToken>::New(v);
                 }
             }
+        } else {
+
+            // fallback to UsdAttribute lookup so that we still support
+            // render delegates which query via GetLightParamValue rather
+            // than GetMaterialResource.
+            if (UsdAttribute attr =
+                    UsdImagingPrimAdapter::LookupLightParamAttribute(
+                        _lightApi.GetPrim(), name)) {
+                return  UsdImagingDataSourceAttributeNew(
+                    attr,
+                    _stageGlobals,
+                    _lightApi.GetPrim().GetPath(),
+                    HdLightSchema::GetDefaultLocator().Append(name));
+            }
+
+
         }
 
         return nullptr;
@@ -140,18 +150,22 @@ private:
             HdTokens->filters,
             HdTokens->lightLink,
             HdTokens->shadowLink,
-            _tokens->isLight,
-            _tokens->materialSyncMode,
+            HdTokens->isLight,
+            HdTokens->materialSyncMode,
         };
 
         return names;
     }
 
-    _LightDataSource(const UsdLuxLightAPI &lightApi)
+    _LightDataSource(
+        const UsdLuxLightAPI &lightApi,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
     : _lightApi(lightApi)
+    , _stageGlobals(stageGlobals)
     {}
 
     UsdLuxLightAPI _lightApi;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
 };
 
 } // namespace anonymous
@@ -175,7 +189,7 @@ UsdImagingLightAPIAdapter::GetImagingSubprimData(
                 stageGlobals,
                 HdMaterialTerminalTokens->light),
             HdLightSchemaTokens->light,
-            _LightDataSource::New(UsdLuxLightAPI(prim)));
+            _LightDataSource::New(UsdLuxLightAPI(prim), stageGlobals));
     }
 
     return nullptr;
@@ -187,7 +201,8 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (!subprim.IsEmpty() || !appliedInstanceName.IsEmpty()) {
         return HdDataSourceLocatorSet();
@@ -208,6 +223,11 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
             //             in the material network have a fixed name for the
             //             light case so that we could.
             result.insert(HdMaterialSchema::GetDefaultLocator());
+
+            // since we report parameter values in the "light" data source
+            // also, we need to invalidate it also
+            result.insert(HdLightSchema::GetDefaultLocator());
+            
         }
 
         // NOTE: Having to make assumptions regarding relevant linking
@@ -216,13 +236,13 @@ UsdImagingLightAPIAdapter::InvalidateImagingSubprim(
         //       instance. Let's assume collections defined here are linking
         //       related.
         if (!dirtiedLight
-                && UsdCollectionAPI::CanContainPropertyName(propertyName)){
+                && (UsdCollectionAPI::CanContainPropertyName(propertyName)
+                    // This will capture other contents of light data source
+                    || TfStringStartsWith(propertyName.GetString(), "light:"))){
             dirtiedLight = true;
             result.insert(HdLightSchema::GetDefaultLocator());
         }
     }
-
-    // TODO: contents of light data source
 
     return result;
 }

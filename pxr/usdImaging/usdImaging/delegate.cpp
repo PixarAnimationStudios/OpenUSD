@@ -1704,24 +1704,6 @@ UsdImagingDelegate::_RefreshUsdObject(
 // Data Collection
 // -------------------------------------------------------------------------- //
 
-VtValue
-UsdImagingDelegate::_GetUsdPrimAttribute(SdfPath const& cachePath,
-                                         TfToken const &attrName)
-{
-    VtValue value;
-
-    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
-    if (TF_VERIFY(primInfo, "%s\n", cachePath.GetText())) {
-        UsdPrim const& prim = primInfo->usdPrim;
-        if (prim.HasAttribute(attrName)) {
-            UsdAttribute attr = prim.GetAttribute(attrName);
-            attr.Get(&value, GetTime());
-        }
-    }
-
-    return value;
-}
-
 void
 UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
                                        int requestBits)
@@ -2131,6 +2113,21 @@ UsdImagingDelegate::GetDisplayStyle(SdfPath const& id)
     if (TfMapLookup(_refineLevelMap, cachePath, &level))
         return HdDisplayStyle(level);
     return HdDisplayStyle(GetRefineLevelFallback());
+}
+
+/*virtual*/ 
+HdModelDrawMode 
+UsdImagingDelegate::GetModelDrawMode(SdfPath const& id) 
+{
+    HdModelDrawMode model;
+    SdfPath cachePath = ConvertIndexPathToCachePath(id);
+    _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
+
+    if (TF_VERIFY(primInfo)) {
+        model = primInfo->adapter->GetFullModelDrawMode(primInfo->usdPrim);
+    }
+    
+    return model;
 }
 
 void
@@ -3001,99 +2998,13 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     }
 
     SdfPath cachePath = ConvertIndexPathToCachePath(id);
-
-    // XXX(UsdImaging): We use the cachePath directly as a usdPath here
-    // but should do the proper transformation.  Maybe we can use
-    // the primInfo.usdPrim
-    UsdPrim prim = _GetUsdPrim(cachePath);
-    if (!TF_VERIFY(prim, "No primInfo for <%s>", id.GetText())) {
+    _HdPrimInfo* primInfo = _GetHdPrimInfo(cachePath);
+    if (!TF_VERIFY(primInfo)) {
         return VtValue();
     }
-    UsdLuxLightAPI light = UsdLuxLightAPI(prim);
-    if (!light) {
-        // Its ok that this is not a light. Lets assume its a light filter.
-        // Asking for the lightFilterType is the render delegates way of
-        // determining the type of the light filter.
-        if (paramName == _tokens->lightFilterType) {
-            // Use the schema type name from the prim type info which is the
-            // official type of the prim.
-            return VtValue(prim.GetPrimTypeInfo().GetSchemaTypeName());
-        }
-        if (paramName == HdTokens->lightFilterLink) {
-            UsdLuxLightFilter lightFilter = UsdLuxLightFilter(prim);
-            UsdCollectionAPI lightFilterLink =
-                            lightFilter.GetFilterLinkCollectionAPI();
-            return VtValue(_collectionCache.GetIdForCollection(
-                                                    lightFilterLink));
-        }
-        // Fallback to USD attributes.
-        return _GetUsdPrimAttribute(cachePath, paramName);
-    }
 
-    if (paramName == HdTokens->lightLink) {
-        UsdCollectionAPI lightLink = light.GetLightLinkCollectionAPI();
-        return VtValue(_collectionCache.GetIdForCollection(lightLink));
-    } else if (paramName == HdTokens->filters) {
-        SdfPathVector filterPaths;
-        light.GetFiltersRel().GetForwardedTargets(&filterPaths);
-        return VtValue(filterPaths);
-    } else if (paramName == HdTokens->shadowLink) {
-        UsdCollectionAPI shadowLink = light.GetShadowLinkCollectionAPI();
-        return VtValue(_collectionCache.GetIdForCollection(shadowLink));
-    } else if (paramName == HdLightTokens->intensity) {
-        // return 0.0 intensity if scene lights are not enabled
-        if (!_sceneLightsEnabled) {
-            return VtValue(0.0f);
-        }
-
-        // return 0.0 intensity if the scene lights are not visible
-        if (!GetVisible(cachePath)) {
-            return VtValue(0.0f);
-        }
-    }
-
-    // Fallback to USD attributes.
-    static const std::unordered_map<TfToken, TfToken, TfHash> paramToAttrName({
-        { HdLightTokens->angle, UsdLuxTokens->inputsAngle },
-        { HdLightTokens->color, UsdLuxTokens->inputsColor },
-        { HdLightTokens->colorTemperature, 
-            UsdLuxTokens->inputsColorTemperature },
-        { HdLightTokens->diffuse, UsdLuxTokens->inputsDiffuse },
-        { HdLightTokens->enableColorTemperature, 
-            UsdLuxTokens->inputsEnableColorTemperature },
-        { HdLightTokens->exposure, UsdLuxTokens->inputsExposure },
-        { HdLightTokens->height, UsdLuxTokens->inputsHeight },
-        { HdLightTokens->intensity, UsdLuxTokens->inputsIntensity },
-        { HdLightTokens->length, UsdLuxTokens->inputsLength },
-        { HdLightTokens->normalize, UsdLuxTokens->inputsNormalize },
-        { HdLightTokens->radius, UsdLuxTokens->inputsRadius },
-        { HdLightTokens->specular, UsdLuxTokens->inputsSpecular },
-        { HdLightTokens->textureFile, UsdLuxTokens->inputsTextureFile },
-        { HdLightTokens->textureFormat, UsdLuxTokens->inputsTextureFormat },
-        { HdLightTokens->width, UsdLuxTokens->inputsWidth },
-
-        { HdLightTokens->shapingFocus, UsdLuxTokens->inputsShapingFocus },
-        { HdLightTokens->shapingFocusTint, 
-            UsdLuxTokens->inputsShapingFocusTint },
-        { HdLightTokens->shapingConeAngle, 
-            UsdLuxTokens->inputsShapingConeAngle },
-        { HdLightTokens->shapingConeSoftness, 
-            UsdLuxTokens->inputsShapingConeSoftness },
-        { HdLightTokens->shapingIesFile, UsdLuxTokens->inputsShapingIesFile },
-        { HdLightTokens->shapingIesAngleScale, 
-            UsdLuxTokens->inputsShapingIesAngleScale },
-        { HdLightTokens->shapingIesNormalize, 
-            UsdLuxTokens->inputsShapingIesNormalize },
-        { HdLightTokens->shadowEnable, UsdLuxTokens->inputsShadowEnable },
-        { HdLightTokens->shadowColor, UsdLuxTokens->inputsShadowColor },
-        { HdLightTokens->shadowDistance, UsdLuxTokens->inputsShadowDistance },
-        { HdLightTokens->shadowFalloff, UsdLuxTokens->inputsShadowFalloff },
-        { HdLightTokens->shadowFalloffGamma, 
-            UsdLuxTokens->inputsShadowFalloffGamma }
-    });
-
-    const TfToken *attrName = TfMapLookupPtr(paramToAttrName, paramName);
-    return _GetUsdPrimAttribute(cachePath, attrName ? *attrName : paramName);
+    return primInfo->adapter->GetLightParamValue(primInfo->usdPrim,
+        cachePath, paramName, _time);
 }
 
 VtValue 

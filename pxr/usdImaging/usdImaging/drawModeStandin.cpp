@@ -23,7 +23,6 @@
 
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
 #include "pxr/imaging/hd/basisCurvesSchema.h"
@@ -37,6 +36,7 @@
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
+#include "pxr/imaging/hd/modelSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -55,6 +55,7 @@
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
 
+#include <array>
 #include <functional>
 #include <bitset>
 
@@ -190,12 +191,12 @@ public:
     }
 
 private:
-    _DisplayColorVec3fDataSource(const UsdImagingModelSchema schema)
+    _DisplayColorVec3fDataSource(const HdModelSchema schema)
       : _schema(schema)
     {
     }
 
-    UsdImagingModelSchema _schema;
+    HdModelSchema _schema;
 };
 
 /// A vec4f wrapper around a HdVec3fDataSource, for use when a vec4f
@@ -329,7 +330,7 @@ public:
             ///
             return _PrimvarDataSource::New(
                 _DisplayColorVec3fDataSource::New(
-                    UsdImagingModelSchema::GetFromParent(_primSource)),
+                    HdModelSchema::GetFromParent(_primSource)),
                 HdPrimvarSchemaTokens->constant,
                 HdPrimvarSchemaTokens->color);
         }
@@ -661,8 +662,8 @@ public:
 
         // Check whether model:drawModeColor is dirty.
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
         
@@ -873,8 +874,8 @@ public:
 
         // Check whether model:drawModeColor is dirty.
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->drawModeColor);
         const bool dirtyColor =
             dirtyLocators.Intersects(colorLocator);
         
@@ -954,7 +955,7 @@ using _MaterialsDict = std::unordered_map<
 /// It is providing a mesh with a material. The mesh consists of up to 6 quads.
 /// Besides points, it has the vertex-varying cardsUv and face-varying
 /// cardsTexAssgin - determining where to sample which of the up to 6 textures
-/// that can be specified by the UsdImagingModelSchema.
+/// that can be specified by the HdModelSchema.
 ///
 /// Details vary based on the card geometry which is box, cross, or fromTexture.
 ///
@@ -1011,7 +1012,7 @@ public:
     }
 
 private:
-    /// A helper extracing values from UsdImagingModelSchema.
+    /// A helper extracing values from HdModelSchema.
     ///
     /// Note that the order of the six given textures is assumed to be:
     /// XPos, YPos, ZPos, XNeg, YNeg, ZNeg.
@@ -1022,7 +1023,7 @@ private:
     /// So we do not support motion-blur for these attributes.
     struct _SchemaValues
     {
-        _SchemaValues(UsdImagingModelSchema schema);
+        _SchemaValues(HdModelSchema schema);
 
         /// Card geometry, that is box, cross, or fromTexture.
         TfToken cardGeometry;
@@ -1085,7 +1086,7 @@ private:
             return cached;
         }
         auto data = std::make_shared<_CardsData>(
-            _SchemaValues(UsdImagingModelSchema::GetFromParent(_primSource)),
+            _SchemaValues(HdModelSchema::GetFromParent(_primSource)),
             _primPath
         );
 
@@ -1179,7 +1180,7 @@ GetWorldToScreenFromImageMetadata(
     return false;
 }
 
-_CardsDataCache::_SchemaValues::_SchemaValues(UsdImagingModelSchema schema)
+_CardsDataCache::_SchemaValues::_SchemaValues(HdModelSchema schema)
 {
     if (HdTokenDataSourceHandle src = schema.GetCardGeometry()) {
         cardGeometry = src->GetTypedValue(0.0f);
@@ -1985,20 +1986,20 @@ public:
         // we send to the observer.
 
         static const HdDataSourceLocatorSet cardLocators{
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardGeometry),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZPos),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureXNeg),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureYNeg),
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->cardTextureZNeg) };
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardGeometry),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureXPos),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureYPos),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureZPos),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureXNeg),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureYNeg),
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->cardTextureZNeg) };
         
         // Blast the entire thing.
         if (dirtyLocators.Intersects(cardLocators)) {
@@ -2012,8 +2013,8 @@ public:
         }
 
         static const HdDataSourceLocator colorLocator =
-            UsdImagingModelSchema::GetDefaultLocator().Append(
-                UsdImagingModelSchemaTokens->drawModeColor);
+            HdModelSchema::GetDefaultLocator().Append(
+                HdModelSchemaTokens->drawModeColor);
         if (dirtyLocators.Intersects(colorLocator)) {
             HdDataSourceLocatorSet primDirtyLocators = dirtyLocators;
             static const HdDataSourceLocator displayColorValue =

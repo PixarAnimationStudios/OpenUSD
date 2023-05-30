@@ -36,6 +36,8 @@ pxr_library(usdImaging
         dataSourceGprim
         dataSourceMaterial
         dataSourceMesh
+        dataSourceNurbsCurves
+        dataSourceNurbsPatch
         dataSourcePointInstancer
         dataSourcePoints
         dataSourcePrim
@@ -50,9 +52,9 @@ pxr_library(usdImaging
         delegate
         drawModeAdapter
         drawModeSceneIndex
+        extentResolvingSceneIndex
         indexProxy
         materialParamUtils
-        modelSchema
         primvarUtils
         resolvedAttributeCache
         instancerContext
@@ -71,7 +73,6 @@ pxr_library(usdImaging
         cylinderAdapter
         cylinderLightAdapter
         diskLightAdapter
-        displayFilterAdapter
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
@@ -98,6 +99,8 @@ pxr_library(usdImaging
         portalLightAdapter
         primAdapter
         primvarDescCache
+        rootOverridesSceneIndex
+        unloadedDrawModeSceneIndex
         usdPrimInfoSchema
         usdRenderProductSchema
         usdRenderSettingsSchema
@@ -109,13 +112,13 @@ pxr_library(usdImaging
         renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
-        sampleFilterAdapter
         sphereAdapter
         sphereLightAdapter
         textureUtils
         volumeAdapter
 
     PRIVATE_CLASSES
+        adapterManager
         drawModeStandin
         niInstanceAggregationSceneIndex
         niPrototypePruningSceneIndex
@@ -125,6 +128,7 @@ pxr_library(usdImaging
     PUBLIC_HEADERS
         api.h
         dataSourceSchemaBased.h
+        types.h
         unitTestHelper.h
         version.h
 

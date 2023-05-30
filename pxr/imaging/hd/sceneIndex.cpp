@@ -22,8 +22,12 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include "pxr/base/tf/instantiateSingleton.h"
+#include "pxr/base/arch/demangle.h"
+
+#include <typeinfo>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -61,9 +65,7 @@ HdSceneIndexBase::_SendPrimsAdded(
             (*it)->PrimsAdded(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
-            ++it;
-            _observers.erase(it2);
+            it = _observers.erase(it);
         }
     }
 }
@@ -81,9 +83,7 @@ HdSceneIndexBase::_SendPrimsRemoved(
             (*it)->PrimsRemoved(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
-            ++it;
-            _observers.erase(it2);
+            it = _observers.erase(it);
         }
     }
 }
@@ -101,9 +101,25 @@ HdSceneIndexBase::_SendPrimsDirtied(
             (*it)->PrimsDirtied(*this, entries);
             ++it;
         } else {
-            _ObserverSet::const_iterator it2 = it;
+            it = _observers.erase(it);
+        }
+    }
+}
+
+void
+HdSceneIndexBase::_SendPrimsRenamed(
+    const HdSceneIndexObserver::RenamedPrimEntries & entries)
+{
+    if (entries.empty()) {
+        return;
+    }
+    _ObserverSet::const_iterator it = _observers.begin();
+    while (it != _observers.end()) {
+        if (*it) {
+            (*it)->PrimsRenamed(*this, entries);
             ++it;
-            _observers.erase(it2);
+        } else {
+            it = _observers.erase(it);
         }
     }
 }
@@ -112,6 +128,46 @@ bool
 HdSceneIndexBase::_IsObserved() const
 {
     return !_observers.empty();
+}
+
+std::string
+HdSceneIndexBase::GetDisplayName() const
+{
+    if (!_displayName.empty()) {
+        return _displayName;
+    }
+
+    return ArchGetDemangled(typeid(*this).name());
+}
+
+void
+HdSceneIndexBase::SetDisplayName(const std::string &n)
+{
+    _displayName = n;
+}
+
+void
+HdSceneIndexBase::AddTag(const TfToken &tag)
+{
+    _tags.insert(tag);
+}
+
+void
+HdSceneIndexBase::RemoveTag(const TfToken &tag)
+{
+    _tags.erase(tag);
+}
+
+bool
+HdSceneIndexBase::HasTag(const TfToken &tag) const
+{
+    return _tags.find(tag) != _tags.end();
+}
+
+TfTokenVector
+HdSceneIndexBase::GetTags() const
+{
+    return TfTokenVector(_tags.begin(), _tags.end());
 }
 
 
@@ -138,9 +194,7 @@ HdSceneIndexNameRegistry::GetRegisteredNames()
             result.push_back(it->first);
             ++it;
         } else {
-            _NamedInstanceMap::const_iterator it2 = it;
-            ++it;
-            _namedInstances.erase(it2);
+            it = _namedInstances.erase(it);
         }
     }
 

@@ -39,12 +39,12 @@
 #include "pxr/base/tf/mallocTag.h"
 
 #include <boost/iterator_adaptors.hpp>
-#include <boost/iterator/reverse_iterator.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <new>
@@ -242,9 +242,9 @@ class VtArray : public Vt_ArrayBase {
     using const_iterator = ElementType const *;
     
     /// Reverse iterator type.
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     /// Reverse const iterator type.
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     /// Reference type.
     typedef ElementType &reference;
@@ -557,12 +557,28 @@ class VtArray : public Vt_ArrayBase {
     /// 5 elements would be left unchanged and the last 5 elements would be
     /// value-initialized.
     void resize(size_t newSize) {
-        struct _Filler {
-            inline void operator()(pointer b, pointer e) const {
-                std::uninitialized_fill(b, e, value_type());
-            }
-        };
-        return resize(newSize, _Filler());
+        return resize(newSize, value_type());
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type const &value) {
+        return resize(newSize,
+                      [&value](pointer b, pointer e) {
+                          std::uninitialized_fill(b, e, value);
+                      });
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &value) {
+        return resize(newSize, const_cast<value_type const &>(value));
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &&value) {
+        return resize(newSize, const_cast<value_type const &>(value));
     }
 
     /// Resize this array.  Preserve existing elements that remain, initialize

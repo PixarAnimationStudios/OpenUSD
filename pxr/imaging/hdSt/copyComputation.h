@@ -26,7 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hdSt/computation.h"
+
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,21 +38,22 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A GPU computation which transfers a vbo range specified by src and name to
 /// the given range.
 ///
-class HdStCopyComputationGPU : public HdComputation {
+class HdStCopyComputationGPU : public HdStComputation
+{
 public:
     HDST_API
     HdStCopyComputationGPU(HdBufferArrayRangeSharedPtr const &src,
-                          TfToken const &name);
+                           TfToken const &name);
 
     HDST_API
-    virtual void Execute(HdBufferArrayRangeSharedPtr const &range,
-                         HdResourceRegistry *resourceRegistry) override;
+    void Execute(HdBufferArrayRangeSharedPtr const &range,
+                 HdResourceRegistry *resourceRegistry) override;
 
     HDST_API
-    virtual int GetNumOutputElements() const override;
+    int GetNumOutputElements() const override;
 
     HDST_API
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
+    void GetBufferSpecs(HdBufferSpecVector *specs) const override;
 
 private:
     HdBufferArrayRangeSharedPtr _src;

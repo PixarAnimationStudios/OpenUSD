@@ -1784,34 +1784,23 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
         return nullptr;
     }
 
-    std::unique_ptr<UsdPrimDefinition> composedPrimDef(new UsdPrimDefinition());
-
    _FamilyAndInstanceToVersionMap seenSchemaFamilyVersions;
 
     // Find the existing concrete typed prim definition for the prim's type.
     const UsdPrimDefinition *primDef = FindConcretePrimDefinition(primType);
-    if (!primDef) {
-        // Its perfectly valid for there to be no prim definition for the 
-        // given prim type, in which case we compose API schemas into an empty
-        // prim definition.
-        _ComposeAPISchemasIntoPrimDefinition(
-            composedPrimDef.get(), appliedAPISchemas, &seenSchemaFamilyVersions,
-            /* allowDupes = */ true);
-        return composedPrimDef;
-    }
-
-    // We do not initialize the prim definition like normal as we need to add
-    // authored API schemas and their properties before adding of the prim 
-    // definition's properties. So here we just manually copy prim spec layer 
-    // and path to the composed definition.
-    composedPrimDef->_primLayerAndPath = primDef->_primLayerAndPath;
+    // Make a copy of the typed prim definition to start.
+    // Its perfectly valid for there to be no prim definition for the 
+    // given prim type, in which case we compose API schemas into an empty
+    // prim definition.
+    std::unique_ptr<UsdPrimDefinition> composedPrimDef(
+        primDef ? new UsdPrimDefinition(*primDef) : new UsdPrimDefinition());
 
     // We do not allow authored API schemas to cause a different version of an
     // API schema to be added if an API schema in that family is already 
     // built in to the prim type's prim definition. Thus, we have to populate
     // the seen schema family versions with API schemas found in the prim type's
     // definition before trying to add any authored API schemas.
-    for (const TfToken &apiSchema : primDef->_appliedAPISchemas) {
+    for (const TfToken &apiSchema : composedPrimDef->_appliedAPISchemas) {
         // Applied schemas may be single or multiple apply so we have to parse
         // the full schema name into a type and possibly an instance name.
         std::pair<TfToken, TfToken> typeNameAndInstance = 
@@ -1824,35 +1813,10 @@ UsdSchemaRegistry::BuildComposedPrimDefinition(
             std::move(typeNameAndInstance), schemaInfo->version);
     }
 
-    // We compose in the new API schemas first as these API schema property 
-    // opinions need to be stronger than the prim type's prim definition's 
-    // opinions.
+    // We compose in the weaker authored API schemas.
     _ComposeAPISchemasIntoPrimDefinition(
-        composedPrimDef.get(), appliedAPISchemas, &seenSchemaFamilyVersions,
-        /* allowDupes = */ true);
-
-    // When building a definition from authored applied API schemas we 
-    // don't want API schemas applied on top of a typed prim definition to 
-    // change any of property types from the typed prim definition. That's 
-    // why we compose in the weaker typed prim definition with 
-    // useWeakerPropertyForTypeConflict set to true. 
-    // 
-    // Note that the strongest API schema wins for a property type conflict
-    // amongst the authored applied API schemas themselves. But this 
-    // "winning" property will be ignored if it tries to changed the type
-    // of an existing property in the typed prim definition.
-    composedPrimDef->_ComposePropertiesFromPrimDef(
-        *primDef, /* useWeakerPropertyForTypeConflict = */ true);
-
-    // The prim type's prim definition may have its own built-in API 
-    // schemas (which were already composed into its definition). We need
-    // to append these to applied API schemas list for our composed prim
-    // definition.
-    composedPrimDef->_appliedAPISchemas.insert(
-        composedPrimDef->_appliedAPISchemas.end(),
-        primDef->_appliedAPISchemas.begin(),
-        primDef->_appliedAPISchemas.end());
-            
+        composedPrimDef.get(), appliedAPISchemas, &seenSchemaFamilyVersions);
+           
     return composedPrimDef;
 }
 
@@ -1860,8 +1824,7 @@ void
 UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
     UsdPrimDefinition *primDef, 
     const TfTokenVector &appliedAPISchemas,
-    _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions,
-    bool allowDupes) const
+    _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions) const
 {
     // Add in properties from each new applied API schema. Applied API schemas 
     // are ordered strongest to weakest so we compose, in order, each weaker 
@@ -1891,7 +1854,7 @@ UsdSchemaRegistry::_ComposeAPISchemasIntoPrimDefinition(
 
             primDef->_ComposeWeakerAPIPrimDefinition(
                 *apiSchemaDefInfo->primDef, instanceName, 
-                seenSchemaFamilyVersions, allowDupes);
+                seenSchemaFamilyVersions);
         }
     }
 }

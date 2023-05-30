@@ -109,6 +109,28 @@ UsdImagingDataSourcePointInstancerTopology::GetNames()
     };
 }
 
+static
+const UsdImagingDataSourceCustomPrimvars::Mappings &
+_GetCustomPrimvarMappings(const UsdPrim &usdPrim)
+{
+    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
+        { HdInstancerTokens->translate,
+          UsdGeomTokens->positions,
+          HdPrimvarSchemaTokens->instance
+        },
+        { HdInstancerTokens->rotate,
+          UsdGeomTokens->orientations,
+          HdPrimvarSchemaTokens->instance
+        },
+        { HdInstancerTokens->scale,
+          UsdGeomTokens->scales,
+          HdPrimvarSchemaTokens->instance
+        }
+    };
+
+    return mappings;
+}
+
 HdDataSourceBaseHandle
 UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
 {
@@ -160,56 +182,31 @@ TfTokenVector
 UsdImagingDataSourcePointInstancerPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourcePrim::GetNames();
-    result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
-    result.push_back(HdPrimvarsSchemaTokens->primvars);
+    result.push_back(HdInstancerTopologySchema::GetSchemaToken());
+    result.push_back(HdPrimvarsSchema::GetSchemaToken());
     return result;
 }
 
 HdDataSourceBaseHandle
 UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
 {
-    if (name == HdInstancerTopologySchemaTokens->instancerTopology) {
+    if (name == HdInstancerTopologySchema::GetSchemaToken()) {
         return UsdImagingDataSourcePointInstancerTopology::New(
                 _GetSceneIndexPath(),
                 UsdGeomPointInstancer(_GetUsdPrim()),
                 _GetStageGlobals());
-    } else if (name == HdPrimvarsSchemaTokens->primvars) {
-
+    } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
         // Note that we are not yet handling velocities, accelerations
         // and angularVelocities.
-        static const UsdImagingDataSourceCustomPrimvars::Mappings
-            customPrimvarMappings =
-                {
-                    { HdInstancerTokens->translate,
-                      UsdGeomTokens->positions,
-                      HdPrimvarSchemaTokens->instance
-                    },
-                    { HdInstancerTokens->rotate,
-                      UsdGeomTokens->orientations,
-                      HdPrimvarSchemaTokens->instance
-                    },
-                    { HdInstancerTokens->scale,
-                      UsdGeomTokens->scales,
-                      HdPrimvarSchemaTokens->instance
-                    }
-                };
-
-        HdContainerDataSourceHandle basePvs = HdContainerDataSource::Cast(
-            UsdImagingDataSourcePrim::Get(name));
-
-        HdContainerDataSourceHandle customPvs =
-            UsdImagingDataSourceCustomPrimvars::New(
-                _GetSceneIndexPath(),
-                _GetUsdPrim(),
-                customPrimvarMappings,
-                _GetStageGlobals());
-
-        if (basePvs) {
-            return HdOverlayContainerDataSource::New(basePvs, customPvs);
-        } else {
-            return customPvs;
-        }
-
+        return
+            HdOverlayContainerDataSource::New(
+                UsdImagingDataSourceCustomPrimvars::New(
+                    _GetSceneIndexPath(),
+                    _GetUsdPrim(),
+                    _GetCustomPrimvarMappings(_GetUsdPrim()),
+                    _GetStageGlobals()),
+                HdContainerDataSource::Cast(
+                    UsdImagingDataSourcePrim::Get(name)));
     } else {
         return UsdImagingDataSourcePrim::Get(name);
     }
@@ -219,54 +216,43 @@ HdDataSourceLocatorSet
 UsdImagingDataSourcePointInstancerPrim::Invalidate(
     UsdPrim const &prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet locators =
         UsdImagingDataSourcePrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
 
-    for (const TfToken &propertyName : properties) {
-        if (propertyName == UsdGeomTokens->prototypes) {
-            locators.insert(
-                HdInstancerTopologySchema::GetDefaultLocator());
-        }
-        if (propertyName == UsdGeomTokens->protoIndices) {
-            static const HdDataSourceLocator locator =
-                HdInstancerTopologySchema::GetDefaultLocator()
+    if (subprim.IsEmpty()) {
+        for (const TfToken &propertyName : properties) {
+
+            if (propertyName == UsdGeomTokens->prototypes) {
+                locators.insert(
+                    HdInstancerTopologySchema::GetDefaultLocator());
+            }
+            if (propertyName == UsdGeomTokens->protoIndices) {
+                static const HdDataSourceLocator locator =
+                    HdInstancerTopologySchema::GetDefaultLocator()
                     .Append(HdInstancerTopologySchemaTokens->instanceIndices);
-            locators.insert(locator);
-        }
-        // inactiveIds are metadata - changing those will cause a resync
-        // of the prim, that is prim remove and add to the stage scene index.
-        // So we do not need to deal with them here.
-        if (propertyName == UsdGeomTokens->invisibleIds) {
-            static const HdDataSourceLocator locator =
-                HdInstancerTopologySchema::GetDefaultLocator()
+                locators.insert(locator);
+            }
+            // inactiveIds are metadata - changing those will cause a resync
+            // of the prim, that is prim remove and add to the stage scene index.
+            // So we do not need to deal with them here.
+            if (propertyName == UsdGeomTokens->invisibleIds) {
+                static const HdDataSourceLocator locator =
+                    HdInstancerTopologySchema::GetDefaultLocator()
                     .Append(HdInstancerTopologySchemaTokens->mask);
-            locators.insert(locator);
+                locators.insert(locator);
+            }
         }
-        if (propertyName == UsdGeomTokens->positions) {
-            static const HdDataSourceLocator locator =
-                HdPrimvarsSchema::GetDefaultLocator()
-                    .Append(HdInstancerTokens->translate)
-                    .Append(HdPrimvarSchemaTokens->primvarValue);
-            locators.insert(locator);
-        }
-        if (propertyName == UsdGeomTokens->orientations) {
-            static const HdDataSourceLocator locator =
-                HdPrimvarsSchema::GetDefaultLocator()
-                    .Append(HdInstancerTokens->rotate)
-                    .Append(HdPrimvarSchemaTokens->primvarValue);
-            locators.insert(locator);
-        }
-        if (propertyName == UsdGeomTokens->scales) {
-            static const HdDataSourceLocator locator =
-                HdPrimvarsSchema::GetDefaultLocator()
-                    .Append(HdInstancerTokens->scale)
-                    .Append(HdPrimvarSchemaTokens->primvarValue);
-            locators.insert(locator);
-        }
+
+        locators.insert(
+            UsdImagingDataSourceCustomPrimvars::Invalidate(
+                properties, _GetCustomPrimvarMappings(prim)));
     }
+
+    
 
     return locators;
 }

@@ -932,9 +932,17 @@ PcpCache::IsInvalidAssetPath(const std::string& resolvedAssetPath) const
 }
 
 bool 
-PcpCache::HasAnyDynamicFileFormatArgumentDependencies() const
+PcpCache::HasAnyDynamicFileFormatArgumentFieldDependencies() const
 {
-    return _primDependencies->HasAnyDynamicFileFormatArgumentDependencies();
+    return 
+        _primDependencies->HasAnyDynamicFileFormatArgumentFieldDependencies();
+}
+
+bool 
+PcpCache::HasAnyDynamicFileFormatArgumentAttributeDependencies() const
+{
+    return 
+        _primDependencies->HasAnyDynamicFileFormatArgumentAttributeDependencies();
 }
 
 bool 
@@ -942,6 +950,14 @@ PcpCache::IsPossibleDynamicFileFormatArgumentField(
     const TfToken &field) const
 {
     return _primDependencies->IsPossibleDynamicFileFormatArgumentField(field);
+}
+
+bool 
+PcpCache::IsPossibleDynamicFileFormatArgumentAttribute(
+    const TfToken &attributeName) const
+{
+    return _primDependencies->IsPossibleDynamicFileFormatArgumentAttribute(
+        attributeName);
 }
 
 const PcpDynamicFileFormatDependencyData &
@@ -1541,6 +1557,7 @@ struct PcpCache::_ParallelIndexer
                      
 
     void _PublishOutputs() {
+        TRACE_FUNCTION();
         // Publish.
         std::pair<_PrimIndexCache::NodeHandle, PcpPrimIndexOutputs> outputItem;
         while (_toPublish.try_pop(outputItem)) {

@@ -28,6 +28,7 @@
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
+#include "pxr/imaging/hd/flattenedPrimvarsDataSource.h"
 
 #include "pxr/usd/sdf/pathTable.h"
 
@@ -102,6 +103,7 @@ private:
     bool _flattenPurpose;
     bool _flattenModel;
     bool _flattenMaterialBinding;
+    bool _flattenPrimvars;
     TfTokenVector _dataSourceNames;
 
     HdContainerDataSourceHandle _identityXform;
@@ -151,6 +153,8 @@ private:
             const HdContainerDataSourceHandle &model);
         HdDataSourceBaseHandle _GetMaterialBinding();
         HdDataSourceBaseHandle _GetMaterialBindingUncached();
+        HdFlattenedPrimvarsDataSourceHandle _GetPrimvars();
+        HdFlattenedPrimvarsDataSourceHandle _GetPrimvarsUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -159,12 +163,12 @@ private:
         HdContainerDataSourceAtomicHandle _computedVisDataSource;
         HdContainerDataSourceAtomicHandle _computedPurposeDataSource;
         HdTokenDataSource::AtomicHandle _computedDrawModeDataSource;
-
         // Stored as a base rather than a container so we can use cast to
         // distinguish between a cached value and the absence of a cached value.
         // Internally, this is set to a retained bool=false data source to 
         // indicate that no binding is present.
         HdDataSourceBaseAtomicHandle _computedMaterialBindingDataSource;
+        HdFlattenedPrimvarsDataSource::AtomicHandle _computedPrimvarsDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

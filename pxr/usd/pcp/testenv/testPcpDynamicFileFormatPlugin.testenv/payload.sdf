@@ -15,8 +15,8 @@ payload = @sphere.testpcpdynamic@
 # Prim with two dynamic payloads that are identified through use of static
 # file format arguments.
 def "PayloadMulti" (
-payload = [@cone.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=2@,
-           @sphere.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=1@]
+payload = [@cone.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=Pl2@,
+           @sphere.testpcpdynamic:SDF_FORMAT_ARGS:TestPcp_payloadId=Pl1@]
 )
 {
 }

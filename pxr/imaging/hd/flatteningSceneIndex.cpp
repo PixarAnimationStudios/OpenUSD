@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
@@ -85,6 +86,9 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     , _flattenMaterialBinding(
         _GetBoolValue(inputArgs,
                       HdMaterialBindingSchemaTokens->materialBinding))
+    , _flattenPrimvars(
+        _GetBoolValue(inputArgs,
+                      HdPrimvarsSchemaTokens->primvars))
     , _identityXform(HdXformSchema::Builder()
         .SetMatrix(
             HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
@@ -124,6 +128,10 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     if (_flattenMaterialBinding) {
         _dataSourceNames.push_back(
             HdMaterialBindingSchemaTokens->materialBinding);
+    }
+    if (_flattenPrimvars) {
+        _dataSourceNames.push_back(
+            HdPrimvarsSchemaTokens->primvars);
     }
 
     _FillPrimsRecursively(SdfPath::AbsoluteRootPath());
@@ -211,7 +219,8 @@ HdFlatteningSceneIndex::_PrimsAdded(
                 HdVisibilitySchema::GetDefaultLocator(),
                 HdPurposeSchema::GetDefaultLocator(),
                 _GetDrawModeLocator(),
-                HdMaterialBindingSchema::GetDefaultLocator()
+                HdMaterialBindingSchema::GetDefaultLocator(),
+                HdPrimvarsSchema::GetDefaultLocator()
             };
 
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
@@ -280,6 +289,9 @@ HdFlatteningSceneIndex::_PrimsDirtied(
                 HdMaterialBindingSchema::GetDefaultLocator())) {
             locators.insert(HdMaterialBindingSchema::GetDefaultLocator());
         }
+        locators.insert(
+            HdFlattenedPrimvarsDataSource::ComputeDirtyPrimvarsLocators(
+                entry.dirtyLocators));
         
         if (!locators.IsEmpty()) {
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
@@ -353,10 +365,12 @@ bool
 HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         const HdDataSourceLocatorSet &set)
 {
+    static const HdContainerDataSourceHandle containerNull;
+    static const HdTokenDataSourceHandle tokenNull;
+    static const HdDataSourceBaseHandle baseNull;
+    static const HdFlattenedPrimvarsDataSourceHandle flattenedPrimvarsNull;
+
     bool anyDirtied = false;
-    static const HdContainerDataSourceHandle containerNull(nullptr);
-    static const HdTokenDataSourceHandle tokenNull(nullptr);
-    static const HdDataSourceBaseHandle baseNull(nullptr);
 
     if (set.Intersects(HdXformSchema::GetDefaultLocator())) {
         if (HdContainerDataSource::AtomicLoad(_computedXformDataSource)) {
@@ -380,14 +394,38 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
             _computedPurposeDataSource, containerNull);
     }
     if (set.Intersects(_GetDrawModeLocator())) {
-        anyDirtied = true;
+        if (HdTokenDataSource::AtomicLoad(_computedDrawModeDataSource)) {
+            anyDirtied = true;
+        }
         HdTokenDataSource::AtomicStore(
             _computedDrawModeDataSource, tokenNull);
     }
     if (set.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
-        anyDirtied = true;
+        if (HdDataSourceBase::AtomicLoad(_computedMaterialBindingDataSource)) {
+            anyDirtied = true;
+        }
         HdDataSourceBase::AtomicStore(
             _computedMaterialBindingDataSource, baseNull);
+    }
+    if (set.Intersects(HdPrimvarsSchema::GetDefaultLocator())) {
+        if (set.Contains(HdPrimvarsSchema::GetDefaultLocator())) {
+            // If HdFlattenedPrimvarsDataSource::ComputeDirtyPrimvarsLocators
+            // returned just the "primvars" data source locator, drop the entire
+            // flattened primvars data source.
+            if (HdFlattenedPrimvarsDataSource::AtomicLoad(
+                    _computedPrimvarsDataSource)) {
+                anyDirtied = true;
+            }
+            HdFlattenedPrimvarsDataSource::AtomicStore(
+                _computedPrimvarsDataSource, flattenedPrimvarsNull);
+        } else {
+            // Otherwise, we can just invalidate the primvars in question.
+            if (_computedPrimvarsDataSource) {
+                if (_computedPrimvarsDataSource->Invalidate(set)) {
+                    anyDirtied = true;
+                }
+            }
+        }
     }
 
     return anyDirtied;
@@ -463,6 +501,10 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
     if (_sceneIndex._flattenMaterialBinding &&
         name == HdMaterialBindingSchemaTokens->materialBinding) {
         return _GetMaterialBinding();
+    }
+    if (_sceneIndex._flattenPrimvars &&
+        name == HdPrimvarsSchemaTokens->primvars) {
+        return _GetPrimvars();
     }
     if (_inputDataSource) {
         return _inputDataSource->Get(name);
@@ -750,6 +792,46 @@ _GetMaterialBindingUncached()
             return HdRetainedTypedSampledDataSource<bool>::New(false);
         }
     }
+}
+
+HdFlattenedPrimvarsDataSourceHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetPrimvars()
+{
+    HdFlattenedPrimvarsDataSourceHandle result =
+        HdFlattenedPrimvarsDataSource::AtomicLoad(
+            _computedPrimvarsDataSource);
+
+    if (!result) {
+        result = _GetPrimvarsUncached();
+        HdFlattenedPrimvarsDataSource::AtomicStore(
+            _computedPrimvarsDataSource,
+            result);
+    }
+
+    return result;
+}
+
+HdFlattenedPrimvarsDataSourceHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
+_GetPrimvarsUncached()
+{
+    HdContainerDataSourceHandle inputPrimvars =
+        HdPrimvarsSchema::GetFromParent(_inputDataSource).GetContainer();
+
+    HdFlattenedPrimvarsDataSourceHandle parentPrimvars;
+    if (_primPath.GetPathElementCount()) {
+        SdfPath parentPath = _primPath.GetParentPath();
+        const auto it = _sceneIndex._prims.find(parentPath);
+        if (it != _sceneIndex._prims.end()) {
+            parentPrimvars =
+                HdFlattenedPrimvarsDataSource::Cast(
+                    HdPrimvarsSchema::GetFromParent(
+                        it->second.prim.dataSource).GetContainer());
+        }
+    }
+
+    return HdFlattenedPrimvarsDataSource::New(
+        inputPrimvars, parentPrimvars);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

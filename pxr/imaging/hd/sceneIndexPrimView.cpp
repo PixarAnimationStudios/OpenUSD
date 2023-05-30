@@ -70,6 +70,12 @@ HdSceneIndexPrimView::const_iterator::const_iterator(
 }
 
 HdSceneIndexPrimView::HdSceneIndexPrimView(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex)
+  : HdSceneIndexPrimView(inputSceneIndex, SdfPath::AbsoluteRootPath())
+{
+}
+
+HdSceneIndexPrimView::HdSceneIndexPrimView(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &root)
   : _begin(inputSceneIndex, root)

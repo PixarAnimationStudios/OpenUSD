@@ -99,18 +99,43 @@ HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 }
 
 void
-HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
-                                        GfVec4d const &viewport)
+HdRenderPassState::SetCamera(const HdCamera * const camera)
 {
     if (!camera) {
         TF_CODING_ERROR("Received null camera\n");
     }
     _camera = camera;
+}
+
+void
+HdRenderPassState::SetOverrideWindowPolicy(
+    const std::pair<bool, CameraUtilConformWindowPolicy> &overrideWindowPolicy)
+{
+    _overrideWindowPolicy = overrideWindowPolicy;
+}
+
+void
+HdRenderPassState::SetViewport(const GfVec4d &viewport)
+{
     _viewport = GfVec4f((float)viewport[0], (float)viewport[1],
                         (float)viewport[2], (float)viewport[3]);
 
     // Invalidate framing so that it isn't used by GetProjectionMatrix().
     _framing = CameraUtilFraming();
+}    
+
+void
+HdRenderPassState::SetFraming(const CameraUtilFraming &framing)
+{
+    _framing = framing;
+}
+
+void
+HdRenderPassState::SetCameraAndViewport(HdCamera const *camera,
+                                        GfVec4d const &viewport)
+{
+    SetCamera(camera);
+    SetViewport(viewport);
 }
 
 void
@@ -119,12 +144,9 @@ HdRenderPassState::SetCameraAndFraming(
     const CameraUtilFraming &framing,
     const std::pair<bool, CameraUtilConformWindowPolicy> &overrideWindowPolicy)
 {
-    if (!camera) {
-        TF_CODING_ERROR("Received null camera\n");
-    }
-    _camera = camera;
-    _framing = framing;
-    _overrideWindowPolicy = overrideWindowPolicy;
+    SetCamera(camera);
+    SetFraming(framing);
+    SetOverrideWindowPolicy(overrideWindowPolicy);
 }
 
 GfMatrix4d
@@ -164,13 +186,12 @@ HdRenderPassState::GetProjectionMatrix() const
                 GetWindowPolicy());
     }
 
-    CameraUtilConformWindowPolicy const policy = _camera->GetWindowPolicy();
     const double aspect =
         (_viewport[3] != 0.0 ? _viewport[2] / _viewport[3] : 1.0);
 
     // Adjust the camera frustum based on the window policy.
     return CameraUtilConformedWindow(
-        _camera->ComputeProjectionMatrix(), policy, aspect);
+        _camera->ComputeProjectionMatrix(), GetWindowPolicy(), aspect);
 }
 
 GfMatrix4d

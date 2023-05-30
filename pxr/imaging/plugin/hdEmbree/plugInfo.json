@@ -9,6 +9,12 @@
                         ],
                         "displayName": "Embree",
                         "priority": 99
+                    },
+                    "HdEmbree_ImplicitSurfaceSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer" : "Embree",
+                        "priority": 0,
+                        "displayName": "Scene Index to turn implicit surfaces into prims suitable for HdEmbree"
                     }
                 }
             },

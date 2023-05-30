@@ -73,14 +73,14 @@ public:
         TfTokenVector names = _inputSource->GetNames();
         auto it = _selection->pathToState.find(_primPath);
         if (it != _selection->pathToState.end()) {
-            names.push_back(HdSelectionsSchemaTokens->selections);
+            names.push_back(HdSelectionsSchema::GetSchemaToken());
         }
         return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        if (name == HdSelectionsSchemaTokens->selections) {
+        if (name == HdSelectionsSchema::GetSchemaToken()) {
             auto it = _selection->pathToState.find(_primPath);
             if (it != _selection->pathToState.end()) {
                 return it->second.GetVectorDataSource();

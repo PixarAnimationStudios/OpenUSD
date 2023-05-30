@@ -271,7 +271,8 @@ UsdImagingCoordSysAPIAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfToken const& appliedInstanceName,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (appliedInstanceName.IsEmpty()) {
         return HdDataSourceLocatorSet();

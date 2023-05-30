@@ -1228,59 +1228,25 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
                              load);
 }
 
-static inline SdfAttributeSpecHandle
-_GetSchemaPropSpec(SdfAttributeSpec *,
-                   const UsdPrimDefinition &primDef, 
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaAttributeSpec(attrName);
-}
-
-static inline SdfRelationshipSpecHandle
-_GetSchemaPropSpec(SdfRelationshipSpec *,
-                   const UsdPrimDefinition &primDef,  
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaRelationshipSpec(attrName);
-}
-
-static inline SdfPropertySpecHandle
-_GetSchemaPropSpec(SdfPropertySpec *,
-                   const UsdPrimDefinition &primDef, 
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaPropertySpec(attrName);
-}
-
-template <class PropType>
-SdfHandle<PropType>
-UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
+UsdPrimDefinition::Property
+UsdStage::_GetSchemaProperty(const UsdProperty &prop) const
 {
     Usd_PrimDataHandle const &primData = prop._Prim();
     if (!primData)
-        return TfNullPtr;
-
-    // Consult the registry.
-    return _GetSchemaPropSpec(static_cast<PropType *>(nullptr),
-                              primData->GetPrimDefinition(), prop.GetName());
+        return UsdPrimDefinition::Property();
+    return primData->GetPrimDefinition().GetPropertyDefinition(prop.GetName());
 }
 
-SdfPropertySpecHandle
-UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
+UsdPrimDefinition::Attribute
+UsdStage::_GetSchemaAttribute(const UsdAttribute &attr) const
 {
-    return _GetSchemaPropertySpec<SdfPropertySpec>(prop);
+    return _GetSchemaProperty(attr);
 }
 
-SdfAttributeSpecHandle
-UsdStage::_GetSchemaAttributeSpec(const UsdAttribute &attr) const
+UsdPrimDefinition::Relationship
+UsdStage::_GetSchemaRelationship(const UsdRelationship &rel) const
 {
-    return _GetSchemaPropertySpec<SdfAttributeSpec>(attr);
-}
-
-SdfRelationshipSpecHandle
-UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
-{
-    return _GetSchemaPropertySpec<SdfRelationshipSpec>(rel);
+    return _GetSchemaProperty(rel);
 }
 
 bool
@@ -1374,6 +1340,72 @@ UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
     return _CreatePrimSpecAtEditTarget(GetEditTarget(), prim.GetPath());
 }
 
+SdfAttributeSpecHandle
+UsdStage::_CreateNewSpecFromSchemaAttribute(
+    const UsdPrim &prim,
+    const UsdPrimDefinition::Attribute &attrDef)
+{
+    SdfChangeBlock block;
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
+    if (!TF_VERIFY(primSpec)) {
+        return TfNullPtr;
+    }
+    return SdfAttributeSpec::New(primSpec, 
+        attrDef.GetName(), attrDef.GetTypeName(), attrDef.GetVariability());
+}
+
+SdfRelationshipSpecHandle
+UsdStage::_CreateNewSpecFromSchemaRelationship(
+    const UsdPrim &prim,
+    const UsdPrimDefinition::Relationship &relDef)
+{
+    SdfChangeBlock block;
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
+    if (!TF_VERIFY(primSpec)) {
+        return TfNullPtr;
+    }
+    return SdfRelationshipSpec::New(primSpec, 
+        relDef.GetName(), /* custom = */ false, relDef.GetVariability());
+}
+
+template <> 
+SdfPropertySpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfPropertySpec>(
+    const UsdProperty &prop)
+{
+    UsdPrimDefinition::Property propDef = _GetSchemaProperty(prop);
+    if (propDef.IsAttribute()) {
+        return _CreateNewSpecFromSchemaAttribute(prop.GetPrim(), propDef);
+    } else if (propDef.IsRelationship()) {
+        return _CreateNewSpecFromSchemaRelationship(prop.GetPrim(), propDef);
+    }
+    return TfNullPtr;
+}
+
+template<>
+SdfAttributeSpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfAttributeSpec>(
+    const UsdProperty &prop)
+{
+    UsdPrimDefinition::Attribute attrDef = _GetSchemaProperty(prop);
+    if (attrDef) {
+        return _CreateNewSpecFromSchemaAttribute(prop.GetPrim(), attrDef);
+    }
+    return TfNullPtr;
+}
+
+template<>
+SdfRelationshipSpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfRelationshipSpec>(
+    const UsdProperty &prop)
+{
+    const UsdPrimDefinition::Relationship relDef = _GetSchemaProperty(prop);
+    if (relDef) {
+        return _CreateNewSpecFromSchemaRelationship(prop.GetPrim(), relDef);
+    }
+    return TfNullPtr;
+}
+
 static SdfAttributeSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
                       const TfToken &propName,
@@ -1448,44 +1480,49 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     // spec whose metadata we can copy.  First check to see if there is a
     // builtin we can use.  Failing that, try to take the strongest authored
     // spec.
-    TypedSpecHandle specToCopy;
 
-    // Get definition, if any.
-    specToCopy = _GetSchemaPropertySpec<PropType>(prop);
-
-    if (!specToCopy) {
-        // There is no definition available, either because the prim has no
-        // known schema, or its schema has no definition for this property.  In
-        // this case, we look to see if there's a strongest property spec.  If
-        // so, we copy its required metadata.
-        for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
-            if (SdfPropertySpecHandle propSpec = r.GetLayer()->
-                GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName))) {
-                if ((specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec)))
-                    break;
-                // Type mismatch.
-                TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
-                                 "<%s> at <%s> in @%s@.  Strongest existing "
-                                 "spec, %s at <%s> in @%s@",
-                                 ArchGetDemangled<PropType>().c_str(),
-                                 propPath.GetText(),
-                                 editTarget.MapToSpecPath(propPath).GetText(),
-                                 editTarget.GetLayer()->GetIdentifier().c_str(),
-                                 TfStringify(propSpec->GetSpecType()).c_str(),
-                                 propSpec->GetPath().GetText(),
-                                 propSpec->GetLayer()->GetIdentifier().c_str());
-                return TfNullPtr;
-            }
-        }
+    // First, see if we can create a new spec from the property's schema 
+    // definition (if it has one).
+    if (TypedSpecHandle specFromSchema = 
+            _CreateNewPropertySpecFromSchema<PropType>(prop)) {
+        return specFromSchema;
     }
 
-    // If we have a spec to copy from, then we author an opinion at the edit
-    // target.
-    if (specToCopy) {
+    // There is no definition available, either because the prim has no
+    // known schema, or its schema has no definition for this property.  In
+    // this case, we look to see if there's a strongest property spec.  If
+    // so, we copy its required metadata.
+    for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
+        SdfPropertySpecHandle propSpec = r.GetLayer()->
+            GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName));
+        if (!propSpec) {
+            continue;
+        }
+
+        // If we have a spec to copy from, then we author an opinion at the
+        // edit target.
+        TypedSpecHandle specToCopy = 
+            TfDynamic_cast<TypedSpecHandle>(propSpec);
+        if (!specToCopy) {
+            // Type mismatch.
+            TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
+                                "<%s> at <%s> in @%s@.  Strongest existing "
+                                "spec, %s at <%s> in @%s@",
+                                ArchGetDemangled<PropType>().c_str(),
+                                propPath.GetText(),
+                                editTarget.MapToSpecPath(propPath).GetText(),
+                                editTarget.GetLayer()->GetIdentifier().c_str(),
+                                TfStringify(propSpec->GetSpecType()).c_str(),
+                                propSpec->GetPath().GetText(),
+                                propSpec->GetLayer()->GetIdentifier().c_str());
+            return TfNullPtr;
+        }
+
         SdfChangeBlock block;
         SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
-        if (TF_VERIFY(primSpec))
+        if (TF_VERIFY(primSpec)) {
             return _StampNewPropertySpec(primSpec, propName, specToCopy);
+        }
     }
 
     // Otherwise, we fail to create a spec.
@@ -4088,8 +4125,7 @@ UsdStage::_HandleLayersDidChange(
 
     PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
-    changes.DidChange(
-        TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
+    changes.DidChange(cache, n.GetChangeListVec());
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
@@ -5173,8 +5209,8 @@ _HasAuthoredValue(const TfToken& fieldKey,
 }
 
 void
-_CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
-               const SdfPropertySpecHandle &dstPropDef,
+_CopyFallbacks(const UsdPrimDefinition::Property &srcPropDef,
+               const UsdPrimDefinition::Property &dstPropDef,
                const SdfPropertySpecHandle &dstPropSpec,
                const SdfPropertySpecHandleVector &dstPropStack)
 {
@@ -5182,7 +5218,7 @@ _CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
         return;
     }
 
-    std::vector<TfToken> fallbackFields = srcPropDef->ListFields();
+    std::vector<TfToken> fallbackFields = srcPropDef.ListMetadataFields();
     fallbackFields.erase(
         std::remove_if(fallbackFields.begin(), fallbackFields.end(),
                        _IsPrivateFallbackFieldKey),
@@ -5200,13 +5236,16 @@ _CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
         // fallback for that property matches the source fallback
         // and there isn't an authored value that's overriding that
         // fallback, we don't need to write the fallback.
-        VtValue fallbackVal = srcPropDef->GetField(fieldName);
-        if (dstPropDef && dstPropDef->GetField(fieldName) == fallbackVal &&
+        VtValue srcFallbackVal, dstFallbackVal;
+        srcPropDef.GetMetadata(fieldName, &srcFallbackVal);
+        if (dstPropDef && 
+            dstPropDef.GetMetadata(fieldName, &dstFallbackVal) &&
+            dstFallbackVal == srcFallbackVal &&
             !_HasAuthoredValue(fieldName, dstPropStack)) {
                 continue;
         }
 
-        fallbacks[fieldName].Swap(fallbackVal);
+        fallbacks[fieldName].Swap(srcFallbackVal);
     }
 
     _CopyMetadata(dstPropSpec, fallbacks);
@@ -5375,8 +5414,8 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Copy fallback property values and metadata if needed.
         _CopyFallbacks(
-            _GetSchemaPropertySpec(srcProp),
-            _GetSchemaPropertySpec(dstProp),
+            _GetSchemaProperty(srcProp),
+            _GetSchemaProperty(dstProp),
             dstPropSpec, dstPropStack);
     }
 
@@ -6314,7 +6353,7 @@ UsdStage::_IsCustom(const UsdProperty &prop) const
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
 
-    if (_GetSchemaPropertySpec(prop))
+    if (_GetSchemaProperty(prop))
         return false;
 
     const TfToken &propName = prop.GetName();
@@ -6350,8 +6389,8 @@ UsdStage
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
         // Check definition.
-        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
-            return attrDef->GetVariability();
+        if (UsdPrimDefinition::Attribute attrDef = _GetSchemaAttribute(attr)) {
+            return attrDef.GetVariability();
         }
 
         // Check authored scene description.
@@ -6539,11 +6578,8 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
     TRACE_FUNCTION();
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
-    if (_GetSchemaPropertySpec(prop)) {
-        composer->ConsumeUsdFallback(
-            prop._Prim()->GetPrimDefinition(), 
-            prop.GetName(),
-            SdfFieldKeys->Custom, TfToken());
+    if (_GetSchemaProperty(prop)) {
+        composer->ConsumeExplicitValue(false);
         return;
     }
 
@@ -8448,11 +8484,9 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
             return false;
 
         // Check for a registered fallback.
-        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
-            if (attrDef->HasDefaultValue()) {
-                *hasSamples = false;
-                return true;
-            }
+        if (attr.HasFallbackValue()) {
+            *hasSamples = false;
+            return true;
         }
     }
 

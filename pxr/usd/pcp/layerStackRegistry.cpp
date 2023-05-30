@@ -154,9 +154,7 @@ Pcp_LayerStackRegistry::FindOrCreate(const PcpLayerStackIdentifier& identifier,
         lock.release();
 
         PcpLayerStackRefPtr createdLayerStack =
-            TfCreateRefPtr(new PcpLayerStack(
-                identifier, _GetFileFormatTarget(), _GetMutedLayers(), 
-                _IsUsd()));
+            TfCreateRefPtr(new PcpLayerStack(identifier, *this));
 
         // Take the lock and check again for an existing layer stack, or
         // install the one we just created.

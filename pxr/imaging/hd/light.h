@@ -95,12 +95,32 @@ public:
         DirtyShadowParams     = 1 << 2,
         DirtyCollection       = 1 << 3,
         DirtyResource         = 1 << 4,
+
+        // XXX: This flag is important for instanced lights, and must have
+        // the same value as it does for Rprims
+        DirtyInstancer        = 1 << 16,
         AllDirty              = (DirtyTransform
                                  |DirtyParams
                                  |DirtyShadowParams
                                  |DirtyCollection
-                                 |DirtyResource)
+                                 |DirtyResource
+                                 |DirtyInstancer)
     };
+
+    HD_API
+    static std::string StringifyDirtyBits(HdDirtyBits dirtyBits);
+
+    /// Returns the identifier of the instancer (if any) for this Sprim. If this
+    /// Sprim is not instanced, an empty SdfPath will be returned.
+    const SdfPath& GetInstancerId() const { return _instancerId; }
+
+    HD_API
+    void _UpdateInstancer(
+        HdSceneDelegate* sceneDelegate,
+        HdDirtyBits* dirtyBits);
+
+private:
+    SdfPath _instancerId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

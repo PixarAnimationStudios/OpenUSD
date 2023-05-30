@@ -73,6 +73,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsConstantsGroup.py
     testenv/testUsdUtilsCreateNewUsdzPackage.py
     testenv/testUsdUtilsDependencies.py
+    testenv/testUsdUtilsDependenciesCustomResolver.py
     testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py
@@ -86,6 +87,18 @@ pxr_test_scripts(
     testenv/testUsdUtilsUpdateSchemaWithSdrNode.py
     testenv/testUsdUtilsUsdzUtils.py
     testenv/testUsdUtilsVarSelsSessionLayer.py
+)
+
+pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX UsdUtilsPlugins
+    LIBRARIES
+        ar
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestUsdUtilsDependenciesCustomResolver_plugin.cpp
 )
 
 pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
@@ -139,8 +152,23 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageContextDep
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies
     DEST testUsdUtilsDependencies
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependenciesCustomResolver
+    DEST testUsdUtilsDependenciesCustomResolver
 )
 
 pxr_install_test_dir(
@@ -399,9 +427,29 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
+    DIFF_COMPARE contents_usdz_context_dep_assets.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_filter_metadata_keys.txt filter_metadata_keys.usdz filterMetadataKeys/filter_metadata_keys.usda"
+    DIFF_COMPARE contents_filter_metadata_keys.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsDependencies
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependenciesCustomResolver
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependenciesCustomResolver"
     EXPECTED_RETURN_CODE 0
 )
 

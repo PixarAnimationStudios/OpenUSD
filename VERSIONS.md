@@ -30,7 +30,7 @@ Our test machines have the following software versions installed
 | RenderMan     | 24.4                 | 24.4                         | 24.4                           |
 | Alembic       | 1.7.10               | 1.8.3                        | 1.7.10                         |
 | OpenEXR       | 2.4.3                | 2.4.3                        | 2.5.2                          |
-| MaterialX     | 1.38.4               | 1.38.4                       | 1.38.4                         |
+| MaterialX     | 1.38.7               | 1.38.7                       | 1.38.7                         |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |

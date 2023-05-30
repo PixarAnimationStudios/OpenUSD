@@ -187,22 +187,6 @@ public:
         return _primType;
     }
 
-    HdCullStyle GetCullStyle() const {
-        return _cullStyle;
-    }
-
-    bool GetUseHardwareFaceCulling() const {
-        return _useHardwareFaceCulling;
-    }
-
-    bool GetHasMirroredTransform() const {
-        return _hasMirroredTransform;
-    }
-
-    bool GetDoubleSided() const {
-        return _doubleSided;
-    }
-
     bool GetUseMetalTessellation() const {
         return _useMetalTessellation;
     }
@@ -246,6 +230,10 @@ public:
         return IsPrimTypeTriQuads(_primType);
     }
 
+    bool IsPrimTypeRefinedMesh() const {
+        return IsPrimTypeRefinedMesh(_primType);
+    }
+
     bool IsPrimTypePatches() const {
         return IsPrimTypePatches(_primType);
     }
@@ -276,6 +264,10 @@ public:
     // Returns the HgiPrimitiveType for the primitive type.
     HDST_API
     HgiPrimitiveType GetHgiPrimitiveType() const;
+
+    // Resolve the cull mode from the cull style in the render state.
+    HDST_API
+    HgiCullMode ResolveCullMode(HdCullStyle const renderStateCullStyle) const;
 
     // Factory for convenience.
     static HdSt_GeometricShaderSharedPtr Create(

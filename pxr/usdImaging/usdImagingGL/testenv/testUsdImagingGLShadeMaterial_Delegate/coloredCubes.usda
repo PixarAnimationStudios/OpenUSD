@@ -1,0 +1,84 @@
+#usda 1.0
+(
+    endFrame = 1
+    startFrame = 1
+    upAxis = "Z"
+)
+
+def Xform "Cubes"
+{
+    custom matrix4d xformOp:transform = ( (0.7, 0.5, 0.5, 0), (-0.7, 0.5, 0.5, 0), (0, -0.7, 0.7, 0), (0, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+
+    def Cube "pCubePrimvar"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        float[] primvars:displayOpacity = [1]
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pCubeMaterial" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        custom rel material:binding = </Materials/lambert1>
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-6, 0, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pCubeEmpty"
+    {
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, -6, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pPotentCube"
+    {
+        color3f[] primvars:displayColor = [(732, -345, 1)]
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+
+    def Cube "pInvalidMaterialCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
+    {
+        custom rel material:binding = </Materials/Nonexistent>
+        custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -6, 0, 1) )
+        uniform token[] xformOpOrder = ["xformOp:transform"]
+    }
+}
+
+def Scope "Materials"
+{
+    def Material "lambert1" (
+        inherits = </_class_Material>
+    )
+    {
+        # Material preview is fallback if gprim doesn't provide displayColor
+        # Desired syntax is below, but not yet support in UsdImaging
+        # color3f primvars:displayColor = (0, 0, 1)
+        custom color3f displayColor = (0, 0, 1)
+        token outputs:ri:surface = </Materials/lambert1/diffuse1.outputs:out>
+        token outputs:surface.connect = </Materials/lambert1/PbrPreview.outputs:surface>
+
+        def RisBxdf "diffuse1"
+        {
+            asset info:filePath = @PxrDiffuse@
+            token outputs:out
+        }
+
+        def Shader "PbrPreview"
+        {
+            uniform token info:id = "UsdPreviewSurface"
+            color3f inputs:diffuseColor = (0, 0, 1)
+            token outputs:surface
+        }
+    }
+}
+
+class "_class_Material"
+{
+}
+

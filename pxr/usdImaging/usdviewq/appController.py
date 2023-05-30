@@ -2798,7 +2798,7 @@ class AppController(QtCore.QObject):
             caption,
             './' + recommendedFilename,
             'USD Files (*.usd)'
-            ';;USD ASCII Files (*.usda)'
+            ';;USD Text Files (*.usda)'
             ';;USD Crate Files (*.usdc)'
             ';;Any USD File (*.usd *.usda *.usdc)',
             'Any USD File (*.usd *.usda *.usdc)')
@@ -4155,8 +4155,8 @@ class AppController(QtCore.QObject):
         #
         # XXX: Would be nice to have some official facility to query
         # this.
-        compKeys = [# composition related metadata
-                    "references", "inheritPaths", "specializes",
+        compKeys = [# composition related metadata (inherits handled below)
+                    "references", "specializes",
                     "payload", "subLayers"]
 
 
@@ -4181,6 +4181,12 @@ class AppController(QtCore.QObject):
         variantSets = {}
         setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get the inherits via API instead of the "inheritPaths" metadata
+            # which can be incomplete.
+            inheritPaths = obj.GetInherits().GetAllDirectInherits()
+            if inheritPaths:
+                m["inherits"] = inheritPaths
+
             # Get all variant selections as setless and remove the ones we find
             # sets for.
             setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()

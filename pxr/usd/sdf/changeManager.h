@@ -32,7 +32,6 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <boost/noncopyable.hpp>
 #include <tbb/enumerable_thread_specific.h>
 #include <string>
 #include <vector>
@@ -54,7 +53,9 @@ class SdfSpec;
 ///
 /// For now this class uses TfNotices to represent invalidations.
 ///
-class Sdf_ChangeManager : boost::noncopyable {
+class Sdf_ChangeManager {
+    Sdf_ChangeManager(const Sdf_ChangeManager&) = delete;
+    Sdf_ChangeManager& operator=(const Sdf_ChangeManager&) = delete;
 public:
     SDF_API
     static Sdf_ChangeManager& Get() {

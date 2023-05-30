@@ -60,7 +60,7 @@ _ComputeUnderlaySource(const SdfPath &instancer, const SdfPath &prototypeRoot)
 
     return
         HdRetainedContainerDataSource::New(
-            HdInstancedBySchemaTokens->instancedBy,
+            HdInstancedBySchema::GetSchemaToken(),
             HdInstancedBySchema::Builder()
                 .SetPaths(DataSource::New({ instancer }))
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
@@ -76,7 +76,7 @@ _ComputePrototypeRootOverlaySource(const SdfPath &instancer)
     
     return
         HdRetainedContainerDataSource::New(
-            HdXformSchemaTokens->xform,
+            HdXformSchema::GetSchemaToken(),
             HdXformSchema::Builder()
                 .SetResetXformStack(
                     HdRetainedTypedSampledDataSource<bool>::New(
@@ -162,7 +162,7 @@ _MakeUnrenderable(HdSceneIndexPrim * const prim)
     //
     static HdContainerDataSourceHandle const overlaySource =
         HdRetainedContainerDataSource::New(
-            UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo,
+            UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
             HdRetainedContainerDataSource::New(
                 UsdImagingUsdPrimInfoSchemaTokens->niPrototypePath,
                 HdBlockDataSource::New()));

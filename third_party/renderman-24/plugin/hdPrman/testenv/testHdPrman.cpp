@@ -613,9 +613,9 @@ HydraSetupAndRender(
         dynamic_cast<const HdCamera*>(
             hdRenderIndex->GetSprim(HdTokens->camera, cameraInfo.cameraPath));
 
-    hdRenderPassState->SetCameraAndFraming(
-        camera,
-        ComputeFraming(cameraInfo),
+    hdRenderPassState->SetCamera(camera);
+    hdRenderPassState->SetFraming(ComputeFraming(cameraInfo));
+    hdRenderPassState->SetOverrideWindowPolicy(
         { true, _RenderSettingsTokenToConformWindowPolicy(
                                 cameraInfo.aspectRatioConformPolicy) });
 

@@ -87,11 +87,12 @@ HdDataSourceLocatorSet
 UsdImagingPointsAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourcePointsPrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();

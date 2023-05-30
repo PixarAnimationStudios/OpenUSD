@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -42,25 +42,25 @@ TF_DEFINE_PUBLIC_TOKENS(HdDisplayFilterSchemaTokens,
 
 
 HdMaterialNodeSchema
-HdDisplayFilterSchema::GetDisplayFilterResource()
+HdDisplayFilterSchema::GetResource()
 {
     return HdMaterialNodeSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdDisplayFilterSchemaTokens->displayFilterResource));
+        HdDisplayFilterSchemaTokens->resource));
 }
 
 /*static*/
 HdContainerDataSourceHandle
 HdDisplayFilterSchema::BuildRetained(
-        const HdContainerDataSourceHandle &displayFilterResource
+        const HdContainerDataSourceHandle &resource
 )
 {
     TfToken names[1];
     HdDataSourceBaseHandle values[1];
 
     size_t count = 0;
-    if (displayFilterResource) {
-        names[count] = HdDisplayFilterSchemaTokens->displayFilterResource;
-        values[count++] = displayFilterResource;
+    if (resource) {
+        names[count] = HdDisplayFilterSchemaTokens->resource;
+        values[count++] = resource;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -79,6 +79,12 @@ HdDisplayFilterSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdDisplayFilterSchema::GetSchemaToken()
+{
+    return HdDisplayFilterSchemaTokens->displayFilter;
+} 
+/*static*/
 const HdDataSourceLocator &
 HdDisplayFilterSchema::GetDefaultLocator()
 {
@@ -87,11 +93,23 @@ HdDisplayFilterSchema::GetDefaultLocator()
     );
     return locator;
 } 
-HdDisplayFilterSchema::Builder &
-HdDisplayFilterSchema::Builder::SetDisplayFilterResource(
-    const HdContainerDataSourceHandle &displayFilterResource)
+/*static*/
+const HdDataSourceLocator &
+HdDisplayFilterSchema::GetResourceLocator()
 {
-    _displayFilterResource = displayFilterResource;
+    static const HdDataSourceLocator locator(
+        HdDisplayFilterSchemaTokens->displayFilter,
+        HdDisplayFilterSchemaTokens->resource
+    );
+    return locator;
+}
+
+
+HdDisplayFilterSchema::Builder &
+HdDisplayFilterSchema::Builder::SetResource(
+    const HdContainerDataSourceHandle &resource)
+{
+    _resource = resource;
     return *this;
 }
 
@@ -99,7 +117,7 @@ HdContainerDataSourceHandle
 HdDisplayFilterSchema::Builder::Build()
 {
     return HdDisplayFilterSchema::BuildRetained(
-        _displayFilterResource
+        _resource
     );
 }
 

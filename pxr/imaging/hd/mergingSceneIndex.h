@@ -113,6 +113,11 @@ private:
         void PrimsDirtied(
             const HdSceneIndexBase &sender,
             const DirtiedPrimEntries &entries) override;
+
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
     private:
         HdMergingSceneIndex *_owner;
     };

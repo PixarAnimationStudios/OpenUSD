@@ -24,7 +24,7 @@
 #ifndef PXR_USD_IMAGING_NI_INSTANCE_AGGREGATION_SCENE_INDEX_H
 #define PXR_USD_IMAGING_NI_INSTANCE_AGGREGATION_SCENE_INDEX_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
@@ -66,10 +66,10 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///
 /// E.g., when there are no bindings and the prototype is
 /// __Prototype_1, the instancer path will be
-/// __Usd_Prototypes/NoBindings/__Prototype_1.
+/// /UsdNiPropagatesPrototyped/NoBindings/__Prototype_1/UsdNiInstancer.
 /// If there are bindings, a hash will be computed, e.g.,
-/// _Usd_Prototypes/Bindings32f...723/__Prototype_1.
-/// In that case, _Usd_Prototypes/Bindings32f...723 will be a prim with a
+/// /UsdNiPropagatedPrototypes/Bindings32f...723/__Prototype_1/UsdNiInstancer.
+/// In that case, /UsdNiPropagatedPrototypes/Bindings32f...723 will be a prim with a
 /// copy of the bindings from one of the instances with that binding hash.
 ///
 /// For nested instancing, the UsdImaging_NiInstanceAggregationSceneIndex can
@@ -120,7 +120,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///         instance: # Not relevant for rendering,
 ///                   # but useful to translate Usd proxy path for, e.g.,
 ///                   # selection
-///             instancer: /__Usd_Prototypes/NoBindings/__Prototype_1
+///             instancer: /_UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///             prototypeId: 0 # Index into instancer's instanceIndices vector
 ///                            # data source, always 0 since instancer never
 ///                            # has more than one prototype.
@@ -129,17 +129,17 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///                           # The indexed element in VtIntArray was added by
 ///                           # the instance aggregation because of this
 ///                           # instance.
-/// /__Usd_Prototypes
+/// /UsdNiPropagatedPrototypes
+/// /UsdNiPropagatedPrototypes/NoBindings
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
 ///     primType: ""
-/// /__Usd_Prototypes/NoBindings
-///     primType: ""
-/// /__Usd_Prototypes/NoBindings/__Prototype_1
+/// /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///     primType: instancer
 ///     dataSource:
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: [ 0 ]
-///             prototypes: [ /__Usd_Prototypes/NoBindings/__Prototype_1/__Protoype_1 ]
+///             prototypes: [ /UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -168,21 +168,22 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///
 /// /Cube_1
 ///     ... # Similar to above
-/// /__Usd_Prototypes
+/// /UsdNiPropagatedPrototypes
 ///     primType: ""
-/// /__Usd_Prototypes/Binding312...436
+/// /UsdNiPropagatedPrototypes/Binding312...436
 ///     primType: ""
 ///     dataSource:
 ///         materialBinding:
 ///             "": /MyMaterial
-///
-/// /__Usd_Prototypes/Binding312...436/__Prototype_1
+/// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1
+///     primType: ""
+/// /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer
 ///     primType: instancer
 ///     dataSource:
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: 0
-///             prototypes: [ /__Usd_Prototypes/Binding312...436/__Prototype_1/__Protoype_1 ]
+///             prototypes: [ /UsdNiPropagatedPrototypes/Binding312...436/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -221,18 +222,19 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiInstanceAggregationSceneIndex);
 ///     primType: ""
 ///     dataSource:
 ///         instance:
-///             instancer: /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings/__Prototype_1
+///             instancer: /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///             prototypeId: 0
 ///             instanceId: 0
-/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes
-/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings
+/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes
+/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings
+/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1
 ///     primType: ""
-/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings/__Prototype_1
+/// /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer
 ///     primType: instancer
 ///         instancerTopology:
 ///             instanceIndices:
 ///                 i0: [ 0 ]
-///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/__Usd_Prototypes/NoBindings/__Prototype_1__Protoype_1 ]
+///             prototypes: [ /MyPointInstancer/MyPointPrototype/ForInstancer434...256/UsdNiPropagatedPrototypes/NoBindings/__Prototype_1/UsdNiInstancer/__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
 ///             instanceTransform:
@@ -252,17 +254,19 @@ public:
                 inputScene, prototypeRoot));
     }
 
-    USDIMAGING_API
     ~UsdImaging_NiInstanceAggregationSceneIndex() override;
 
-    USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
-    USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
-    USDIMAGING_API
     std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const override;
+
+    // Given a path in this scene index, returns the name of the prototype
+    // if it is a path to an instancer instancing a particular prototype.
+    // If not the path to such an instancer, return empty token.
+    static
+    TfToken GetPrototypeNameFromInstancerPath(const SdfPath &primPath);
 
 private:
     friend class _RetainedSceneIndexObserver;
@@ -281,6 +285,10 @@ private:
         void PrimsRemoved(
             const HdSceneIndexBase &sender,
             const RemovedPrimEntries &entries) override;
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override;
+
     private:
         UsdImaging_NiInstanceAggregationSceneIndex * const _owner;
     };

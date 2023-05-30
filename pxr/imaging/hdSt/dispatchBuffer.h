@@ -123,7 +123,7 @@ public:
         return _bar;
     }
 
-    /// Returns entire buffer as a single HdBufferResource.
+    /// Returns entire buffer as a single HdStBufferResource.
     HdStBufferResourceSharedPtr GetEntireResource() const {
         return _entireResource;
     }

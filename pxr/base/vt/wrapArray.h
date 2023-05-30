@@ -258,8 +258,8 @@ template <typename T>
 void
 setitem_index(VtArray<T> &self, int64_t idx, object value)
 {
-    static const bool tile = true;
-    setArraySlice(self, slice(idx, idx + 1), value, tile);
+    idx = TfPyNormalizeIndex(idx, self.size(), /*throwError=*/true);
+    setArraySlice(self, slice(idx, idx+1), value, /*tile=*/true);
 }
 
 template <typename T>

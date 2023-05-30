@@ -222,7 +222,8 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceMeshPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet locators;
 
@@ -257,7 +258,8 @@ UsdImagingDataSourceMeshPrim::Invalidate(
 
     // Give base classes a chance to invalidate.
     locators.insert(
-        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties));
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType));
     return locators;
 }
 

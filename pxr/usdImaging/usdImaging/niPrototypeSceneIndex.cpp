@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 
+#include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
@@ -60,24 +61,48 @@ _ResetXformToIdentityDataSource()
 }
 
 HdContainerDataSourceHandle
+_InstancedByDataSource(const SdfPath &prototypeRoot)
+{
+    using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+
+    static const DataSource::Handle paths =
+        DataSource::New(
+            { SdfPath::AbsoluteRootPath()
+                  .AppendChild(UsdImagingTokens->niInstancer) });
+
+    return
+        HdInstancedBySchema::Builder()
+            .SetPaths(paths)
+            .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
+            .Build();
+}
+
+HdContainerDataSourceHandle
 _ComputeUnderlaySource(const SdfPath &prototypeRoot)
 {
     if (prototypeRoot.IsEmpty()) {
         return nullptr;
     }
 
-    using DataSource = HdRetainedTypedSampledDataSource<VtArray<SdfPath>>;
+    return
+        HdRetainedContainerDataSource::New(
+            HdInstancedBySchema::GetSchemaToken(),
+            _InstancedByDataSource(prototypeRoot));
+}
+
+HdContainerDataSourceHandle
+_ComputePrototypeRootOverlaySource(const SdfPath &prototypeRoot)
+{
+    if (prototypeRoot.IsEmpty()) {
+        return nullptr;
+    }
 
     return
         HdRetainedContainerDataSource::New(
-            HdInstancedBySchemaTokens->instancedBy,
-            HdInstancedBySchema::Builder()
-                .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
-                .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build(),
-
+            HdInstancedBySchema::GetSchemaToken(),
+            _InstancedByDataSource(prototypeRoot),
             // The prototypes should always be defined at the origin.
-            HdXformSchemaTokens->xform,
+            HdXformSchema::GetSchemaToken(),
             _ResetXformToIdentityDataSource());
 }
 
@@ -98,7 +123,11 @@ UsdImaging_NiPrototypeSceneIndex(
     HdSceneIndexBaseRefPtr const &inputSceneIndex,
     const SdfPath &prototypeRoot)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-  , _underlaySource(_ComputeUnderlaySource(prototypeRoot))
+  , _prototypeRoot(prototypeRoot)
+  , _prototypeRootOverlaySource(
+      _ComputePrototypeRootOverlaySource(prototypeRoot))
+  , _underlaySource(
+      _ComputeUnderlaySource(prototypeRoot))
 {
 }
 
@@ -117,17 +146,30 @@ UsdImaging_NiPrototypeSceneIndex::GetPrim(
         return prim;
     }
 
-    if (primPath.IsAbsoluteRootPath()) {
+    if (_prototypeRoot.IsEmpty()) {
         return prim;
     }
 
-    if (!_underlaySource) {
+    if (!primPath.HasPrefix(_prototypeRoot)) {
         return prim;
     }
 
-    prim.dataSource = HdOverlayContainerDataSource::New(
-        prim.dataSource,
-        _underlaySource);
+    if (primPath.GetPathElementCount() ==
+                    _prototypeRoot.GetPathElementCount()) {
+        // primPath is _prototypeRoot
+        if (_prototypeRootOverlaySource) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                _prototypeRootOverlaySource,
+                prim.dataSource);
+        }
+    } else {
+        // primPath is an ancestor of _prototypeRoot.
+        if (_underlaySource) {
+            prim.dataSource = HdOverlayContainerDataSource::New(
+                prim.dataSource,
+                _underlaySource);
+        }
+    }
 
     return prim;
 }

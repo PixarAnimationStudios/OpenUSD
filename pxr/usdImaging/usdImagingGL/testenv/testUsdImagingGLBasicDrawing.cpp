@@ -97,9 +97,12 @@ My_TestGLDrawing::InitTest()
     _stage = UsdStage::Open(GetStageFilePath(),
         IsEnabledUnloadedAsBounds() ? UsdStage::LoadNone : UsdStage::LoadAll);
 
-    SdfPathVector excludedPaths;
-    _engine.reset(new UsdImagingGLEngine(
-        _stage->GetPseudoRoot().GetPath(), excludedPaths));
+    UsdImagingGLEngine::Parameters parameters;
+    parameters.rootPath = _stage->GetPseudoRoot().GetPath();
+    parameters.displayUnloadedPrimsWithBounds = IsEnabledUnloadedAsBounds();
+
+    _engine = std::make_shared<UsdImagingGLEngine>(parameters);
+
     if (!_GetRenderer().IsEmpty()) {
         if (!_engine->SetRendererPlugin(_GetRenderer())) {
             std::cerr << "Couldn't set renderer plugin: " <<
@@ -238,17 +241,18 @@ My_TestGLDrawing::DrawTest(bool offscreen)
         _engine->SetCameraPath(SdfPath(GetCameraPath()));
     }
 
+    _engine->SetOverrideWindowPolicy({true, GetWindowPolicy()});
+
     const CameraUtilFraming framing(
         GetDisplayWindow(), GetDataWindow(), GetPixelAspectRatio());
     if (framing.IsValid()) {
         _engine->SetRenderBufferSize(GfVec2i(width, height));
         _engine->SetFraming(framing);
-        _engine->SetOverrideWindowPolicy({true, CameraUtilFit});
     } else {
         const GfVec4d viewport(0, 0, width, height);
         _engine->SetRenderViewport(viewport);
     }
- 
+
     UsdImagingGLRenderParams params;
     params.drawMode = GetDrawMode();
     params.enableLighting = IsEnabledTestLighting();
@@ -260,10 +264,6 @@ My_TestGLDrawing::DrawTest(bool offscreen)
     params.showRender = IsShowRender();
     params.showProxy = IsShowProxy();
     params.clearColor = GetClearColor();
-
-    if (IsEnabledUnloadedAsBounds()) {
-        _SetDisplayUnloadedPrimsWithBounds(_engine.get(), true);
-    }
 
     _engine->SetRendererAov(GetRendererAov());
 

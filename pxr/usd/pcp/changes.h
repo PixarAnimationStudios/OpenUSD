@@ -33,7 +33,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
-#include "pxr/base/tf/span.h"
 
 #include <map>
 #include <set>
@@ -165,9 +164,9 @@ private:
 ///
 /// Describes Pcp changes.
 ///
-/// Collects changes to Pcp necessary to reflect changes in Sd.  It does
+/// Collects changes to Pcp necessary to reflect changes in Sdf.  It does
 /// not cause any changes to any Pcp caches, layer stacks, etc;  it only
-/// computes what changes would be necessary to Pcp to reflect the Sd
+/// computes what changes would be necessary to Pcp to reflect the Sdf
 /// changes.
 ///
 class PcpChanges {
@@ -175,15 +174,15 @@ public:
     PCP_API PcpChanges();
     PCP_API ~PcpChanges();
 
-    /// Breaks down \p changes into individual changes on the caches in
-    /// \p caches.  This simply translates data in \p changes into other
-    /// Did...() calls on this object.
+    /// Breaks down \p changes into individual changes on \p cache. This 
+    /// simply translates data in \p changes into other Did...() calls on
+    /// this object.
     ///
     /// Clients will typically call this method once then call \c Apply() or
     /// get the changes using \c GetLayerStackChanges() and
     /// \c GetCacheChanges().
     PCP_API 
-    void DidChange(const TfSpan<const PcpCache*> &caches,
+    void DidChange(const PcpCache* cache,
                    const SdfLayerChangeListVec& changes);
 
     /// Tries to load the sublayer of \p layer at \p sublayerPath.  If
@@ -378,7 +377,7 @@ private:
 
     // Mark the layer stack as having changed.
     void _DidChangeLayerStack(
-        const TfSpan<const PcpCache*>& caches,
+        const PcpCache* cache,
         const PcpLayerStackPtr& layerStack,
         bool requiresLayerStackChange,
         bool requiresLayerStackOffsetsChange,
@@ -389,14 +388,14 @@ private:
     // so that change-processing can determine which other caches it
     // needs to invalidate.
     void _DidChangeLayerStackRelocations(
-        const TfSpan<const PcpCache*>& caches,
-        const PcpLayerStackPtr & layerStack,
+        const PcpCache* cache,
+        const PcpLayerStackPtr& layerStack,
         std::string* debugSummary);
 
     // Register changes to any prim indexes in \p caches that are affected
     // by a change to a layer's resolved path used by \p layerStack.
     void _DidChangeLayerStackResolvedPath(
-        const TfSpan<const PcpCache*>& caches,
+        const PcpCache* cache,
         const PcpLayerStackPtr& layerStack,
         bool requiresLayerStackChange,
         std::string* debugSummary);

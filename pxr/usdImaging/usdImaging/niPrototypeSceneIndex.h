@@ -24,7 +24,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_SCENE_INDEX_H
 #define PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_SCENE_INDEX_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
@@ -34,8 +34,10 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 
 /// \class UsdImaging_NiPrototypeSceneIndex
 ///
-/// A scene index that prepares prim in a Usd prototype
-/// (e.g. /__Prototype_1) to be instanced by an instancer
+/// A scene index that prepares prim in a Usd prototype moved under
+/// /UsdNiInstancer (so that paths that are referring to prims outside
+/// the prototype are not translated later when we re-root the instancer)
+/// (e.g. /UsdNiInstancer/__Prototype_1) to be instanced by an instancer
 /// created by the UsdImaging_InstanceAggregationSceneIndex.
 ///
 /// It forces an empty type on all prims that are instances
@@ -44,7 +46,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 /// sphere, yet we do not want to see this sphere in the render.
 ///
 /// It also adds an instanced by data source with
-/// instancedBy:paths being / and instancedBy:prototypeRoot being
+/// instancedBy:paths being /UsdNiInstancer and instancedBy:prototypeRoot being
 /// the given prototype root. These are only added if they are not
 /// already present. That way, point instancers and prototypes within
 /// native prototypes are handled correctly.
@@ -53,16 +55,13 @@ class UsdImaging_NiPrototypeSceneIndex
             : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    USDIMAGING_API
     static
     UsdImaging_NiPrototypeSceneIndexRefPtr
     New(HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &prototypeRoot);
 
-    USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
-    USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
@@ -81,9 +80,9 @@ private:
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
         const SdfPath &prototypeRoot);
 
-    HdContainerDataSourceHandle const _underlaySource;
-
     const SdfPath _prototypeRoot;
+    HdContainerDataSourceHandle const _prototypeRootOverlaySource;
+    HdContainerDataSourceHandle const _underlaySource;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

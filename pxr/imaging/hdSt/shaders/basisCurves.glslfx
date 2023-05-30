@@ -576,17 +576,13 @@ void main(void)
     float v = .5;
 
     CurveData vertexData = PopulatePeyeAndNeye();
-    vec4 cv0 = vertexData.Peye[0];
-    vec4 cv1 = vertexData.Peye[1];
-    vec4 cv2 = vertexData.Peye[2];
-    vec4 cv3 = vertexData.Peye[3];
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    Coeffs coeffs = evaluateBasis(u, vertexData.Peye);
     vec4 basis = coeffs.basis;
-    vec4 pos = basis[0] * cv0 +
-               basis[1] * cv1 +
-               basis[2] * cv2 +
-               basis[3] * cv3;
+    vec4 pos = basis[0] * vertexData.Peye[0] +
+               basis[1] * vertexData.Peye[1] +
+               basis[2] * vertexData.Peye[2] +
+               basis[3] * vertexData.Peye[3];
 
     outData.Peye = pos;
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
@@ -613,24 +609,27 @@ void main(void)
 --- --------------------------------------------------------------------------
 -- glsl Curves.TessEval.Cubic.Wire
 
-FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
+FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
 
 void main()
 {
     float u = gl_TessCoord.x;
     float v = .5;
 
-    vec4 cv0 = inData[0].Peye;
-    vec4 cv1 = inData[1].Peye;
-    vec4 cv2 = inData[2].Peye;
-    vec4 cv3 = inData[3].Peye;
+    const vec4 cv[4] = {
+        inData[0].Peye,
+        inData[1].Peye,
+        inData[2].Peye,
+        inData[3].Peye,
+    };
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    Coeffs coeffs = evaluateBasis(u, cv);
     vec4 basis = coeffs.basis;
-    vec4 pos = basis[0] * cv0 + 
-         basis[1] * cv1 + 
-         basis[2] * cv2 + 
-         basis[3] * cv3; 
+    vec4 pos = 
+        basis[0] * cv[0] + 
+        basis[1] * cv[1] + 
+        basis[2] * cv[2] + 
+        basis[3] * cv[3]; 
 
     outData.Peye = pos;
     gl_Position = vec4(GetProjectionMatrix() * outData.Peye);
@@ -690,7 +689,7 @@ FORWARD_DECL(
     void evaluate(float u, float v, REF(thread, vec4) position,
                   REF(thread, vec4) tangent, REF(thread, float) width,
                   REF(thread, vec3) normal, CurveData vertexData));
-FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
+FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
 
 // it's the responsibility of orient to store Neye, usually with either
 // the computed normal or the tangent (from which the normal will be computed
@@ -702,7 +701,9 @@ void main()
     u = gl_TessCoord.y;
     v = gl_TessCoord.x;
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    CurveData vertexData = PopulatePeyeAndNeye();
+
+    Coeffs coeffs = evaluateBasis(u, vertexData.Peye);
     vec4 basis = coeffs.basis;
 
     vec4 position;
@@ -710,7 +711,6 @@ void main()
     float rawWidth;
     vec3 normal;
 
-    CurveData vertexData = PopulatePeyeAndNeye();
     evaluate(u, v, position, tangent, rawWidth, normal, vertexData);
     vec3 direction = orient(v, position, tangent, normal);
     MAT4 transform = ApplyInstanceTransform(HdGet_transform());
@@ -802,29 +802,24 @@ void evaluate(float u, float v, REF(thread, vec4) position,
 --- --------------------------------------------------------------------------
 -- glsl Curves.CommonEval.Cubic.Patch
 
-FORWARD_DECL(Coeffs evaluateBasis(float u, float u2, float u3));
+FORWARD_DECL(Coeffs evaluateBasis(float u, const vec4 cv[4]));
 FORWARD_DECL(float evaluateWidths(vec4 basis, float u));
 FORWARD_DECL(vec3 evaluateNormal(vec4 basis, float u, CurveData vertexData));
 
 void evaluate(float u, float v, REF(thread, vec4) position,
               REF(thread, vec4) tangent, REF(thread, float) width,
               REF(thread, vec3) normal, CurveData vertexData) {
-    vec4 p0 = vertexData.Peye[0];
-    vec4 p1 = vertexData.Peye[1];
-    vec4 p2 = vertexData.Peye[2];
-    vec4 p3 = vertexData.Peye[3];
+    Coeffs coeffs = evaluateBasis(u, vertexData.Peye);
 
-    Coeffs coeffs = evaluateBasis(u, u*u, u*u*u);
+    position = coeffs.basis[0] * vertexData.Peye[0] +
+               coeffs.basis[1] * vertexData.Peye[1] +
+               coeffs.basis[2] * vertexData.Peye[2] +
+               coeffs.basis[3] * vertexData.Peye[3];
 
-    position = coeffs.basis[0] * p0 +
-               coeffs.basis[1] * p1 +
-               coeffs.basis[2] * p2 +
-               coeffs.basis[3] * p3;
-
-    tangent = coeffs.tangent_basis[0] * p0 + 
-              coeffs.tangent_basis[1] * p1 +
-              coeffs.tangent_basis[2] * p2 + 
-              coeffs.tangent_basis[3] * p3;
+    tangent = coeffs.tangent_basis[0] * vertexData.Peye[0] + 
+              coeffs.tangent_basis[1] * vertexData.Peye[1] +
+              coeffs.tangent_basis[2] * vertexData.Peye[2] + 
+              coeffs.tangent_basis[3] * vertexData.Peye[3];
 
     width = evaluateWidths(coeffs.basis, u);
     normal = normalize(evaluateNormal(coeffs.basis, u, vertexData));
@@ -996,8 +991,11 @@ vec4 InterpolatePrimvar(vec4 inPv0, vec4 inPv1, vec4 inPv2, vec4 inPv3,
 --- --------------------------------------------------------------------------
 -- glsl Curves.BezierBasis
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(float u, const vec4 cv[4])
 {
+  const float u2 = u*u;
+  const float u3 = u2*u;
+
   vec4 basis; vec4 tangent_basis;
   basis[0] = u3;
   basis[1] = -3.0*u3 + 3.0*u2;
@@ -1016,8 +1014,11 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 --- --------------------------------------------------------------------------
 -- glsl Curves.LinearBasis
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(float u, const vec4 cv[4])
 {
+  const float u2 = u*u;
+  const float u3 = u2*u;
+
   vec4 basis; vec4 tangent_basis;
   basis[0] = u;
   basis[1] = 1.0 - u;
@@ -1036,8 +1037,11 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 --- --------------------------------------------------------------------------
 -- glsl Curves.CatmullRomBasis
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(float u, const vec4 cv[4])
 {
+  const float u2 = u*u;
+  const float u3 = u2*u;
+
   vec4 basis; vec4 tangent_basis;
   basis[0] = 0.5*u3 - 0.5*u2;
   basis[1] = -1.5*u3 + 2.0*u2 + 0.5*u;
@@ -1054,10 +1058,107 @@ Coeffs evaluateBasis(float u, float u2, float u3)
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Curves.CentripetalCatmullRomBasis
+
+Coeffs evaluateBasis(float u, const vec4 cv[4])
+{
+  // centripetal arc-length
+  float d01 = sqrt(length(cv[1] - cv[0]));
+  float d12 = sqrt(length(cv[2] - cv[1]));
+  float d23 = sqrt(length(cv[3] - cv[2]));
+
+  // handling generate CVs.
+  if (d12 < 1.e-4) d12 = 1.;
+  if (d01 < 1.e-4) d01 = d12;
+  if (d23 < 1.e-4) d23 = d12;
+
+  // centripetal reparametrization
+  vec4 w;
+  w[0] = 0.;
+  w[1] = w[0] + d01;
+  w[2] = w[1] + d12;
+  w[3] = w[2] + d23;
+
+  // remap parameter value to reparametrized values.
+  const float t = (1.-u)*w[1] + u*w[2];
+  const float dtdu = w[2] - w[1];
+
+  // coefficients (and derivatives) for recursive evaluation.
+
+  vec2 P01, dP01;
+  vec2 P12, dP12;
+  vec2 P23, dP23;
+  vec2 P012, dP012;
+  vec2 P123, dP123;
+  vec2 P0123, dP0123;
+
+  P01[0] = (w[1] - t) / (w[1] - w[0]);
+  dP01[0] = - dtdu / (w[1] - w[0]);
+  
+  P12[0] = (w[2] - t) / (w[2] - w[1]);
+  dP12[0] = - dtdu / (w[2] - w[1]);
+
+  P23[0] = (w[3] - t) / (w[3] - w[2]);
+  dP23[0] = - dtdu / (w[3] - w[2]);
+  
+  P012[0] = (w[2] - t) / (w[2] - w[0]);
+  dP012[0] = - dtdu / (w[2] - w[0]);
+  
+  P123[0] = (w[3] - t) / (w[3] - w[1]);
+  dP123[0] = - dtdu / (w[3] - w[1]);
+  
+  P0123[0] = (w[2] - t) / (w[2] - w[1]);
+  dP0123[0] = - dtdu / (w[2] - w[1]);
+  
+  P01[1] = 1. - P01[0]; 
+  P12[1] = 1. - P12[0]; 
+  P23[1] = 1. - P23[0]; 
+  P012[1] = 1. - P012[0];
+  P123[1] = 1. - P123[0];
+  P0123[1] = 1. - P0123[0];
+
+  dP01[1] = - dP01[0]; 
+  dP12[1] = - dP12[0]; 
+  dP23[1] = - dP23[0]; 
+  dP012[1] = - dP012[0];
+  dP123[1] = - dP123[0];
+  dP0123[1] = - dP0123[0];
+
+  vec4 basis; 
+  basis[0] = P01[0]*P012[0]*P0123[0];
+  basis[1] = P01[1]*P012[0]*P0123[0] + 
+    P12[0]*P012[1]*P0123[0] + P12[0]*P123[0]*P0123[1];
+  basis[2] = P12[1]*P012[1]*P0123[0] + 
+    P12[1]*P123[0]*P0123[1] + P23[0]*P123[1]*P0123[1];
+  basis[3] = P23[1]*P123[1]*P0123[1];
+
+  vec4 tangent_basis;
+  tangent_basis[0] = dP01[0]*P012[0]*P0123[0] + 
+    P01[0]*dP012[0]*P0123[0] + P01[0]*P012[0]*dP0123[0];
+  tangent_basis[1] = dP01[1]*P012[0]*P0123[0] + 
+    P01[1]*dP012[0]*P0123[0] + P01[1]*P012[0]*dP0123[0] + 
+    dP12[0]*P012[1]*P0123[0] + P12[0]*dP012[1]*P0123[0] + 
+    P12[0]*P012[1]*dP0123[0] + dP12[0]*P123[0]*P0123[1] + 
+    P12[0]*dP123[0]*P0123[1] + P12[0]*P123[0]*dP0123[1];
+  tangent_basis[2] = dP12[1]*P012[1]*P0123[0] + 
+    P12[1]*dP012[1]*P0123[0] + P12[1]*P012[1]*dP0123[0] + 
+    dP12[1]*P123[0]*P0123[1] + P12[1]*dP123[0]*P0123[1] + 
+    P12[1]*P123[0]*dP0123[1] + dP23[0]*P123[1]*P0123[1] + 
+    P23[0]*dP123[1]*P0123[1] + P23[0]*P123[1]*dP0123[1];
+  tangent_basis[3] = dP23[1]*P123[1]*P0123[1] + 
+    P23[1]*dP123[1]*P0123[1] + P23[1]*P123[1]*dP0123[1];
+
+  return Coeffs(basis, tangent_basis);
+}
+
+--- --------------------------------------------------------------------------
 -- glsl Curves.BsplineBasis
 
-Coeffs evaluateBasis(float u, float u2, float u3)
+Coeffs evaluateBasis(float u, const vec4 cv[4])
 {
+  const float u2 = u*u;
+  const float u3 = u2*u;
+  
   vec4 basis; vec4 tangent_basis;
   basis[0] = (1.0/6.0)*u3;
   basis[1] = -0.5*u3 + 0.5*u2 + 0.5*u + (1.0/6.0);

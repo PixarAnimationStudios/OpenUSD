@@ -241,12 +241,13 @@ HdxRenderSetupTask::PrepareCamera(HdRenderIndex* renderIndex)
     HdRenderPassStateSharedPtr const &renderPassState =
             _GetRenderPassState(renderIndex);
 
+    renderPassState->SetCamera(camera);
+    renderPassState->SetOverrideWindowPolicy(_overrideWindowPolicy);
+
     if (_framing.IsValid()) {
-        renderPassState->SetCameraAndFraming(
-            camera, _framing, _overrideWindowPolicy);
+        renderPassState->SetFraming(_framing);
     } else {
-        renderPassState->SetCameraAndViewport(
-            camera, _viewport);
+        renderPassState->SetViewport(_viewport);
     }
 }
 

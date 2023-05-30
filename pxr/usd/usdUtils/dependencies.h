@@ -148,7 +148,7 @@ UsdUtilsCreateNewARKitUsdzPackage(
 /// Any unresolved (layer and non-layer) asset paths are populated in 
 /// \p unresolvedPaths.
 /// 
-/// The input vectors to be populated with the results are are *cleared* before 
+/// The input vectors to be populated with the results are *cleared* before 
 /// any results are added to them.
 /// 
 /// Returns true if the given asset was resolved correctly.

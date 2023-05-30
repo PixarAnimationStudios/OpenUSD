@@ -178,47 +178,39 @@ HdDataSourceMaterialNetworkInterface::GetNodeType(
 HdContainerDataSourceHandle
 HdDataSourceMaterialNetworkInterface::_GetNodeTypeInfo(const TfToken& nodeName) const
 {
-    if (HdContainerDataSourceHandle node = _GetNode(nodeName)) {
-        return HdContainerDataSource::Cast(
-                node->Get(HdMaterialNodeSchemaTokens->renderContextNodeIdentifiers));
+    HdContainerDataSourceHandle const node = _GetNode(nodeName);
+    if (!node) {
+        return nullptr;
     }
-    return nullptr;
+    return HdContainerDataSource::Cast(
+        node->Get(HdMaterialNodeSchemaTokens->nodeTypeInfo));
 }
 
 TfTokenVector
 HdDataSourceMaterialNetworkInterface::GetNodeTypeInfoKeys(
     const TfToken& nodeName) const
 {
-    static const std::string infoNamespacePrefix("info:");
-
-    TfTokenVector ret;
-    if (HdContainerDataSourceHandle nodeTypeInfo
-        = _GetNodeTypeInfo(nodeName)) {
-        for (const TfToken& name : nodeTypeInfo->GetNames()) {
-            const std::string& nameStr = name.GetString();
-            if (!TfStringStartsWith(nameStr, infoNamespacePrefix)) {
-                continue;
-            }
-            const std::string nameWithoutInfo
-                = nameStr.substr(infoNamespacePrefix.size());
-            ret.push_back(TfToken(nameWithoutInfo));
-        }
+    HdContainerDataSourceHandle const nodeTypeInfo = _GetNodeTypeInfo(nodeName);
+    if (!nodeTypeInfo) {
+        return {};
     }
-    return ret;
+    return nodeTypeInfo->GetNames();
 }
 
 VtValue
 HdDataSourceMaterialNetworkInterface::GetNodeTypeInfoValue(
     const TfToken& nodeName, const TfToken& key) const
 {
-    if (HdContainerDataSourceHandle nodeTypeInfo = _GetNodeTypeInfo(nodeName)) {
-        if (HdSampledDataSourceHandle value
-            = HdSampledDataSource::Cast(nodeTypeInfo->Get(TfToken(
-                        TfStringPrintf("info:%s", key.GetText()))))) {
-            return value->GetValue(0.f);
-        }
+    HdContainerDataSourceHandle const nodeTypeInfo = _GetNodeTypeInfo(nodeName);
+    if (!nodeTypeInfo) {
+        return {};
     }
-    return VtValue();
+    HdSampledDataSourceHandle const ds =
+        HdSampledDataSource::Cast(nodeTypeInfo->Get(key));
+    if (!ds) {
+        return {};
+    }
+    return ds->GetValue(0.0f);
 }
 
 TfTokenVector

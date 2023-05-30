@@ -429,7 +429,8 @@ UDIM's.
     * *raw* : Use texture data as it was read from the texture and do not mark
       it as using a specific color space.
 
-    * *sRGB* : Mark texture as sRGB when reading.
+    * *sRGB* : Mark texture as sRGB when reading. The texture will be read using
+      the sRGB transfer curve, but not filtered against the sRGB gamut. 
 
     * *auto* : Check for gamma/color space metadata in the texture file itself;
       if metadata is indicative of sRGB, mark texture as *sRGB* . If no relevant

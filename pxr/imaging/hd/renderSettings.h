@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/bprim.h"
 
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec2f.h"
@@ -151,10 +152,10 @@ public:
     const RenderProducts& GetRenderProducts() const;
 
     HD_API
-    const TfTokenVector& GetIncludedPurposes() const;
+    const VtArray<TfToken>& GetIncludedPurposes() const;
 
     HD_API
-    const TfTokenVector& GetMaterialBindingPurposes() const;
+    const VtArray<TfToken>& GetMaterialBindingPurposes() const;
 
     HD_API
     const TfToken& GetRenderingColorSpace() const;
@@ -198,8 +199,8 @@ private:
     bool _active;
     NamespacedSettings _namespacedSettings;
     RenderProducts _products;
-    TfTokenVector _includedPurposes;
-    TfTokenVector _materialBindingPurposes;
+    VtArray<TfToken> _includedPurposes;
+    VtArray<TfToken> _materialBindingPurposes;
     TfToken _renderingColorSpace;
 };
 

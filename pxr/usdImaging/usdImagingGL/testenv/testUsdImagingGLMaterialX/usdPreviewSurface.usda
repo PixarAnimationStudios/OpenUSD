@@ -40,7 +40,7 @@ def Sphere "ball4" (
 }
 
 def Scope "Materials" {
-    def Material "MaterialX" (
+    def "MaterialX" (
         references = [
             # USD Preview Surface MaterialX Nodes
             @./usd_preview_surface_nodes.mtlx@</MaterialX>,

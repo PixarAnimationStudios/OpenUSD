@@ -24,7 +24,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_PI_PROTOTYPE_SCENE_INDEX_H
 #define PXR_USD_IMAGING_USD_IMAGING_PI_PROTOTYPE_SCENE_INDEX_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 

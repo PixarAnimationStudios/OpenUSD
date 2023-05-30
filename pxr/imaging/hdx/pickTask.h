@@ -59,6 +59,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pickFaces)                      \
     (pickEdges)                      \
     (pickPoints)                     \
+    (pickPointsAndInstances)         \
                                      \
     /* Resolve mode */               \
     (resolveNearestToCamera)         \
@@ -213,6 +214,7 @@ struct HdxPrimOriginInfo
 ///         HdxPickTokens->pickFaces
 ///         HdxPickTokens->pickEdges
 ///         HdxPickTokens->pickPoints
+///         HdxPickTokens->pickPointsAndInstances
 ///
 /// 'resolveMode': Dictates the resolution of which hit(s) are returned in
 ///     'outHits'.

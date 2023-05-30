@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -955,7 +954,7 @@ HdSt_Subdivision::CreateRefineComputationCPU(HdSt_MeshTopology *topology,
         topology, source, osdTopology, interpolation, fvarChannel);
 }
 
-HdComputationSharedPtr
+HdStComputationSharedPtr
 HdSt_Subdivision::CreateRefineComputationGPU(
     HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology,

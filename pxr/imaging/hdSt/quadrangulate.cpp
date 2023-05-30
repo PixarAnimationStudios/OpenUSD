@@ -34,6 +34,7 @@
 #include "pxr/imaging/hd/bufferArrayRange.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/types.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
@@ -571,17 +572,13 @@ HdSt_QuadrangulateComputationGPU::Execute(
         std::static_pointer_cast<HdStBufferArrayRange> (range);
 
     // buffer resources for GPU computation
-    HdBufferResourceSharedPtr primvar_ = range_->GetResource(_name);
-    HdStBufferResourceSharedPtr primvar =
-        std::static_pointer_cast<HdStBufferResource> (primvar_);
+    HdStBufferResourceSharedPtr primvar = range_->GetResource(_name);
 
     HdStBufferArrayRangeSharedPtr quadrangulateTableRange_ =
         std::static_pointer_cast<HdStBufferArrayRange> (quadrangulateTableRange);
 
-    HdBufferResourceSharedPtr quadrangulateTable_ =
-        quadrangulateTableRange_->GetResource();
     HdStBufferResourceSharedPtr quadrangulateTable =
-        std::static_pointer_cast<HdStBufferResource> (quadrangulateTable_);
+        quadrangulateTableRange_->GetResource();
 
     // prepare uniform buffer for GPU computation
     int quadInfoStride = quadInfo->maxNumVert + 2;

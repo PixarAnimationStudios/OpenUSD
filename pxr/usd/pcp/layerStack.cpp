@@ -27,7 +27,6 @@
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
-#include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -36,6 +35,8 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <algorithm>
 #include <iterator>
@@ -50,12 +51,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ////////////////////////////////////////////////////////////////////////
 // Computing layer stacks
 
-// XXX Parallel layer prefetch is disabled until Sd thread-safety issues
-// can be fixed, specifically plugin loading:
+// XXX Parallel layer prefetch is only available in usd-mode, until Sd
+// thread-safety issues can be fixed, specifically plugin loading:
 // - FileFormat plugins
 // - value type plugins for parsing AnimSplines
 TF_DEFINE_ENV_SETTING(
-    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, false,
+    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, true,
     "Enables parallel, threaded pre-fetch of sublayers.");
 
 TF_DEFINE_ENV_SETTING(
@@ -70,6 +71,7 @@ PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled()
 }
 
 struct Pcp_SublayerInfo {
+    Pcp_SublayerInfo() = default;
     Pcp_SublayerInfo(const SdfLayerRefPtr& layer_, const SdfLayerOffset& offset_,
                      double timeCodesPerSecond_)
         : layer(layer_)
@@ -159,8 +161,8 @@ _ApplyOwnedSublayerOrder(
             if (std::distance(first, last) > 1) {
                 PcpErrorInvalidSublayerOwnershipPtr error =
                     PcpErrorInvalidSublayerOwnership::New();
-                error->rootSite = PcpSiteStr(identifier,
-                                             SdfPath::AbsoluteRootPath());
+                error->rootSite = 
+                    PcpSite(identifier, SdfPath::AbsoluteRootPath());
                 error->owner = sessionOwner;
                 error->layer = layer;
                 for (; first != last; ++first) {
@@ -430,11 +432,14 @@ Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
 
 PcpLayerStack::PcpLayerStack(
     const PcpLayerStackIdentifier& identifier,
-    const std::string &fileFormatTarget,
-    const Pcp_MutedLayers &mutedLayers,
-    bool isUsd) :
-    _identifier(identifier),
-    _isUsd(isUsd)
+    const Pcp_LayerStackRegistry& registry)
+    : _identifier(identifier)
+    , _isUsd(registry._IsUsd())
+
+    // Note that we do not set the _registry member here. This will be
+    // done by Pcp_LayerStackRegistry itself when it decides to register
+    // this layer stack.
+    // , _registry(TfCreateWeakPtr(&registry))
 {
     TfAutoMallocTag2 tag("Pcp", "PcpLayerStack::PcpLayerStack");
     TRACE_FUNCTION();
@@ -443,7 +448,7 @@ PcpLayerStack::PcpLayerStack(
         return;
     }
 
-    _Compute(fileFormatTarget, mutedLayers);
+    _Compute(registry._GetFileFormatTarget(), registry._GetMutedLayers());
 
     if (!_isUsd) {
         Pcp_ComputeRelocationsForLayerStack(_layers, 
@@ -739,21 +744,6 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
     const SdfLayer::FileFormatArguments layerArgs =
         Pcp_GetArgumentsForFileFormatTarget(fileFormatTarget);
 
-    // Do a parallel pre-fetch request of the shot layer stack. This
-    // resolves and parses the layers, retaining them until we do a
-    // serial pass below to stitch them into a layer tree. The post-pass
-    // is serial in order to get deterministic ordering of errors,
-    // and to keep the layer stack composition algorithm as simple as
-    // possible while doing the high-latency work up front in parallel.
-    PcpLayerPrefetchRequest prefetch;
-    if (TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH)) {
-        if (_identifier.sessionLayer) {
-            prefetch.RequestSublayerStack(_identifier.sessionLayer, layerArgs);
-        }
-        prefetch.RequestSublayerStack(_identifier.rootLayer, layerArgs);
-        prefetch.Run(mutedLayers);
-    }
-
     // The session owner.  This will be empty if there is no session owner
     // in the session layer.
     std::string sessionOwner;
@@ -888,59 +878,98 @@ PcpLayerStack::_BuildLayerStack(
     _mapFunctions.push_back(mapFunction);
         
     // Recurse over sublayers to build subtrees.
-    Pcp_SublayerInfoVector sublayerInfo;
     const vector<string> &sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
-    for(size_t i=0, numSublayers = sublayers.size(); i<numSublayers; i++) {
+    size_t numSublayers = sublayers.size();
+    std::vector<bool> isMuted(numSublayers);
+    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
+    std::vector<std::string> errCommentary(numSublayers);
+
+    // Compute mutedness first.
+    for(size_t i=0; i != numSublayers; ++i) {
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {
             _mutedAssetPaths.insert(canonicalMutedPath);
+            isMuted[i] = true;
+        }
+    }
+
+    std::vector<_SublayerSourceInfo> localSourceInfo(numSublayers);
+    
+    // Open all the layers in parallel.
+    WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
+        // Cannot use parallelism for non-USD clients due to thread-safety
+        // issues in file format plugins & value readers.
+        const bool goParallel = _isUsd && numSublayers > 1 &&
+            TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH);
+
+        for (size_t i=0; i != numSublayers; ++i) {
+            if (isMuted[i]) {
+                continue;
+            }
+            auto code = [&, i]() {
+                // Resolve and open sublayer.
+                TfErrorMark m;
+                
+                SdfLayer::FileFormatArguments localArgs;
+                const SdfLayer::FileFormatArguments& layerArgs = 
+                    Pcp_GetArgumentsForFileFormatTarget(
+                        sublayers[i], &defaultLayerArgs, &localArgs);
+                
+                // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
+                // but we want to keep track of the final sublayer path after
+                // anchoring it to the layer.
+                string sublayerPath = SdfComputeAssetPathRelativeToLayer(
+                    layer, sublayers[i]);
+                sublayerRefPtrs[i] =
+                    SdfLayer::FindOrOpen(sublayerPath, layerArgs);
+                
+                localSourceInfo[i] =
+                    _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
+                
+                // Produce commentary for eventual PcpError created below.
+                if (!m.IsClean()) {
+                    vector<string> commentary;
+                    for (auto const &err: m) {
+                        commentary.push_back(err.GetCommentary());
+                    }
+                    m.Clear();
+                    errCommentary[i] = TfStringJoin(commentary.begin(),
+                                                    commentary.end(), "; ");
+                }
+            };
+            if (goParallel) {
+                wd.Run(code);
+            }
+            else {
+                code();
+            }
+        }
+    });
+
+    Pcp_SublayerInfoVector sublayerInfo;
+    for (size_t i=0; i != numSublayers; ++i) {
+        if (isMuted[i]) {
             continue;
         }
-
-        // Resolve and open sublayer.
-        TfErrorMark m;
-
-        SdfLayer::FileFormatArguments localArgs;
-        const SdfLayer::FileFormatArguments& layerArgs = 
-            Pcp_GetArgumentsForFileFormatTarget(
-                sublayers[i], &defaultLayerArgs, &localArgs);
-
-        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer, but we
-        // want to keep track of the final sublayer path after anchoring it
-        // to the layer.
-        string sublayerPath = SdfComputeAssetPathRelativeToLayer(
-            layer, sublayers[i]);
-        SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
-
-        _sublayerSourceInfo.emplace_back(layer, sublayers[i], sublayerPath);
-
-        if (!sublayer) {
+        if (!sublayerRefPtrs[i]) {
             PcpErrorInvalidSublayerPathPtr err = 
                 PcpErrorInvalidSublayerPath::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer = layer;
-            err->sublayerPath = sublayerPath;
-            if (!m.IsClean()) {
-                vector<string> commentary;
-                for (auto const &err: m) {
-                    commentary.push_back(err.GetCommentary());
-                }
-                m.Clear();
-                err->messages = TfStringJoin(commentary.begin(),
-                                             commentary.end(), "; ");
-            }
-            errors->push_back(err);
+            err->sublayerPath = localSourceInfo[i].computedSublayerPath;
+            err->messages = std::move(errCommentary[i]);
+            errors->push_back(std::move(err));
             continue;
         }
 
         // Check for cycles.
-        if (seenLayers->count(sublayer)) {
+        if (seenLayers->count(sublayerRefPtrs[i])) {
             PcpErrorSublayerCyclePtr err = PcpErrorSublayerCycle::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer = layer;
-            err->sublayer = sublayer;
+            err->sublayer = sublayerRefPtrs[i];
             errors->push_back(err);
             continue;
         }
@@ -954,7 +983,7 @@ PcpLayerStack::_BuildLayerStack(
                 PcpErrorInvalidSublayerOffset::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer       = layer;
-            err->sublayer    = sublayer;
+            err->sublayer    = sublayerRefPtrs[i];
             err->offset      = sublayerOffset;
             errors->push_back(err);
             sublayerOffset = SdfLayerOffset();
@@ -962,7 +991,7 @@ PcpLayerStack::_BuildLayerStack(
 
         // Apply the scale from computed layer TCPS to sublayer TCPS to sublayer
         // layer offset.
-        const double sublayerTcps = sublayer->GetTimeCodesPerSecond();
+        const double sublayerTcps = sublayerRefPtrs[i]->GetTimeCodesPerSecond();
         if (!PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled() &&
             layerTcps != sublayerTcps) {
             sublayerOffset.SetScale(sublayerOffset.GetScale() * 
@@ -974,9 +1003,21 @@ PcpLayerStack::_BuildLayerStack(
         sublayerOffset = offset * sublayerOffset;
 
         // Store the info for later recursion.
-        sublayerInfo.push_back(Pcp_SublayerInfo(
-            sublayer, sublayerOffset, sublayerTcps));
+        sublayerInfo.emplace_back(
+            sublayerRefPtrs[i], sublayerOffset, sublayerTcps);
     }
+
+    // Append localSourceInfo items into _sublayerSourceInfo, skipping any for
+    // which don't have a layer (these entries correspond to layers that were
+    // muted).
+    _sublayerSourceInfo.reserve(
+        _sublayerSourceInfo.size() + localSourceInfo.size());
+    for (_SublayerSourceInfo &localInfo: localSourceInfo) {
+        if (localInfo.layer) {
+            _sublayerSourceInfo.push_back(std::move(localInfo));
+        }
+    }
+    localSourceInfo.clear();
 
     // Reorder sublayers according to sessionOwner.
     _ApplyOwnedSublayerOrder(_identifier, layer, sessionOwner, &sublayerInfo,

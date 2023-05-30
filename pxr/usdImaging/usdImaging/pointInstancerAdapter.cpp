@@ -112,11 +112,12 @@ HdDataSourceLocatorSet
 UsdImagingPointInstancerAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourcePointInstancerPrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
     }
     
     return HdDataSourceLocatorSet();
@@ -1030,6 +1031,42 @@ UsdImagingPointInstancerAdapter::MarkVisibilityDirty(
                                                HdChangeTracker::DirtyVisibility;
 
         index->MarkInstancerDirty(cachePath, visibilityDirty);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkLightParamsDirty(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        SdfPath instancerPath = cachePath.GetParentPath();
+        const _ProtoPrim& proto = _GetProtoPrim(instancerPath, cachePath);
+        
+        proto.adapter->MarkLightParamsDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits lightParamsDirty =
+            HdChangeTracker::DirtyParams;
+        index->MarkInstancerDirty(cachePath, lightParamsDirty);
+    }
+}
+
+void
+UsdImagingPointInstancerAdapter::MarkCollectionsDirty(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    if (IsChildPath(cachePath)) {
+        SdfPath instancerPath = cachePath.GetParentPath();
+        const _ProtoPrim& proto = _GetProtoPrim(instancerPath, cachePath);
+
+        proto.adapter->MarkCollectionsDirty(prim, cachePath, index);
+    } else {
+        static const HdDirtyBits collectionsDirty =
+            HdChangeTracker::DirtyCategories;
+        index->MarkInstancerDirty(cachePath, collectionsDirty);
     }
 }
 
@@ -1958,6 +1995,39 @@ UsdImagingPointInstancerAdapter::GetMaterialId(UsdPrim const& usdPrim,
         return GetMaterialUsdPath(instanceProxyPrim);
     }
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetLightParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        const _ProtoPrim proto = _GetProtoPrim(prim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetLightParamValue(
+            protoPrim, cachePath, paramName, time);
+    }
+    return BaseAdapter::GetLightParamValue(prim, cachePath, paramName, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingPointInstancerAdapter::GetMaterialResource(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdTimeCode time) const
+{
+    if (IsChildPath(cachePath)) {
+        // Delegate to prototype adapter and USD prim.
+        const _ProtoPrim& proto = _GetProtoPrim(prim.GetPath(), cachePath);
+        UsdPrim protoPrim = _GetProtoUsdPrim(proto);
+        return proto.adapter->GetMaterialResource(protoPrim, cachePath, time);
+    }
+    return BaseAdapter::GetMaterialResource(prim, cachePath, time);
 }
 
 /*virtual*/

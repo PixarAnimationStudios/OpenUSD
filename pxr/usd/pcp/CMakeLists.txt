@@ -31,7 +31,6 @@ pxr_library(pcp
         errors
         instanceKey
         iterator
-        layerPrefetchRequest
         layerStack
         layerStackIdentifier
         mapExpression
@@ -243,6 +242,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpDynamicFileFormatPlugin.testenv
     DEST testPcpDynamicFileFormatPlugin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpDynamicFileFormatPlugin.testenv
+    DEST testPcpDynamicFileFormatPlugin_AttributeInputs
 )
 
 pxr_install_test_dir(
@@ -1835,6 +1839,16 @@ pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
     EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=0
+)
+
+pxr_register_test(testPcpDynamicFileFormatPlugin_AttributeInputs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=1
 )
 
 pxr_register_test(testPcpStreamingLayerReload

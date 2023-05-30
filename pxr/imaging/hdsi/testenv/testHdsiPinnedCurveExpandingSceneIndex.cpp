@@ -312,7 +312,7 @@ _GetAuthoredAndExpectedTestCurves(
         VtFloatArray eVaryingPrimvar;
         VtIntArray eVaryingPrimvarIndices;
 
-        if (basis == HdTokens->bSpline) {
+        if (basis == HdTokens->bspline) {
             // Topology & points
             if (!useCurveIndices) {
                 ePoints = {
@@ -556,7 +556,7 @@ TestPinnedCurves(bool hasCurveIndices, bool hasIndexedPrimvar)
         // 1. Pinned bspline
         const auto curves =
             _GetAuthoredAndExpectedTestCurves(
-                HdTokens->bSpline, hasCurveIndices, hasIndexedPrimvar);
+                HdTokens->bspline, hasCurveIndices, hasIndexedPrimvar);
 
         HdRetainedSceneIndexRefPtr retainedScene = HdRetainedSceneIndex::New();
         retainedScene->AddPrims({{

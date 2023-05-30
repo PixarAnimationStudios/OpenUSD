@@ -52,6 +52,8 @@ pxr_library(sdf
         pathTable
         payload
         pool
+        predicateExpression
+        predicateLibrary
         primSpec
         propertySpec
         proxyPolicies
@@ -64,6 +66,7 @@ pxr_library(sdf
         siteUtils
         spec
         specType
+        stageVariableExpression
         textFileFormat
         timeCode
         tokens
@@ -73,7 +76,6 @@ pxr_library(sdf
         variantSpec
 
         # Flex/Bison generated code
-        path.tab
         textFileFormat.tab
    
     PYTHON_PUBLIC_CLASSES
@@ -90,7 +92,10 @@ pxr_library(sdf
         api.h
         accessorHelpers.h
         declareSpec.h
+        invoke.hpp
         layerHints.h
+        predicateExpressionParser.h
+        predicateProgram.h
         schemaTypeRegistration.h
 
     PRIVATE_CLASSES
@@ -106,7 +111,8 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
-        pathParser
+        stageVariableExpressionImpl
+        stageVariableExpressionParser
         subLayerListEditor
         textParserContext
         valueTypeRegistry
@@ -118,7 +124,6 @@ pxr_library(sdf
 
     CPPFILES
         # Flex/Bison generated code
-        path.lex.cpp
         textFileFormat.lex.cpp
 
     PYTHON_CPPFILES
@@ -143,12 +148,14 @@ pxr_library(sdf
         wrapOpaqueValue.cpp
         wrapPath.cpp
         wrapPayload.cpp
+        wrapPredicateExpression.cpp
         wrapPrimSpec.cpp
         wrapPropertySpec.cpp
         wrapPseudoRootSpec.cpp
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
+        wrapStageVariableExpression.cpp
         wrapTimeCode.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
@@ -164,6 +171,7 @@ pxr_library(sdf
     DOXYGEN_FILES
         overview.dox
         doxygen/fileFormatPlugin.dox
+        doxygen/stageVariableExpressions.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires
@@ -184,7 +192,7 @@ else()
             --srcDir ${CMAKE_CURRENT_SOURCE_DIR}
             --bison ${BISON_EXECUTABLE}
             --flex ${FLEX_EXECUTABLE}
-            --bases textFileFormat path 
+            --bases textFileFormat
             --validate
     )
 endif()
@@ -209,6 +217,7 @@ pxr_test_scripts(
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
+    testenv/testSdfStageVariableExpression.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
 )
@@ -317,6 +326,14 @@ pxr_build_test(testSdfPathThreading
         tf
     CPPFILES
         testenv/testSdfPathThreading.cpp
+)
+
+pxr_build_test(testSdfPredicateExpression_Cpp
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfPredicateExpression.cpp
 )
 
 pxr_install_test_dir(
@@ -476,6 +493,11 @@ pxr_register_test(testSdfPathTable
 pxr_register_test(testSdfPathThreading
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathThreading"
 )
+
+pxr_register_test(testSdfPredicateExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPredicateExpression_Cpp"
+)
+
 pxr_register_test(testSdfPayload
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPayload"
@@ -491,6 +513,10 @@ pxr_register_test(testSdfReference
 pxr_register_test(testSdfSpecHash
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
+)
+pxr_register_test(testSdfStageVariableExpression
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfStageVariableExpression"
 )
 pxr_register_test(testSdfTimeCode
     PYTHON

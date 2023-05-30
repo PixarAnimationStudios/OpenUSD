@@ -56,6 +56,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -292,6 +293,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdLight::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
+        if (bits & HdLight::DirtyInstancer) {
+            set->append(HdInstancedBySchema::GetDefaultLocator());
+        }
     } else if (primType == HdPrimTypeTokens->drawTarget) {
         const static HdDataSourceLocator locator(
                 HdPrimTypeTokens->drawTarget);
@@ -315,6 +319,10 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
         if (bits & HdExtComputation::DirtyOutputDesc) {
             set->append(HdExtComputationSchema::GetOutputsLocator());
+        }
+    } else if (primType == HdPrimTypeTokens->integrator) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            set->append(HdIntegratorSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (bits & HdChangeTracker::DirtyParams) {
@@ -753,6 +761,9 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdCamera::DirtyTransform;
         }
     } else if (HdPrimTypeIsLight(primType)) {
+        if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdLight::DirtyInstancer;
+        }
         if (_FindLocator(HdLightSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyParams |
                 HdLight::DirtyShadowParams |
@@ -815,6 +826,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                 } while(it != end && it->Intersects(
                             HdExtComputationSchema::GetDefaultLocator()));
             }
+        }
+    } else if (primType == HdPrimTypeTokens->integrator) {
+        if (_FindLocator(HdIntegratorSchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (_FindLocator(HdSampleFilterSchema::GetDefaultLocator(), end, &it)) {

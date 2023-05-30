@@ -34,6 +34,7 @@
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
+#include "pxr/usd/usd/primDefinition.h"
 #include "pxr/usd/usd/primFlags.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -130,7 +131,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// exercized with large scenes, as flattening defeats some of the benefits of
 /// referenced scene description, and may produce very large results, 
 /// especially in file formats that do not support data de-duplication, like
-/// the usda ASCII format!
+/// the usda text format!
 ///
 /// \section Usd_SessionLayer Stage Session Layers
 ///
@@ -140,9 +141,13 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// considered as permanent mutations to be recorded upon export.  A very 
 /// common use of session layers is to make variant selections, to pick a
 /// specific LOD or shading variation, for example.  The session layer is
-/// also frequently used to perform interactive vising/invsning of geometry
-/// and assets in the scene.   A session layer, if present, contributes to a 
-/// UsdStage's identity, for purposes of stage-caching, etc.
+/// also frequently used to override the visibility of geometry 
+/// and assets in the scene.  A session layer, if present, contributes to a 
+/// UsdStage's identity, for purposes of stage-caching, etc. 
+///
+/// To edit content in a session layer, get the layer's edit target using 
+/// stage->GetEditTargetForLocalLayer(stage->GetSessionLayer()) and set that
+/// target in the stage by calling SetEditTarget() or creating a UsdEditContext.
 ///
 class UsdStage : public TfRefBase, public TfWeakBase {
 public:
@@ -1644,21 +1649,28 @@ private:
     static std::vector<std::pair<SdfPrimSpecHandle, SdfLayerOffset>> 
     _GetPrimStackWithLayerOffsets(const UsdPrim &prim);
 
-    SdfPropertySpecHandle
-    _GetSchemaPropertySpec(const UsdPrim &prim, const TfToken &propName) const;
+    UsdPrimDefinition::Property
+    _GetSchemaProperty(const UsdProperty &prop) const;
 
-    SdfPropertySpecHandle
-    _GetSchemaPropertySpec(const UsdProperty &prop) const;
+    UsdPrimDefinition::Attribute
+    _GetSchemaAttribute(const UsdAttribute &attr) const;
 
-    template <class PropType>
-    SdfHandle<PropType>
-    _GetSchemaPropertySpec(const UsdProperty &prop) const;
+    UsdPrimDefinition::Relationship
+    _GetSchemaRelationship(const UsdRelationship &rel) const;
 
     SdfAttributeSpecHandle
-    _GetSchemaAttributeSpec(const UsdAttribute &attr) const;
+    _CreateNewSpecFromSchemaAttribute(
+        const UsdPrim &prim,
+        const UsdPrimDefinition::Attribute &attrDef);
 
     SdfRelationshipSpecHandle
-    _GetSchemaRelationshipSpec(const UsdRelationship &rel) const;
+    _CreateNewSpecFromSchemaRelationship(
+        const UsdPrim &prim,
+        const UsdPrimDefinition::Relationship &relDef);
+
+    template <class PropType> 
+    SdfHandle<PropType>
+    _CreateNewPropertySpecFromSchema(const UsdProperty &prop);
 
     SdfPrimSpecHandle
     _CreatePrimSpecForEditing(const UsdPrim& prim);

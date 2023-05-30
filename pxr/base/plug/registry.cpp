@@ -36,6 +36,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -135,6 +136,9 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo,
     NewPluginsVec newPlugins;
     {
         Plug_TaskArena taskArena;
+        // Drop the GIL in case we have it since we're taking a lock on _mutex
+        // below, and other python threads could reenter here.
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
         // XXX -- Is this mutex really needed?
         std::lock_guard<std::mutex> lock(_mutex);
         WorkWithScopedParallelism([&]() {
@@ -271,6 +275,12 @@ PlugPlugin::_RegisterAllPlugins()
 {
     PlugPluginPtrVector result;
 
+    // Drop the GIL here -- the _RegisterPlugins call below will drop the GIL,
+    // meaning that some python caller could arrive here and wait on the
+    // call_once while holding the GIL.  When _RegisterPlugins attempts to
+    // reacquire the GIL, we'll deadlock.
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+    
     static std::once_flag once;
     std::call_once(once, [&result](){
         PlugRegistry &registry = PlugRegistry::GetInstance();

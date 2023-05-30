@@ -23,6 +23,14 @@
 #
 from __future__ import print_function
 
+# Check whether this script is being run under Python 2 first. Otherwise,
+# any Python 3-only code below will cause the script to fail with an
+# unhelpful error message.
+import sys
+if sys.version_info.major == 2:
+    sys.exit("ERROR: USD does not support Python 2. Use a supported version "
+             "of Python 3 instead.")
+
 import argparse
 import codecs
 import contextlib
@@ -1576,14 +1584,14 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.4.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.7.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
-
-        cmakeOptions += buildArgs;
-
+        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
+                        '-DMATERIALX_BUILD_TESTS=OFF'
+        ]
+        cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
@@ -2089,13 +2097,13 @@ subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
 group.add_argument("--draco-location", type=str,
                    help="Directory where Draco is installed.")
 
-group = parser.add_argument_group(title="MaterialX Plugin Options")
+group = parser.add_argument_group(title="MaterialX Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
-                      default=False,
-                      help="Build MaterialX plugin for USD")
+                      default=True,
+                      help="Enable MaterialX support (default)")
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
-                      help="Do not build MaterialX plugin for USD (default)")
+                      help="Disable MaterialX support")
 
 args = parser.parse_args()
 

@@ -41,6 +41,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// cannot hold any information, cannot be parsed, and cannot be serialized to
 /// a layer.
 ///
+/// SdfOpaqueValue is also the type associated with group attributes. A group 
+/// attribute is an opaque attribute that represents a group of other 
+/// properties.
+///
 class SdfOpaqueValue final {};
 
 inline bool

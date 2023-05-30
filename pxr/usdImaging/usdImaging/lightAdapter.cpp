@@ -54,9 +54,7 @@ bool UsdImagingLightAdapter::IsEnabledSceneLights() {
     return _v;
 }
 
-UsdImagingLightAdapter::~UsdImagingLightAdapter() 
-{
-}
+UsdImagingLightAdapter::~UsdImagingLightAdapter() = default;
 
 HdContainerDataSourceHandle
 UsdImagingLightAdapter::GetImagingSubprimData(
@@ -76,9 +74,11 @@ HdDataSourceLocatorSet
 UsdImagingLightAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    UsdImagingPropertyInvalidationType invalidationType)
 {
-    return UsdImagingDataSourcePrim::Invalidate(prim, subprim, properties);
+    return UsdImagingDataSourcePrim::Invalidate(
+        prim, subprim, properties, invalidationType);
 }
 
 bool
@@ -93,11 +93,7 @@ UsdImagingLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->light, prim.GetPath(), prim);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-    _RegisterLightCollections(prim);
-
-    return prim.GetPath();
+    return _AddSprim(HdPrimTypeTokens->light, prim, index, instancerContext);
 }
 
 void
@@ -305,6 +301,65 @@ UsdImagingLightAdapter::GetMaterialResource(UsdPrim const &prim,
         time);
 
     return VtValue(networkMap);
+}
+
+/* static */
+SdfPath
+UsdImagingLightAdapter::_ResolveCachePath(
+    const SdfPath& usdPath,
+    const UsdImagingInstancerContext* instancerContext)
+{
+    SdfPath cachePath = usdPath;
+
+    if (instancerContext != nullptr) {
+        SdfPath const& instancer = instancerContext->instancerCachePath;
+        TfToken const& childName = instancerContext->childName;
+
+        if (!instancer.IsEmpty()) {
+            cachePath = instancer;
+        }
+        if (!childName.IsEmpty()) {
+            cachePath = cachePath.AppendProperty(childName);
+        }
+    }
+    return cachePath;
+}
+
+SdfPath
+UsdImagingLightAdapter::_AddSprim(
+    const TfToken& primType,
+    const UsdPrim& usdPrim,
+    UsdImagingIndexProxy* index,
+    const UsdImagingInstancerContext* instancerContext)
+{
+    SdfPath cachePath = _ResolveCachePath(usdPrim.GetPath(), instancerContext);
+
+    // For an instanced light prim, this is the instancer prim.
+    // For a non-instanced light prim, this is just the light prim.
+    UsdPrim proxyPrim = usdPrim.GetStage()->GetPrimAtPath(
+        cachePath.GetAbsoluteRootOrPrimPath());
+
+    if (instancerContext != nullptr) {
+        index->InsertSprim(
+            primType, cachePath, proxyPrim, instancerContext->instancerAdapter);
+        index->RemovePrimInfoDependency(cachePath);
+        index->AddDependency(cachePath, usdPrim);
+    } else {
+        index->InsertSprim(primType, cachePath, proxyPrim);
+    }
+    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
+    _RegisterLightCollections(proxyPrim);
+    return cachePath;
+}
+
+void
+UsdImagingLightAdapter::_RemoveSprim(
+    const TfToken& primType,
+    const SdfPath& cachePath,
+    UsdImagingIndexProxy* index)
+{
+    _UnregisterLightCollections(cachePath);
+    index->RemoveSprim(primType, cachePath);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

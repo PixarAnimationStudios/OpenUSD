@@ -265,8 +265,7 @@ HdStLight::_ApproximateAreaLight(SdfPath const &id,
     }
 
     // See glf/shaders/simpleLighting.glslfx for attenuation math
-    if (_lightType == HdPrimTypeTokens->distantLight ||
-        _lightType == HdPrimTypeTokens->domeLight) {
+    if (_lightType == HdPrimTypeTokens->distantLight) {
         l.SetAttenuation(GfVec3f(0.0f, 0.0f, 0.0f)); // none
     } else {
         l.SetAttenuation(GfVec3f(0.0f, 0.0f, 1.0f)); // distance^-2
