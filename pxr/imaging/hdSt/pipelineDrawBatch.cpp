@@ -71,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (dispatchBuffer)
     (drawCullInput)
+    (drawBuffer)
 
     (drawIndirect)
     (drawIndirectCull)
@@ -1428,7 +1429,7 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             
             state.binder.GetBufferBindingDesc(
                     &bindingsDesc,
-                    _tokens->drawCullInput,
+                    _tokens->drawBuffer,
                     _dispatchBuffer->GetEntireResource(),
                     _dispatchBuffer->GetEntireResource()->GetOffset());
              
@@ -1573,33 +1574,8 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
 
             if (cmd->common.count && cmd->common.instanceCount) {
                 if (useMeshShaders) {
-                    struct Uniforms {
-                        uint32_t drawIndexCount;
-                        uint32_t drawCommandNumUints;
-                        uint32_t drawCoordOffset;
-                        uint32_t drawCoordIOffset;
-                    };
-                    
-                    if (useMeshShaders) {
-                        // set instanced cull parameters
-                        Uniforms cullParams;
-                        //cullParams.cullMatrix = GfMatrix4f(renderPassState->GetCullMatrix());
-                        cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
-                        cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
-                        cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
-
-                        gfxCmds->SetConstantValues(
-                            psoHandle, 0, 27,
-                            sizeof(Uniforms), &cullParams);
-                    }
-                    gfxCmds->DrawIndexedMesh(
-                        indexBuffer->GetHandle(),
-                        cmd->common.count,
-                        indexBufferByteOffset,
-                        cmd->common.baseVertex,
-                        cmd->common.instanceCount,
-                        cmd->common.baseInstance,
-                        i);
+                    //We don't support direct drawing with mesh shaders.
+                    return;
                 } else {
                 if (useMetalTessellation) {
                     gfxCmds->DrawIndexed(

@@ -327,7 +327,7 @@ int GetDrawingField(uint off, uint drawCommandIndex)
 
     offset += off;
 
-    return int(drawCullInput[offset]);return int(drawCullInput[offset]);
+    return int(drawBuffer[offset]);return int(drawBuffer[offset]);
 }
 
 const int indexCountOffset = 0;
@@ -374,7 +374,7 @@ void main(void)
 ["vec4", "Peye"],
 ["vec3", "Neye"]
 ],
-["uniform block", "Uniforms", "meshObjectParams",
+["uniform block", "Uniforms", "meshletParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"],
@@ -416,41 +416,7 @@ uint32_t gl_BaseInstance;
 uint32_t baseVertex;
 uint32_t baseIndex;
 
-half2 getScreenPos(float4 hPos)
-{
-  hPos /= hPos.w;
-  return half2((hPos.xy * 0.5 + 0.5) * (renderPassState.viewport.zw - renderPassState.viewport.xy));
-}
 
-bool testTriangle(half2 a, half2 b, half2 c, half winding)
-{
-#if ENABLE_BACKFACE_CULLING
-  // back face culling
-  const half2 ab = b.xy - a.xy;
-  const half2 ac = c.xy - a.xy;
-  const half cross_product = ab.x * ac.y - ab.y * ac.x;
-
-  //possibly needs reversal
-  //cross_product = -cross_product;
-  if (cross_product * winding < 0.0f) {return false;}
-#endif
-
-  return true;
-}
-
-uint getCullBits(vec4 hPos)
-{
-    uint cullBits = 0;
-    cullBits |= hPos.x < -hPos.w ?  1 : 0;
-    cullBits |= hPos.x >  hPos.w ?  2 : 0;
-    cullBits |= hPos.y < -hPos.w ?  4 : 0;
-    cullBits |= hPos.y >  hPos.w ?  8 : 0;
-    //cullBits |= hPos.z < -hPos.w ? 16 : 0;
-    cullBits |= hPos.z <  0.0f      ? 16 : 0;
-    cullBits |= hPos.z >  hPos.w ? 32 : 0;
-    cullBits |= hPos.w <= 0.0f      ? 64 : 0;
-    return cullBits;
-}
 hd_drawingCoord dcMemb;
 void main(void) {
     dcMemb = GetDrawingCoordFull();
@@ -477,9 +443,7 @@ void main(void) {
         SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
         primitive_id = (ind)/3;
         hd_VertexID = ind;
-
-        uint totalIndOff = (ind % 3);
-        globalIndex = (indices + (usedBaseIndex))[ind];
+        globalIndex = (indices + (baseIndex))[ind];
     }
     else
     {
@@ -507,15 +471,11 @@ void main(void) {
         vertexOut.Neye = Neye0; // normalized
 
         vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
-	    vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
+        vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
         ProcessPrimvarsOut(vertexOut);
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
         gsPatchCoord = GetPatchCoord(index);
         ApplyClipPlanes(vertexOut.Peye);
-
-#if ENABLE_BACKFACE_CULLING == 1
-        indexListOptimizerContext.positions[hd_LocalIndexID] = getScreenPos(vertexOut.position);
-#endif
     }
 
     ThreadgroupBarrier();
@@ -529,19 +489,8 @@ void main(void) {
         const uchar localIndex1 = indexListOptimizerContext.localIndices[baseIndex+1];
         const uchar localIndex2 = indexListOptimizerContext.localIndices[baseIndex+2];
 
-#if ENABLE_BACKFACE_CULLING == 1
-        const bool visible = testTriangle(
-            indexListOptimizerContext.positions[localIndex0],
-            indexListOptimizerContext.positions[localIndex1],
-            indexListOptimizerContext.positions[localIndex2],
-            1.0);
-
-        const uint visiblePrimitivesThreadMask = (uint) (simd_vote::vote_t) simd_ballot(visible);
-        const uint outputPrimitiveCount = popcount(visiblePrimitivesThreadMask);
-#else
         const bool visible = true;
         const uint outputPrimitiveCount = inputPrimitiveCount;
-#endif
 
         if( hd_LocalIndexID == 0 )
         {
@@ -550,11 +499,8 @@ void main(void) {
 
         if( visible )
         {
-#if ENABLE_BACKFACE_CULLING == 1
-            const uint primitiveId = popcount(visiblePrimitivesThreadMask & ((1 << hd_LocalIndexID) - 1));
-#else
+
             const uint primitiveId = hd_LocalIndexID;
-#endif
 
             PrimOut primOut;
             mesh.set_primitive(primitiveId, primOut);
@@ -1699,7 +1645,7 @@ vec4 GetInterpolatedPatchCoord()
         ["vec4", "Peye"],
         ["vec3", "Neye"]
     ],
-["uniform block", "Uniforms", "ulocCullParams",
+["uniform block", "Uniforms", "fragmentParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"],

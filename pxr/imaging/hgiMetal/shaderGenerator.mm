@@ -375,7 +375,6 @@ _ComputeHeader(id<MTLDevice> device, const HgiShaderFunctionDesc &descriptor)
                << "#define ACTUAL_OBJECT_THREADS     MAX_OBJECT_THREADS\n"
                << "#define MAX_INDICES                (" << descriptor.meshDescriptor.maxMeshletVertexCount << ")\n"
                << "#define MAX_PRIMITIVES            (((MAX_INDICES) + 2) / 3)\n"
-               << "#define ENABLE_BACKFACE_CULLING    (0)\n"
                << "#endif // MESH_SHADING_CONFIG_H\n";
     }
     

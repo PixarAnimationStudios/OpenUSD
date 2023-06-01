@@ -917,7 +917,7 @@ HdSt_ResourceBinder::ResolveBindings(
     // generated.
     
     if (useMeshShaders) {
-        auto name = TfToken("drawCullInput");
+        auto name = TfToken("drawBuffer");
         HdStBinding cullInput = locator.GetBinding(HdStBinding::SSBO, name);
         _bindingMap[name] = cullInput;
         MetaData::BindingDeclaration b(name,

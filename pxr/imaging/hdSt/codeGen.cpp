@@ -4578,7 +4578,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "  const int base = "
         << "hd_drawIndex.drawId * drawIndexStride + drawIndexOffset;\n"
         << "  return int("
-        << "drawCullInput"
+        << "drawBuffer"
         << "[base + offset]);\n"
         << "}\n";
         
@@ -4618,7 +4618,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "  const int base = "
         << "payload.drawCommandIndexPayload * drawIndexStride + drawIndexOffset;\n"
         << "  return int("
-        << "drawCullInput"
+        << "drawBuffer"
         << "[base + offset]);\n"
         << "}\n";
     }
@@ -4636,7 +4636,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "  const int base = "
         << "drawIndexVS * drawIndexStride + drawIndexOffset;\n"
         << "  return int("
-        << "drawCullInput"
+        << "drawBuffer"
         << "[base + offset]);\n"
         << "}\n";
     }
