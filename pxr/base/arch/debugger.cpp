@@ -34,7 +34,9 @@
 #if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
 #include "pxr/base/arch/inttypes.h"
 #include <sys/types.h>
+#if !defined(ARCH_OS_IOS)
 #include <sys/ptrace.h>
+#endif
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <cstdio>
