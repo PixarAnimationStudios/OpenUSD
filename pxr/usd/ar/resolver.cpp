@@ -70,7 +70,7 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     // Plugin metadata key for package resolver extensions.
     (extensions)
     
-    // Plugin metadata key for resolver URI schemes.
+    // Plugin metadata key for resolver URI/IRI schemes.
     (uriSchemes)
 
     // Plugin metadata keys for specifying resolver functionality.
@@ -85,7 +85,7 @@ TF_DEFINE_ENV_SETTING(
 
 TF_DEFINE_ENV_SETTING(
     PXR_AR_DISABLE_PLUGIN_URI_RESOLVERS, false,
-    "Disables plugin URI resolver implementations.");
+    "Disables plugin URI/IRI resolver implementations.");
 
 static TfStaticData<std::string> _preferredResolver;
 
@@ -114,7 +114,7 @@ public:
     // TfType for the resolver implementation.
     TfType type;
 
-    // URI schemes associated with the resolver implementation.
+    // URI/IRI schemes associated with the resolver implementation.
     std::vector<std::string> uriSchemes;
 
     // Whether this resolver can be used as a primary resolver.
@@ -210,7 +210,7 @@ _GetAvailableResolvers()
     std::vector<_ResolverInfo> resolvers;
     resolvers.reserve(sortedResolverTypes.size());
 
-    // Fill in the URI schemes associated with each available resolver.
+    // Fill in the URI/IRI schemes associated with each available resolver.
     for (const TfType& resolverType : sortedResolverTypes) {
         const PlugPluginPtr plugin = _GetPluginForType(resolverType);
         if (!plugin) {
@@ -506,12 +506,13 @@ public:
         const ArResolvedPath& anchorAssetPath,
         const CreateIdentifierFn& createIdentifierFn) const
     {
-        // If assetPath has a recognized URI scheme, we assume it's an absolute
-        // URI per RFC 3986 sec 4.3 and delegate to the associated URI resolver
-        // to handle this query.
+        // If assetPath has a recognized URI/IRI scheme, we assume it's an
+        // absolute identifier per RFC 3986 sec 4.3 (RFC 3987 sec 2.2 for IRIs)
+        // and delegate to the associated scheme's resolver to handle this
+        // query.
         //
-        // If path does not have a recognized URI scheme, we delegate to the
-        // resolver for the anchorAssetPath. Although we could implement URI
+        // If path does not have a recognized URI/IRI scheme, we delegate to
+        // the resolver for the anchorAssetPath. Although we could implement
         // anchoring per RFC 3986 sec 5 here, we want to give implementations
         // the chance to do additional manipulations.
         ArResolver* resolver = _GetURIResolver(assetPath);
@@ -589,11 +590,11 @@ public:
         return resolver.GetExtension(path);
     }
 
-    // The primary resolver and the URI resolvers all participate
+    // The primary resolver and the URI/IRI resolvers all participate
     // in context binding and may have context-related data to store
     // away. To accommodate this, _Resolve stores away a vector of
     // VtValues where each element corresponds to the primary resolver
-    // or a URI resolver.
+    // or a URI/IRI resolver.
     using _ResolverContextData = std::vector<VtValue>;
 
     void _BindContext(
@@ -1109,8 +1110,9 @@ private:
             uriSchemes.reserve(resolverInfo.uriSchemes.size());
 
             for (std::string uriScheme : resolverInfo.uriSchemes) {
-                // Per RFC 3986 sec 3.1 schemes are case-insensitive.
-                // Force all schemes to lower-case to support this.
+                // Per RFC 3986 sec 3.1 / RFC 3987 sec 5.3.2.1 schemes are
+                // case-insensitive. Force all schemes to lower-case to support
+                // this.
                 uriScheme = TfStringToLower(uriScheme);
 
                 if (const _ResolverSharedPtr* existingResolver =
@@ -1241,7 +1243,7 @@ private:
             return nullptr;
         }
 
-        // Search for the first ":" character delimiting a URI scheme in
+        // Search for the first ":" character delimiting a URI/IRI scheme in
         // the given asset path. As an optimization, we only search the
         // first _maxURISchemeLength + 1 (to accommodate the ":") characters.
         const size_t numSearchChars =
@@ -1262,9 +1264,10 @@ private:
         const std::string& scheme,
         const _ResolverInfo** info = nullptr) const
     {
-        // Per RFC 3986 sec 3.1 schemes are case-insensitive. The schemes
-        // stored in _uriResolvers are always stored in lower-case, so
-        // convert our candidate scheme to lower case as well.
+        // Per RFC 3986 sec 3.1 / RFC 3987 5.3.2.1 schemes are
+        // case-insensitive. The schemes stored in _uriResolvers are always
+        // stored in lower-case, so convert our candidate scheme to lower case
+        // as well.
         const _ResolverSharedPtr* uriResolver = 
             TfMapLookupPtr(_uriResolvers, TfStringToLower(scheme));
         if (uriResolver) {
@@ -1344,7 +1347,7 @@ private:
         return resolveFn(path);
     }
 
-    // Primary and URI Resolvers --------------------
+    // Primary and URI/IRI Resolvers --------------------
 
     class _Resolver
         : public _PluginResolver<ArResolver, Ar_ResolverFactoryBase>
@@ -1368,7 +1371,7 @@ private:
     // Primary Resolver
     _ResolverSharedPtr _resolver;
 
-    // URI Resolvers
+    // URI/IRI Resolvers
     std::unordered_map<std::string, _ResolverSharedPtr> _uriResolvers;
     size_t _maxURISchemeLength;
 
