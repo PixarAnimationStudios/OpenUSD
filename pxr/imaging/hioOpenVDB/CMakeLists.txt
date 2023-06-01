@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hioOpenVDB)
 
-if (NOT ${PXR_BUILD_GPU_SUPPORT})
+if (NOT ${PXR_BUILD_GPU_SUPPORT} AND NOT APPLEIOS)
     message(STATUS
             "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
     return()

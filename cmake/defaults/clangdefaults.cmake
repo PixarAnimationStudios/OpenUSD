@@ -26,6 +26,14 @@ include(gccclangshareddefaults)
 
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
 
+if (APPLE)
+    _disable_warning("comma")
+    _disable_warning("deprecated-register")
+    _disable_warning("documentation")
+    _disable_warning("deprecated-declarations")
+    _disable_warning("documentation-deprecated-sync")
+endif()
+
 # clang annoyingly warns about the -pthread option if it's only linking.
 if(CMAKE_USE_PTHREADS_INIT)
     _disable_warning("unused-command-line-argument")

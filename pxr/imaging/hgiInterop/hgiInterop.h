@@ -100,11 +100,11 @@ private:
     HgiInterop & operator=(const HgiInterop&) = delete;
     HgiInterop(const HgiInterop&) = delete;
 
-#if defined(PXR_METAL_SUPPORT_ENABLED)
+#if defined(PXR_METAL_SUPPORT_ENABLED) && !defined(ARCH_OS_IOS)
     std::unique_ptr<HgiInteropMetal> _metalToOpenGL;
 #elif defined(PXR_VULKAN_SUPPORT_ENABLED)
     std::unique_ptr<HgiInteropVulkan> _vulkanToOpenGL;
-#else
+#elif !defined(ARCH_OS_IOS)
     std::unique_ptr<HgiInteropOpenGL> _openGLToOpenGL;
 #endif
 };
