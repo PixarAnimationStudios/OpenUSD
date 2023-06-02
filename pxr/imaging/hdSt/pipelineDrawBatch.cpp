@@ -134,6 +134,9 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     _useDrawIndexed = static_cast<bool>(drawItem->GetTopologyRange());
     _useInstancing  = static_cast<bool>(drawItem->GetInstanceIndexRange());
     _useGpuCulling  = _allowGpuFrustumCulling && IsEnabledGPUFrustumCulling();
+    _allowIndirectCommandEncoding =
+        _allowIndirectCommandEncoding &&
+        !drawItem->GetGeometricShader()->GetUseMeshShaders();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling.

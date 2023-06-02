@@ -64,21 +64,9 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
         if (binding.buffer) {
             HgiMetalBuffer* mtlBuffer =
                 static_cast<HgiMetalBuffer*>(binding.buffer.Get());
-            [encoder setVertexBuffer:mtlBuffer->GetBufferId()
-                              offset:binding.byteOffset
-                             atIndex:binding.index];
-            //TODO Thor maybe not need all
-            /*
-            [encoder
-                setObjectBuffer:mtlBuffer->GetBufferId()
-             offset:binding.byteOffset
-            atIndex:binding.index];
-            [encoder
-                setMeshBuffer:mtlBuffer->GetBufferId()
-             offset:binding.byteOffset
-            atIndex:binding.index];
-             */
-             
+                [encoder setVertexBuffer:mtlBuffer->GetBufferId()
+                                  offset:binding.byteOffset
+                                 atIndex:binding.index];
         }
     }
 }
