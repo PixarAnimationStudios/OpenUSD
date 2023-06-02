@@ -73,6 +73,7 @@ HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
     : HdBprim(id)
     , _active(false)
+    , _settingsVersion(1)
 {
 }
 
@@ -88,6 +89,12 @@ const HdRenderSettings::NamespacedSettings&
 HdRenderSettings::GetNamespacedSettings() const
 {
     return _namespacedSettings;
+}
+
+unsigned int
+HdRenderSettings::GetSettingsVersion() const
+ {
+    return _settingsVersion;
 }
 
 const HdRenderSettings::RenderProducts&
@@ -135,6 +142,7 @@ HdRenderSettings::Sync(
             GetId(), HdRenderSettingsPrimTokens->namespacedSettings);
         if (vSettings.IsHolding<VtDictionary>()) {
             _namespacedSettings = vSettings.UncheckedGet<VtDictionary>();
+            _settingsVersion++;
         }
     }
 

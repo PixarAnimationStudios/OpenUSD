@@ -39,7 +39,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
-/// Abstract hydra prim backing render settings scene description.
+/// Hydra prim backing render settings scene description.
 /// While it is a state prim (Sprim) in spirit, it is made to be a Bprim to
 /// ensure that it is sync'd prior to Sprims and Rprims to allow render setting 
 /// opinions to be discovered and inform the sync process of those prims.
@@ -149,6 +149,9 @@ public:
     const NamespacedSettings& GetNamespacedSettings() const;
 
     HD_API
+    unsigned int GetSettingsVersion() const;
+
+    HD_API
     const RenderProducts& GetRenderProducts() const;
 
     HD_API
@@ -198,6 +201,7 @@ private:
 
     bool _active;
     NamespacedSettings _namespacedSettings;
+    unsigned int _settingsVersion;
     RenderProducts _products;
     VtArray<TfToken> _includedPurposes;
     VtArray<TfToken> _materialBindingPurposes;
