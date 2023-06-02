@@ -4798,8 +4798,6 @@ HdSt_CodeGen::_GenerateDrawingCoord(
             genAttr << "void SetCulledInstanceIndex(uint instance) "
                     "{ /*no-op*/ }\n";
         }
-        _genCS << "hd_instanceIndex GetInstanceIndex() {"
-               << "  hd_instanceIndex r; r.indices[0] = 0; return r; }\n";
     }
 
     if (!_hasCS) {
