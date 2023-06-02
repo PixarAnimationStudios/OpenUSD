@@ -104,5 +104,3 @@ void wrapLayerStack()
         // TODO: repr, eq, etc.
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(PcpLayerStack)

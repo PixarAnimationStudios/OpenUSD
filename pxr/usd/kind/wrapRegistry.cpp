@@ -51,5 +51,3 @@ void wrapRegistry()
         .staticmethod("IsA")
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(KindRegistry)
