@@ -69,6 +69,8 @@ HdMergingSceneIndex::AddInputScene(
     const HdSceneIndexBaseRefPtr &inputScene,
     const SdfPath &activeInputSceneRoot)
 {
+    TRACE_FUNCTION();
+
     if (!inputScene) {
         return;
     }
@@ -111,6 +113,8 @@ HdMergingSceneIndex::AddInputScene(
 void
 HdMergingSceneIndex::RemoveInputScene(const HdSceneIndexBaseRefPtr &sceneIndex)
 {
+    TRACE_FUNCTION();
+
     for (_InputEntries::iterator it = _inputs.begin(); it != _inputs.end();
             ++it) {
         if (sceneIndex == it->sceneIndex) {
