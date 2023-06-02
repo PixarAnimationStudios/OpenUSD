@@ -833,7 +833,6 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     // cache the offset needed for compute culling.
     _drawCoordOffset = traits.drawingCoord0_offset / sizeof(uint32_t);
-    _drawCoordIOffset = traits.drawingCoordI_offset / sizeof(uint32_t);
 
     // cache the location of patchBaseVertex for tessellated patch drawing.
     _patchBaseVertexByteOffset = traits.patchBaseVertex_offset;
@@ -1492,7 +1491,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 uint32_t drawIndexCount;
                 uint32_t drawCommandNumUints;
                 uint32_t drawCoordOffset;
-                uint32_t drawCoordIOffset;
             };
 
             if (useMeshShaders) {
@@ -1500,7 +1498,6 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
                 Uniforms cullParams;
                 cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
                 cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
-                cullParams.drawCoordIOffset = uint32_t(_drawCoordIOffset);
 
                 gfxCmds->SetConstantValues(
                         psoHandle, 0, 27,
@@ -2023,7 +2020,6 @@ HdSt_PipelineDrawBatch::_CreateCullingProgram(
         _cullingProgram.SetGeometricShader(cullShader);
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
                                       resourceRegistry);
-
         _dirtyCullingProgram = false;
     }
 }

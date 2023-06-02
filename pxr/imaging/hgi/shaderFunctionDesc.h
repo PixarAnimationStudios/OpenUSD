@@ -325,18 +325,37 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
-//TODO Thor add comments
+/// \struct HgiShaderFunctionMeshDesc
+///
+/// Describes a mesh shader's function description
+///
+/// <ul>
+/// <li>meshTopology:
+///   The type of topology</li>
+/// <li>maxMeshletVertexCount
+///   Max number of vertices per meshlet in shader</li>
+/// <li>maxPrimitiveCount
+///   Max number of primitives in shader</li>
+/// <li>maxTotalThreadsPerObjectThreadgroup
+///   Max number of threads per object threadgroup</li>
+/// <li>maxTotalThreadsPerMeshletThreadgroup:
+///   Maximum total threads per meshlet threadgroup</li>
+/// <li>maxTotalThreadgroupsPerMeshObject:
+///   Maximum total threadgroups per mesh object shader</li>
+/// <li>maxTotalThreadgroupsPerMeshlet:
+///   Max total threadgroups per meshlet shader</li>
+/// </ul>
+///
 struct HgiShaderFunctionMeshDesc
 {
     enum class MeshTopology { Point, Line, Triangle, None };
     MeshTopology meshTopology = MeshTopology::None;
-    uint32_t maxMeshletVertexCount = 255;
-    uint32_t maxPrimitiveCount = 85;
-    uint32_t maxTotalThreadsPerObjectThreadgroup = 512;
-    uint32_t maxTotalThreadsPerMeshletThreadgroup = 512;
-    uint32_t maxTotalThreadgroupsPerMeshObject = 64;
-    uint32_t maxTotalThreadgroupsPerMeshlet = 64;
-    uint32_t targetPrimitiveCount = 1;
+    uint32_t maxMeshletVertexCount;
+    uint32_t maxPrimitiveCount;
+    uint32_t maxTotalThreadsPerObjectThreadgroup;
+    uint32_t maxTotalThreadsPerMeshletThreadgroup;
+    uint32_t maxTotalThreadgroupsPerMeshObject;
+    uint32_t maxTotalThreadgroupsPerMeshlet;
 };
 
 HGI_API

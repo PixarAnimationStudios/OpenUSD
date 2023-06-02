@@ -313,8 +313,7 @@ void main(void)
 ["uniform block", "Uniforms", "meshObjectParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ]
 ]
 
@@ -377,8 +376,7 @@ void main(void)
 ["uniform block", "Uniforms", "meshletParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ],
 ["out", "vec4", "gsPatchCoord"]
 ]
@@ -1648,8 +1646,7 @@ vec4 GetInterpolatedPatchCoord()
 ["uniform block", "Uniforms", "fragmentParams",
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
-["uint", "drawCoordOffset"],
-["uint", "drawCoordIOffset"]
+["uint", "drawCoordOffset"]
 ]
 ]
 
@@ -1712,7 +1709,7 @@ void main(void)
     // Normalize Neye after rasterizer interpolation.
     if (length(Neye) > 0.0) {
         Neye = normalize(Neye);
-    }   
+    }
     // Give the shader key a chance to override the normal.
     Neye = GetNormal(Neye, 0);
     // Orient the normal for shading.
