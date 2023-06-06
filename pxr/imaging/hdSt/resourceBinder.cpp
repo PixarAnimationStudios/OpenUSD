@@ -29,6 +29,7 @@
 #include "pxr/imaging/hdSt/bufferResource.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/drawItem.h"
+#include "pxr/imaging/hdSt/geometricShader.h"
 #include "pxr/imaging/hdSt/materialNetworkShader.h"
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/textureBinder.h"
@@ -199,7 +200,11 @@ HdSt_ResourceBinder::ResolveBindings(
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-
+    bool useMeshShaders = false;
+    if (drawItem->GetGeometricShader()->GetUseMeshShaders()) {
+        useMeshShaders = true;
+    }
+    
     if (!TF_VERIFY(metaDataOut)) return;
 
     const bool bindlessBuffersEnabled = 
@@ -219,6 +224,11 @@ HdSt_ResourceBinder::ResolveBindings(
         structBufferBindingType = HdStBinding::BINDLESS_UNIFORM;
     } else {
         structBufferBindingType = HdStBinding::SSBO;
+    }
+    
+    HdStBinding::Type vertexAttrBindingType = HdStBinding::VERTEX_ATTR;
+    if (useMeshShaders) {
+        vertexAttrBindingType = HdStBinding::SSBO;
     }
 
     metaDataOut->drawingCoordBufferBinding = dcBinding;
@@ -327,7 +337,7 @@ HdSt_ResourceBinder::ResolveBindings(
             TfToken const& name = it->first;
             TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
             HdStBinding vertexPrimvarBinding =
-                locator.GetBinding(HdStBinding::VERTEX_ATTR, name);
+                locator.GetBinding(vertexAttrBindingType, name);
             _bindingMap[name] = vertexPrimvarBinding;
 
             HdTupleType valueType = it->second->GetTupleType();
@@ -383,7 +393,7 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBufferResourceSharedPtr const& resource = it->second;
 
             if (name == HdTokens->indices) {
-                if (isMetal && drawItem->GetVaryingPrimvarRange()) {
+                if (isMetal && (drawItem->GetVaryingPrimvarRange() || drawItem->GetGeometricShader()->GetUseMeshShaders())) {
                     // Bind index buffer as an SSBO so that we can
                     // access varying data by index.
                     HdStBinding const binding =
@@ -1171,7 +1181,7 @@ HdSt_ResourceBinder::GetTextureBindingDesc(
     HgiTextureBindDesc texelDesc;
     texelDesc.stageUsage =
         HgiShaderStageGeometry | HgiShaderStageFragment |
-        HgiShaderStagePostTessellationVertex;
+        HgiShaderStagePostTessellationVertex | HgiShaderStageMeshlet;
     texelDesc.textures = { texelTexture };
     texelDesc.samplers = { texelSampler };
     texelDesc.resourceType = HgiBindResourceTypeCombinedSamplerImage;
@@ -1662,6 +1672,8 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
+    boost::hash_combine(hash, indexBufferBinding.binding.GetValue());
+    boost::hash_combine(hash, indexBufferBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
     boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
 

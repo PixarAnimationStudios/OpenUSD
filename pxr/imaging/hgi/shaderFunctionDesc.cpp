@@ -394,6 +394,7 @@ HgiShaderFunctionAddConstantParam(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
+    paramDesc.isPointerToValue = false;
     
     desc->constantParams.push_back(std::move(paramDesc));
 }
@@ -409,6 +410,7 @@ HgiShaderFunctionAddStageInput(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
+    paramDesc.isPointerToValue = false;
 
     desc->stageInputs.push_back(std::move(paramDesc));
 }
@@ -419,6 +421,25 @@ HgiShaderFunctionAddStageInput(
         HgiShaderFunctionParamDesc const &paramDesc)
 {
     functionDesc->stageInputs.push_back(paramDesc);
+}
+
+/// Adds a field to descriptor to given shader function payload's descriptor.
+HGI_API
+void
+HgiShaderFunctionAddPayloadMember(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t arraySize) {
+    HgiShaderFunctionParamDesc paramDesc;
+    paramDesc.nameInShader = nameInShader;
+    paramDesc.type = type;
+    paramDesc.arraySize = std::to_string(arraySize);
+    if (arraySize < 1) {
+        paramDesc.arraySize = "";
+    }
+    paramDesc.isPointerToValue = false;
+    desc->payloadMembers.push_back(std::move(paramDesc));
 }
 
 void
@@ -432,6 +453,7 @@ HgiShaderFunctionAddGlobalVariable(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.arraySize = arraySize;
+    paramDesc.isPointerToValue = false;
     desc->stageGlobalMembers.push_back(std::move(paramDesc));
 }
 
@@ -446,6 +468,7 @@ HgiShaderFunctionAddStageOutput(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.role = role;
+    paramDesc.isPointerToValue = false;
 
     desc->stageOutputs.push_back(std::move(paramDesc));
 }
@@ -461,6 +484,7 @@ HgiShaderFunctionAddStageOutput(
     paramDesc.nameInShader = nameInShader;
     paramDesc.type = type;
     paramDesc.location = location;
+    paramDesc.isPointerToValue = false;
 
     desc->stageOutputs.push_back(std::move(paramDesc));
 }

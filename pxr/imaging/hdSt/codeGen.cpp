@@ -1482,6 +1482,8 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
         HdShaderTokens->fragmentShader,
         HdShaderTokens->postTessControlShader,
         HdShaderTokens->postTessVertexShader,
+        HdShaderTokens->meshObjectShader,
+        HdShaderTokens->meshletShader,
         HdShaderTokens->computeShader,
     };
 

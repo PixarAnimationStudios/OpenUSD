@@ -127,6 +127,15 @@ public:
         return _ptvsSource;
     }
 
+    /// Return the generated mesh object shader source
+    const std::string &GetMeshObjectShaderSource() const {
+        return _mosSource;
+    }
+
+    const std::string &GetMeshletShaderSource() const {
+        return _msSource;
+    }
+
     /// Return the pointer of metadata to be populated by resource binder.
     HdSt_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
@@ -203,6 +212,8 @@ private:
     std::string _csSource;
     std::string _ptcsSource;
     std::string _ptvsSource;
+    std::string _mosSource;
+    std::string _msSource;
 
     bool _hasVS;
     bool _hasTCS;
