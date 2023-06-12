@@ -38,10 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
     (bboxLocalMax)                              \
     (bbox)                                      \
     (bezier)                                    \
-    (bSpline)                                   \
+    (bspline)                                   \
     (blurScale)                                 \
     (camera)                                    \
     (catmullRom)                                \
+    (centripetalCatmullRom)                     \
     (collection)                                \
     (computeShader)                             \
     (coordSysBindings)                          \
@@ -77,8 +78,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (linear)                                    \
     (lightLink)                                 \
     (lightFilterLink)                           \
+    (lightFilterType)                           \
     (meshLight)                                 \
     (materialParams)                            \
+    (materialSyncMode)                          \
     (nonlinearSampleCount)                      \
     (nonperiodic)                               \
     (normals)                                   \
@@ -111,7 +114,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (velocities)                                \
     (visibility)                                \
     (widths)                                    \
-    (isLight)
+    (isLight)                                   \
+                                                \
+    /* Legacy tokens. */                        \
+                                                \
+    /* bSpline is a legacy alias so that */     \
+    /* render delegates can compile without */  \
+    /* code change. The new token for */        \
+    /* bspline follows USD and has no */        \
+    /* capital letters. */                      \
+    ((bSpline, "bspline"))
 
 #define HD_INSTANCER_TOKENS                     \
     (culledInstanceIndices)                     \
@@ -143,6 +155,16 @@ PXR_NAMESPACE_OPEN_SCOPE
     (front) \
     (backUnlessDoubleSided) \
     (frontUnlessDoubleSided)
+
+#define HD_MODEL_DRAWMODE_TOKENS                \
+    (inherited)                                 \
+    (origin)                                    \
+    (bounds)                                    \
+    (cards)                                     \
+    ((default_, "default"))                     \
+    (cross)                                     \
+    (box)                                       \
+    (fromTexture)     
 
 #define HD_PERF_TOKENS                          \
     (adjacencyBufSize)                          \
@@ -254,7 +276,9 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cube)                                      \
     (cylinder)                                  \
     (mesh)                                      \
+    (nurbsPatch)                                \
     (basisCurves)                               \
+    (nurbsCurves)                               \
     (points)                                    \
     (sphere)                                    \
     (volume)                                    \
@@ -267,6 +291,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (coordSys)                                  \
     (instancer)                                 \
     (instance)                                  \
+    (integrator)                                \
     (sampleFilter)                              \
     (displayFilter)                             \
     /* Sprims Lights */                         \
@@ -404,8 +429,11 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
 
 #define HD_RENDER_SETTINGS_PRIM_TOKENS                \
     (active)                                          \
-    (settings)                                        \
-    (renderProducts)
+    (namespacedSettings)                              \
+    (renderProducts)                                  \
+    (includedPurposes)                                \
+    (materialBindingPurposes)                         \
+    (renderingColorSpace)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
@@ -418,6 +446,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdTokens, HD_API, HD_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdInstancerTokens, HD_API, HD_INSTANCER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdReprTokens, HD_API, HD_REPR_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdCullStyleTokens, HD_API, HD_CULLSTYLE_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdModelDrawModeTokens, HD_API,
+                         HD_MODEL_DRAWMODE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdPerfTokens, HD_API, HD_PERF_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdShaderTokens, HD_API, HD_SHADER_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialTagTokens, HD_API, HD_MATERIALTAG_TOKENS);

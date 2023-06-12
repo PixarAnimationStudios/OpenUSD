@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/nurbsCurvesAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceNurbsCurves.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/primvarUtils.h"
@@ -38,7 +39,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingNurbsCurvesAdapter Adapter;
@@ -46,9 +46,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingNurbsCurvesAdapter::~UsdImagingNurbsCurvesAdapter() 
-{
-}
+UsdImagingNurbsCurvesAdapter::~UsdImagingNurbsCurvesAdapter() = default;
 
 bool
 UsdImagingNurbsCurvesAdapter::IsSupported(
@@ -357,6 +355,51 @@ UsdImagingNurbsCurvesAdapter::Get(UsdPrim const& prim,
     }
 
     return BaseAdapter::Get(prim, cachePath, key, time, outIndices);
+}
+
+TfTokenVector
+UsdImagingNurbsCurvesAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingNurbsCurvesAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->nurbsCurves;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingNurbsCurvesAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceNurbsCurvesPrim::New(
+            prim.GetPath(), prim, stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingNurbsCurvesAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceNurbsCurvesPrim::Invalidate(
+            prim, subprim, properties, invalidationType);
+    }
+
+    return HdDataSourceLocatorSet();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

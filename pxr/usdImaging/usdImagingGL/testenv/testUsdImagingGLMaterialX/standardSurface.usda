@@ -59,7 +59,7 @@ def Sphere "ball6" (
 
 
 def Scope "Materials" {
-    def Material "MaterialX" (
+    def "MaterialX" (
         references = [
             # Standard Surface MaterialX Nodes
             @./standard_surface_nodes.mtlx@</MaterialX>,

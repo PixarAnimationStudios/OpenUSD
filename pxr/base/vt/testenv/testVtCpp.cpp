@@ -219,6 +219,13 @@ static void testArray() {
 
         TF_AXIOM(array.size() == 5);
 
+        array.resize(10, 9.99);
+        TF_AXIOM(array.size() == 10);
+        TF_AXIOM(array[5] == 9.99 &&
+                 array[6] == 9.99 &&
+                 array[7] == 9.99 &&
+                 array[8] == 9.99 &&
+                 array[9] == 9.99);
     }
 
     {
@@ -1549,6 +1556,9 @@ static void
 testValueHash()
 {
     static_assert(VtIsHashable<int>(), "");
+    static_assert(VtIsHashable<double>(), "");
+    static_assert(VtIsHashable<GfVec3f>(), "");
+    static_assert(VtIsHashable<std::string>(), "");
     static_assert(!VtIsHashable<_Unhashable>(), "");
 
     VtValue vHashable{1};
@@ -1572,6 +1582,14 @@ testValueHash()
         TF_AXIOM(!m.IsClean());
         m.Clear();
     }
+}
+
+static void
+testArrayHash()
+{
+    VtArray<int> array = {1, 2, 3, 4, 5, 10, 100};
+    TF_AXIOM(TfHash()(array) == TfHash()(array));
+    TF_AXIOM(TfHash()(array) == TfHash()(VtArray<int>(array)));
 }
 
 template <class T>
@@ -1849,6 +1867,7 @@ int main(int argc, char *argv[])
 
     testValue();
     testValueHash();
+    testArrayHash();
     testTypedVtValueProxy();
     testErasedVtValueProxy();
     testCombinedVtValueProxies();

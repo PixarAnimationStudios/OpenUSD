@@ -1666,9 +1666,9 @@ class TestUsdSchemaRegistry(unittest.TestCase):
              "TestVersionedMultiApplyAPI:foo",
              "TestVersionedMultiApplyAPI:bar"])
         self.assertEqual(prim.GetAppliedSchemas(), 
-            ["TestVersionedMultiApplyAPI:bar",
-             "TestVersionedSingleApplyAPI_1",
-             "TestVersionedMultiApplyAPI_2:foo"])
+            ["TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI_2:foo",
+             "TestVersionedMultiApplyAPI:bar"])
         self.assertEqual(prim.GetPropertyNames(), 
             ["multi:bar:m_attr",
              "multi:foo:m_attr2",

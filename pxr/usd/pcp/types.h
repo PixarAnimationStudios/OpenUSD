@@ -119,7 +119,7 @@ PcpIsClassBasedArc(PcpArcType arcType)
 /// what type of arcs. 
 ///
 struct PcpSiteTrackerSegment {
-    PcpSiteStr site;
+    PcpSite site;
     PcpArcType arcType;
 };
 

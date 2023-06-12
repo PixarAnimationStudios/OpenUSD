@@ -46,6 +46,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((disableMotionBlur,              "disableMotionBlur"))            \
     ((shutterOpen,                    "shutter:open"))                 \
     ((shutterClose,                   "shutter:close"))                \
+    ((experimentalRenderSettingsPrimPath,"experimental:renderSettingsPrimPath"))\
+    ((experimentalSettingsCameraPath, "experimental:settingsCameraPath"))\
     ((experimentalRenderSpec,         "experimental:renderSpec"))      \
     ((delegateRenderProducts,         "delegateRenderProducts"))       \
     ((batchCommandLine,               "batchCommandLine"))             \

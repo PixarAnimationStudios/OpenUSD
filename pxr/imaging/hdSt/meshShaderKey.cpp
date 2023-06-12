@@ -59,25 +59,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((edgeMaskQuadFS,              "MeshWire.Fragment.EdgeMaskQuad"))
     ((edgeMaskRefinedQuadFS,       "MeshWire.Fragment.EdgeMaskRefinedQuad"))
     ((edgeMaskTriQuadFS,           "MeshWire.Fragment.EdgeMaskTriQuad"))
-    ((edgeMaskPTVSTriQuadFS,       "MeshWire.Fragment.EdgeMaskPTVSTriQuad"))
-    ((edgeMaskPTVSRefinedTriQuadFS,
-        "MeshWire.Fragment.EdgeMaskPTVSRefinedTriQuad"))
-    ((edgeMaskMetalRefinedTriQuadFS,
-        "MeshWire.Fragment.EdgeMaskMetalRefinedTriQuad"))
     ((edgeMaskNoneFS,              "MeshWire.Fragment.EdgeMaskNone"))
 
     ((edgeCommonFS,                "MeshWire.Fragment.EdgeCommon"))
-    ((edgeRefinedTriquadFS,        "MeshWire.Fragment.EdgeRefinedTriquad"))
+    ((edgeTriQuadPTVSFS,           "MeshWire.Fragment.EdgeTriQuadPTVS"))
     ((edgeParamFS,                 "MeshWire.Fragment.EdgeParam"))
 
     ((edgeOnlyBlendFS,             "MeshWire.Fragment.EdgeOnlyBlendColor"))
     ((edgeOnlyNoBlendFS,           "MeshWire.Fragment.EdgeOnlyNoBlend"))
                          
-    ((edgeCoordBary,               "MeshWire.Fragment.EdgeCoord.Barycentric"))
-    ((edgeCoordPTVSBary,
-        "MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Triangle"))
-    ((edgeCoordPTVSBilinear,
-        "MeshWire.Fragment.EdgeCoord.PostTessPositionInPatch.Quad"))
+    ((edgeCoordBarycentricCoordFS, "MeshWire.Fragment.EdgeCoord.Barycentric"))
+    ((edgeCoordTessCoordFS,        "MeshWire.Fragment.EdgeCoord.Tess"))
+    ((edgeCoordTessCoordTriangleFS,"MeshWire.Fragment.EdgeCoord.TessTriangle"))
 
     ((edgeOnSurfFS,                "MeshWire.Fragment.EdgeOnSurface"))
     ((patchEdgeTriangleFS,         "MeshPatchWire.Fragment.PatchEdgeTriangle"))
@@ -119,31 +112,24 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBoxSplineTriangleTCS,    "Mesh.TessControl.BoxSplineTriangle"))
     ((mainBezierTriangleTES,       "Mesh.TessEval.BezierTriangle"))
     ((mainVaryingInterpTES,        "Mesh.TessEval.VaryingInterpolation"))
-    ((mainPTCS,                    "Mesh.PostTessControl"))
     ((mainTrianglePTVS,            "Mesh.PostTessVertex.Triangle"))
     ((mainQuadPTVS,                "Mesh.PostTessVertex.Quad"))
     ((mainTriQuadPTVS,             "Mesh.PostTessVertex.TriQuad"))
-    ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
+    ((mainBSplineQuadPTCS,         "Mesh.PostTessControl.BSplineQuad"))
+    ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
+    ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
+    ((mainBoxSplineTrianglePTVS,   "Mesh.PostTessVertex.BoxSplineTriangle"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,                  "Mesh.Geometry.Quad"))
-    ((mainPatchCoordFSCPBary,
-        "Mesh.Fragment.PatchCoord.ControlPointBarycentric"))
-    ((mainPatchCoordCPTriangle,
-        "Mesh.Fragment.PatchCoord.ControlPointTessCoord.Triangle"))
-    ((mainPatchCoordFSCPTessCTriangle, 
-        "Mesh.Fragment.PatchCoord.ControlPointTessCoord.Triangle"))
-    ((mainPatchCoordPTVSTri,
-        "Mesh.PostTessellationVertex.PatchCoord.Triangle"))
-    ((mainPatchCoordPTVSQuad,
-        "Mesh.PostTessellationVertex.PatchCoord.Quad"))
-    ((mainPatchCoordPTVSTriQuad, 
-        "Mesh.PostTessellationVertex.PatchCoord.TriQuad"))
     ((mainPatchCoordFS,            "Mesh.Fragment.PatchCoord"))
+    ((mainPatchCoordTessFS,        "Mesh.Fragment.PatchCoord.Tess"))
     ((mainPatchCoordTriangleFS,    "Mesh.Fragment.PatchCoord.Triangle"))
     ((mainPatchCoordQuadFS,        "Mesh.Fragment.PatchCoord.Quad"))
     ((mainPatchCoordTriQuadFS,     "Mesh.Fragment.PatchCoord.TriQuad"))
+    ((mainPatchCoordTrianglePTVSFS,"Mesh.Fragment.PatchCoord.TrianglePTVS"))
+    ((mainPatchCoordQuadPTVSFS,    "Mesh.Fragment.PatchCoord.QuadPTVS"))
     ((mainPatchCoordTriQuadPTVSFS, "Mesh.Fragment.PatchCoord.TriQuadPTVS"))
     ((mainFS,                      "Mesh.Fragment"))
 
@@ -288,6 +274,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Determine if PTVS should be used for Metal.
     bool const usePTVSTechniques =
+            isPrimTypePatches ||
             hasCustomDisplacement ||
             ptvsSceneNormals ||
             ptvsGeometricNormals ||
@@ -347,20 +334,20 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->noCustomDisplacementGS;
         }
 
-        if (isPrimTypePatches || isPrimTypeTris) {
+        if (isPrimTypeTris) {
             PTVS[ptvsIndex++] = _tokens->mainTrianglePTVS;
         } else if (isPrimTypeQuads) {
             PTVS[ptvsIndex++] = _tokens->mainQuadPTVS;
         } else if (isPrimTypeTriQuads) {
             PTVS[ptvsIndex++] = _tokens->mainTriQuadPTVS;
-        }
-        
-        if (isPrimTypeTris) {
-            PTVS[ptvsIndex++] = _tokens->mainPatchCoordPTVSTri;
-        } else if (isPrimTypeQuads) {
-            PTVS[ptvsIndex++] = _tokens->mainPatchCoordPTVSQuad;
-        } else if (isPrimTypeTriQuads) {
-            PTVS[ptvsIndex++] = _tokens->mainPatchCoordPTVSTriQuad;
+        } else if (isPrimTypePatchesBSpline) {
+            PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainBSplineQuadPTCS;
+            PTVS[ptvsIndex++] = _tokens->mainBSplineQuadPTVS;
+        } else if (isPrimTypePatchesBoxSplineTriangle) {
+            PTCS[ptcsIndex++] = _tokens->instancing;
+            PTCS[ptcsIndex++] = _tokens->mainBoxSplineTrianglePTCS;
+            PTVS[ptvsIndex++] = _tokens->mainBoxSplineTrianglePTVS;
         }
         
         PTVS[ptvsIndex] = TfToken();
@@ -489,37 +476,30 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Wire (edge) related mixins
     if (renderWireframe || renderEdges) {
-        if (ptvsStageEnabled) {
-            if (isPrimTypeTriQuads) {
-                FS[fsIndex++] = _tokens->edgeCoordPTVSBilinear;
-            } else {
-                FS[fsIndex++] = _tokens->edgeCoordPTVSBary;
-            }
+        if (isPrimTypeTris && ptvsStageEnabled) {
+            FS[fsIndex++] = _tokens->edgeCoordTessCoordTriangleFS;
+        } else if ((isPrimTypeQuads||isPrimTypeTriQuads) && ptvsStageEnabled) {
+            FS[fsIndex++] = _tokens->edgeCoordTessCoordFS;
         } else {
-            FS[fsIndex++] = _tokens->edgeCoordBary;
+            FS[fsIndex++] = _tokens->edgeCoordBarycentricCoordFS;
         }
+
         if (isPrimTypeRefinedMesh) {
-            if (isPrimTypeTriQuads && ptvsStageEnabled) {
-                FS[fsIndex++] = _tokens->edgeMaskPTVSRefinedTriQuadFS;
-            } else if (isPrimTypeTriQuads && hasMetalTessellation && 
-                       !ptvsStageEnabled) {
-                FS[fsIndex++] = _tokens->edgeMaskMetalRefinedTriQuadFS;
-            } else if (isPrimTypeQuads) {
+            if (isPrimTypeQuads || isPrimTypeTriQuads) {
                 FS[fsIndex++] = _tokens->edgeMaskRefinedQuadFS;
             } else {
                 FS[fsIndex++] = _tokens->edgeMaskNoneFS;
             }
         } else if (isPrimTypeTris) {
             FS[fsIndex++] = _tokens->edgeMaskTriangleFS;
-        } else if (isPrimTypeTriQuads && !ptvsStageEnabled) {
+        } else if (isPrimTypeTriQuads) {
             FS[fsIndex++] = _tokens->edgeMaskTriQuadFS;
-        } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->edgeMaskPTVSTriQuadFS;
         } else {
             FS[fsIndex++] = _tokens->edgeMaskQuadFS;
         }
+
         if (isPrimTypeTriQuads && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->edgeRefinedTriquadFS;
+            FS[fsIndex++] = _tokens->edgeTriQuadPTVSFS;
         } else {
             FS[fsIndex++] = _tokens->edgeCommonFS;
         }
@@ -613,24 +593,31 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
 
-    if (!ptvsStageEnabled) {
-        // Use barycentrics coord if not using posttess for control point
-        // in patchcoord
-        FS[fsIndex++] = _tokens->mainPatchCoordFSCPBary;
-    } else if (isPrimTypeTris) {
-        FS[fsIndex++] = _tokens->mainPatchCoordCPTriangle;
-    }
-    if (isPrimTypeTris && !gsStageEnabled) {
+    // Triangles
+    if (isPrimTypeTris && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTrianglePTVSFS;
+    } else if (isPrimTypeTris && !gsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
+
+    // Quads
+    } else if (isPrimTypeQuads && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordQuadPTVSFS;
     } else if (isPrimTypeQuads && !gsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
-    } else if (isPrimTypeTriQuads && !ptvsStageEnabled) {
-        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+
+    // TriQuads
     } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
         FS[fsIndex++] = _tokens->mainPatchCoordTriQuadPTVSFS;
+    } else if (isPrimTypeTriQuads) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+
+    // Patches
+    } else if (isPrimTypePatches && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
     } else {
         FS[fsIndex++] = _tokens->mainPatchCoordFS;
     }
+
     FS[fsIndex++] = _tokens->mainFS;
     FS[fsIndex] = TfToken();
 }

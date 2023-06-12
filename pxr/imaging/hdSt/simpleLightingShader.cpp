@@ -169,8 +169,6 @@ HdStSimpleLightingShader::BindResources(const int program,
     }
     
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 
 /* virtual */
@@ -188,12 +186,7 @@ HdStSimpleLightingShader::UnbindResources(const int program,
 void
 HdStSimpleLightingShader::AddBufferBinding(HdStBindingRequest const& req)
 {
-    auto it = _customBuffers.insert({req.GetName(), req});
-    // Entry already existed and was equal to what we want to set it.
-    if (!it.second && it.first->second == req) {
-        return;
-    }
-    it.first->second = req;
+    _customBuffers[req.GetName()] = req;
 }
 
 void

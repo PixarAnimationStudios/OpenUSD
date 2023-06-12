@@ -2798,7 +2798,7 @@ class AppController(QtCore.QObject):
             caption,
             './' + recommendedFilename,
             'USD Files (*.usd)'
-            ';;USD ASCII Files (*.usda)'
+            ';;USD Text Files (*.usda)'
             ';;USD Crate Files (*.usdc)'
             ';;Any USD File (*.usd *.usda *.usdc)',
             'Any USD File (*.usd *.usda *.usdc)')
@@ -3062,28 +3062,16 @@ class AppController(QtCore.QObject):
             # with targets etc etc.
             role = item.data(PropertyViewIndex.TYPE, QtCore.Qt.ItemDataRole.WhatsThisRole)
             if role in (PropertyViewDataRoles.CONNECTION, PropertyViewDataRoles.TARGET):
-
-                # Get the owning property's set of selected targets.
-                propName = str(item.parent().text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                targets = selectedProperties.setdefault(prop, set())
-
-                # Add the target to the set of targets.
                 targetPath = Sdf.Path(str(item.text(PropertyViewIndex.NAME)))
-                if role == PropertyViewDataRoles.CONNECTION:
-                    prim = self._dataModel.stage.GetPrimAtPath(
-                        targetPath.GetPrimPath())
-                    target = prim.GetProperty(targetPath.name)
-                else: # role == PropertyViewDataRoles.TARGET
-                    target = self._dataModel.stage.GetPrimAtPath(
-                        targetPath)
-                targets.add(target)
-
+                propName = str(item.parent().text(PropertyViewIndex.NAME))
             else:
-
+                targetPath = None
                 propName = str(item.text(PropertyViewIndex.NAME))
-                prop = self._propertiesDict[propName]
-                selectedProperties.setdefault(prop, set())
+
+            prop = self._propertiesDict[propName]
+            targetPaths = selectedProperties.setdefault(prop, [])
+            if targetPath:
+                targetPaths.append(targetPath)
 
         with self._dataModel.selection.batchPropChanges:
             self._dataModel.selection.clearProps()
@@ -3091,7 +3079,8 @@ class AppController(QtCore.QObject):
                 if not isinstance(prop, CustomAttribute):
                     self._dataModel.selection.addProp(prop)
                     for target in targets:
-                        self._dataModel.selection.addPropTarget(prop, target)
+                        self._dataModel.selection.addPropTargetPath(
+                            prop.GetPath(), target)
 
         with self._dataModel.selection.batchComputedPropChanges:
             self._dataModel.selection.clearComputedProps()
@@ -4166,8 +4155,8 @@ class AppController(QtCore.QObject):
         #
         # XXX: Would be nice to have some official facility to query
         # this.
-        compKeys = [# composition related metadata
-                    "references", "inheritPaths", "specializes",
+        compKeys = [# composition related metadata (inherits handled below)
+                    "references", "specializes",
                     "payload", "subLayers"]
 
 
@@ -4192,6 +4181,12 @@ class AppController(QtCore.QObject):
         variantSets = {}
         setlessVariantSelections = {}
         if (isinstance(obj, Usd.Prim)):
+            # Get the inherits via API instead of the "inheritPaths" metadata
+            # which can be incomplete.
+            inheritPaths = obj.GetInherits().GetAllDirectInherits()
+            if inheritPaths:
+                m["inherits"] = inheritPaths
+
             # Get all variant selections as setless and remove the ones we find
             # sets for.
             setlessVariantSelections = obj.GetVariantSets().GetAllVariantSelections()

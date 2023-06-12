@@ -740,6 +740,7 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->DefaultPrim, TfToken());
     _DoRegisterField(SdfFieldKeys->EndFrame, 0.0);
     _DoRegisterField(SdfFieldKeys->EndTimeCode, 0.0);
+    _DoRegisterField(SdfFieldKeys->ExpressionVariables, VtDictionary());
     _DoRegisterField(SdfFieldKeys->FramePrecision, 3);
     _DoRegisterField(SdfFieldKeys->FramesPerSecond, 24.0)
         .ValueValidator(&_ValidateFramesPerSecond);
@@ -843,6 +844,7 @@ SdfSchemaBase::_RegisterStandardFields()
         .MetadataField(SdfFieldKeys->DefaultPrim)
         .MetadataField(SdfFieldKeys->Documentation)
         .MetadataField(SdfFieldKeys->EndTimeCode)
+        .MetadataField(SdfFieldKeys->ExpressionVariables)
         .MetadataField(SdfFieldKeys->FramesPerSecond)
         .MetadataField(SdfFieldKeys->FramePrecision)
         .MetadataField(SdfFieldKeys->HasOwnedSubLayers)

@@ -48,14 +48,12 @@ using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomSphere, HdSphereSch
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingSphereAdapter Adapter;
+    using Adapter = UsdImagingSphereAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingSphereAdapter::~UsdImagingSphereAdapter() 
-{
-}
+UsdImagingSphereAdapter::~UsdImagingSphereAdapter() = default;
 
 TfTokenVector
 UsdImagingSphereAdapter::GetImagingSubprims(UsdPrim const& prim)
@@ -93,10 +91,12 @@ HdDataSourceLocatorSet
 UsdImagingSphereAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::Invalidate(prim, subprim,properties);
+        return _PrimSource::Invalidate(
+            prim, subprim,properties, invalidationType);
     }
     
     return HdDataSourceLocatorSet();

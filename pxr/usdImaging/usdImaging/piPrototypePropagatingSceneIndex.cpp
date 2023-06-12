@@ -24,8 +24,9 @@
 #include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/piPrototypeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/imaging/hd/mergingSceneIndex.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -46,22 +47,189 @@ TF_DEFINE_ENV_SETTING(USDIMAGING_SHOW_POINT_PROTOTYPE_SCENE_INDICES, false,
 namespace UsdImagingPiPrototypePropagatingSceneIndex_Impl
 {
 
+// Container data source for __usdPrimInfo/piPropagatedPrototypes
+//
+// It stores a map internally and has API to modify the map.
+//
+class _PropagatedPrototypesSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_PropagatedPrototypesSource);
+
+    TfTokenVector GetNames() override {
+        TfTokenVector result;
+        result.reserve(_instancerHashToPropagatedPrototype.size());
+        for (const auto &item : _instancerHashToPropagatedPrototype) {
+            result.push_back(item.first);
+        }
+        return result;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        const auto it = _instancerHashToPropagatedPrototype.find(name);
+        if (it == _instancerHashToPropagatedPrototype.end()) {
+            return nullptr;
+        }
+        return HdRetainedTypedSampledDataSource<SdfPath>::New(it->second);
+    }
+
+    // Makes Get(instancerHash) return propagatedPrototoype.
+    void AddPropagatedPrototype(const TfToken &instancerHash,
+                                const SdfPath &propagatedPrototype) {
+        _instancerHashToPropagatedPrototype[instancerHash] =
+            propagatedPrototype;
+    }
+
+    // Removes entry for instancerHash.
+    void RemovePropagatedPrototype(const TfToken &instancerHash) {
+        _instancerHashToPropagatedPrototype.erase(instancerHash);
+    }
+
+    bool IsEmpty() const {
+        return _instancerHashToPropagatedPrototype.empty();
+    }
+
+private:
+    std::map<TfToken, SdfPath> _instancerHashToPropagatedPrototype;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(_PropagatedPrototypesSource);
+
+TF_DECLARE_REF_PTRS(_UsdPrimInfoSceneIndex);
+
+// A retained scene index providing a container data source at
+// __usdPrimInfo:piPropagatedSceneIndices.
+// For each prototype (that is each prim targeted by a the prototype
+// relationship of a Usd point instancer), the container data
+// source is a map from instancerHash's to propagated prototypes
+// (that is the copies of the prototype created).
+class _UsdPrimInfoSceneIndex : public HdRetainedSceneIndex
+{
+public:
+    static _UsdPrimInfoSceneIndexRefPtr New() {
+        return TfCreateRefPtr(new _UsdPrimInfoSceneIndex);
+    }
+
+    // Makes it so that the data source at
+    // __usdPrimInfo:piPropagatedPrototypes:INSTANCER_HASH
+    // for the prim at prototype contains the path
+    // propagatedPrototypes.
+    void AddPropagatedPrototype(
+        const SdfPath &prototype,
+        const TfToken &instancerHash,
+        const SdfPath &propagatedPrototype);
+
+    // Removes entry for prim at prototype and locator
+    // __usdPrimInfo:piPropagatedPrototypes:INSTANCER_HASH.
+    void RemovePropagatedPrototype(
+        const SdfPath &prototype,
+        const TfToken &instancerHash);
+
+private:
+    _PropagatedPrototypesSourceHandle _GetDataSource(
+        const SdfPath &prototype);
+    _PropagatedPrototypesSourceHandle _CreateDataSource(
+        const SdfPath &prototype);
+    _PropagatedPrototypesSourceHandle _GetOrCreateDataSource(
+        const SdfPath &prototype);
+};
+    
+_PropagatedPrototypesSourceHandle
+_UsdPrimInfoSceneIndex::_GetDataSource(
+    const SdfPath &prototype)
+{
+    HdContainerDataSourceHandle const primSource =
+        GetPrim(prototype).dataSource;
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(primSource);
+    return
+        _PropagatedPrototypesSource::Cast(
+            schema.GetPiPropagatedPrototypes());
+}
+
+_PropagatedPrototypesSourceHandle
+_UsdPrimInfoSceneIndex::_CreateDataSource(
+    const SdfPath &prototype)
+{
+    _PropagatedPrototypesSourceHandle const ds =
+        _PropagatedPrototypesSource::New();
+    AddPrims(
+        { { prototype,
+              TfToken(),
+              HdRetainedContainerDataSource::New(
+                  UsdImagingUsdPrimInfoSchema::GetSchemaToken(),
+                  UsdImagingUsdPrimInfoSchema::Builder()
+                      .SetPiPropagatedPrototypes(ds)
+                      .Build()) } } );
+    return ds;
+}
+
+_PropagatedPrototypesSourceHandle
+_UsdPrimInfoSceneIndex::_GetOrCreateDataSource(
+    const SdfPath &prototype)
+{
+    if (_PropagatedPrototypesSourceHandle const ds =
+            _GetDataSource(prototype)) {
+        return ds;
+    } else {
+        return _CreateDataSource(prototype);
+    }
+}
+    
+void
+_UsdPrimInfoSceneIndex::AddPropagatedPrototype(
+    const SdfPath &prototype,
+    const TfToken &instancerHash,
+    const SdfPath &propagatedPrototype)
+{
+    _PropagatedPrototypesSourceHandle const ds =
+        _GetOrCreateDataSource(prototype);
+    ds->AddPropagatedPrototype(instancerHash, propagatedPrototype);
+    static const HdDataSourceLocator locator =
+        UsdImagingUsdPrimInfoSchema::GetDefaultLocator()
+        .Append(UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes);
+    DirtyPrims(
+        { { prototype, locator } } );
+}
+
+void
+_UsdPrimInfoSceneIndex::RemovePropagatedPrototype(
+    const SdfPath &prototype,
+    const TfToken &instancerHash)
+{
+    _PropagatedPrototypesSourceHandle const ds =
+        _GetDataSource(prototype);
+    if (!ds) {
+        return;
+    }
+    ds->RemovePropagatedPrototype(instancerHash);
+    if (ds->IsEmpty()) {
+        RemovePrims({prototype});
+    }
+}
+
 struct _Context
 {
     _Context(
         HdSceneIndexBaseRefPtr const &inputSceneIndex)
       : inputSceneIndex(inputSceneIndex)
       , instancerSceneIndex(HdRetainedSceneIndex::New())
+      , usdPrimInfoSceneIndex(_UsdPrimInfoSceneIndex::New())
       , mergingSceneIndex(HdMergingSceneIndex::New())
     {
         mergingSceneIndex->AddInputScene(
             instancerSceneIndex, SdfPath::AbsoluteRootPath());
+        mergingSceneIndex->AddInputScene(
+            usdPrimInfoSceneIndex, SdfPath::AbsoluteRootPath());
     }
 
     HdSceneIndexBaseRefPtr const inputSceneIndex;
     /// Scene index used to override the instancerTopology::prototypes
     /// data sources of instancers to account for the re-rooting.
     HdRetainedSceneIndexRefPtr const instancerSceneIndex;
+    /// Scene index providing the data source at
+    /// __usdPrimInfo:piPropagatedSceneIndices.
+    _UsdPrimInfoSceneIndexRefPtr const usdPrimInfoSceneIndex;
     /// Our "output" scene index.
     HdMergingSceneIndexRefPtr const mergingSceneIndex;
 };
@@ -106,6 +274,11 @@ public:
     void PrimsRemoved(
         const HdSceneIndexBase &sender,
         const RemovedPrimEntries &entries) override;
+
+    void PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries) override;
+
 
 private:
     // For point instancers nested within this prototype, we store the map
@@ -258,7 +431,7 @@ _InstancerTopology(const VtArray<SdfPath> &prototypes)
 {
     return
         HdRetainedContainerDataSource::New(
-            HdInstancerTopologySchemaTokens->instancerTopology,
+            HdInstancerTopologySchema::GetSchemaToken(),
             HdInstancerTopologySchema::Builder()
                 .SetPrototypes(
                     HdRetainedTypedSampledDataSource<VtArray<SdfPath>>::New(
@@ -275,13 +448,18 @@ _InstancerObserver::_UpdateInstancerPrototypes(
 {
     const SdfPath rerootedInstancer = _RerootedPath(instancer);
 
+    const TfToken instancerHash = _InstancerHash(instancer);
+
     {
         // Remove _InstancerObservers for prims that are no longer targeted by the
         // instancer's prototype relationship.
         const SdfPathSet prototypeSet(prototypes.begin(), prototypes.end());
         for (auto it = prototypeToInstancerObserver->begin();
              it != prototypeToInstancerObserver->end(); ) {
-            if (prototypeSet.find(it->first) == prototypeSet.end()) {
+            const SdfPath &prototype = it->first;
+            if (prototypeSet.find(prototype) == prototypeSet.end()) {
+                _context->usdPrimInfoSceneIndex->RemovePropagatedPrototype(
+                    prototype, instancerHash);
                 it = prototypeToInstancerObserver->erase(it);
             } else {
                 ++it;
@@ -296,14 +474,15 @@ _InstancerObserver::_UpdateInstancerPrototypes(
     propagatedPrototypes.reserve(prototypes.size());
     for (const SdfPath &prototype : prototypes) {
         const SdfPath propagatedPrototype =
-            prototype.AppendChild(
-                _InstancerHash(instancer));
+            prototype.AppendChild(instancerHash);
         propagatedPrototypes.push_back(propagatedPrototype);
         _InstancerObserverUniquePtr &observer = 
             (*prototypeToInstancerObserver)[prototype];
         if (!observer) {
             observer = std::make_unique<_InstancerObserver>(
                 _context, rerootedInstancer, prototype, propagatedPrototype);
+            _context->usdPrimInfoSceneIndex->AddPropagatedPrototype(
+                prototype, instancerHash, propagatedPrototype);
         }
     }
 
@@ -360,7 +539,7 @@ _InstancerObserver::_UpdateInstancer(
 void
 _InstancerObserver::_Populate()
 {
-    UsdImaging_SceneIndexPrimView view(_prototypeSceneIndex, _prototype);
+    HdSceneIndexPrimView view(_prototypeSceneIndex, _prototype);
     for (auto it = view.begin(); it != view.end(); ++it) {
         const SdfPath &path = *it;
         HdSceneIndexPrim const prim = _prototypeSceneIndex->GetPrim(path);
@@ -437,6 +616,14 @@ _InstancerObserver::PrimsRemoved(const HdSceneIndexBase &sender,
     if (!removedInstancers.empty()) {
         _context->instancerSceneIndex->RemovePrims(removedInstancers);
     }
+}
+
+
+void
+_InstancerObserver::PrimsRenamed(const HdSceneIndexBase &sender,
+                                 const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 }
@@ -520,6 +707,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingPiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

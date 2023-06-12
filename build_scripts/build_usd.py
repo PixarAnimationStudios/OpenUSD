@@ -23,6 +23,14 @@
 #
 from __future__ import print_function
 
+# Check whether this script is being run under Python 2 first. Otherwise,
+# any Python 3-only code below will cause the script to fail with an
+# unhelpful error message.
+import sys
+if sys.version_info.major == 2:
+    sys.exit("ERROR: USD does not support Python 2. Use a supported version "
+             "of Python 3 instead.")
+
 import argparse
 import codecs
 import contextlib
@@ -1106,7 +1114,7 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 ############################################################
 # PNG
 
-PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.29.zip"
+PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
 
 def InstallPNG(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PNG_URL, context, force)):
@@ -1574,14 +1582,14 @@ DRACO = Dependency("Draco", InstallDraco, "include/draco/compression/decode.h")
 ############################################################
 # MaterialX
 
-MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.4.zip"
+MATERIALX_URL = "https://github.com/materialx/MaterialX/archive/v1.38.7.zip"
 
 def InstallMaterialX(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(MATERIALX_URL, context, force)):
-        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON']
-
-        cmakeOptions += buildArgs;
-
+        cmakeOptions = ['-DMATERIALX_BUILD_SHARED_LIBS=ON',
+                        '-DMATERIALX_BUILD_TESTS=OFF'
+        ]
+        cmakeOptions += buildArgs
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
@@ -1775,6 +1783,11 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
+        if context.buildPythonDocs:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=ON')
+        else:
+            extraArgs.append('-DPXR_BUILD_PYTHON_DOCUMENTATION=OFF')
+
         if Windows():
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
@@ -1967,6 +1980,11 @@ subgroup.add_argument("--docs", dest="build_docs", action="store_true",
 subgroup.add_argument("--no-docs", dest="build_docs", action="store_false",
                       help="Do not build documentation (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--python-docs", dest="build_python_docs", action="store_true",
+                      default=False, help="Build Python docs")
+subgroup.add_argument("--no-python-docs", dest="build_python_docs", action="store_false",
+                      help="Do not build Python documentation (default)")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--python", dest="build_python", action="store_true",
                       default=True, help="Build python based components "
                                          "(default)")
@@ -2077,13 +2095,13 @@ subgroup.add_argument("--no-draco", dest="build_draco", action="store_false",
 group.add_argument("--draco-location", type=str,
                    help="Directory where Draco is installed.")
 
-group = parser.add_argument_group(title="MaterialX Plugin Options")
+group = parser.add_argument_group(title="MaterialX Options")
 subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--materialx", dest="build_materialx", action="store_true", 
-                      default=False,
-                      help="Build MaterialX plugin for USD")
+                      default=True,
+                      help="Enable MaterialX support (default)")
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
-                      help="Do not build MaterialX plugin for USD (default)")
+                      help="Disable MaterialX support")
 
 args = parser.parse_args()
 
@@ -2223,6 +2241,9 @@ class InstallContext:
 
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
+
+        # - Python docs
+        self.buildPythonDocs = args.build_python_docs        
 
     def GetBuildArguments(self, dep):
         return self.buildArgs.get(dep.name.lower(), [])
@@ -2387,6 +2408,16 @@ if context.buildDocs:
                    "PATH")
         sys.exit(1)
 
+# Require having built both Python support and Doxygen docs before we can 
+# build Python docs
+if context.buildPythonDocs:
+    if not context.buildDocs:
+        PrintError("Cannot build Python docs when doxygen docs are disabled.")
+        sys.exit(1)
+    if not context.buildPython:
+        PrintError("Cannot build Python docs when Python support is disabled.")
+        sys.exit(1)        
+
 if PYSIDE in requiredDependencies:
     # Special case - we are given the PYSIDEUICBINARY as cmake arg.
     usdBuildArgs = context.GetBuildArguments(USD)
@@ -2449,6 +2480,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python 3:                 {enablePython3}
+      Python docs:              {buildPythonDocs}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
@@ -2510,6 +2542,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     enablePython3=("On" if Python3() else "Off"),
+    buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),

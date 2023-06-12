@@ -74,24 +74,35 @@ struct HdSt_BasisCurvesShaderKey : public HdSt_ShaderKey
                               bool basisNormalInterpolation,
                               TfToken shadingTerminal,
                               bool hasAuthoredTopologicalVisibility,
-                              bool pointsShadingEnabled);
+                              bool pointsShadingEnabled,
+                              bool hasMetalTessellation);
+
     ~HdSt_BasisCurvesShaderKey();
 
     TfToken const &GetGlslfxFilename() const override { return glslfx; }
     TfToken const *GetVS() const override  { return VS; }
     TfToken const *GetTCS() const override { return TCS; }
     TfToken const *GetTES() const override { return TES; }
+    TfToken const *GetPTCS() const override { return PTCS; }
+    TfToken const *GetPTVS() const override { return PTVS; }
     TfToken const *GetFS() const override { return FS; }
 
     HdSt_GeometricShader::PrimitiveType GetPrimitiveType() const override { 
         return primType; 
     }
 
+    bool UseMetalTessellation() const override {
+        return useMetalTessellation;
+    }
+
     HdSt_GeometricShader::PrimitiveType primType;
+    bool useMetalTessellation;
     TfToken glslfx;
     TfToken VS[7];
-    TfToken TCS[4];
-    TfToken TES[9];
+    TfToken TCS[7];
+    TfToken TES[12];
+    TfToken PTCS[9];
+    TfToken PTVS[14];
     TfToken FS[8];
 };
 

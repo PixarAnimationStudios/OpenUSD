@@ -43,6 +43,7 @@
 #include "pxr/usd/usd/usdFileFormat.h"
 #include "pxr/usd/usd/usdcFileFormat.h"
 #include "pxr/usd/usd/zipFile.h"
+#include "pxr/usd/usdShade/udimUtils.h"
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/fileUtils.h"
@@ -97,36 +98,48 @@ public:
              const SdfLayerRefPtr &layer,
              const _DepType &depType)>;
 
-    // Opens the file at \p resolvedFilePath and analyzes its external 
-    // dependencies.
+    // Attempts to open the file at \p referencePath and analyzes its external 
+    // dependencies.  Opening the layer using this non-resolved path ensures
+    // that layer metadata is correctly set.  If the file cannot be opened then
+    // the analyzer simply retains the \p resolvedPath for later use.
     // 
     // For each dependency that is detected, the provided (optional) callback 
     // functions are invoked. 
     // 
     // \p processPathFunc is invoked first with the raw (un-remapped) path. 
     // Then \p remapPathFunc is invoked. 
-    _FileAnalyzer(const std::string &resolvedFilePath,
+    _FileAnalyzer(const std::string &referencePath,
+                  const std::string &resolvedPath,
                   _ReferenceTypesToInclude refTypesToInclude=
                         _ReferenceTypesToInclude::All,
+                  bool enableMetadataFiltering = false,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
-        _filePath(resolvedFilePath),
+        _filePath(resolvedPath),
         _refTypesToInclude(refTypesToInclude),
+        _metadataFilteringEnabled(enableMetadataFiltering),
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
         // If this file can be opened on a USD stage or referenced into a USD 
         // stage via composition, then analyze the file, collect & update all 
         // references. If not, return early.
-        if (!UsdStage::IsSupportedFile(_filePath)) {
+        if (!UsdStage::IsSupportedFile(referencePath)) {
             return;
         }
 
         TRACE_FUNCTION();
 
-        _layer = SdfLayer::FindOrOpen(_filePath);
+        _layer = SdfLayer::FindOrOpen(referencePath);
         if (!_layer) {
-            TF_WARN("Unable to open layer at path @%s@.", _filePath.c_str());
+            TF_WARN("Unable to open layer at path @%s@.", 
+                referencePath.c_str());
+            return;
+        }
+
+        // If the newly opened layer is a package, it we do not need to traverse
+        // into it as the entire package will be included as a dependency.
+        if (_layer->GetFileFormat()->IsPackage()) {
             return;
         }
 
@@ -138,14 +151,18 @@ public:
     _FileAnalyzer(const SdfLayerHandle& layer,
                   _ReferenceTypesToInclude refTypesToInclude=
                         _ReferenceTypesToInclude::All,
+                  bool enableMetadataFiltering = false,
                   const RemapAssetPathFunc &remapPathFunc={},
                   const ProcessAssetPathFunc &processPathFunc={}) : 
         _layer(layer),
         _refTypesToInclude(refTypesToInclude),
+        _metadataFilteringEnabled(enableMetadataFiltering),
         _remapPathFunc(remapPathFunc),
         _processPathFunc(processPathFunc)
     {
-        if (!_layer) {
+        // In the case we have come across a package layer, traversal can be
+        // halted as the entire package will be included as a dependency.
+        if (!_layer || _layer->GetFileFormat()->IsPackage()) {
             return;
         }
 
@@ -165,6 +182,12 @@ public:
     }
 
 private:
+    // This function returns a boolean value indicating whether an asset path
+    // should be processed.  Currently this is used when processing metadata
+    // to filter out specific keys
+    using ShouldProcessAssetValueFunc = std::function<bool
+            (const std::string &key)>;
+
     // Open the layer, updates references to point to relative or search paths
     // and accumulates all references.
     void _AnalyzeDependencies();
@@ -174,6 +197,10 @@ private:
     // can update the source reference to point to the remapped path.
     std::string _ProcessDependency(const std::string &rawRefPath,
                                    const _DepType &depType);
+
+    // Invokes the path remapping function if one has been supplied, otherwise
+    // returns the passed in raw reference path
+    std::string _RemapDependency(const std::string &rawRefPath);
 
     // Processes any sublayers in the SdfLayer associated with the file.
     void _ProcessSublayers();
@@ -193,6 +220,15 @@ private:
     // Returns the given VtValue with any asset paths remapped to point to 
     // destination-relative path.
     VtValue _UpdateAssetValue(const VtValue &val);
+
+    // Returns the given VtValue with any asset paths remapped to point to 
+    // destination-relative path.
+    // This overload supports filtering asset path processing based on their
+    // key. The processing callback is not invoked for filtered keys, however
+    // the remapping callback is invoked in all cases.
+    VtValue _UpdateAssetValue(const std::string &key, 
+                              const VtValue &val, 
+                              const ShouldProcessAssetValueFunc shouldProcessFunc);
 
     // Callback function that's passed into SdfPayloadsProxy::ModifyItemEdits()
     // or SdfReferencesProxy::ModifyItemEdits() to update all payloads or 
@@ -214,6 +250,9 @@ private:
     // metadata and non-composition prim metadata) are ignored.
     _ReferenceTypesToInclude _refTypesToInclude;
 
+    // if true, will filter ignore path processing for specified metadata keys.
+    bool _metadataFilteringEnabled;
+
     // Remap and process path callback functions.
     RemapAssetPathFunc _remapPathFunc;
     ProcessAssetPathFunc _processPathFunc;
@@ -227,6 +266,11 @@ _FileAnalyzer::_ProcessDependency(const std::string &rawRefPath,
         _processPathFunc(rawRefPath, GetLayer(), depType);
     }
 
+    return _RemapDependency(rawRefPath);
+}
+
+std::string 
+_FileAnalyzer::_RemapDependency(const std::string &rawRefPath) {
     if (_remapPathFunc) {
         return _remapPathFunc(rawRefPath, GetLayer());
     }
@@ -237,14 +281,28 @@ _FileAnalyzer::_ProcessDependency(const std::string &rawRefPath,
 }
 
 VtValue 
-_FileAnalyzer::_UpdateAssetValue(const VtValue &val) 
+_FileAnalyzer::_UpdateAssetValue(const VtValue &val)
+{
+    return _UpdateAssetValue(
+        std::string(),
+        val,
+        [](const std::string &) { return true; }
+    );
+}
+
+VtValue 
+_FileAnalyzer::_UpdateAssetValue(const std::string &key, 
+                            const VtValue &val, 
+                            const ShouldProcessAssetValueFunc shouldProcessFunc)
 {
     if (val.IsHolding<SdfAssetPath>()) {
         auto assetPath = val.UncheckedGet<SdfAssetPath>();
         const std::string& rawAssetPath = assetPath.GetAssetPath();
         if (!rawAssetPath.empty()) {
-            const std::string remappedPath =
-                _ProcessDependency(rawAssetPath, _DepType::Reference);
+            const std::string remappedPath = shouldProcessFunc(key)
+                ? _ProcessDependency(rawAssetPath, _DepType::Reference)
+                : _RemapDependency(rawAssetPath);
+
             return remappedPath.empty() ? 
                 VtValue() : VtValue(SdfAssetPath(remappedPath));
         }
@@ -254,8 +312,10 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
             val.UncheckedGet< VtArray<SdfAssetPath> >()) {                
             const std::string& rawAssetPath = assetPath.GetAssetPath();
             if (!rawAssetPath.empty()) {
-                const std::string remappedPath =
-                    _ProcessDependency(rawAssetPath, _DepType::Reference);
+                const std::string remappedPath = shouldProcessFunc(key)
+                    ? _ProcessDependency(rawAssetPath, _DepType::Reference)
+                    : _RemapDependency(rawAssetPath);
+
                 if (!remappedPath.empty()) {
                     updatedArray.push_back(SdfAssetPath(remappedPath));
                 }
@@ -266,7 +326,9 @@ _FileAnalyzer::_UpdateAssetValue(const VtValue &val)
     else if (val.IsHolding<VtDictionary>()) {
         VtDictionary updatedDict;
         for (const auto& p : val.UncheckedGet<VtDictionary>()) {
-            VtValue updatedVal = _UpdateAssetValue(p.second);
+            const std::string dictKey = key.empty() ? key : key + ':' + p.first;
+            VtValue updatedVal = 
+                _UpdateAssetValue(dictKey, p.second, shouldProcessFunc);
             if (!updatedVal.IsEmpty()) {
                 updatedDict[p.first] = std::move(updatedVal);
             }
@@ -428,13 +490,23 @@ _FileAnalyzer::_ProcessProperties(const SdfPrimSpecHandle &primSpec)
     }
 }
 
+// Determines if a metadata key should be processed.
+// XXX: Currently operates on a single hardcoded value, but in the future we
+//      would like to give users the ability to specify keys to filter.
+static
+bool _IgnoreAssetInfoIdentifier(const std::string &key) {
+    return !TfStringEndsWith(key, "assetInfo:identifier");
+}
+
 void
 _FileAnalyzer::_ProcessMetadata(const SdfPrimSpecHandle &primSpec)
 {
     if (_refTypesToInclude == _ReferenceTypesToInclude::All) {
         for (const TfToken& infoKey : primSpec->GetMetaDataInfoKeys()) {
             VtValue value = primSpec->GetInfo(infoKey);
-            VtValue updatedValue = _UpdateAssetValue(value);
+            VtValue updatedValue = _metadataFilteringEnabled
+                 ? _UpdateAssetValue(infoKey, value, _IgnoreAssetInfoIdentifier)
+                 : _UpdateAssetValue(value);
             if (_remapPathFunc && value != updatedValue) {
                 if (updatedValue.IsEmpty()) {
                     primSpec->ClearInfo(infoKey);
@@ -611,6 +683,8 @@ public:
     // the information needed to localize the asset.
     // If \p destDir is empty, none of the asset layers are modified, allowing
     // this class to be used purely as a recursive dependency finder.
+    // \p enableMetadataFiltering if true, will instruct FileAnalyzer to skip
+    // processing asset paths that match a list of predefined names
     // \p firstLayerName if non-empty, holds desired the name of the root layer 
     // in the localized asset. 
     // 
@@ -627,6 +701,7 @@ public:
     // the transitive dependencies referenced by the skipped dependency are 
     // processed and may be missing in the created package.
     _AssetLocalizer(const SdfAssetPath &assetPath, const std::string &destDir,
+                    bool enableMetadataFiltering,
                     const std::string &firstLayerName=std::string(),
                     const std::string &origRootFilePath=std::string(),
                     const std::vector<std::string> 
@@ -638,7 +713,8 @@ public:
 
         auto &resolver = ArGetResolver();
 
-        std::string rootFilePath = resolver.Resolve(assetPath.GetAssetPath());
+        const std::string assetPathStr = assetPath.GetAssetPath();
+        std::string rootFilePath = resolver.Resolve(assetPathStr);
 
         // Ensure that the resolved path is not empty.
         if (rootFilePath.empty()) {
@@ -677,8 +753,10 @@ public:
             seenFiles.insert(rootFilePath);
             std::string destFilePath = TfStringCatPaths(destDir, 
                     TfGetBaseName(rootFilePath));
-            filesToLocalize.emplace(destFilePath, _FileAnalyzer(rootFilePath, 
+            filesToLocalize.emplace(destFilePath, _FileAnalyzer(
+                    assetPathStr, rootFilePath, 
                     /*refTypesToInclude*/ _ReferenceTypesToInclude::All,
+                    /*enableMetadataFiltering*/ enableMetadataFiltering,
                     remapAssetPathFunc, processPathFunc));
         }
 
@@ -692,8 +770,13 @@ public:
             auto &fileAnalyzer = destFilePathAndAnalyzer.second;
 
             if (!fileAnalyzer.GetLayer()) {
-                _fileCopyMap.emplace_back(fileAnalyzer.GetFilePath(),
-                                          destFilePath);
+                const std::string &srcFilePath = fileAnalyzer.GetFilePath();
+                if (UsdShadeUdimUtils::IsUdimIdentifier(srcFilePath)) {
+                    _ResolveUdimPaths(srcFilePath, destFilePath);
+                } else {
+                    _fileCopyMap.emplace_back(srcFilePath, destFilePath);
+                }
+
                 continue;
             }
 
@@ -720,10 +803,17 @@ public:
                 }
 
                 const std::string refAssetPath = 
-                    SdfComputeAssetPathRelativeToLayer(
-                        fileAnalyzer.GetLayer(), ref);
+                        SdfComputeAssetPathRelativeToLayer(
+                            fileAnalyzer.GetLayer(), ref);
+                std::string resolvedRefFilePath;
 
-                std::string resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                // Specially handle UDIM paths
+                if (UsdShadeUdimUtils::IsUdimIdentifier(ref)) {
+                    resolvedRefFilePath = UsdShadeUdimUtils::ResolveUdimPath(
+                        ref, fileAnalyzer.GetLayer());
+                } else {
+                    resolvedRefFilePath = resolver.Resolve(refAssetPath);
+                }
 
                 if (resolvedRefFilePath.empty()) {
                     TF_WARN("Failed to resolve reference @%s@ with computed "
@@ -771,8 +861,9 @@ public:
                         destDirForRef, remappedRef);
 
                 filesToLocalize.emplace(destFilePathForRef, _FileAnalyzer(
-                        resolvedRefFilePath, 
+                        refAssetPath, resolvedRefFilePath,
                         /* refTypesToInclude */ _ReferenceTypesToInclude::All,
+                        /*enableMetadataFiltering*/ enableMetadataFiltering,
                         remapAssetPathFunc, processPathFunc));
             }
         }
@@ -796,6 +887,26 @@ public:
     }
 
 private:
+    // This function will ensure that all tiles that match the UDIM identifier
+    // contained in src path are correctly added to the file copy map
+    void _ResolveUdimPaths(
+        const std::string &srcFilePath,
+        const std::string &destFilePath) 
+    {
+        // Since the source path should already be pre-resolved,
+        // a proper layer doesn't have to be provided
+        const std::vector<UsdShadeUdimUtils::ResolvedPathAndTile> resolvedPaths =
+            UsdShadeUdimUtils::ResolveUdimTilePaths(srcFilePath, SdfLayerHandle());
+
+        for (const auto & resolvedPath : resolvedPaths) {
+            const std::string destUdimPath = 
+                UsdShadeUdimUtils::ReplaceUdimPattern(
+                    destFilePath, resolvedPath.second);
+            
+            _fileCopyMap.emplace_back(resolvedPath.first, destUdimPath);
+        }
+    }
+
     // This will contain a mapping of SdfLayerRefPtr's mapped to their 
     // desination path inside the destination directory.
     std::vector<LayerAndDestPath> _layerExportMap;
@@ -885,22 +996,47 @@ _AssetLocalizer::_RemapAssetPath(const std::string &refPath,
     const bool isContextDependentPath =
         resolver.IsContextDependentPath(refPath);
 
-    // We determine if refPath is relative by creating identifiers with
-    // and without the anchoring layer and seeing if they're the same.
-    // If they aren't, then refPath depends on the anchor, so we assume
-    // it's relative.
-    const bool isRelativePath =
-        !isContextDependentPath &&
-        (resolver.CreateIdentifier(refPath, layer->GetResolvedPath()) !=
-         resolver.CreateIdentifier(refPath));
+    // We want to maintain relative paths where possible to keep localized
+    // assets as close as possible to their original layout. However, we
+    // skip this for context-dependent paths because those must be resolved
+    // to determine what asset is being referred to.
+    if (!isContextDependentPath) {
+        // We determine if refPath is relative by creating identifiers with
+        // and without the anchoring layer and seeing if they're the same.
+        // If they aren't, then refPath depends on the anchor, so we assume
+        // it's relative.
+        const std::string anchored = 
+            resolver.CreateIdentifier(refPath, layer->GetResolvedPath());
+        const std::string unanchored =
+            resolver.CreateIdentifier(refPath);
+        const bool isRelativePath = (anchored != unanchored);
 
-    // Return relative paths unmodified.
-    if (isRelativePathOut) {
-        *isRelativePathOut = isRelativePath;
+        if (isRelativePath) {
+            // Asset localization is rooted at the location of the root layer.
+            // If this relative path points somewhere outside that location
+            // (e.g., a relative path like "../foo.jpg"). there will be nowhere
+            // to put this asset in the localized asset structure. In that case,
+            // we need to remap this path. Otherwise, we can keep the relative
+            // asset path as-is.
+            const ArResolvedPath resolvedRefPath = resolver.Resolve(anchored);
+            const bool refPathIsOutsideAssetLocation = 
+                !TfStringStartsWith(
+                    TfNormPath(TfGetPathName(resolvedRefPath)),
+                    TfNormPath(TfGetPathName(rootFilePath)));
+
+            if (!refPathIsOutsideAssetLocation) {
+                if (isRelativePathOut) {
+                    *isRelativePathOut = true;
+                }
+
+                // Return relative paths unmodified.
+                return refPath;
+            }
+        }
     }
 
-    if (isRelativePath) {
-        return refPath;
+    if (isRelativePathOut) {
+        *isRelativePathOut = false;
     }
 
     std::string result = refPath;
@@ -991,9 +1127,12 @@ _ExtractExternalReferences(
     std::vector<std::string>* references,
     std::vector<std::string>* payloads)
 {
+    auto &resolver = ArGetResolver();
+
     // We only care about knowing what the dependencies are. Hence, set 
     // remapPathFunc to empty.
-    _FileAnalyzer(filePath, refTypesToInclude,
+    _FileAnalyzer(filePath, resolver.Resolve(filePath), refTypesToInclude,
+        /*enableMetadataFiltering*/ false,
         /*remapPathFunc*/ {}, 
         [&subLayers, &references, &payloads](
             const std::string &assetPath, const SdfLayerRefPtr &layer,
@@ -1048,8 +1187,11 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
 
     std::string destDir = TfGetPathName(usdzFilePath);
     destDir = destDir.empty() ? "./" : destDir;
-    _AssetLocalizer localizer(assetPath, destDir, firstLayerName, 
-                              origRootFilePath, dependenciesToSkip);
+    _AssetLocalizer localizer(assetPath, destDir, 
+                            /* enableMetadataFiltering */ true,
+                            firstLayerName, 
+                            origRootFilePath, 
+                            dependenciesToSkip);
 
     auto &layerExportMap = localizer.GetLayerExportMap();
     auto &fileCopyMap = localizer.GetFileCopyMap();
@@ -1308,7 +1450,9 @@ UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
 {
     // We are not interested in localizing here, hence pass in the empty string
     // for destination directory.
-    _AssetLocalizer localizer(assetPath, /* destDir */ std::string());
+    _AssetLocalizer localizer(assetPath, 
+                              /* destDir */ std::string(), 
+                              /* enableMetadataFiltering */ true);
 
     // Clear the vectors before we start.
     layers->clear();
@@ -1338,7 +1482,8 @@ UsdUtilsModifyAssetPaths(
         const UsdUtilsModifyAssetPathFn& modifyFn)
 {
     _FileAnalyzer(layer,
-        _ReferenceTypesToInclude::All, 
+        _ReferenceTypesToInclude::All,
+        /* enableMetadataFiltering*/ false, 
         [&modifyFn](const std::string& assetPath, 
                     const SdfLayerRefPtr& layer) { 
             return modifyFn(assetPath);

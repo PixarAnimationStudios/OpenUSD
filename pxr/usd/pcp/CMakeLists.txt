@@ -31,7 +31,6 @@ pxr_library(pcp
         errors
         instanceKey
         iterator
-        layerPrefetchRequest
         layerStack
         layerStackIdentifier
         mapExpression
@@ -246,6 +245,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpDynamicFileFormatPlugin.testenv
+    DEST testPcpDynamicFileFormatPlugin_AttributeInputs
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpStreamingLayerReload.testenv
     DEST testPcpStreamingLayerReload
 )
@@ -403,6 +407,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicVariantWithConnections.testenv
     DEST testPcpMuseum_BasicVariantWithConnections
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicVariantWithReference.testenv
+    DEST testPcpMuseum_BasicVariantWithReference
 )
 
 pxr_install_test_dir(
@@ -1038,6 +1047,13 @@ pxr_register_test(testPcpMuseum_BasicVariantWithConnections
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithConnections/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicVariantWithConnections.txt
     DIFF_COMPARE compositionResults_BasicVariantWithConnections.txt 
+)
+
+pxr_register_test(testPcpMuseum_BasicVariantWithReference
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithReference/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicVariantWithReference.txt
+    DIFF_COMPARE compositionResults_BasicVariantWithReference.txt 
 )
 
 pxr_register_test(testPcpMuseum_BasicOwner
@@ -1823,6 +1839,16 @@ pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
     EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=0
+)
+
+pxr_register_test(testPcpDynamicFileFormatPlugin_AttributeInputs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=1
 )
 
 pxr_register_test(testPcpStreamingLayerReload

@@ -25,7 +25,7 @@
 #define PXR_USD_IMAGING_USD_IMAGING_DRAW_MODE_STANDIN_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdImaging/api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexObserver.h"
 
@@ -38,6 +38,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class UsdImaging_DrawModeStandin
 {
 public:
+    virtual ~UsdImaging_DrawModeStandin();
+
     virtual TfToken GetDrawMode() const = 0;
 
     /// Get prim replacing the original prim.

@@ -49,6 +49,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -89,10 +90,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (coordSys)
     (prmanParams)
     ((prmanParamsNames, ""))
-    (materialSyncMode)
-
-    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
-    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 // ----------------------------------------------------------------------------
@@ -1285,10 +1282,7 @@ public:
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
             HdTokens->isLight,
-            _tokens->materialSyncMode,  // Part of UsdLux but not yet hydra
-                                        // here just so you can see it in the
-                                        // browser coming from legacy scene
-                                        // delegates.
+            HdTokens->materialSyncMode
         };
         return result;
     }
@@ -2073,8 +2067,7 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                         TfToken(hdVar.sourceName)),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         hdVar.sourceType),
-                    _ToContainerDS(
-                        hdVar.extraSettings)));
+                    _ToContainerDS(hdVar.namespacedSettings)));
         }
 
         productsDs.push_back(
@@ -2105,8 +2098,7 @@ _ToVectorDS(const HdRenderProducts &hdProducts)
                         hdProduct.dataWindowNDC.GetMax()[1])),
                 HdRetainedTypedSampledDataSource<bool>::New(
                     hdProduct.disableMotionBlur),
-                _ToContainerDS(
-                    hdProduct.extraSettings)));
+                _ToContainerDS(hdProduct.namespacedSettings)));
     }
 
     return HdRetainedSmallVectorDataSource::New(
@@ -2127,17 +2119,20 @@ public:
 
     TfTokenVector GetNames() override
     {
-        TfTokenVector v;
-        v.push_back(HdRenderSettingsSchemaTokens->namespacedSettings);
-        v.push_back(HdRenderSettingsSchemaTokens->renderProducts);
-        return v;
+        static TfTokenVector names = {
+            HdRenderSettingsSchemaTokens->namespacedSettings,
+            HdRenderSettingsSchemaTokens->renderProducts,
+            HdRenderSettingsSchemaTokens->includedPurposes,
+            HdRenderSettingsSchemaTokens->materialBindingPurposes,
+            HdRenderSettingsSchemaTokens->renderingColorSpace};
+        return names;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
         if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
             const VtValue value = _sceneDelegate->Get(
-                _id, HdRenderSettingsPrimTokens->settings);
+                _id, HdRenderSettingsPrimTokens->namespacedSettings);
             if (value.IsHolding<VtDictionary>()) {
                 return _ToContainerDS(
                     value.UncheckedGet<VtDictionary>());
@@ -2149,6 +2144,33 @@ public:
                 _id, HdRenderSettingsPrimTokens->renderProducts);
             if (value.IsHolding<HdRenderProducts>()) {
                 return _ToVectorDS(value.UncheckedGet<HdRenderProducts>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->includedPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->includedPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->materialBindingPurposes) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->materialBindingPurposes);
+            if (value.IsHolding<VtArray<TfToken>>()) {
+                return HdRetainedTypedSampledDataSource<VtArray<TfToken>>::New(
+                    value.UncheckedGet<VtArray<TfToken>>());
+            }
+        }
+
+        if (name == HdRenderSettingsSchemaTokens->renderingColorSpace) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdRenderSettingsPrimTokens->renderingColorSpace);
+            if (value.IsHolding<TfToken>()) {
+                return HdRetainedTypedSampledDataSource<TfToken>::New(
+                    value.UncheckedGet<TfToken>());
             }
         }
 
@@ -2342,6 +2364,10 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdRenderSettingsSchemaTokens->renderSettings);
     }
 
+    if (_type == HdPrimTypeTokens->integrator) {
+        result.push_back(HdIntegratorSchemaTokens->integrator);
+    }
+
     if (_type == HdPrimTypeTokens->sampleFilter) {
         result.push_back(HdSampleFilterSchemaTokens->sampleFilter);
     }
@@ -2465,7 +2491,8 @@ _ConvertHdMaterialNetworkToHdDataSources(
                         cValues.data()),
                     HdRetainedTypedSampledDataSource<TfToken>::New(
                         node.identifier),
-                    nullptr /*renderContextNodeIdentifiers*/));
+                        /* renderContextNodeIdentifiers = */ nullptr,
+                        /* nodeTypeInfo = */ nullptr));
         }
 
         terminalsValues.push_back(
@@ -2504,16 +2531,21 @@ _ConvertHdMaterialNetworkToHdDataSources(
 }
 
 template <typename SchemaType>
-static bool
-_ConvertOutputFilterNodeToHdDataSources(
-    const HdMaterialNode2 &hdNode,
-    HdContainerDataSourceHandle *result)
+static HdContainerDataSourceHandle
+_ConvertRenderTerminalResourceToHdDataSource(const VtValue &outputNodeValue)
 {
     HD_TRACE_FUNCTION();
 
+    if (!outputNodeValue.IsHolding<HdMaterialNode2>()) {
+        return nullptr;
+    }
+
+    const HdMaterialNode2 outputNode =
+        outputNodeValue.UncheckedGet<HdMaterialNode2>();
+
     std::vector<TfToken> paramsNames;
     std::vector<HdDataSourceBaseHandle> paramsValues;
-    for (const auto &p : hdNode.parameters) {
+    for (const auto &p : outputNode.parameters) {
         paramsNames.push_back(p.first);
         paramsValues.push_back(
             HdRetainedTypedSampledDataSource<VtValue>::New(p.second)
@@ -2527,12 +2559,11 @@ _ConvertOutputFilterNodeToHdDataSources(
             paramsValues.data()),
         HdRetainedContainerDataSource::New(),
         HdRetainedTypedSampledDataSource<TfToken>::New(
-            hdNode.nodeTypeId),
-            nullptr /*renderContextNodeIdentifiers*/);
+            outputNode.nodeTypeId),
+            /* renderContextNodeIdentifiers = */ nullptr,
+            /* nodeTypeInfo = */ nullptr);
 
-    *result = SchemaType::BuildRetained(nodeDS);
-
-    return true;
+    return SchemaType::BuildRetained(nodeDS);
 }
 
 HdDataSourceBaseHandle
@@ -2661,43 +2692,24 @@ HdDataSourceLegacyPrim::_GetMaterialDataSource()
 }
 
 HdDataSourceBaseHandle
+HdDataSourceLegacyPrim::_GetIntegratorDataSource()
+{
+    return _ConvertRenderTerminalResourceToHdDataSource<HdIntegratorSchema>(
+                _sceneDelegate->Get(_id, HdIntegratorSchemaTokens->resource));
+}
+
+HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetSampleFilterDataSource()
 {
-    VtValue sampleFilterValue = _sceneDelegate->Get(
-        _id, HdSampleFilterSchemaTokens->sampleFilterResource);
-
-    if (!sampleFilterValue.IsHolding<HdMaterialNode2>()) {
-        return nullptr;
-    }
-
-    HdMaterialNode2 sampleFilterNode =
-        sampleFilterValue.UncheckedGet<HdMaterialNode2>();
-    HdContainerDataSourceHandle sampleFilterDS = nullptr;    
-    if (!_ConvertOutputFilterNodeToHdDataSources<HdSampleFilterSchema>(
-            sampleFilterNode, &sampleFilterDS)) {
-        return nullptr;
-    }
-    return sampleFilterDS;
+    return _ConvertRenderTerminalResourceToHdDataSource<HdSampleFilterSchema>(
+                _sceneDelegate->Get(_id, HdSampleFilterSchemaTokens->resource));
 }
 
 HdDataSourceBaseHandle
 HdDataSourceLegacyPrim::_GetDisplayFilterDataSource()
 {
-    VtValue displayFilterValue = _sceneDelegate->Get(
-        _id, HdDisplayFilterSchemaTokens->displayFilterResource);
-
-    if (!displayFilterValue.IsHolding<HdMaterialNode2>()) {
-        return nullptr;
-    }
-
-    HdMaterialNode2 displayFilterNode = 
-        displayFilterValue.UncheckedGet<HdMaterialNode2>();
-    HdContainerDataSourceHandle displayFilterDS = nullptr;
-    if (!_ConvertOutputFilterNodeToHdDataSources<HdDisplayFilterSchema>(
-            displayFilterNode, &displayFilterDS)) {
-        return nullptr;
-    }
-    return displayFilterDS;
+    return _ConvertRenderTerminalResourceToHdDataSource<HdDisplayFilterSchema>(
+                _sceneDelegate->Get(_id, HdDisplayFilterSchemaTokens->resource));
 }
 
 HdDataSourceBaseHandle
@@ -2955,6 +2967,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
         return Hd_DataSourceRenderSettings::New(_sceneDelegate, _id);
     } else if (name == HdSampleFilterSchemaTokens->sampleFilter) {
         return _GetSampleFilterDataSource();
+    } else if (name == HdIntegratorSchemaTokens->integrator) {
+        return _GetIntegratorDataSource();
     } else if (name == HdDisplayFilterSchemaTokens->displayFilter) {
         return _GetDisplayFilterDataSource();
     } else if (name == HdVolumeFieldSchemaTokens->volumeField) {

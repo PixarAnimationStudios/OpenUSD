@@ -430,7 +430,7 @@ class TestUsdBugs(unittest.TestCase):
             # Now truncate layer to corrupt it.
             fobj = open(f.name, "r+")
             size = os.path.getsize(f.name)
-            fobj.truncate(size / 2)
+            fobj.truncate(size // 2)
             fobj.close()
             # Attempting to open the file should raise an exception.
             with self.assertRaises(Tf.ErrorException):

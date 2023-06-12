@@ -56,6 +56,7 @@
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
 #include "pxr/imaging/hd/instanceSchema.h"
+#include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingSchema.h"
@@ -292,6 +293,9 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdLight::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
+        if (bits & HdLight::DirtyInstancer) {
+            set->append(HdInstancedBySchema::GetDefaultLocator());
+        }
     } else if (primType == HdPrimTypeTokens->drawTarget) {
         const static HdDataSourceLocator locator(
                 HdPrimTypeTokens->drawTarget);
@@ -315,6 +319,10 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
         if (bits & HdExtComputation::DirtyOutputDesc) {
             set->append(HdExtComputationSchema::GetOutputsLocator());
+        }
+    } else if (primType == HdPrimTypeTokens->integrator) {
+        if (bits & HdChangeTracker::DirtyParams) {
+            set->append(HdIntegratorSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (bits & HdChangeTracker::DirtyParams) {
@@ -399,11 +407,20 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyActive) {
             set->append(HdRenderSettingsSchema::GetActiveLocator());
         }
-        if (bits & HdRenderSettings::DirtySettings) {
+        if (bits & HdRenderSettings::DirtyNamespacedSettings) {
             set->append(HdRenderSettingsSchema::GetNamespacedSettingsLocator());
         }
         if (bits & HdRenderSettings::DirtyRenderProducts) {
             set->append(HdRenderSettingsSchema::GetRenderProductsLocator());
+        }
+        if (bits & HdRenderSettings::DirtyIncludedPurposes) {
+            set->append(HdRenderSettingsSchema::GetIncludedPurposesLocator());
+        }
+        if (bits & HdRenderSettings::DirtyMaterialBindingPurposes) {
+            set->append(HdRenderSettingsSchema::GetMaterialBindingPurposesLocator());
+        }
+        if (bits & HdRenderSettings::DirtyRenderingColorSpace) {
+            set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -744,6 +761,9 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdCamera::DirtyTransform;
         }
     } else if (HdPrimTypeIsLight(primType)) {
+        if (_FindLocator(HdInstancedBySchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdLight::DirtyInstancer;
+        }
         if (_FindLocator(HdLightSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdLight::DirtyParams |
                 HdLight::DirtyShadowParams |
@@ -806,6 +826,10 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
                 } while(it != end && it->Intersects(
                             HdExtComputationSchema::GetDefaultLocator()));
             }
+        }
+    } else if (primType == HdPrimTypeTokens->integrator) {
+        if (_FindLocator(HdIntegratorSchema::GetDefaultLocator(), end, &it)) {
+            bits |= HdChangeTracker::DirtyParams;
         }
     } else if (primType == HdPrimTypeTokens->sampleFilter) {
         if (_FindLocator(HdSampleFilterSchema::GetDefaultLocator(), end, &it)) {
@@ -908,11 +932,25 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
         }
         if (_FindLocator(HdRenderSettingsSchema::GetNamespacedSettingsLocator(),
                  end, &it)) {
-            bits |= HdRenderSettings::DirtySettings;
+            bits |= HdRenderSettings::DirtyNamespacedSettings;
         }
         if (_FindLocator(HdRenderSettingsSchema::GetRenderProductsLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyRenderProducts;
+        }
+        if (_FindLocator(HdRenderSettingsSchema::GetIncludedPurposesLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyIncludedPurposes;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetMaterialBindingPurposesLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyMaterialBindingPurposes;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyRenderingColorSpace;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

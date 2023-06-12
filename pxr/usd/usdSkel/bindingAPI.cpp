@@ -24,7 +24,6 @@
 #include "pxr/usd/usdSkel/bindingAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -38,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (SkelBindingAPI)
-);
 
 /* virtual */
 UsdSkelBindingAPI::~UsdSkelBindingAPI()
@@ -449,7 +443,8 @@ UsdSkelBindingAPI::GetInheritedSkeleton() const
 
     if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
-            if (UsdSkelBindingAPI(p).GetSkeleton(&skel)) {
+            if (p.HasAPI<UsdSkelBindingAPI>() && 
+                UsdSkelBindingAPI(p).GetSkeleton(&skel)) {
                 return skel;
             }
         }
@@ -496,7 +491,8 @@ UsdSkelBindingAPI::GetInheritedAnimationSource() const
 
     if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
-            if (UsdSkelBindingAPI(p).GetAnimationSource(&animPrim)) {
+            if (p.HasAPI<UsdSkelBindingAPI>() && 
+                UsdSkelBindingAPI(p).GetAnimationSource(&animPrim)) {
                 return animPrim;
             }
         }

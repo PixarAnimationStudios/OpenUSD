@@ -88,6 +88,9 @@ class "MultipleApplyAPI" (
 {
     int testAttrOne
     double testAttrTwo
+    # Special attribute name to define a multiple apply property with no base
+    # name
+    opaque __INSTANCE_NAME__
 }
 
 class "PublicMultipleApplyAPI" (
@@ -101,6 +104,13 @@ class "PublicMultipleApplyAPI" (
 {
     int testAttrOne
     double testAttrTwo
+    # Special attribute name to define a multiple apply property with no base
+    # name
+    opaque __INSTANCE_NAME__ (
+        customData = {
+            string apiName = "PublicAPI"
+        }
+    )
 }
 
 class "Base" (

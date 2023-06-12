@@ -608,9 +608,3 @@ void wrapTf_TestTfPython()
         ;
 
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(Tf_ClassWithVarArgInit)
-TF_REFPTR_CONST_VOLATILE_GET(Tf_TestBase)
-TF_REFPTR_CONST_VOLATILE_GET(Tf_TestDerived)
-TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestBase<class Tf_TestBase>)
-TF_REFPTR_CONST_VOLATILE_GET(polymorphic_Tf_TestDerived<class Tf_TestDerived>)

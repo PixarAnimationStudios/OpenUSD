@@ -37,7 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Delegate support for UsdRenderSettings.
 ///
-class UsdImagingRenderSettingsAdapter : public UsdImagingPrimAdapter {
+class UsdImagingRenderSettingsAdapter : public UsdImagingPrimAdapter
+{
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
@@ -72,7 +73,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

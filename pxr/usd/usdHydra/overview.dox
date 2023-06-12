@@ -2,7 +2,6 @@
 \page usdHydra_page_front UsdHydra : USD Hydra Schemas
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdHydra : USD Hydra Schemas
-\publicLib
 \endif
 
 \section usdHydra_overview Overview

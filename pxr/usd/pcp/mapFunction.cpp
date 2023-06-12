@@ -27,12 +27,11 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <limits>
 
@@ -535,14 +534,7 @@ PcpMapFunction::GetString() const
 size_t
 PcpMapFunction::Hash() const
 {
-    size_t hash = _data.hasRootIdentity;
-    boost::hash_combine(hash, _data.numPairs);
-    for (PathPair const &p: _data) {
-        boost::hash_combine(hash, p.first.GetHash());
-        boost::hash_combine(hash, p.second.GetHash());
-    }
-    boost::hash_combine(hash, _offset.GetHash());
-    return hash;
+    return TfHash{}(*this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

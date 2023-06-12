@@ -28,13 +28,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/work/api.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/tf/pyLock.h"
 
 #include <tbb/task_arena.h>
 
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 /// Invoke \p fn, ensuring that all wait operations on concurrent constructs
 /// invoked by the calling thread only take tasks created within the scope of \p
@@ -106,11 +107,38 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// thread that restricts the tasks it can take to the protected scope: all
 /// other worker threads continue unhindered.
 ///
+/// If Python support is enabled and \p dropPythonGIL is true, this function
+/// ensures the GIL is released before invoking \p fn.  If this function
+/// released the GIL, it reacquires it before returning.
+///
 template <class Fn>
 auto
-WorkWithScopedParallelism(Fn &&fn)
+WorkWithScopedParallelism(Fn &&fn, bool dropPythonGIL=true)
 {
-    return tbb::this_task_arena::isolate(std::forward<Fn>(fn));
+    if (dropPythonGIL) {
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
+        return tbb::this_task_arena::isolate(std::forward<Fn>(fn));
+    }
+    else {
+        return tbb::this_task_arena::isolate(std::forward<Fn>(fn));
+    }
+}
+
+/// Similar to WorkWithScopedParallelism(), but pass a WorkDispatcher instance
+/// to \p fn for its use during the scoped parallelism.  Accordingly, \p fn must
+/// accept a WorkDispatcher lvalue reference argument.  After \p fn returns but
+/// before the scoped parallelism ends, call WorkDispatcher::Wait() on the
+/// dispatcher instance.  The \p dropPythonGIL argument has the same meaning as
+/// it does for WorkWithScopedParallelism().
+template <class Fn>
+auto
+WorkWithScopedDispatcher(Fn &&fn, bool dropPythonGIL=true)
+{
+    return WorkWithScopedParallelism([&fn]() {
+        WorkDispatcher dispatcher;
+        return std::forward<Fn>(fn)(dispatcher);
+        // dispatcher's destructor invokes Wait() here.
+    }, dropPythonGIL);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

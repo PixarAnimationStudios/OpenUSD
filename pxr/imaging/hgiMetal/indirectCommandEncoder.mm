@@ -623,8 +623,23 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
         ++argPatchStepDescs;
     }
 
-    // If this is a patch primitive then add the constant tess factors.
-    if (pipelineDesc.primitiveType == HgiPrimitiveTypePatchList) {
+    bool usedExplicitTessFactorBuffer = false;
+    for (const HgiBufferBindDesc &buffer :
+         resourceBindings->GetDescriptor().buffers) {
+        if (buffer.resourceType == HgiBindResourceTypeTessFactors) {
+            if (buffer.buffers[0]) {
+                HgiMetalBuffer* mtlBuffer =
+                    static_cast<HgiMetalBuffer*>(buffer.buffers[0].Get());
+
+                [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
+                                             offset:buffer.offsets[0]
+                                            atIndex:ArgIndex_PatchFactorsBuffer];
+                usedExplicitTessFactorBuffer = true;
+            }
+        }
+    }
+    if (pipelineDesc.primitiveType == HgiPrimitiveTypePatchList &&
+            !usedExplicitTessFactorBuffer) {
         id<MTLBuffer> patchFactorsBuffer = _triangleTessFactors;
         if (pipelineDesc.tessellationState.patchType ==
             HgiTessellationState::PatchType::Quad) {
@@ -653,13 +668,15 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
     uint32_t index = 0;
 
     for (auto const& binding : bindings) {
-        HgiMetalBuffer* mtlBuffer =
-            static_cast<HgiMetalBuffer*>(binding.buffer.Get());
-        [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
-                                     offset:binding.byteOffset
-                                    atIndex:ArgIndex_Buffers + index];
-        [encoder useResource:mtlBuffer->GetBufferId()
-                       usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+        if (binding.buffer) {
+            HgiMetalBuffer* mtlBuffer =
+                static_cast<HgiMetalBuffer*>(binding.buffer.Get());
+            [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
+                                         offset:binding.byteOffset
+                                        atIndex:ArgIndex_Buffers + index];
+            [encoder useResource:mtlBuffer->GetBufferId()
+                           usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+        }
         index++;
     }
 

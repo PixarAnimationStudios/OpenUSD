@@ -857,6 +857,8 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
     if (light.IsDomeLight()) {
         _delegate.SetParameter(pathName, HdLightTokens->textureFile,
                                _GetDomeLightTexture(light));
+        _delegate.SetParameter(pathName, HdLightTokens->shadowEnable, 
+            VtValue(true));
     }
     // When not using storm, initialize the camera light transform based on
     // the SimpleLight position
@@ -871,6 +873,8 @@ HdxTaskController::_SetParameters(SdfPath const& pathName,
             VtValue(DISTANT_LIGHT_ANGLE));
         _delegate.SetParameter(pathName, HdLightTokens->intensity, 
             VtValue(DISTANT_LIGHT_INTENSITY));
+        _delegate.SetParameter(pathName, HdLightTokens->shadowEnable, 
+            VtValue(false));
     }
 }
 
@@ -901,6 +905,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         // For the domelight, add the domelight texture resource.
         node.parameters[HdLightTokens->textureFile] = 
             _GetDomeLightTexture(light);
+        node.parameters[HdLightTokens->shadowEnable] = true;
     }
     else {
         // For the camera light, initialize the transform based on the
@@ -913,6 +918,7 @@ HdxTaskController::_SetMaterialNetwork(SdfPath const& pathName,
         // Initialize distant light specific parameters
         node.parameters[HdLightTokens->angle] = DISTANT_LIGHT_ANGLE;
         node.parameters[HdLightTokens->intensity] = DISTANT_LIGHT_INTENSITY;
+        node.parameters[HdLightTokens->shadowEnable] = false;
     }
     lightNetwork.nodes.push_back(node);
 

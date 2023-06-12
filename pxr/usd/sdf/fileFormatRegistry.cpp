@@ -203,6 +203,32 @@ Sdf_FileFormatRegistry::FindAllFileFormatExtensions()
     return result;
 }
 
+std::set<std::string>
+Sdf_FileFormatRegistry::FindAllDerivedFileFormatExtensions(
+    const TfType& baseType)
+{
+    TRACE_FUNCTION();
+
+    _RegisterFormatPlugins();
+
+    if (!baseType.IsA<SdfFileFormat>()) {
+        TF_CODING_ERROR("Type %s does not derive from SdfFileFormat",
+                        baseType.GetTypeName().c_str());
+        return {};
+    }
+
+    std::set<std::string> result; 
+    for (const auto& p : _fullExtensionIndex) {
+        for (const _InfoSharedPtr &info : p.second) {
+            if (info->type.IsA(baseType)) {
+                result.insert(p.first);
+            }
+        }
+    }
+
+    return result;
+}
+
 TfToken
 Sdf_FileFormatRegistry::GetPrimaryFormatForExtension(
     const std::string& ext)

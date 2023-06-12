@@ -33,7 +33,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/weakBase.h"
-#include <boost/noncopyable.hpp>
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -50,8 +49,10 @@ TF_DECLARE_WEAK_PTRS(PlugPlugin);
 /// providing methods for finding registered formats either by format
 /// identifier or file extension.
 ///
-class Sdf_FileFormatRegistry : boost::noncopyable
+class Sdf_FileFormatRegistry
 {
+    Sdf_FileFormatRegistry(const Sdf_FileFormatRegistry&) = delete;
+    Sdf_FileFormatRegistry& operator=(const Sdf_FileFormatRegistry&) = delete;
 public:
     /// Constructor.
     Sdf_FileFormatRegistry();
@@ -70,6 +71,13 @@ public:
     /// Returns a set containing the extension(s) corresponding to 
     /// all registered file formats.
     std::set<std::string> FindAllFileFormatExtensions();
+
+    /// Returns a set containing the extension(s) corresponding to
+    /// all registered file formats that derive from \p baseType.
+    ///
+    /// \p baseType must derive from SdfFileFormat.
+    std::set<std::string> FindAllDerivedFileFormatExtensions(
+        const TfType& baseType);
 
     /// Returns the id of the file format plugin that is registered as
     /// the primary format for the given file extension.

@@ -258,8 +258,8 @@ template <typename T>
 void
 setitem_index(VtArray<T> &self, int64_t idx, object value)
 {
-    static const bool tile = true;
-    setArraySlice(self, slice(idx, idx + 1), value, tile);
+    idx = TfPyNormalizeIndex(idx, self.size(), /*throwError=*/true);
+    setArraySlice(self, slice(idx, idx+1), value, /*tile=*/true);
 }
 
 template <typename T>
@@ -524,19 +524,6 @@ void VtWrapArray()
 #endif
 
         ;
-
-#if PY_MAJOR_VERSION == 2
-    // The above generates bindings for scalar division of arrays, but we
-    // need to explicitly add bindings for __truediv__ and __rtruediv__
-    // in Python 2 to support "from __future__ import division".
-    if (PyObject_HasAttrString(selfCls.ptr(), "__div__")) {
-        selfCls.attr("__truediv__") = selfCls.attr("__div__");
-    }
-
-    if (PyObject_HasAttrString(selfCls.ptr(), "__rdiv__")) {
-        selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
-    }
-#endif
 
 #define WRITE(z, n, data) BOOST_PP_COMMA_IF(n) data
 #define VtCat_DEF(z, n, unused) \

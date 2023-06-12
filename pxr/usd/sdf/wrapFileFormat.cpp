@@ -110,6 +110,11 @@ void wrapFileFormat()
              return_value_policy<TfPySequenceToList>())
         .staticmethod("FindAllFileFormatExtensions")
 
+        .def("FindAllDerivedFileFormatExtensions",
+             &This::FindAllDerivedFileFormatExtensions,
+             return_value_policy<TfPySequenceToList>())
+        .staticmethod("FindAllDerivedFileFormatExtensions")
+
         .def("FindById", &This::FindById)
         .staticmethod("FindById")
 
@@ -154,5 +159,3 @@ void wrapFileFormat()
         "Tokens", SdfFileFormatTokens, SDF_FILE_FORMAT_TOKENS);
 
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(SdfFileFormat)

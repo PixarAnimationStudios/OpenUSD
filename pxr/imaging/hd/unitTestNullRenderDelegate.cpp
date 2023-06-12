@@ -34,7 +34,6 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
-#include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/unitTestNullRenderPass.h"
 
 #include <iostream>

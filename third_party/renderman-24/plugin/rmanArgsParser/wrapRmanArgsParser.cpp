@@ -58,5 +58,3 @@ void wrapRmanArgsParser()
         .def("GetSourceType", &This::GetSourceType, copyRefPolicy)
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(SdrShaderNode)

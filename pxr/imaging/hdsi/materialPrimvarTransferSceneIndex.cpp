@@ -62,20 +62,13 @@ public:
         if (_inputDs) {
             result = _inputDs->GetNames();
             if (HdMaterialBindingSchema::GetFromParent(_inputDs)) {
-
-                const TfToken primvarsName =
-                    HdPrimvarsSchema::GetDefaultLocator().GetFirstElement();
-
-                if (std::find(result.begin(), result.end(), primvarsName)
-                        == result.end()) {
-                    result.push_back(primvarsName);
-                }
-
-                const TfToken dependenciesName =
-                    HdDependenciesSchema::GetDefaultLocator().GetFirstElement();
-                if (std::find(result.begin(), result.end(), dependenciesName)
-                        == result.end()) {
-                    result.push_back(dependenciesName);
+                for (const TfToken &name : {
+                        HdPrimvarsSchema::GetSchemaToken(),
+                        HdDependenciesSchema::GetSchemaToken() }) {
+                    if (std::find(result.begin(), result.end(), name)
+                            == result.end()) {
+                        result.push_back(name);
+                    }
                 }
             }
         }
@@ -89,7 +82,7 @@ public:
             inputResult = _inputDs->Get(name);
         }
 
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
             if (HdPathDataSourceHandle pathDs = _GetMaterialBinding()) {
 
                 // We need to create three dependencies here:
@@ -151,7 +144,7 @@ public:
                     return depsDs;
                 }
             }
-        } else if (name == HdPrimvarsSchemaTokens->primvars) {
+        } else if (name == HdPrimvarsSchema::GetSchemaToken()) {
 
             if (HdPathDataSourceHandle pathDs = _GetMaterialBinding()) {
                 const SdfPath materialPath = pathDs->GetTypedValue(0.0f);

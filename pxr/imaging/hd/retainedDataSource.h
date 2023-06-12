@@ -354,7 +354,7 @@ public:
     HD_API
     HdRetainedSmallVectorDataSource(
         size_t count, 
-        HdDataSourceBaseHandle *values);
+        const HdDataSourceBaseHandle *values);
 
     HD_API
     size_t GetNumElements() override;

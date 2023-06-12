@@ -51,7 +51,6 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/noncopyable.hpp>
 #include <boost/optional.hpp>
 
 #include <atomic>
@@ -88,8 +87,10 @@ TfType::PyPolymorphicBase::~PyPolymorphicBase()
 // Stored data for a TfType.
 // A unique instance of _TypeInfo is allocated for every type declared.
 //
-struct TfType::_TypeInfo : boost::noncopyable
-{
+struct TfType::_TypeInfo {
+    _TypeInfo(const _TypeInfo&) = delete;
+    _TypeInfo& operator=(const _TypeInfo&) = delete;
+
     typedef TfHashMap<string, TfType::_TypeInfo*, TfHash> NameToTypeMap;
     typedef TfHashMap<
         TfType::_TypeInfo*, vector<string>, TfHash> TypeToNamesMap;
@@ -217,8 +218,10 @@ struct Tf_PyHandleLess
 
 // Registry for _TypeInfos.
 //
-class Tf_TypeRegistry : boost::noncopyable
+class Tf_TypeRegistry
 {
+    Tf_TypeRegistry(const Tf_TypeRegistry&) = delete;
+    Tf_TypeRegistry& operator=(const Tf_TypeRegistry&) = delete;
 public:
     static Tf_TypeRegistry& GetInstance() {
         return TfSingleton<Tf_TypeRegistry>::GetInstance();
@@ -631,9 +634,14 @@ void
 TfType::GetAllDerivedTypes(std::set<TfType> *result) const
 {
     ScopedLock lock(GetRegistryMutex(), /*write=*/false);
-    for (auto derivedType: _info->derivedTypes) {
-        result->insert(derivedType);
-        derivedType.GetAllDerivedTypes(result);
+    TypeVector stack { _info->derivedTypes };
+    while (!stack.empty()) {
+        TfType derivedType = std::move(stack.back());
+        stack.pop_back();
+        stack.insert(stack.end(),
+                     derivedType._info->derivedTypes.begin(),
+                     derivedType._info->derivedTypes.end());
+        result->insert(std::move(derivedType));
     }
 }
 

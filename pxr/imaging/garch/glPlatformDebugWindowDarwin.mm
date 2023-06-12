@@ -52,9 +52,9 @@ Garch_GetModifierKeys(NSUInteger flags)
     return keys;
 }
 
-@class  View;
+@class Garch_GLPlatformView;
 
-@interface View : NSOpenGLView <NSWindowDelegate>
+@interface Garch_GLPlatformView : NSOpenGLView <NSWindowDelegate>
 {
     GarchGLDebugWindow *_callback;
     NSOpenGLContext *_ctx;
@@ -62,7 +62,7 @@ Garch_GetModifierKeys(NSUInteger flags)
 
 @end
 
-@implementation View
+@implementation Garch_GLPlatformView
 
 -(id)initGL:(NSRect)frame callback:(GarchGLDebugWindow*)cb
 {
@@ -206,7 +206,8 @@ Garch_GLPlatformDebugWindow::Init(const char *title,
     NSRect frame = NSMakeRect(0, 0, width, height);
     NSRect viewBounds = NSMakeRect(0, 0, width, height);
 
-    View *view = [[View alloc] initGL:viewBounds callback:_callback];
+    Garch_GLPlatformView *view =
+        [[Garch_GLPlatformView alloc] initGL:viewBounds callback:_callback];
 
     NSWindow *window = [[NSWindow alloc]
                         initWithContentRect:frame

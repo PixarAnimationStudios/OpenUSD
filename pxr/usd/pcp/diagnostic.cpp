@@ -558,7 +558,7 @@ private:
             const size_t numSpacesPerIndent = 4;
             const std::string indentation(indent * numSpacesPerIndent, ' ');
             const std::string finalMsg =
-                TfStringReplace(msg, "\n", "\n" + indentation);
+                TfStringReplace(TfStringTrim(msg), "\n", "\n" + indentation);
 
             // Append output.
             outputBuffer.push_back(indentation + finalMsg + "\n");

@@ -36,8 +36,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/type.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_mutex.h>
 #include <atomic>
@@ -68,7 +66,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// registry, since multiple active traversals (either by different threads,
 /// or because of reentrancy) should be rare.
 ///
-class Tf_NoticeRegistry : boost::noncopyable {
+class Tf_NoticeRegistry {
+    Tf_NoticeRegistry(const Tf_NoticeRegistry&) = delete;
+    Tf_NoticeRegistry& operator=(const Tf_NoticeRegistry&) = delete;
 public:
     void _BeginDelivery(const TfNotice &notice,
                         const TfWeakBase *sender,

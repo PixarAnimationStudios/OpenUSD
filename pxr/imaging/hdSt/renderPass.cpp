@@ -179,7 +179,6 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     gfxCmds->SetViewport(
         stRenderPassState->ComputeViewport(
-            desc,
             /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL));
 
 

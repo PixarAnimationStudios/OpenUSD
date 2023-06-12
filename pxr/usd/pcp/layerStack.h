@@ -206,11 +206,12 @@ private:
     // Needs access to _sublayerSourceInfo
     friend bool Pcp_NeedToRecomputeDueToAssetPathChange(const PcpLayerStackPtr&);
 
-    // It's a coding error to construct a layer stack with a NULL root layer.
+    // Construct a layer stack for the given \p identifier that will be
+    // installed into \p registry. This installation is managed by
+    // \p registry and does not occur within the c'tor. See comments on
+    // _registry for more details.
     PcpLayerStack(const PcpLayerStackIdentifier &identifier,
-                  const std::string &fileFormatTarget,
-                  const Pcp_MutedLayers &mutedLayers,
-                  bool isUsd);
+                  const Pcp_LayerStackRegistry &registry);
 
     void _BlowLayers();
     void _BlowRelocations();
@@ -231,6 +232,7 @@ private:
 private:
     /// The identifier that uniquely identifies this layer stack.
     const PcpLayerStackIdentifier _identifier;
+
     /// The registry (1:1 with a PcpCache) this layer stack belongs to.  This
     /// may not be set, particularly when a registry is creating a layer stack
     /// but before it's been installed in the registry.
@@ -264,6 +266,7 @@ private:
 
     /// Tracks information used to compute sublayer asset paths.
     struct _SublayerSourceInfo {
+        _SublayerSourceInfo() = default;
         _SublayerSourceInfo(
             const SdfLayerHandle& layer_,
             const std::string& authoredSublayerPath_,

@@ -28,6 +28,7 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/renderBuffer.h"
 #include "hdPrman/renderDelegate.h"
+#include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 
 #include "pxr/imaging/hd/perfLog.h"
@@ -315,11 +316,9 @@ HdPrman_RenderPass::_Execute(
     const RenderProducts& renderProducts =
         renderDelegate->GetRenderSetting<RenderProducts>(
             HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
-    const bool hasProducts = _HasRenderProducts(renderProducts);
-
     const int lastVersion = _renderParam->GetLastSettingsVersion();
 
-    if (hasProducts) {
+    if (_HasRenderProducts(renderProducts)) {
         // Code path for Solaris render products
         int frame =
             renderDelegate->GetRenderSetting<int>(
@@ -336,17 +335,38 @@ HdPrman_RenderPass::_Execute(
         
         bool createRenderView = _renderParam->DeleteFramebuffer();
         if (lastVersion != currentSettingsVersion) {
-            // Re-create new render view since render spec might have
-            // changed.
+            // Re-create new render view since render spec might have changed.
             createRenderView = true;
         }
 
         if (createRenderView) {
-            const VtDictionary &renderSpec =
-                renderDelegate->GetRenderSetting<VtDictionary>(
-                    HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-                    VtDictionary());
-            _renderParam->CreateRenderViewFromSpec(renderSpec);
+            // Use the Render Settings Prim if possible.
+            bool useRenderSettingsPrim = false;
+            const SdfPath &renderSettingsPath =
+                renderDelegate->GetRenderSetting<SdfPath>(
+                    HdPrmanRenderSettingsTokens->experimentalRenderSettingsPrimPath, 
+                    SdfPath());
+
+            if (!renderSettingsPath.IsEmpty()) {
+                const HdPrman_RenderSettings *rsPrim = 
+                        dynamic_cast<const HdPrman_RenderSettings*>(
+                            GetRenderIndex()->GetBprim(
+                                HdPrimTypeTokens->renderSettings, 
+                                renderSettingsPath));
+                if (rsPrim->GetRenderProducts().size() != 0) {
+                    _renderParam->CreateRenderViewFromRenderSettingsPrim(*rsPrim);
+                    useRenderSettingsPrim = true;
+                }
+            }
+            
+            // Otherwise use the RenderSpec
+            if (!useRenderSettingsPrim) {
+                const VtDictionary &renderSpec =
+                    renderDelegate->GetRenderSetting<VtDictionary>(
+                        HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                        VtDictionary());
+                _renderParam->CreateRenderViewFromRenderSpec(renderSpec);
+            }
         }
 
         resolution = cameraContext.GetResolutionFromDisplayWindow();

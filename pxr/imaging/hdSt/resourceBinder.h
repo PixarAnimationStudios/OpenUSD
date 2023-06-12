@@ -329,8 +329,10 @@ public:
         BindingDeclaration culledInstanceIndexArrayBinding;
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
+        BindingDeclaration tessFactorsBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
+        BindingDeclaration indexBufferBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;
         std::vector<BindingDeclaration> fvarIndicesBindings;
 
@@ -453,12 +455,6 @@ public:
     HDST_API
     void UnbindInstanceBufferArray(
         HdStBufferArrayRangeSharedPtr const &bar, int level) const;
-
-    /// bind/unbind shader parameters and textures
-    HDST_API
-    void BindShaderResources(HdStShaderCode const *shader) const;
-    HDST_API
-    void UnbindShaderResources(HdStShaderCode const *shader) const;
 
     /// piecewise buffer binding utility
     /// (to be used for frustum culling, draw indirect result)

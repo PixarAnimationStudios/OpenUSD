@@ -2,7 +2,6 @@
 \page usdMedia_page_front UsdMedia : USD Media Schema
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdMedia : USD Media Schema
-\publicLib
 \endif
 
 \section usdMedia_overview Overview

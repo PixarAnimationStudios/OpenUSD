@@ -2,16 +2,15 @@
 \page sdf_page_front Sdf : Scene Description Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Sdf : Scene Description Foundations
-\publicLib
 \endif
 
-Sdf provides the foundations for serializing scene description to a reference ascii format, or a (multitude of) plugin-defined format.  It also provides the primitive abstractions for interacting with scene description, such as SdfPath, SdfLayer, SdfPrimSpec.
+Sdf provides the foundations for serializing scene description to a reference text format, or a multitude of plugin-defined formats.  It also provides the primitive abstractions for interacting with scene description, such as SdfPath, SdfLayer, SdfPrimSpec.
 
 \section sdf_overview Overview
 
 Implements scene description \em layers in USD.  In USD, a complete scene description is composed from partial scene description stored in SdfLayer objects.  The primary unit of scene description within a layer is a \em prim \em spec, represented by the SdfPrimSpec class.  A complete UsdPrim on a stage is a composition of the prim's built-in fallback values and all of the prim spec objects specified in Sdf layers.  (For an overview of prims and stages, see the \ref usd_page_front "Usd library overview".) 
 
-Use methods on an SdfLayer object to export and save a layer to a file, or to load a file from disk.  Scene description files are stored in <c>.usd</c> format (one layer per file, ascii or binary).  Other features abstracted at the layer level include undo/redo functionality and logging, which can be customized by subclassing SdfLayerStateDelegateBase .
+Use methods on an SdfLayer object to export and save a layer to a file, or to load a file from disk.  Scene description files are stored in <c>.usd</c> format (one layer per file, text or binary).  Other features abstracted at the layer level include undo/redo functionality and logging, which can be customized by subclassing SdfLayerStateDelegateBase .
 
 You should primarily work with scene description using the classes in the Usd library.  The UsdStage object not only represents a complete scene; it also knows how each of the partial scene descriptions were combined to form the complete scene.  For example, the UsdStage object has the context to know how the path of a UsdPrim object on the stage relates to the paths of each SdfPrimSpec object in each layer that contributes a partial description to the complete prim.  SdfLayer objects do not have the context to know how they relate to other layers.
 
@@ -216,8 +215,12 @@ Note that metadata that "appliesTo" prims also applies to variants, as variants 
 
 A plugin metadata field may be associated with a display group by specifying a value for the "displayGroup" field.  This is purely an affordance to allow external applications to group metadata fields together for display purposes.  Sdf does not consume this data itself.
 
-\section sdf_fileFormatPlugin Custom File Formats
+\section sdf_file_format_plugins File Format Plugins
 
-It is possible to create plugins that adapt other file formats to USD, such that a USD file can reference a file of another format, and the plugin will dynamically translate the file's contents into data recognizable as SdfPrimSpec 's, SdfPropertySpec 's, etc.  If it is acceptable to have the file's entire contents translated and cached in memory at the time the file is opened, then deriving a class from the SdfFileFormat plugin base class is the primary task.  If, however, one wishes to access the data lazily (as most binary file formats are designed to do), then one must also create an SdfAbstractData -derived adapter as part of the plugin.
+See \subpage Sdf_Page_FileFormatPlugin for information about creating file format plugins..
+
+\section sdf_variable_expressions Variable Expressions
+
+See \subpage Sdf_Page_VariableExpressions for information about variable expressions.
 
 */

@@ -31,7 +31,6 @@
 #include "pxr/imaging/hdSt/tokens.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -955,7 +954,7 @@ HdSt_Subdivision::CreateRefineComputationCPU(HdSt_MeshTopology *topology,
         topology, source, osdTopology, interpolation, fvarChannel);
 }
 
-HdComputationSharedPtr
+HdStComputationSharedPtr
 HdSt_Subdivision::CreateRefineComputationGPU(
     HdSt_MeshTopology *topology,
     HdBufferSourceSharedPtr const &osdTopology,
@@ -1219,7 +1218,8 @@ HdSt_OsdIndexComputation::Resolve()
     } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(ptableSize/3);
-        memcpy(indices.data(), firstIndex, ptableSize * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, ptableSize * sizeof(int));
 
         HdBufferSourceSharedPtr triIndices =
             std::make_shared<HdVtBufferSource>(
@@ -1484,7 +1484,8 @@ HdSt_OsdFvarIndexComputation::Resolve()
     } else if (HdSt_Subdivision::RefinesToTriangles(scheme)) {
         // populate refined triangle indices.
         VtArray<GfVec3i> indices(numPatches);
-        memcpy(indices.data(), firstIndex, 3 * numPatches * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, 3 * numPatches * sizeof(int));
 
         HdBufferSourceSharedPtr triIndices =
             std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));
@@ -1492,7 +1493,8 @@ HdSt_OsdFvarIndexComputation::Resolve()
     } else {
         // populate refined quad indices.
         VtArray<GfVec4i> indices(numPatches);
-        memcpy(indices.data(), firstIndex, 4 * numPatches * sizeof(int));
+        memcpy(reinterpret_cast<Far::Index*>(indices.data()),
+                firstIndex, 4 * numPatches * sizeof(int));
 
         HdBufferSourceSharedPtr quadIndices =
             std::make_shared<HdVtBufferSource>(_indicesName, VtValue(indices));

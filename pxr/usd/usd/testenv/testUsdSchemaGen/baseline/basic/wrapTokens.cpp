@@ -171,6 +171,7 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "stringArray", UsdContrivedTokens->stringArray);
     _AddToken(cls, "temp", UsdContrivedTokens->temp);
     _AddToken(cls, "test", UsdContrivedTokens->test);
+    _AddToken(cls, "test_MultipleApplyTemplate_", UsdContrivedTokens->test_MultipleApplyTemplate_);
     _AddToken(cls, "test_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrOne);
     _AddToken(cls, "test_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->test_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "testingAsset", UsdContrivedTokens->testingAsset);
@@ -178,6 +179,7 @@ void wrapUsdContrivedTokens()
     _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrOne);
     _AddToken(cls, "testNewVersion_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testNewVersion_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "testo", UsdContrivedTokens->testo);
+    _AddToken(cls, "testo_MultipleApplyTemplate_", UsdContrivedTokens->testo_MultipleApplyTemplate_);
     _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrOne", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrOne);
     _AddToken(cls, "testo_MultipleApplyTemplate_TestAttrTwo", UsdContrivedTokens->testo_MultipleApplyTemplate_TestAttrTwo);
     _AddToken(cls, "token", UsdContrivedTokens->token);

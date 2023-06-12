@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -221,6 +221,12 @@ HdRenderProductSchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+HdRenderProductSchema::GetSchemaToken()
+{
+    return HdRenderProductSchemaTokens->renderProduct;
+} 
 /*static*/
 const HdDataSourceLocator &
 HdRenderProductSchema::GetDefaultLocator()

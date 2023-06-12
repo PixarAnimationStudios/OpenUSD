@@ -53,7 +53,9 @@ def Xform "CubesWithMaterialRel"
     #uniform token[] xformOpOrder = ["xformOp:translate"]
 
     # Fully-opaque grey color cube (default color/opacity)
-    def Cube "NoColorNoOpacity"
+    def Cube "NoColorNoOpacity" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/Nonexistent>
         custom double3 xformOp:translate = (-5, 0, 10)
@@ -61,7 +63,9 @@ def Xform "CubesWithMaterialRel"
     }
 
     # Blue cube with default 1.0 opacity
-    def Cube "YesColorNoOpacity"
+    def Cube "YesColorNoOpacity" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matBlueColor>
         custom double3 xformOp:translate = (0, 0, 10)
@@ -69,7 +73,9 @@ def Xform "CubesWithMaterialRel"
     }
 
     # Grey cube with half opacity
-    def Cube "NoColorYesOpacity"
+    def Cube "NoColorYesOpacity" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matHalfOpacity>
         custom double3 xformOp:translate = (5, 0, 10)
@@ -77,7 +83,9 @@ def Xform "CubesWithMaterialRel"
     }
 
     # Green cube with half opacity
-    def Cube "YesColorYesOpacity"
+    def Cube "YesColorYesOpacity" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matGreenColorHalfOpacity>
         custom double3 xformOp:translate = (10, 0, 10)
@@ -162,7 +170,9 @@ def Xform "CubesWithLocalPrimvars"
 def Xform "CubesWithPrimvarOverrides"
 {
     # material should override any local primvars specified.     
-    def Cube "NoWarnColorAndOpacityFromMaterialRel"
+    def Cube "NoWarnColorAndOpacityFromMaterialRel" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matGreenColorHalfOpacity>
         color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
@@ -176,7 +186,9 @@ def Xform "CubesWithPrimvarOverrides"
     }
 
     # blue color with different face opacities from primvar data.
-    def Cube "NoWarnColorFromMaterialRelOpacityFromPrimvar"
+    def Cube "NoWarnColorFromMaterialRelOpacityFromPrimvar" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matBlueColor>
         color3f[] primvars:displayColor = [(1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 0), (0, 1, 1), (1, 0, 1)] (
@@ -194,7 +206,9 @@ def Xform "CubesWithPrimvarOverrides"
     # even though we have different non-constant interpolation modes below, 
     # since material overrides opacity (always with a constant), 
     # we won't trigger a warning.
-    def Cube "NoWarnColorFromPrimvarOpacityFromMaterial"
+    def Cube "NoWarnColorFromPrimvarOpacityFromMaterial" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matHalfOpacity>
         color3f[] primvars:displayColor = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (
@@ -210,7 +224,9 @@ def Xform "CubesWithPrimvarOverrides"
     # since material has neither color nor opacity, we get color and opacity 
     # from the local primvars, and thus, trigger a warning since interp modes
     # are different, and neither of them are constant
-    def Cube "WarnColorAndOpacityFromPrimvar"
+    def Cube "WarnColorAndOpacityFromPrimvar" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/matNonExistent>
         color3f[] primvars:displayColor = [(0, 0, 0), (1, 0, 0), (0, 1, 0), (0, 0, 1), (1, 1, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1)] (

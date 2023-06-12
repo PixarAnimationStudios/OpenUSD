@@ -318,7 +318,7 @@ UsdUsdFileFormat::WriteToFile(
 
     // Otherwise, if we are saving a .usd layer (i.e., calling SdfLayer::Save),
     // we want to maintain that layer's underlying format. For example,
-    // calling Save() on an ASCII .usd file should produce an ASCII file
+    // calling Save() on a text .usd file should produce a text file
     // and not convert it to binary.
     // 
     // If we are exporting to a .usd layer (i.e., calling SdfLayer::Export),

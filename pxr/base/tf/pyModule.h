@@ -72,52 +72,12 @@ void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#if PY_MAJOR_VERSION == 2
 // When we generate boost python bindings for a library named Foo, 
 // we generate a python package that has __init__.py and _Foo.so, 
 // and we put all the python bindings in _Foo.so.  The __init__.py 
 // file imports _Foo and then publishes _Foo's symbols as its own.  
-// Since the module with the bindings is named _Foo, the init routine 
-// must be named init_Foo.  This little block produces that function.
-//
-extern "C"
-ARCH_EXPORT
-void BOOST_PP_CAT(init_, MFB_PACKAGE_NAME)() {
-    PXR_NAMESPACE_USING_DIRECTIVE
-    boost::python::detail::init_module
-        (TF_PP_STRINGIZE(BOOST_PP_CAT(_,MFB_PACKAGE_NAME)),
-         TF_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
-}
-
-// We also support the case where both the library contents and the 
-// python bindings go into libfoo.so.  We still generate a package named foo
-// but the __init__.py file in the package foo imports libfoo and
-// publishes it's symbols as its own.  Since the module with the
-// bindings is named libfoo, the init routine must be named initlibfoo.
-// This little block produces that function.
-//
-// So there are two init routines in every library, but only the one
-// that matches the name of the python module will be called by python
-// when the module is imported.  So the total cost is a 1-line
-// function that doesn't get called.
-//
-extern "C"
-ARCH_EXPORT
-void BOOST_PP_CAT(initlib, MFB_PACKAGE_NAME)() {
-    PXR_NAMESPACE_USING_DIRECTIVE
-    boost::python::detail::init_module
-        (TF_PP_STRINGIZE(BOOST_PP_CAT(lib,MFB_PACKAGE_NAME)),
-         TF_PP_CAT(&init_module_, MFB_PACKAGE_NAME));
-}
-
-#else // Python 3:
-
-// These functions serve the same purpose as the python 2 implementations
-// above, but are updated for the overhauled approach to module initialization
-// in python 3. In python 3 init<name> is replaced by PyInit_<name>, and
-// initlib<name> becomes PyInit_lib<name>. The init_module function still
-// exists, but now takes a struct of input values instead of a list of
-// parameters. Also, these functions now return a PyObject* instead of void.
+// Since the module with the bindings is named _Foo, the PyInit routine 
+// must be named PyInit_Foo.  This little block produces that function.
 //
 // See https://docs.python.org/3/c-api/module.html#initializing-c-modules_
 //
@@ -142,6 +102,18 @@ PyObject* BOOST_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
                 BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
+// We also support the case where both the library contents and the 
+// python bindings go into libfoo.so.  We still generate a package named foo
+// but the __init__.py file in the package foo imports libfoo and
+// publishes it's symbols as its own.  Since the module with the
+// bindings is named libfoo, the init routine must be named PyInit_libfoo.
+// This little block produces that function.
+//
+// So there are two init routines in every library, but only the one
+// that matches the name of the python module will be called by python
+// when the module is imported.  So the total cost is a 1-line
+// function that doesn't get called.
+//
 extern "C"
 ARCH_EXPORT
 PyObject* BOOST_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
@@ -162,8 +134,6 @@ PyObject* BOOST_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
     return boost::python::detail::init_module(moduledef, 
                 BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
-
-#endif
 
 
 #define TF_WRAP_MODULE static void WrapModule()

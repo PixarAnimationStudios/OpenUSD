@@ -413,6 +413,19 @@ public:
     HD_API
     void MarkSprimClean(SdfPath const& id, HdDirtyBits newBits=Clean);
 
+    /// Insert a dependency between \p sprimId and parent instancer
+    /// \p instancerId.  Changes to the latter mark the former with
+    /// DirtyInstancer.
+    HD_API
+    void AddInstancerSprimDependency(SdfPath const& instancerId,
+                                     SdfPath const& sprimId);
+
+    /// Remove a dependency between \p sprimId and parent instancer
+    /// \p instancerId.
+    HD_API
+    void RemoveInstancerSprimDependency(SdfPath const& instancerId,
+                                        SdfPath const& sprimId);
+
     /// Insert a dependency between \p sprimId and parent sprim
     /// \p parentSprimId.
     HD_API
@@ -603,8 +616,9 @@ private:
     _CollectionStateMap _collectionState;
 
     // Provides reverse-association between instancers and the child
-    // instancers/rprims that use them.
+    // instancers/prims that use them.
     _DependencyMap _instancerRprimDependencies;
+    _DependencyMap _instancerSprimDependencies;
     _DependencyMap _instancerInstancerDependencies;
 
     // Provides forward and reverse-association between sprims and the child

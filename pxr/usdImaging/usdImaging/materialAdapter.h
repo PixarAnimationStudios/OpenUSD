@@ -73,7 +73,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     /// Returns RepresentsSelfAndDescendents to suppress population of child
     /// Shader prims and receive notice when their properties change/
@@ -85,7 +86,8 @@ public:
             UsdPrim const& prim,
             UsdPrim const& descendentPrim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

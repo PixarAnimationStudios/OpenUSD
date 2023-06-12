@@ -54,8 +54,6 @@ public:
     virtual std::vector<HdSceneIndexBaseRefPtr> GetInputScenes() const = 0;
 };
 
-
-
 TF_DECLARE_WEAK_AND_REF_PTRS(HdSingleInputFilteringSceneIndexBase);
 
 ///
@@ -86,6 +84,12 @@ protected:
     virtual void _PrimsDirtied(
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) = 0;
+
+    // Base implementation converts prim removed messages.
+    HD_API
+    virtual void _PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const HdSceneIndexObserver::RenamedPrimEntries &entries);
 
     /// Returns the input scene.  
     ///
@@ -118,6 +122,10 @@ private:
         void PrimsDirtied(
                 const HdSceneIndexBase &sender,
                 const DirtiedPrimEntries &entries) override;
+
+        void PrimsRenamed(
+                const HdSceneIndexBase &sender,
+                const RenamedPrimEntries &entries) override;
     private:
         HdSingleInputFilteringSceneIndexBase *_owner;
     };

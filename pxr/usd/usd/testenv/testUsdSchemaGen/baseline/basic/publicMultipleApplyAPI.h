@@ -260,6 +260,28 @@ public:
     UsdAttribute CreateTestAttrTwoAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
+    // --------------------------------------------------------------------- //
+    // PUBLICAPI 
+    // --------------------------------------------------------------------- //
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `opaque __INSTANCE_NAME__` |
+    /// | C++ Type | SdfOpaqueValue |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Opaque |
+    USDCONTRIVED_API
+    UsdAttribute GetPublicAPIAttr() const;
+
+    /// See GetPublicAPIAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDCONTRIVED_API
+    UsdAttribute CreatePublicAPIAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
     // ===================================================================== //
     // Feel free to add custom code below this line, it will be preserved by 
     // the code generator. 

@@ -183,6 +183,11 @@ class TestUsdzFileFormat(unittest.TestCase):
                            "anchored_refs/root.usd")
         _TestComposedStage("nested_anchored_refs.usdz[anchored_refs.usdz[root.usd]]", 
                            "anchored_refs/root.usd")
+        
+    def test_Capabilities(self):
+        self.assertTrue(Sdf.FileFormat.FormatSupportsReading('.usdz'))
+        self.assertFalse(Sdf.FileFormat.FormatSupportsWriting('.usdz'))
+        self.assertFalse(Sdf.FileFormat.FormatSupportsEditing('.usdz'))
 
 if __name__ == "__main__":
     unittest.main()

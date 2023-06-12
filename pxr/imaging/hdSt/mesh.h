@@ -43,7 +43,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdStDrawItem;
 class HdSceneDelegate;
 
-using Hd_VertexAdjacencySharedPtr = std::shared_ptr<class Hd_VertexAdjacency>;
+using HdSt_VertexAdjacencyBuilderSharedPtr =
+        std::shared_ptr<class HdSt_VertexAdjacencyBuilder>;
 using HdBufferSourceSharedPtr = std::shared_ptr<class HdBufferSource>;
 using HdSt_MeshTopologySharedPtr = std::shared_ptr<class HdSt_MeshTopology>;
 
@@ -169,7 +170,7 @@ protected:
         HdStResourceRegistrySharedPtr resourceRegistry,
         HdChangeTracker &changeTracker, 
         HdRenderParam *renderParam, 
-        HdDrawItem *drawItem, 
+        HdStDrawItem *drawItem, 
         const TfToken &indexToken,
         HdBufferSourceSharedPtr indicesSource, 
         HdBufferSourceSharedPtr fvarIndicesSource, 
@@ -330,7 +331,7 @@ private:
     };
 
     HdSt_MeshTopologySharedPtr _topology;
-    Hd_VertexAdjacencySharedPtr _vertexAdjacency;
+    HdSt_VertexAdjacencyBuilderSharedPtr _vertexAdjacencyBuilder;
 
     HdTopology::ID _topologyId;
     HdTopology::ID _vertexPrimvarId;

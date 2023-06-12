@@ -30,7 +30,6 @@
 #include "pxr/imaging/hdSt/materialParam.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/resource.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -39,6 +38,8 @@
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/envSetting.h"
+
+#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -150,16 +151,12 @@ HdSt_MaterialNetworkShader::BindResources(const int program,
                                  HdSt_ResourceBinder const &binder)
 {
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 /*virtual*/
 void
 HdSt_MaterialNetworkShader::UnbindResources(const int program,
                                    HdSt_ResourceBinder const &binder)
 {
-    binder.UnbindShaderResources(this);
-
     HdSt_TextureBinder::UnbindResources(binder, _namedTextureHandles);
 }
 /*virtual*/

@@ -122,53 +122,23 @@ TfTokenVector
 UsdImagingDataSourceBasisCurvesPrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdBasisCurvesSchemaTokens->basisCurves);
+    result.push_back(HdBasisCurvesSchema::GetSchemaToken());
 
     return result;
 }
 
 
-static
-const UsdImagingDataSourceCustomPrimvars::Mappings &
-_GetCustomPrimvarMappings(const UsdPrim &usdPrim)
-{
-    static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        {HdTokens->widths, HdTokens->widths},
-    };
-
-    return mappings;
-}
-
 HdDataSourceBaseHandle 
 UsdImagingDataSourceBasisCurvesPrim::Get(const TfToken &name)
 {
-    if (name == HdBasisCurvesSchemaTokens->basisCurves) {
+    if (name == HdBasisCurvesSchema::GetSchemaToken()) {
         return UsdImagingDataSourceBasisCurves::New(
                 _GetSceneIndexPath(),
                 UsdGeomBasisCurves(_GetUsdPrim()),
                 _GetStageGlobals());
     }
 
-    HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
-    if (name == HdPrimvarsSchemaTokens->primvars) {
-
-        HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
-        HdContainerDataSourceHandle customPvs =
-            UsdImagingDataSourceCustomPrimvars::New(
-                _GetSceneIndexPath(),
-                _GetUsdPrim(),
-                _GetCustomPrimvarMappings(_GetUsdPrim()),
-                _GetStageGlobals());
-
-        if (HdContainerDataSourceHandle basePvs =
-                HdContainerDataSource::Cast(result)) {
-            result = HdOverlayContainerDataSource::New(basePvs, customPvs);
-        } else {
-            result = customPvs;
-        }
-    }
-
-    return result;
+    return UsdImagingDataSourceGprim::Get(name);
 }
 
 /*static*/
@@ -176,18 +146,14 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceBasisCurvesPrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result;
 
     if (subprim.IsEmpty()) {
         result = UsdImagingDataSourceGprim::Invalidate(
-            prim, subprim, properties);
-
-        if (subprim.IsEmpty()) {
-            result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
-                properties, _GetCustomPrimvarMappings(prim)));
-        }
+            prim, subprim, properties, invalidationType);
 
         for (const TfToken &propertyName : properties) {
             if (propertyName == UsdGeomTokens->curveVertexCounts) {

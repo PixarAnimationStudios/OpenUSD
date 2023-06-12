@@ -42,9 +42,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 static const char VoidFuncSource[] = "def VoidFunc(): pass\n";
 static const char BoolFuncSource[] = "def BoolFunc(): return True\n";
 static const char IntFuncSource[] = "def IntFunc(): return 13\n";
-#if PY_MAJOR_VERSION < 3
-static const char LongFuncSource[] = "def LongFunc(): return 17L\n";
-#endif
 static const char DoubleFuncSource[] = "def DoubleFunc(): return 19.0\n";
 static const char StringFuncSource[] = "def StringFunc(): return 'a string'\n";
 static const char ObjectFuncSource[] = "def ObjectFunc(): return testObject\n";
@@ -98,14 +95,11 @@ main(int argc, char **argv)
     // Store our test functions in this dictionary rather than the main module.
     dict testEnv;
 
-    testEnv.update(import(TfPyBuiltinModuleName).attr("__dict__"));
+    testEnv.update(import("builtins").attr("__dict__"));
 
     // Expected results of calling functions
     const bool expectedBool = true;
     const int expectedInt = 13;
-#if PY_MAJOR_VERSION < 3
-    const long expectedLong = 17;
-#endif
     const double expectedDouble = 19;
     const std::string expectedString = "a string";
     object expectedObject = TfPyEvaluate("object()");
@@ -119,10 +113,6 @@ main(int argc, char **argv)
     object intFunc = DefineFunc("IntFunc", IntFuncSource, testEnv);
     TF_AXIOM(!intFunc.is_none());
 
-#if PY_MAJOR_VERSION < 3
-    object longFunc = DefineFunc("LongFunc", LongFuncSource, testEnv);
-    TF_AXIOM(!longFunc.is_none());
-#endif
 
     object doubleFunc = DefineFunc("DoubleFunc", DoubleFuncSource, testEnv);
     TF_AXIOM(!doubleFunc.is_none());
@@ -134,9 +124,6 @@ main(int argc, char **argv)
     AssertCallVoid(voidFunc);
     AssertCallResult<bool>(boolFunc, expectedBool);
     AssertCallResult<int>(intFunc, expectedInt);
-#if PY_MAJOR_VERSION < 3
-    AssertCallResult<long>(longFunc, expectedLong);
-#endif
     AssertCallResult<double>(doubleFunc, expectedDouble);
     AssertCallResult<std::string>(stringFunc, expectedString);
     AssertCallResult<object>(objectFunc, expectedObject);
@@ -148,10 +135,6 @@ main(int argc, char **argv)
     TF_AXIOM(!boolLambda.is_none());
     object intLambda = TfPyEvaluate("lambda: 13");
     TF_AXIOM(!intLambda.is_none());
-#if PY_MAJOR_VERSION < 3
-    object longLambda = TfPyEvaluate("lambda: 17L");
-    TF_AXIOM(!longLambda.is_none());
-#endif
     object doubleLambda = TfPyEvaluate("lambda: 19.0");
     TF_AXIOM(!doubleLambda.is_none());
     object stringLambda = TfPyEvaluate("lambda: 'a string'");
@@ -162,9 +145,6 @@ main(int argc, char **argv)
     AssertCallVoid(voidLambda);
     AssertCallResult<bool>(boolLambda, expectedBool);
     AssertCallResult<int>(intLambda, expectedInt);
-#if PY_MAJOR_VERSION < 3
-    AssertCallResult<long>(longLambda, expectedLong);
-#endif
     AssertCallResult<double>(doubleLambda, expectedDouble);
     AssertCallResult<std::string>(stringLambda, expectedString);
     AssertCallResult<object>(objectLambda, expectedObject);

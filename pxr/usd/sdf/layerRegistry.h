@@ -33,7 +33,6 @@
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/hashed_index.hpp>
 #include <boost/multi_index/identity.hpp>
-#include <boost/noncopyable.hpp>
 
 #include <string>
 #include <iosfwd>
@@ -49,8 +48,10 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// is inserted into the layer registry. This allows SdfLayer::Find/FindOrOpen
 /// to locate loaded layers.
 ///
-class Sdf_LayerRegistry : boost::noncopyable
+class Sdf_LayerRegistry
 {
+    Sdf_LayerRegistry(const Sdf_LayerRegistry&) = delete;
+    Sdf_LayerRegistry& operator=(const Sdf_LayerRegistry&) = delete;
 public:
     /// Constructor.
     Sdf_LayerRegistry();

@@ -76,7 +76,7 @@ consider the prim to be *deactivated*, which has two important consequences:
   scene complexity and cost.
 
 
-\section Usd_Filetypes Ascii, Binary, and Plugin Filetypes
+\section Usd_Filetypes Text, Binary, and Plugin Filetypes
      
 \section Usd_AssetResolution Resolving Asset References
 

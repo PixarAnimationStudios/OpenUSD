@@ -563,5 +563,3 @@ void wrapUsdStage()
              return_internal_reference<>())
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(UsdStage)

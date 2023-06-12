@@ -1,0 +1,115 @@
+/*!
+
+\page Sdf_Page_FileFormatPlugin Creating a File Format Plugin
+
+You can create plugins that adapt other file formats to USD, and the plugin will dynamically translate the file's contents into data recognizable as SdfPrimSpec 's, SdfPropertySpec 's, etc.  
+If you plan to have the file's entire contents translated and cached in memory at the time the file is opened, then derive a class from the SdfFileFormat plugin base class.  
+If, however, you wish to access the data lazily (as most binary file formats are designed to do), then you should also create an SdfAbstractData -derived adapter as part of the plugin.
+
+\section Capability_Overview File Format Capabilities
+
+When integrating USD into end user applications it can be helpful to determine if file format plugins provide reading, writing, and/or editing functionality.
+These collective operations are referred to as a plugin's capabilities.  
+Being able to query a plugin's capabilities can be helpful in situations such as creating a file format selector for import or export.
+In the absense of being able to query such capabilities, a user might, for example, select a format for export, and have the operation fail mysteriously due to the operation not being supported by the format plugin.
+
+\subsection Declaring_Capabilities Declaring Capabilities
+
+File format capabilities are specified in the file format plugin's \c plugInfo.json entry.
+By default, the system assumes that each file format plugin supports all capabilities.
+Plugin authors must explicitly enumerate the capabilities that a plugin does not support.
+
+There are currently three standard file format capabilities:
+<table>
+<tr>
+    <th>Capability</th>
+    <th>plugInfo.json property</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>Reading</td>
+    <td> \c supportsReading</td>
+    <td>
+        The plugin supports data import into SdfLayer.
+        If "supportsReading" is false, SdfLayer API that reads serialized data will issue a coding error and fail if given an identifier that is handled by this plugin. 
+        
+        This includes:<br />
+        SdfLayer::FindOrOpen<br />
+        SdfLayer::Import
+    </td>
+</tr>
+<tr>
+    <td>Writing</td>
+    <td> \c supportsWriting</td>
+    <td>
+        The plugin supports data export from SdfLayer.
+        If "supportsWriting" is false, SdfLayer API that writes serialized data will issue a coding error and fail if given an identifier that is handled by this plugin. 
+        
+        This includes:<br />
+        SdfLayer::Export<br />
+        SdfLayer::Save
+    </td>
+</tr>
+<tr>
+    <td>Editing</td>
+    <td> \c supportsEditing</td>
+    <td>
+        The plugin supports interactive layer modification.
+        Currently this capability is for informational purposes only.
+        No runtime validation is performed.
+    </td>
+</tr>
+</table>
+
+Below is an example \c plugInfo.json file declaring a file format that does not support writing.
+
+\code
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "UnwritableFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "Format that does not support writing",
+                        "extensions": [
+                            "unwritable"
+                        ],
+                        "supportsWriting": false,
+                        "formatId": "UnwritableFormat",
+                        "primary": true
+                    }
+                }
+            }
+        }
+    ]
+}
+\endcode
+
+\subsection Runtime_Access Querying Capabilities at Runtime
+
+File format capabilities can be queried at runtime using the SdfFileFormat class:
+<table>
+<tr>
+    <th> Static Method </th>
+    <th> Instance Method </th>
+</tr>
+<tr>
+    <td> SdfFileFormat::FormatSupportsReading </td>
+    <td> SdfFileFormat::SupportsReading </td>
+</tr>
+<tr>
+    <td> SdfFileFormat::FormatSupportsWriting </td>
+    <td> SdfFileFormat::SupportsWriting </td>
+</tr>
+<tr>
+    <td> SdfFileFormat::FormatSupportsEditing </td>
+    <td> SdfFileFormat::SupportsEditing </td>
+</tr>
+</table>
+Use of the static methods when possible is preferred because these methods read the metadata authored in \c plugInfo.json to determine capabilities without loading the plugins themselves.
+This avoids a potentially costly load of large and complex plugins.
+
+*/

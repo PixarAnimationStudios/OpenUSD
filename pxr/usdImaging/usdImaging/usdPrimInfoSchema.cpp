@@ -62,16 +62,32 @@ UsdImagingUsdPrimInfoSchema::GetSpecifier()
         UsdImagingUsdPrimInfoSchemaTokens->specifier);
 }
 
+HdContainerDataSourceHandle
+UsdImagingUsdPrimInfoSchema::GetPiPropagatedPrototypes()
+{
+    return _GetTypedDataSource<HdContainerDataSource>(
+        UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes);
+}
+
+HdBoolDataSourceHandle
+UsdImagingUsdPrimInfoSchema::GetIsLoaded()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        UsdImagingUsdPrimInfoSchemaTokens->isLoaded);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingUsdPrimInfoSchema::BuildRetained(
         const HdPathDataSourceHandle &niPrototypePath,
         const HdBoolDataSourceHandle &isNiPrototype,
-        const HdTokenDataSourceHandle &specifier
+        const HdTokenDataSourceHandle &specifier,
+        const HdContainerDataSourceHandle &piPropagatedPrototypes,
+        const HdBoolDataSourceHandle &isLoaded
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken names[5];
+    HdDataSourceBaseHandle values[5];
 
     size_t count = 0;
     if (niPrototypePath) {
@@ -89,6 +105,16 @@ UsdImagingUsdPrimInfoSchema::BuildRetained(
         values[count++] = specifier;
     }
 
+    if (piPropagatedPrototypes) {
+        names[count] = UsdImagingUsdPrimInfoSchemaTokens->piPropagatedPrototypes;
+        values[count++] = piPropagatedPrototypes;
+    }
+
+    if (isLoaded) {
+        names[count] = UsdImagingUsdPrimInfoSchemaTokens->isLoaded;
+        values[count++] = isLoaded;
+    }
+
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
@@ -104,6 +130,12 @@ UsdImagingUsdPrimInfoSchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+UsdImagingUsdPrimInfoSchema::GetSchemaToken()
+{
+    return UsdImagingUsdPrimInfoSchemaTokens->__usdPrimInfo;
+} 
 /*static*/
 const HdDataSourceLocator &
 UsdImagingUsdPrimInfoSchema::GetDefaultLocator()
@@ -149,13 +181,31 @@ UsdImagingUsdPrimInfoSchema::Builder::SetSpecifier(
     return *this;
 }
 
+UsdImagingUsdPrimInfoSchema::Builder &
+UsdImagingUsdPrimInfoSchema::Builder::SetPiPropagatedPrototypes(
+    const HdContainerDataSourceHandle &piPropagatedPrototypes)
+{
+    _piPropagatedPrototypes = piPropagatedPrototypes;
+    return *this;
+}
+
+UsdImagingUsdPrimInfoSchema::Builder &
+UsdImagingUsdPrimInfoSchema::Builder::SetIsLoaded(
+    const HdBoolDataSourceHandle &isLoaded)
+{
+    _isLoaded = isLoaded;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 UsdImagingUsdPrimInfoSchema::Builder::Build()
 {
     return UsdImagingUsdPrimInfoSchema::BuildRetained(
         _niPrototypePath,
         _isNiPrototype,
-        _specifier
+        _specifier,
+        _piPropagatedPrototypes,
+        _isLoaded
     );
 }
 

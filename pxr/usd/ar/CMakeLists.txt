@@ -240,6 +240,15 @@ pxr_build_test(testArResolverContext_CPP
         testenv/testArResolverContext.cpp
 ) 
 
+pxr_build_test(testArThreadedAssetCreation
+    LIBRARIES
+        arch
+        tf
+        ar
+    CPPFILES
+        testenv/testArThreadedAssetCreation.cpp
+) 
+
 pxr_register_test(testArAssetInfo
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArAssetInfo"
@@ -281,4 +290,8 @@ pxr_register_test(testArResolverContext
 
 pxr_register_test(testArResolverContext_CPP
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext_CPP"
+)
+
+pxr_register_test(testArThreadedAssetCreation
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArThreadedAssetCreation"
 )

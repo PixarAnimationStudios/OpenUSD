@@ -173,21 +173,19 @@
                         "isInternal": true,
                         "primTypeName": "RenderSettings"
                     },
-                    "UsdImagingSampleFilterAdapter": {
+                    "UsdImagingRenderProductAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
                         ],
                         "isInternal": true,
-                        "primTypeName": "PxrSampleFilterPluginBase",
-                        "includeDerivedPrimTypes" : true 
+                        "primTypeName": "RenderProduct"
                     },
-                    "UsdImagingDisplayFilterAdapter": {
+                    "UsdImagingRenderVarAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
                         ],
                         "isInternal": true,
-                        "primTypeName": "PxrDisplayFilterPluginBase",
-                        "includeDerivedPrimTypes": true
+                        "primTypeName": "RenderVar"
                     },
                     "UsdImagingVolumeAdapter": {
                         "bases": [

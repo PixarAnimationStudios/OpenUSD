@@ -209,29 +209,13 @@ _ComputeDataWindow(
 }
 
 static
-const GfVec3i &
-_GetFramebufferSize(const HgiGraphicsCmdsDesc &desc)
-{
-    for (const HgiTextureHandle &color : desc.colorTextures) {
-        return color->GetDescriptor().dimensions;
-    }
-    if (desc.depthTexture) {
-        return desc.depthTexture->GetDescriptor().dimensions;
-    }
-    
-    static const GfVec3i fallback(0);
-    return fallback;
-}
-
-static
 GfVec4i
 _FlipViewport(const GfVec4i &viewport,
-              const GfVec3i &framebufferSize)
+              unsigned int framebufferHeight)
 {
-    const int height = framebufferSize[1];
-    if (height > 0) {
+    if (framebufferHeight > 0) {
         return GfVec4i(viewport[0],
-                       height - (viewport[1] + viewport[3]),
+                       framebufferHeight - (viewport[1] + viewport[3]),
                        viewport[2],
                        viewport[3]);
     } else {
@@ -257,7 +241,6 @@ _ToVec4i(const GfRect2i &r)
 
 GfVec4i
 HdStRenderPassState::ComputeViewport(
-    const HgiGraphicsCmdsDesc &desc,
     const bool flip) const
 {
     const CameraUtilFraming &framing = GetFraming();
@@ -268,7 +251,7 @@ HdStRenderPassState::ComputeViewport(
         if (flip) {
             // Note that in OpenGL, the coordinates for the viewport
             // are y-Up but the camera framing is y-Down.
-            return _FlipViewport(viewport, _GetFramebufferSize(desc));
+            return _FlipViewport(viewport, _GetFramebufferHeight());
         } else {
             return viewport;
         }
@@ -562,74 +545,6 @@ HdStRenderPassState::GetShaders() const
 
 namespace {
 
-// Note: The geometric shader may override the state if necessary,
-// including disabling h/w culling altogether.
-// Disabling h/w culling is required to handle instancing wherein
-// instanceScale/instanceTransform can flip the xform handedness.
-HgiCullMode
-_ResolveCullMode(
-        HdCullStyle const rsCullStyle,
-        HdSt_GeometricShaderSharedPtr const &geometricShader)
-{
-    if (!geometricShader->GetUseHardwareFaceCulling()) {
-        // Use fragment shader culling via discard.
-        return HgiCullModeNone;
-    }
-
-
-    // If the Rprim has an opinion, that wins. Else use the render pass.
-    HdCullStyle const gsCullStyle = geometricShader->GetCullStyle();
-    HdCullStyle const resolvedCullStyle =
-        gsCullStyle == HdCullStyleDontCare? rsCullStyle : gsCullStyle;
-    
-    bool const hasMirroredTransform =
-                        geometricShader->GetHasMirroredTransform();
-    bool const doubleSided = geometricShader->GetDoubleSided();
-
-    HgiCullMode resolvedCullMode = HgiCullModeNone;
-
-    switch (resolvedCullStyle) {
-        case HdCullStyleFront:
-            if (hasMirroredTransform) {
-                resolvedCullMode = HgiCullModeBack;
-            } else {
-                resolvedCullMode = HgiCullModeFront;
-            }
-            break;
-        case HdCullStyleFrontUnlessDoubleSided:
-            if (!doubleSided) {
-                if (hasMirroredTransform) {
-                    resolvedCullMode = HgiCullModeBack;
-                } else {
-                    resolvedCullMode = HgiCullModeFront;
-                }
-            }
-            break;
-        case HdCullStyleBack:
-            if (hasMirroredTransform) {
-                resolvedCullMode = HgiCullModeFront;
-            } else {
-                resolvedCullMode = HgiCullModeBack;
-            }
-            break;
-        case HdCullStyleBackUnlessDoubleSided:
-            if (!doubleSided) {
-                if (hasMirroredTransform) {
-                    resolvedCullMode = HgiCullModeFront;
-                } else {
-                    resolvedCullMode = HgiCullModeBack;
-                }
-            }
-            break;
-        case HdCullStyleNothing:
-        default:
-            resolvedCullMode = HgiCullModeNone;
-            break;
-    }
-
-    return resolvedCullMode;
-}
-
 void
 _SetGLCullState(HgiCullMode const resolvedCullMode)
 {
@@ -723,7 +638,7 @@ HdStRenderPassState::ApplyStateFromGeometricShader(
         HdSt_ResourceBinder const &binder,
         HdSt_GeometricShaderSharedPtr const &geometricShader)
 {
-    _SetGLCullState(_ResolveCullMode(_cullStyle, geometricShader));
+    _SetGLCullState(geometricShader->ResolveCullMode(_cullStyle));
     _SetGLPolygonMode(_lineWidth, geometricShader);
 }
 
@@ -1161,6 +1076,10 @@ HdStRenderPassState::_InitPrimitiveState(
                 geometricShader->IsPrimTypeTriangles()
                     ? HgiTessellationState::PatchType::Triangle
                     : HgiTessellationState::PatchType::Quad;
+            pipeDesc->tessellationState.tessFactorMode =
+                geometricShader->IsPrimTypePatches()
+                    ? HgiTessellationState::TessVertex
+                    : HgiTessellationState::Constant;
         }
     }
 }
@@ -1277,7 +1196,7 @@ HdStRenderPassState::_InitRasterizationState(
     }
 
     rasterizationState->cullMode =
-        _ResolveCullMode(_cullStyle, geometricShader);
+        geometricShader->ResolveCullMode(_cullStyle);
 
     if (GetEnableDepthClamp()) {
         rasterizationState->depthClampEnabled = true;

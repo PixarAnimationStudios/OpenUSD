@@ -27,11 +27,10 @@
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rerootingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/sceneIndexPrimView.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/mergingSceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 
 #include "pxr/base/tf/envSetting.h"
 
@@ -75,29 +74,41 @@ public:
 
         _SceneIndices &sceneIndices = _prototypeToSceneIndices[prototypeName];
 
-        HdSceneIndexBaseRefPtr flatteningSceneIndex =
-            sceneIndices.flatteningSceneIndex;
-        if (!flatteningSceneIndex) {
-            flatteningSceneIndex =
-                _ComputeFlatteningSceneIndex(
+        // Are we instantiating, e.g., the instance aggregation scene index
+        // to aggregate instances inside a prototype or for everything outside
+        // any USD prototype?
+        const bool forPrototype = !prototypeName.IsEmpty();
+
+        // Check whether weak ptr references valid scene index.
+        HdSceneIndexBaseRefPtr isolatingSceneIndex =
+            sceneIndices.isolatingSceneIndex;
+        if (!isolatingSceneIndex) {
+            // Allocate new scene index if not.
+            isolatingSceneIndex =
+                _ComputeIsolatingSceneIndex(
                     prototypeName);
+            // Store weak ptr so that it can be re-used in the future.
+            sceneIndices.isolatingSceneIndex =
+                isolatingSceneIndex;
         }
 
         result.prototypeSceneIndex = sceneIndices.prototypeSceneIndex;
         if (!result.prototypeSceneIndex) {
             result.prototypeSceneIndex =
-                _ComputePrototypeSceneIndex(
-                    prototypeName, flatteningSceneIndex);
-            sceneIndices.prototypeSceneIndex = result.prototypeSceneIndex;
+                UsdImaging_NiPrototypeSceneIndex::New(
+                    isolatingSceneIndex, forPrototype);
+            sceneIndices.prototypeSceneIndex =
+                result.prototypeSceneIndex;
         }
 
         result.instanceAggregationSceneIndex =
             sceneIndices.instanceAggregationSceneIndex;
         if (!result.instanceAggregationSceneIndex) {
             result.instanceAggregationSceneIndex =
-                _ComputeInstanceAggregationSceneIndex(
-                    prototypeName, flatteningSceneIndex);
-            sceneIndices.instanceAggregationSceneIndex = result.instanceAggregationSceneIndex;
+                UsdImaging_NiInstanceAggregationSceneIndex::New(
+                    isolatingSceneIndex, forPrototype);
+            sceneIndices.instanceAggregationSceneIndex =
+                result.instanceAggregationSceneIndex;
         }
 
         return result;
@@ -111,56 +122,21 @@ private:
             return UsdImaging_NiPrototypePruningSceneIndex::New(
                 _inputSceneIndex);
         } else {
-            const SdfPath prototypePath =
-                SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
+            // Isolate prototype from UsdImagingStageSceneIndex and
+            // move it under the instancer.
             return UsdImagingRerootingSceneIndex::New(
-                _inputSceneIndex, prototypePath, prototypePath);
+                _inputSceneIndex,
+                // Path of prototype on UsdImagingStageSceneIndex
+                SdfPath::AbsoluteRootPath().AppendChild(prototypeName),
+                UsdImaging_NiPrototypeSceneIndex::GetPrototypePath());
         }
-    }
-
-    HdSceneIndexBaseRefPtr
-    _ComputeFlatteningSceneIndex(const TfToken &prototypeName) const
-    {
-        // Needed for, e.g., to get the composed transform or resolved
-        // material binding of a native instance (resolved within the
-        // prototype).
-        return HdFlatteningSceneIndex::New(
-            _ComputeIsolatingSceneIndex(prototypeName));
-    }
-
-    HdSceneIndexBaseRefPtr
-    _ComputePrototypeSceneIndex(
-        const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
-    {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
-        
-        return UsdImaging_NiPrototypeSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
-    }
-
-    HdSceneIndexBaseRefPtr
-    _ComputeInstanceAggregationSceneIndex(
-        const TfToken &prototypeName,
-        HdSceneIndexBaseRefPtr const &commonSceneIndex) const
-    {
-        const SdfPath prototypeRoot =
-            prototypeName.IsEmpty()
-            ? SdfPath()
-            : SdfPath::AbsoluteRootPath().AppendChild(prototypeName);
-
-        return UsdImaging_NiInstanceAggregationSceneIndex::New(
-            commonSceneIndex, prototypeRoot);
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
 
     struct _SceneIndices
     {
-        HdSceneIndexBasePtr flatteningSceneIndex;
+        HdSceneIndexBasePtr isolatingSceneIndex;
         HdSceneIndexBasePtr instanceAggregationSceneIndex;
         HdSceneIndexBasePtr prototypeSceneIndex;
     };
@@ -185,7 +161,12 @@ public:
         HdMergingSceneIndexRefPtr const &mergingSceneIndex)
       : _rerootingSceneIndex(
           UsdImagingRerootingSceneIndex::New(
-              sceneIndex, SdfPath::AbsoluteRootPath(), prefix))
+              sceneIndex,
+              // Re-root, but only prims under the instancer,
+              // i.e., the instancer and the prototype.
+              // This way paths inside the prototype pointing to
+              // stuff outside the prototype will not be changed.
+              UsdImaging_NiPrototypeSceneIndex::GetInstancerPath(), prefix))
       , _mergingSceneIndex(mergingSceneIndex)
     {
         _mergingSceneIndex->AddInputScene(_rerootingSceneIndex, prefix);
@@ -251,8 +232,8 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
     HdSceneIndexBaseRefPtr const &instanceAggregationSceneIndex)
 {
     for (const SdfPath &primPath
-             : UsdImaging_SceneIndexPrimView(instanceAggregationSceneIndex,
-                                             SdfPath::AbsoluteRootPath())) {
+             : HdSceneIndexPrimView(instanceAggregationSceneIndex,
+                                    SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
 }
@@ -260,22 +241,12 @@ UsdImagingNiPrototypePropagatingSceneIndex::_Populate(
 void
 UsdImagingNiPrototypePropagatingSceneIndex::_AddPrim(const SdfPath &primPath)
 {
-    // Use the convention from the UsdImaging_NiInstanceAggregationSceneIndex
-    // that instancers will have paths such as
-    // /Foo/__Usd_Prototypes/Binding435..f52/__Prototype_1
-    // find them.
-    if (primPath.GetPathElementCount() < 3) {
+    const TfToken prototypeName =
+        UsdImaging_NiInstanceAggregationSceneIndex::
+        GetPrototypeNameFromInstancerPath(primPath);
+    if (prototypeName.IsEmpty()) {
         return;
     }
-
-    // Path has __Usd_Prototypes at correct place.
-    const TfToken parentParentName =
-        primPath.GetParentPath().GetParentPath().GetNameToken();
-    if (parentParentName != UsdImagingTokens->propagatedPrototypesScope) {
-        return;
-    }
-
-    const TfToken prototypeName = primPath.GetNameToken();
 
     _MergingSceneIndexEntryUniquePtr &entry =
         _instancersToMergingSceneIndexEntry[primPath];
@@ -370,6 +341,15 @@ _InstanceAggregationSceneIndexObserver::PrimsRemoved(
     }
 }
 
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_InstanceAggregationSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
+
 UsdImagingNiPrototypePropagatingSceneIndex::
 _MergingSceneIndexObserver::_MergingSceneIndexObserver(
     UsdImagingNiPrototypePropagatingSceneIndex * const owner)
@@ -402,6 +382,15 @@ _MergingSceneIndexObserver::PrimsRemoved(
     const RemovedPrimEntries &entries)
 {
     _owner->_SendPrimsRemoved(entries);
+}
+
+void
+UsdImagingNiPrototypePropagatingSceneIndex::
+_MergingSceneIndexObserver::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

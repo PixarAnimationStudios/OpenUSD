@@ -43,7 +43,7 @@ add GeometryLight support to Hydra and HdPrman, we need to address two concerns:
 In support of the first concern, we have had extensive internal discussions
 about workflow. This document and the proposal it contains are derived from
 those discussions, with inspiration also from several key discussions on the
-usd-interest forum.
+OpenUSD forum.
 
 In support of the second concern, we have done a documentation search on
 `RenderMan <https://rmanwiki.pixar.com/display/REN23/PxrMeshLight>`_, `Arnold

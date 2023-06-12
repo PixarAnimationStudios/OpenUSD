@@ -294,6 +294,7 @@ public:
 
     using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
+    PathsToChangesMap primTypeInfoChanges;
 };
 
 // ------------------------------------------------------------------------- //
@@ -1227,59 +1228,25 @@ UsdStage::OpenMasked(const SdfLayerHandle& rootLayer,
                              load);
 }
 
-static inline SdfAttributeSpecHandle
-_GetSchemaPropSpec(SdfAttributeSpec *,
-                   const UsdPrimDefinition &primDef, 
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaAttributeSpec(attrName);
-}
-
-static inline SdfRelationshipSpecHandle
-_GetSchemaPropSpec(SdfRelationshipSpec *,
-                   const UsdPrimDefinition &primDef,  
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaRelationshipSpec(attrName);
-}
-
-static inline SdfPropertySpecHandle
-_GetSchemaPropSpec(SdfPropertySpec *,
-                   const UsdPrimDefinition &primDef, 
-                   TfToken const &attrName)
-{
-    return primDef.GetSchemaPropertySpec(attrName);
-}
-
-template <class PropType>
-SdfHandle<PropType>
-UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
+UsdPrimDefinition::Property
+UsdStage::_GetSchemaProperty(const UsdProperty &prop) const
 {
     Usd_PrimDataHandle const &primData = prop._Prim();
     if (!primData)
-        return TfNullPtr;
-
-    // Consult the registry.
-    return _GetSchemaPropSpec(static_cast<PropType *>(nullptr),
-                              primData->GetPrimDefinition(), prop.GetName());
+        return UsdPrimDefinition::Property();
+    return primData->GetPrimDefinition().GetPropertyDefinition(prop.GetName());
 }
 
-SdfPropertySpecHandle
-UsdStage::_GetSchemaPropertySpec(const UsdProperty &prop) const
+UsdPrimDefinition::Attribute
+UsdStage::_GetSchemaAttribute(const UsdAttribute &attr) const
 {
-    return _GetSchemaPropertySpec<SdfPropertySpec>(prop);
+    return _GetSchemaProperty(attr);
 }
 
-SdfAttributeSpecHandle
-UsdStage::_GetSchemaAttributeSpec(const UsdAttribute &attr) const
+UsdPrimDefinition::Relationship
+UsdStage::_GetSchemaRelationship(const UsdRelationship &rel) const
 {
-    return _GetSchemaPropertySpec<SdfAttributeSpec>(attr);
-}
-
-SdfRelationshipSpecHandle
-UsdStage::_GetSchemaRelationshipSpec(const UsdRelationship &rel) const
-{
-    return _GetSchemaPropertySpec<SdfRelationshipSpec>(rel);
+    return _GetSchemaProperty(rel);
 }
 
 bool
@@ -1373,6 +1340,72 @@ UsdStage::_CreatePrimSpecForEditing(const UsdPrim& prim)
     return _CreatePrimSpecAtEditTarget(GetEditTarget(), prim.GetPath());
 }
 
+SdfAttributeSpecHandle
+UsdStage::_CreateNewSpecFromSchemaAttribute(
+    const UsdPrim &prim,
+    const UsdPrimDefinition::Attribute &attrDef)
+{
+    SdfChangeBlock block;
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
+    if (!TF_VERIFY(primSpec)) {
+        return TfNullPtr;
+    }
+    return SdfAttributeSpec::New(primSpec, 
+        attrDef.GetName(), attrDef.GetTypeName(), attrDef.GetVariability());
+}
+
+SdfRelationshipSpecHandle
+UsdStage::_CreateNewSpecFromSchemaRelationship(
+    const UsdPrim &prim,
+    const UsdPrimDefinition::Relationship &relDef)
+{
+    SdfChangeBlock block;
+        SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
+    if (!TF_VERIFY(primSpec)) {
+        return TfNullPtr;
+    }
+    return SdfRelationshipSpec::New(primSpec, 
+        relDef.GetName(), /* custom = */ false, relDef.GetVariability());
+}
+
+template <> 
+SdfPropertySpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfPropertySpec>(
+    const UsdProperty &prop)
+{
+    UsdPrimDefinition::Property propDef = _GetSchemaProperty(prop);
+    if (propDef.IsAttribute()) {
+        return _CreateNewSpecFromSchemaAttribute(prop.GetPrim(), propDef);
+    } else if (propDef.IsRelationship()) {
+        return _CreateNewSpecFromSchemaRelationship(prop.GetPrim(), propDef);
+    }
+    return TfNullPtr;
+}
+
+template<>
+SdfAttributeSpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfAttributeSpec>(
+    const UsdProperty &prop)
+{
+    UsdPrimDefinition::Attribute attrDef = _GetSchemaProperty(prop);
+    if (attrDef) {
+        return _CreateNewSpecFromSchemaAttribute(prop.GetPrim(), attrDef);
+    }
+    return TfNullPtr;
+}
+
+template<>
+SdfRelationshipSpecHandle
+UsdStage::_CreateNewPropertySpecFromSchema<SdfRelationshipSpec>(
+    const UsdProperty &prop)
+{
+    const UsdPrimDefinition::Relationship relDef = _GetSchemaProperty(prop);
+    if (relDef) {
+        return _CreateNewSpecFromSchemaRelationship(prop.GetPrim(), relDef);
+    }
+    return TfNullPtr;
+}
+
 static SdfAttributeSpecHandle
 _StampNewPropertySpec(const SdfPrimSpecHandle &primSpec,
                       const TfToken &propName,
@@ -1447,44 +1480,49 @@ UsdStage::_CreatePropertySpecForEditing(const UsdProperty &prop)
     // spec whose metadata we can copy.  First check to see if there is a
     // builtin we can use.  Failing that, try to take the strongest authored
     // spec.
-    TypedSpecHandle specToCopy;
 
-    // Get definition, if any.
-    specToCopy = _GetSchemaPropertySpec<PropType>(prop);
-
-    if (!specToCopy) {
-        // There is no definition available, either because the prim has no
-        // known schema, or its schema has no definition for this property.  In
-        // this case, we look to see if there's a strongest property spec.  If
-        // so, we copy its required metadata.
-        for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
-            if (SdfPropertySpecHandle propSpec = r.GetLayer()->
-                GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName))) {
-                if ((specToCopy = TfDynamic_cast<TypedSpecHandle>(propSpec)))
-                    break;
-                // Type mismatch.
-                TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
-                                 "<%s> at <%s> in @%s@.  Strongest existing "
-                                 "spec, %s at <%s> in @%s@",
-                                 ArchGetDemangled<PropType>().c_str(),
-                                 propPath.GetText(),
-                                 editTarget.MapToSpecPath(propPath).GetText(),
-                                 editTarget.GetLayer()->GetIdentifier().c_str(),
-                                 TfStringify(propSpec->GetSpecType()).c_str(),
-                                 propSpec->GetPath().GetText(),
-                                 propSpec->GetLayer()->GetIdentifier().c_str());
-                return TfNullPtr;
-            }
-        }
+    // First, see if we can create a new spec from the property's schema 
+    // definition (if it has one).
+    if (TypedSpecHandle specFromSchema = 
+            _CreateNewPropertySpecFromSchema<PropType>(prop)) {
+        return specFromSchema;
     }
 
-    // If we have a spec to copy from, then we author an opinion at the edit
-    // target.
-    if (specToCopy) {
+    // There is no definition available, either because the prim has no
+    // known schema, or its schema has no definition for this property.  In
+    // this case, we look to see if there's a strongest property spec.  If
+    // so, we copy its required metadata.
+    for (Usd_Resolver r(&prim.GetPrimIndex()); r.IsValid(); r.NextLayer()) {
+        SdfPropertySpecHandle propSpec = r.GetLayer()->
+            GetPropertyAtPath(r.GetLocalPath().AppendProperty(propName));
+        if (!propSpec) {
+            continue;
+        }
+
+        // If we have a spec to copy from, then we author an opinion at the
+        // edit target.
+        TypedSpecHandle specToCopy = 
+            TfDynamic_cast<TypedSpecHandle>(propSpec);
+        if (!specToCopy) {
+            // Type mismatch.
+            TF_RUNTIME_ERROR("Spec type mismatch.  Failed to create %s for "
+                                "<%s> at <%s> in @%s@.  Strongest existing "
+                                "spec, %s at <%s> in @%s@",
+                                ArchGetDemangled<PropType>().c_str(),
+                                propPath.GetText(),
+                                editTarget.MapToSpecPath(propPath).GetText(),
+                                editTarget.GetLayer()->GetIdentifier().c_str(),
+                                TfStringify(propSpec->GetSpecType()).c_str(),
+                                propSpec->GetPath().GetText(),
+                                propSpec->GetLayer()->GetIdentifier().c_str());
+            return TfNullPtr;
+        }
+
         SdfChangeBlock block;
         SdfPrimSpecHandle primSpec = _CreatePrimSpecForEditing(prim);
-        if (TF_VERIFY(primSpec))
+        if (TF_VERIFY(primSpec)) {
             return _StampNewPropertySpec(primSpec, propName, specToCopy);
+        }
     }
 
     // Otherwise, we fail to create a spec.
@@ -2166,8 +2204,16 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
 
     _loadRules.LoadAndUnload(finalLoadSet, finalUnloadSet, policy);
 
-    // Go through the finalLoadSet, and check ancestors -- if any are loaded,
-    // include the most ancestral which was loaded last in the finalLoadSet.
+    // Now the rules are established, but we need to identify the paths on the
+    // stage where we need to recompose.  In the case of loading (the
+    // finalLoadSet) we cannot just recompose those paths and their descendants.
+    // We also have to consider ancestors, because if we load /foo/bar/baz, that
+    // also implicitly loads /foo and /foo/bar.  To handle this, we need to walk
+    // the ancestors of each path in the finalLoadSet to find the most-ancestral
+    // unloaded prim, and that is where we need to recompose.
+    //
+    // Note that this is potentially a big over-recomposition, since we don't
+    // yet have a way to tell the stage to recompose more granularly.
     for (SdfPath const &p: finalLoadSet) {
         SdfPath curPath = p;
         while (true) {
@@ -2175,8 +2221,10 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
             if (parentPath.IsEmpty())
                 break;
             UsdPrim prim = GetPrimAtPath(parentPath);
-            if (prim && prim.IsLoaded() && p != curPath) {
-                finalLoadSet.insert(curPath);
+            if (prim && prim.IsLoaded()) {
+                if (p != curPath) {
+                    finalLoadSet.insert(curPath);
+                }
                 break;
             }
             curPath = parentPath;
@@ -3026,28 +3074,12 @@ UsdStage::_ComposeSubtreeImpl(
         (parent == _pseudoRoot 
          && prim->_primIndex->GetPath() != prim->GetPath());
 
-    if (parent && !isPrototypePrim) {
-        // Compose the type info full type ID for the prim which includes
-        // the type name, applied schemas, and a possible mapped fallback type 
-        // if the stage specifies it.
-        Usd_PrimTypeInfoCache::TypeId typeId(
-            _ComposeTypeName(prim->_primIndex));
-        _ComposeAuthoredAppliedSchemas(
-            prim->_primIndex, &typeId.appliedAPISchemas);
-        if (const TfToken *fallbackType = TfMapLookupPtr(
-                _invalidPrimTypeToFallbackMap, typeId.primTypeName)) {
-            typeId.mappedTypeName = *fallbackType;
-        }
-
-        // Ask the type info cache for the type info for our type.
-        prim->_primTypeInfo = 
-            _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(std::move(typeId));
-    } else {
-        prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
-    }
-
-    // Compose type info and flags for prim.
+    // Compose flags for prim.
     prim->_ComposeAndCacheFlags(parent, isPrototypePrim);
+
+    // Compose prim type info after setting the flags as this relies on the 
+    // flags being set.
+    _ComposePrimTypeInfoImpl(prim);
 
     // Pre-compute clip information for this prim to avoid doing so
     // at value resolution time.
@@ -3072,6 +3104,31 @@ UsdStage::_ComposeSubtreeImpl(
 
     // Compose the set of children on this prim.
     _ComposeChildren(prim, mask, /*recurse=*/true);
+}
+
+void UsdStage::_ComposePrimTypeInfoImpl(Usd_PrimDataPtr prim) 
+{
+    // The pseudo-root and root prototype prims do not have prim type info.
+    if (prim->IsPseudoRoot() || prim->IsPrototype()) {
+        prim->_primTypeInfo = _GetPrimTypeInfoCache().GetEmptyPrimTypeInfo();
+        return;
+    }
+
+    // Compose the type info full type ID for the prim which includes
+    // the type name, applied schemas, and a possible mapped fallback type 
+    // if the stage specifies it.
+    Usd_PrimTypeInfoCache::TypeId typeId(
+        _ComposeTypeName(prim->_primIndex));
+    _ComposeAuthoredAppliedSchemas(
+        prim->_primIndex, &typeId.appliedAPISchemas);
+    if (const TfToken *fallbackType = TfMapLookupPtr(
+            _invalidPrimTypeToFallbackMap, typeId.primTypeName)) {
+        typeId.mappedTypeName = *fallbackType;
+    }
+
+    // Ask the type info cache for the type info for our type.
+    prim->_primTypeInfo = 
+        _GetPrimTypeInfoCache().FindOrCreatePrimTypeInfo(std::move(typeId));
 }
 
 void
@@ -3921,6 +3978,7 @@ UsdStage::_HandleLayersDidChange(
     // have otherwise changed.
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
+    _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
     _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
@@ -3983,6 +4041,7 @@ UsdStage::_HandleLayersDidChange(
                 sdfPath.IsPrimOrPrimVariantSelectionPath()) {
 
                 bool didChangeActive = false;
+                bool willChangePrimTypeInfo = false;
                 for (const auto& info : entry.infoChanged) {
                     if (info.first == SdfFieldKeys->Active) {
                         TF_DEBUG(USD_CHANGES).Msg(
@@ -3997,10 +4056,11 @@ UsdStage::_HandleLayersDidChange(
                 } else {
                     for (const auto& info : entry.infoChanged) {
                         const auto& infoKey = info.first;
-                        if (infoKey == SdfFieldKeys->Kind ||
-                            infoKey == SdfFieldKeys->TypeName ||
+                        if (infoKey == SdfFieldKeys->TypeName ||
+                            infoKey == UsdTokens->apiSchemas) {
+                            willChangePrimTypeInfo = true;
+                        } else if (infoKey == SdfFieldKeys->Kind ||
                             infoKey == SdfFieldKeys->Specifier ||
-                            infoKey == UsdTokens->apiSchemas ||
                             
                             // XXX: Could be more specific when recomposing due
                             //      to clip changes. E.g., only update the clip
@@ -4025,6 +4085,9 @@ UsdStage::_HandleLayersDidChange(
                 if (willRecompose) {
                     _AddAffectedStagePaths(layer, sdfPath, 
                                            *_cache, &recomposeChanges, &entry);
+                } else if (willChangePrimTypeInfo) {
+                    _AddAffectedStagePaths(layer, sdfPath, 
+                                           *_cache, &primTypeInfoChanges, &entry);
                 }
                 if (didChangeActive) {
                     _AddAffectedStagePaths(layer, sdfPath, 
@@ -4062,8 +4125,7 @@ UsdStage::_HandleLayersDidChange(
 
     PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
-    changes.DidChange(
-        TfSpan<const PcpCache*>(&cache, 1), n.GetChangeListVec());
+    changes.DidChange(cache, n.GetChangeListVec());
 
     // Pcp does not consider activation changes to be significant since
     // it doesn't look at activation during composition. However, UsdStage
@@ -4101,6 +4163,7 @@ UsdStage::_ProcessPendingChanges()
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
     _PathsToChangesMap& otherResyncChanges=_pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
+    _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
 
     _Recompose(changes, &recomposeChanges);
 
@@ -4110,6 +4173,7 @@ UsdStage::_ProcessPendingChanges()
 
         otherResyncChanges.clear();
         otherInfoChanges.clear();
+        primTypeInfoChanges.clear();
     }
     else {
         // Filter out all changes to objects beneath instances and remap
@@ -4143,8 +4207,36 @@ UsdStage::_ProcessPendingChanges()
         };
 
         remapChangesToPrototypes(&recomposeChanges);
+        remapChangesToPrototypes(&primTypeInfoChanges);
         remapChangesToPrototypes(&otherResyncChanges);
         remapChangesToPrototypes(&otherInfoChanges);
+
+        // Before processing any prim type info changes, remove any that would
+        // already have been covered by the recomposed prims.
+        _MergeAndRemoveDescendentEntries(
+                &recomposeChanges, &primTypeInfoChanges);
+
+        // Recompose the prim type info for the prims that need it. 
+        for (const auto &entry : primTypeInfoChanges) {
+            PathToNodeMap::const_accessor acc;
+            if (_primMap.find(acc, entry.first)) {
+                auto prim = acc->second.get();
+                if (prim) {
+                    _ComposePrimTypeInfoImpl(prim);
+                }
+            }
+        }
+
+        // Even though we don't actually recompose prims that only have a type
+        // info change, we still treat them as recomposed as far as notification
+        // is concerned. 
+        if (recomposeChanges.empty()) {
+            recomposeChanges.swap(primTypeInfoChanges);
+        } else {
+            for (auto& entry : primTypeInfoChanges) {
+                recomposeChanges[entry.first] = std::move(entry.second);
+            }
+        }
 
         // Add in all other paths that are marked as resynced.
         if (recomposeChanges.empty()) {
@@ -5117,8 +5209,8 @@ _HasAuthoredValue(const TfToken& fieldKey,
 }
 
 void
-_CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
-               const SdfPropertySpecHandle &dstPropDef,
+_CopyFallbacks(const UsdPrimDefinition::Property &srcPropDef,
+               const UsdPrimDefinition::Property &dstPropDef,
                const SdfPropertySpecHandle &dstPropSpec,
                const SdfPropertySpecHandleVector &dstPropStack)
 {
@@ -5126,7 +5218,7 @@ _CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
         return;
     }
 
-    std::vector<TfToken> fallbackFields = srcPropDef->ListFields();
+    std::vector<TfToken> fallbackFields = srcPropDef.ListMetadataFields();
     fallbackFields.erase(
         std::remove_if(fallbackFields.begin(), fallbackFields.end(),
                        _IsPrivateFallbackFieldKey),
@@ -5144,13 +5236,16 @@ _CopyFallbacks(const SdfPropertySpecHandle &srcPropDef,
         // fallback for that property matches the source fallback
         // and there isn't an authored value that's overriding that
         // fallback, we don't need to write the fallback.
-        VtValue fallbackVal = srcPropDef->GetField(fieldName);
-        if (dstPropDef && dstPropDef->GetField(fieldName) == fallbackVal &&
+        VtValue srcFallbackVal, dstFallbackVal;
+        srcPropDef.GetMetadata(fieldName, &srcFallbackVal);
+        if (dstPropDef && 
+            dstPropDef.GetMetadata(fieldName, &dstFallbackVal) &&
+            dstFallbackVal == srcFallbackVal &&
             !_HasAuthoredValue(fieldName, dstPropStack)) {
                 continue;
         }
 
-        fallbacks[fieldName].Swap(fallbackVal);
+        fallbacks[fieldName].Swap(srcFallbackVal);
     }
 
     _CopyMetadata(dstPropSpec, fallbacks);
@@ -5319,8 +5414,8 @@ UsdStage::_FlattenProperty(const UsdProperty &srcProp,
 
         // Copy fallback property values and metadata if needed.
         _CopyFallbacks(
-            _GetSchemaPropertySpec(srcProp),
-            _GetSchemaPropertySpec(dstProp),
+            _GetSchemaProperty(srcProp),
+            _GetSchemaProperty(dstProp),
             dstPropSpec, dstPropStack);
     }
 
@@ -6258,7 +6353,7 @@ UsdStage::_IsCustom(const UsdProperty &prop) const
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
 
-    if (_GetSchemaPropertySpec(prop))
+    if (_GetSchemaProperty(prop))
         return false;
 
     const TfToken &propName = prop.GetName();
@@ -6294,8 +6389,8 @@ UsdStage
     if (prop.Is<UsdAttribute>()) {
         UsdAttribute attr = prop.As<UsdAttribute>();
         // Check definition.
-        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
-            return attrDef->GetVariability();
+        if (UsdPrimDefinition::Attribute attrDef = _GetSchemaAttribute(attr)) {
+            return attrDef.GetVariability();
         }
 
         // Check authored scene description.
@@ -6483,11 +6578,8 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
     TRACE_FUNCTION();
     // Custom is composed as true if there is no property definition and it is
     // true anywhere in the stack of opinions.
-    if (_GetSchemaPropertySpec(prop)) {
-        composer->ConsumeUsdFallback(
-            prop._Prim()->GetPrimDefinition(), 
-            prop.GetName(),
-            SdfFieldKeys->Custom, TfToken());
+    if (_GetSchemaProperty(prop)) {
+        composer->ConsumeExplicitValue(false);
         return;
     }
 
@@ -8392,11 +8484,9 @@ UsdStage::_GetBracketingTimeSamplesFromResolveInfo(const UsdResolveInfo &info,
             return false;
 
         // Check for a registered fallback.
-        if (SdfAttributeSpecHandle attrDef = _GetSchemaAttributeSpec(attr)) {
-            if (attrDef->HasDefaultValue()) {
-                *hasSamples = false;
-                return true;
-            }
+        if (attr.HasFallbackValue()) {
+            *hasSamples = false;
+            return true;
         }
     }
 

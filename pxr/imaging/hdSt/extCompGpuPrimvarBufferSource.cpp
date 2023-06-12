@@ -26,6 +26,8 @@
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include <boost/functional/hash.hpp>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 HdStExtCompGpuPrimvarBufferSource::HdStExtCompGpuPrimvarBufferSource(

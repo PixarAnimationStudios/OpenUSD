@@ -29,6 +29,7 @@
 #include "pxr/base/gf/range3f.h"
 #include "pxr/base/gf/range3d.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -65,7 +66,7 @@ static GfRange3f& __itruediv__(GfRange3f &self, double value)
     return self /= value;
 }
 
-static size_t __hash__(GfRange3f const &r) { return hash_value(r); }
+static size_t __hash__(GfRange3f const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 

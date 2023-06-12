@@ -173,7 +173,7 @@ HdSt_ImageShaderRenderPass::_Execute(
         return;
     }
 
-    const GfVec4i viewport = stRenderPassState->ComputeViewport(desc,
+    const GfVec4i viewport = stRenderPassState->ComputeViewport(
         /* flip = */ _hgi->GetAPIName() == HgiTokens->OpenGL);
     gfxCmds->SetViewport(viewport);
 

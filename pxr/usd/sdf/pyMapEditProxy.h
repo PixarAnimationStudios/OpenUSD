@@ -126,19 +126,9 @@ private:
             .def("__delitem__", &This::_DelItem)
             .def("__contains__", &This::_HasKey)
             .def("__iter__",   &This::_GetKeyIterator)
-#if PY_MAJOR_VERSION < 3
-            .def("itervalues", &This::_GetValueIterator)
-            .def("iterkeys",   &This::_GetKeyIterator)
-            .def("iteritems",  &This::_GetItemIterator)
-            .def("values", &This::_GetValues)
-            .def("keys", &This::_GetKeys)
-            .def("items", &This::_GetItems)
-            .def("has_key", &This::_HasKey)
-#else
             .def("values", &This::_GetValueIterator)
             .def("keys",   &This::_GetKeyIterator)
             .def("items",  &This::_GetItemIterator)
-#endif
             .def("clear", &Type::clear)
             .def("get", &This::_PyGet)
             .def("get", &This::_PyGetDefault)
@@ -149,7 +139,7 @@ private:
             .def("update", &This::_UpdateList)
             .def("copy", &This::_Copy)
             .add_property("expired", &Type::IsExpired)
-            .def(TfPyBoolBuiltinFuncName, &This::_NonZero)
+            .def("__bool__", &This::_IsValid)
             .def(self == self)
             .def(self != self)
             ;
@@ -157,19 +147,19 @@ private:
         class_<_Iterator<_ExtractItem> >
             ((name + "_Iterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractItem>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractItem>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractItem>::GetNext)
             ;
 
         class_<_Iterator<_ExtractKey> >
             ((name + "_KeyIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractKey>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractKey>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractKey>::GetNext)
             ;
 
         class_<_Iterator<_ExtractValue> >
             ((name + "_ValueIterator").c_str(), no_init)
             .def("__iter__", &This::template _Iterator<_ExtractValue>::GetCopy)
-            .def(TfPyIteratorNextMethodName, &This::template _Iterator<_ExtractValue>::GetNext)
+            .def("__next__", &This::template _Iterator<_ExtractValue>::GetNext)
             ;
     }
 
@@ -284,23 +274,6 @@ private:
         return result;
     }
 
-#if PY_MAJOR_VERSION < 3
-    static boost::python::list _GetItems(const Type& x)
-    {
-        return _Get<_ExtractItem>(x);
-    }
-
-    static boost::python::list _GetKeys(const Type& x)
-    {
-        return _Get<_ExtractKey>(x);
-    }
-
-    static boost::python::list _GetValues(const Type& x)
-    {
-        return _Get<_ExtractValue>(x);
-    }
-#endif
-
     static mapped_type _Pop(Type& x, const key_type& key)
     {
         iterator i = x.find(key);
@@ -372,7 +345,7 @@ private:
         x = other;
     }
 
-    static bool _NonZero(const Type& x)
+    static bool _IsValid(const Type& x)
     {
         return static_cast<bool>(x);
     }

@@ -38,14 +38,13 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/iterator_adaptors.hpp>
-#include <boost/iterator/reverse_iterator.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <memory>
 #include <new>
@@ -243,9 +242,9 @@ class VtArray : public Vt_ArrayBase {
     using const_iterator = ElementType const *;
     
     /// Reverse iterator type.
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
+    typedef std::reverse_iterator<iterator> reverse_iterator;
     /// Reverse const iterator type.
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef std::reverse_iterator<const_iterator> const_reverse_iterator;
 
     /// Reference type.
     typedef ElementType &reference;
@@ -558,12 +557,28 @@ class VtArray : public Vt_ArrayBase {
     /// 5 elements would be left unchanged and the last 5 elements would be
     /// value-initialized.
     void resize(size_t newSize) {
-        struct _Filler {
-            inline void operator()(pointer b, pointer e) const {
-                std::uninitialized_fill(b, e, value_type());
-            }
-        };
-        return resize(newSize, _Filler());
+        return resize(newSize, value_type());
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type const &value) {
+        return resize(newSize,
+                      [&value](pointer b, pointer e) {
+                          std::uninitialized_fill(b, e, value);
+                      });
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &value) {
+        return resize(newSize, const_cast<value_type const &>(value));
+    }
+
+    /// Resize this array.  Preserve existing elements that remain, initialize
+    /// any newly added elements by copying \p value.
+    void resize(size_t newSize, value_type &&value) {
+        return resize(newSize, const_cast<value_type const &>(value));
     }
 
     /// Resize this array.  Preserve existing elements that remain, initialize
@@ -923,14 +938,18 @@ class VtArray : public Vt_ArrayBase {
     extern template class VtArray< VT_TYPE(elem) >;
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
+template <class HashState, class ELEM>
+inline std::enable_if_t<VtIsHashable<ELEM>()>
+TfHashAppend(HashState &h, VtArray<ELEM> const &array)
+{
+    h.Append(array.size());
+    h.AppendContiguous(array.cdata(), array.size());
+}
+
 template <class ELEM>
 typename std::enable_if<VtIsHashable<ELEM>(), size_t>::type
 hash_value(VtArray<ELEM> const &array) {
-    size_t h = array.size();
-    for (auto const &x: array) {
-        boost::hash_combine(h, x);
-    }
-    return h;
+    return TfHash()(array);
 }
 
 // Specialize traits so others can figure out that VtArray is an array.

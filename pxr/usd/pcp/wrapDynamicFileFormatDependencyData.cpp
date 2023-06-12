@@ -41,8 +41,13 @@ wrapDynamicFileFormatDependencyData()
         .def("GetRelevantFieldNames",
              make_function(&This::GetRelevantFieldNames,
                            return_value_policy< TfPySequenceToList >()))
+        .def("GetRelevantAttributeNames",
+             make_function(&This::GetRelevantAttributeNames,
+                           return_value_policy< TfPySequenceToList >()))
         .def("CanFieldChangeAffectFileFormatArguments", 
              &This::CanFieldChangeAffectFileFormatArguments)
+        .def("CanAttributeDefaultValueChangeAffectFileFormatArguments", 
+             &This::CanAttributeDefaultValueChangeAffectFileFormatArguments)
         .def("IsEmpty", &This::IsEmpty)
         ;
 }

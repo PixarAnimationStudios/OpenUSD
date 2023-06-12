@@ -206,6 +206,8 @@ HdSt_ResourceBinder::ResolveBindings(
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessBuffers);
     const bool bindlessTexturesEnabled = 
         capabilities->IsSet(HgiDeviceCapabilitiesBitsBindlessTextures);
+    const bool isMetal =
+        capabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
 
     HdStBinding::Type arrayBufferBindingType = HdStBinding::SSBO;
     if (bindlessBuffersEnabled) {
@@ -381,8 +383,28 @@ HdSt_ResourceBinder::ResolveBindings(
             HdStBufferResourceSharedPtr const& resource = it->second;
 
             if (name == HdTokens->indices) {
-                // IBO. no need for codegen
-                _bindingMap[name] = HdStBinding(HdStBinding::INDEX_ATTR, 0);
+                if (isMetal && drawItem->GetVaryingPrimvarRange()) {
+                    // Bind index buffer as an SSBO so that we can
+                    // access varying data by index.
+                    HdStBinding const binding =
+                        locator.GetBinding(HdStBinding::SSBO, name);
+                    _bindingMap[name] = binding;
+
+                    HdType const componentType =
+                        HdGetComponentType(resource->GetTupleType().type);
+                    TfToken const glType =
+                        HdStGLConversions::GetGLSLTypename(componentType);
+
+                    MetaData::BindingDeclaration const bindingDecl(
+                                         /*name=*/name,
+                                         /*type=*/glType,
+                                         /*binding=*/binding);
+                    metaDataOut->indexBufferBinding = bindingDecl;
+                } else {
+                    // Bind index buffer as IBO, no need for codeGen.
+                    _bindingMap[name] = HdStBinding(HdStBinding::INDEX_ATTR, 0);
+                }
+
             } else {
                 // We expect the following additional topology based info:
                 // - primitive parameter (for all tris, quads and patches)
@@ -400,7 +422,7 @@ HdSt_ResourceBinder::ResolveBindings(
                 TfToken glType =
                     HdStGLConversions::GetGLSLTypename(valueType.type);
 
-                auto bindingDecl = MetaData::BindingDeclaration(
+                MetaData::BindingDeclaration const bindingDecl(
                                      /*name=*/name,
                                      /*type=*/glType,
                                      /*binding=*/binding);
@@ -423,6 +445,24 @@ HdSt_ResourceBinder::ResolveBindings(
                 }
             }
         }
+    }
+
+    // tessFactors buffer for Metal tessellation
+    if (isMetal) {
+        TfToken const name = HdTokens->tessFactors;
+        HdStBinding binding =
+            locator.GetBinding(arrayBufferBindingType, name);
+        _bindingMap[name] = binding;
+
+        HdTupleType valueType{HdTypeFloat, 1};
+        TfToken glType =
+            HdStGLConversions::GetGLSLTypename(valueType.type);
+
+        MetaData::BindingDeclaration const bindingDecl(
+                             /*name=*/name,
+                             /*type=*/glType,
+                             /*binding=*/binding);
+        metaDataOut->tessFactorsBinding = bindingDecl;
     }
 
     if (HdBufferArrayRangeSharedPtr topVisBar_ =
@@ -999,7 +1039,9 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
     HdStBinding binding = GetBinding(name, level);
 
     HgiShaderStage stageUsage =
-        HgiShaderStageVertex | HgiShaderStagePostTessellationVertex |
+        HgiShaderStageVertex |
+        HgiShaderStagePostTessellationControl |
+        HgiShaderStagePostTessellationVertex |
         HgiShaderStageTessellationControl | HgiShaderStageTessellationEval |
         HgiShaderStageGeometry | HgiShaderStageFragment;
     HgiBufferBindDesc desc;
@@ -1088,8 +1130,7 @@ HdSt_ResourceBinder::GetBindingRequestBindingDesc(
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdStBufferResourceSharedPtr resource =
-            std::static_pointer_cast<HdStBufferResource>(req.GetResource());
+        HdStBufferResourceSharedPtr const &resource = req.GetResource();
 
         GetBufferBindingDesc(bindingsDesc,
                              req.GetName(),
@@ -1445,16 +1486,6 @@ HdSt_ResourceBinder::UnbindInstanceBufferArray(
 }
 
 void
-HdSt_ResourceBinder::BindShaderResources(HdStShaderCode const *shader) const
-{
-}
-
-void
-HdSt_ResourceBinder::UnbindShaderResources(HdStShaderCode const *shader) const
-{
-}
-
-void
 HdSt_ResourceBinder::BindBufferArray(HdStBufferArrayRangeSharedPtr const &bar) const
 {
     if (!bar) return;
@@ -1470,9 +1501,7 @@ HdSt_ResourceBinder::Bind(HdStBindingRequest const& req) const
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdBufferResourceSharedPtr res_ = req.GetResource();
-        HdStBufferResourceSharedPtr res =
-            std::static_pointer_cast<HdStBufferResource> (res_);
+        HdStBufferResourceSharedPtr const &res = req.GetResource();
 
         BindBuffer(req.GetName(), res, req.GetByteOffset());
     } else if (req.IsInterleavedBufferArray()) {
@@ -1496,9 +1525,7 @@ HdSt_ResourceBinder::Unbind(HdStBindingRequest const& req) const
     if (req.IsTypeless()) {
         return;
     } else if (req.IsResource()) {
-        HdBufferResourceSharedPtr res_ = req.GetResource();
-        HdStBufferResourceSharedPtr res =
-            std::static_pointer_cast<HdStBufferResource> (res_);
+        HdStBufferResourceSharedPtr const &res = req.GetResource();
 
         UnbindBuffer(req.GetName(), res);
     } else if (req.IsInterleavedBufferArray()) {
@@ -1632,6 +1659,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, instanceIndexBaseBinding.dataType);
     boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
     boost::hash_combine(hash, primitiveParamBinding.dataType);
+    boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
     boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());

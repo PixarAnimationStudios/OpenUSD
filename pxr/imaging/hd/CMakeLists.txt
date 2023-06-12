@@ -28,8 +28,6 @@ pxr_library(hd
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRegistry
-        bufferResource
         bufferSource
         bufferSpec
         camera
@@ -38,8 +36,6 @@ pxr_library(hd
         categoriesSchema
         changeTracker
         command
-        compExtCompInputSource
-        computation
         coneSchema
         containerDataSourceEditor
         coordSys
@@ -62,9 +58,6 @@ pxr_library(hd
         drawItem
         engine
         enums
-        extCompCpuComputation
-        extCompInputSource
-        extCompPrimvarBufferSource
         extComputation
         extComputationContext
         extComputationContextInternal
@@ -77,6 +70,7 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
+        flattenedPrimvarsDataSource
         flatteningSceneIndex
         flatNormals
         geomSubset
@@ -89,6 +83,7 @@ pxr_library(hd
         instanceRegistry
         instancerTopologySchema
         instanceSchema
+        integratorSchema
         lazyContainerDataSource
         legacyDisplayStyleSchema
         legacyPrimSceneIndex
@@ -109,7 +104,11 @@ pxr_library(hd
         meshTopology
         meshTopologySchema
         meshUtil
+        modelSchema
         noticeBatchingSceneIndex
+        nurbsCurvesSchema
+        nurbsPatchSchema
+        nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle
@@ -137,7 +136,6 @@ pxr_library(hd
         renderVarSchema
         renderThread
         repr
-        resource
         resourceRegistry
         retainedDataSource
         retainedSceneIndex
@@ -146,12 +144,13 @@ pxr_library(hd
         rprimSharedData
         sampleFilterSchema
         sceneDelegate
-        sceneExtCompInputSource
+        sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema
@@ -160,7 +159,6 @@ pxr_library(hd
         sortedIds
         sphereSchema
         sprim
-        strategyBase
         subdivisionTagsSchema
         systemSchema
         task
@@ -172,6 +170,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        utils
         vectorSchema
         vertexAdjacency
         visibilitySchema

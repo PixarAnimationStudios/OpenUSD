@@ -2,7 +2,6 @@
 \page ar_page_front Ar: Asset Resolution
 \if ( PIXAR_MFB_BUILD )
 \mainpage Ar : Asset Resolution
-\publicLib
 \endif
 
 \section ar_overview Overview
@@ -217,6 +216,11 @@ This is because resolved paths may be passed to downstream clients or external
 libraries that will not (or can not) have a context object bound when the
 resolved path is used to open an asset. Put another way: a resolved path should
 be usable by downstream clients that do not have a resolver context bound.
+
+Context binding and unbinding are thread-specific. If you bind a context in a 
+thread, that binding will only be visible to that thread. If you want to use 
+the same context to resolve asset paths in multiple threads, you’ll need to 
+bind the context in multiple threads.
 
 For more details, see: 
 

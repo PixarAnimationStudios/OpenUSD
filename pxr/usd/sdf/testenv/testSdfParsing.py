@@ -37,10 +37,9 @@ import sys, os, difflib, unittest, platform
 from pxr import Tf, Sdf
 
 # Default encoding on Windows in python 3+ is not UTF-8, but it is on Linux &
-# Mac.  Provide a wrapper here so we specify that in that case.  Python 2.x does
-# not support an 'encoding' argument.
+# Mac.  Provide a wrapper here so we specify that in that case.
 def _open(*args, **kw):
-    if sys.version_info.major >= 3 and platform.system() == "Windows":
+    if platform.system() == "Windows":
         kw['encoding'] = 'utf8'
         return open(*args, **kw)
     else:

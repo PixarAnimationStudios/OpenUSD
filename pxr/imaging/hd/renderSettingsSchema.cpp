@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -62,16 +62,40 @@ HdRenderSettingsSchema::GetRenderProducts()
         HdRenderSettingsSchemaTokens->renderProducts));
 }
 
+HdTokenArrayDataSourceHandle
+HdRenderSettingsSchema::GetIncludedPurposes()
+{
+    return _GetTypedDataSource<HdTokenArrayDataSource>(
+        HdRenderSettingsSchemaTokens->includedPurposes);
+}
+
+HdTokenArrayDataSourceHandle
+HdRenderSettingsSchema::GetMaterialBindingPurposes()
+{
+    return _GetTypedDataSource<HdTokenArrayDataSource>(
+        HdRenderSettingsSchemaTokens->materialBindingPurposes);
+}
+
+HdTokenDataSourceHandle
+HdRenderSettingsSchema::GetRenderingColorSpace()
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdRenderSettingsSchemaTokens->renderingColorSpace);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
         const HdContainerDataSourceHandle &namespacedSettings,
         const HdBoolDataSourceHandle &active,
-        const HdVectorDataSourceHandle &renderProducts
+        const HdVectorDataSourceHandle &renderProducts,
+        const HdTokenArrayDataSourceHandle &includedPurposes,
+        const HdTokenArrayDataSourceHandle &materialBindingPurposes,
+        const HdTokenDataSourceHandle &renderingColorSpace
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken names[6];
+    HdDataSourceBaseHandle values[6];
 
     size_t count = 0;
     if (namespacedSettings) {
@@ -89,6 +113,21 @@ HdRenderSettingsSchema::BuildRetained(
         values[count++] = renderProducts;
     }
 
+    if (includedPurposes) {
+        names[count] = HdRenderSettingsSchemaTokens->includedPurposes;
+        values[count++] = includedPurposes;
+    }
+
+    if (materialBindingPurposes) {
+        names[count] = HdRenderSettingsSchemaTokens->materialBindingPurposes;
+        values[count++] = materialBindingPurposes;
+    }
+
+    if (renderingColorSpace) {
+        names[count] = HdRenderSettingsSchemaTokens->renderingColorSpace;
+        values[count++] = renderingColorSpace;
+    }
+
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
@@ -104,6 +143,12 @@ HdRenderSettingsSchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+HdRenderSettingsSchema::GetSchemaToken()
+{
+    return HdRenderSettingsSchemaTokens->renderSettings;
+} 
 /*static*/
 const HdDataSourceLocator &
 HdRenderSettingsSchema::GetDefaultLocator()
@@ -146,6 +191,39 @@ HdRenderSettingsSchema::GetRenderProductsLocator()
     return locator;
 }
 
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetIncludedPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->includedPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetMaterialBindingPurposesLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->materialBindingPurposes
+    );
+    return locator;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetRenderingColorSpaceLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->renderingColorSpace
+    );
+    return locator;
+}
+
 
 HdRenderSettingsSchema::Builder &
 HdRenderSettingsSchema::Builder::SetNamespacedSettings(
@@ -171,13 +249,40 @@ HdRenderSettingsSchema::Builder::SetRenderProducts(
     return *this;
 }
 
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetIncludedPurposes(
+    const HdTokenArrayDataSourceHandle &includedPurposes)
+{
+    _includedPurposes = includedPurposes;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetMaterialBindingPurposes(
+    const HdTokenArrayDataSourceHandle &materialBindingPurposes)
+{
+    _materialBindingPurposes = materialBindingPurposes;
+    return *this;
+}
+
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetRenderingColorSpace(
+    const HdTokenDataSourceHandle &renderingColorSpace)
+{
+    _renderingColorSpace = renderingColorSpace;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
     return HdRenderSettingsSchema::BuildRetained(
         _namespacedSettings,
         _active,
-        _renderProducts
+        _renderProducts,
+        _includedPurposes,
+        _materialBindingPurposes,
+        _renderingColorSpace
     );
 }
 

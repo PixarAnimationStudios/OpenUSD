@@ -1,0 +1,48 @@
+#sdf 1.4.32
+(
+    """
+    This test exercises a sub-root, internal reference within
+    a variant to another prim within that variant.
+    It also has an inherit, to show the similarity in behavior.
+    """
+)
+
+def "Model" (
+    prepend variantSets = "vset"
+    variants = {
+        string vset = "without_children"
+    }
+)
+{
+    custom int modelRootAttribute = 123
+
+    variantSet "vset" = {
+        "without_children" {
+        }
+
+        "with_children" {
+            def "_prototype"
+            {
+                custom int attr1
+                prepend int attr1.connect = </Model.modelRootAttribute>
+
+                custom int attr2 = 123
+            }
+
+            def "InstanceViaReference" (
+                prepend references = </Model/_prototype>
+            )
+            {
+                custom int attr2 = 456
+            }
+
+            def "InstanceViaClass" (
+                prepend inherits = </Model/_prototype>
+            )
+            {
+                custom int attr2 = 789
+            }
+        }
+    }
+
+}
