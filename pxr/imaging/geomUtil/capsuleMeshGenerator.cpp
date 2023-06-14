@@ -82,7 +82,9 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const typename PointType::ScalarType topRadius,
     const typename PointType::ScalarType height,
     const typename PointType::ScalarType bottomCapHeight,
+    const typename PointType::ScalarType bottomCapLatitudeRange,
     const typename PointType::ScalarType topCapHeight,
+    const typename PointType::ScalarType topCapLatitudeRange,
     const typename PointType::ScalarType sweepDegrees,
     const _PointWriter<PointType>& ptWriter)
 {
@@ -115,10 +117,9 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 
     // Bottom hemisphere latitude rings:
     for (size_t axIdx = 1; axIdx < (numCapAxial + 1); ++axIdx) {
-        // Latitude range: (-0.5pi, 0]
-        const ScalarType latAngle =
-            ((ScalarType(axIdx) / ScalarType(numCapAxial)) - 1.0) *
-            (0.5 * M_PI);
+        // Latitude range: (-0.5pi, topCapLatitudeRange]
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+            ScalarType(-0.5 * M_PI), topCapLatitudeRange);
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
@@ -134,9 +135,9 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 
     // Top hemisphere latitude rings:
     for (size_t axIdx = 0; axIdx < numCapAxial; ++axIdx) {
-        // Latitude range: [0, 0.5pi)
-        const ScalarType latAngle =
-            (ScalarType(axIdx) / ScalarType(numCapAxial)) * (0.5 * M_PI);
+        // Latitude range: [bottomCapLatitudeRange, 0.5pi)
+        const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
+            bottomCapLatitudeRange, ScalarType(0.5 * M_PI));
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
@@ -158,12 +159,12 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 // calling method template (the public GeneratePoints, in the header).
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const size_t, const size_t, const float, const float,
-    const float, const float, const float, const float,
+    const float, const float, const float, const float, const float, const float,
     const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const size_t, const size_t, const double, const double,
-    const double, const double, const double, const double,
+    const double, const double, const double, const double, const double, const double,
     const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
 
 

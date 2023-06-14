@@ -29,10 +29,12 @@ pxr_library(usdGeom
         boundableComputeExtent
         camera
         capsule
+        capsule_1
         cone
         cube
         curves
         cylinder
+        cylinder_1
         hermiteCurves
         imageable
         gprim

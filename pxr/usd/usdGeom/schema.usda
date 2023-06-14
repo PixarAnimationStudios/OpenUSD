@@ -809,6 +809,106 @@ class Cone "Cone" (
     )
 }
 
+class Cylinder_1 "Cylinder_1" (
+    inherits = </Gprim>
+    doc = """Defines a primitive cylinder with closed ends, centered at the
+    origin, whose spine is along the specified \\em axis, with a pair of radii
+    desribing the size of the end points.
+
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    double height = 2 (
+        doc = """The size of the cylinder's spine along the specified
+        \\em axis.  If you author \\em height you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusTop = 1.0 (
+        doc = """The radius of the top of the cylinder - i.e. the face located
+        along the positive \\em axis. If you author \\em radiusTop you must also
+        author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusBottom = 1.0 (
+        doc = """The radius of the bottom of the cylinder - i.e. the face
+        point located along the negative \\em axis. If you author
+        \\em radiusBottom you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the cylinder is aligned"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Cylinder only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Capsule_1 "Capsule_1" (
+    inherits = </Gprim>
+    doc = """Defines a primitive capsule, i.e. a cylinder capped by two half
+    spheres, with potentially different radii, centered at the origin, and whose
+    spine is along the specified \\em axis."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    double height = 1.0 (
+        doc = """The size of the capsule's spine along the specified
+        \\em axis excluding the size of the two half spheres, i.e.
+        the size of the cylinder portion of the capsule.
+        If you author \\em height you must also author \\em extent.
+        \\sa GetExtentAttr()"""
+    )
+    double radiusTop = 0.5 (
+        doc = """The radius of the capping sphere at the top of the capsule -
+        i.e. the sphere in the direction of the positive \\em axis. If you
+        author \\em radius you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusBottom = 0.5 (
+        doc = """The radius of the capping sphere at the bottom of the capsule -
+        i.e. the sphere located in the direction of the negative \\em axis. If
+        you author \\em radius you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the capsule is aligned"""
+    )
+
+    float3[] extent = [(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)] (
+        doc = """Extent is re-defined on Capsule only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Cone_1 "Cone_1" (
+    inherits = </Cylinder_1>
+    doc = """Defines a primitive cone, centered at the origin, whose spine
+    is along the specified \\em axis, with the apex of the cone pointing
+    in the direction of the positive axis. This is a special-case of a cylinder
+    whose top radius is zero.
+
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+) {
+}
+
 class Plane "Plane" (
     inherits = </Gprim>
     doc = """Defines a primitive plane, centered at the origin, and is defined by

@@ -54,9 +54,12 @@
 
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/range3d.h"
+#include "pxr/base/tf/token.h"
 
 #include <functional>
 #include <bitset>
+#include <vector>
+#include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

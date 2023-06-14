@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/usdGeom/capsule.h"
+#include "pxr/usd/usdGeom/capsule_1.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/tf/type.h"
@@ -45,7 +46,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule, HdCapsuleSchema>;
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule_1, HdCapsuleSchema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -175,12 +176,14 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    UsdGeomCapsule capsule(prim);
+    UsdGeomCapsule_1 capsule(prim);
     double height = 1.0;
-    double radius = 0.5;
+    double radiusTop = 0.5;
+    double radiusBottom = 0.5;
     TfToken axis = UsdGeomTokens->z;
     TF_VERIFY(capsule.GetHeightAttr().Get(&height, time));
-    TF_VERIFY(capsule.GetRadiusAttr().Get(&radius, time));
+    TF_VERIFY(capsule.GetRadiusTopAttr().Get(&radiusTop, time));
+    TF_VERIFY(capsule.GetRadiusBottomAttr().Get(&radiusBottom, time));
     TF_VERIFY(capsule.GetAxisAttr().Get(&axis, time));
 
     // The capsule point generator computes points such that the "rings" of the
@@ -192,14 +195,49 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     const size_t numPoints =
         GeomUtilCapsuleMeshGenerator::ComputeNumPoints(numRadial, numCapAxial);
 
-    VtVec3fArray points(numPoints);
+    double latitudeRange = 0.0;
+    if (radiusBottom != radiusTop)
+    {
+        // USD describes that the height excludes the sphere radii, so we have two spheres
+        // located at +height/2 and -height/2. We need to find a plane tangent to both spheres
+        // to generate a smooth smooth interface between the different radii. The angle of this
+        // tangent from the axis which will become the latitudeRange for the two spheres.
+
+        // First, construct two circles:
+        // * One at (0,0), of radius height * 0.5 (i.e. the centers of the caps are on this surface)
+        // * One at (-height,0) of radius rBottom - rTop
+        // Then, find the intersection between those two circles = q.
+        // The vector |q - (-height, 0)| is perpendicular to the tangent
+        double rA = radiusBottom - radiusTop;
+        double rB = height * 0.5;
+        double a = height * -0.5;
+        GfVec2d q(0, 0);
+        q[0] = (rB * rB - rA * rA + a * a) / (2 * a);
+        //<todo.eoin If this value is negative, we have a degenerate capsule; should we just draw a sphere?
+        q[1] = GfSqrt(rA * rA - (q[0] - a) * (q[0] - a));
+        GfVec2d perpTangent = (q - GfVec2d(a, 0)).GetNormalized();
+        latitudeRange = acos(perpTangent[1]);
+
+        if (radiusTop > radiusBottom)
+        {
+            latitudeRange *= -1;
+        }
+    }
         
+    VtVec3fArray points(numPoints);
+    const double sweep = 360;
     GeomUtilCapsuleMeshGenerator::GeneratePoints(
         points.begin(),
         numRadial,
         numCapAxial,
-        radius,
+        radiusBottom,
+        radiusTop,
         height,
+        radiusBottom,
+        latitudeRange,
+        radiusTop,
+        latitudeRange,
+        sweep,
         &basis
     );
 

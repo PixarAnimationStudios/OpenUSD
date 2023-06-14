@@ -36,6 +36,7 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/usd/usdGeom/cylinder.h"
+#include "pxr/usd/usdGeom/cylinder_1.h"
 #include "pxr/usd/usdGeom/xformCache.h"
 
 #include "pxr/base/tf/type.h"
@@ -43,7 +44,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder, HdCylinderSchema>;
+using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder_1, HdCylinderSchema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -176,7 +177,7 @@ VtValue
 UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
                                      UsdTimeCode time) const
 {
-    UsdGeomCylinder cylinder(prim);
+    UsdGeomCylinder_1 cylinder(prim);
 
     double height = 2.0;
     UsdGeomSphere sphere(prim);
@@ -184,9 +185,14 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
         TF_WARN("Could not evaluate double-valued height attribute on prim %s",
             prim.GetPath().GetText());
     }
-    double radius = 1.0;
-    if (!cylinder.GetRadiusAttr().Get(&radius, time)) {
-        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+    double radiusBottom = 1.0;
+    if (!cylinder.GetRadiusBottomAttr().Get(&radiusBottom, time)) {
+        TF_WARN("Could not evaluate double-valued bottom radius attribute on prim %s",
+            prim.GetPath().GetText());
+    }
+    double radiusTop = 1.0;
+    if (!cylinder.GetRadiusTopAttr().Get(&radiusTop, time)) {
+        TF_WARN("Could not evaluate double-valued top radius attribute on prim %s",
             prim.GetPath().GetText());
     }
     TfToken axis = UsdGeomTokens->z;
@@ -202,11 +208,14 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
 
     VtVec3fArray points(numPoints);
         
+    const double sweepDegrees = 360;
     GeomUtilCylinderMeshGenerator::GeneratePoints(
         points.begin(),
         numRadial,
-        radius,
+        radiusBottom,
+        radiusTop,
         height,
+        sweepDegrees,
         &basis
     );
 
