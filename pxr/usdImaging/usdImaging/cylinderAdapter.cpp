@@ -172,34 +172,64 @@ UsdImagingCylinderAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
+static void extractRadii(UsdGeomCylinder const& cylinder, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+{
+    if (!cylinder.GetRadiusAttr().Get(&radiusBottomOut, time)) {
+        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+            cylinder.GetPath().GetText());
+    } else {
+        radiusTopOut = radiusBottomOut;
+    }
+}
+
+
+static void extractRadii(UsdGeomCylinder_1 const& cylinder, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+{
+    if (!cylinder.GetRadiusBottomAttr().Get(&radiusBottomOut, time)) {
+        TF_WARN("Could not evaluate double-valued bottom radius attribute on prim %s",
+            cylinder.GetPath().GetText());
+    }
+    if (!cylinder.GetRadiusTopAttr().Get(&radiusTopOut, time)) {
+        TF_WARN("Could not evaluate double-valued top radius attribute on prim %s",
+            cylinder.GetPath().GetText());
+    }
+}
+
+template<typename CylinderType>
+static void extractCylinderParameters(UsdPrim const& prim, UsdTimeCode time, double& heightOut, double& radiusBottomOut,
+        double& radiusTopOut, TfToken& axisOut)
+{
+    if (!prim.IsA<CylinderType>()) {
+        return;
+    }
+
+    CylinderType cylinder(prim);
+
+    if (!cylinder.GetHeightAttr().Get(&heightOut, time)) {
+        TF_WARN("Could not evaluate double-valued height attribute on prim %s",
+            cylinder.GetPath().GetText());
+    }
+
+    extractRadii(cylinder, time, radiusBottomOut, radiusTopOut);
+
+    if (!cylinder.GetAxisAttr().Get(&axisOut, time)) {
+        TF_WARN("Could not evaluate token-valued axis attribute on prim %s",
+            cylinder.GetPath().GetText());
+    }
+}
+
 /*virtual*/
 VtValue
 UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
                                      UsdTimeCode time) const
 {
-    UsdGeomCylinder_1 cylinder(prim);
-
     double height = 2.0;
-    UsdGeomSphere sphere(prim);
-    if (!cylinder.GetHeightAttr().Get(&height, time)) {
-        TF_WARN("Could not evaluate double-valued height attribute on prim %s",
-            prim.GetPath().GetText());
-    }
     double radiusBottom = 1.0;
-    if (!cylinder.GetRadiusBottomAttr().Get(&radiusBottom, time)) {
-        TF_WARN("Could not evaluate double-valued bottom radius attribute on prim %s",
-            prim.GetPath().GetText());
-    }
     double radiusTop = 1.0;
-    if (!cylinder.GetRadiusTopAttr().Get(&radiusTop, time)) {
-        TF_WARN("Could not evaluate double-valued top radius attribute on prim %s",
-            prim.GetPath().GetText());
-    }
     TfToken axis = UsdGeomTokens->z;
-    if (!cylinder.GetAxisAttr().Get(&axis, time)) {
-        TF_WARN("Could not evaluate token-valued axis attribute on prim %s",
-            prim.GetPath().GetText());
-    }
+    extractCylinderParameters<UsdGeomCylinder>(prim, time, height, radiusBottom, radiusTop, axis);
+    extractCylinderParameters<UsdGeomCylinder_1>(prim, time, height, radiusBottom, radiusTop, axis);
+
 
     const GfMatrix4d basis = UsdImagingGprimAdapter::GetImplicitBasis(axis);
 

@@ -48,7 +48,7 @@
                             "UsdImagingGprimAdapter"
                         ],
                         "isInternal": true,
-                        "primTypeName": "Capsule_1"
+                        "primTypeNames": ["Capsule", "Capsule_1"]
                     },
                      "UsdImagingCollectionAPIAdapter" : {
                         "bases": ["UsdImagingAPISchemaAdapter"],
@@ -86,7 +86,7 @@
                             "UsdImagingGprimAdapter"
                         ],
                         "isInternal": true,
-                        "primTypeName": "Cylinder_1"
+                        "primTypeNames": ["Cylinder", "Cylinder_1"]
                     },
                     "UsdImagingDrawModeAdapter" : {
                         "bases": ["UsdImagingPrimAdapter"],

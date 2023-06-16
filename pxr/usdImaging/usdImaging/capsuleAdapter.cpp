@@ -168,6 +168,53 @@ UsdImagingCapsuleAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
+static void extractRadii(UsdGeomCapsule const& capsule, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+{
+    if (!capsule.GetRadiusAttr().Get(&radiusBottomOut, time)) {
+        TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
+            capsule.GetPath().GetText());
+    } else {
+        radiusTopOut = radiusBottomOut;
+    }
+}
+
+
+static void extractRadii(UsdGeomCapsule_1 const& capsule, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+{
+    if (!capsule.GetRadiusBottomAttr().Get(&radiusBottomOut, time)) {
+        TF_WARN("Could not evaluate double-valued bottom radius attribute on prim %s",
+            capsule.GetPath().GetText());
+    }
+    if (!capsule.GetRadiusTopAttr().Get(&radiusTopOut, time)) {
+        TF_WARN("Could not evaluate double-valued top radius attribute on prim %s",
+            capsule.GetPath().GetText());
+    }
+}
+
+template<typename CapsuleType>
+static void extractCapsuleParameters(UsdPrim const& prim, UsdTimeCode time, double& heightOut, double& radiusBottomOut,
+        double& radiusTopOut, TfToken& axisOut)
+{
+    if (!prim.IsA<CapsuleType>()) {
+        return;
+    }
+
+    CapsuleType capsule(prim);
+
+    if (!capsule.GetHeightAttr().Get(&heightOut, time)) {
+        TF_WARN("Could not evaluate double-valued height attribute on prim %s",
+            capsule.GetPath().GetText());
+    }
+
+    extractRadii(capsule, time, radiusBottomOut, radiusTopOut);
+
+    if (!capsule.GetAxisAttr().Get(&axisOut, time)) {
+        TF_WARN("Could not evaluate token-valued axis attribute on prim %s",
+            capsule.GetPath().GetText());
+    }
+}
+
+
 /*virtual*/
 VtValue
 UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
@@ -176,15 +223,12 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    UsdGeomCapsule_1 capsule(prim);
-    double height = 1.0;
-    double radiusTop = 0.5;
+    double height = 2.0;
     double radiusBottom = 0.5;
+    double radiusTop = 0.5;
     TfToken axis = UsdGeomTokens->z;
-    TF_VERIFY(capsule.GetHeightAttr().Get(&height, time));
-    TF_VERIFY(capsule.GetRadiusTopAttr().Get(&radiusTop, time));
-    TF_VERIFY(capsule.GetRadiusBottomAttr().Get(&radiusBottom, time));
-    TF_VERIFY(capsule.GetAxisAttr().Get(&axis, time));
+    extractCapsuleParameters<UsdGeomCapsule>(prim, time, height, radiusBottom, radiusTop, axis);
+    extractCapsuleParameters<UsdGeomCapsule_1>(prim, time, height, radiusBottom, radiusTop, axis);
 
     // The capsule point generator computes points such that the "rings" of the
     // capsule lie on a plane parallel to the XY plane, with the Z-axis being
