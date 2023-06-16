@@ -282,6 +282,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (points)                                    \
     (sphere)                                    \
     (volume)                                    \
+    (model)
 
 #define HD_SPRIMTYPE_TOKENS                     \
     /* Sprims */                                \
