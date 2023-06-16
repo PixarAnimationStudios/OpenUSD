@@ -88,8 +88,12 @@ private:
     struct _Stack {
 
         void PushOp(SdfPredicateExpression::Op op) {
+            using Op = SdfPredicateExpression::Op;
+            auto higherPrec = [](Op left, Op right) {
+                return (left < right) || (left == right && left != Op::Not);
+            };            
             // Reduce while prior ops have higher precendence.
-            while (!opStack.empty() && opStack.back() <= op) {
+            while (!opStack.empty() && higherPrec(opStack.back(), op)) {
                 _Reduce();
             }
             opStack.push_back(op);
@@ -161,10 +165,7 @@ namespace {
 using namespace tao::TAO_PEGTL_NAMESPACE;
 
 template <class Rule, class Sep>
-using list_tail2 = seq<Rule, star<at<Sep, Rule>, Sep, Rule>, opt<Sep>>;
-
-template <class Rule, class Sep>
-using list2 = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
+using LookaheadList = seq<Rule, star<at<Sep, Rule>, Sep, Rule>>;
 
 template <class Rule> using OptSpaced = pad<Rule, blank>;
 
@@ -195,17 +196,24 @@ struct PredArgInt : seq<opt<one<'-'>>, Digits> {};
 
 struct PredArgBool : sor<True, False> {};
 
-struct Escaped : one< '"', '\\', 'b', 'f', 'n', 'r', 't' > {};
-struct Unescaped : utf8::range<0x20, 0x10FFFF> {};
+template <class Quote>
+struct Escaped : sor<Quote, one<'\\', 'b', 'f', 'n', 'r', 't'>> {};
+template <class Quote>
+struct Unescaped : minus<utf8::range<0x20, 0x10FFFF>, Quote> {};
 
-struct StringChar : if_then_else<one<'\\'>, must<Escaped>, Unescaped> {};
+template <class Quote>
+struct StringChar : if_then_else<
+    one<'\\'>, must<Escaped<Quote>>, Unescaped<Quote>> {};
 
-struct QStringContent : until<at<one<'"'>>, must<StringChar>> {};
-struct QuotedString : if_must<one<'"'>, QStringContent, one<'"'>> {};
+struct QuotedString : sor<
+    if_must<one<'"'>, until<one<'"'>, StringChar<one<'"'>>>>,
+    if_must<one<'\''>, until<one<'\''>, StringChar<one<'\''>>>>
+    > {};
 
+struct UnquotedStringDelimiter : sor<blank, one<',', ')', '"', '\''>> {};
 struct UnquotedString
-    : seq<minus<StringChar, blank>,
-      until<at<sor<blank, one<',',')'>, eolf>>, StringChar>> {};
+    : until<at<sor<UnquotedStringDelimiter, eolf>>,
+            StringChar<UnquotedStringDelimiter>> {};
 
 struct PredArgString : sor<QuotedString, UnquotedString> {};
 
@@ -251,9 +259,9 @@ struct PredAtom
     >
 {};
 
-struct PredFactor : seq<opt<OptSpaced<NotKW>>, PredAtom> {};
+struct PredFactor : seq<opt<OptSpaced<list<NotKW, plus<blank>>>>, PredAtom> {};
 struct PredOperator : sor<OptSpaced<AndKW>, OptSpaced<OrKW>, ImpliedAnd> {};
-struct PredExpr : list2<PredFactor, PredOperator> {};
+struct PredExpr : LookaheadList<PredFactor, PredOperator> {};
 
 // Actions ///////////////////////////////////////////////////////////////
 
@@ -356,13 +364,14 @@ struct PredAction<PredArgString>
     static void apply(Input const &in, SdfPredicateExprBuilder &builder) {
         std::string const &instr = in.string();
         size_t trimAmount = 0;
-        if (instr.size() >= 2 && instr.front() == '"' && instr.back() == '"') {
+        if (instr.size() >= 2 &&
+            ((instr.front() == '"' && instr.back() == '"') ||
+             (instr.front() == '\'' && instr.back() == '\''))) {
             trimAmount = 1;
         }
         builder.AddFuncArg(
-            VtValue(
-                Sdf_EvalQuotedString(
-                    instr.c_str(), instr.size(), trimAmount)));
+            VtValue(Sdf_EvalQuotedString(
+                        instr.c_str(), instr.size(), trimAmount)));
     }
 };
 

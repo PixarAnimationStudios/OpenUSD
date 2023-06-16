@@ -29,6 +29,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/vt/value.h"
 
+#include "fileIO_Common.h"
 #include "predicateExpressionParser.h"
 
 #include <functional>
@@ -95,8 +96,8 @@ SdfPredicateExpression::MakeCall(FnCall &&call)
 }
 
 void
-SdfPredicateExpression::Walk(
-    TfFunctionRef<void (Op, int)> logic,
+SdfPredicateExpression::WalkWithOpStack(
+    TfFunctionRef<void (std::vector<std::pair<Op, int>> const &)> logic,
     TfFunctionRef<void (FnCall const &)> call) const
 {
     // Do nothing if this is the empty expression.
@@ -112,25 +113,25 @@ SdfPredicateExpression::Walk(
     using CallIter = std::vector<FnCall>::const_iterator;
     CallIter curCall = _calls.begin();
 
-    // A stack of iterators and indexes tracks where we are in the expression.
-    // The indexes delimit the operands while processing an operation:
+    // A stack of ops and indexes tracks where we are in the expression.  The
+    // indexes delimit the operands while processing an operation:
     //
     // index ----->    0     1      2
     // operation -> And(<lhs>, <rhs>)
-    std::vector<std::pair<OpIter, int>> stack {1, {curOp, 0}};
+    std::vector<std::pair<Op, int>> stack {1, {*curOp, 0}};
 
     while (!stack.empty()) {
-        OpIter const &stackOp = stack.back().first;
+        Op stackOp = stack.back().first;
         int &operandIndex = stack.back().second;
         int operandIndexEnd = 0;
 
         // Invoke 'call' for Call operations, otherwise 'logic'.
-        if (*stackOp == Call) {
+        if (stackOp == Call) {
             call(*curCall++);
         } else {
-            logic(*stackOp, operandIndex++);
-            operandIndexEnd =
-                *stackOp == Not ? 2 : 3; // 'not' is the only unary op.
+            logic(stack);
+            ++operandIndex;
+            operandIndexEnd = stackOp == Not ? 2 : 3; // only 'not' is unary.
         }
 
         // If we've reached the end of an operation, pop it from the stack,
@@ -139,69 +140,106 @@ SdfPredicateExpression::Walk(
             stack.pop_back();
         }
         else {
-            stack.emplace_back(++curOp, 0);
+            stack.emplace_back(*(++curOp), 0);
         }
     }
 }
 
+void
+SdfPredicateExpression::Walk(
+    TfFunctionRef<void (Op, int)> logic,
+    TfFunctionRef<void (FnCall const &)> call) const
+{
+    auto adaptLogic = [&logic](std::vector<std::pair<Op, int>> const &stack) {
+        return logic(stack.back().first, stack.back().second);
+    };
+    return WalkWithOpStack(adaptLogic, call);
+}
+
 std::string
-SdfPredicateExpression::GetDebugString() const
+SdfPredicateExpression::GetText() const
 {
     std::string result;
     if (IsEmpty()) {
-        result = "<invalid>";
-        if (!_parseError.empty()) {
-            result += " (err='" + _parseError + "')";
-        }
         return result;
     }
 
     auto opName = [](Op k) {
         switch (k) {
-        case Call: return "call";
         case Not: return "not";
-        case ImpliedAnd: return "iand";
+        case ImpliedAnd: return " ";
         case And: return "and";
         case Or: return "or";
+        default: break;
         };
         return "<unknown>";
     };
 
-    result = TfStringPrintf("Expr @ %p: { ", this);
+    std::vector<Op> opStack;
 
-    auto printLogic = [&opName, &result](Op op, int argIndex) {
-        if (op == Not) {
-            switch (argIndex) {
-            case 0: result += "not ("; break;
-            case 1: result += ")"; break;
-            };
+    auto printLogic = [&opName, &opStack, &result](
+        std::vector<std::pair<Op, int>> const &stack) {
+
+        const Op op = stack.back().first;
+        const int argIndex = stack.back().second;
+        
+        // Parenthesize this subexpression if we have a parent op, and either:
+        // - the parent op has a stronger precedence than this op
+        // - the parent op has the same precedence as this op, and this op is
+        //   the right-hand-side of the parent op.
+        bool parenthesize = false;
+        if (stack.size() >= 2 /* has a parent op */) {
+            Op parentOp;
+            int parentIndex;
+            std::tie(parentOp, parentIndex) = stack[stack.size()-2];
+            parenthesize =
+                parentOp < op || (parentOp == op && parentIndex == 2);
         }
-        else {
-            switch (argIndex) {
-            case 0: result += "("; break;
-            case 1: result += TfStringPrintf(" %s ", opName(op)); break;
-            case 2: result += ")"; break;
-            };
+
+        if (parenthesize && argIndex == 0) {
+            result += '(';
+        }
+        if (op == Not ? argIndex == 0 : argIndex == 1) {
+            result += opName(op);
+        }
+        if (parenthesize && (op == Not ? argIndex == 1 : argIndex == 2)) {
+            result += ')';
         }                
     };
 
     auto printCall = [&result](FnCall const &call) {
-        result += call.funcName + "(";
+        result += call.funcName;
+        switch (call.kind) {
+        case FnCall::BareCall: break;
+        case FnCall::ColonCall: {
+            std::vector<std::string> argStrs;
         for (auto const &arg: call.args) {
-            result += TfStringPrintf(
-                "%s%s%s,", arg.argName.empty() ? "" : arg.argName.c_str(),
-                arg.argName.empty() ? "" : "=", TfStringify(arg.value).c_str());
+                argStrs.push_back(
+                    Sdf_FileIOUtility::StringFromVtValue(arg.value));
         }
-        result += TfStringPrintf(") [%s]",
-                                 call.kind == FnCall::BareCall ? "bare" :
-                                 call.kind == FnCall::ColonCall ? "colon" :
-                                 call.kind == FnCall::ParenCall ? "paren" :
-                                 "<INVALID>");
+            if (!argStrs.empty()) {
+                result += ":" + TfStringJoin(argStrs, ",");
+            }
+        } break;
+        case FnCall::ParenCall: {
+            std::vector<std::string> argStrs;
+            for (auto const &arg: call.args) {
+                argStrs.push_back(
+                    TfStringPrintf(
+                        "%s%s%s",
+                        arg.argName.empty() ? "" : arg.argName.c_str(),
+                        arg.argName.empty() ? "" : "=",
+                        Sdf_FileIOUtility
+                        ::StringFromVtValue(arg.value).c_str()));
+            }
+            if (!argStrs.empty()) {
+                result += "(" + TfStringJoin(argStrs, ", ") + ")";
+            }
+        } break;
+        };
     };
     
-    Walk(printLogic, printCall);
-
-    result += " }";
+    WalkWithOpStack(printLogic, printCall);
     
     return result;
 }

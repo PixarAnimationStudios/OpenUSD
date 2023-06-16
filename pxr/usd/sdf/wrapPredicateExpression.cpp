@@ -40,6 +40,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using PredExpr = SdfPredicateExpression;
 
+static std::string
+_Repr(SdfPredicateExpression const &self) {
+    if (!self) {
+        return TF_PY_REPR_PREFIX + "PredicateExpression()";
+    }
+    else {
+        return std::string(TF_PY_REPR_PREFIX + "PredicateExpression(")
+            + TfPyRepr(self.GetText()) + ")";
+    }
+}
+                           
 void wrapPredicateExpression()
 {
     TfPyFunctionFromPython<void (PredExpr::Op, int)> {};
@@ -75,10 +86,11 @@ void wrapPredicateExpression()
                  return expr.Walk(logic, call);
              }, (arg("logic"), arg("call")))
 
-        .def("GetDebugString", &PredExpr::GetDebugString)
+        .def("GetText", &PredExpr::GetText)
 
         .def("IsEmpty", &PredExpr::IsEmpty)
         .def("__bool__", &PredExpr::operator bool)
+        .def("__repr__", &_Repr)
 
         .def("GetParseError",
              static_cast<std::string const &(PredExpr::*)() const &>(

@@ -89,6 +89,32 @@ TestSimple()
         TF_AXIOM(test("foops"));
     }
 
+    {
+        auto test = SdfLinkPredicateExpression(
+            SdfPredicateExpression("not not allVowels"), predLib);
+        
+        TF_AXIOM(test("eieio"));
+        TF_AXIOM(!test("abcdefg"));
+        TF_AXIOM(!test("fooabcdefg"));
+        TF_AXIOM(test("aieeee"));
+        TF_AXIOM(test("oooooo"));
+        TF_AXIOM(!test("oops"));
+        TF_AXIOM(!test("foops"));
+    }
+
+    {
+        auto test = SdfLinkPredicateExpression(
+            SdfPredicateExpression("not not not allVowels"), predLib);
+        
+        TF_AXIOM(!test("eieio"));
+        TF_AXIOM(test("abcdefg"));
+        TF_AXIOM(test("fooabcdefg"));
+        TF_AXIOM(!test("aieeee"));
+        TF_AXIOM(!test("oooooo"));
+        TF_AXIOM(test("oops"));
+        TF_AXIOM(test("foops"));
+    }
+    
     // Link some expressions with predLib to produce programs, and run some
     // simple tests.
     {
@@ -203,7 +229,6 @@ TestParseErrors() {
             "((foo)",
             "bar)",
             "(baz))",
-            "badCallArgs(kw=)",
             "badCallArgs(pos1, kw=foo,pos2)",
             "badCallArgs(",
         }) {

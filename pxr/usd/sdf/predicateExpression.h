@@ -197,9 +197,20 @@ public:
     void Walk(TfFunctionRef<void (Op, int)> logic,
               TfFunctionRef<void (FnCall const &)> call) const;
 
-    /// Return a debugging-oriented string representation of this expression.
+    /// Equivalent to Walk(), except that the \p logic function is called with a
+    /// const reference to the current Op stack instead of just the top of it.
+    /// The top of the Op stack is the vector's back.  This is useful in case
+    /// the processing code needs to understand the context in which an Op
+    /// appears.
     SDF_API
-    std::string GetDebugString() const;
+    void WalkWithOpStack(
+        TfFunctionRef<void (std::vector<std::pair<Op, int>> const &)> logic,
+        TfFunctionRef<void (FnCall const &)> call) const;
+
+    /// Return a text representation of this expression that parses to the same
+    /// expression.
+    SDF_API
+    std::string GetText() const;
 
     /// Return true if this is the empty expression; i.e. default-constructed or
     /// constructed from a string with invalid syntax.
