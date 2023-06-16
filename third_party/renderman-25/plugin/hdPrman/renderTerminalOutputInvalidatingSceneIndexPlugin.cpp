@@ -207,12 +207,12 @@ protected:
             return;
         }
 
-        // When the RenderSettings prim is dirtied make sure to dirty the
-        // connected terminal as well.
+        // When the Namespaced Settings on a RenderSettings prim is dirtied 
+        // make sure to dirty the connected render terminal outputs as well.
         HdSceneIndexObserver::DirtiedPrimEntries outputsToDirty;
         for(auto const &entry : entries) {
             if (entry.dirtyLocators.Intersects(
-                    HdRenderSettingsSchema::GetDefaultLocator())) {
+                    HdRenderSettingsSchema::GetNamespacedSettingsLocator())) {
                 const HdSceneIndexPrim prim =
                     _GetInputSceneIndex()->GetPrim(entry.primPath);
                 for (auto const& path : _GetConnectedOutputs(prim)) {
