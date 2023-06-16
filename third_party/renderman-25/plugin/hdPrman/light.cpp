@@ -459,8 +459,9 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    if (*dirtyBits & DirtyTransform) {
-        // The light instance's transform has changed
+    if (*dirtyBits & (DirtyTransform | DirtyInstancer)) {
+        // If the transform has changed or the instancer is dirty, the light
+        // instance (or instances, in the latter case) needs to be refreshed.
         dirtyLightInstance = true;
     }
     
