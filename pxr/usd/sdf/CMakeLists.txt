@@ -48,6 +48,7 @@ pxr_library(sdf
         notice
         opaqueValue
         path
+        pathExpression
         pathNode
         pathTable
         payload
@@ -147,6 +148,7 @@ pxr_library(sdf
         wrapNotice.cpp
         wrapOpaqueValue.cpp
         wrapPath.cpp
+        wrapPathExpression.cpp
         wrapPayload.cpp
         wrapPredicateExpression.cpp
         wrapPrimSpec.cpp
