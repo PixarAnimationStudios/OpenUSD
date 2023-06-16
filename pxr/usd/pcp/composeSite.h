@@ -52,6 +52,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/path.h"
@@ -61,6 +62,8 @@
 #include "pxr/usd/sdf/site.h"
 
 #include <set>
+#include <string>
+#include <unordered_set>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -87,33 +90,91 @@ typedef std::vector<PcpSourceArcInfo> PcpSourceArcInfoVector;
 /// References
 PCP_API
 void
-PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
-                         SdfPath const &path,
-                         SdfReferenceVector *result,
-                         PcpSourceArcInfoVector *info);
+PcpComposeSiteReferences(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfReferenceVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors);
+
 inline void
-PcpComposeSiteReferences(PcpNodeRef const &node,
-                         SdfReferenceVector *result,
-                         PcpSourceArcInfoVector *info)
+PcpComposeSiteReferences(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfReferenceVector *result,
+    PcpSourceArcInfoVector *info)
 {
-    return PcpComposeSiteReferences(node.GetLayerStack(), node.GetPath(),
-                                    result, info);
+    return PcpComposeSiteReferences(
+        layerStack, path, result, info, nullptr , nullptr);
+}
+
+inline void
+PcpComposeSiteReferences(
+    PcpNodeRef const &node,
+    SdfReferenceVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors)
+{
+    return PcpComposeSiteReferences(
+        node.GetLayerStack(), node.GetPath(), 
+        result, info, exprVarDependencies, errors);
+}
+
+inline void
+PcpComposeSiteReferences(
+    PcpNodeRef const &node,
+    SdfReferenceVector *result,
+    PcpSourceArcInfoVector *info)
+{
+    return PcpComposeSiteReferences(
+        node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
 }
 
 /// Payloads
 PCP_API
 void
-PcpComposeSitePayloads(PcpLayerStackRefPtr const &layerStack,
-                       SdfPath const &path,
-                       SdfPayloadVector *result,
-                       PcpSourceArcInfoVector *info);
+PcpComposeSitePayloads(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfPayloadVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors);
+
 inline void
-PcpComposeSitePayloads(PcpNodeRef const &node,
-                       SdfPayloadVector *result,
-                       PcpSourceArcInfoVector *info)
+PcpComposeSitePayloads(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfPayloadVector *result,
+    PcpSourceArcInfoVector *info)
 {
-    return PcpComposeSitePayloads(node.GetLayerStack(), node.GetPath(),
-                                  result, info);
+    return PcpComposeSitePayloads(
+        layerStack, path, result, info, nullptr, nullptr);
+}
+
+inline void
+PcpComposeSitePayloads(
+    PcpNodeRef const &node,
+    SdfPayloadVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors)
+{
+    return PcpComposeSitePayloads(
+        node.GetLayerStack(), node.GetPath(),
+        result, info, exprVarDependencies, errors);
+}
+
+inline void
+PcpComposeSitePayloads(
+    PcpNodeRef const &node,
+    SdfPayloadVector *result,
+    PcpSourceArcInfoVector *info)
+{
+    return PcpComposeSitePayloads(
+        node.GetLayerStack(), node.GetPath(), result, info, nullptr, nullptr);
 }
 
 /// Permission

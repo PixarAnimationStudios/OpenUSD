@@ -24,7 +24,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStack.h"
+#include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/listOp.h"
@@ -57,14 +59,29 @@ _CopyCustomData(SdfPayload *, const SdfPayload&)
     // do nothing
 }
 
+static const char*
+_GetErrorContext(const SdfReference*)
+{
+    return "reference";
+}
+
+static const char*
+_GetErrorContext(const SdfPayload*)
+{
+    return "payload";
+}
+
 // Payload and reference lists are composed in the same way.
 template <class RefOrPayloadType>
 static void
-_PcpComposeSiteReferencesOrPayloads(TfToken const &field,
-                                    PcpLayerStackRefPtr const &layerStack,
-                                    SdfPath const &path,
-                                    std::vector<RefOrPayloadType> *result,
-                                    PcpSourceArcInfoVector *info )
+_PcpComposeSiteReferencesOrPayloads(
+    TfToken const &field,
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    std::vector<RefOrPayloadType> *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors)
 {
     // Sdf provides no convenient way to annotate each element of the result.
     // So we use a map from element value to its annotation, which in this
@@ -77,38 +94,61 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
     result->clear();
     for (size_t i = layers.size(); i-- != 0; ) {
         const SdfLayerHandle& layer = layers[i];
-        if (layer->HasField(path, field, &curListOp)) {
-            const SdfLayerOffset* layerOffset =
-                layerStack->GetLayerOffsetForLayer(i);
-
-            // List-op composition callback computes absolute asset paths
-            // relative to the layer where they were expressed.
-            curListOp.ApplyOperations(result,
-                [&](SdfListOpType opType, const RefOrPayloadType& refOrPayload)
-                {
-                    // Fill in the result reference of payload with the anchored
-                    // asset path instead of the authored asset path. This 
-                    // ensures that references or payloads with the same 
-                    // relative asset path but anchored to different
-                    // locations will not be considered duplicates.
-                    const std::string &authoredAssetPath = 
-                        refOrPayload.GetAssetPath();
-                    const std::string assetPath = authoredAssetPath.empty() ? 
-                        authoredAssetPath : 
-                        SdfComputeAssetPathRelativeToLayer(
-                            layer, authoredAssetPath);
-                    RefOrPayloadType result( assetPath, 
-                                             refOrPayload.GetPrimPath(),
-                                             refOrPayload.GetLayerOffset());
-
-                    _CopyCustomData(&result, refOrPayload);
-                    infoMap[result] = {
-                        layer,
-                        layerOffset ? *layerOffset : SdfLayerOffset(),
-                        refOrPayload.GetAssetPath()};
-                    return result;
-                });
+        if (!layer->HasField(path, field, &curListOp)) {
+            continue;
         }
+
+        const SdfLayerOffset* layerOffset =
+            layerStack->GetLayerOffsetForLayer(i);
+
+        // List-op composition callback computes absolute asset paths
+        // relative to the layer where they were expressed.
+        curListOp.ApplyOperations(result,
+            [&](SdfListOpType opType, const RefOrPayloadType& refOrPayload)
+            -> boost::optional<RefOrPayloadType>
+            {
+                // Fill in the result reference or payload with the anchored
+                // asset path instead of the authored asset path. This 
+                // ensures that references or payloads with the same 
+                // relative asset path but anchored to different
+                // locations will not be considered duplicates.
+                std::string authoredAssetPath = refOrPayload.GetAssetPath();
+
+                std::string assetPath;
+                if (Pcp_IsVariableExpression(authoredAssetPath)) {
+                    authoredAssetPath = Pcp_EvaluateVariableExpression(
+                        authoredAssetPath, layerStack->GetExpressionVariables(),
+                        _GetErrorContext((const RefOrPayloadType*)(nullptr)),
+                        layer, path, exprVarDependencies, errors);
+
+                    // Expressions that evaluate to an empty path are silently
+                    // ignored to allow users to conditionally reference a
+                    // layer. If the empty result was due to an error, that
+                    // will have already been saved to the errors list above.
+                    if (authoredAssetPath.empty()) {
+                        return boost::none;
+                    }
+
+                    assetPath = SdfComputeAssetPathRelativeToLayer(
+                        layer, authoredAssetPath);
+                }
+                else if (!authoredAssetPath.empty()) {
+                    assetPath = SdfComputeAssetPathRelativeToLayer(
+                        layer, authoredAssetPath);
+                }
+
+                RefOrPayloadType result( assetPath, 
+                                         refOrPayload.GetPrimPath(),
+                                         refOrPayload.GetLayerOffset());
+
+                _CopyCustomData(&result, refOrPayload);
+                infoMap[result] = {
+                    layer,
+                    layerOffset ? *layerOffset : SdfLayerOffset(),
+                    std::move(authoredAssetPath)
+                };
+                return result;
+            });
     }
 
     // Fill in info.
@@ -120,23 +160,31 @@ _PcpComposeSiteReferencesOrPayloads(TfToken const &field,
 }
 
 void
-PcpComposeSiteReferences(PcpLayerStackRefPtr const &layerStack,
-                         SdfPath const &path,
-                         SdfReferenceVector *result,
-                         PcpSourceArcInfoVector *info )
+PcpComposeSiteReferences(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfReferenceVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *stageVarDependencies,
+    PcpErrorVector *errors)
 {
     _PcpComposeSiteReferencesOrPayloads(
-        SdfFieldKeys->References, layerStack, path, result, info);
+        SdfFieldKeys->References, layerStack, path, result, info,
+        stageVarDependencies, errors);
 }
 
 void
-PcpComposeSitePayloads(PcpLayerStackRefPtr const &layerStack,
-                       SdfPath const &path,
-                       SdfPayloadVector *result,
-                       PcpSourceArcInfoVector *info )
+PcpComposeSitePayloads(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfPayloadVector *result,
+    PcpSourceArcInfoVector *info,
+    std::unordered_set<std::string> *stageVarDependencies,
+    PcpErrorVector *errors)
 {
     _PcpComposeSiteReferencesOrPayloads(
-        SdfFieldKeys->Payload, layerStack, path, result, info);
+        SdfFieldKeys->Payload, layerStack, path, result, info,
+        stageVarDependencies, errors);
 }
 
 SdfPermission

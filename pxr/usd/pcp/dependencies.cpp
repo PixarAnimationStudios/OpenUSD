@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file Dependencies.cpp
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependencies.h"
@@ -85,7 +84,8 @@ void
 Pcp_Dependencies::Add(
     const PcpPrimIndex &primIndex,
     PcpCulledDependencyVector &&culledDependencies,
-    PcpDynamicFileFormatDependencyData &&fileFormatDependencyData)
+    PcpDynamicFileFormatDependencyData &&fileFormatDependencyData,
+    PcpExpressionVariablesDependencyData &&exprVarDependencyData)
 {
     TfAutoMallocTag2 tag("Pcp", "Pcp_Dependencies::Add");
     if (!primIndex.GetRootNode()) {
@@ -201,6 +201,24 @@ Pcp_Dependencies::Add(
         // Take and store the dependency data.
         _fileFormatArgumentDependencyMap[primIndexPath] = 
             std::move(fileFormatDependencyData);
+    }
+
+    if (!exprVarDependencyData.IsEmpty()) {
+        tbb::spin_mutex::scoped_lock lock;
+        if (_concurrentPopulationContext) {
+            lock.acquire(_concurrentPopulationContext->_mutex);
+        }
+
+        exprVarDependencyData.ForEachDependency(
+            [&, this](
+                const PcpLayerStackPtr& layerStack,
+                const std::unordered_set<std::string>&)
+            {
+                _layerStackExprVarsMap[layerStack].push_back(primIndexPath);
+            });
+
+        _exprVarsDependencyMap[primIndexPath] = 
+            std::move(exprVarDependencyData);
     }
 
     if (count == 0) {
@@ -356,6 +374,30 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
         // Remove the dependency data.
         _fileFormatArgumentDependencyMap.erase(it);
     }
+
+    auto exprVarIt = _exprVarsDependencyMap.find(primIndexPath);
+    if (exprVarIt != _exprVarsDependencyMap.end()) {
+        exprVarIt->second.ForEachDependency(
+            [&, this](
+                const PcpLayerStackPtr& layerStack,
+                const std::unordered_set<std::string>&)
+            {
+                auto layerStackIt = _layerStackExprVarsMap.find(layerStack);
+                if (TF_VERIFY(layerStackIt != _layerStackExprVarsMap.end())) {
+                    SdfPathVector& primIndexPaths = layerStackIt->second;
+                    primIndexPaths.erase(
+                        std::remove(
+                            primIndexPaths.begin(), primIndexPaths.end(),
+                            primIndexPath),
+                        primIndexPaths.end());
+                    if (primIndexPaths.empty()) {
+                        _layerStackExprVarsMap.erase(layerStackIt);
+                    }
+                }
+            });
+
+        _exprVarsDependencyMap.erase(exprVarIt);
+    }
 }
 
 void
@@ -377,6 +419,8 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     _possibleDynamicFileFormatArgumentAttributes.clear();
     _culledDependenciesMap.clear();
     _fileFormatArgumentDependencyMap.clear();
+    _exprVarsDependencyMap.clear();
+    _layerStackExprVarsMap.clear();
 }
 
 SdfLayerHandleSet 
@@ -467,6 +511,35 @@ Pcp_Dependencies::GetDynamicFileFormatArgumentDependencyData(
         return empty;
     }
     return it->second;
+}
+
+const SdfPathVector&
+Pcp_Dependencies::GetPrimsUsingExpressionVariablesFromLayerStack(
+    const PcpLayerStackPtr& layerStack) const
+{
+    static const SdfPathVector empty;
+
+    const SdfPathVector* primIndexPaths = 
+        TfMapLookupPtr(_layerStackExprVarsMap, layerStack);
+    return primIndexPaths ? *primIndexPaths : empty;
+}
+
+const std::unordered_set<std::string>&
+Pcp_Dependencies::GetExpressionVariablesFromLayerStackUsedByPrim(
+    const SdfPath &primIndexPath,
+    const PcpLayerStackPtr &layerStack) const
+{
+    static const std::unordered_set<std::string> empty;
+    
+    const PcpExpressionVariablesDependencyData* exprVarDeps =
+        TfMapLookupPtr(_exprVarsDependencyMap, primIndexPath);
+    if (!exprVarDeps) {
+        return empty;
+    }
+
+    const std::unordered_set<std::string>* usedExprVars =
+        exprVarDeps->GetDependenciesForLayerStack(layerStack);
+    return usedExprVars ? *usedExprVars : empty;
 }
 
 void

@@ -179,6 +179,11 @@ wrapErrors()
         ("ErrorUnresolvedPrimPath", "", no_init)
         ;
 
+    class_<PcpErrorVariableExpressionError, bases<PcpErrorBase>,
+           PcpErrorVariableExpressionErrorPtr>
+        ("ErrorVariableExpressionError", "", no_init)
+        ;
+
     // Register conversion for python list <-> vector<PcpErrorBasePtr>
     to_python_converter< PcpErrorVector, 
                          TfPySequenceToPython<PcpErrorVector> >();

@@ -30,6 +30,7 @@ pxr_library(pcp
         dynamicFileFormatInterface
         errors
         expressionVariables
+        expressionVariablesDependencyData
         expressionVariablesSource
         instanceKey
         iterator
@@ -454,6 +455,16 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicSpecializesAndVariants.testenv
     DEST testPcpMuseum_BasicSpecializesAndVariants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInPayloads.testenv
+    DEST testPcpMuseum_ExpressionsInPayloads
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInReferences.testenv
+    DEST testPcpMuseum_ExpressionsInReferences
 )
 
 pxr_install_test_dir(
@@ -1108,6 +1119,20 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInPayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInPayloads/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInPayloads.txt
+    DIFF_COMPARE compositionResults_ExpressionsInPayloads.txt
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInReferences
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInReferences/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInReferences.txt
+    DIFF_COMPARE compositionResults_ExpressionsInReferences.txt
 )
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits

@@ -58,6 +58,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(PcpErrorType_SublayerCycle);
     TF_ADD_ENUM_NAME(PcpErrorType_TargetPermissionDenied);
     TF_ADD_ENUM_NAME(PcpErrorType_UnresolvedPrimPath);
+    TF_ADD_ENUM_NAME(PcpErrorType_VariableExpressionError);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -871,6 +872,53 @@ PcpErrorUnresolvedPrimPath::ToString() const
         TfEnum::GetDisplayName(arcType).c_str(), 
         TfStringify(PcpSite(targetLayer, unresolvedPath)).c_str(),
         TfStringify(PcpSite(sourceLayer, site.path)).c_str());
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+PcpErrorVariableExpressionErrorPtr
+PcpErrorVariableExpressionError::New()
+{
+    return PcpErrorVariableExpressionErrorPtr(
+        new PcpErrorVariableExpressionError);
+}
+
+PcpErrorVariableExpressionError::PcpErrorVariableExpressionError()
+    : PcpErrorBase(PcpErrorType_VariableExpressionError)
+{
+}
+
+PcpErrorVariableExpressionError::~PcpErrorVariableExpressionError()
+{
+}
+
+std::string
+PcpErrorVariableExpressionError::ToString() const
+{
+    // Example error messages:
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for sublayer in @foo.sdf@: invalid syntax
+    //
+    // Error evaluating expression "`if(${FOO}, ..."
+    // for reference at </Foo> in @bar.sdf@: invalid syntax
+    auto makeSourceStr = [this]() {
+        std::string result;
+        if (!sourcePath.IsAbsoluteRootPath()) {
+            result += TfStringPrintf(
+                "at %s ", sourcePath.GetAsString().c_str());
+        }
+        result += TfStringPrintf(
+            "in @%s@", 
+            sourceLayer ? sourceLayer->GetIdentifier().c_str() : "<expired>");
+        return result;
+
+    };
+
+    return TfStringPrintf(
+        R"(Error evaluating expression %s for %s %s: %s)",
+        expression.substr(0, 32).c_str(), 
+        context.c_str(), makeSourceStr().c_str(),
+        expressionError.c_str());
 }
 
 ///////////////////////////////////////////////////////////////////////////////

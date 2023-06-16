@@ -377,10 +377,12 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
     }
-    // Append the contents of the child's file format dependency object to
-    // ours.
+
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
+
+    expressionVariablesDependency.AppendDependencyData(
+        std::move(childOutputs.expressionVariablesDependency));
 
     culledDependencies.insert(
         culledDependencies.end(),
@@ -2085,7 +2087,21 @@ _EvalNodeReferences(
     // Compose value for local references.
     SdfReferenceVector refArcs;
     PcpSourceArcInfoVector refInfo;
-    PcpComposeSiteReferences(node, &refArcs, &refInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSiteReferences(
+        node, &refArcs, &refInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     // Add each reference arc.
     _EvalRefOrPayloadArcs<SdfReference, PcpArcTypeReference>(
@@ -2112,7 +2128,21 @@ _EvalNodePayloads(
     // Compose value for local payloads.
     SdfPayloadVector payloadArcs;
     PcpSourceArcInfoVector payloadInfo;
-    PcpComposeSitePayloads(node, &payloadArcs, &payloadInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSitePayloads(
+        node, &payloadArcs, &payloadInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     if (payloadArcs.empty()) {
         return;

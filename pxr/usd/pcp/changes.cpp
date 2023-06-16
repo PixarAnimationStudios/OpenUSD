@@ -2408,6 +2408,39 @@ PcpChanges::_DidChangeLayerStackExpressionVariables(
             continue;
         }
 
+        const auto expressionVarChanged = 
+            [&oldExprVars, &newExprVars](const std::string& usedVar) {
+                const VtValue* oldVar =
+                    TfMapLookupPtr(oldExprVars.GetVariables(), usedVar);
+                const VtValue* newVar =
+                    TfMapLookupPtr(newExprVars.GetVariables(), usedVar);
+                return (oldVar && !newVar) || (!oldVar && newVar) || 
+                       (oldVar && newVar && *oldVar != *newVar);
+            };
+
+        // Any prim indexes that depend on expression variables in this layer
+        // stack (e.g. in reference/payload asset paths or variant selections)
+        // must be resync'd if any of the variables they depend on have changed.
+        for (const SdfPath& primIndexPath :
+             cache->GetPrimsUsingExpressionVariablesFromLayerStack(
+                 layerStack)) {
+
+            for (const std::string& usedExprVar :
+                 cache->GetExpressionVariablesFromLayerStackUsedByPrim(
+                     primIndexPath, layerStack)) {
+
+                if (expressionVarChanged(usedExprVar)) {
+                    PCP_APPEND_DEBUG(
+                        "    Resync <%s> because expression variable '%s' "
+                        "has changed\n",
+                        primIndexPath.GetText(), usedExprVar.c_str());
+
+                    DidChangeSignificantly(cache, primIndexPath);
+                    break;
+                }
+            }
+        }
+    
         // Since this layer stack's expression variables have changed, any layer
         // stacks that use the expression variables as the overriding expression
         // vars in their identifier must also be checked for necessary

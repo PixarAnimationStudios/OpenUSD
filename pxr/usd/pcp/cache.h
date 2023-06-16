@@ -577,6 +577,20 @@ public:
     GetDynamicFileFormatArgumentDependencyData(
         const SdfPath &primIndexPath) const;
 
+    /// Returns the list of prim index paths that depend on one or more
+    /// expression variables from \p layerStack.
+    PCP_API
+    const SdfPathVector& GetPrimsUsingExpressionVariablesFromLayerStack(
+        const PcpLayerStackPtr &layerStack) const;
+
+    /// Returns the set of expression variables in \p layerStack that are
+    /// used by the prim index at \p primIndexPath.
+    PCP_API
+    const std::unordered_set<std::string>& 
+    GetExpressionVariablesFromLayerStackUsedByPrim(
+        const SdfPath &primIndexPath,
+        const PcpLayerStackPtr &layerStack) const;
+
     /// @}
 
     /// \name Change handling

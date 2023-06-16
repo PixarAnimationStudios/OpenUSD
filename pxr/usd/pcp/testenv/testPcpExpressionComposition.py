@@ -35,7 +35,7 @@ def LoadPcpCache(rootLayer, sessionLayer = None):
     return Pcp.Cache(Pcp.LayerStackIdentifier(l, sl))
 
 class TestPcpExpressionComposition(unittest.TestCase):
-    def AssertVariables(self, pcpCache, path, expected):
+    def AssertVariables(self, pcpCache, path, expected, errorsExpected = False):
         '''Helper function for verifying the expected value of 
         expression variables in the layer stacks throughout the prim index
         for the prim at the given path.
@@ -49,6 +49,9 @@ class TestPcpExpressionComposition(unittest.TestCase):
         The first entry in "expected" corresponds to the expected expression
         variables dictionary in the root node, followed by a list of
         entries corresponding to the children of the root node, etc.
+
+        If "errorsExpected" is False, then this function will return false if
+        any composition errors are generated when computing the prim index.
         '''
         def _recurse(node, expected):
             self.assertEqual(
@@ -65,11 +68,189 @@ class TestPcpExpressionComposition(unittest.TestCase):
                 _recurse(n, expected[1][(idx*2):(idx*2)+2])
 
         pi, err = pcpCache.ComputePrimIndex(path)
-        self.assertFalse(err, "Unexpected composition errors: {}".format(
-            ",".join(str(e) for e in err)))
+        if errorsExpected:
+            self.assertTrue(err, "Composition errors expected")
+        else:
+            self.assertFalse(err, "Unexpected composition errors: {}".format(
+                ",".join(str(e) for e in err)))
         _recurse(pi.rootNode, expected)
 
         return pi
+
+    def test_BasicReferencesAndPayloads(self):
+        pcpCache = LoadPcpCache('refs_and_payloads/root.sdf')
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+
+        # Verify initial state.
+        self.AssertVariables(
+            pcpCache, '/Ref',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/Payload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionRef',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionPayload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        # Author a new 'OTHER_REF' variable in the root layer. No prims
+        # rely on this variable in a reference arc, so this does not result
+        # in any resyncs.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'REF':'A', 'OTHER_REF':'A'}
+            self.assertEqual(changes.GetSignificantChanges(), [])
+
+        self.AssertVariables(
+            pcpCache, '/Ref',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/Payload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionRef',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionPayload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'A', 'OTHER_REF':'A'}), [
+                    ],
+                ]
+            ])
+
+        # Change the value of the 'REF' variable. Since both /Ref and /Payload
+        # depend on this variable, they should be resynced.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'REF':'B'}
+            self.assertEqual(
+                changes.GetSignificantChanges(), ['/Payload', '/Ref'])
+
+        self.AssertVariables(
+            pcpCache, '/Ref',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
+                    ('refs_and_payloads/B.sdf', {'REF':'B'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/Payload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
+                    ('refs_and_payloads/B.sdf', {'REF':'B'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionRef',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'B'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionPayload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'B'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'B'}), [
+                    ],
+                ]
+            ])
+
+        # Change the value of the 'REF' variable to an invalid expression.
+        # Both /Ref and /Payload should be resynced but raise composition
+        # errors due to the invalid expression.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'REF':'`${BAD`'}
+            self.assertEqual(
+                changes.GetSignificantChanges(), ['/Payload', '/Ref'])
+
+        pi = self.AssertVariables(
+            pcpCache, '/Ref',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                ]
+            ],
+            errorsExpected = True)
+
+        self.assertIsInstance(
+            pi.localErrors[0], Pcp.ErrorVariableExpressionError)
+
+        pi = self.AssertVariables(
+            pcpCache, '/Payload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                ]
+            ],
+            errorsExpected = True)
+
+        self.assertIsInstance(
+            pi.localErrors[0], Pcp.ErrorVariableExpressionError)
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionRef',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'`${BAD`'}), [
+                    ],
+                ]
+            ])
+
+        self.AssertVariables(
+            pcpCache, '/NoExpressionPayload',
+            expected = [
+                ('refs_and_payloads/root.sdf', {'REF':'`${BAD`'}), [
+                    ('refs_and_payloads/A.sdf', {'REF':'`${BAD`'}), [
+                    ],
+                ]
+            ])
 
     def test_ExpressionVarChanges_MultipleReferences(self):
         """Test expression variable changes involving multiple references on
