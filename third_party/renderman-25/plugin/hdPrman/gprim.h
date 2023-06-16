@@ -62,17 +62,17 @@ public:
     {
         HdPrman_RenderParam *param =
             static_cast<HdPrman_RenderParam*>(renderParam);
-
+        const SdfPath& id = BASE::GetId();
         riley::Riley *riley = param->AcquireRiley();
 
         // Release retained conversions of coordSys bindings.
-        param->ReleaseCoordSysBindings(BASE::GetId());
+        param->ReleaseCoordSysBindings(id);
 
         // Delete instances before deleting the prototypes they use.
-        for (const auto &id: _instanceIds) {
-            if (id != riley::GeometryInstanceId::InvalidId()) {
+        for (const auto &instId: _instanceIds) {
+            if (instId != riley::GeometryInstanceId::InvalidId()) {
                 riley->DeleteGeometryInstance(
-                    riley::GeometryPrototypeId::InvalidId(), id);
+                    riley::GeometryPrototypeId::InvalidId(), instId);
             }
         }
         _instanceIds.clear();
@@ -80,12 +80,12 @@ public:
         // delete instances owned by the instancer.
         if (HdPrmanInstancer* instancer = param->GetInstancer(
             BASE::GetInstancerId())) {
-            instancer->Depopulate(renderParam, BASE::GetId());
+            instancer->Depopulate(renderParam, id);
         }
 
-        for (const auto &id: _prototypeIds) {
-            if (id != riley::GeometryPrototypeId::InvalidId()) {
-                riley->DeleteGeometryPrototype(id);
+        for (const auto &protoId: _prototypeIds) {
+            if (protoId != riley::GeometryPrototypeId::InvalidId()) {
+                riley->DeleteGeometryPrototype(protoId);
             }
         }
         _prototypeIds.clear();
@@ -339,6 +339,7 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     //
     // Create or modify Riley geometry instances.
     //
+    
     // Resolve attributes.
     RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
 
@@ -360,10 +361,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
         // Add "identifier:id2" with the instance number.
         // XXX Do we want to distinguish facesets here?
         attrs.SetInteger(RixStr.k_identifier_id2, 0);
+
         // Adjust _instanceIds array.
-        const size_t newNumHdInstances = 1u;
         const size_t oldCount = _instanceIds.size();
-        const size_t newCount = newNumHdInstances * _prototypeIds.size();
+        const size_t newCount = _prototypeIds.size();
         if (newCount != oldCount) {
             for (const auto &oldInstanceId: _instanceIds) {
                 if (oldInstanceId != riley::GeometryInstanceId::InvalidId()) {
