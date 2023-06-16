@@ -115,6 +115,7 @@ private:
     HdDataSourceBaseHandle _GetPrmanParamsDataSource();
 
     bool _IsLight();
+    bool _IsInstanceable();
 
 private:
     SdfPath _id;

@@ -2386,6 +2386,14 @@ HdDataSourceLegacyPrim::_IsLight()
     return v.GetWithDefault<bool>(false);
 }
 
+bool
+HdDataSourceLegacyPrim::_IsInstanceable()
+{
+    return HdPrimTypeIsGprim(_type)
+        || _IsLight() 
+        || _type == HdPrimTypeTokens->instancer;
+}
+
 TfTokenVector 
 HdDataSourceLegacyPrim::GetNames()
 {
@@ -2413,7 +2421,6 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdCoordSysBindingSchemaTokens->coordSysBinding);
         result.push_back(HdPurposeSchemaTokens->purpose);
         result.push_back(HdVisibilitySchemaTokens->visibility);
-        result.push_back(HdInstancedBySchemaTokens->instancedBy);
         result.push_back(HdCategoriesSchemaTokens->categories);
         result.push_back(HdXformSchemaTokens->xform);
         result.push_back(HdExtentSchemaTokens->extent);
@@ -2434,9 +2441,12 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_type == HdPrimTypeTokens->instancer) {
         result.push_back(HdXformSchemaTokens->xform);
-        result.push_back(HdInstancedBySchemaTokens->instancedBy);
         result.push_back(HdInstancerTopologySchemaTokens->instancerTopology);
         result.push_back(HdInstanceCategoriesSchemaTokens->instanceCategories);
+    }
+
+    if (_IsInstanceable()) {
+        result.push_back(HdInstancedBySchemaTokens->instancedBy);
     }
 
     if (_type == HdPrimTypeTokens->camera) {
