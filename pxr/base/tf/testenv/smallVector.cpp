@@ -1487,19 +1487,21 @@ testResize()
     }
 
     // grow where T is trivial
-    // XXX: http://bug/DEV-16693
-#if !defined(ARCH_COMPILER_GCC) || ARCH_COMPILER_GCC_MAJOR < 9
     {
         TfSmallVector<int, 10> v;
-        v.insert(v.end(), sourceA.begin(), sourceA.end());
 
+        v.insert(v.end(), sourceA.begin(), sourceA.end());
         TF_AXIOM(v.size() == 100);
 
-        v.resize(150, 17);
+        // Shrink first -- this magically sidesteps a GCC bug (possibly this
+        // one, but there are other candidates too:
+        // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=89689)
+        v.resize(5, 17);
+        TF_AXIOM(v.size() == 5);
 
+        v.resize(150, 17);
         TF_AXIOM(v.size() == 150);
     }
-#endif
 }
 
 static void
