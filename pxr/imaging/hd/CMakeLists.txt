@@ -87,6 +87,7 @@ pxr_library(hd
         lazyContainerDataSource
         legacyDisplayStyleSchema
         legacyPrimSceneIndex
+        lensDistortionSchema
         light
         lightSchema
         mapContainerDataSource
@@ -159,6 +160,7 @@ pxr_library(hd
         smoothNormals
         sortedIds
         sphereSchema
+        splitDiopterSchema
         sprim
         subdivisionTagsSchema
         systemSchema

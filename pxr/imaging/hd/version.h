@@ -69,7 +69,9 @@
 // 49 -> 50: Added HdModelDrawMode struct and getter API to HdSceneDelegate.
 // 50 -> 51: HdMaterialBindingSchema became HdMaterialBindingsSchema which uses
 //           the new HdMaterialBindingSchema.
-#define HD_API_VERSION 51
+// 51 -> 52: Added lens distortion, focus, and split diopter parameters to
+//           HdCamera.
+#define HD_API_VERSION 52
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

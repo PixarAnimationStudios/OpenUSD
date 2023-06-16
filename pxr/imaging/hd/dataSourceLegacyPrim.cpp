@@ -37,6 +37,7 @@
 #include "pxr/imaging/hd/cameraSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
+#include "pxr/imaging/hd/displayFilterSchema.h"
 #include "pxr/imaging/hd/extComputationInputComputationSchema.h"
 #include "pxr/imaging/hd/extComputationOutputSchema.h"
 #include "pxr/imaging/hd/extComputationPrimvarSchema.h"
@@ -51,6 +52,7 @@
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
+#include "pxr/imaging/hd/lensDistortionSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
@@ -67,7 +69,7 @@
 #include "pxr/imaging/hd/renderSettingsSchema.h"
 #include "pxr/imaging/hd/renderVarSchema.h"
 #include "pxr/imaging/hd/sampleFilterSchema.h"
-#include "pxr/imaging/hd/displayFilterSchema.h"
+#include "pxr/imaging/hd/splitDiopterSchema.h"
 #include "pxr/imaging/hd/subdivisionTagsSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
@@ -1187,17 +1189,25 @@ public:
         // best guess by answering with the common ones defined by
         // HdCameraSchema.
 
-        TfTokenVector results;
-        results.push_back(HdCameraSchemaTokens->projection);
-        results.push_back(HdCameraSchemaTokens->horizontalAperture);
-        results.push_back(HdCameraSchemaTokens->verticalAperture);
-        results.push_back(HdCameraSchemaTokens->horizontalApertureOffset);
-        results.push_back(HdCameraSchemaTokens->verticalApertureOffset);
-        results.push_back(HdCameraSchemaTokens->focalLength);
-        results.push_back(HdCameraSchemaTokens->clippingRange);
-        results.push_back(HdCameraSchemaTokens->clippingPlanes);
-
-        return results;
+        return {
+            HdCameraSchemaTokens->projection,
+            HdCameraSchemaTokens->horizontalAperture,
+            HdCameraSchemaTokens->verticalAperture,
+            HdCameraSchemaTokens->horizontalApertureOffset,
+            HdCameraSchemaTokens->verticalApertureOffset,
+            HdCameraSchemaTokens->focalLength,
+            HdCameraSchemaTokens->clippingRange,
+            HdCameraSchemaTokens->clippingPlanes,
+            HdCameraSchemaTokens->fStop,
+            HdCameraSchemaTokens->focusDistance,
+            HdCameraSchemaTokens->shutterOpen,
+            HdCameraSchemaTokens->shutterClose,
+            HdCameraSchemaTokens->exposure,
+            HdCameraSchemaTokens->focusOn,
+            HdCameraSchemaTokens->dofAspect,
+            HdCameraSchemaTokens->splitDiopter,
+            HdCameraSchemaTokens->lensDistortion,
+        };
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
@@ -1248,6 +1258,17 @@ public:
             }
             return HdRetainedTypedSampledDataSource<VtArray<GfVec4d>>::New(
                 array);
+        } else if (name == HdCameraSchemaTokens->shutterOpen ||
+                   name == HdCameraSchemaTokens->shutterClose) {
+            return Hd_TypedDataSourceLegacyCameraParamValue<double>::New(
+                _id, name, _sceneDelegate);
+        } else if (name == HdCameraSchemaTokens->focusOn) {
+            return Hd_TypedDataSourceLegacyCameraParamValue<bool>::New(
+                _id, name, _sceneDelegate);
+        } else if (name == HdCameraSchemaTokens->splitDiopter) {
+            return _BuildSplitDiopter();
+        } else if (name == HdCameraSchemaTokens->lensDistortion) {
+            return _BuildLensDistortion();
         } else if (std::find(HdCameraSchemaTokens->allTokens.begin(),
                 HdCameraSchemaTokens->allTokens.end(), name)
                     != HdCameraSchemaTokens->allTokens.end()) {
@@ -1262,6 +1283,66 @@ public:
     }
 
 private:
+    HdDataSourceBaseHandle _BuildSplitDiopter()
+    {
+        return HdSplitDiopterSchema::BuildRetained(
+            Hd_TypedDataSourceLegacyCameraParamValue<int>::New(
+                _id, HdCameraTokens->splitDiopterCount, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterAngle, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterOffset1, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterWidth1, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterFocusDistance1, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterOffset2, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterWidth2, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->splitDiopterFocusDistance2, _sceneDelegate
+            )
+        );
+    }
+
+    HdDataSourceBaseHandle _BuildLensDistortion()
+    {
+        return HdLensDistortionSchema::BuildRetained(
+            Hd_TypedDataSourceLegacyCameraParamValue<TfToken>::New(
+                _id, HdCameraTokens->lensDistortionType, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->lensDistortionK1, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->lensDistortionK2, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<GfVec2f>::New(
+                _id, HdCameraTokens->lensDistortionCenter, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->lensDistortionAnaSq, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<GfVec2f>::New(
+                _id, HdCameraTokens->lensDistortionAsym, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->lensDistortionScale, _sceneDelegate
+            ),
+            Hd_TypedDataSourceLegacyCameraParamValue<float>::New(
+                _id, HdCameraTokens->lensDistortionIor, _sceneDelegate
+            )
+        );
+    }
+
     SdfPath _id;
     HdSceneDelegate *_sceneDelegate;
 };

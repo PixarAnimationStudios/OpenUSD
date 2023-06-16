@@ -64,6 +64,7 @@ public:
         return _sampleXforms;
     }
 
+#if HD_API_VERSION < 52
     float GetLensDistortionK1() const {
         return _lensDistortionK1;
     }
@@ -87,17 +88,19 @@ public:
     float GetLensDistortionScale() const {
         return _lensDistortionScale;
     }
-    
+#endif
 
 private:
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> _sampleXforms;
 
+#if HD_API_VERSION < 52
     float _lensDistortionK1;
     float _lensDistortionK2;
     GfVec2f _lensDistortionCenter;
     float _lensDistortionAnaSq;
     GfVec2f _lensDistortionAsym;
     float _lensDistortionScale;
+#endif
 };
 
 

@@ -28,6 +28,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if HD_API_VERSION < 52
 TF_DEFINE_PRIVATE_TOKENS(
     _lensDistortionTokens,
     ((k1,     "lensDistortion:k1"))
@@ -37,15 +38,18 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((asym,   "lensDistortion:asym"))
     ((scale,  "lensDistortion:scale"))
 );
+#endif
 
 HdPrmanCamera::HdPrmanCamera(SdfPath const& id)
   : HdCamera(id)
+#if HD_API_VERSION < 52
   , _lensDistortionK1(0.0f)
   , _lensDistortionK2(0.0f)
   , _lensDistortionCenter(0.0f)
   , _lensDistortionAnaSq(1.0f)
   , _lensDistortionAsym(0.0f)
   , _lensDistortionScale(1.0f)
+#endif
 {
 }
 
@@ -82,6 +86,7 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
     HdCamera::Sync(sceneDelegate, renderParam, dirtyBits);
 
     if (bits & DirtyParams) {
+#if HD_API_VERSION < 52
         _lensDistortionK1 =
             sceneDelegate
                 ->GetCameraParamValue(id, _lensDistortionTokens->k1)
@@ -106,6 +111,7 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
             sceneDelegate
                 ->GetCameraParamValue(id, _lensDistortionTokens->scale)
                 .GetWithDefault<float>(1.0f);
+#endif
 
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
