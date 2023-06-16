@@ -1049,7 +1049,9 @@ public:
     T GetUninlinedValue(uint32_t x, T *) const {
         static_assert(sizeof(T) <= sizeof(x), "");
         T r;
-        memcpy(&r, &x, sizeof(r));
+        char const *srcBytes = reinterpret_cast<char const *>(&x);
+        char *dstBytes = reinterpret_cast<char *>(&r);
+        memcpy(dstBytes, srcBytes, sizeof(r));
         return r;
     }
 
