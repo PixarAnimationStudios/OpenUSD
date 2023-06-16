@@ -118,6 +118,20 @@ shader UsdPreviewSurfaceParameters
                             Bn * normalIn[1] + 
                             N * normalIn[2];
             bumpNormalOut = normalize(bumpNormalOut);
+
+            // Avoid artifacts along edges where bump normals might face away from camera.
+            if (isFrontSide) {
+                // Adjust bump normals that are facing away from the camera
+                vector Vn = normalize(-I);
+                float VdotN = dot(Vn, bumpNormalOut);
+                if (VdotN <= 0)
+                {
+                    // If the input normal faces away from camera, nudge it back
+                    // pad an extra 1% towards V
+                    bumpNormalOut -= 1.01 * VdotN * Vn;
+                    bumpNormalOut = normalize(bumpNormalOut);
+                }
+            }
         }
 
         // This check ensures that the permuted shading normal hasn't altered
