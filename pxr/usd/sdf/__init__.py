@@ -31,9 +31,9 @@ def Find(layerFileName, scenePath=None):
 layerFileName: string
 scenePath: Path
 
-If given a single string argument, returns the menv layer with 
+If given a single string argument, returns the layer with 
 the given filename.  If given two arguments (a string and a Path), finds 
-the menv layer with the given filename and returns the scene object 
+the layer with the given filename and returns the scene object 
 within it at the given path.'''
     layer = Layer.Find(layerFileName)
     if (scenePath is None): return layer
