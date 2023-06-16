@@ -484,6 +484,16 @@ public:
     /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API SdfPathVector GetPrefixes() const;
 
+    /// Return up to \p numPrefixes prefix paths of this path.
+    ///
+    /// Prefixes are returned in order of shortest to longest.  The path itself
+    /// is returned as the last prefix.  Note that if the prefix order does not
+    /// need to be from shortest to longest, it is more efficient to use
+    /// GetAncestorsRange, which produces an equivalent set of paths, ordered
+    /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
+    /// number of this path's prefixes, fill all prefixes.
+    SDF_API SdfPathVector GetPrefixes(size_t numPrefixes) const;
+
     /// Fills prefixes with prefixes of this path.
     /// 
     /// This avoids copy constructing the return value.
@@ -491,9 +501,19 @@ public:
     /// Prefixes are returned in order of shortest to longest.  The path
     /// itself is returned as the last prefix.
     /// Note that if the prefix order does not need to be from shortest to
-    /// longest, it is more efficient to use GetAncestorsRange, which
+    /// longest, it is more efficient to use GetAncestorsRange(), which
     /// produces an equivalent set of paths, ordered from longest to shortest.
     SDF_API void GetPrefixes(SdfPathVector *prefixes) const;
+
+    /// Fill \p prefixes with up to \p numPrefixes prefixes of this path.
+    /// 
+    /// Prefixes are filled in order of shortest to longest.  The path itself is
+    /// included as the last prefix.  Note that if the prefix order does not
+    /// need to be from shortest to longest, it can be more efficient to use
+    /// GetAncestorsRange(), which produces an equivalent set of paths, ordered
+    /// from longest to shortest.  If \p numPrefixes is 0 or greater than the
+    /// number of this path's prefixes, fill all prefixes.
+    SDF_API void GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const;
 
     /// Return a range for iterating over the ancestors of this path.
     ///

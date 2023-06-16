@@ -131,6 +131,10 @@ class TestSdfPath(unittest.TestCase):
             self.assertEqual(path.IsPropertyPath(), testProperty[testIndex])
             prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), elements)
             self.assertEqual(path.GetPrefixes(), prefixes)
+            for i in range(path.pathElementCount):
+                prefixes = Sdf._PathElemsToPrefixes(
+                    path.IsAbsolutePath(), elements, i)
+                self.assertEqual(path.GetPrefixes(i), prefixes)
             self.assertEqual(path, eval(repr(path)))
             assert Sdf.Path.IsValidPathString(str(path))
         

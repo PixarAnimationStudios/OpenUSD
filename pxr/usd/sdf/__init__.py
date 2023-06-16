@@ -41,15 +41,15 @@ within it at the given path.'''
 
 
 # Test utilities
-def _PathElemsToPrefixes(absolute, elements):
-    if absolute:
-        string = "/"
-    else:
-        string = ""
-    
+def _PathElemsToPrefixes(absolute, elements, numPrefixes=0):
+
+    prefixes = []
+
+    string = "/" if absolute else ""
+        
     lastElemWasDotDot = False
     didFirst = False
-    
+
     for elem in elements:
         if elem == Path.parentPathElement:
             # dotdot
@@ -58,16 +58,19 @@ def _PathElemsToPrefixes(absolute, elements):
             else:
                 didFirst = True
             string = string + elem
+            prefixes.append(Path(string))
             lastElemWasDotDot = True
         elif elem[0] == ".":
             # property
             if lastElemWasDotDot:
                 string = string + "/"
             string = string + elem
+            prefixes.append(Path(string))
             lastElemWasDotDot = False
         elif elem[0] == "[":
             # rel attr or sub-attr indices, don't care which
             string = string + elem
+            prefixes.append(Path(string))
             lastElemWasDotDot = False
         else:
             if didFirst:
@@ -75,8 +78,10 @@ def _PathElemsToPrefixes(absolute, elements):
             else:
                 didFirst = True
             string = string + elem
+            prefixes.append(Path(string))
             lastElemWasDotDot = False
+
     if not string:
         return []
-    path = Path(string)
-    return path.GetPrefixes()
+    
+    return prefixes if numPrefixes == 0 else prefixes[-numPrefixes:]
