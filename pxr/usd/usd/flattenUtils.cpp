@@ -44,6 +44,7 @@
 #include "pxr/usd/usd/valueUtils.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/staticData.h"
+#include "pxr/base/tf/pathUtils.h"
 
 #include <algorithm>
 #include <functional>
@@ -688,9 +689,9 @@ UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
     SdfChangeBlock changeBlock;
     // XXX Currently, SdfLayer::CreateAnonymous() examines the tag
     // file extension to determine the file type.  Provide an
-    // extension here if needed to ensure that we get a usda file.
-    SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(
-        TfStringEndsWith(tag, ".usda") ? tag : (tag + ".usda"));
+    // extension here if needed.
+    const bool hasExtension = !TfGetExtension(tag).empty();
+    SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(hasExtension ? tag : tag+".usda");
     _FlattenFields(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
     _FlattenSpec(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
     return outputLayer;

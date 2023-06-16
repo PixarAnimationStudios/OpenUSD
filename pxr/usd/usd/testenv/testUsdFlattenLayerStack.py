@@ -270,6 +270,19 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         a = prim.GetAttribute('x')
         self.assertEqual(a.Get(), Vt.IntArray(1, (0,)))
 
+    def test_Tags(self):
+        src_stage = Usd.Stage.Open('root.usda')
+        src_layer_stack = src_stage._GetPcpCache().layerStack
+
+        tagToExtension = {
+            '': '.usda',
+            'test.usda': '.usda',
+            'test.usdc': '.usdc',
+            'test.sdf': '.sdf'
+        }
+        for (tag, extension) in tagToExtension.items():
+            layer = Usd.FlattenLayerStack(src_layer_stack, tag=tag)
+            self.assertTrue(layer.identifier.endswith(extension))
 
 if __name__=="__main__":
     # Register test plugin defining timecode metadata fields.
