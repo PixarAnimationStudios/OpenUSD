@@ -266,6 +266,7 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
             // the PrimsAdded message for that prim was emitted by the
             // UsdImagingStageSceneIndex.
             //
+            _DeleteSubtree(path);
             removedEntries.push_back({path});
 
             // The prim needs to be replaced by stand-in geometry.
@@ -345,6 +346,16 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
                 continue;
             }
             lastPath = SdfPath();
+
+            // Suppress prims from input scene delegate that have an ancestor
+            // with a draw mode.
+            size_t relPathLen;
+            if (UsdImaging_DrawModeStandinSharedPtr standin =
+                _FindStandinForPrimOrAncestor(path, &relPathLen)) {
+                if (relPathLen > 0) {
+                    continue;
+                }
+            }
             
             // Determine new draw mode.
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);
