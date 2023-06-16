@@ -714,11 +714,17 @@ public:
         auto &resolver = ArGetResolver();
 
         const std::string assetPathStr = assetPath.GetAssetPath();
-        std::string rootFilePath = resolver.Resolve(assetPathStr);
+        const bool isAnonymousLayer = 
+            SdfLayer::IsAnonymousLayerIdentifier(assetPathStr);
+        std::string rootFilePath;
 
-        // Ensure that the resolved path is not empty.
-        if (rootFilePath.empty()) {
-            return;
+        if (!isAnonymousLayer) {
+            rootFilePath = resolver.Resolve(assetPathStr);
+
+            // Ensure that the resolved path is not empty.
+            if (rootFilePath.empty()) {
+                return;
+            }
         }
 
         // Record all dependencies in layerDependenciesMap so we can recurse
@@ -749,6 +755,26 @@ public:
         std::unordered_set<std::string> seenFiles;
          
         std::stack<DestFilePathAndAnalyzer> filesToLocalize;
+
+        if (isAnonymousLayer)
+        {
+            SdfLayerRefPtr layer = SdfLayer::Find(assetPathStr);
+            if (!layer) {
+                return;
+            }
+
+            rootFilePath = "anon_layer." + layer->GetFileExtension();
+
+            seenFiles.insert(assetPathStr);
+            std::string destFilePath = TfStringCatPaths(destDir, 
+                    TfGetBaseName(rootFilePath));
+            filesToLocalize.emplace(destFilePath, _FileAnalyzer(
+                    layer,
+                    /*refTypesToInclude*/ _ReferenceTypesToInclude::All,
+                    /*enableMetadataFiltering*/ enableMetadataFiltering,
+                    remapAssetPathFunc, processPathFunc));
+        }
+        else
         {
             seenFiles.insert(rootFilePath);
             std::string destFilePath = TfStringCatPaths(destDir, 
@@ -1129,12 +1155,7 @@ _ExtractExternalReferences(
 {
     auto &resolver = ArGetResolver();
 
-    // We only care about knowing what the dependencies are. Hence, set 
-    // remapPathFunc to empty.
-    _FileAnalyzer(filePath, resolver.Resolve(filePath), refTypesToInclude,
-        /*enableMetadataFiltering*/ false,
-        /*remapPathFunc*/ {}, 
-        [&subLayers, &references, &payloads](
+    const auto processPathFunc = [&subLayers, &references, &payloads](
             const std::string &assetPath, const SdfLayerRefPtr &layer,
             const _DepType &depType) 
         {
@@ -1145,7 +1166,23 @@ _ExtractExternalReferences(
             } else if (depType == _DepType::Payload) {
                 payloads->push_back(assetPath);
             }
-        });
+        };
+
+    // We only care about knowing what the dependencies are. Hence, set 
+    // remapPathFunc to empty.
+    if (SdfLayer::IsAnonymousLayerIdentifier(filePath)) {
+        _FileAnalyzer(SdfLayer::Find(filePath), refTypesToInclude,
+            /*enableMetadataFiltering*/ false,
+            /*remapPathFunc*/ {}, 
+            processPathFunc);
+    }
+    else {
+        _FileAnalyzer(filePath, resolver.Resolve(filePath), refTypesToInclude,
+            /*enableMetadataFiltering*/ false,
+            /*remapPathFunc*/ {}, 
+            processPathFunc);
+    }
+
 
     // Sort and remove duplicates
     std::sort(references->begin(), references->end());
