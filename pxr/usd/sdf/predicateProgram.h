@@ -61,7 +61,7 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
 /// The main public interface this class exposes is the function-call
 /// operator(), accepting a single argument of type `DomainType`, as it is
 /// specified to the template.  Consider using `const Type &` as the
-/// `DomainType`/// for both SdfPredicateProgram and SdfPredicateLibrary if it's
+/// `DomainType` for both SdfPredicateProgram and SdfPredicateLibrary if it's
 /// important that domain type instances aren't passed by-value.
 ///
 template <class DomainType>
@@ -145,9 +145,9 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
     using Expr = SdfPredicateExpression;
     using Program = SdfPredicateProgram<DomainType>;
     
-    SdfPredicateProgram<DomainType> prog;
     // Walk expr and populate prog, binding calls with lib.
 
+    Program prog;
     std::string errs;
 
     auto exprToProgramOp = [](Expr::Op op) {
@@ -170,11 +170,7 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
         case Expr::ImpliedAnd: // Binary logic ops are infix to facilitate
         case Expr::And:        // short-circuiting.
         case Expr::Or:
-            if (argIndex == 0) {
-                prog._ops.push_back(Program::Open);
-            }
-            else if (argIndex == 1) {
-                prog._ops.push_back(Program::Close);
+            if (argIndex == 1) {
                 prog._ops.push_back(exprToProgramOp(op));
                 prog._ops.push_back(Program::Open);
             }
