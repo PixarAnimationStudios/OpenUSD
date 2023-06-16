@@ -115,7 +115,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     // if we are on MacOS 14 or less
     //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
     //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
-    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU;
+    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU || hasIos;
     _SetFlag(HgiDeviceCapabilitiesBitsBasePrimitiveOffset,
              requiresBasePrimitiveOffset);
 
