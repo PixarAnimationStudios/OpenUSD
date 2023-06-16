@@ -508,10 +508,10 @@ public:
     /// same value is repeated many times in the array value of a primvar. An 
     /// indexed primvar can be used in such cases to optimize for data storage
     /// if the primvar's interpolation is uniform, varying, or vertex.
-    /// For **faceVarying primvars,**  however, indexing serves a higher
+    /// For **faceVarying primvars**, however, indexing serves a higher
     /// purpose (and should be used *only* for this purpose, since renderers
     /// and OpenSubdiv will assume it) of establishing a surface topology
-    /// for the primvar.  That is, faveVarying primvars use indexing to 
+    /// for the primvar.  That is, faceVarying primvars use indexing to 
     /// unambiguously define discontinuities in their functions at edges
     /// and vertices.  Please see the <a href="http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules">
     /// OpenSubdiv documentation on FaceVarying Primvars</a> for more 
