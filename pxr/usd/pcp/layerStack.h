@@ -49,6 +49,7 @@ TF_DECLARE_WEAK_AND_REF_PTRS(Pcp_LayerStackRegistry);
 class ArResolverContext;
 class Pcp_LayerStackRegistry;
 class Pcp_MutedLayers;
+class PcpExpressionVariables;
 class PcpLayerStackChanges;
 class PcpLifeboat;
 
@@ -122,6 +123,10 @@ public:
     bool HasLayer(const SdfLayerHandle& layer) const;
     PCP_API
     bool HasLayer(const SdfLayerRefPtr& layer) const;
+
+    /// Return the composed expression variables for this layer stack.
+    const PcpExpressionVariables& GetExpressionVariables() const
+    { return *_expressionVariables; }
 
     /// Return the time codes per second value of the layer stack. This is 
     /// usually the same as the computed time codes per second of the root layer
@@ -307,6 +312,9 @@ private:
 
     /// List of all prim spec paths where relocations were found.
     SdfPathVector _relocatesPrimPaths;
+
+    /// Composed expression variables.
+    std::shared_ptr<PcpExpressionVariables> _expressionVariables;
 
     bool _isUsd;
 };

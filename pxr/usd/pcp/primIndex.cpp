@@ -32,6 +32,7 @@
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/instancing.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -1919,8 +1920,52 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
             const ArResolverContext& pathResolverContext =
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
-            PcpLayerStackIdentifier layerStackIdentifier(
-                layer, SdfLayerHandle(), pathResolverContext );
+            
+            // We want to use the expression variables composed up to node's
+            // layer stack to compose over the variables in the referenced layer
+            // stack.
+            // 
+            // Note that we specify the source of this node's layer stack's
+            // PcpExpressionVariables object as the "expression variable
+            // override source" in the referenced layer stack. This allows us to
+            // share layer stacks across prim indexes when expression variables
+            // are sparsely authored (which is the expected use case).
+            //
+            // For example, consider two prim indexes /A and /B:
+            //
+            //                    ref              ref 
+            // /A: @root.sdf@</A> ---> @a.sdf@</A> ---> @model.sdf@</Model>
+            //
+            //                    ref              ref 
+            // /B: @root.sdf@</B> ---> @b.sdf@</B> ---> @model.sdf@</Model>
+            //
+            // If expression variables are only authored on root.sdf, the
+            // override source for all downstream layer stacks will be
+            // root.sdf. This means the model.sdf layer stack in /A and /B are
+            // the same object.
+            // 
+            // If we instead used the layer stack identifier of this node as the
+            // expression variable override source, the identifiers for the
+            // model.sdf layer stack in /A and /B would differ, even though they
+            // would be equivalent since they'd have the same layers and
+            // composed expression variables.
+            //
+            // The approach we take maximizes sharing but requires that change
+            // processing triggers resyncs when an override source changes.  For
+            // example, if expression variables are additionally authored on
+            // a.sdf, change processing needs to determine that that layer stack
+            // now provides the variable overrides instead of root.sdf, which
+            // means that /A needs to be resynced so that the reference to
+            // model.sdf is recomputed. At that point, the model.sdf layer
+            // stacks in /A and /B are no longer equivalent and become two
+            // different objects since they have different composed expression
+            // variables. If the variables in a.sdf were then removed, change
+            // processing should again resync /A, at which point the model.sdf
+            // layer stacks in /A and /B would be the same object once more.
+            const PcpLayerStackIdentifier layerStackIdentifier(
+                layer, SdfLayerHandle(), pathResolverContext,
+                node.GetLayerStack()->GetExpressionVariables().GetSource());
+
             layerStack = indexer->inputs.cache->ComputeLayerStack( 
                 layerStackIdentifier, &indexer->outputs->allErrors);
 

@@ -42,10 +42,12 @@ PcpLayerStackIdentifier::PcpLayerStackIdentifier() : _hash(0)
 PcpLayerStackIdentifier::PcpLayerStackIdentifier(
     const SdfLayerHandle& rootLayer_,
     const SdfLayerHandle& sessionLayer_,
-    const ArResolverContext& pathResolverContext_)
+    const ArResolverContext& pathResolverContext_,
+    const PcpExpressionVariablesSource& expressionVariablesOverrideSource_)
     : rootLayer(rootLayer_)
     , sessionLayer(sessionLayer_)
     , pathResolverContext(pathResolverContext_)
+    , expressionVariablesOverrideSource(expressionVariablesOverrideSource_)
     , _hash(rootLayer ? _ComputeHash() : 0)
 {
     // Do nothing
@@ -57,9 +59,11 @@ PcpLayerStackIdentifier::operator=(const PcpLayerStackIdentifier& rhs)
     if (this != &rhs) {
         const_cast<SdfLayerHandle&>(rootLayer)    = rhs.rootLayer;
         const_cast<SdfLayerHandle&>(sessionLayer) = rhs.sessionLayer;
-        const_cast<ArResolverContext&>
-                           (pathResolverContext) = rhs.pathResolverContext;
-        const_cast<size_t&>(_hash)               = rhs._hash;
+        const_cast<ArResolverContext&>(pathResolverContext) = 
+            rhs.pathResolverContext;
+        const_cast<PcpExpressionVariablesSource&>(expressionVariablesOverrideSource) =
+            rhs.expressionVariablesOverrideSource;
+        const_cast<size_t&>(_hash) = rhs._hash;
     }
     return *this;
 }
@@ -72,27 +76,33 @@ PcpLayerStackIdentifier::operator bool() const
 bool
 PcpLayerStackIdentifier::operator==(const This &rhs) const
 {
-    return
+    return 
         std::tie(
             _hash, rootLayer, sessionLayer,
-            pathResolverContext) ==
+            pathResolverContext, expressionVariablesOverrideSource) ==
         std::tie(
-            rhs._hash, rhs.rootLayer, rhs.sessionLayer,
-            rhs.pathResolverContext);
+            rhs._hash, rhs.rootLayer, rhs.sessionLayer, 
+            rhs.pathResolverContext, rhs.expressionVariablesOverrideSource);
 }
 
 bool
 PcpLayerStackIdentifier::operator<(const This &rhs) const
 {
     return
-        std::tie(sessionLayer, rootLayer, pathResolverContext) <
-        std::tie(rhs.sessionLayer, rhs.rootLayer, rhs.pathResolverContext);
+        std::tie(
+            sessionLayer, rootLayer, pathResolverContext,
+            expressionVariablesOverrideSource) <
+        std::tie(
+            rhs.sessionLayer, rhs.rootLayer, rhs.pathResolverContext,
+            rhs.expressionVariablesOverrideSource);
 }
 
 size_t
 PcpLayerStackIdentifier::_ComputeHash() const
 {
-    return TfHash::Combine(rootLayer, sessionLayer, pathResolverContext);
+    return TfHash::Combine(
+        rootLayer, sessionLayer, pathResolverContext,
+        expressionVariablesOverrideSource);
 }
 
 enum Pcp_IdentifierFormat {
@@ -146,19 +156,26 @@ std::ostream& PcpIdentifierFormatIdentifier(std::ostream& os)
     return os;
 }
 
+static void
+_PrintIdentifier(std::ostream& s, const PcpLayerStackIdentifier& x)
+{
+    // XXX: Should probably write the resolver context, too.
+    s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@";
+    if (x.sessionLayer) {
+        s << ",@" << Pcp_FormatIdentifier(s, x.sessionLayer) << "@";
+    }
+    if (const PcpLayerStackIdentifier* exprOverrideSource =
+        x.expressionVariablesOverrideSource.GetLayerStackIdentifier()) {
+        s << ",exprVarOverrideSource=";
+        _PrintIdentifier(s, *exprOverrideSource);
+    }
+}
+
 std::ostream&
 operator<<(std::ostream& s, const PcpLayerStackIdentifier& x)
 {
-    // XXX: Should probably write the resolver context, too.
-    if (x.sessionLayer) {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@,"
-                 << "@" << Pcp_FormatIdentifier(s, x.sessionLayer) << "@"
-                 << PcpIdentifierFormatIdentifier;
-    }
-    else {
-        return s << "@" << Pcp_FormatIdentifier(s, x.rootLayer) << "@"
-                 << PcpIdentifierFormatIdentifier;
-    }
+    _PrintIdentifier(s, x);
+    return s << PcpIdentifierFormatIdentifier;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

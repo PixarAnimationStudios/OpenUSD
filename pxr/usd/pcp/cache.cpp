@@ -113,7 +113,8 @@ PcpCache::PcpCache(
     _layerStackIdentifier(layerStackIdentifier),
     _usd(usd),
     _fileFormatTarget(fileFormatTarget),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
+    _layerStackCache(Pcp_LayerStackRegistry::New(
+        _layerStackIdentifier, _fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing

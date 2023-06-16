@@ -48,8 +48,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Pcp_LayerStackRegistryData {
 public:
     Pcp_LayerStackRegistryData(
+        const PcpLayerStackIdentifier& rootLayerStackId_,
         const std::string& fileFormatTarget_, bool isUsd) 
-        : fileFormatTarget(fileFormatTarget_)
+        : rootLayerStackId(rootLayerStackId_)
+        , fileFormatTarget(fileFormatTarget_)
         , isUsd(isUsd)
     { }
 
@@ -74,6 +76,7 @@ public:
     LayerStackToMutedLayerIdentifiers layerStackToMutedLayerIdentifiers;
 
     const PcpLayerStackPtrVector empty;
+    const PcpLayerStackIdentifier rootLayerStackId;
     const std::string fileFormatTarget;
     bool isUsd;
     Pcp_MutedLayers mutedLayers;
@@ -82,14 +85,19 @@ public:
 };
 
 Pcp_LayerStackRegistryRefPtr
-Pcp_LayerStackRegistry::New(const std::string& fileFormatTarget, bool isUsd)
+Pcp_LayerStackRegistry::New(
+    const PcpLayerStackIdentifier& rootLayerStackId,
+    const std::string& fileFormatTarget, bool isUsd)
 {
-    return TfCreateRefPtr(new Pcp_LayerStackRegistry(fileFormatTarget, isUsd));
+    return TfCreateRefPtr(
+        new Pcp_LayerStackRegistry(rootLayerStackId, fileFormatTarget, isUsd));
 }
 
 Pcp_LayerStackRegistry::Pcp_LayerStackRegistry(
+    const PcpLayerStackIdentifier& rootLayerStackId,
     const std::string& fileFormatTarget, bool isUsd)
-    : _data(new Pcp_LayerStackRegistryData(fileFormatTarget, isUsd))
+    : _data(new Pcp_LayerStackRegistryData(
+            rootLayerStackId, fileFormatTarget, isUsd))
 {
     // Do nothing
 }
@@ -331,6 +339,12 @@ Pcp_LayerStackRegistry::_SetLayers(const PcpLayerStack* layerStack)
         _data->mutedLayerIdentifierToLayerStacks[mutedLayer]
             .push_back(layerStackPtr);
     }
+}
+
+const PcpLayerStackIdentifier&
+Pcp_LayerStackRegistry::_GetRootLayerStackIdentifier() const
+{
+    return _data->rootLayerStackId;
 }
 
 const std::string&

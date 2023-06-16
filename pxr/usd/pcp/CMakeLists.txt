@@ -29,6 +29,8 @@ pxr_library(pcp
         dynamicFileFormatDependencyData
         dynamicFileFormatInterface
         errors
+        expressionVariables
+        expressionVariablesSource
         instanceKey
         iterator
         layerStack
@@ -69,6 +71,8 @@ pxr_library(pcp
         wrapDependency.cpp
         wrapDynamicFileFormatDependencyData.cpp
         wrapErrors.cpp
+        wrapExpressionVariables.cpp
+        wrapExpressionVariablesSource.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp
         wrapLayerStack.cpp
@@ -92,6 +96,9 @@ pxr_library(pcp
 pxr_test_scripts(
     testenv/testPcpCache.py
     testenv/testPcpChanges.py
+    testenv/testPcpExpressionComposition.py
+    testenv/testPcpExpressionVariables.py
+    testenv/testPcpExpressionVariablesSource.py
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
@@ -237,6 +244,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpPathTranslation.testenv
     DEST testPcpPathTranslation
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpExpressionComposition.testenv
+    DEST testPcpExpressionComposition
 )
 
 pxr_install_test_dir(
@@ -1849,6 +1861,24 @@ pxr_register_test(testPcpDynamicFileFormatPlugin_AttributeInputs
     EXPECTED_RETURN_CODE 0  
     ENV
         TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=1
+)
+
+pxr_register_test(testPcpExpressionComposition
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionComposition"
+    EXPECTED_RETURN_CODE 0  
+)
+
+pxr_register_test(testPcpExpressionVariables
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionVariables"
+    EXPECTED_RETURN_CODE 0  
+)
+
+pxr_register_test(testPcpExpressionVariablesSource
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionVariablesSource"
+    EXPECTED_RETURN_CODE 0  
 )
 
 pxr_register_test(testPcpStreamingLayerReload
