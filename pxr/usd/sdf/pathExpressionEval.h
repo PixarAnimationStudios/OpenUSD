@@ -32,92 +32,48 @@
 #include "pxr/usd/sdf/predicateProgram.h"
 
 #include "pxr/base/arch/regex.h"
-#include "pxr/base/tf/errorMark.h"
+#include "pxr/base/tf/functionRef.h"
 
 #include <string>
+#include <type_traits>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 // fwd decl
-template <class DomainType, class DomainInterface>
+template <class DomainType>
 class SdfPathExpressionEval;
 
 // fwd decl
-template <class DomainType, class DomainInterface>
-SdfPathExpressionEval<DomainType, DomainInterface>
+template <class DomainType>
+SdfPathExpressionEval<DomainType>
 SdfMakePathExpressionEval(SdfPathExpression const &expr,
-                          DomainInterface &&domainInterface,
                           SdfPredicateLibrary<DomainType> const &lib);
 
-/// \class SdfPathExpressionEval
-///
-/// Objects of this class evaluate complete SdfPathExpressions in the context of
-/// a DomainType and DomainInterface, using an SdfPredicateLibrary<DomainType>
-/// to evaluate any embedded predicates.
-///
-template <class DomainType, class DomainInterface>
-class SdfPathExpressionEval
+// fwd decl
+class Sdf_PathExpressionEvalBase;
+
+// fwd decl
+SDF_API
+bool
+Sdf_MakePathExpressionEvalImpl(
+    Sdf_PathExpressionEvalBase &eval,
+    SdfPathExpression const &expr,
+    TfFunctionRef<
+    void (SdfPathExpression::PathPattern const &)> translatePattern);
+
+// Helper base class for SdfPathExpressionEval.  This factors out as much
+// template-parameter independent code as possible to reduce bloat & compile
+// times.
+class Sdf_PathExpressionEvalBase
 {
 public:
-    /// Make an SdfPathExpressionEval object to evaluate \p expr using \p
-    /// domainInterface and \p lib.
-    friend SdfPathExpressionEval
-    SdfMakePathExpressionEval<DomainType, DomainInterface>(
+    friend bool
+    Sdf_MakePathExpressionEvalImpl(
+        Sdf_PathExpressionEvalBase &eval,
         SdfPathExpression const &expr,
-        DomainInterface &&domainInterface,
-        SdfPredicateLibrary<DomainType> const &lib);
-
-    /// Test \p obj to see if it matches this expression.
-    bool Match(DomainType obj) const {
-        bool result = false;
-        int nest = 0;
-        auto matchIter = _matches.cbegin();
-        auto opIter = _ops.cbegin(), opEnd = _ops.cend();
-        // Helper for short-circuiting.  Advance, ignoring everything until we
-        // reach the next Close that brings us to the starting nest level.
-        auto shortCircuit = [&]() {
-            const int origNest = nest;
-            for (; opIter != opEnd; ++opIter) {
-                switch(*opIter) {
-                case PatternMatch: ++matchIter; break; // Skip matches.
-                case Not: case And: case Or: break; // Skip operations.
-                case Open: ++nest; break;
-                case Close:
-                    if (--nest == origNest) {
-                        return;
-                    }
-                    break;
-                };
-            }
-        };
-
-        // Evaluate the predicate expression by processing operations and
-        // invoking predicate functions.
-        for (; opIter != opEnd; ++opIter) {
-            switch (*opIter) {
-            case PatternMatch:
-                result = (*matchIter++)(obj, _domainInterface);
-                break;
-            case Not:
-                result = !result;
-                break;
-            case And:
-            case Or: {
-                const bool decidingValue = *opIter != And;
-                // If the And/Or result is already the deciding value,
-                // short-circuit.  Otherwise the result is the rhs, so continue.
-                if (result == decidingValue) {
-                    shortCircuit();
-                }
-            }
-                break;
-            case Open: ++nest; break;
-            case Close: --nest; break;
-            };
-        }
-        return result;
-    }
+        TfFunctionRef<
+        void (SdfPathExpression::PathPattern const &)> translatePattern);
 
     /// Return true if this is the empty evalutator.  The empty evaluator always
     /// returns false from operator().
@@ -130,53 +86,22 @@ public:
         return !IsEmpty();
     }
 
-private:
+protected:
+    class _PatternMatchBase {
+    protected:
+        // This is not a constructor because the subclass wants to invoke this
+        // from its ctor, TfFunctionRef currently requires an lvalue, which is
+        // hard to conjure in a ctor initializer list.
+        SDF_API
+        void _Init(SdfPathExpression::PathPattern const &pattern,
+                   TfFunctionRef<
+                   int (SdfPredicateExpression const &)> linkPredicate);
 
-    // This object implements matching against a single path pattern.
-    class _PatternMatch {
-    public:
-        _PatternMatch(SdfPathExpression::PathPattern const &pattern,
-                      SdfPredicateLibrary<DomainType> const &predLib) {
-            // Build a matcher.
-            _prefix = pattern.GetPrefix();
-            _isProperty = pattern.IsProperty();
-            auto const &predicateExprs = pattern.GetPredicateExprs();
-            _numMatchingComponents = pattern.GetComponents().size();
-            for (SdfPathExpression::PathPattern::Component const &component:
-                     pattern.GetComponents()) {
-                // A 'stretch' (//) component.
-                if (component.IsStretch()) {
-                    // Stretches are non-matching components.
-                    --_numMatchingComponents;
-                    _components.push_back({ Stretch, -1, -1 });
-                }
-                // A literal text name or empty name (must have predicate).
-                else if (component.isLiteral || component.text.empty()) {
-                    _explicitNames.push_back(component.text);
-                    _components.push_back({ ExplicitName,
-                            static_cast<int>(_explicitNames.size()-1), -1 });
-                }
-                // A glob pattern (we translate to regex).
-                else {
-                    _regexes.emplace_back(component.text, ArchRegex::GLOB);
-                    _components.push_back({ Regex,
-                            static_cast<int>(_regexes.size()-1), -1 });
-                }
-                // If the component has a predicate, link that.
-                if (component.predicateIndex != -1) {
-                    _predicates.push_back(
-                        SdfLinkPredicateExpression(
-                            predicateExprs[component.predicateIndex],
-                            predLib));
-                    _components.back().predicateIndex = _predicates.size()-1;
-                }
-            }
-        }
+        SDF_API
+        bool _Match(SdfPath const &path,
+                    TfFunctionRef<
+                    bool (int, SdfPath const &)> runNthPredicate) const;
 
-        // Check obj for a match against this pattern.
-        bool operator()(DomainType obj, DomainInterface const &interface) const;
-        
-    private:
         enum _ComponentType {
             Stretch,           // the "//", arbitrary levels of hierarchy.
             ExplicitName,      // an explicit name (not a glob pattern).
@@ -193,299 +118,150 @@ private:
         std::vector<_Component> _components;
         std::vector<std::string> _explicitNames;
         std::vector<ArchRegex> _regexes;
-        std::vector<SdfPredicateProgram<DomainType>> _predicates;
         size_t _numMatchingComponents; // of type ExplicitName or Regex.
         bool _isProperty; // true if this pattern matches only properties.
     };
+
+    // The passed \p patternMatch function must do two things: 1, if \p skip is
+    // false, test the current pattern for a match (otherwise skip it) and 2,
+    // advance to be ready to test the next pattern for a match on the next call
+    // to \p patternMatch.
+    SDF_API
+    bool _Match(TfFunctionRef<bool (bool /*skip*/)> patternMatch) const;
     
     enum _Op { PatternMatch, Not, Open, Close, Or, And };
     
     std::vector<_Op> _ops;
-    std::vector<_PatternMatch> _matches;
-
-    DomainInterface _domainInterface;
 };
 
-template <class DomainType, class DomainInterface>
-bool
-SdfPathExpressionEval<DomainType, DomainInterface>::_PatternMatch
-::operator()(DomainType obj, DomainInterface const &interface) const
+
+/// \class SdfPathExpressionEval
+///
+/// Objects of this class evaluate complete SdfPathExpressions on instances of
+/// DomainType.  See SdfMakePathExpressionEval() to create instances of this
+/// class, passing the expression to evaluate and an
+/// SdfPredicateLibrary<DomainType> to evaluate any embedded predicates.
+///
+/// This class must be able to find the DomainType instance associated with an
+/// SdfPath and vice-versa. There are two ways to do this; either explicitly by
+/// passing function objects to Match(), or by providing ADL-found overloads of
+/// the following two functions:
+///
+/// \code
+/// SdfPath SdfPathExpressionObjectToPath(DomainType);
+/// DomainType SdfPathExpressionPathToObject(SdfPath const &,
+///                                          DomainType const *);
+/// \endcode
+///
+/// The function SdfPathExpressionPathToObject()'s second argument is always
+/// nullptr. It exists to disambiguate overloads, since functions cannot be
+/// overloaded on return-type. It is also an argument rather than an explicit
+/// template parameter since function calls with explicit template arguments are
+/// not found via ADL.
+///
+template <class DomainType>
+class SdfPathExpressionEval : public Sdf_PathExpressionEvalBase
 {
-    using ComponentIter = typename std::vector<_Component>::const_iterator;
-    
-    SdfPath const &path = interface.GetPath(obj);
-    
-    // Only support prim and prim property paths.
-    if (!path.IsAbsoluteRootOrPrimPath() &&
-        !path.IsPrimPropertyPath()) {
-        TF_WARN("Unsupported path <%s>; can only match prim or "
-                "prim-property paths", path.GetAsString().c_str());
-        return false;
-    }
-
-    // If this pattern has no components, it matches if it is the same as the
-    // prefix.
-    if (_components.empty()) {
-        return path == _prefix;
-    }
-    
-    // Check prefix & property-ness.  If this pattern demands a property path
-    // then we can early-out if the path in question is not a property path.
-    // Otherwise this path may or may not match properties.
-    if (!path.HasPrefix(_prefix) ||
-        (_isProperty && !path.IsPrimPropertyPath())) {
-        return false;
-    }
-
-    // Split the path into prefixes but skip any covered by _prefix.
-    SdfPathVector prefixes;
-    path.GetPrefixes(
-        &prefixes, path.GetPathElementCount() - _prefix.GetPathElementCount());
-    
-    SdfPathVector::const_iterator matchLoc = prefixes.begin();
-    const SdfPathVector::const_iterator matchEnd = prefixes.end();
-
-    // Process each matching "segment", which is a sequence of matching
-    // components separated by "stretch" components.  For example, if the
-    // pattern is /foo//bar/baz//qux, there are three segments: [foo], [bar,
-    // baz], and [qux]. The first segment [foo] must match at the head of the
-    // path. The next segment, [bar, baz] can match anywhere following up to the
-    // sum of the number of components in the subsequent segments. The final
-    // segment [qux] must match at the end.
-
-    const auto componentEnd = _components.cend();
-
-    struct Segment {
-        bool IsEmpty() const {
-            return begin == end;
-        }
-        bool StartsAt(ComponentIter iter) const {
-            return begin == iter;
-        }
-        bool EndsAt(ComponentIter iter) const {
-            return end == iter;
-        }
-        size_t GetSize() const {
-            return std::distance(begin, end);
-        }
-        ComponentIter begin;
-        ComponentIter end;
-    };
-
-    // Advance \p seg to the next segment.  If \p priming is true, the begin
-    // iterator is not adjusted -- this is used to set up the first segment.
-    auto nextSegment = [componentEnd](Segment &seg, bool priming=false) {
-        if (!priming) {
-            seg.begin = seg.end;
-            while (seg.begin != componentEnd && seg.begin->type == Stretch) {
-                ++seg.begin;
-            }
-            seg.end = seg.begin;
-        }
-        while (seg.end != componentEnd && seg.end->type != Stretch) {
-            ++seg.end;
+    struct _DefaultToPath {
+        auto operator()(DomainType obj) const {
+            return SdfPathExpressionObjectToPath(obj);
         }
     };
-
-    // Check if \p segment matches at exactly \p pathIter.
-    auto checkMatch = [this, &interface](
-        Segment const &seg, SdfPathVector::const_iterator pathIter) {
-
-        for (auto iter = seg.begin; iter != seg.end; ++iter, ++pathIter) {
-            switch (iter->type) {
-            case ExplicitName: {
-                // ExplicitName entries with empty text are components with only
-                // predicates. (e.g. //{somePredicate}) They implicitly match
-                // all names.
-                std::string const &name = _explicitNames[iter->patternIndex];
-                if (!name.empty() && name != pathIter->GetName()) {
-                    return false;
-                }
-            }
-                break;
-            case Regex:
-                if (!_regexes[iter->patternIndex].Match(pathIter->GetName())) {
-                    return false;
-                }
-                break;
-            case Stretch:
-                TF_CODING_ERROR("invalid 'stretch' component in segment");
-                break;
-            };
-            // Evaluate a predicate if this component has one.
-            if (iter->predicateIndex != -1 &&
-                !_predicates[iter->predicateIndex](
-                    interface.GetObject(*pathIter))) {
-                return false;
-            }
+    
+    struct _DefaultToObj {
+        auto operator()(SdfPath const &path) const {
+            return SdfPathExpressionPathToObject(
+                path, static_cast<std::decay_t<DomainType> const *>(nullptr));
         }
-        return true;
     };
+    
+public:
+    /// Make an SdfPathExpressionEval object to evaluate \p expr using \p lib to
+    /// link any embedded predicate expressions.
+    friend SdfPathExpressionEval
+    SdfMakePathExpressionEval<DomainType>(
+        SdfPathExpression const &expr,
+        SdfPredicateLibrary<DomainType> const &lib);
 
-    // Note!  In case of a match, this function updates 'matchLoc' to mark the
-    // location of the match in [pathBegin, pathEnd).
-    auto searchMatch = [&](Segment const &seg,
-                           SdfPathVector::const_iterator pathBegin,
-                           SdfPathVector::const_iterator pathEnd) {
-        // Search the range [pathBegin, pathEnd) to match seg.
-        // Naive search to start... TODO: improve!
-        size_t segSize = std::distance(seg.begin, seg.end);
-        size_t numPaths = std::distance(pathBegin, pathEnd);
-        if (segSize > numPaths) {
-            return false;
-        }
-
-        SdfPathVector::const_iterator
-            pathSearchEnd = pathBegin + (numPaths - segSize) + 1;
-
-        for (; pathBegin != pathSearchEnd; ++pathBegin) {
-            if (checkMatch(seg, pathBegin)) {
-                matchLoc = pathBegin;
-                return true;
-            }
-        }
-        return false;
-    };            
-
-    // Track the number of matching components remaining.
-    int numMatchingComponentsLeft = _numMatchingComponents;
-
-    // For each segment:
-    Segment segment { _components.cbegin(), _components.cbegin() };
-    nextSegment(segment, /*priming=*/true);
-    for (; !segment.StartsAt(componentEnd); nextSegment(segment)) {
-        // Skip empty segments.
-        if (segment.IsEmpty()) {
-            continue;
-        }
-
-        // If there are more matching components remaining than the number of
-        // path elements, this cannot possibly match.
-        if (numMatchingComponentsLeft > std::distance(matchLoc, matchEnd)) {
-            return false;
-        }
-
-        // Decrement number of matching components remaining by this segment's
-        // size.
-        numMatchingComponentsLeft -= segment.GetSize();
-
-        // First segment must match at the beginning.
-        if (segment.StartsAt(_components.cbegin())) {
-            if (!checkMatch(segment, matchLoc)) {
+    /// Test \p obj for a match with this expression. Overloads of
+    /// SdfPathExpressionPathToObject() and SdfPathExpressionObjectToPath() for
+    /// \a DomainType must be found by ADL.
+    bool Match(DomainType obj) {
+        return Match(obj, _DefaultToPath {}, _DefaultToObj {});
+    }
+    
+    /// Test \p obj for a match with this expression. Use \p objToPath and \p
+    /// pathToObj to map between corresponding SdfPath and DomainType instances.
+    template <class ObjectToPath, class PathToObject>
+    bool Match(DomainType obj,
+               ObjectToPath const &objToPath,
+               PathToObject const &pathToObj) const {
+        auto matchIter = _matches.cbegin();
+        auto patternMatch = [&](bool skip) {
+            if (skip) {
+                ++matchIter;
                 return false;
             }
-            matchLoc += segment.GetSize();
-            // If there is only one segment, it needs to match the whole.
-            if (segment.EndsAt(_components.cend()) && matchLoc != matchEnd) {
-                return false;
-            }
-        }
-        // Final segment must match at the end.
-        else if (segment.EndsAt(_components.cend())) {
-            if (!checkMatch(segment, matchEnd - segment.GetSize())) {
-                return false;
-            }
-            matchLoc = matchEnd;
-        }
-        // Interior segments search for a match within the range.
-        else {
-            // We can restrict the search range by considering how many
-            // components we have remaining to match against.
-            if (!searchMatch(segment, matchLoc,
-                             matchEnd - numMatchingComponentsLeft)) {
-                return false;
-            }
-            matchLoc += segment.GetSize();
-        }
+            return (*matchIter++)(obj, objToPath, pathToObj);
+        };
+        return _Match(patternMatch);
     }
 
-    return true;
-}    
+private:
 
-/// Create an SdfPathExpressionEval object that can evaluate complete
-/// SdfPathExpressions in the context of a DomainType and DomainInterface, using
-/// an SdfPredicateLibrary<DomainType> to evaluate any embedded predicates.
+    // This object implements matching against a single path pattern.
+    class _PatternMatch : public _PatternMatchBase {
+    public:
+        _PatternMatch(SdfPathExpression::PathPattern const &pattern,
+                      SdfPredicateLibrary<DomainType> const &predLib) {
+            auto linkPredicate =
+                [this, &predLib](SdfPredicateExpression const &predExpr) {
+                    _predicates.push_back(
+                        SdfLinkPredicateExpression(predExpr, predLib));
+                    return _predicates.size()-1;
+                };
+            _Init(pattern, linkPredicate);
+        }
+
+        // Check obj for a match against this pattern.
+        template <class ObjectToPath, class PathToObject>
+        bool operator()(DomainType obj,
+                        ObjectToPath const &objToPath,
+                        PathToObject const &pathToObj) const {
+            auto runNthPredicate =
+                [this, &pathToObj](int i, SdfPath const &path) {
+                    return _predicates[i](pathToObj(path));
+                };
+            return _Match(objToPath(obj), runNthPredicate);
+        }
+        
+    private:
+        std::vector<SdfPredicateProgram<DomainType>> _predicates;
+    };
+    
+    std::vector<_PatternMatch> _matches;
+};
+
+/// Create an SdfPathExpressionEval object that can evaluate the complete
+/// SdfPathExpression \p expr on DomainType instances, using \p lib, an
+/// SdfPredicateLibrary<DomainType> to evaluate any embedded predicates.
+///
 /// Note that \p expr must be "complete", meaning that
 /// SdfPathExpression::IsComplete() must return true.  If an evaluator cannot
-/// succesfully be made possibly because the passed \expr is not complete, or if
-/// any embedded SdfPredicateExpression s cannot be successfully linked with \p
-/// lib, or another reason, issue an error and return the empty
+/// succesfully be made, possibly because the passed \expr is not complete, or
+/// if any embedded SdfPredicateExpression s cannot be successfully linked with
+/// \p lib, or another reason, issue an error and return the empty
 /// SdfPathExpressionEval object.  See SdfPathExpressionEval::IsEmpty().
 ///
-/// In case this function issues an error, \p domainInterface may have been
-/// assigned-from, meaning that if it was an rvalue, it may be left in a
-/// moved-from state if the assignment was a move-assignment.
-template <class DomainType, class DomainInterface>
-SdfPathExpressionEval<DomainType, DomainInterface>
+template <class DomainType>
+SdfPathExpressionEval<DomainType>
 SdfMakePathExpressionEval(SdfPathExpression const &expr,
-                          DomainInterface &&domainInterface,
                           SdfPredicateLibrary<DomainType> const &lib)
 {
     using Expr = SdfPathExpression;
-    using Eval = SdfPathExpressionEval<DomainType, DomainInterface>;
-
-    if (!expr.IsComplete()) {
-        TF_CODING_ERROR("Cannot build evaluator for incomplete "
-                        "SdfPathExpression; must contain only absolute "
-                        "paths and no expression references: <%s>",
-                        expr.GetDebugString().c_str());
-        return {};
-    }
-    
-    // Walk expr and populate eval, binding predicates with lib, and using
-    // domainInterface to go from DomainType <-> SdfPath.
+    using Eval = SdfPathExpressionEval<DomainType>;
 
     Eval eval;
-    std::string errs;
-
-    auto exprToEvalOp = [](Expr::Op op) {
-        switch (op) {
-        case Expr::Complement: return Eval::Not;
-        case Expr::Union: case Expr::ImpliedUnion: return Eval::Or;
-        case Expr::Intersection: case Expr::Difference: return Eval::And;
-            // Note that Difference(A, B) is transformed to And(A, !B) below.
-        case Expr::Pattern: return Eval::PatternMatch;
-        case Expr::ExpressionRef:
-            TF_CODING_ERROR("Building evaluator for incomplete "
-                            "SdfPathExpression");
-            break;
-        };
-        return static_cast<typename Eval::_Op>(-1);
-    };
-
-    auto translateLogic = [&](Expr::Op op, int argIndex) {
-        switch (op) {
-        case Expr::Complement: // Not is postfix, RPN-style.
-            if (argIndex == 1) {
-                eval._ops.push_back(Eval::Not);
-            }
-            break;
-        case Expr::Union:        // Binary logic ops are infix to facilitate
-        case Expr::ImpliedUnion: // short-circuiting.
-        case Expr::Intersection:
-        case Expr::Difference:
-            if (argIndex == 1) {
-                eval._ops.push_back(exprToEvalOp(op));
-                eval._ops.push_back(Eval::Open);
-            }
-            else if (argIndex == 2) {
-                // The set-difference operation (a - b) is transformed to (a &
-                // ~b) which is represented in boolean logic as (a and not b),
-                // so we apply a postfix Not here if the op is 'Difference'.
-                if (op == Expr::Difference) {
-                    eval._ops.push_back(Eval::Not);
-                }
-                eval._ops.push_back(Eval::Close);
-            }
-            break;
-        case Expr::Pattern:
-            break; // do nothing, handled in translatePattern.
-        case Expr::ExpressionRef:
-            TF_CODING_ERROR("Cannot build evaluator for incomplete "
-                            "SdfPathExpression");
-            break;
-        };
-    };
 
     auto translatePattern = [&](Expr::PathPattern const &pattern) {
         // Add a _PatternMatch object that tests a DomainType object against
@@ -494,26 +270,10 @@ SdfMakePathExpressionEval(SdfPathExpression const &expr,
         eval._ops.push_back(Eval::PatternMatch);
     };
 
-    // This should never be called, since the path expression is checked for
-    // "completeness" above, which means that it must have no unresolved
-    // references.
-    auto issueReferenceError = [&expr](Expr::ExpressionReference const &) {
-        TF_CODING_ERROR("Unexpected reference in path expression: <%s>",
-                        expr.GetDebugString().c_str());
-    };
-
-    TfErrorMark m;
-
-    // Store the interface object in the expr.
-    eval._domainInterface = std::forward<DomainInterface>(domainInterface);
-    
-    // Walk the expression and build the "compiled" evaluator.
-    expr.Walk(translateLogic, issueReferenceError, translatePattern);
-
-    if (!m.IsClean()) {
+    if (!Sdf_MakePathExpressionEvalImpl(eval, expr, translatePattern)) {
         eval = {};
     }
-    
+
     return eval;
 }
 

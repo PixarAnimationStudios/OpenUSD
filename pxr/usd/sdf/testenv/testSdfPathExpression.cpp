@@ -30,22 +30,21 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-namespace {
+// For testing, provide overloads of SdfPathExpressionObjectToPath &
+// PathToObject so that just return the path itself.
+PXR_NAMESPACE_OPEN_SCOPE
 
-// Domain object interface mapping path <-> object.  In this case it's the
-// identity function because the domain object we're using in the test is
-// SdfPath itself.
-struct PathIdentity
-{
-    SdfPath GetPath(SdfPath const &p) const {
-        return p;
-    }
-    SdfPath GetObject(SdfPath const &p) const {
-        return p;
-    }
-};
-
+static SdfPath
+SdfPathExpressionObjectToPath(SdfPath const &path) {
+    return path;
 }
+
+static SdfPath
+SdfPathExpressionPathToObject(SdfPath const &path, SdfPath const *) {
+    return path;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
 
 static void
 TestBasics()
@@ -62,7 +61,7 @@ TestBasics()
 
     {
         auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo//bar"), PathIdentity {}, predLib);
+            SdfPathExpression("/foo//bar"), predLib);
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -74,7 +73,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("//foo/bar/baz/qux/quux"),
-            PathIdentity {}, predLib);
+            predLib);
         
         TF_AXIOM(!eval.Match(SdfPath("/foo")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar")));
@@ -90,7 +89,7 @@ TestBasics()
 
     {
         auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo*//bar"), PathIdentity {}, predLib);
+            SdfPathExpression("/foo*//bar"), predLib);
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -108,7 +107,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/foo*//bar{isPrimPath}"),
-            PathIdentity {}, predLib);
+            predLib);
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -126,7 +125,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/foo*//bar//{isPrimPath}"),
-            PathIdentity {}, predLib);
+            predLib);
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar/a")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar/b")));
@@ -148,7 +147,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/a /b /c /d/e/f"),
-            PathIdentity {}, predLib);
+            predLib);
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/b")));
@@ -164,7 +163,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/a// - /a/b/c"),
-            PathIdentity {}, predLib);
+            predLib);
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/a/b")));
@@ -177,7 +176,7 @@ TestBasics()
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/a//{isPropertyPath} - /a/b.c"),
-            PathIdentity {}, predLib);
+            predLib);
 
         TF_AXIOM(!eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/a.b")));
@@ -206,7 +205,7 @@ TestBasics()
         TF_AXIOM(composed.IsComplete());
         
         auto eval = SdfMakePathExpressionEval(
-            composed, PathIdentity {}, predLib);
+            composed, predLib);
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/b")));
@@ -241,7 +240,7 @@ TestBasics()
 
         // Resolved should be "/a /weaker /foo// - /foo/bar//"
         auto eval = SdfMakePathExpressionEval(
-            resolved, PathIdentity {}, predLib);
+            resolved, predLib);
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/weaker")));
@@ -263,7 +262,7 @@ TestBasics()
         TF_AXIOM(abs.IsAbsolute());
         TF_AXIOM(abs.IsComplete());
 
-        auto eval = SdfMakePathExpressionEval(abs, PathIdentity {}, predLib);
+        auto eval = SdfMakePathExpressionEval(abs, predLib);
 
         TF_AXIOM(eval.Match(SdfPath("/World/test/foo")));
         TF_AXIOM(!eval.Match(SdfPath("/World/test/bar")));
@@ -277,7 +276,7 @@ TestBasics()
                 abs.ReplacePrefix(SdfPath("/World"), SdfPath("/Home"));
             
             auto eval =
-                SdfMakePathExpressionEval(home, PathIdentity {}, predLib);
+                SdfMakePathExpressionEval(home, predLib);
 
             TF_AXIOM(eval.Match(SdfPath("/Home/test/foo")));
             TF_AXIOM(!eval.Match(SdfPath("/Home/test/bar")));
@@ -292,7 +291,7 @@ int
 main(int argc, char **argv)
 {
     TestBasics();
-
+    
     printf(">>> Test SUCCEEDED\n");
     return 0;
 }

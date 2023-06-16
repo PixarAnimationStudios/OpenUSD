@@ -49,6 +49,7 @@ pxr_library(sdf
         opaqueValue
         path
         pathExpression
+        pathExpressionEval
         pathNode
         pathTable
         payload
@@ -95,7 +96,6 @@ pxr_library(sdf
         declareSpec.h
         invoke.hpp
         layerHints.h
-        pathExpressionEval.h
         predicateExpressionParser.h
         predicateProgram.h
         schemaTypeRegistration.h
