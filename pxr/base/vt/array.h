@@ -956,12 +956,48 @@ hash_value(VtArray<ELEM> const &array) {
 template <typename T>
 struct VtIsArray< VtArray <T> > : public std::true_type {};
 
+template <class T>
+struct Vt_ArrayOpHelp {
+    static T Add(T l, T r) { return l + r; }
+    static T Sub(T l, T r) { return l - r; }
+    static T Mul(T l, T r) { return l * r; }
+    static T Div(T l, T r) { return l / r; }
+    static T Mod(T l, T r) { return l % r; }
+};
 
-#define VTOPERATOR_CPPARRAY(op)                                                \
+template <class T>
+struct Vt_ArrayOpHelpScalar {
+    static T Mul(T l, double r) { return l * r; }
+    static T Mul(double l, T r) { return l * r; }
+    static T Div(T l, double r) { return l / r; }
+    static T Div(double l, T r) { return l / r; }
+};
+
+// These operations on bool-arrays are highly questionable, but this preserves
+// existing behavior in the name of Hyrum's Law.
+template <>
+struct Vt_ArrayOpHelp<bool> {
+    static bool Add(bool l, bool r) { return l | r; }
+    static bool Sub(bool l, bool r) { return l ^ r; }
+    static bool Mul(bool l, bool r) { return l & r; }
+    static bool Div(bool l, bool r) { return l; }
+    static bool Mod(bool l, bool r) { return false; }
+};
+
+template <>
+struct Vt_ArrayOpHelpScalar<bool> {
+    static bool Mul(bool l, double r) { return l && (r != 0.0); }
+    static bool Mul(double l, bool r) { return (l != 0.0) && r; }
+    static bool Div(bool l, double r) { return (r == 0.0) || l; }
+    static bool Div(double l, bool r) { return !r || (l != 0.0); }
+};
+
+#define VTOPERATOR_CPPARRAY(op, opName)                                        \
     template <class T>                                                         \
     VtArray<T>                                                                 \
     operator op (VtArray<T> const &lhs, VtArray<T> const &rhs)                 \
     {                                                                          \
+        using Op = Vt_ArrayOpHelp<T>;                                          \
         /* accept empty vecs */                                                \
         if (!lhs.empty() && !rhs.empty() && lhs.size() != rhs.size()) {        \
             TF_CODING_ERROR("Non-conforming inputs for operator %s", #op);     \
@@ -972,16 +1008,19 @@ struct VtIsArray< VtArray <T> > : public std::true_type {};
         VtArray<T> ret(leftEmpty ? rhs.size() : lhs.size());                   \
         T zero = VtZero<T>();                                                  \
         if (leftEmpty) {                                                       \
-            std::transform(rhs.begin(), rhs.end(), ret.begin(),                \
-                           [zero](T const &r) { return T(zero op r); });       \
+            std::transform(                                                    \
+                rhs.begin(), rhs.end(), ret.begin(),                           \
+                [zero](T const &r) { return Op:: opName (zero, r); });         \
         }                                                                      \
         else if (rightEmpty) {                                                 \
-            std::transform(lhs.begin(), lhs.end(), ret.begin(),                \
-                           [zero](T const &l) { return T(l op zero); });       \
+            std::transform(                                                    \
+                lhs.begin(), lhs.end(), ret.begin(),                           \
+                [zero](T const &l) { return Op:: opName (l, zero); });         \
         }                                                                      \
         else {                                                                 \
-            std::transform(lhs.begin(), lhs.end(), rhs.begin(), ret.begin(),   \
-                           [](T const &l, T const &r) { return T(l op r); });  \
+            std::transform(                                                    \
+                lhs.begin(), lhs.end(), rhs.begin(), ret.begin(),              \
+                [](T const &l, T const &r) { return Op:: opName (l, r); });    \
         }                                                                      \
         return ret;                                                            \
     }
@@ -991,11 +1030,11 @@ ARCH_PRAGMA_FORCING_TO_BOOL
 ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
 ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
 
-VTOPERATOR_CPPARRAY(+);
-VTOPERATOR_CPPARRAY(-);
-VTOPERATOR_CPPARRAY(*);
-VTOPERATOR_CPPARRAY(/);
-VTOPERATOR_CPPARRAY(%);
+VTOPERATOR_CPPARRAY(+, Add);
+VTOPERATOR_CPPARRAY(-, Sub);
+VTOPERATOR_CPPARRAY(*, Mul);
+VTOPERATOR_CPPARRAY(/, Div);
+VTOPERATOR_CPPARRAY(%, Mod);
     
 template <class T>
 VtArray<T>
@@ -1010,56 +1049,53 @@ ARCH_PRAGMA_POP
 
 // Operations on scalars and arrays
 // These are free functions defined in Array.h
-#define VTOPERATOR_CPPSCALAR_TYPE(op,arraytype,scalartype,rettype)      \
-    template<typename arraytype>                                        \
-    VtArray<ElemType>                                                   \
-    operator op (scalartype const &scalar,                              \
-                 VtArray<arraytype> const &vec) {                       \
-        VtArray<rettype> ret(vec.size());                               \
-        for (size_t i = 0; i<vec.size(); ++i) {                         \
-            ret[i] = scalar op vec[i];                                  \
-        }                                                               \
+#define VTOPERATOR_CPPSCALAR(op,opName)                                 \
+    template<typename T>                                                \
+    VtArray<T> operator op (T const &scalar, VtArray<T> const &arr) {   \
+        using Op = Vt_ArrayOpHelp<T>;                                   \
+        VtArray<T> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),             \
+                       [&scalar](T const &aObj) {                       \
+                           return Op:: opName (scalar, aObj);           \
+                       });                                              \
         return ret;                                                     \
     }                                                                   \
-    template<typename arraytype>                                        \
-    VtArray<ElemType>                                                   \
-    operator op (VtArray<arraytype> const &vec,                         \
-                 scalartype const &scalar) {                            \
-        VtArray<rettype> ret(vec.size());                               \
-        for (size_t i = 0; i<vec.size(); ++i) {                         \
-            ret[i] = vec[i] op scalar;                                  \
-        }                                                               \
+    template<typename T>                                                \
+    VtArray<T> operator op (VtArray<T> const &arr, T const &scalar) {   \
+        using Op = Vt_ArrayOpHelp<T>;                                   \
+        VtArray<T> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),             \
+                       [&scalar](T const &aObj) {                       \
+                           return Op:: opName (aObj, scalar);           \
+                       });                                              \
         return ret;                                                     \
     } 
-
-#define VTOPERATOR_CPPSCALAR(op)                                        \
-    VTOPERATOR_CPPSCALAR_TYPE(op,ElemType,ElemType,ElemType)
 
 // define special-case operators on arrays and doubles - except if the array
 // holds doubles, in which case we already defined the operator (with
 // VTOPERATOR_CPPSCALAR above) so we can't do it again!
-#define VTOPERATOR_CPPSCALAR_DOUBLE(op)                                        \
-    template<typename ElemType>                                                \
-    typename boost::disable_if<boost::is_same<ElemType, double>,               \
-                               VtArray<ElemType> >::type                       \
-    operator op (double const &scalar,                                         \
-                 VtArray<ElemType> const &vec) {                               \
-        VtArray<ElemType> ret(vec.size());                                     \
-        for (size_t i = 0; i<vec.size(); ++i) {                                \
-            ret[i] = scalar op vec[i];                                         \
-        }                                                                      \
-        return ret;                                                            \
-    }                                                                          \
-    template<typename ElemType>                                                \
-    typename boost::disable_if<boost::is_same<ElemType, double>,               \
-                               VtArray<ElemType> >::type                       \
-    operator op (VtArray<ElemType> const &vec,                                 \
-                 double const &scalar) {                                       \
-        VtArray<ElemType> ret(vec.size());                                     \
-        for (size_t i = 0; i<vec.size(); ++i) {                                \
-            ret[i] = vec[i] op scalar;                                         \
-        }                                                                      \
-        return ret;                                                            \
+#define VTOPERATOR_CPPSCALAR_DOUBLE(op,opName)                          \
+    template<typename T>                                                \
+    std::enable_if_t<!std::is_same<T, double>::value, VtArray<T>>       \
+    operator op (double const &scalar, VtArray<T> const &arr) {         \
+        using Op = Vt_ArrayOpHelpScalar<T>;                             \
+        VtArray<T> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),             \
+                       [&scalar](T const &aObj) {                       \
+                           return Op:: opName (scalar, aObj);           \
+                       });                                              \
+        return ret;                                                     \
+    }                                                                   \
+    template<typename T>                                                \
+    std::enable_if_t<!std::is_same<T, double>::value, VtArray<T>>       \
+    operator op (VtArray<T> const &arr, double const &scalar) {         \
+        using Op = Vt_ArrayOpHelpScalar<T>;                             \
+        VtArray<T> ret(arr.size());                                     \
+        std::transform(arr.begin(), arr.end(), ret.begin(),             \
+                       [&scalar](T const &aObj) {                       \
+                           return Op:: opName (aObj, scalar);           \
+                       });                                              \
+        return ret;                                                     \
     } 
 
 // free functions for operators combining scalar and array types
@@ -1067,13 +1103,13 @@ ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_FORCING_TO_BOOL
 ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
 ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
-VTOPERATOR_CPPSCALAR(+)
-VTOPERATOR_CPPSCALAR(-)
-VTOPERATOR_CPPSCALAR(*)
-VTOPERATOR_CPPSCALAR_DOUBLE(*)
-VTOPERATOR_CPPSCALAR(/)
-VTOPERATOR_CPPSCALAR_DOUBLE(/)
-VTOPERATOR_CPPSCALAR(%)
+VTOPERATOR_CPPSCALAR(+, Add)
+VTOPERATOR_CPPSCALAR(-, Sub)
+VTOPERATOR_CPPSCALAR(*, Mul)
+VTOPERATOR_CPPSCALAR_DOUBLE(*, Mul)
+VTOPERATOR_CPPSCALAR(/, Div)
+VTOPERATOR_CPPSCALAR_DOUBLE(/, Div)
+VTOPERATOR_CPPSCALAR(%, Mod)
 ARCH_PRAGMA_POP
 
 PXR_NAMESPACE_CLOSE_SCOPE
