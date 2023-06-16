@@ -95,6 +95,7 @@ pxr_library(sdf
         declareSpec.h
         invoke.hpp
         layerHints.h
+        pathExpressionEval.h
         predicateExpressionParser.h
         predicateProgram.h
         schemaTypeRegistration.h
@@ -308,6 +309,13 @@ pxr_build_test(testSdfMetaDataPlugInfo
         testenv/testSdfMetaDataPlugInfo.cpp
 )
 
+pxr_build_test(testSdfPathExpression_Cpp
+    LIBRARIES
+        sdf
+    CPPFILES
+        testenv/testSdfPathExpression.cpp
+)
+
 pxr_build_test(testSdfPathParser
     LIBRARIES
         sdf
@@ -458,6 +466,10 @@ pxr_register_test(testSdfListOp
 
 pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
+)
+
+pxr_register_test(testSdfPathExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathExpression_Cpp"
 )
 
 pxr_register_test(testSdfParsing
