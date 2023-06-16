@@ -52,7 +52,7 @@
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -696,27 +696,34 @@ private:
         const HdGeomSubsets &gs =
             _GetMeshTopologyStore()->Get()->GetGeomSubsets();
         for (const HdGeomSubset &geomSubset : gs) {
-            HdDataSourceBaseHandle materialIdDs = 
-                HdRetainedTypedSampledDataSource<SdfPath>::New(
-                        geomSubset.materialId);
-            TfToken t = HdMaterialBindingSchemaTokens->allPurpose;
-
-            HdContainerDataSourceHandle containers[2] = {
-                HdGeomSubsetSchema::BuildRetained(
-                        HdGeomSubsetSchema::BuildTypeDataSource(
-                            HdGeomSubsetSchemaTokens->typeFaceSet),
-                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            geomSubset.indices)),
-
-                HdRetainedContainerDataSource::New(
-                        HdMaterialBindingSchemaTokens->materialBinding,
-                        HdMaterialBindingSchema::BuildRetained(
-                            1, &t, &materialIdDs))
+            static const TfToken purposes[] = {
+                HdMaterialBindingsSchemaTokens->allPurpose
+            };
+            HdDataSourceBaseHandle const materialBindingSources[] = {
+                HdMaterialBindingSchema::Builder()
+                    .SetPath(
+                        HdRetainedTypedSampledDataSource<SdfPath>::New(
+                            geomSubset.materialId))
+                    .Build()
             };
 
             names.push_back(TfToken(geomSubset.id.GetText()));
-            values.push_back(HdOverlayContainerDataSource::New(
-                        2, containers));
+            values.push_back(
+                HdOverlayContainerDataSource::New(
+                    HdGeomSubsetSchema::Builder()
+                       .SetType(
+                           HdGeomSubsetSchema::BuildTypeDataSource(
+                               HdGeomSubsetSchemaTokens->typeFaceSet))
+                       .SetIndices(
+                           HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                               geomSubset.indices))
+                       .Build(),
+                    HdRetainedContainerDataSource::New(
+                        HdMaterialBindingsSchema::GetSchemaToken(),
+                        HdMaterialBindingsSchema::BuildRetained(
+                            TfArraySize(purposes),
+                            purposes,
+                            materialBindingSources))));
         }
 
         static const TfToken invisibleFacesToken("__invisibleFaces");
@@ -2320,7 +2327,7 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (HdPrimTypeIsGprim(_type)) {
         result.push_back(HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars);
-        result.push_back(HdMaterialBindingSchemaTokens->materialBinding);
+        result.push_back(HdMaterialBindingsSchema::GetSchemaToken());
         result.push_back(HdLegacyDisplayStyleSchemaTokens->displayStyle); 
         result.push_back(HdCoordSysBindingSchemaTokens->coordSysBinding);
         result.push_back(HdPurposeSchemaTokens->purpose);
@@ -2643,19 +2650,25 @@ HdDataSourceLegacyPrim::_GetExtComputationPrimvarsDataSource()
 }
 
 HdDataSourceBaseHandle
-HdDataSourceLegacyPrim::_GetMaterialBindingDataSource()
+HdDataSourceLegacyPrim::_GetMaterialBindingsDataSource()
 {
-    SdfPath path = _sceneDelegate->GetMaterialId(_id);
+    const SdfPath path = _sceneDelegate->GetMaterialId(_id);
     if (path.IsEmpty()) {
         return nullptr;
     }
-    HdDataSourceBaseHandle bindingPath = 
-        HdRetainedTypedSampledDataSource<SdfPath>::New(path);
+    static const TfToken purposes[] = {
+        HdMaterialBindingsSchemaTokens->allPurpose
+    };
+    HdDataSourceBaseHandle const materialBindingSources[] = {
+        HdMaterialBindingSchema::Builder()
+            .SetPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(path))
+            .Build()
+    };
 
-    TfToken t = HdMaterialBindingSchemaTokens->allPurpose;
-    HdContainerDataSourceHandle binding = 
-        HdMaterialBindingSchema::BuildRetained(1, &t, &bindingPath);
-    return binding;
+    return
+        HdMaterialBindingsSchema::BuildRetained(
+            TfArraySize(purposes), purposes, materialBindingSources);
 }
 
 HdDataSourceBaseHandle
@@ -2928,8 +2941,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
     } else if (
         name == HdExtComputationPrimvarsSchemaTokens->extComputationPrimvars) {
         return _GetExtComputationPrimvarsDataSource();
-    } else if (name == HdMaterialBindingSchemaTokens->materialBinding) {
-        return _GetMaterialBindingDataSource();
+    } else if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
+        return _GetMaterialBindingsDataSource();
     } else if (name == HdXformSchemaTokens->xform) {
        return _GetXformDataSource();
     } else if (name == HdMaterialSchemaTokens->material) {

@@ -70,7 +70,7 @@
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -495,13 +495,13 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
             }
 
             SdfPath materialId = SdfPath();
-            HdMaterialBindingSchema materialBinding = 
-                HdMaterialBindingSchema::GetFromParent(gsSchema.GetContainer());
-            if (materialBinding.IsDefined()) {
-                if (HdPathDataSourceHandle materialIdDs = 
-                    materialBinding.GetMaterialBinding()) {
-                    materialId = materialIdDs->GetTypedValue(0.0f);
-                }
+            HdMaterialBindingsSchema materialBindings = 
+                HdMaterialBindingsSchema::GetFromParent(
+                    gsSchema.GetContainer());
+            HdMaterialBindingSchema materialBinding =
+                materialBindings.GetMaterialBinding();
+            if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
+                materialId = ds->GetTypedValue(0.0f);
             }
 
             VtIntArray indices = VtIntArray(0);
@@ -840,18 +840,15 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialId(SdfPath const & id)
     HF_MALLOC_TAG_FUNCTION();
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdMaterialBindingSchema mat = HdMaterialBindingSchema::GetFromParent(
-        prim.dataSource);
-    if (!mat.IsDefined()) {
-        return SdfPath();
+    HdMaterialBindingsSchema materialBindings =
+        HdMaterialBindingsSchema::GetFromParent(
+            prim.dataSource);
+    HdMaterialBindingSchema materialBinding =
+        materialBindings.GetMaterialBinding();
+    if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
+        return ds->GetTypedValue(0.0f);
     }
-
-    HdPathDataSourceHandle bindingDs = mat.GetMaterialBinding();
-    if (!bindingDs) {
-        return SdfPath();
-    }
-
-    return bindingDs->GetTypedValue(0);
+    return SdfPath();
 }
 
 HdIdVectorSharedPtr

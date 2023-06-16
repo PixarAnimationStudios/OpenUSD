@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 #include "pxr/imaging/hdsi/materialPruningSceneIndex.h"
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/trace/trace.h"
@@ -72,7 +72,7 @@ public:
             // Filter out materialBinding
             names.erase(
                 std::remove(names.begin(), names.end(),
-                            HdMaterialBindingSchemaTokens->materialBinding));
+                            HdMaterialBindingsSchema::GetSchemaToken()));
         }
         return names;
     }
@@ -84,7 +84,7 @@ public:
         }
         if (!_si->GetSceneMaterialsEnabled()) {
             // Filter out materialBinding
-            if (name == HdMaterialBindingSchemaTokens->materialBinding) {
+            if (name == HdMaterialBindingsSchema::GetSchemaToken()) {
                 return nullptr;
             }
         }
@@ -164,8 +164,7 @@ HdsiMaterialPruningSceneIndex::SetSceneMaterialsEnabled(bool materialsEnabled)
                 _pruneMap[primPath] = true;
                 removedEntries.emplace_back(primPath);
             }
-        } else if (prim.dataSource && prim.dataSource->Get(
-                   HdMaterialBindingSchemaTokens->materialBinding)) {
+        } else if (HdMaterialBindingsSchema::GetFromParent(prim.dataSource)) {
             // Dirty this prim's materialBinding.
             dirtiedEntries.emplace_back(primPath, materialBindingLocators);
         }

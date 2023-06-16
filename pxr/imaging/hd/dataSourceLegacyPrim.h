@@ -96,7 +96,7 @@ private:
 
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     HdDataSourceBaseHandle _GetExtComputationPrimvarsDataSource();
-    HdDataSourceBaseHandle _GetMaterialBindingDataSource();
+    HdDataSourceBaseHandle _GetMaterialBindingsDataSource();
     HdDataSourceBaseHandle _GetXformDataSource();
     HdDataSourceBaseHandle _GetMaterialDataSource();
     HdDataSourceBaseHandle _GetIntegratorDataSource();

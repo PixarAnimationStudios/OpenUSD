@@ -92,6 +92,7 @@ pxr_library(hd
         mapContainerDataSource
         material
         materialBindingSchema
+        materialBindingsSchema
         materialConnectionSchema
         materialFilteringSceneIndexBase
         materialNetworkSchema

@@ -26,6 +26,8 @@
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/tokens.h"
 
+#include "pxr/imaging/hd/version.h"
+
 #include "pxr/imaging/hd/containerDataSourceEditor.h"
 #include "pxr/imaging/hd/dataSourceLocator.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
@@ -34,7 +36,11 @@
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
+#if HD_API_VERSION >= 51
+#include "pxr/imaging/hd/materialBindingsSchema.h"
+#else
 #include "pxr/imaging/hd/materialBindingSchema.h"
+#endif
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
@@ -229,11 +235,21 @@ SdfPath
 _GetBoundMaterialPath(
     const HdContainerDataSourceHandle& primDS)
 {
+#if HD_API_VERSION >= 51
+    HdMaterialBindingsSchema materialBindings =
+        HdMaterialBindingsSchema::GetFromParent(primDS);
+    HdMaterialBindingSchema materialBinding =
+        materialBindings.GetMaterialBinding();
+    if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
+        return ds->GetTypedValue(0.0f);
+    }
+#else
     if (auto matBindSchema = HdMaterialBindingSchema::GetFromParent(primDS)) {
         if (auto matBindDS = matBindSchema.GetMaterialBinding()) {
             return matBindDS->GetTypedValue(0.0f);
         }
     }
+#endif
     return SdfPath();
 }
 
@@ -413,9 +429,13 @@ _BuildLightDependenciesDataSource(
             HdMaterialSchema::GetDefaultLocator());
 
     // material binding
-    static const HdLocatorDataSourceHandle materialBindingDSL =
+    static const HdLocatorDataSourceHandle materialBindingsDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+#if HD_API_VERSION >= 51
+            HdMaterialBindingsSchema::GetDefaultLocator());
+#else
             HdMaterialBindingSchema::GetDefaultLocator());
+#endif
 
     // usdCollections
     static const HdLocatorDataSourceHandle usdCollectionsDSL =
@@ -444,8 +464,8 @@ _BuildLightDependenciesDataSource(
     std::vector<TfToken> names;
     std::vector<HdDataSourceBaseHandle> sources;
 
-    const auto originPathDS = HdRetainedTypedSampledDataSource<SdfPath>
-        ::New(originPath);
+    const auto originPathDS =
+        HdRetainedTypedSampledDataSource<SdfPath>::New(originPath);
 
     // meshLight.light --> origin.light
     names.push_back(_tokens->meshLight_dep_light);
@@ -468,7 +488,7 @@ _BuildLightDependenciesDataSource(
     sources.push_back(HdDependencySchema::Builder()
         .SetDependedOnPrimPath(
             HdRetainedTypedSampledDataSource<SdfPath>::New(bindingSourcePath))
-        .SetDependedOnDataSourceLocator(materialBindingDSL)
+        .SetDependedOnDataSourceLocator(materialBindingsDSL)
         .SetAffectedDataSourceLocator(materialDSL)
         .Build());
 
@@ -508,8 +528,14 @@ _BuildLightDependenciesDataSource(
     names.push_back(_tokens->meshLight_dep_material_boundMaterial);
     sources.push_back(HdDependencySchema::Builder()
         .SetDependedOnPrimPath(
+#if HD_API_VERSION >= 51
+            HdMaterialBindingsSchema::GetFromParent(bindingSourceDS)
+                .GetMaterialBinding()
+            .GetPath())
+#else
             HdMaterialBindingSchema::GetFromParent(bindingSourceDS)
                 .GetMaterialBinding())
+#endif
         .SetDependedOnDataSourceLocator(materialDSL)
         .SetAffectedDataSourceLocator(materialDSL)
         .Build());
@@ -601,7 +627,11 @@ _BuildLightDataSource(
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out material binding
+#if HD_API_VERSION >= 51
+    names.push_back(HdMaterialBindingsSchema::GetSchemaToken());
+#else
     names.push_back(HdMaterialBindingSchemaTokens->materialBinding);
+#endif
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out volume field binding
@@ -632,9 +662,13 @@ _BuildSourceDependenciesDataSource(
             HdPrimvarsSchema::GetDefaultLocator());
     
     // material binding
-    static const HdLocatorDataSourceHandle materialBindingDSL =
+    static const HdLocatorDataSourceHandle materialBindingsDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+#if HD_API_VERSION >= 51
+            HdMaterialBindingsSchema::GetDefaultLocator());
+#else
             HdMaterialBindingSchema::GetDefaultLocator());
+#endif
     
     // volume field binding
     static const HdLocatorDataSourceHandle volumeFieldBindingDSL =
@@ -671,8 +705,8 @@ _BuildSourceDependenciesDataSource(
     names.push_back(_tokens->meshLight_dep_materialBinding);
     sources.push_back(HdDependencySchema::Builder()
         .SetDependedOnPrimPath(originPathDS)
-        .SetDependedOnDataSourceLocator(materialBindingDSL)
-        .SetAffectedDataSourceLocator(materialBindingDSL)
+        .SetDependedOnDataSourceLocator(materialBindingsDSL)
+        .SetAffectedDataSourceLocator(materialBindingsDSL)
         .Build());
     
     // source.volumeFieldBinding --> origin.volumeFieldBinding
@@ -743,7 +777,11 @@ _BuildMeshDependenciesDataSource(
     // material binding
     static const HdLocatorDataSourceHandle materialBindingDSL =
         HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+#if HD_API_VERSION >= 51
+            HdMaterialBindingsSchema::GetDefaultLocator());
+#else
             HdMaterialBindingSchema::GetDefaultLocator());
+#endif
 
     // visibility
     static const HdLocatorDataSourceHandle visibilityDSL =

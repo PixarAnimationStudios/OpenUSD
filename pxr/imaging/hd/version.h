@@ -67,7 +67,9 @@
 // 48 -> 49: Moved HdExtCompCpuComputation, Hd_ExtCompInputSource,
 //           Hd_CompExtCompInputSource, and Hd_SceneExtCompInputSource to hdSt.
 // 49 -> 50: Added HdModelDrawMode struct and getter API to HdSceneDelegate.
-#define HD_API_VERSION 50
+// 50 -> 51: HdMaterialBindingSchema became HdMaterialBindingsSchema which uses
+//           the new HdMaterialBindingSchema.
+#define HD_API_VERSION 51
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

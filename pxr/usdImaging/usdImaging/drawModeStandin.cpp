@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -1380,7 +1380,7 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
     static const std::array<TfToken, 6> materialNameTokens = 
         _AddAxesToNames("subsetMaterial", "");
     
-    TfToken purposeToken[] = { HdMaterialBindingSchemaTokens->allPurpose };
+    TfToken purposeToken[] = { HdMaterialBindingsSchemaTokens->allPurpose };
 
     std::vector<TfToken> subsetNames;
     std::vector<HdDataSourceBaseHandle> subsets;
@@ -1407,26 +1407,42 @@ _CardsDataCache::_CardsData::_ComputeGeomSubsets(
         for (size_t i = 0; i < 6; i++) {
             const size_t vi = (i % 2 == 0 ? 0 : 3) + i / 2;
             if (values.hasFace[vi]) {
-                // use the opposite face's material if no texture for this face
-                size_t matIndex = values.hasTexture[vi] ? vi : (vi + 3) % 6;
-                // geomSubset's materialBinding path must be absolute
-                HdDataSourceBaseHandle materialPath[] = {
-                    HdRetainedTypedSampledDataSource<SdfPath>::New(primPath
-                        .AppendChild(materialNameTokens[matIndex])) };
+                static HdTokenDataSourceHandle const typeSource =
+                    HdGeomSubsetSchema::BuildTypeDataSource(
+                        HdGeomSubsetSchemaTokens->typeFaceSet);
                 const int subsetIndex(subsets.size());
-                HdContainerDataSourceHandle containers[] = {
-                    HdGeomSubsetSchema::BuildRetained(
-                        HdGeomSubsetSchema::BuildTypeDataSource(
-                            HdGeomSubsetSchemaTokens->typeFaceSet),
-                        HdRetainedTypedSampledDataSource<VtIntArray>::New(
-                            { subsetIndex })),
-                    HdRetainedContainerDataSource::New(
-                        HdMaterialBindingSchemaTokens->materialBinding,
-                        HdMaterialBindingSchema::BuildRetained(
-                            1, purposeToken, materialPath)) };
+                // use the opposite face's material if no texture for this face
+                const size_t matIndex = values.hasTexture[vi] ? vi : (vi + 3) % 6;
+                static const TfToken purposes[] = {
+                    HdMaterialBindingsSchemaTokens->allPurpose
+                };
+                const SdfPath materialPath =
+                    // geomSubset's materialBinding path must be absolute
+                    primPath.AppendChild(materialNameTokens[matIndex]);
+                HdDataSourceBaseHandle const materialBindingSources[] = {
+                    HdMaterialBindingSchema::Builder()
+                        .SetPath(
+                            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                                materialPath))
+                        .Build()
+                };
+
                 subsetNames.push_back(subsetNameTokens[vi]);
-                subsets.push_back(HdOverlayContainerDataSource::New(
-                    TfArraySize(containers), containers));
+                subsets.push_back(
+                    HdOverlayContainerDataSource::New(
+                        HdGeomSubsetSchema::Builder()
+                            .SetType(typeSource)
+                            .SetIndices(
+                                HdRetainedTypedSampledDataSource<VtIntArray>::New(
+                                    { subsetIndex }))
+                            .Build(),
+                        HdRetainedContainerDataSource::New(
+                            HdMaterialBindingsSchema::GetSchemaToken(),
+                            HdMaterialBindingsSchema::BuildRetained(
+                                TfArraySize(purposes),
+                                purposes,
+                                materialBindingSources))));
+                        
             }
         }
     }

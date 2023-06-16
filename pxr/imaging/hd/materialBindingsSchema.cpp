@@ -28,7 +28,7 @@
 /* ** defs.py or the (*)Schema.template.cpp files to make changes.         ** */
 /* ************************************************************************** */
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
@@ -36,52 +36,66 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens,
-    HDMATERIALBINDING_SCHEMA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingsSchemaTokens,
+    HDMATERIALBINDINGS_SCHEMA_TOKENS);
 
 
-
-HdPathDataSourceHandle
-HdMaterialBindingSchema::GetPath()
+HdMaterialBindingSchema
+HdMaterialBindingsSchema::GetMaterialBinding()
 {
-    return _GetTypedDataSource<HdPathDataSource>(
-        HdMaterialBindingSchemaTokens->path);
+    return HdMaterialBindingSchema(
+        _GetTypedDataSource<HdContainerDataSource>(
+            HdMaterialBindingsSchemaTokens->allPurpose));
 }
+
+HdMaterialBindingSchema
+HdMaterialBindingsSchema::GetMaterialBinding(TfToken const &purpose)
+{
+    if (auto b = _GetTypedDataSource<HdContainerDataSource>(purpose)) {
+        return HdMaterialBindingSchema(b);
+    }
+
+    // If we can't find the purpose-specific binding, return the fallback.
+    return GetMaterialBinding();
+}
+
 
 /*static*/
 HdContainerDataSourceHandle
-HdMaterialBindingSchema::BuildRetained(
-        const HdPathDataSourceHandle &path
-)
+HdMaterialBindingsSchema::BuildRetained(
+    const size_t count,
+    const TfToken * const names,
+    const HdDataSourceBaseHandle * const values)
 {
-    TfToken names[1];
-    HdDataSourceBaseHandle values[1];
-
-    size_t count = 0;
-    if (path) {
-        names[count] = HdMaterialBindingSchemaTokens->path;
-        values[count++] = path;
-    }
-
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
-
-HdMaterialBindingSchema::Builder &
-HdMaterialBindingSchema::Builder::SetPath(
-    const HdPathDataSourceHandle &path)
+/*static*/
+HdMaterialBindingsSchema
+HdMaterialBindingsSchema::GetFromParent(
+        const HdContainerDataSourceHandle &fromParentContainer)
 {
-    _path = path;
-    return *this;
+    return HdMaterialBindingsSchema(
+        fromParentContainer
+        ? HdContainerDataSource::Cast(fromParentContainer->Get(
+                HdMaterialBindingsSchemaTokens->materialBindings))
+        : nullptr);
 }
 
-HdContainerDataSourceHandle
-HdMaterialBindingSchema::Builder::Build()
+/*static*/
+const TfToken &
+HdMaterialBindingsSchema::GetSchemaToken()
 {
-    return HdMaterialBindingSchema::BuildRetained(
-        _path
+    return HdMaterialBindingsSchemaTokens->materialBindings;
+}
+
+/*static*/
+const HdDataSourceLocator &
+HdMaterialBindingsSchema::GetDefaultLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdMaterialBindingsSchemaTokens->materialBindings
     );
-}
-
-
+    return locator;
+} 
 PXR_NAMESPACE_CLOSE_SCOPE

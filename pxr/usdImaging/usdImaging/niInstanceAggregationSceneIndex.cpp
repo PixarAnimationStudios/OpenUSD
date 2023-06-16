@@ -33,7 +33,7 @@
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/lazyContainerDataSource.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -748,14 +748,17 @@ _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
 
 // We should implement a generic data source hash and use it here.
 size_t
-_ComputeHash(HdContainerDataSourceHandle const &container)
+_ComputeMaterialBindingsHashHelper(
+    HdContainerDataSourceHandle const &container)
 {
     std::vector<std::pair<TfToken, SdfPath>> bindings;
     TfTokenVector names = container->GetNames();
     bindings.reserve(names.size());
     for (const TfToken &name : names) {
         if (HdPathDataSourceHandle const ds =
-                    HdPathDataSource::Cast(container->Get(name))) {
+                HdMaterialBindingSchema(
+                    HdContainerDataSource::Cast(
+                        container->Get(name))).GetPath()) {
             bindings.emplace_back(name, ds->GetTypedValue(0.0f));
         }
     }
@@ -766,13 +769,14 @@ _ComputeHash(HdContainerDataSourceHandle const &container)
 // We can only group together native instances that are using the same
 // materials. Compute hash for material bindings.
 std::string
-_ComputeMaterialBindingHash(HdMaterialBindingSchema schema)
+_ComputeMaterialBindingsHash(HdMaterialBindingsSchema schema)
 {
     if (!schema.GetContainer()) {
         return "NoMaterialBindings";
     }
     return TfStringPrintf(
-        "MaterialBindings%zx", _ComputeHash(schema.GetContainer()));
+        "MaterialBindings%zx",
+        _ComputeMaterialBindingsHashHelper(schema.GetContainer()));
 }
 
 std::string
@@ -795,8 +799,8 @@ _ComputeBindingHash(HdContainerDataSourceHandle const &primSource)
         _ComputeConstantPrimvarsRoleHash(
             HdPrimvarsSchema::GetFromParent(primSource)) +
         "_" +
-        _ComputeMaterialBindingHash(
-            HdMaterialBindingSchema::GetFromParent(primSource)) +
+        _ComputeMaterialBindingsHash(
+            HdMaterialBindingsSchema::GetFromParent(primSource)) +
         _ComputePurposeBindingHash(
             HdPurposeSchema::GetFromParent(primSource)));
 }
@@ -880,14 +884,14 @@ _MakeCopy(HdDataSourceBaseHandle const &ds)
 HdContainerDataSourceHandle
 _MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
 {
-    HdMaterialBindingSchema materialBindingSchema =
-        HdMaterialBindingSchema::GetFromParent(primSource);
+    HdMaterialBindingsSchema materialBindingsSchema =
+        HdMaterialBindingsSchema::GetFromParent(primSource);
     HdPurposeSchema purposeSchema =
         HdPurposeSchema::GetFromParent(primSource);
 
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingSchema::GetSchemaToken(),
-        _MakeCopy(materialBindingSchema.GetContainer()),
+        HdMaterialBindingsSchema::GetSchemaToken(),
+        _MakeCopy(materialBindingsSchema.GetContainer()),
         HdPurposeSchema::GetSchemaToken(),
         _MakeCopy(purposeSchema.GetContainer()));
 
@@ -1137,7 +1141,7 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
             static const HdDataSourceLocatorSet resyncLocators{
                 HdInstancedBySchema::GetDefaultLocator().Append(
                     HdInstancedBySchemaTokens->prototypeRoots),
-                HdMaterialBindingSchema::GetDefaultLocator(),
+                HdMaterialBindingsSchema::GetDefaultLocator(),
                 UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
 
             if (locators.Intersects(resyncLocators)) {

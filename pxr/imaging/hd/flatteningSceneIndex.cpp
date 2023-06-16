@@ -28,7 +28,7 @@
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/visibilitySchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
@@ -83,9 +83,9 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     , _flattenModel(
         _GetBoolValue(inputArgs,
                       _tokens->model))
-    , _flattenMaterialBinding(
+    , _flattenMaterialBindings(
         _GetBoolValue(inputArgs,
-                      HdMaterialBindingSchemaTokens->materialBinding))
+                      HdMaterialBindingsSchema::GetSchemaToken()))
     , _flattenPrimvars(
         _GetBoolValue(inputArgs,
                       HdPrimvarsSchemaTokens->primvars))
@@ -125,9 +125,9 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
         _dataSourceNames.push_back(
             _tokens->model);
     }
-    if (_flattenMaterialBinding) {
+    if (_flattenMaterialBindings) {
         _dataSourceNames.push_back(
-            HdMaterialBindingSchemaTokens->materialBinding);
+            HdMaterialBindingsSchema::GetSchemaToken());
     }
     if (_flattenPrimvars) {
         _dataSourceNames.push_back(
@@ -219,7 +219,7 @@ HdFlatteningSceneIndex::_PrimsAdded(
                 HdVisibilitySchema::GetDefaultLocator(),
                 HdPurposeSchema::GetDefaultLocator(),
                 _GetDrawModeLocator(),
-                HdMaterialBindingSchema::GetDefaultLocator(),
+                HdMaterialBindingsSchema::GetDefaultLocator(),
                 HdPrimvarsSchema::GetDefaultLocator()
             };
 
@@ -286,8 +286,8 @@ HdFlatteningSceneIndex::_PrimsDirtied(
             locators.insert(_GetDrawModeLocator());
         }
         if (entry.dirtyLocators.Intersects(
-                HdMaterialBindingSchema::GetDefaultLocator())) {
-            locators.insert(HdMaterialBindingSchema::GetDefaultLocator());
+                HdMaterialBindingsSchema::GetDefaultLocator())) {
+            locators.insert(HdMaterialBindingsSchema::GetDefaultLocator());
         }
         locators.insert(
             HdFlattenedPrimvarsDataSource::ComputeDirtyPrimvarsLocators(
@@ -400,12 +400,12 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
         HdTokenDataSource::AtomicStore(
             _computedDrawModeDataSource, tokenNull);
     }
-    if (set.Intersects(HdMaterialBindingSchema::GetDefaultLocator())) {
-        if (HdDataSourceBase::AtomicLoad(_computedMaterialBindingDataSource)) {
+    if (set.Intersects(HdMaterialBindingsSchema::GetDefaultLocator())) {
+        if (HdDataSourceBase::AtomicLoad(_computedMaterialBindingsDataSource)) {
             anyDirtied = true;
         }
         HdDataSourceBase::AtomicStore(
-            _computedMaterialBindingDataSource, baseNull);
+            _computedMaterialBindingsDataSource, baseNull);
     }
     if (set.Intersects(HdPrimvarsSchema::GetDefaultLocator())) {
         if (set.Contains(HdPrimvarsSchema::GetDefaultLocator())) {
@@ -498,9 +498,9 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
         name == _tokens->model) {
         return _GetModel();
     }
-    if (_sceneIndex._flattenMaterialBinding &&
-        name == HdMaterialBindingSchemaTokens->materialBinding) {
-        return _GetMaterialBinding();
+    if (_sceneIndex._flattenMaterialBindings &&
+        name == HdMaterialBindingsSchema::GetSchemaToken()) {
+        return _GetMaterialBindings();
     }
     if (_sceneIndex._flattenPrimvars &&
         name == HdPrimvarsSchemaTokens->primvars) {
@@ -738,14 +738,14 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetDrawModeUncached(
 }
 
 HdDataSourceBaseHandle
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBinding()
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBindings()
 {
     HdDataSourceBaseHandle result =
-        HdDataSourceBase::AtomicLoad(_computedMaterialBindingDataSource);
+        HdDataSourceBase::AtomicLoad(_computedMaterialBindingsDataSource);
 
     if (!result) {
-        result = _GetMaterialBindingUncached();
-        HdDataSourceBase::AtomicStore(_computedMaterialBindingDataSource,
+        result = _GetMaterialBindingsUncached();
+        HdDataSourceBase::AtomicStore(_computedMaterialBindingsDataSource,
             result);
     }
 
@@ -756,17 +756,17 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBinding()
 
 HdDataSourceBaseHandle
 HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
-_GetMaterialBindingUncached()
+_GetMaterialBindingsUncached()
 {
     HdContainerDataSourceHandle inputBindings =
-        HdMaterialBindingSchema::GetFromParent(_inputDataSource).GetContainer();
+        HdMaterialBindingsSchema::GetFromParent(_inputDataSource).GetContainer();
 
     HdContainerDataSourceHandle parentBindings;
     if (_primPath.GetPathElementCount()) {
         SdfPath parentPath = _primPath.GetParentPath();
         const auto it = _sceneIndex._prims.find(parentPath);
         if (it != _sceneIndex._prims.end()) {
-            parentBindings = HdMaterialBindingSchema::GetFromParent(
+            parentBindings = HdMaterialBindingsSchema::GetFromParent(
                     it->second.prim.dataSource).GetContainer();
         }
     }

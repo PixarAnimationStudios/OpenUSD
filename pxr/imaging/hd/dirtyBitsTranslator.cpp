@@ -59,7 +59,7 @@
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -176,7 +176,7 @@ HdDirtyBitsTranslator::RprimDirtyBitsToLocatorSet(TfToken const& primType,
     }
 
     if (bits & HdChangeTracker::DirtyMaterialId) {
-        set->append(HdMaterialBindingSchema::GetDefaultLocator());
+        set->append(HdMaterialBindingsSchema::GetDefaultLocator());
     }
 
     if (primType == HdPrimTypeTokens->mesh) {
@@ -620,7 +620,7 @@ HdDirtyBitsTranslator::RprimLocatorSetToDirtyBits(
 
     // Locator (*): materialBindingSchema
 
-    if (_FindLocator(HdMaterialBindingSchema::GetDefaultLocator(), end, &it)) {
+    if (_FindLocator(HdMaterialBindingsSchema::GetDefaultLocator(), end, &it)) {
         bits |= HdChangeTracker::DirtyMaterialId;
     }
 
