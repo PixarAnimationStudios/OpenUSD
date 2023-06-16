@@ -797,7 +797,6 @@ HdPrman_RenderParam::ConvertCategoriesToAttributes(
     if (categories.empty()) {
         attrs.SetString( RixStr.k_lightfilter_subset, RtUString("") );
         attrs.SetString( RixStr.k_lighting_subset, RtUString("default") );
-        attrs.SetString( RixStr.k_grouping_membership, RtUString("default") );
         TF_DEBUG(HDPRMAN_LIGHT_LINKING)
             .Msg("HdPrman: <%s> no categories; lighting:subset = \"default\"\n",
                  id.GetText());

@@ -232,9 +232,21 @@ private:
                 }
             }
 
+            // Copy any existing value for grouping:membership into the
+            // flatten data. For lights, this gets a value during light sync,
+            // and ConvertCategoriesToAttributes specifically handles preserving
+            // it. We need to capture the value from light sync here so we can 
+            // and flatten against it. It won't be captured by the categories
+            // because the value set in light sync comes from a different
+            // source. It has to be handled separately from categories.
+            RtUString groupingMembership;
+            if (other.GetString(RixStr.k_grouping_membership, groupingMembership)) {
+                params.SetString(RixStr.k_grouping_membership, groupingMembership);
+            }
+
             // Remove the light linking params from the RtParamList. Not going
             // to parse them back out to individual tokens to add to
-            // the FlattenData, as they will be captured elsewhere.
+            // the FlattenData categories, as they will be captured elsewhere.
             for (const RtUString& param : _GetLightLinkParams()) {
                 other.Remove(param);
             }
