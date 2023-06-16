@@ -41,6 +41,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDMATERIALBINDING_SCHEMA_TOKENS \
     (path) \
+    (bindingStrength) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
     HDMATERIALBINDING_SCHEMA_TOKENS);
@@ -57,6 +58,8 @@ public:
 
     HD_API
     HdPathDataSourceHandle GetPath();
+    HD_API
+    HdTokenDataSourceHandle GetBindingStrength();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -68,7 +71,8 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdPathDataSourceHandle &path
+        const HdPathDataSourceHandle &path,
+        const HdTokenDataSourceHandle &bindingStrength
     );
 
     /// \class HdMaterialBindingSchema::Builder
@@ -83,6 +87,9 @@ public:
         HD_API
         Builder &SetPath(
             const HdPathDataSourceHandle &path);
+        HD_API
+        Builder &SetBindingStrength(
+            const HdTokenDataSourceHandle &bindingStrength);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -90,6 +97,7 @@ public:
 
     private:
         HdPathDataSourceHandle _path;
+        HdTokenDataSourceHandle _bindingStrength;
     };
 
 };

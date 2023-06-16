@@ -143,6 +143,8 @@ private:
         HdDataSourceBaseHandle Get(const TfToken &name) override;
 
     private:
+        HdContainerDataSourceHandle _GetParentPrimDataSource() const;
+
         HdDataSourceBaseHandle _GetXform();
         HdDataSourceBaseHandle _GetVis();
         HdDataSourceBaseHandle _GetPurpose();
@@ -152,7 +154,7 @@ private:
         HdTokenDataSourceHandle _GetDrawModeUncached(
             const HdContainerDataSourceHandle &model);
         HdDataSourceBaseHandle _GetMaterialBindings();
-        HdDataSourceBaseHandle _GetMaterialBindingsUncached();
+        HdContainerDataSourceHandle _GetMaterialBindingsUncached();
         HdFlattenedPrimvarsDataSourceHandle _GetPrimvars();
         HdFlattenedPrimvarsDataSourceHandle _GetPrimvarsUncached();
 

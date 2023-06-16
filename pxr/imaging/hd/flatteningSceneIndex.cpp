@@ -40,9 +40,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     (model)
     (drawMode)
     (inherited)
+    (strongerThanDescendants)
 );
 
-static
+namespace {
+
 const HdDataSourceLocator &_GetDrawModeLocator()
 {
     static const HdDataSourceLocator l(_tokens->model, _tokens->drawMode);
@@ -50,7 +52,6 @@ const HdDataSourceLocator &_GetDrawModeLocator()
 }
 
 // Defaults to true if no data source given.
-static
 bool _GetBoolValue(const HdContainerDataSourceHandle &ds,
                    const TfToken &name)
 {
@@ -64,6 +65,83 @@ bool _GetBoolValue(const HdContainerDataSourceHandle &ds,
         return false;
     }
     return bds->GetTypedValue(0.0f);
+}
+
+
+// Parent and local bindings might have unique fields so we must
+// overlay them. If we are concerned about overlay depth, we could
+// compare GetNames() results to decide whether the child bindings
+// completely mask the parent.
+//
+// Like an HdOverlayContainerDataSource, but looking at bindingStrength
+// to determine which data source is stronger.
+//
+class _MaterialBindingsDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_MaterialBindingsDataSource);
+
+    TfTokenVector GetNames() override {
+        TfDenseHashSet<TfToken, TfToken::HashFunctor> allNames;
+        {
+            for (const TfTokenVector names : { _primBindings->GetNames(),
+                                               _parentBindings->GetNames() } ) {
+                allNames.insert(names.begin(), names.end());
+            }
+        }
+
+        return { allNames.begin(), allNames.end() };
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        HdMaterialBindingSchema parentSchema(
+            HdContainerDataSource::Cast(
+                _parentBindings->Get(name)));
+        if (HdTokenDataSourceHandle const strengthDs =
+                parentSchema.GetBindingStrength()) {
+            const TfToken strength = strengthDs->GetTypedValue(0.0f);
+            if (strength == _tokens->strongerThanDescendants) {
+                return parentSchema.GetContainer();
+            }
+        }
+        if (HdDataSourceBaseHandle const bindingDs = _primBindings->Get(name)) {
+            return bindingDs;
+        }
+        return parentSchema.GetContainer();
+    }
+
+    // Return data source with the correct composition behavior.
+    //
+    // This avoids allocating the _MaterialBindingsDataSource if only one
+    // of the given handles is non-null.
+    static
+    HdContainerDataSourceHandle
+    UseOrCreateNew(
+        const HdContainerDataSourceHandle &primBindings,
+        const HdContainerDataSourceHandle &parentBindings)
+    {
+        if (!primBindings) {
+            return parentBindings;
+        }
+        if (!parentBindings) {
+            return primBindings;
+        }
+        return New(primBindings, parentBindings);
+    }
+
+private:
+    _MaterialBindingsDataSource(
+        const HdContainerDataSourceHandle &primBindings,
+        const HdContainerDataSourceHandle &parentBindings)
+      : _primBindings(primBindings)
+      , _parentBindings(parentBindings)
+    {
+    }
+
+    HdContainerDataSourceHandle const _primBindings;
+    HdContainerDataSourceHandle const _parentBindings;
+};
+
 }
 
 HdFlatteningSceneIndex::HdFlatteningSceneIndex(
@@ -512,6 +590,22 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
     return nullptr;
 }
 
+HdContainerDataSourceHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
+_GetParentPrimDataSource() const
+{
+    if (_primPath.IsAbsoluteRootPath()) {
+        return nullptr;
+    }
+    const SdfPath parentPath = _primPath.GetParentPath();
+    const auto it = _sceneIndex._prims.find(parentPath);
+    if (it == _sceneIndex._prims.end()) {
+        return nullptr;
+    }
+
+    return it->second.prim.dataSource;
+}
+
 HdDataSourceBaseHandle
 HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetPurpose()
 {
@@ -745,8 +839,14 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBindings()
 
     if (!result) {
         result = _GetMaterialBindingsUncached();
-        HdDataSourceBase::AtomicStore(_computedMaterialBindingsDataSource,
-            result);
+        if (!result) {
+            // Cache the absence of value by storing a non-container which will
+            // fail the cast on return. Using retained "false" because its New
+            // returns a shared instance rather than a new allocation.
+            result = HdRetainedTypedSampledDataSource<bool>::New(false);
+        }
+        HdDataSourceBase::AtomicStore(
+            _computedMaterialBindingsDataSource, result);
     }
 
     // The cached value of the absence of a materialBinding is a non-container
@@ -754,44 +854,16 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetMaterialBindings()
     return HdContainerDataSource::Cast(result);
 }
 
-HdDataSourceBaseHandle
+HdContainerDataSourceHandle
 HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
 _GetMaterialBindingsUncached()
 {
-    HdContainerDataSourceHandle inputBindings =
-        HdMaterialBindingsSchema::GetFromParent(_inputDataSource).GetContainer();
-
-    HdContainerDataSourceHandle parentBindings;
-    if (_primPath.GetPathElementCount()) {
-        SdfPath parentPath = _primPath.GetParentPath();
-        const auto it = _sceneIndex._prims.find(parentPath);
-        if (it != _sceneIndex._prims.end()) {
-            parentBindings = HdMaterialBindingsSchema::GetFromParent(
-                    it->second.prim.dataSource).GetContainer();
-        }
-    }
-
-    if (inputBindings) {
-        if (parentBindings) {
-            // Parent and local bindings might have unique fields so we must
-            // overlay them. If we are concerned about overlay depth, we could
-            // compare GetNames() results to decide whether the child bindings
-            // completely mask the parent.
-            return HdOverlayContainerDataSource::New(
-                inputBindings, parentBindings);
-        }
-
-        return inputBindings;
-    } else {
-        if (parentBindings) {
-            return parentBindings;
-        } else {
-            // Cache the absence of value by storing a non-container which will
-            // fail the cast on return. Using retained "false" because its New
-            // returns a shared instance rather than a new allocation.
-            return HdRetainedTypedSampledDataSource<bool>::New(false);
-        }
-    }
+    return
+        _MaterialBindingsDataSource::UseOrCreateNew(
+            HdMaterialBindingsSchema::GetFromParent(_inputDataSource)
+                .GetContainer(),
+            HdMaterialBindingsSchema::GetFromParent(_GetParentPrimDataSource())
+                .GetContainer());
 }
 
 HdFlattenedPrimvarsDataSourceHandle

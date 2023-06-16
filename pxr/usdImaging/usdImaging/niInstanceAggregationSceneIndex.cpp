@@ -751,16 +751,25 @@ size_t
 _ComputeMaterialBindingsHashHelper(
     HdContainerDataSourceHandle const &container)
 {
-    std::vector<std::pair<TfToken, SdfPath>> bindings;
+    std::vector<std::pair<TfToken, std::pair<SdfPath, TfToken>>> bindings;
     TfTokenVector names = container->GetNames();
     bindings.reserve(names.size());
     for (const TfToken &name : names) {
-        if (HdPathDataSourceHandle const ds =
-                HdMaterialBindingSchema(
-                    HdContainerDataSource::Cast(
-                        container->Get(name))).GetPath()) {
-            bindings.emplace_back(name, ds->GetTypedValue(0.0f));
+        HdMaterialBindingSchema bindingSchema(
+            HdContainerDataSource::Cast(container->Get(name)));
+        if (!bindingSchema) {
+            continue;
         }
+
+        HdPathDataSourceHandle const pathDs =
+            bindingSchema.GetPath();
+        HdTokenDataSourceHandle const strengthDs =
+            bindingSchema.GetBindingStrength();
+
+        bindings.push_back(
+            { name,
+              { pathDs ? pathDs->GetTypedValue(0.0f) : SdfPath(),
+                strengthDs ? strengthDs->GetTypedValue(0.0f) : TfToken()}});
     }
 
     return TfHash::Combine(bindings);

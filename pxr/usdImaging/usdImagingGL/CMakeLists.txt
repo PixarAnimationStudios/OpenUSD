@@ -471,6 +471,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLMaterialStrengthOrder
+    DEST testUsdImagingGLMaterialStrengthOrder
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLInstancePrimvars
     DEST testUsdImagingGLInstancePrimvars
 )
@@ -3565,6 +3570,22 @@ pxr_register_test(testUsdImagingGLMaterialTag
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLMaterialTag
+)
+
+pxr_register_test(testUsdImagingGLMaterialStrengthOrder
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -camera /camera -lighting -offscreen -stage bindingStrength.usda -write bindingStrength.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLMaterialStrengthOrder.png
+    FAIL 0.1
+    FAIL_PERCENT 0.002
+    WARN 0.01
+    WARN_PERCENT 0.0075
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLMaterialTag
+    # The UsdImagingDelegate did not apply the material override to native instances.
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})

@@ -55,18 +55,26 @@ public:
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name)) {
-            UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
-            if (db.IsBound()) {
-                return
-                    HdMaterialBindingSchema::Builder()
-                        .SetPath(
-                            HdRetainedTypedSampledDataSource<SdfPath>::New(
-                                db.GetMaterialPath()))
-                        .Build();
-            }
+        UsdRelationship bindingRel = _mbApi.GetDirectBindingRel(name);
+        if (!bindingRel) {
+            return nullptr;
         }
-        return nullptr;
+
+        UsdShadeMaterialBindingAPI::DirectBinding db(bindingRel);
+        if (!db.IsBound()) {
+            return nullptr;
+        }
+
+        return
+            HdMaterialBindingSchema::Builder()
+                .SetPath(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        db.GetMaterialPath()))
+                .SetBindingStrength(
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        UsdShadeMaterialBindingAPI::GetMaterialBindingStrength(
+                            bindingRel)))
+                .Build();
     }
 
 private:

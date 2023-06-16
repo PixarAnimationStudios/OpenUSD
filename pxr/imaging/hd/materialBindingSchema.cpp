@@ -48,19 +48,32 @@ HdMaterialBindingSchema::GetPath()
         HdMaterialBindingSchemaTokens->path);
 }
 
+HdTokenDataSourceHandle
+HdMaterialBindingSchema::GetBindingStrength()
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialBindingSchemaTokens->bindingStrength);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialBindingSchema::BuildRetained(
-        const HdPathDataSourceHandle &path
+        const HdPathDataSourceHandle &path,
+        const HdTokenDataSourceHandle &bindingStrength
 )
 {
-    TfToken names[1];
-    HdDataSourceBaseHandle values[1];
+    TfToken names[2];
+    HdDataSourceBaseHandle values[2];
 
     size_t count = 0;
     if (path) {
         names[count] = HdMaterialBindingSchemaTokens->path;
         values[count++] = path;
+    }
+
+    if (bindingStrength) {
+        names[count] = HdMaterialBindingSchemaTokens->bindingStrength;
+        values[count++] = bindingStrength;
     }
 
     return HdRetainedContainerDataSource::New(count, names, values);
@@ -75,11 +88,20 @@ HdMaterialBindingSchema::Builder::SetPath(
     return *this;
 }
 
+HdMaterialBindingSchema::Builder &
+HdMaterialBindingSchema::Builder::SetBindingStrength(
+    const HdTokenDataSourceHandle &bindingStrength)
+{
+    _bindingStrength = bindingStrength;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdMaterialBindingSchema::Builder::Build()
 {
     return HdMaterialBindingSchema::BuildRetained(
-        _path
+        _path,
+        _bindingStrength
     );
 }
 
