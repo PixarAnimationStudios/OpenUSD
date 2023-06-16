@@ -25,9 +25,11 @@
 
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/debugUtil.h"
+#include "hdPrman/light.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/utils.h"
 
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -180,12 +182,11 @@ HdPrmanInstancer::~HdPrmanInstancer() = default;
 HdDirtyBits 
 HdPrmanInstancer::GetInitialDirtyBitsMask() const
 {
-    return HdChangeTracker::DirtyTransform |
-        HdChangeTracker::DirtyPrimvar |
+    static const HdDirtyBits dirtyBits =
+        HdInstancer::GetInitialDirtyBitsMask() |
         HdChangeTracker::DirtyVisibility |
-        HdChangeTracker::DirtyInstancer |
-        HdChangeTracker::DirtyCategories |
-        HdChangeTracker::DirtyInstanceIndex;
+        HdChangeTracker::DirtyCategories;
+    return dirtyBits;
 };
 
 void
@@ -296,8 +297,10 @@ HdPrmanInstancer::Finalize(HdRenderParam *renderParam)
         for (const auto rp : entry.map) {
             const _InstanceIdVec& ids = rp.second;
             for (const _RileyInstanceId& ri : ids) {
-                if (ri.instanceId != riley::GeometryInstanceId::InvalidId()) {
-                    riley->DeleteGeometryInstance(ri.groupId, ri.instanceId);
+                if (ri.lightInstanceId != riley::LightInstanceId::InvalidId()) {
+                    riley->DeleteLightInstance(ri.groupId, ri.lightInstanceId);
+                } else if (ri.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
+                    riley->DeleteGeometryInstance(ri.groupId, ri.geoInstanceId);
                 }
             }
         }
@@ -333,7 +336,8 @@ void HdPrmanInstancer::Populate(
     const RtParamList protoParams,
     const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> protoXform,
     const std::vector<riley::MaterialId>& rileyMaterialIds,
-    const SdfPathVector& prototypePaths)
+    const SdfPathVector& prototypePaths,
+    const riley::LightShaderId& lightShaderId)
 {
     // This public Populate signature does not accept the last two arguments
     // that the private _PopulateInstances does; those are only available to 
@@ -350,6 +354,7 @@ void HdPrmanInstancer::Populate(
         protoXform,
         rileyMaterialIds,
         prototypePaths,
+        lightShaderId,
         { },
         { });
 }
@@ -699,6 +704,7 @@ HdPrmanInstancer::_PopulateInstances(
     const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> prototypeXform,
     const std::vector<riley::MaterialId>& rileyMaterialIds,
     const SdfPathVector& prototypePaths,
+    const riley::LightShaderId& lightShaderId,
     const std::vector<_InstanceData>& subInstances,
     const std::vector<_FlattenData>& prototypeFlats
 )
@@ -741,6 +747,7 @@ HdPrmanInstancer::_PopulateInstances(
         || (*dirtyBits & HdChangeTracker::DirtyTransform)
         || (*dirtyBits & HdChangeTracker::DirtyVisibility);
     bool anyGroupIdChanged = false;
+    bool isLight = lightShaderId != riley::LightShaderId::InvalidId();
 
     if (TfDebug::IsEnabled(HDPRMAN_INSTANCERS)) {
         using namespace HdPrmanDebugUtil;
@@ -762,6 +769,11 @@ HdPrmanInstancer::_PopulateInstances(
         ins += TfStringPrintf("of %lu prototypes ", rileyPrototypeIds.size());
         total *= rileyPrototypeIds.size();
         ins += TfStringPrintf("= %lu Riley instances", total);
+
+        std::string lsi = "- none -";
+        if (lightShaderId != riley::LightShaderId::InvalidId()) {
+            lsi = TfStringPrintf("(%u)", lightShaderId.AsUInt32());
+        }
     
         const HdDirtyBits instDirtyBits = renderIndex.GetChangeTracker()
             .GetInstancerDirtyBits(instancerId);
@@ -783,6 +795,7 @@ HdPrmanInstancer::_PopulateInstances(
         str += TfStringPrintf("    rileyPrototypeIds : (%s)\n", pro.c_str());
         str += TfStringPrintf("    rileyMaterialIds  : (%s)\n", mid.c_str());
         str += TfStringPrintf("    prototypePaths    : [%s]\n", pps.c_str());
+        str += TfStringPrintf("    lightShaderId     : %s\n", lsi.c_str());
         str += TfStringPrintf("    prototypeParams   : %s\n", pat.c_str());
         str += TfStringPrintf("    prototypeXform    : %s\n", pxf.c_str());
         str += TfStringPrintf("    instances         : %lu\n", instanceIndices.size());
@@ -808,6 +821,15 @@ HdPrmanInstancer::_PopulateInstances(
         "prototypeFlats size mismatch: %lu != %lu",
         prototypeFlats.size(), rileyPrototypeIds.size());
 
+    // For analytic lights only, rileyPrototypeIds may have only a single,
+    // invalid id. In that case, lightData with a valid shader id is required.
+    if (rileyPrototypeIds.size() == 1 &&
+        rileyPrototypeIds[0] == riley::GeometryPrototypeId::InvalidId()) {
+        TF_VERIFY(isLight,
+            "When called with a single invalid "
+            "prototype id, a light shader id is required");
+    }
+    
     instancesNeedUpdate = _RemoveDeadInstances(riley, prototypePrimPath,
         rileyPrototypeIds) || instancesNeedUpdate;
 
@@ -885,6 +907,7 @@ HdPrmanInstancer::_PopulateInstances(
             prototypeXform,
             rileyMaterialIds,
             prototypePaths,
+            lightShaderId,
             instances,
             { }
         );
@@ -905,6 +928,7 @@ HdPrmanInstancer::_PopulateInstances(
         _ComposePrototypeData(
             prototypePrimPath,
             prototypeParams,
+            isLight,
             rileyPrototypeIds, 
             prototypePaths,
             prototypeFlats,
@@ -1003,46 +1027,98 @@ HdPrmanInstancer::_PopulateInstances(
                 // riley instance id only if the group id and geometry prototype
                 // id have not changed. We only need to check the group id;
                 // protomap structure guarantees the prototype id is unchanged.
-                if (instId.instanceId != riley::GeometryInstanceId::InvalidId()
+                if (instId.geoInstanceId != riley::GeometryInstanceId::InvalidId()
                     && instId.groupId != groupId) {
                     // the instanceId is valid but the groupId is different
                     riley->DeleteGeometryInstance(
-                        instId.groupId, instId.instanceId);
+                        instId.groupId, instId.geoInstanceId);
                     _groupCounters.get(instId.groupId)--;
-                    instId.instanceId = riley::GeometryInstanceId::InvalidId();
+                    instId.geoInstanceId = riley::GeometryInstanceId::InvalidId();
+                }
+                if (instId.lightInstanceId != riley::LightInstanceId::InvalidId()
+                    && instId.groupId != groupId) {
+                    // the instanceId is valid but the groupId is different
+                    riley->DeleteLightInstance(
+                        instId.groupId, instId.lightInstanceId);
+                    _groupCounters.get(instId.groupId)--;
+                    instId.lightInstanceId = riley::LightInstanceId::InvalidId();
                 }
 
                 instId.groupId = groupId;
                 _groupCounters.get(instId.groupId)++;
 
-                if (instId.instanceId == riley::GeometryInstanceId::InvalidId()) {
-                    // XXX: The stats userId will not be unique in the case of
-                    // nested instancing, but this approach preserves prior
-                    // behavior in the unnested case.
-                    const SdfPath instancePath = delegate->GetScenePrimPath(
-                        prototypePaths[j], i, nullptr);
-                    riley::UserId userId = riley::UserId(
-                        stats::AddDataLocation(instancePath.GetText()).GetValue());
-                    TRACE_SCOPE("riley::CreateGeometryInstance");
-                    instId.instanceId = riley->CreateGeometryInstance(
-                        userId,
-                        instId.groupId, 
-                        protoId, 
-                        matId, 
-                        coordSysList, 
-                        rileyXform, 
-                        params);
-                } else if (*dirtyBits) {
-                    riley->ModifyGeometryInstance(
-                        instId.groupId,
-                        instId.instanceId,
-                        &matId,
-                        &coordSysList,
-                        &rileyXform,
-                        &params);
+                // Now we branch based on whether we're dealing with lights
+                // or geometry
+
+                // XXX: The stats userId will not be unique in the case of
+                // nested instancing, but this approach preserves prior
+                // behavior in the unnested case.
+
+                const SdfPath instancePath = delegate->GetScenePrimPath(
+                    prototypePaths[j], i, nullptr);
+                riley::UserId userId = riley::UserId(
+                    stats::AddDataLocation(instancePath.GetText()).GetValue());
+
+                if (lightShaderId != riley::LightShaderId::InvalidId()) {
+
+                    // XXX: Temporary workaround for RMAN-20704
+                    // Destroy the light instance so it will be recreated instead
+                    // of being updated, since ModifyLightInstance may crash.
+
+                    if (instId.lightInstanceId != riley::LightInstanceId::InvalidId()) {
+                        riley->DeleteLightInstance(
+                            instId.groupId, instId.lightInstanceId);
+                        instId.lightInstanceId = riley::LightInstanceId::InvalidId();
+                    }
+                    // XXX: End of RMAN-20704 workaround
+
+                    if (instId.lightInstanceId == riley::LightInstanceId::InvalidId()) {
+                        TRACE_SCOPE("riley::CreateLightInstance");
+                        instId.lightInstanceId = riley->CreateLightInstance(
+                            userId,
+                            instId.groupId,
+                            protoId,
+                            matId,
+                            lightShaderId,
+                            coordSysList,
+                            rileyXform,
+                            params);
+                    } else if (*dirtyBits) {
+                        TRACE_SCOPE("riley::ModifyLightInstance");
+                        riley->ModifyLightInstance(
+                            instId.groupId,
+                            instId.lightInstanceId,
+                            &matId,
+                            &lightShaderId,
+                            &coordSysList,
+                            &rileyXform,
+                            &params);
+                    }
+                } else {
+                    if (instId.geoInstanceId == riley::GeometryInstanceId::InvalidId()) {
+                        TRACE_SCOPE("riley::CreateGeometryInstance");
+                        instId.geoInstanceId = riley->CreateGeometryInstance(
+                            userId,
+                            instId.groupId, 
+                            protoId, 
+                            matId, 
+                            coordSysList, 
+                            rileyXform, 
+                            params);
+                    } else if (*dirtyBits) {
+                        TRACE_SCOPE("riley::ModifyGeometryInstance");
+                        riley->ModifyGeometryInstance(
+                            instId.groupId,
+                            instId.geoInstanceId,
+                            &matId,
+                            &coordSysList,
+                            &rileyXform,
+                            &params);
+                    }
                 }
             }
         }
+
         // We have now fully processed all changes from the last time the
         // instancer was synced down to the riley instances for this particular
         // hydra prototype prim.
@@ -1094,6 +1170,11 @@ HdPrmanInstancer::_PopulateInstances(
             xf,
             mats,
             paths,
+            // If this prototype was a light and we made light instances in a
+            // geometry prototype group, we want the parent instancer to make
+            // *geometry* instances of those geometry prototype groups. So we
+            // pass the invalid light shader id to it.
+            riley::LightShaderId::InvalidId(),
             { },
             flats);
     }
@@ -1229,6 +1310,7 @@ void
 HdPrmanInstancer::_ComposePrototypeData(
     const SdfPath& protoPath,
     const RtParamList& globalProtoParams,
+    const bool isLight,
     const std::vector<riley::GeometryPrototypeId>& protoIds,
     const SdfPathVector& subProtoPaths,
     const std::vector<_FlattenData>& subProtoFlats,
@@ -1248,13 +1330,36 @@ HdPrmanInstancer::_ComposePrototypeData(
         const VtTokenArray& cats = delegate->GetCategories(protoPath);
         flats.categories.insert(cats.begin(), cats.end());
         flats.UpdateVisAndFilterParamList(params); // filters out flatten params
+
+        // XXX: Temporary workaround form RMAN-20703
+        if (isLight) {
+            // Due to limitations in Prman, we currently cannot put light
+            // instances and geometry instances in the same prototype group. To
+            // force the instancer to separate them, we will make use of
+            // _FlattenData::params, the RtParamList we ordinarily just use for
+            // flattening visibility params up the instancing hierarchy. For
+            // lights, we will set a marker param in the flatten group's
+            // param list that will distinguish the flatten group from an
+            // otherwise identical one for geometry. The name we use is not
+            // important, so long as it has no meaning to riley.
+            //
+            // We only set this marker param here, and it is never read
+            // except when computing the flatten group's hash, when it is
+            // picked up by the RtParamList hash functor.
+            //
+            // See https://jira.pixar.com/browse/RMAN-20703
+            flats.params.SetInteger(RtUString("__light"), 1);
+        }
+        // XXX: End of RMAN-20703 workaround
+
     };
 
-    const size_t count = protoIds.size();
+    // Make at least one set, even when there are no prototype ids,
+    // to cover analytic lights.
+    const size_t count = std::max(size_t(1), protoIds.size());
 
     protoParams.resize(count);
     protoFlats.resize(count);
-
 
     for (size_t i = 0; i < count; ++i) {
         SetProtoParams(protoPath, protoParams[i], protoFlats[i]);
@@ -1267,11 +1372,7 @@ HdPrmanInstancer::_ComposePrototypeData(
         if (subProtoPaths.size() > 0 && subProtoPaths[i] != protoPath) {
             RtParamList subParams;
             _FlattenData subFlats;
-            SdfPath subProtoPath = subProtoPaths[i]; // copy;
-            if (!subProtoPath.IsAbsolutePath()) {
-                subProtoPath = subProtoPath.MakeAbsolutePath(protoPath);
-            }
-            SetProtoParams(subProtoPath, subParams, subFlats);
+            SetProtoParams(subProtoPaths[i], subParams, subFlats);
             protoParams[i].Update(subParams);
             protoFlats[i].Update(subFlats);
         }
@@ -1297,8 +1398,12 @@ HdPrmanInstancer::_ResizeProtoMap(
         const size_t oldSize = instIdVec.size();
         for (size_t i = newSize; i < oldSize; ++i) {
             const _RileyInstanceId& id = instIdVec[i];
-            if (id.instanceId != riley::GeometryInstanceId::InvalidId()) {
-                riley->DeleteGeometryInstance(id.groupId, id.instanceId);
+            if (id.lightInstanceId != riley::LightInstanceId::InvalidId()) {
+                riley->DeleteLightInstance(id.groupId, id.lightInstanceId);
+                _groupCounters.get(id.groupId)--;
+            }
+            if (id.geoInstanceId != riley::GeometryInstanceId::InvalidId()) {
+                riley->DeleteGeometryInstance(id.groupId, id.geoInstanceId);
                 _groupCounters.get(id.groupId)--;
             }
         }

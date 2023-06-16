@@ -102,6 +102,11 @@ public:
      *        These are used for identification purposes and, when they are
      *        different from hydraPrototypeId, for retrieving light-linking
      *        categories, so they should (ideally) not be proxy paths.
+     * @param lightShaderId (optional) The riley light shader id associated with
+     *        this hydra prototype. When this is provided, we assume the hydra
+     *        prototype prim is a light. When this is provided,
+     *        rileyPrototypeIds must either have the geometry prototype id(s)
+     *        for a mesh light or have a single invalid id for an analytic light.
      */
     void Populate(
         HdRenderParam* renderParam,
@@ -112,7 +117,8 @@ public:
         const RtParamList protoParams,
         const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> protoXform,
         const std::vector<riley::MaterialId>& rileyMaterialIds,
-        const SdfPathVector& prototypePaths);
+        const SdfPathVector& prototypePaths,
+        const riley::LightShaderId& lightShaderId = riley::LightShaderId::InvalidId());
 
     /**
      * @brief Instructs the instancer to destroy any riley instances for the
@@ -431,7 +437,8 @@ private:
     struct _RileyInstanceId
     {
         riley::GeometryPrototypeId groupId;
-        riley::GeometryInstanceId instanceId;
+        riley::GeometryInstanceId geoInstanceId;
+        riley::LightInstanceId lightInstanceId;
     };
 
     using _InstanceIdVec = std::vector<_RileyInstanceId>;
@@ -524,6 +531,7 @@ private:
     void _ComposePrototypeData(
         const SdfPath& protoPath,
         const RtParamList& globalProtoParams,
+        const bool isLight,
         const std::vector<riley::GeometryPrototypeId>& protoIds,
         const SdfPathVector& subProtoPaths,
         const std::vector<_FlattenData>& subProtoFlats,
@@ -560,6 +568,7 @@ private:
         const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> protoXform,
         const std::vector<riley::MaterialId>& rileyMaterialIds,
         const SdfPathVector& prototypePaths,
+        const riley::LightShaderId& lightShaderId,
         const std::vector<_InstanceData>& subInstances,
         const std::vector<_FlattenData>& prototypeFlats);
 
@@ -654,11 +663,12 @@ private:
     // Main storage for tracking riley instances owned by this instancer.
     // Instance ids are paired with their containing group id (RileyInstanceId),
     // then grouped by their riley geometry prototype id (ProtoInstMap). These
-    // are then grouped by id of the prototype prim they represent. The top
-    // level of this nested structure may be written to during Populate,
-    // therefore access to the top level is gated behind a mutex lock (built 
-    // into LockingMap). Deeper levels are only ever written to from within a
-    // single call to Populate, so they do not have gated access.
+    // are then grouped by id of the prototype prim they represent (which may be
+    // the invalid id in the case of analytic lights). The top level of this
+    // nested structure may be written to during Populate, therefore access to
+    // the top level is gated behind a mutex lock (built into LockingMap).
+    // Deeper levels are only ever written to from within a single call to
+    // Populate, so they do not have gated access.
     _LockingProtoMap _protoMap;
 };
 
