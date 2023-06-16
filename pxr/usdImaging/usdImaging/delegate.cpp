@@ -1599,8 +1599,13 @@ UsdImagingDelegate::_RefreshUsdObject(
             resyncNeeded = true;
 
         } else if (usdPrim && usdPrim.IsA<UsdShadeShader>()) {
-            // Shader edits get forwarded to parent material.
-            while (usdPrim && !usdPrim.IsA<UsdShadeMaterial>()) {
+            // Shader edits get forwarded to parent material. Note if the
+            // material is native instanced, we need to stop the traversal
+            // at the prototype, since the corresponding instance prim will be
+            // of type material but the prototype is typeless.
+            while (usdPrim &&
+                   !usdPrim.IsA<UsdShadeMaterial>() &&
+                   !usdPrim.IsPrototype()) {
                 usdPrim = usdPrim.GetParent();
             }
             if (usdPrim) {
