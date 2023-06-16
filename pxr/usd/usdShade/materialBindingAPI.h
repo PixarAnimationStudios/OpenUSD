@@ -702,8 +702,15 @@ public:
         /// Inspects all the material:binding* properties on the \p prim and 
         /// computes direct and collection-based bindings for the given 
         /// value of \p materialPurpose.
+        ///
+        /// To provide backward compatibility with old assets not having
+        /// MaterialBindingAPI applied, \p supportLegacyBindings is used to
+        /// determine whether we perform the full computation even if 
+        /// MaterialBindingAPI is not applied to \p prim.
+        ///
         USDSHADE_API
-        BindingsAtPrim(const UsdPrim &prim, const TfToken &materialPurpose);
+        BindingsAtPrim(const UsdPrim &prim, const TfToken &materialPurpose,
+                bool supportLegacyBindings);
 
         /// If the prim has a restricted purpose direct binding, then it is 
         /// stored here. If there is no restricted purpose binding on the prim, 
@@ -781,6 +788,14 @@ public:
     /// UsdShadeMaterialBindingAPI::GetResolvedTargetPathFromBindingRel to get 
     /// the path of the resolved target identified by the winning bindingRel.
     ///
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// See \ref UsdShadeMaterialBindingAPI_MaterialResolution "Bound Material Resolution"
     /// for details on the material resolution process.
     /// 
@@ -791,7 +806,8 @@ public:
         BindingsCache *bindingsCache,
         CollectionQueryCache *collectionQueryCache,
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        UsdRelationship *bindingRel=nullptr) const;
+        UsdRelationship *bindingRel=nullptr,
+        bool supportLegacyBindings=true) const;
 
     /// \overload
     /// Computes the resolved bound material for this prim, for the given 
@@ -804,6 +820,14 @@ public:
     /// If \p bindingRel is not null, then it is set to the winning binding
     /// relationship.
     /// 
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// See \ref UsdShadeMaterialBindingAPI_MaterialResolution "Bound Material Resolution"
     /// for details on the material resolution process.
     ///
@@ -812,7 +836,8 @@ public:
     USDSHADE_API
     UsdShadeMaterial ComputeBoundMaterial(
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        UsdRelationship *bindingRel=nullptr) const;
+        UsdRelationship *bindingRel=nullptr,
+        bool supportLegacyBindings=true) const;
 
     /// Static API for efficiently and concurrently computing the resolved 
     /// material bindings for a vector of UsdPrims, \p prims for the 
@@ -825,6 +850,14 @@ public:
     /// If the pointer \p bindingRels points to a valid vector, then it is 
     /// populated with the set of all "winning" binding relationships.
     /// 
+    /// In order for backward compatibility with old assets not having
+    /// MaterialBindingAPI applied, \p supportLegacyBindings defaults to true.
+    /// Though its recommended for clients to update the assets to have
+    /// MaterialBindingAPI applied for optimized computation of bound material.
+    ///
+    /// Note: In a future release the default for \p supportLegacyBindings will
+    /// be updated to "false".
+    ///
     /// The python version of this method returns a tuple containing two lists -
     /// the bound materials and the corresponding "winning" binding 
     /// relationships.
@@ -832,7 +865,8 @@ public:
     static std::vector<UsdShadeMaterial> ComputeBoundMaterials(
         const std::vector<UsdPrim> &prims, 
         const TfToken &materialPurpose=UsdShadeTokens->allPurpose,
-        std::vector<UsdRelationship> *bindingRels=nullptr);
+        std::vector<UsdRelationship> *bindingRels=nullptr,
+        bool supportLegacyBindings=true);
 
     /// @}
         
