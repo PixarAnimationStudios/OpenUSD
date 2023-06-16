@@ -1001,7 +1001,7 @@ Changes, by Version
 Version 2.0 - Initial Public Specification
 ##########################################
 
-`USD Preview Surface Proposal Version 2.0 <https://graphics.pixar.com/usd/files/UsdPreviewSurfaceProposal_v2_0.pdf>`_
+`USD Preview Surface Proposal Version 2.0 <https://openusd.org/files/UsdPreviewSurfaceProposal_v2_0.pdf>`_
 
 Version 2.2 - Before Type Changes
 #################################
@@ -1013,7 +1013,7 @@ From version 2.0...
     * Adds :ref:`opacityThreshold <addopacitythreshold>`
       and clarification of *opacity* behavior for UsdPreviewSurface
 
-`USD Preview Surface Proposal Version 2.2 <https://graphics.pixar.com/usd/files/UsdPreviewSurfaceProposal_v_2_2.pdf>`_
+`USD Preview Surface Proposal Version 2.2 <https://openusd.org/files/UsdPreviewSurfaceProposal_v_2_2.pdf>`_
 
 Version 2.3
 ###########

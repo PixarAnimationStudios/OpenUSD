@@ -31,7 +31,7 @@ of scalability:
    animation-layering capabilities may eventually be introduced as part of an
    encoding of animation blending.
 
-2. UsdSkel leverages <a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Instancing">scene graph instancing</a>
+2. UsdSkel leverages <a href="https://openusd.org/release/glossary.html#usdglossary-instancing">scene graph instancing</a>
    to describe _rest state_ instancing, by which the rest state of
    characters may be shared across multiple instances of a character, each of
    which has been assigned a unique animation -- *without deinstancing*.
