@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/flattenedPrimvarsDataSource.h"
 
 #include "pxr/usd/sdf/pathTable.h"
+#include <tbb/concurrent_unordered_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -88,40 +89,47 @@ protected:
     void _PrimsDirtied(
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
+
+    // Consolidate _recentPrims into _prims.
+    void _ConsolidateRecentPrims();
+
 private:
     // members
-    struct _PrimEntry
-    {
-        HdSceneIndexPrim prim;
+    using _PrimTable = SdfPathTable<HdSceneIndexPrim>;
+    _PrimTable _prims;
+
+    struct _PathHashCompare {
+        static bool equal(const SdfPath& a, const SdfPath& b) {
+            return a == b;
+        }
+        static size_t hash(const SdfPath& path) {
+            return hash_value(path);
+        }
     };
+    using _RecentPrimTable =
+        tbb::concurrent_hash_map<SdfPath, HdSceneIndexPrim, _PathHashCompare>;
+    mutable _RecentPrimTable _recentPrims;
 
-    using _PrimEntryTable = SdfPathTable<_PrimEntry>;
-    _PrimEntryTable _prims;
-
-    bool _flattenXform;
-    bool _flattenVisibility;
-    bool _flattenPurpose;
-    bool _flattenModel;
-    bool _flattenMaterialBindings;
-    bool _flattenPrimvars;
+    const bool _flattenXform;
+    const bool _flattenVisibility;
+    const bool _flattenPurpose;
+    const bool _flattenModel;
+    const bool _flattenMaterialBindings;
+    const bool _flattenPrimvars;
     TfTokenVector _dataSourceNames;
 
-    HdContainerDataSourceHandle _identityXform;
-    HdContainerDataSourceHandle _identityVis;
-    HdContainerDataSourceHandle _identityPurpose;
-    HdTokenDataSourceHandle _identityDrawMode;
+    const HdContainerDataSourceHandle _identityXform;
+    const HdContainerDataSourceHandle _identityVis;
+    const HdContainerDataSourceHandle _identityPurpose;
+    const HdTokenDataSourceHandle _identityDrawMode;
 
     // methods
-    void _FillPrimsRecursively(const SdfPath &primPath);
-
     void _DirtyHierarchy(
         const SdfPath &primPath,
         const HdDataSourceLocatorSet &dirtyLocators,
         HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries);
 
     // ------------------------------------------------------------------------
-
-    friend class _PrimLevelWrappingDataSource;
 
     /// wraps the input scene's prim-level data sources in order to deliver
     /// overriden value
