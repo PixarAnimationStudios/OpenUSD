@@ -3582,7 +3582,7 @@ pxr_register_test(testUsdImagingGLMaterialStrengthOrder
     WARN_PERCENT 0.0075
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLMaterialTag
+    TESTENV testUsdImagingGLMaterialStrengthOrder
     # The UsdImagingDelegate did not apply the material override to native instances.
     ENV
         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
