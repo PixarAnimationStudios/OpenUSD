@@ -2992,6 +2992,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddPayloadMember(&mosDesc, "drawCommandNumUintLocal", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "baseInstance", "uint");
         HgiShaderFunctionAddPayloadMember(&mosDesc, "indexCount", "uint");
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "meshletCoord", "uint");
+        HgiShaderFunctionAddPayloadMember(&mosDesc, "numberMeshlets", "uint");
         
         HgiShaderFunctionAddStageInput(
             &mosDesc, "hd_GlobalInvocationID", "uvec3",
@@ -3042,12 +3044,24 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         msDesc.meshDescriptor.maxMeshletVertexCount = 96;
         msDesc.meshDescriptor.maxPrimitiveCount = msDesc.meshDescriptor.maxMeshletVertexCount/3;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
+
+        if (_metaData.meshletRemapBinding.binding.IsValid()) {
+            HdStBinding binding = _metaData.meshletRemapBinding.binding;
+            _EmitDeclaration(&_resMS,
+                             _metaData.meshletRemapBinding.name,
+                             _metaData.meshletRemapBinding.dataType,
+                             binding,
+                             true);
+        }
+
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseVertex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseIndex", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandIndexPayload", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "drawCommandNumUintLocal", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "baseInstance", "uint");
         HgiShaderFunctionAddPayloadMember(&msDesc, "indexCount", "uint");
+        HgiShaderFunctionAddPayloadMember(&msDesc, "meshletCoord", "uint");
+        HgiShaderFunctionAddPayloadMember(&msDesc, "numberMeshlets", "uint");
         resourceGen._GenerateHgiResources(&msDesc,
                                           HdShaderTokens->meshletShader, _resAttrib, _metaData);
         resourceGen._GenerateHgiResources(&msDesc,

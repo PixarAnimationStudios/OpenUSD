@@ -458,13 +458,13 @@ HdSt_ResourceBinder::ResolveBindings(
     }
 
     // tessFactors buffer for Metal tessellation
-    if (isMetal) {
-        TfToken const name = HdTokens->tessFactors;
+    if (isMetal && useMeshShaders) {
+        TfToken const name = HdTokens->meshletRemap;
         HdStBinding binding =
             locator.GetBinding(arrayBufferBindingType, name);
         _bindingMap[name] = binding;
 
-        HdTupleType valueType{HdTypeFloat, 1};
+        HdTupleType valueType{HdTypeUInt32, 1};
         TfToken glType =
             HdStGLConversions::GetGLSLTypename(valueType.type);
 
@@ -472,6 +472,23 @@ HdSt_ResourceBinder::ResolveBindings(
                              /*name=*/name,
                              /*type=*/glType,
                              /*binding=*/binding);
+        metaDataOut->meshletRemapBinding = bindingDecl;
+    }
+
+    if (isMetal) {
+        TfToken const name = HdTokens->tessFactors;
+        HdStBinding binding =
+                locator.GetBinding(arrayBufferBindingType, name);
+        _bindingMap[name] = binding;
+
+        HdTupleType valueType{HdTypeFloat, 1};
+        TfToken glType =
+                HdStGLConversions::GetGLSLTypename(valueType.type);
+
+        MetaData::BindingDeclaration const bindingDecl(
+                /*name=*/name,
+                /*type=*/glType,
+                /*binding=*/binding);
         metaDataOut->tessFactorsBinding = bindingDecl;
     }
 
@@ -1682,6 +1699,7 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
     boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
     boost::hash_combine(hash, primitiveParamBinding.dataType);
     boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
+    boost::hash_combine(hash, meshletRemapBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
     boost::hash_combine(hash, edgeIndexBinding.dataType);
     boost::hash_combine(hash, indexBufferBinding.binding.GetValue());

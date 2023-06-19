@@ -98,6 +98,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primID)                                    \
     (primitiveParam)                            \
     (tessFactors)                               \
+    (meshletRemap)                              \
+    (meshletDispatch)                           \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \

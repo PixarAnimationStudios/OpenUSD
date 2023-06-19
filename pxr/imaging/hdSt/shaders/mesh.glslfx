@@ -334,6 +334,8 @@ const int instanceCountOffset = 1;
 const int baseIndexOffset = 2;
 const int baseVertexOffset = 3;
 const int baseInstanceOffset = 4;
+const int meshletCoordOffset = 5;
+const int numMeshletsOffset = 6;
 
 void main(void)
 {   
@@ -341,7 +343,7 @@ void main(void)
     const uint32_t indicesPerMesh = MAX_INDICES;
     SetDrawIndex(hd_LocalInvocationID.x, 0);
     const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
-    const uint numMeshlets = (indexCount + MAX_INDICES - 1) / MAX_INDICES;
+    const uint numMeshlets2 = (indexCount + MAX_INDICES - 1) / MAX_INDICES;
 
     //TODO maybe remove this
 
@@ -349,6 +351,8 @@ void main(void)
     uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
     uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
     uint baseInstance = GetDrawingField(baseInstanceOffset, hd_LocalInvocationID.x);
+    uint meshletCoord = GetDrawingField(meshletCoordOffset, hd_LocalInvocationID.x);
+    uint numMeshlet = GetDrawingField(numMeshletsOffset, hd_LocalInvocationID.x);
 
     //IDEA Maybe sorting the inputs?
 
@@ -358,11 +362,13 @@ void main(void)
     payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
     payload.drawCommandNumUintLocal = drawCommandNumUints;
     payload.indexCount = indexCount;
+    payload.meshletCoord = meshletCoord;
+    payload.numberMeshlets = numMeshlet;
 
     // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.
 
     //IDEAS go in scan order
-    meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, numMeshlets, 1));
+    meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, numMeshlet, 1));
 }
 
 
@@ -417,7 +423,17 @@ uint32_t baseIndex;
 
 hd_drawingCoord dcMemb;
 void main(void) {
-    dcMemb = GetDrawingCoordFull();
+    device uint *meshletStart = meshletRemap + payload.meshletCoord;
+    uint thisMeshCoord = *(meshletStart + hd_LocalInvocationID.y);
+    uint meshletVertexCount = *(meshletRemap + thisMeshCoord);
+    uint meshletPrimitiveCount = *(meshletRemap + thisMeshCoord + 1);
+
+    //TODO don't need to store this here
+    device uint *meshletVerticesStart = (meshletRemap + thisMeshCoord + 2);
+
+    const uint numUintsPerVertex = 2;
+    device uint *meshletIndicesStart = (meshletRemap + thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
+
     //can be simplified to always use payload.baseVertex
     const uint startIndex = MAX_INDICES * hd_LocalInvocationID.y;
     const uint endIndex   = min(startIndex + MAX_INDICES, payload.indexCount);
@@ -442,6 +458,8 @@ void main(void) {
         primitive_id = (ind)/3;
         hd_VertexID = ind;
         globalIndex = (indices + (baseIndex))[ind];
+        dcMemb = GetDrawingCoordFull();
+        
     }
     else
     {
@@ -462,7 +480,8 @@ void main(void) {
 
         vec3 Neye0 = GetNormal(vec3(0),index);
 
-        //point = DisplacementTerminal(0, point, Neye0, GetPatchCoord(0));
+        //point = DisplacementTerminal(globalIndex%3, point, Neye0, GetPatchCoord(globalIndex%3));
+
         MAT4 transform = ApplyInstanceTransform(HdGet_transform());
         vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
 

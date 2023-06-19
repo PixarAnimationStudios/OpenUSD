@@ -175,8 +175,10 @@ private:
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
 
     HdStBufferResourceSharedPtr _tessFactorsBuffer;
+    HdStBufferResourceSharedPtr _meshletDispatchBuffer;
 
     std::vector<uint32_t> _drawCommandBuffer;
+    std::vector<uint32_t> _meshletDrawBuffer;
     bool _drawCommandBufferDirty;
 
     size_t _bufferArraysHash;
