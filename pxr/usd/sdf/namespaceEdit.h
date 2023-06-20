@@ -143,7 +143,7 @@ public:
                            const std::string& reason);
 
     SDF_API bool operator==(const SdfNamespaceEditDetail& rhs) const;
-    SDF_API bool operator!=(const SdfNamespaceEditDetail& other) const;
+    SDF_API bool operator!=(const SdfNamespaceEditDetail& rhs) const;
 
 public:
     Result result;          ///< Validity.

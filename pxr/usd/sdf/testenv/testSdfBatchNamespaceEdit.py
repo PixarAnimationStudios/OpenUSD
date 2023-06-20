@@ -32,10 +32,8 @@ verbose = False
 
 class TestSdfBatchNamespaceEdit(unittest.TestCase):
     def test_EqualityOperators(self):
-        self.assertTrue(Sdf.NamespaceEdit('/A', '/B') == Sdf.NamespaceEdit('/A', '/B'))
-        self.assertFalse(Sdf.NamespaceEdit('/A', '/B') != Sdf.NamespaceEdit('/A', '/B'))
-        self.assertFalse(Sdf.NamespaceEdit('/B', '/A') == Sdf.NamespaceEdit('/A', '/B'))
-        self.assertTrue(Sdf.NamespaceEdit('/B', '/A') != Sdf.NamespaceEdit('/A', '/B'))
+        self.assertEqual(Sdf.NamespaceEdit('/A', '/B'), Sdf.NamespaceEdit('/A', '/B'))
+        self.assertNotEqual(Sdf.NamespaceEdit('/B', '/A'), Sdf.NamespaceEdit('/A', '/B'))
 
         # Validate the equality operators by varying a single field from a prototype edit
         # at a time
@@ -44,29 +42,19 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
             Sdf.NamespaceEdit('/A', '/B'),
             "reason"
         )
-        self.assertTrue(prototype == prototype)
-        self.assertFalse(prototype != prototype)
-        self.assertTrue(prototype != Sdf.NamespaceEditDetail(
+        self.assertEqual(prototype, Sdf.NamespaceEditDetail(
+            prototype.result,
+            prototype.edit,
+            prototype.reason))
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
             Sdf.NamespaceEditDetail.Unbatched,
             prototype.edit,
             prototype.reason))
-        self.assertFalse(prototype == Sdf.NamespaceEditDetail(
-            Sdf.NamespaceEditDetail.Unbatched,
-            prototype.edit,
-            prototype.reason))
-        self.assertTrue(prototype != Sdf.NamespaceEditDetail(
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
             prototype.result,
             Sdf.NamespaceEdit('/C', '/D'),
             prototype.reason))
-        self.assertFalse(prototype == Sdf.NamespaceEditDetail(
-            prototype.result,
-            Sdf.NamespaceEdit('/C', '/D'),
-            prototype.reason))
-        self.assertTrue(prototype != Sdf.NamespaceEditDetail(
-            prototype.result,
-            prototype.edit,
-            "a different reason"))
-        self.assertFalse(prototype == Sdf.NamespaceEditDetail(
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
             prototype.result,
             prototype.edit,
             "a different reason"))

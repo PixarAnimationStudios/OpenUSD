@@ -722,9 +722,9 @@ SdfNamespaceEditDetail::operator==(const SdfNamespaceEditDetail& rhs) const
 }
 
 bool
-SdfNamespaceEditDetail::operator!=(const SdfNamespaceEditDetail& other) const
+SdfNamespaceEditDetail::operator!=(const SdfNamespaceEditDetail& rhs) const
 {
-    return !(*this == other);
+    return !(*this == rhs);
 }
 
 std::ostream&
