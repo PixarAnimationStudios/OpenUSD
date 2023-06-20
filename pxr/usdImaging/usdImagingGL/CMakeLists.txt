@@ -3575,7 +3575,7 @@ pxr_register_test(testUsdImagingGLMaterialTag
 pxr_register_test(testUsdImagingGLMaterialStrengthOrder
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -camera /camera -lighting -offscreen -stage bindingStrength.usda -write bindingStrength.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLMaterialStrengthOrder.png
+        bindingStrength.png
     FAIL 0.1
     FAIL_PERCENT 0.002
     WARN 0.01
