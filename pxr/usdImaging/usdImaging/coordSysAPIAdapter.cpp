@@ -63,8 +63,7 @@ UsdImagingCoordSysAPIAdapter::GetImagingSubprimData(
 
     if (subprim.IsEmpty()) {
         UsdShadeCoordSysAPI::Binding binding =
-            UsdShadeCoordSysAPI::Apply(prim, appliedInstanceName)
-                .GetLocalBinding();
+            UsdShadeCoordSysAPI(prim, appliedInstanceName).GetLocalBinding();
         if (binding.name.IsEmpty()) {
             return nullptr;
         }
