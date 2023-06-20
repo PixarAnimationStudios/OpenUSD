@@ -36,10 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (coordSysBinding_dep_xform)
-);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
