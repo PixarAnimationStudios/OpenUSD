@@ -117,6 +117,7 @@ private:
     const bool _flattenMaterialBindings;
     const bool _flattenPrimvars;
     const bool _flattenCoordSysBinding;
+    HdDataSourceLocatorSet _dataSourceLocators;
     TfTokenVector _dataSourceNames;
 
     const HdContainerDataSourceHandle _identityXform;
@@ -153,10 +154,13 @@ private:
         HdContainerDataSourceHandle _GetParentPrimDataSource() const;
 
         HdDataSourceBaseHandle _GetXform();
+        HdContainerDataSourceHandle _GetXformUncached();
         HdDataSourceBaseHandle _GetVis();
+        HdContainerDataSourceHandle _GetVisUncached();
         HdDataSourceBaseHandle _GetPurpose();
+        HdContainerDataSourceHandle _GetPurposeUncached();
         HdDataSourceBaseHandle _GetModel();
-        HdDataSourceBaseHandle _GetDrawMode(
+        HdTokenDataSourceHandle _GetDrawMode(
             const HdContainerDataSourceHandle &model);
         HdTokenDataSourceHandle _GetDrawModeUncached(
             const HdContainerDataSourceHandle &model);
@@ -168,7 +172,7 @@ private:
         HdContainerDataSourceHandle _GetCoordSysBindingUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
-        SdfPath _primPath;
+        const SdfPath _primPath;
         HdContainerDataSourceHandle _inputDataSource;
         HdContainerDataSourceAtomicHandle _computedXformDataSource;
         HdContainerDataSourceAtomicHandle _computedVisDataSource;

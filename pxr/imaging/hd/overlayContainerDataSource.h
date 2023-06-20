@@ -62,6 +62,16 @@ public:
         const HdContainerDataSourceHandle &src1,
         const HdContainerDataSourceHandle &src2,
         const HdContainerDataSourceHandle &src3);
+    
+    /// Creates HdOverlayContainerDataSource from sources, but only
+    /// if needed. If one of given handles is null, the other handle
+    /// is returned instead.
+    HD_API
+    static
+    HdContainerDataSourceHandle
+    OverlayedContainerDataSources(
+        const HdContainerDataSourceHandle &src1,
+        const HdContainerDataSourceHandle &src2);
 
     HD_API
     TfTokenVector GetNames() override;

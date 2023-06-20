@@ -211,6 +211,18 @@ HdModelSchema::GetDefaultLocator()
     );
     return locator;
 } 
+/*static*/
+const HdDataSourceLocator &
+HdModelSchema::GetDrawModeLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdModelSchemaTokens->model,
+        HdModelSchemaTokens->drawMode
+    );
+    return locator;
+}
+
+
 HdModelSchema::Builder &
 HdModelSchema::Builder::SetDrawMode(
     const HdTokenDataSourceHandle &drawMode)
