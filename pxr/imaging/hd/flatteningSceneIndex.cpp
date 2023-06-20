@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
+#include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/work/utils.h"
 
@@ -167,6 +168,9 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     , _flattenPrimvars(
         _GetBoolValue(inputArgs,
                       HdPrimvarsSchemaTokens->primvars))
+    , _flattenCoordSysBinding(
+        _GetBoolValue(inputArgs,
+                    HdCoordSysBindingSchemaTokens->coordSysBinding))
     , _identityXform(HdXformSchema::Builder()
         .SetMatrix(
             HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
@@ -210,6 +214,10 @@ HdFlatteningSceneIndex::HdFlatteningSceneIndex(
     if (_flattenPrimvars) {
         _dataSourceNames.push_back(
             HdPrimvarsSchemaTokens->primvars);
+    }
+    if (_flattenCoordSysBinding) {
+        _dataSourceNames.push_back(
+                HdCoordSysBindingSchemaTokens->coordSysBinding);
     }
 }
 
@@ -367,6 +375,10 @@ HdFlatteningSceneIndex::_PrimsDirtied(
         locators.insert(
             HdFlattenedPrimvarsDataSource::ComputeDirtyPrimvarsLocators(
                 entry.dirtyLocators));
+        if (entry.dirtyLocators.Intersects(
+                HdCoordSysBindingSchema::GetDefaultLocator())) {
+            locators.insert(HdCoordSysBindingSchema::GetDefaultLocator());
+        }
         
         if (!locators.IsEmpty()) {
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
@@ -510,6 +522,13 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::PrimDirtied(
             }
         }
     }
+    if (set.Intersects(HdCoordSysBindingSchema::GetDefaultLocator())) {
+        if (HdDataSourceBase::AtomicLoad(_computedCoordSysBindingDataSource)) {
+            anyDirtied = true;
+        }
+        HdDataSourceBase::AtomicStore(
+            _computedCoordSysBindingDataSource, baseNull);
+    }
 
     return anyDirtied;
 }
@@ -588,6 +607,10 @@ HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::Get(
     if (_sceneIndex._flattenPrimvars &&
         name == HdPrimvarsSchemaTokens->primvars) {
         return _GetPrimvars();
+    }
+    if (_sceneIndex._flattenCoordSysBinding &&
+        name == HdCoordSysBindingSchemaTokens->coordSysBinding) {
+        return _GetCoordSysBinding();
     }
     if (_inputDataSource) {
         return _inputDataSource->Get(name);
@@ -882,6 +905,52 @@ _GetPrimvarsUncached()
 
     return HdFlattenedPrimvarsDataSource::New(
         inputPrimvars, parentPrimvars);
+}
+
+HdDataSourceBaseHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::_GetCoordSysBinding()
+{
+    HdDataSourceBaseHandle result =
+        HdDataSourceBase::AtomicLoad(_computedCoordSysBindingDataSource);
+
+    if (!result) {
+        result = _GetCoordSysBindingUncached();
+        if (!result) {
+            // Cache the absence of value by storing a non-container which will
+            // fail the cast on return. Using retained "false" because its New
+            // returns a shared instance rather than a new allocation.
+            result = HdRetainedTypedSampledDataSource<bool>::New(false);
+        }
+        HdDataSourceBase::AtomicStore(
+            _computedCoordSysBindingDataSource, result);
+    }
+
+    return HdContainerDataSource::Cast(result);
+}
+
+HdContainerDataSourceHandle
+HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::
+_GetCoordSysBindingUncached()
+{
+    HdContainerDataSourceHandle inputBindings =
+        HdCoordSysBindingSchema::GetFromParent(_inputDataSource)
+            .GetContainer();
+    HdContainerDataSourceHandle parentBindings =
+        HdCoordSysBindingSchema::GetFromParent(_GetParentPrimDataSource())
+            .GetContainer();
+        
+    if (!inputBindings) {
+        return parentBindings;
+    }
+    if (!parentBindings) {
+        return inputBindings;
+    }
+
+    // Parent and local bindings might have unique fields so we must
+    // overlay them. If we are concerned about overlay depth, we could
+    // compare GetNames() results to decide whether the child bindings
+    // completely mask the parent.
+    return HdOverlayContainerDataSource::New(inputBindings, parentBindings);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -71,7 +71,8 @@
 //           the new HdMaterialBindingSchema.
 // 51 -> 52: Added lens distortion, focus, and split diopter parameters to
 //           HdCamera.
-#define HD_API_VERSION 52
+// 52 -> 53: Changing dirty bits of HdCoordSys.
+#define HD_API_VERSION 53
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

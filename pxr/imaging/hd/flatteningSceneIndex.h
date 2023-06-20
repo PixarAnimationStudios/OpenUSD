@@ -116,6 +116,7 @@ private:
     const bool _flattenModel;
     const bool _flattenMaterialBindings;
     const bool _flattenPrimvars;
+    const bool _flattenCoordSysBinding;
     TfTokenVector _dataSourceNames;
 
     const HdContainerDataSourceHandle _identityXform;
@@ -165,6 +166,8 @@ private:
         HdContainerDataSourceHandle _GetMaterialBindingsUncached();
         HdFlattenedPrimvarsDataSourceHandle _GetPrimvars();
         HdFlattenedPrimvarsDataSourceHandle _GetPrimvarsUncached();
+        HdDataSourceBaseHandle _GetCoordSysBinding();
+        HdContainerDataSourceHandle _GetCoordSysBindingUncached();
 
         const HdFlatteningSceneIndex &_sceneIndex;
         SdfPath _primPath;
@@ -179,6 +182,7 @@ private:
         // indicate that no binding is present.
         HdDataSourceBaseAtomicHandle _computedMaterialBindingsDataSource;
         HdFlattenedPrimvarsDataSource::AtomicHandle _computedPrimvarsDataSource;
+        HdDataSourceBaseAtomicHandle _computedCoordSysBindingDataSource;
     };
 
     HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);

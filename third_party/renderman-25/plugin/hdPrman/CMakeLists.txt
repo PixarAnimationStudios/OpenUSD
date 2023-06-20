@@ -76,6 +76,7 @@ pxr_plugin(${PXR_PACKAGE}
         cone
         cylinder
         coordSys
+        coordSysPrimSceneIndexPlugin
         debugCodes
         dependencyForwardingSceneIndexPlugin
         displayFilter

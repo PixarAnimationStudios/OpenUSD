@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -20,36 +20,31 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
-#ifndef PXR_USD_IMAGING_USD_IMAGING_COORD_SYS_API_ADAPTER_H
-#define PXR_USD_IMAGING_USD_IMAGING_COORD_SYS_API_ADAPTER_H
 
-#include "pxr/usdImaging/usdImaging/apiSchemaAdapter.h"
+#ifndef PXR_IMAGING_HDPRMAN_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN_H
+#define PXR_IMAGING_HDPRMAN_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN_H
+
+#include "pxr/pxr.h"
+#include "pxr/imaging/hd/sceneIndexPlugin.h"
+#include "hdPrman/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingCoordSysAPIAdapter : public UsdImagingAPISchemaAdapter
+/// \class HdPrman_CoordSysPrimSceneIndexPlugin
+///
+/// Plugin adds a scene index that adds coord system prims.
+///
+class HdPrman_CoordSysPrimSceneIndexPlugin : public HdSceneIndexPlugin
 {
 public:
+    HdPrman_CoordSysPrimSceneIndexPlugin();
 
-    using BaseAdapter = UsdImagingAPISchemaAdapter;
-
-    USDIMAGING_API
-    HdContainerDataSourceHandle GetImagingSubprimData(
-            UsdPrim const& prim,
-            TfToken const& subprim,
-            TfToken const& appliedInstanceName,
-            const UsdImagingDataSourceStageGlobals &stageGlobals) override;
-
-    USDIMAGING_API
-    HdDataSourceLocatorSet InvalidateImagingSubprim(
-            UsdPrim const& prim,
-            TfToken const& subprim,
-            TfToken const& appliedInstanceName,
-            TfTokenVector const& properties,
-            UsdImagingPropertyInvalidationType invalidationType) override;
+protected:
+    HdSceneIndexBaseRefPtr _AppendSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputScene,
+        const HdContainerDataSourceHandle &inputArgs) override;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif
+#endif // PXR_IMAGING_HDPRMAN_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN_H

@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
+#include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
@@ -254,6 +255,12 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
             set->append(HdMaterialSchema::GetDefaultLocator());
         }
     } else if (primType == HdPrimTypeTokens->coordSys) {
+        if (bits & HdCoordSys::DirtyName) {
+            static const HdDataSourceLocator locator =
+                HdCoordSysSchema::GetDefaultLocator()
+                    .Append(HdCoordSysSchemaTokens->name);
+            set->append(locator);
+        }
         if (bits & HdCoordSys::DirtyTransform) {
             set->append(HdXformSchema::GetDefaultLocator());
         }
@@ -747,6 +754,12 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
             bits |= HdMaterial::AllDirty;
         }
     } else if (primType == HdPrimTypeTokens->coordSys) {
+        static const HdDataSourceLocator nameLocator =
+            HdCoordSysSchema::GetDefaultLocator()
+            .Append(HdCoordSysSchemaTokens->name);
+        if (_FindLocator(nameLocator, end, &it)) {
+            bits |= HdCoordSys::DirtyName;
+        }
         if (_FindLocator(HdXformSchema::GetDefaultLocator(), end, &it)) {
             bits |= HdCoordSys::DirtyTransform;
         }

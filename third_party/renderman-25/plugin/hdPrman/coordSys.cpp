@@ -72,10 +72,14 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
         static_cast<HdPrman_RenderParam*>(renderParam);
 
     SdfPath id = GetId();
+    // Save state of dirtyBits before HdCoordSys::Sync clears them.
+    const HdDirtyBits bits = *dirtyBits;
 
     riley::Riley *riley = param->AcquireRiley();
 
-    if (*dirtyBits) {
+    HdCoordSys::Sync(sceneDelegate, renderParam, dirtyBits);
+
+    if (bits & AllDirty) {
         // Sample transform
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
         sceneDelegate->SampleTransform(id, &xf);
@@ -105,12 +109,14 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
     *dirtyBits = HdChangeTracker::Clean;
 }
 
+#if HD_API_VERSION < 53
 /* virtual */
 HdDirtyBits
 HdPrmanCoordSys::GetInitialDirtyBitsMask() const
 {
     return HdChangeTracker::AllDirty;
 }
+#endif
 
 bool
 HdPrmanCoordSys::IsValid() const

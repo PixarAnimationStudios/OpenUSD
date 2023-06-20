@@ -68,6 +68,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman Render Settings Filtering Scene Index"
+                    },
+                    "HdPrman_CoordSysPrimSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Coord Sys Prim Scene Index"
                     }
                 }
             },

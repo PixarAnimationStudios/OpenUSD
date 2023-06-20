@@ -50,6 +50,7 @@
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
+#include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
@@ -1852,6 +1853,20 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
             if (HdSampledDataSourceHandle valueSrc =
                     HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
                 return valueSrc->GetValue(0);
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->coordSys) {
+        static TfToken nameKey(
+            SdfPath::JoinIdentifier(
+                TfTokenVector{HdCoordSysSchema::GetSchemaToken(),
+                              HdCoordSysSchemaTokens->name}));
+        if (key == nameKey) {
+            if (HdTokenDataSourceHandle const nameDs =
+                    HdCoordSysSchema::GetFromParent(prim.dataSource)
+                        .GetName()) {
+                return nameDs->GetValue(0.0f);
             }
         }
     }
