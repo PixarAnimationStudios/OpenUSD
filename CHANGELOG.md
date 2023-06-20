@@ -1,5 +1,11 @@
 # Change Log
 
+## [23.08] - TBD
+
+We anticipate moving to the [VFX Reference Platform CY2022](https://vfxplatform.com/) 
+and C++17 in the next release. Note that as part of the migration to C++17,
+some API signatures will change from using boost to using the std equivalent. 
+
 ## [23.05] - 2023-04-18
 
 Support for Python 2 has been removed in this release.
