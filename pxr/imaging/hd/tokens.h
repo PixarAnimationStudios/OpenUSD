@@ -326,6 +326,9 @@ bool HdPrimTypeIsGprim(TfToken const& primType);
 HD_API
 bool HdPrimTypeIsLight(TfToken const& primType);
 
+HD_API
+const TfTokenVector &HdLightPrimTypeTokens();
+
 #define HD_PRIMVAR_ROLE_TOKENS                  \
     ((none, ""))                                \
     (color)                                     \

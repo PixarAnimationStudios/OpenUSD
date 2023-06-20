@@ -41,14 +41,14 @@
 #include "pxr/usd/usdRender/settings.h"
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/utils.h"
-#include "pxr/imaging/hdsi/materialPruningSceneIndex.h"
+#include "pxr/imaging/hdsi/primTypePruningSceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
 #include "pxr/imaging/hdx/pickTask.h"
@@ -323,10 +323,13 @@ UsdImagingGLEngine::_PrepareRender(const UsdImagingGLRenderParams& params)
 
     // Forward scene materials enable option.
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7116): params.enableSceneLights
         if (_materialPruningSceneIndex) {
-            _materialPruningSceneIndex->SetSceneMaterialsEnabled(
-                params.enableSceneMaterials);
+            _materialPruningSceneIndex->SetEnabled(
+                !params.enableSceneMaterials);
+        }
+        if (_lightPruningSceneIndex) {
+            _lightPruningSceneIndex->SetEnabled(
+                !params.enableSceneLights);
         }
     } else {
         _sceneDelegate->SetSceneMaterialsEnabled(params.enableSceneMaterials);
@@ -1140,10 +1143,33 @@ UsdImagingGLEngine::_SetRenderDelegate(
         _sceneIndex = _stageSceneIndex =
             UsdImagingStageSceneIndex::New(stageInputArgs);
 
+        static HdContainerDataSourceHandle const materialPruningInputArgs =
+            HdRetainedContainerDataSource::New(
+                HdsiPrimTypePruningSceneIndexTokens->primTypes,
+                HdRetainedTypedSampledDataSource<TfTokenVector>::New(
+                    { HdPrimTypeTokens->material }),
+                HdsiPrimTypePruningSceneIndexTokens->bindingToken,
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    HdMaterialBindingsSchema::GetSchemaToken()));
+
         // Prune scene materials prior to flattening inherited
         // materials bindings and resolving material bindings
         _sceneIndex = _materialPruningSceneIndex =
-            HdsiMaterialPruningSceneIndex::New(_sceneIndex);
+            HdsiPrimTypePruningSceneIndex::New(
+                _sceneIndex, materialPruningInputArgs);
+
+        static HdContainerDataSourceHandle const lightPruningInputArgs =
+            HdRetainedContainerDataSource::New(
+                HdsiPrimTypePruningSceneIndexTokens->primTypes,
+                HdRetainedTypedSampledDataSource<TfTokenVector>::New(
+                    HdLightPrimTypeTokens()),
+                HdsiPrimTypePruningSceneIndexTokens->doNotPruneNonPrimPaths,
+                HdRetainedTypedSampledDataSource<bool>::New(
+                    false));
+
+        _sceneIndex = _lightPruningSceneIndex =
+            HdsiPrimTypePruningSceneIndex::New(
+                _sceneIndex, lightPruningInputArgs);
 
         // Use extentsHint for default_/geometry purpose
         HdContainerDataSourceHandle const extentInputArgs =
