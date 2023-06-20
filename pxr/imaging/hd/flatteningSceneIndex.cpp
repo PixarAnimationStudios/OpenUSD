@@ -228,7 +228,7 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
 {
     // Check the hierarchy cache
     {
-        _PrimTable::const_iterator i = _prims.find(primPath);
+        const _PrimTable::const_iterator i = _prims.find(primPath);
         // SdfPathTable will default-construct entries for ancestors
         // as needed to represent hierarchy, so double-check the
         // dataSource to confirm presence of a cached prim
@@ -300,9 +300,9 @@ HdFlatteningSceneIndex::_PrimsAdded(
     // Clear out any cached dataSources for prims that have been re-added.
     // They will get updated dataSources in the next call to GetPrim().
     for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        _PrimTable::iterator i = _prims.find(entry.primPath);
+        const _PrimTable::iterator i = _prims.find(entry.primPath);
         if (i != _prims.end()) {
-            i->second.dataSource.reset();
+            WorkSwapDestroyAsync(i->second.dataSource);
         }
     }
 
@@ -383,6 +383,18 @@ HdFlatteningSceneIndex::_PrimsDirtied(
         if (!locators.IsEmpty()) {
             _DirtyHierarchy(entry.primPath, locators, &dirtyEntries);
         }
+
+        // Empty locator indicates that we need to pull the input data source
+        // again - which we achieve by destroying the data source wrapping the
+        // input data source.
+        // Note that we destroy it after calling _DirtyHierarchy to not prevent
+        // _DirtyHierarchy propagating the invalidation to the ancestors.
+        if (entry.dirtyLocators.Contains(HdDataSourceLocator::EmptyLocator())) {
+            const _PrimTable::iterator it = _prims.find(entry.primPath);
+            if (it != _prims.end() && it->second.dataSource) {
+                WorkSwapDestroyAsync(it->second.dataSource);
+            }
+        }
     }
 
     _SendPrimsDirtied(entries);
@@ -447,13 +459,6 @@ _PrimLevelWrappingDataSource::_PrimLevelWrappingDataSource(
     , _primPath(primPath)
     , _inputDataSource(inputDataSource)
 {
-}
-
-void
-HdFlatteningSceneIndex::_PrimLevelWrappingDataSource::UpdateInputDataSource(
-        HdContainerDataSourceHandle inputDataSource)
-{
-    _inputDataSource = inputDataSource;
 }
 
 bool

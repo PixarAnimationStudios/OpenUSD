@@ -144,8 +144,6 @@ private:
                 const SdfPath &primPath,
                 HdContainerDataSourceHandle inputDataSource);
 
-        void UpdateInputDataSource(HdContainerDataSourceHandle inputDataSource);
-
         bool PrimDirtied(const HdDataSourceLocatorSet &locators);
 
         TfTokenVector GetNames() override;
