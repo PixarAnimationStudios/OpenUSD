@@ -549,7 +549,7 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         kCFAllocatorDefault,
         width,
         height,
-        kCVPixelFormatType_32BGRA,
+        kCVPixelFormatType_64RGBAHalf,
         (__bridge CFDictionaryRef)cvBufferProperties,
         &_pixelBuffer);
     
@@ -598,7 +598,7 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         _cvmtlTextureCache,
         _pixelBuffer,
         (__bridge CFDictionaryRef)metalTextureProperties,
-        MTLPixelFormatBGRA8Unorm,
+        MTLPixelFormatRGBA16Float,
         width,
         height,
         0,
