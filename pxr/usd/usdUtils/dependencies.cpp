@@ -308,8 +308,15 @@ _FileAnalyzer::_UpdateAssetValue(const std::string &key,
         }
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
         VtArray<SdfAssetPath> updatedArray;
-        for (const SdfAssetPath& assetPath :
-            val.UncheckedGet< VtArray<SdfAssetPath> >()) {                
+        const VtArray<SdfAssetPath>& originalArray = 
+            val.UncheckedGet< VtArray<SdfAssetPath> >();
+        
+        // ensure explicit empty array value is preserved
+        if (originalArray.empty()) {
+            return VtValue::Take(updatedArray);
+        }
+        
+        for (const SdfAssetPath& assetPath : originalArray) {                
             const std::string& rawAssetPath = assetPath.GetAssetPath();
             if (!rawAssetPath.empty()) {
                 const std::string remappedPath = shouldProcessFunc(key)
@@ -325,7 +332,14 @@ _FileAnalyzer::_UpdateAssetValue(const std::string &key,
     }
     else if (val.IsHolding<VtDictionary>()) {
         VtDictionary updatedDict;
-        for (const auto& p : val.UncheckedGet<VtDictionary>()) {
+        const VtDictionary& originalDict = val.UncheckedGet<VtDictionary>();
+
+        // ensure explicit empty dict value is preserved
+        if (originalDict.empty()) {
+            return VtValue::Take(updatedDict);
+        }
+
+        for (const auto& p : originalDict) {
             const std::string dictKey = key.empty() ? key : key + ':' + p.first;
             VtValue updatedVal = 
                 _UpdateAssetValue(dictKey, p.second, shouldProcessFunc);

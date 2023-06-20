@@ -30,6 +30,8 @@ def Xform "Model" (
             asset foo = @foo.usd@
             asset[] bar = [@foo.usd@, @bar.usd@]
         }
+        dictionary emptyDict = {
+        }
     }
 )
 {
@@ -46,6 +48,7 @@ def Xform "Model" (
         1: [@foo.usd@, @bar.usd@],
         2: [@bar.usd@, @foo.usd@],
     }
+    asset[] emptyArr = []
 }
 
 def Xform "Variants" (
