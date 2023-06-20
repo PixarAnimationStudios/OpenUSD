@@ -32,6 +32,9 @@
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/xformSchema.h"
 #include "pxr/base/trace/trace.h"
+#include "pxr/base/work/loops.h"
+
+#include <tbb/enumerable_thread_specific.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -176,8 +179,6 @@ _MakeUnrenderable(HdSceneIndexPrim * const prim)
 HdSceneIndexPrim
 UsdImaging_PiPrototypeSceneIndex::GetPrim(const SdfPath &primPath) const
 {
-    TRACE_FUNCTION();
-
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     if (!primPath.HasPrefix(_prototypeRoot)) {
@@ -223,29 +224,49 @@ UsdImaging_PiPrototypeSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    HdSceneIndexObserver::AddedPrimEntries newEntries;
+    TRACE_FUNCTION();
 
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
-        const SdfPath &path = entry.primPath;
-        if (_ContainsStrictPrefixOfPath(_instancersAndOvers, path)) {
-            newEntries.emplace_back(path, TfToken());
-            continue;
-        }
+    // First pass: Identify instancers and overs.
+    // Use thread-local results to avoid synchronizing.
+    tbb::enumerable_thread_specific<SdfPathVector> perThreadResults;
+    WorkParallelForN(
+        //entries.begin(), entries.end(),
+        entries.size(),
+        [&](size_t begin, size_t end)
+        {
+            SdfPathVector &results = perThreadResults.local();
+            for (size_t i=begin; i<end; ++i) {
+                const HdSceneIndexObserver::AddedPrimEntry &entry = entries[i];
+                if (entry.primType == HdPrimTypeTokens->instancer ||
+                    _IsOver(_GetInputSceneIndex()->GetPrim(entry.primPath))) {
+                    results.push_back(entry.primPath);
+                }
+            }
+        },
+        256 /* note: relatively coarse grain size */ );
 
-        if (entry.primType == HdPrimTypeTokens->instancer ||
-            _IsOver(_GetInputSceneIndex()->GetPrim(path))) {
-            _instancersAndOvers.insert(path);
-        }
-
-        // Note that we do not handle the case that the type of a prim
-        // changes and we get a single AddedPrimEntry about it.
-        //
-        // E.g. if a prim becomes an instancer, we need to re-sync
-        // its namespace descendants since their type change to empty.
-        // Similarly, if a prim was an instancer.
-
-        newEntries.push_back(entry);
+    // Commit per-thread results back into _instancersAndOvers.
+    for (const SdfPath &path: tbb::flatten2d(perThreadResults)) {
+        _instancersAndOvers.insert(path);
     }
+
+    // Second pass: Clear out types for any prims under instancers or overs.
+    HdSceneIndexObserver::AddedPrimEntries newEntries(entries);
+    WorkParallelForEach(
+        newEntries.begin(), newEntries.end(),
+        [&](HdSceneIndexObserver::AddedPrimEntry &entry)
+    {
+        if (_ContainsStrictPrefixOfPath(_instancersAndOvers, entry.primPath)) {
+            entry.primType = TfToken();
+        }
+    });
+
+    // Note that we do not handle the case that the type of a prim
+    // changes and we get a single AddedPrimEntry about it.
+    //
+    // E.g. if a prim becomes an instancer, we need to re-sync
+    // its namespace descendants since their type change to empty.
+    // Similarly, if a prim was an instancer.
 
     _SendPrimsAdded(newEntries);
 }
