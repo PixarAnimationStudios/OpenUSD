@@ -71,13 +71,25 @@ public:
     // Comparison.
     PCP_API
     bool operator==(const This &rhs) const;
-    bool operator!=(const This &rhs) const { return !(rhs == *this); }
+    bool operator!=(const This &rhs) const
+    {
+        return !(rhs == *this);
+    }
 
     PCP_API
     bool operator<(const This &rhs) const;
-    bool operator<=(const This& rhs) const { return !(rhs < *this); }
-    bool operator>(const This& rhs) const { return rhs < *this; }
-    bool operator>=(const This& rhs) const { return !(*this < rhs); }
+    bool operator<=(const This& rhs) const
+    {
+        return !(rhs < *this);
+    }
+    bool operator>(const This& rhs) const
+    {
+        return rhs < *this;
+    }
+    bool operator>=(const This& rhs) const
+    {
+        return !(*this < rhs);
+    }
 
     // Hashing.
     struct Hash {
