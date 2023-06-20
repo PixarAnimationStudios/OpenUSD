@@ -64,6 +64,8 @@ struct HdSceneIndexPrim
 class HdSceneIndexBase : public TfRefBase, public TfWeakBase
 {
 public:
+    HD_API
+    HdSceneIndexBase();
 
     HD_API
     ~HdSceneIndexBase() override;
@@ -210,12 +212,26 @@ protected:
     bool _IsObserved() const;
 
 private:
+    void _RemoveExpiredObservers();
 
-    using _ObserverSet = std::set<HdSceneIndexObserverPtr>;
-    _ObserverSet _observers;
+    // Scoped (RAII) helper to manage tracking recursion depth,
+    // and to remove expired observers after completing delivery.
+    struct _NotifyScope;
 
+    // Registered observers, in order of registration.
+    using _Observers = std::vector<HdSceneIndexObserverPtr>;
+    _Observers _observers;
+
+    // Count of in-flight observer notifications
+    int _notifyDepth;
+
+    // Flag hinting that expired observers may exist.
+    bool _shouldRemoveExpiredObservers;
+
+    // User-visible label for this scene index
     std::string _displayName;
 
+    // Tags used to categorize this scene index
     using _TagSet = TfDenseHashSet<TfToken, TfHash, std::equal_to<TfToken>, 8>;
     _TagSet _tags;
 };
