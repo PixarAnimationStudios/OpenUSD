@@ -467,7 +467,7 @@ private:
 
 // Allow TfIteration over children proxies.
 template <typename _View>
-struct Tf_ShouldIterateOverCopy<SdfChildrenProxy<_View> > : boost::true_type
+struct Tf_ShouldIterateOverCopy<SdfChildrenProxy<_View> > : std::true_type
 {
 };
 

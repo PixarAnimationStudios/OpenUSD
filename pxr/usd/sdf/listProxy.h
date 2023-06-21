@@ -39,11 +39,9 @@
 #include <boost/iterator/reverse_iterator.hpp>
 #include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/remove_cv.hpp>
-#include <boost/type_traits/remove_reference.hpp>
 
 #include <memory>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -126,11 +124,11 @@ private:
     class _Iterator :
         public boost::iterator_facade<
             _Iterator<Owner, GetItem>,
-            typename boost::remove_cv<
-                typename boost::remove_reference<
+            std::remove_cv_t<
+                std::remove_reference_t<
                     typename GetItem::result_type
-                >::type
-            >::type,
+                >
+            >,
             std::random_access_iterator_tag,
             typename GetItem::result_type> {
     public:
@@ -138,11 +136,11 @@ private:
         typedef
             boost::iterator_facade<
                 _Iterator<Owner, GetItem>,
-                typename boost::remove_cv<
-                    typename boost::remove_reference<
+                std::remove_cv_t<
+                    std::remove_reference_t<
                         typename GetItem::result_type
-                    >::type
-                >::type,
+                    >
+                >,
                 std::random_access_iterator_tag,
                 typename GetItem::result_type> Parent;
         typedef typename Parent::reference reference;
@@ -627,7 +625,7 @@ private:
 
 // Allow TfIteration over list proxies.
 template <typename T>
-struct Tf_ShouldIterateOverCopy<SdfListProxy<T> > : boost::true_type
+struct Tf_ShouldIterateOverCopy<SdfListProxy<T> > : std::true_type
 {
 };
 

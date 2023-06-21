@@ -305,10 +305,10 @@ public:
     };                                                                  \
                                                                         \
     template <>                                                         \
-    struct Tf_ShouldIterateOverCopy<Range> : boost::true_type {};       \
+    struct Tf_ShouldIterateOverCopy<Range> : std::true_type {};         \
                                                                         \
     template <>                                                         \
-    struct Tf_ShouldIterateOverCopy<const Range> : boost::true_type {}
+    struct Tf_ShouldIterateOverCopy<const Range> : std::true_type {}
 
 PCP_DEFINE_RANGE(PcpNodeRange, PcpNodeIterator, PcpNodeReverseIterator);
 PCP_DEFINE_RANGE(PcpPrimRange, PcpPrimIterator, PcpPrimReverseIterator);

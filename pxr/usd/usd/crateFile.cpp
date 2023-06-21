@@ -319,10 +319,13 @@ namespace Usd_CrateFile {
 
 // XXX: These checks ensure VtValue can hold ValueRep in the lightest
 // possible way -- WBN not to rely on internal knowledge of that.
-static_assert(boost::has_trivial_constructor<ValueRep>::value, "");
-static_assert(boost::has_trivial_copy<ValueRep>::value, "");
-static_assert(boost::has_trivial_assign<ValueRep>::value, "");
-static_assert(boost::has_trivial_destructor<ValueRep>::value, "");
+static_assert(std::is_trivially_constructible<ValueRep>::value, "");
+static_assert(std::is_trivially_copyable<ValueRep>::value, "");
+// In C++17, std::is_trivially_copy_assignable<T> could be used in place of
+// std::is_trivially_assignable
+static_assert(std::is_trivially_assignable<ValueRep&, const ValueRep&>::value,
+              "");
+static_assert(std::is_trivially_destructible<ValueRep>::value, "");
 
 using namespace Usd_CrateValueInliners;
 
