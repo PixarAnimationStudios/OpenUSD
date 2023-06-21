@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while computing Layer Stack
+
+Error evaluating expression `"${BOGUS"` for sublayer in @ExpressionsInSublayers/root.sdf@: Missing ending '}' at character 9
+

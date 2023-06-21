@@ -394,6 +394,16 @@ private:
                             std::string* debugSummary,
                             bool *significant);
 
+    // Propagates changes due to the addition/removal of the sublayer
+    // at the given \p sublayerPath to/from the parent \p layer.
+    void _DidAddOrRemoveSublayer(const PcpCache* cache,
+                                 const PcpLayerStackPtrVector& layerStacks,
+                                 const SdfLayerHandle& layer,
+                                 const std::string& sublayerPath,
+                                 _SublayerChangeType sublayerChange,
+                                 std::string* debugSummary,
+                                 std::vector<bool> *significant);
+
     // Mark the layer stack as having changed.
     void _DidChangeLayerStack(
         const PcpCache* cache,

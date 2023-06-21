@@ -85,6 +85,10 @@ void wrapLayerStack()
         .add_property("expressionVariables",
                       make_function(&PcpLayerStack::GetExpressionVariables,
                                     return_value_policy<return_by_value>()))
+        .add_property("expressionVariableDependencies",
+                      make_function(
+                          &PcpLayerStack::GetExpressionVariableDependencies,
+                          return_value_policy<TfPySequenceToList>()))
         .add_property("relocatesSourceToTarget",
                       make_function(&PcpLayerStack::GetRelocatesSourceToTarget,
                                     return_value_policy<return_by_value>()))

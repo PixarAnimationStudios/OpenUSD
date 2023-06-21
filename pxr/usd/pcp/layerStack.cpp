@@ -829,6 +829,7 @@ PcpLayerStack::_BlowLayers()
     _layerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
     _mutedAssetPaths.clear();
+    _expressionVariableDependencies.clear();
 }
 
 void
@@ -1000,23 +1001,33 @@ PcpLayerStack::_BuildLayerStack(
     _mapFunctions.push_back(mapFunction);
         
     // Recurse over sublayers to build subtrees.
-    const vector<string> &sublayers = layer->GetSubLayerPaths();
+    vector<string> sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
-    size_t numSublayers = sublayers.size();
-    std::vector<bool> isMuted(numSublayers);
-    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
-    std::vector<std::string> errCommentary(numSublayers);
+    const size_t numSublayers = sublayers.size();
 
-    // Compute mutedness first.
+    // Evaluate expressions and compute mutedness first.
     for(size_t i=0; i != numSublayers; ++i) {
+        if (Pcp_IsVariableExpression(sublayers[i])) {
+            sublayers[i] = Pcp_EvaluateVariableExpression(
+                sublayers[i], *_expressionVariables,
+                "sublayer", layer, SdfPath::AbsoluteRootPath(),
+                &_expressionVariableDependencies, errors);
+
+            if (sublayers[i].empty()) {
+                continue;
+            }
+        }
+
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {
             _mutedAssetPaths.insert(canonicalMutedPath);
-            isMuted[i] = true;
+            sublayers[i].clear();
         }
     }
 
+    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
+    std::vector<std::string> errCommentary(numSublayers);
     std::vector<_SublayerSourceInfo> localSourceInfo(numSublayers);
 
     auto loadSublayer = [&](size_t i) {
@@ -1058,7 +1069,7 @@ PcpLayerStack::_BuildLayerStack(
             TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH);
 
         for (size_t i=0; i != numSublayers; ++i) {
-            if (isMuted[i]) {
+            if (sublayers[i].empty()) {
                 continue;
             }
 
@@ -1079,7 +1090,7 @@ PcpLayerStack::_BuildLayerStack(
 
     Pcp_SublayerInfoVector sublayerInfo;
     for (size_t i=0; i != numSublayers; ++i) {
-        if (isMuted[i]) {
+        if (sublayers[i].empty()) {
             continue;
         }
         if (!sublayerRefPtrs[i]) {

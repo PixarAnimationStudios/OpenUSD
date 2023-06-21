@@ -60,6 +60,13 @@ Pcp_EvaluateVariableExpression(
     std::unordered_set<std::string>* usedVariables,
     PcpErrorVector* errors);
 
+// Convenience overload of above that does not populate \p usedVariables or 
+// \p errors.
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars);
+
 // Returns true if \p str is a variable expression, false otherwise.
 bool
 Pcp_IsVariableExpression(

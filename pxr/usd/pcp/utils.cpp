@@ -73,6 +73,16 @@ Pcp_EvaluateVariableExpression(
         r.value.UncheckedGet<std::string>() : std::string();
 }
 
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars)
+{
+    return Pcp_EvaluateVariableExpression(
+        expression, expressionVars,
+        std::string(), SdfLayerHandle(), SdfPath(), nullptr, nullptr);
+}
+
 bool
 Pcp_IsVariableExpression(
     const std::string& str)

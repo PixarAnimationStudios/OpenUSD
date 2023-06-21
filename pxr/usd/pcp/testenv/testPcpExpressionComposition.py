@@ -77,6 +77,433 @@ class TestPcpExpressionComposition(unittest.TestCase):
 
         return pi
 
+    def test_BasicSublayers(self):
+        pcpCache = LoadPcpCache('sublayers/root.sdf')
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+
+        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.sdf')
+        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.sdf')
+        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.sdf')
+        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.sdf')
+
+        # Verify initial state.
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+        # Modify the expression variable to X=B. This should drop A.sdf and load
+        # B.sdf as a sublayer. Since B.sdf is not empty, this should incur a
+        # significant resync.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'X':'B'}
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             bLayer.GetPrimAtPath('/Test'),
+             bSubLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             bLayer,
+             bSubLayer])
+
+        # Modify the expression variable to X=C. This drops B.sdf and loads
+        # C.sdf as a sublayer. This incurs a significant resync even though
+        # C.sdf is empty -- see comment in 
+        # PcpChanges::_DidChangeLayerStackExpressionVariables
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'X':'C'}
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(len(layerStack.localErrors), 0)
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer,
+             cLayer])
+
+        # Modify the expression variable to X=BAD. This should drop C.sdf and
+        # attempt to load BAD.sdf as a sublayer, but fail to do so since
+        # BAD.sdf does not exist.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'X':'BAD'}
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(len(layerStack.localErrors), 1)
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer])
+
+        # Modify the expression variable to X=A. This should resolve the error
+        # and load A.sdf again.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'X':'A'}
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+        # Author a new expression variable Y=B. This should cause no changes
+        # since nothing relies on that variable.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'X':'A', 'Y':'B'}
+            self.assertEqual(changes.GetSignificantChanges(), [])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+    def test_SublayerAuthoring(self):
+        pcpCache = LoadPcpCache('sublayers/root.sdf')
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+
+        aLayer = Sdf.Layer.FindOrOpen('sublayers/A.sdf')
+        bLayer = Sdf.Layer.FindOrOpen('sublayers/B.sdf')
+        bSubLayer = Sdf.Layer.FindOrOpen('sublayers/B_sub.sdf')
+        cLayer = Sdf.Layer.FindOrOpen('sublayers/C.sdf')
+
+        # Verify initial state.
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+        # Add a new sublayer using an expression that evaluates to B.sdf.
+        # Since B.sdf is not empty, this should incur a significant resync.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.subLayerPaths.append('`"./B.sdf"`')
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test'),
+             bLayer.GetPrimAtPath('/Test'),
+             bSubLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer,
+             bLayer,
+             bSubLayer])
+
+        # Remove the sublayer we just added to reverse the changes.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            del rootLayer.subLayerPaths[-1]
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+        # Add a new sublayer using an expression that evaluates to C.sdf.
+        # Since C.sdf is empty, this should not incur any changes to /Test.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.subLayerPaths.append('`"./C.sdf"`')
+            self.assertEqual(changes.GetSignificantChanges(), [])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer,
+             cLayer])
+
+        # Remove the sublayer we just added to reverse the changes.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            del rootLayer.subLayerPaths[-1]
+            self.assertEqual(changes.GetSignificantChanges(), [])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test'),
+             aLayer.GetPrimAtPath('/Test')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(layerStack.localErrors, [])
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer, 
+             aLayer])
+
+    def test_SublayerAuthoringAndVariableChange(self):
+        pcpCache = LoadPcpCache('multi_sublayer_auth/base_ref.sdf')
+
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.sdf')
+        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.sdf')
+
+        # Verify initial state.
+        pi, err = pcpCache.ComputePrimIndex('/BaseRef')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/BaseRef')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer])
+
+        # Add a new sublayer expression and the variable it depends on
+        # in the same change block. The newly-authored variable should
+        # be used when evaluating the sublayer, which should be loaded
+        # successfully and cause the appropriate resyncs.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            with Sdf.ChangeBlock():
+                rootLayer.expressionVariables = {'X':'B'}
+                rootLayer.subLayerPaths.append('`"./${X}.sdf"`')
+
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/BaseRef')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/BaseRef'),
+             bLayer.GetPrimAtPath('/BaseRef')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer,
+             bLayer])
+
+        # Undo the changes in the same change block to reverse the
+        # effects.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            with Sdf.ChangeBlock():
+                rootLayer.ClearExpressionVariables()
+                del rootLayer.subLayerPaths[-1]
+
+            self.assertEqual(changes.GetSignificantChanges(), ['/'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/BaseRef')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/BaseRef')])
+
+        layerStack = pi.rootNode.layerStack
+        self.assertEqual(
+            layerStack.layers, 
+            [rootLayer])
+
+    def test_SublayerAuthoringAffectingMultipleLayerStacks(self):
+        pcpCache = LoadPcpCache('multi_sublayer_auth/root.sdf')
+
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+        ref1Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref1.sdf')
+        ref2Layer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/ref2.sdf')
+        baseRefLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/base_ref.sdf')
+
+        aLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/A.sdf')
+        bLayer = Sdf.Layer.FindOrOpen('multi_sublayer_auth/B.sdf')
+
+        # Verify initial state.
+        pi, err = pcpCache.ComputePrimIndex('/Test_1')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_1'),
+             ref1Layer.GetPrimAtPath('/Ref_1'),
+             baseRefLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test_2')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_2'),
+             ref2Layer.GetPrimAtPath('/Ref_2'),
+             baseRefLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer])
+
+        # Add a sublayer that refers to the expression variable X in
+        # base_ref.sdf. This variable is assigned different values in the
+        # various referenced layer stacks:
+        #
+        #   - In ref1.sdf, X=A, which should load insignificant sublayer
+        #     A.sdf, causing no changes for /Test_1.
+        #
+        #   - In ref2.sdf, X=B, which should load significant sublayer
+        #     B.sdf, causing a significant resync for /Test_2.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            baseRefLayer.subLayerPaths.append('`"./${X}.sdf"`')
+            self.assertEqual(changes.GetSignificantChanges(), ['/Test_2'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test_1')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_1'),
+             ref1Layer.GetPrimAtPath('/Ref_1'),
+             baseRefLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer,
+             aLayer])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test_2')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_2'),
+             ref2Layer.GetPrimAtPath('/Ref_2'),
+             baseRefLayer.GetPrimAtPath('/BaseRef'),
+             bLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer,
+             bLayer])
+
+        # Remove the sublayer to reverse the changes.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            del baseRefLayer.subLayerPaths[-1]
+            self.assertEqual(changes.GetSignificantChanges(), ['/Test_2'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test_1')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_1'),
+             ref1Layer.GetPrimAtPath('/Ref_1'),
+             baseRefLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer])
+
+        pi, err = pcpCache.ComputePrimIndex('/Test_2')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Test_2'),
+             ref2Layer.GetPrimAtPath('/Ref_2'),
+             baseRefLayer.GetPrimAtPath('/BaseRef')])
+
+        baseRefLayerStack = pi.rootNode.children[0].children[0].layerStack
+        self.assertEqual(baseRefLayerStack.identifier.rootLayer, baseRefLayer)
+        self.assertEqual(
+            baseRefLayerStack.layers, 
+            [baseRefLayer])
+
     def test_BasicReferencesAndPayloads(self):
         pcpCache = LoadPcpCache('refs_and_payloads/root.sdf')
         rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer

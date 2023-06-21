@@ -885,27 +885,18 @@ PcpChanges::DidChange(const PcpCache* cache,
                                 k.second == SdfChangeList::SubLayerAdded ? 
                                 _SublayerAdded : _SublayerRemoved;
 
-                            bool significant = false;
-                            const SdfLayerRefPtr sublayer = 
-                                _LoadSublayerForChange(cache,
-                                    layer,
-                                    sublayerPath,
-                                    sublayerChange);
-                                
-                            PCP_APPEND_DEBUG(
-                                "  Layer @%s@ changed sublayers\n",
-                                layer ? 
-                                layer->GetIdentifier().c_str() : "invalid");
+                            std::vector<bool> significant;
+                            _DidAddOrRemoveSublayer(
+                                cache, layerStacks, layer, sublayerPath,
+                                sublayerChange, debugSummary, &significant);
+                            
+                            for (size_t i = 0, e = layerStacks.size(); 
+                                 i != e; ++i) {
 
-                            _DidChangeSublayer(cache, layerStacks,
-                                               sublayerPath,
-                                               sublayer,
-                                               sublayerChange,
-                                               debugSummary,
-                                               &significant);
-                            if (significant) {
-                                layerStackChangeMask |=
-                                    LayerStackSignificantChange;
+                                if (significant[i]) {
+                                    layerStackChangesMap[layerStacks[i]] |=
+                                        LayerStackSignificantChange;
+                                }
                             }
                         }
                     }
@@ -2026,6 +2017,117 @@ PcpChanges::_LoadSublayerForChange(
 }
 
 void
+PcpChanges::_DidAddOrRemoveSublayer(
+    const PcpCache* cache,
+    const PcpLayerStackPtrVector& layerStacks,
+    const SdfLayerHandle& layer,
+    const std::string& sublayerPath,
+    _SublayerChangeType sublayerChange,
+    std::string* debugSummary,
+    std::vector<bool>* significant)
+{
+    PCP_APPEND_DEBUG(
+        "  Layer @%s@ changed sublayers\n",
+        layer ? layer->GetIdentifier().c_str() : "invalid");
+
+    // If the sublayer path being added or removed is a variable expression,
+    // it can wind up evaluating to different paths depending on the layer
+    // stacks the parent layer is a part of. 
+    // 
+    // If the path is not an expression, we can avoid that complication and
+    // just load and process the specified sublayer.
+    if (!Pcp_IsVariableExpression(sublayerPath)) {
+        const SdfLayerRefPtr sublayer = 
+            _LoadSublayerForChange(cache,
+                layer,
+                sublayerPath,
+                sublayerChange);
+
+        bool sublayerIsSignificant = false;
+        
+        _DidChangeSublayer(
+            cache, layerStacks, sublayerPath, sublayer,
+            sublayerChange, debugSummary, &sublayerIsSignificant);
+
+        significant->assign(layerStacks.size(), sublayerIsSignificant);
+
+        return;
+    }
+
+    // Evaluate the sublayer path using the expression variables associated
+    // with each layer stack the parent layer is a part of, grouping them
+    // together for batch processing afterwards.
+    struct _Data
+    {
+        std::string sublayerPath;
+        SdfLayerRefPtr sublayer;
+        PcpLayerStackPtrVector layerStacks;
+        std::vector<size_t> layerStackIdxs;
+    };
+    std::unordered_map<std::string, _Data, TfHash> sublayerToLayerStack;
+
+    // XXX: 
+    // WBN to share this with _DidChangeLayerStackExpressionVariables
+    // since that function will probably do the same computations.
+    PcpExpressionVariableCachingComposer expressionVarComposer(
+        cache->GetLayerStackIdentifier());
+
+    for (size_t i = 0, e = layerStacks.size(); i != e; ++i) {
+        const PcpLayerStackPtr& layerStack = layerStacks[i];
+
+        // If this sublayer is being added, we recompute the expression
+        // variables for the layer stack to handle the case where variables
+        // that the sublayer expression depends on are modified in the
+        // same change block.
+        //
+        // If this sublayer is being removed, we can just use the cached
+        // variables in the layer stack since we need to evaluate the
+        // sublayer expression the same way it would've originally been
+        // evaluated. Otherwise, we'll be unable to find the corresponding
+        // SdfLayer in _LoadSublayerForChange below.
+        const PcpExpressionVariables& expressionVars =
+            sublayerChange == _SublayerAdded ?
+            expressionVarComposer.ComputeExpressionVariables(
+                layerStack->GetIdentifier()) :
+            layerStack->GetExpressionVariables();
+
+        const std::string evaluatedPath =
+            Pcp_EvaluateVariableExpression(sublayerPath, expressionVars);
+        if (evaluatedPath.empty()) {
+            continue;
+        }
+
+        _Data& d = sublayerToLayerStack[evaluatedPath];
+        if (d.sublayerPath.empty()) {
+            d.sublayer = _LoadSublayerForChange(
+                cache, layer, evaluatedPath, sublayerChange);
+            d.sublayerPath = std::move(evaluatedPath);
+        }
+        d.layerStacks.push_back(layerStack);
+        d.layerStackIdxs.push_back(i);
+    }
+
+    // Do the appropriate change processing for each unique evaluated value
+    // for the sublayer path expression.
+    significant->assign(layerStacks.size(), false);
+
+    for (const auto& entry : sublayerToLayerStack) {
+        const _Data& d = entry.second;
+        bool sublayerIsSignificant = false;
+
+        _DidChangeSublayer(
+            cache, d.layerStacks, d.sublayerPath, d.sublayer,
+            sublayerChange, debugSummary, &sublayerIsSignificant);
+
+        if (sublayerIsSignificant) {
+            for (const size_t i : d.layerStackIdxs) {
+                (*significant)[i] = true;
+            }
+        }
+    }
+}
+
+void
 PcpChanges::_DidChangeSublayer(
     const PcpCache* cache,
     const PcpLayerStackPtrVector& layerStacks,
@@ -2324,6 +2426,7 @@ PcpChanges::_DidChangeLayerStackExpressionVariables(
             const PcpDependencyVector deps =
                 cache->FindSiteDependencies(
                     layerStack, SdfPath::AbsoluteRootPath(),
+                    PcpDependencyTypeRoot | 
                     PcpDependencyTypeDirect | PcpDependencyTypeNonVirtual,
                     /* recurseOnSite = */ true,
                     /* recurseOnIndex = */ false,
@@ -2417,6 +2520,39 @@ PcpChanges::_DidChangeLayerStackExpressionVariables(
                 return (oldVar && !newVar) || (!oldVar && newVar) || 
                        (oldVar && newVar && *oldVar != *newVar);
             };
+
+        // If this layer stack had sublayer asset paths that involved
+        // expression variables, we need to mark this layer stack as needing
+        // recomputation.
+        const std::unordered_set<std::string>& usedVars = 
+            layerStack->GetExpressionVariableDependencies();
+
+        const bool requiresLayerStackChange = std::any_of(
+            usedVars.begin(), usedVars.end(), expressionVarChanged);
+
+        if (requiresLayerStackChange) {
+            // Assume this is a significant change to the layer stack,
+            // which requires recomputing the layers as well as resyncing
+            // all prim indexes using this layer stack.
+            //
+            // We could be more precise by reevaluating all expressions
+            // in the layer stack and checking whether all of the layers
+            // that were added and removed are empty, in which case this
+            // would be an insignificant change. This seems like a very
+            // uncommon case and not worth the extra complexity now.
+            _DidChangeLayerStack(
+                cache, layerStack, 
+                /* requiresLayerStackChange = */ true,
+                /* requiresLayerStackOffsetsChange = */ false,
+                /* requiresSignificantChange = */ true);
+        
+            PCP_APPEND_DEBUG(
+                "    Resync all prims using layer stack because "
+                "an expression variable used for sublayers changed.\n");
+
+            resyncAllPrimsUsingLayerStack(layerStack);
+            continue;
+        }
 
         // Any prim indexes that depend on expression variables in this layer
         // stack (e.g. in reference/payload asset paths or variant selections)
