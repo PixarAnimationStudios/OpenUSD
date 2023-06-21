@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/tokens.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/valueTypeRegistry.h"
+#include "pxr/usd/sdf/variableExpression.h"
 
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
@@ -394,6 +395,7 @@ SDF_VALIDATE_WRAPPER(RelocatesPath, SdfPath);
 SDF_VALIDATE_WRAPPER(SpecializesPath, SdfPath);
 SDF_VALIDATE_WRAPPER(SubLayer, std::string);
 SDF_VALIDATE_WRAPPER(VariantIdentifier, std::string);
+SDF_VALIDATE_WRAPPER(VariantSelection, std::string);
 
 TF_DEFINE_PUBLIC_TOKENS(SdfChildrenKeys, SDF_CHILDREN_KEYS);
 TF_DEFINE_PUBLIC_TOKENS(SdfFieldKeys, SDF_FIELD_KEYS);
@@ -800,7 +802,7 @@ SdfSchemaBase::_RegisterStandardFields()
     _DoRegisterField(SdfFieldKeys->VariantSetNames, SdfStringListOp())
         .ListValueValidator(&_ValidateIdentifier);
     _DoRegisterField(SdfFieldKeys->VariantSelection, SdfVariantSelectionMap())
-        .MapValueValidator(&_ValidateVariantIdentifier);
+        .MapValueValidator(&_ValidateVariantSelection);
     _DoRegisterField(SdfFieldKeys->Variability, SdfVariabilityVarying);
     
     // Children fields.
@@ -1303,6 +1305,16 @@ _PathContainsProhibitedVariantSelection(const SdfPath& path)
     static const bool enforce =
         TfGetEnvSetting(SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS);
     return enforce ?  path.ContainsPrimVariantSelection() : false;
+}
+
+SdfAllowed
+SdfSchemaBase::IsValidVariantSelection(const std::string& sel)
+{
+    if (SdfVariableExpression::IsExpression(sel)) {
+        return true;
+    }
+
+    return IsValidVariantIdentifier(sel);
 }
 
 SdfAllowed 

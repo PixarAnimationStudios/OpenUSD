@@ -548,7 +548,7 @@ _PrimSetVariantSelection(Sdf_TextParserContext *context)
             const std::string variantName = it->second.Get<std::string>();
             ERROR_AND_RETURN_IF_NOT_ALLOWED(
                 context, 
-                SdfSchema::IsValidVariantIdentifier(variantName));
+                SdfSchema::IsValidVariantSelection(variantName));
 
             refVars[it->first] = variantName;
         }

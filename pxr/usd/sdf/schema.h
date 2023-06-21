@@ -314,6 +314,8 @@ public:
     static SdfAllowed IsValidSubLayer(const std::string& sublayer);
     SDF_API 
     static SdfAllowed IsValidVariantIdentifier(const std::string& name);
+    SDF_API
+    static SdfAllowed IsValidVariantSelection(const std::string& sel);
 
     /// @}
 

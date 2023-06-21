@@ -220,9 +220,10 @@ pxr_test_scripts(
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
-    testenv/testSdfVariableExpression.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
+    testenv/testSdfVariableExpression.py
+    testenv/testSdfVariants.py
 )
 
 pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
@@ -528,10 +529,6 @@ pxr_register_test(testSdfSpecHash
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
 )
-pxr_register_test(testSdfVariableExpression
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariableExpression"
-)
 pxr_register_test(testSdfTimeCode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
@@ -539,4 +536,12 @@ pxr_register_test(testSdfTimeCode
 pxr_register_test(testSdfTypes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes"
+)
+pxr_register_test(testSdfVariableExpression
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariableExpression"
+)
+pxr_register_test(testSdfVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariants"
 )
