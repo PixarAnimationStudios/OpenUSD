@@ -106,7 +106,7 @@ public:
     }
 
     /// Greater than operator
-    /// \sa PcpNodeRef::PcpNodeRef<(const PcpNodeRef&)
+    /// \sa PcpNodeRef::operator<(const PcpNodeRef&)
     bool operator>(const PcpNodeRef& rhs) const {
         return rhs < *this;
     }
