@@ -97,5 +97,11 @@ HgiShaderSection::_GetDefaultValue() const
     return _defaultValue;
 }
 
+const std::string& 
+HgiShaderSection::GetIdentifier() const
+{
+   return _identifierVar;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -27,12 +27,14 @@
 #include "pxr/base/plug/thisPlugin.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/fileUtils.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/imaging/hio/imageRegistry.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
 
 static TfToken
 _GetShaderPath(char const * shader)
@@ -59,121 +61,204 @@ _GetTexturePath(char const * texture)
 TfToken
 HdxPackageFullscreenShader()
 {
-    static TfToken shader = _GetShaderPath("fullscreen.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("fullscreen.hlslfx") :
+       _GetShaderPath("fullscreen.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassColorShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassColorShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled)? 
+      _GetShaderPath("renderPassColorShader.hlslfx"): 
+      _GetShaderPath("renderPassColorShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassColorAndSelectionShader()
 {
-    static TfToken shader =
-        _GetShaderPath("renderPassColorAndSelectionShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("renderPassColorAndSelectionShader.hlslfx") :
+       _GetShaderPath("renderPassColorAndSelectionShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassColorWithOccludedSelectionShader()
 {
-    static TfToken shader =
-        _GetShaderPath("renderPassColorWithOccludedSelectionShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+      _GetShaderPath("renderPassColorWithOccludedSelectionShader.hlslfx"):
+      _GetShaderPath("renderPassColorWithOccludedSelectionShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassIdShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassIdShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+      _GetShaderPath("renderPassIdShader.hlslfx"):
+      _GetShaderPath("renderPassIdShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassPickingShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassPickingShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("renderPassPickingShader.hlslfx") :
+       _GetShaderPath("renderPassPickingShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassShadowShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassShadowShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("renderPassShadowShader.hlslfx") :
+       _GetShaderPath("renderPassShadowShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageColorChannelShader()
 {
-    static TfToken shader = _GetShaderPath("colorChannel.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("colorChannel.hlslfx") :
+       _GetShaderPath("colorChannel.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageColorCorrectionShader()
 {
-    static TfToken shader = _GetShaderPath("colorCorrection.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("colorCorrection.hlslfx") :
+       _GetShaderPath("colorCorrection.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageVisualizeAovShader()
 {
-    static TfToken shader = _GetShaderPath("visualize.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("visualize.hlslfx") :
+       _GetShaderPath("visualize.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassOitShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassOitShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ? 
+      _GetShaderPath("renderPassOitShader.hlslfx") :
+      _GetShaderPath("renderPassOitShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassOitOpaqueShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassOitOpaqueShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+      _GetShaderPath("renderPassOitOpaqueShader.hlslfx") :
+      _GetShaderPath("renderPassOitOpaqueShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageRenderPassOitVolumeShader()
 {
-    static TfToken shader = _GetShaderPath("renderPassOitVolumeShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ? 
+      _GetShaderPath("renderPassOitVolumeShader.hlslfx") : 
+      _GetShaderPath("renderPassOitVolumeShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageOitResolveImageShader()
 {
-    static TfToken shader = _GetShaderPath("oitResolveImageShader.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("oitResolveImageShader.hlslfx") :
+       _GetShaderPath("oitResolveImageShader.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageOutlineShader()
 {
-    static TfToken shader = _GetShaderPath("outline.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("outline.hlslfx") :
+       _GetShaderPath("outline.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageSkydomeShader()
 {
-    static TfToken shader = _GetShaderPath("skydome.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("skydome.hlslfx") :
+       _GetShaderPath("skydome.glslfx");
     return shader;
 }
 
 TfToken
 HdxPackageBoundingBoxShader()
 {
-    static TfToken shader = _GetShaderPath("boundingBox.glslfx");
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    static TfToken shader = (1 == dxHgiEnabled) ?
+       _GetShaderPath("boundingBox.hlslfx") :
+       _GetShaderPath("boundingBox.glslfx");
     return shader;
 }
 

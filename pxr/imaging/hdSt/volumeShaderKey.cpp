@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/volumeShaderKey.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -31,6 +32,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,         "volume.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,         "volume.hlslfx"))
 
     // point id mixins (provide functions for picking system)
     ((pointIdFS,          "PointId.Fragment.Fallback"))
@@ -43,12 +49,16 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,         "Instancing.Transform"))
 );
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+
 HdSt_VolumeShaderKey::HdSt_VolumeShaderKey()
-    : glslfx(_tokens->baseGLSLFX),
-      VS{ _tokens->instancing, _tokens->mainVS, TfToken() },
+    : VS{ _tokens->instancing, _tokens->mainVS, TfToken() },
       FS{ _tokens->pointIdFS, _tokens->instancing,
           _tokens->mainFS, TfToken() }
 {
+   glslfx = (1 == dxHgiEnabled) ?
+      _tokens->baseHLSLFX :
+      _tokens->baseGLSLFX;
 }
 
 HdSt_VolumeShaderKey::~HdSt_VolumeShaderKey() = default;

@@ -58,6 +58,9 @@ public:
     HGI_API
     const char *GetGeneratedShaderCode() const;
 
+    HGI_API
+    HgiShaderFunctionDesc const& GetDescriptor() const;
+
 protected:
     HGI_API
     explicit HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor);

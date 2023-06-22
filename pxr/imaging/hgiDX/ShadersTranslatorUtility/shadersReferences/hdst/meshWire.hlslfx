@@ -1,0 +1,330 @@
+-- glslfx version 0.1
+
+//
+// Copyright 2016 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+--- This is what an import might look like.
+--- #import $TOOLS/hdSt/shaders/meshWire.hlslfx
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskTriangle
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
+    return vec3(0, GetEdgeFlag() & 1, GetEdgeFlag() & 2);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
+    return vec3(GetEdgeFlag() != 0, 1, 0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskTriQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // A value of one in this mask hides the corresponding edge.
+    // (See hd/meshUtil.cpp)
+    if (GetTriQuadID() == 0) {
+        return vec3(GetEdgeFlag() != 0, 1, 0);
+    } else {
+        return vec3(0, 1, GetEdgeFlag() != 0);
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskRefinedQuad
+
+vec3 GetPrimitiveEdgeMask()
+{
+    // Hide the common edge between the pair of rasterized triangles.
+    return vec3(0,1,0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeMaskNone
+
+vec3 GetPrimitiveEdgeMask()
+{
+    return vec3(0,0,0);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCommon
+
+// Returns the distance of the current fragment (in viewport pixel units) from
+// the nearest edge.
+float GetMinEdgeDistance()
+{
+    // Hide triangle edges by adding edge mask.
+    vec3 param = GetEdgeCoord() + GetPrimitiveEdgeMask();
+    vec3 edgeDistance = max(vec3(0.0,0.0,0.0), param / fwidth(param));
+    return min(edgeDistance.x,
+               min(edgeDistance.y,
+                   edgeDistance.z));
+}
+
+// Use edge distance to compute a smooth opacity falloff for good looking edges.
+float GetEdgeFalloff(float d) {
+    return exp2(-4 * d * d);
+}
+
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeTriQuadPTVS
+
+// Returns the distance of the current fragment (in viewport pixel units) from
+// the nearest edge.
+float GetMinEdgeDistance()
+{
+    vec2 leftBottom = GetEdgeCoord().xy;
+    vec2 rightTop = vec2(1.0,1.0) - leftBottom;
+
+    vec4 param = vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+    vec4 edgeDistance = max(vec4(0.0,0.0,0.0,0.0), param / fwidth(param));
+
+    // Hide internal edges introduced by quadrangulation
+    if (GetEdgeFlag() != 0) edgeDistance.yz += vec2(2.0,2.0);
+
+    return min(min(edgeDistance.x, edgeDistance.y),
+               min(edgeDistance.z, edgeDistance.w));
+}
+
+// Use edge distance to compute a smooth opacity falloff for good looking edges.
+float GetEdgeFalloff(float d) {
+    return exp2(-4 * d * d);
+}
+
+float GetEdgeOpacity() {
+    return GetEdgeFalloff(GetMinEdgeDistance());
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeParam
+
+vec3 GetEdgeParamTriangle()
+{
+    // Expand barycentric coordinates
+    vec2 param = GetPatchCoord(0).xy;
+    vec3 barycentric = vec3(param.x, param.y, 1 - param.x - param.y);
+
+    // Match triangle edge order
+    return barycentric.yzx;
+}
+
+vec3 GetEdgeDistanceTriangle()
+{
+    vec3 param = GetEdgeParamTriangle();
+    return max(vec3(0.0,0.0,0.0), param / fwidth(param));
+}
+
+vec4 GetEdgeParamQuad()
+{
+    // Expand coordinates to opposite corners of quad
+    vec2 leftBottom = GetPatchCoord(0).xy;
+    vec2 rightTop = vec2(1.0,1.0) - leftBottom;
+
+    // Match quad edge order
+    return vec4(leftBottom.y, rightTop.x, rightTop.y, leftBottom.x);
+}
+
+vec4 GetEdgeDistanceQuad()
+{
+    vec4 param = GetEdgeParamQuad();
+    return max(vec4(0.0,0.0,0.0,0.0), param / fwidth(param));
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.PatchEdgeTriangle
+
+// Override for subdivided faces to make the boundary of the face stand out.
+float GetEdgeOpacityForPatch()
+{
+    // Distance in pixels from triangle patch edges.
+    vec3 patchEdgeDistance = GetEdgeDistanceTriangle();
+
+    const float patchEdgeMinDistance =
+        min(patchEdgeDistance.x, min(patchEdgeDistance.y, patchEdgeDistance.z));
+
+    // Reduce the opacity of edges not on patch boundaries
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.PatchEdgeQuad
+
+// Override for subdivided faces to make the boundary of the face stand out.
+float GetEdgeOpacityForPatch()
+{
+    // Distance in pixels from quad patch edges.
+    vec4 patchEdgeDistance = GetEdgeDistanceQuad();
+
+    // Hide sub-patch internal edges introduced by quadrangulation
+    if (GetEdgeFlag() != 0) patchEdgeDistance.yz += vec2(2.0,2.0);
+
+    const float patchEdgeMinDistance =
+        min(min(patchEdgeDistance.x, patchEdgeDistance.y),
+            min(patchEdgeDistance.z, patchEdgeDistance.w));
+
+    // Reduce the opacity of edges not on patch boundaries
+    if (patchEdgeMinDistance > 1.0) {
+        return 0.3 * GetEdgeOpacity();
+    }
+
+    // Use distance to patch edge rather than distance to primitive edge
+    return GetEdgeFalloff(patchEdgeMinDistance);
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.NoEdge
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    return Cfill;
+}
+
+// Return a large value, signifying that the fragment isn't near an edge.
+float GetMinEdgeDistance()
+{
+    return 1000.0;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeOnSurface
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    float p = GetEdgeOpacity();
+    
+    vec4 wireColor = GetWireframeColor();
+    
+    // If wireColor is unset (zero), the fill color is just dimmed a bit.
+    if (all(equal(wireColor, vec4(0,0,0,0)))) wireColor.a = 0.5;
+
+    vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
+    Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
+
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeOnlyBlendColor
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    float p = GetEdgeOpacity();
+    if (p < 0.5) discard;
+
+    vec4 wireColor = GetWireframeColor();
+
+    // If wireColor is unset (zero), ignore it altogether
+    
+    Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
+
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeOnlyNoBlend
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    float p = GetEdgeOpacity();
+    if (p < 0.5) discard;
+
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.Barycentric
+
+vec3 GetEdgeCoord()
+{
+    return GetBarycentricCoord();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.Tess
+
+vec2 GetEdgeCoord()
+{
+    return GetTessCoord();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.EdgeCoord.TessTriangle
+
+vec3 GetEdgeCoord()
+{
+    return GetTessCoordTriangle();
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.EdgeOnSurface
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    float p = GetEdgeOpacityForPatch();
+    
+    vec4 wireColor = GetWireframeColor();
+
+    // If wireColor is unset (zero), the fill color is just dimmed a bit.
+    if (all(equal(wireColor, vec4(0,0,0,0)))) wireColor.a = 0.5;
+
+    vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
+    Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
+
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshPatchWire.Fragment.EdgeOnly
+
+vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
+{
+    float p = GetEdgeOpacity();
+    if (p < 0.5) discard;
+
+    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
+
+    return Cfill;
+}

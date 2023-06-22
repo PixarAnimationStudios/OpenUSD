@@ -1338,11 +1338,15 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_OMP=ON',
             '-DNO_CUDA=ON',
             '-DNO_OPENCL=ON',
-            '-DNO_DX=ON',
             '-DNO_TESTS=ON',
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
+        
+        if context.buildDirectX:
+            extraArgs.append('-DNO_DX=OFF')
+        else:
+            extraArgs.append('-DNO_DX=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -1718,6 +1722,9 @@ def InstallUSD(context, force, buildArgs):
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=ON')
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
+            
+        if context.buildDirectX:
+            extraArgs.append('-DPXR_ENABLE_DIRECTX_SUPPORT=ON')
 
         if context.buildMayapyTests:
             extraArgs.append('-DPXR_BUILD_MAYAPY_TESTS=ON')
@@ -2073,6 +2080,11 @@ subgroup.add_argument("--animx-tests",
 subgroup.add_argument("--no-animx-tests",
                       dest="build_animx_tests", action="store_false",
                       help="Do not build AnimX spline tests (default)")
+group = parser.add_argument_group(title="Optional Hgi")
+group.add_argument("--directx", dest="buildDirectX", action="store_true", 
+                      default=False,
+                      help="Build DirectX Hgi")
+
 
 args = parser.parse_args()
 
@@ -2217,6 +2229,9 @@ class InstallContext:
 
         # - MaterialX Plugin
         self.buildMaterialX = args.build_materialx
+        
+        # - Hgi
+        self.buildDirectX = args.buildDirectX
 
         # - Spline Tests
         self.buildMayapyTests = args.build_mayapy_tests
@@ -2485,6 +2500,7 @@ summaryMsg += """\
       HDF5 support:             {enableHDF5}
     Draco Plugin                {buildDraco}
     MaterialX Plugin            {buildMaterialX}
+    DirectX Hgi                 {buildDirectX}
 
   Dependencies                  {dependencies}"""
 
@@ -2547,7 +2563,8 @@ summaryMsg = summaryMsg.format(
     buildMaterialX=("On" if context.buildMaterialX else "Off"),
     buildMayapyTests=("On" if context.buildMayapyTests else "Off"),
     buildAnimXTests=("On" if context.buildAnimXTests else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    enableHDF5=("On" if context.enableHDF5 else "Off"),
+    buildDirectX=("On" if context.buildDirectX else "Off"))
 
 Print(summaryMsg)
 

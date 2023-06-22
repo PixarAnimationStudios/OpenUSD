@@ -46,6 +46,7 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/getEnv.h"
 
 #include "pxr/base/tf/hash.h"
 
@@ -72,6 +73,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (primitiveParam)
     (topologyVisibility)
 );
+
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
 
 namespace {
     struct BindingLocator {
@@ -333,13 +336,24 @@ HdSt_ResourceBinder::ResolveBindings(
             HdTupleType valueType = it->second->GetTupleType();
             // Special case: VBOs have intrinsic support for packed types,
             // so expand them out to their target type for the shader binding.
-            if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
-                valueType.type = HdTypeFloatVec4;
-            } else if (valueType.type == HdTypeHalfFloatVec2) {
-                valueType.type = HdTypeFloatVec2;
-            } else if (valueType.type == HdTypeHalfFloatVec4) {
-                valueType.type = HdTypeFloatVec4;
+
+            //
+            // Seems DirectX does not have the same intrinsic support as OpenGl 
+            // for such packed data type (or if it does it's really difficult to figure out how 
+            // it might work), so:
+            if (!dxHgiEnabled)
+            {
+               if (valueType.type == HdTypeInt32_2_10_10_10_REV) {
+                  valueType.type = HdTypeFloatVec4;
+               }
+               else if (valueType.type == HdTypeHalfFloatVec2) {
+                  valueType.type = HdTypeFloatVec2;
+               }
+               else if (valueType.type == HdTypeHalfFloatVec4) {
+                  valueType.type = HdTypeFloatVec4;
+               }
             }
+
             TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
             metaDataOut->vertexData[vertexPrimvarBinding] =
                 MetaData::Primvar(/*name=*/glName,

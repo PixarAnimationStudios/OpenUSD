@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/cullingShaderKey.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -30,6 +31,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,       "frustumCull.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,       "frustumCull.hlslfx"))
     ((instancing,       "Instancing.Transform"))
     ((counting,         "ViewFrustumCull.Counting"))
     ((noCounting,       "ViewFrustumCull.NoCounting"))
@@ -42,10 +48,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainCS,           "ViewFrustumCull.Compute"))
 );
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+
 HdSt_CullingShaderKey::HdSt_CullingShaderKey(
     bool instancing, bool tinyCull, bool counting)
-    : glslfx(_tokens->baseGLSLFX)
 {
+    glslfx = (1 == dxHgiEnabled) ? 
+       _tokens->baseHLSLFX:
+       _tokens->baseGLSLFX;
 
     VS[0] = _tokens->instancing;
     VS[1] = counting ? _tokens->counting : _tokens->noCounting;
@@ -61,8 +71,10 @@ HdSt_CullingShaderKey::~HdSt_CullingShaderKey()
 
 HdSt_CullingComputeShaderKey::HdSt_CullingComputeShaderKey(
     bool instancing, bool tinyCull, bool counting)
-    : glslfx(_tokens->baseGLSLFX)
 {
+   glslfx = (1 == dxHgiEnabled) ?
+      _tokens->baseHLSLFX :
+      _tokens->baseGLSLFX;
 
     CS[0] = _tokens->instancing;
     CS[1] = counting ? _tokens->counting : _tokens->noCounting;

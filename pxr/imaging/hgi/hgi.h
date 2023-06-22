@@ -50,6 +50,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
 class HgiIndirectCommandEncoder;
+class HgiMemoryHelper;
+struct HgiCustomInterop;
 
 using HgiUniquePtr = std::unique_ptr<class Hgi>;
 
@@ -319,6 +321,17 @@ public:
     HGI_API
     virtual void EndFrame() = 0;
 
+	/// Provide a way to transfer the Render Target image to the 
+	/// destination texture or window
+	HGI_API
+    virtual HgiCustomInterop* GetCustomInterop();
+
+	HGI_API
+	/// When allocating memory in the GPU area for the shaders input data
+	/// the padding and aligning requirements can be different for different 
+	/// graphics interfaces. This allows each Hgi to override the default
+    /// memory allocation rules.
+    virtual HgiMemoryHelper* GetMemoryHelper();
 protected:
     // Returns a unique id for handle creation.
     // Thread safety: Thread-safe atomic increment.

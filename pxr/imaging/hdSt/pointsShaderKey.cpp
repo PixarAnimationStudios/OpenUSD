@@ -23,6 +23,7 @@
 //
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/pointsShaderKey.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -30,7 +31,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-    ((baseGLSLFX,         "points.glslfx"))
+    ((baseGLSLFX,               "points.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,               "points.hlslfx"))
 
     // point id mixins (for point picking & selection)
     ((pointIdVS,                "PointId.Vertex.PointParam"))
@@ -51,9 +57,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,               "Instancing.Transform"))
 );
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
-    : glslfx(_tokens->baseGLSLFX)
 {
+    glslfx = (1 == dxHgiEnabled) ?
+      _tokens->baseHLSLFX :
+      _tokens->baseGLSLFX;
     VS[0] = _tokens->instancing;
     VS[1] = _tokens->mainVS;
     VS[2] = _tokens->pointIdVS;

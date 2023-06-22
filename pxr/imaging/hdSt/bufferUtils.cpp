@@ -44,10 +44,12 @@
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/iterator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
 
 template <typename T>
 VtValue
@@ -234,6 +236,23 @@ HdStBufferRelocator::Commit(HgiBlitCmds* blitCmds)
                         (double)_queue.size());
 
     _queue.clear();
+
+    //
+    // This is something that happens right before we destroy the old buffers (re-alocator)
+    // I believe it makes sense to wait for the copy operations to finish before destroying the source buffers
+    // and at the moment I do not see a better place to take care of that
+    //
+    // without this, with DirectX I get a 
+    // D3D12 ERROR: ID3D12CommandList::Close: 
+    // An ID3D12Resource object (0x000002AE694EF4A0:'indices'), referenced in the command list being closed 
+    // (0x000002AE69998140:'Unnamed ID3D12GraphicsCommandList Object'), was deleted prior to closing the command list.  
+    // This is invalid and can result in application instability. [ EXECUTION ERROR #921: OBJECT_DELETED_WHILE_STILL_IN_USE]
+
+    //
+    // I'll only activate this for DirectX for now 
+    // until we can check whether it is useful in other cases or not
+    if(dxHgiEnabled)
+      blitCmds->InsertMemoryBarrier(HgiMemoryBarrierBits::HgiMemoryBarrierAll);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

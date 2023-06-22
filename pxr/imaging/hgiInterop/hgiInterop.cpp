@@ -70,8 +70,16 @@ void HgiInterop::TransferToApp(
     TfToken const& srcApi = srcHgi->GetAPIName();
 
     if (dstApi != HgiTokens->OpenGL) {
-        TF_CODING_ERROR("Unsupported destination Hgi backend: %s",
-                        dstApi.GetText());
+	    //
+	    // if we are in none of the <something> to OpenGL cases 
+	    // let's try allowing the hgi to deal with this the right way (e.g. vulkan -> vulkan, directX -> directX, ...)
+	    HgiCustomInterop* pInterop = srcHgi->GetCustomInterop();
+	    if (nullptr != pInterop) {
+	        pInterop->TransferToApp(srcColor, srcDepth, dstFramebuffer, dstRegion);
+	    }
+	    else 
+            TF_CODING_ERROR("Unsupported destination Hgi backend: %s",
+                            dstApi.GetText());
         return;
     }
 

@@ -45,6 +45,7 @@
 #include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -58,6 +59,7 @@
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
 #else
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#include <opensubdiv/osd/hlslPatchShaderSource.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -149,6 +151,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
                       "Enable Hgi resource generation for codeGen");
+
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
 
 /* static */
 bool
@@ -352,6 +356,8 @@ _GetPackedTypeDefinitions()
            "hd_dmat3 hd_dmat3_set(dmat3 v)    { return hd_dmat3(v[0][0], v[0][1], v[0][2],\n"
            "                                                    v[1][0], v[1][1], v[1][2],\n"
            "                                                    v[2][0], v[2][1], v[2][2]); }\n"
+           "mat4 MAT4Init(float x) {\n"
+           "   return mat4(x,0,0,0, 0,x,0,0, 0,0,x,0, 0,0,0,x); }\n"
         // helper functions for 410 specification
         // applying a swizzle operator on int and float is not allowed in 410.
            "int hd_int_get(int v)          { return v; }\n"
@@ -386,6 +392,7 @@ _GetPackedTypeDefinitions()
            "    return vec4(unpackHalf2x16(v.x), unpackHalf2x16(v.y)); }\n"
            "uvec2 hd_half4_set(vec4 v) {\n"
            "    return uvec2(packHalf2x16(v.xy), packHalf2x16(v.zw)); }\n"
+           "// End alias hgi vec and matrix types to hd.\n"
            ;
 }
 
@@ -1600,6 +1607,11 @@ _GetOSDCommonShaderSource()
     // forward declarations needed by the OpenSubdiv shaders.
     std::stringstream ss;
 
+    //
+    // This marker is required by the DirectX HGI backend 
+    // so that it can post-process the OSD shader code starting at this line.
+    ss << "\n// //////// OSD_CODE_START //////// \n";
+
 #if OPENSUBDIV_VERSION_NUMBER >= 30600
 #if defined(__APPLE__)
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchDrawingShaderSource();
@@ -1639,16 +1651,25 @@ _GetOSDCommonShaderSource()
 #else
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
-       << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
-       << "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+       << "mat4 OsdProjectionMatrix() { return GetProjectionMatrix(); }\n"
        << "int OsdPrimitiveIdBase() { return 0; }\n"
        << "float OsdTessLevel() { return GetTessLevel(); }\n"
+       //
+       // DirectX (HLSL) does not have a matrix constructor from one (float) value
+       // so let's do something a bit more generic
+       << "mat4 OsdModelViewMatrix() { return MAT4Init(1); }\n"
        << "\n";
 
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+       ss << ((1 == dxHgiEnabled) ?
+           OpenSubdiv::Osd::HLSLPatchShaderSource::GetCommonShaderSource() :
+           OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource());
 #endif
 #endif // OPENSUBDIV_VERSION_NUMBER
 
+    //
+    // This marker is required by the DirectX HGI backend 
+    // so that it can post-process the OSD shader code ending at this line.
+    ss << "\n// //////// OSD_CODE_END //////// \n";
     return ss.str();
 }
 
@@ -2011,7 +2032,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                       "}\n";
         } else {
             _genFS << "vec3 GetBarycentricCoord() {\n"
-                      "  return vec3(0);\n"
+                      "  return vec3(0,0,0);\n"
                       "}\n";
         }
     }
@@ -2054,6 +2075,30 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                 /*dataType=*/_tokens->_uint);
         }
     }
+
+    //
+    // When drawing with "points" mode, there is no gs
+    // and the ps expects a "patchCoord" as input.
+    // If vs does not provide it, DX throws an error:
+    // D3D12 ERROR: ID3D12Device::CreateGraphicsPipelineState: 
+    // Vertex Shader - Pixel Shader linkage error :
+    // Signatures between stages are incompatible.
+    // The input stage requires Semantic / Index(GSPATCHCOORD, 0) as input, 
+    // but it is not provided by the output stage.
+    // [STATE_CREATION ERROR #666: CREATEGRAPHICSPIPELINESTATE_SHADER_LINKAGE_SEMANTICNAME_NOT_FOUND]
+    //
+    // Adding the missing values to the output stage, fixes the DX errors, 
+    // even though nobody is setting a proper value for them.
+    if (!_hasGS)
+    {
+       _AddInterstageElement(&_resVS,
+                             HdSt_ResourceLayout::InOut::STAGE_OUT,
+                             /*name=*/TfToken("gsPatchCoord"),
+                             /*dataType=*/_tokens->vec4,
+                             TfToken(),
+                             TfToken());
+    }
+
 
     // prep interstage plumbing function
     _procVS  << "void ProcessPrimvarsIn() {\n";
@@ -2226,6 +2271,15 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // We need to include OpenSubdiv shader source only when processing
     // refined meshes. For all other meshes we need only a simplified
     // method of patch coord interpolation.
+
+    //
+    // The above idea seems good in theory but also looks unfinished:
+    // when drawing a simple Cube with no material and a simple red color,
+    // we get here with a "PrimitiveType" == PRIM_COMPUTE, 
+    // but the compiled code uses mesh.glslfx, line 1047, -- glsl Mesh.Geometry.Triangle
+    // which calls "GetPatchCoord", which calls "InterpolatePatchCoordTriangle"
+    // which, without the OSD code is now undefined, so I'm making a small change below
+
     if (_geometricShader->IsPrimTypeRefinedMesh()) {
         // Include OpenSubdiv shader source and use full patch interpolation.
         _osd << _GetOSDCommonShaderSource();
@@ -2238,7 +2292,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             "{\n"
             "    return OsdInterpolatePatchCoordTriangle(uv, patchParam);\n"
             "}\n";
-    } else if (_geometricShader->IsPrimTypeMesh()) {
+    } else 
+    {
         // Use simplified patch interpolation since all mesh faces are level 0.
         _osd <<
             "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
@@ -2729,9 +2784,36 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.generatedShaderCodeOut = &_fsSource;
 
         // builtins
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
+        TfToken baryAttribute = HgiShaderKeywordTokens->hdBaryCoordNoPerspNV;
+        TfToken primIdAttribute = HgiShaderKeywordTokens->hdPrimitiveID;
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+
+        if (builtinBarycentricsEnabled) {
+	        if (1 != dxHgiEnabled)
+	        {
+	           //
+	           // Adding this for DirectX is harmful because it does not (always) match a stage output.
+	            HgiShaderFunctionAddStageInput(
+	                &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
+	                baryAttribute);
+	        }
+
+        //
+        // For the PrimitiveID, HLSL has some really crazy ideas about when this can or cannot be
+        // a system parameter and also seems unable to properly compile based on context, so
+        // I need to manually distinguish between the case when we have a gs stage and when we do not
+        // For now, dealing with that with an ugly hack:
+        // Adding the parameter here (with an interstage id of -1), while for the "_hasGS" case
+        // it is properly added as an interstage element elsewhere (hlslfx file)
+        if ((1 != dxHgiEnabled) || (!_hasGS))
+        {
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "gl_PrimitiveID", "uint",
+                primIdAttribute);
+        }
+
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);
@@ -2757,6 +2839,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
     if (_hasTCS) {
         HgiShaderFunctionDesc tcsDesc;
         tcsDesc.shaderStage = HgiShaderStageTessellationControl;
+
+        //
+        // tentative quick fix to get TCS to compile for DX
+        if (1 == dxHgiEnabled)
+        {
+           HgiShaderFunctionAddStageInput(&tcsDesc, "gl_PrimitiveID", "uint", HgiShaderKeywordTokens->hdPrimitiveID);
+           HgiShaderFunctionAddStageInput(&tcsDesc, "gl_InvocationID", "uint", "");
+        }
 
         resourceGen._GenerateHgiResources(&tcsDesc,
             HdShaderTokens->tessControlShader, _resCommon, _GetMetaData());

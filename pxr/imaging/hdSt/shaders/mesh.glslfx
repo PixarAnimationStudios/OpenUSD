@@ -59,8 +59,8 @@ void main(void)
     ProcessPrimvarsIn();
 
     MAT4 transform    = ApplyInstanceTransform(HdGet_transform());
-    vec4 point        = vec4(HdGet_points().xyz, 1);
-    outData.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+    vec4 pt           = vec4(HdGet_points().xyz, 1);
+    outData.Peye = vec4(GetWorldToViewMatrix() * transform * pt);
 
     outData.Neye = GetNormal(vec3(0), 0); // normalized
 

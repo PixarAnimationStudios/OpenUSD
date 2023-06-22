@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hdSt/meshShaderKey.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -33,6 +34,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,                  "mesh.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,                  "mesh.hlslfx"))
 
     // normal mixins
     ((normalsScene,                "MeshNormal.Scene"))
@@ -156,6 +162,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((noScalarOverrideFS,          "Fragment.NoScalarOverride"))
 );
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
     TfToken shadingTerminal,
@@ -185,8 +193,11 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
     , fvarPatchType(fvarPatchType)
-    , glslfx(_tokens->baseGLSLFX)
 {
+    glslfx = (1 == dxHgiEnabled) ?
+      _tokens->baseHLSLFX:
+      _tokens->baseGLSLFX;
+
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
         polygonMode = HdPolygonModeLine;

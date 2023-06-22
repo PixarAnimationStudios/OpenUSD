@@ -38,4 +38,5 @@ pxr_library(hgi
         blitCmdsOps.h
         enums.h
         handle.h
+        memoryHelper.h
 )

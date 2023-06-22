@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/hdSt/imageShaderShaderKey.h"
+#include "pxr/base/tf/getEnv.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -30,13 +31,23 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((baseGLSLFX,       "imageShader.glslfx"))
+
+    //
+    // TODO: this is a temporary solution to switch between (slightly different) libraries 
+    // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
+    ((baseHLSLFX,       "imageShader.hlslfx"))
     ((mainVS,           "ImageShader.Vertex"))
     ((mainFS,           "ImageShader.Fragment"))
 );
 
+static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+
 HdSt_ImageShaderShaderKey::HdSt_ImageShaderShaderKey()
-    : glslfx(_tokens->baseGLSLFX)
 {
+   glslfx = (1 == dxHgiEnabled) ?
+      _tokens->baseHLSLFX :
+      _tokens->baseGLSLFX;
+
     VS[0] = _tokens->mainVS;
     VS[1] = TfToken();
 
