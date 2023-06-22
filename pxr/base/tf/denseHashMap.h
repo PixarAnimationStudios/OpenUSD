@@ -27,6 +27,7 @@
 /// \file tf/denseHashMap.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
@@ -55,7 +56,7 @@ template <
     unsigned Threshold = 128
 >
 
-class TfDenseHashMap :
+class ARCH_EMPTY_BASES TfDenseHashMap :
     // Since sizeof(EqualKey) == 0 and sizeof(HashFn) == 0 in many cases
     // we use the empty base optimization to not pay a size penalty.
     // In C++20, explore using [[no_unique_address]] as an alternative

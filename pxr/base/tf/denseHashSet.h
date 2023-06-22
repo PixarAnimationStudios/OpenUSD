@@ -27,6 +27,7 @@
 /// \file tf/denseHashSet.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
@@ -53,7 +54,7 @@ template <
     class    EqualElement  = std::equal_to<Element>,
     unsigned Threshold = 128
 >
-class TfDenseHashSet :
+class ARCH_EMPTY_BASES TfDenseHashSet :
     // Since sizeof(EqualElement) == 0 and sizeof(HashFn) == 0 in many cases
     // we use the empty base optimization to not pay a size penalty.
     // In C++20, explore using [[no_unique_address]] as an alternative
