@@ -1124,6 +1124,7 @@ HTML_EXTRA_STYLESHEET  = docs/doxygen/usd_style.css
 # files. In the HTML_STYLESHEET file, use the file name only. Also note that the
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
+# NOTE: See also Doxygen Awesome additions below
 
 HTML_EXTRA_FILES       =
 
@@ -2343,3 +2344,12 @@ GENERATE_LEGEND        = YES
 DOT_CLEANUP            = YES
 
 #CLANG_ASSISTED_PARSING = YES
+
+# Setup for Doxygen Awesome CSS
+
+FULL_SIDEBAR = NO
+HTML_EXTRA_STYLESHEET  = docs/doxygen/doxygen-awesome-css/doxygen-awesome.css
+HTML_EXTRA_FILES  = docs/doxygen/doxygen-awesome-css/doxygen-awesome-darkmode-toggle.js \
+                    docs/doxygen/doxygen-awesome-css/doxygen-awesome-fragment-copy-button.js
+# HTML_COLORSTYLE is a Doxygen 1.9.x config required for Doxygen Awesome
+HTML_COLORSTYLE = LIGHT
