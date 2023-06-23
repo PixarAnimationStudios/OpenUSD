@@ -238,14 +238,12 @@ HdSceneIndexPrim
 HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
 {
     // Check the hierarchy cache
-    {
-        const _PrimTable::const_iterator i = _prims.find(primPath);
-        // SdfPathTable will default-construct entries for ancestors
-        // as needed to represent hierarchy, so double-check the
-        // dataSource to confirm presence of a cached prim
-        if (i != _prims.end() && i->second.dataSource) {
-            return i->second;
-        }
+    const _PrimTable::const_iterator i = _prims.find(primPath);
+    // SdfPathTable will default-construct entries for ancestors
+    // as needed to represent hierarchy, so double-check the
+    // dataSource to confirm presence of a cached prim
+    if (i != _prims.end() && i->second.dataSource) {
+        return i->second;
     }
 
     // Check the recent prims cache
@@ -261,8 +259,15 @@ HdFlatteningSceneIndex::GetPrim(const SdfPath &primPath) const
     // No cache entry found; query input scene
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
-    // Wrap the input dataSource even when null, to support
-    // dirtying down the hierarchy
+    // If the input scene does not provide a data source, and there
+    // are no descendant prims either (as implied by the lack of a
+    // SdfPathTable entry in _prims), do not return anything.
+    if (!prim.dataSource && i == _prims.end()) {
+        return prim;
+    }
+
+    // Wrap the input datasource even when null, to support dirtying
+    // down non-contiguous hierarchy
     prim.dataSource = _PrimLevelWrappingDataSource::New(
         *this, primPath, prim.dataSource);
 
