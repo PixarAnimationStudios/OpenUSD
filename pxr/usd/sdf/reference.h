@@ -35,8 +35,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/operators.hpp>
-
 #include <iosfwd>
 #include <string>
 #include <vector>
@@ -74,7 +72,7 @@ typedef std::vector<SdfReference> SdfReferenceVector;
 /// Custom data is for use by plugins or other non-tools supplied extensions
 /// that need to be able to store data associated with references.
 ///
-class SdfReference : boost::totally_ordered<SdfReference> {
+class SdfReference {
 public:
     /// Creates a reference with all its meta data.  The default reference is an
     /// internal reference to the default prim.  See SdfAssetPath for what
@@ -175,9 +173,29 @@ public:
     /// Returns whether this reference equals \a rhs.
     SDF_API bool operator==(const SdfReference &rhs) const;
 
+    /// \sa SdfReference::operator==(const SdfReference&)
+    bool operator!=(const SdfReference &rhs) const {
+        return !(*this == rhs);
+    }
+
     /// Returns whether this reference is less than \a rhs.  The meaning
     /// of less than is somewhat arbitrary.
     SDF_API bool operator<(const SdfReference &rhs) const;
+
+    /// \sa SdfReference::operator<(const SdfReference&)
+    bool operator>(const SdfReference &rhs) const {
+        return rhs < *this;
+    }
+
+    /// \sa SdfReference::operator<(const SdfReference&)
+    bool operator<=(const SdfReference &rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// \sa SdfReference::operator<(const SdfReference&)
+    bool operator>=(const SdfReference &rhs) const {
+        return !(*this < rhs);
+    }
 
     /// Struct that defines equality of SdfReferences based on their
     /// identity (the asset path and prim path).
