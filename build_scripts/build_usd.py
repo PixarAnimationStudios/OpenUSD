@@ -1488,17 +1488,7 @@ PYOPENGL = PythonDependency("PyOpenGL", GetPyOpenGLInstructions,
 
 def GetPySideInstructions():
     # For licensing reasons, this script cannot install PySide itself.
-    if Windows():
-        # There is no distribution of PySide2 for Windows for Python 2.7.
-        # So use PySide instead. See the following for more details:
-        # https://wiki.qt.io/Qt_for_Python/Considerations#Missing_Windows_.2F_Python_2.7_release
-        return ('PySide is not installed. If you have pip '
-                'installed, run "pip install PySide" '
-                'to install it, then re-run this script.\n'
-                'If PySide is already installed, you may need to '
-                'update your PYTHONPATH to indicate where it is '
-                'located.')
-    elif MacOS():
+    if MacOS():
         # PySide6 is required for Apple Silicon support, so is the default
         # across all macOS hardware platforms.
         return ('PySide6 is not installed. If you have pip '
@@ -1516,7 +1506,7 @@ def GetPySideInstructions():
                 'located.')
 
 PYSIDE = PythonDependency("PySide", GetPySideInstructions,
-                          moduleNames=["PySide", "PySide2", "PySide6"])
+                          moduleNames=["PySide2", "PySide6"])
 
 ############################################################
 # HDF5
@@ -2436,27 +2426,18 @@ if PYSIDE in requiredDependencies:
     usdBuildArgs = context.GetBuildArguments(USD)
     given_pysideUic = 'PYSIDEUICBINARY' in " ".join(usdBuildArgs)
 
-    # The USD build will skip building usdview if pyside2-uic or pyside-uic is
+    # The USD build will skip building usdview if pyside6-uic or pyside2-uic is
     # not found, so check for it here to avoid confusing users. This list of 
     # PySide executable names comes from cmake/modules/FindPySide.cmake
     pyside6Uic = ["pyside6-uic"]
     found_pyside6Uic = any([which(p) for p in pyside6Uic])
     pyside2Uic = ["pyside2-uic", "python2-pyside2-uic", "pyside2-uic-2.7"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
-    pysideUic = ["pyside-uic", "python2-pyside-uic", "pyside-uic-2.7"]
-    found_pysideUic = any([which(p) for p in pysideUic])
-    if not given_pysideUic and not found_pyside2Uic and not found_pysideUic and not found_pyside6Uic:
-        if Windows():
-            # Windows does not support PySide2 with Python2.7
-            PrintError("pyside-uic not found -- please install PySide and"
-                       " adjust your PATH. (Note that this program may be named"
-                       " {0} depending on your platform)"
-                   .format(" or ".join(pysideUic)))
-        else:
-            PrintError("uic not found -- please install PySide2 or PySide6 and"
-                       " adjust your PATH. (Note that this program may be"
-                       " named {0} depending on your platform)"
-                       .format(" or ".join(set(pyside2Uic+pyside6Uic))))
+    if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
+        PrintError("uic not found -- please install PySide2 or PySide6 and"
+                   " adjust your PATH. (Note that this program may be"
+                   " named {0} depending on your platform)"
+                   .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
 # Summarize
