@@ -33,8 +33,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
 
-#include <boost/operators.hpp>
-
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -47,8 +45,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// Objects of this type are immutable.
 ///
-class PcpLayerStackIdentifier :
-    boost::totally_ordered<PcpLayerStackIdentifier> {
+class PcpLayerStackIdentifier {
 public:
     typedef PcpLayerStackIdentifier This;
 
@@ -78,8 +75,25 @@ public:
     // Comparison.
     PCP_API
     bool operator==(const This &rhs) const;
+    bool operator!=(const This &rhs) const
+    {
+        return !(rhs == *this);
+    }
+
     PCP_API
     bool operator<(const This &rhs) const;
+    bool operator<=(const This& rhs) const
+    {
+        return !(rhs < *this);
+    }
+    bool operator>(const This& rhs) const
+    {
+        return rhs < *this;
+    }
+    bool operator>=(const This& rhs) const
+    {
+        return !(*this < rhs);
+    }
 
     // Hashing.
     struct Hash {
