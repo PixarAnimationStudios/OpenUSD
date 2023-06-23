@@ -393,7 +393,7 @@ typename UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_Entry*
 UsdImaging_ResolvedAttributeCache<Strategy, ImplData>::_GetCacheEntryForPrim(
     const UsdPrim &prim) const
 {
-    typename _CacheMap::const_iterator it = _cache.find(prim);
+    typename _CacheMap::iterator it = _cache.find(prim);
     if (it != _cache.end()) {
         return &it->second;
     }
