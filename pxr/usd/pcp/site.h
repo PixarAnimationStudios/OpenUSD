@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/operators.hpp>
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,7 +42,7 @@ class PcpLayerStackSite;
 ///
 /// A site specifies a path in a layer stack of scene description.
 ///
-class PcpSite : boost::totally_ordered<PcpSite> 
+class PcpSite
 {
 public:
     PcpLayerStackIdentifier layerStackIdentifier;
@@ -63,9 +62,25 @@ public:
 
     PCP_API
     bool operator==(const PcpSite &rhs) const;
+
+    bool operator!=(const PcpSite &rhs) const {
+        return !(*this == rhs);
+    }
     
     PCP_API
     bool operator<(const PcpSite &rhs) const;
+
+    bool operator<=(const PcpSite &rhs) const {
+        return !(rhs < *this);
+    }
+
+    bool operator>(const PcpSite &rhs) const {
+        return rhs < *this;
+    }
+
+    bool operator>=(const PcpSite &rhs) const {
+        return !(*this < rhs);
+    }
 
     struct Hash {
         PCP_API
@@ -77,7 +92,7 @@ public:
 ///
 /// A site specifies a path in a layer stack of scene description.
 ///
-class PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> 
+class PcpLayerStackSite
 {
 public:
     PcpLayerStackRefPtr layerStack;
@@ -92,8 +107,25 @@ public:
     PCP_API
     bool operator==(const PcpLayerStackSite &rhs) const;
 
+    bool operator!=(const PcpLayerStackSite &rhs) const {
+        return !(*this == rhs);
+    }
+
     PCP_API
     bool operator<(const PcpLayerStackSite &rhs) const;
+
+    bool operator<=(const PcpLayerStackSite &rhs) const {
+        return !(rhs < *this);
+    }
+
+    bool operator>(const PcpLayerStackSite &rhs) const {
+        return rhs < *this;
+    }
+
+    bool operator>=(const PcpLayerStackSite &rhs) const {
+        return !(*this < rhs);
+    }
+
 
     struct Hash {
         PCP_API
