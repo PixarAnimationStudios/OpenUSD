@@ -51,11 +51,11 @@
 
 #include "pxr/usd/pcp/changes.h"
 #include "pxr/usd/pcp/errors.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackIdentifier.h"
 #include "pxr/usd/pcp/site.h"
 
-// used for creating prims
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/changeBlock.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -64,6 +64,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdf/types.h" 
+#include "pxr/usd/sdf/variableExpression.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/usd/ar/resolver.h"
@@ -294,7 +295,38 @@ public:
 
     using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
-    PathsToChangesMap primTypeInfoChanges;
+    PathsToChangesMap primTypeInfoChanges, assetValueChanges;
+};
+
+// Object containing information used when resolving an asset path value.
+class Usd_AssetPathContext
+{
+public:
+    operator bool() const { return static_cast<bool>(layer); }
+
+    // Report errors that occurred during asset path resolution.
+    void ReportErrors(const std::vector<std::string>& errors) const
+    {
+        const std::string context = TfStringPrintf(
+            "resolving asset path at @%s@<%s>",
+            layer->GetIdentifier().c_str(), specPath.GetText());
+
+        stage->_ReportErrors(PcpErrorVector(), errors, context);
+    }
+
+    // The UsdStage containing the attribute or metadata value.
+    const UsdStage* stage = nullptr;
+
+    // The layer and path to the spec containing the asset path value
+    // to anchor.
+    SdfLayerRefPtr layer;
+    SdfPath specPath;
+    
+    // The node containing the asset path opinion. Typically the
+    // layer containing the asset path value will be part of the
+    // node's layer stack. However, if the asset path comes from a 
+    // value clip, this is the node where the clips were introduced.
+    PcpNodeRef node;
 };
 
 // ------------------------------------------------------------------------- //
@@ -355,24 +387,43 @@ _ResolveAssetPathRelativeToLayer(
 // update the authored assetPaths by anchoring them to the
 // anchor layer; it will not fill in the resolved path field.
 static void
-_MakeResolvedAssetPathsImpl(const SdfLayerRefPtr &anchor,
-                            const ArResolverContext &context,
+_MakeResolvedAssetPathsImpl(const Usd_AssetPathContext &assetContext,
+                            const ArResolverContext &resolverContext,
                             SdfAssetPath *assetPaths,
                             size_t numAssetPaths,
                             bool anchorAssetPathsOnly)
 {
-    ArResolverContextBinder binder(context);
+    ArResolverContextBinder binder(resolverContext);
     for (size_t i = 0; i != numAssetPaths; ++i) {
+
+        if (SdfVariableExpression::IsExpression(assetPaths[i].GetAssetPath())) {
+            const PcpExpressionVariables& exprVars =
+                assetContext.node.GetLayerStack()->GetExpressionVariables();
+
+            SdfVariableExpression::Result r = 
+                SdfVariableExpression(assetPaths[i].GetAssetPath())
+                .EvaluateTyped<std::string>(exprVars.GetVariables());
+
+            if (!r.errors.empty()) {
+                assetContext.ReportErrors(r.errors);
+                continue;
+            }
+
+            assetPaths[i] = SdfAssetPath(
+                r.value.IsHolding<std::string>() ? 
+                r.value.UncheckedGet<std::string>() : std::string());
+        }
+
         if (anchorAssetPathsOnly) {
             assetPaths[i] = SdfAssetPath(
                 _AnchorAssetPathRelativeToLayer(
-                    anchor, assetPaths[i].GetAssetPath()));
+                    assetContext.layer, assetPaths[i].GetAssetPath()));
         }
         else {
             assetPaths[i] = SdfAssetPath(
                 assetPaths[i].GetAssetPath(),
                 _ResolveAssetPathRelativeToLayer(
-                    anchor, assetPaths[i].GetAssetPath()));
+                    assetContext.layer, assetPaths[i].GetAssetPath()));
         }
     }
 }
@@ -386,10 +437,10 @@ UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
 {
     // Get the layer providing the strongest value and use that to anchor the
     // resolve.
-    auto anchor = _GetLayerWithStrongestValue(time, attr);
-    if (anchor) {
+    auto context = _GetAssetPathContext(time, attr);
+    if (context) {
         _MakeResolvedAssetPathsImpl(
-            anchor, GetPathResolverContext(), assetPaths, numAssetPaths,
+            context, GetPathResolverContext(), assetPaths, numAssetPaths,
             anchorAssetPathsOnly);
     }
 }
@@ -3801,6 +3852,13 @@ _AddToChangedPaths(SdfPathVector *paths, const SdfPath& p,
     paths->push_back(p);
 }
 
+template <class ChangedPaths>
+static void
+_AddToChangedPaths(ChangedPaths *paths, const SdfPath& p)
+{
+    (*paths)[p];
+}
+
 template <class ChangedPaths, class... Values>
 static void
 _AddToChangedPaths(ChangedPaths *paths, const SdfPath& p, const Values&... data)
@@ -3869,6 +3927,38 @@ _AddAffectedStagePaths(const SdfLayerHandle &layer, const SdfPath &path,
         "Adding paths that use <%s> in layer @%s@: %s\n",
         path.GetText(),
         layer->GetIdentifier().c_str(),
+        _Stringify(*changedPaths).c_str());
+}
+
+// Add paths in the given cache that depend on any prim in the given
+// layerStack to changedPaths. See comment on other overload for more details.
+template <class ChangedPaths, class... ExtraData>
+static void
+_AddAffectedStagePaths(const PcpLayerStackPtr &layerStack,
+                       const PcpCache &cache,
+                       ChangedPaths *changedPaths,
+                       const ExtraData&... extraData)
+{
+    // Unlike the other overload, we want root dependencies since
+    // we want all prims that depend on any prims in this layer stack.
+    const PcpDependencyFlags depTypes = PcpDependencyTypeAnyNonVirtual;
+
+    // Do not filter dependencies against the indexes cached in PcpCache,
+    // because Usd does not cache PcpPropertyIndex entries.
+    const bool filterForExistingCachesOnly = false;
+
+    for (const PcpDependency& dep:
+         cache.FindSiteDependencies(
+             layerStack, SdfPath::AbsoluteRootPath(), depTypes,
+             /* recurseOnSite */ true,
+             /* recurseOnIndex */ false,
+             filterForExistingCachesOnly)) {
+        _AddToChangedPaths(changedPaths, dep.indexPath, extraData...);
+    }
+
+    TF_DEBUG(USD_CHANGES).Msg(
+        "Adding paths that use layer stack %s: %s\n",
+        TfStringify(layerStack).c_str(),
         _Stringify(*changedPaths).c_str());
 }
 
@@ -3979,6 +4069,7 @@ UsdStage::_HandleLayersDidChange(
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
     _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
+    _PathsToChangesMap& assetValueChanges = _pendingChanges->assetValueChanges;
     _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
@@ -4122,7 +4213,6 @@ UsdStage::_HandleLayersDidChange(
     // changedActivePaths.  Push changes through Pcp to determine further
     // invalidation based on composition metadata (reference, inherits, variant
     // selections, etc).
-
     PcpChanges& changes = _pendingChanges->pcpChanges;
     const PcpCache *cache = _cache.get();
     changes.DidChange(cache, n.GetChangeListVec());
@@ -4133,7 +4223,28 @@ UsdStage::_HandleLayersDidChange(
     // This ensures that prim indexes for these prims are ejected from
     // the PcpCache.
     for (const SdfPath& p : changedActivePaths) {
-        changes.DidChangeSignificantly(_cache.get(), p);
+        changes.DidChangeSignificantly(cache, p);
+    }
+
+    // If the resolved expression variables have changed for any layer
+    // stacks, asset-valued attributes and metadata that are authored in
+    // those stacks and use stage variable expressions may be affected.
+    // We don't have to recompose anything but we need to send notification
+    // to clients about this. 
+    // 
+    // Currently, we send resyncs for all prims on the stage that depend
+    // on layer stacks with variable changes. We can't do anything more
+    // targeted since we don't cache attribute/metadata values and don't
+    // want to pay the cost of scanning the entire stage for affected
+    // values. A possible alternative would be to introduce another notice
+    // that indicates that asset values under a given prim may have changed
+    // and put clients on the hook for responding to that.
+    for (const auto& layerStackChange : changes.GetLayerStackChanges()) {
+        const PcpLayerStackPtr& layerStack = layerStackChange.first;
+        const PcpLayerStackChanges& changes = layerStackChange.second;
+        if (changes.didChangeExpressionVariables) {
+            _AddAffectedStagePaths(layerStack, *cache, &assetValueChanges);
+        }
     }
 
     // Normally we'd call _ProcessPendingChanges only if _pendingChanges
@@ -4164,6 +4275,7 @@ UsdStage::_ProcessPendingChanges()
     _PathsToChangesMap& otherResyncChanges=_pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
     _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
+    _PathsToChangesMap& assetValueChanges = _pendingChanges->assetValueChanges;
 
     _Recompose(changes, &recomposeChanges);
 
@@ -4208,13 +4320,14 @@ UsdStage::_ProcessPendingChanges()
 
         remapChangesToPrototypes(&recomposeChanges);
         remapChangesToPrototypes(&primTypeInfoChanges);
+        remapChangesToPrototypes(&assetValueChanges);
         remapChangesToPrototypes(&otherResyncChanges);
         remapChangesToPrototypes(&otherInfoChanges);
 
         // Before processing any prim type info changes, remove any that would
         // already have been covered by the recomposed prims.
         _MergeAndRemoveDescendentEntries(
-                &recomposeChanges, &primTypeInfoChanges);
+            &recomposeChanges, &primTypeInfoChanges);
 
         // Recompose the prim type info for the prims that need it. 
         for (const auto &entry : primTypeInfoChanges) {
@@ -4234,6 +4347,20 @@ UsdStage::_ProcessPendingChanges()
             recomposeChanges.swap(primTypeInfoChanges);
         } else {
             for (auto& entry : primTypeInfoChanges) {
+                recomposeChanges[entry.first] = std::move(entry.second);
+            }
+        }
+
+        // Process asset value changes as resyncs, making sure to remove any
+        // that are covered by the recomposed prims. See comment in 
+        // _HandleLayersDidChange.
+        _MergeAndRemoveDescendentEntries(
+            &recomposeChanges, &assetValueChanges);
+
+        if (recomposeChanges.empty()) {
+            recomposeChanges.swap(assetValueChanges);
+        } else {
+            for (auto& entry : assetValueChanges) {
                 recomposeChanges[entry.first] = std::move(entry.second);
             }
         }
@@ -5500,47 +5627,48 @@ private:
 
 static void
 _ResolveAssetPath(SdfAssetPath *v,
-                  const ArResolverContext &context,
-                  const SdfLayerRefPtr &layer,
+                  const ArResolverContext &resolverContext,
+                  const Usd_AssetPathContext &assetContext,
                   bool anchorAssetPathsOnly)
 {
     _MakeResolvedAssetPathsImpl(
-        layer, context, v, 1,  anchorAssetPathsOnly);
+        assetContext, resolverContext, v, 1, anchorAssetPathsOnly);
 }
 
 static void
 _ResolveAssetPath(VtArray<SdfAssetPath> *v,
-                  const ArResolverContext &context,
-                  const SdfLayerRefPtr &layer,
+                  const ArResolverContext &resolverContext,
+                  const Usd_AssetPathContext &assetContext,
                   bool anchorAssetPathsOnly)
 {
     _MakeResolvedAssetPathsImpl(
-        layer, context, v->data(), v->size(),  anchorAssetPathsOnly);
+        assetContext, resolverContext, v->data(), v->size(), 
+        anchorAssetPathsOnly);
 }
 
 template <class T, class Storage>
 static void
 _UncheckedResolveAssetPath(Storage storage,
-                           const ArResolverContext &context,
-                           const SdfLayerRefPtr &layer,
+                           const ArResolverContext &resolverContext,
+                           const Usd_AssetPathContext &assetContext,
                            bool anchorAssetPathsOnly)
 {
     T v;
     _UncheckedSwap(storage, v);
-    _ResolveAssetPath(&v, context, layer, anchorAssetPathsOnly);
+    _ResolveAssetPath(&v, resolverContext, assetContext, anchorAssetPathsOnly);
     _UncheckedSwap(storage, v);
 }
 
 template <class T, class Storage>
 static bool 
 _TryResolveAssetPath(Storage storage,
-                     const ArResolverContext &context,
-                     const SdfLayerRefPtr &layer,
+                     const ArResolverContext &resolverContext,
+                     const Usd_AssetPathContext &assetContext,
                      bool anchorAssetPathsOnly)
 {
     if (_IsHolding<T>(storage)) {
         _UncheckedResolveAssetPath<T>(
-            storage, context, layer, anchorAssetPathsOnly);
+            storage, resolverContext, assetContext, anchorAssetPathsOnly);
         return true;
     }
     return false;
@@ -5551,15 +5679,15 @@ _TryResolveAssetPath(Storage storage,
 template <class Storage>
 static bool 
 _TryResolveAssetPaths(Storage storage,
-                      const ArResolverContext &context,
-                      const SdfLayerRefPtr &layer,
+                      const ArResolverContext &resolverContext,
+                      const Usd_AssetPathContext &assetContext,
                       bool anchorAssetPathsOnly)
 {
     return 
         _TryResolveAssetPath<SdfAssetPath>(
-            storage, context, layer, anchorAssetPathsOnly) ||
+            storage, resolverContext, assetContext, anchorAssetPathsOnly) ||
         _TryResolveAssetPath<VtArray<SdfAssetPath>>(
-            storage, context, layer, anchorAssetPathsOnly);
+            storage, resolverContext, assetContext, anchorAssetPathsOnly);
 }
 
 template <class T, class Storage>
@@ -5606,7 +5734,7 @@ _TryResolveTimeCodes(Storage storage, const LayerOffsetAccess &offsetAccess)
 // If the given dictionary contains any resolvable values, fills in those values
 // with their resolved paths.
 static void
-_ResolveValuesInDictionary(const SdfLayerRefPtr &anchor,
+_ResolveValuesInDictionary(const Usd_AssetPathContext &anchor,
                            const ArResolverContext &context,
                            const LayerOffsetAccess *offsetAccess,
                            VtDictionary *dict,
@@ -5638,7 +5766,7 @@ _ResolveValuesInDictionary(const SdfLayerRefPtr &anchor,
 template <class Storage>
 static bool
 _TryResolveValuesInDictionary(Storage storage,
-                              const SdfLayerRefPtr &anchor,
+                              const Usd_AssetPathContext &anchor,
                               const ArResolverContext &context,
                               const LayerOffsetAccess *offsetAccess,
                               bool anchorAssetPathsOnly)
@@ -5705,7 +5833,8 @@ protected:
 
     // Consumes an authored dictionary value and merges it into the current 
     // strongest dictionary value.
-    bool _ConsumeAndMergeAuthoredDictionary(const PcpNodeRef &node,
+    bool _ConsumeAndMergeAuthoredDictionary(const UsdStage &stage,
+                                            const PcpNodeRef &node,
                                             const SdfLayerRefPtr &layer,
                                             const SdfPath &specPath,
                                             const TfToken &fieldName,
@@ -5725,8 +5854,8 @@ protected:
 
             // Try resolving the values in the dictionary.
             if (_TryResolveValuesInDictionary(
-                    _value, layer, context, &layerOffsetAccess, 
-                    _anchorAssetPathsOnly)) {
+                    _value, { &stage, layer, specPath, node }, 
+                    context, &layerOffsetAccess, _anchorAssetPathsOnly)) {
                 // Merge the resolved dictionary.
                 VtDictionaryOverRecursive(
                     &tmpDict, _UncheckedGet<VtDictionary>(_value));
@@ -5777,7 +5906,8 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
         VtValue *s, bool anchorAssetPathsOnly = false)
         : Base(s, anchorAssetPathsOnly) {}
 
-    bool ConsumeAuthored(const PcpNodeRef &node,
+    bool ConsumeAuthored(const UsdStage &stage,
+                         const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
                          const SdfPath &specPath,
                          const TfToken &fieldName,
@@ -5787,7 +5917,7 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
             // Handle special value-type composition: dictionaries merge atop 
             // each other.
             return this->_ConsumeAndMergeAuthoredDictionary(
-                node, layer, specPath, fieldName, keyPath);
+                stage, node, layer, specPath, fieldName, keyPath);
         } else {
             // Try to read value from scene description and resolve it if needed
             // if the value is found.
@@ -5797,7 +5927,7 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
                 if (!_IsHoldingDictionary()) {
                     this->_done = true;
                 }
-                _ResolveValue(node, layer);
+                _ResolveValue(stage, node, layer, specPath);
                 return true;
             }
             return false;
@@ -5826,7 +5956,10 @@ protected:
         return _IsHolding<VtDictionary>(this->_value);
     }
 
-    void _ResolveValue(const PcpNodeRef &node, const SdfLayerRefPtr &layer)
+    void _ResolveValue(const UsdStage& stage, 
+                       const PcpNodeRef &node,
+                       const SdfLayerRefPtr &layer,
+                       const SdfPath &specPath)
     {
         const ArResolverContext &context = 
             node.GetLayerStack()->GetIdentifier().pathResolverContext;
@@ -5844,15 +5977,17 @@ protected:
         // here to the cover the case when the storage container starts as an
         // empty VtValue.
         if (_TryResolveValuesInDictionary(
-                this->_value, layer, context, &layerOffsetAccess, 
-                this->_anchorAssetPathsOnly)) {
+                this->_value, { &stage, layer, specPath, node },
+                context, &layerOffsetAccess, this->_anchorAssetPathsOnly)) {
         } else {
             // Otherwise try resolving each of the the other resolvable 
             // types.
             _TryApplyLayerOffsetToValue<SdfTimeSampleMap>(
                 this->_value, layerOffsetAccess) ||
             _TryResolveAssetPaths(
-                this->_value, context, layer, this->_anchorAssetPathsOnly) ||
+                this->_value, context,
+                { &stage, layer, specPath, node },
+                this->_anchorAssetPathsOnly) ||
             _TryResolveTimeCodes(this->_value, layerOffsetAccess);
         }
     }
@@ -5871,7 +6006,8 @@ struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
         : Base(s, /* anchorAssetPathsOnly = */ false) {}
 
 
-    bool ConsumeAuthored(const PcpNodeRef &node,
+    bool ConsumeAuthored(const UsdStage &stage,
+                         const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
                          const SdfPath &specPath,
                          const TfToken &fieldName,
@@ -5911,7 +6047,8 @@ struct TypeSpecificValueComposer :
     explicit TypeSpecificValueComposer(SdfAbstractDataTypedValue<T> *s)
         : Base(s, /*anchorAssetPathsOnly = */ false) {}
 
-    bool ConsumeAuthored(const PcpNodeRef &node,
+    bool ConsumeAuthored(const UsdStage &stage,
+                         const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
                          const SdfPath &specPath,
                          const TfToken &fieldName,
@@ -5923,7 +6060,7 @@ struct TypeSpecificValueComposer :
             // We're done if we got value and it's not a dictionary. For 
             // dictionaries we'll continue to merge in weaker dictionaries.
             this->_done = true;
-            _ResolveValue(node, layer);
+            _ResolveValue(stage, node, layer, specPath);
             return true;
         }
         return false;
@@ -5940,8 +6077,10 @@ struct TypeSpecificValueComposer :
 
 protected:
     // Implementation for the base class.
-    void _ResolveValue(const PcpNodeRef &node,
-                       const SdfLayerRefPtr &layer)
+    void _ResolveValue(const UsdStage &stage,
+                       const PcpNodeRef &node,
+                       const SdfLayerRefPtr &layer,
+                       const SdfPath &specPath)
     {
         // The default for almost all types is to do no extra value resolution.
         // The few types that require resolution must either specialize this 
@@ -5960,32 +6099,40 @@ protected:
 template <>
 void 
 TypeSpecificValueComposer<SdfAssetPath>::_ResolveValue(
+    const UsdStage &stage,
     const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
 {
     const ArResolverContext &context = 
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
     _UncheckedResolveAssetPath<SdfAssetPath>(
-        _value, context, layer, /*anchorAssetPathsOnly = */ false);
+        _value, context, { &stage, layer, specPath, node },
+        /*anchorAssetPathsOnly = */ false);
 }
 
 template <>
 void 
 TypeSpecificValueComposer<VtArray<SdfAssetPath>>::_ResolveValue(
+    const UsdStage &stage,
     const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
 {
     const ArResolverContext &context = 
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
     _UncheckedResolveAssetPath<VtArray<SdfAssetPath>>(
-        _value, context, layer, /*anchorAssetPathsOnly = */ false);
+        _value, context, { &stage, layer, specPath, node },
+        /*anchorAssetPathsOnly = */ false);
 }
 
 template <>
 void 
 TypeSpecificValueComposer<SdfTimeCode>::_ResolveValue(
+    const UsdStage &stage,
     const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
 {
     SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
     _UncheckedApplyLayerOffsetToValue<SdfTimeCode>(_value, offset);
@@ -5994,8 +6141,10 @@ TypeSpecificValueComposer<SdfTimeCode>::_ResolveValue(
 template <>
 void 
 TypeSpecificValueComposer<VtArray<SdfTimeCode>>::_ResolveValue(
+    const UsdStage &stage,
     const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
 {
     SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
     _UncheckedApplyLayerOffsetToValue<VtArray<SdfTimeCode>>(_value, offset);
@@ -6004,8 +6153,10 @@ TypeSpecificValueComposer<VtArray<SdfTimeCode>>::_ResolveValue(
 template <>
 void 
 TypeSpecificValueComposer<SdfTimeSampleMap>::_ResolveValue(
+    const UsdStage &stage,
     const PcpNodeRef &node,
-    const SdfLayerRefPtr &layer)
+    const SdfLayerRefPtr &layer,
+    const SdfPath &specPath)
 {
     SdfLayerOffset offset = _GetLayerToStageOffset(node, layer);
     _UncheckedApplyLayerOffsetToValue<SdfTimeSampleMap>(_value, offset);
@@ -6017,6 +6168,7 @@ TypeSpecificValueComposer<SdfTimeSampleMap>::_ResolveValue(
 template <>
 bool 
 TypeSpecificValueComposer<VtDictionary>::ConsumeAuthored(
+    const UsdStage &stage,
     const PcpNodeRef &node,
     const SdfLayerRefPtr &layer,
     const SdfPath &specPath,
@@ -6026,7 +6178,7 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeAuthored(
     // Handle special value-type composition: dictionaries merge atop 
     // each other.
     return this->_ConsumeAndMergeAuthoredDictionary(
-        node, layer, specPath, fieldName, keyPath);
+        stage, node, layer, specPath, fieldName, keyPath);
 }
 
 template <>
@@ -6046,8 +6198,8 @@ TypeSpecificValueComposer<VtDictionary>::ConsumeUsdFallback(
 template <>
 void 
 TypeSpecificValueComposer<VtDictionary>::_ResolveValue(
-    const PcpNodeRef &, const SdfLayerRefPtr &) = delete;
-
+    const UsdStage &, const PcpNodeRef &, const SdfLayerRefPtr &,
+    const SdfPath &) = delete;
 
 struct ExistenceComposer
 {
@@ -6059,7 +6211,8 @@ struct ExistenceComposer
 
     const std::type_info& GetHeldTypeid() const { return typeid(void); }
     bool IsDone() const { return _done; }
-    bool ConsumeAuthored(const PcpNodeRef &node,
+    bool ConsumeAuthored(const UsdStage &stage,
+                         const PcpNodeRef &node,
                          const SdfLayerRefPtr &layer,
                          const SdfPath &specPath,
                          const TfToken &fieldName,
@@ -6228,7 +6381,8 @@ _ComposeGeneralMetadataImpl(Usd_PrimDataConstPtr primData,
 
         // Consume an authored opinion here, if one exists.
         gotOpinion |= composer->ConsumeAuthored(
-            res->GetNode(), res->GetLayer(), specPath, fieldName, keyPath);
+            *primData->GetStage(), res->GetNode(), res->GetLayer(), specPath,
+            fieldName, keyPath);
         
         if (composer->IsDone()) {
             return true;
@@ -6268,7 +6422,8 @@ _ComposePseudoRootMetadataImpl(Usd_PrimDataConstPtr primData,
         node.GetLayerStack()->GetLayers().front() == sessionLayer) {
         // Consume an authored opinion here, if one exists.
         gotOpinion = composer->ConsumeAuthored(
-            node, sessionLayer, specPath, fieldName, keyPath);
+            *primData->GetStage(), node, sessionLayer, specPath,
+            fieldName, keyPath);
         if (composer->IsDone()) {
             return true;
         }
@@ -6276,7 +6431,7 @@ _ComposePseudoRootMetadataImpl(Usd_PrimDataConstPtr primData,
 
     // Consume an authored opinion from the root layer (which cannot be muted).
     gotOpinion |= composer->ConsumeAuthored(
-        node, rootLayer, specPath, fieldName, keyPath);
+        *primData->GetStage(), node, rootLayer, specPath, fieldName, keyPath);
 
     // Return whether we got an opinion from either layer.
     return gotOpinion;
@@ -6563,7 +6718,8 @@ UsdStage::_GetAttrVariabilityImpl(const UsdAttribute &attr, bool useFallbacks,
         SdfPath specPath = itr->GetPath().AppendProperty(attrName);
         TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
             composer->ConsumeAuthored(
-                *itr, *layerIt, specPath, SdfFieldKeys->Variability, TfToken());
+                *this, *itr, *layerIt, specPath, SdfFieldKeys->Variability, 
+                TfToken());
             if (composer->IsDone())
                 return;
         }
@@ -6592,7 +6748,8 @@ UsdStage::_GetPropCustomImpl(const UsdProperty &prop, bool useFallbacks,
         SdfPath specPath = itr->GetPath().AppendProperty(propName);
         TF_REVERSE_FOR_ALL(layerIt, itr->GetLayerStack()->GetLayers()) {
             composer->ConsumeAuthored(
-                *itr, *layerIt, specPath, SdfFieldKeys->Custom, TfToken());
+                *this, *itr, *layerIt, specPath, SdfFieldKeys->Custom,
+                TfToken());
             if (composer->IsDone())
                 return;
         }
@@ -6612,8 +6769,8 @@ _GetPrimTypeNameImpl(Usd_PrimDataConstPtr primData,
                 res.GetLocalPath(), SdfFieldKeys->TypeName, &tok)) {
             if (!tok.IsEmpty() && tok != SdfTokens->AnyTypeToken) {
                 composer->ConsumeAuthored(
-                    res.GetNode(), res.GetLayer(), res.GetLocalPath(),
-                    SdfFieldKeys->TypeName, TfToken());
+                    *primData->GetStage(), res.GetNode(), res.GetLayer(),
+                    res.GetLocalPath(), SdfFieldKeys->TypeName, TfToken());
                 if (composer->IsDone())
                     return;
             }
@@ -7545,40 +7702,45 @@ struct UsdStage::_ExtraResolveInfo
     Usd_ClipSetRefPtr clipSet;
 };
 
-SdfLayerRefPtr
-UsdStage::_GetLayerWithStrongestValue(
-    UsdTimeCode time, const UsdAttribute &attr) const
+Usd_AssetPathContext
+UsdStage::_GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const
 {
     SdfLayerRefPtr resultLayer;
-    if (time.IsDefault()) {
-        ExistenceComposer getLayerComposer(&resultLayer);
-        _GetMetadataImpl(attr, SdfFieldKeys->Default,
-                         TfToken(), /*useFallbacks=*/false, &getLayerComposer);
-    } else {
-        UsdResolveInfo resolveInfo;
-        _ExtraResolveInfo<SdfAbstractDataValue> extraResolveInfo;
-        
-        _GetResolveInfo(attr, &resolveInfo, &time, &extraResolveInfo);
-        
-        if (resolveInfo._source == UsdResolveInfoSourceTimeSamples ||
-            resolveInfo._source == UsdResolveInfoSourceDefault) {
-            resultLayer = resolveInfo._layer;
-        }
-        else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
-            const Usd_ClipSetRefPtr& clipSet = extraResolveInfo.clipSet;
-            const Usd_ClipRefPtr& activeClip = 
-                clipSet->GetActiveClip(time.GetValue());
-            const SdfPath specPath =
-                resolveInfo._primPathInLayerStack.AppendProperty(attr.GetName());
+    SdfPath resultSpecPath;
 
-            // If the active clip has authored time samples, the value will
-            // come from it (or at least be interpolated from it) so use that
-            // clip's layer. Otherwise the value will come from the manifest.
-            resultLayer = activeClip->HasAuthoredTimeSamples(specPath) ? 
-                activeClip->GetLayer() : clipSet->manifestClip->GetLayer();
-        }
+    UsdResolveInfo resolveInfo;
+    _ExtraResolveInfo<SdfAbstractDataValue> extraResolveInfo;
+        
+    _GetResolveInfo(attr, &resolveInfo, &time, &extraResolveInfo);
+        
+    if (resolveInfo._source == UsdResolveInfoSourceTimeSamples ||
+        resolveInfo._source == UsdResolveInfoSourceDefault) {
+        resultLayer = resolveInfo._layer;
+        resultSpecPath =
+            resolveInfo._primPathInLayerStack.AppendProperty(attr.GetName());
     }
-    return resultLayer;
+    else if (resolveInfo._source == UsdResolveInfoSourceValueClips) {
+        const Usd_ClipSetRefPtr& clipSet = extraResolveInfo.clipSet;
+        const Usd_ClipRefPtr& activeClip = 
+            clipSet->GetActiveClip(time.GetValue());
+        resultSpecPath =
+            resolveInfo._primPathInLayerStack.AppendProperty(attr.GetName());
+
+        // If the active clip has authored time samples, the value will
+        // come from it (or at least be interpolated from it) so use that
+        // clip's layer. Otherwise the value will come from the manifest.
+        resultLayer = activeClip->HasAuthoredTimeSamples(resultSpecPath) ? 
+            activeClip->GetLayer() : clipSet->manifestClip->GetLayer();
+    }
+
+    // If we filled in resultLayer, we must have found a strongest authored
+    // opinion for the attribute and populated _layerStack.
+    if (resultLayer) {
+        return { this, std::move(resultLayer), std::move(resultSpecPath),
+                 resolveInfo._node };
+    }
+    
+    return {};
 }
 
 template <class T>

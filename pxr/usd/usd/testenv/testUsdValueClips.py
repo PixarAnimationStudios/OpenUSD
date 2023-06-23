@@ -2462,6 +2462,11 @@ class TestUsdValueClips(unittest.TestCase):
         # clip layer. Note that at time 1 we have a clip with no samples
         # so we should get the default value defined in the manifest;
         # the resolved path there should be anchored to the manifest layer.
+        #
+        # The stage variable expressions authored in the asset paths in
+        # clip3.usda are evaluated using the variables authored in the
+        # stage's root and session layer. Variables in the clip itself
+        # are currently ignored.
 
         attr = stage.GetAttributeAtPath('/Model.assetPath')
         _CheckAssetPathValue(
@@ -2473,6 +2478,9 @@ class TestUsdValueClips(unittest.TestCase):
         _CheckAssetPathValue(
             attr, time=2,
             expected=os.path.abspath('assetPathValues/clip2/clip2.usda'))
+        _CheckAssetPathValue(
+            attr, time=3,
+            expected=os.path.abspath('assetPathValues/clip3/clip3.usda'))
 
         attr = stage.GetAttributeAtPath('/Model.assetPathArray')
         _CheckAssetPathArrayValue(
@@ -2484,6 +2492,9 @@ class TestUsdValueClips(unittest.TestCase):
         _CheckAssetPathArrayValue(
             attr, time=2,
             expected=[os.path.abspath('assetPathValues/clip2/clip2.usda')])
+        _CheckAssetPathArrayValue(
+            attr, time=3,
+            expected=[os.path.abspath('assetPathValues/clip3/clip3.usda')])
 
     def test_ComputeClipAssetPaths(self):
         """Test Usd.ClipsAPI.ComputeClipAssetPaths"""
@@ -2502,7 +2513,8 @@ class TestUsdValueClips(unittest.TestCase):
             [p.resolvedPath for p in computedAssetPaths],
             [os.path.abspath('assetPathValues/clip1/clip1.usda'),
              os.path.abspath('assetPathValues/nosamples.usda'),
-             os.path.abspath('assetPathValues/clip2/clip2.usda')])
+             os.path.abspath('assetPathValues/clip2/clip2.usda'),
+             os.path.abspath('assetPathValues/clip3/clip3.usda')])
 
         stage = Usd.Stage.Open('template/int1/result_int_1.usda')
         clipsAPI = Usd.ClipsAPI(

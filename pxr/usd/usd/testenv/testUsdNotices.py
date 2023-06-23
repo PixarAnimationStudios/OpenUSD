@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-import os, platform, sys, unittest
+import contextlib, os, platform, sys, unittest
 from pxr import Ar,Sdf,Usd,Tf
 
 allFormats = ['usd' + x for x in 'ac']
@@ -371,6 +371,93 @@ class TestUsdNotices(unittest.TestCase):
                 os.remove('Model.usda')
             except:
                 pass
+
+    def test_StageVariableExpressionChange(self):
+        refLayer = Sdf.Layer.CreateAnonymous('.usda')
+        refLayer.ImportFromString('''
+        #usda 1.0
+        (
+            expressionVariables = {
+                string REF = "A"
+            }
+        )
+
+        def "Ref"
+        {
+            asset attr = @`"${REF}.jpg"`@
+        }
+        '''.strip())
+
+        rootLayer = Sdf.Layer.CreateAnonymous('.usda')
+        rootLayer.ImportFromString('''
+        #usda 1.0
+        (
+            expressionVariables = {{
+                string ROOT = "A"
+            }}
+        )
+
+        def "Test"
+        {{
+            asset attr = @`"${{A}}.jpg"`@
+        }}
+
+        def "Ref1" (
+            references = @{refId}@</Ref>
+        )
+        {{
+        }}
+
+        def "Ref2" (
+            references = @{refId}@</Ref>
+        )
+        {{
+        }}
+        '''.format(refId=refLayer.identifier).strip())
+
+        s = Usd.Stage.Open(rootLayer)
+
+        @contextlib.contextmanager
+        def ExpectedNotice(stage, callback):
+            received = False
+            def _RunTest(notice, sender):
+                callback(notice)
+                nonlocal received
+                received = True
+            key = Tf.Notice.Register(Usd.Notice.ObjectsChanged, _RunTest, stage)
+            yield
+            self.assertTrue(received, "Did not receive notice")
+
+        # Author a change to the expression variables in the root layer
+        # stack. We currently expect a resync from the root since there
+        # may be asset-valued attributes (that we may have never pulled
+        # a value from) that depend on those variables.
+        def RootResync(notice):
+            self.assertEqual(notice.GetResyncedPaths(), ['/'])
+            self.assertEqual(notice.GetChangedFields('/'), [])
+
+        with ExpectedNotice(s, RootResync):
+            rootLayer.expressionVariables = {'ROOT':'B'}
+
+        # Author a change to the expression variables in a referenced layer
+        # stack. We expect to resync only the prim(s) that are referencing
+        # that layer.
+        def ReferencingPrimsResync(notice):
+            self.assertEqual(notice.GetResyncedPaths(), ['/Ref1', '/Ref2'])
+
+            # XXX:
+            # 'expressionVariables' should not show up as changed fields on
+            # /Ref1 and /Ref2 since that field was actually authored on the
+            # pseudo-root. This is a pre-existing bug involving layer
+            # metadata fields that cause resyncs for referencing prims.
+            # 'defaultPrim' is another example of such a field.
+            self.assertEqual(
+                notice.GetChangedFields('/Ref1'), ['expressionVariables'])
+            self.assertEqual(
+                notice.GetChangedFields('/Ref2'), ['expressionVariables'])
+
+        with ExpectedNotice(s, ReferencingPrimsResync):
+            refLayer.expressionVariables = {'REF':'B'}
 
 if __name__ == "__main__":
     unittest.main()
