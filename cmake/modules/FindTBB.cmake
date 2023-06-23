@@ -198,8 +198,8 @@ if(NOT TBB_FOUND)
 
   if(TBB_INCLUDE_DIRS)
     # Use new oneTBB version header if it exists.
-    if(EXISTS "${TBB_INCLUDE_DIRS}/tbb/version.h")
-      file(READ "${TBB_INCLUDE_DIRS}/tbb/version.h" _tbb_version_file)
+    if(EXISTS "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h")
+      file(READ "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h" _tbb_version_file)
     else()
       file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
     endif()
