@@ -368,6 +368,14 @@ def RunCMake(context, force, extraArgs = None):
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
     # using the name of the current working directory.
+    if extraArgs is None:
+        extraArgs = []
+    else:
+        # ensure we can freely modify our extraArgs without affecting caller
+        extraArgs = list(extraArgs)
+
+    if context.cmakeBuildArgs:
+        extraArgs.insert(0, context.cmakeBuildArgs)
     srcDir = os.getcwd()
     instDir = (context.usdInstDir if srcDir == context.usdSrcDir
                else context.instDir)
@@ -1908,6 +1916,10 @@ if MacOS():
 group.add_argument("--build-args", type=str, nargs="*", default=[],
                    help=("Custom arguments to pass to build system when "
                          "building libraries (see docs above)"))
+group.add_argument("--cmake-build-args", type=str,
+                   help=("Custom arguments to pass to all builds that use "
+                         "cmake; a single string, similar to the args passed "
+                         "for a single dependency in --build-args"))
 group.add_argument("--build-python-info", type=str, nargs=4, default=[],
                    metavar=('PYTHON_EXECUTABLE', 'PYTHON_INCLUDE_DIR', 'PYTHON_LIBRARY', 'PYTHON_VERSION'),
                    help=("Specify a custom python to use during build"))
@@ -2143,6 +2155,7 @@ class InstallContext:
         # CMake generator and toolset
         self.cmakeGenerator = args.generator
         self.cmakeToolset = args.toolset
+        self.cmakeBuildArgs = args.cmake_build_args
 
         # Number of jobs
         self.numJobs = args.jobs
