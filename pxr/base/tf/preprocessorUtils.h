@@ -33,7 +33,6 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/pragmas.h"
-#include <boost/preprocessor/arithmetic/add.hpp>
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
 #include <boost/preprocessor/cat.hpp>
@@ -43,7 +42,6 @@
 #include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/punctuation/paren.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
-#include <boost/preprocessor/tuple/eat.hpp>
 #include <boost/preprocessor/tuple/to_list.hpp>
 #include <boost/preprocessor/tuple/to_seq.hpp>
 #if defined(ARCH_COMPILER_MSVC)
