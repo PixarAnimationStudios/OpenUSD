@@ -39,7 +39,6 @@
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/pyResultConversions.h"
-#include "pxr/base/tf/pyPtrHelpers.h"
 #include "pxr/base/tf/makePyConstructor.h"
 
 #include <boost/python/class.hpp>
