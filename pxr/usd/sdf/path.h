@@ -288,7 +288,7 @@ VT_TYPE_IS_CHEAP_TO_COPY(class SdfPath);
 /// the number of values created (since it requires synchronized access to
 /// this table) or copied (since it requires atomic ref-counting operations).
 ///
-class SdfPath : boost::totally_ordered<SdfPath>
+class SdfPath
 {
 public:
     /// The empty path value, equivalent to SdfPath().
@@ -906,9 +906,13 @@ public:
     /// @{
 
     /// Equality operator.
-    /// (Boost provides inequality from this.)
     inline bool operator==(const SdfPath &rhs) const {
         return _AsInt() == rhs._AsInt();
+    }
+
+    /// Inequality operator.
+    inline bool operator!=(const SdfPath &rhs) const {
+        return !(*this == rhs);
     }
 
     /// Comparison operator.
@@ -924,6 +928,24 @@ public:
         }
         // Valid prim parts -- must walk node structure, etc.
         return _LessThanInternal(*this, rhs);
+    }
+
+    /// Greater than operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator>(const SdfPath& rhs) const {
+        return rhs < *this;
+    }
+
+    /// Less than or equal operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator<=(const SdfPath& rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// Greater than or equal operator.
+    /// \sa SdfPath::operator<(const SdfPath&)
+    inline bool operator>=(const SdfPath& rhs) const {
+        return !(*this < rhs);
     }
 
     template <class HashState>

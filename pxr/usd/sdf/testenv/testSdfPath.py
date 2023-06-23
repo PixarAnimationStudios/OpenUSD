@@ -76,6 +76,20 @@ class TestSdfPath(unittest.TestCase):
         self.assertTrue(Sdf.Path('aaa') < Sdf.Path('aab'))
         self.assertTrue(not Sdf.Path('aaa') < Sdf.Path())
         self.assertTrue(Sdf.Path('/') < Sdf.Path('/a'))
+
+        # Test greaterthan
+        self.assertGreater(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreater(Sdf.Path('/a'), Sdf.Path.emptyPath)
+
+        # Test lessequal
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aab'))
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertLessEqual(Sdf.Path.emptyPath, Sdf.Path('/a'))
+
+        # Test greaterequal
+        self.assertGreaterEqual(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('/a'), Sdf.Path.emptyPath)
         
         # XXX test path from elements ['.prop'] when we have that wrapped?
         
