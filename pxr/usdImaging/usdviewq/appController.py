@@ -388,12 +388,8 @@ class AppController(QtCore.QObject):
             self._lastViewContext = {}
             self._paused = False
             self._stopped = False
-            if QT_BINDING == 'PySide':
-                self._statusFileName = 'state'
-                self._deprecatedStatusFileNames = ('.usdviewrc')
-            else:
-                self._statusFileName = 'state.%s'%QT_BINDING
-                self._deprecatedStatusFileNames = ('state', '.usdviewrc')
+            self._statusFileName = 'state.%s'%QT_BINDING
+            self._deprecatedStatusFileNames = ('state', '.usdviewrc')
             self._mallocTags = parserData.mallocTagStats
 
             self._allowViewUpdates = True
@@ -779,8 +775,10 @@ class AppController(QtCore.QObject):
 
             # XXX:
             # To avoid PYSIDE-79 (https://bugreports.qt.io/browse/PYSIDE-79)
-            # with Qt4/PySide, we must hold the prim view's selectionModel
-            # in a local variable before connecting its signals.
+            # we must hold the prim view's selectionModel in a local variable
+            # before connecting its signals. Note this bug was originally
+            # associated with PySide 1.x/Qt4, but comments on the bug report
+            # above indicate this is still be an issue in newer PySide releases.
             primViewSelModel = self._ui.primView.selectionModel()
             primViewSelModel.selectionChanged.connect(self._selectionChanged)
 
