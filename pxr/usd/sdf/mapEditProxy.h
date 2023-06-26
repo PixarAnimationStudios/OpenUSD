@@ -38,7 +38,6 @@
 #include "pxr/base/tf/mallocTag.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
-#include <boost/operators.hpp>
 #include <iterator>
 #include <utility>
 
@@ -117,8 +116,7 @@ public:
 /// \sa SdfIdentityMapEditProxyValuePolicy
 ///
 template <class T, class _ValuePolicy = SdfIdentityMapEditProxyValuePolicy<T> >
-class SdfMapEditProxy :
-    boost::totally_ordered<SdfMapEditProxy<T, _ValuePolicy>, T> {
+class SdfMapEditProxy {
 public:
     typedef T Type;
     typedef _ValuePolicy ValuePolicy;
@@ -578,6 +576,21 @@ public:
         return _Validate() ? _CompareEqual(other) : false;
     }
 
+    bool operator!=(const Type& other) const
+    {
+        return !(*this == other);
+    }
+
+    friend bool operator==(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs == lhs;
+    }
+
+    friend bool operator!=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs != lhs;
+    }
+
     bool operator<(const Type& other) const
     {
         return _Validate() ? _Compare(other) < 0 : false;
@@ -586,6 +599,36 @@ public:
     bool operator>(const Type& other) const
     {
         return _Validate() ? _Compare(other) > 0 : false;
+    }
+
+    bool operator>=(const Type& other) const
+    {
+        return !(*this < other);
+    }
+
+    bool operator<=(const Type& other) const
+    {
+        return !(*this > other);
+    }
+
+    friend bool operator<(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs > lhs;
+    }
+
+    friend bool operator>(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs < lhs;
+    }
+
+    friend bool operator<=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs >= lhs;
+    }
+
+    friend bool operator>=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs <= lhs;
     }
 
     template <class U, class UVP>
