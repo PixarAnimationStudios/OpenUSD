@@ -701,7 +701,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 count++;
                 globalToLocalVertex[it->first] = count;
             }
-            for(uint32_t n = meshStartLocation; n < meshEndLocation +1; n++) {
+            for(uint32_t n = startPrimitive * 3; n < endPrimitive * 3; n++) {
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n]]);
             }
             meshlet.vertexCount = meshlet.vertexInfo.size();
@@ -718,7 +718,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 continue;
             }
             meshlet = Meshlet();
-            startPrimitive = i%3;
+            startPrimitive = i/3;
         }
         int newVerts = 0;
         auto it1 = m.find(i);
@@ -775,27 +775,33 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoor
     uint32_t currentOffset = 0;
     uint32_t lastOffset = 0;
     for(int i = 0; i < meshlets.size(); i++) {
+        int localOffset = 0;
         const std::vector<Meshlet> &meshletsInMesh = meshlets[i];
         for(int l = 0; l < meshletsInMesh.size(); l++) {
             flattenInto.push_back(0);
+            currentOffset++;
+            localOffset++;
         }
         for(int j = 0; j < meshletsInMesh.size(); j++) {
             const Meshlet &m = meshletsInMesh[j];
             flattenInto.push_back(m.vertexCount);
             flattenInto.push_back(m.primitiveCount);
             currentOffset += 2;
+            localOffset += 2;
             for (uint32_t k = 0; k < m.vertexInfo.size(); k++) {
                 auto vertexInfo = m.vertexInfo[k];
                 flattenInto.push_back(vertexInfo.vertexId);
                 flattenInto.push_back(vertexInfo.indexId);
                 currentOffset += 2;
+                localOffset += 2;
             }
             for (int k = 0; k < m.remappedIndices.size(); k++) {
                 flattenInto.push_back(m.remappedIndices[k]);
                 currentOffset++;
+                localOffset++;
             }
             if(j < (meshletsInMesh.size()-1)) {
-                flattenInto[lastOffset+(j+1)] = currentOffset;
+                flattenInto[lastOffset+(j+1)] = localOffset;
             }
         }
         MeshletCoord mlCoord;
@@ -1304,6 +1310,7 @@ struct _BindingState : public _DrawItemState
     void GetBindingsForDrawing(
                 HgiResourceBindingsDesc * bindingsDesc,
                 HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+                HdStBufferResourceSharedPtr const & meshletRemapBuffer,
                 bool bindTessFactors) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
@@ -1337,6 +1344,7 @@ void
 _BindingState::GetBindingsForDrawing(
     HgiResourceBindingsDesc * bindingsDesc,
     HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+    HdStBufferResourceSharedPtr const & meshletRemapBuffer,
     bool bindTessFactors) const
 {
     GetBindingsForViewTransformation(bindingsDesc);
@@ -1353,6 +1361,10 @@ _BindingState::GetBindingsForDrawing(
     
     if (geometricShader->GetUseMeshShaders()) {
         binder.GetBufferArrayBindingDesc(bindingsDesc, vertexBar);
+        binder.GetBufferBindingDesc(bindingsDesc,
+                                    HdTokens->tessFactors,
+                                    meshletRemapBuffer,
+                                    meshletRemapBuffer->GetOffset());
     }
 
     if (tessFactorsBuffer) {
@@ -1681,7 +1693,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
         HgiResourceBindingsDesc bindingsDesc;
         state.GetBindingsForDrawing(&bindingsDesc,
-                _tessFactorsBuffer, /*bindTessFactors=*/true);
+                _tessFactorsBuffer,
+                _meshletDispatchBuffer, /*bindTessFactors=*/true);
         bool const useMeshShaders =
                 _drawItemInstances[0]->GetDrawItem()->
                         GetGeometricShader()->GetUseMeshShaders();
@@ -1927,7 +1940,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
 
     HgiResourceBindingsDesc bindingsDesc;
     state.GetBindingsForDrawing(&bindingsDesc,
-            _tessFactorsBuffer, /*bindTessFactors=*/true);
+            _tessFactorsBuffer,
+            _meshletDispatchBuffer, /*bindTessFactors=*/true);
 
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
@@ -2138,7 +2152,8 @@ HdSt_PipelineDrawBatch::_ExecutePTCS(
 
     HgiResourceBindingsDesc bindingsDesc;
     state.GetBindingsForDrawing(&bindingsDesc,
-            _tessFactorsBuffer, /*bindTessFactors=*/false);
+            _tessFactorsBuffer,
+            _meshletDispatchBuffer, /*bindTessFactors=*/false);
 
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);

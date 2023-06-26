@@ -389,8 +389,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Meshlet.Triangle
-
-threadgroup IndexListOptimizerContext &indexListOptimizerContext;
 //start index list optimizer
 
 
@@ -425,58 +423,53 @@ hd_drawingCoord dcMemb;
 void main(void) {
     device uint *meshletStart = meshletRemap + payload.meshletCoord;
     uint thisMeshCoord = *(meshletStart + hd_LocalInvocationID.y);
-    uint meshletVertexCount = *(meshletRemap + thisMeshCoord);
-    uint meshletPrimitiveCount = *(meshletRemap + thisMeshCoord + 1);
+    uint meshletVertexCount = *(meshletStart + thisMeshCoord);
+    uint meshletPrimitiveCount = *(meshletStart + thisMeshCoord + 1);
 
     //TODO don't need to store this here
-    device uint *meshletVerticesStart = (meshletRemap + thisMeshCoord + 2);
+    device uint *meshletVerticesStart = (meshletStart + thisMeshCoord + 2);
 
     const uint numUintsPerVertex = 2;
-    device uint *meshletIndicesStart = (meshletRemap + thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
+    device uint *meshletIndicesStart = (meshletStart + thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
 
     //can be simplified to always use payload.baseVertex
-    const uint startIndex = MAX_INDICES * hd_LocalInvocationID.y;
-    const uint endIndex   = min(startIndex + MAX_INDICES, payload.indexCount);
-    uint drawIndexCount2 =  endIndex - startIndex;
-    uint32_t inputPrimitiveCount = drawIndexCount2/3;
+    const uint startIndex = 0;
+    const uint endIndex   = meshletPrimitiveCount * 3;
+    uint drawIndexCount2 =  endIndex;
+    uint32_t inputPrimitiveCount = meshletPrimitiveCount;
     if(drawIndexCount2 < 1) {
         return;
     }
 
     uint ind = startIndex + hd_LocalIndexID;
 
-    uint globalIndex;
-
     if (ind < endIndex)
     {
         baseVertex = payload.baseVertex;
+        //TODO probably not needed
         baseIndex = payload.baseIndex;
         gl_BaseInstance = payload.baseInstance;
         gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance;
 
         SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
+        //This primitive ID is bogus
         primitive_id = (ind)/3;
         hd_VertexID = ind;
-        globalIndex = (indices + (baseIndex))[ind];
         dcMemb = GetDrawingCoordFull();
         
     }
-    else
-    {
-        globalIndex = INVALID_GLOBAL_INDEX;
-    }
 
-    optimizeIndexList(indexListOptimizerContext, ushort(hd_LocalIndexID), drawIndexCount2, globalIndex);
-
-    if( hd_LocalIndexID < indexListOptimizerContext.numUniqueVertices )
+    if( hd_LocalIndexID < meshletVertexCount )
     {
-        uint index = indexListOptimizerContext.globalIndices[hd_LocalIndexID];
+        uint index = *(meshletVerticesStart + ind * numUintsPerVertex + 1);
+        //TODO investigate this
         ProcessPrimvarsIn(index);
 
         //this is problematic because of threads
 
         VertexOut vertexOut;
-        float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
+        uint vertIndirection = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
+        float4 point = float4(HdGet_points(vertIndirection).x, HdGet_points(vertIndirection).y, HdGet_points(vertIndirection).z, 1.0f);
 
         vec3 Neye0 = GetNormal(vec3(0),index);
 
@@ -495,39 +488,24 @@ void main(void) {
         ApplyClipPlanes(vertexOut.Peye);
     }
 
-    ThreadgroupBarrier();
-
-    const uint simdId = hd_LocalIndexID / SIMD_WIDTH;
-    if( simdId == 0 )
-    {
-        const uint baseIndex = hd_LocalIndexID * 3;
-
-        const uchar localIndex0 = indexListOptimizerContext.localIndices[baseIndex+0];
-        const uchar localIndex1 = indexListOptimizerContext.localIndices[baseIndex+1];
-        const uchar localIndex2 = indexListOptimizerContext.localIndices[baseIndex+2];
-
-        const bool visible = true;
+    const uint baseIndex = hd_LocalIndexID * 3;
+    if(hd_LocalIndexID < meshletPrimitiveCount) {
+        //TODO is this needed?
         const uint outputPrimitiveCount = inputPrimitiveCount;
 
-        if( hd_LocalIndexID == 0 )
-        {
-            mesh.set_primitive_count(outputPrimitiveCount);
-        }
+        mesh.set_primitive_count(outputPrimitiveCount);
+        //TODO make a smarter primitiveID
+        const uint primitiveId = hd_LocalIndexID;
 
-        if( visible )
-        {
+        //TODO actually set the primitive ID here
+        PrimOut primOut;
+        mesh.set_primitive(primitiveId, primOut);
 
-            const uint primitiveId = hd_LocalIndexID;
-
-            PrimOut primOut;
-            mesh.set_primitive(primitiveId, primOut);
-
-            // Set the output indices.
-            const uint baseIndex = primitiveId * 3;
-            mesh.set_index(baseIndex+0, localIndex0);
-            mesh.set_index(baseIndex+1, localIndex1);
-            mesh.set_index(baseIndex+2, localIndex2);
-        }
+        // Set the output indices.
+        //TODO cache base index calc
+        mesh.set_index(baseIndex+0, *(meshletIndicesStart + baseIndex));
+        mesh.set_index(baseIndex+1, *(meshletIndicesStart + baseIndex + 1));
+        mesh.set_index(baseIndex+2, *(meshletIndicesStart + baseIndex + 2));
     }
 }
 
