@@ -86,6 +86,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         // Indirect command buffers not currently supported on Intel GPUs.
         icbSupported = false;
     }
+    if (hasIos) {
+        icbSupported = false;
+    }
 
     if (!TfGetEnvSetting(HGIMETAL_ENABLE_INDIRECT_COMMAND_BUFFER)) {
         icbSupported = false;

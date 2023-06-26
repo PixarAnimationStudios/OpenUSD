@@ -503,7 +503,7 @@ HgiMetalBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
     HgiMetalTexture* metalTex = static_cast<HgiMetalTexture*>(texture.Get());
 
     if (metalTex) {
-        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor()) && IsFilterable(metalTex->GetTextureId().pixelFormat) {
+        if (_HgiTextureCanBeFiltered(metalTex->GetDescriptor()) && IsFilterable(metalTex->GetTextureId().pixelFormat)) {
             _CreateEncoder();
             [_blitEncoder generateMipmapsForTexture:metalTex->GetTextureId()];
         }
