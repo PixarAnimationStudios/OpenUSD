@@ -179,8 +179,9 @@ public:
     /// Swaps the contents of two sets.
     ///
     void swap(TfDenseHashSet &rhs) {
-        std::swap(_hash(), rhs._hash());
-        std::swap(_equ(), rhs._equ());
+        using std::swap;
+        swap(_hash(), rhs._hash());
+        swap(_equ(), rhs._equ());
         _vector.swap(rhs._vector);
         _h.swap(rhs._h);
     }
@@ -441,7 +442,7 @@ private:
     _Vector _vector;
 
     // Optional hash map that maps from keys to vector indices.
-    std::unique_ptr<_HashMap> _h = nullptr;
+    std::unique_ptr<_HashMap> _h;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
