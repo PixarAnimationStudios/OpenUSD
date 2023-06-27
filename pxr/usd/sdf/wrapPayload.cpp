@@ -29,7 +29,6 @@
 #include "pxr/base/vt/valueFromPython.h"
 
 #include <boost/python.hpp>
-#include <boost/function.hpp>
 
 #include <string>
 

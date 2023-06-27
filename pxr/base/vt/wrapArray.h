@@ -48,7 +48,6 @@
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/preprocessor/facilities/empty.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
