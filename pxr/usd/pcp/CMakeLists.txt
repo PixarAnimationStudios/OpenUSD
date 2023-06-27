@@ -473,6 +473,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInVariantSelections.testenv
+    DEST testPcpMuseum_ExpressionsInVariantSelections
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ImpliedAndAncestralInherits.testenv
     DEST testPcpMuseum_ImpliedAndAncestralInherits
 )
@@ -1145,6 +1150,13 @@ pxr_register_test(testPcpMuseum_ExpressionsInSublayers
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInSublayers/root.sdf --session ExpressionsInSublayers/session.sdf --errorFile compositionErrors_ExpressionsInSublayers.txt" 
     STDOUT_REDIRECT compositionResults_ExpressionsInSublayers.txt
     DIFF_COMPARE compositionResults_ExpressionsInSublayers.txt compositionErrors_ExpressionsInSublayers.txt
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInVariantSelections
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInVariantSelections/root.sdf --errorFile compositionErrors_ExpressionsInVariantSelections.txt" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInVariantSelections.txt
+    DIFF_COMPARE compositionResults_ExpressionsInVariantSelections.txt compositionErrors_ExpressionsInVariantSelections.txt
 )
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits

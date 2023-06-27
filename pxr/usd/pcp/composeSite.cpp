@@ -382,38 +382,95 @@ PcpComposeSiteVariantSetOptions(PcpLayerStackRefPtr const &layerStack,
 }
 
 bool
-PcpComposeSiteVariantSelection(PcpLayerStackRefPtr const &layerStack,
-                               SdfPath const &path,
-                               std::string const &vsetName,
-                               std::string *result)
+PcpComposeSiteVariantSelection(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    std::string const &vsetName,
+    std::string *result,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors)
 {
     static const TfToken field = SdfFieldKeys->VariantSelection;
 
     SdfVariantSelectionMap vselMap;
+
     for (auto const &layer: layerStack->GetLayers()) {
-        if (layer->HasField(path, field, &vselMap)) {
-            SdfVariantSelectionMap::const_iterator i = vselMap.find(vsetName);
-            if (i != vselMap.end()) {
-                *result = i->second;
-                return true;
-            } 
+        if (!layer->HasField(path, field, &vselMap)) {
+            continue;
         }
+
+        std::string* vsel = TfMapLookupPtr(vselMap, vsetName);
+        if (!vsel) {
+            continue;
+        }
+
+        if (Pcp_IsVariableExpression(*vsel)) {
+            PcpErrorVector exprErrors;
+            *vsel = Pcp_EvaluateVariableExpression(
+                *vsel, layerStack->GetExpressionVariables(),
+                "variant", layer, path, exprVarDependencies, &exprErrors);
+
+            // If an error occurred evaluating this expression, we ignore
+            // this variant selection and look for the next weakest opinion.
+            if (!exprErrors.empty()) {
+                if (errors) {
+                    errors->insert(errors->end(),
+                        std::make_move_iterator(exprErrors.begin()),
+                        std::make_move_iterator(exprErrors.end()));
+                }
+                continue;
+            }
+        }
+
+        *result = std::move(*vsel);
+        return true;
     }
     return false;
 }
 
 void 
-PcpComposeSiteVariantSelections(PcpLayerStackRefPtr const &layerStack,
-                                SdfPath const &path,
-                                SdfVariantSelectionMap *result)
+PcpComposeSiteVariantSelections(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfVariantSelectionMap *result,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors)
 {
     static const TfToken field = SdfFieldKeys->VariantSelection;
 
     SdfVariantSelectionMap vselMap;
+
     for (auto const &layer: layerStack->GetLayers()) {
-        if (layer->HasField(path, field, &vselMap)) {
-            result->insert(vselMap.begin(), vselMap.end());
+        if (!layer->HasField(path, field, &vselMap)) {
+            continue;
         }
+
+        for (auto it = vselMap.begin(); it != vselMap.end(); ) {
+            std::string& vsel = it->second;
+            
+            if (Pcp_IsVariableExpression(vsel)) {
+                PcpErrorVector exprErrors;
+                vsel = Pcp_EvaluateVariableExpression(
+                    vsel, layerStack->GetExpressionVariables(),
+                    "variant", layer, path, exprVarDependencies, &exprErrors);
+
+                // If an error occurred evaluating this expression, we ignore
+                // this variant selection and look for the next weakest opinion.
+                if (!exprErrors.empty()) {
+                    if (errors) {
+                        errors->insert(errors->end(),
+                            std::make_move_iterator(exprErrors.begin()),
+                            std::make_move_iterator(exprErrors.end()));
+                    }
+                    it = vselMap.erase(it);
+                    continue;
+                }
+            }
+
+            ++it;
+        }
+
+        result->insert(vselMap.begin(), vselMap.end());
     }
 }
 

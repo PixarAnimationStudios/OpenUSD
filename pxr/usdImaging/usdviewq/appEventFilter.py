@@ -94,6 +94,7 @@ class AppEventFilter(QtCore.QObject):
         return (isinstance(w, QtWidgets.QLineEdit) or 
                 isinstance(w, QtWidgets.QComboBox) or
                 isinstance(w, QtWidgets.QTextEdit) or
+                isinstance(w, QtWidgets.QPlainTextEdit) or
                 isinstance(w, QtWidgets.QAbstractSlider) or
                 isinstance(w, QtWidgets.QAbstractSpinBox) or
                 isinstance(w, QtWidgets.QWidget) and w.windowModality() in [QtCore.Qt.WindowModal,

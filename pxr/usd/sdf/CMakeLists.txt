@@ -201,6 +201,7 @@ else()
 endif()
 
 pxr_test_scripts(
+    testenv/testSdfAssetPath.py
     testenv/testSdfAttribute.py
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
@@ -380,6 +381,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
+)
+
+pxr_register_test(testSdfAssetPath
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAssetPath"
 )
 
 pxr_register_test(testSdfAttribute

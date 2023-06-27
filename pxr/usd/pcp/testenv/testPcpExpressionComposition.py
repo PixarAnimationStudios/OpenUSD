@@ -1100,6 +1100,99 @@ class TestPcpExpressionComposition(unittest.TestCase):
                 ]
             ])
 
+    def test_BasicVariantSelections(self):
+        """Test expressions in variant selections."""
+        pcpCache = LoadPcpCache('variants/root.sdf')
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+
+        # Verify initial state
+        pi, err = pcpCache.ComputePrimIndex('/Basic')
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Basic'),
+             rootLayer.GetPrimAtPath('/Basic{v=x_sel}')])
+        self.assertEqual(
+            pi.ComposeAuthoredVariantSelections(), {'v':'x_sel'})
+        self.assertEqual(
+            pi.GetSelectionAppliedForVariantSet('v'), 'x_sel')
+
+        # Author expression variable ROOT=y, which affects the variant selection
+        # on /BasicVariantSelections and should cause it to be resynced.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'ROOT':'y'}
+
+            self.assertEqual(changes.GetSignificantChanges(), ['/Basic'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Basic')
+        self.assertEqual(len(err), 0)
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Basic'),
+             rootLayer.GetPrimAtPath('/Basic{v=y_sel}')])
+        self.assertEqual(
+            pi.ComposeAuthoredVariantSelections(), {'v':'y_sel'})
+        self.assertEqual(
+            pi.GetSelectionAppliedForVariantSet('v'), 'y_sel')
+
+    def test_VariantSelectionInReference(self):
+        """Test variant selection expressions across references."""
+        pcpCache = LoadPcpCache('variants/root.sdf')
+        rootLayer = pcpCache.GetLayerStackIdentifier().rootLayer
+        refLayer = Sdf.Layer.FindOrOpen('variants/ref.sdf')
+
+        # Verify initial state
+        pi, err = pcpCache.ComputePrimIndex('/Reference')
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Reference'),
+             refLayer.GetPrimAtPath('/Ref'),
+             refLayer.GetPrimAtPath('/Ref{v=x_sel}')])
+        self.assertEqual(
+            pi.ComposeAuthoredVariantSelections(), {'v':'x_sel'})
+        self.assertEqual(
+            pi.GetSelectionAppliedForVariantSet('v'), 'x_sel')
+
+        # Author expression variable REF=y in the referenced layer ref.sdf.
+        # This affects the variant selection used by /Reference, so it should
+        # cause a resync.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            refLayer.expressionVariables = {'REF':'y'}
+
+            self.assertEqual(changes.GetSignificantChanges(), ['/Reference'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+        
+        pi, err = pcpCache.ComputePrimIndex('/Reference')
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Reference'),
+             refLayer.GetPrimAtPath('/Ref'),
+             refLayer.GetPrimAtPath('/Ref{v=y_sel}')])
+        self.assertEqual(
+            pi.ComposeAuthoredVariantSelections(), {'v':'y_sel'})
+        self.assertEqual(
+            pi.GetSelectionAppliedForVariantSet('v'), 'y_sel')
+
+        # Author expression variable REF=z in the root layer stack. This
+        # should override the variable in ref.sdf and affect the variant
+        # selection on /Reference again.
+        with Pcp._TestChangeProcessor(pcpCache) as changes:
+            rootLayer.expressionVariables = {'REF':'z'}
+
+            self.assertEqual(changes.GetSignificantChanges(), ['/Reference'])
+            self.assertEqual(changes.GetSpecChanges(), [])
+
+        pi, err = pcpCache.ComputePrimIndex('/Reference')
+        self.assertEqual(
+            pi.primStack,
+            [rootLayer.GetPrimAtPath('/Reference'),
+             refLayer.GetPrimAtPath('/Ref'),
+             refLayer.GetPrimAtPath('/Ref{v=z_sel}')])
+        self.assertEqual(
+            pi.ComposeAuthoredVariantSelections(), {'v':'z_sel'})
+        self.assertEqual(
+            pi.GetSelectionAppliedForVariantSet('v'), 'z_sel')
+
     def test_NoChanges(self):
         """Test scenarios where no recomputations are expected."""
         pcpCache = LoadPcpCache('no_changes/root.sdf')

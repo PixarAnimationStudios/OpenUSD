@@ -315,31 +315,60 @@ PcpComposeSiteVariantSetOptions(PcpNodeRef const &node,
 /// VariantSelection
 PCP_API
 bool
-PcpComposeSiteVariantSelection(PcpLayerStackRefPtr const &layerStack,
-                               SdfPath const &path,
-                               std::string const &vsetName,
-                               std::string *result);
+PcpComposeSiteVariantSelection(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    std::string const &vsetName,
+    std::string *result,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors);
+
+inline bool
+PcpComposeSiteVariantSelection(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    std::string const &vsetName,
+    std::string *result)
+{
+    return PcpComposeSiteVariantSelection(
+        layerStack, path, vsetName, result, nullptr, nullptr);
+}
+
 inline bool
 PcpComposeSiteVariantSelection(PcpNodeRef const &node,
                                std::string const &vsetName,
                                std::string *result)
 {
-    return PcpComposeSiteVariantSelection(node.GetLayerStack(), node.GetPath(),
-                                          vsetName, result);
+    return PcpComposeSiteVariantSelection(
+        node.GetLayerStack(), node.GetPath(), vsetName, result);
 }
 
 /// VariantSelections
 PCP_API
 void 
-PcpComposeSiteVariantSelections(PcpLayerStackRefPtr const &layerStack,
-                                SdfPath const &path,
-                                SdfVariantSelectionMap *result);
+PcpComposeSiteVariantSelections(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfVariantSelectionMap *result,
+    std::unordered_set<std::string> *exprVarDependencies,
+    PcpErrorVector *errors);
+
+inline void 
+PcpComposeSiteVariantSelections(
+    PcpLayerStackRefPtr const &layerStack,
+    SdfPath const &path,
+    SdfVariantSelectionMap *result)
+{
+    return PcpComposeSiteVariantSelections(
+        layerStack, path, result, nullptr, nullptr);
+}
+
 inline void
 PcpComposeSiteVariantSelections(PcpNodeRef const &node,
                                 SdfVariantSelectionMap *result)
 {
-    return PcpComposeSiteVariantSelections(node.GetLayerStack(), node.GetPath(),
-                                           result);
+    return PcpComposeSiteVariantSelections(
+        node.GetLayerStack(), node.GetPath(), result);
 }
 
 /// Compose child names.

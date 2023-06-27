@@ -307,13 +307,38 @@ PcpPrimIndex::ComposeAuthoredVariantSelections() const
     SdfVariantSelectionMap result;
     const TfToken field = SdfFieldKeys->VariantSelection;
     TF_FOR_ALL(i, GetPrimRange()) {
-        Pcp_SdSiteRef site = i.base()._GetSiteRef();
-        const VtValue& value = site.layer->GetField(site.path, field);
-        if (value.IsHolding<SdfVariantSelectionMap>()) {
-            const SdfVariantSelectionMap & vselMap =
-                value.UncheckedGet<SdfVariantSelectionMap>();
-            result.insert(vselMap.begin(), vselMap.end());
+        const Pcp_SdSiteRef site = i.base()._GetSiteRef();
+
+        SdfVariantSelectionMap vselMap;
+        if (!site.layer->HasField(site.path, field, &vselMap)) {
+            continue;
         }
+
+        for (auto it = vselMap.begin(); it != vselMap.end(); ) {
+            std::string& vsel = it->second;
+            if (Pcp_IsVariableExpression(vsel)) {
+                const PcpLayerStackRefPtr& layerStack =
+                    i.base().GetNode().GetLayerStack();
+
+                PcpErrorVector exprErrors;
+                vsel = Pcp_EvaluateVariableExpression(
+                    vsel, layerStack->GetExpressionVariables(),
+                    "variant", site.layer, site.path, nullptr, &exprErrors);
+
+                // If an error occurred evaluating this expression, we ignore
+                // this variant selection and look for the next weakest opinion.
+                // We don't emit any errors here since they would have already
+                // been captured as composition errors during prim indexing.
+                // See PcpComposeSiteVariantSelection.
+                if (!exprErrors.empty()) {
+                    it = vselMap.erase(it);
+                    continue;
+                }
+            }
+            ++it;
+        }
+
+        result.insert(vselMap.begin(), vselMap.end());
     }
     return result;
 }
@@ -3496,7 +3521,7 @@ _ComposeVariantSelectionForNode(
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     TF_VERIFY(!pathInNode.IsEmpty());
 
@@ -3522,8 +3547,26 @@ _ComposeVariantSelectionForNode(
                 node.GetPath());
         }
 
-        if (PcpComposeSiteVariantSelection(
-                site.layerStack, site.path, vset, vsel)) {
+        std::unordered_set<std::string> exprVarDependencies;
+        PcpErrorVector errors;
+
+        const bool foundSelection = 
+            PcpComposeSiteVariantSelection(
+                site.layerStack, site.path, vset, vsel, 
+                &exprVarDependencies, &errors);
+
+        if (!exprVarDependencies.empty()) {
+            indexer->outputs->expressionVariablesDependency.AddDependencies(
+                site.layerStack, std::move(exprVarDependencies));
+        }
+
+        if (!errors.empty()) {
+            for (const PcpErrorBasePtr& err : errors) {
+                indexer->RecordError(err);
+            }
+        }
+
+        if (foundSelection) {
             *nodeWithVsel = node;
             return true;
         }
@@ -3596,11 +3639,11 @@ _ComposeVariantSelectionAcrossStackFrames(
     std::string *vsel,
     _StackFrameAndChildNodeVector *stackFrames,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     // Compose variant selection in strong-to-weak order.
     if (_ComposeVariantSelectionForNode(
-            node, pathInNode, vset, vsel, nodeWithVsel, outputs)) {
+            node, pathInNode, vset, vsel, nodeWithVsel, indexer)) {
         return true;
     }
 
@@ -3629,7 +3672,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty()) {
             return _ComposeVariantSelectionAcrossStackFrames(
                 childNode, pathInChildNode, vset, vsel, stackFrames, 
-                nodeWithVsel, outputs);
+                nodeWithVsel, indexer);
         }
 
         return false;
@@ -3643,7 +3686,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty() &&
             _ComposeVariantSelectionAcrossStackFrames(
                 *child, pathInChildNode, vset, vsel, stackFrames,
-                nodeWithVsel, outputs)) {
+                nodeWithVsel, indexer)) {
             return true;
         }
     }
@@ -3670,14 +3713,12 @@ _ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
 
 static void
 _ComposeVariantSelection(
-    int ancestorRecursionDepth,
-    PcpPrimIndex_StackFrame *previousFrame,
-    PcpNodeRef node,
+    const PcpNodeRef &node,
     const SdfPath &pathInNode,
+    Pcp_PrimIndexer *indexer,
     const std::string &vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    PcpNodeRef *nodeWithVsel)
 {
     TRACE_FUNCTION();
     TF_VERIFY(!pathInNode.IsEmpty());
@@ -3711,12 +3752,13 @@ _ComposeVariantSelection(
     // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
     // accounts for any ancestral recursion.
     if (_FindPriorVariantSelection(rootNode, pathInRoot,
-                                   ancestorRecursionDepth,
+                                   indexer->ancestorRecursionDepth,
                                    vset, vsel, nodeWithVsel)) {
         return;
     }
 
-    while (previousFrame) {
+    for (PcpPrimIndex_StackFrame *previousFrame = indexer->previousFrame;
+         previousFrame; previousFrame = previousFrame->previousFrame) {
         // There may not be a valid mapping for the current path across 
         // the previous stack frame. For example, this may happen when
         // trying to compose ancestral variant selections on a sub-root
@@ -3747,7 +3789,7 @@ _ComposeVariantSelection(
         // stack as well.
         if (_FindPriorVariantSelection(rootNodeInPreviousFrame, 
                                        pathInPreviousFrame,
-                                       ancestorRecursionDepth,
+                                       indexer->ancestorRecursionDepth,
                                        vset, vsel, nodeWithVsel)) {
             return;
         }
@@ -3761,15 +3803,13 @@ _ComposeVariantSelection(
         // frame.
         rootNode = rootNodeInPreviousFrame;
         pathInRoot = pathInPreviousFrame;
-
-        previousFrame = previousFrame->previousFrame;
     }
 
     // Now recursively walk the prim index in strong-to-weak order
     // looking for a variant selection.
     _ComposeVariantSelectionAcrossStackFrames(
         rootNode, pathInRoot, vset, vsel, &previousStackFrames,
-        nodeWithVsel, outputs);
+        nodeWithVsel, indexer);
 }
 
 static bool
@@ -3974,11 +4014,8 @@ _EvalNodeAuthoredVariant(
     // Determine the authored variant selection for this set, if any.
     std::string vsel;
     PcpNodeRef nodeWithVsel;
-    _ComposeVariantSelection(indexer->ancestorRecursionDepth,
-                             indexer->previousFrame, node,
-                             node.GetPath().StripAllVariantSelections(),
-                             vset, &vsel, &nodeWithVsel,
-                             indexer->outputs);
+    _ComposeVariantSelection(node, node.GetPath().StripAllVariantSelections(),
+                             indexer, vset, &vsel, &nodeWithVsel);
     if (!vsel.empty()) {
         PCP_INDEXING_MSG(
             indexer, node, "Found variant selection {%s=%s} at %s",

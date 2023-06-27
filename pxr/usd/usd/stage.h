@@ -66,17 +66,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
 class ArResolverContext;
 class GfInterval;
 class SdfAbstractDataValue;
+class Usd_AssetPathContext;
 class Usd_ClipCache;
 class Usd_InstanceCache;
 class Usd_InstanceChanges;
 class Usd_InterpolatorBase;
+class Usd_Resolver;
 class UsdResolveInfo;
 class UsdResolveTarget;
-class Usd_Resolver;
 class UsdPrim;
 class UsdPrimRange;
 
@@ -1922,7 +1922,8 @@ private:
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
     // parents of these subtrees. Note that [start, finish) must be a
-    // sorted range of paths with no descendent paths.
+    // sorted range of map iterators whose keys are paths with no descendent
+    // paths. In C++20, consider using the ranges API to improve this.
     template <class Iter>
     void _ComputeSubtreesToRecompose(Iter start, Iter finish,
                                      std::vector<Usd_PrimDataPtr>* recompose);
@@ -2181,12 +2182,6 @@ private:
                        Usd_InterpolatorBase* interpolator,
                        T* value) const;
 
-    SdfLayerRefPtr
-    _GetLayerWithStrongestValue(
-        UsdTimeCode time, const UsdAttribute &attr) const;
-
-
-
     USD_API
     bool _GetValueFromResolveInfo(const UsdResolveInfo &info,
                                   UsdTimeCode time, const UsdAttribute &attr,
@@ -2208,6 +2203,9 @@ private:
     bool _GetDefaultValueFromResolveInfoImpl(const UsdResolveInfo &info,
                                              const UsdAttribute &attr,
                                              T* value) const;
+
+    Usd_AssetPathContext
+    _GetAssetPathContext(UsdTimeCode time, const UsdAttribute &attr) const;
 
     // --------------------------------------------------------------------- //
     // Specialized Time Sample I/O
@@ -2344,6 +2342,7 @@ private:
     friend class UsdSpecializes;
     friend class UsdVariantSet;
     friend class UsdVariantSets;
+    friend class Usd_AssetPathContext;
     friend class Usd_FlattenAccess;
     friend class Usd_PcpCacheAccess;
     friend class Usd_PrimData;
@@ -2484,7 +2483,6 @@ UsdStage::_SetMetadata(const UsdObject &object, const TfToken& key,
 {
     return _SetEditTargetMappedMetadata(object, key, keyPath, value);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

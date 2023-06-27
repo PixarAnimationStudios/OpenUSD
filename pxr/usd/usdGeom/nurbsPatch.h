@@ -56,7 +56,7 @@ class SdfAssetPath;
 /// surface, with optional trim curves.
 /// 
 /// The encoding mostly follows that of RiNuPatch and RiTrimCurve: 
-/// https://renderman.pixar.com/resources/current/RenderMan/geometricPrimitives.html#rinupatch , with some minor renaming and coalescing for clarity.
+/// https://renderman.pixar.com/resources/RenderMan_20/geometricPrimitives.html#rinupatch , with some minor renaming and coalescing for clarity.
 /// 
 /// The layout of control vertices in the \em points attribute inherited
 /// from UsdGeomPointBased is row-major with U considered rows, and V columns.

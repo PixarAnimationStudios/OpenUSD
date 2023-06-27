@@ -1,0 +1,59 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string ROOT_VAR_SEL = "x"
+    }
+    subLayers = [
+        @./sub.sdf@
+    ]
+)
+
+def "BasicVariantSelection" (
+    """Test simple variant selection expressions."""
+    variantSets = ["v"]
+    variants = {
+        string v = "`'${ROOT_VAR_SEL}_sel'`"
+    }
+)
+{
+    variantSet "v" = {
+        "x_sel" {
+        }
+        "y_sel" {
+        }
+    }
+}
+
+def "VariantSelectionInReference" (
+    """
+    Test that variant selections using expression variables
+    authored in referenced layer stacks work properly.
+    """
+    references = @./ref.sdf@</Ref>
+)
+{
+}
+
+def "OverriddenVariantSelectionInReference" (
+    """
+    Test that variant selection expressions in referenced layer
+    stacks take into account overriding opinions on expression
+    variables.
+    """
+    references = @./override_ref.sdf@</OverrideRef>
+)
+{
+}
+
+over "BadExpressionInSelection" (
+    """
+    The variant selection authored here is an invalid expression.
+    We should get a composition error about this but fall through
+    to the next weaker selection.
+    """
+    variants = {
+        string v = "`'${BAD_SYNTAX'`"
+    }
+)
+{
+}    
