@@ -97,7 +97,6 @@
 #include "pxr/base/work/withScopedParallelism.h"
 
 #include <boost/optional.hpp>
-#include <boost/iterator/transform_iterator.hpp>
 
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/spin_mutex.h>
@@ -112,7 +111,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using boost::make_transform_iterator;
 using std::pair;
 using std::make_pair;
 using std::map;
@@ -3876,9 +3874,9 @@ template <class ChangedPaths>
 static std::string
 _Stringify(const ChangedPaths& paths)
 {
-    return _Stringify(SdfPathVector(
-        make_transform_iterator(paths.begin(), TfGet<0>()),
-        make_transform_iterator(paths.end(), TfGet<0>())));
+    SdfPathVector temp(paths.size());
+    std::transform(paths.cbegin(), paths.cend(), temp.begin(), TfGet<0>());
+    return _Stringify(temp);
 }
 
 // Add paths in the given cache that depend on the given path in the given 
@@ -4667,8 +4665,7 @@ UsdStage::_RecomposePrims(T *pathsToRecompose)
     // around this.
     std::vector<Usd_PrimDataPtr> subtreesToRecompose;
     _ComputeSubtreesToRecompose(
-        make_transform_iterator(pathsToRecompose->begin(), TfGet<0>()),
-        make_transform_iterator(pathsToRecompose->end(), TfGet<0>()),
+        pathsToRecompose->begin(), pathsToRecompose->end(),
         &subtreesToRecompose);
 
     // Recompose subtrees.
@@ -4710,14 +4707,14 @@ UsdStage::_ComputeSubtreesToRecompose(
         subtreesToRecompose->size() + std::distance(i, end));
 
     while (i != end) {
-        TF_DEBUG(USD_CHANGES).Msg("Recomposing: %s\n", i->GetText());
+        TF_DEBUG(USD_CHANGES).Msg("Recomposing: %s\n", i->first.GetText());
         // TODO: refactor into shared method
         // We only care about recomposing prim-like things
         // so avoid recomposing anything else.
-        if (!i->IsAbsoluteRootOrPrimPath() ||
-            i->ContainsPrimVariantSelection()) {
+        if (!i->first.IsAbsoluteRootOrPrimPath() ||
+            i->first.ContainsPrimVariantSelection()) {
             TF_DEBUG(USD_CHANGES).Msg("Skipping non-prim: %s\n",
-                                      i->GetText());
+                                      i->first.GetText());
             ++i;
             continue;
         }
@@ -4725,16 +4722,16 @@ UsdStage::_ComputeSubtreesToRecompose(
         // Add prototypes to list of subtrees to recompose and instantiate any 
         // new prototype not present in the primMap from before
         PathToNodeMap::const_accessor acc;
-        if (_instanceCache->IsPrototypePath(*i)) {
+        if (_instanceCache->IsPrototypePath(i->first)) {
             Usd_PrimDataPtr prototypePrim;
-            if (_primMap.find(acc, *i)) {
+            if (_primMap.find(acc, i->first)) {
                 // should be a changed prototype if already in the primMap
                 prototypePrim = acc->second.get();
                 acc.release();
             } else {
                 // newPrototype should be absent from the primMap, instantiate
                 // these now to be added to subtreesToRecompose
-                prototypePrim = _InstantiatePrototypePrim(*i);
+                prototypePrim = _InstantiatePrototypePrim(i->first);
             }
             subtreesToRecompose->push_back(prototypePrim);
             ++i;
@@ -4743,7 +4740,7 @@ UsdStage::_ComputeSubtreesToRecompose(
 
         // Collect all non-prototype prims (including descendants of prototypes)
         // to be added to subtreesToRecompute
-        SdfPath const &parentPath = i->GetParentPath();
+        SdfPath const &parentPath = i->first.GetParentPath();
         if (_primMap.find(acc, parentPath)) {
 
             // Since our input range contains no descendant paths, siblings
@@ -4761,18 +4758,18 @@ UsdStage::_ComputeSubtreesToRecompose(
 
             // Recompose the subtree for each affected sibling.
             do {
-                if (_primMap.find(acc, *i)) {
+                if (_primMap.find(acc, i->first)) {
                     subtreesToRecompose->push_back(acc->second.get());
                     acc.release();
-                } else if (_instanceCache->IsPrototypePath(*i)) {
+                } else if (_instanceCache->IsPrototypePath(i->first)) {
                     // If this path is a prototype path and is not present in
                     // the primMap, then this must be a new prototype added
                     // during this processing, instantiate and add it.
-                    Usd_PrimDataPtr protoPrim = _InstantiatePrototypePrim(*i);
+                    Usd_PrimDataPtr protoPrim = _InstantiatePrototypePrim(i->first);
                     subtreesToRecompose->push_back(protoPrim);
                 }
                 ++i;
-            } while (i != end && i->GetParentPath() == parentPath);
+            } while (i != end && i->first.GetParentPath() == parentPath);
         } else if (parentPath.IsEmpty()) {
             // This is the pseudo root, so we need to blow and rebuild
             // everything.

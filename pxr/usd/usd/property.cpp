@@ -27,8 +27,6 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/pcp/targetIndex.h"
 
-#include <boost/iterator/transform_iterator.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 
@@ -185,17 +183,14 @@ using _PathMap = std::vector<std::pair<SdfPath, SdfPath>>;
 static SdfPath
 _MapPath(_PathMap const &map, SdfPath const &path)
 {
-    using boost::make_transform_iterator;
-
     if (map.empty()) {
         return path;
     }
 
     auto it = SdfPathFindLongestPrefix(
-        make_transform_iterator(map.begin(), TfGet<0>()),
-        make_transform_iterator(map.end(), TfGet<0>()), path);
-    if (it.base() != map.end()) {
-        return path.ReplacePrefix(it.base()->first, it.base()->second);
+        map.begin(), map.end(), path, TfGet<0>());
+    if (it != map.end()) {
+        return path.ReplacePrefix(it->first, it->second);
     }
     return path;
 }

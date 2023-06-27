@@ -1922,7 +1922,8 @@ private:
     // Helper for _Recompose to find the subtrees that need to be
     // fully recomposed and to recompose the name children of the
     // parents of these subtrees. Note that [start, finish) must be a
-    // sorted range of paths with no descendent paths.
+    // sorted range of map iterators whose keys are paths with no descendent
+    // paths. In C++20, consider using the ranges API to improve this.
     template <class Iter>
     void _ComputeSubtreesToRecompose(Iter start, Iter finish,
                                      std::vector<Usd_PrimDataPtr>* recompose);
