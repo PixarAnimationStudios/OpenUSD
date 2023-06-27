@@ -52,8 +52,6 @@
 #include <boost/python/return_arg.hpp>
 #include <boost/python/tuple.hpp>
 
-#include <boost/smart_ptr.hpp>
-
 #include <functional>
 #include <string>
 #include <vector>
