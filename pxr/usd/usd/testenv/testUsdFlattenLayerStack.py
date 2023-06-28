@@ -230,11 +230,154 @@ class TestUsdFlattenLayerStack(unittest.TestCase):
         self.assertEqual(list(assetArrayAttr.Get()), 
                          [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
 
-    def test_ValueBlocks(self):
-        src_stage = Usd.Stage.Open('valueBlocks_root.usda')
-        def replaceWithFoo(layer, s):
+    def test_ResolveAssetPathAdvancedFn(self):
+        src_stage = Usd.Stage.Open('emptyAssetPaths.usda')
+        def replaceWithFoo(context):
+            self.assertEqual(context.sourceLayer, src_stage.GetRootLayer())
+            self.assertEqual(context.assetPath, '')
+            self.assertEqual(context.expressionVariables, {})
             return 'foo'
 
+        src_layer_stack = src_stage.GetPseudoRoot().GetPrimIndex().rootNode.layerStack
+        layer = Usd.FlattenLayerStackAdvanced(src_layer_stack, 
+                resolveAssetPathFn=replaceWithFoo,
+                tag='resolveAssetPathFn')
+        result_stage = Usd.Stage.Open(layer)
+
+        # verify that we replaced asset paths with "foo"
+
+        prim = result_stage.GetPrimAtPath('/Test')
+        assetAttr = prim.GetAttribute('a')
+        self.assertEqual(assetAttr.Get(), Sdf.AssetPath('foo'))
+
+        assetArrayAttr = prim.GetAttribute('b')
+        self.assertEqual(list(assetArrayAttr.Get()), 
+                         [Sdf.AssetPath('foo'), Sdf.AssetPath('foo')])
+
+    def test_ResolveAssetPathWithExpressions(self):
+        src_stage = Usd.Stage.Open('assetPathsAndExpressions.usda')
+        src_layer_stack = src_stage.GetPseudoRoot().GetPrimIndex().rootNode.layerStack
+
+        # The simple Usd.FlattenLayerStack function should evaluate asset path
+        # expressions and anchor the result to the layer where the opinion was
+        # authored.
+        layer = Usd.FlattenLayerStack(src_layer_stack)
+        self.assertEqual(
+            layer.GetAttributeAtPath('/Test.a').default,
+            Sdf.ComputeAssetPathRelativeToLayer(
+                src_stage.GetRootLayer(), './assetPathsTest.usda'))
+
+        # The more advanced Usd.FlattenLayerStack function should pass the
+        # evaluated asset path expression to the resolve callback to allow
+        # it to perform whatever anchoring/replacement behaviors it wants.
+        def replaceWithFoo(layer, assetPath):
+            self.assertEqual(layer, src_stage.GetRootLayer())
+            self.assertEqual(assetPath, './assetPathsTest.usda')
+            return 'foo'
+
+        layer = Usd.FlattenLayerStack(src_layer_stack,
+                resolveAssetPathFn=replaceWithFoo)
+        self.assertEqual(
+            layer.GetAttributeAtPath('/Test.a').default,
+            Sdf.AssetPath('foo'))
+
+        # Usd.FlattenLayerStackAdvanced should pass the unevaluated asset
+        # path expression along with the applicable expression variables to
+        # the resolve callback to allow it to fully customize the evaluation,
+        # anchoring, and replacement behaviors.
+        def replaceWithFoo(context):
+            self.assertEqual(context.sourceLayer, src_stage.GetRootLayer())
+            self.assertEqual(context.assetPath, '`"./${NAME}.usda"`')
+            self.assertEqual(context.expressionVariables, {'NAME':'assetPathsTest'})
+            return 'foo'
+
+        layer = Usd.FlattenLayerStackAdvanced(src_layer_stack,
+                resolveAssetPathFn=replaceWithFoo)
+        self.assertEqual(
+            layer.GetAttributeAtPath('/Test.a').default,
+            Sdf.AssetPath('foo'))
+
+    def test_ResolveAssetPathWithExpressionsAcrossReference(self):
+        # Create source stage with a prim that references 
+        # assetPathsAndExpressions.usda but overrides the expression variable in
+        # that layer stack.
+        rootLayer = Sdf.Layer.CreateAnonymous('.usda')
+        rootLayer.ImportFromString('''
+        #usda 1.0
+        (
+            expressionVariables = {
+                string NAME = "test_from_ref"
+            }
+        )
+
+        def "TestRef" (
+            references = @./assetPathsAndExpressions.usda@</Test>
+        )
+        {
+        }
+        '''.strip())
+
+        src_stage = Usd.Stage.Open(rootLayer)
+
+        # When we get the value of /TestRef.expression, the "NAME" variable
+        # authored in our root layer should be used to evaluate the expression
+        # from assetPathsAndExpressions.usda, giving us "test_from_ref.usda". 
+        #
+        # Note that since this layer doesn't actually exist, calling Get() gives
+        # us an Sdf.AssetPath with the asset path set to the result of
+        # evaluating the expression and no resolved path.
+        self.assertEqual(
+            src_stage.GetAttributeAtPath('/TestRef.a').Get(),
+            Sdf.AssetPath('./test_from_ref.usda'))
+
+        # Now, flatten the *referenced* layer stack retrieved from /TestRef's
+        # prim index. Flattening should evaluate the expression using the
+        # variables authored in the *referenced* layer stack and anchor it to
+        # the layer where it was authored. So instead of 'test_from_ref.usda',
+        # we expect 'assetPathsTest.usda'.
+        #
+        # This ensures the attribute value when loading the flattened layer on a
+        # Usd.Stage will be consistent with loading the root (and session) layer
+        # of the original layer stack on a Usd.Stage.
+        primIndex = src_stage.GetPrimAtPath('/TestRef').GetPrimIndex()
+        ref_layer_stack = primIndex.rootNode.children[0].layerStack
+
+        layer = Usd.FlattenLayerStack(ref_layer_stack)
+        self.assertEqual(
+            layer.GetAttributeAtPath('/Test.a').default,
+            Sdf.ComputeAssetPathRelativeToLayer(
+                ref_layer_stack.layers[0], './assetPathsTest.usda'))
+
+        # The resolve callback used by Usd.FlattenLayerStackAdvanced
+        # should receive the expression variables from the referenced layer
+        # stack.
+        def resolveFn(context):
+            self.assertEqual(context.sourceLayer, ref_layer_stack.layers[0])
+            self.assertEqual(context.assetPath, '`"./${NAME}.usda"`')
+            self.assertEqual(
+                context.expressionVariables, 
+                {'NAME':'assetPathsTest'})
+            return Usd.FlattenLayerStackResolveAssetPathAdvanced(context)
+
+        layer = Usd.FlattenLayerStackAdvanced(ref_layer_stack, resolveFn)
+        self.assertEqual(
+            layer.GetAttributeAtPath('/Test.a').default,
+            Sdf.ComputeAssetPathRelativeToLayer(
+                ref_layer_stack.layers[0], './assetPathsTest.usda'))
+
+        # Verify the consistency guarantee mentioned above. Note that this
+        # guarantee currently only applies to the resolved path; the authored
+        # paths may differ.
+        stage_from_flattened = Usd.Stage.Open(layer)
+        stage_from_layer_stack = Usd.Stage.Open(
+            ref_layer_stack.identifier.rootLayer)
+
+        self.assertEqual(
+            stage_from_flattened.GetAttributeAtPath('/Test.a').Get().resolvedPath,
+            stage_from_layer_stack.GetAttributeAtPath('/Test.a').Get().resolvedPath)
+
+    def test_ValueBlocks(self):
+        src_stage = Usd.Stage.Open('valueBlocks_root.usda')
         src_layer_stack = src_stage._GetPcpCache().layerStack
         layer = Usd.FlattenLayerStack(src_layer_stack, tag='valueBlocks')
         print(layer.ExportToString())

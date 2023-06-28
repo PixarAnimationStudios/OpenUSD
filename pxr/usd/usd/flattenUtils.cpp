@@ -31,11 +31,13 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/attributeSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
+#include "pxr/usd/sdf/variableExpression.h"
 #include "pxr/usd/sdf/variantSetSpec.h"
 #include "pxr/usd/sdf/variantSpec.h"
 #include "pxr/usd/sdf/pseudoRootSpec.h"
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/pcp/composeSite.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/clipsAPI.h"
@@ -285,9 +287,13 @@ _ApplyLayerOffset(const SdfLayerOffset &offset,
     }
 }
 
+using _ResolveAssetPathFn = std::function<
+    std::string(const SdfLayerHandle& sourceLayer,
+                const std::string& assetPath)>;
+
 template <class RefOrPayloadType>
 static boost::optional<RefOrPayloadType>
-_FixReferenceOrPayload(const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+_FixReferenceOrPayload(const _ResolveAssetPathFn& resolveAssetPathFn,
                        const SdfLayerHandle &sourceLayer,
                        const RefOrPayloadType &refOrPayload)
 {
@@ -300,28 +306,28 @@ _FixReferenceOrPayload(const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
 static void
 _FixAssetPaths(const SdfLayerHandle &sourceLayer,
                const TfToken &field,
-               const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+               const _ResolveAssetPathFn& resolveAssetPathFn,
                VtValue *val)
 {
     static auto updateAssetPathFn = [](
         const SdfLayerHandle &sourceLayer,
-        const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+        const _ResolveAssetPathFn& resolveAssetPathFn,
         VtValue &val) {
             SdfAssetPath ap;
             val.Swap(ap);
             ap = SdfAssetPath(
-                    resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+                resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
             val.Swap(ap);
         };
     static auto updateAssetPathArrayFn = [](
         const SdfLayerHandle &sourceLayer,
-        const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+        const _ResolveAssetPathFn& resolveAssetPathFn,
         VtValue &val) {
             VtArray<SdfAssetPath> a;
             val.Swap(a);
             for (SdfAssetPath &ap: a) {
                 ap = SdfAssetPath(
-                        resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
+                    resolveAssetPathFn(sourceLayer, ap.GetAssetPath()));
             }
             val.Swap(a);
         };
@@ -450,7 +456,7 @@ static VtValue
 _ReduceField(const PcpLayerStackRefPtr &layerStack,
              const SdfSpecHandle &targetSpec,
              const TfToken &field,
-             const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+             const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     const SdfLayerRefPtrVector &layers = layerStack->GetLayers();
     const SdfPath &path = targetSpec->GetPath();
@@ -492,7 +498,7 @@ _ReduceField(const PcpLayerStackRefPtr &layerStack,
 static void
 _FlattenFields(const PcpLayerStackRefPtr &layerStack,
                const SdfSpecHandle &targetSpec,
-               const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+               const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     const SdfLayerRefPtrVector &layers = layerStack->GetLayers();
     const SdfSchemaBase &schema = targetSpec->GetLayer()->GetSchema();
@@ -540,12 +546,12 @@ _GetSiteSpecType(const SdfLayerRefPtrVector &layers, const SdfPath &path)
 static void
 _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
              const SdfPrimSpecHandle &prim,
-             const UsdFlattenResolveAssetPathFn& resolveAssetPathFn);
+             const _ResolveAssetPathFn& resolveAssetPathFn);
 
 static void
 _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
              const SdfVariantSpecHandle &var,
-             const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+             const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     _FlattenSpec(layerStack, var->GetPrimSpec(), resolveAssetPathFn);
 }
@@ -553,7 +559,7 @@ _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
 static void
 _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
              const SdfVariantSetSpecHandle &vset,
-             const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+             const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     // Variants
     TfTokenVector nameOrder;
@@ -575,7 +581,7 @@ _FlattenTargetPaths(const PcpLayerStackRefPtr &layerStack,
                     const SdfSpecHandle &spec,
                     const TfToken &field,
                     SdfPathEditorProxy targetProxy,
-                    const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+                    const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     VtValue val = _ReduceField(layerStack, spec, field, resolveAssetPathFn);
     if (val.IsHolding<SdfPathListOp>()) {
@@ -597,10 +603,10 @@ _FlattenTargetPaths(const PcpLayerStackRefPtr &layerStack,
     }
 }
 
-void
+static void
 _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
              const SdfPrimSpecHandle &prim,
-             const UsdFlattenResolveAssetPathFn& resolveAssetPathFn)
+             const _ResolveAssetPathFn& resolveAssetPathFn)
 {
     const SdfLayerRefPtrVector &layers = layerStack->GetLayers();
 
@@ -679,11 +685,57 @@ _FlattenSpec(const PcpLayerStackRefPtr &layerStack,
     }
 }
 
-SdfLayerRefPtr
-UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
-                     const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
-                     const std::string &tag)
+static std::string
+_EvaluateAssetPathExpression(
+    const std::string& expression,
+    const VtDictionary& expressionVars)
 {
+    SdfVariableExpression::Result r = 
+        SdfVariableExpression(expression)
+        .EvaluateTyped<std::string>(expressionVars);
+            
+    if (!r.errors.empty()) {
+        const std::string combinedError = TfStringJoin(
+            r.errors.begin(), r.errors.end(), "; ");
+        TF_WARN(
+            "Error evaluating expression %s: %s",
+            expression.c_str(), combinedError.c_str());
+    }
+
+    return r.value.IsHolding<std::string>() ? 
+        r.value.UncheckedGet<std::string>() : std::string();
+}
+
+SdfLayerRefPtr
+UsdFlattenLayerStack(
+    const PcpLayerStackRefPtr &layerStack,
+    const UsdFlattenResolveAssetPathAdvancedFn& resolveAssetPathFn,
+    const std::string &tag)
+{
+    // Explicitly compute the expression variables for this layer stack instead
+    // of using the values from PcpLayerStack::GetExpressionVariables. This
+    // ensures we get the same variables as if we loaded layerStack as the
+    // root layer of a UsdStage.
+    //
+    // For example, if layerStack was referenced from some other layer stack R,
+    // and R had authored expression variables, those variables would show up
+    // in the object returned by layerStack->GetExpressionVariables(). However,
+    // if layerStack was used as a UsdStage's root layer stack, those variables
+    // from R would not show up.
+    const PcpExpressionVariables layerStackExprVars =
+        PcpExpressionVariables::Compute(
+            layerStack->GetIdentifier(), layerStack->GetIdentifier());
+
+    // Wrap the resolve function we're given to pass along the computed
+    // expression variables.
+    auto resolveFnWrapper = [&resolveAssetPathFn, &layerStackExprVars](
+        const SdfLayerHandle& sourceLayer, 
+        const std::string& assetPath) -> std::string
+    {
+        return resolveAssetPathFn(
+            {sourceLayer, assetPath, layerStackExprVars.GetVariables()});
+    };
+
     ArResolverContextBinder arBinder(
         layerStack->GetIdentifier().pathResolverContext);
     SdfChangeBlock changeBlock;
@@ -692,8 +744,8 @@ UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
     // extension here if needed.
     const bool hasExtension = !TfGetExtension(tag).empty();
     SdfLayerRefPtr outputLayer = SdfLayer::CreateAnonymous(hasExtension ? tag : tag+".usda");
-    _FlattenFields(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
-    _FlattenSpec(layerStack, outputLayer->GetPseudoRoot(), resolveAssetPathFn);
+    _FlattenFields(layerStack, outputLayer->GetPseudoRoot(), resolveFnWrapper);
+    _FlattenSpec(layerStack, outputLayer->GetPseudoRoot(), resolveFnWrapper);
     return outputLayer;
 }
 
@@ -702,8 +754,48 @@ UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
                      const std::string& tag)
 {
     return UsdFlattenLayerStack(layerStack,
-            UsdFlattenLayerStackResolveAssetPath, 
+            UsdFlattenLayerStackResolveAssetPathAdvanced, 
             tag);
+}
+
+SdfLayerRefPtr
+UsdFlattenLayerStack(const PcpLayerStackRefPtr &layerStack,
+                     const UsdFlattenResolveAssetPathFn& resolveAssetPathFn,
+                     const std::string &tag)
+{
+    // Wrap the resolve function we're given so that we evaluate any asset
+    // path expressions before passing them along to the callback.
+    auto resolveFnWrapper = [&resolveAssetPathFn](
+        const UsdFlattenResolveAssetPathContext& ctx) {
+
+        if (SdfVariableExpression::IsExpression(ctx.assetPath)) {
+            const std::string evaluatedAssetPath =
+                _EvaluateAssetPathExpression(
+                    ctx.assetPath, ctx.expressionVariables);
+            return resolveAssetPathFn(ctx.sourceLayer, evaluatedAssetPath);
+        }
+        return resolveAssetPathFn(ctx.sourceLayer, ctx.assetPath);
+    };
+
+    return UsdFlattenLayerStack(layerStack, resolveFnWrapper, tag);
+}
+
+std::string
+UsdFlattenLayerStackResolveAssetPathAdvanced(
+    const UsdFlattenResolveAssetPathContext& ctx)
+{
+    const std::string* assetPath = &ctx.assetPath;
+
+    // If the asset path is an expression, compute its value before anchoring
+    // it below.
+    std::string evaluatedAssetPath;
+    if (SdfVariableExpression::IsExpression(ctx.assetPath)) {
+        evaluatedAssetPath = _EvaluateAssetPathExpression(
+            ctx.assetPath, ctx.expressionVariables);
+        assetPath = &evaluatedAssetPath;
+    }
+
+    return UsdFlattenLayerStackResolveAssetPath(ctx.sourceLayer, *assetPath);
 }
 
 std::string 
@@ -716,6 +808,5 @@ UsdFlattenLayerStackResolveAssetPath(
     return assetPath.empty() ? 
         assetPath : SdfComputeAssetPathRelativeToLayer(sourceLayer, assetPath);
 }
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
