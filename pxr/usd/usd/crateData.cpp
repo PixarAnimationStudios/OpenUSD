@@ -804,16 +804,21 @@ private:
                     
             dispatcher.Run(
                 [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
-                    // XXX Won't need first two tags when bug #132031 is
-                    // addressed
-                    TfAutoMallocTag tag(
-                        "Usd", "Usd_CrateDataImpl::Open", "field data");
-                    auto &pairs = fieldValuePairs.GetMutable();
-                    pairs.resize(fsEnd-fsBegin);
-                    for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
-                        auto const &field = fields[fsBegin->value];
-                        pairs[i].first = _crateFile->GetToken(field.tokenIndex);
-                        pairs[i].second = _UnpackForField(field.valueRep);
+                    try {
+                        // XXX Won't need first two tags when bug #132031 is
+                        // addressed
+                        TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open", "field data");
+                        auto &pairs = fieldValuePairs.GetMutable();
+                        pairs.resize(fsEnd-fsBegin);
+                        for (size_t i = 0; fsBegin != fsEnd; ++fsBegin, ++i) {
+                            auto const &field = fields[fsBegin->value];
+                            pairs[i].first = _crateFile->GetToken(field.tokenIndex);
+                            pairs[i].second = _UnpackForField(field.valueRep);
+                        }
+                    } catch (const std::exception&) {
+                        // Don't let exceptions from individual reader out,
+                        // otherwise it will crash in some destructors.
                     }
                 });
         }

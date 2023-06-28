@@ -92,6 +92,7 @@
 #include <mutex>
 #include <tuple>
 #include <type_traits>
+#include <exception>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -595,8 +596,7 @@ struct _MmapStream {
                     "Read out-of-bounds: %zd bytes at offset %td in "
                     "a mapping of length %zd",
                     nBytes, offset, mapLen);
-                memset(dest, 0x99, nBytes);
-                return;
+                throw std::runtime_error("Read out of bounds");
             }
         }
 
