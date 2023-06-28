@@ -31,6 +31,7 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
 
+#include <boost/call_traits.hpp>
 #include <type_traits>
 
 // This file defines macros intended to reduce the amount of boilerplate code

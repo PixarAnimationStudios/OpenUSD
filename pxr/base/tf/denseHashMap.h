@@ -27,14 +27,13 @@
 /// \file tf/denseHashMap.h
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/attributes.h"
 #include "pxr/base/tf/hashmap.h"
 
 #include <memory>
 #include <vector>
 
-#include <boost/compressed_pair.hpp>
 #include <boost/iterator/iterator_facade.hpp>
-#include <boost/utility.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,7 +55,13 @@ template <
     class    EqualKey  = std::equal_to<Key>,
     unsigned Threshold = 128
 >
-class TfDenseHashMap
+
+class ARCH_EMPTY_BASES TfDenseHashMap :
+    // Since sizeof(EqualKey) == 0 and sizeof(HashFn) == 0 in many cases
+    // we use the empty base optimization to not pay a size penalty.
+    // In C++20, explore using [[no_unique_address]] as an alternative
+    // way to get this optimization.
+    private HashFn, private EqualKey
 {
 public:
 
@@ -219,11 +224,9 @@ public:
     ///
     explicit TfDenseHashMap(
         const HashFn   &hashFn   = HashFn(),
-        const EqualKey &equalKey = EqualKey())
-    {
-        _hash() = hashFn;
-        _equ()  = equalKey;
-    }
+        const EqualKey &equalKey = EqualKey()) :
+            HashFn(hashFn),
+            EqualKey(equalKey) {}
 
     /// Construct with range.
     ///
@@ -241,11 +244,10 @@ public:
     /// Copy Ctor.
     ///
     TfDenseHashMap(const TfDenseHashMap &rhs)
-    :   _vectorHashFnEqualFn(rhs._vectorHashFnEqualFn) {
-        if (rhs._h) {
-            _h.reset(new _HashMap(*rhs._h));
-        }
-    }
+    :   HashFn(rhs),
+        EqualKey(rhs),
+        _vector(rhs._vector),
+        _h(rhs._h ? std::make_unique<_HashMap>(*rhs._h) : nullptr) {}
 
     /// Move Ctor.
     ///
@@ -308,7 +310,10 @@ public:
     /// Swaps the contents of two maps.
     ///
     void swap(TfDenseHashMap &rhs) {
-        _vectorHashFnEqualFn.swap(rhs._vectorHashFnEqualFn);
+        using std::swap;
+        swap(_hash(), rhs._hash());
+        swap(_equ(), rhs._equ());
+        _vector.swap(rhs._vector);
         _h.swap(rhs._h);
     }
 
@@ -543,32 +548,32 @@ private:
 
     // Helper to access the storage vector.
     _Vector &_vec() {
-        return _vectorHashFnEqualFn.first().first();
+        return _vector;
     }
 
     // Helper to access the hash functor.
     HashFn &_hash() {
-        return _vectorHashFnEqualFn.first().second();
+        return *this;
     }
 
     // Helper to access the equality functor.
     EqualKey &_equ() {
-        return _vectorHashFnEqualFn.second();
+        return *this;
     }
 
     // Helper to access the storage vector.
     const _Vector &_vec() const {
-        return _vectorHashFnEqualFn.first().first();
+        return _vector;
     }
 
     // Helper to access the hash functor.
     const HashFn &_hash() const {
-        return _vectorHashFnEqualFn.first().second();
+        return *this;
     }
 
     // Helper to access the equality functor.
     const EqualKey &_equ() const {
-        return _vectorHashFnEqualFn.second();
+        return *this;
     }
 
     // Helper to linear-search the vector for a key.
@@ -612,17 +617,8 @@ private:
         }
     }
 
-    // Vector holding all elements along with the EqualKey functor.  Since
-    // sizeof(EqualKey) == 0 in many cases we use a compressed_pair to not
-    // pay a size penalty.
-
-    typedef
-        boost::compressed_pair<
-            boost::compressed_pair<_Vector, HashFn>,
-            EqualKey>
-        _VectorHashFnEqualFn;
-
-    _VectorHashFnEqualFn _vectorHashFnEqualFn;
+    // Vector holding all elements
+    _Vector _vector;
 
     // Optional hash map that maps from keys to vector indices.
     std::unique_ptr<_HashMap> _h;
