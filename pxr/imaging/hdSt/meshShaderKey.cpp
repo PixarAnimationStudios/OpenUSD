@@ -119,6 +119,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
     ((mainBoxSplineTrianglePTVS,   "Mesh.PostTessVertex.BoxSplineTriangle"))
+    ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
+    ((mainMOS,                     "Mesh.MeshObject.Main"))
+    ((mainTriangleMS,              "Mesh.Meshlet.Triangle"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
@@ -284,9 +287,54 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     useMetalTessellation =
         hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
 
+    useMetalTessellation = false;
+
+    bool useMeshShading = UseMeshShaders();
+
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =
-        hasBuiltinBarycentrics || useMetalTessellation;
+        hasBuiltinBarycentrics || useMetalTessellation || useMeshShading;
+
+    uint8_t mosIndex = 0;
+    uint8_t msIndex = 0;
+
+    if (useMeshShading) {
+        MS[msIndex++] = _tokens->instancing;
+        if (ptvsGeometricNormals) {
+            MS[msIndex++] = _tokens->normalsGeometryFlat;
+        } else {
+            MS[msIndex++] = _tokens->normalsGeometryNoFlat;
+        }
+
+        // Now handle the vs style normals
+        if (normalsSource == NormalSourceFlat) {
+            MS[msIndex++] = _tokens->normalsFlat;
+        }
+        else if (normalsSource == NormalSourceSmooth) {
+            MS[msIndex++] = _tokens->normalsSmooth;
+        } else if (vsSceneNormals) {
+            MS[msIndex++] = _tokens->normalsScene;
+        } else if (gsSceneNormals && isPrimTypePatches) {
+            MS[msIndex++] = _tokens->normalsScenePatches;
+        } else {
+            MS[msIndex++] = _tokens->normalsPass;
+        }
+        
+        if (hasCustomDisplacement) {
+            MS[msIndex++] = _tokens->customDisplacementGS;
+        } else {
+            MS[msIndex++] = _tokens->noCustomDisplacementGS;
+        }
+        
+        MOS[mosIndex++] = _tokens->mainMOS;
+        if (isPrimTypeQuads || isPrimTypeTriQuads) {
+            TF_CODING_ERROR("Quad prims not supported yet");
+        } else if (isPrimTypeTris) {
+            MS[msIndex++] = _tokens->mainTriangleMS;
+        } else {
+            TF_CODING_ERROR("Unsupported meshlet primitive type");
+        }
+    }
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;
@@ -415,7 +463,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Optimization : See if we can skip the geometry shader.
     bool const canSkipGS =
-            ptvsStageEnabled ||
+            (ptvsStageEnabled || UseMeshShaders()) ||
             // Whether we can skip executing the displacement shading terminal
             (!hasCustomDisplacement
             && (normalsSource != NormalSourceLimit)

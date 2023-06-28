@@ -145,11 +145,14 @@ private:
 
     void _ExecuteDrawIndirect(
                 HgiGraphicsCmds * gfxCmds,
-                HdStBufferArrayRangeSharedPtr const & indexBar);
+                HdStBufferArrayRangeSharedPtr const & indexBar,
+                HgiGraphicsPipelineHandle psoHandle,
+                HdStRenderPassStateSharedPtr const & renderPassState);
 
     void _ExecuteDrawImmediate(
                 HgiGraphicsCmds * gfxCmds,
-                HdStBufferArrayRangeSharedPtr const & indexBar);
+                HdStBufferArrayRangeSharedPtr const & indexBar,
+                HgiGraphicsPipelineHandle psoHandle);
 
     void _ExecuteFrustumCull(
                 bool updateDispatchBuffer,
@@ -194,7 +197,7 @@ private:
     bool _useGpuCulling;
     bool _useInstanceCulling;
     bool const _allowGpuFrustumCulling;
-    bool const _allowIndirectCommandEncoding;
+    bool _allowIndirectCommandEncoding;
 
     size_t _instanceCountOffset;
     size_t _cullInstanceCountOffset;

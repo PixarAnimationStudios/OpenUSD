@@ -905,6 +905,18 @@ HdSt_ResourceBinder::ResolveBindings(
     // Add custom bindings.
     // Don't need to sanitize the name used, since these are internally
     // generated.
+    
+    if (useMeshShaders) {
+        auto name = TfToken("drawBuffer");
+        HdStBinding cullInput = locator.GetBinding(HdStBinding::SSBO, name);
+        _bindingMap[name] = cullInput;
+        MetaData::BindingDeclaration b(name,
+            TfToken("uint"),
+             cullInput,
+            false);
+        metaDataOut->customBindings.push_back(b);
+    }
+    
     TF_FOR_ALL (it, customBindings) {
         if (it->IsInterleavedBufferArray()) {
             // Interleaved resource, only need a single binding point
@@ -1043,7 +1055,7 @@ HdSt_ResourceBinder::GetBufferBindingDesc(
         HgiShaderStagePostTessellationControl |
         HgiShaderStagePostTessellationVertex |
         HgiShaderStageTessellationControl | HgiShaderStageTessellationEval |
-        HgiShaderStageGeometry | HgiShaderStageFragment;
+        HgiShaderStageGeometry | HgiShaderStageFragment | HgiShaderStageMeshObject | HgiShaderStageMeshlet;
     HgiBufferBindDesc desc;
     desc.writable = true;
 

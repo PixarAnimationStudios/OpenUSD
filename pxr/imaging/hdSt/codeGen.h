@@ -168,9 +168,10 @@ private:
     std::stringstream _genDecl;
     std::stringstream _genAccessors;
     std::stringstream _genVS, _genTCS, _genTES;
-    std::stringstream _genPTCS, _genPTVS;
+    std::stringstream _genPTCS, _genPTVS, _genMOS, _genMS;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
+    std::stringstream _procMOSDecl, _procMOS, _procMSDecl, _procMSIn, _procMSOut;
     std::stringstream _procPTVSOut;
     std::stringstream _osd;
 
@@ -183,6 +184,8 @@ private:
     ElementVector _resFS;
     ElementVector _resPTCS;
     ElementVector _resPTVS;
+    ElementVector _resMOS;
+    ElementVector _resMS;
     ElementVector _resCS;
 
     ElementVector _resInterstage;
@@ -212,6 +215,8 @@ private:
     bool _hasCS;
     bool _hasPTCS;
     bool _hasPTVS;
+    bool _hasMOS;
+    bool _hasMS;
 };
 
 

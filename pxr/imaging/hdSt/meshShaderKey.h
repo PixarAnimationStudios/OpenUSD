@@ -86,6 +86,9 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool UseMetalTessellation() const override {
         return useMetalTessellation;
     }
+    bool UseMeshShaders() const override {
+        return hasCustomDisplacement && HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+    }
 
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }
     float GetLineWidth() const override { return lineWidth; }
@@ -98,6 +101,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
+    bool hasCustomDisplacement;
     bool useHardwareFaceCulling;
     bool hasMirroredTransform;
     bool doubleSided;
@@ -112,6 +116,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetTES() const override { return TES; }
     TfToken const *GetPTCS()  const override { return PTCS; }
     TfToken const *GetPTVS()  const override { return PTVS; }
+    TfToken const *GetMOS()  const override { return MOS; }
+    TfToken const *GetMS()  const override { return MS; }
     TfToken const *GetGS()  const override { return GS; }
     TfToken const *GetFS()  const override { return FS; }
 
@@ -121,6 +127,8 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken TES[4];
     TfToken PTCS[5];
     TfToken PTVS[12];
+    TfToken MOS[3];
+    TfToken MS[8];
     TfToken GS[10];
     TfToken FS[22];
 };
