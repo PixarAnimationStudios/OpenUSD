@@ -309,6 +309,212 @@ void main(void)
 }
 
 --- --------------------------------------------------------------------------
+-- layout Mesh.MeshObject.Main
+[
+["uniform block", "Uniforms", "meshObjectParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.MeshObject.Main
+
+int GetDrawingField(uint off, uint drawCommandIndex)
+{
+    uint offset = drawCommandIndex * drawCommandNumUints;
+
+    offset += off;
+
+    return int(drawBuffer[offset]);return int(drawBuffer[offset]);
+}
+
+const int indexCountOffset = 0;
+const int instanceCountOffset = 1;
+const int baseIndexOffset = 2;
+const int baseVertexOffset = 3;
+const int baseInstanceOffset = 4;
+
+void main(void)
+{   
+    //IDEAS Experimentally tune
+    const uint32_t indicesPerMesh = MAX_INDICES;
+    SetDrawIndex(hd_LocalInvocationID.x, 0);
+    const uint indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
+    const uint numMeshlets = (indexCount + MAX_INDICES - 1) / MAX_INDICES;
+
+    //TODO maybe remove this
+
+    uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
+    uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
+    uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
+    uint baseInstance = GetDrawingField(baseInstanceOffset, hd_LocalInvocationID.x);
+
+    //IDEA Maybe sorting the inputs?
+
+    payload.baseVertex = baseVertex;
+    payload.baseIndex = baseIndex;
+    payload.baseInstance = baseInstance;
+    payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
+    payload.drawCommandNumUintLocal = drawCommandNumUints;
+    payload.indexCount = indexCount;
+
+    // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.
+
+    //IDEAS go in scan order
+    meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, numMeshlets, 1));
+}
+
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.Meshlet.Triangle
+[
+["out block", "VertexData", "outData",
+["vec4", "Peye"],
+["vec3", "Neye"]
+],
+["uniform block", "Uniforms", "meshletParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Meshlet.Triangle
+
+threadgroup IndexListOptimizerContext &indexListOptimizerContext;
+//start index list optimizer
+
+
+
+//end index list optimizer
+
+vec4 GetPatchCoord(int index)
+{
+    vec2 uv[3];
+    uv[0] = vec2(0, 0); // (0, 0, 1);
+    uv[1] = vec2(1, 0); // (1, 0, 0);
+    uv[2] = vec2(0, 1); // (0, 1, 0);
+
+    ivec3 patchParam = GetPatchParam();
+    return InterpolatePatchCoordTriangle(uv[index], patchParam);
+}
+
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
+uint32_t hd_VertexID;
+uint32_t primitive_id;
+uint32_t gl_InstanceID;
+uint32_t gl_BaseInstance;
+uint32_t baseVertex;
+uint32_t baseIndex;
+
+
+hd_drawingCoord dcMemb;
+void main(void) {
+    dcMemb = GetDrawingCoordFull();
+    //can be simplified to always use payload.baseVertex
+    const uint startIndex = MAX_INDICES * hd_LocalInvocationID.y;
+    const uint endIndex   = min(startIndex + MAX_INDICES, payload.indexCount);
+    uint drawIndexCount2 =  endIndex - startIndex;
+    uint32_t inputPrimitiveCount = drawIndexCount2/3;
+    if(drawIndexCount2 < 1) {
+        return;
+    }
+
+    uint ind = startIndex + hd_LocalIndexID;
+
+    uint globalIndex;
+
+    if (ind < endIndex)
+    {
+        baseVertex = payload.baseVertex;
+        baseIndex = payload.baseIndex;
+        gl_BaseInstance = payload.baseInstance;
+        gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance;
+
+        SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
+        primitive_id = (ind)/3;
+        hd_VertexID = ind;
+        globalIndex = (indices + (baseIndex))[ind];
+    }
+    else
+    {
+        globalIndex = INVALID_GLOBAL_INDEX;
+    }
+
+    optimizeIndexList(indexListOptimizerContext, ushort(hd_LocalIndexID), drawIndexCount2, globalIndex);
+
+    if( hd_LocalIndexID < indexListOptimizerContext.numUniqueVertices )
+    {
+        uint index = indexListOptimizerContext.globalIndices[hd_LocalIndexID];
+        ProcessPrimvarsIn(index);
+
+        //this is problematic because of threads
+
+        VertexOut vertexOut;
+        float4 point = float4(HdGet_points(index).x, HdGet_points(index).y, HdGet_points(index).z, 1.0f);
+
+        vec3 Neye0 = GetNormal(vec3(0),index);
+
+        //point = DisplacementTerminal(globalIndex%3, point, Neye0, GetPatchCoord(globalIndex%3));
+
+        MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+        vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+
+        vertexOut.Neye = Neye0; // normalized
+
+        vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
+        vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
+        ProcessPrimvarsOut(vertexOut);
+        mesh.set_vertex(hd_LocalIndexID, vertexOut);
+        //gsPatchCoord = GetPatchCoord(index%3);
+        ApplyClipPlanes(vertexOut.Peye);
+    }
+
+    ThreadgroupBarrier();
+
+    const uint simdId = hd_LocalIndexID / SIMD_WIDTH;
+    if( simdId == 0 )
+    {
+        const uint baseIndex = hd_LocalIndexID * 3;
+
+        const uchar localIndex0 = indexListOptimizerContext.localIndices[baseIndex+0];
+        const uchar localIndex1 = indexListOptimizerContext.localIndices[baseIndex+1];
+        const uchar localIndex2 = indexListOptimizerContext.localIndices[baseIndex+2];
+
+        const bool visible = true;
+        const uint outputPrimitiveCount = inputPrimitiveCount;
+
+        if( hd_LocalIndexID == 0 )
+        {
+            mesh.set_primitive_count(outputPrimitiveCount);
+        }
+
+        if( visible )
+        {
+
+            const uint primitiveId = hd_LocalIndexID;
+
+            PrimOut primOut;
+            mesh.set_primitive(primitiveId, primOut);
+
+            // Set the output indices.
+            const uint baseIndex = primitiveId * 3;
+            mesh.set_index(baseIndex+0, localIndex0);
+            mesh.set_index(baseIndex+1, localIndex1);
+            mesh.set_index(baseIndex+2, localIndex2);
+        }
+    }
+}
+
+
+--- --------------------------------------------------------------------------
 -- layout Mesh.TessControl.BSplineQuad
 
 [
@@ -1437,11 +1643,18 @@ vec4 GetInterpolatedPatchCoord()
     ["in block", "VertexData", "inData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+["uniform block", "Uniforms", "fragmentParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
 ]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
+
+hd_drawingCoord dcMemb;
 
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset
@@ -1476,6 +1689,7 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    dcMemb = GetDrawingCoordFull();
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);
