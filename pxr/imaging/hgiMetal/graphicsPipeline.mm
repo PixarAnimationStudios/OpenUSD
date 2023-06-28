@@ -48,7 +48,11 @@ HgiMetalGraphicsPipeline::HgiMetalGraphicsPipeline(
 {
     _CreateVertexDescriptor();
     _CreateDepthStencilState(hgi);
-    _CreateRenderPipelineState(hgi);
+    if (desc.meshState.useMeshShader) {
+        _CreateMeshRenderPipelineState(hgi);
+    } else {
+        _CreateRenderPipelineState(hgi);
+    }
 }
 
 HgiMetalGraphicsPipeline::~HgiMetalGraphicsPipeline()
@@ -331,6 +335,112 @@ HgiMetalGraphicsPipeline::_CreateRenderPipelineState(HgiMetal *hgi)
     _renderPipelineState = [device
         newRenderPipelineStateWithDescriptor:stateDesc
         error:&error];
+    [stateDesc release];
+    
+    if (!_renderPipelineState) {
+        NSString *err = [error localizedDescription];
+        TF_WARN("Failed to created pipeline state, error %s",
+            [err UTF8String]);
+    }
+}
+
+void
+HgiMetalGraphicsPipeline::_CreateMeshRenderPipelineState(HgiMetal *hgi)
+{
+    MTLMeshRenderPipelineDescriptor *stateDesc =
+        [[MTLMeshRenderPipelineDescriptor alloc] init];
+
+    // Create a new render pipeline state object
+    HGIMETAL_DEBUG_LABEL(stateDesc, _descriptor.debugName.c_str());
+    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
+
+    HgiMetalShaderProgram const *metalProgram =
+        static_cast<HgiMetalShaderProgram*>(_descriptor.shaderProgram.Get());
+    stateDesc.maxTotalThreadsPerObjectThreadgroup = _descriptor.meshState.maxTotalThreadsPerObjectThreadgroup;
+    stateDesc.maxTotalThreadsPerMeshThreadgroup = _descriptor.meshState.maxTotalThreadsPerMeshThreadgroup;
+    stateDesc.maxTotalThreadgroupsPerMeshGrid = _descriptor.meshState.maxTotalThreadGroupsPerObject;
+
+    stateDesc.objectFunction = metalProgram->GetMeshObjectFunction();
+    stateDesc.meshFunction = metalProgram->GetMeshletFunction();
+    
+    id<MTLFunction> fragFunction = metalProgram->GetFragmentFunction();
+    if (fragFunction && _descriptor.rasterizationState.rasterizerEnabled) {
+        stateDesc.fragmentFunction = fragFunction;
+        stateDesc.rasterizationEnabled = YES;
+    }
+    else {
+        stateDesc.rasterizationEnabled = NO;
+    }
+
+    // Color attachments
+    for (size_t i=0; i<_descriptor.colorAttachmentDescs.size(); i++) {
+        HgiAttachmentDesc const &hgiColorAttachment =
+            _descriptor.colorAttachmentDescs[i];
+        MTLRenderPipelineColorAttachmentDescriptor *metalColorAttachment =
+            stateDesc.colorAttachments[i];
+        
+        metalColorAttachment.pixelFormat = HgiMetalConversions::GetPixelFormat(
+            hgiColorAttachment.format, hgiColorAttachment.usage);
+
+        metalColorAttachment.writeMask = HgiMetalConversions::GetColorWriteMask(
+            hgiColorAttachment.colorMask);
+
+        if (hgiColorAttachment.blendEnabled) {
+            metalColorAttachment.blendingEnabled = YES;
+            
+            metalColorAttachment.sourceRGBBlendFactor =
+                HgiMetalConversions::GetBlendFactor(
+                    hgiColorAttachment.srcColorBlendFactor);
+            metalColorAttachment.destinationRGBBlendFactor =
+                HgiMetalConversions::GetBlendFactor(
+                    hgiColorAttachment.dstColorBlendFactor);
+            
+            metalColorAttachment.sourceAlphaBlendFactor =
+                HgiMetalConversions::GetBlendFactor(
+                    hgiColorAttachment.srcAlphaBlendFactor);
+            metalColorAttachment.destinationAlphaBlendFactor =
+                HgiMetalConversions::GetBlendFactor(
+                    hgiColorAttachment.dstAlphaBlendFactor);
+
+            metalColorAttachment.rgbBlendOperation =
+                HgiMetalConversions::GetBlendEquation(
+                    hgiColorAttachment.colorBlendOp);
+            metalColorAttachment.alphaBlendOperation =
+                HgiMetalConversions::GetBlendEquation(
+                    hgiColorAttachment.alphaBlendOp);
+        }
+        else {
+            metalColorAttachment.blendingEnabled = NO;
+        }
+    }
+    
+    HgiAttachmentDesc const &hgiDepthAttachment =
+        _descriptor.depthAttachmentDesc;
+
+    MTLPixelFormat depthPixelFormat = HgiMetalConversions::GetPixelFormat(
+        hgiDepthAttachment.format, hgiDepthAttachment.usage);
+
+    stateDesc.depthAttachmentPixelFormat = depthPixelFormat;
+    
+    if (_descriptor.depthAttachmentDesc.usage &
+        HgiTextureUsageBitsStencilTarget) {
+        stateDesc.stencilAttachmentPixelFormat = depthPixelFormat;
+    }
+    stateDesc.rasterSampleCount = _descriptor.multiSampleState.sampleCount;
+    if (_descriptor.multiSampleState.alphaToCoverageEnable) {
+        stateDesc.alphaToCoverageEnabled = YES;
+    } else {
+        stateDesc.alphaToCoverageEnabled = NO;
+    }
+    if (_descriptor.multiSampleState.alphaToOneEnable) {
+        stateDesc.alphaToOneEnabled = YES;
+    } else {
+        stateDesc.alphaToOneEnabled = NO;
+    }
+
+    NSError *error = NULL;
+    id<MTLDevice> device = hgi->GetPrimaryDevice();
+    _renderPipelineState = [device newRenderPipelineStateWithMeshDescriptor:stateDesc options:MTLPipelineOptionNone reflection:nullptr error:&error];
     [stateDesc release];
     
     if (!_renderPipelineState) {

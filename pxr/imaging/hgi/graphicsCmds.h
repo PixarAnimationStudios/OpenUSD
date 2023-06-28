@@ -78,7 +78,7 @@ public:
     /// Usually you call this right after BindPipeline() and the resources bound
     /// must be compatible with the bound pipeline.
     HGI_API
-    virtual void BindResources(HgiResourceBindingsHandle resources) = 0;
+    virtual void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders = false) = 0;
 
     /// Set Push / Function constants.
     /// `pipeline` is the pipeline that you are binding before the draw call. It
@@ -158,6 +158,16 @@ public:
         uint32_t baseVertex,
         uint32_t instanceCount,
         uint32_t baseInstance) = 0;
+
+    HGI_API
+    virtual void DrawIndexedMeshIndirect(
+            HgiBufferHandle const& indexBuffer,
+            uint32_t indexCount,
+            uint32_t indexBufferByteOffset,
+            uint32_t baseVertex,
+            uint32_t instanceCount,
+            uint32_t baseInstance,
+            uint32_t baseIndex) = 0;
 
     /// Records a indexed multi-draw command that reads the draw parameters
     /// from a provided drawParameterBuffer, and indices from indexBuffer.

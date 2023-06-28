@@ -59,7 +59,7 @@ public:
     void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
 
     HGIMETAL_API
-    void BindResources(HgiResourceBindingsHandle resources) override;
+    void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders) override;
 
     HGIMETAL_API
     void SetConstantValues(
@@ -95,6 +95,16 @@ public:
         uint32_t baseVertex,
         uint32_t instanceCount,
         uint32_t baseInstance) override;
+
+    HGIMETAL_API
+    void DrawIndexedMeshIndirect(
+            HgiBufferHandle const& indexBuffer,
+            uint32_t indexCount,
+            uint32_t indexBufferByteOffset,
+            uint32_t baseVertex,
+            uint32_t instanceCount,
+            uint32_t baseInstance,
+            uint32_t drawIndex) override;
 
     HGIMETAL_API
     void DrawIndexedIndirect(
@@ -154,6 +164,7 @@ private:
         MTLViewport viewport;
         MTLScissorRect scissorRect;
         
+        bool useMeshShaders = false;
         HgiMetalResourceBindings* resourceBindings;
         HgiMetalGraphicsPipeline* graphicsPipeline;
         id<MTLBuffer> argumentBuffer;

@@ -80,7 +80,8 @@ public:
     HGIMETAL_API
     void BindResources(HgiMetal *hgi,
                        id<MTLRenderCommandEncoder> renderEncoder,
-                       id<MTLBuffer> argBuffer);
+                       id<MTLBuffer> argBuffer,
+                       bool useMeshShaders);
 
     HGIMETAL_API
     void BindResources(HgiMetal *hgi,

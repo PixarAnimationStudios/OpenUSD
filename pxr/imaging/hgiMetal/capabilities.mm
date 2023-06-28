@@ -46,6 +46,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool unifiedMemory = false;
     bool barycentrics = false;
     bool hasAppleSilicon = false;
+    bool hasMeshShaders = true;
     bool icbSupported = false;
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
@@ -97,6 +98,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
     
     _SetFlag(HgiDeviceCapabilitiesBitsIndirectCommandBuffers, icbSupported);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsMeshShading, hasMeshShaders);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset
