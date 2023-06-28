@@ -20,46 +20,29 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-//
 
-#include "pxr/imaging/hd/utils.h"
+#ifndef PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
+#define PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
 
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/usdImaging/usdImaging/api.h"
 
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/flattenedDataSourceProvider.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+class UsdImagingFlattenedModelDataSourceProvider
+                        : public HdFlattenedDataSourceProvider
 {
-    if (!si) {
-        return false;
-    }
+    USDIMAGING_API
+    HdContainerDataSourceHandle GetFlattenedDataSource(
+        const Context&) const override;
 
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
-
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-}
+    USDIMAGING_API
+    void ComputeDirtyLocatorsForDescendants(
+        HdDataSourceLocatorSet * locators) const override;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
+

@@ -76,6 +76,8 @@ pxr_library(usdImaging
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
+        flattenedDataSourceProviders
+        flattenedModelDataSourceProvider
         geometryLightAdapter
         gprimAdapter
         hermiteCurvesAdapter

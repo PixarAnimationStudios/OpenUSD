@@ -26,14 +26,24 @@
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
-#include "pxr/imaging/hd/flattenedPrimvarsDataSource.h"
 
 #include "pxr/usd/sdf/pathTable.h"
-#include <tbb/concurrent_unordered_map.h>
+#include <tbb/concurrent_hash_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+using HdFlattenedDataSourceProviderSharedPtr =
+    std::shared_ptr<class HdFlattenedDataSourceProvider>;
+using HdFlattenedDataSourceProviderSharedPtrVector =
+    std::vector<HdFlattenedDataSourceProviderSharedPtr>;
+
+namespace HdFlatteningSceneIndex_Impl
+{
+constexpr uint32_t _smallVectorSize = 8;
+using _DataSourceLocatorSetVector =
+    TfSmallVector<HdDataSourceLocatorSet, _smallVectorSize>;
+}
 
 TF_DECLARE_REF_PTRS(HdFlatteningSceneIndex);
 
@@ -50,12 +60,14 @@ TF_DECLARE_REF_PTRS(HdFlatteningSceneIndex);
 class HdFlatteningSceneIndex : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-
     /// Creates a new flattening scene index.
+    /// inputArgs maps names to HdFlattenedDataSourceProviderSharedPtr's.
+    /// That provider flattens the data sources under the locator name
+    /// in each prim source.
     ///
     static HdFlatteningSceneIndexRefPtr New(
                 HdSceneIndexBaseRefPtr const &inputScene,
-                HdContainerDataSourceHandle const &inputArgs = nullptr) {
+                HdContainerDataSourceHandle const &inputArgs) {
         return TfCreateRefPtr(
             new HdFlatteningSceneIndex(inputScene, inputArgs));
     }
@@ -69,6 +81,18 @@ public:
 
     HD_API 
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
+
+    /// Data sources under locator name in a prim source get flattened.
+    const TfTokenVector &
+    GetFlattenedDataSourceNames() const {
+        return _dataSourceNames;
+    }
+
+    /// Providers in the same order as GetFlattenedDataSourceNames.
+    const HdFlattenedDataSourceProviderSharedPtrVector &
+    GetFlattenedDataSourceProviders() const {
+        return _dataSourceProviders;
+    }
 
 protected:
 
@@ -90,105 +114,52 @@ protected:
             const HdSceneIndexBase &sender,
             const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
+private:
+    using _DataSourceLocatorSetVector =
+        HdFlatteningSceneIndex_Impl::_DataSourceLocatorSetVector;
+
     // Consolidate _recentPrims into _prims.
     void _ConsolidateRecentPrims();
 
-private:
+    void _DirtyHierarchy(
+        const SdfPath &primPath,
+        const _DataSourceLocatorSetVector &relativeDirtyLocators,
+        const HdDataSourceLocatorSet &dirtyLocators,
+        HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries);
+
+    void _PrimDirtied(
+        const HdSceneIndexObserver::DirtiedPrimEntry &entry,
+        HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries);
+
+    // _dataSourceNames and _dataSourceProviders run in parallel
+    // and indicate that a data source at locator name in a prim data
+    // source gets flattened by provider.
+    TfTokenVector _dataSourceNames;
+    HdFlattenedDataSourceProviderSharedPtrVector _dataSourceProviders;
+
+    // Stores all data source names - convenient to quickly send out
+    // dirty messages for ancestors of resynced prims.
+    HdDataSourceLocatorSet _dataSourceLocatorSet;
+    // Stores universal set for each name in data source names - convenient
+    // to quickly invalidate all relevant data sourced of ancestors of
+    // resynced prim.
+    _DataSourceLocatorSetVector _relativeDataSourceLocators;
+
     // members
     using _PrimTable = SdfPathTable<HdSceneIndexPrim>;
     _PrimTable _prims;
 
     struct _PathHashCompare {
-        static bool equal(const SdfPath& a, const SdfPath& b) {
+        static bool equal(const SdfPath &a, const SdfPath &b) {
             return a == b;
         }
-        static size_t hash(const SdfPath& path) {
+        static size_t hash(const SdfPath &path) {
             return hash_value(path);
         }
     };
     using _RecentPrimTable =
         tbb::concurrent_hash_map<SdfPath, HdSceneIndexPrim, _PathHashCompare>;
     mutable _RecentPrimTable _recentPrims;
-
-    const bool _flattenXform;
-    const bool _flattenVisibility;
-    const bool _flattenPurpose;
-    const bool _flattenModel;
-    const bool _flattenMaterialBindings;
-    const bool _flattenPrimvars;
-    const bool _flattenCoordSysBinding;
-    HdDataSourceLocatorSet _dataSourceLocators;
-    TfTokenVector _dataSourceNames;
-
-    const HdContainerDataSourceHandle _identityXform;
-    const HdContainerDataSourceHandle _identityVis;
-    const HdContainerDataSourceHandle _identityPurpose;
-    const HdTokenDataSourceHandle _identityDrawMode;
-
-    // methods
-    void _DirtyHierarchy(
-        const SdfPath &primPath,
-        const HdDataSourceLocatorSet &dirtyLocators,
-        HdSceneIndexObserver::DirtiedPrimEntries *dirtyEntries);
-
-    // ------------------------------------------------------------------------
-
-    /// wraps the input scene's prim-level data sources in order to deliver
-    /// overriden value
-    class _PrimLevelWrappingDataSource : public HdContainerDataSource
-    {
-    public:
-        HD_DECLARE_DATASOURCE(_PrimLevelWrappingDataSource);
-
-        _PrimLevelWrappingDataSource(
-                const HdFlatteningSceneIndex &scene,
-                const SdfPath &primPath,
-                HdContainerDataSourceHandle inputDataSource);
-
-        bool PrimDirtied(const HdDataSourceLocatorSet &locators);
-
-        TfTokenVector GetNames() override;
-        HdDataSourceBaseHandle Get(const TfToken &name) override;
-
-    private:
-        HdContainerDataSourceHandle _GetParentPrimDataSource() const;
-
-        HdDataSourceBaseHandle _GetXform();
-        HdContainerDataSourceHandle _GetXformUncached();
-        HdDataSourceBaseHandle _GetVis();
-        HdContainerDataSourceHandle _GetVisUncached();
-        HdDataSourceBaseHandle _GetPurpose();
-        HdContainerDataSourceHandle _GetPurposeUncached();
-        HdDataSourceBaseHandle _GetModel();
-        HdTokenDataSourceHandle _GetDrawMode(
-            const HdContainerDataSourceHandle &model);
-        HdTokenDataSourceHandle _GetDrawModeUncached(
-            const HdContainerDataSourceHandle &model);
-        HdDataSourceBaseHandle _GetMaterialBindings();
-        HdContainerDataSourceHandle _GetMaterialBindingsUncached();
-        HdFlattenedPrimvarsDataSourceHandle _GetPrimvars();
-        HdFlattenedPrimvarsDataSourceHandle _GetPrimvarsUncached();
-        HdDataSourceBaseHandle _GetCoordSysBinding();
-        HdContainerDataSourceHandle _GetCoordSysBindingUncached();
-
-        const HdFlatteningSceneIndex &_sceneIndex;
-        const SdfPath _primPath;
-        HdContainerDataSourceHandle _inputDataSource;
-        HdContainerDataSourceAtomicHandle _computedXformDataSource;
-        HdContainerDataSourceAtomicHandle _computedVisDataSource;
-        HdContainerDataSourceAtomicHandle _computedPurposeDataSource;
-        HdTokenDataSource::AtomicHandle _computedDrawModeDataSource;
-        // Stored as a base rather than a container so we can use cast to
-        // distinguish between a cached value and the absence of a cached value.
-        // Internally, this is set to a retained bool=false data source to 
-        // indicate that no binding is present.
-        HdDataSourceBaseAtomicHandle _computedMaterialBindingsDataSource;
-        HdFlattenedPrimvarsDataSource::AtomicHandle _computedPrimvarsDataSource;
-        HdDataSourceBaseAtomicHandle _computedCoordSysBindingDataSource;
-    };
-
-    HD_DECLARE_DATASOURCE_HANDLES(_PrimLevelWrappingDataSource);
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

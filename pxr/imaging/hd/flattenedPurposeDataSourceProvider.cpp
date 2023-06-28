@@ -21,45 +21,43 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hd/flattenedPurposeDataSourceProvider.h"
 
-#include "pxr/imaging/hd/utils.h"
-
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+HdContainerDataSourceHandle
+HdFlattenedPurposeDataSourceProvider::GetFlattenedDataSource(
+    const Context &ctx) const
 {
-    if (!si) {
-        return false;
+    HdPurposeSchema inputPurpose(ctx.GetInputDataSource());
+    if (inputPurpose.GetPurpose()) {
+        return inputPurpose.GetContainer();
     }
 
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
+    HdPurposeSchema parentPurpose(ctx.GetFlattenedDataSourceFromParentPrim());
+    if (parentPurpose.GetPurpose()) {
+        return parentPurpose.GetContainer();
     }
 
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
+    static const HdContainerDataSourceHandle identityPurpose =
+        HdPurposeSchema::Builder()
+            .SetPurpose(
+                HdRetainedTypedSampledDataSource<TfToken>::New(
+                    HdRenderTagTokens->geometry))
+            .Build();
 
-    return false;
+    return identityPurpose;
 }
 
+void
+HdFlattenedPurposeDataSourceProvider::ComputeDirtyLocatorsForDescendants(
+    HdDataSourceLocatorSet * const locators) const
+{
+    *locators = HdDataSourceLocatorSet::UniversalSet();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

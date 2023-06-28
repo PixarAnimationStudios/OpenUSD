@@ -21,45 +21,26 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_IMAGING_HD_FLATTENED_PURPOSE_DATA_SOURCE_PROVIDER_H
+#define PXR_IMAGING_HD_FLATTENED_PURPOSE_DATA_SOURCE_PROVIDER_H
 
-#include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/flattenedDataSourceProvider.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+class HdFlattenedPurposeDataSourceProvider : public HdFlattenedDataSourceProvider
 {
-    if (!si) {
-        return false;
-    }
+    HD_API
+    HdContainerDataSourceHandle GetFlattenedDataSource(
+        const Context&) const override;
 
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
-
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-}
+    HD_API
+    void ComputeDirtyLocatorsForDescendants(
+        HdDataSourceLocatorSet * locators) const override;
+};
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // PXR_IMAGING_HD_FLATTENED_PURPOSE_DATA_SOURCE_PROVIDER_H

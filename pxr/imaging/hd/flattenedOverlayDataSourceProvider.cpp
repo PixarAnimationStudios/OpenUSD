@@ -21,45 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hd/flattenedOverlayDataSourceProvider.h"
 
-#include "pxr/imaging/hd/utils.h"
-
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+HdContainerDataSourceHandle
+HdFlattenedOverlayDataSourceProvider::GetFlattenedDataSource(
+    const Context &ctx) const
 {
-    if (!si) {
-        return false;
-    }
-
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
-
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
+    return
+        HdOverlayContainerDataSource::OverlayedContainerDataSources(
+            ctx.GetInputDataSource(),
+            ctx.GetFlattenedDataSourceFromParentPrim());
 }
 
+void
+HdFlattenedOverlayDataSourceProvider::ComputeDirtyLocatorsForDescendants(
+    HdDataSourceLocatorSet * const locators) const
+{
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

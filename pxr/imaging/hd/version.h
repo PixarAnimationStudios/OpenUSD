@@ -72,6 +72,8 @@
 // 51 -> 52: Added lens distortion, focus, and split diopter parameters to
 //           HdCamera.
 // 52 -> 53: Changing dirty bits of HdCoordSys.
+// 53 -> 54: Introducing HdFlattenedDataSourceProvider to make
+//           HdFlatteningSceneIndex modular.
 #define HD_API_VERSION 53
 
 // 1  ->  2: SimpleLighting -> FallbackLighting

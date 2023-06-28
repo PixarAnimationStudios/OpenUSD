@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
@@ -1092,7 +1093,10 @@ private:
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
         const bool forPrototype)
-  : _flattenedInputScene(HdFlatteningSceneIndex::New(inputScene))
+  : _flattenedInputScene(
+      HdFlatteningSceneIndex::New(
+          inputScene,
+          UsdImagingFlattenedDataSourceProviders()))
   , _retainedSceneIndex(HdRetainedSceneIndex::New())
   , _forPrototype(forPrototype)
 {

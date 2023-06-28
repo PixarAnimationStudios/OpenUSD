@@ -70,7 +70,14 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
-        flattenedPrimvarsDataSource
+        flattenedDataSourceProvider
+        flattenedDataSourceProviders
+        flattenedOverlayDataSourceProvider
+        flattenedMaterialBindingsDataSourceProvider
+        flattenedPrimvarsDataSourceProvider
+        flattenedPurposeDataSourceProvider
+        flattenedVisibilityDataSourceProvider
+        flattenedXformDataSourceProvider
         flatteningSceneIndex
         flatNormals
         geomSubset
@@ -187,6 +194,7 @@ pxr_library(hd
         api.h
         dataSourceTypeDefs.h
         driver.h
+        invalidatableContainerDataSource.h
         materialNetworkInterface.h
         vectorSchemaTypeDefs.h
         version.h

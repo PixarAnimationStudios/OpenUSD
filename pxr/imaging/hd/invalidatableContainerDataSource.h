@@ -21,45 +21,31 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_IMAGING_HD_INVALIDATABLE_CONTAINER_DATA_SOURCE_H
+#define PXR_IMAGING_HD_INVALIDATABLE_CONTAINER_DATA_SOURCE_H
 
-#include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/dataSource.h"
+#include "pxr/imaging/hd/dataSourceLocator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+/// \class HdInvalidatableContainerDataSource
+///
+/// Base class for container data sources that cache data but provide
+/// a locator to invalidate the cached data.
+///
+class HdInvalidatableContainerDataSource : public HdContainerDataSource
 {
-    if (!si) {
-        return false;
-    }
+public:
+    HD_DECLARE_DATASOURCE_ABSTRACT(HdInvalidatableContainerDataSource)
 
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
+    virtual bool Invalidate(const HdDataSourceLocatorSet &dirtyLocators) = 0;
+};
 
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-}
+HD_DECLARE_DATASOURCE_HANDLES(HdInvalidatableContainerDataSource);
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif

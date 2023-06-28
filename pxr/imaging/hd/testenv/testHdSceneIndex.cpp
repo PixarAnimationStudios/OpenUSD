@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/flattenedDataSourceProviders.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -355,7 +356,8 @@ bool TestFlatteningSceneIndex()
 {
     HdRetainedSceneIndexRefPtr sceneIndex_ = HdRetainedSceneIndex::New();
     HdFlatteningSceneIndexRefPtr flatteningSceneIndex_ =
-        HdFlatteningSceneIndex::New(sceneIndex_);
+        HdFlatteningSceneIndex::New(
+            sceneIndex_, HdFlattenedDataSourceProviders());
 
     HdRetainedSceneIndex &sceneIndex = *sceneIndex_;
     HdFlatteningSceneIndex &flatteningSceneIndex = *flatteningSceneIndex_;

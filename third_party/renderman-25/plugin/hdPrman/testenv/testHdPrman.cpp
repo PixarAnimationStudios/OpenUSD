@@ -56,6 +56,7 @@
 #include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -741,7 +742,8 @@ HydraSetupAndRender(
         siChainHead = UsdImagingNiPrototypePropagatingSceneIndex::New(siChainHead);
         siChainHead = UsdImagingSelectionSceneIndex::New(siChainHead);
         siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(siChainHead);
-        siChainHead = HdFlatteningSceneIndex::New(siChainHead);
+        siChainHead = HdFlatteningSceneIndex::New(
+            siChainHead, UsdImagingFlattenedDataSourceProviders());
         siChainHead = UsdImagingDrawModeSceneIndex::New(siChainHead, nullptr);
         siChainHead = HdsiLegacyDisplayStyleOverrideSceneIndex::New(siChainHead);
 

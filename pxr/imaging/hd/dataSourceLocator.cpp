@@ -314,6 +314,15 @@ HdDataSourceLocatorSet::_Normalize()
     }
 }
 
+
+const HdDataSourceLocatorSet &
+HdDataSourceLocatorSet::UniversalSet()
+{
+    static const HdDataSourceLocatorSet &result{
+        HdDataSourceLocator::EmptyLocator()};
+    return result;
+}
+
 HdDataSourceLocatorSet::HdDataSourceLocatorSet(
     const HdDataSourceLocator &locator)
   : _locators{locator}

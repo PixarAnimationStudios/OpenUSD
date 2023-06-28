@@ -34,6 +34,7 @@
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
@@ -1203,7 +1204,8 @@ UsdImagingGLEngine::_SetRenderDelegate(
             UsdImagingRenderSettingsFlatteningSceneIndex::New(_sceneIndex);
 
         _sceneIndex =
-            HdFlatteningSceneIndex::New(_sceneIndex);
+            HdFlatteningSceneIndex::New(
+                _sceneIndex, UsdImagingFlattenedDataSourceProviders());
 
         _sceneIndex =
             UsdImagingDrawModeSceneIndex::New(_sceneIndex,

@@ -21,45 +21,30 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
-#include "pxr/imaging/hd/utils.h"
+#include "pxr/usdImaging/usdImaging/flattenedModelDataSourceProvider.h"
 
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/flattenedDataSourceProviders.h"
+#include "pxr/imaging/hd/modelSchema.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
+HdContainerDataSourceHandle
+UsdImagingFlattenedDataSourceProviders()
 {
-    if (!si) {
-        return false;
-    }
+    using namespace HdMakeDataSourceContainingFlattenedDataSourceProvider;
 
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
-
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
-}
-
+    static HdContainerDataSourceHandle const result =
+        HdOverlayContainerDataSource::New(
+        HdRetainedContainerDataSource::New(
+            HdModelSchema::GetSchemaToken(),
+            Make<UsdImagingFlattenedModelDataSourceProvider>()),
+        HdFlattenedDataSourceProviders());
+    return result;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
+

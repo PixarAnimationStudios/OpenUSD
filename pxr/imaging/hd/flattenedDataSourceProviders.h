@@ -21,45 +21,23 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#ifndef PXR_IMAGING_HD_FLATTENED_DATA_SOURCE_PROVIDERS_H
+#define PXR_IMAGING_HD_FLATTENED_DATA_SOURCE_PROVIDERS_H
 
-#include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/sceneGlobalsSchema.h"
-#include "pxr/imaging/hd/sceneIndex.h"
-#include "pxr/imaging/hd/tokens.h"
-
-#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/dataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace HdUtils {
-
-/* static */
-bool
-HasActiveRenderSettingsPrim(
-    const HdSceneIndexBaseRefPtr &si,
-    SdfPath *primPath /* = nullptr */)
-{
-    if (!si) {
-        return false;
-    }
-
-    HdSceneGlobalsSchema sgSchema =
-        HdSceneGlobalsSchema::GetFromSceneIndex(si);
-    if (!sgSchema) {
-        return false;
-    }
-
-    if (auto pathHandle = sgSchema.GetActiveRenderSettingsPrim()) {
-        if (primPath) {
-            *primPath = pathHandle->GetTypedValue(0);
-        }
-        return true;
-    }
-
-    return false;
-}
-
-}
+/// Contains all flattened data source providers implemented in hd.
+///
+/// Can be given as inputArgs to the HdFlatteningSceneIndex.
+///
+HD_API
+HdContainerDataSourceHandle HdFlattenedDataSourceProviders();
 
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif
+
