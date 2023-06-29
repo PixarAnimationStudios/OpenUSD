@@ -151,8 +151,6 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
 
     _enabled = enabled;
 
-    HdSceneIndexObserver::AddedPrimEntries addedEntries;
-    HdSceneIndexObserver::RemovedPrimEntries removedEntries;
     HdSceneIndexObserver::DirtiedPrimEntries dirtiedEntries;
 
     // Invalidate all data source locators.  Even though the prim
@@ -177,14 +175,16 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
             if (_enabled) {
                 // Prune this primType.
                 _pruneMap[primPath] = true;
-                removedEntries.emplace_back(primPath);
+                printf("pruning %s\n", primPath.GetText());
+                dirtiedEntries.emplace_back(primPath, locators);
             } else {
                 const _PruneMap::iterator i = _pruneMap.find(primPath);
                 if (i != _pruneMap.end() && i->second) {
                     // Add back this previously-pruned prim.
-                    addedEntries.emplace_back(primPath, prim.primType);
+                    //addedEntries.emplace_back(primPath, prim.primType);
                     // Don't bother erasing the _pruneMap entry;
                     // will clear below.
+                    dirtiedEntries.emplace_back(primPath, locators);
                 }
             }
         } else if (!_bindingToken.IsEmpty()) {
@@ -201,12 +201,6 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
     }
 
     // Notify observers
-    if (!addedEntries.empty()) {
-        _SendPrimsAdded(addedEntries);
-    }
-    if (!removedEntries.empty()) {
-        _SendPrimsRemoved(removedEntries);
-    }
     if (!dirtiedEntries.empty()) {
         _SendPrimsDirtied(dirtiedEntries);
     }
@@ -224,6 +218,8 @@ HdsiPrimTypePruningSceneIndex::GetPrim(const SdfPath &primPath) const
         return prim;
     }
     if (_PruneType(prim.primType)) {
+        // For pruned prims, we clear out the primType and null out the
+        // dataSource.
         return { TfToken(), nullptr };
     } else {
         // Filter out scene primType prim entries
@@ -240,27 +236,10 @@ SdfPathVector
 HdsiPrimTypePruningSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 {
-    TRACE_FUNCTION();
-
     SdfPathVector result;
-    auto const input = _GetInputSceneIndex();
-
-    result = input->GetChildPrimPaths(primPath);
-    if (!_enabled) {
-        return result;
+    if (auto const input = _GetInputSceneIndex()) {
+        result = input->GetChildPrimPaths(primPath);
     }
-
-    // Filter out scene entries
-    result.erase(
-        std::remove_if(
-            result.begin(), result.end(),
-            [this](const SdfPath &path) {
-                return
-                    this->_PrunePath(path) &&
-                    this->_PruneType(
-                        this->_GetInputSceneIndex()->GetPrim(path).primType);
-            }),
-        result.end());
     return result;
 }
 
@@ -291,13 +270,11 @@ HdsiPrimTypePruningSceneIndex::_PrimsAdded(
     }
 
     // PrimTypes are present.  Filter them out of the entries.
-    HdSceneIndexObserver::AddedPrimEntries filteredEntries;
-    filteredEntries.reserve(entries.size());
-    for (const HdSceneIndexObserver::AddedPrimEntry &entry : entries) {
+    HdSceneIndexObserver::AddedPrimEntries filteredEntries = entries;
+    for (HdSceneIndexObserver::AddedPrimEntry &entry : filteredEntries) {
         if (_PrunePath(entry.primPath) && _PruneType(entry.primType)) {
+            entry.primType = TfToken();
             _pruneMap[entry.primPath] = true;
-        } else {
-            filteredEntries.push_back(entry);
         }
     }
     _SendPrimsAdded(filteredEntries);
@@ -308,42 +285,7 @@ HdsiPrimTypePruningSceneIndex::_PrimsRemoved(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::RemovedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
-    // Fast path: not filtering.
-    if (!_enabled) {
-        _SendPrimsRemoved(entries);
-        return;
-    }
-
-    // Fast path: if there are no primTypes, we can reuse the entry list.
-    bool anythingToFilter = false;
-    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        const _PruneMap::iterator i = _pruneMap.find(entry.primPath);
-        if (i != _pruneMap.end() && i->second) {
-            // Found a primType.
-            anythingToFilter = true;
-            break;
-        }
-    }
-    if (!anythingToFilter) {
-        _SendPrimsRemoved(entries);
-        return;
-    }
-
-    // PrimTypes are present.  Filter them out of the entries.
-    HdSceneIndexObserver::RemovedPrimEntries filteredEntries;
-    filteredEntries.reserve(entries.size());
-    for (const HdSceneIndexObserver::RemovedPrimEntry &entry : entries) {
-        const _PruneMap::iterator i = _pruneMap.find(entry.primPath);
-        if (i == _pruneMap.end() || !i->second) {
-            filteredEntries.push_back(entry);
-        }
-        if (i != _pruneMap.end()) {
-            _pruneMap.erase(i);
-        }
-    }
-    _SendPrimsRemoved(filteredEntries);
+    _SendPrimsRemoved(entries);
 }
 
 void
@@ -351,38 +293,10 @@ HdsiPrimTypePruningSceneIndex::_PrimsDirtied(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::DirtiedPrimEntries &entries)
 {
-    TRACE_FUNCTION();
-
-    // Fast path: not filtering.
-    if (_enabled) {
-        _SendPrimsDirtied(entries);
-        return;
-    }
-
-    // Fast path: if there are no primTypes, we can reuse the entry list.
-    bool anythingToFilter = false;
-    for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
-        const _PruneMap::iterator i = _pruneMap.find(entry.primPath);
-        if (i != _pruneMap.end() && i->second) {
-            anythingToFilter = true;
-            break;
-        }
-    }
-    if (!anythingToFilter) {
-        _SendPrimsDirtied(entries);
-        return;
-    }
-
-    // PrimTypes are present.  Filter them out of the entries.
-    HdSceneIndexObserver::DirtiedPrimEntries filteredEntries;
-    filteredEntries.reserve(entries.size());
-    for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
-        const _PruneMap::iterator i = _pruneMap.find(entry.primPath);
-        if (i == _pruneMap.end() || !i->second) {
-            filteredEntries.push_back(entry);
-        }
-    }
-    _SendPrimsDirtied(filteredEntries);
+    // XXX We could, potentially, filter out entries for prims
+    // we have pruned.  For now, we pass through (potentially
+    // unnecessary) dirty notification.
+    _SendPrimsDirtied(entries);
 }
 
 HdsiPrimTypePruningSceneIndex::HdsiPrimTypePruningSceneIndex(

@@ -44,6 +44,11 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiPrimTypePruningSceneIndex);
 /// Scene Index that prunes prims of given type (e.g., material) and
 /// (optionally) bindings to that prim type (e.g., materialBindings).
 ///
+/// Pruned prims are not removed from the scene index; instead, they
+/// are given an empty primType and null dataSource.  This is to
+/// preserve hierarchy and allow children of the pruned types to still
+/// exist.
+///
 /// An optional bool argument specifies whether to suppress pruning for
 /// prims at non-prim paths, and, correspondingly, leave bindings to
 /// prims at non-prim paths unchanged.
