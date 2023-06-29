@@ -1270,12 +1270,18 @@ function(pxr_build_python_documentation)
     string(REPLACE ";" "," pxrPythonModulesStr "${pxrPythonModules}")
     # Run convertDoxygen on the module list, setting PYTHONPATH 
     # to the install path for the USD Python modules
-    install(CODE "execute_process(\
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
-        COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
-        --package pxr --module ${pxrPythonModulesStr} \
-        --inputIndex ${BUILT_XML_DOCS}/index.xml \
-        --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
-        --output ${INSTALL_PYTHON_PXR_ROOT})")
+    install(CODE "\
+        execute_process(\
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
+            RESULT_VARIABLE convert_doxygen_return_code
+            COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
+                --package pxr --module ${pxrPythonModulesStr} \
+                --inputIndex ${BUILT_XML_DOCS}/index.xml \
+                --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
+                --output ${INSTALL_PYTHON_PXR_ROOT})
+        if (NOT \${convert_doxygen_return_code} EQUAL \"0\")
+            message( FATAL_ERROR \"Error generating python docstrings - ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} return code: \${convert_doxygen_return_code} \")
+        endif()
+    ")
 
 endfunction() # pxr_build_python_documentation
