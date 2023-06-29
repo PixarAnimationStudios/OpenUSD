@@ -32,7 +32,7 @@
 import os
 import sys
 import inspect
-import re
+import traceback
 
 __debugMode = True
 
@@ -43,7 +43,10 @@ LABEL_STATIC = '**static** '
 
 def Error(msg):
     """Output a fatal error message and exit the program."""
-    print("Error: %s" % msg)
+    print("Error: %s" % msg, flush=True)
+    if __debugMode:
+        traceback.print_stack()
+        sys.stderr.flush()
     sys.exit(1)
 
 def Warn(msg):
