@@ -135,9 +135,9 @@ public:
     }
 
     /// \sa SdfHandle::operator==
-    bool operator!=(const SdfHandle& other) const
+    friend bool operator!=(const SdfHandle& lhs, const SdfHandle& rhs)
     {
-        return !(*this == other);
+        return !(lhs == rhs);
     }
 
     /// Arranges handles in an arbitrary strict weak ordering.  Note that
@@ -149,21 +149,21 @@ public:
     }
 
     /// \sa SdfHandle::operator<
-    bool operator>(const SdfHandle& other) const
+    friend bool operator>(const SdfHandle& lhs, const SdfHandle& rhs)
     {
-        return other < *this;
+        return rhs < lhs;
     }
 
     /// \sa SdfHandle::operator<
-    bool operator<=(const SdfHandle& other) const
+    friend bool operator<=(const SdfHandle& lhs, const SdfHandle& rhs)
     {
-        return !(other < *this);
+        return !(rhs < lhs);
     }
 
     /// \sa SdfHandle::operator<
-    bool operator>=(const SdfHandle& other) const
+    friend bool operator>=(const SdfHandle& lhs, const SdfHandle& rhs)
     {
-        return !(*this < other);
+        return !(lhs < rhs);
     }
 
     /// Hash.
