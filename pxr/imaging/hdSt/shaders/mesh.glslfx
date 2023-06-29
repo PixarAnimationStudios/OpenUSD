@@ -350,8 +350,8 @@ void main(void)
     uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
     uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
     uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
-    uint baseInstance = GetDrawingField(baseInstanceOffset, hd_LocalInvocationID.x);
-    uint meshletCoord = GetDrawingField(meshletCoordOffset, hd_LocalInvocationID.x);
+    uint baseInstance = hd_LocalInvocationID.x;
+    uint meshlCoord = GetDrawingField(meshletCoordOffset, hd_LocalInvocationID.x);
     uint numMeshlet = GetDrawingField(numMeshletsOffset, hd_LocalInvocationID.x);
 
     //IDEA Maybe sorting the inputs?
@@ -362,7 +362,7 @@ void main(void)
     payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
     payload.drawCommandNumUintLocal = drawCommandNumUints;
     payload.indexCount = indexCount;
-    payload.meshletCoord = meshletCoord;
+    payload.meshletCoord = meshlCoord;
     payload.numberMeshlets = numMeshlet;
 
     // Because the mesh shader is only producing one mesh, the threadgroup grid size is 1 x 1 x 1.
@@ -383,8 +383,7 @@ void main(void)
 ["uint", "drawIndexCount"],
 ["uint", "drawCommandNumUints"],
 ["uint", "drawCoordOffset"]
-],
-["out", "vec4", "gsPatchCoord"]
+]
 ]
 
 --- --------------------------------------------------------------------------
@@ -463,13 +462,14 @@ void main(void) {
     {
         uint index = *(meshletVerticesStart + ind * numUintsPerVertex + 1);
         //TODO investigate this
-        ProcessPrimvarsIn(index);
+        
 
         //this is problematic because of threads
 
         VertexOut vertexOut;
         uint vertIndirection = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
-        float4 point = float4(HdGet_points(vertIndirection).x, HdGet_points(vertIndirection).y, HdGet_points(vertIndirection).z, 1.0f);
+        ProcessPrimvarsIn(vertIndirection);
+        float4 point = float4(HdGet_points(vertIndirection), 1.0f);
 
         vec3 Neye0 = GetNormal(vec3(0),index);
 
@@ -484,28 +484,23 @@ void main(void) {
         vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
         ProcessPrimvarsOut(vertexOut);
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
-        gsPatchCoord = GetPatchCoord(index);
         ApplyClipPlanes(vertexOut.Peye);
     }
 
-    const uint baseIndex = hd_LocalIndexID * 3;
+    const uint base = hd_LocalIndexID * 3;
     if(hd_LocalIndexID < meshletPrimitiveCount) {
-        //TODO is this needed?
-        const uint outputPrimitiveCount = inputPrimitiveCount;
 
-        mesh.set_primitive_count(outputPrimitiveCount);
-        //TODO make a smarter primitiveID
-        const uint primitiveId = hd_LocalIndexID;
-
+        mesh.set_primitive_count(meshletPrimitiveCount);
         //TODO actually set the primitive ID here
         PrimOut primOut;
-        mesh.set_primitive(primitiveId, primOut);
+        //TODO export a smarter primitive ID
+        mesh.set_primitive(hd_LocalIndexID, primOut);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(baseIndex+0, *(meshletIndicesStart + baseIndex));
-        mesh.set_index(baseIndex+1, *(meshletIndicesStart + baseIndex + 1));
-        mesh.set_index(baseIndex+2, *(meshletIndicesStart + baseIndex + 2));
+        mesh.set_index(baseIndex+0, *(meshletIndicesStart + base));
+        mesh.set_index(baseIndex+1, *(meshletIndicesStart + base + 1));
+        mesh.set_index(baseIndex+2, *(meshletIndicesStart + base + 2));
     }
 }
 
