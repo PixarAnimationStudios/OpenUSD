@@ -3015,13 +3015,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         //TODO Thor something better than this
         mosDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
-        mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
+        mosDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 256;
         mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
         mosDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
         
-        mosDesc.meshDescriptor.maxMeshletVertexCount = 96;
-        mosDesc.meshDescriptor.maxPrimitiveCount =
-                mosDesc.meshDescriptor.maxMeshletVertexCount/3;
+        mosDesc.meshDescriptor.maxMeshletVertexCount = 256;
+        mosDesc.meshDescriptor.maxPrimitiveCount = 172;
         mosDesc.meshDescriptor.meshTopology =
                 HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         
@@ -3037,7 +3036,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         msDesc.shaderStage = HgiShaderStageMeshlet;
         
         msDesc.meshDescriptor.maxTotalThreadsPerObjectThreadgroup = 1;
-        msDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 96;
+        msDesc.meshDescriptor.maxTotalThreadsPerMeshletThreadgroup = 256;
         msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
         msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
         
@@ -4796,12 +4795,23 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                           _metaData.culledInstanceIndexArrayBinding.binding,
                           "GetInstanceIndexCoord()+localIndex + 1");
 
-            genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
-                    << "  hd_instanceIndex r;\n"
-                    << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                            << "    r.indices[i] = culledInstanceIndices[/*localIndex=*/i];\n"
-                    << "  return r;\n"
-                    << "}\n";
+            if (!_hasMS) {
+                genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
+                << "  hd_instanceIndex r;\n"
+                << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
+                << "    r.indices[i] = culledInstanceIndices[/*localIndex=*/i];\n"
+                << "  return r;\n"
+                << "}\n";
+            } else {
+                //TODO Thor remove from MOS and the baseinstance and instanceid
+                genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
+                << "  hd_instanceIndex r;\n"
+                << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
+                << "    r.indices[i] = culledInstanceIndices[GetBaseInstanceIndexCoord()"
+                " + (gl_InstanceID - gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH + i + 1];\n"
+                << "  return r;\n"
+                << "}\n";
+            }
         }
     } else {
         genAttr << "hd_instanceIndex GetInstanceIndex() {"

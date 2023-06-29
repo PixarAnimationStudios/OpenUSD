@@ -389,16 +389,12 @@ struct _DrawCommandTraits
 template <typename CmdType>
 void _SetDrawCommandTraits(_DrawCommandTraits * traits,
                            int const instancerNumLevels,
-                           size_t const uint32Alignment,
-                           bool useMeshShaders = false)
+                           size_t const uint32Alignment)
 {
     // Number of uint32_t in the command struct
     // followed by instanceDC[instancerNumLevals]
     traits->numUInt32 = sizeof(CmdType) / sizeof(uint32_t)
                       + instancerNumLevels;
-    if (useMeshShaders) {
-        traits->numUInt32 +=2;
-    }
 
     if (uint32Alignment > 0) {
         size_t const alignMask = uint32Alignment - 1;
@@ -847,8 +843,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     TF_DEBUG(HDST_DRAW).Msg(" - useDrawIndexed: %d\n", _useDrawIndexed);
     TF_DEBUG(HDST_DRAW).Msg(" - useInstanceCulling: %d\n", _useInstanceCulling);
     TF_DEBUG(HDST_DRAW).Msg(" - num draw items: %zu\n", numDrawItemInstances);
-    unsigned long sz = traits.numUInt32;
-    _drawCommandBuffer.resize(numDrawItemInstances * sz);
+    _drawCommandBuffer.resize(numDrawItemInstances * traits.numUInt32);
     //estimate this required overallication
     //_meshletDrawBuffer.resize(numDrawItemInstances * 2 * 258);
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
@@ -859,39 +854,36 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         indexBar->GetResource(HdTokens->indices);
     uint32_t* cpuBuffer = ((uint32_t*)indexBuffer->GetHandle()->GetCPUStagingAddress());
     std::vector<std::vector<Meshlet>> meshlets;
-    for (size_t item = 0; item < numDrawItemInstances; ++item) {
-        HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
-        HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
-        
-        _barElementOffsetsHash =
-        TfHash::Combine(_barElementOffsetsHash,
-                        drawItem->GetElementOffsetsHash());
-        
-        _DrawItemState const dc(drawItem);
-        
-        // drawing coordinates.
-        uint32_t const modelDC         = 0; // reserved for future extension
-        uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
-        uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
-        
-        // 3 for triangles, 4 for quads, 6 for triquads, n for patches
-        uint32_t const numIndicesPerPrimitive =
-        drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
-        
-        uint32_t const baseVertex = vertexDC;
-        uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
-        
-        // if delegate fails to get vertex primvars, it could be empty.
-        // skip the drawitem to prevent drawing uninitialized vertices.
-        uint32_t const numElements =
-        vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
-        
-        uint32_t const baseIndex = primitiveDC * numIndicesPerPrimitive;
-        uint32_t const indexCount = numElements * numIndicesPerPrimitive;
-        
-        uint32_t indexStart = baseIndex;
-        auto meshlet = processIndices(cpuBuffer, indexCount, baseVertex, baseVertex + indexCount);
-        meshlets.push_back(meshlet);
+    if (isMeshShader) {
+        for (size_t item = 0; item < numDrawItemInstances; ++item) {
+            HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
+            HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
+            
+            
+            _DrawItemState const dc(drawItem);
+            
+            // drawing coordinates.
+            uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
+            uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
+            
+            // 3 for triangles, 4 for quads, 6 for triquads, n for patches
+            uint32_t const numIndicesPerPrimitive =
+            drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
+            
+            uint32_t const baseVertex = vertexDC;
+            uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+            
+            // if delegate fails to get vertex primvars, it could be empty.
+            // skip the drawitem to prevent drawing uninitialized vertices.
+            uint32_t const numElements =
+            vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
+            
+            uint32_t const baseIndex = primitiveDC * numIndicesPerPrimitive;
+            uint32_t const indexCount = numElements * numIndicesPerPrimitive;
+            
+            auto meshlet = processIndices(cpuBuffer, indexCount, baseVertex, baseVertex + indexCount);
+            meshlets.push_back(meshlet);
+        }
     }
     std::vector<MeshletCoord> meshletDrawCoord;
     flattenMeshlets(_meshletDrawBuffer, meshletDrawCoord, meshlets);
@@ -1362,7 +1354,7 @@ _BindingState::GetBindingsForDrawing(
     if (geometricShader->GetUseMeshShaders()) {
         binder.GetBufferArrayBindingDesc(bindingsDesc, vertexBar);
         binder.GetBufferBindingDesc(bindingsDesc,
-                                    HdTokens->tessFactors,
+                                    HdTokens->meshletRemap,
                                     meshletRemapBuffer,
                                     meshletRemapBuffer->GetOffset());
     }
@@ -1692,9 +1684,6 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         gfxCmds->BindPipeline(psoHandle);
 
         HgiResourceBindingsDesc bindingsDesc;
-        state.GetBindingsForDrawing(&bindingsDesc,
-                _tessFactorsBuffer,
-                _meshletDispatchBuffer, /*bindTessFactors=*/true);
         bool const useMeshShaders =
                 _drawItemInstances[0]->GetDrawItem()->
                         GetGeometricShader()->GetUseMeshShaders();
@@ -1710,6 +1699,10 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
                     _dispatchBuffer->GetEntireResource()->GetOffset());
              
         }
+        state.GetBindingsForDrawing(&bindingsDesc,
+                _tessFactorsBuffer,
+                _meshletDispatchBuffer, /*bindTessFactors=*/true);
+        
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
         gfxCmds->BindResources(resourceBindings, useMeshShaders);
