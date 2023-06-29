@@ -70,6 +70,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     std::set<TfType> types;
     PlugRegistry::GetAllDerivedTypes(*_adapterBaseType, &types);
     std::vector<TfToken> includeDerivedPrimTypes;
+    std::vector<TfToken> includeSchemaFamilies;
 
     TF_FOR_ALL(typeIt, types) {
 
@@ -111,78 +112,82 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         }
 
 
-        JsObject::const_iterator primNameKey = metadata.find("primTypeName");
-        JsObject::const_iterator primNamesKey = metadata.find("primTypeNames");
-        if (primNameKey == metadata.end() && primNamesKey == metadata.end()) {
+        JsObject::const_iterator it = metadata.find("primTypeName");
+        if (it == metadata.end()) {
             TF_RUNTIME_ERROR("[PluginDiscover] primTypeName metadata was not "
-                    "present for plugin '%s'\n",
+                    "present for plugin '%s'\n", 
+                    typeIt->GetTypeName().c_str());
+            continue;
+        }
+        if (!it->second.Is<std::string>()) {
+            TF_RUNTIME_ERROR("[PluginDiscover] primTypeName metadata was "
+                    "corrupted for plugin '%s'\n", 
                     typeIt->GetTypeName().c_str());
             continue;
         }
 
-        if (primNameKey != metadata.end() && !primNameKey->second.Is<std::string>() ) {
-            TF_RUNTIME_ERROR("[PluginDiscover] primTypeName metadata was "
-                    "corrupted for plugin '%s'\n",
-                    typeIt->GetTypeName().c_str());
-            continue;
+        const TfToken primTypeName(it->second.Get<std::string>());
+
+        TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin discovered "
+                        "'%s' for primType '%s'\n", 
+                        typeIt->GetTypeName().c_str(), primTypeName.GetText());
+        if (_typeMap.count(primTypeName) != 0) {
+            TF_CODING_ERROR("[PluginDiscover] A prim adapter for primType '%s' "
+                "already exists! Overriding prim adapters at runtime is not "
+                "supported. The last discovered adapter (%s) will be used. The "
+                "previously discovered adapter (%s) will be discarded.",
+                primTypeName.GetText(), typeIt->GetTypeName().c_str(),
+                _typeMap[primTypeName].GetTypeName().c_str());
         }
-        if (primNamesKey != metadata.end() && (!primNamesKey->second.Is<JsArray>() ||
-                    false)) { //!primNamesKey->second.Get<JsArray>().IsArrayOf<std::string>())) {
-            TF_RUNTIME_ERROR("[PluginDiscover] primTypeNames metadata was "
-                    "corrupted for plugin '%s'\n",
-                    typeIt->GetTypeName().c_str());
-            continue;
-        }
+        _typeMap[primTypeName] = *typeIt;
 
         // Adapters can opt in to being used as the adapter for any derived
-        // prim types (without adapters of their own) of the targeted prim type
+        // prim types (without adapters of their own) of the targeted prim type 
         // through additional metadata.
-        JsObject::const_iterator includeDerivedIt =
+        JsObject::const_iterator includeDerivedIt = 
             metadata.find("includeDerivedPrimTypes");
-        bool includeDerivedTypes = false;
         if (includeDerivedIt != metadata.end()) {
             if (!includeDerivedIt->second.Is<bool>()) {
                 TF_RUNTIME_ERROR("[PluginDiscover] includeDerivedPrimTypes "
                         "metadata was corrupted for plugin '%s'; not holding "
+                        "bool\n", 
+                        typeIt->GetTypeName().c_str());
+                continue;
+            } else if (includeDerivedIt->second.Get<bool>()){ 
+                includeDerivedPrimTypes.push_back(primTypeName);
+            }
+        }
+
+        // Adapters can opt in to being used as the adapter for any prim
+        // types in the same family
+        JsObject::const_iterator includeFamilyIt =
+            metadata.find("includeSchemaFamily");
+        if (includeFamilyIt != metadata.end()) {
+            if (!includeFamilyIt->second.Is<bool>()) {
+                TF_RUNTIME_ERROR("[PluginDiscover] includeSchemaFamily "
+                        "metadata was corrupted for plugin '%s'; not holding "
                         "bool\n",
                         typeIt->GetTypeName().c_str());
                 continue;
-            } else {
-                includeDerivedTypes = includeDerivedIt->second.Get<bool>();
+            } else if (includeFamilyIt->second.Get<bool>()){
+                includeSchemaFamilies.push_back(primTypeName);
             }
         }
+        //<todo.eoin Need to work out what to do if both derivdetypes+family is set!
+    }
 
-        auto registerPluginByName = [this, &includeDerivedPrimTypes](TfToken const& primTypeName, TfType const& pluginType, bool includeDerivedTypes) {
-
-            TF_DEBUG(USDIMAGING_PLUGINS).Msg("[PluginDiscover] Plugin discovered "
-                            "'%s' for primType '%s'\n",
-                            pluginType.GetTypeName().c_str(), primTypeName.GetText());
-            if (_typeMap.count(primTypeName) != 0) {
-                TF_CODING_ERROR("[PluginDiscover] A prim adapter for primType '%s' "
-                    "already exists! Overriding prim adapters at runtime is not "
-                    "supported. The last discovered adapter (%s) will be used. The "
-                    "previously discovered adapter (%s) will be discarded.",
-                    primTypeName.GetText(), pluginType.GetTypeName().c_str(),
-                    _typeMap[primTypeName].GetTypeName().c_str());
-            }
-            _typeMap[primTypeName] = pluginType;
-
-            if (includeDerivedTypes) {
-                includeDerivedPrimTypes.push_back(primTypeName);
-            }
-        };
-
-        if (primNameKey != metadata.end()) {
-            registerPluginByName(TfToken(primNameKey->second.Get<std::string>()), *typeIt, includeDerivedTypes);
-        }
-
-        if (primNamesKey != metadata.end()) {
-            const JsArray& primNames = primNamesKey->second.Get<JsArray>();
-            for(const JsValue& primName : primNames) {
-                registerPluginByName(TfToken(primName.GetString()), *typeIt, includeDerivedTypes);
+    for (const TfToken &familyName : includeSchemaFamilies) {
+        const TfType adapterType = _typeMap[familyName];
+        for (const UsdSchemaRegistry::SchemaInfo* schemaInfo :
+                UsdSchemaRegistry::FindSchemaInfosInFamily(familyName)) {
+            if (_typeMap.emplace(schemaInfo->identifier, adapterType).second) {
+                const TfToken typeName =
+                    UsdSchemaRegistry::GetSchemaTypeName(schemaInfo->type);
+                TF_DEBUG(USDIMAGING_PLUGINS).Msg(
+                    "[PluginDiscover] Mapping adapter for family '%s' to type "
+                    "'%s'\n", familyName.GetText(), typeName.GetText());
             }
         }
-
     }
 
     // Process the types whose derived types can use its adapter after all
