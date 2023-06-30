@@ -111,29 +111,28 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     ScalarType latitudeRange = 0.0;
     if (bottomRadius != topRadius)
     {
-        // USD describes that the height excludes the sphere radii, so we have
-        // two spheres located at +height/2 and -height/2. We need to find a
-        // plane tangent to both spheres to generate a smooth smooth interface
-        // between the different radii. The angle of this tangent from the axis
-        // which will become the latitudeRange for the two spheres.
+        // We're going to tesselate two spheres for the end caps. We need to
+        // calculate the latitude at which to clip the spheres, which we can
+        // derive from the line tangent to the two spheres.
+        // Consider the larger circle at (0,0) of radius r1 and the smaller
+        // at (0, height), of radius r2.
+        // Shrink both circles by r2 - i.e. one circle is reduced to a point.
+        ScalarType rDiff = (bottomRadius - topRadius);
 
-        // First, construct two circles:
-        // * One at (0,0), of radius height * 0.5 (i.e. the centers of the caps
-        //   are on this surface)
-        // * One at (-height,0) of radius rBottom - rTop
-        // Then, find the intersection between those two circles = q.
-        // The vector |q - (-height, 0)| is perpendicular to the tangent
-        ScalarType rA = bottomRadius - topRadius;
-        ScalarType rB = height * 0.5;
-        ScalarType a = height * -0.5;
-        PointType q(0, 0, 0);
-        q[0] = (rB * rB - rA * rA + a * a) / (2 * a);
-        //<todo.eoin If this value is negative, we have a degenerate capsule;
-        //should we just draw a sphere?
-        q[1] = GfSqrt(rA * rA - (q[0] - a) * (q[0] - a));
-        PointType perpTangent = (q - PointType(a, 0, 0)).GetNormalized();
-        latitudeRange = acos(perpTangent[1]);
+        // We want to find a point q such that:
+        // |q - (0,0)| == r1 - r2
+        //    (i.e. is on the shrunken circle)
+        // q dot ((0, h) - q) = 0
+        //    (perpendicular to the line passing through (0, h) and q)
+        // Simplifying, we get:
+        ScalarType qx = rDiff * rDiff / height;
+        ScalarType qy = GfSqrt(qx * height - qx * qx);
 
+        // Now, the latidude at which to clip the sphere is the angle of
+        // this point from the horizontal:
+        latitudeRange = atan(qx / qy);
+
+        // Above, we assumed that bottomR > topR. Flip the angle if incorrect:
         if (topRadius > bottomRadius)
         {
             latitudeRange *= -1;
