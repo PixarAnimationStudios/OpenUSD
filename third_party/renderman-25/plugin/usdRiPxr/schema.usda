@@ -4660,6 +4660,13 @@ class PxrIntMultLightFilter "PxrIntMultLightFilter" (
         </p>
 """
     )
+    float inputs:ri:lightFilter:density = 1 (
+        connectability = "interfaceOnly"
+        displayGroup = "Multiplier"
+        displayName = "Density"
+        doc = """density: How much effect the filter has (0-1).
+            """
+    )
     float inputs:ri:lightFilter:diffuse = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Multiplier"
@@ -6287,21 +6294,21 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     color3f inputs:ri:BGColor = (0, 0, 0) (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
-        displayName = "Background Color"
+        displayGroup = "Compositing:Canvas"
+        displayName = "Canvas Color"
         doc = """
       Background color outside of alpha
     """
     )
     asset inputs:ri:BGTex = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
-        displayName = "Background Tex"
+        displayGroup = "Compositing:Canvas"
+        displayName = "Canvas Texture"
         doc = "Provide BG texture, if blank uses BG Color"
     )
     bool inputs:ri:blending_black = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
+        displayGroup = "Blending"
         displayName = "Last Texture is Black"
         doc = """
       After the darkest texture, tex8, add solid color black
@@ -6309,36 +6316,36 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     float inputs:ri:blending_hold = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
-        displayName = "Blending Hold"
+        displayGroup = "Blending"
+        displayName = "Hold"
         doc = """ Hold texture full value
     """
     )
     token inputs:ri:blending_mode = "mix" (
         allowedTokens = ["mix", "weighted"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
+        displayGroup = "Blending"
         displayName = "Blending Mode"
         doc = "<help />"
     )
     float inputs:ri:blending_overlap = 0.125 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
-        displayName = "Blending Overlap"
+        displayGroup = "Blending"
+        displayName = "Overlap"
         doc = """ Overlap of the Bell Curve weighting function. 0.125 is minimum and blends 2 textures, higher values blend more up to 8 textures.
 """
     )
     bool inputs:ri:blending_test_colors_switch = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
-        displayName = "Rainbow Test"
+        displayGroup = "Blending"
+        displayName = "Color Blend Signal"
         doc = """
       Replace tex1-tex8 with RED, ORANGE, YELLOW, GREEN, BLUE, INDIGO, VIOLET, TORQOISE for previewing blending
     """
     )
     bool inputs:ri:blending_white = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Blend"
+        displayGroup = "Blending"
         displayName = "First Texture is White"
         doc = """
           After the lightest texture, tex1, add solid color white
@@ -6362,7 +6369,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     bool inputs:ri:flip_tex = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Flip"
         doc = "Flip"
     )
@@ -6374,9 +6381,17 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         Gamma (Contrast)
     """
     )
+    token inputs:ri:Hatch_On = "color" (
+        allowedTokens = ["color", "bg", "multiply", "screen"]
+        connectability = "interfaceOnly"
+        displayGroup = "Compositing"
+        displayName = "Mode"
+        doc = """ Hatch on Color or previous layer (BG)
+    """
+    )
     color3f inputs:ri:hatchColor = (0, 0, 0) (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
+        displayGroup = "Color"
         displayName = "Color"
         doc = """
       Hatching color
@@ -6385,7 +6400,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:hatchColorFrom = "colorSwatch" (
         allowedTokens = ["colorSwatch", "NPRalbedoAOV", "albedoAOV", "NPRlineAlbedoAOV", "texture"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
+        displayGroup = "Color"
         displayName = "Color From"
         doc = """Select which AOV to determine the coloring of the hatching
     """
@@ -6393,84 +6408,85 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:hatching_aov_channel = "green" (
         allowedTokens = ["red", "green", "blue"]
         connectability = "interfaceOnly"
-        displayGroup = "Grayscale Output"
+        displayGroup = "Output"
         displayName = "Channel"
-        doc = "<help />"
+        doc = """Which channel to write grayscale hatching output to
+    """
     )
-    string inputs:ri:hatching_aov_string = "NPRtoonDiffRamp" (
+    string inputs:ri:hatching_aov_string = "NPRhatchOut" (
         connectability = "interfaceOnly"
-        displayGroup = "Grayscale Output"
+        displayGroup = "Output"
         displayName = "AOV"
         doc = """
-      Name of a color AOV to use for this specific Hatching node. Default goes to GREEN channel of NPRtoonDiffRamp, use this for additional AOV support for use in compositing.
+      Name of a color AOV to use for this specific Hatching node. Default goes to GREEN channel of NPRhatchOut, use this for additional AOV support for use in compositing.
     """
     )
     float inputs:ri:hatching_freq = 0.2 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Frequency"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    token inputs:ri:hatching_freq_mode = "1Value" (
+    token inputs:ri:hatching_freq_mode = "8Values" (
         allowedTokens = ["1Value", "8Values", "camdistRange", "lightSignalRange"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Mode"
         doc = "<help />"
     )
     float inputs:ri:hatching_freq_tex1 = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 1"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex2 = 1 (
+    float inputs:ri:hatching_freq_tex2 = 2 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 2"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex3 = 1 (
+    float inputs:ri:hatching_freq_tex3 = 2.5 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 3"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex4 = 1 (
+    float inputs:ri:hatching_freq_tex4 = 3 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 4"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex5 = 1 (
+    float inputs:ri:hatching_freq_tex5 = 3.5 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 5"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex6 = 1 (
+    float inputs:ri:hatching_freq_tex6 = 4 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 6"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex7 = 1 (
+    float inputs:ri:hatching_freq_tex7 = 4.5 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 7"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
     )
-    float inputs:ri:hatching_freq_tex8 = 1 (
+    float inputs:ri:hatching_freq_tex8 = 5 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Hatching Freq Tex 8"
         doc = """Higher numbers, higher frequency. For screen start at 1. For triplanar start at 0.005.
     """
@@ -6484,55 +6500,55 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     asset inputs:ri:hatchingTex1 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 1"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex2 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 2"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex3 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 3"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex4 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 4"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex5 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 5"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex6 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 6"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex7 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 7"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTex8 = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatching Texture 8"
         doc = "Provide COLOR texture"
     )
     asset inputs:ri:hatchingTexSetCustom = @@ (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Texture Set"
         doc = """Provide Texture Set Directory
         A texture set is the name of a directory of pre-organized textures.
@@ -6549,7 +6565,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:hatchingTexSetStock = "StylizedLooks/pxrStylized-woven" (
         allowedTokens = ["StylizedLooks/pxrStylized-aquatint", "StylizedLooks/pxrStylized-charcoal", "StylizedLooks/pxrStylized-crosshatch", "StylizedLooks/pxrStylized-curl", "StylizedLooks/pxrStylized-halftone", "StylizedLooks/pxrStylized-patches", "StylizedLooks/pxrStylized-random", "StylizedLooks/pxrStylized-scumble", "StylizedLooks/pxrStylized-splatter", "StylizedLooks/pxrStylized-stipple", "StylizedLooks/pxrStylized-wash", "StylizedLooks/pxrStylized-woven"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Texture Set"
         doc = """
     Select a hatching texture set from the built-in predefined collection.
@@ -6558,23 +6574,15 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:hatchingTexType = "texSetStock" (
         allowedTokens = ["texSetStock", "texSetCustom", "texIndividualFiles"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Type"
         doc = """
     Select the source for hatching textures.
     """
     )
-    bool inputs:ri:HatchOnBG_switch = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
-        displayName = "Hatch On Background"
-        doc = """
-        Use background color or texture for object albedo color. Texture will swim if movement.
-    """
-    )
     color3f inputs:ri:HatchOnColor = (1, 1, 1) (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Color"
+        displayGroup = "Compositing"
         displayName = "Hatch On Color"
         doc = """
       Ignore albedo color for base color, use this color on all objects
@@ -6582,7 +6590,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     bool inputs:ri:hatchTex_invert_switch = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Invert"
         doc = """
           Invert order of progression of hatch texture lookups. For diffuse signals, typically left OFF (default)
@@ -6590,9 +6598,17 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     float inputs:ri:hatchTexClr_mix = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Hatch Tex Color Mix"
         doc = "<help />"
+    )
+    bool inputs:ri:Invert_Signal = 0 (
+        connectability = "interfaceOnly"
+        displayGroup = "Input"
+        displayName = "Invert Signal"
+        doc = """
+        Invert Signal Energy
+    """
     )
     bool inputs:ri:light_mask_switch = 0 (
         connectability = "interfaceOnly"
@@ -6604,13 +6620,13 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     float inputs:ri:Light_max_freq = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Light Max Hatch Frequency"
         doc = "<help />"
     )
     float inputs:ri:Light_min_freq = 5 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Light Min Hatch Frequency"
         doc = "<help />"
     )
@@ -6621,24 +6637,21 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         doc = """0: disables this Hatching Node and shows previous node if daisy chained, or original beauty if no previous Stylized Looks nodes. 1: full Hatching from this node.
   """
     )
-    bool inputs:ri:Override_SignalAOV_CameraRange = 0 (
+    bool inputs:ri:progressive_tex_switch = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Input"
-        displayName = "Override Signal by Camera Range"
-        doc = """
-        Override signal AOV with Camera Range for Hatching Signal
-    """
-    )
-    bool inputs:ri:progressive_tex_switch = 0 (
-        connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Progressive"
-        doc = "Progressive"
+        doc = """
+    Composites textures on top of each other if not originally created that way (each texture progressively is added to the previous one). 
+    <br />
+\t<br />
+    Useful when using 8-val frequency mode.
+  """
     )
-    token inputs:ri:projection = "triplanar" (
+    token inputs:ri:projection = "screen" (
         allowedTokens = ["screen", "triplanar", "NPRtextureCoordsAOV"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Projection"
         doc = "<help />"
     )
@@ -6648,7 +6661,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         displayName = "Ramp"
         doc = "Ramp"
     )
-    float[] inputs:ri:ramp_Floats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:ramp_Floats = [0, 0, 1, 1] (
         displayGroup = "Input:Input Remap"
         hidden = true
     )
@@ -6657,20 +6670,31 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         displayGroup = "Input:Input Remap"
         hidden = true
     )
-    float[] inputs:ri:ramp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
+    float[] inputs:ri:ramp_Knots = [0, 0, 1, 1] (
         displayGroup = "Input:Input Remap"
         hidden = true
     )
     bool inputs:ri:remapSplineSwitch = 0 (
         connectability = "interfaceOnly"
         displayGroup = "Input:Input Remap"
-        displayName = "Spline Ramp Switch"
-        doc = "Spline Ramp Switch"
+        displayName = "Enable Ramp"
+        doc = "Enable Ramp"
+    )
+    token inputs:ri:signal = "diffuse" (
+        allowedTokens = ["beauty", "diffuse", "directSpecular", "cameraRange", "aov"]
+        connectability = "interfaceOnly"
+        displayGroup = "Input"
+        displayName = "Signal"
+        doc = """
+        Choose the input signal to run the hatching algorithm on. Typically light signals like diffuse, directSpecular. 
+        Camera Range - uses camera min and max depth set in paremeters below instead.
+        Custom AOV - type in color AOV in Signal String below.
+    """
     )
     string inputs:ri:signal_aov_string = "diffuse" (
         connectability = "interfaceOnly"
         displayGroup = "Input"
-        displayName = "Signal"
+        displayName = "Signal String"
         doc = """
       Name of a color AOV to use for the signal to hatching. Typically diffuse, can put any light AOV here. This AOV has to be setup in Maya/Katana/Houdini or DisplayFilter will exit.
     """
@@ -6678,26 +6702,26 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     float inputs:ri:Signal_Pre_Gain = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Input:Input Remap"
-        displayName = "Signal Pre Gain"
+        displayName = "Gain"
         doc = """ Gain on incoming signal
     """
     )
     float inputs:ri:Signal_Pre_Gamma = 1 (
         connectability = "interfaceOnly"
         displayGroup = "Input:Input Remap"
-        displayName = "Signal Pre Gamma"
+        displayName = "Gamma"
         doc = """ Gamma on incoming signal
     """
     )
     bool inputs:ri:Toon_Colors_Switch = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Textures"
+        displayGroup = "Textures"
         displayName = "Toon Mode"
         doc = "Toon Mode"
     )
     float inputs:ri:triplanar_blending = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Triplanar Blending"
         doc = """0 - no blending, 1 - full blending
     """
@@ -6705,7 +6729,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:triplanar_N = "NPRNtriplanar" (
         allowedTokens = ["NPRNtriplanar", "Nn", "__Nref", "aov"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Triplanar N"
         doc = """
       NPRNtriplanar - set with PxrStylizedControl
@@ -6716,7 +6740,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     string inputs:ri:triplanar_N_aov_string = "NPRNtriplanar" (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Triplanar N String"
         doc = '''
       Name of a color AOV to use for the triplanar blending of N. If set to "NPRNtriplanar": need to plug PxrManifold3d into PxrStylizedControl node to provide custom co-ordinate system. Can also be factory "N" "__Nref" if those AOVs are setup.
@@ -6725,7 +6749,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     token inputs:ri:triplanar_P = "NPRPtriplanar" (
         allowedTokens = ["NPRPtriplanar", "P", "__Pref", "aov"]
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Triplanar P"
         doc = '''
       NPRPtriplanar - set with PxrStylizedControl to be P in "object" space
@@ -6736,14 +6760,14 @@ class PxrStylizedHatching "PxrStylizedHatching" (
     )
     string inputs:ri:triplanar_P_aov_string = "NPRPtriplanar" (
         connectability = "interfaceOnly"
-        displayGroup = "Hatching Projection"
+        displayGroup = "Projection"
         displayName = "Triplanar P String"
         doc = '''
       Name of a color AOV to use for the triplanar blending of P. If set to "NPRPtriplanar": need to plug PxrManifold3d into PxrStylizedControl node to provide custom co-ordinate system. Can also be factory "P" "__Pref" "Pworld" if those AOVs are setup.
     '''
     )
-    token inputs:ri:visualizer = "hatchingOnColor" (
-        allowedTokens = ["beauty", "hatchingOnColor", "hatchingOnBeauty", "separator", "hatchingBlend", "diffuseLuminance", "diffuseEnergy", "triplanarTestColors"]
+    token inputs:ri:visualizer = "hatchingFinal" (
+        allowedTokens = ["beauty", "hatchingFinal", "separator", "hatchingBlend", "diffuseLuminance", "diffuseEnergy", "triplanarTestColors"]
         connectability = "interfaceOnly"
         displayName = "Result"
         doc = "<help />"
@@ -6752,7 +6776,7 @@ class PxrStylizedHatching "PxrStylizedHatching" (
         allowedTokens = ["signalAovMono", "signalAovAverage", "albedoAOV", "NPRalbedoAOV"]
         connectability = "interfaceOnly"
         displayGroup = "Input"
-        displayName = "Grayscale Mode"
+        displayName = "Mode"
         doc = """ Under the hood a white shader approximation is created based off the Signal AOV to drive the Hatching. By default using average of RGB components of Signal AOV, but can also divide Signal AOV lighting results with a pure albedo from NPRalbedo AOV or albedo AOV. If NPRalbedo AOV chosen, must set Albedo Color in Stylized Controller Pattern node.
     """
     )
@@ -6808,14 +6832,15 @@ class PxrStylizedLines "PxrStylizedLines" (
          4) NPRlineCamdist
          5) NPRalbedo
          6) NPRlineAlbedo
-         7) NPRlineMask
+         7) NPRmask
          8) NPRlineWidth
          9) diffuse
         10) albedo
-        11) NPRallLines
-        12) NPRallLinesAlpha
+        11) NPRlineOut
+        12) NPRlineOutAlpha
         13) sampleCount
         14) NPRcurvature
+        15) NPRdistort
 """
     inherits = </PxrDisplayFilterPluginBase>
 )
@@ -6876,23 +6901,23 @@ class PxrStylizedLines "PxrStylizedLines" (
   """
     )
     token inputs:ri:daisy_chain_comp = "over" (
-        allowedTokens = ["over", "plus", "multiply"]
+        allowedTokens = ["over", "plus", "multiply", "screen"]
         connectability = "interfaceOnly"
         displayGroup = "Compositing"
         displayName = "Mode"
-        doc = """ Comp mode over previous result (if have previous daisy-chained Stylized nodes, or beauty
+        doc = """ Comp mode over previous result (if have previous daisy-chained Stylized nodes, or beauty)
     """
     )
     bool inputs:ri:Dilate_Sort_Alpha_Switch = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Use Alpha"
         doc = """ If object has alpha, the zero alpha on camera depth will be incorrect, switch to ON to mix between camera depth of object and Dilate_Sort_Max_Depth based on alpha
       """
     )
     float inputs:ri:Dilate_Sort_Depth_Scale = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Depth Scale"
         doc = """
       Scale Z depth for sorting based on scene scale
@@ -6900,7 +6925,7 @@ class PxrStylizedLines "PxrStylizedLines" (
     )
     float inputs:ri:Dilate_Sort_Max_Depth = 1000 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Dilate Sort Max Depth"
         doc = """
       Max Depth to consider for outside of alpha
@@ -6908,7 +6933,7 @@ class PxrStylizedLines "PxrStylizedLines" (
     )
     float inputs:ri:Dilate_Sort_Radius = 1 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Radius"
         doc = """
       How big of a radius to dilate Z-sorted signal. Larger values = longer render time. MAX size of 6: will clamp if over.
@@ -6916,7 +6941,7 @@ class PxrStylizedLines "PxrStylizedLines" (
     )
     bool inputs:ri:Dilate_Sort_Switch = 0 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Enable"
         doc = """ If using signals to drive line thickness/color, need to dilate and sort by z depth to pickup correct signal since line detection goes half off geo.
       """
@@ -6924,7 +6949,7 @@ class PxrStylizedLines "PxrStylizedLines" (
     token inputs:ri:Dilate_Sort_Weight_Type = "Bell Curve" (
         allowedTokens = ["Bell Curve", "Hermite", "Clamp"]
         connectability = "interfaceOnly"
-        displayGroup = "Input:Input Dilation Sorting"
+        displayGroup = "Input:Dilation Sorting"
         displayName = "Weight"
         doc = """ During dilate sort, weighting
       """
@@ -6943,7 +6968,7 @@ class PxrStylizedLines "PxrStylizedLines" (
         doc = """Distort lines using Distort U V fractal plugged into PxrStylizedControl
   """
     )
-    float inputs:ri:Distort_UV_Scale = 0 (
+    float inputs:ri:Distort_UV_Scale = 15 (
         connectability = "interfaceOnly"
         displayGroup = "Line Distort"
         displayName = "Offset"
@@ -7045,7 +7070,7 @@ class PxrStylizedLines "PxrStylizedLines" (
         connectability = "interfaceOnly"
         displayGroup = "Mask"
         displayName = "PxrStylizedControl Mask"
-        doc = """ Mult by line mask from PxrStylizedControl pattern node in AOV NPRlineMask
+        doc = """ Mult by line mask from PxrStylizedControl pattern node in AOV NPRmask
   """
     )
     float inputs:ri:linesGamma = 1 (
@@ -7072,17 +7097,17 @@ class PxrStylizedLines "PxrStylizedLines" (
     """
     )
     token inputs:ri:lineType = "sections" (
-        allowedTokens = ["aov", "outline", "sections", "lineNZ", "curvature", "camdist"]
+        allowedTokens = ["outline", "sections", "lineNZ", "curvature", "camdist", "aov"]
         connectability = "interfaceOnly"
         displayGroup = "Line Detection"
         displayName = "Type"
         doc = """
-      aov - custom AOV defined below
       outline - line on alpha of object
       sections - line on random id
       lineNZ - line on combination of X Y components of surface normal and Z depth, good for unit scale
       curvature - line on change in surface normal
       camdist - line on change in camera distance
+      aov - custom AOV defined below
     """
     )
     bool inputs:ri:overwriteDataAOV = 0 (
@@ -7090,26 +7115,26 @@ class PxrStylizedLines "PxrStylizedLines" (
         displayGroup = "Line Detection"
         displayName = "Write To Type AOV"
         doc = """
-        OFF: edge detection results go into NPRallLinesAlpha and NPRallLines. ON: overwrite original signal, example writes back to NPRlineNZ/NPRsections/etc
+        OFF: edge detection results go into NPRlineOutAlpha and NPRlineOut. ON: overwrite original signal, example writes back to NPRlineNZ/NPRsections/etc
     """
     )
     int inputs:ri:ramp = 4 (
         connectability = "interfaceOnly"
-        displayGroup = "Input:Signal Remap Spline"
+        displayGroup = "Line Detection:Activation Spline"
         displayName = "Ramp"
         doc = "Ramp"
     )
     float[] inputs:ri:ramp_Floats = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Input:Signal Remap Spline"
+        displayGroup = "Line Detection:Activation Spline"
         hidden = true
     )
     token inputs:ri:ramp_Interpolation = "linear" (
         allowedTokens = ["linear", "catmull-rom", "bspline", "constant"]
-        displayGroup = "Input:Signal Remap Spline"
+        displayGroup = "Line Detection:Activation Spline"
         hidden = true
     )
     float[] inputs:ri:ramp_Knots = [0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] (
-        displayGroup = "Input:Signal Remap Spline"
+        displayGroup = "Line Detection:Activation Spline"
         hidden = true
     )
     string inputs:ri:shaderNotes = "Lines Stylization Display Filter" (
@@ -7125,12 +7150,12 @@ class PxrStylizedLines "PxrStylizedLines" (
          4) NPRlineCamdist
          5) NPRalbedo
          6) NPRlineAlbedo
-         7) NPRlineMask
+         7) NPRmask
          8) NPRlineWidth
          9) diffuse
         10) albedo
-        11) NPRallLines
-        12) NPRallLinesAlpha
+        11) NPRlineOut
+        12) NPRlineOutAlpha
         13) sampleCount
         14) NPRcurvature
         15) NPRdistort
@@ -7164,10 +7189,21 @@ class PxrStylizedLines "PxrStylizedLines" (
         doc = """ Sharpness of the sigmoid pair. Used for softening/hardening the line edge. See: https://www.desmos.com/calculator/g4jbxcvtqz and modify variable a
     """
     )
-    string inputs:ri:signal_aov_string = "diffuse" (
+    token inputs:ri:signal = "diffuse" (
+        allowedTokens = ["beauty", "diffuse", "directSpecular", "aov"]
         connectability = "interfaceOnly"
         displayGroup = "Input"
         displayName = "Signal"
+        doc = """
+        Choose the input signal to use for the light signal to line color and line thickness by lighting. Typically diffuse, can put any light AOV here.
+        Camera Range - uses camera min and max depth set in paremeters below instead.
+        Custom AOV - type in color AOV in Signal String below.
+    """
+    )
+    string inputs:ri:signal_aov_string = "diffuse" (
+        connectability = "interfaceOnly"
+        displayGroup = "Input"
+        displayName = "Signal String"
         doc = """
       Name of a color AOV to use for the light signal to line color and line thickness by lighting. Typically diffuse, can put any light AOV here. This AOV has to be setup in Maya/Katana/Houdini or DisplayFilter will exit.
     """
@@ -7197,7 +7233,7 @@ class PxrStylizedLines "PxrStylizedLines" (
         """
     )
     token inputs:ri:visualizer = "finalLinesBeauty" (
-        allowedTokens = ["beauty", "finalLinesBeauty", "finalLines", "finalLinesInvert", "separator", "finalLinesAlpha", "lineThicknessFromPattern", "lineThicknessFromLighting", "Luminance", "diffuseEnergy", "zCamdist"]
+        allowedTokens = ["beauty", "finalLinesBeauty", "separator", "finalLines", "finalLinesInvert", "finalLinesAlpha", "lineThicknessFromPattern", "lineThicknessFromLighting", "Luminance", "diffuseEnergy", "zCamdist"]
         connectability = "interfaceOnly"
         displayName = "Result"
         doc = "<help />"
@@ -7214,7 +7250,7 @@ class PxrStylizedLines "PxrStylizedLines" (
         allowedTokens = ["signalAovAverage", "albedoAOV", "NPRalbedoAOV"]
         connectability = "interfaceOnly"
         displayGroup = "Input"
-        displayName = "Grayscale Mode"
+        displayName = "Mode"
         doc = """ 
         Under the hood a white shader approximation is created based off the Signal AOV to drive the Hatching. By default using average of RGB components of Signal AOV, but can also divide Signal AOV lighting results with a pure albedo from NPRalbedo AOV or albedo AOV. If NPRalbedo AOV chosen, must set Albedo Color in PxrStylizedControl node.
     """
@@ -7255,7 +7291,7 @@ class PxrStylizedToon "PxrStylizedToon" (
         string className = "StylizedToon"
     }
     doc = """
-        Required AOVs: diffuse albedo directSpecular NPRtoonDiffRamp NPRalbedo
+        Required AOVs: diffuse albedo directSpecular NPRtoonOut NPRalbedo
     """
     inherits = </PxrDisplayFilterPluginBase>
 )
@@ -8977,6 +9013,4 @@ class "PxrDspyTiffAPI" (
         displayGroup = "Advanced"
     )
 }
-
-
 
