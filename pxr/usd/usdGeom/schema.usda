@@ -897,18 +897,6 @@ class Capsule_1 "Capsule_1" (
     )
 }
 
-class Cone_1 "Cone_1" (
-    inherits = </Cylinder_1>
-    doc = """Defines a primitive cone, centered at the origin, whose spine
-    is along the specified \\em axis, with the apex of the cone pointing
-    in the direction of the positive axis. This is a special-case of a cylinder
-    whose top radius is zero.
-
-    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
-    they all pack into the same volume/bounds."""
-) {
-}
-
 class Plane "Plane" (
     inherits = </Gprim>
     doc = """Defines a primitive plane, centered at the origin, and is defined by

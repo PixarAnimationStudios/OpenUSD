@@ -740,12 +740,8 @@ struct UsdGeomTokensType {
     const TfToken Capsule_1;
     /// \brief "Cone"
     /// 
-    /// Schema identifer and family for UsdGeomCone, Schema family for UsdGeomCone_1
+    /// Schema identifer and family for UsdGeomCone
     const TfToken Cone;
-    /// \brief "Cone_1"
-    /// 
-    /// Schema identifer for UsdGeomCone_1
-    const TfToken Cone_1;
     /// \brief "Cube"
     /// 
     /// Schema identifer and family for UsdGeomCube

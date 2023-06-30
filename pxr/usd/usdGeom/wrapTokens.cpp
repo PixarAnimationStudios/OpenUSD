@@ -234,7 +234,6 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "Capsule", UsdGeomTokens->Capsule);
     _AddToken(cls, "Capsule_1", UsdGeomTokens->Capsule_1);
     _AddToken(cls, "Cone", UsdGeomTokens->Cone);
-    _AddToken(cls, "Cone_1", UsdGeomTokens->Cone_1);
     _AddToken(cls, "Cube", UsdGeomTokens->Cube);
     _AddToken(cls, "Curves", UsdGeomTokens->Curves);
     _AddToken(cls, "Cylinder", UsdGeomTokens->Cylinder);
