@@ -175,7 +175,6 @@ HdsiPrimTypePruningSceneIndex::SetEnabled(const bool enabled)
             if (_enabled) {
                 // Prune this primType.
                 _pruneMap[primPath] = true;
-                printf("pruning %s\n", primPath.GetText());
                 dirtiedEntries.emplace_back(primPath, locators);
             } else {
                 const _PruneMap::iterator i = _pruneMap.find(primPath);
