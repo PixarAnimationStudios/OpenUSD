@@ -227,8 +227,10 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     double radiusBottom = 0.5;
     double radiusTop = 0.5;
     TfToken axis = UsdGeomTokens->z;
-    extractCapsuleParameters<UsdGeomCapsule>(prim, time, height, radiusBottom, radiusTop, axis);
-    extractCapsuleParameters<UsdGeomCapsule_1>(prim, time, height, radiusBottom, radiusTop, axis);
+    extractCapsuleParameters<UsdGeomCapsule>(prim, time, height, radiusBottom,
+            radiusTop, axis);
+    extractCapsuleParameters<UsdGeomCapsule_1>(prim, time, height, radiusBottom,
+            radiusTop, axis);
 
     // The capsule point generator computes points such that the "rings" of the
     // capsule lie on a plane parallel to the XY plane, with the Z-axis being
@@ -239,35 +241,6 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     const size_t numPoints =
         GeomUtilCapsuleMeshGenerator::ComputeNumPoints(numRadial, numCapAxial);
 
-    double latitudeRange = 0.0;
-    if (radiusBottom != radiusTop)
-    {
-        // USD describes that the height excludes the sphere radii, so we have two spheres
-        // located at +height/2 and -height/2. We need to find a plane tangent to both spheres
-        // to generate a smooth smooth interface between the different radii. The angle of this
-        // tangent from the axis which will become the latitudeRange for the two spheres.
-
-        // First, construct two circles:
-        // * One at (0,0), of radius height * 0.5 (i.e. the centers of the caps are on this surface)
-        // * One at (-height,0) of radius rBottom - rTop
-        // Then, find the intersection between those two circles = q.
-        // The vector |q - (-height, 0)| is perpendicular to the tangent
-        double rA = radiusBottom - radiusTop;
-        double rB = height * 0.5;
-        double a = height * -0.5;
-        GfVec2d q(0, 0);
-        q[0] = (rB * rB - rA * rA + a * a) / (2 * a);
-        //<todo.eoin If this value is negative, we have a degenerate capsule; should we just draw a sphere?
-        q[1] = GfSqrt(rA * rA - (q[0] - a) * (q[0] - a));
-        GfVec2d perpTangent = (q - GfVec2d(a, 0)).GetNormalized();
-        latitudeRange = acos(perpTangent[1]);
-
-        if (radiusTop > radiusBottom)
-        {
-            latitudeRange *= -1;
-        }
-    }
-        
     VtVec3fArray points(numPoints);
     const double sweep = 360;
     GeomUtilCapsuleMeshGenerator::GeneratePoints(
@@ -277,13 +250,8 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
         radiusBottom,
         radiusTop,
         height,
-        radiusBottom,
-        latitudeRange,
-        radiusTop,
-        latitudeRange,
         sweep,
-        &basis
-    );
+        &basis);
 
     return VtValue(points);
 }

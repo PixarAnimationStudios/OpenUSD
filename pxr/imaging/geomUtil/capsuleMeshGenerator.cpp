@@ -81,10 +81,6 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     const typename PointType::ScalarType bottomRadius,
     const typename PointType::ScalarType topRadius,
     const typename PointType::ScalarType height,
-    const typename PointType::ScalarType bottomCapHeight,
-    const typename PointType::ScalarType bottomCapLatitudeRange,
-    const typename PointType::ScalarType topCapHeight,
-    const typename PointType::ScalarType topCapLatitudeRange,
     const typename PointType::ScalarType sweepDegrees,
     const _PointWriter<PointType>& ptWriter)
 {
@@ -112,18 +108,50 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
         ringXY[radIdx][1] = sin(longAngle);
     }
 
+    ScalarType latitudeRange = 0.0;
+    if (bottomRadius != topRadius)
+    {
+        // USD describes that the height excludes the sphere radii, so we have
+        // two spheres located at +height/2 and -height/2. We need to find a
+        // plane tangent to both spheres to generate a smooth smooth interface
+        // between the different radii. The angle of this tangent from the axis
+        // which will become the latitudeRange for the two spheres.
+
+        // First, construct two circles:
+        // * One at (0,0), of radius height * 0.5 (i.e. the centers of the caps
+        //   are on this surface)
+        // * One at (-height,0) of radius rBottom - rTop
+        // Then, find the intersection between those two circles = q.
+        // The vector |q - (-height, 0)| is perpendicular to the tangent
+        ScalarType rA = bottomRadius - topRadius;
+        ScalarType rB = height * 0.5;
+        ScalarType a = height * -0.5;
+        PointType q(0, 0, 0);
+        q[0] = (rB * rB - rA * rA + a * a) / (2 * a);
+        //<todo.eoin If this value is negative, we have a degenerate capsule;
+        //should we just draw a sphere?
+        q[1] = GfSqrt(rA * rA - (q[0] - a) * (q[0] - a));
+        PointType perpTangent = (q - PointType(a, 0, 0)).GetNormalized();
+        latitudeRange = acos(perpTangent[1]);
+
+        if (topRadius > bottomRadius)
+        {
+            latitudeRange *= -1;
+        }
+    }
+
     // Bottom point:
-    ptWriter.Write(PointType(0.0, 0.0, -(bottomCapHeight + (0.5 * height))));
+    ptWriter.Write(PointType(0.0, 0.0, -(bottomRadius + (0.5 * height))));
 
     // Bottom hemisphere latitude rings:
     for (size_t axIdx = 1; axIdx < (numCapAxial + 1); ++axIdx) {
-        // Latitude range: (-0.5pi, topCapLatitudeRange]
+        // Latitude range: (-0.5pi, latitudeRange]
         const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
-            ScalarType(-0.5 * M_PI), topCapLatitudeRange);
+            ScalarType(-0.5 * M_PI), latitudeRange);
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
-            -(0.5 * height) + (bottomCapHeight * sin(latAngle));
+            -(0.5 * height) + (bottomRadius * sin(latAngle));
 
         for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
             ptWriter.Write(
@@ -135,13 +163,13 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
 
     // Top hemisphere latitude rings:
     for (size_t axIdx = 0; axIdx < numCapAxial; ++axIdx) {
-        // Latitude range: [bottomCapLatitudeRange, 0.5pi)
+        // Latitude range: [latitudeRange, 0.5pi)
         const ScalarType latAngle = GfLerp(double(axIdx) / double(numCapAxial),
-            bottomCapLatitudeRange, ScalarType(0.5 * M_PI));
+            latitudeRange, ScalarType(0.5 * M_PI));
 
         const ScalarType radScale = cos(latAngle);
         const ScalarType latitude =
-            (0.5 * height) + (topCapHeight * sin(latAngle));
+            (0.5 * height) + (topRadius * sin(latAngle));
 
         for (size_t radIdx = 0; radIdx < numRadialPoints; ++radIdx) {
             ptWriter.Write(PointType(radScale * topRadius * ringXY[radIdx][0],
@@ -151,21 +179,19 @@ GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
     }
 
     // Top point:
-    ptWriter.Write(PointType(0.0, 0.0, topCapHeight + (0.5 * height)));
+    ptWriter.Write(PointType(0.0, 0.0, topRadius + (0.5 * height)));
 }
 
 // Force-instantiate _GeneratePointsImpl for the supported point types.  Only
 // these instantiations will ever be needed due to the SFINAE machinery on the
 // calling method template (the public GeneratePoints, in the header).
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
-    const size_t, const size_t, const float, const float,
-    const float, const float, const float, const float, const float, const float,
-    const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
+    const size_t, const size_t, const float, const float, const float,
+    const float, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3f>&);
 
 template GEOMUTIL_API void GeomUtilCapsuleMeshGenerator::_GeneratePointsImpl(
-    const size_t, const size_t, const double, const double,
-    const double, const double, const double, const double, const double, const double,
-    const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
+    const size_t, const size_t, const double, const double, const double,
+    const double, const GeomUtilCapsuleMeshGenerator::_PointWriter<GfVec3d>&);
 
 
 PXR_NAMESPACE_CLOSE_SCOPE
