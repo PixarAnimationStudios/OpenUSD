@@ -176,7 +176,7 @@ static void _SetPurpose(UsdGeomImageable::PurposeInfo &purposeInfo,
     purposeInfo.purpose = TfToken(purpose);
 }
 
-static bool _Nonzero(const UsdGeomImageable::PurposeInfo &purposeInfo)
+static bool _IsValidPurposeInfo(const UsdGeomImageable::PurposeInfo &purposeInfo)
 {
     return bool(purposeInfo);
 }
@@ -250,7 +250,7 @@ WRAP_CUSTOM {
             class_<UsdGeomImageable::PurposeInfo>("PurposeInfo")
                 .def(init<>())
                 .def(init<const TfToken &, bool>())
-                .def(TfPyBoolBuiltinFuncName, &_Nonzero)
+                .def("__bool__", &_IsValidPurposeInfo)
                 .def(self == self)
                 .def(self != self)
                 .add_property("purpose", &_GetPurpose, &_SetPurpose)

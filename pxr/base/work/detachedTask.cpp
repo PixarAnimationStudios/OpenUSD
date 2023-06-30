@@ -55,7 +55,7 @@ Work_EnsureDetachedTaskProgress()
         if (detachedWaiter.compare_exchange_strong(c, newThread)) {
             // We won the race, so start the waiter thread.
             WorkDispatcher &dispatcher = Work_GetDetachedDispatcher();
-            *newThread = std::move(
+            *newThread =
                 std::thread([&dispatcher]() {
                         while (true) {
                             // Process detached tasks.
@@ -64,7 +64,7 @@ Work_EnsureDetachedTaskProgress()
                             using namespace std::chrono_literals;
                             std::this_thread::sleep_for(50ms);
                         }
-                    }));
+                    });
             newThread->detach();
         }
         else {

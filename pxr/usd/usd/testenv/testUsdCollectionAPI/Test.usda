@@ -76,7 +76,7 @@ def "CollectionTest" (
 
     token collection:invalidExpansionRule:expansionRule = "freeLove"
 
-    token collection:invalidExcludesExplicitOnly:expasionRule = "explicitOnly"
+    token collection:invalidExcludesExplicitOnly:expansionRule = "explicitOnly"
     rel collection:invalidExcludesExplicitOnly:includes = [
         </CollectionTest/Geom/Shapes/Cone>,
         </CollectionTest/Geom/Shapes/Cylinder>
@@ -86,7 +86,7 @@ def "CollectionTest" (
         </CollectionTest/Geom/Shapes/Sphere>
     ]
 
-    token collection:invalidExcludesExpandPrims:expasionRule = "expandPrims"
+    token collection:invalidExcludesExpandPrims:expansionRule = "expandPrims"
     rel collection:invalidExcludesExpandPrims:includes = [
         </CollectionTest/Geom/Shapes>
     ]
@@ -94,7 +94,7 @@ def "CollectionTest" (
         </CollectionTest/Geom/Box>
     ]
 
-    token collection:invalidTopLevelRules:expasionRule = "explicitOnly"
+    token collection:invalidTopLevelRules:expansionRule = "explicitOnly"
     rel collection:invalidTopLevelRules:includes = [
         </A>,
     ]
@@ -102,6 +102,8 @@ def "CollectionTest" (
         </B>
     ]
 
+    uniform token collection:explicitOnlyAndIncludeRoot:expansionRule = "explicitOnly"
+    uniform bool collection:explicitOnlyAndIncludeRoot:includeRoot = true
 
     def "Geom" (
         prepend apiSchemas = ["CollectionAPI:allGeom"]

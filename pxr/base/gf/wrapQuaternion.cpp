@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/gf/quaternion.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -65,7 +66,7 @@ static string _Repr(GfQuaternion const &self) {
         TfPyRepr(self.GetImaginary()) + ")";
 }
 
-static size_t __hash__(GfQuaternion const &self) { return hash_value(self); }
+static size_t __hash__(GfQuaternion const &self) { return TfHash{}(self); }
 
 } // anonymous namespace 
 
@@ -85,6 +86,8 @@ void wrapQuaternion()
         .def(init<int>())
 
         .def(init<double, const GfVec3d &>())
+
+        .def(init<This>())
 
         .def( TfTypePythonClass() )
 

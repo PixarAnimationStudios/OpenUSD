@@ -1010,9 +1010,6 @@ struct UsdImaging_CoordSysBindingStrategy
             }
         };
 
-        const std::string usdShadeCoordSysMultApply = 
-            TfGetEnvSetting(USD_SHADE_COORD_SYS_IS_MULTI_APPLY);
-
         // XXX: Make sure to update the following code when
         // UsdShadeCoordSysAPI's old non-applied mode is completely removed.
         UsdShadeCoordSysAPI coordSysAPI = UsdShadeCoordSysAPI(prim, 

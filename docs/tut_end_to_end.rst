@@ -6,7 +6,7 @@
 End to End Example
 ==================
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/553309734.jpg
+.. image:: http://openusd.org/images/tut_end_to_end.jpg
 
 This tutorial aims to show USD in an extremely simplified pipeline. The files
 for this tutorial live in :filename:`USD/extras/usd/tutorials/endToEnd`.
@@ -121,7 +121,7 @@ find :filename:`models/Ball/Ball.maya.usd` and save over it.
 
 **Save Settings:**
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/580912918.png
+.. image:: http://openusd.org/images/tut_end_to_end_save_settings.png
 
 You can now try viewing this:
 
@@ -183,7 +183,7 @@ change to variants with different colors.
 
    usdview models/Ball/Ball.usd
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/model_ball.png
+.. image:: http://openusd.org/images/tut_end_to_end_model_ball.png
 
 Set dressing
 ************
@@ -208,7 +208,7 @@ other means.
 You may need to move the camera around to see the table and balls as pictured
 below.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/model_room_set.png
+.. image:: http://openusd.org/images/tut_end_to_end_model_room_set.png
 
 Shot Work
 #########
@@ -320,7 +320,7 @@ props, and positions the camera
    python tutorial_scripts/layout_shot_s00_01.py
    python tutorial_scripts/anim_shot_s00_01.py
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/s00_01.png
+.. image:: http://openusd.org/images/tut_end_to_end_s00_01.png
 
 Render
 ######
@@ -345,7 +345,7 @@ from the camera in the USD file). A simple light is created in the gaffer node.
 To render the scene, right-click on the :code:`RenderSettings` node and select 
 "Preview Render".
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/367526391/519831824.png
+.. image:: http://openusd.org/images/tut_end_to_end_render_settings.png
 
 That's it!
 

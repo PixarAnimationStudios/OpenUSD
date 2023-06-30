@@ -120,6 +120,15 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///
 /// UsdImagingNiPrototypePropagatingSceneIndex
 ///
+/// /Cube_1
+///     primType: ""
+///     dataSource:
+///         instance: # Useful for translating Usd proxy paths for selection.
+///                   # See corresponding example in niInstanceAggregationIndex
+///                   # for more details.
+///             instancer: /__Usd_Prototypes/NoBindings/__Prototype_1
+///             prototypeId: 0
+///             instanceId: 0
 /// /MyPrototype # Not referenced from a different file, so appears here
 ///              # as non-prototype as well
 ///     primType: ""
@@ -134,7 +143,7 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///     dataSource:
 ///         instancerTopology:
 ///             instanceIndices:
-///                 i0: 0
+///                 i0: [ 0 ]
 ///             prototypes: [ /__Usd_Prototypes/NoBindings/__Prototype_1/__Protoype_1 ]
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
@@ -180,6 +189,13 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 /// UsdImagingNiPrototypePropagatingSceneIndex
 ///
 /// ...
+/// /MyInstance
+///    primType: ""
+///    dataSource:
+///        instance:
+///            instancer: /__Usd_Prototypes/NoBindings/__Prototype_2
+///            prototypeId: 0
+///            instanceId: 0
 /// /__UsdPrototypes
 /// /__UsdPrototypes/NoBindings
 ///    primType: ""
@@ -190,6 +206,13 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///            prototypes: [ /__UsdPrototypes/NoBindings/__Prototype_2 ]
 ///        ...
 /// /__UsdPrototypes/NoBindings/__Prototype_2/_Prototype_2
+///    primType: ""
+/// /__UsdPrototypes/NoBindings/__Prototype_2/_Prototype_2/MyNestedInstance
+///    primType: ""
+///    dataSource:
+///             instancer: /__UsdPrototypes/NoBindings/__Prototype_2/_Prototype_2/__UsdPrototypes/NoBindings/__Prototype_1
+///             prototypeId: 0
+///             instanceId: 0
 /// /__UsdPrototypes/NoBindings/__Prototype_2/_Prototype_2/__UsdPrototypes
 /// /__UsdPrototypes/NoBindings/__Prototype_2/_Prototype_2/__UsdPrototypes/NoBindings
 ///    primType: ""

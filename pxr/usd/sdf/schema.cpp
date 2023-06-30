@@ -37,6 +37,7 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/vt/dictionary.h"
@@ -52,6 +53,12 @@ using std::string;
 using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(
+    SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS, 1,
+    "Treat variant selections within paths where they are disallowed "
+    "as invalid.  Provided as a measure to temporarily allow parsing "
+    "of old invalid files.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
@@ -1288,11 +1295,24 @@ SdfSchemaBase::IsValidVariantIdentifier(const std::string& identifier)
     return true;
 }
 
+static bool
+_PathContainsProhibitedVariantSelection(const SdfPath& path)
+{
+    static const bool enforce =
+        TfGetEnvSetting(SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS);
+    return enforce ?  path.ContainsPrimVariantSelection() : false;
+}
+
 SdfAllowed 
 SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
 {
-    if (path == SdfPath::AbsoluteRootPath()) {
-        return SdfAllowed("Root paths not allowed in relocates map");
+    if (_PathContainsProhibitedVariantSelection(path)) {
+        return SdfAllowed("Relocate paths cannot contain "
+                          "variant selections");
+    }
+    if (!(path.IsPrimPath())) {
+        return SdfAllowed("Relocate path <" + path.GetString() + 
+                          "> must be a prim path");
     }
 
     return true;
@@ -1301,6 +1321,10 @@ SdfSchemaBase::IsValidRelocatesPath(const SdfPath& path)
 SdfAllowed
 SdfSchemaBase::IsValidInheritPath(const SdfPath& path)
 {
+    if (_PathContainsProhibitedVariantSelection(path)) {
+        return SdfAllowed("Inherit paths cannot contain "
+                          "variant selections");
+    }
     if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Inherit paths must be an absolute prim path");
     }
@@ -1310,6 +1334,10 @@ SdfSchemaBase::IsValidInheritPath(const SdfPath& path)
 SdfAllowed
 SdfSchemaBase::IsValidSpecializesPath(const SdfPath& path)
 {
+    if (_PathContainsProhibitedVariantSelection(path)) {
+        return SdfAllowed("Specializes paths cannot contain "
+                          "variant selections");
+    }
     if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Specializes paths must be absolute prim path");
     }
@@ -1354,6 +1382,10 @@ SdfAllowed
 SdfSchemaBase::IsValidReference(const SdfReference& ref)
 {
     const SdfPath& path = ref.GetPrimPath();
+    if (_PathContainsProhibitedVariantSelection(path)) {
+        return SdfAllowed("Reference paths cannot contain "
+                          "variant selections");
+    }
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Reference prim path <" + path.GetString() + 
@@ -1367,6 +1399,10 @@ SdfAllowed
 SdfSchemaBase::IsValidPayload(const SdfPayload& p)
 {
     const SdfPath& path = p.GetPrimPath();
+    if (_PathContainsProhibitedVariantSelection(path)) {
+        return SdfAllowed("Payload paths cannot contain "
+                          "variant selections");
+    }
     if (!path.IsEmpty() &&
         !(path.IsAbsolutePath() && path.IsPrimPath())) {
         return SdfAllowed("Payload prim path <" + path.GetString() + 

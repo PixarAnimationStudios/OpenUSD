@@ -74,21 +74,27 @@ def CheckUsdzCompliance(rootLayer, arkit=False):
     return len(errors) == 0 and len(failedChecks) == 0
 
 # Creates a usdz package under usdzFile
-def CreateUsdzPackage(usdzFile, filesToAdd, recurse, checkCompliance, verbose):
+def CreateUsdzPackage(usdzFile, filesToAdd, recurse, ensureCompliance, verbose):
     """
     Creates a usdz package with the files provided in filesToAdd and saves as
     the usdzFile.
     If filesToAdd contains nested subdirectories, recurse flag can be specified,
     which will make sure to recurse through the directory structure and include
     the files in the usdz archive.
-    Specifying checkCompliance, will make sure run UsdUtils.ComplianceChecker on
-    the rootLayer of the usdz package being created.
+    Specifying ensureCompliance, will additionally run 
+    UsdUtils.ComplianceChecker on the rootLayer of the usdz package being 
+    created. Failing compliance, will result in a Runtime exception being raised
+    Returns True on successful creation of the usdz package.
+    Note that any encountered exception will cause the usdzFile to be discarded, 
+    and the exception re-raised for clients to handle.
     """
     if (not usdzFile.endswith('.usdz')):
         return False
 
     from pxr import Usd, Tf
     with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
+        # Note that any exception raised here will result in ZipFileWriter's 
+        # exit discarding the usdzFile. 
         fileList = []
         while filesToAdd:
             # Pop front (first file) from the list of files to add.
@@ -113,19 +119,21 @@ def CreateUsdzPackage(usdzFile, filesToAdd, recurse, checkCompliance, verbose):
                 else:
                     _Err("Skipping empty file '%s'." % f)
 
-        if checkCompliance and len(fileList) > 0:
+        if ensureCompliance and len(fileList) > 0:
             rootLayer = fileList[0]
             if not CheckUsdzCompliance(rootLayer):
-                return False
+                # Fails compliance when it was requested, raise an exception as
+                # it was requested by the client
+                raise RuntimeError("Root layer (%s) of the usdz package (%s), " \
+                        "failed compliance check." %(rootLayer, usdzFile))
 
         for f in fileList:
             try:
                 usdzWriter.AddFile(f)
             except Tf.ErrorException as e:
-                _Err('Failed to add file \'%s\' to package. Discarding '
-                    'package.' % f)
-                # When the "with" block exits, Discard() will be called on
-                # usdzWriter automatically if an exception occurs.
+                _Err('CreateUsdzPackage failed to add file \'%s\' to package. '
+                     'Discarding package.' % f)
+                # Raise this to the client
                 raise
         return True
 
@@ -183,9 +191,11 @@ def ExtractUsdzPackage(usdzFile, extractDir, recurse, verbose, force):
 class UsdzAssetIterator(object):
     """
     Class that provides an iterator for usdz assets. Within context, it
-    extracts the contents of the usdz package, provides gennerators for all usd
+    extracts the contents of the usdz package, provides generators for all usd
     files and all assets and on exit packs the extracted files back recursively 
     into a usdz package.
+    Note that root layer of the usdz package might not be compliant which can
+    cause UsdzAssetIterator to raise an exception while repacking on exit.
     """
     def __init__(self, usdzFile, verbose, parentDir=None):
         # If a parentDir is provided extractDir is created under the parent dir,
@@ -223,18 +233,15 @@ class UsdzAssetIterator(object):
             return 
         os.chdir(self.extractDir)
         filesToAdd = self._ExtractedFiles()
+        if self.verbose:
+            _Print("Packing files [%s] in (%s) directory as (%s) usdz " \
+            "package." %(", ".join(filesToAdd), self.extractDir,
+                self.usdzFile))
+        # Package creation can error out 
         try:
-            if self.verbose:
-                _Print("Packing files [%s] in (%s) directory as (%s) usdz " \
-                "package." %(", ".join(filesToAdd), self.extractDir,
-                    self.usdzFile))
-            # Package creation can error out 
-            packed = CreateUsdzPackage(self.usdzFile, filesToAdd, True, True, 
-                    self.verbose)
-        except Tf.ErrorException as e:
-            _Err("Failed to pack files [%s] as usdzFile '%s' because following "
-                    "exception was thrown: (%s)" %(",".join(filesToAdd), \
-                            self.usdzFile, e))
+            if excType is None:
+                CreateUsdzPackage(self.usdzFile, filesToAdd, True, True, 
+                        self.verbose)
         finally:
             # Make sure context is not on the directory being removed
             os.chdir(os.path.dirname(self.extractDir))

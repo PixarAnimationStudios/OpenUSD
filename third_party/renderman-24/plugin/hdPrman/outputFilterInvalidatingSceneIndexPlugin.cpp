@@ -37,6 +37,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_OutputFilterInvalidatingSceneIndexPlugin"))
+    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
+    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
 
 static const char * const _pluginDisplayName = "Prman";
@@ -75,23 +77,30 @@ _GetConnectedOutputFilters(const HdSceneIndexPrim &prim)
     if (!renderSettingsDs) {
         return VtArray<SdfPath>();
     }
+    HdRenderSettingsSchema rsSchema = HdRenderSettingsSchema(renderSettingsDs);
+    if (!rsSchema.IsDefined()) {
+        return VtArray<SdfPath>();
+    }
+    HdContainerDataSourceHandle namespacedSettingsDS = 
+        rsSchema.GetNamespacedSettings();
+    if (!namespacedSettingsDS) {
+        return VtArray<SdfPath>();
+    }
 
     const TfToken filterTokens[] = {
-        HdRenderSettingsSchemaTokens->sampleFilters,
-        HdRenderSettingsSchemaTokens->displayFilters
+        _tokens->outputsRiSampleFilters,
+        _tokens->outputsRiDisplayFilters
     };
 
     VtArray<SdfPath> filters;
-
     for (const auto& filterToken : filterTokens) {
         const HdSampledDataSourceHandle valueDs =
-            HdSampledDataSource::Cast(renderSettingsDs->Get(filterToken));
+            HdSampledDataSource::Cast(namespacedSettingsDS->Get(filterToken));
         if (!valueDs) {
             continue;
         }
-        const VtValue pathArrayValue = valueDs->GetValue(0);
-        const VtArray<SdfPath> paths = 
-            pathArrayValue.GetWithDefault<VtArray<SdfPath>>();
+        const VtValue pathsValue = valueDs->GetValue(0);
+        const SdfPathVector paths = pathsValue.GetWithDefault<SdfPathVector>();
         for (const auto& path : paths) {
             filters.push_back(path);
         }
@@ -101,14 +110,14 @@ _GetConnectedOutputFilters(const HdSceneIndexPrim &prim)
 }
 
 TF_DECLARE_REF_PTRS(_HdPrmanOutputFilterInvalidatingSceneIndex);
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////////////////////
 /// \class _HdPrmanOutputFilterInvalidatingSceneIndex
 ///
 /// The scene index feeding into HdDependencyForwardingSceneIndex and
 /// constructed by the HdPrman_OutputFilterInvalidatingSceneIndexPlugin.
 ///
+
 class _HdPrmanOutputFilterInvalidatingSceneIndex
     : public HdSingleInputFilteringSceneIndexBase
 {

@@ -26,7 +26,6 @@
 #include "pxr/usd/sdf/valueTypeName.h"
 #include "pxr/usd/sdf/valueTypePrivate.h"
 
-#include <boost/functional/hash.hpp>
 #include <ostream>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -176,10 +175,10 @@ size_t
 SdfValueTypeName::GetHash() const
 {
     // See comment in operator==.
-    size_t hash = 0;
-    boost::hash_combine(hash, TfHash()(_impl->type->type));
-    boost::hash_combine(hash, _impl->type->role.Hash());
-    return hash;
+    return TfHash::Combine(
+        _impl->type->type,
+        _impl->type->role
+    );
 }
 
 bool

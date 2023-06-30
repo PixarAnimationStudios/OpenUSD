@@ -1,0 +1,53 @@
+{
+    "Plugins": [
+        {
+            "Info": {
+                "Types": {
+                    "TestSdfUnwritableFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "Format that does not support writing",
+                        "extensions": [
+                            "unwritable"
+                        ],
+                        "supportsWriting": false,
+                        "formatId": "TestSdfUnwritableFormat",
+                        "primary": true
+                    },
+                    "TestSdfUnreadableFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "Format that does not support reading",
+                        "extensions": [
+                            "unreadable"
+                        ],
+                        "supportsReading": false,
+                        "formatId": "TestSdfUnreadableFormat",
+                        "primary": true,
+                        "target": "test"
+                    },
+                    "TestSdfUneditableFormat": {
+                        "bases": [
+                            "SdfTextFileFormat"
+                        ],
+                        "displayName": "Non-editable file format for testing",
+                        "extensions": [
+                            "uneditable"
+                        ],
+                        "supportsEditing": false,
+                        "formatId": "TestSdfUneditableFormat",
+                        "primary": true,
+                        "target": "test"
+                    }
+                }
+            },
+            "LibraryPath": "@TEST_PLUG_INFO_LIBRARY_PATH@",
+            "Name": "TestSdfFileFormatCapabilities",
+            "ResourcePath": "@TEST_PLUG_INFO_RESOURCE_PATH@",
+            "Root": "@TEST_PLUG_INFO_ROOT@",
+            "Type": "library"
+        }
+    ]
+}

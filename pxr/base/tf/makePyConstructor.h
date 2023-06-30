@@ -65,8 +65,6 @@
 #include <boost/python/raw_function.hpp>
 #include <boost/python/tuple.hpp>
 #include <boost/python/type_id.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/type_traits/remove_reference.hpp>
 
 #include <string>
 
@@ -258,7 +256,7 @@ void Install(object const &self, T const &t, TfErrorMark const &m) {
 
 template <typename WeakPtr, typename P>
 struct _RefPtrFactoryConverter {
-    typedef typename boost::remove_reference<P>::type Ptr;
+    typedef std::remove_reference_t<P> Ptr;
     bool convertible() const {
         // FIXME should actually check here...  It's not really horrible because
         // if the conversion will fail, we'll just get a runtime error down
@@ -293,9 +291,10 @@ template <typename WeakPtr = void>
 struct RefPtrFactory {
     template <typename FactoryResultPtr>
     struct apply {
-        typedef typename boost::mpl::if_<boost::is_same<WeakPtr, void>,
+        using WeakPtrType = std::conditional_t<
+            std::is_same<WeakPtr, void>::value,
             TfWeakPtr<typename FactoryResultPtr::DataType>,
-            WeakPtr>::type WeakPtrType;
+            WeakPtr>;
         typedef _RefPtrFactoryConverter<WeakPtrType, FactoryResultPtr> type;
     };
 };
@@ -404,7 +403,7 @@ struct TfPySequenceToListRefPtrFactory {
 // XXX: would be nicer to be able to compose converters with factory
 template <typename T>
 struct Tf_PySequenceToListConverterRefPtrFactory {
-    typedef typename boost::remove_reference<T>::type SeqType;
+    typedef std::remove_reference_t<T> SeqType;
     bool convertible() const {
         return true;
     }
@@ -505,7 +504,7 @@ struct NewCtor<SIGNATURE> : CtorBase<SIGNATURE> {
 #define EXTRACT_REQ_ARG_A(z, n, data)                                     \
     /* The n'th required arg is stored at n + 1 in the positional args */ \
     /* tuple as the 0'th element is always the self object */             \
-    bp::extract<typename boost::remove_reference<A##n>::type>(data[n + 1])
+    bp::extract<typename std::remove_reference_t<A##n>>(data[n + 1])
 
 template <typename R BOOST_PP_ENUM_TRAILING_PARAMS(N, typename A)>
 struct InitCtorWithVarArgs<VAR_SIGNATURE> : CtorBase<VAR_SIGNATURE> {

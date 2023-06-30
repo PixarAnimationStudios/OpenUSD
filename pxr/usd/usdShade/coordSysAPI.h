@@ -324,7 +324,7 @@ public:
     USDSHADE_API
     static std::vector<Binding> GetLocalBindingsForPrim(const UsdPrim &prim);
 
-    /// Get the coordinate system bindings local to this prim cooresponding to
+    /// Get the coordinate system bindings local to this prim corresponding to
     /// this instance name. This does not process inherited bindings. It does 
     /// not validate that a prim exists at the indicated path. If the binding 
     /// relationship has multiple targets, only the first is used.

@@ -38,7 +38,7 @@ namespace {
 static size_t
 __hash__(const PcpInstanceKey& key)
 {
-    return hash_value(key);
+    return TfHash{}(key);
 }
 
 } // anonymous namespace 
@@ -53,6 +53,6 @@ wrapInstanceKey()
         .def(self != self)
 
         .def("__str__", &PcpInstanceKey::GetString)
-        .def("__hash_", __hash__)
+        .def("__hash__", __hash__)
         ;
 }

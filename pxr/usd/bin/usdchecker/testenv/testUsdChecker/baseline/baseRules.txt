@@ -32,17 +32,18 @@ UsdPreviewSurface must ensure that the data is encoded and scaled properly.
 Specifically:
    - Since normals are expected to be in the range [(-1,-1,-1), (1,1,1)],
      the Texture node must transform 8-bit textures from their [0..1] range by
-     setting its _inputs:scale_ to [2, 2, 2, 1] and 
-     _inputs:bias_ to [-1, -1, -1, 0]
+     setting its _inputs:scale_ to (2, 2, 2, 1) and 
+     _inputs:bias_ to (-1, -1, -1, 0)
    - Normal map data is commonly expected to be linearly encoded.  However, many
      image-writing tools automatically set the profile of three-channel, 8-bit
      images to SRGB.  To prevent an unwanted transformation, the UsdUVTexture's
-     _inputs:sourceColorSpace_ must be set to "raw".  This program cannot
-     currently read the texture metadata itself, so for now we emit warnings
-     about this potential infraction for all 8 bit image formats.
+     _inputs:sourceColorSpace_ must be set to "raw".
 
 ------------------------------
 [MaterialBindingAPIAppliedChecker]:
  A prim providing a material binding, must have MaterialBindingAPI applied on the prim.
+------------------------------
+[SkelBindingAPIAppliedChecker]:
+ A prim providing skelBinding properties, must have SkelBindingAPI applied on the prim.
 ------------------------------
 Success!

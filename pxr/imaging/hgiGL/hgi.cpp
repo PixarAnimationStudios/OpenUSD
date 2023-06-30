@@ -61,7 +61,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 HgiGL::HgiGL()
     : _device(nullptr)
-    , _garbageCollector(this)
     , _frameDepth(0)
 {
     static std::once_flag versionOnce;

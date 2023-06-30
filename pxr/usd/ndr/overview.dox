@@ -1,7 +1,6 @@
 /*!
 \page ndr_page_front Ndr : Node Definition Registry
 \if ( PIXAR_MFB_BUILD )
-\publicLib
 \mainpage Ndr : Node Definition Registry
 \endif
 

@@ -123,7 +123,7 @@ will use as our starting point and all the code for this exercise is in the
    Running usdview on the exported :filename:`RefExample.usda` shows the
    composed result.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample.png
+   .. image:: http://openusd.org/images/tut_referencing_layers_refexample.png
 
    If it were unselected in the namespace browser, usdview would show
    :sdfpath:`/refSphere` in orange to indicate that it is a referencing point on
@@ -201,7 +201,7 @@ will use as our starting point and all the code for this exercise is in the
       {
       }
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample_2.png
+   .. image:: http://openusd.org/images/tut_referencing_layers_xform.png
 
    We can see that our over has been applied to move the first sphere to the
    origin, while the second sphere is still translated by :code:`(4, 5, 6)`.
@@ -243,7 +243,7 @@ will use as our starting point and all the code for this exercise is in the
           }
       }
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368706187/RefExample_3.png
+   .. image:: http://openusd.org/images/tut_referencing_layers_color.png
 
 #. We can also flatten the composed results.  All of the scene description
    listings above were of the stage's root layer, where we performed our

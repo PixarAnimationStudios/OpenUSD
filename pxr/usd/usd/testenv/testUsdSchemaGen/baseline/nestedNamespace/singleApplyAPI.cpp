@@ -24,7 +24,6 @@
 #include "pxr/usd/usdContrived/singleApplyAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -38,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdAPISchemaBase > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (SingleApplyAPI)
-);
 
 /* virtual */
 UsdContrivedSingleApplyAPI::~UsdContrivedSingleApplyAPI()
@@ -108,13 +102,64 @@ UsdContrivedSingleApplyAPI::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdContrivedSingleApplyAPI::GetTestAttrOneAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->testAttrOne);
+}
+
+UsdAttribute
+UsdContrivedSingleApplyAPI::CreateTestAttrOneAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->testAttrOne,
+                       SdfValueTypeNames->Int,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdContrivedSingleApplyAPI::GetTestAttrTwoAttr() const
+{
+    return GetPrim().GetAttribute(UsdContrivedTokens->testAttrTwo);
+}
+
+UsdAttribute
+UsdContrivedSingleApplyAPI::CreateTestAttrTwoAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdContrivedTokens->testAttrTwo,
+                       SdfValueTypeNames->Double,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+namespace {
+static inline TfTokenVector
+_ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
+{
+    TfTokenVector result;
+    result.reserve(left.size() + right.size());
+    result.insert(result.end(), left.begin(), left.end());
+    result.insert(result.end(), right.begin(), right.end());
+    return result;
+}
+}
+
 /*static*/
 const TfTokenVector&
 UsdContrivedSingleApplyAPI::GetSchemaAttributeNames(bool includeInherited)
 {
-    static TfTokenVector localNames;
+    static TfTokenVector localNames = {
+        UsdContrivedTokens->testAttrOne,
+        UsdContrivedTokens->testAttrTwo,
+    };
     static TfTokenVector allNames =
-        UsdAPISchemaBase::GetSchemaAttributeNames(true);
+        _ConcatenateAttributeNames(
+            UsdAPISchemaBase::GetSchemaAttributeNames(true),
+            localNames);
 
     if (includeInherited)
         return allNames;

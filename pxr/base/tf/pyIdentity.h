@@ -40,8 +40,6 @@
 #include <boost/python/class.hpp>
 #include <boost/python/handle.hpp>
 #include <boost/python/object.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/utility.hpp>
 
 #include "pxr/base/tf/hashmap.h"
 
@@ -135,9 +133,9 @@ struct Tf_PyOwnershipHelper {
 
 template <typename Ptr>
 struct Tf_PyOwnershipHelper<Ptr,
-    typename boost::enable_if<
-        boost::mpl::and_<boost::is_same<TfRefPtr<typename Ptr::DataType>, Ptr>,
-            boost::is_base_of<TfRefBase, typename Ptr::DataType> > >::type>
+    std::enable_if_t<
+        std::is_same<TfRefPtr<typename Ptr::DataType>, Ptr>::value &&
+        std::is_base_of<TfRefBase, typename Ptr::DataType>::value>>
 {
     struct _RefPtrHolder {
         static boost::python::object
@@ -229,13 +227,13 @@ struct Tf_PyIsRefPtr<TfRefPtr<T> > {
 
 
 template <class Ptr>
-typename boost::enable_if<Tf_PyIsRefPtr<Ptr> >::type
+std::enable_if_t<Tf_PyIsRefPtr<Ptr>::value>
 Tf_PySetPythonIdentity(Ptr const &, PyObject *)
 {
 }
 
 template <class Ptr>
-typename boost::disable_if<Tf_PyIsRefPtr<Ptr> >::type
+std::enable_if_t<!Tf_PyIsRefPtr<Ptr>::value>
 Tf_PySetPythonIdentity(Ptr const &ptr, PyObject *obj)
 {
     if (ptr.GetUniqueIdentifier()) {

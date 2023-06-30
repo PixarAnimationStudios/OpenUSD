@@ -48,32 +48,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
-    // tokens for RenderMan-specific light parameters
-    ((cheapCaustics,                "inputs:ri:light:cheapCaustics"))
-    ((cheapCausticsExcludeGroup,    "inputs:ri:light:cheapCausticsExcludeGroup"))
-    ((fixedSampleCount,             "inputs:ri:light:fixedSampleCount"))
-    ((importanceMultiplier,         "inputs:ri:light:importanceMultiplier"))
-    ((intensityNearDist,            "inputs:ri:light:intensityNearDist"))
-    ((thinShadow,                   "inputs:ri:light:thinShadow"))
-    ((traceLightPaths,              "inputs:ri:light:traceLightPaths"))
-    ((visibleInRefractionPath,      "inputs:ri:light:visibleInRefractionPath"))
-    ((lightGroup,                   "inputs:ri:light:lightGroup"))
-    ((colorMapGamma,                "inputs:ri:light:colorMapGamma"))
-    ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
-
+    (meshLight)
     ((meshLightSourceMesh,          "sourceMesh"))
 );
-
-TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS, true,
-                      "bool env setting to enable material networks for lights "
-                      "and light filters");
 
 HdPrmanLight::HdPrmanLight(SdfPath const& id, TfToken const& lightType)
     : HdLight(id)
     , _hdLightType(lightType)
     , _shaderId(riley::LightShaderId::InvalidId())
     , _instanceId(riley::LightInstanceId::InvalidId())
+    // Note: _groupPrototypeId isn't used yet. I.e., it's always invalid. 
+    , _groupPrototypeId(riley::GeometryPrototypeId::InvalidId())
+    , _geometryPrototypeId(riley::GeometryPrototypeId::InvalidId())
+    , _instanceMaterialId(riley::MaterialId::InvalidId())
 {
     /* NOTHING */
 }
@@ -107,421 +94,16 @@ HdPrmanLight::_ResetLight(HdPrman_RenderParam *renderParam, bool clearFilterPath
     }
 
     if (_instanceId != riley::LightInstanceId::InvalidId()) {
-        riley->DeleteLightInstance(
-            riley::GeometryPrototypeId::InvalidId(),
-            _instanceId);
+        riley->DeleteLightInstance(_groupPrototypeId, _instanceId);
         _instanceId = riley::LightInstanceId::InvalidId();
     }
     if (_shaderId != riley::LightShaderId::InvalidId()) {
         riley->DeleteLightShader(_shaderId);
         _shaderId = riley::LightShaderId::InvalidId();
     }
-}
 
-static RtUString
-_RtStringFromSdfAssetPath(SdfAssetPath const& ap)
-{
-    // Although Renderman does its own searchpath resolution,
-    // scene delegates like USD may have additional path resolver
-    // semantics, so try GetResolvedPath() first.
-    std::string p = ap.GetResolvedPath();
-    if (p.empty()) {
-        p = ap.GetAssetPath();
-    }
-    return RtUString(p.c_str());
-}
-
-static RtUString
-_RtStringFromLightColorMapAssetPath(SdfAssetPath const& ap)
-{
-    // Although Renderman does its own searchpath resolution,
-    // scene delegates like USD may have additional path resolver
-    // semantics, so try GetResolvedPath() first.
-    //
-    // Also, use the RtxHioImage plugin if the path is resolved and it
-    // isn't a tex file.  RtxHioImage wants to flip images by default
-    // but lightColorMap images should not be flipped.
-    std::string p = ap.GetResolvedPath();
-    if (p.empty()) {
-        p = ap.GetAssetPath();
-    }
-    else if (ArGetResolver().GetExtension(p) != "tex") {
-        p = "rtxplugin:RtxHioImage" ARCH_LIBRARY_SUFFIX
-            "?filename=" + p + "&flipped=false";
-    }
-    TF_DEBUG(HDPRMAN_IMAGE_ASSET_RESOLVE)
-        .Msg("Resolved lightColorMap asset path: %s\n", p.c_str());
-    return RtUString(p.c_str());
-}
-
-static
-void
-_PopulateNodeFromLightParams(HdSceneDelegate *sceneDelegate,
-                             const SdfPath &id,
-                             const TfToken &hdLightType,
-                             std::vector<riley::ShadingNode> *lightNodes)
-{
-    static const RtUString us_intensity("intensity");
-    static const RtUString us_exposure("exposure");
-    static const RtUString us_lightColor("lightColor");
-    static const RtUString us_enableTemperature("enableTemperature");
-    static const RtUString us_temperature("temperature");
-    static const RtUString us_diffuse("diffuse");
-    static const RtUString us_specular("specular");
-    static const RtUString us_areaNormalize("areaNormalize");
-    static const RtUString us_emissionFocus("emissionFocus");
-    static const RtUString us_emissionFocusTint("emissionFocusTint");
-    static const RtUString us_coneAngle("coneAngle");
-    static const RtUString us_coneSoftness("coneSoftness");
-    static const RtUString us_iesProfile("iesProfile");
-    static const RtUString us_iesProfileScale("iesProfileScale");
-    static const RtUString us_iesProfileNormalize("iesProfileNormalize");
-    static const RtUString us_enableShadows("enableShadows");
-    static const RtUString us_shadowColor("shadowColor");
-    static const RtUString us_shadowDistance("shadowDistance");
-    static const RtUString us_shadowFalloff("shadowFalloff");
-    static const RtUString us_shadowFalloffGamma("shadowFalloffGamma");
-    static const RtUString us_shadowSubset("shadowSubset");
-    static const RtUString us_PxrDomeLight("PxrDomeLight");
-    static const RtUString us_PxrRectLight("PxrRectLight");
-    static const RtUString us_PxrDiskLight("PxrDiskLight");
-    static const RtUString us_PxrCylinderLight("PxrCylinderLight");
-    static const RtUString us_PxrSphereLight("PxrSphereLight");
-    static const RtUString us_PxrDistantLight("PxrDistantLight");
-    static const RtUString us_PxrMeshLight("PxrMeshLight");
-    static const RtUString us_angleExtent("angleExtent");
-    static const RtUString us_lightColorMap("lightColorMap");
-    static const RtUString us_default("default");
-    static const RtUString us_cheapCaustics("cheapCaustics");
-    static const RtUString us_cheapCausticsExcludeGroup(
-                                "cheapCausticsExcludeGroup");
-    static const RtUString us_fixedSampleCount("fixedSampleCount");
-    static const RtUString us_importanceMultiplier("importanceMultiplier");
-    static const RtUString us_intensityNearDist("intensityNearDist");
-    static const RtUString us_thinShadow("thinShadow");
-    static const RtUString us_traceLightPaths("traceLightPaths");
-    static const RtUString us_visibleInRefractionPath(
-                                "visibleInRefractionPath");
-    static const RtUString us_lightGroup("lightGroup");
-    static const RtUString us_colorMapGamma("colorMapGamma");
-    static const RtUString us_colorMapSaturation("colorMapSaturation");
-    static const RtUString us_textureColor("textureColor");    
-
-    lightNodes->push_back({
-        riley::ShadingNode::Type::k_Light, // type
-        US_NULL, // name
-        RtUString(id.GetText()), // handle
-        RtParamList() // params
-    });
-
-    riley::ShadingNode &lightNode = lightNodes->back();
-
-    // UsdLuxLight base parameters
-    {
-        // intensity
-        VtValue intensity =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->intensity);
-        if (intensity.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_intensity, intensity.UncheckedGet<float>());
-        }
-
-        // exposure
-        VtValue exposure =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->exposure);
-        if (exposure.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_exposure, exposure.UncheckedGet<float>());
-        }
-
-        // color -> lightColor
-        VtValue lightColor =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->color);
-        if (lightColor.IsHolding<GfVec3f>()) {
-            GfVec3f v = lightColor.UncheckedGet<GfVec3f>();
-            lightNode.params.SetColor(us_lightColor, RtColorRGB(v[0], v[1], v[2]));
-        }
-
-        // enableColorTemperature -> enableTemperature
-        VtValue enableTemperature =
-            sceneDelegate->GetLightParamValue(id,
-                HdLightTokens->enableColorTemperature);
-        if (enableTemperature.IsHolding<bool>()) {
-            int v = enableTemperature.UncheckedGet<bool>();
-            lightNode.params.SetInteger(us_enableTemperature, v);
-        }
-
-        // temperature
-        VtValue temperature =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->colorTemperature);
-        if (temperature.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_temperature, temperature.UncheckedGet<float>());
-        }
-
-        // diffuse
-        VtValue diffuse =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->diffuse);
-        if (diffuse.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_diffuse, diffuse.UncheckedGet<float>());
-        }
-
-        // specular
-        VtValue specular =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->specular);
-        if (specular.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_specular, specular.UncheckedGet<float>());
-        }
-
-        // normalize -> areaNormalize
-        // (Avoid unused param warnings for light types that don't have this)
-        if (hdLightType != HdPrimTypeTokens->domeLight) {
-            VtValue normalize =
-                sceneDelegate->GetLightParamValue(id, HdLightTokens->normalize);
-            if (normalize.IsHolding<bool>()) {
-                int v = normalize.UncheckedGet<bool>();
-                lightNode.params.SetInteger(us_areaNormalize, v);
-            }
-        }
-    }
-
-    // UsdLuxShapingAPI
-    {
-        if (hdLightType != HdPrimTypeTokens->domeLight) {
-            VtValue shapingFocus =
-                sceneDelegate->GetLightParamValue(id,
-                                                  HdLightTokens->shapingFocus);
-            if (shapingFocus.IsHolding<float>()) {
-                lightNode.params.SetFloat(us_emissionFocus,
-                                 shapingFocus.UncheckedGet<float>());
-            }
-
-            // XXX -- emissionFocusNormalize is missing here
-
-            VtValue shapingFocusTint =
-                sceneDelegate->GetLightParamValue(id, 
-                    HdLightTokens->shapingFocusTint);
-            if (shapingFocusTint.IsHolding<GfVec3f>()) {
-                GfVec3f v = shapingFocusTint.UncheckedGet<GfVec3f>();
-                lightNode.params.SetColor(us_emissionFocusTint,
-                                 RtColorRGB(v[0], v[1], v[2]));
-            }
-        }
-
-        // ies is only supported on rect, disk, cylinder and sphere light.
-        // cone angle only supported on rect, disk, cylinder and sphere lights.
-        // XXX -- fix for mesh/geometry light when it comes online
-        if (hdLightType == HdPrimTypeTokens->rectLight ||
-            hdLightType == HdPrimTypeTokens->diskLight ||
-            hdLightType == HdPrimTypeTokens->cylinderLight ||
-            hdLightType == HdPrimTypeTokens->sphereLight) {
-
-            VtValue shapingConeAngle =
-                sceneDelegate->GetLightParamValue(id, 
-                    HdLightTokens->shapingConeAngle);
-            if (shapingConeAngle.IsHolding<float>()) {
-                lightNode.params.SetFloat(us_coneAngle,
-                                 shapingConeAngle.UncheckedGet<float>());
-            }
-
-            VtValue shapingConeSoftness =
-                sceneDelegate->GetLightParamValue(id, 
-                    HdLightTokens->shapingConeSoftness);
-            if (shapingConeSoftness.IsHolding<float>()) {
-                lightNode.params.SetFloat(us_coneSoftness,
-                                 shapingConeSoftness.UncheckedGet<float>());
-            }
-
-            VtValue shapingIesFile =
-                sceneDelegate->GetLightParamValue(id, 
-                    HdLightTokens->shapingIesFile);
-            if (shapingIesFile.IsHolding<SdfAssetPath>()) {
-                SdfAssetPath ap = shapingIesFile.UncheckedGet<SdfAssetPath>();
-                lightNode.params.SetString(us_iesProfile, _RtStringFromSdfAssetPath(ap));
-            }
-
-            VtValue shapingIesAngleScale =
-                sceneDelegate->GetLightParamValue(id,
-                    HdLightTokens->shapingIesAngleScale);
-            if (shapingIesAngleScale.IsHolding<float>()) {
-                lightNode.params.SetFloat(us_iesProfileScale,
-                                 shapingIesAngleScale.UncheckedGet<float>());
-            }
-
-            VtValue shapingIesNormalize =
-                sceneDelegate->GetLightParamValue(id,
-                    HdLightTokens->shapingIesNormalize);
-            if (shapingIesNormalize.IsHolding<bool>()) {
-                lightNode.params.SetInteger(us_iesProfileNormalize,
-                                   shapingIesNormalize.UncheckedGet<bool>());
-            }
-        }
-    }
-
-    // UsdLuxShadowAPI
-    {
-        VtValue shadowEnable =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowEnable);
-        if (shadowEnable.IsHolding<bool>()) {
-            lightNode.params.SetInteger(us_enableShadows,
-                               shadowEnable.UncheckedGet<bool>());
-        }
-
-        VtValue shadowColor =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowColor);
-        if (shadowColor.IsHolding<GfVec3f>()) {
-            GfVec3f v = shadowColor.UncheckedGet<GfVec3f>();
-            lightNode.params.SetColor(us_shadowColor, RtColorRGB(v[0], v[1], v[2]));
-        }
-
-        VtValue shadowDistance =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shadowDistance);
-        if (shadowDistance.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_shadowDistance,
-                             shadowDistance.UncheckedGet<float>());
-        }
-
-        VtValue shadowFalloff =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->shadowFalloff);
-        if (shadowFalloff.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_shadowFalloff,
-                             shadowFalloff.UncheckedGet<float>());
-        }
-
-        VtValue shadowFalloffGamma =
-            sceneDelegate->GetLightParamValue(id, 
-                HdLightTokens->shadowFalloffGamma);
-        if (shadowFalloffGamma.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_shadowFalloffGamma,
-                             shadowFalloffGamma.UncheckedGet<float>());
-        }
-    }
-
-    // extra RenderMan parameters - "ri:light"
-    {
-        VtValue cheapCaustics =
-            sceneDelegate->GetLightParamValue(id, _tokens->cheapCaustics);
-        if (cheapCaustics.IsHolding<int>()) {
-            lightNode.params.SetInteger(us_cheapCaustics,
-                               cheapCaustics.UncheckedGet<int>());
-        }
-
-        VtValue cheapCausticsExcludeGroupVal =
-            sceneDelegate->GetLightParamValue(id, 
-                _tokens->cheapCausticsExcludeGroup);
-        if (cheapCausticsExcludeGroupVal.IsHolding<TfToken>()) {
-            TfToken cheapCausticsExcludeGroup = 
-                cheapCausticsExcludeGroupVal.UncheckedGet<TfToken>();
-            if (!cheapCausticsExcludeGroup.IsEmpty()) {
-                lightNode.params.SetString(us_cheapCausticsExcludeGroup,
-                                RtUString(cheapCausticsExcludeGroup.GetText()));
-            }
-        }
-
-        VtValue fixedSampleCount =
-            sceneDelegate->GetLightParamValue(id, _tokens->fixedSampleCount);
-        if (fixedSampleCount.IsHolding<int>()) {
-            lightNode.params.SetInteger(us_fixedSampleCount,
-                               fixedSampleCount.UncheckedGet<int>());
-        }
-
-        VtValue importanceMultiplier =
-            sceneDelegate->GetLightParamValue(id, 
-                _tokens->importanceMultiplier);
-        if (importanceMultiplier.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_importanceMultiplier,
-                               importanceMultiplier.UncheckedGet<float>());
-        }
-
-        VtValue intensityNearDist =
-            sceneDelegate->GetLightParamValue(id, _tokens->intensityNearDist);
-        if (intensityNearDist.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_intensityNearDist,
-                               intensityNearDist.UncheckedGet<float>());
-        }
-
-        VtValue thinShadow =
-            sceneDelegate->GetLightParamValue(id, _tokens->thinShadow);
-        if (thinShadow.IsHolding<int>()) {
-            lightNode.params.SetInteger(us_thinShadow, thinShadow.UncheckedGet<int>());
-        }
-
-        VtValue traceLightPaths =
-            sceneDelegate->GetLightParamValue(id, _tokens->traceLightPaths);
-        if (traceLightPaths.IsHolding<int>()) {
-            lightNode.params.SetInteger(us_traceLightPaths,
-                               traceLightPaths.UncheckedGet<int>());
-        }
-
-        VtValue visibleInRefractionPath =
-            sceneDelegate->GetLightParamValue(id, 
-                _tokens->visibleInRefractionPath);
-        if (visibleInRefractionPath.IsHolding<int>()) {
-            lightNode.params.SetInteger(us_visibleInRefractionPath,
-                               visibleInRefractionPath.UncheckedGet<int>());
-        }
-
-        VtValue lightGroupVal =
-            sceneDelegate->GetLightParamValue(id, _tokens->lightGroup);
-        if (lightGroupVal.IsHolding<TfToken>()) {
-            TfToken lightGroup = lightGroupVal.UncheckedGet<TfToken>();
-            if (!lightGroup.IsEmpty()) {
-                lightNode.params.SetString(us_lightGroup,
-                                  RtUString(lightGroup.GetText()));
-            }
-        }
-    }
-
-
-    TF_DEBUG(HDPRMAN_LIGHT_LIST)
-        .Msg("HdPrman: Light <%s> lightType \"%s\"\n",
-             id.GetText(), hdLightType.GetText());
-
-    if (hdLightType == HdPrimTypeTokens->domeLight) {
-        lightNode.name = us_PxrDomeLight;
-    } else if (hdLightType == HdPrimTypeTokens->rectLight) {
-        lightNode.name = us_PxrRectLight;
-    } else if (hdLightType == HdPrimTypeTokens->diskLight) {
-        lightNode.name = us_PxrDiskLight;
-    } else if (hdLightType == HdPrimTypeTokens->cylinderLight) {
-        lightNode.name = us_PxrCylinderLight;
-    } else if (hdLightType == HdPrimTypeTokens->sphereLight) {
-        lightNode.name = us_PxrSphereLight;
-    } else if (hdLightType == HdPrimTypeTokens->meshLight) {
-        lightNode.name = us_PxrMeshLight;
-    } else if (hdLightType == HdPrimTypeTokens->distantLight) {
-        lightNode.name = us_PxrDistantLight;
-        VtValue angle =
-            sceneDelegate->GetLightParamValue(id, HdLightTokens->angle);
-        if (angle.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_angleExtent, angle.UncheckedGet<float>());
-        }
-    }
-    
-    if (hdLightType == HdPrimTypeTokens->domeLight ||
-        hdLightType == HdPrimTypeTokens->rectLight) {
-        // textureFile -> lightColorMap
-        VtValue textureFile = sceneDelegate->GetLightParamValue(id,
-            HdLightTokens->textureFile);
-        if (textureFile.IsHolding<SdfAssetPath>()) {
-            SdfAssetPath ap = textureFile.UncheckedGet<SdfAssetPath>();
-            lightNode.params.SetString(us_lightColorMap,
-                        _RtStringFromLightColorMapAssetPath(ap));
-        }
-
-        VtValue colorMapGamma =
-            sceneDelegate->GetLightParamValue(id, _tokens->colorMapGamma);
-        if (colorMapGamma.IsHolding<GfVec3f>()) {
-            GfVec3f v = colorMapGamma.UncheckedGet<GfVec3f>();
-            lightNode.params.SetVector(us_colorMapGamma, RtVector3(v[0], v[1], v[2]));
-        }
-
-        VtValue colorMapSaturation =
-            sceneDelegate->GetLightParamValue(id, _tokens->colorMapSaturation);
-        if (colorMapSaturation.IsHolding<float>()) {
-            lightNode.params.SetFloat(us_colorMapSaturation,
-                               colorMapSaturation.UncheckedGet<float>());
-        }
-    }
+    _geometryPrototypeId = riley::GeometryPrototypeId::InvalidId();
+    _instanceMaterialId = riley::MaterialId::InvalidId();
 }
 
 static bool
@@ -644,18 +226,11 @@ _PopulateLightFilterNodes(
             continue;
         }
 
-        if (TfGetEnvSetting(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS)) {
-            if (!_PopulateNodesFromMaterialResource(
-                    sceneDelegate, filterPath,
-                    HdMaterialTerminalTokens->lightFilter, 
-                    lightFilterNodes)) {
-                continue;
-            }
-        } else {
-            if (!HdPrmanLightFilterPopulateNodesFromLightParams(
-                lightFilterNodes, filterPath, sceneDelegate)) {
-                continue;
-            }
+        if (!_PopulateNodesFromMaterialResource(
+                sceneDelegate, filterPath,
+                HdMaterialTerminalTokens->lightFilter, 
+                lightFilterNodes)) {
+            continue;
         }
 
         HdPrmanLightFilterGenerateCoordSysAndLinks(
@@ -693,96 +268,90 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_shadowSubset("shadowSubset");
     static const RtUString us_default("default");
 
-
     SdfPath id = GetId();
 
-    // Set default riley args.
-    riley::GeometryPrototypeId geometryPrototypeId = 
-        riley::GeometryPrototypeId::InvalidId();
-    riley::MaterialId instanceMaterialId = 
-        riley::MaterialId::InvalidId();
+    // XXX -- Only update mesh lights if *lighting* bits are dirty.
+    // i.e., ignore mesh/transform/primvar/etc. changes.
+    // This helps to prevent a Prman crash resulting from simultaneous 
+    // edits to both the sprim and rprim pieces of a mesh light.
+    // https://jira.pixar.com/browse/RMAN-20136
+    
+    bool dirtyLightingBits = false;
+    if (_hdLightType == _tokens->meshLight) {
 
-    HdPrman_RenderParam * const param =
-            static_cast<HdPrman_RenderParam*>(renderParam);
+        // Make sure we have required resources. If we don't, we need to sync.
+        if (_geometryPrototypeId == riley::GeometryPrototypeId::InvalidId() ||
+                _instanceMaterialId  == riley::MaterialId::InvalidId()) {
+            dirtyLightingBits = true;
+        }
 
-    // Early mesh light tests. See if the geometry prototype exists (yet).
-    // Sprims get created before rprims, but for mesh lights we *need* the
-    // source mesh rprim, since that's our geometry prototype. If it hasn't
-    // yet been created, we return early. In that case, the light is still 
-    // marked as "dirty", so this will run again.
-    const VtValue sourceMesh = sceneDelegate->GetLightParamValue(id, 
+        // Are there dirty resource bits?
+        if (*dirtyBits & HdLight::DirtyResource) {
+            dirtyLightingBits = true;
+        }
+
+        // Are there dirty transform bits?
+        if (*dirtyBits & HdLight::DirtyTransform) {
+            dirtyLightingBits = true;
+        }
+
+        // Has source mesh changed? Is the rprim still there?
+        const VtValue sourceMesh = sceneDelegate->GetLightParamValue(id, 
             _tokens->meshLightSourceMesh);
-
-    if (sourceMesh.IsHolding<SdfPath>()) {
-
-        const SdfPath sourceMeshPath = sourceMesh.UncheckedGet<SdfPath>();
-        const HdRprim *rprim = 
-                sceneDelegate->GetRenderIndex().GetRprim(sourceMeshPath);
-
-        if (!rprim) {
-            // No prim. It may not have been created yet. Leave the light 
-            // "dirty" and return.
-            return;            
-        }
-
-        auto mesh = static_cast<const HdPrman_Mesh*>(rprim);
-        std::vector<riley::GeometryPrototypeId> prototypeIds = 
-                mesh->GetPrototypeIds();
-
-        if (prototypeIds.empty()) {
-            TF_WARN("Could not find prototype for mesh at '%s'."
-                    " Skipping '%s'.", 
-                    sourceMeshPath.GetText(), 
-                    id.GetText());
-            // Light stays dirty.
-            return;
-        }
-
-        // Find geometry prototype id.
-        for (const auto &protoTypeId: prototypeIds) {
-            if (protoTypeId != riley::GeometryPrototypeId::InvalidId()) {
-                geometryPrototypeId = protoTypeId;
-                break;
+        if (sourceMesh.IsHolding<SdfPath>()) {
+            const SdfPath sourceMeshPath = sourceMesh.UncheckedGet<SdfPath>();
+            if (sourceMeshPath != _sourceMeshPath) {
+                dirtyLightingBits = true;
+                _sourceMeshPath = sourceMeshPath;
+            } else {
+                const HdRprim *rprim = 
+                    sceneDelegate->GetRenderIndex().GetRprim(_sourceMeshPath);
+                if (!rprim) {
+                    dirtyLightingBits = true;
+                }
             }
         }
 
-        // Find instance material id.
-        const SdfPath materialPath = sceneDelegate->GetMaterialId(
-                sourceMeshPath);
-        if (materialPath == SdfPath()) {
-            // Leave the light "dirty" and return.
-            return;
-        } 
-        const HdSprim *sprim = 
-                sceneDelegate->GetRenderIndex().GetSprim(
-                        HdSprimTypeTokens->material,
-                        materialPath);
-        if (!sprim) {
-            // No prim. It may not have been created yet. Leave the light 
-            // "dirty" and return.            
-            return;
+        // Has linking changed?
+        TfToken lightLink;
+        VtValue val =
+            sceneDelegate->GetLightParamValue(id, HdTokens->lightLink);
+        if (val.IsHolding<TfToken>()) {
+            lightLink = val.UncheckedGet<TfToken>();
+        } else {
+            dirtyLightingBits = true;                        
         }
-        auto hdPrmanMaterial = static_cast<const HdPrmanMaterial*>(sprim);
-        instanceMaterialId = hdPrmanMaterial->GetMaterialId();
-
-        if (instanceMaterialId == riley::MaterialId::InvalidId()) {
-            TF_WARN("Could not find material for mesh at '%s'."
-                    " Skipping '%s'.", 
-                    sourceMeshPath.GetText(), 
-                    id.GetText());
-            // Stay dirty. Return.
-            return;
+        if (_lightLink != lightLink) {
+            dirtyLightingBits = true;                        
         }
 
-        // Note: If we've returned early, we'll need to revisit this light 
-        // once the other prims have been processed. This will continue 
-        // until we succeed (and "bits" is marked "clean", which happens 
-        // below). In the meshlight case, we're synthesizing the 
-        // dependencies, so we know we'll succeed quickly. However, misuse 
-        // of this code might result in a loop.
+        // Have filters changed?
+        // XXX -- We don't actually support filters yet.
+        SdfPathVector lightFilterPaths;
+        val = sceneDelegate->GetLightParamValue(id, HdTokens->filters);
+        if (val.IsHolding<SdfPathVector>()) {
+            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+        } else {
+            dirtyLightingBits = true;                                    
+        }
+        if (_lightFilterPaths != lightFilterPaths) {
+            dirtyLightingBits = true;
+        }                        
 
-        // TODO: Dependency tracking here?
+        if (!dirtyLightingBits) {
+            // No dirty lighting bits. We can skip this update.
+            *dirtyBits = HdChangeTracker::Clean;
+            return;
+        }
     }
+
+    if (dirtyLightingBits) {
+        *dirtyBits = GetInitialDirtyBitsMask();
+
+    }
+
+    HdPrman_RenderParam * const param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
 
     riley::Riley *const riley = param->AcquireRiley();
 
@@ -804,15 +373,82 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // want to consider adding a path to use the Modify() API in Riley.
     _ResetLight(param, clearFilterPaths);
 
+    // Early mesh light case test. See if the geometry prototype exists (yet).
+    // Sprims get created before rprims, but for mesh lights we *need* the
+    // source mesh rprim, since that's our geometry prototype. If it hasn't
+    // yet been created, we return early. In that case, the light is still 
+    // marked as "dirty", so this will run again.
+    if (_hdLightType == _tokens->meshLight) {
+        const HdRprim *rprim = 
+                sceneDelegate->GetRenderIndex().GetRprim(_sourceMeshPath);
+
+        if (!rprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.
+            return;            
+        }
+
+        auto mesh = static_cast<const HdPrman_Mesh*>(rprim);
+        std::vector<riley::GeometryPrototypeId> prototypeIds = 
+                mesh->GetPrototypeIds();
+
+        if (prototypeIds.empty()) {
+            TF_WARN("Could not find prototype for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    _sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Light stays dirty.
+            return;
+        }
+
+        // Find geometry prototype id.
+        for (const auto &protoTypeId: prototypeIds) {
+            if (protoTypeId != riley::GeometryPrototypeId::InvalidId()) {
+                _geometryPrototypeId = protoTypeId;
+                break;
+            }
+        }
+
+        // Find instance material id.
+        const SdfPath materialPath = sceneDelegate->GetMaterialId(
+                _sourceMeshPath);
+        if (materialPath == SdfPath()) {
+            // Leave the light "dirty" and return.
+            return;
+        } 
+        const HdSprim *sprim = 
+                sceneDelegate->GetRenderIndex().GetSprim(
+                        HdSprimTypeTokens->material,
+                        materialPath);
+        if (!sprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.            
+            return;
+        }
+        auto hdPrmanMaterial = static_cast<const HdPrmanMaterial*>(sprim);
+        _instanceMaterialId = hdPrmanMaterial->GetMaterialId();
+
+        if (_instanceMaterialId == riley::MaterialId::InvalidId()) {
+            TF_WARN("Could not find material for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    _sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Stay dirty. Return.
+            return;
+        }
+
+        // Note: If we've returned early, we'll need to revisit this light 
+        // once the other prims have been processed. This will continue 
+        // until we succeed (and "bits" is marked "clean", which happens 
+        // below). In the meshlight case, we're synthesizing the 
+        // dependencies, so we know we'll succeed quickly. However, misuse 
+        // of this code might result in a loop.
+    }
+
     std::vector<riley::ShadingNode> lightNodes;
 
-    if (TfGetEnvSetting(HD_PRMAN_ENABLE_LIGHT_MATERIAL_NETWORKS)) {
-        _PopulateNodesFromMaterialResource(
-            sceneDelegate, id, HdMaterialTerminalTokens->light, &lightNodes);
-    } else {
-        _PopulateNodeFromLightParams(
-            sceneDelegate, id, _hdLightType, &lightNodes);
-    }
+    _PopulateNodesFromMaterialResource(
+        sceneDelegate, id, HdMaterialTerminalTokens->light, &lightNodes);
 
     if (lightNodes.empty() || lightNodes.back().name.Empty()) {
         TF_WARN("Could not populate shading nodes for light '%s'. Skipping.",
@@ -979,20 +615,17 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
     geomMat.SetScale(geomScale);
 
-    // adjust orientation to make prman match the USD spec
-    // TODO: Add another orientMat for PxrEnvDayLight when supported
+    // Adjust orientation to make prman match the USD spec.
+    // TODO: Add another orientMat for PxrEnvDayLight when supported.
     GfMatrix4d orientMat(1.0);
-    if (lightNode.name == us_PxrDomeLight)
-    {
+    if (lightNode.name == us_PxrDomeLight) {
         // Transform Dome to match OpenEXR spec for environment maps
         // Rotate -90 X, Rotate 90 Y
         orientMat = GfMatrix4d(0.0, 0.0, -1.0, 0.0, 
                                -1.0, 0.0, 0.0, 0.0, 
                                0.0, 1.0, 0.0, 0.0, 
                                0.0, 0.0, 0.0, 1.0);
-    }
-    else
-    {
+    } else if (lightNode.name != us_PxrMeshLight) {
         // Transform lights to match correct orientation
         // Scale -1 Z, Rotate 180 Z
         orientMat = GfMatrix4d(-1.0, 0.0, 0.0, 0.0, 
@@ -1000,7 +633,6 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                                0.0, 0.0, -1.0, 0.0, 
                                0.0, 0.0, 0.0, 1.0);
     }
-
     geomMat = orientMat * geomMat;
 
     for (size_t i=0; i < xf.count; ++i) {
@@ -1012,14 +644,16 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Instance attributes.
     attrs.SetInteger(RixStr.k_lighting_mute, !sceneDelegate->GetVisible(id));
 
-    // Light instance
+    // Coordsys.
     riley::CoordinateSystemList const coordsysList = {
                              unsigned(coordsysIds.size()), coordsysIds.data()};
+
+    // Light instance.
     _instanceId = riley->CreateLightInstance(
         riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
-        riley::GeometryPrototypeId::InvalidId(), // no group
-        geometryPrototypeId, // No geo id, unless this is a mesh light.
-        instanceMaterialId, // No material id, unless this is a mesh light.
+        _groupPrototypeId,
+        _geometryPrototypeId, // No geo id, unless this is a mesh light.
+        _instanceMaterialId, // No material id, unless this is a mesh light.
         _shaderId,
         coordsysList,
         xform,

@@ -1537,6 +1537,409 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         _VerifyApplyAndRemoveAPIInstance(
             primV0, expectedMultiApplyVersion2Info, "foo")
 
+    def test_APISchemaVersionConflicts(self):
+        """Tests the handling of API schema version conflicts in composed 
+           API schema definitions"""        
+        stage = Usd.Stage.CreateInMemory()
+
+        def _MakeNewPrimPath() :
+            _MakeNewPrimPath.primNum += 1
+            return "/Prim" + str(_MakeNewPrimPath.primNum)
+        _MakeNewPrimPath.primNum = 0
+
+        # Define a prim with no type that we'll apply API schemas to. 
+        prim = stage.DefinePrim(_MakeNewPrimPath())
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+
+        # Apply version 1 of the single apply API. Authored and composed API
+        # schemas will just have this API.
+        self.assertTrue(prim.ApplyAPI("TestVersionedSingleApplyAPI_1"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_1"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr1"])
+
+        # Now apply version 0 and version 2 of the single apply API 
+        # All three versions will be in the authored API schemas.
+        # But the composed API schemas will only have version 1 due as we only
+        # allow one version of a schema from a family to be coposed into a prim.
+        self.assertTrue(prim.ApplyAPI("TestVersionedSingleApplyAPI"))
+        self.assertTrue(prim.ApplyAPI("TestVersionedSingleApplyAPI_2"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_1", 
+             "TestVersionedSingleApplyAPI",
+             "TestVersionedSingleApplyAPI_2"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr1"])
+
+        # Now apply version 0 and version 2 of the multiple apply API with 
+        # different instance names.
+        # These both are added to the authored and composed API schemas. Even
+        # though they are different versions of the same family, the differing
+        # instance names cause this to not be a version conflict.
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI", "foo"))
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI_2", "bar"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_1", 
+             "TestVersionedSingleApplyAPI",
+             "TestVersionedSingleApplyAPI_2",
+             "TestVersionedMultiApplyAPI:foo",
+             "TestVersionedMultiApplyAPI_2:bar"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI:foo",
+             "TestVersionedMultiApplyAPI_2:bar"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:bar:m_attr2",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        # Now apply version 1 of the multiple apply API with the same instance 
+        # names as above.
+        # These will be added to the authored API schemas but will be skipped
+        # in the composed API schemas as they conflict with versions of the 
+        # schema family applied with the same instance names.
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI_1", "foo"))
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI_1", "bar"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_1", 
+             "TestVersionedSingleApplyAPI",
+             "TestVersionedSingleApplyAPI_2",
+             "TestVersionedMultiApplyAPI:foo",
+             "TestVersionedMultiApplyAPI_2:bar",
+             "TestVersionedMultiApplyAPI_1:foo",
+             "TestVersionedMultiApplyAPI_1:bar"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI:foo",
+             "TestVersionedMultiApplyAPI_2:bar"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:bar:m_attr2",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        # Define a new prim with a type that already has built-in API schemas.
+        # The composed built-in schemas for this prim are version 1 of the
+        # single apply API schema and version 2 of the multi apply schema with
+        # the instance "foo".
+        prim = stage.DefinePrim(_MakeNewPrimPath(), "TestPrimWithAPIBuiltins")
+        self.assertTrue(prim)
+        self.assertTrue(prim.IsA("TestPrimWithAPIBuiltins"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI_2:foo"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:foo:m_attr2",
+             "s_attr1"])
+        
+        # Apply version 2 of the single apply API schema and version 0 of the 
+        # multi apply schema with the instance "foo".
+        # These schemas will show up in the authored API schemas but will not
+        # be added to the composed API schemas as their versions conflict with
+        # the existing built-in API schema from the prim type.
+        self.assertTrue(prim.ApplyAPI("TestVersionedSingleApplyAPI_2"))
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI", "foo"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_2",
+             "TestVersionedMultiApplyAPI:foo"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI_2:foo"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:foo:m_attr2",
+             "s_attr1"])
+
+        # Now apply version 0 of the multi apply schema with instance "bar". 
+        # This schema will show up in both the authored and composed API schemas
+        # because the instance name is different than the built-in schema's 
+        # instance name so it is not considered a version conflict.
+        self.assertTrue(prim.ApplyAPI("TestVersionedMultiApplyAPI", "bar"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestVersionedSingleApplyAPI_2",
+             "TestVersionedMultiApplyAPI:foo",
+             "TestVersionedMultiApplyAPI:bar"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedMultiApplyAPI:bar",
+             "TestVersionedSingleApplyAPI_1",
+             "TestVersionedMultiApplyAPI_2:foo"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:bar:m_attr",
+             "multi:foo:m_attr2",
+             "s_attr1"])
+
+        # Define another new prim with no type.
+        prim = stage.DefinePrim(_MakeNewPrimPath())
+        self.assertTrue(prim)
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), [])
+        self.assertEqual(prim.GetAppliedSchemas(), [])
+
+        # Apply TestAPIWithAPIBuiltins1_API which includes others of our 
+        # versioned schemas as built-ins. 
+        self.assertTrue(prim.ApplyAPI("TestAPIWithAPIBuiltins1_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestAPIWithAPIBuiltins1_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestAPIWithAPIBuiltins1_API",
+                "TestVersionedSingleApplyAPI_1",
+                "TestVersionedMultiApplyAPI:foo"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr1",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        # Now apply TestAPIWithAPIBuiltins2_API which also includes other
+        # versioned built-in API schemas.
+        # One of these included schemas is a version conflict with the schemas
+        # included by TestAPIWithAPIBuiltins1_API so ALL schemas that would be
+        # included by TestAPIWithAPIBuiltins2_API are skipped in the composed
+        # API schemas.
+        self.assertTrue(prim.ApplyAPI("TestAPIWithAPIBuiltins2_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestAPIWithAPIBuiltins1_API",
+             "TestAPIWithAPIBuiltins2_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestAPIWithAPIBuiltins1_API",
+                "TestVersionedSingleApplyAPI_1",
+                "TestVersionedMultiApplyAPI:foo"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr1",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        # Now apply TestAPIWithAPIBuiltins3_API which also includes other
+        # versioned built-in API schemas.
+        # At least one of these new schemas would have version conflict with the
+        # schemas from TestAPIWithAPIBuiltins2_API, but since 
+        # TestAPIWithAPIBuiltins2_API is excluded because of its own conflicts 
+        # (and there are no conflicts with TestAPIWithAPIBuiltins1_API's 
+        # schemas), the schemas from TestAPIWithAPIBuiltins3_API are composed in.
+        self.assertTrue(prim.ApplyAPI("TestAPIWithAPIBuiltins3_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestAPIWithAPIBuiltins1_API",
+             "TestAPIWithAPIBuiltins2_API",
+             "TestAPIWithAPIBuiltins3_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestAPIWithAPIBuiltins1_API",
+                "TestVersionedSingleApplyAPI_1",
+                "TestVersionedMultiApplyAPI:foo",
+             "TestAPIWithAPIBuiltins3_API",
+                "TestVersionedMultiApplyAPI_2:bar",
+                "TestVersionedMultiApplyAPI_2:baz"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr1",
+             "b_attr3",
+             "multi:bar:m_attr2",
+             "multi:baz:m_attr2",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        # Now remove TestAPIWithAPIBuiltins1_API
+        # This removes the version conflict for the schemas from 
+        # TestAPIWithAPIBuiltins2_API so now those do appear in the composed
+        # API schemas. However, now that TestAPIWithAPIBuiltins2_API's schemas
+        # are included, one of the schemas from TestAPIWithAPIBuiltins3_API 
+        # causes a version conflict so all of TestAPIWithAPIBuiltins3_API's
+        # schemas are excluded from the composed API schemas.
+        self.assertTrue(prim.RemoveAPI("TestAPIWithAPIBuiltins1_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestAPIWithAPIBuiltins2_API",
+             "TestAPIWithAPIBuiltins3_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestAPIWithAPIBuiltins2_API",
+                "TestVersionedMultiApplyAPI:bar",
+                "TestVersionedSingleApplyAPI_2"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr2",
+             "multi:bar:m_attr",
+             "s_attr2"])
+
+        # Now remove TestAPIWithAPIBuiltins2_API.
+        # This removes the version conflict for the schemas from 
+        # TestAPIWithAPIBuiltins3_API so now those do appear in the composed
+        # API schemas again.
+        self.assertTrue(prim.RemoveAPI("TestAPIWithAPIBuiltins2_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestAPIWithAPIBuiltins3_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestAPIWithAPIBuiltins3_API",
+                "TestVersionedMultiApplyAPI_2:bar",
+                "TestVersionedMultiApplyAPI_2:baz"])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr3",
+             "multi:bar:m_attr2",
+             "multi:baz:m_attr2"])
+
+        # All of the following are examples of typed and API schema definitions
+        # that are defined with internal version conflicts among their 
+        # built-ins. These cases verify that conflicting API schemas are skipped
+        # in these definitions.
+        prim = stage.DefinePrim(
+            _MakeNewPrimPath(), "TestPrimWithAPIVersionConflict1")
+        self.assertTrue(prim)
+        self.assertTrue(prim.IsA("TestPrimWithAPIVersionConflict1"))
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI",
+             # Conflict: "TestVersionedSingleApplyAPI_1",
+             # Conflict: "TestVersionedSingleApplyAPI_2",
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr"])
+
+        prim = stage.DefinePrim(
+            _MakeNewPrimPath(), "TestPrimWithAPIVersionConflict2")
+        self.assertTrue(prim)
+        self.assertTrue(prim.IsA("TestPrimWithAPIVersionConflict2"))
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestVersionedSingleApplyAPI_1",
+             # Conflict: "TestVersionedSingleApplyAPI",
+             # Conflict: "TestVersionedSingleApplyAPI_2",
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr1"])
+
+        prim = stage.DefinePrim(_MakeNewPrimPath(), "")
+        self.assertTrue(prim)
+        self.assertTrue(
+            prim.ApplyAPI("TestSingleApplyWithAPIVersionConflict1_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict1_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict1_API",
+                "TestVersionedSingleApplyAPI",
+                # Conflict: "TestVersionedSingleApplyAPI_1",
+                # Conflict: "TestVersionedSingleApplyAPI_2",
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr"])
+
+        prim = stage.DefinePrim(_MakeNewPrimPath(), "")
+        self.assertTrue(prim)
+        self.assertTrue(
+            prim.ApplyAPI("TestSingleApplyWithAPIVersionConflict2_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict2_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict2_API",
+                "TestVersionedSingleApplyAPI_1",
+                # Conflict: "TestVersionedSingleApplyAPI",
+                # Conflict: "TestVersionedSingleApplyAPI_2",
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["s_attr1"])
+
+        prim = stage.DefinePrim(_MakeNewPrimPath(), "")
+        self.assertTrue(prim)
+        self.assertTrue(
+            prim.ApplyAPI("TestSingleApplyWithAPIVersionConflict3_API"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict3_API"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestSingleApplyWithAPIVersionConflict3_API",
+                "TestAPIWithAPIBuiltins1_API",
+                    "TestVersionedSingleApplyAPI_1",
+                    "TestVersionedMultiApplyAPI:foo",
+                # Conflict: "TestAPIWithAPIBuiltins2_API",
+                    # Conflict: "TestVersionedMultiApplyAPI:bar",
+                    # Conflict: "TestVersionedSingleApplyAPI_2"
+                "TestAPIWithAPIBuiltins3_API",
+                    "TestVersionedMultiApplyAPI_2:bar",
+                    "TestVersionedMultiApplyAPI_2:baz"
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["b_attr1",
+             "b_attr3",
+             "multi:bar:m_attr2",
+             "multi:baz:m_attr2",
+             "multi:foo:m_attr",
+             "s_attr1"])
+
+        prim = stage.DefinePrim(_MakeNewPrimPath(), "")
+        self.assertTrue(prim)
+        self.assertTrue(
+            prim.ApplyAPI("TestMultiApplyWithAPIVersionConflict_API", "bar"))
+        self.assertEqual(prim.GetPrimTypeInfo().GetAppliedAPISchemas(), 
+            ["TestMultiApplyWithAPIVersionConflict_API:bar"])
+        self.assertEqual(prim.GetAppliedSchemas(), 
+            ["TestMultiApplyWithAPIVersionConflict_API:bar",
+                "TestVersionedMultiApplyAPI_1:bar", 
+                # Conflict: "TestVersionedMultiApplyAPI_2:bar", 
+                "TestVersionedMultiApplyAPI_2:bar:foo",
+                # Conflict: "TestVersionedMultiApplyAPI:bar:foo"
+            ])
+        self.assertEqual(prim.GetPropertyNames(), 
+            ["multi:bar:foo:m_attr2",
+             "multi:bar:m_attr1"])
+
+    def test_AutoApplyAPI(self):
+        """Tests versioning behavior with auto-apply API schemas"""        
+
+        # Verify the auto-apply API schemas setup for this test.
+        # We have three versions of the same schema family:
+        #   Version 0 - TestVersionedAutoApplyAPI
+        #   Version 2 - TestVersionedAutoApplyAPI_2
+        #   Version 10 - TestVersionedAutoApplyAPI_10
+        #
+        # These versions were chosen as the version order, 10 > 2 > 0, is 
+        # different than the lexicographical order of the suffixes, 
+        # "_2" > "_10" > "".
+        # 
+        # All three versions of the schema are set up to auto apply to 
+        # version 1 of the BasicVersioned typed schema. Only version 0 
+        # of the auto-apply schema is setup to auto-apply to version 0
+        # of the BasicVersioned typed schema.
+        autoApplySchemas = Usd.SchemaRegistry.GetAutoApplyAPISchemas()
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI"],
+            ["TestBasicVersioned", "TestBasicVersioned_1"])
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI_2"],
+            ["TestBasicVersioned_1"])
+        self.assertEqual(autoApplySchemas["TestVersionedAutoApplyAPI_10"],
+            ["TestBasicVersioned_1"])
+
+        # Create a prim typed with each version of the basic IsA schema.
+        stage = Usd.Stage.CreateInMemory()
+        primV0 = stage.DefinePrim("/Prim", "TestBasicVersioned")
+        primV1 = stage.DefinePrim("/Prim1", "TestBasicVersioned_1")
+        primV2 = stage.DefinePrim("/Prim2", "TestBasicVersioned_2")
+
+        self.assertTrue(primV0)
+        self.assertTrue(primV1)
+        self.assertTrue(primV2)
+
+        self.assertTrue(primV0.IsA(self.BasicVersion0Type))
+        self.assertTrue(primV1.IsA(self.BasicVersion1Type))
+        self.assertTrue(primV2.IsA(self.BasicVersion2Type))
+
+        # TestBasicVersioned has only version 0 of TestVersionedAutoApplyAPI
+        # auto-applied, so its the only API schema that applied to it.
+        self.assertEqual(primV0.GetAppliedSchemas(), 
+            ["TestVersionedAutoApplyAPI"])
+        self.assertEqual(primV0.GetPropertyNames(), 
+            ["a_attr"])
+
+        # TestBasicVersioned_1 has all three versions of 
+        # TestVersionedAutoApplyAPI applied. In this case only the latest 
+        # version of the schema family is applied which is version 10. 
+        self.assertEqual(primV1.GetAppliedSchemas(), 
+            ["TestVersionedAutoApplyAPI_10"])
+        self.assertEqual(primV1.GetPropertyNames(), 
+            ["a_attr10"])
+
+        # TestBasicVersioned_2 has none of the versions of 
+        # TestVersionedAutoApplyAPI explicitly applied. This case proves that
+        # the auto-applied schemas of the earlier versions of TestBasicVersioned
+        # do not automatically propagate to this later version.
+        self.assertEqual(primV2.GetAppliedSchemas(), 
+            [])
+        self.assertEqual(primV2.GetPropertyNames(), 
+            [])
+
 
 if __name__ == "__main__":
     unittest.main()

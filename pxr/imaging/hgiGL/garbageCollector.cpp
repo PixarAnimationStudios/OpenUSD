@@ -59,9 +59,8 @@ static void _EmptyTrash(std::vector<std::vector<HgiHandle<T>>*>* list) {
     }
 }
 
-HgiGLGarbageCollector::HgiGLGarbageCollector(HgiGL* hgi)
-    : _hgi(hgi)
-    , _isDestroying(false)
+HgiGLGarbageCollector::HgiGLGarbageCollector()
+    : _isDestroying(false)
 {
 }
 

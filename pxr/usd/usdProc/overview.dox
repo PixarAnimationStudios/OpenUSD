@@ -2,7 +2,6 @@
 \page usdProc_page_front UsdProc : USD Schemas for Procedurals
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdProc : USD Schemas for Procedurals
-\publicLib
 \endif
 
 \section usdProc_overview Overview

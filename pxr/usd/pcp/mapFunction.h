@@ -290,6 +290,13 @@ private:
             return !(*this == other);
         }
 
+        template <class HashState>
+        friend void TfHashAppend(HashState &h, _Data const &data){
+            h.Append(data.hasRootIdentity);
+            h.Append(data.numPairs);
+            h.AppendRange(std::begin(data), std::end(data));
+        }
+
         union {
             PathPair localPairs[_MaxLocalPairs > 0 ? _MaxLocalPairs : 1];
             std::shared_ptr<PathPair> remotePairs;
@@ -299,6 +306,14 @@ private:
         bool hasRootIdentity = false;
     };
 
+    // Specialize TfHashAppend for PcpMapFunction.
+    template <typename HashState>
+    friend inline
+    void TfHashAppend(HashState& h, const PcpMapFunction& x){
+        h.Append(x._data);
+        h.Append(x._offset);
+    }
+
     _Data _data;
     SdfLayerOffset _offset;
 };
@@ -307,7 +322,7 @@ private:
 inline
 size_t hash_value(const PcpMapFunction& x)
 {
-    return x.Hash();
+    return TfHash{}(x);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

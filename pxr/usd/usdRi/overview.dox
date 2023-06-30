@@ -2,7 +2,6 @@
 \page usdRi_page_front UsdRi: USD Renderman Schemas
 \if ( PIXAR_MFB_BUILD )
 \mainpage  UsdRi: USD Renderman Schemas
-\publicLib
 \endif
 
 \section usdRi_overview Overview

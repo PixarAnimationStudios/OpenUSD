@@ -25,6 +25,7 @@
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/coordSys.h"
+#include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/mesh.h"
 #include "pxr/imaging/hd/basisCurves.h"
@@ -235,6 +236,29 @@ private:
     Hd_NullMaterial &operator =(const Hd_NullMaterial &) = delete;
 };
 
+class Hd_NullLight final : public HdLight {
+public:
+    Hd_NullLight(SdfPath const& id) : HdLight(id) {}
+    virtual ~Hd_NullLight() = default;
+
+    virtual void Sync(HdSceneDelegate *sceneDelegate,
+                      HdRenderParam   *renderParam,
+                      HdDirtyBits     *dirtyBits) override
+    {
+        *dirtyBits = HdLight::Clean;
+    }
+
+    virtual HdDirtyBits GetInitialDirtyBitsMask() const override
+    {
+        return HdLight::AllDirty;
+    }
+
+private:
+    Hd_NullLight()                                 = delete;
+    Hd_NullLight(const Hd_NullLight &)             = delete;
+    Hd_NullLight &operator =(const Hd_NullLight &) = delete;
+};
+
 class Hd_NullCoordSys final : public HdCoordSys {
 public:
     Hd_NullCoordSys(SdfPath const& id) : HdCoordSys(id) {}
@@ -290,6 +314,7 @@ const TfTokenVector Hd_UnitTestNullRenderDelegate::SUPPORTED_SPRIM_TYPES =
 {
     HdPrimTypeTokens->camera,
     HdPrimTypeTokens->coordSys,
+    HdPrimTypeTokens->domeLight,
     HdPrimTypeTokens->material
 };
 
@@ -369,6 +394,8 @@ Hd_UnitTestNullRenderDelegate::CreateSprim(TfToken const& typeId,
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(sprimId);
+    } else if (typeId == HdPrimTypeTokens->domeLight) {
+        return new Hd_NullLight(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new Hd_NullCoordSys(sprimId);
     } else if (typeId == HdPrimTypeTokens->camera) {
@@ -384,6 +411,8 @@ Hd_UnitTestNullRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
 {
     if (typeId == HdPrimTypeTokens->material) {
         return new Hd_NullMaterial(SdfPath::EmptyPath());
+    } else if (typeId == HdPrimTypeTokens->domeLight) {
+        return new Hd_NullLight(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->coordSys) {
         return new Hd_NullCoordSys(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->camera) {

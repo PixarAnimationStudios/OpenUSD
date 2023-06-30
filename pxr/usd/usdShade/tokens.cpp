@@ -57,6 +57,13 @@ UsdShadeTokensType::UsdShadeTokensType() :
     universalSourceType("", TfToken::Immortal),
     volume("volume", TfToken::Immortal),
     weakerThanDescendants("weakerThanDescendants", TfToken::Immortal),
+    ConnectableAPI("ConnectableAPI", TfToken::Immortal),
+    CoordSysAPI("CoordSysAPI", TfToken::Immortal),
+    Material("Material", TfToken::Immortal),
+    MaterialBindingAPI("MaterialBindingAPI", TfToken::Immortal),
+    NodeDefAPI("NodeDefAPI", TfToken::Immortal),
+    NodeGraph("NodeGraph", TfToken::Immortal),
+    Shader("Shader", TfToken::Immortal),
     allTokens({
         allPurpose,
         bindMaterialAs,
@@ -88,7 +95,14 @@ UsdShadeTokensType::UsdShadeTokensType() :
         universalRenderContext,
         universalSourceType,
         volume,
-        weakerThanDescendants
+        weakerThanDescendants,
+        ConnectableAPI,
+        CoordSysAPI,
+        Material,
+        MaterialBindingAPI,
+        NodeDefAPI,
+        NodeGraph,
+        Shader
     })
 {
 }

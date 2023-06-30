@@ -37,10 +37,9 @@ import sys, os, difflib, unittest, platform
 from pxr import Tf, Sdf
 
 # Default encoding on Windows in python 3+ is not UTF-8, but it is on Linux &
-# Mac.  Provide a wrapper here so we specify that in that case.  Python 2.x does
-# not support an 'encoding' argument.
+# Mac.  Provide a wrapper here so we specify that in that case.
 def _open(*args, **kw):
-    if sys.version_info.major >= 3 and platform.system() == "Windows":
+    if platform.system() == "Windows":
         kw['encoding'] = 'utf8'
         return open(*args, **kw)
     else:
@@ -65,6 +64,11 @@ class TestSdfParsing(unittest.TestCase):
         # This will mean that your new test runs first and you can spot
         # failures much quicker.
         testFiles = '''
+        216_bad_variant_in_relocates_path.sdf
+        215_bad_variant_in_specializes_path.sdf
+        214_bad_variant_in_inherits_path.sdf
+        213_bad_variant_in_payload_path.sdf
+        212_bad_variant_in_reference_path.sdf
         211_bad_authored_opaque_attributes.sdf
         210_opaque_attributes.sdf
         209_bad_escaped_string4.sdf

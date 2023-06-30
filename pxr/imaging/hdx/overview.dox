@@ -2,7 +2,6 @@
 \page hdx_page_front Hdx : Hydra extensions
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Hdx : Hydra extensions
-\publicLib
 \endif
 
 \anchor hdx_mainpage

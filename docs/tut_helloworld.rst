@@ -43,13 +43,13 @@ Use :ref:`toolset:usdview` to visualize and inspect the stage.
 
       $ usdview HelloWorld.usda
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368705904/HelloWorld_Sphere_1.png
+   .. image:: http://openusd.org/images/tut_helloworld_sphere_1.png
 
 #. You can refine the geometry with the :menuselection:`View --> Complexity`
    menu item or use the hotkeys :kbd:`Ctrl-+` and :kbd:`Ctrl--` to increase or
    decrease the refinement.
 
-   .. image:: http://graphics.pixar.com/usd/docs/attachments/368705904/HelloWorld_Sphere_2.png
+   .. image:: http://openusd.org/images/tut_helloworld_sphere_2.png
 
 #. You can also bring up an embedded Python interpreter by pressing :kbd:`i` or
    using the :menuselection:`Window --> Interpreter` menu item. This interpreter

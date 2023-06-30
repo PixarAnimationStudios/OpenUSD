@@ -71,13 +71,13 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/scoped_ptr.hpp>
-
 #include <cstdio>
 #include <cmath>
 #include <iterator>
 #include <iostream>
 #include <limits>
+#include <new>
+#include <memory>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -511,6 +511,36 @@ static void testArray() {
         TF_AXIOM(array.cback() == "aloha");
         TF_AXIOM(aloha == "aloha");
     }
+    {
+        // Test that attempts to create overly large arrays throw
+        // std::bad_alloc
+
+        VtIntArray ia;
+        try {
+            ia.resize(std::numeric_limits<size_t>::max());
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
+
+        VtDoubleArray da;
+        try {
+            da.reserve(std::numeric_limits<size_t>::max() / 2);
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
+        
+        try {
+            da.resize(ia.max_size() + 1);
+            TF_FATAL_ERROR("Did not throw std::bad_alloc");
+        }
+        catch (std::bad_alloc const &) {
+            // pass
+        }
+    }
 }
 
 static void testArrayOperators() {
@@ -842,7 +872,7 @@ testDictionaryIterators()
         VtDictionary::iterator i = a.find(key2.first);
 
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             a.insert(std::make_pair(key3.first, key3.second));
         }
 
@@ -874,7 +904,7 @@ testDictionaryIterators()
         VtDictionary::const_iterator i = a.find(key2.first);
         VtDictionary::const_iterator j = expected.find(key2.first);
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             VtDictionary::value_type v(key3.first, key3.second);
             a.insert(v);
             expected.insert(v);
@@ -892,7 +922,7 @@ testDictionaryIterators()
         VtDictionary a = {key1, key2};
         VtDictionary::const_iterator i = a.find(key1.first);
         {
-            boost::scoped_ptr<VtDictionary> b(new VtDictionary(a));
+            std::unique_ptr<VtDictionary> b = std::make_unique<VtDictionary>(a);
             a[key1.first] = VtValue(12);
         }
 
@@ -1519,6 +1549,9 @@ static void
 testValueHash()
 {
     static_assert(VtIsHashable<int>(), "");
+    static_assert(VtIsHashable<double>(), "");
+    static_assert(VtIsHashable<GfVec3f>(), "");
+    static_assert(VtIsHashable<std::string>(), "");
     static_assert(!VtIsHashable<_Unhashable>(), "");
 
     VtValue vHashable{1};
@@ -1542,6 +1575,14 @@ testValueHash()
         TF_AXIOM(!m.IsClean());
         m.Clear();
     }
+}
+
+static void
+testArrayHash()
+{
+    VtArray<int> array = {1, 2, 3, 4, 5, 10, 100};
+    TF_AXIOM(TfHash()(array) == TfHash()(array));
+    TF_AXIOM(TfHash()(array) == TfHash()(VtArray<int>(array)));
 }
 
 template <class T>
@@ -1819,6 +1860,7 @@ int main(int argc, char *argv[])
 
     testValue();
     testValueHash();
+    testArrayHash();
     testTypedVtValueProxy();
     testErasedVtValueProxy();
     testCombinedVtValueProxies();

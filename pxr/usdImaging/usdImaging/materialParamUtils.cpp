@@ -25,24 +25,15 @@
 
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/imaging/hd/material.h"
-#include "pxr/usd/ar/packageUtils.h"
-#include "pxr/usd/ar/resolver.h"
-#include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdr/registry.h"
-#include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
-#include "pxr/usd/usd/attribute.h"
 #include "pxr/usd/usdShade/connectableAPI.h"
 #include "pxr/usd/usdShade/nodeDefAPI.h"
+#include "pxr/usd/usdShade/udimUtils.h"
 #include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-static const char UDIM_PATTERN[] = "<UDIM>";
-static const int UDIM_START_TILE = 1001;
-static const int UDIM_END_TILE = 1100;
-static const std::string::size_type UDIM_TILE_NUMBER_LENGTH = 4;
 
 // We need to find the first layer that changes the value
 // of the parameter so that we anchor relative paths to that.
@@ -95,60 +86,6 @@ _ResolveAssetSymlinks(const SdfAssetPath& assetPath)
     }
 }
 
-// Given the prefix (e.g., /someDir/myImage.) and suffix (e.g., .exr),
-// add integer between them and try to resolve. Iterate until
-// resolution succeeded.
-static
-std::string
-_ResolvedPathForFirstTile(
-    const std::pair<std::string, std::string> &splitPath,
-    SdfLayerHandle const &layer)
-{
-    TRACE_FUNCTION();
-
-    ArResolver& resolver = ArGetResolver();
-    
-    for (int i = UDIM_START_TILE; i < UDIM_END_TILE; i++) {
-        // Fill in integer
-        std::string path =
-            splitPath.first + std::to_string(i) + splitPath.second;
-        if (layer) {
-            // Deal with layer-relative paths.
-            path = SdfComputeAssetPathRelativeToLayer(layer, path);
-        }
-        // Resolve. Unlike the non-UDIM case, we do not resolve symlinks
-        // here to handle the case where the symlinks follow the UDIM
-        // naming pattern but the files that are linked do not. We'll
-        // let whoever consumes the pattern determine if they want to
-        // resolve symlinks themselves.
-        path = resolver.Resolve(path);
-        if (!path.empty())
-            return path;
-    }
-    return std::string();
-}
-
-// Split a udim file path such as /someDir/myFile.<UDIM>.exr into a
-// prefix (/someDir/myFile.) and suffix (.exr).
-//
-// We might support other patterns such as /someDir/myFile._MAPID_.exr
-// in the future.
-static
-std::pair<std::string, std::string>
-_SplitUdimPattern(const std::string &path)
-{
-    static const std::vector<std::string> patterns = { UDIM_PATTERN };
-
-    for (const std::string &pattern : patterns) {
-        const std::string::size_type pos = path.find(pattern);
-        if (pos != std::string::npos) {
-            return { path.substr(0, pos), path.substr(pos + pattern.size()) };
-        }
-    }
-
-    return { std::string(), std::string() };
-}
-
 // If given assetPath contains UDIM pattern, resolve the UDIM pattern.
 // Otherwise, leave assetPath untouched.
 static
@@ -160,60 +97,19 @@ _ResolveAssetAttribute(
 {
     TRACE_FUNCTION();
 
-    // See whether the asset path contains UDIM pattern.
-    const std::pair<std::string, std::string>
-        splitPath = _SplitUdimPattern(assetPath.GetAssetPath());
-
-    if (splitPath.first.empty() && splitPath.second.empty()) {
-        // Not a UDIM, resolve symlinks and exit.
+    // Not a UDIM, resolve symlinks and exit.
+    if (!UsdShadeUdimUtils::IsUdimIdentifier(assetPath.GetAssetPath())) {
         return _ResolveAssetSymlinks(assetPath);
     }
 
-    // Find first tile.
-    std::string firstTilePackage;
-    std::string firstTilePath =
-        _ResolvedPathForFirstTile(splitPath, _FindLayerHandle(attr, time));
-
-    if (firstTilePath.empty()) {
+    const std::string resolvedPath = 
+        UsdShadeUdimUtils::ResolveUdimPath(
+            assetPath.GetAssetPath(), _FindLayerHandle(attr, time));
+    // If the path doesn't resolve, return the input path
+    if (resolvedPath.empty()) {
         return assetPath;
     }
-
-    // If the resolved path of the first tile is located in a packaged asset,
-    // like /foo/bar/baz.usdz[myImage.0001.exr], we need to separate the
-    // paths to restore the "<UDIM>" prefix to the image filename in the
-    // code below, then join the path back togther before we return.
-    if (ArIsPackageRelativePath(firstTilePath)) {
-        std::tie(firstTilePackage, firstTilePath) =
-            ArSplitPackageRelativePathInner(firstTilePath);
-    }
-
-    // Construct the file path /filePath/myImage.<UDIM>.exr by using
-    // the first part from the first resolved tile, "<UDIM>" and the
-    // suffix.
-
-    const std::string &suffix = splitPath.second;
-
-    // Sanity check that the part after <UDIM> did not change.
-    if (!TfStringEndsWith(firstTilePath, suffix)) {
-        TF_WARN(
-            "Resolution of first udim tile gave ambigious result. "
-            "First tile for '%s' is '%s'.",
-            assetPath.GetAssetPath().c_str(), firstTilePath.c_str());
-        return assetPath;
-    }
-
-    // Length of the part /filePath/myImage.<UDIM>.exr.
-    const std::string::size_type prefixLength =
-        firstTilePath.size() - suffix.size() - UDIM_TILE_NUMBER_LENGTH;
-
-    firstTilePath = 
-        firstTilePath.substr(0, prefixLength) + UDIM_PATTERN + suffix;
-
-    return SdfAssetPath( 
-        assetPath.GetAssetPath(),
-        firstTilePackage.empty() ? 
-            firstTilePath : 
-            ArJoinPackageRelativePath(firstTilePackage, firstTilePath));
+    return SdfAssetPath(assetPath.GetAssetPath(), resolvedPath);
 }
 
 // Get the value from the usd attribute at given time. If it is an

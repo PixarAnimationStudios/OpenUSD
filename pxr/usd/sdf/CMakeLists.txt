@@ -163,6 +163,7 @@ pxr_library(sdf
 
     DOXYGEN_FILES
         overview.dox
+        doxygen/fileFormatPlugin.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires
@@ -192,6 +193,7 @@ pxr_test_scripts(
     testenv/testSdfAttribute.py
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
+    testenv/testSdfFileFormatCapabilities.py
     testenv/testSdfCopyUtils.py
     testenv/testSdfCustomLayerData.py
     testenv/testSdfDetachedLayer.py
@@ -209,6 +211,17 @@ pxr_test_scripts(
     testenv/testSdfSpecHash.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
+)
+
+pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX SdfPlugins
+    LIBRARIES
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestSdfFileFormatCapabilities.cpp
 )
 
 pxr_build_test_shared_lib(TestSdfNoAssetFileFormat
@@ -398,6 +411,11 @@ pxr_register_test(testSdfHardToReach
 pxr_register_test(testSdfFileFormat
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormat"
+)
+
+pxr_register_test(testSdfFileFormatCapabilities
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfFileFormatCapabilities"
 )
 
 pxr_register_test(testSdfLayer

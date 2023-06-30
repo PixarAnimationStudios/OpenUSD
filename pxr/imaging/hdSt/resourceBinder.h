@@ -26,8 +26,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/handle.h"
 #include "pxr/base/tf/token.h"
@@ -49,7 +49,7 @@ using HdStBufferArrayRangeSharedPtr =
 
 using HdStShaderCodeSharedPtr = std::shared_ptr<class HdStShaderCode>;
 using HdStShaderCodeSharedPtrVector = std::vector<HdStShaderCodeSharedPtr>;
-using HdBindingRequestVector = std::vector<class HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 using HgiTextureHandle = HgiHandle<class HgiTexture>;
 using HgiSamplerHandle = HgiHandle<class HgiSampler>;
@@ -192,7 +192,7 @@ public:
             std::vector<StructEntry> entries;
             int arraySize;
         };
-        typedef std::map<HdBinding, StructBlock> StructBlockBinding;
+        using StructBlockBinding = std::map<HdStBinding, StructBlock>;
 
         // -------------------------------------------------------------------
         // for a primvar in non-interleaved buffer array (Vertex, Element, ...)
@@ -203,7 +203,7 @@ public:
             TfToken name;
             TfToken dataType;
         };
-        typedef std::map<HdBinding, Primvar> PrimvarBinding;
+        using PrimvarBinding = std::map<HdStBinding, Primvar>;
 
         // -------------------------------------------------------------------
         // for a face-varying primvar in non-interleaved buffer array
@@ -214,7 +214,7 @@ public:
                 : Primvar(name, dataType), channel(channel) {}
             int channel;
         };
-        typedef std::map<HdBinding, FvarPrimvar> FvarPrimvarBinding;
+        using FvarPrimvarBinding = std::map<HdStBinding, FvarPrimvar>;
 
         // -------------------------------------------------------------------
         // for instance primvars
@@ -227,7 +227,7 @@ public:
             TfToken dataType;
             int level;
         };
-        typedef std::map<HdBinding, NestedPrimvar> NestedPrimvarBinding;
+        using NestedPrimvarBinding = std::map<HdStBinding, NestedPrimvar>;
 
         // -------------------------------------------------------------------
         // for shader parameter accessors
@@ -259,12 +259,13 @@ public:
                                                // material shader and for uv
                                                // and field textures.
             size_t arrayOfTexturesSize; // If the shaderParameterAccessor is 
-                                     // associated with an HdBinding of type 
+                                     // associated with an HdStBinding of type 
                                      // ARRAY_OF_TEXTURE_2D or 
                                      // BINDLESS_ARRAY_OF_TEXTURE_2D, this will 
                                      // indicate the size of the array.
         };
-        typedef std::map<HdBinding, ShaderParameterAccessor> ShaderParameterBinding;
+        using ShaderParameterBinding =
+                std::map<HdStBinding, ShaderParameterAccessor>;
 
         // -------------------------------------------------------------------
         // for specific buffer array (drawing coordinate, instance indices)
@@ -272,7 +273,7 @@ public:
             BindingDeclaration() {}
             BindingDeclaration(TfToken const &name,
                                TfToken const &dataType,
-                               HdBinding binding,
+                               HdStBinding binding,
                                bool isWritable = false)
                 : name(name)
                 , dataType(dataType)
@@ -281,7 +282,7 @@ public:
 
             TfToken name;
             TfToken dataType;
-            HdBinding binding;
+            HdStBinding binding;
             bool isWritable;
         };
 
@@ -328,8 +329,10 @@ public:
         BindingDeclaration culledInstanceIndexArrayBinding;
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
+        BindingDeclaration tessFactorsBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
+        BindingDeclaration indexBufferBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;
         std::vector<BindingDeclaration> fvarIndicesBindings;
 
@@ -349,7 +352,7 @@ public:
                          MetaData *metaDataOut,
                          MetaData::DrawingCoordBufferBinding const &dcBinding,
                          bool instanceDraw,
-                         HdBindingRequestVector const &customBindings,
+                         HdStBindingRequestVector const &customBindings,
                          HgiCapabilities const *capabilities);
 
     /// Assign all binding points used in computation.
@@ -394,7 +397,7 @@ public:
     HDST_API
     void GetBindingRequestBindingDesc(
                 HgiResourceBindingsDesc * bindingsDesc,
-                HdBindingRequest const & req) const;
+                HdStBindingRequest const & req) const;
 
     HDST_API
     void GetTextureBindingDesc(
@@ -417,9 +420,9 @@ public:
     ////////////////////////////////////////////////////////////
 
     HDST_API
-    void Bind(HdBindingRequest const& req) const;
+    void Bind(HdStBindingRequest const& req) const;
     HDST_API
-    void Unbind(HdBindingRequest const& req) const;
+    void Unbind(HdStBindingRequest const& req) const;
 
     /// bind/unbind BufferArray
     HDST_API
@@ -500,10 +503,8 @@ public:
     }
 
     /// Returns binding point.
-    /// XXX: exposed temporarily for drawIndirectResult
-    /// see Hd_IndirectDrawBatch::_BeginGPUCountVisibleInstances()
-    HdBinding GetBinding(TfToken const &name, int level=-1) const {
-        HdBinding binding;
+    HdStBinding GetBinding(TfToken const &name, int level=-1) const {
+        HdStBinding binding;
         TfMapLookup(_bindingMap, NameAndLevel(name, level), &binding);
         return binding;
     }
@@ -550,7 +551,7 @@ private:
                   (name == other.name && level < other.level);
         }
     };
-    typedef std::map<NameAndLevel, HdBinding> _BindingMap;
+    using _BindingMap = std::map<NameAndLevel, HdStBinding>;
     _BindingMap _bindingMap;
 };
 

@@ -167,21 +167,22 @@ class TestUsdSpecializes(unittest.TestCase):
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
 
-            # Try to add a local specialize path pointing to a prim outside the 
-            # scope of reference. This should fail because that path will not
-            # map across the reference edit target.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetSpecializes() \
-                            .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
+            # Add a local specialize path pointing to a prim outside the 
+            # scope of reference.  This is allowed, because unlike
+            # external references, internal references do not
+            # encapsulate namespace.
+            instancePrim.GetSpecializes() \
+                        .AddSpecialize("/Ref2/Class", Usd.ListPositionFrontOfPrependList)
 
+            expectedSpecializePaths.prependedItems = ["/Ref2/Class"]
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
 
-            # Remove the local specialize path. This should fail and raise an
-            # error again because the path will not map across the reference.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetSpecializes().RemoveSpecialize("/Ref2/Class")
+            # Remove the local specialize path. This should work.
+            instancePrim.GetSpecializes().RemoveSpecialize("/Ref2/Class")
 
+            expectedSpecializePaths.deletedItems = ["/Ref/Class", "/Class", "/Ref2/Class"]
+            expectedSpecializePaths.prependedItems = []
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
             
@@ -194,11 +195,11 @@ class TestUsdSpecializes(unittest.TestCase):
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
 
-            # Try to set unmappable specialize paths using the 
-            # SetSpecializes API, which should fail.
-            with self.assertRaises(Tf.ErrorException):
-                instancePrim.GetSpecializes().SetSpecializes(["/Ref2/Class"])
+            # Set specialize paths using the SetSpecializes API.
+            instancePrim.GetSpecializes().SetSpecializes(["/Ref2/Class"])
 
+            expectedSpecializePaths = Sdf.PathListOp()
+            expectedSpecializePaths.explicitItems = ["/Ref2/Class"]
             self.assertEqual(instancePrimSpec.GetInfo("specializes"),
                              expectedSpecializePaths)
 

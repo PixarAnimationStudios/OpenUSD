@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/enums.h"
-#include "pxr/imaging/hd/binding.h"
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
+#include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/declarePtrs.h"
@@ -69,7 +69,7 @@ public:
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
     HDST_API
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
     HDST_API
     HdSt_MaterialParamVector const& GetParams() const override;
 
@@ -78,7 +78,7 @@ public:
 
     /// Add a custom binding request for use when this shader executes.
     HDST_API
-    void AddBufferBinding(HdBindingRequest const& req);
+    void AddBufferBinding(HdStBindingRequest const& req);
 
     /// Remove \p name from custom binding.
     HDST_API
@@ -105,7 +105,7 @@ private:
     mutable size_t  _hash;
     mutable bool    _hashValid;
 
-    TfHashMap<TfToken, HdBindingRequest, TfToken::HashFunctor> _customBuffers;
+    TfHashMap<TfToken, HdStBindingRequest, TfToken::HashFunctor> _customBuffers;
 
     NamedTextureHandleVector _namedTextureHandles;
 

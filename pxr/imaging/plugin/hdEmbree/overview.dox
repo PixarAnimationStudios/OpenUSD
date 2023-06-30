@@ -5,7 +5,6 @@
 \page hdEmbree_page_front HdEmbree : Embree-based hydra renderer plugin.
 \if ( PIXAR_MFB_BUILD )
 \mainpage  HdEmbree : Embree-based hydra renderer plugin.
-\publicLib
 \endif
 
 \anchor hdEmbree_mainpage

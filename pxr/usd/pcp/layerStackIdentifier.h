@@ -176,19 +176,32 @@ private:
     size_t _hash;
 };
 
+template <typename HashState>
+inline void
+TfHashAppend(HashState& h, const PcpLayerStackIdentifier& x)
+{
+    h.Append(x.GetHash());
+}
+
+template <typename HashState>
+inline void
+TfHashAppend(HashState& h, const PcpLayerStackIdentifierStr& x)
+{
+    h.Append(x.GetHash());
+}
 
 inline
 size_t
 hash_value(const PcpLayerStackIdentifier& x)
 {
-    return x.GetHash();
+    return TfHash{}(x);
 }
 
 inline
 size_t
 hash_value(const PcpLayerStackIdentifierStr& x)
 {
-    return x.GetHash();
+    return TfHash{}(x);
 }
 
 PCP_API

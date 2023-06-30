@@ -248,6 +248,15 @@ VtIsKnownValueType()
     return Vt_KnownValueTypeDetail::GetIndex<T>() != -1;
 }
 
+// XXX: Works around an MSVC bug where constexpr functions cannot be used as the
+// condition in enable_if, fixed in MSVC 2022 version 14.33 1933 (version 17.3).
+// https://developercommunity.visualstudio.com/t/function-template-has-already-been-defined-using-s/833543
+template <class T>
+struct VtIsKnownValueType_Workaround
+{
+    static const bool value = VtIsKnownValueType<T>();
+};
+
 // None of the VT_VALUE_TYPES are value proxies.  We want to specialize these
 // templates here, since otherwise the VtIsTypedValueProxy will require a
 // complete type to check if it derives VtTypedValueProxyBase.

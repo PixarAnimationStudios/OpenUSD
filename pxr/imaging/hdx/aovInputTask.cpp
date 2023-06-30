@@ -228,6 +228,10 @@ HdxAovInputTask::_UpdateTexture(
         _GetHgi()->SubmitCmds(blitCmds.get());
         buffer->Unmap();
     } else {
+        // Destroy old texture
+        if(texture) {
+            _GetHgi()->DestroyTexture(&texture);
+        }
         // Create a new texture
         HgiTextureDesc texDesc;
         texDesc.debugName = "AovInput Texture";

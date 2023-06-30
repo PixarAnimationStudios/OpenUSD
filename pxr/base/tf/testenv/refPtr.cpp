@@ -163,11 +163,23 @@ static void TestNullptrComparisons()
     TF_AXIOM(NULL == p);
 }
 
+static void TestHash(){
+    TF_AXIOM(TfHash()(NodeRefPtr()) == TfHash()(NodeRefPtr(nullptr)));
+
+    {
+        NodeRefPtr p = Node::New();
+        TF_AXIOM(TfHash()(p) == TfHash()(p));
+        TF_AXIOM(TfHash()(p) == TfHash()(NodeRefPtr(p)));
+        TF_AXIOM(TfHash()(p) == TfHash()(p.operator->()));
+    }
+}
+
 static bool
 Test_TfRefPtr()
 {
     TestConversions();
     TestNullptrComparisons();
+    TestHash();
     
     NodeRefPtr chain1 = MakeChain(10);
     NodeRefPtr chain2 = MakeChain(5);

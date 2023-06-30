@@ -23,11 +23,12 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
+#include "pxr/imaging/hd/xformSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -36,15 +37,26 @@ namespace {
 bool
 _IsUsdInstance(HdContainerDataSourceHandle const &primSource)
 {
-    HdPathDataSourceHandle const pathDs =
-        HdPathDataSource::Cast(
-            primSource->Get(
-                UsdImagingNativeInstancingTokens->usdPrototypePath));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(primSource);
+    HdPathDataSourceHandle const pathDs = schema.GetNiPrototypePath();
     if (!pathDs) {
         return false;
     }
     const SdfPath usdPrototypePath = pathDs->GetTypedValue(0.0f);
     return !usdPrototypePath.IsEmpty();
+}
+
+HdContainerDataSourceHandle
+_ResetXformToIdentityDataSource()
+{
+    static HdMatrixDataSourceHandle const identity
+        = HdRetainedTypedSampledDataSource<GfMatrix4d>::New(
+            GfMatrix4d(1.0));
+    return HdXformSchema::Builder()
+        .SetMatrix(identity)
+        .SetResetXformStack(HdRetainedTypedSampledDataSource<bool>::New(true))
+        .Build();
 }
 
 HdContainerDataSourceHandle
@@ -62,7 +74,11 @@ _ComputeUnderlaySource(const SdfPath &prototypeRoot)
             HdInstancedBySchema::Builder()
                 .SetPaths(DataSource::New({ SdfPath::AbsoluteRootPath() }))
                 .SetPrototypeRoots(DataSource::New({ prototypeRoot }))
-                .Build()); 
+                .Build(),
+
+            // The prototypes should always be defined at the origin.
+            HdXformSchemaTokens->xform,
+            _ResetXformToIdentityDataSource());
 }
 
 }

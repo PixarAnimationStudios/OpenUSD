@@ -31,6 +31,7 @@
 #include "crateValueInliners.h"
 
 #include "pxr/base/arch/fileSystem.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -43,7 +44,6 @@
 #include "pxr/usd/sdf/types.h"
 
 #include <boost/container/flat_map.hpp>
-#include <boost/functional/hash.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/concurrent_unordered_set.h>
@@ -198,12 +198,12 @@ struct TimeSamples {
     }
 
     friend size_t hash_value(TimeSamples const &ts) {
-        size_t h = 0;
-        boost::hash_combine(h, ts.valueRep);
-        boost::hash_combine(h, ts.times);
-        boost::hash_combine(h, ts.values);
-        boost::hash_combine(h, ts.valuesFileOffset);
-        return h;
+        return TfHash::Combine(
+            ts.valueRep,
+            ts.times,
+            ts.values,
+            ts.valuesFileOffset
+        );
     }
 
     friend std::ostream &
@@ -271,7 +271,7 @@ private:
 struct _Hasher {
     template <class T>
     inline size_t operator()(const T &val) const {
-        return boost::hash<T>()(val);
+        return TfHash()(val);
     }
 };
 
@@ -350,9 +350,10 @@ private:
                     return !(*this == other);
                 }
                 friend size_t tbb_hasher(ZeroCopySource const &z) {
-                    size_t seed = reinterpret_cast<uintptr_t>(z._addr);
-                    boost::hash_combine(seed, z._numBytes);
-                    return seed;
+                    return TfHash::Combine(
+                        reinterpret_cast<uintptr_t>(z._addr),
+                        z._numBytes
+                    );
                 }
                 
                 // Return true if the refcount is nonzero.
@@ -590,9 +591,10 @@ public:
         }
         friend size_t hash_value(const Field &f) {
             _Hasher h;
-            size_t result = h(f.tokenIndex);
-            boost::hash_combine(result, f.valueRep);
-            return result;
+            return TfHash::Combine(
+                h(f.tokenIndex),
+                f.valueRep
+            );
         }
         TokenIndex tokenIndex;
         ValueRep valueRep;
@@ -615,10 +617,11 @@ public:
         }
         friend size_t hash_value(Spec const &s) {
             _Hasher h;
-            size_t result = h(s.pathIndex);
-            boost::hash_combine(result, s.fieldSetIndex);
-            boost::hash_combine(result, s.specType);
-            return result;
+            return TfHash::Combine(
+                h(s.pathIndex),
+                s.fieldSetIndex,
+                s.specType
+            );
         }
         PathIndex pathIndex;
         FieldSetIndex fieldSetIndex;
@@ -652,10 +655,11 @@ public:
         }
         friend size_t hash_value(Spec_0_0_1 const &s) {
             _Hasher h;
-            size_t result = h(s.pathIndex);
-            boost::hash_combine(result, s.fieldSetIndex);
-            boost::hash_combine(result, s.specType);
-            return result;
+            return TfHash::Combine(
+                h(s.pathIndex),
+                s.fieldSetIndex,
+                s.specType
+            );
         }
         PathIndex pathIndex;
         FieldSetIndex fieldSetIndex;

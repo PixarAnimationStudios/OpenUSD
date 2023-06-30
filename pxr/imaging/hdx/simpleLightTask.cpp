@@ -360,7 +360,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
                 for (int shadowId = shadowStart; shadowId <= shadowEnd; 
                      ++shadowId) {
                     shadows->SetViewMatrix(shadowId,
-                        _glfSimpleLights[lightId].GetTransform());
+                        _glfSimpleLights[lightId].GetTransform().GetInverse());
                     shadows->SetProjectionMatrix(shadowId,
                         shadowMatrices[shadowId - shadowStart]);
                 }
@@ -411,9 +411,9 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
             HdBufferArrayUsageHint());
 
         _lightingShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             HdxSimpleLightTaskTokens->lightingContext,
-                             _lightingBar, /*interleaved=*/true));
+            HdStBindingRequest(HdStBinding::UBO, 
+                               HdxSimpleLightTaskTokens->lightingContext,
+                               _lightingBar, /*interleaved=*/true));
     }
   
     // Add lighting buffer sources
@@ -490,11 +490,11 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
 
     if (numLights != 0) {
         _lightingShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, 
-                             HdxSimpleLightTaskTokens->lightSource,
-                            _lightSourcesBar, /*interleaved=*/true, 
-                            /*writable*/false, numLights,
-                            /*concatenateNames*/true));
+            HdStBindingRequest(HdStBinding::UBO, 
+                               HdxSimpleLightTaskTokens->lightSource,
+                               _lightSourcesBar, /*interleaved=*/true, 
+                               /*writable*/false, numLights,
+                               /*concatenateNames*/true));
     }
 
     // Allocate shadows BAR if needed
@@ -525,10 +525,10 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
     
     if (numShadows != 0) {
         _lightingShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, HdxSimpleLightTaskTokens->shadow,
-                            _shadowsBar, /*interleaved=*/true, 
-                            /*writable*/false, numShadows, 
-                            /*concatenateNames*/true));
+            HdStBindingRequest(HdStBinding::UBO, HdxSimpleLightTaskTokens->shadow,
+                               _shadowsBar, /*interleaved=*/true, 
+                               /*writable*/false, numShadows, 
+                               /*concatenateNames*/true));
     }
 
     // Add light and shadow buffer sources
@@ -684,10 +684,10 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
 
         // Add buffer binding request
         _lightingShader->AddBufferBinding(
-            HdBindingRequest(HdBinding::UBO, TfToken("material"),
-                             _materialBar, /*interleaved=*/true, 
-                             /*writable*/false, /*arraySize*/0, 
-                             /*concatenateNames*/true));
+            HdStBindingRequest(HdStBinding::UBO, TfToken("material"),
+                               _materialBar, /*interleaved=*/true, 
+                               /*writable*/false, /*arraySize*/0, 
+                               /*concatenateNames*/true));
     }
     
     // Add material buffer sources

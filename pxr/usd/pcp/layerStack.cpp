@@ -172,6 +172,12 @@ _ApplyOwnedSublayerOrder(
     }
 }
 
+static bool
+_IsValidRelocatesPath(SdfPath const& path)
+{
+    return path.IsPrimPath() && !path.ContainsPrimVariantSelection();
+}
+
 void
 Pcp_ComputeRelocationsForLayerStack(
     const SdfLayerRefPtrVector & layers,
@@ -221,6 +227,30 @@ Pcp_ComputeRelocationsForLayerStack(
                 // Absolutize source/target paths.
                 SdfPath source = reloc->first .MakeAbsolutePath(primPath);
                 SdfPath target = reloc->second.MakeAbsolutePath(primPath);
+
+                // The SdfSchema should already enforce that these
+                // are valid paths for relocates, however we still
+                // double-check here to avoid problematic results
+                // under composition.
+                //
+                // XXX As with the case below, high-level code emits a
+                // warning in this case.  If we introduce a path to
+                // emit PcpErrors in this code, we'd use it here too.
+                if (!_IsValidRelocatesPath(source)) {
+                    TF_WARN("Ignoring invalid relocate source "
+                            "path <%s> in layer @%s@",
+                            source.GetText(),
+                            (*layer)->GetIdentifier().c_str());
+                    continue;
+                }
+                if (!_IsValidRelocatesPath(target)) {
+                    TF_WARN("Ignoring invalid relocate target "
+                            "path <%s> in layer @%s@",
+                            target.GetText(),
+                            (*layer)->GetIdentifier().c_str());
+                    continue;
+                }
+
                 if (source == target || source.HasPrefix(target)) {
                     // Skip relocations from a path P back to itself and
                     // relocations from a path P to an ancestor of P.

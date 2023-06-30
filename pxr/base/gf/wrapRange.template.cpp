@@ -31,6 +31,7 @@
 #include "pxr/base/gf/range{{ DIM }}{{ S[0] }}.h"
 {% endfor %}
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 #include "pxr/base/tf/pyContainerConversions.h"
@@ -67,7 +68,7 @@ static {{ RNG }}& __itruediv__({{ RNG }} &self, double value)
     return self /= value;
 }
 
-static size_t __hash__({{ RNG }} const &r) { return hash_value(r); }
+static size_t __hash__({{ RNG }} const &r) { return TfHash{}(r); }
 
 } // anonymous namespace 
 
@@ -83,6 +84,10 @@ void wrapRange{{ SUFFIX }}()
     cls
         .def(init<{{ RNG }}>())
         .def(init<{{ MINMAXPARM }}, {{ MINMAXPARM }}>())
+
+{% for S in SCALARS if S != SCL %}
+        .def(init<{{ RNGNAME(DIM, S) }}>())
+{% endfor %}
         
         .def(TfTypePythonClass())
 

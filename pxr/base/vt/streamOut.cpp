@@ -33,7 +33,7 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <iostream>
+#include <ostream>
 #include <numeric>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -88,24 +88,23 @@ namespace {
 void
 _StreamArrayRecursive(
     std::ostream& out,
-    VtStreamOutIterator* i,
     const Vt_ShapeData &shape,
+    TfFunctionRef<void(std::ostream&)> streamNextElem,
     size_t lastDimSize,
-    size_t *index,
     size_t dimension)
 {
     out << '[';
     if (dimension == shape.GetRank() - 1) {
         for (size_t j = 0; j < lastDimSize; ++j) {
             if (j) { out << ", "; }
-            i->Next(out);
+            streamNextElem(out);
         }
     }
     else {
         for (size_t j = 0; j < shape.otherDims[dimension]; ++j) {
             if (j) { out << ", "; }
             _StreamArrayRecursive(
-                out, i, shape, lastDimSize, index, dimension + 1);
+                out, shape, streamNextElem, lastDimSize, dimension + 1);
         }
     }
     out << ']';
@@ -113,14 +112,11 @@ _StreamArrayRecursive(
 
 }
 
-VtStreamOutIterator::~VtStreamOutIterator() { }
-
 void
 VtStreamOutArray(
-    VtStreamOutIterator* i,
-    size_t size,
+    std::ostream& out,
     const Vt_ShapeData* shapeData,
-    std::ostream& out)
+    TfFunctionRef<void(std::ostream&)> streamNextElem)
 {
     // Compute last dim size, and if size is not evenly divisible, output as
     // rank-1.
@@ -137,9 +133,8 @@ VtStreamOutArray(
         rank1.totalSize = shapeData->totalSize;
         shapeData = &rank1;
     }
-    
-    size_t index = 0;
-    _StreamArrayRecursive(out, i, *shapeData, lastDimSize, &index, 0);
+
+    _StreamArrayRecursive(out, *shapeData, streamNextElem, lastDimSize, 0);
 }
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

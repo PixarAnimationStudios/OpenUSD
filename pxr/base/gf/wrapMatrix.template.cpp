@@ -33,7 +33,7 @@
 {% block customIncludes %}
 {% endblock customIncludes %}
 
-#include "pxr/base/tf/py3Compat.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
@@ -61,45 +61,6 @@ namespace {
 
 ////////////////////////////////////////////////////////////////////////
 // Python buffer protocol support.
-
-#if PY_MAJOR_VERSION == 2
-// Python's getreadbuf interface function.
-static Py_ssize_t
-getreadbuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
-    if (segment != 0) {
-        // Always one-segment.
-        PyErr_SetString(PyExc_ValueError, "accessed non-existent segment");
-        return -1;
-    }
-    {{ MAT }} &mat = extract<{{ MAT }} &>(self);
-    *ptrptr = static_cast<void *>(mat.GetArray());
-    // Return size in bytes.
-    return sizeof({{ MAT }});
-}
-
-// Python's getwritebuf interface function.
-static Py_ssize_t
-getwritebuf(PyObject *self, Py_ssize_t segment, void **ptrptr) {
-    PyErr_SetString(PyExc_ValueError, "writable buffers supported only with "
-                    "new-style buffer protocol.");
-    return -1;
-}
-
-// Python's getsegcount interface function.
-static Py_ssize_t
-getsegcount(PyObject *self, Py_ssize_t *lenp) {
-    if (lenp)
-        *lenp = sizeof({{ MAT }});
-    return 1; // Always one contiguous segment.
-}
-
-// Python's getcharbuf interface function.
-static Py_ssize_t
-getcharbuf(PyObject *self, Py_ssize_t segment, const char **ptrptr) {
-    PyErr_SetString(PyExc_ValueError, "cannot treat binary data as text");
-    return -1;
-}
-#endif
 
 // Python's getbuffer interface function.
 static int
@@ -152,12 +113,6 @@ getbuffer(PyObject *self, Py_buffer *view, int flags) {
 // This structure serves to instantiate a PyBufferProcs instance with pointers
 // to the right buffer protocol functions.
 static PyBufferProcs bufferProcs = {
-#if PY_MAJOR_VERSION == 2
-    (readbufferproc) getreadbuf,   /*bf_getreadbuffer*/
-    (writebufferproc) getwritebuf, /*bf_getwritebuffer*/
-    (segcountproc) getsegcount,    /*bf_getsegcount*/
-    (charbufferproc) getcharbuf,   /*bf_getcharbuffer*/
-#endif
     (getbufferproc) getbuffer,
     (releasebufferproc) 0,
 };
@@ -267,7 +222,7 @@ struct {{ MAT }}_Pickle_Suite : boost::python::pickle_suite
     }
 };
 
-static size_t __hash__({{ MAT }} const &m) { return hash_value(m); }
+static size_t __hash__({{ MAT }} const &m) { return TfHash{}(m); }
 
 static boost::python::tuple get_dimension()
 {
@@ -389,12 +344,9 @@ void wrapMatrix{{ SUFFIX }}()
     
     // Install buffer protocol: set the tp_as_buffer slot to point to a
     // structure of function pointers that implement the buffer protocol for
-    // this type, and set the type flags to indicate that this type supports the
-    // buffer protocol.
+    // this type.
     auto *typeObj = reinterpret_cast<PyTypeObject *>(cls.ptr());
     typeObj->tp_as_buffer = &bufferProcs;
-    typeObj->tp_flags |= (TfPy_TPFLAGS_HAVE_NEWBUFFER |
-                          TfPy_TPFLAGS_HAVE_GETCHARBUFFER);
 
     if (!PyObject_HasAttrString(cls.ptr(), "__truediv__")) {
         // __truediv__ not added by .def( self / self ) above, which

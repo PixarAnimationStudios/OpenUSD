@@ -124,6 +124,19 @@ static void _TestComparisons()
     TF_AXIOM( !(NULL == x) );
 }
 
+static void _TestHash()
+{
+    TF_AXIOM(TfHash()(MonkeyInterfaceWeakPtr()) ==
+             TfHash()(MonkeyInterfaceWeakPtr(nullptr)));
+    {
+        Human h;
+        MonkeyInterfaceWeakPtr p(&h);
+        TF_AXIOM(TfHash()(p) == TfHash()(p));
+        TF_AXIOM(TfHash()(p) == TfHash()(MonkeyInterfaceWeakPtr(p)));
+    }
+}
+
+
 static bool
 Test_TfWeakPtr()
 {
@@ -173,6 +186,7 @@ Test_TfWeakPtr()
     delete human;
     TF_AXIOM(!hPtr);
     _TestComparisons();
+    _TestHash();
 
     return true;
 }

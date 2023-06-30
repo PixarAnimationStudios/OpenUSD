@@ -190,6 +190,10 @@ void wrapUsdRenderPass()
 namespace {
 
 WRAP_CUSTOM {
+    _class
+    .def("GetRenderVisibilityCollectionAPI",
+             &UsdRenderPass::GetRenderVisibilityCollectionAPI)
+    ;
 }
 
 }

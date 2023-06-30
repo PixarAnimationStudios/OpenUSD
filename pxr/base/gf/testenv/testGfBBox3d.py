@@ -170,6 +170,15 @@ class TestGfBBox3d(unittest.TestCase):
 
         self.assertEqual(b4, eval(repr(b4)))
 
+    def test_Hash(self):
+        b = Gf.BBox3d(
+            Gf.Range3d((-1, -2, -3), (2, 3, 4)),
+            Gf.Matrix4d(1.0)
+        )
+
+        self.assertEqual(hash(b), hash(b))
+        self.assertEqual(hash(b), hash(Gf.BBox3d(b)))
+
 if __name__ == '__main__':
     unittest.main()
 

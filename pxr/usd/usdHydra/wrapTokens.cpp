@@ -93,4 +93,5 @@ void wrapUsdHydraTokens()
     _AddToken(cls, "uv", UsdHydraTokens->uv);
     _AddToken(cls, "wrapS", UsdHydraTokens->wrapS);
     _AddToken(cls, "wrapT", UsdHydraTokens->wrapT);
+    _AddToken(cls, "HydraGenerativeProceduralAPI", UsdHydraTokens->HydraGenerativeProceduralAPI);
 }

@@ -1,0 +1,22 @@
+#sdf 1.4.32
+(
+    """
+    This test exercises a sub-root, internal reference within
+    a variant to another prim within that variant.
+    """
+)
+
+def "ModelRef" (
+    prepend references = @./model.sdf@</Model>
+)
+{
+}
+
+def "ModelRefWithChildren" (
+    prepend references = @./model.sdf@</Model>
+    variants = {
+        string vset = "with_children"
+    }
+)
+{
+}

@@ -64,6 +64,10 @@ static std::string _Repr(GfFrustum const &self)
     return prefix + TfStringJoin(kwargs, seperator.c_str()) + ")";
 }
 
+static size_t __hash__(GfFrustum const &self) {
+    return TfHash()(self);
+}
+
 static object
 GetPerspectiveHelper( const GfFrustum &self, bool isFovVertical ) {
     double fov, aspect, nearDist, farDist;
@@ -257,6 +261,7 @@ void wrapFrustum()
         .def(self != self)
 
         .def("__repr__", _Repr)
+        .def("__hash__", __hash__)
         ;
 
     TfPyWrapEnum<This::ProjectionType>();

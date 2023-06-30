@@ -1399,11 +1399,14 @@ pxr_register_test(testUsdImagingGLPickAndHighlight
     TESTENV testUsdImagingGLPickAndHighlight
 )
 
-# Scene indices only support picking but no selection highlighting so far, so skipping most of the image diffs.
 pxr_register_test(testUsdImagingGLPickAndHighlight_SceneIndex
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLPickAndHighlight -offscreen -frameAll -stage instance.usda -write testUsdImagingGLPickAndHighlight.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLPickAndHighlight_000.png
+        testUsdImagingGLPickAndHighlight_001.png
+        testUsdImagingGLPickAndHighlight_002.png
+        testUsdImagingGLPickAndHighlight_003.png
+        testUsdImagingGLPickAndHighlight_004.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -1644,6 +1647,17 @@ pxr_register_test(testUsdImagingGLPointInstancer_pi_sibling_pi
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi.png"
     IMAGE_DIFF_COMPARE
         pi_sibling_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_pi_sibling_pi_over
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi_over.usda -write pi_sibling_pi_over.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_pi_over.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -1911,6 +1925,19 @@ pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi.png"
     IMAGE_DIFF_COMPARE
         pi_sibling_pi.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPointInstancer_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLPointInstancer_SceneIndex_pi_sibling_pi_over
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -camlight -stage pi_sibling_pi.usda -write pi_sibling_pi_over.png"
+    IMAGE_DIFF_COMPARE
+        pi_sibling_pi_over.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -3798,6 +3825,20 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage customMaterial.usda -write customMaterial.png"
         IMAGE_DIFF_COMPARE
             customMaterial.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.2
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXCustomNodes
+        ENV
+            PXR_MTLX_PLUGIN_SEARCH_PATHS=./customNodeDefs
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialXCustomNodes_customColor
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage customColor.usda -write customColor.png"
+        IMAGE_DIFF_COMPARE
+            customColor.png
         FAIL 0.5
         FAIL_PERCENT 0.005
         WARN 0.05

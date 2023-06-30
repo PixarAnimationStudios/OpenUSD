@@ -1,169 +1,163 @@
 /*!
 \page page_tf_TfError The TfError Error Posting System
 
-The TfError system is a developer-level mechanism for use in functions
-to indicate that a non-fatal error has occurred.  The primary use of
-this facility should be in "cross-interface" code situations.  These
-situations occur when the library being called cannot judge the
-severity of an error and wishes to record that an error occurred, for
-the caller to handle if possible.  (Errors reported in a thread can
-only be seen within that thread.)
+The TfError system is a developer-level mechanism used to indicate that a
+non-fatal error has occurred.  The primary benefit of this facility is that it
+enables separating the concerns of error detection from error handling/reporting
+without breaking the normal flow of control, in contrast to exception
+propagation.
 
-Note that the use of TfError is not meant to discourage functions from
-reporting errors by return value or by extra parameter passing.  The
-TfError facility is instead intended as a supplement for code
-situations in which error return codes or extra parameters are
-problematic.
+A good example of where this kind of separation is desirable is in
+"cross-interface" code situations.  These situations occur when a called library
+routine detects an error condition, but the action to take in response is
+unclear; different callers want to report or log the error differently.  With
+TfError, the library can record that the error occurred, but leave the handling
+and reporting to callers as they see fit.
 
-A TfError object is posted using the TF_ERROR() macro to indicate an
-error condition.  The function that posts the error is still
-responsible for maintaining flow of control (that is, returning
-gracefully to its caller).
+Use of TfError is not meant to discourage functions from reporting errors by
+return value or by extra parameter passing. Instead, the TfError facility is a
+supplement for situations where error return codes or extra parameters are
+cumbersome or problematic.
 
-Each thread maintains its own separate error list.  Calling functions
-use the TfErrorMark object to detect newly posted errors.  Traversal
-of the list is accomplished via standard iterators.
+Post a TfError using the TF_ERROR() macro. Since normal flow of control is
+maintained, the posting code must return gracefully to its caller.
 
-The following code sample illustrates the use of TfError:
+Each thread maintains its own separate error list. This means that by default,
+errors reported in a thread can only be observed within that thread, but the
+TfErrorTransport class provides a mechanism to transport errors from one thread
+to another. This is particularly useful in scoped parent-child parallel
+contexts.
+
+Use the TfErrorMark object to detect errors posted by called code. If errors
+have occurred, TfErrorMark::IsClean() returns false, and you can iterate the
+contained errors using a range-for loop, or begin()/end() iterators.
+
+The following code sample illustrates typical use of TfError:
 
 \code
-enum MatrixCodes { MATRIX_HAS_BAD_DIMENSIONS, MATRIX_IS_SINGULAR };
+enum MatrixCodes { MatrixHasBadDimensions, MatrixIsSingular };
 TF_REGISTRY_FUNCTION(TfEnum) {
-    TF_ADD_ENUM_NAME(MATRIX_HAS_BAD_DIMENSIONS, "Matrix has bad dimensions.");
-    TF_ADD_ENUM_NAME(MATRIX_IS_SINGULAR, "Matrix is singular");
+    TF_ADD_ENUM_NAME(MatrixHasBadDimensions, "Matrix has bad dimensions.");
+    TF_ADD_ENUM_NAME(MatrixIsSingular, "Matrix is singular");
 };
 
-const SquareMatrix operator+ (const SquareMatrix& a, const SquareMatrix& b) 
+SquareMatrix operator+ (const SquareMatrix& a, const SquareMatrix& b) 
 {
-	if (a.GetSize() != b.GetSize()) {
-		TF_ERROR(MATRIX_HAS_BAD_DIMENSIONS,
-                         "a size: %d, b size: %d", a.GetSize(), b.GetSize());
-		return SquareMatrix::Zero();
-	}
-	else { 
-		// compute sum, return here
-	}
+    if (a.GetSize() != b.GetSize()) {
+        TF_ERROR(MatrixHasBadDimensions,
+                "a size: %d, b size: %d", a.GetSize(), b.GetSize());
+        return SquareMatrix::Zero();
+    }
+    // compute sum, return result.
 }
 
-void Func() 
+void ErrorSavvyFunction() 
 {
-	TfErrorMark m;
-	SquareMatrix a = ... ,
-	b = ... ,
+    SquareMatrix a = ... , b = ...;
+    
+    TfErrorMark m; // Track errors issued from this point.
 
-	m.SetMark();
-	SquareMatrix c = a + b;
+    // Attempt an operation which might issue a TfError.
+    SquareMatrix c = a + b;
+    
+    if (!m.IsClean()) {
+        // Some errors occurred -- look for the MatrixHasBadDimensions error.
+        for (TfError const &err: m) {
+            if (err.GetErrorCode() == MatrixHasBadDimensions) {
+                // Report or handle appropriately for this caller ...
+            }
+        }
+        // Do not propagate any errors to further callers.
+        m.Clear();
+    }
 
-	if (not m.IsClean()) {
-		for (TfErrorMark::Iterator i = m.GetBegin(); i != m.GetEnd(); ++i) {
-			if (i->GetErrorCode() == MATRIX_HAS_BAD_DIMENSIONS) {
-				...
-			}
-		}
-		m.Clear();
-	}
-
-	if (TF_HAS_ERRORS(m, c = 2*a + 3*b)) {
-		for (TfError::Iterator i = m.GetBegin(); i != m.GetEnd(); ++i) {
-			...
-		}
-	}
+    // The TF_HAS_ERRORS convenience macro calls TfErrorMark::SetMark() to begin
+    // tracking new errors, invokes the passed expression, then evaluates to
+    // true if any errors were issued during the expression evaluation,
+    // otherwise false. For example:
+    if (TF_HAS_ERRORS(m, c = 2*a + 3*b)) {
+        for (TfError const &err: m) {
+            // Handle/report error...
+        }
+    }
 }
 \endcode
 
 \section DiagnosticErrorUsage Usage
 
-The TF_ERROR macro is always invoked with a diagnostic enum code. See
-\ref DiagnosticEnumConventions for an example of registering an enum
-type and it's values as diagnostic codes. The calling patterns for
-TF_ERROR() are shown in the following examples:
+The TF_ERROR macro is always invoked with a diagnostic enum code. See \ref
+DiagnosticEnumConventions for an example of registering an enum type and its
+values as diagnostic codes. The calling patterns for TF_ERROR() are shown in the
+following examples:
 
 \code
-// The following three macros return an iterator to the just-posted TfError.
 
-    // plain unformatted string (and a rather unhelpful message...):
-    TF_ERROR(NO_SUCH_FILE, "some file somewhere wasn't found");
+// The TF_ERROR macro can accept a message in several forms:
 
-    // using an std::string:
-    string msg = "No such file: ";
-    TF_ERROR(NO_SUCH_FILE, msg + fileName);
+// string literal message:
+TF_ERROR(NoSuchFile, "File not found");
 
-    // printf-like version:
-    TF_ERROR(NO_SUCH_FILE, "file %s not found", fileName.c_str());
+// std::string message:
+std::string msg = "File not found: ";
+TF_ERROR(NoSuchFile, msg + fileName);
 
-// The following patterns show the old (menv2x) way of issuing an error with an 
-// error code and are deprecated. They are still supported only for backwards
-// compatibility. All new code should use the above patterns to issue errors
-// with error codes.
+// printf-style message:
+TF_ERROR(NoSuchFile, "File not found: %s", fileName.c_str());
 
-    // plain unformatted string (and a rather unhelpful message...):
-    TF_ERROR(NO_SUCH_FILE).Post("some file somewhere wasn't found");
-
-    // using an std::string:
-    string msg = "No such file: ";
-    TF_ERROR(NO_SUCH_FILE).Post(msg + fileName);
-
-    // printf-like version:
-    TF_ERROR(NO_SUCH_FILE).Post("file %s not found", fileName.c_str());
 \endcode
 
-The argument to the TF_ERROR macro (and the Post() function) can
-either be a \c std::string, or a printf-like formatting string
-followed by the appropriate arguments. Additionally, an error may have
-an arbitrary piece of extra data stored with it as follows:
+Additionally, an error may have an arbitrary piece of contextual data stored
+with it as follows:
 
 \code
-TfDiagnosticInfo myInfo = MyInfo(<data-describing-the-error>);
-TF_ERROR(myInfo, ENUM_CODE, "plain 'ol string");
+// The same three message options as above, but with an additional extra object
+// of any type to convey useful contextual information to error handlers.
 
-// using a std::string
-TF_ERROR(myInfo, NO_SUCH_FILE, msg + fileName);
-
-// printf like version
-TF_ERROR(myInfo, NO_SUCH_FILE, "file %s not found", fileName.c_str());
+TF_ERROR(NoSuchFile, filePathConfig,
+         <literal, std::string, or printf-style message>);
 \endcode
 
-The following patterns show the old (menv2x) way of issuing an error
-with an error code and an arbitrary piece of extra data (TfDiagnosticInfo).
-They are still supported only for backwards compatibility. All new code
-should use the above patterns.
+Callers inspecting TfError objects can retrieve this extra object by calling
+TfError::GetInfo() (really a base-class member function
+TfDiagnosticBase::GetInfo()).
 
 \code
-// plain old string:
-TF_ERROR(ENUM_CODE).Post("plain 'ol string")->SetInfo(myInfo);
-
-// using an std::string:
-string msg = "No such file: ";
-TF_ERROR(NO_SUCH_FILE).Post(msg + fileName)->SetInfo(myInfo);
-
-// printf-like version:
-TF_ERROR(NO_SUCH_FILE).Post("file %s not found", fileName.c_str())->SetInfo(myInfo);
-\endcode
-
-The extra data can be retrieved using \c GetInfo() on the diagnostic object:
-
-\code
-if (const MyInfo* myInfo = diagnostic.GetInfo<MyInfo>()) {
-    // process data in myInfo...
+for (TfError const &err: m) {
+    if (m.GetCode() == NoSuchFile) {
+        if (const FilePathConfig *pathConfig = err.GetInfo<FilePathConfig>()) {
+            // Report error with contextual information from pathConfig.
+        }
+    }
 }
 \endcode
 
-\c GetInfo() will return \c NULL if there is no extra data or if it's not
+TfError::GetInfo() returns \c nullptr if there is no extra data or if it's not
 holding (exactly) the given type.
 
-The Post() construct always returns an iterator to the just-posted TfError. 
+\section BuiltInErrorReporting Built-in Error Reporting
 
-Note that the TF_ERROR() macro always causes an immediate printout, even if the error
-is handled.  To suppress the printout, use the macro TF_QUIET_ERROR(), which is
-otherwise the same as TF_ERROR().
+If there are no TfErrorMark objects in the current thread, TF_ERROR() will
+immediately report the error, either to the currently installed
+TfDiagnosticMgr::Delegate objects, or to stderr if there are no delegates.
+
+If there are TfErrorMark objects in the current thread, TF_ERROR() will instead
+append the error to the thread's local error list to be potentially handled
+later by a caller. It also appends its message to an internal crash log text
+buffer. When the last TfErrorMark object on a thread is destroyed, if the error
+list is not empty, then those remaining errors are reported to either delegates
+or stderr, as above, and its text is removed from the crash log buffer.
+
+In case of an unrecoverable crash, Tf's crash handler will emit all the pending,
+unreported diagnostic error messages to the crash report. This way, diagnostic
+messages for unhandled errors are always reported, either via delegates/stderr,
+or to the crash log in case of a crash.
 
 \section DiagnosticEnumConventions Enum Conventions
 
-If you have several different error states to distinguish, you should
-create an enum with multiple values describing the various error
-states.  In a library named Oof, the enum (or enums, should you group
-error states into different categories) should be declared in a header
-file named Oof/Error.h.
+If you have several different error conditions to distinguish, create an enum
+with multiple values describing the various conditions.  In a library named Oof,
+the enum (or enums, should you group error states into different categories)
+could be declared in a header file named oof/error.h.
 
 \code
 struct OofError {
@@ -175,22 +169,21 @@ struct OofError {
 };
 \endcode 
 
-The enum values should then be registered with the TfEnum registry.
-This could happen in Oof/Error.cpp.
+Register the enum values with the TfEnum registry to use them with TfError. For
+example, in oof/error.cpp:
 
 \code
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/registryManager.h"
 
 TF_REGISTRY_FUNCTION(TfEnum) {
-    TF_ADD_ENUM_NAME(OofError::OofErrorCode1, "Short description of error code1");
-    TF_ADD_ENUM_NAME(OofError::OofErrorCode2, "Short description of error code2");
-    TF_ADD_ENUM_NAME(OofError::OofErrorCode3, "Short description of error code3");
+    TF_ADD_ENUM_NAME(OofError::OofErrorCode1, "Description of error code1");
+    TF_ADD_ENUM_NAME(OofError::OofErrorCode2, "Description of error code2");
+    TF_ADD_ENUM_NAME(OofError::OofErrorCode3, "Description of error code3");
 };
-
 \endcode
 
-Also wrap the enum to python in Oof/wrapError.cpp. 
+Also wrap the enum to python in oof/wrapError.cpp. 
 
 The following code allows the enum values to be accessible from python
 under a scope named Error.
@@ -209,33 +202,47 @@ void wrapOofError() {
 
     // Wrap the enum under a scope called Error. The enum values 
     // will be available in python under Oof.Error.*.
-    scope errorTypeScope = class_ <This>("Error", no_init)
-        ;
+    scope errorTypeScope = class_ <This>("Error", no_init);
 
     TfPyWrapEnum<OofError::Type>();
 }
 \endcode
 
-If you would like the enum values to be available directly under the
-module Oof, then just skip creating the errorTypeScope.
+To make the enum values available directly under the module Oof, omit the
+errorTypeScope.
 
 \code
 // wrapOofError.cpp
 #include "pxr/base/tf/pyEnum.h"
 
 void wrapOofError() {
-    TfPyWrapEnum<>(OofErrorType);
+    TfPyWrapEnum<OofError::Type>();
 }
 \endcode
 
-Even if you do not wish to distinguish between error states within a
-library, the fact that these errors came from the same module of code
-is in itself useful information.  In this case, create an enum with a
-single value, and pass that value.  As a last resort, if you're just
-too darn lazy to stop and make up an enum with one value, you can just
-pass in integer zero. Doing this, of course, means that you cannot
-distinguish this particular error from anyone else who has chosen to
-do this for their error.
+Even if you do not wish to distinguish between error states within a library,
+the fact that these errors came from the same module of code is in itself useful
+information.  In this case, create an enum with a single value, and pass that
+value.
+
+On the other hand, while proivding a unique error enumerant for every error
+condition gives the most specificity, it can also be tedious and cumbersome for
+both error producers and consumers. Think carefully about the main categories of
+errors your library generates. The best designs generally have a small number of
+error enumerants, instead adding nuance and subtlety in the error messages or
+diagnostic info objects.
+
+Remember to document the errors that your public API might issue, and under what
+circumstances it does so.  This makes it easier for callers to detect and
+handle the errors gracefully.
+
+For convenience Tf supplies two general macros that issue TfErrors with
+Tf-supplied error enum values: TF_CODING_ERROR() and TF_RUNTIME_ERROR().  These
+macros issue TfErrors with the error enum values TF_DIAGNOSTIC_CODING_ERROR_TYPE
+and TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE, respectively.  Use TF_CODING_ERROR() where
+there is a demonstrable software error; for example, if passed arguments are
+invalid, or for an unmet precondition.  Use TF_RUNTIME_ERROR() for errors that
+are not due to software bugs; for example, corrupt or invalid data in a file,
+disk space exhausted, network server unresponsive.
 
 */
-

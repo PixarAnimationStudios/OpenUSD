@@ -169,7 +169,7 @@ def Xform "Meshes" (
         references = </Mesh>
     )
     {
-        custom int primvars:ptexFaceOffset = 66 (
+        custom int primvars:ptexFaceOffset = 0 (
             interpolation = "constant"
         )
     }
@@ -179,7 +179,7 @@ def Xform "Meshes" (
         references = </Mesh>
     )
     {
-        custom int primvars:ptexFaceOffset = 67 (
+        custom int primvars:ptexFaceOffset = 16 (
             interpolation = "constant"
         )
         custom double3 xformOp:translate = (0, 0, -4.25)

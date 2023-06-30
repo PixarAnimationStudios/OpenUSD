@@ -66,6 +66,7 @@ public:
     /// classes can't override it and instead override _Sync.
     /// This 'non-virtual interface'-like pattern allows us to ensure we always
     /// initialized Hgi during the Sync task so derived classes don't have to.
+    HDX_API 
     void Sync(
         HdSceneDelegate* delegate,
         HdTaskContext* ctx,
@@ -82,12 +83,14 @@ protected:
     // Swaps the color target and colorIntermediate target.
     // This is used when a task wishes to read from the color and also write
     // to it. We use two color targets and ping-pong between them.
+    HDX_API
     void _ToggleRenderTarget(HdTaskContext* ctx);
 
     // Return pointer to Hydra Graphics Interface.
     HDX_API
     Hgi* _GetHgi() const;
 
+private:
     Hgi* _hgi;
 };
 

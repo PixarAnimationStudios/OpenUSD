@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while composing </ModelWithVariant/InvalidInherit>
+
+Invalid inherit path </ModelWithVariant{vset=sel}_class> introduced by @<expired>@</ModelWithVariant{vset=vsel}InvalidInherit>-- must be an absolute prim path with no variant selections.
+

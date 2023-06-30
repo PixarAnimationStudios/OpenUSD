@@ -23,7 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/niPrototypePruningSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 
@@ -37,12 +37,9 @@ _IsUsdPrototype(HdSceneIndexBaseRefPtr const &sceneIndex,
 {
     HdContainerDataSourceHandle const primSource =
         sceneIndex->GetPrim(primPath).dataSource;
-    if (!primSource) {
-        return false;
-    }
-    HdBoolDataSourceHandle const ds =
-        HdBoolDataSource::Cast(
-            primSource->Get(UsdImagingNativeInstancingTokens->isUsdPrototype));
+    UsdImagingUsdPrimInfoSchema schema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(primSource);
+    HdBoolDataSourceHandle const ds = schema.GetIsNiPrototype();
     if (!ds) {
         return false;
     }

@@ -69,6 +69,7 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "adjustPixelAspectRatio", UsdRenderTokens->adjustPixelAspectRatio);
     _AddToken(cls, "aspectRatioConformPolicy", UsdRenderTokens->aspectRatioConformPolicy);
     _AddToken(cls, "camera", UsdRenderTokens->camera);
+    _AddToken(cls, "collectionRenderVisibilityIncludeRoot", UsdRenderTokens->collectionRenderVisibilityIncludeRoot);
     _AddToken(cls, "color3f", UsdRenderTokens->color3f);
     _AddToken(cls, "command", UsdRenderTokens->command);
     _AddToken(cls, "cropAperture", UsdRenderTokens->cropAperture);
@@ -99,7 +100,14 @@ void wrapUsdRenderTokens()
     _AddToken(cls, "renderingColorSpace", UsdRenderTokens->renderingColorSpace);
     _AddToken(cls, "renderSettingsPrimPath", UsdRenderTokens->renderSettingsPrimPath);
     _AddToken(cls, "renderSource", UsdRenderTokens->renderSource);
+    _AddToken(cls, "renderVisibility", UsdRenderTokens->renderVisibility);
     _AddToken(cls, "resolution", UsdRenderTokens->resolution);
     _AddToken(cls, "sourceName", UsdRenderTokens->sourceName);
     _AddToken(cls, "sourceType", UsdRenderTokens->sourceType);
+    _AddToken(cls, "RenderDenoisePass", UsdRenderTokens->RenderDenoisePass);
+    _AddToken(cls, "RenderPass", UsdRenderTokens->RenderPass);
+    _AddToken(cls, "RenderProduct", UsdRenderTokens->RenderProduct);
+    _AddToken(cls, "RenderSettings", UsdRenderTokens->RenderSettings);
+    _AddToken(cls, "RenderSettingsBase", UsdRenderTokens->RenderSettingsBase);
+    _AddToken(cls, "RenderVar", UsdRenderTokens->RenderVar);
 }

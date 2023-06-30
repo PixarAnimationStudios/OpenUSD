@@ -24,11 +24,10 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stageLoadRules.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stl.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <algorithm>
 
@@ -341,8 +340,7 @@ operator<<(std::ostream &os, UsdStageLoadRules const &rules)
 size_t
 hash_value(UsdStageLoadRules const &rules)
 {
-    boost::hash<std::vector<std::pair<SdfPath, UsdStageLoadRules::Rule> > > h;
-    return h(rules._rules);
+    return TfHash()(rules._rules);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

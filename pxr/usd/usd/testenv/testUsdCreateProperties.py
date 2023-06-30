@@ -550,6 +550,11 @@ class TestUsdCreateProperties(unittest.TestCase):
                 (expectedPropertyStack[2], Sdf.LayerOffset(20.0, 2.0))
             ]
 
+            # ensure that fetching property stacks with and without providing
+            # the default timecode as an argument yields the same result.
+            self.assertEqual(attr.GetPropertyStack(), expectedPropertyStack)
+            self.assertEqual(attr.GetPropertyStackWithLayerOffsets(),
+                             expectedPropertyStackWithLayerOffsets)
             self.assertEqual(attr.GetPropertyStack(Usd.TimeCode.Default()), 
                                               expectedPropertyStack)
             self.assertEqual(attr.GetPropertyStackWithLayerOffsets(
