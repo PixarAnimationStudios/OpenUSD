@@ -70,7 +70,10 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     std::set<TfType> types;
     PlugRegistry::GetAllDerivedTypes(*_adapterBaseType, &types);
     std::vector<TfToken> includeDerivedPrimTypes;
-    std::vector<TfToken> includeSchemaFamilies;
+    // Set of schema families we have an adapter for; the boolean indicates
+    // whether we also need to include types which are derived from another
+    // type in the same family.
+    std::vector<std::pair<TfToken,bool>> includeSchemaFamilies;
 
     TF_FOR_ALL(typeIt, types) {
 
@@ -146,6 +149,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         // through additional metadata.
         JsObject::const_iterator includeDerivedIt = 
             metadata.find("includeDerivedPrimTypes");
+        bool includeDerived = false;
         if (includeDerivedIt != metadata.end()) {
             if (!includeDerivedIt->second.Is<bool>()) {
                 TF_RUNTIME_ERROR("[PluginDiscover] includeDerivedPrimTypes "
@@ -155,6 +159,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
                 continue;
             } else if (includeDerivedIt->second.Get<bool>()){ 
                 includeDerivedPrimTypes.push_back(primTypeName);
+                includeDerived = true;
             }
         }
 
@@ -170,13 +175,15 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
                         typeIt->GetTypeName().c_str());
                 continue;
             } else if (includeFamilyIt->second.Get<bool>()){
-                includeSchemaFamilies.push_back(primTypeName);
+                includeSchemaFamilies.push_back(
+                        std::make_pair(primTypeName, includeDerived));
             }
         }
-        //<todo.eoin Need to work out what to do if both derivdetypes+family is set!
     }
 
-    for (const TfToken &familyName : includeSchemaFamilies) {
+    for (auto const &pair : includeSchemaFamilies) {
+        const TfToken& familyName = std::get<0>(pair);
+        const bool includeDerived = std::get<1>(pair);
         const TfType adapterType = _typeMap[familyName];
         for (const UsdSchemaRegistry::SchemaInfo* schemaInfo :
                 UsdSchemaRegistry::FindSchemaInfosInFamily(familyName)) {
@@ -186,6 +193,13 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
                 TF_DEBUG(USDIMAGING_PLUGINS).Msg(
                     "[PluginDiscover] Mapping adapter for family '%s' to type "
                     "'%s'\n", familyName.GetText(), typeName.GetText());
+
+                if (includeDerived) {
+                    // This plugin has requested including both derived types
+                    // and all types in the family. This will include the
+                    // adaptor for any derived types in the family, too.
+                    includeDerivedPrimTypes.push_back(typeName);
+                }
             }
         }
     }
