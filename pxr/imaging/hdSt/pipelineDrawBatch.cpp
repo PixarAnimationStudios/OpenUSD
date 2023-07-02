@@ -687,15 +687,15 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
     int endPrimitive = meshStartLocation/3;
     for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
         if (maxVertsReached || maxPrimsReached || i == meshEndLocation) {
-            endPrimitive = (i/3)-1;
+            endPrimitive = (i/3);
             int count = 0;
             for(auto it = m.begin(); it != m.end(); ++it) {
                 VertexInfo vertexInfo;
                 vertexInfo.vertexId = it->first;
                 vertexInfo.indexId = it->second[0];
                 meshlet.vertexInfo.push_back(vertexInfo);
-                count++;
                 globalToLocalVertex[it->first] = count;
+                count++;
             }
             for(uint32_t n = startPrimitive * 3; n < endPrimitive * 3; n++) {
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n]]);
@@ -774,7 +774,7 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoor
         int localOffset = 0;
         const std::vector<Meshlet> &meshletsInMesh = meshlets[i];
         for(int l = 0; l < meshletsInMesh.size(); l++) {
-            flattenInto.push_back(0);
+            flattenInto.push_back(meshletsInMesh.size());
             currentOffset++;
             localOffset++;
         }
@@ -847,14 +847,17 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     //estimate this required overallication
     //_meshletDrawBuffer.resize(numDrawItemInstances * 2 * 258);
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
-    auto indexBar =
-    std::static_pointer_cast<HdStBufferArrayRange>(
-                                                   _drawItemInstances.front()->GetDrawItem()->GetTopologyRange());
-    HdStBufferResourceSharedPtr indexBuffer =
-        indexBar->GetResource(HdTokens->indices);
-    uint32_t* cpuBuffer = ((uint32_t*)indexBuffer->GetHandle()->GetCPUStagingAddress());
+    
+    HdStBufferResourceSharedPtr indexBuffer;
+        
+    uint32_t* cpuBuffer;
     std::vector<std::vector<Meshlet>> meshlets;
     if (isMeshShader) {
+        auto indexBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(
+                                                       _drawItemInstances.front()->GetDrawItem()->GetTopologyRange());
+        indexBuffer = indexBar->GetResource(HdTokens->indices);
+        cpuBuffer = ((uint32_t*)indexBuffer->GetHandle()->GetCPUStagingAddress());
         for (size_t item = 0; item < numDrawItemInstances; ++item) {
             HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
             HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
