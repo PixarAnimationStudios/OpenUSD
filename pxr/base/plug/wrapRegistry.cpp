@@ -31,7 +31,6 @@
 #include "pxr/base/tf/pySingleton.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/range.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/python.hpp>
 
@@ -40,11 +39,8 @@
 #include <functional>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
-using std::make_pair;
-using std::pair;
 using std::string;
 using std::vector;
 
@@ -120,11 +116,11 @@ struct SharedState : boost::noncopyable {
     std::atomic<size_t> nextAvailable;
 };
 
-template <class Range>
-string PluginNames(Range const &range) {
+template <class It>
+string PluginNames(const It begin, const It end) {
     using std::distance;
-    vector<string> names(distance(boost::begin(range), boost::end(range)));
-    transform(boost::begin(range), boost::end(range), names.begin(),
+    vector<string> names(distance(begin, end));
+    transform(begin, end, names.begin(),
               [](PlugPluginPtr const &plug) { return plug->GetName(); });
     return TfStringJoin(names.begin(), names.end(), ", ");
 }
@@ -150,7 +146,7 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     // Report any already loaded plugins as skipped.
     if (verbose && alreadyLoaded != plugins.end()) {
         printf("Skipping already-loaded plugins: %s\n",
-               PluginNames(make_pair(alreadyLoaded, plugins.end())).c_str());
+               PluginNames(alreadyLoaded, plugins.end()).c_str());
     }
 
     // Trim the already loaded plugins from the vector.
@@ -172,7 +168,8 @@ void _LoadPluginsConcurrently(PluginPredicateFn pred,
     // Report what we're doing.
     if (verbose) {
         printf("Loading %zu plugins concurrently: %s\n",
-               plugins.size(), PluginNames(plugins).c_str());
+               plugins.size(),
+               PluginNames(std::cbegin(plugins), std::cend(plugins)).c_str());
     }
 
     // Establish shared state.

@@ -28,7 +28,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/implicit.hpp>
