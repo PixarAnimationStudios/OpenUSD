@@ -652,7 +652,8 @@ _AllocateMeshletDispatchBuffer(
 
 } // annonymous namespace
 
-constexpr uint32_t max_primitives = 128;
+//TODO IHH drive externally
+constexpr uint32_t max_primitives = 512;
 constexpr uint32_t max_vertices = 256;
 
 struct VertexInfo {
@@ -685,24 +686,34 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
     Meshlet meshlet;
     int startPrimitive = meshStartLocation/3;
     int endPrimitive = meshStartLocation/3;
-    for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
-        if (maxVertsReached || maxPrimsReached || i == meshEndLocation) {
-            endPrimitive = (i/3);
+    for(uint32_t i = meshStartLocation; i < meshEndLocation + 2; i += 3) {
+        if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
+            endPrimitive = ((i)/3);
             int count = 0;
+            meshlet.vertexInfo.resize(m.size());
             for(auto it = m.begin(); it != m.end(); ++it) {
                 VertexInfo vertexInfo;
                 vertexInfo.vertexId = it->first;
                 vertexInfo.indexId = it->second[0];
-                meshlet.vertexInfo.push_back(vertexInfo);
+                meshlet.vertexInfo[count] = vertexInfo;
                 globalToLocalVertex[it->first] = count;
                 count++;
             }
-            for(uint32_t n = startPrimitive * 3; n < endPrimitive * 3; n++) {
-                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n]]);
+            
+            for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
+                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3]]);
+                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+1]]);
+                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+2]]);
             }
             meshlet.vertexCount = meshlet.vertexInfo.size();
-            meshlet.primitiveCount = endPrimitive - startPrimitive;
-
+            meshlet.primitiveCount = (endPrimitive - startPrimitive);
+            //temp
+            /*
+            std::vector<uint32_t> inds;
+            for(int i = 0; i < endPrimitive * 3; i++) {
+                inds.push_back(indices[i]);
+            }
+             */
             maxVertsReached = false;
             maxPrimsReached = false;
             numPrimsProcessed = 0;
@@ -710,7 +721,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
             m = std::unordered_map<uint32_t, std::vector<uint32_t>>();
             globalToLocalVertex = std::unordered_map<uint32_t, uint32_t>();
             meshlets.push_back(meshlet);
-            if(i == meshEndLocation) {
+            if(i >= meshEndLocation) {
                 continue;
             }
             meshlet = Meshlet();
@@ -852,6 +863,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         
     uint32_t* cpuBuffer;
     std::vector<std::vector<Meshlet>> meshlets;
+    std::vector<MeshletCoord> meshletDrawCoord;
     if (isMeshShader) {
         auto indexBar =
         std::static_pointer_cast<HdStBufferArrayRange>(
@@ -884,12 +896,11 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             uint32_t const baseIndex = primitiveDC * numIndicesPerPrimitive;
             uint32_t const indexCount = numElements * numIndicesPerPrimitive;
             
-            auto meshlet = processIndices(cpuBuffer, indexCount, baseVertex, baseVertex + indexCount);
+            auto meshlet = processIndices(cpuBuffer, indexCount, baseIndex, baseIndex + indexCount);
             meshlets.push_back(meshlet);
         }
+        flattenMeshlets(_meshletDrawBuffer, meshletDrawCoord, meshlets);
     }
-    std::vector<MeshletCoord> meshletDrawCoord;
-    flattenMeshlets(_meshletDrawBuffer, meshletDrawCoord, meshlets);
     
     
     // Count the number of visible items. We may actually draw fewer
@@ -909,7 +920,10 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                             drawItem->GetElementOffsetsHash());
 
         _DrawItemState const dc(drawItem);
-        MeshletCoord coord = meshletDrawCoord[item];
+        MeshletCoord coord;
+        if (isMeshShader && !meshletDrawCoord.empty()) {
+            coord = meshletDrawCoord[item];
+        }
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
         uint32_t const constantDC      = _GetElementOffset(dc.constantBar);
@@ -1007,11 +1021,17 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                     *cmdIt++ = baseIndex;
                     *cmdIt++ = baseVertex;
                     *cmdIt++ = baseInstance;
-
-                    *cmdIt++ = 1;             /* cullCount (always 1) */
-                    *cmdIt++ = instanceCount; /* cullInstanceCount */
-                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
-                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    if (isMeshShader) {
+                        *cmdIt++ = coord.meshlet_coord;
+                        *cmdIt++ = coord.numMeshlets;
+                        *cmdIt++ = 0;
+                        *cmdIt++ = 0;
+                    } else {
+                        *cmdIt++ = 1;             /* cullCount (always 1) */
+                        *cmdIt++ = instanceCount; /* cullInstanceCount */
+                        *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                        *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    }
                 }
             } else {
                 // _DrawIndexedCommand

@@ -3040,8 +3040,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshlet = 1024;
         msDesc.meshDescriptor.maxTotalThreadgroupsPerMeshObject = 128;
         
-        msDesc.meshDescriptor.maxMeshletVertexCount = 96;
-        msDesc.meshDescriptor.maxPrimitiveCount = msDesc.meshDescriptor.maxMeshletVertexCount/3;
+        msDesc.meshDescriptor.maxMeshletVertexCount = 256;
+        msDesc.meshDescriptor.maxPrimitiveCount = 512;
         msDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
 
         if (_metaData.meshletRemapBinding.binding.IsValid()) {
