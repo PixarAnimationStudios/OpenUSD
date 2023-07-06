@@ -87,7 +87,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
         return useMetalTessellation;
     }
     bool UseMeshShaders() const override {
-        return hasCustomDisplacement && HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+        return true; //hasCustomDisplacement && HdSt_GeometricShader::IsPrimTypeTriangles(primType);
     }
 
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }

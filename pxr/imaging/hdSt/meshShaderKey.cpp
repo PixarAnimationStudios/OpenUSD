@@ -496,7 +496,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
     
-    FS[fsIndex++] =
+    FS[fsIndex++] = _tokens->normalsScreenSpaceFS;
+    /*
         (normalsSource == NormalSourceFlatScreenSpace)
             ? _tokens->normalsScreenSpaceFS
             : (!gsStageEnabled && normalsSource == NormalSourceFlat)
@@ -504,6 +505,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
                 : ((!gsStageEnabled && gsSceneNormals)
                     ? _tokens->normalsScene
                     : _tokens->normalsPass);
+     */
 
     FS[fsIndex++] = doubleSided ?
         _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
