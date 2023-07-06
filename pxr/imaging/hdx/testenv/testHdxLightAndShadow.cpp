@@ -138,7 +138,7 @@ int main(int argc, char *argv[])
     delegate->AddTet(SdfPath("/tet"),
                      GfMatrix4d( 1,0,0,0, 0,1,0,0,  0,0,1,0,  3,0,5,1));
     delegate->SetRefineLevel(SdfPath("/cube"), 4);
-    delegate->SetRefineLevel(SdfPath("/tet"), 3);
+    delegate->SetRefineLevel(SdfPath("/tet"), 5);
 
     // camera
     GfFrustum frustum;
@@ -200,6 +200,36 @@ int main(int argc, char *argv[])
     delegate->WriteRenderBufferToFile(colorAovId, "color4.png");
 
     // --------------------------------------------------------------------
+    // move light so that the shadow direction becomes straight down
+    light2.SetPosition(GfVec4f(0.0, 0.0, 2.0, 0.0));
+    light2.SetDiffuse(GfVec4f(1.0, 1.0, 1.0, 1.0));
+    delegate->SetLight(SdfPath("/light2"), HdLightTokens->params, 
+                      VtValue(light2));
+
+    frustum.SetPosition(GfVec3d(3.1, -1, 6));
+    frustum.SetRotation(GfRotation(GfVec3d(1, 0, 0), 45));
+    delegate->SetCamera(frustum.ComputeViewMatrix(), frustum.ComputeProjectionMatrix());
+
+    // --------------------------------------------------------------------
+    // set normal bias to 0.
+    light2.SetShadowNormalBias(0);
+    delegate->SetLight(SdfPath("/light2"), HdLightTokens->params, VtValue(light2));
+
+    // draw.
+    engine.Execute(index.get(), &tasks);
+    delegate->WriteRenderBufferToFile(colorAovId, "color5.png");
+
+    // --------------------------------------------------------------------
+    // set normal bias to 0.12.
+    light2.SetShadowNormalBias(0.12);
+    delegate->SetLight(SdfPath("/light2"), HdLightTokens->params, VtValue(light2));
+    
+    // draw.
+    engine.Execute(index.get(), &tasks);
+    delegate->WriteRenderBufferToFile(colorAovId, "color6.png");
+    // ----
 
     std::cout << "OK" << std::endl;
+
+    return 0;
 }

@@ -412,7 +412,7 @@ evaluateLights(
         float shadow = 1.0;
     #if USE_SHADOWS
         shadow = light.hasShadow ?
-            shadowing(/*lightIndex=*/i, Peye) : 1.0;
+            shadowing(/*lightIndex=*/i, Peye, Neye) : 1.0;
     #endif
 
         float intensity = atten * spot * shadow;

@@ -167,6 +167,7 @@ struct HdxShadowParams {
     HdxShadowParams()
         : shadowMatrix()
         , bias(0.0)
+        , normalBias(0.0)
         , blur(0.0)
         , resolution(0)
         , enabled(false)
@@ -174,6 +175,7 @@ struct HdxShadowParams {
 
     HdxShadowMatrixComputationSharedPtr shadowMatrix;
     double bias;
+    double normalBias;
     double blur;
     int resolution;
     bool enabled;

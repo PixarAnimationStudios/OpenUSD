@@ -107,7 +107,7 @@ R"(#if NUM_LIGHTS > 0
             // ShadowOcclusion value
             #if USE_SHADOWS
                 u_lightData[u_numActiveLightSources].shadowOcclusion = 
-                    light.hasShadow ? shadowing(i, Peye) : 1.0;
+                    light.hasShadow ? shadowing(i, Peye, Neye) : 1.0;
             #else 
                 u_lightData[u_numActiveLightSources].shadowOcclusion = 1.0;
             #endif

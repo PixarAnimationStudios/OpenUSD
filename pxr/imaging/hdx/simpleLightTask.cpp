@@ -309,6 +309,7 @@ HdxSimpleLightTask::Sync(HdSceneDelegate* delegate,
 
                     glfl.SetShadowMatrices(shadowMatrices);
                     glfl.SetShadowBias(lightShadowParams.bias);
+                    glfl.SetShadowNormalBias(lightShadowParams.normalBias);
                     glfl.SetShadowBlur(lightShadowParams.blur);
                     glfl.SetShadowResolution(lightShadowParams.resolution);
                 }
@@ -514,6 +515,9 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         bufferSpecs.emplace_back(
             HdxSimpleLightTaskTokens->bias,
             HdTupleType{HdTypeFloat, 1});
+        bufferSpecs.emplace_back(
+            HdxSimpleLightTaskTokens->normalBias,
+            HdTupleType{HdTypeFloat, 1});
 
         _shadowsBar = 
             hdStResourceRegistry->AllocateUniformBufferArrayRange(
@@ -553,6 +557,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
         VtMatrix4fArray shadowToWorldMatrix(numShadows);
         VtFloatArray blur(numShadows);
         VtFloatArray bias(numShadows);
+        VtFloatArray normalBias(numShadows);
         
         GlfSimpleLightVector const & lights = lightingContext->GetLights();
         GlfSimpleShadowArrayRefPtr const & shadows = 
@@ -582,6 +587,7 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
                         worldToShadowMatrix[j].GetInverse());
                     blur[j] = lights[i].GetShadowBlur();
                     bias[j] = lights[i].GetShadowBias();
+                    normalBias[j] = lights[i].GetShadowNormalBias();
                 }
             }
         }
@@ -645,6 +651,9 @@ HdxSimpleLightTask::Prepare(HdTaskContext* ctx,
                 std::make_shared<HdVtBufferSource>(
                     HdxSimpleLightTaskTokens->bias,
                     VtValue(bias)),
+                std::make_shared<HdVtBufferSource>(
+                    HdxSimpleLightTaskTokens->normalBias,
+                    VtValue(normalBias)),
             };
             
             hdStResourceRegistry->AddSources(_shadowsBar, 
@@ -800,6 +809,7 @@ operator<<(std::ostream& out, const HdxShadowParams& pv)
     out << pv.shadowMatrix << " "
         << pv.resolution << " "
         << pv.bias << " "
+        << pv.normalBias << " "
         << pv.blur << " "
         << pv.enabled;
     return out;
@@ -811,6 +821,7 @@ operator==(const HdxShadowParams& lhs, const HdxShadowParams& rhs)
     return lhs.shadowMatrix == rhs.shadowMatrix
        && lhs.resolution == rhs.resolution
        && lhs.bias == rhs.bias
+       && lhs.normalBias == rhs.normalBias
        && lhs.blur == rhs.blur
        && lhs.enabled == rhs.enabled;
 }

@@ -111,6 +111,11 @@ public:
     void SetShadowBias(float bias);
 
     GLF_API
+    float GetShadowNormalBias() const;
+    GLF_API
+    void SetShadowNormalBias(float bias);
+
+    GLF_API
     float GetShadowBlur() const;
     GLF_API
     void SetShadowBlur(float blur);
@@ -205,6 +210,7 @@ private:
     bool _hasShadow;
     int _shadowResolution;
     float _shadowBias;
+    float _shadowNormalBias;
     float _shadowBlur;
     int _shadowIndexStart;
     int _shadowIndexEnd;

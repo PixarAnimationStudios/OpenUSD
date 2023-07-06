@@ -121,6 +121,13 @@ pxr_build_test(testHdxRenderTask
     CPPFILES
         testenv/testHdxRenderTask.cpp
 )
+endif()
+
+pxr_install_test_dir(
+    SRC testenv/testHdxLightAndShadow
+    DEST testHdxLightAndShadow
+)
+
 pxr_build_test(testHdxLightAndShadow
     LIBRARIES
         hdx
@@ -133,7 +140,22 @@ pxr_build_test(testHdxLightAndShadow
     CPPFILES
         testenv/testHdxLightAndShadow.cpp
 )
-endif()
+
+pxr_register_test(testHdxLightAndShadow
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdxLightAndShadow"
+    IMAGE_DIFF_COMPARE
+        color1.png
+        color2.png
+        color3.png
+        color4.png
+        color5.png
+        color6.png
+    FAIL .05
+    FAIL_PERCENT .03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdxLightAndShadow
+)
 
 if (X11_FOUND)
 pxr_build_test(testHdxIdRender
