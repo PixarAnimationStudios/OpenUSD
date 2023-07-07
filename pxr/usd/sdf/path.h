@@ -33,7 +33,6 @@
 #include "pxr/base/vt/traits.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/operators.hpp>
 
 #include <algorithm>
 #include <iterator>
