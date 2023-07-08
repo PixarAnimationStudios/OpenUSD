@@ -33,6 +33,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
+#include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 #include <map>
 #include <utility>
