@@ -33,7 +33,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 #include <map>
@@ -117,22 +116,67 @@ private:
     };
 
     template <class _Owner, class _Iter, class _Value>
-    class _Iterator :
-        public boost::iterator_facade<
-                    _Iterator<_Owner, _Iter, _Value>,
-                    _Value,
-                    std::bidirectional_iterator_tag,
-                    _Value> {
+    class _Iterator {
+        class _PtrProxy {
+        public:
+            _Value* operator->() { return &_value; }
+        private:
+            friend class _Iterator;
+            explicit _PtrProxy(const _Value& value) : _value(value) {}
+            _Value _value;
+        };
     public:
-        _Iterator() { }
+        static_assert(!std::is_reference<_Value>::value &&
+                      !std::is_pointer<_Value>::value,
+                      "_Value cannot be a pointer or reference type.");
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = _Value;
+        using reference = _Value;
+        using pointer = _PtrProxy;
+        using difference_type = std::ptrdiff_t;
+
+        _Iterator() = default;
         _Iterator(_Owner owner, _inner_iterator i) : _owner(owner), _pos(i) { }
         template <class O2, class I2, class V2>
         _Iterator(const _Iterator<O2, I2, V2>& other) :
             _owner(other._owner), _pos(other._pos) { }
 
-    private:
-        friend class boost::iterator_core_access;
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return pointer(dereference()); }
 
+        _Iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        _Iterator& operator--() {
+            decrement();
+            return *this;
+        }
+
+        _Iterator operator++(int) {
+            _Iterator result(*this);
+            increment();
+            return result;
+        }
+
+        _Iterator operator--(int) {
+            _Iterator result(*this);
+            decrement();
+            return result;
+        }
+
+        template <class O2, class I2, class V2>
+        bool operator==(const _Iterator<O2, I2, V2>& other) const {
+            return equal(other);
+        }
+
+        template <class O2, class I2, class V2>
+        bool operator!=(const _Iterator<O2, I2, V2>& other) const {
+            return !equal(other);
+        }
+
+    private:
         _Value dereference() const
         {
             return _Traits::Dereference(_owner, _pos);
