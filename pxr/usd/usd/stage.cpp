@@ -7430,7 +7430,7 @@ private:
     // Metafunction for selecting the appropriate interpolation object if the
     // given value type supports linear interpolation.
     struct _SelectInterpolator 
-        : public boost::mpl::if_c<
+        : public std::conditional<
               UsdLinearInterpolationTraits<T>::isSupported,
               Usd_LinearInterpolator<T>,
               Usd_HeldInterpolator<T> > { };
