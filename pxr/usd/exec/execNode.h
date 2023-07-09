@@ -21,32 +21,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define EXEC_NODE_METADATA_TOKENS   \
     ((Category, "category"))       \
     ((Role, "role"))               \
-    ((Departments, "departments")) \
     ((Help, "help"))               \
     ((Label, "label"))             \
-    ((Pages, "pages"))             \
     ((Primvars, "primvars"))       \
-    ((ImplementationName, "__EXEC__implementationName"))\
-    ((Target, "__EXEC__target"))
 
 // Note: The concept of context is defined on NdrNode and can be queried with
 // the GetContext() method. Exec categorizes nodes by the context in which they
 // are used inside of a engine.
-#define EXEC_NODE_CONTEXT_TOKENS      \
-    ((Pattern, "pattern"))           \
-    ((Surface, "surface"))           \
-    ((Volume, "volume"))             \
-    ((Displacement, "displacement")) \
-    ((Light, "light"))               \
-    ((LightFilter, "lightFilter"))   \
-    ((SampleFilter, "sampleFilter")) \
-    ((PixelFilter, "pixelFilter"))
+#define EXEC_NODE_CONTEXT_TOKENS       \
+    ((Topology, "topology"))           \
+    ((Deformation, "deformation"))     \
+    ((Simulation, "simulation"))       
 
 #define EXEC_NODE_ROLE_TOKENS         \
-    ((Primvar, "primvar"))           \
-    ((Texture, "texture"))           \
-    ((Field, "field"))               \
-    ((Math, "math"))                 \
+    ((Get, "get"))           \
+    ((Set, "set"))           \
+    ((Modify, "modify"))     \
+    ((Create, "create"))     \
+    ((Delete, "delete"))     
 
 TF_DECLARE_PUBLIC_TOKENS(ExecNodeMetadata, EXEC_API, EXEC_NODE_METADATA_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(ExecNodeContext, EXEC_API, EXEC_NODE_CONTEXT_TOKENS);
@@ -87,10 +79,6 @@ public:
     EXEC_API
     ExecPropertyConstPtr GetExecOutput(const TfToken& outputName) const;
 
-    /// Returns the list of all inputs that are tagged as asset identifier 
-    /// inputs.
-    EXEC_API
-    NdrTokenVec GetAssetIdentifierInputNames() const;
 
     /// Returns the first input that is tagged as the default input.
     /// A default input and its value can be used to acquire a fallback value
@@ -133,72 +121,15 @@ public:
     EXEC_API
     std::string GetHelp() const;
 
-    /// The departments this node is associated with, if any.
-    EXEC_API
-    const NdrTokenVec& GetDepartments() const { return _departments; }
-
-    /// Gets the pages on which the node's properties reside (an aggregate of
-    /// the unique `ExecProperty::GetPage()` values for all of the node's
-    /// properties). Nodes themselves do not reside on pages. In an example
-    /// scenario, properties might be divided into two pages, 'Simple' and
-    /// 'Advanced'.
-    EXEC_API
-    const NdrTokenVec& GetPages() const { return _pages; };
-
     /// The list of primvars this node knows it requires / uses.
-    /// For example, a node may require the 'normals' primvar to function
-    /// correctly. Additional, user specified primvars may have been authored on
-    /// the node. These can be queried via `GetAdditionalPrimvarProperties()`.
-    /// Together, `GetPrimvars()` and `GetAdditionalPrimvarProperties()`,
-    /// provide the complete list of primvar requirements for the node.
+    /// For example, a node may require the primvar to function
+    /// correctly.
     EXEC_API
     const NdrTokenVec& GetPrimvars() const { return _primvars; }
 
-    /// The list of string input properties whose values provide the names of
-    /// additional primvars consumed by this node. For example, this may return
-    /// a token named `varname`. This indicates that the client should query the
-    /// value of a (presumed to be string-valued) input attribute named varname
-    /// from its scene description to determine the name of a primvar the 
-    /// node will consume. See `GetPrimvars()` for additional information.
-    EXEC_API
-    const NdrTokenVec& GetAdditionalPrimvarProperties() const {
-        return _primvarNamingProperties;
-    }
-
-    /// Returns the implementation name of this node.  The name of the node
-    /// is how to refer to the node in networks.  The label is how to
-    /// present this node to users.  The implementation name is the name of
-    /// the function (or something) this node represents in the
-    /// implementation.  Any client using the implementation \b must call
-    /// this method to get the correct name;  using \c getName() is not
-    /// correct.
-    EXEC_API
-    std::string GetImplementationName() const;
-
     /// @}
 
 
-    /// \name Aggregate Information
-    /// @{
-
-    /// Gets the names of the properties on a certain page (one that was
-    /// returned by `GetPages()`). To get properties that are not assigned to a
-    /// page, an empty string can be used for \p pageName.
-    EXEC_API
-    NdrTokenVec GetPropertyNamesForPage(const std::string& pageName) const;
-
-    /// @}
-
-
-    /// \cond
-    /// Hide from the API.
-
-    // Performs a post-process on properties to determine information that can
-    // only be determined after parsing or in aggregate. Clients SHOULD NOT
-    // need to call this.
-    void _PostProcessProperties();
-
-    /// \endcond
 
 protected:
     // Processed primvar metadata. `_primvars` contains the names of primvars
@@ -206,13 +137,10 @@ protected:
     // names of string input properties whose values provide the names of
     // additional primvars consumed by this node.
     NdrTokenVec _primvars;
-    NdrTokenVec _primvarNamingProperties;
 
     // Tokenized metadata
     TfToken _label;
     TfToken _category;
-    NdrTokenVec _departments;
-    NdrTokenVec _pages;
 
     ExecPropertyMap _execInputs;
     ExecPropertyMap _execOutputs;
@@ -220,9 +148,6 @@ protected:
 private:
     // Initializes `_primvars` and `_primvarNamingProperties`
     void _InitializePrimvars();
-
-    // Determines which pages are present on the node's properties
-    NdrTokenVec _ComputePages() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

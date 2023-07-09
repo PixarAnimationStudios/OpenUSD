@@ -62,16 +62,11 @@ void wrapExecProperty()
                 copyRefPolicy)
         .def("GetLabel", &This::GetLabel, copyRefPolicy)
         .def("GetHelp", &This::GetHelp)
-        .def("GetPage", &This::GetPage, copyRefPolicy)
-        .def("GetWidget", &This::GetWidget, copyRefPolicy)
         .def("GetHints", &This::GetHints,
             return_value_policy<TfPyMapToDictionary>())
         .def("GetOptions", &This::GetOptions,
             return_value_policy<TfPySequenceToList>())
-        .def("GetImplementationName", &This::GetImplementationName)
         .def("GetValidConnectionTypes", &This::GetValidConnectionTypes,
             copyRefPolicy)
-        .def("IsAssetIdentifier", &This::IsAssetIdentifier)
-        .def("IsDefaultInput", &This::IsDefaultInput)
         ;
 }

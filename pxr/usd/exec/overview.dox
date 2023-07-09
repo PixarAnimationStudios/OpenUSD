@@ -102,13 +102,8 @@ Some of these metadata tags are:
 
 Some metadata is used to drive the conversion of an SdfValueTypeName.
 Metadata that is used for SdfValueTypeName conversion is authored either by 
-node writers (ExecUsdDefinitionName), or it should be injected into an 
-ExecProperty by a parser plugin writer (IsAssetIdentifier).
+node writers (ExecUsdDefinitionName)
 This includes:
-- ExecPropertyMetadata->IsAssetIdentifier - This metadata tag is injected by a
-  parser if the parser determines that the property is an asset. The presence
-  of this metadata tag then guides the type mapping to choose
-  SdfValueTypeNames->Asset
 - ExecPropertyMetadata->ExecUsdDefinitionType - This metadata, explicitly 
   authored in a node definition, specifies the SdfValueTypeName as string. 
   Note that this metadata takes precendence in determining the SdfValueTypeName 
@@ -127,7 +122,7 @@ This includes:
 ## Some examples illustrating the treatment of property types
 
 ~~~~~~~~~~~~~{.usd}
-shader TestOSLShader
+node TestOSLNode
 (
     color foo = color(1.0, 1.0 1.0),
     token bar = "baz",
