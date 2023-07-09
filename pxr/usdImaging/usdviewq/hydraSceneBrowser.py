@@ -147,7 +147,8 @@ class HydraSceneBrowser(QtWidgets.QWidget):
         menuTreeWidget.setAllColumnsShowFocus(True);
         menuTreeWidget.setMouseTracking(True);
         menuTreeWidget.setSizeAdjustPolicy(
-            QtWidgets.QAbstractScrollArea.AdjustToContentsOnFirstShow)
+            QtWidgets.QAbstractScrollArea.SizeAdjustPolicy.\
+                AdjustToContentsOnFirstShow)
 
         def _ItemEntered(item):
             menuTreeWidget.setCurrentItem(item, 0,
@@ -247,8 +248,8 @@ class _SceneIndexTreeWidget(QtWidgets.QTreeWidget):
         self.setHeaderLabels(["Name", "Type"])
 
         header = self.header()
-        header.setSectionResizeMode(0, header.Stretch);
-        header.setSectionResizeMode(1, header.Fixed);
+        header.setSectionResizeMode(0, header.ResizeMode.Stretch);
+        header.setSectionResizeMode(1, header.ResizeMode.Fixed);
         header.resizeSection(1, self.fontMetrics().averageCharWidth() * 10);
         header.setStretchLastSection(False);
 
@@ -405,7 +406,8 @@ class _SceneIndexPrimTreeWidgetItem(QtWidgets.QTreeWidgetItem):
         self.__queryOnExpansion = queryOnExpansion
 
         if queryOnExpansion:
-            self.setChildIndicatorPolicy(self.ShowIndicator)
+            self.setChildIndicatorPolicy(
+                self.ChildIndicatorPolicy.ShowIndicator)
 
         if primPath.IsPropertyPath():
             name = "." + primPath.name
@@ -443,7 +445,8 @@ class _SceneIndexPrimTreeWidgetItem(QtWidgets.QTreeWidgetItem):
             treeWidget._AddPrimItem(childPath, childItem)
 
         if not self.childCount():
-            self.setChildIndicatorPolicy(self.DontShowIndicator)
+            self.setChildIndicatorPolicy(
+                self.ChildIndicatorPolicy.DontShowIndicator)
 
 # -----------------------------------------------------------------------------
 
@@ -548,9 +551,11 @@ class _DataSourceTreeWidgetItem(QtWidgets.QTreeWidgetItem):
 
         if isinstance(self.__dataSource, (ContainerDataSource,
                 VectorDataSource,)):
-            self.setChildIndicatorPolicy(self.ShowIndicator)
+            self.setChildIndicatorPolicy(
+                self.ChildIndicatorPolicy.ShowIndicator)
         else:
-            self.setChildIndicatorPolicy(self.DontShowIndicator)
+            self.setChildIndicatorPolicy(
+                self.ChildIndicatorPolicy.DontShowIndicator)
 
         if self.__IsInExpandedSet():
             #TODO, determine whether this is necessary to defer anymore
@@ -745,9 +750,9 @@ class _DataSourceValueTreeView(QtWidgets.QTreeView):
                 dataSource.GetTypeString(), self))
 
             header = self.header()
-            header.setSectionResizeMode(0, header.Stretch)
+            header.setSectionResizeMode(0, header.ResizeMode.Stretch)
             if header.count() > 1:
-                header.setSectionResizeMode(1, header.Fixed)
+                header.setSectionResizeMode(1, header.ResizeMode.Fixed)
                 header.resizeSection(1,
                     self.fontMetrics().averageCharWidth() * 10)
                 header.setStretchLastSection(False)

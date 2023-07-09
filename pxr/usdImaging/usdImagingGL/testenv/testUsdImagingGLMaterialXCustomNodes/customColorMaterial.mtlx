@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+
+  <!-- Namespaces work when the namespaced file is included AND the containing
+       folder is indicated with the PXR_MTLX_PLUGIN_SEARCH_PATHS env var -->
+  <xi:include href="./customNodeDefs/customColorNodeDef.mtlx" />
+
+  <nodegraph name="wrapper_nodegraph">
+    <color3val name="myColor" type="color3" namespace="TestNamespace"/>
+    <constant name="green" type="color3">
+      <input name="value" type="color3" value="0,1,0" />
+    </constant>
+    <multiply name="multi" type="color3">
+      <input name="in1" type="color3" nodename="myColor" />
+      <input name="in2" type="float" value="0.75" />
+    </multiply>
+    <add name="add" type="color3">
+      <input name="in1" type="color3" nodename="multi" />
+      <input name="in2" type="color3" nodename="green" />
+    </add>
+    <output name="diffuse_output" type="color3" nodename="add" />
+  </nodegraph>
+  <UsdPreviewSurface name="surface_shader_node" type="surfaceshader">
+    <input name="diffuseColor" type="color3" output="diffuse_output" nodegraph="wrapper_nodegraph" />
+    <input name="useSpecularWorkflow" type="integer" value="0" />
+    <input name="specularColor" type="color3" value=".9, .9, .9" />
+    <input name="roughness" type="float" value="0.25" />
+    <input name="ior" type="float" value=".9" />
+  </UsdPreviewSurface>
+  <surfacematerial name="surface_material_node" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="surface_shader_node" />
+  </surfacematerial>
+</materialx>

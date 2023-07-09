@@ -408,7 +408,19 @@ class TestGfFrustum(unittest.TestCase):
             self.assertTrue(
                 Gf.IsClose(corners[i], (results[i] + results[i+4]) / 2.0,
                            0.0001))
-        
+
+    def test_Hash(self):
+        frustum = Gf.Frustum(
+                Gf.Vec3d(1.0, 2.0, 3.0),
+                Gf.Rotation(Gf.Vec3d(1.0, 0.0, 0.0), 90.0),
+                Gf.Range2d(Gf.Vec2d(-0.5, 0.5), Gf.Vec2d(-1.0, 1.0)),
+                Gf.Range1d(1.0, 1000.0),
+                Gf.Frustum.Perspective,
+                10.0
+        )
+
+        self.assertEqual(hash(frustum), hash(frustum))
+        self.assertEqual(hash(frustum), hash(Gf.Frustum(frustum)))
 
 if __name__ == '__main__':
     unittest.main()

@@ -427,6 +427,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -435,7 +436,6 @@
 
 #include "pxr/base/arch/hints.h"
 
-#include <boost/functional/hash_fwd.hpp>
 
 #include <typeinfo>
 #include <type_traits>
@@ -1329,11 +1329,7 @@ template <class T>
 inline size_t
 hash_value(const TfRefPtr<T>& ptr)
 {
-    // Make the boost::hash type depend on T so that we don't have to always
-    // include boost/functional/hash.hpp in this header for the definition of
-    // boost::hash.
-    auto refBase = ptr._refBase;
-    return boost::hash<decltype(refBase)>()(refBase);
+    return TfHash()(ptr);
 }
 
 template <class HashState, class T>

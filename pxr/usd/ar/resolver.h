@@ -231,6 +231,15 @@ public:
     /// would invalidate asset paths that had previously been resolved,
     /// an ArNotice::ResolverChanged notice will be sent to inform clients
     /// of this.
+    ///
+    /// Avoid calling RefreshContext() on the same context from more than one 
+    /// thread concurrently as ArNotice::ResolverChanged notice listeners may 
+    /// mutate their state in response to receiving the notice.
+    ///
+    /// Avoid calling RefreshContext() with a context that is active (bound to 
+    /// a resolver). Unbind the context before refreshing it.
+    ///
+    /// \see \ref Usd_Page_MultiThreading "Threading Model and Performance Considerations"
     AR_API
     void RefreshContext(
         const ArResolverContext& context);

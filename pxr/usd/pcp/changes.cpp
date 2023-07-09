@@ -530,7 +530,6 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
     SdfPathSet pathsWithSignificantChanges;
     PathChangeMap pathsWithSpecChanges;
     SpecChangesTypes pathsWithSpecChangesTypes;
-    SdfPathSet pathsWithRelocatesChanges;
     SdfPathVector oldPaths, newPaths;
     SdfPathSet fallbackToAncestorPaths;
 
@@ -612,7 +611,6 @@ PcpChanges::DidChange(const TfSpan<const PcpCache*>& caches,
         pathsWithSignificantChanges.clear();
         pathsWithSpecChanges.clear();
         pathsWithSpecChangesTypes.clear();
-        pathsWithRelocatesChanges.clear();
         oldPaths.clear();
         newPaths.clear();
         fallbackToAncestorPaths.clear();

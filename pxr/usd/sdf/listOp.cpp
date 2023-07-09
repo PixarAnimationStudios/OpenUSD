@@ -171,6 +171,15 @@ SdfListOp<T>::GetItems(SdfListOpType type) const
 }
 
 template <typename T>
+typename SdfListOp<T>::ItemVector 
+SdfListOp<T>::GetAppliedItems() const
+{
+    ItemVector result;
+    ApplyOperations(&result);
+    return result;
+}
+
+template <typename T>
 void 
 SdfListOp<T>::SetExplicitItems(const ItemVector &items)
 {

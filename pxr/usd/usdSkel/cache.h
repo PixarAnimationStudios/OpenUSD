@@ -68,7 +68,7 @@ public:
     ///
     /// Population resolves inherited skel bindings set using the
     /// UsdSkelBindingAPI, making resolved bindings available through
-    /// GetSkinningQuery(), ComputeSkelBdining() and ComputeSkelBindings().
+    /// GetSkinningQuery(), ComputeSkelBinding() and ComputeSkelBindings().
     USDSKEL_API
     bool Populate(const UsdSkelRoot& root,
                   Usd_PrimFlagsPredicate predicate) const;

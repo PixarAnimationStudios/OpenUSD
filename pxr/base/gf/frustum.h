@@ -38,8 +38,7 @@
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/api.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <array>
 #include <atomic>
@@ -190,14 +189,14 @@ class GfFrustum {
     }        
 
     friend inline size_t hash_value(const GfFrustum &f) {
-        size_t h = 0;
-        boost::hash_combine(h, f._position);
-        boost::hash_combine(h, f._rotation);
-        boost::hash_combine(h, f._window);
-        boost::hash_combine(h, f._nearFar);
-        boost::hash_combine(h, f._viewDistance);
-        boost::hash_combine(h, f._projectionType);
-        return h;
+        return TfHash::Combine(
+            f._position,
+            f._rotation,
+            f._window,
+            f._nearFar,
+            f._viewDistance,
+            f._projectionType
+        );
     }
 
     // Equality operator. true iff all parts match.

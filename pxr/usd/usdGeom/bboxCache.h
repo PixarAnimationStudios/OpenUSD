@@ -30,6 +30,7 @@
 #include "pxr/usd/usdGeom/pointInstancer.h"
 #include "pxr/usd/usd/attributeQuery.h"
 #include "pxr/base/gf/bbox3d.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/work/dispatcher.h"
 
@@ -541,10 +542,18 @@ private:
     // Helper to determine if we should use extents hints for \p prim.
     inline bool _UseExtentsHintForPrim(UsdPrim const &prim) const;
 
-    // Need hash_value for boost to key cache entries by prim context.
-    friend size_t hash_value(const _PrimContext &key);
+    // Specialize TfHashAppend for TfHash
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const _PrimContext &key)
+    {
+        h.Append(key.prim);
+        h.Append(key.instanceInheritablePurpose);
+    }
 
-    typedef boost::hash<_PrimContext> _PrimContextHash;
+    // Need hash_value for boost to key cache entries by prim context.
+    friend size_t hash_value(const _PrimContext &key) { return TfHash{}(key); }
+
+    typedef TfHash _PrimContextHash;
     typedef TfHashMap<_PrimContext, _Entry, _PrimContextHash> _PrimBBoxHashMap;
 
     // Finds the cache entry for the prim context if it exists.

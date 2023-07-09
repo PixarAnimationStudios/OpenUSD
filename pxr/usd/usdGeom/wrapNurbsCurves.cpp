@@ -69,6 +69,13 @@ _CreateRangesAttr(UsdGeomNurbsCurves &self,
     return self.CreateRangesAttr(
         UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double2Array), writeSparsely);
 }
+        
+static UsdAttribute
+_CreatePointWeightsAttr(UsdGeomNurbsCurves &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreatePointWeightsAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->DoubleArray), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdGeomNurbsCurves &self)
@@ -132,6 +139,13 @@ void wrapUsdGeomNurbsCurves()
              &_CreateRangesAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
+        
+        .def("GetPointWeightsAttr",
+             &This::GetPointWeightsAttr)
+        .def("CreatePointWeightsAttr",
+             &_CreatePointWeightsAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;
@@ -163,4 +177,4 @@ namespace {
 WRAP_CUSTOM {
 }
 
-} // anonymous namespace
+}

@@ -54,8 +54,7 @@
 
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_set.h>
@@ -73,12 +72,9 @@ UsdPrim::GetChild(const TfToken &name) const
     return GetStage()->GetPrimAtPath(GetPath().AppendChild(name));
 }
 
-template<class... SchemaArgs>
 bool
-UsdPrim::_IsA(const SchemaArgs & ...schemaArgs) const
+UsdPrim::_IsA(const UsdSchemaRegistry::SchemaInfo *schemaInfo) const
 {
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        UsdSchemaRegistry::FindSchemaInfo(schemaArgs...);
     if (!schemaInfo) {
         return false;
     }
@@ -91,20 +87,20 @@ UsdPrim::_IsA(const SchemaArgs & ...schemaArgs) const
 bool
 UsdPrim::IsA(const TfType& schemaType) const
 {
-    return _IsA(schemaType);
+    return _IsA(UsdSchemaRegistry::FindSchemaInfo(schemaType));
 }
 
 bool
 UsdPrim::IsA(const TfToken& schemaIdentifier) const
 {
-    return _IsA(schemaIdentifier);
+    return _IsA(UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier));
 }
 
 bool
 UsdPrim::IsA(const TfToken& schemaFamily,
              UsdSchemaVersion schemaVersion) const
 {
-    return _IsA(schemaFamily, schemaVersion);
+    return _IsA(UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion));
 }
 
 // Helper implementations for wrapping UsdSchemaRegistry's 
@@ -289,12 +285,9 @@ _IsSchemaInstanceInAppliedSchemas(
         apiSchemaName) != appliedSchemas.end();
 }
 
-template<class... SchemaArgs>
 bool 
-UsdPrim::_HasAPI(const SchemaArgs & ...schemaArgs) const
+UsdPrim::_HasAPI(const UsdSchemaRegistry::SchemaInfo *schemaInfo) const
 {
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        UsdSchemaRegistry::FindSchemaInfo(schemaArgs...);
     if (!schemaInfo) {
         return false;
     }
@@ -307,18 +300,16 @@ UsdPrim::_HasAPI(const SchemaArgs & ...schemaArgs) const
     return _IsSchemaInAppliedSchemas(appliedSchemas, *schemaInfo);
 }
 
-template<class... SchemaArgs>
 bool 
 UsdPrim::_HasAPIInstance(
-    const TfToken &instanceName, const SchemaArgs & ...schemaArgs) const
+    const UsdSchemaRegistry::SchemaInfo *schemaInfo,
+    const TfToken &instanceName) const
 {
     if (instanceName.IsEmpty()) {
         TF_CODING_ERROR("Instance name must be non-empty");
         return false;
     }
 
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        UsdSchemaRegistry::FindSchemaInfo(schemaArgs...);
     if (!schemaInfo) {
         return false;
     }
@@ -335,33 +326,36 @@ UsdPrim::_HasAPIInstance(
 bool
 UsdPrim::HasAPI(const TfType& schemaType) const
 {
-    return _HasAPI(schemaType);
+    return _HasAPI(UsdSchemaRegistry::FindSchemaInfo(schemaType));
 }
 
 bool
 UsdPrim::HasAPI(const TfType& schemaType, const TfToken& instanceName) const
 {
-    return _HasAPIInstance(instanceName, schemaType);
+    return _HasAPIInstance(
+        UsdSchemaRegistry::FindSchemaInfo(schemaType), instanceName);
 }
 
 bool
 UsdPrim::HasAPI(const TfToken& schemaIdentifier) const
 {
-    return _HasAPI(schemaIdentifier);
+    return _HasAPI(UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier));
 }
 
 bool
 UsdPrim::HasAPI(const TfToken& schemaIdentifier, 
                 const TfToken& instanceName) const
 {
-    return _HasAPIInstance(instanceName, schemaIdentifier);
+    return _HasAPIInstance(
+        UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier), instanceName);
 }
 
 bool
 UsdPrim::HasAPI(const TfToken& schemaFamily,
                 UsdSchemaVersion schemaVersion) const
 {
-    return _HasAPI(schemaFamily, schemaVersion);
+    return _HasAPI(
+        UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion));
 }
 
 bool
@@ -369,7 +363,9 @@ UsdPrim::HasAPI(const TfToken& schemaFamily,
                 UsdSchemaVersion schemaVersion, 
                 const TfToken& instanceName) const
 {
-    return _HasAPIInstance(instanceName, schemaFamily, schemaVersion);
+    return _HasAPIInstance(
+        UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion),
+        instanceName);
 }
 
 // The implementation of HasAPIInFamily (without an instance name) for
@@ -530,84 +526,92 @@ UsdPrim::GetVersionIfHasAPIInFamily(
     return false;
 }                             
 
-// Helpers for getting the strings for use in messages and errors for each of
-// supported schema function input types.
+// Helpers for formatting and reporting error messages for each of the 
+// supported schema function input types when they do not produce a valid schema.
 static
-std::string _MakeSchemaInputDebugString(const TfType &schemaType) 
+void _ReportInvalidSchemaError(
+    const char *funcName, 
+    const TfType &schemaType,
+    std::string *reason = nullptr) 
 {
-    return TfStringPrintf("schema type '%s'", schemaType.GetTypeName().c_str());
+    std::string errorMsg = TfStringPrintf(
+        "Cannot find a valid schema for the provided schema type '%s'", 
+        schemaType.GetTypeName().c_str());
+    TF_CODING_ERROR("%s: %s", funcName, errorMsg.c_str());
+    if (reason) {
+        *reason = std::move(errorMsg);
+    }
 }
 
 static 
-std::string _MakeSchemaInputDebugString(const TfToken &schemaIdentifier) 
+void _ReportInvalidSchemaError(
+    const char *funcName, 
+    const TfToken &schemaIdentifier,
+    std::string *reason = nullptr) 
 {
-    return TfStringPrintf("schema identifier '%s'", schemaIdentifier.GetText());
+    std::string errorMsg = TfStringPrintf(
+        "Cannot find a valid schema for the provided schema identifier '%s'", 
+        schemaIdentifier.GetText());
+    TF_CODING_ERROR("%s: %s", funcName, errorMsg.c_str());
+    if (reason) {
+        *reason = std::move(errorMsg);
+    }
 }
 
 static 
-std::string _MakeSchemaInputDebugString(
-    const TfToken &schemaFamily, UsdSchemaVersion schemaVersion) 
+void _ReportInvalidSchemaError(
+    const char *funcName,
+    const TfToken &schemaFamily,
+    UsdSchemaVersion schemaVersion,
+    std::string *reason = nullptr) 
 {
-    return TfStringPrintf("schema family '%s' and version '%u", 
-        schemaFamily.GetText(), schemaVersion);
+    std::string errorMsg =  TfStringPrintf(
+        "Cannot find a valid schema for the provided schema family '%s' and "
+        "version '%u", schemaFamily.GetText(), schemaVersion);
+    TF_CODING_ERROR("%s: %s", funcName, errorMsg.c_str());
+    if (reason) {
+        *reason = std::move(errorMsg);
+    }
 }
 
-// Gets and validates the schema info for the single apply API schema  
-// ApplyAPI/CanApplyAPI/RemoveAPI functions.
-template <class... SchemaArgs>
-static
-const UsdSchemaRegistry::SchemaInfo * 
-_GetValidatedSingleApplySchemaInfo(
-    std::string *reason, const SchemaArgs &... schemaArgs)
+// Helpers for validating the expected schema kind for a schema and 
+// reporting errors for schemas that are not the expected kind.
+static bool 
+_ValidateIsSingleApplyAPI(
+    const char *funcName, 
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+    std::string *reason = nullptr) 
 {
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
-        UsdSchemaRegistry::FindSchemaInfo(schemaArgs...);
-    if (!schemaInfo) {
+    if (schemaInfo.kind != UsdSchemaKind::SingleApplyAPI) {
+        std::string errorMessage = TfStringPrintf(
+            "Provided schema type %s is not a single-apply API schema.", 
+            schemaInfo.type.GetTypeName().c_str());
+        TF_CODING_ERROR("%s: %s", funcName, errorMessage.c_str());
         if (reason) {
-            *reason = TfStringPrintf(
-                "Provided %s is not a valid schema type.", 
-                _MakeSchemaInputDebugString(schemaArgs...).c_str());
+            *reason = std::move(errorMessage);
         }
-        return nullptr;
+        return false;
     }
-    if (schemaInfo->kind != UsdSchemaKind::SingleApplyAPI) {
-        if (reason) {
-            *reason = TfStringPrintf(
-                "Provided %s is not a single-apply API schema type.", 
-                _MakeSchemaInputDebugString(schemaArgs...).c_str());
-        }
-        return nullptr;
-    }
-    return schemaInfo;
+    return true;
 }
 
-// Gets and validates the schema info for the multiple apply API schema  
-// ApplyAPI/CanApplyAPI/RemoveAPI functions.
-template<class... SchemaArgs>
-static 
-const UsdSchemaRegistry::SchemaInfo *
-_GetValidatedMultipleApplySchemaInfo(
-    std::string *reason, const SchemaArgs &... schemaArgs)
+static bool 
+_ValidateIsMultipleApplyAPI(
+    const char *funcName, 
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+    std::string *reason = nullptr) 
 {
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
-        UsdSchemaRegistry::FindSchemaInfo(schemaArgs...);
-    if (!schemaInfo) {
+    if (schemaInfo.kind != UsdSchemaKind::MultipleApplyAPI) {
+        std::string errorMessage = TfStringPrintf(
+            "Provided schema type %s is not a multiple-apply API schema.", 
+            schemaInfo.type.GetTypeName().c_str());
+        TF_CODING_ERROR("%s: %s", funcName, errorMessage.c_str());
         if (reason) {
-            *reason = TfStringPrintf(
-                "Provided %s is not a valid schema type.", 
-                _MakeSchemaInputDebugString(schemaArgs...).c_str());
+            *reason = std::move(errorMessage);
         }
-        return nullptr;
+        return false;
     }
-    if (schemaInfo->kind != UsdSchemaKind::MultipleApplyAPI) {
-        if (reason) {
-            *reason = TfStringPrintf(
-                "Provided %s is not a multiple-apply API schema type.", 
-                _MakeSchemaInputDebugString(schemaArgs...).c_str());
-        }
-        return nullptr;
-    }
-    return schemaInfo;
+    return true;
 }
 
 // Determines whether the given prim type can have the given API schema applied 
@@ -656,21 +660,12 @@ _IsPrimTypeValidApplyToTarget(const TfType &primType,
     return false;
 }
 
-template <class... SchemaArgs>
-bool 
+bool
 UsdPrim::_CanApplySingleApplyAPI(
-    std::string *whyNot, const SchemaArgs &... schemaArgs) const
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+    std::string *whyNot) const
 {
-    // Get the valid single apply API schema info. Failure to get the schema 
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedSingleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("CanApplyAPI: %s", errorMsg.c_str());
-        if (whyNot) {
-            *whyNot = std::move(errorMsg);
-        }
+    if (!_ValidateIsSingleApplyAPI("CanApplyAPI", schemaInfo, whyNot)) {
         return false;
     }
 
@@ -686,28 +681,18 @@ UsdPrim::_CanApplySingleApplyAPI(
     // API schema.
     return _IsPrimTypeValidApplyToTarget(
         GetPrimTypeInfo().GetSchemaType(), 
-        schemaInfo->identifier,
+        schemaInfo.identifier,
         /*instanceName=*/ TfToken(),
         whyNot);
 }
 
-template <class... SchemaArgs>
 bool 
 UsdPrim::_CanApplyMultipleApplyAPI(
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
     const TfToken& instanceName, 
-    std::string *whyNot, 
-    const SchemaArgs &... schemaArgs) const
+    std::string *whyNot) const
 {
-    // Get the valid multiple apply API schema info. Failure to get the schema
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedMultipleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("CanApplyAPI: %s", errorMsg.c_str());
-        if (whyNot) {
-            *whyNot = std::move(errorMsg);
-        }
+    if (!_ValidateIsMultipleApplyAPI("CanApplyAPI", schemaInfo, whyNot)) {
         return false;
     }
 
@@ -716,7 +701,7 @@ UsdPrim::_CanApplyMultipleApplyAPI(
     if (instanceName.IsEmpty()) {
         TF_CODING_ERROR("CanApplyAPI: for multiple apply API schema %s, a "
                         "non-empty instance name must be provided.",
-            schemaInfo->identifier.GetText());
+            schemaInfo.identifier.GetText());
         return false;
     }
 
@@ -731,12 +716,12 @@ UsdPrim::_CanApplyMultipleApplyAPI(
     // Multiple apply API schemas may have limitations on what instance names
     // are allowed to be used. Check if the requested instance name is valid.
     if (!UsdSchemaRegistry::IsAllowedAPISchemaInstanceName(
-            schemaInfo->identifier, instanceName)) {
+            schemaInfo.identifier, instanceName)) {
         if (whyNot) {
             *whyNot = TfStringPrintf(
                 "'%s' is not an allowed instance name for multiple apply API "
                 "schema '%s'.", 
-                instanceName.GetText(), schemaInfo->identifier.GetText());
+                instanceName.GetText(), schemaInfo.identifier.GetText());
         }
         return false;
     }
@@ -745,7 +730,7 @@ UsdPrim::_CanApplyMultipleApplyAPI(
     // API schema and instance name.
     return _IsPrimTypeValidApplyToTarget(
         GetPrimTypeInfo().GetSchemaType(), 
-        schemaInfo->identifier,
+        schemaInfo.identifier,
         instanceName,
         whyNot);
 }
@@ -754,7 +739,13 @@ bool
 UsdPrim::CanApplyAPI(const TfType& schemaType, 
                      std::string *whyNot) const
 {
-    return _CanApplySingleApplyAPI(whyNot, schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _CanApplySingleApplyAPI(*schemaInfo, whyNot);
+    } 
+    
+    _ReportInvalidSchemaError("CanApplyAPI", schemaType, whyNot);
+    return false;
 }
 
 bool 
@@ -762,14 +753,26 @@ UsdPrim::CanApplyAPI(const TfType& schemaType,
                      const TfToken& instanceName,
                      std::string *whyNot) const
 {
-    return _CanApplyMultipleApplyAPI(instanceName, whyNot, schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _CanApplyMultipleApplyAPI(*schemaInfo, instanceName, whyNot);
+    }
+
+    _ReportInvalidSchemaError("CanApplyAPI", schemaType, whyNot);
+    return false;
 }
 
 bool
 UsdPrim::CanApplyAPI(const TfToken& schemaIdentifier,
                      std::string *whyNot) const
 {
-    return _CanApplySingleApplyAPI(whyNot, schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _CanApplySingleApplyAPI(*schemaInfo, whyNot);
+    }
+
+    _ReportInvalidSchemaError("CanApplyAPI", schemaIdentifier, whyNot);
+    return false;
 }                     
 
 bool
@@ -777,7 +780,13 @@ UsdPrim::CanApplyAPI(const TfToken& schemaIdentifier,
                      const TfToken& instanceName,
                      std::string *whyNot) const
 {
-    return _CanApplyMultipleApplyAPI(instanceName, whyNot, schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _CanApplyMultipleApplyAPI(*schemaInfo, instanceName, whyNot);
+    }
+
+    _ReportInvalidSchemaError("CanApplyAPI", schemaIdentifier, whyNot);
+    return false;
 }                     
 
 bool 
@@ -785,7 +794,13 @@ UsdPrim::CanApplyAPI(const TfToken& schemaFamily,
                      UsdSchemaVersion schemaVersion,
                      std::string *whyNot) const
 {
-    return _CanApplySingleApplyAPI(whyNot, schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _CanApplySingleApplyAPI(*schemaInfo, whyNot);
+    }
+
+    _ReportInvalidSchemaError("CanApplyAPI", schemaFamily, schemaVersion, whyNot);
+    return false;
 }                     
 
 bool 
@@ -794,21 +809,20 @@ UsdPrim::CanApplyAPI(const TfToken& schemaFamily,
                      const TfToken& instanceName,
                      std::string *whyNot) const
 {
-    return _CanApplyMultipleApplyAPI(
-        instanceName, whyNot, schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _CanApplyMultipleApplyAPI(*schemaInfo, instanceName, whyNot);
+    }
+
+    _ReportInvalidSchemaError("CanApplyAPI", schemaFamily, schemaVersion, whyNot);
+    return false;
 }                     
 
-template <class... SchemaArgs>
 bool 
-UsdPrim::_ApplySingleApplyAPI(const SchemaArgs &... schemaArgs) const
+UsdPrim::_ApplySingleApplyAPI(
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo) const
 {
-    // Get the valid single apply API schema info. Failure to get the schema 
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedSingleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("ApplyAPI: %s", errorMsg.c_str());
+    if (!_ValidateIsSingleApplyAPI("ApplyAPI", schemaInfo)) {
         return false;
     }
 
@@ -826,21 +840,15 @@ UsdPrim::_ApplySingleApplyAPI(const SchemaArgs &... schemaArgs) const
         return false;
     }
 
-    return AddAppliedSchema(schemaInfo->identifier);
+    return AddAppliedSchema(schemaInfo.identifier);
 }
 
-template <class... SchemaArgs>
 bool 
 UsdPrim::_ApplyMultipleApplyAPI(
-    const TfToken &instanceName, const SchemaArgs &... schemaArgs) const
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+    const TfToken &instanceName) const
 {
-    // Get the valid mulitple apply API schema info. Failure to get the schema 
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedMultipleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("ApplyAPI: %s", errorMsg.c_str());
+    if (!_ValidateIsMultipleApplyAPI("ApplyAPI", schemaInfo)) {
         return false;
     }
 
@@ -849,7 +857,7 @@ UsdPrim::_ApplyMultipleApplyAPI(
     if (instanceName.IsEmpty()) {
         TF_CODING_ERROR("ApplyAPI: for mutiple apply API schema %s, a "
                         "non-empty instance name must be provided.",
-            schemaInfo->identifier.GetText());
+            schemaInfo.identifier.GetText());
         return false;
     }
 
@@ -868,41 +876,71 @@ UsdPrim::_ApplyMultipleApplyAPI(
     }
 
     const TfToken apiName(
-        SdfPath::JoinIdentifier(schemaInfo->identifier, instanceName));
+        SdfPath::JoinIdentifier(schemaInfo.identifier, instanceName));
     return AddAppliedSchema(apiName);
 }
 
 bool
 UsdPrim::ApplyAPI(const TfType& schemaType) const
 {
-    return _ApplySingleApplyAPI(schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _ApplySingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaType);
+    return false;
 }
 
 bool
 UsdPrim::ApplyAPI(const TfType& schemaType, 
                   const TfToken& instanceName) const
 {
-    return _ApplyMultipleApplyAPI(instanceName, schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _ApplyMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaType);
+    return false;
 }
 
 bool 
 UsdPrim::ApplyAPI(const TfToken& schemaIdentifier) const
 {
-    return _ApplySingleApplyAPI(schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _ApplySingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaIdentifier);
+    return false;
 }
 
 bool 
 UsdPrim::ApplyAPI(const TfToken& schemaIdentifier, 
                   const TfToken& instanceName) const
 {
-    return _ApplyMultipleApplyAPI(instanceName, schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _ApplyMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaIdentifier);
+    return false;
 }
 
 bool 
 UsdPrim::ApplyAPI(const TfToken& schemaFamily, 
                   UsdSchemaVersion schemaVersion) const
 {
-    return _ApplySingleApplyAPI(schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _ApplySingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaFamily, schemaVersion);
+    return false;
 }
 
 bool 
@@ -910,38 +948,32 @@ UsdPrim::ApplyAPI(const TfToken& schemaFamily,
                   UsdSchemaVersion schemaVersion, 
                   const TfToken& instanceName) const
 {
-    return _ApplyMultipleApplyAPI(instanceName, schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _ApplyMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("ApplyAPI", schemaFamily, schemaVersion);
+    return false;
 }
 
-template <class... SchemaArgs>
 bool 
 UsdPrim::_RemoveSingleApplyAPI(
-    const SchemaArgs &... schemaArgs) const
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo) const
 {
-    // Get the valid single apply API schema info. Failure to get the schema 
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedSingleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("RemoveAPI: %s", errorMsg.c_str());
+    if (!_ValidateIsSingleApplyAPI("RemoveAPI", schemaInfo)) {
         return false;
     }
-    return RemoveAppliedSchema(schemaInfo->identifier);
+
+    return RemoveAppliedSchema(schemaInfo.identifier);
 }
 
-template <class... SchemaArgs>
 bool 
 UsdPrim::_RemoveMultipleApplyAPI(
-    const TfToken &instanceName, const SchemaArgs &... schemaArgs) const
+    const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+    const TfToken &instanceName) const
 {
-    // Get the valid multipe apply API schema info. Failure to get the schema 
-    // info is a coding error.
-    std::string errorMsg;
-    const UsdSchemaRegistry::SchemaInfo *schemaInfo =
-        _GetValidatedMultipleApplySchemaInfo(&errorMsg, schemaArgs...);
-    if (!schemaInfo) {
-        TF_CODING_ERROR("RemoveAPI: %s", errorMsg.c_str());
+    if (!_ValidateIsMultipleApplyAPI("RemoveAPI", schemaInfo)) {
         return false;
     }
 
@@ -950,46 +982,76 @@ UsdPrim::_RemoveMultipleApplyAPI(
     if (instanceName.IsEmpty()) {
         TF_CODING_ERROR("RemoveAPI: for mutiple apply API schema %s, a "
                         "non-empty instance name must be provided.",
-            schemaInfo->identifier.GetText());
+            schemaInfo.identifier.GetText());
         return false;
     }
 
     const TfToken apiName(
-        SdfPath::JoinIdentifier(schemaInfo->identifier, instanceName));
+        SdfPath::JoinIdentifier(schemaInfo.identifier, instanceName));
     return RemoveAppliedSchema(apiName);
 }
 
 bool
 UsdPrim::RemoveAPI(const TfType& schemaType) const
 {
-    return _RemoveSingleApplyAPI(schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _RemoveSingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaType);
+    return false;
 }
 
 bool
 UsdPrim::RemoveAPI(const TfType& schemaType, 
                    const TfToken& instanceName) const
 {
-    return _RemoveMultipleApplyAPI(instanceName, schemaType);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaType)) {
+        return _RemoveMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaType);
+    return false;
 }
 
 bool
 UsdPrim::RemoveAPI(const TfToken& schemaIdentifier) const
 {
-    return _RemoveSingleApplyAPI(schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _RemoveSingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaIdentifier);
+    return false;
 }
 
 bool
 UsdPrim::RemoveAPI(const TfToken& schemaIdentifier, 
                    const TfToken& instanceName) const
 {
-    return _RemoveMultipleApplyAPI(instanceName, schemaIdentifier);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaIdentifier)) {
+        return _RemoveMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaIdentifier);
+    return false;
 }
 
 bool
 UsdPrim::RemoveAPI(const TfToken& schemaFamily, 
                    UsdSchemaVersion schemaVersion) const
 {
-    return _RemoveSingleApplyAPI(schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _RemoveSingleApplyAPI(*schemaInfo);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaFamily, schemaVersion);
+    return false;
 }
 
 bool
@@ -997,7 +1059,13 @@ UsdPrim::RemoveAPI(const TfToken& schemaFamily,
                    UsdSchemaVersion schemaVersion, 
                    const TfToken& instanceName) const
 {
-    return _RemoveMultipleApplyAPI(instanceName, schemaFamily, schemaVersion);
+    if (const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo(schemaFamily, schemaVersion)) {
+        return _RemoveMultipleApplyAPI(*schemaInfo, instanceName);
+    }
+
+    _ReportInvalidSchemaError("RemoveAPI", schemaFamily, schemaVersion);
+    return false;
 }
 
 bool 
@@ -1601,7 +1669,7 @@ private:
     WorkSingularTask _consumerTask;
     Predicate const &_predicate;
     tbb::concurrent_queue<SdfPath> _workQueue;
-    tbb::concurrent_unordered_set<UsdPrim, boost::hash<UsdPrim> > _seenPrims;
+    tbb::concurrent_unordered_set<UsdPrim, TfHash> _seenPrims;
     SdfPathVector _result;
     bool _recurse;
 };

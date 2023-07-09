@@ -1,0 +1,22 @@
+#usda 1.0 
+(
+    subLayers = [ 
+        @baseSchema.usda@
+    ]  
+)
+
+over "GLOBAL" (
+    customData = {
+        string libraryName      = "schemaFail10"
+        string libraryPath      = "pxr/usd/fakelib"
+    }
+)
+{
+}
+
+# Schema identifier that can't be parsed into a valid family and version.
+class InvalidVersionedId_1_2 "InvalidVersionedId_1_2" (
+    inherits = </Typed>
+)
+{
+}

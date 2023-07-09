@@ -2,7 +2,6 @@
 \page usdabc_page_front UsdAbc : Alembic File Format Plugin 
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdAbc : Alembic File Format Plugin
-\publicLib
 \endif
 
 \section usdAbc_overview Overview

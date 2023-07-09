@@ -15,7 +15,7 @@ def Skeleton "Skel" (
     prepend apiSchemas = ["SkelBindingAPI"]
 )
 {
-    rel skel:animationSource = </Anim>
+    rel skel:animationSource = <Anim>
 
     def SkelAnimation "Anim" {}
 }
@@ -36,7 +36,7 @@ def SkelRoot "Character" (
 \endcode
 
 Above, there is a single _skeleton_ at `</Skel>`, which is animated according
-to the _animation_ at `</Anim>`. That skeleton is bound to `</Character>`,
+to the _animation_ at `</Skel/Anim>`. That skeleton is bound to `</Character>`,
 and so affects every _skinnable primitive_ beneath `</Character>`, such as
 `</Character/Mesh>`.
 
@@ -62,7 +62,7 @@ way for clients to reason about resolved properties.
 \section UsdSkel_OM_SkeletonQuery UsdSkelSkeletonQuery: Skeleton Resolver
 
 A UsdSkelSkeletonQuery provides a simplified API for querying resolved
-data related to a UsdSkelSKeleton.
+data related to a UsdSkelSkeleton.
 
 A UsdSkelSkeletonQuery is created through a UsdSkelCache instance. Internally,
 constructing a query through a cache presents opportunities for sharing work

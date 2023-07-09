@@ -171,6 +171,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         self._highlightColorName = self.stateProperty("highlightColor", default="Yellow")
         self._ambientLightOnly = self.stateProperty("cameraLightEnabled", default=True)
         self._domeLightEnabled = self.stateProperty("domeLightEnabled", default=False)
+        self._domeLightTexturesVisible = self.stateProperty("domeLightTexturesVisible", default=True)
         self._clearColorText = self.stateProperty("backgroundColor", default="Grey (Dark)")
         self._autoComputeClippingPlanes = self.stateProperty("autoComputeClippingPlanes", default=False)
         self._showBBoxPlayback = self.stateProperty("showBBoxesDuringPlayback", default=False)
@@ -242,6 +243,7 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
         state["highlightColor"] = self._highlightColorName
         state["cameraLightEnabled"] = self._ambientLightOnly
         state["domeLightEnabled"] = self._domeLightEnabled
+        state["domeLightTexturesVisible"] = self._domeLightTexturesVisible
         state["backgroundColor"] = self._clearColorText
         state["autoComputeClippingPlanes"] = self._autoComputeClippingPlanes
         state["showBBoxesDuringPlayback"] = self._showBBoxPlayback
@@ -761,6 +763,15 @@ class ViewSettingsDataModel(QtCore.QObject, StateSource):
     @visibleViewSetting
     def domeLightEnabled(self, value):
         self._domeLightEnabled = value
+
+    @property
+    def domeLightTexturesVisible(self):
+        return self._domeLightTexturesVisible
+
+    @domeLightTexturesVisible.setter
+    @visibleViewSetting
+    def domeLightTexturesVisible(self, value):
+        self._domeLightTexturesVisible = value
 
     @property
     def clearColorText(self):

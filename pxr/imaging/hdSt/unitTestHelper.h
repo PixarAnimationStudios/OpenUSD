@@ -585,7 +585,7 @@ public:
     HDST_API
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     /// HdStLightingShader overrides
     void SetCamera(GfMatrix4d const &worldToViewMatrix,

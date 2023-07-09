@@ -413,6 +413,14 @@ public:
     HD_API
     virtual TfTokenVector GetMaterialRenderContexts() const;
 
+    /// Returns a list of namespace prefixes for render settings attributes 
+    /// relevant to a render delegate. This list is used to gather just the 
+    /// relevant attributes from render settings scene description. The default
+    /// is an empty list, which will gather all custom (non-schema) attributes.
+    ///
+    HD_API
+    virtual TfTokenVector GetRenderSettingsNamespaces() const;
+
     ///
     /// Return true to indicate that the render delegate wants rprim primvars
     /// to be filtered by the scene delegate to reduce the amount of primvars

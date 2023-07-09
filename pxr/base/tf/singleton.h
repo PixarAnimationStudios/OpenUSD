@@ -103,6 +103,7 @@
 /// to the sole instance of the registry.
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include <atomic>
 
@@ -132,10 +133,16 @@ public:
     /// (for example, letting only one thread at a time call a member
     /// function) are the responsibility of the class author.
     inline static T& GetInstance() {
+        // Suppress undefined-var-template warnings from clang; _instance
+        // is expected to be instantiated in another translation unit via
+        // the TF_INSTANTIATE_SINGLETON macro.
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         T *p = _instance.load();
         if (!p) {
             p = _CreateInstance(_instance);
         }
+        ARCH_PRAGMA_POP
         return *p;
     }
 
@@ -144,7 +151,13 @@ public:
     ///
     /// This call tests whether or not the singleton currently exists.
     inline static bool CurrentlyExists() {
+        // Suppress undefined-var-template warnings from clang; _instance
+        // is expected to be instantiated in another translation unit via
+        // the TF_INSTANTIATE_SINGLETON macro.
+        ARCH_PRAGMA_PUSH
+        ARCH_PRAGMA_UNDEFINED_VAR_TEMPLATE
         return static_cast<bool>(_instance.load());
+        ARCH_PRAGMA_POP
     }
 
     /// Indicate that the sole instance object has already been created.

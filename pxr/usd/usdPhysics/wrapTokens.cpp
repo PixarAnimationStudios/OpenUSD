@@ -135,4 +135,21 @@ void wrapUsdPhysicsTokens()
     _AddToken(cls, "x", UsdPhysicsTokens->x);
     _AddToken(cls, "y", UsdPhysicsTokens->y);
     _AddToken(cls, "z", UsdPhysicsTokens->z);
+    _AddToken(cls, "PhysicsArticulationRootAPI", UsdPhysicsTokens->PhysicsArticulationRootAPI);
+    _AddToken(cls, "PhysicsCollisionAPI", UsdPhysicsTokens->PhysicsCollisionAPI);
+    _AddToken(cls, "PhysicsCollisionGroup", UsdPhysicsTokens->PhysicsCollisionGroup);
+    _AddToken(cls, "PhysicsDistanceJoint", UsdPhysicsTokens->PhysicsDistanceJoint);
+    _AddToken(cls, "PhysicsDriveAPI", UsdPhysicsTokens->PhysicsDriveAPI);
+    _AddToken(cls, "PhysicsFilteredPairsAPI", UsdPhysicsTokens->PhysicsFilteredPairsAPI);
+    _AddToken(cls, "PhysicsFixedJoint", UsdPhysicsTokens->PhysicsFixedJoint);
+    _AddToken(cls, "PhysicsJoint", UsdPhysicsTokens->PhysicsJoint);
+    _AddToken(cls, "PhysicsLimitAPI", UsdPhysicsTokens->PhysicsLimitAPI);
+    _AddToken(cls, "PhysicsMassAPI", UsdPhysicsTokens->PhysicsMassAPI);
+    _AddToken(cls, "PhysicsMaterialAPI", UsdPhysicsTokens->PhysicsMaterialAPI);
+    _AddToken(cls, "PhysicsMeshCollisionAPI", UsdPhysicsTokens->PhysicsMeshCollisionAPI);
+    _AddToken(cls, "PhysicsPrismaticJoint", UsdPhysicsTokens->PhysicsPrismaticJoint);
+    _AddToken(cls, "PhysicsRevoluteJoint", UsdPhysicsTokens->PhysicsRevoluteJoint);
+    _AddToken(cls, "PhysicsRigidBodyAPI", UsdPhysicsTokens->PhysicsRigidBodyAPI);
+    _AddToken(cls, "PhysicsScene", UsdPhysicsTokens->PhysicsScene);
+    _AddToken(cls, "PhysicsSphericalJoint", UsdPhysicsTokens->PhysicsSphericalJoint);
 }

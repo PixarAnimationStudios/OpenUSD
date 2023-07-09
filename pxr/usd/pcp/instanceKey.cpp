@@ -82,13 +82,7 @@ PcpInstanceKey::PcpInstanceKey(const PcpPrimIndex& primIndex)
         }
     }
     _variantSelection.assign(variantSelection.begin(), variantSelection.end());
-    
-    for (const auto& arc : _arcs) {
-        boost::hash_combine(_hash, arc.GetHash());
-    }
-    for (const auto& vsel : _variantSelection) {
-        boost::hash_combine(_hash, vsel);
-    }
+    _hash = TfHash::Combine(_hash, _arcs, _variantSelection);
 }
 
 bool 

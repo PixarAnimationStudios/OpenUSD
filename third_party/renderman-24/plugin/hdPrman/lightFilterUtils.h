@@ -35,11 +35,6 @@ class HdSceneDelegate;
 class SdfPath;
 class TfToken;
 
-bool HdPrmanLightFilterPopulateNodesFromLightParams(
-    std::vector<riley::ShadingNode> *filterNodes,
-    const SdfPath &filterPath,
-    HdSceneDelegate *sceneDelegate);
-
 void HdPrmanLightFilterGenerateCoordSysAndLinks(
     riley::ShadingNode *filter,
     const SdfPath &filterPath,

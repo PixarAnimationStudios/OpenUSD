@@ -24,10 +24,11 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 
 #include "pxr/usdImaging/usdImaging/adapterRegistry.h"
+#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/debugCodes.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdImaging/coordSysAdapter.h"
 #include "pxr/usdImaging/usdImaging/instanceAdapter.h"
+#include "pxr/usdImaging/usdImaging/materialAdapter.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 
@@ -1281,6 +1282,14 @@ bool _IsCoordSysAdapter(const UsdImagingPrimAdapterSharedPtr &adapter)
     return dynamic_cast<UsdImagingCoordSysAdapter *>(adapter.get());
 }
 
+// We also need to check if a prim adapter is a material adapter to ensure we
+// perform the resync correctly in _ResyncUsdPrim.
+static
+bool _IsMaterialAdapter(const UsdImagingPrimAdapterSharedPtr& adapter)
+{
+    return dynamic_cast<UsdImagingMaterialAdapter*>(adapter.get());
+}
+
 void 
 UsdImagingDelegate::_ResyncUsdPrim(
     SdfPath const& usdPath,
@@ -1313,7 +1322,7 @@ UsdImagingDelegate::_ResyncUsdPrim(
     // There's an additional exception with regards to the targets of coord 
     // system bindings. Coord systems target and are dependent on Xform prims 
     // that can be anywhere within the hierarchy of the tree. The hydra prims 
-    // for coordinate systems that are denpendant on the resynced path or any
+    // for coordinate systems that are dependent on the resynced path or any
     // of its descendants are always individually resynced.
     //
     // The resync function has three phases, with each phase dropping through
@@ -1329,8 +1338,8 @@ UsdImagingDelegate::_ResyncUsdPrim(
     //  -- If case (1) applies, proceed to (2a), otherwise (2b) --
     //
     // (2a) If the resync target is a child of a "leaf" hydra prim, check 
-    //      if it's a parent of any coordinate system prims. If so, we need to 
-    //      resync the coordinate system prims as they're independent from their
+    //      if it's a parent of any coordinate system or material prims. If so,
+    //      we need to resync the child prims as they're independent from their
     //      parents. From here, we're done so return.
     // (2b) Otherwise, since the resync target isn't a child of a "leaf" hydra 
     //      prim, check if it's a parent of any hydra prims.  If so, we need to 
@@ -1378,11 +1387,11 @@ UsdImagingDelegate::_ResyncUsdPrim(
             if (primInfo != nullptr &&
                 TF_VERIFY(primInfo->adapter != nullptr)) {
                 // Skip any coord system prims as they're synced independently
-                // from prims it their hierarchy.
+                // from prims in their hierarchy.
                 if (!_IsCoordSysAdapter(primInfo->adapter)) {
                     // Process the prim and mark that we found a prim that 
                     // "prunes" the need to process any non coordinate system
-                    // prims below it.
+                    // or material prims below it.
                     primInfo->adapter->ProcessPrimResync(cachePath, proxy);
                     foundPruningPrim = true;
                 }
@@ -1393,11 +1402,13 @@ UsdImagingDelegate::_ResyncUsdPrim(
     // Whether the resync target is below a populated prim or not, we still 
     // search the resync subtree for affected prims. In the case where the 
     // target is below a populated prim, we're only looking for affected 
-    // dependent prims that are related to coordinate systems. Coordinate 
-    // systems are independent of their parent prims so we resync each 
-    // coordinate system in the subtree individually
+    // dependent prims that are related to coordinate systems or materials.
+    // Coordinate systems are independent of their parent prims so we resync
+    // each coordinate system in the subtree individually.  Referenced Material
+    // prims under a populated prim, e.g., a point instancer, also need to be
+    // resynced.
     // 
-    // It the case where the resync target is not below a populated prim, we 
+    // In the case where the resync target is not below a populated prim, we 
     // search the resync subtree for all affected prims. If there are any 
     // affected dependent prims, this subtree has been populated and we can 
     // resync affected prims individually. If we do this, we also need to walk 
@@ -1422,7 +1433,8 @@ UsdImagingDelegate::_ResyncUsdPrim(
                 // ProcessPrimResync to add Repopulate calls for objects not
                 // under "usdPath" (such as sibling native instances).
                 if (!foundPruningPrim || 
-                        _IsCoordSysAdapter(primInfo->adapter)) {
+                        _IsCoordSysAdapter(primInfo->adapter) ||
+                        _IsMaterialAdapter(primInfo->adapter)) {
                     primInfo->adapter->ProcessPrimResync(
                         affectedCachePath, proxy);
                 }
@@ -2416,6 +2428,29 @@ UsdImagingDelegate::SetRootVisibility(bool isVisible)
     }
 }
 
+void
+UsdImagingDelegate::SetRootInstancerId(SdfPath const& instancerId)
+{
+    if (instancerId == _rootInstancerId) {
+        return;
+    }
+    _rootInstancerId = instancerId;
+
+    UsdImagingIndexProxy indexProxy(this, nullptr);
+
+    // Mark dirty.
+    TF_FOR_ALL(it, _hdPrimInfoMap) {
+        const SdfPath &cachePath = it->first;
+        _HdPrimInfo &primInfo = it->second;
+        if (TF_VERIFY(primInfo.adapter, "%s", cachePath.GetText())) {
+            primInfo.adapter->MarkDirty(primInfo.usdPrim,
+                                        cachePath,
+                                        HdChangeTracker::DirtyInstancer,
+                                        &indexProxy);
+        }
+    }
+}
+
 SdfPath 
 UsdImagingDelegate::GetScenePrimPath(SdfPath const& rprimId,
                                      int instanceIndex,
@@ -2897,7 +2932,13 @@ UsdImagingDelegate::GetInstancerId(SdfPath const &primId)
             primInfo->adapter->GetInstancerId(primInfo->usdPrim, cachePath);
     }
 
-    return ConvertCachePathToIndexPath(pathValue);
+    pathValue = ConvertCachePathToIndexPath(pathValue);
+
+    if (pathValue.IsEmpty()) {
+        return _rootInstancerId;
+    }
+
+    return pathValue;
 }
 
 /*virtual*/
@@ -2928,7 +2969,8 @@ UsdImagingDelegate::GetMaterialId(SdfPath const &rprimId)
 
     _HdPrimInfo *primInfo = _GetHdPrimInfo(cachePath);
 
-    if (TF_VERIFY(primInfo)) {
+    if (TF_VERIFY(primInfo, "No primInfo for <%s> <%s>",
+        rprimId.GetText(), cachePath.GetText())) {
         pathValue = primInfo->adapter->GetMaterialId(
             primInfo->usdPrim, cachePath, _time);
     }
@@ -2964,7 +3006,7 @@ UsdImagingDelegate::GetLightParamValue(SdfPath const &id,
     // but should do the proper transformation.  Maybe we can use
     // the primInfo.usdPrim
     UsdPrim prim = _GetUsdPrim(cachePath);
-    if (!TF_VERIFY(prim)) {
+    if (!TF_VERIFY(prim, "No primInfo for <%s>", id.GetText())) {
         return VtValue();
     }
     UsdLuxLightAPI light = UsdLuxLightAPI(prim);

@@ -29,7 +29,6 @@
 \page gf_page_front Gf : Graphics Foundations
 \if ( PIXAR_MFB_BUILD )
 \mainpage Gf : Graphics Foundations
-\publicLib
 \endif
 
 \anchor mainpage_Gf

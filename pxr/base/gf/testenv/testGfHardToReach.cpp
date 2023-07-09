@@ -180,6 +180,11 @@ main(int argc, char *argv[])
 
         float halfsNan = GfHalf::sNan();
         TF_AXIOM(std::isnan(halfsNan));
+
+        TF_AXIOM(pxr_half::hash_value(GfHalf(1.0f)) ==
+                 pxr_half::hash_value(GfHalf(1.0f)));
+        TF_AXIOM(pxr_half::hash_value(GfHalf(1.0f)) ==
+                 hash_value(GfHalf(1.0f)));
     }
 
     return 0;

@@ -24,10 +24,11 @@
 #include "pxr/usd/usd/collectionAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
+
+#include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -41,7 +42,6 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_DEFINE_PRIVATE_TOKENS(
     _schemaTokens,
-    (CollectionAPI)
     (collection)
 );
 
@@ -96,6 +96,8 @@ UsdCollectionAPI::IsSchemaPropertyBaseName(const TfToken &baseName)
             UsdTokens->collection_MultipleApplyTemplate_ExpansionRule),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdTokens->collection_MultipleApplyTemplate_IncludeRoot),
+        UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
+            UsdTokens->collection_MultipleApplyTemplate_),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
             UsdTokens->collection_MultipleApplyTemplate_Includes),
         UsdSchemaRegistry::GetMultipleApplyNameTemplateBaseName(
@@ -239,6 +241,29 @@ UsdCollectionAPI::CreateIncludeRootAttr(VtValue const &defaultValue, bool writeS
                        writeSparsely);
 }
 
+UsdAttribute
+UsdCollectionAPI::GetCollectionAttr() const
+{
+    return GetPrim().GetAttribute(
+        _GetNamespacedPropertyName(
+            GetName(),
+            UsdTokens->collection_MultipleApplyTemplate_));
+}
+
+UsdAttribute
+UsdCollectionAPI::CreateCollectionAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(
+                       _GetNamespacedPropertyName(
+                            GetName(),
+                           UsdTokens->collection_MultipleApplyTemplate_),
+                       SdfValueTypeNames->Opaque,
+                       /* custom = */ false,
+                       SdfVariabilityUniform,
+                       defaultValue,
+                       writeSparsely);
+}
+
 UsdRelationship
 UsdCollectionAPI::GetIncludesRel() const
 {
@@ -296,6 +321,7 @@ UsdCollectionAPI::GetSchemaAttributeNames(bool includeInherited)
     static TfTokenVector localNames = {
         UsdTokens->collection_MultipleApplyTemplate_ExpansionRule,
         UsdTokens->collection_MultipleApplyTemplate_IncludeRoot,
+        UsdTokens->collection_MultipleApplyTemplate_,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -339,8 +365,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #include "pxr/usd/usd/primRange.h"
 
-#include <boost/functional/hash.hpp>
-
 #include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -374,7 +398,8 @@ UsdCollectionAPI::GetCollection(const UsdPrim &prim,
 SdfPath 
 UsdCollectionAPI::GetCollectionPath() const
 {
-    return GetPath().AppendProperty(_GetCollectionPropertyName());
+    return GetPath().AppendProperty(_GetNamespacedPropertyName(
+            GetName(), UsdTokens->collection_MultipleApplyTemplate_));
 }
 
 /* static */
@@ -383,35 +408,8 @@ UsdCollectionAPI::GetNamedCollectionPath(
     const UsdPrim &prim, 
     const TfToken &collectionName)
 {
-    return prim.GetPath().AppendProperty(TfToken(SdfPath::JoinIdentifier(
-            UsdTokens->collection, collectionName)));
-}
-
-// XXX: This functionality should probably be exposed in the base-class for use 
-// in other API schemas.UsdPrim::HasAPI has similar code as well.
-static std::vector<std::string> 
-_GetCollectionAPIAliases(const TfType &collSchemaType) 
-{
-    // The alias for UsdCollectionAPI is already available as a static token 
-    // in _schemaTokes.
-    std::vector<std::string> collectionAPIAliases{_schemaTokens->CollectionAPI};
-
-    // If there are derived types of the CollectionAPI, include their aliases
-    // too.
-    std::set<TfType> derivedTypes;
-    collSchemaType.GetAllDerivedTypes(&derivedTypes);
-    if (!derivedTypes.empty()) {
-        collectionAPIAliases.reserve(collectionAPIAliases.size() + 
-                                     derivedTypes.size());
-        const auto schemaBaseType = TfType::Find<UsdSchemaBase>();
-        for (const auto& derived : derivedTypes) {
-            for (const auto &derivedAlias : schemaBaseType.GetAliases(derived)){
-                collectionAPIAliases.push_back(derivedAlias);
-            }
-        }
-    }
-
-    return collectionAPIAliases;
+    return prim.GetPath().AppendProperty(_GetNamespacedPropertyName(
+            collectionName, UsdTokens->collection_MultipleApplyTemplate_));
 }
 
 /* static */
@@ -425,31 +423,19 @@ UsdCollectionAPI::GetAllCollections(const UsdPrim &prim)
         return collections;
     }
 
-    static const std::vector<std::string> collectionAPIAliases = 
-        _GetCollectionAPIAliases(_GetStaticTfType());
+    static const std::string collAPIPrefix = 
+        UsdTokens->CollectionAPI.GetString() + 
+        UsdObject::GetNamespaceDelimiter();
 
     for (const auto &appliedSchema : appliedSchemas) {
-        for (const std::string &alias : collectionAPIAliases) {
-            const std::string collAPIPrefix = alias + 
-                    UsdObject::GetNamespaceDelimiter();
-            if (TfStringStartsWith(appliedSchema, collAPIPrefix)) {
-                const std::string collectionName = 
-                        appliedSchema.GetString().substr(collAPIPrefix.size());
-                collections.emplace_back(prim, TfToken(collectionName));
-            }
+        if (TfStringStartsWith(appliedSchema, collAPIPrefix)) {
+            const std::string collectionName = 
+                appliedSchema.GetString().substr(collAPIPrefix.size());
+            collections.emplace_back(prim, TfToken(collectionName));
         }
     }
 
     return collections;
-}
-
-TfToken 
-UsdCollectionAPI::_GetCollectionPropertyName(
-    const TfToken &baseName /* =TfToken() */) const
-{
-    return TfToken(UsdTokens->collection.GetString() + ":" + 
-                   GetName().GetString() + 
-                   (baseName.IsEmpty() ? "" : (":" + baseName.GetString())));
 }
 
 bool 
@@ -601,10 +587,13 @@ UsdCollectionAPI::_ComputeMembershipQueryImpl(
     // Consult includeRoot and include </> if requested.
     // (The separate attribute is necessary since </> cannot be a
     // target path in a relationship.)
-    bool includeRoot = false;
-    GetIncludeRootAttr().Get(&includeRoot);
-    if (includeRoot) {
-        includes.push_back(SdfPath::AbsoluteRootPath());
+    // includeRoot is not meaningful in combination with explicitOnly.
+    if (expRule != UsdTokens->explicitOnly) {
+        bool includeRoot = false;
+        GetIncludeRootAttr().Get(&includeRoot);
+        if (includeRoot) {
+            includes.push_back(SdfPath::AbsoluteRootPath());
+        }
     }
 
     UsdStageWeakPtr stage = GetPrim().GetStage();

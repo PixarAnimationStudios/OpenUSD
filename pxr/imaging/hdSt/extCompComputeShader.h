@@ -73,7 +73,7 @@ public:
                          HdSt_ResourceBinder const &binder) override;
 
     HDST_API
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     HDST_API
     ID ComputeHash() const override;

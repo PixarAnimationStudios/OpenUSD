@@ -216,7 +216,7 @@ protected:
         // enabled or not.
         HDST_API
         virtual void _GetCustomBindings(
-            HdBindingRequestVector *customBindings,
+            HdStBindingRequestVector *customBindings,
             bool *enableInstanceDraw) const;
 
         HDST_API

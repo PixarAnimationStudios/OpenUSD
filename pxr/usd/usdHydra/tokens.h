@@ -100,7 +100,7 @@ struct UsdHydraTokensType {
     const TfToken HwUvTexture_1;
     /// \brief "hydraGenerativeProcedural"
     /// 
-    /// Default value for UsdHydraGenerativeProceduralAPI::GetProceduralSystemAttr()
+    /// Fallback value for UsdHydraGenerativeProceduralAPI::GetProceduralSystemAttr()
     const TfToken hydraGenerativeProcedural;
     /// \brief "inputs:file"
     /// 
@@ -178,6 +178,10 @@ struct UsdHydraTokensType {
     /// 
     /// A shader input on a hydra UvTexture shader which defines the behavior of texture coordinates that are outside the bounds of the texture.
     const TfToken wrapT;
+    /// \brief "HydraGenerativeProceduralAPI"
+    /// 
+    /// Schema identifer and family for UsdHydraGenerativeProceduralAPI
+    const TfToken HydraGenerativeProceduralAPI;
     /// A vector of all of the tokens listed above.
     const std::vector<TfToken> allTokens;
 };

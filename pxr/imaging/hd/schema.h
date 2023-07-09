@@ -28,6 +28,7 @@
 #include "pxr/imaging/hd/api.h"
 
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
+#include "pxr/imaging/hd/vectorSchemaTypeDefs.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

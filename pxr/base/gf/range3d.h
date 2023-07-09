@@ -37,8 +37,7 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/traits.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <cfloat>
 #include <cstddef>
@@ -88,6 +87,11 @@ public:
         : _min(min), _max(max)
     {
     }
+
+
+    /// Implicitly convert from GfRange3f.
+    GF_API
+    GfRange3d(class GfRange3f const &other);
 
     /// Returns the minimum value of the range.
     const GfVec3d &GetMin() const { return _min; }
@@ -297,10 +301,7 @@ public:
 
     /// hash.
     friend inline size_t hash_value(const GfRange3d &r) {
-        size_t h = 0;
-        boost::hash_combine(h, r._min);
-        boost::hash_combine(h, r._max);
-        return h;
+        return TfHash::Combine(r._min, r._max);
     }
 
     /// The min and max points must match exactly for equality.

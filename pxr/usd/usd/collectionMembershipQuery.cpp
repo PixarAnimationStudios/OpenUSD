@@ -360,14 +360,10 @@ UsdCollectionMembershipQuery::Hash::operator()(
     std::vector<_Entry> entries(q._pathExpansionRuleMap.begin(),
                                 q._pathExpansionRuleMap.end());
     std::sort(entries.begin(), entries.end());
-    size_t h = 0;
-    for (_Entry const& entry: entries) {
-        boost::hash_combine(h, entry.first);
-        boost::hash_combine(h, entry.second);
-    }
+
     // Don't hash _hasExcludes because it is derived from
     // the contents of _pathExpansionRuleMap.
-    return h;
+    return TfHash()(entries);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

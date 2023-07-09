@@ -249,7 +249,7 @@ _WrapSampledDataSourceGetValue(HdSampledDataSourceHandle &self,
 }
 
 static
-const char *
+std::string
 _WrapSampledDataSourceGetTypeString(HdSampledDataSourceHandle &self)
 {
     if (!self) {
@@ -261,7 +261,7 @@ _WrapSampledDataSourceGetTypeString(HdSampledDataSourceHandle &self)
         return "";
     }
 
-    return v.GetTypeName().c_str();
+    return v.GetTypeName();
 }
 
 static

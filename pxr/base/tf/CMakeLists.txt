@@ -147,6 +147,7 @@ pxr_library(tf
     PYTHON_PUBLIC_HEADERS
         py3Compat.h
         pySafePython.h
+        pySignatureExt.h
         pyStaticTokens.h
 
     PRIVATE_CLASSES

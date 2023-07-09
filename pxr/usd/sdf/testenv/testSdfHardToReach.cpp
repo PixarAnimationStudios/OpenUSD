@@ -26,7 +26,9 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/notice.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/primSpec.h"
+#include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
 
@@ -426,6 +428,54 @@ _TestSdfFpsAndTcps()
         VtValue(48.0), VtValue());
 }
 
+static void
+_TestSdfSchemaPathValidation()
+{
+    const SdfSchema &schema = SdfSchema::GetInstance();
+
+    // Exercise path restrictions on fields used for composition arcs.
+
+    TF_AXIOM(schema.IsValidInheritPath(SdfPath("/A")));
+    TF_AXIOM(!schema.IsValidInheritPath(SdfPath()));
+    TF_AXIOM(!schema.IsValidInheritPath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidInheritPath(SdfPath("A")));
+    TF_AXIOM(!schema.IsValidInheritPath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidInheritPath(SdfPath("/A{x=y}B")));
+
+    TF_AXIOM(schema.IsValidSpecializesPath(SdfPath("/A")));
+    TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath()));
+    TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("A")));
+    TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidSpecializesPath(SdfPath("/A{x=y}B")));
+
+    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.sdf", SdfPath())));
+    TF_AXIOM(schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A"))));
+    TF_AXIOM(schema.IsValidPayload(SdfPayload("", SdfPath("/A"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A.a"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("A"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A{x=y}"))));
+    TF_AXIOM(!schema.IsValidPayload(SdfPayload("a.sdf", SdfPath("/A{x=y}B"))));
+
+    TF_AXIOM(schema.IsValidReference(SdfReference("a.sdf", SdfPath())));
+    TF_AXIOM(schema.IsValidReference(SdfReference("a.sdf", SdfPath("/A"))));
+    TF_AXIOM(schema.IsValidReference(SdfReference("", SdfPath("/A"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", SdfPath("/A.a"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", SdfPath("A"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf",
+                                                   SdfPath("/A{x=y}"))));
+    TF_AXIOM(!schema.IsValidReference(SdfReference("a.sdf", 
+                                                   SdfPath("/A{x=y}B"))));
+
+    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("A")));
+    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A")));
+    TF_AXIOM(schema.IsValidRelocatesPath(SdfPath("/A/B")));
+    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath()));
+    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A.a")));
+    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}")));
+    TF_AXIOM(!schema.IsValidRelocatesPath(SdfPath("/A{x=y}B")));
+}
+
 int
 main(int argc, char **argv)
 {
@@ -435,6 +485,7 @@ main(int argc, char **argv)
     _TestSdfRelationshipTargetSpecEdits();
     _TestSdfPathFindLongestPrefix();
     _TestSdfFpsAndTcps();
+    _TestSdfSchemaPathValidation();
 
     return 0;
 }

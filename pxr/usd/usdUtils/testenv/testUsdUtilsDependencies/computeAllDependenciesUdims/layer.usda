@@ -1,0 +1,12 @@
+#usda 1.0
+
+def "foo"
+{
+    asset udim_attr = @./image_a.<UDIM>.exr@
+    asset[] udim_list = [
+        @./image_b.<UDIM>.exr@,
+        @./image_c.<UDIM>.exr@,
+        @./image_d.<UDIM>.exr@,
+    ]
+    asset udim_missing = @./image_e.<UDIM>.exr@
+}

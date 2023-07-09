@@ -47,7 +47,7 @@ Now we can use :ref:`toolset:usdview` to view our new alembic file.
 
   $ usdview hello.abc
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/553308898/553310211.jpg
+.. image:: http://openusd.org/images/plugins_alembic_usdview.jpg
 
 We can also convert this Alembic file back to USD using a similar call to usdcat.
 

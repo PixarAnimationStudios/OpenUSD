@@ -60,29 +60,29 @@ public:
     static HdsiPinnedCurveExpandingSceneIndexRefPtr
     New(const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
-    HD_API
+    HDSI_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override final;
 
-    HD_API
+    HDSI_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override final;
 
 protected:
-    HD_API
+    HDSI_API
     void _PrimsAdded(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::AddedPrimEntries &entries) override final;
 
-    HD_API
+    HDSI_API
     void _PrimsRemoved(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override final;
 
-    HD_API
+    HDSI_API
     void _PrimsDirtied(
         const HdSceneIndexBase &sender,
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override final;
 
-    HD_API
+    HDSI_API
     HdsiPinnedCurveExpandingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
 

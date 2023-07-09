@@ -12,6 +12,7 @@ over "GLOBAL" (
         string libraryPath           = "pxr/usd/usdGeom"
         # string libraryPrefix       = "UsdGeom"
         # string tokensPrefix        = "UsdGeom"
+        bool useLiteralIdentifier = 0
         dictionary libraryTokens = {
             dictionary interpolation = {
                 string doc = """UsdGeomPrimvar - How a Primvar interpolates
@@ -1597,7 +1598,7 @@ class BasisCurves "BasisCurves" (
     \\image html USDCurveHydra.png
 
     The file used to generate these curves can be found in
-    pxr/extras/examples/usdGeomExamples/basisCurves.usda.  It's provided
+    extras/usd/examples/usdGeomExamples/basisCurves.usda.  It's provided
     as a reference on how to properly image both tubes and ribbons. The first
     row of curves are linear; the second are cubic bezier. (We aim in future
     releases of HdSt to fix the discontinuity seen with broken tangents to
@@ -1677,6 +1678,15 @@ class NurbsCurves "NurbsCurves" (
         knots['i'th curve slice][order[i]-1]. The maxium must be less 
         than or equal to the last element's value in knots['i'th curve slice].
 	Range maps to (vmin, vmax) in the RenderMan spec.""")
+
+    double[] pointWeights (
+        doc = """Optionally provides "w" components for each control point,
+        thus must be the same length as the points attribute.  If authored,
+        the curve will be rational.  If unauthored, the curve will be
+        polynomial, i.e. weight for all points is 1.0.
+        \\note Some DCC's pre-weight the \\em points, but in this schema, 
+        \\em points are not pre-weighted."""
+    )
 }
 
 class Points "Points" (
@@ -1775,11 +1785,20 @@ class PointInstancer "PointInstancer" (
     
     Each instance's transformation is a combination of the SRT affine transform
     described by its scale, orientation, and position, applied \\em after
-    (i.e. less locally) than the transformation computed at the root of the
-    prototype it is instancing.  In other words, to put an instance of a 
-    PointInstancer into the space of the PointInstancer's parent prim:
+    (i.e. less locally than) the local to parent transformation computed at 
+    the root of the prototype it is instancing. 
+
+    If your processing of prototype geometry naturally takes into account the 
+    transform of the prototype root, then this term can be omitted from the 
+    computation of each instance transform, and this can be controlled when 
+    computing instance transformation matrices using the 
+    UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
+
+    To understand the computation of the instance transform, in order to put
+    an instance of a PointInstancer into the space of the PointInstancer's 
+    parent prim we do the following:
     
-    1. Apply (most locally) the authored transformation for 
+    1. Apply (most locally) the authored local to parent transformation for 
     <em>prototypes[protoIndices[i]]</em>
     2. If *scales* is authored, next apply the scaling matrix from *scales[i]*
     3. If *orientations* is authored: **if *angularVelocities* is authored**, 

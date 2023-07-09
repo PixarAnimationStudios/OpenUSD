@@ -53,14 +53,13 @@ HdRenderParam::~HdRenderParam() = default;
 HdRenderDelegate::~HdRenderDelegate() = default;
 
 HdRenderDelegate::HdRenderDelegate()
-    : _settingsMap(), _settingsVersion(1)
+    : _settingsVersion(1)
 {
 }
 
 HdRenderDelegate::HdRenderDelegate(HdRenderSettingsMap const& settingsMap)
-    : _settingsMap(), _settingsVersion(1)
+    : _settingsMap(settingsMap), _settingsVersion(1)
 {
-    _settingsMap = settingsMap;
     if (TfDebug::IsEnabled(HD_RENDER_SETTINGS)) {
         std::cout << "Initial Render Settings" << std::endl;
         for (auto const& pair : _settingsMap) {
@@ -107,6 +106,13 @@ HdRenderDelegate::GetMaterialRenderContexts() const
     // GetMaterialNetworkSelector()
     return {GetMaterialNetworkSelector()};
 }
+
+TfTokenVector
+HdRenderDelegate::GetRenderSettingsNamespaces() const
+{
+    return TfTokenVector();
+}
+
 
 bool
 HdRenderDelegate::IsPrimvarFilteringNeeded() const

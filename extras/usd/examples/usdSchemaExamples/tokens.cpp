@@ -32,13 +32,19 @@ UsdSchemaExamplesTokensType::UsdSchemaExamplesTokensType() :
     paramsVelocity("params:velocity", TfToken::Immortal),
     paramsVolume("params:volume", TfToken::Immortal),
     target("target", TfToken::Immortal),
+    ComplexPrim("ComplexPrim", TfToken::Immortal),
+    ParamsAPI("ParamsAPI", TfToken::Immortal),
+    SimplePrim("SimplePrim", TfToken::Immortal),
     allTokens({
         complexString,
         intAttr,
         paramsMass,
         paramsVelocity,
         paramsVolume,
-        target
+        target,
+        ComplexPrim,
+        ParamsAPI,
+        SimplePrim
     })
 {
 }

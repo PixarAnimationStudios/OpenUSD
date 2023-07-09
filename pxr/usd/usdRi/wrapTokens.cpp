@@ -65,10 +65,13 @@ void wrapUsdRiTokens()
     boost::python::class_<UsdRiTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "bspline", UsdRiTokens->bspline);
+    _AddToken(cls, "cameraVisibility", UsdRiTokens->cameraVisibility);
     _AddToken(cls, "catmullRom", UsdRiTokens->catmullRom);
+    _AddToken(cls, "collectionCameraVisibilityIncludeRoot", UsdRiTokens->collectionCameraVisibilityIncludeRoot);
     _AddToken(cls, "constant", UsdRiTokens->constant);
     _AddToken(cls, "interpolation", UsdRiTokens->interpolation);
     _AddToken(cls, "linear", UsdRiTokens->linear);
+    _AddToken(cls, "matte", UsdRiTokens->matte);
     _AddToken(cls, "outputsRiDisplacement", UsdRiTokens->outputsRiDisplacement);
     _AddToken(cls, "outputsRiSurface", UsdRiTokens->outputsRiSurface);
     _AddToken(cls, "outputsRiVolume", UsdRiTokens->outputsRiVolume);
@@ -76,4 +79,8 @@ void wrapUsdRiTokens()
     _AddToken(cls, "renderContext", UsdRiTokens->renderContext);
     _AddToken(cls, "spline", UsdRiTokens->spline);
     _AddToken(cls, "values", UsdRiTokens->values);
+    _AddToken(cls, "RiMaterialAPI", UsdRiTokens->RiMaterialAPI);
+    _AddToken(cls, "RiRenderPassAPI", UsdRiTokens->RiRenderPassAPI);
+    _AddToken(cls, "RiSplineAPI", UsdRiTokens->RiSplineAPI);
+    _AddToken(cls, "StatementsAPI", UsdRiTokens->StatementsAPI);
 }

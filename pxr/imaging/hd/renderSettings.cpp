@@ -26,8 +26,48 @@
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/tokens.h"
 
+#include "pxr/base/arch/hash.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace {
+    
+template <class HashState>
+void TfHashAppend(
+        HashState &h,
+        HdRenderSettings::RenderProduct::RenderVar const &rv)
+{
+    h.Append(
+            rv.varPath,
+            rv.dataType,
+            rv.sourceName,
+            rv.sourceType,
+            rv.namespacedSettings);
+}
+
+template <class HashState>
+void TfHashAppend(
+    HashState &h,
+    HdRenderSettings::RenderProduct const &rp)
+{
+    h.Append(
+            rp.productPath,
+            rp.type,
+            rp.name,
+            rp.resolution,
+            rp.renderVars,
+            rp.cameraPath,
+            rp.pixelAspectRatio,
+            rp.aspectRatioConformPolicy,
+            rp.apertureSize,
+            rp.dataWindowNDC,
+            rp.disableMotionBlur,
+            rp.namespacedSettings);
+}
+
+}
+// -------------------------------------------------------------------------- //
 
 HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
@@ -44,10 +84,34 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
-const HdRenderSettingsParams&
-HdRenderSettings::GetParams() const
+const HdRenderSettings::NamespacedSettings&
+HdRenderSettings::GetNamespacedSettings() const
 {
-    return _params;
+    return _namespacedSettings;
+}
+
+const HdRenderSettings::RenderProducts&
+HdRenderSettings::GetRenderProducts() const
+{
+    return _products;
+}
+
+const TfTokenVector&
+HdRenderSettings::GetIncludedPurposes() const
+{
+    return _includedPurposes;
+}
+
+const TfTokenVector&
+HdRenderSettings::GetMaterialBindingPurposes() const
+{
+    return _materialBindingPurposes;
+}
+
+const TfToken&
+HdRenderSettings::GetRenderingColorSpace() const
+{
+    return _renderingColorSpace;
 }
 
 void
@@ -57,21 +121,56 @@ HdRenderSettings::Sync(
     HdDirtyBits *dirtyBits)
 {
     if (*dirtyBits & HdRenderSettings::DirtyActive) {
+
         const VtValue val = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->active);
-        
         if (val.IsHolding<bool>()) {
             _active = val.UncheckedGet<bool>();
         }
     }
 
-    if (*dirtyBits & HdRenderSettings::DirtyParams) {
+    if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
 
-        const VtValue vParams = sceneDelegate->Get(
-            GetId(), HdRenderSettingsPrimTokens->params);
+        const VtValue vSettings = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->namespacedSettings);
+        if (vSettings.IsHolding<VtDictionary>()) {
+            _namespacedSettings = vSettings.UncheckedGet<VtDictionary>();
+        }
+    }
 
-        if (vParams.IsHolding<HdRenderSettingsParams>()) {
-            _params = vParams.UncheckedGet<HdRenderSettingsParams>();
+    if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
+
+        const VtValue vProducts = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->renderProducts);
+        if (vProducts.IsHolding<RenderProducts>()) {
+            _products = vProducts.UncheckedGet<RenderProducts>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyIncludedPurposes) {
+
+        const VtValue vPurposes = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->includedPurposes);
+        if (vPurposes.IsHolding<TfTokenVector>()) {
+            _includedPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyMaterialBindingPurposes) {
+
+        const VtValue vPurposes = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->materialBindingPurposes);
+        if (vPurposes.IsHolding<TfTokenVector>()) {
+            _materialBindingPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyRenderingColorSpace) {
+
+        const VtValue vColorSpace = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->renderingColorSpace);
+        if (vColorSpace.IsHolding<TfToken>()) {
+            _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
     }
 
@@ -95,5 +194,82 @@ HdRenderSettings::_Sync(
 {
     // no-op
 }
+
+// -------------------------------------------------------------------------- //
+// VtValue Requirements
+// -------------------------------------------------------------------------- //
+size_t
+hash_value(HdRenderSettings::RenderProduct const &rp)
+{
+    return TfHash()(rp);
+}
+
+std::ostream& operator<<(
+    std::ostream& out,
+    const HdRenderSettings::RenderProduct& rp)
+{
+    out << "RenderProduct: \n"
+        << "    productPath : " << rp.productPath
+        << "    resolution : " << rp.resolution
+        << "    namespacedSettings: " << rp.namespacedSettings
+        << "    renderVars: \n";
+    for (size_t rvId = 0; rvId < rp.renderVars.size(); rvId++) {
+        out << "        [" << rvId << "] "  << rp.renderVars[rvId];
+    }
+    // XXX Fill other state as need be.
+    return out;
+}
+
+bool operator==(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs) 
+{
+    return
+           lhs.productPath == rhs.productPath
+        && lhs.type == rhs.type
+        && lhs.name == rhs.name
+        && lhs.resolution == rhs.resolution
+        && lhs.renderVars == rhs.renderVars
+        && lhs.cameraPath == rhs.cameraPath
+        && lhs.pixelAspectRatio == rhs.pixelAspectRatio
+        && lhs.aspectRatioConformPolicy == rhs.aspectRatioConformPolicy
+        && lhs.apertureSize == rhs.apertureSize
+        && lhs.dataWindowNDC == rhs.dataWindowNDC
+        && lhs.disableMotionBlur == rhs.disableMotionBlur
+        && lhs.namespacedSettings == rhs.namespacedSettings;
+}
+
+bool operator!=(const HdRenderSettings::RenderProduct& lhs, 
+                const HdRenderSettings::RenderProduct& rhs) 
+{
+    return !(lhs == rhs);
+}
+
+std::ostream& operator<<(
+    std::ostream& out,
+    const HdRenderSettings::RenderProduct::RenderVar& rv)
+{
+    out << "RenderVar \n"
+        << "    varPath : " << rv.varPath
+        << "    namespacedSettings" << rv.namespacedSettings;
+    return out;
+}
+
+bool operator==(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs) 
+{
+    return
+           lhs.varPath == rhs.varPath
+        && lhs.dataType == rhs.dataType
+        && lhs.sourceName == rhs.sourceName
+        && lhs.sourceType == rhs.sourceType
+        && lhs.namespacedSettings == rhs.namespacedSettings;
+}
+
+bool operator!=(const HdRenderSettings::RenderProduct::RenderVar& lhs, 
+                const HdRenderSettings::RenderProduct::RenderVar& rhs) 
+{
+    return !(lhs == rhs);
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

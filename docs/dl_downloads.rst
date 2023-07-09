@@ -77,3 +77,13 @@ Assets
    ^^^
    .. image:: https://graphics.pixar.com/usd/images/HumanFemale.png
       :target: dl_usdskel_examples.html
+
+Additional Assets
+#################
+
+| Animal Logic - `ALab Open Source Scene <https://animallogic.com/alab/>`_
+| Apple - `ARKit Example Assets <https://developer.apple.com/augmented-reality/quick-look/>`_
+| Intel - `4004 Moore Lane Scene <https://dpel.aswf.io/4004-moore-lane/>`_
+| NVIDIA - `Example Assets <https://developer.nvidia.com/usd#sample>`_
+| USD Working Group - `Assets Repository <https://github.com/usd-wg/assets>`_, `Example Assets <https://wiki.aswf.io/display/WGUSD/Sample+Assets>`_
+| Walt Disney Animation Studios - `Moana Island Scene <https://www.disneyanimation.com/resources/moana-island-scene/>`_

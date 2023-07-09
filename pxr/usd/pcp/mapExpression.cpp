@@ -362,11 +362,12 @@ PcpMapExpression::_Node::SetValueForVariable(Value && value)
 inline size_t
 PcpMapExpression::_Node::Key::GetHash() const
 {
-    size_t hash = op;
-    boost::hash_combine(hash, boost::get_pointer(arg1));
-    boost::hash_combine(hash, boost::get_pointer(arg2));
-    boost::hash_combine(hash, valueForConstant);
-    return hash;
+    return TfHash::Combine(
+        op,
+        boost::get_pointer(arg1),
+        boost::get_pointer(arg2),
+        valueForConstant
+    );
 }
 
 bool

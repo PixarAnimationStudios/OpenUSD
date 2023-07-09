@@ -2,7 +2,6 @@
 \page usdVol_page_front UsdVol : USD Volume Schema
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdVol : USD Volume Schema
-\publicLib
 \endif
 
 \tableofcontents

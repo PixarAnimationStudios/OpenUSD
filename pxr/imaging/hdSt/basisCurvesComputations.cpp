@@ -285,7 +285,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
             // catmull-rom. This generates 2 segments each at the start and end
             // of each curve for bspline and 1 for catmull-rom curves.
             if (start) {
-                const int &v0 = startIndex;
+                const int v0 = startIndex;
                 const int endIndex = v0 + cvCount - 1;
                 const int v1 = std::min(v0 + 1, endIndex);
                 const int v2 = std::min(v0 + 2, endIndex);
@@ -299,15 +299,14 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
                 primIndices.push_back(curveIndex);
 
             } else {
-                GfVec4i const &lastSeg = indices.back();
-                const int &vn  = lastSeg[3];
-                const int &vn1 = lastSeg[2];
-                const int &vn2 = lastSeg[1];
-                indices.push_back(GfVec4i(vn2, vn1, vn, vn));
+                const GfVec4i lastSeg = indices.back();
+                indices.push_back(GfVec4i(lastSeg[1], lastSeg[2],
+                                          lastSeg[3], lastSeg[3]));
                 primIndices.push_back(curveIndex);
 
                 if (basis == HdTokens->bSpline) {
-                    indices.push_back(GfVec4i(vn1, vn, vn, vn));
+                    indices.push_back(GfVec4i(lastSeg[2], lastSeg[3],
+                                              lastSeg[3], lastSeg[3]));
                     primIndices.push_back(curveIndex);
                 }
             }

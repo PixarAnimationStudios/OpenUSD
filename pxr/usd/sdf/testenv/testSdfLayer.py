@@ -917,5 +917,26 @@ over "test"
             Sdf.Layer.Find('new_layer.test_target_format',
                            args={'target':'B'}))
 
+    def test_OpenCloseThreadSafety(self):
+        import concurrent.futures
+        PATH = "testSdfLayer_OpenCloseThreadSafety.sdf"
+        OPENS = 25
+        WORKERS = 16
+        ITERATIONS = 10
+        layer = Sdf.Layer.CreateNew(PATH)
+        layer.Save()
+        del layer
+
+        for _ in range(ITERATIONS):
+            with (concurrent.futures.ThreadPoolExecutor(
+                    max_workers=WORKERS)) as executor:
+                futures = [
+                    executor.submit(
+                        lambda: bool(Sdf.Layer.FindOrOpen(PATH)))
+                    for _ in range(OPENS)]
+                completed = sum(1 if f.result() else 0 for f in
+                                concurrent.futures.as_completed(futures))
+            self.assertEqual(completed, OPENS)
+
 if __name__ == "__main__":
     unittest.main()

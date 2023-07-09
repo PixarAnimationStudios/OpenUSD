@@ -93,6 +93,9 @@
     #define ARCH_PRAGMA_UNUSED_FUNCTION \
         _Pragma("clang diagnostic ignored \"-Wunused-function\"")
 
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD \
+        _Pragma("clang diagnostic ignored \"-Wunused-private-field\"")
+
     #define ARCH_PRAGMA_INSTANTIATION_AFTER_SPECIALIZATION \
         _Pragma("clang diagnostic ignored \"-Winstantiation-after-specialization\"")
 
@@ -193,6 +196,10 @@
 
 #if !defined ARCH_PRAGMA_UNUSED_FUNCTION
     #define ARCH_PRAGMA_UNUSED_FUNCTION
+#endif
+
+#if !defined ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
+    #define ARCH_PRAGMA_UNUSED_PRIVATE_FIELD
 #endif
 
 #if !defined ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS

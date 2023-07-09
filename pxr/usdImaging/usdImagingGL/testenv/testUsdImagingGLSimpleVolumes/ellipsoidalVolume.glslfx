@@ -45,7 +45,7 @@
 -- glsl EllipsoidalVolume.VolumeShader
 
 // Forward declare function.
-vec3 coordsToLocalVolumeSpace(vec3);
+FORWARD_DECL(vec3 coordsToLocalVolumeSpace(vec3));
 
 // The functions given here are for an ellipsoid shaped volume of constant
 // density not emitting light.

@@ -458,10 +458,14 @@ class SelectionDataModel(QtCore.QObject):
                 repr(sdfPath)))
         return sdfPath
 
-    def _ensureValidTargetPath(self, target):
+    def _ensureValidTargetPath(self, targetPath):
         """Validate a property target or connection."""
+        sdfPath = Sdf.Path(str(targetPath))
+        if not targetPath.IsPrimPath() and not targetPath.IsPropertyPath():
+            raise ValueError("Path must be a prim or property path, got: {}".format(
+                repr(sdfPath)))
 
-        return Sdf.Path(str(target))
+        return sdfPath
 
     def _getPropFromPath(self, path):
         """Get a Usd property object from a property path."""

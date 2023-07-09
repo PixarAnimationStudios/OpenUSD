@@ -2,7 +2,6 @@
 \page trace_page_front Trace: Performance tracking
 \if ( PIXAR_MFB_BUILD )
 \mainpage  Trace: Performance tracking
-\publicLib
 \endif
 
 \section trace_contents Contents

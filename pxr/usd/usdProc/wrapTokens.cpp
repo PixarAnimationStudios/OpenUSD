@@ -65,4 +65,5 @@ void wrapUsdProcTokens()
     boost::python::class_<UsdProcTokensType, boost::noncopyable>
         cls("Tokens", boost::python::no_init);
     _AddToken(cls, "proceduralSystem", UsdProcTokens->proceduralSystem);
+    _AddToken(cls, "GenerativeProcedural", UsdProcTokens->GenerativeProcedural);
 }

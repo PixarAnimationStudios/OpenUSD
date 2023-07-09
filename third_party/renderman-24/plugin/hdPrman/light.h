@@ -64,10 +64,14 @@ private:
     const TfToken _hdLightType;
     riley::LightShaderId _shaderId;
     riley::LightInstanceId _instanceId;
+    riley::GeometryPrototypeId _groupPrototypeId;
+    riley::GeometryPrototypeId _geometryPrototypeId;
+    riley::MaterialId _instanceMaterialId;
 
     TfToken _lightLink;
     SdfPathVector _lightFilterPaths;
     std::vector<TfToken> _lightFilterLinks;
+    SdfPath _sourceMeshPath;
 };
 
 

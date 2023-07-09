@@ -49,6 +49,20 @@ namespace {
 // fwd decl.
 WRAP_CUSTOM;
 
+        
+static UsdAttribute
+_CreateTestAttrOneAttr(UsdContrivedSingleApplyAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTestAttrOneAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Int), writeSparsely);
+}
+        
+static UsdAttribute
+_CreateTestAttrTwoAttr(UsdContrivedSingleApplyAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateTestAttrTwoAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->Double), writeSparsely);
+}
 
 static std::string
 _Repr(const UsdContrivedSingleApplyAPI &self)
@@ -112,6 +126,20 @@ void wrapUsdContrivedSingleApplyAPI()
 
         .def(!self)
 
+        
+        .def("GetTestAttrOneAttr",
+             &This::GetTestAttrOneAttr)
+        .def("CreateTestAttrOneAttr",
+             &_CreateTestAttrOneAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetTestAttrTwoAttr",
+             &This::GetTestAttrTwoAttr)
+        .def("CreateTestAttrTwoAttr",
+             &_CreateTestAttrTwoAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
 
         .def("__repr__", ::_Repr)
     ;

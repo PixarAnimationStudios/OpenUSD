@@ -24,9 +24,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/ostreamMethods.h"
-
-#include <boost/functional/hash.hpp>
 
 #include <algorithm>
 
@@ -272,8 +271,7 @@ operator<<(std::ostream &os, UsdStagePopulationMask const &mask)
 size_t
 hash_value(UsdStagePopulationMask const &mask)
 {
-    boost::hash<std::vector<SdfPath> > h;
-    return h(mask._paths);
+    return TfHash()(mask._paths);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

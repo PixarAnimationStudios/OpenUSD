@@ -76,6 +76,28 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
             file(TO_CMAKE_PATH ${PYTHON_INCLUDE_DIRS} PYTHON_INCLUDE_DIRS)
         endif()
 
+        # PXR_PY_UNDEFINED_DYNAMIC_LOOKUP might be explicitly set when 
+        # packaging wheels, or when cross compiling to a Python environment 
+        # that is not the current interpreter environment.
+        # If it was not explicitly set to ON or OFF, then determine whether 
+        # Python was statically linked to its runtime library by fetching the
+        # sysconfig variable LDLIBRARY, and set the variable accordingly.
+        # If the variable does not exist, PXR_PY_UNDEFINED_DYNAMIC_LOOKUP will
+        # default to OFF. On Windows, LDLIBRARY does not exist, as the default
+        # will always be OFF.
+        if((NOT WIN32) AND (NOT DEFINED PXR_PY_UNDEFINED_DYNAMIC_LOOKUP))
+            execute_process(COMMAND ${PYTHON_EXECUTABLE} "-c" "import sysconfig;print(sysconfig.get_config_var('LDLIBRARY'))"
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                OUTPUT_VARIABLE PXR_PYTHON_LINKED_LIBRARY
+            )
+            get_filename_component(PXR_PYTHON_LINKED_LIBRARY_EXT ${PXR_PYTHON_LINKED_LIBRARY} LAST_EXT)
+            if(PXR_PYTHON_LINKED_LIBRARY_EXT STREQUAL ".a")
+                set(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP ON)
+                message(STATUS 
+                        "PXR_PY_UNDEFINED_DYNAMIC_LOOKUP wasn't specified, forced ON because Python statically links ${PXR_PYTHON_LINKED_LIBRARY}")
+            endif()
+        endif()
+
         # This option indicates that we don't want to explicitly link to the
         # python libraries. See BUILDING.md for details.
         if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
@@ -85,11 +107,8 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
         endif()
     endmacro()
 
-    if(PXR_USE_PYTHON_3)
-        setup_python_package(Python3)
-    else()
-        setup_python_package(Python2)
-    endif()
+    # USD builds only work with Python3
+    setup_python_package(Python3)
 
     if(WIN32 AND PXR_USE_DEBUG_PYTHON)
         set(Boost_USE_DEBUG_PYTHON ON)
@@ -97,7 +116,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
 
     # Manually specify VS2022, 2019, and 2017 as USD's supported compiler versions
     if(WIN32)
-	set(Boost_COMPILER "-vc143;-vc142;-vc141")
+        set(Boost_COMPILER "-vc143;-vc142;-vc141")
     endif()
 
     # As of boost 1.67 the boost_python component name includes the
@@ -112,7 +131,7 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
     set(python_version_nodot "${PYTHON_VERSION_MAJOR}${PYTHON_VERSION_MINOR}")
     find_package(Boost
         COMPONENTS
-	    python${python_version_nodot}
+        python${python_version_nodot}
         REQUIRED
     )
     set(Boost_PYTHON_LIBRARY "${Boost_PYTHON${python_version_nodot}_LIBRARY}")
@@ -125,13 +144,9 @@ else()
     if (PXR_BUILD_DOCUMENTATION OR PXR_BUILD_TESTS
         OR PXR_VALIDATE_GENERATED_CODE)
 
-        if(PXR_USE_PYTHON_3)
-            find_package(Python3 COMPONENTS Interpreter)
-            set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
-        else()
-            find_package(Python2 COMPONENTS Interpreter)
-            set(PYTHON_EXECUTABLE ${Python2_EXECUTABLE})
-        endif()
+        # We only need to check for Python3 components
+        find_package(Python3 COMPONENTS Interpreter)
+        set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
     endif()
 endif()
 

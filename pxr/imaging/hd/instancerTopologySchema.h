@@ -98,10 +98,8 @@ public:
 
     HD_API
     HdPathArrayDataSourceHandle GetPrototypes();
-
-    // Note: expected to be a vector of HdIntArrayDataSource.
     HD_API
-    HdVectorDataSourceHandle GetInstanceIndices();
+    HdIntArrayVectorSchema GetInstanceIndices();
     HD_API
     HdBoolArrayDataSourceHandle GetMask();
     HD_API

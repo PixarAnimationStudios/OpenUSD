@@ -173,6 +173,20 @@
                         "isInternal": true,
                         "primTypeName": "RenderSettings"
                     },
+                    "UsdImagingRenderProductAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "RenderProduct"
+                    },
+                    "UsdImagingRenderVarAdapter": {
+                        "bases": [
+                            "UsdImagingPrimAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "RenderVar"
+                    },
                     "UsdImagingSampleFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"

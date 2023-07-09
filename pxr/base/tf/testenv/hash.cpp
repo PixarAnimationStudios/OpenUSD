@@ -294,6 +294,15 @@ Test_TfHash()
     std::vector<int> vint = {1, 2, 3, 4, 5};
     printf("hash(vector<int>): %zu\n", h(vint));
 
+    std::vector<bool> vbool = {true, false, true};
+    printf("hash(vector<bool>): %zu\n", h(vbool));
+
+    std::set<int> sint = {1, 2, 3, 4, 5};
+    printf("hash(set<int>): %zu\n", h(sint));
+
+    std::map<int, uint32_t> mint = {{-1, 1}, {2, 3}, {-4, 5}};
+    printf("hash(map<int, uint32_t>): %zu\n", h(mint));
+
     std::pair<int, float> intfloat = {1, 2.34};
     printf("hash(pair<int, float>): %zu\n", h(intfloat));
 
@@ -305,6 +314,15 @@ Test_TfHash()
 
     printf("combine hash of the 3: %zu\n",
            TfHash::Combine(vint, intfloat, vp));
+
+    // Validate support for std::type_index
+    printf("hash(type_index): %zu\n", h(std::type_index(typeid(int))));
+
+    // Validate support for std::shared_ptr
+    printf("hash(shared_ptr): %zu\n", h(std::make_shared<int>(5)));
+
+    // Validate support for std::unique_ptr
+    printf("hash(unique_ptr): %zu\n", h(std::make_unique<int>(7)));
 
     TfHasher tfh;
     //BoostHasher bh;

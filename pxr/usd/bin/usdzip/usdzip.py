@@ -176,8 +176,14 @@ def main():
 
     success = True
     if len(inputFiles) > 0:
-        success = UsdUtils.CreateUsdzPackage(usdzFile, inputFiles, args.recurse, 
-                args.checkCompliance, args.verbose) and success
+        try:
+            success = UsdUtils.CreateUsdzPackage(usdzFile, inputFiles, 
+                    args.recurse, args.checkCompliance, args.verbose) and success
+        except Exception as e:
+            success = False
+            _Err("Failed to create usdz package (%s) containing (%s) files, "
+                 "as the following exception was raised: \n\t(%s)"
+                        %(usdzFile, ','.join(inputFiles), e))
 
     elif args.asset:
         r = Ar.GetResolver()

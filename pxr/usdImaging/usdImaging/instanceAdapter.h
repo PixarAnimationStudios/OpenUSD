@@ -460,6 +460,7 @@ private:
 
     struct _PopulateInstanceSelectionFn;
     struct _GetScenePrimPathsFn;
+    struct _GetInstanceCategoriesFn;
 
     // Helper functions for dealing with "actual" instances to be drawn.
     //

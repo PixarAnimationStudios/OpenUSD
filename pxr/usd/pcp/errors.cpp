@@ -371,7 +371,8 @@ std::string
 PcpErrorInvalidPrimPath::ToString() const
 {
     return TfStringPrintf("Invalid %s path <%s> introduced by %s"
-                          "-- must be an absolute prim path.", 
+                          "-- must be an absolute prim path with no "
+                          "variant selections.", 
                           TfEnum::GetDisplayName(arcType).c_str(), 
                           primPath.GetText(),
                           TfStringify(PcpSite(sourceLayer, site.path)).c_str());

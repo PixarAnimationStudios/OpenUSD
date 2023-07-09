@@ -31,6 +31,7 @@
 #include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/object.h"
 #include "pxr/usd/usd/primFlags.h"
+#include "pxr/usd/usd/schemaRegistry.h"
 
 #include "pxr/usd/sdf/schema.h"
 #include "pxr/base/trace/trace.h"
@@ -490,51 +491,49 @@ public:
     bool HasProperty(const TfToken &propName) const;
 
 private:
-    // Templated helper functions for the public schema query and API schema
+    // Helper functions for the public schema query and API schema
     // authoring functions. The public functions have overloads that take 
-    // a type, an identifier, or a family and version and these helpers handle
-    // all three of these types of input.
-    template<class... SchemaArgs>
-    bool _IsA(
-        const SchemaArgs & ...schemaArgs) const;
+    // a type, an identifier, or a family which all are used to find the 
+    // SchemaInfo from the schema registry.
+    USD_API
+    bool _IsA(const UsdSchemaRegistry::SchemaInfo *schemaInfo) const;
 
-    template<class... SchemaArgs>
-    bool _HasAPI(
-        const SchemaArgs & ...schemaArgs) const;
+    USD_API
+    bool _HasAPI(const UsdSchemaRegistry::SchemaInfo *schemaInfo) const;
 
-    template<class... SchemaArgs>
+    USD_API
     bool _HasAPIInstance(
-        const TfToken &instanceName, 
-        const SchemaArgs & ...schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo,
+        const TfToken &instanceName) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _CanApplySingleApplyAPI(
-        std::string *whyNot, 
-        const SchemaArgs &... schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+        std::string *whyNot) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _CanApplyMultipleApplyAPI(
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo,
         const TfToken& instanceName, 
-        std::string *whyNot, 
-        const SchemaArgs &... schemaArgs) const;
+        std::string *whyNot) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _ApplySingleApplyAPI(
-        const SchemaArgs &... schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _ApplyMultipleApplyAPI(
-        const TfToken &instanceName, 
-        const SchemaArgs &... schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+        const TfToken &instanceName) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _RemoveSingleApplyAPI(
-        const SchemaArgs &... schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo) const;
 
-    template <class... SchemaArgs>
+    USD_API
     bool _RemoveMultipleApplyAPI(
-        const TfToken &instanceName, 
-        const SchemaArgs &... schemaArgs) const;
+        const UsdSchemaRegistry::SchemaInfo &schemaInfo,
+        const TfToken &instanceName) const;
 
 public:
     /// \name IsA
@@ -551,7 +550,7 @@ public:
     bool IsA() const {
         static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return IsA(TfType::Find<SchemaType>());
+        return _IsA(UsdSchemaRegistry::FindSchemaInfo<SchemaType>());
     };
 
     /// This is an overload of \ref IsA that takes a TfType \p schemaType . 
@@ -598,7 +597,17 @@ public:
         UsdSchemaRegistry::VersionPolicy versionPolicy) const {
         static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return IsInFamily(TfType::Find<SchemaType>(), versionPolicy);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return IsInFamily(schemaInfo->family, schemaInfo->version, 
+            versionPolicy);
     };
 
     /// Overload for convenience of 
@@ -698,7 +707,7 @@ public:
             SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be an applied API schema.");
 
-        return HasAPI(TfType::Find<SchemaType>());
+        return _HasAPI(UsdSchemaRegistry::FindSchemaInfo<SchemaType>());
     }
 
     /// Return true if the UsdPrim has the specific instance, \p instanceName,
@@ -716,7 +725,8 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multi apply API schema.");
 
-        return HasAPI(TfType::Find<SchemaType>(), instanceName);
+        return _HasAPIInstance(
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>(), instanceName);
     }
 
     /// This is an overload of \ref HasAPI that takes a TfType \p schemaType . 
@@ -817,8 +827,17 @@ public:
         UsdSchemaRegistry::VersionPolicy versionPolicy) const {
         static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return HasAPIInFamily(
-            TfType::Find<SchemaType>(), versionPolicy);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return  HasAPIInFamily(schemaInfo->family, schemaInfo->version, 
+            versionPolicy);
     };
 
     /// Overload for convenience of 
@@ -831,8 +850,17 @@ public:
         const TfToken &instanceName) const {
         static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
                       "Provided type must derive UsdSchemaBase.");
-        return HasAPIInFamily(
-            TfType::Find<SchemaType>(), versionPolicy, instanceName);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return  HasAPIInFamily(schemaInfo->family, schemaInfo->version, 
+            versionPolicy, instanceName);
     };
 
     /// Overload for convenience of 
@@ -946,8 +974,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::SingleApplyAPI,
             "Provided schema type must be a single apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return CanApplyAPI(schemaType, whyNot);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _CanApplySingleApplyAPI(*schemaInfo, whyNot);
     }
 
     /// Returns whether a __multiple-apply__ API schema with the given C++ 
@@ -973,8 +1009,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multiple apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return CanApplyAPI(schemaType, instanceName, whyNot);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _CanApplyMultipleApplyAPI(*schemaInfo, instanceName, whyNot);
     }
 
     /// This is an overload of \ref CanApplyAPI that takes a TfType 
@@ -1053,8 +1097,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::SingleApplyAPI,
             "Provided schema type must be a single apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return ApplyAPI(schemaType);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _ApplySingleApplyAPI(*schemaInfo);
     }
 
     /// Applies a __multiple-apply__ API schema with the given C++ type 
@@ -1086,8 +1138,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multiple apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return ApplyAPI(schemaType, instanceName);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _ApplyMultipleApplyAPI(*schemaInfo, instanceName);
     }
 
     /// This is an overload of \ref ApplyAPI that takes a TfType \p schemaType . 
@@ -1157,8 +1217,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::SingleApplyAPI,
             "Provided schema type must be a single apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return RemoveAPI(schemaType);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _RemoveSingleApplyAPI(*schemaInfo);
     }
 
     /// Removes a __multiple-apply__ API schema with the given C++ type 
@@ -1191,8 +1259,16 @@ public:
         static_assert(SchemaType::schemaKind == UsdSchemaKind::MultipleApplyAPI,
             "Provided schema type must be a multiple apply API schema.");
 
-        static const TfType schemaType = TfType::Find<SchemaType>();
-        return RemoveAPI(schemaType, instanceName);
+        const UsdSchemaRegistry::SchemaInfo *schemaInfo =
+            UsdSchemaRegistry::FindSchemaInfo<SchemaType>();
+        if (!schemaInfo) {
+            TF_CODING_ERROR("Class '%s' is not correctly registered with the "
+                "UsdSchemaRegistry as a schema type. The schema may need to be "
+                "regenerated.", 
+                TfType::Find<SchemaType>().GetTypeName().c_str());
+            return false;
+        }
+        return _RemoveMultipleApplyAPI(*schemaInfo, instanceName);
     }
 
     /// This is an overload of \ref RemoveAPI that takes a TfType \p schemaType . 

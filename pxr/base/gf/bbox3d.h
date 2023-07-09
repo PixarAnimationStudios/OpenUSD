@@ -210,10 +210,10 @@ class GfBBox3d {
 
     /// Hash.
     friend inline size_t hash_value(const GfBBox3d &b) {
-        size_t h = 0;
-        boost::hash_combine(h, b._box);
-        boost::hash_combine(h, b._matrix);
-        return h;
+        return TfHash::Combine(
+            b._box,
+            b._matrix
+        );
     }
     
     /// Component-wise equality test. The axis-aligned boxes and

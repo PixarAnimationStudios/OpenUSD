@@ -354,7 +354,7 @@ struct SpecVisitor : bp::def_visitor<SpecVisitor<Abstract> > {
             return !self;
         }
 
-        static bool NonZero(const HeldType& self)
+        static bool IsValid(const HeldType& self)
         {
             return self;
         }
@@ -411,7 +411,7 @@ public:
 
         // Add methods.
         c.add_property("expired", &_Helper<CLS>::IsExpired);
-        c.def(TfPyBoolBuiltinFuncName, &_Helper<CLS>::NonZero);
+        c.def("__bool__", &_Helper<CLS>::IsValid);
         c.def("__hash__", &_Helper<CLS>::__hash__);
         c.def("__eq__", &_Helper<CLS>::__eq__);
         c.def("__ne__", &_Helper<CLS>::__ne__);

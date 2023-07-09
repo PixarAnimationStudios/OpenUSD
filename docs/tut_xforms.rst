@@ -33,7 +33,7 @@ The USD distribution ships with :ref:`toolset:usdview`, a lightweight tool for
 inspecting USD files. Running :program:`usdview` on the file, we can see that
 the geometry looks like this:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231464.png
+.. image:: http://openusd.org/images/tut_xforms_geom.png
 
 .. admonition:: Choosing an "Up" axis
 
@@ -210,7 +210,7 @@ expressed in degrees, so this provides 4 revolutions over the course of the
 
 We can use :program:`usdview` to play back the animation:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231465.gif
+.. image:: http://openusd.org/images/tut_xforms_spin.gif
 
 Chaining Multiple Transformations with :usda:`xformOpOrder`
 ***********************************************************
@@ -258,7 +258,7 @@ rotation to represent this. Notice that we add the tilt **before** the spin:
 
 Here is the result. The spin axis is now tilted:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231466.gif
+.. image:: http://openusd.org/images/tut_xforms_spin_tilted.gif
 
 To illustrate the importance of transformation order, here is a variation that
 shows what we get if we flip the order of rotations, by swapping the two entries
@@ -280,7 +280,7 @@ in the :usda:`xformOpOrder`:
    uniform token[] xformOpOrder = ["xformOp:rotateZ:spin", "xformOp:rotateX:tilt"]
    ...
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231467.gif
+.. image:: http://openusd.org/images/tut_xforms_spin_tilted_flipped.gif
 
 .. admonition:: Interpreting :usda:`xformOpOrder`
 
@@ -357,7 +357,7 @@ the top to move slightly on the surface. Restoring the original
 
 Here is the result:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231468.gif
+.. image:: http://openusd.org/images/tut_xforms_spin_precession.gif
 
 To summarize: we used time-samples to animate the motion, and careful ordering
 of the transformations to express a spinning motion with precession and
@@ -457,7 +457,7 @@ a scale of 0.25 (causing its animation to play back at 4x the rate).
        }
    }
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231469.gif
+.. image:: http://openusd.org/images/tut_xforms_spin_offsets.gif
 
 Perhaps it is a surprise that this GIF does not loop cleanly. Let's look at the
 reasons. There are several things to observe here that illustrate how time
@@ -510,5 +510,5 @@ We conclude this tutorial with a path-traced render of the above scene, which
 illustrates how the varying rates of rotation yield corresponding degrees of
 motion blur.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/567231471/567231470.png
+.. image:: http://openusd.org/images/tut_xforms_spin_render.png
 

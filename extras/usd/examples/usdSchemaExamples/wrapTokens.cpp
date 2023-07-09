@@ -70,4 +70,7 @@ void wrapUsdSchemaExamplesTokens()
     _AddToken(cls, "paramsVelocity", UsdSchemaExamplesTokens->paramsVelocity);
     _AddToken(cls, "paramsVolume", UsdSchemaExamplesTokens->paramsVolume);
     _AddToken(cls, "target", UsdSchemaExamplesTokens->target);
+    _AddToken(cls, "ComplexPrim", UsdSchemaExamplesTokens->ComplexPrim);
+    _AddToken(cls, "ParamsAPI", UsdSchemaExamplesTokens->ParamsAPI);
+    _AddToken(cls, "SimplePrim", UsdSchemaExamplesTokens->SimplePrim);
 }

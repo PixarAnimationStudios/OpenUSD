@@ -81,6 +81,20 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(explicitColl.GetCollectionPath(), 
                          Usd.CollectionAPI.GetNamedCollectionPath(testPrim, 
                             "test:Explicit:Collection"))
+        # Verify the attribute representing the collection is found at the
+        # collection path.
+        self.assertEqual(
+            explicitColl.GetCollectionAttr(),
+            testPrim.GetAttributeAtPath(explicitColl.GetCollectionPath()))
+        self.assertTrue(explicitColl.GetCollectionAttr().IsDefined())
+        self.assertFalse(explicitColl.GetCollectionAttr().IsAuthored())
+        self.assertFalse(explicitColl.GetCollectionAttr().HasValue())
+        # Verify CreateCollectionAttr works and "authors" the attribute even 
+        # though the attribute is opaque and can never have a value.
+        self.assertTrue(explicitColl.CreateCollectionAttr())
+        self.assertTrue(explicitColl.GetCollectionAttr().IsDefined())
+        self.assertTrue(explicitColl.GetCollectionAttr().IsAuthored())
+        self.assertFalse(explicitColl.GetCollectionAttr().HasValue())
 
         explicitColl.CreateIncludesRel().AddTarget(sphere.GetPath())
         self.assertFalse(explicitColl.HasNoIncludedPaths())
@@ -160,7 +174,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPnPCollMquery, stage)
 
-        self.assertEqual(len(expandPnPCollObjects), 19)
+        self.assertEqual(len(expandPnPCollObjects), 20)
         for obj in expandPnPCollObjects:
             self.assertTrue(expandPnPCollMquery.IsPathIncluded(obj.GetPath()))
 
@@ -185,7 +199,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         for obj in combinedCollIncObjects:
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
 
-        self.assertEqual(len(combinedCollIncObjects), 16)
+        self.assertEqual(len(combinedCollIncObjects), 17)
 
         # now add the collection "expandPrimsColl", which includes "Geom" and 
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
@@ -330,7 +344,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(allGeomPropertiesMquery.GetIncludedCollections(), [])
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 29)
+                allGeomPropertiesMquery, stage)), 31)
 
         hasRels = Usd.CollectionAPI(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
@@ -613,6 +627,10 @@ class TestUsdCollectionAPI(unittest.TestCase):
                 "includes"))
         self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
                 "excludes"))
+        # CollectionAPI does define a property with an empty base name, i.e.
+        # "collection:{collectionName}"
+        self.assertTrue(Usd.CollectionAPI.IsSchemaPropertyBaseName(
+                ""))
         # "collection" is the prefix, not the base name.
         self.assertFalse(Usd.CollectionAPI.IsSchemaPropertyBaseName(
                 Usd.Tokens.collection))
@@ -622,23 +640,28 @@ class TestUsdCollectionAPI(unittest.TestCase):
         # passing True vs False for includeInherited doesn't make a difference.
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
-                          'collection:__INSTANCE_NAME__:includeRoot'])
+                          'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
-                          'collection:__INSTANCE_NAME__:includeRoot'])
+                          'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
-                          'collection:__INSTANCE_NAME__:includeRoot'])
+                          'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, "foo"),
                          ['collection:foo:expansionRule', 
-                          'collection:foo:includeRoot'])
+                          'collection:foo:includeRoot',
+                          'collection:foo'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, "bar"),
                          ['collection:bar:expansionRule', 
-                          'collection:bar:includeRoot'])
+                          'collection:bar:includeRoot',
+                          'collection:bar'])
 
     def test_RelativePathIsPathIncluded(self):
         # ----------------------------------------------------------
@@ -651,6 +674,26 @@ class TestUsdCollectionAPI(unittest.TestCase):
 
         with self.assertRaises(Tf.ErrorException):
             query.IsPathIncluded('CollectionTest/Geom', Usd.Tokens.expandPrims)
+
+    def test_ExplicitOnlyAndIncludeRoot(self):
+        # Regression test that a membership query for a collection that has
+        # includeRoot=true and expansionMode=explicitOnly does not trigger a
+        # coding error.
+        collection = Usd.CollectionAPI.Get(testPrim,
+            'explicitOnlyAndIncludeRoot')
+        query = collection.ComputeMembershipQuery()
+        self.assertEqual(
+            Usd.ComputeIncludedPathsFromCollection(query, stage), [])
+
+    def test_HashMembershipQuery(self):
+        self.assertEqual(
+            hash(Usd.UsdCollectionMembershipQuery()),
+            hash(Usd.UsdCollectionMembershipQuery())
+        )
+        self.assertEqual(
+            hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery()),
+            hash(Usd.CollectionAPI.Get(testPrim, 'allGeom').ComputeMembershipQuery())
+        )
 
 if __name__ == "__main__":
     unittest.main()

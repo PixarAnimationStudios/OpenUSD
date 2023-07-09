@@ -29,6 +29,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/staticData.h"
 
+#include <algorithm>
 #include <functional>
 
 #include <cstdlib>

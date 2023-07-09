@@ -149,7 +149,7 @@ HdStExtCompGpuComputation::Execute(
         HdStBufferResourceSharedPtr const & buffer =
                 outputBar->GetResource(compPrimvar.name);
 
-        HdBinding const &binding = binder.GetBinding(name);
+        HdStBinding const &binding = binder.GetBinding(name);
         // These should all be valid as they are required outputs
         if (TF_VERIFY(binding.IsValid()) && TF_VERIFY(buffer->GetHandle())) {
             size_t componentSize = HdDataSizeOfType(
@@ -171,7 +171,7 @@ HdStExtCompGpuComputation::Execute(
             TfToken const &name = it.first;
             HdStBufferResourceSharedPtr const &buffer = it.second;
 
-            HdBinding const &binding = binder.GetBinding(name);
+            HdStBinding const &binding = binder.GetBinding(name);
             // These should all be valid as they are required inputs
             if (TF_VERIFY(binding.IsValid())) {
                 HdTupleType tupleType = buffer->GetTupleType();
@@ -185,7 +185,7 @@ HdStExtCompGpuComputation::Execute(
                 // This is correct for the SSBO allocator only
                 _uniforms.push_back(HdGetComponentCount(tupleType.type));
 
-                if (binding.GetType() != HdBinding::SSBO) {
+                if (binding.GetType() != HdStBinding::SSBO) {
                     TF_RUNTIME_ERROR(
                         "Unsupported binding type %d for ExtComputation",
                         binding.GetType());
@@ -230,7 +230,7 @@ HdStExtCompGpuComputation::Execute(
             HdStBufferResourceSharedPtr const & buffer =
                     outputBar->GetResource(compPvar.name);
 
-            HdBinding const &binding = binder.GetBinding(name);
+            HdStBinding const &binding = binder.GetBinding(name);
             // These should all be valid as they are required outputs
             if (TF_VERIFY(binding.IsValid()) &&
                 TF_VERIFY(buffer->GetHandle())) {
@@ -250,7 +250,7 @@ HdStExtCompGpuComputation::Execute(
                 TfToken const &name = it.first;
                 HdStBufferResourceSharedPtr const &buffer = it.second;
 
-                HdBinding const &binding = binder.GetBinding(name);
+                HdStBinding const &binding = binder.GetBinding(name);
                 // These should all be valid as they are required inputs
                 if (TF_VERIFY(binding.IsValid())) {
                     _AppendResourceBindings(&resourceDesc,

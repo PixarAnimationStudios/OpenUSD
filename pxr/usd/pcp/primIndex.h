@@ -321,15 +321,6 @@ public:
     /// Site dependencies from nodes in the prim index that have been culled.
     std::vector<PcpCulledDependency> culledDependencies;
 
-    /// Swap content with \p r.
-    inline void swap(PcpPrimIndexOutputs &r) {
-        primIndex.swap(r.primIndex);
-        allErrors.swap(r.allErrors);
-        std::swap(payloadState, r.payloadState);
-        dynamicFileFormatDependency.swap(r.dynamicFileFormatDependency);
-        culledDependencies.swap(r.culledDependencies);
-    }
-
     /// Appends the outputs from \p childOutputs to this object, using 
     /// \p arcToParent to connect \p childOutputs' prim index to this object's
     /// prim index. 
@@ -340,9 +331,6 @@ public:
                       const PcpArc& arcToParent,
                       PcpErrorBasePtr *error);
 };
-
-/// Free function version for generic code and ADL.
-inline void swap(PcpPrimIndexOutputs &l, PcpPrimIndexOutputs &r) { l.swap(r); }
 
 /// \class PcpPrimIndexInputs
 ///

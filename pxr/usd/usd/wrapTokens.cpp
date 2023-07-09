@@ -68,6 +68,7 @@ void wrapUsdTokens()
     _AddToken(cls, "clips", UsdTokens->clips);
     _AddToken(cls, "clipSets", UsdTokens->clipSets);
     _AddToken(cls, "collection", UsdTokens->collection);
+    _AddToken(cls, "collection_MultipleApplyTemplate_", UsdTokens->collection_MultipleApplyTemplate_);
     _AddToken(cls, "collection_MultipleApplyTemplate_Excludes", UsdTokens->collection_MultipleApplyTemplate_Excludes);
     _AddToken(cls, "collection_MultipleApplyTemplate_ExpansionRule", UsdTokens->collection_MultipleApplyTemplate_ExpansionRule);
     _AddToken(cls, "collection_MultipleApplyTemplate_IncludeRoot", UsdTokens->collection_MultipleApplyTemplate_IncludeRoot);
@@ -77,4 +78,9 @@ void wrapUsdTokens()
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);
     _AddToken(cls, "explicitOnly", UsdTokens->explicitOnly);
     _AddToken(cls, "fallbackPrimTypes", UsdTokens->fallbackPrimTypes);
+    _AddToken(cls, "APISchemaBase", UsdTokens->APISchemaBase);
+    _AddToken(cls, "ClipsAPI", UsdTokens->ClipsAPI);
+    _AddToken(cls, "CollectionAPI", UsdTokens->CollectionAPI);
+    _AddToken(cls, "ModelAPI", UsdTokens->ModelAPI);
+    _AddToken(cls, "Typed", UsdTokens->Typed);
 }
