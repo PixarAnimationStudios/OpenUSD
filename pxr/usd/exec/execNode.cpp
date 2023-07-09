@@ -52,20 +52,12 @@ ExecNode::ExecNode(
     }
 
     _InitializePrimvars();
-    _PostProcessProperties();
 
     // Tokenize metadata
     _label = TokenVal(ExecNodeMetadata->Label, _metadata);
     _category = TokenVal(ExecNodeMetadata->Category, _metadata);
-    _departments = TokenVecVal(ExecNodeMetadata->Departments, _metadata);
-    _pages = _ComputePages();
 }
 
-void
-ExecNode::_PostProcessProperties()
-{
-    
-}
 
 ExecPropertyConstPtr
 ExecNode::GetExecInput(const TfToken& inputName) const
@@ -83,29 +75,13 @@ ExecNode::GetExecOutput(const TfToken& outputName) const
     );
 }
 
-NdrTokenVec
-ExecNode::GetAssetIdentifierInputNames() const
-{
-    NdrTokenVec result;
-    for (const auto &inputName : GetInputNames()) {
-        if (auto input = GetExecInput(inputName)) {
-            if (input->IsAssetIdentifier()) {
-                result.push_back(input->GetName());
-            }
-        }
-    }
-    return result;
-}
-
 ExecPropertyConstPtr 
 ExecNode::GetDefaultInput() const
 {
     std::vector<ExecPropertyConstPtr> result;
     for (const auto &inputName : GetInputNames()) {
         if (auto input = GetExecInput(inputName)) {
-            if (input->IsDefaultInput()) {
-                return input;
-            }
+            return input;
         }
     }
     return nullptr;
@@ -118,32 +94,9 @@ ExecNode::GetHelp() const
 }
 
 std::string
-ExecNode::GetImplementationName() const
-{
-    return StringVal(ExecNodeMetadata->ImplementationName, _metadata, GetName());
-}
-
-std::string
 ExecNode::GetRole() const
 {
     return StringVal(ExecNodeMetadata->Role, _metadata, GetName());
-}
-
-NdrTokenVec
-ExecNode::GetPropertyNamesForPage(const std::string& pageName) const
-{
-    NdrTokenVec propertyNames;
-
-    for (const NdrPropertyUniquePtr& property : _properties) {
-        const ExecPropertyConstPtr execProperty =
-            dynamic_cast<const ExecPropertyConstPtr>(property.get());
-
-        if (execProperty->GetPage() == pageName) {
-            propertyNames.push_back(execProperty->GetName());
-        }
-    }
-
-    return propertyNames;
 }
 
 void
@@ -180,27 +133,6 @@ ExecNode::_InitializePrimvars()
     }
 
     _primvars = primvars;
-    _primvarNamingProperties = primvarNamingProperties;
-}
-
-NdrTokenVec
-ExecNode::_ComputePages() const
-{
-    NdrTokenVec pages;
-
-    for (const NdrPropertyUniquePtr& property : _properties) {
-        auto execProperty = static_cast<ExecPropertyPtr>(property.get());
-        const TfToken& page = execProperty->GetPage();
-
-        // Exclude duplicate pages
-        if (std::find(pages.begin(), pages.end(), page) != pages.end()) {
-            continue;
-        }
-
-        pages.emplace_back(std::move(page));
-    }
-
-    return pages;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -160,8 +160,6 @@ def TestShadingProperties(node):
 
     assert properties["inputA"].GetLabel() == "inputA label"
     assert properties["inputA"].GetHelp() == "inputA help message"
-    assert properties["inputA"].GetPage() == "inputs1"
-    assert properties["inputA"].GetWidget() == "number"
     assert properties["inputA"].GetHints() == {
         "uncategorized": "1"
     }
@@ -211,18 +209,11 @@ def TestShadingProperties(node):
     assert properties["inputStruct"].GetTypeAsSdfType() == \
            (SdfTypes.Token, Exec.PropertyTypes.Struct)
 
-    # --------------------------------------------------------------------------
-    # Ensure asset identifiers are detected correctly
-    # --------------------------------------------------------------------------
-    assert properties["inputAssetIdentifier"].IsAssetIdentifier()
-    assert not properties["inputOptions"].IsAssetIdentifier()
-    assert properties["inputAssetIdentifier"].GetTypeAsSdfType() == \
-           (SdfTypes.Asset, "")
 
 
 def TestBasicNode(node, nodeSourceType, nodeDefinitionURI, nodeImplementationURI):
     """
-    Test basic, non-shader-specific correctness on the specified node.
+    Test basic, non-node-specific correctness on the specified node.
     """
 
     # Implementation notes:
@@ -334,54 +325,39 @@ def TestExecSpecificNode(node):
     # --------------------------------------------------------------------------
 
 
-    shaderInputs = {propertyName: node.GetExecInput(propertyName)
+    nodeInputs = {propertyName: node.GetExecInput(propertyName)
                     for propertyName in node.GetInputNames()}
 
-    shaderOutputs = {propertyName: node.GetExecOutput(propertyName)
+    nodeOutputs = {propertyName: node.GetExecOutput(propertyName)
                      for propertyName in node.GetOutputNames()}
 
-    assert len(shaderInputs) == 17
-    assert len(shaderOutputs) == numOutputs
-    assert shaderInputs["inputA"] is not None
-    assert shaderInputs["inputB"] is not None
-    assert shaderInputs["inputC"] is not None
-    assert shaderInputs["inputD"] is not None
-    assert shaderInputs["inputF2"] is not None
-    assert shaderInputs["inputF3"] is not None
-    assert shaderInputs["inputF4"] is not None
-    assert shaderInputs["inputF5"] is not None
-    assert shaderInputs["inputInterp"] is not None
-    assert shaderInputs["inputOptions"] is not None
-    assert shaderInputs["inputPoint"] is not None
-    assert shaderInputs["inputNormal"] is not None
-    assert shaderOutputs["resultF"] is not None
-    assert shaderOutputs["resultF2"] is not None
-    assert shaderOutputs["resultF3"] is not None
-    assert shaderOutputs["resultI"] is not None
-    assert shaderOutputs["outputPoint"] is not None
-    assert shaderOutputs["outputNormal"] is not None
-    assert shaderOutputs["outputColor"] is not None
-    assert shaderOutputs["outputVector"] is not None
+    assert len(nodeInputs) == 17
+    assert len(nodeOutputs) == numOutputs
+    assert nodeInputs["inputA"] is not None
+    assert nodeInputs["inputB"] is not None
+    assert nodeInputs["inputC"] is not None
+    assert nodeInputs["inputD"] is not None
+    assert nodeInputs["inputF2"] is not None
+    assert nodeInputs["inputF3"] is not None
+    assert nodeInputs["inputF4"] is not None
+    assert nodeInputs["inputF5"] is not None
+    assert nodeInputs["inputInterp"] is not None
+    assert nodeInputs["inputOptions"] is not None
+    assert nodeInputs["inputPoint"] is not None
+    assert nodeInputs["inputNormal"] is not None
+    assert nodeOutputs["resultF"] is not None
+    assert nodeOutputs["resultF2"] is not None
+    assert nodeOutputs["resultF3"] is not None
+    assert nodeOutputs["resultI"] is not None
+    assert nodeOutputs["outputPoint"] is not None
+    assert nodeOutputs["outputNormal"] is not None
+    assert nodeOutputs["outputColor"] is not None
+    assert nodeOutputs["outputVector"] is not None
     assert node.GetLabel() == label
     assert node.GetCategory() == category
     assert node.GetHelp() == "This is the test node"
-    assert node.GetDepartments() == ["testDept"]
-    assert set(node.GetPages()) == pages
     assert set(node.GetPrimvars()) == {"primvar1", "primvar2", "primvar3"}
-    assert set(node.GetAdditionalPrimvarProperties()) == {"primvarNamingProperty"}
-    assert set(node.GetPropertyNamesForPage("results")) == {
-        "resultF", "resultF2", "resultF3", "resultI"
-    }
-    assert set(node.GetPropertyNamesForPage("")) == {
-        "outputPoint", "outputNormal", "outputColor", "outputVector"
-    }
-    assert set(node.GetPropertyNamesForPage("inputs1")) == {"inputA"}
-    assert set(node.GetPropertyNamesForPage("inputs2")) == {
-        "inputB", "inputC", "inputD", "inputF2", "inputF3", "inputF4", "inputF5",
-        "inputInterp", "inputOptions", "inputPoint", "inputNormal",
-        "inputStruct", "inputAssetIdentifier", "primvarNamingProperty",
-        "invalidPrimvarNamingProperty", "inputStrArray"
-    }
+
 
     # Test shading-specific property correctness
     TestShadingProperties(node)
@@ -389,7 +365,7 @@ def TestExecSpecificNode(node):
 
 def TestExecPropertiesNode(node):
     """
-    Tests property correctness on the specified shader node, which must be
+    Tests property correctness on the specified node, which must be
     one of the following pre-defined nodes:
     * 'TestExecPropertiesNodeOSL'
     * 'TestExecPropertiesNodeARGS'
@@ -397,10 +373,10 @@ def TestExecPropertiesNode(node):
     These pre-defined nodes have a property of every type that Exec supports.
 
     Property correctness is defined as:
-    * The shader property has the expected ExecPropertyType
-    * The shader property has the expected SdfValueTypeName
-    * If the shader property has a default value, the default value's type
-      matches the shader property's type
+    * The node property has the expected ExecPropertyType
+    * The node property has the expected SdfValueTypeName
+    * If the node property has a default value, the default value's type
+      matches the node property's type
     """
     # This test should only be run on the following allowed node names
     # --------------------------------------------------------------------------
@@ -474,7 +450,7 @@ def TestExecPropertiesNode(node):
 
     if node.GetName() != "TestExecPropertiesNodeUSD":
         # XXX Note that 'struct' and 'vstruct' types are currently unsupported
-        # by the UsdExecNodeDefParserPlugin, which parses shaders defined in
+        # by the UsdExecNodeDefParserPlugin, which parses nodes defined in
         # usd files. Please see UsdExecNodeDefParserPlugin implementation for
         # details.
         property = nodeInputs["inputStruct"]
@@ -572,8 +548,4 @@ def TestExecPropertiesNode(node):
     assert GetType(property) == Tf.Type.FindByName("TfToken")
     assert Ndr._ValidateProperty(node, property)
 
-    # Specific test of implementationName feature, we can skip type-tests
-    property = nodeInputs["normal"]
-    assert property.GetImplementationName() == "aliasedNormalInput"
-    assert Ndr._ValidateProperty(node, property)
 
