@@ -38,44 +38,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Base class for OpenGL code sections. The generator holds these
 ///
-class HgiGLShaderSection : public HgiShaderSection
+class HgiGLShaderSection : public HgiBaseGLShaderSection
 {
-public:
+    public:
     HGIGL_API
     explicit HgiGLShaderSection(
-        const std::string &identifier,
-        const HgiShaderSectionAttributeVector &attributes = {},
-        const std::string &storageQualifier = std::string(),
-        const std::string &defaultValue = std::string(),
-        const std::string &arraySize = std::string(),
-        const std::string &blockInstanceIdentifier = std::string());
-
-    HGIGL_API
-    ~HgiGLShaderSection() override;
-
-    HGIGL_API
-    void WriteDeclaration(std::ostream &ss) const override;
-    HGIGL_API
-    void WriteParameter(std::ostream &ss) const override;
-
-    HGIGL_API
-    virtual bool VisitGlobalIncludes(std::ostream &ss);
-    HGIGL_API
-    virtual bool VisitGlobalMacros(std::ostream &ss);
-    HGIGL_API
-    virtual bool VisitGlobalStructs(std::ostream &ss);
-    HGIGL_API
-    virtual bool VisitGlobalMemberDeclarations(std::ostream &ss);
-    HGIGL_API
-    virtual bool VisitGlobalFunctionDefinitions(std::ostream &ss);
-
-private:
-    HgiGLShaderSection() = delete;
-    HgiGLShaderSection & operator=(const HgiGLShaderSection&) = delete;
-    HgiGLShaderSection(const HgiGLShaderSection&) = delete;
-
-    const std::string _storageQualifier;
-    const std::string _arraySize;
+            const std::string &identifier,
+            const HgiShaderSectionAttributeVector &attributes = {},
+            const std::string &storageQualifier = std::string(),
+            const std::string &defaultValue = std::string(),
+            const std::string &arraySize = std::string(),
+            const std::string &blockInstanceIdentifier = std::string())
+            : HgiBaseGLShaderSection(identifier, attributes, storageQualifier,
+                                     defaultValue, arraySize, blockInstanceIdentifier) {}
 };
 
 using HgiGLShaderSectionPtrVector = 

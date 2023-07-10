@@ -7,8 +7,9 @@ set(DIRS
     usdVolImaging
     usdAppUtils
     usdviewq
-    bin
     plugin
+    hdEmscripten
+    bin
 )
 
 foreach(d ${DIRS})

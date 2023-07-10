@@ -1,0 +1,116 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`USD Tutorials Referencing Layers 1`] = `
+"#usda 1.0
+(
+    doc = \\"\\"\\"Generated from Composed Stage of root layer //RefExample.usda
+\\"\\"\\"
+)
+
+def Xform \\"refSphere\\"
+{
+    double3 xformOp:translate = (4, 5, 6)
+    uniform token[] xformOpOrder = []
+
+    def Sphere \\"world\\"
+    {
+        color3f[] primvars:displayColor = [(0, 0, 1)]
+        double radius = 2
+    }
+}
+
+def Xform \\"refSphere2\\"
+{
+    double3 xformOp:translate = (4, 5, 6)
+    uniform token[] xformOpOrder = [\\"xformOp:translate\\"]
+
+    def Sphere \\"world\\"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+        double radius = 2
+    }
+}
+
+"
+`;
+
+exports[`USD Tutorials Referencing Layers 2`] = `
+"#usda 1.0
+
+over \\"refSphere\\" (
+    prepend references = @./HelloWorld.usda@
+)
+{
+    uniform token[] xformOpOrder = []
+}
+
+over \\"refSphere2\\" (
+    prepend references = @./HelloWorld.usda@
+)
+{
+    over \\"world\\"
+    {
+        color3f[] primvars:displayColor = [(1, 0, 0)]
+    }
+}
+
+"
+`;
+
+exports[`USD Tutorials Simple Shading in USD 1`] = `
+"#usda 1.0
+(
+    doc = \\"\\"\\"Generated from Composed Stage of root layer //SimpleShading.usda
+\\"\\"\\"
+    upAxis = \\"Y\\"
+)
+
+def Xform \\"TexModel\\" (
+    kind = \\"component\\"
+)
+{
+    def Mesh \\"card\\"
+    {
+        float3[] extent = [(-430, -145, 0), (430, 145, 0)]
+        int[] faceVertexCounts = [4]
+        int[] faceVertexIndices = [0, 1, 2, 3]
+        rel material:binding = </TexModel/boardMat>
+        point3f[] points = [(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-430, 145, 0)]
+        texCoord2f[] primvars:st = [(0, 0), (1, 0), (1, 1), (0, 1)] (
+            interpolation = \\"varying\\"
+        )
+    }
+
+    def Material \\"boardMat\\"
+    {
+        token inputs:frame:stPrimvarName = \\"st\\"
+        token outputs:surface.connect = </TexModel/boardMat/PBRShader.outputs:surface>
+
+        def Shader \\"stReader\\"
+        {
+            uniform token info:id = \\"UsdPrimvarReader_float2\\"
+            token inputs:varname.connect = </TexModel/boardMat.inputs:frame:stPrimvarName>
+            float2 outputs:result
+        }
+
+        def Shader \\"texture\\"
+        {
+            uniform token info:id = \\"UsdUVTexture\\"
+            asset inputs:file = @USDLogoHeader.png@
+            float2 inputs:st.connect = </TexModel/boardMat/stReader.outputs:result>
+            float3 outputs:rgb
+        }
+
+        def Shader \\"PBRShader\\"
+        {
+            uniform token info:id = \\"UsdPreviewSurface\\"
+            color3f inputs:diffuseColor.connect = </TexModel/boardMat/texture.outputs:rgb>
+            float inputs:metallic = 0
+            float inputs:roughness = 0.4
+            token outputs:surface
+        }
+    }
+}
+
+"
+`;

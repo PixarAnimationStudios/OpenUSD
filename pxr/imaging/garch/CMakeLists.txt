@@ -20,6 +20,10 @@ elseif(WIN32)
     set(GARCH_GLPLATFORMCONTEXT       glPlatformContextWindows)
     set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowWindows)
     set(GARCH_SOURCE_EXTENSION        cpp)
+elseif(PXR_ENABLE_JS_SUPPORT)
+    set(GARCH_GLPLATFORMCONTEXT       glPlatformContextEmscripten)
+    set(GARCH_GLPLATFORMDEBUGWINDOW   glPlatformDebugWindowEmscripten)
+    set(GARCH_SOURCE_EXTENSION        cpp)
 endif()
 
 pxr_library(garch

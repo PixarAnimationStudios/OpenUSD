@@ -264,6 +264,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+        SRC testenv/testUsdviewWebGPU
+        DEST testUsdviewWebGPU
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdviewSelectionHighlighting
     DEST testUsdviewSelectionHighlighting
 )
@@ -613,6 +618,24 @@ pxr_register_test(testUsdviewMeshBounds
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewMeshBounds.py meshBounds.usda"
     EXPECTED_RETURN_CODE 0
 )
+
+if (PXR_ENABLE_WEBGPU_SUPPORT)
+    pxr_register_test(testUsdviewWebGPU
+            PYTHON
+            COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewWebGPU.py sphere.usda"
+            IMAGE_DIFF_COMPARE
+            start.png
+            FAIL 1
+            FAIL_PERCENT 0.00002
+            PERCEPTUAL
+            EXPECTED_RETURN_CODE 0
+            ENV
+            HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING=0
+            HD_ENABLE_PACKED_NORMALS=0
+            HDX_ENABLE_OIT=0
+            HGI_ENABLE_WEBGPU=1
+            )
+endif()
 
 if (APPLE)
     message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")

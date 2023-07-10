@@ -73,14 +73,14 @@ void DecodeSelOffset(int selOffset, REF(thread, bool) isSelected,
 // [subprim-type][min][max][     selOffsets     ]
 // <----------3 ----------><--- max - min + 1 -->
 struct SubprimHeader {
-    int type;
+    int primType;
     int min;
     int max;
 };
 SubprimHeader DecodeSubprimHeader(int offset)
 {
     SubprimHeader header;
-    header.type = HdGet_hdxSelectionBuffer(offset    );
+    header.primType = HdGet_hdxSelectionBuffer(offset    );
     header.min  = HdGet_hdxSelectionBuffer(offset + 1);
     header.max  = HdGet_hdxSelectionBuffer(offset + 2);
     return header;
@@ -164,7 +164,7 @@ SubprimSelectionResult GetSubprimSel(int offset,
     int nextSubprimOffset = 0;
     SubprimHeader header = DecodeSubprimHeader(offset);
 
-    if (header.type == SUBPRIM_TYPE_ELEMENT) {
+    if (header.primType == SUBPRIM_TYPE_ELEMENT) {
         s.elementSelected =
             IsSubprimSelected(elementId, header.min, header.max,
                               offset, /*out*/nextSubprimOffset);
@@ -176,7 +176,7 @@ SubprimSelectionResult GetSubprimSel(int offset,
         }
     }
 
-    if (header.type == SUBPRIM_TYPE_EDGE) {
+    if (header.primType == SUBPRIM_TYPE_EDGE) {
         s.edgeSelected =
             IsSubprimSelected(edgeId, header.min, header.max,
                               offset, /*out*/nextSubprimOffset);
@@ -188,7 +188,7 @@ SubprimSelectionResult GetSubprimSel(int offset,
         }
     }
 
-    if (header.type == SUBPRIM_TYPE_POINT) {
+    if (header.primType == SUBPRIM_TYPE_POINT) {
         s.pointSelected =
             IsSubprimSelected(pointId, header.min, header.max,
                               offset, /*unused*/nextSubprimOffset);
@@ -213,7 +213,7 @@ bool IsInstanceSelected(int offset, REF(thread, int) nextOffset)
     int instanceId = GetDrawingCoord().instanceIndex[0];
 
     SubprimHeader header = DecodeSubprimHeader(offset);
-    if (header.type == SUBPRIM_TYPE_INSTANCE) {
+    if (header.primType == SUBPRIM_TYPE_INSTANCE) {
         sel =
             IsSubprimSelected(instanceId, header.min, header.max,
                               offset, /*out*/nextOffset);

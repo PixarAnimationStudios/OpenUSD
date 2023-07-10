@@ -189,6 +189,7 @@ private:
 
     ElementVector _resCommon;
     ElementVector _resAttrib;
+    ElementVector _resAttribFS;
     ElementVector _resMaterial;
 
     using TextureElementVector = HioGlslfxResourceLayout::TextureElementVector;

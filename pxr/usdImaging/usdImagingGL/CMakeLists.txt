@@ -72,17 +72,16 @@ pxr_library(usdImagingGL
 #
 # C++ tests - Only build on all platforms for now.
 # 
-set(TEST_LIBS
-        "arch"
-        "garch"
-        "glf"
-        "hd"
-        "sdf"
-        "tf"
-        "usd"
-        "usdUtils"
-        "usdImaging"
-        "usdImagingGL")
+set(TEST_LIBS "arch" "garch" "glf" "hd" "sdf" "tf" "usd" "usdUtils" "usdImaging" "usdImagingGL")
+if(PXR_ENABLE_JS_SUPPORT)
+    list(APPEND TEST_LIBS
+            "-s MAX_WEBGL_VERSION=3"
+            "-s LEGACY_GL_EMULATION=1"
+            "-s USE_GLFW=3"
+            "-s MAX_WEBGL_VERSION=3"
+            )
+endif()
+
 
 pxr_build_test(testUsdImagingGLBasicDrawing
     LIBRARIES

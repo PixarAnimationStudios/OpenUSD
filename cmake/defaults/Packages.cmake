@@ -148,6 +148,15 @@ else()
         find_package(Python3 COMPONENTS Interpreter)
         set(PYTHON_EXECUTABLE ${Python3_EXECUTABLE})
     endif()
+ 
+    # --Boost
+    if(NOT PXR_ENABLE_JS_SUPPORT)
+        find_package(Boost
+            COMPONENTS
+                program_options
+            REQUIRED
+        )
+    endif()
 endif()
 
 
@@ -230,6 +239,10 @@ if (PXR_BUILD_IMAGING)
         endif()
         find_package(OpenGL REQUIRED)
     endif()
+    # --WebGPU
+    if (PXR_ENABLE_WEBGPU_SUPPORT)
+        add_definitions(-DPXR_WEBGPU_SUPPORT_ENABLED)
+    endif()
     # --Metal
     if (PXR_ENABLE_METAL_SUPPORT)
         add_definitions(-DPXR_METAL_SUPPORT_ENABLED)
@@ -270,6 +283,9 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --Opensubdiv
     set(OPENSUBDIV_USE_GPU ${PXR_ENABLE_GL_SUPPORT})
+    if (EMSCRIPTEN)
+        set(OPENSUBDIV_USE_GPU OFF)
+    endif()
     find_package(OpenSubdiv 3 REQUIRED)
     # --Ptex
     if (PXR_ENABLE_PTEX_SUPPORT)

@@ -108,6 +108,7 @@ _GetPageShift(unsigned int mask)
     return shift;
 }
 
+#undef CRATE_PAGESIZE
 static const unsigned int CRATE_PAGESIZE = ArchGetPageSize();
 static const uint64_t CRATE_PAGEMASK =
     ~(static_cast<uint64_t>(CRATE_PAGESIZE-1));

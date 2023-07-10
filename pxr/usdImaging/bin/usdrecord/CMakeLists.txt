@@ -1,6 +1,12 @@
 set(PXR_PREFIX pxr/usdImaging)
 set(PXR_PACKAGE usdrecord)
 
+if (NOT ${PXR_BUILD_GPU_SUPPORT})
+    message(STATUS
+        "Skipping ${PXR_PACKAGE} because PXR_BUILD_GPU_SUPPORT is OFF")
+    return()
+endif()
+
 pxr_python_bin(usdrecord
     DEPENDENCIES
         usd

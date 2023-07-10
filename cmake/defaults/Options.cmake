@@ -41,6 +41,8 @@ option(PXR_ENABLE_MATERIALX_SUPPORT "Enable MaterialX support" OFF)
 option(PXR_BUILD_DOCUMENTATION "Generate doxygen documentation" OFF)
 option(PXR_BUILD_PYTHON_DOCUMENTATION "Generate Python documentation" OFF)
 option(PXR_ENABLE_PYTHON_SUPPORT "Enable Python based components for USD" ON)
+option(PXR_ENABLE_JS_SUPPORT "Enable Javascript based components for USD" OFF)
+option(PXR_USE_PYTHON_3 "Build Python bindings for Python 3" ON)
 option(PXR_USE_DEBUG_PYTHON "Build with debug python" OFF)
 option(PXR_ENABLE_HDF5_SUPPORT "Enable HDF5 backend in the Alembic plugin for USD" OFF)
 option(PXR_ENABLE_OSL_SUPPORT "Enable OSL (OpenShadingLanguage) based components" OFF)
@@ -60,6 +62,7 @@ endif()
 option(PXR_ENABLE_METAL_SUPPORT "Enable Metal based components" "${pxr_enable_metal}")
 option(PXR_ENABLE_VULKAN_SUPPORT "Enable Vulkan based components" OFF)
 option(PXR_ENABLE_GL_SUPPORT "Enable OpenGL based components" ON)
+option(PXR_ENABLE_WEBGPU_SUPPORT "Enable WebGPU based components" OFF)
 
 # Precompiled headers are a win on Windows, not on gcc.
 set(pxr_enable_pch "OFF")
@@ -146,7 +149,13 @@ if (${PXR_ENABLE_METAL_SUPPORT})
     endif()
 endif()
 
-if (${PXR_ENABLE_GL_SUPPORT} OR ${PXR_ENABLE_METAL_SUPPORT} OR ${PXR_ENABLE_VULKAN_SUPPORT})
+if (${PXR_ENABLE_JS_SUPPORT})
+message(STATUS
+        "Setting PXR_ENABLE_WEBGPU_SUPPORT=ON")
+    set(PXR_ENABLE_WEBGPU_SUPPORT "ON" CACHE BOOL "" FORCE)
+endif()
+
+if (${PXR_ENABLE_GL_SUPPORT} OR ${PXR_ENABLE_METAL_SUPPORT} OR ${PXR_ENABLE_VULKAN_SUPPORT} OR ${PXR_ENABLE_WEBGPU_SUPPORT})
     set(PXR_BUILD_GPU_SUPPORT "ON")
 else()
     set(PXR_BUILD_GPU_SUPPORT "OFF")
@@ -199,6 +208,13 @@ if (${PXR_BUILD_DRACO_PLUGIN} AND ${PXR_BUILD_MONOLITHIC} AND WIN32)
         "Draco plugin can not be enabled for monolithic builds on Windows")
 endif()
 
+# Error out if user is building with Emscripten and tests. 
+# This is currently not supported.
+if (${PXR_ENABLE_JS_SUPPORT} AND ${PXR_BUILD_TESTS})
+    message(FATAL_ERROR 
+        "Emscripten build can not be enabled together with tests")
+endif()
+
 # Make sure PXR_BUILD_DOCUMENTATION and PXR_ENABLE_PYTHON_SUPPORT are enabled 
 # if PXR_BUILD_PYTHON_DOCUMENTATION is enabled
 if (${PXR_BUILD_PYTHON_DOCUMENTATION})
@@ -214,3 +230,4 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
+

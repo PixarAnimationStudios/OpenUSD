@@ -205,6 +205,30 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // ARCH_OS_WINDOWS
 
+#if defined(__EMSCRIPTEN__)
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// XXX: implement debug context
+class GarchGLPlatformDebugContextPrivate {
+public:
+    GarchGLPlatformDebugContextPrivate(
+        int majorVersion, int minorVersion,
+        bool coreProfile, bool directRendering) {}
+    ~GarchGLPlatformDebugContextPrivate() {}
+
+  void MakeCurrent() {}
+};
+
+void *GarchSelectCoreProfileMacVisual()
+{
+    return nullptr;
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+#endif // __EMSCRIPTEN__
+
 ////////////////////////////////////////////////////////////
 
 PXR_NAMESPACE_OPEN_SCOPE

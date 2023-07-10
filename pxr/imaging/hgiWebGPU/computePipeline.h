@@ -1,5 +1,5 @@
 //
-// Copyright 2020 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,58 +21,51 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HGIINTEROP_HGIINTEROPVULKAN_H
-#define PXR_IMAGING_HGIINTEROP_HGIINTEROPVULKAN_H
+#ifndef PXR_IMAGING_HGI_WEBGPU_COMPUTE_PIPELINE_H
+#define PXR_IMAGING_HGI_WEBGPU_COMPUTE_PIPELINE_H
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/vec4i.h"
-#include "pxr/imaging/hgi/texture.h"
-#include "pxr/imaging/hgiInterop/api.h"
-
+#include "pxr/imaging/hgi/computePipeline.h"
+#include "pxr/imaging/hgiWebGPU/api.h"
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiVulkan;
-class VtValue;
+class HgiWebGPU;
 
-/// \class HgiInteropVulkan
+/// \class HgiWebGPUComputePipeline
 ///
-/// Provides Vulkan/GL interop.
+/// WebGPU implementation of HgiComputePipeline.
 ///
-class HgiInteropVulkan final
+class HgiWebGPUComputePipeline final : public HgiComputePipeline
 {
 public:
-    HGIINTEROP_API
-    HgiInteropVulkan(Hgi* hgiVulkan);
+    HGIWEBGPU_API
+    ~HgiWebGPUComputePipeline() override;
 
-    HGIINTEROP_API
-    ~HgiInteropVulkan();
+    HGIWEBGPU_API
+    wgpu::ComputePipeline GetPipeline() const;
 
-    /// Composite provided color (and optional depth) textures over app's
-    /// framebuffer contents.
-    HGIINTEROP_API
-    void CompositeToInterop(
-        HgiTextureHandle const &color,
-        HgiTextureHandle const &depth,
-        VtValue const &framebuffer,
-        GfVec4i const& viewport);
+    HGIWEBGPU_API
+    const std::vector<wgpu::BindGroupLayout>& GetBindGroupLayoutList() const;
+
+protected:
+    friend class HgiWebGPU;
+
+    HGIWEBGPU_API
+    HgiWebGPUComputePipeline(
+        HgiWebGPU *hgi,
+        HgiComputePipelineDesc const& desc);
 
 private:
-    HgiInteropVulkan() = delete;
+    HgiWebGPUComputePipeline() = delete;
+    HgiWebGPUComputePipeline & operator=(const HgiWebGPUComputePipeline&) = delete;
+    HgiWebGPUComputePipeline(const HgiWebGPUComputePipeline&) = delete;
 
-    HgiVulkan* _hgiVulkan;
-    uint32_t _vs;
-    uint32_t _fsNoDepth;
-    uint32_t _fsDepth;
-    uint32_t _prgNoDepth;
-    uint32_t _prgDepth;
-    uint32_t _vertexBuffer;
-
-    // XXX We tmp copy Vulkan's GPU texture to CPU and then to GL texture
-    // Once we share GPU memory between Vulkan and GL we can remove this.
-    uint32_t _glColorTex;
-    uint32_t _glDepthTex;
+    wgpu::ComputePipeline _pipeline;
+    std::vector<wgpu::BindGroupLayout> _bindGroupLayoutList;
 };
+
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

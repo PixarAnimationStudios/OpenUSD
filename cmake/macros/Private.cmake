@@ -249,14 +249,26 @@ function(_install_resource_files NAME pluginInstallPrefix pluginToLibraryPath)
                 _plugInfo_subst(${NAME} "${pluginToLibraryPath}" ${resourceFile})
             endif()
             set(resourceFile "${CMAKE_CURRENT_BINARY_DIR}/${resourceFile}")
+            set(EMSCRIPTEN_RESOURCE_FILE ${resourceFile})
+        else()
+            set(EMSCRIPTEN_RESOURCE_FILE "${CMAKE_CURRENT_SOURCE_DIR}/${resourceFile}")
         endif()
 
+        if (PXR_ENABLE_JS_SUPPORT)
+            string(REGEX REPLACE "^lib\\/" "/" LOCAL_PATH "${resourcesPath}")
+
+            list(APPEND EMSCRIPTEN_RESOURCE_FILES "--preload-file ${EMSCRIPTEN_RESOURCE_FILE}@${LOCAL_PATH}/${dirPath}/${destFileName}")
+        endif()
         install(
             FILES ${resourceFile}
             DESTINATION ${resourcesPath}/${dirPath}
             RENAME ${destFileName}
         )
     endforeach()
+
+    if (PXR_ENABLE_JS_SUPPORT)
+        set_property(TARGET ${NAME} PROPERTY EMSCRIPTEN_RESOURCES ${EMSCRIPTEN_RESOURCE_FILES})
+    endif()
 endfunction() # _install_resource_files
 
 function(_install_pyside_ui_files LIBRARY_NAME)
@@ -873,6 +885,8 @@ function(_pxr_target_link_libraries NAME)
                     list(APPEND final ${lib})
                 elseif(CMAKE_COMPILER_IS_GNUCXX)
                     list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
+                elseif(PXR_ENABLE_JS_SUPPORT)
+                    list(APPEND final -Wl,--whole-archive ${lib} -Wl,--no-whole-archive)
                 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
                     list(APPEND final -Wl,-force_load ${lib})
                 else()
@@ -1481,6 +1495,7 @@ function(_pxr_library NAME)
     #
 
     if(NOT "${PXR_PREFIX}" STREQUAL "")
+    message(STATUS "---- wf message ---- ${PXR_PREFIX}; ${args_PRECOMPILED_HEADERS} ; name: ${NAME}; ${args_PRECOMPILED_HEADER_NAME}")
         if(args_PRECOMPILED_HEADERS)
             _pxr_enable_precompiled_header(${NAME}
                 SOURCE_NAME "${args_PRECOMPILED_HEADER_NAME}"

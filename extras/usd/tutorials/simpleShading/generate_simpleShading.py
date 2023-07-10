@@ -43,12 +43,12 @@ Usd.ModelAPI(modelRoot).SetKind(Kind.Tokens.component)
 # A simple card with same proportions as the texture we will map
 billboard = UsdGeom.Mesh.Define(stage, "/TexModel/card")
 billboard.CreatePointsAttr([(-430, -145, 0), (430, -145, 0), (430, 145, 0), (-430, 145, 0)])
-billboard.CreateFaceVertexCountsAttr([4])
-billboard.CreateFaceVertexIndicesAttr([0,1,2,3])
+billboard.CreateFaceVertexCountsAttr([3, 3])
+billboard.CreateFaceVertexIndicesAttr([0,1,2,2,3,0])
 billboard.CreateExtentAttr([(-430, -145, 0), (430, 145, 0)])
 texCoords = UsdGeom.PrimvarsAPI(billboard).CreatePrimvar("st", 
                                     Sdf.ValueTypeNames.TexCoord2fArray, 
-                                    UsdGeom.Tokens.varying)
+                                    UsdGeom.Tokens.vertex)
 texCoords.Set([(0, 0), (1, 0), (1,1), (0, 1)])
 
 # Now make a Material that contains a PBR preview surface, a texture reader,

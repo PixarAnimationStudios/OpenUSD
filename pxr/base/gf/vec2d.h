@@ -37,6 +37,11 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+
+#ifdef __EMSCRIPTEN__
+#include "pxr/base/gf/emscriptenRegistrationHelper.h"
+#endif
+
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
@@ -388,5 +393,9 @@ GfIsClose(GfVec2d const &v1, GfVec2d const &v2, double tolerance)
  
  
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#ifdef __EMSCRIPTEN__
+REGISTER_GLVECTOR(pxr::GfVec2d)
+#endif
 
 #endif // PXR_BASE_GF_VEC2D_H

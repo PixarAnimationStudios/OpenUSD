@@ -29,10 +29,137 @@
 
 #include <cstdint>
 #include <type_traits>
+#include <limits>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#ifdef ARCH_BITS_32
+// If we are on a 32 bit architecture, we just store 32bits and a pointer with 32 bits
+/// \class TfPointerAndBits
+///
+/// This class stores a T * and a small integer in the space of a T *. The
+/// number of bits possible to store depends on the alignment of T.  The
+/// number of distinct values representable by the bits and the maximal value
+/// are exposed via the compile time constants \a NumBitsValues and \a
+/// MaxValue, respectively.
+///
+/// The bits may be set and retrieved as any integral type.  The pointer value
+/// and the bits value may be set and retrieved independently.
+///
+template <class T>
+class TfPointerAndBits
+{
+public:
+    /// Constructor.  Pointer is initialized to null, bits are initialized to
+    /// zero.
+    constexpr TfPointerAndBits() noexcept : _ptr(0), _bits(0) {
+    }
+
+    /// Constructor.  Set the pointer to \a p, and the bits to \a bits.
+    constexpr explicit TfPointerAndBits(T *p, uintptr_t bits = 0) noexcept
+        : _ptr(p), _bits(bits)
+    {
+    }
+
+    constexpr uintptr_t GetMaxValue() const {
+        return std::numeric_limits<uint32_t>::max();
+    }
+
+    constexpr uintptr_t GetNumBitsValues() const {
+        return 32;
+    }
+
+    /// Assignment.  Leaves bits unmodified.
+    TfPointerAndBits &operator=(T *ptr) noexcept {
+        _SetPtr(ptr);
+        return *this;
+    }
+
+    /// Indirection.
+    constexpr T *operator->() const noexcept {
+        return _GetPtr();
+    }
+
+    /// Dereference.
+    constexpr T &operator *() const noexcept {
+        return *_GetPtr();
+    }
+
+    /// Retrieve the stored bits as the integral type \a Integral.
+    template <class Integral>
+    constexpr Integral BitsAs() const noexcept {
+        return static_cast<Integral>(_bits);
+    }
+
+    /// Set the stored bits.  No static range checking is performed.
+    template <class Integral>
+    void SetBits(Integral val) noexcept {
+        _SetBits(static_cast<int32_t>(val));
+    }
+
+    /// Set the pointer value to \a ptr.
+    void Set(T *ptr) noexcept {
+        _SetPtr(ptr);
+    }
+
+    /// Set the pointer value to \a ptr and the bits to \a val.
+    template <class Integral>
+    void Set(T *ptr, Integral val) noexcept {
+        _ptr = ptr;
+        _bits = static_cast<int32_t>(val);
+    }
+
+    /// Retrieve the pointer.
+    constexpr T *Get() const noexcept {
+        return _GetPtr();
+    }
+
+    /// Retrieve the raw underlying value.  This can be useful for doing literal
+    /// equality checks between two instances.  The only guarantees are that
+    /// this has the same bit pattern as the pointer value if the bits are 0,
+    /// and will compare equal to another instance when both have identical
+    /// pointer and bits values.
+    constexpr uintptr_t GetLiteral() const noexcept {
+        return (static_cast<uint64_t>(_bits) << 32) | reinterpret_cast<uint64_t>(_ptr);
+    }
+
+    /// Swap this PointerAndBits with \a other.
+    void Swap(TfPointerAndBits &other) noexcept {
+        ::std::swap(_ptr, other._ptr);
+        ::std::swap(_bits, other._bits);
+    }
+
+private:
+    constexpr uintptr_t _GetBitMask() const noexcept {
+        return GetMaxValue();
+    }
+
+    // Retrieve the held pointer value.
+    constexpr T *_GetPtr() const noexcept {
+        return _ptr;
+    }
+
+    // Set the held pointer value.
+    void _SetPtr(T *p) noexcept {
+        _ptr = p;
+    }
+
+    // Retrieve the held bits value.
+    constexpr uint32_t _GetBits() const noexcept {
+        return _bits;
+    }
+
+    // Set the held bits value.
+    void _SetBits(uint32_t bits) noexcept {
+        _bits = bits;
+    }
+
+    // Single pointer member stores pointer value and bits.
+    T *_ptr;
+    uint32_t _bits;
+};
+#else
 // Return true if \p val is a power of two.
 constexpr bool Tf_IsPow2(uintptr_t val) {
     return val && !(val & (val - 1));
@@ -207,6 +334,7 @@ private:
     // Single pointer member stores pointer value and bits.
     T *_ptrAndBits;
 };
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

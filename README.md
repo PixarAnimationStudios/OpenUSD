@@ -7,6 +7,58 @@ interchange between graphics applications.
 
 For more details, please visit the web site [here](http://openusd.org).
 
+HgiWebGPU ([USD-proposals](https://github.com/autodesk-forks/USD-proposals/tree/adsk/feature/webgpu/proposals/hgiwebgpu))
+------------
+This new graphics backend is a WebGPU based implementation of Hydra 
+Graphics Interface (HGI) that allows to execute the HdStorm rasterization 
+rendering pipeline on the web with the power of the new WebGPU capabilities. 
+It reuses the existing shaders that are converted to SPIR-V by [Shaderc](https://github.com/google/shaderc) 
+and then WGSL by [Tint](https://dawn.googlesource.com/tint), finally consumed by a browser with WebGPU feature 
+enabled.
+
+#### Getting Started with HgiWebGPU
+
+As we worked on a WebGPU based backend, we developed 2 solutions for different scenarios according 
+to their advantages and disadvantages:
+
+- **Dawn-based**: It is used for easier debugging and developing on desktop (Win and macOS).
+It can be tested by enabling the `--dawn` option when building using build_usd.py.
+To try it out, you can use `usdview` but, due to some limitations for WebGPU,
+some features need to be disabled.
+```
+export HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING=0
+export HD_ENABLE_PACKED_NORMALS=0
+export HDX_ENABLE_OIT=0
+export HGI_ENABLE_WEBGPU=1
+```
+
+- **Emscripten-based**: It is used for rendering and viewing on a web browser.
+The WebAssembly content can be tested using [usdviewweb](./pxr/usdImaging/bin/usdviewweb/README.md). For running an example on the browser, please follow the instructions [under usdviewweb folder](./pxr/usdImaging/bin/usdviewweb/README.md).
+Please build USD with `--emscripten` option. 
+
+**Limitations**
+
+- OIT is disabled due to missing support of GLSL `atomicAdd` and binding of a 
+writable buffer to the vertex shader, which is not supported in HgiWebgpu. Could be worked around as the vertex shader actually doesn't access that attribute
+- Issue with Frustum cull
+- Packed normals is disabled due to missing support for format HgiFormatPackedInt1010102
+- Problems using SPIR-V and shader compilation of "OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource()" targeting Vulkan 1.0
+- Doesn’t support dome light due to missing support for float32 filtering.
+- UV problems because `primitive_ID` is not supported and used when doing `faceVarying` interpolation
+- 4GB of memory limitation in WebAssembly
+- Not possible to pass write buffers to the vertex stage (e.g. constPrimVars), As defined in https://www.w3.org/TR/webgpu/#dom-gpudevice-createbindgrouplayout in the device timeline section
+- Only vertex, fragment and compute shaders are available. Some functionalities use either Tesselation shaders or Geometric Shaders is not supported.
+- Missing builtins available in glsl but not by wgsl nor tint reader using SPIR-V:
+  - determinant
+  - isinf
+  - isnan
+  - gl_primitiveID
+  - barycentric coords
+- gl_Pointsize is readonly
+- When there are multiple render targets, we exceed the limit of 32  accross all targets https://www.w3.org/TR/webgpu/#dom-supported-limits-maxcolorattachmentbytespersample. This usually happens when selection is included
+- After conversion to webassembly, the wasm package has 70MB size, it could be smaller.
+
+
 Build Status
 ------------
 

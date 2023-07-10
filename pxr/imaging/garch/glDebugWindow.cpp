@@ -32,6 +32,8 @@
 #include "pxr/imaging/garch/glPlatformDebugWindowDarwin.h"
 #elif defined(ARCH_OS_WINDOWS)
 #include "pxr/imaging/garch/glPlatformDebugWindowWindows.h"
+#elif defined(__EMSCRIPTEN__)
+#include "pxr/imaging/garch/glPlatformDebugWindowEmscripten.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE

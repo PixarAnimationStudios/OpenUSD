@@ -16,13 +16,13 @@ pxr_library(hgiGL
         trace
 
     PRIVATE_CLASSES
-        conversions
         diagnostic
         scopedStateHolder
         shaderGenerator
         shaderSection
 
     PUBLIC_CLASSES
+        conversions
         blitCmds
         buffer
         capabilities

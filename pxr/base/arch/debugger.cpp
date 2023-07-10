@@ -52,6 +52,9 @@
 #if defined(ARCH_OS_WINDOWS)
 #include <Windows.h>
 #endif
+#if defined(__EMSCRIPTEN__)
+#include <emscripten.h>
+#endif
 #include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -591,6 +594,8 @@ ArchDebuggerTrap()
             DebugBreak();
 #elif defined(ARCH_CPU_INTEL)
             asm("int $3");
+#elif defined(__EMSCRIPTEN__)
+            emscripten_debugger();
 #else
             raise(SIGTRAP);
 #endif
@@ -638,7 +643,7 @@ ArchAbort(bool logging)
 {
     if (!_ArchAvoidJIT() || ArchDebuggerIsAttached()) {
         if (!logging) {
-#if !defined(ARCH_OS_WINDOWS)
+#if !defined(ARCH_OS_WINDOWS) && !defined(__EMSCRIPTEN__)
             // Remove signal handler.
             struct sigaction act;
             act.sa_handler = SIG_DFL;
@@ -652,7 +657,11 @@ ArchAbort(bool logging)
     }
 
     // The exit code for abort() (128 + SIGABRT).
-    _exit(134);
+    #if defined(__EMSCRIPTEN__)
+        emscripten_force_exit(134);
+    #else
+        _exit(134);
+    #endif
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

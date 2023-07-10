@@ -45,8 +45,13 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // Static assertion on PrimData size.  We want to be warned when its size
 // changes.
+#ifndef __EMSCRIPTEN__
 static_assert(sizeof(Usd_PrimData) == 64,
               "Expected sizeof(Usd_PrimData) == 64");
+#else
+static_assert(sizeof(Usd_PrimData) == 48,
+              "Expected sizeof(Usd_PrimData) == 48");
+#endif
 
 // Usd_PrimData need to be always initialized with a valid type info pointer
 static const UsdPrimTypeInfo *_GetEmptyPrimTypeInfo() 

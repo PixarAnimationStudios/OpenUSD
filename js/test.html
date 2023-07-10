@@ -1,0 +1,14 @@
+<html>
+  <body>
+    <script src='./jsBindings.js'></script>
+    <script type="module">
+      const Usd = await getUsdModule();
+      const UsdStage = Usd.UsdStage;
+
+      let stage = UsdStage.CreateNew('HelloWorld.usda');
+      stage.DefinePrim('/hello', 'Xform');
+      stage.DefinePrim('/hello/world', 'Sphere');
+      console.log(stage.ExportToString());
+    </script>
+  </body>
+</html>

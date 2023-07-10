@@ -75,6 +75,10 @@ using HgiBits = uint32_t;
 ///   The device requires workaround for primitive id</li>
 /// <li>HgiDeviceCapabilitiesBitsIndirectCommandBuffers:
 ///   Indirect command buffers are supported</li>
+/// <li>HgiDeviceCapabilitiesBitsGeometricStage:
+///   Support for geometric shader stage</li>
+/// <li>HgiDeviceCapabilitiesBitsOSDSupport:
+///   Support for OpenSubDiv</li>
 /// </ul>
 ///
 enum HgiDeviceCapabilitiesBits : HgiBits
@@ -97,6 +101,8 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsBasePrimitiveOffset     = 1 << 15,
     HgiDeviceCapabilitiesBitsPrimitiveIdEmulation    = 1 << 16,
     HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
+    HgiDeviceCapabilitiesBitsGeometricStage          = 1 << 18,
+    HgiDeviceCapabilitiesBitsOSDSupport              = 1 << 19,
 };
 
 using HgiDeviceCapabilities = HgiBits;

@@ -54,7 +54,7 @@ ArchStrerror(int errorCode)
     //   (the string may be truncated if buflen is too small and errnum is
     //   unknown). The string always includes a terminating null byte.
     //
-    return strerror_r(errorCode, msg_buf, 256);
+    return (char*) strerror_r(errorCode, msg_buf, 256);
 #elif !defined(ARCH_COMPILER_MSVC)
     strerror_r(errorCode, msg_buf, 256);
 #else

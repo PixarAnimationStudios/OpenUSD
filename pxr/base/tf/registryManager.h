@@ -178,7 +178,7 @@ public:
 #define TF_REGISTRY_DEFINE(KEY_TYPE, NAME)                                     \
     static void TF_PP_CAT(_Tf_RegistryFunction, NAME)(KEY_TYPE*, void*);       \
     ARCH_CONSTRUCTOR(TF_PP_CAT(_Tf_RegistryAdd, NAME),                         \
-                     TF_REGISTRY_PRIORITY, KEY_TYPE*)                          \
+                     TF_REGISTRY_PRIORITY)                          \
     {                                                                          \
         Tf_RegistryInit::Add(TF_PP_STRINGIZE(MFB_ALT_PACKAGE_NAME),            \
                              (void(*)(KEY_TYPE*, void*))                       \

@@ -54,10 +54,12 @@
 #include <sstream>
 #include <unordered_map>
 
+#if !defined(EMSCRIPTEN)
 #if defined(__APPLE__)
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
 #else
 #include <opensubdiv/osd/glslPatchShaderSource.h>
+#endif
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -158,11 +160,15 @@ HdSt_CodeGen::IsEnabledHgiResourceGeneration(
     static bool const isEnabled =
         TfGetEnvSetting(HDST_ENABLE_HGI_RESOURCE_GENERATION);
 
-    // Hgi resource generation is required for Metal
-    bool const isMetal =
-        hgiCapabilities->IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+    // Hgi resource generation is required for Metal and WebGPU
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED) || defined(PXR_METAL_SUPPORT_ENABLED)
+    bool const isRequired = true;
+#else
+    bool const isRequired = false;
+#endif
 
-    return isEnabled || isMetal;
+
+    return isEnabled || isRequired;
 }
 
 HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
@@ -1585,7 +1591,7 @@ _GetOSDCommonShaderSource()
     // code declarations section and define some accessor methods and
     // forward declarations needed by the OpenSubdiv shaders.
     std::stringstream ss;
-
+#if !defined(EMSCRIPTEN)
 #if defined(__APPLE__)
     ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
        << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
@@ -1616,6 +1622,7 @@ _GetOSDCommonShaderSource()
 
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
 #endif
+#endif
 
     return ss.str();
 }
@@ -1625,12 +1632,14 @@ std::string
 _GetOSDPatchBasisShaderSource()
 {
     std::stringstream ss;
+#if !defined(EMSCRIPTEN)
 #if defined(__APPLE__)
     ss << "#define OSD_PATCH_BASIS_METAL\n";
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #else
     ss << "#define OSD_PATCH_BASIS_GLSL\n";
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+#endif
 #endif
     return ss.str();
 }
@@ -3980,11 +3989,6 @@ _GetDrawingCoord(std::stringstream &ss,
            << " = " << inputPrefix
            << "instanceIndexI" << std::to_string(i) << inArraySize << ";\n";
     }
-    for(int i = 0; i < instanceIndexWidth-1; ++i) {
-        ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
-           << " = " << inputPrefix
-           << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
-    }
 
     ss << "  return dc; \n"
        << "}\n";
@@ -4007,11 +4011,6 @@ _ProcessDrawingCoord(std::stringstream &ss,
         std::string const index = std::to_string(i);
         ss << "  " << outputPrefix << "instanceIndexI" << index << outArraySize
            << " = " << "dc.instanceIndex[" << index << "]" << ";\n";
-    }
-    for(int i = 0; i < instanceIndexWidth-1; ++i) {
-        std::string const index = std::to_string(i);
-        ss << "  " << outputPrefix << "instanceCoordsI" << index << outArraySize
-           << " = " << "dc.instanceCoords[" << index << "]" << ";\n";
     }
 }
 
@@ -4460,6 +4459,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                                   /*name=*/name,
                                   /*dataType=*/_tokens->_int);
         }
+
         for (int i = 0; i < instanceIndexWidth; ++i) {
             TfToken const name(TfStringPrintf("dc_instanceCoordsI%d", i));
             _AddInterstageElement(&_resInterstage,
@@ -4467,6 +4467,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                                   /*name=*/name,
                                   /*dataType=*/_tokens->_int);
         }
+
     }
 
     _genVS   << genAttr.str();

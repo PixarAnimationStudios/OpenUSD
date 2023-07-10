@@ -70,6 +70,12 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for imaging scene input");
 
+#if !defined(EMSCRIPTEN)
+// TODO: Resolve duplicated env variable issue, because HGI_ENABLE_WEBGPU has another definition in hgi
+    TF_DEFINE_ENV_SETTING(HGI_ENABLE_WEBGPU, 0,
+                          "Enable WebGPU as platform default Hgi backend (WIP)");
+#endif
+
 namespace UsdImagingGLEngine_Impl
 {
 
@@ -118,6 +124,22 @@ _GetUseSceneIndices()
 std::string
 _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
 {
+    // Rendering for Storm is delegated to Hgi. We override the
+    // display name for WebGPU since the Hgi implementation for
+    // any platform uses WebGPU instead of GL. Eventually, this should
+    // properly delegate to using Hgi to determine the display
+    // name for Storm.
+#if defined EMSCRIPTEN
+    return "WebGPU";
+#else
+    if (TfGetEnvSetting(HGI_ENABLE_WEBGPU))
+    #if defined(PXR_WEBGPU_SUPPORT_ENABLED)
+            return "WebGPU";
+    #else
+        TF_CODING_ERROR("Build requires PXR_WEBGPU_SUPPORT_ENABLED=true to use WebGPU");
+    #endif
+#endif
+
 #if defined(__APPLE__)
     // Rendering for Storm is delegated to Hgi. We override the
     // display name for macOS since the Hgi implementation for

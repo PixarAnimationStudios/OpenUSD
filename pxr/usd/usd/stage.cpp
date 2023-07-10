@@ -9756,4 +9756,3 @@ template USD_API bool UsdStage::_SetMetadataImpl(
     const SdfAbstractDataConstValue &);
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

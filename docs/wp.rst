@@ -4,7 +4,7 @@ Proposals
 
 .. note:: 
 
-   New proposals will no longer be added here. Proposals should now be posted 
+   New proposals will no longer be added here. Proposals should now be posted
    and reviewed at `OpenUSD-proposals <https://github.com/PixarAnimationStudios/OpenUSD-proposals>`_
 
 .. toctree::

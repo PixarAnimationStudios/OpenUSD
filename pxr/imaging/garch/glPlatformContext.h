@@ -44,6 +44,10 @@
 
 #include "pxr/imaging/garch/glPlatformContextWindows.h"
 
+#elif defined(__EMSCRIPTEN__)
+
+#include "pxr/imaging/garch/glPlatformContextEmscripten.h"
+
 #else
 
 #error "Unknown platform"

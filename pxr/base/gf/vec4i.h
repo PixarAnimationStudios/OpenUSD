@@ -36,6 +36,11 @@
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
+
+#ifdef __EMSCRIPTEN__
+#include "pxr/base/gf/emscriptenRegistrationHelper.h"
+#endif
+
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
@@ -293,5 +298,9 @@ GfDot(GfVec4i const &v1, GfVec4i const &v2) {
 
  
 PXR_NAMESPACE_CLOSE_SCOPE
+
+#ifdef __EMSCRIPTEN__
+REGISTER_GLVECTOR(pxr::GfVec4i)
+#endif
 
 #endif // PXR_BASE_GF_VEC4I_H

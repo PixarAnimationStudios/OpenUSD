@@ -1,6 +1,7 @@
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE vt)
 
+
 pxr_library(vt
     LIBRARIES
         arch
@@ -61,6 +62,12 @@ pxr_library(vt
     DOXYGEN_FILES
         overview.dox
 )
+
+if(PXR_ENABLE_JS_SUPPORT)
+    target_link_options(vt PRIVATE "SHELL: --bind")
+    target_compile_options(vt PRIVATE "SHELL: --bind")
+endif()
+
 
 pxr_build_test(testVtCpp
     LIBRARIES

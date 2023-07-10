@@ -63,8 +63,8 @@ struct Sdf_PathPrimTag;
 struct Sdf_PathPropTag;
 
 // These are validated below.
-static constexpr size_t Sdf_SizeofPrimPathNode = sizeof(void *) * 3;
-static constexpr size_t Sdf_SizeofPropPathNode = sizeof(void *) * 3;
+static constexpr size_t Sdf_SizeofPrimPathNode = sizeof(TfToken) + 2 * sizeof(unsigned int) + sizeof(void*);
+static constexpr size_t Sdf_SizeofPropPathNode = sizeof(TfToken) + 2 * sizeof(unsigned int) + sizeof(void*);
 
 using Sdf_PathPrimPartPool = Sdf_Pool<
     Sdf_PathPrimTag, Sdf_SizeofPrimPathNode, /*regionBits=*/8>;

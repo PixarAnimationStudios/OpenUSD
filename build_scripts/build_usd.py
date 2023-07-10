@@ -48,12 +48,15 @@ import subprocess
 import sys
 import sysconfig
 import zipfile
+import google_depot_tools
 
 from urllib.request import urlopen
 from shutil import which
 
 # Helpers for printing output
 verbosity = 1
+EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS='-sSTACK_SIZE=5MB -sSTACK_SIZE=5MB -sDEFAULT_PTHREAD_STACK_SIZE=2MB'
+EMSCRIPTEN_CMAKE_CXX_FLAGS='-pthread'
 
 def Print(msg):
     if verbosity > 0:
@@ -302,6 +305,8 @@ def CopyFiles(context, src, dest):
         raise RuntimeError("File(s) to copy {src} not found".format(src=src))
 
     instDestDir = os.path.join(context.instDir, dest)
+    if not os.path.isdir(instDestDir):
+        os.makedirs(instDestDir)
     for f in filesToCopy:
         PrintCommandOutput("Copying {file} to {destDir}\n"
                            .format(file=f, destDir=instDestDir))
@@ -398,8 +403,9 @@ def RunCMake(context, force, extraArgs = None):
     if generator is not None:
         generator = '-G "{gen}"'.format(gen=generator)
 
+    # EMSCRIPTEN doesn't use VS On Windows
     # Note - don't want to add -A (architecture flag) if generator is, ie, Ninja
-    if IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
+    if not context.emscripten and IsVisualStudio2019OrGreater() and "Visual Studio" in generator:
         generator = generator + " -A x64"
 
     toolset = context.cmakeToolset
@@ -437,7 +443,8 @@ def RunCMake(context, force, extraArgs = None):
     AppendCXX11ABIArg("-DCMAKE_CXX_FLAGS", context, extraArgs)
 
     with CurrentWorkingDirectory(buildDir):
-        Run('cmake '
+        Run(('{} '.format('emcmake.bat' if Windows() else 'emcmake') if context.emscripten else '') +
+            'cmake '
             '-DCMAKE_INSTALL_PREFIX="{instDir}" '
             '-DCMAKE_PREFIX_PATH="{depsInstDir}" '
             '-DCMAKE_BUILD_TYPE={config} '
@@ -454,9 +461,12 @@ def RunCMake(context, force, extraArgs = None):
                     generator=(generator or ""),
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
-        Run("cmake --build . --config {config} --target install -- {multiproc}"
+        Run(('{} '.format('emmake.bat' if Windows() else 'emmake') if context.emscripten else '') +
+            "cmake --build . --config {config} --target install -- {multiproc}"
             .format(config=config,
                     multiproc=FormatMultiProcs(context.numJobs, generator)))
+        return buildDir
+
 
 def GetCMakeVersion():
     """
@@ -601,6 +611,8 @@ def DownloadURL(url, context, force, extractDir = None,
                     members = (m for m in archive.namelist() 
                                if not any((fnmatch.fnmatch(m, p)
                                            for p in dontExtract)))
+            elif filename.endswith('.js'):
+                return os.path.abspath(filename)
             else:
                 raise RuntimeError("unrecognized archive file type")
 
@@ -787,6 +799,7 @@ def InstallBoost_Helper(context, force, buildArgs):
 
         Run(bootstrapCmd)
 
+
         # b2 supports at most -j64 and will error if given a higher value.
         num_procs = min(64, context.numJobs)
 
@@ -913,6 +926,11 @@ def InstallBoost(context, force, buildArgs):
     # dependency to build the next time it's run.
     try:
         InstallBoost_Helper(context, force, buildArgs)
+
+        # Copy boost headers to align with other platforms
+        if Windows():
+            with CurrentWorkingDirectory(context.instDir):
+                CopyDirectory(context, "include\\boost-1_70\\boost", "include\\boost")
     except:
         for versionHeader in [
             os.path.join(context.instDir, f) for f in BOOST_VERSION_FILES
@@ -939,8 +957,13 @@ elif MacOS():
 else:
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
 
+# Note: this refers to a fork of tbb for wasm. Is this maintained?
+TBB_EMSCRIPTEN_URL = "https://github.com/sdunkel/wasmtbb/archive/refs/heads/master.zip"
+
 def InstallTBB(context, force, buildArgs):
-    if Windows():
+    if context.emscripten:
+        InstallTBB_Emscripten(context, force, buildArgs)
+    elif Windows():
         InstallTBB_Windows(context, force, buildArgs)
     elif MacOS():
         InstallTBB_MacOS(context, force, buildArgs)
@@ -1067,6 +1090,33 @@ def InstallTBB_Linux(context, force, buildArgs):
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
+def InstallTBB_Emscripten(context, force, buildArgs):
+
+    with CurrentWorkingDirectory(DownloadURL(TBB_EMSCRIPTEN_URL, context, force)):
+        # By default no config for other platform is available, but the one for linux
+        # seems to work fine
+        if MacOS():
+            shutil.copy('build/linux.emscripten.inc', 'build/macos.emscripten.inc')
+        elif Windows():
+            shutil.copy('build/linux.emscripten.inc', 'build/windows.emscripten.inc')
+
+        # Run the script from the "x64 Native Tools Command Prompt" of Visual Studio,
+        # to get the correct compiler and arch for TBB Emscripten build on windows
+        Run('{emmake} make -j{procs} extra_inc=big_iron.inc tbb {buildArgs}'
+            .format(emmake="emmake.bat" if Windows() else "emmake",
+                    procs=context.numJobs,
+                    buildArgs=" ".join(buildArgs)))
+
+        # Install both release and debug builds. USD requires the debug
+        # libraries when building in debug mode, and installing both
+        # makes it easier for users to install dependencies in some
+        # location that can be shared by both release and debug USD
+        # builds. Plus, the TBB build system builds both versions anyway.
+        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+        CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
+        CopyDirectory(context, "include/serial", "include/serial")
+        CopyDirectory(context, "include/tbb", "include/tbb")
+
 TBB = Dependency("TBB", InstallTBB, "include/tbb/tbb.h")
 
 ############################################################
@@ -1119,7 +1169,6 @@ TIFF = Dependency("TIFF", InstallTIFF, "include/tiff.h")
 
 ############################################################
 # PNG
-
 PNG_URL = "https://github.com/glennrp/libpng/archive/refs/tags/v1.6.38.zip"
 
 def InstallPNG(context, force, buildArgs):
@@ -1246,6 +1295,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 
 OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.21.0.zip"
 
+
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
         # The only time that we want to build tools with OIIO is for testing
@@ -1340,6 +1390,12 @@ def InstallOpenSubdiv(context, force, buildArgs):
             '-DNO_GLEW=ON',
             '-DNO_GLFW=ON',
         ]
+        if context.emscripten:
+            extraArgs.append('-DBUILD_SHARED_LIB=OFF')
+            extraArgs.append('-DCMAKE_CXX_FLAGS="-s USE_PTHREADS=1"')
+            extraArgs.append('-DCMAKE_C_FLAGS="-s USE_PTHREADS=1"')
+            extraArgs.append('-DNO_OPENGL=ON')
+            extraArgs.append('-DNO_METAL=ON')
 
         # If Ptex support is disabled in USD, disable support in OpenSubdiv
         # as well. This ensures OSD doesn't accidentally pick up a Ptex
@@ -1496,6 +1552,184 @@ def InstallMaterialX(context, force, buildArgs):
         RunCMake(context, force, cmakeOptions)
 
 MATERIALX = Dependency("MaterialX", InstallMaterialX, "include/MaterialXCore/Library.h")
+
+############################################################
+# Three.js
+THREE_URL = "https://unpkg.com/three@0.125.2/build/three.js"
+
+def InstallThreeJs(context, force, buildArgs):
+    DownloadURL(THREE_URL, context, force)
+
+THREE = Dependency("ThreeJs", InstallThreeJs, "src/three.js")
+
+############################################################
+# Tint
+
+TINT_REPO = "https://dawn.googlesource.com/tint"
+TINT_COMMIT = "55af0f2207ab85c4344eb11bfa10ec9a6485fcd4"
+
+def InstallTint(context, force, buildArgs):
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "tint")
+        if force and os.path.isdir(srcDir):
+            shutil.rmtree(srcDir)
+
+        if not os.path.exists(srcDir):
+            os.makedirs(srcDir)
+            with CurrentWorkingDirectory(srcDir):
+                Run('git init')
+                Run('git remote add origin '+ TINT_REPO)
+                Run('git fetch origin ' + TINT_COMMIT + ' --depth 1')
+                Run("git checkout " + TINT_COMMIT)
+
+        with CurrentWorkingDirectory(srcDir):
+            required_submodules = [
+                'third_party/vulkan-deps',
+                'third_party/vulkan-deps/spirv-headers/src',
+                'third_party/vulkan-deps/spirv-tools/src',
+                'third_party/vulkan-deps/glslang/src',
+                'third_party/abseil-cpp',
+            ]
+            google_depot_tools.fetch_dependecies(required_submodules)
+
+            cmakeOptions = [
+                '-DTINT_BUILD_SPV_READER=ON',
+                '-DTINT_BUILD_WGSL_READER=OFF',
+                '-DTINT_BUILD_HLSL_WRITER=OFF',
+                '-DTINT_BUILD_MSL_WRITER=OFF',
+                '-DTINT_BUILD_SPV_WRITER=OFF',
+                '-DTINT_BUILD_WGSL_WRITER=ON',
+                '-DTINT_BUILD_WGSL_READER=OFF',
+                '-DTINT_BUILD_DOCS=OFF',
+                '-DTINT_BUILD_SAMPLES=OFF',
+                '-DTINT_BUILD_TESTS=OFF',
+                '-DCMAKE_CXX_FLAGS="-Wno-unsafe-buffer-usage -Wno-disabled-macro-expansion -Wno-#warnings -Wno-error '
+                    + EMSCRIPTEN_CMAKE_CXX_FLAGS + '"',
+                '-DCMAKE_EXE_LINKER_FLAGS="' + EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS + '"',
+                '-DBUILD_SHARED_LIBS=OFF'
+            ]
+            cmakeOptions += buildArgs
+            buildDir = RunCMake(context, force, cmakeOptions)
+
+        # installation scripts are missing in tint. Doing it manually until addressed
+        with CurrentWorkingDirectory(srcDir):
+            CopyDirectory(context, "include/tint", "include/tint")
+            CopyDirectory(context, "src/tint", "include/src/tint")
+
+        with CurrentWorkingDirectory(buildDir):
+            CopyFiles(context, "src/tint/libtint.a", "lib")
+            CopyFiles(context, "src/tint/libtint_diagnostic_utils.a", "lib")
+
+
+TINT = Dependency("Tint", InstallTint, "include/tint/tint.h")
+
+############################################################
+# DAWN and 3rd parties
+DAWN_REPO = "https://dawn.googlesource.com/dawn"
+DAWN_CHROMIUM_VERSION = "5677"
+
+def InstallDawn(context, force, buildArgs):
+    with CurrentWorkingDirectory(context.srcDir):
+        srcDir = os.path.join(os.getcwd(), "dawn")
+        if force and os.path.isdir(srcDir):
+            shutil.rmtree(srcDir)
+
+        if not os.path.isdir(srcDir):
+            Run("git clone " + DAWN_REPO + " --branch chromium/" + DAWN_CHROMIUM_VERSION + " --depth 1 --single-branch")
+
+        with CurrentWorkingDirectory(srcDir):
+            required_submodules = [
+                'third_party/vulkan-deps',
+                'third_party/vulkan-deps/spirv-headers/src',
+                'third_party/vulkan-deps/spirv-tools/src',
+                'third_party/vulkan-deps/vulkan-headers/src',
+                'third_party/vulkan-deps/vulkan-loader/src',
+                'third_party/vulkan-deps/vulkan-tools/src',
+                'third_party/glfw',
+                'third_party/abseil-cpp',
+                'third_party/jinja2',
+                'third_party/markupsafe',
+            ]
+            google_depot_tools.fetch_dependecies(required_submodules)
+            cmakeOptions = [
+                '-DBUILD_SHARED_LIBS={}'.format('OFF' if Windows() else 'ON'),
+                '-DTINT_BUILD_SPV_READER=ON',
+                '-DTINT_BUILD_WGSL_WRITER=ON',
+                '-DTINT_BUILD_SAMPLES=OFF',
+                '-DTINT_BUILD_TESTS=OFF'
+            ]
+            cmakeOptions += buildArgs;
+            buildDir = RunCMake(context, force, cmakeOptions)
+        
+    # installation scripts are missing in dawn. Doing it manually until addressed
+    with CurrentWorkingDirectory(srcDir):
+        CopyDirectory(context, "include/dawn", "include/dawn")
+        CopyDirectory(context, "include/tint", "include/tint")
+        CopyDirectory(context, "include/webgpu", "include/webgpu")
+        CopyDirectory(context, "src/tint", "include/src/tint")
+
+    with CurrentWorkingDirectory(buildDir):
+
+        # Simply copy headers and pre-built binaries to the appropriate location.
+        # For Windows, Dawn has Release or Debug folders; For macOS, there is not
+        if Windows():
+            buildConfigFolder = "Debug/" if context.buildDebug else "Release/"
+        else:
+            buildConfigFolder = ''
+
+        # Lib files
+        CopyFiles(context, "src/dawn/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/dawn/common/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/dawn/glfw/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/dawn/native/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/dawn/platform/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/dawn/wire/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/spirv-tools/source/{buildConfig}*SPIRV-Tools.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/spirv-tools/source/opt/{buildConfig}*SPIRV-Tools-opt.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/abseil/absl/strings/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/abseil/absl/base/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "third_party/abseil/absl/numeric/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+        CopyFiles(context, "src/tint/{buildConfig}*.*".format(buildConfig=buildConfigFolder), "lib")
+
+        # Extra include files
+        CopyFiles(context, "gen/include/dawn/*.*", "include/dawn")
+
+DAWN = Dependency("Dawn", InstallDawn, "include/dawn/webgpu_cpp.h")
+
+############################################################
+# shaderc
+
+SHADERC_URL = "https://github.com/google/shaderc/archive/refs/tags/v2023.3.zip"
+
+def InstallShaderc(context, force, buildArgs):
+    with CurrentWorkingDirectory(DownloadURL(SHADERC_URL, context, force)):
+        pythonInfo = GetPythonInfo(context)
+
+        Run("{} ./utils/git-sync-deps".format(pythonInfo[0].replace('\\', '/')))
+        cmakeOptions = [
+            '-DBUILD_SHARED_LIBS=OFF',
+            '-DSHADERC_SKIP_TESTS=ON',
+            '-DSHADERC_SKIP_EXAMPLES=ON',
+            '-DSHADERC_SKIP_COPYRIGHT_CHECK=ON',
+            '-DENABLE_GLSLANG_BINARIES=OFF'
+        ]
+
+        cmakeOptions += buildArgs
+
+        # We link with tint same common dependencies and verify there are no issues with different version
+        if context.emscripten:
+            cmakeOptions += [
+                '-DCMAKE_CXX_FLAGS="' + EMSCRIPTEN_CMAKE_CXX_FLAGS + '"',
+                '-DCMAKE_EXE_LINKER_FLAGS="' + EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS + '"',
+                '-DSHADERC_GLSLANG_DIR=' + os.path.join(
+                    context.srcDir, 'tint', 'third_party', 'vulkan-deps', 'glslang', 'src'),
+                '-DSHADERC_SPIRV_TOOLS_DIR=' + os.path.join(
+                    context.srcDir, 'tint', 'third_party', 'vulkan-deps', 'spirv-tools', 'src')
+            ]
+        RunCMake(context, force, cmakeOptions)
+
+
+SHADERC = Dependency("Shaderc", InstallShaderc, "include/shaderc/shaderc.hpp")
 
 ############################################################
 # Embree
@@ -1691,7 +1925,8 @@ def InstallUSD(context, force, buildArgs):
         else:
             extraArgs.append('-DPXR_ENABLE_MATERIALX_SUPPORT=OFF')
 
-        if Windows():
+        if Windows() and not context.emscripten:
+
             # Increase the precompiled header buffer limit.
             extraArgs.append('-DCMAKE_CXX_FLAGS="/Zm150"')
 
@@ -1700,6 +1935,34 @@ def InstallUSD(context, force, buildArgs):
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
         extraArgs += buildArgs
+
+        if context.emscripten:
+            if context.buildUsdImaging:
+                extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
+
+            extraArgs.append('-DPXR_ENABLE_JS_SUPPORT=ON')
+            # For some reason we have to manually specify path to boost
+            extraArgs.append('-DBoost_INCLUDE_DIR="{}"'.format(os.path.join(context.usdInstDir, "include")))
+
+            extraArgs.append('-DTBB_INCLUDE_DIRS="{}"'.format(os.path.join(context.usdInstDir, 'include')))
+            extraArgs.append('-DTBB_tbb_LIBRARY_DEBUG="{}"'.format(os.path.join(context.usdInstDir, 'lib/libtbb_debug.a')))
+            extraArgs.append('-DTBB_tbb_LIBRARY_RELEASE="{}"'.format(os.path.join(context.usdInstDir, 'lib/libtbb.a')))
+
+            extraArgs.append('-DOPENSUBDIV_INCLUDE_DIR="{}"'.format(os.path.join(context.usdInstDir, 'include')))
+            extraArgs.append('-DOPENSUBDIV_OSDCPU_LIBRARY="{}"'.format(os.path.join(context.usdInstDir, 'lib/libosdCPU.a')))
+
+            extraArgs.append('-DTHREE_JS_FILE="{}"'.format(os.path.join(context.usdInstDir, 'src/three.js')))
+
+            extraArgs.append('-DPXR_ENABLE_GL_SUPPORT=ON')
+            extraArgs.append('-DBUILD_SHARED_LIBS=OFF')
+
+            if context.emscripten == 'EMSCRIPTEN_NODE':
+                extraArgs.append('-DPXR_EMSCRIPTEN_NODE=1')
+            else:
+                extraArgs.append('-DPXR_EMSCRIPTEN_NODE=0')
+
+        if context.dawn:
+            extraArgs.append('-DPXR_ENABLE_WEBGPU_SUPPORT=ON')
 
         RunCMake(context, force, extraArgs)
 
@@ -1831,12 +2094,21 @@ group.add_argument("--generator", type=str,
 group.add_argument("--toolset", type=str,
                    help=("CMake toolset to use when building libraries with "
                          "cmake"))
+
 if MacOS():
     codesignDefault = True if apple_utils.IsHostArm() else False
     group.add_argument("--codesign", dest="macos_codesign",
                        default=codesignDefault, action="store_true",
                        help=("Enable code signing for macOS builds "
                              "(defaults to enabled on Apple Silicon)"))
+
+subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--emscripten", dest="emscripten", action="store_const", const='EMSCRIPTEN',
+                    help="Build for emscripten")
+subgroup.add_argument("--emscriptenNode", dest="emscripten", action="store_const", const='EMSCRIPTEN_NODE',
+                    help="Build emscripten for NodeJS (embed data into JS)")
+subgroup.add_argument("--dawn", dest="dawn", action="store_true",
+                    help="Build for dawn")
 
 if Linux():
     group.add_argument("--use-cxx11-abi", type=int, choices=[0, 1],
@@ -2055,6 +2327,12 @@ class InstallContext:
         self.cmakeGenerator = args.generator
         self.cmakeToolset = args.toolset
         self.cmakeBuildArgs = args.cmake_build_args
+        self.emscripten = args.emscripten
+        self.dawn = args.dawn
+
+        # Emscripten only supports MinGW on Windows
+        if self.emscripten and Windows():
+            self.cmakeGenerator = 'MinGW Makefiles'
 
         # Number of jobs
         self.numJobs = args.jobs
@@ -2192,9 +2470,47 @@ if extraPythonPaths:
     paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
     os.environ['PYTHONPATH'] = os.pathsep.join(paths)
 
+# Disable incompatible options if emscripten is used
+if context.emscripten:
+    disabled = []
+    if context.buildPython:
+        context.buildPython = False
+        disabled.append('Python')
+
+    if context.buildExamples:
+        context.buildExamples = False
+        disabled.append('examples')
+
+    if context.buildTutorials:
+        context.buildTutorials = False
+        disabled.append('tutorials')
+
+    if context.buildTools:
+        context.buildTools = False
+        disabled.append('tools')
+
+    if context.buildUsdview:
+        context.buildUsdview = False
+        disabled.append('usdview')
+
+    if context.buildMaterialX:
+        context.buildMaterialX = False
+        disabled.append('materialX')
+
+    if len(disabled) > 0:
+        print("The following components were disabled because they are not compatible with emscripten: " + ", ".join(disabled))
+
 # Determine list of dependencies that are required based on options
 # user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
+requiredDependencies = [BOOST, TBB]
+if not context.emscripten:
+    requiredDependencies += [ZLIB]
+
+if context.dawn:
+    requiredDependencies += [DAWN, SHADERC]
+
+if context.emscripten and context.buildTests:
+    requiredDependencies += [THREE]
 
 if context.buildAlembic:
     if context.enableHDF5:
@@ -2208,6 +2524,10 @@ if context.buildMaterialX:
     requiredDependencies += [MATERIALX]
 
 if context.buildImaging:
+    if context.emscripten:
+        # In this case order is important since SHADERC will use the same common dependencies for SPIRV as TINT
+        requiredDependencies += [TINT, SHADERC]
+
     if context.enablePtex:
         requiredDependencies += [PTEX]
 
@@ -2232,8 +2552,12 @@ if context.buildUsdview:
 # our own. This avoids potential issues where a host application
 # loads an older version of zlib than the one we'd build and link
 # our libraries against.
-if Linux():
+if Linux() and ZLIB in requiredDependencies:
     requiredDependencies.remove(ZLIB)
+
+# TODO: support to DAWN on Linux
+if Linux() and DAWN in requiredDependencies:
+    requiredDependencies.remove(DAWN)
 
 # Error out if user is building monolithic library on windows with draco plugin
 # enabled. This currently results in missing symbols.
@@ -2362,6 +2686,9 @@ Building with settings:
   Build directory               {buildDir}
   CMake generator               {cmakeGenerator}
   CMake toolset                 {cmakeToolset}
+  Emscripten                    {emscripten}
+  Node                          {emscriptenNode}
+  DAWN                          {dawn}
   Downloader                    {downloader}
 
   Building                      {buildType}
@@ -2422,6 +2749,9 @@ summaryMsg = summaryMsg.format(
                     else context.cmakeGenerator),
     cmakeToolset=("Default" if not context.cmakeToolset
                   else context.cmakeToolset),
+    emscripten=("Enabled" if context.emscripten else "Disabled"),
+    emscriptenNode=("Enabled" if context.emscripten == 'EMSCRIPTEN_NODE' else "Disabled"),
+    dawn=("Enabled" if context.dawn else "Disabled"),
     downloader=(context.downloaderName),
     dependencies=("None" if not dependenciesToBuild else 
                   ", ".join([d.name for d in dependenciesToBuild])),

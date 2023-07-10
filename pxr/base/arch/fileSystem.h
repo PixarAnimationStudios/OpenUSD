@@ -41,7 +41,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(__EMSCRIPTEN__)
 #include <unistd.h>
 #include <sys/statfs.h>
 #include <glob.h>

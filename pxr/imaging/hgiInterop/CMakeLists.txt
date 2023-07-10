@@ -14,6 +14,17 @@ set(optionalPrivateHeaders "")
 # Destination of hgiInterop is always OpenGL, so always include garch
 list(APPEND optionalLibraries garch)
 
+if (PXR_ENABLE_WEBGPU_SUPPORT OR PXR_ENABLE_VULKAN_SUPPORT)
+    if (PXR_ENABLE_WEBGPU_SUPPORT)
+        list(APPEND optionalLibraries hgiWebGPU)
+    else()
+        list(APPEND optionalLibraries hgiVulkan)
+    endif()
+
+    list(APPEND optionalCppFiles cpu.cpp)
+    list(APPEND optionalPrivateHeaders cpu.h)
+endif()
+
 if (PXR_ENABLE_METAL_SUPPORT)
     add_compile_options(-x objective-c++)
     FIND_LIBRARY(COREVIDEO_LIBRARY CoreVideo)

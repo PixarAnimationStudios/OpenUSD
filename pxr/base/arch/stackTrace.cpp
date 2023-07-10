@@ -112,7 +112,7 @@ typedef int (*ForkFunc)(void);
 ForkFunc Arch_nonLockingFork =
 #if defined(ARCH_OS_LINUX)
     (ForkFunc)dlsym(RTLD_NEXT, "__libc_fork");
-#elif defined(ARCH_OS_DARWIN)
+#elif defined(ARCH_OS_DARWIN) || defined(__EMSCRIPTEN__)
     NULL;
 #else
 #error Unknown architecture.

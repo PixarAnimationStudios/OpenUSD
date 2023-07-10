@@ -475,10 +475,10 @@ HgiVulkanShaderGenerator::_WriteInOutBlocks(
     const bool out_qualifier = qualifier == "out";
 
     for (const HgiShaderFunctionParamBlockDesc &p : parameterBlocks) {
-        const uint32_t locationIndex = in_qualifier ? 
+        const uint32_t locationIndex = in_qualifier ?
             _inLocationIndex : _outLocationIndex;
 
-        HgiVulkanShaderSectionPtrVector members;
+        HgiBaseGLShaderSectionPtrVector members;
         for(const HgiShaderFunctionParamBlockDesc::Member &member : p.members) {
 
             HgiVulkanMemberShaderSection *memberSection =
@@ -535,38 +535,38 @@ HgiVulkanShaderGenerator::_Execute(std::ostream &ss)
         ss << attr;
     }
 
-    HgiVulkanShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
+    HgiBaseGLShaderSectionUniquePtrVector* shaderSections = GetShaderSections();
     //For all shader sections, visit the areas defined for all
     //shader apis. We assume all shader apis have a global space
     //section, capabilities to define macros in global space,
     //and abilities to declare some members or functions there
     
     ss << "\n// //////// Global Includes ////////\n";
-    for (const std::unique_ptr<HgiVulkanShaderSection>
+    for (const std::unique_ptr<HgiBaseGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalIncludes(ss);
     }
 
     ss << "\n// //////// Global Macros ////////\n";
-    for (const std::unique_ptr<HgiVulkanShaderSection>
+    for (const std::unique_ptr<HgiBaseGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMacros(ss);
     }
 
     ss << "\n// //////// Global Structs ////////\n";
-    for (const std::unique_ptr<HgiVulkanShaderSection>
+    for (const std::unique_ptr<HgiBaseGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalStructs(ss);
     }
 
     ss << "\n// //////// Global Member Declarations ////////\n";
-    for (const std::unique_ptr<HgiVulkanShaderSection>
+    for (const std::unique_ptr<HgiBaseGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalMemberDeclarations(ss);
     }
 
     ss << "\n// //////// Global Function Definitions ////////\n";
-    for (const std::unique_ptr<HgiVulkanShaderSection>
+    for (const std::unique_ptr<HgiBaseGLShaderSection>
             &shaderSection : *shaderSections) {
         shaderSection->VisitGlobalFunctionDefinitions(ss);
     }
@@ -577,7 +577,7 @@ HgiVulkanShaderGenerator::_Execute(std::ostream &ss)
     ss << _GetShaderCode();
 }
 
-HgiVulkanShaderSectionUniquePtrVector*
+HgiBaseGLShaderSectionUniquePtrVector*
 HgiVulkanShaderGenerator::GetShaderSections()
 {
     return &_shaderSections;

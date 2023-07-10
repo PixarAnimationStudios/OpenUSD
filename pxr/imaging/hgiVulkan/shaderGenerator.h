@@ -26,15 +26,13 @@
 #define PXR_IMAGING_HGIVULKAN_SHADERGENERATOR_H
 
 #include "pxr/imaging/hgi/shaderGenerator.h"
+#include "pxr/imaging/hgi/shaderSection.h"
 #include "pxr/imaging/hgiVulkan/shaderSection.h"
 #include "pxr/imaging/hgiVulkan/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 class Hgi;
-
-using HgiVulkanShaderSectionUniquePtrVector =
-    std::vector<std::unique_ptr<HgiVulkanShaderSection>>;
 
 /// \class HgiVulkanShaderGenerator
 ///
@@ -50,7 +48,7 @@ public:
 
     //This is not commonly consumed by the end user, but is available.
     HGIVULKAN_API
-    HgiVulkanShaderSectionUniquePtrVector* GetShaderSections();
+    HgiBaseGLShaderSectionUniquePtrVector* GetShaderSections();
 
     template<typename SectionType, typename ...T>
     SectionType *CreateShaderSection(T && ...t);
@@ -84,8 +82,8 @@ private:
     void _WriteInOutBlocks(
         const HgiShaderFunctionParamBlockDescVector &parameterBlocks,
         const std::string &qualifier);
-    
-    HgiVulkanShaderSectionUniquePtrVector _shaderSections;
+
+    HgiBaseGLShaderSectionUniquePtrVector _shaderSections;
     Hgi const *_hgi;
     uint32_t _textureBindIndexStart;
     uint32_t _inLocationIndex;

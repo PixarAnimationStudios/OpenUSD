@@ -1,0 +1,33 @@
+{
+  "name": "usd",
+  "version": "21.8.0",
+  "description": "Javascript bindings for USD library",
+  "main": "bindings/RelWithDebInfo/jsBindings.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "jest --forceExit",
+    "test-html": "emrun --no_browser test.html"
+  },
+  "jest": {
+    "testTimeout": 30000,
+    "verbose": true,
+    "testRegex": "/__tests__/.*\\.(test|spec)\\.[jt]sx?$"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PixarAnimationStudios/USD.git"
+  },
+  "files": [
+    "bindings/RelWithDebInfo/jsBindings.*"
+  ],
+  "keywords": [
+    "usd"
+  ],
+  "author": "Pixar",
+  "license": "SEE LICENSE IN LICENSE.txt",
+  "devDependencies": {
+    "jest": "^27.0.5"
+  }
+}

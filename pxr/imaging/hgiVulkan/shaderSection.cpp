@@ -26,92 +26,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiVulkanShaderSection::HgiVulkanShaderSection(
-    const std::string &identifier,
-    const HgiShaderSectionAttributeVector &attributes,
-    const std::string &storageQualifier,
-    const std::string &defaultValue,
-    const std::string &arraySize,
-    const std::string &blockInstanceIdentifier)
-  : HgiShaderSection(identifier, attributes, defaultValue,
-                     arraySize, blockInstanceIdentifier)
-  , _storageQualifier(storageQualifier)
-  , _arraySize(arraySize)
-{
-}
-
-HgiVulkanShaderSection::~HgiVulkanShaderSection() = default;
-
-void
-HgiVulkanShaderSection::WriteDeclaration(std::ostream &ss) const
-{
-    //If it has attributes, write them with corresponding layout
-    //identifiers and indicies
-    const HgiShaderSectionAttributeVector &attributes = GetAttributes();
-
-    if(!attributes.empty()) {
-        ss << "layout(";
-        for (size_t i = 0; i < attributes.size(); ++i) {
-            const HgiShaderSectionAttribute &a = attributes[i];
-            if (i > 0) {
-                ss << ", ";
-            }
-            ss << a.identifier;
-            if(!a.index.empty()) {
-                ss << " = " << a.index;
-            }
-        }
-        ss << ") ";
-    }
-    //If it has a storage qualifier, declare it
-    if(!_storageQualifier.empty()) {
-        ss << _storageQualifier << " ";
-    }
-    WriteType(ss);
-    ss << " ";
-    WriteIdentifier(ss);
-    WriteArraySize(ss);
-    ss << ";\n";
-}
-
-void
-HgiVulkanShaderSection::WriteParameter(std::ostream &ss) const
-{
-    WriteType(ss);
-    ss << " ";
-    WriteIdentifier(ss);
-    ss << ";";
-}
-
-bool
-HgiVulkanShaderSection::VisitGlobalIncludes(std::ostream &ss)
-{
-    return false;
-}
-
-bool
-HgiVulkanShaderSection::VisitGlobalMacros(std::ostream &ss)
-{
-    return false;
-}
-
-bool
-HgiVulkanShaderSection::VisitGlobalStructs(std::ostream &ss)
-{
-    return false;
-}
-
-bool HgiVulkanShaderSection::VisitGlobalMemberDeclarations(std::ostream &ss)
-{
-    return false;
-}
-
-bool
-HgiVulkanShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
-{
-    return false;
-}
-
 HgiVulkanMacroShaderSection::HgiVulkanMacroShaderSection(
     const std::string &macroDeclaration,
     const std::string &macroComment)
@@ -544,7 +458,7 @@ HgiVulkanInterstageBlockShaderSection::HgiVulkanInterstageBlockShaderSection(
     const HgiShaderSectionAttributeVector &attributes,
     const std::string &qualifier,
     const std::string &arraySize,
-    const HgiVulkanShaderSectionPtrVector &members)
+    const HgiBaseGLShaderSectionPtrVector &members)
     : HgiVulkanShaderSection(blockIdentifier,
                              attributes,
                              qualifier,
@@ -582,7 +496,7 @@ HgiVulkanInterstageBlockShaderSection::VisitGlobalMemberDeclarations(
     ss << _qualifier << " ";
     WriteIdentifier(ss);
     ss << " {\n";
-    for (const HgiVulkanShaderSection* member : _members) {
+    for (const HgiBaseGLShaderSection* member : _members) {
         ss << "  ";
         member->WriteType(ss);
         ss << " ";

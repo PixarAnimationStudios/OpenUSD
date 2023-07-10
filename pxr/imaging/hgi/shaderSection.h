@@ -123,6 +123,54 @@ private:
     const std::string _blockInstanceIdentifier;
 };
 
+
+class HgiBaseGLShaderSection : public HgiShaderSection
+{
+public:
+    HGI_API
+    explicit HgiBaseGLShaderSection(
+            const std::string &identifier,
+            const HgiShaderSectionAttributeVector &attributes = {},
+            const std::string &storageQualifier = std::string(),
+            const std::string &defaultValue = std::string(),
+            const std::string &arraySize = std::string(),
+            const std::string &blockInstanceIdentifier = std::string());
+
+    HGI_API
+    ~HgiBaseGLShaderSection() override;
+
+    HGI_API
+    void WriteDeclaration(std::ostream &ss) const override;
+    HGI_API
+    void WriteParameter(std::ostream &ss) const override;
+
+    HGI_API
+    virtual bool VisitGlobalIncludes(std::ostream &ss);
+    HGI_API
+    virtual bool VisitGlobalMacros(std::ostream &ss);
+    HGI_API
+    virtual bool VisitGlobalStructs(std::ostream &ss);
+    HGI_API
+    virtual bool VisitGlobalMemberDeclarations(std::ostream &ss);
+    HGI_API
+    virtual bool VisitGlobalFunctionDefinitions(std::ostream &ss);
+
+protected:
+    const std::string _storageQualifier;
+
+private:
+    HgiBaseGLShaderSection() = delete;
+    HgiBaseGLShaderSection & operator=(const HgiBaseGLShaderSection&) = delete;
+    HgiBaseGLShaderSection(const HgiBaseGLShaderSection&) = delete;
+
+    const std::string _arraySize;
+};
+
+using HgiBaseGLShaderSectionPtrVector =
+        std::vector<HgiBaseGLShaderSection*>;
+
+using HgiBaseGLShaderSectionUniquePtrVector =
+        std::vector<std::unique_ptr<HgiBaseGLShaderSection>>;
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif

@@ -25,13 +25,13 @@
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED) || defined(PXR_VULKAN_SUPPORT_ENABLED)
+    #include "pxr/imaging/hgiInterop/cpu.h"
+#endif
 
 #if defined(PXR_METAL_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiMetal/hgi.h"
     #include "pxr/imaging/hgiInterop/metal.h"
-#elif defined(PXR_VULKAN_SUPPORT_ENABLED)
-    #include "pxr/imaging/hgiVulkan/hgi.h"
-    #include "pxr/imaging/hgiInterop/vulkan.h"
 #else
     #include "pxr/imaging/hgiInterop/opengl.h"
 #endif
@@ -51,7 +51,18 @@ void HgiInterop::TransferToApp(
     GfVec4i const &dstRegion)
 {
     TfToken const& srcApi = srcHgi->GetAPIName();
-
+    bool isBackendHandled = false;
+#if defined(PXR_WEBGPU_SUPPORT_ENABLED) || defined(PXR_VULKAN_SUPPORT_ENABLED)
+    if ((srcApi==HgiTokens->WebGPU || srcApi==HgiTokens->Vulkan) && dstApi==HgiTokens->OpenGL) {
+        // Transfer GPU textures to OpenGL application
+        if (!_gpuToOpenGL) {
+            _gpuToOpenGL = std::make_unique<HgiInteropCpu>(srcHgi);
+        }
+        _gpuToOpenGL->CompositeToInterop(
+            srcColor, srcDepth, dstFramebuffer, dstRegion);
+        isBackendHandled = true;
+    }
+#endif
 #if defined(PXR_METAL_SUPPORT_ENABLED)
     if (srcApi==HgiTokens->Metal && dstApi==HgiTokens->OpenGL) {
         // Transfer Metal textures to OpenGL application
@@ -60,19 +71,7 @@ void HgiInterop::TransferToApp(
         }
         _metalToOpenGL->CompositeToInterop(
             srcColor, srcDepth, dstFramebuffer, dstRegion);
-    } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
-    }
-#elif defined(PXR_VULKAN_SUPPORT_ENABLED)
-    if (srcApi==HgiTokens->Vulkan && dstApi==HgiTokens->OpenGL) {
-        // Transfer Vulkan textures to OpenGL application
-        if (!_vulkanToOpenGL) {
-            _vulkanToOpenGL = std::make_unique<HgiInteropVulkan>(srcHgi);
-        }
-        _vulkanToOpenGL->CompositeToInterop(
-            srcColor, srcDepth, dstFramebuffer, dstRegion);
-    } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
+        isBackendHandled = true;
     }
 #else
     if (srcApi==HgiTokens->OpenGL && dstApi==HgiTokens->OpenGL) {
@@ -82,10 +81,12 @@ void HgiInterop::TransferToApp(
         }
         _openGLToOpenGL->CompositeToInterop(
             srcColor, srcDepth, dstFramebuffer, dstRegion);
-    } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
+        isBackendHandled = true;
     }
 #endif
+    if (!isBackendHandled) {
+        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

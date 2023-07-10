@@ -100,6 +100,10 @@ pxr_library(sdf
         predicateProgram.h
         schemaTypeRegistration.h
 
+    JS_PUBLIC_HEADERS
+        wrapPathJs.h
+        wrapAssetPathJs.h
+
     PRIVATE_CLASSES
         assetPathResolver
         changeManager
@@ -164,6 +168,16 @@ pxr_library(sdf
         wrapValueTypeName.cpp
         wrapVariantSpec.cpp
         wrapVariantSetSpec.cpp
+
+    JS_CPPFILES
+        wrapLayerJs.cpp
+        wrapSpecJs.cpp
+        wrapPrimSpecJs.cpp
+        wrapPropertySpecJs.cpp
+        wrapRelationshipSpecJs.cpp
+        wrapAttributeSpecJs.cpp
+        wrapTypesJs.cpp
+        wrapValueTypeNameJs.cpp
 
     PYMODULE_FILES 
         __init__.py

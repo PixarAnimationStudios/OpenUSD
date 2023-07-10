@@ -55,8 +55,8 @@ SDF_INSTANTIATE_POOL(Sdf_PathPropTag, Sdf_SizeofPropPathNode, /*regionBits=*/8);
 
 // Size of path nodes is important, so we want the compiler to tell us if it
 // changes.
-static_assert(sizeof(Sdf_PrimPathNode) == 3 * sizeof(void *), "");
-static_assert(sizeof(Sdf_PrimPropertyPathNode) == 3 * sizeof(void *), "");
+static_assert(sizeof(Sdf_PrimPathNode) == sizeof(TfToken) + 2 * sizeof(unsigned int) + sizeof(void*), "");
+static_assert(sizeof(Sdf_PrimPropertyPathNode) == sizeof(TfToken) + 2 * sizeof(unsigned int) + sizeof(void*), "");
 
 struct Sdf_PathNodePrivateAccess
 {

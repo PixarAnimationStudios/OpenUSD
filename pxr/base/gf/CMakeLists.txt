@@ -4,6 +4,11 @@ set(CMAKE_INCLUDE_CURRENT_DIR OFF)
 set(PXR_PREFIX pxr/base)
 set(PXR_PACKAGE gf)
 
+set(optionalHeaders "")
+if (EMSCRIPTEN)
+    list(APPEND optionalHeaders emscriptenRegistrationHelper.h)
+endif()
+
 pxr_library(gf
     LIBRARIES
         arch
@@ -73,6 +78,7 @@ pxr_library(gf
         ilmbase_halfLimits.h
         limits.h
         traits.h
+        ${optionalHeaders}
 
     PRIVATE_CLASSES
         ostreamHelpers

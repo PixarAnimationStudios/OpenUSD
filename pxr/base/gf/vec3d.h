@@ -37,6 +37,11 @@
 #include "pxr/base/gf/limits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/math.h"
+
+#ifdef __EMSCRIPTEN__
+#include "pxr/base/gf/emscriptenRegistrationHelper.h"
+#endif
+
 #include "pxr/base/tf/hash.h"
 
 #include <cstddef>
@@ -461,4 +466,7 @@ GfSlerp(double alpha, GfVec3d const &v0, GfVec3d const &v1);
  
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#ifdef __EMSCRIPTEN__
+REGISTER_GLVECTOR(pxr::GfVec3d)
+#endif
 #endif // PXR_BASE_GF_VEC3D_H

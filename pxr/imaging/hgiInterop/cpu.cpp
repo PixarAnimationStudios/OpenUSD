@@ -25,8 +25,8 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
-#include "pxr/imaging/hgiVulkan/hgi.h"
-#include "pxr/imaging/hgiInterop/vulkan.h"
+#include "pxr/imaging/hgi/hgi.h"
+#include "pxr/imaging/hgiInterop/cpu.h"
 #include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -105,9 +105,10 @@ _CreateVertexBuffer()
 }
 
 static void
-_ConvertVulkanTextureToOpenGL(
-    HgiVulkan* hgiVulkan,
+_ConvertHgiTextureToOpenGL(
+    Hgi* hgi,
     HgiTextureHandle const &src,
+    std::vector<uint8_t> &texels,
     uint32_t* glDest)
 {
     // XXX we want to use EXT_external_objects and GL_EXT_semaphore to share
@@ -118,7 +119,6 @@ _ConvertVulkanTextureToOpenGL(
     HgiTextureDesc const& texDesc = src->GetDescriptor();
     const size_t byteSize = src->GetByteSizeOfResource();
 
-    std::vector<uint8_t> texels(byteSize, 0);
     HgiTextureGpuToCpuOp readBackOp;
     readBackOp.cpuDestinationBuffer = texels.data();
     readBackOp.destinationBufferByteSize = byteSize;
@@ -127,9 +127,9 @@ _ConvertVulkanTextureToOpenGL(
     readBackOp.mipLevel = 0;
     readBackOp.sourceTexelOffset = GfVec3i(0);
 
-    HgiBlitCmdsUniquePtr blitCmds = hgiVulkan->CreateBlitCmds();
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
     blitCmds->CopyTextureGpuToCpu(readBackOp);
-    hgiVulkan->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
+    hgi->SubmitCmds(blitCmds.get(), HgiSubmitWaitTypeWaitUntilCompleted);
 
     if (*glDest == 0) {
         glGenTextures(1, glDest);
@@ -158,14 +158,14 @@ _ConvertVulkanTextureToOpenGL(
         glTexImage2D(GL_TEXTURE_2D, 0, GL_R32F, width, height, 0, GL_RED,
                      GL_FLOAT, texels.data());
     } else {
-        TF_WARN("Unsupported texture format for Vulkan-GL interop");
+        TF_WARN("Unsupported texture format for HgiTexture-GL interop");
     }
 
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
-HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
-    : _hgiVulkan(static_cast<HgiVulkan*>(hgiVulkan))
+HgiInteropCpu::HgiInteropCpu(Hgi* hgi)
+    : _hgi(static_cast<Hgi*>(hgi))
     , _vs(0)
     , _fsNoDepth(0)
     , _fsDepth(0)
@@ -175,6 +175,7 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
     , _glColorTex(0)
     , _glDepthTex(0)
 {
+    GarchGLApiLoad();
     _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
     _fsNoDepth = _CompileShader(_fragmentNoDepthFullscreen, GL_FRAGMENT_SHADER);
     _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);
@@ -184,7 +185,7 @@ HgiInteropVulkan::HgiInteropVulkan(Hgi* hgiVulkan)
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }
 
-HgiInteropVulkan::~HgiInteropVulkan()
+HgiInteropCpu::~HgiInteropCpu()
 {
     glDeleteShader(_vs);
     glDeleteShader(_fsNoDepth);
@@ -202,7 +203,7 @@ HgiInteropVulkan::~HgiInteropVulkan()
 }
 
 void
-HgiInteropVulkan::CompositeToInterop(
+HgiInteropCpu::CompositeToInterop(
     HgiTextureHandle const &color,
     HgiTextureHandle const &depth,
     VtValue const &framebuffer,
@@ -232,11 +233,17 @@ HgiInteropVulkan::CompositeToInterop(
         }
     }
 
-    // Convert textures from Vulkan to GL
-    _ConvertVulkanTextureToOpenGL(_hgiVulkan, color, &_glColorTex);
+    // Convert textures from HgiTexture to GL
+    if (_colorTarget.size() != color->GetByteSizeOfResource()) {
+        _colorTarget.resize(color->GetByteSizeOfResource());
+    }
+    _ConvertHgiTextureToOpenGL(_hgi, color, _colorTarget, &_glColorTex);
 
     if (depth) {
-        _ConvertVulkanTextureToOpenGL(_hgiVulkan, depth, &_glDepthTex);
+        if (_depthTarget.size() != depth->GetByteSizeOfResource()) {
+            _depthTarget.resize(depth->GetByteSizeOfResource());
+        }
+        _ConvertHgiTextureToOpenGL(_hgi, depth, _depthTarget, &_glDepthTex);
     }
 
     if (!ARCH_UNLIKELY(_glColorTex)) {
