@@ -581,6 +581,27 @@ public:
 
     /// @}
     
+    // ---------------------------------------------------------------------
+    /// \name DepthStencil
+    /// @{
+    // ---------------------------------------------------------------------
+
+    /// Enable / disable depth stencil.
+    /// An application may choose to use depth AOV, or depthStencil AOV.
+    /// Depth AOV represents the clip-space depth of the final fragment, while
+    /// depthStencil AOV represent the clip-space depth plus 8-bit stencil of 
+    /// the final fragment.
+    /// 
+    USDIMAGINGGL_API
+    void SetDepthStencilEnabled(bool enabled);
+
+    /// Returns true if the Engine use depthStencil AOV.
+    /// Returns flase if the Engine use depth AOV.
+    USDIMAGINGGL_API
+    bool GetDepthStencilEnabled();
+
+    /// @}
+    
 protected:
 
     /// Open some protected methods for whitebox testing.

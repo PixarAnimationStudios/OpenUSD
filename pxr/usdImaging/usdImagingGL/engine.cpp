@@ -1579,6 +1579,26 @@ UsdImagingGLEngine::GetHgi()
     return _hgi.get();
 }
 
+void
+UsdImagingGLEngine::SetDepthStencilEnabled(bool enabled)
+{
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return;
+    }
+
+    _taskController->SetDepthStencilEnabled(enabled);
+}
+
+bool
+UsdImagingGLEngine::GetDepthStencilEnabled()
+{
+    if (ARCH_UNLIKELY(!_renderDelegate)) {
+        return false;
+    }
+    
+    return _taskController->GetDepthStencilEnabled();
+}
+
 //----------------------------------------------------------------------------
 // Private/Protected
 //----------------------------------------------------------------------------

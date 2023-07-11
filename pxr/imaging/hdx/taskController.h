@@ -269,6 +269,17 @@ public:
     HDX_API
     void SetEnablePresentation(bool enabled);
 
+    /// -------------------------------------------------------
+    /// Enable / disable depth stencil.
+    /// An application may choose to use depth AOV, or depthStencil AOV.
+	HDX_API
+	void SetDepthStencilEnabled(bool enabled);
+
+    /// Returns true if the render index use depthStencil AOV.
+    /// Returns flase if the render index use depth AOV.
+    HDX_API
+    bool GetDepthStencilEnabled();
+
 private:
     ///
     /// This class is not intended to be copied.
@@ -428,6 +439,7 @@ private:
     std::pair<bool, CameraUtilConformWindowPolicy> _overrideWindowPolicy;
 
     GfVec4d _viewport;
+	bool _depthStencilEnabled{false};
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
