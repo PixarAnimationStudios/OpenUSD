@@ -383,7 +383,7 @@ Create a usd file named Test.usda with the following content:
 .. code-block:: usda
    :caption: Test.usda
 
-    #usda 1.0
+   #usda 1.0
    
     def ComplexPrim "Complex"
     {
@@ -442,20 +442,20 @@ and uses the API provided by schema code generation.
 .. code-block:: python
    :caption: Python Example
 
-    from pxr import Usd, UsdSchemaExamples
-    stage = Usd.Stage.Open("Test.usda")
-    cp = stage.GetPrimAtPath("/Complex")
-    simple = UsdSchemaExamples.Simple(cp)
-    target = simple.GetTargetRel()
-    intAttr = simple.GetIntAttrAttr()
-    complex = UsdSchemaExamples.Complex(cp)
-    print('complexString: %s' % complex.GetComplexStringAttr().Get())
-    obj = stage.GetPrimAtPath("/Object")
-    paramsAPI = UsdSchemaExamples.ParamsAPI.Apply(obj)
-    assert obj.HasAPI(UsdSchemaExamples.ParamsAPI)
-    print('mass: %s' % paramsAPI.GetMassAttr().Get())
-    print('velocity: %s' % paramsAPI.GetVelocityAttr().Get())
-    print('volume: %s' % paramsAPI.GetVolumeAttr().Get())
+   from pxr import Usd, UsdSchemaExamples
+   stage = Usd.Stage.Open("Test.usda")
+   cp = stage.GetPrimAtPath("/Complex")
+   simple = UsdSchemaExamples.Simple(cp)
+   target = simple.GetTargetRel()
+   intAttr = simple.GetIntAttrAttr()
+   complex = UsdSchemaExamples.Complex(cp)
+   print('complexString: %s' % complex.GetComplexStringAttr().Get())
+   obj = stage.GetPrimAtPath("/Object")
+   paramsAPI = UsdSchemaExamples.ParamsAPI.Apply(obj)
+   assert obj.HasAPI(UsdSchemaExamples.ParamsAPI)
+   print('mass: %s' % paramsAPI.GetMassAttr().Get())
+   print('velocity: %s' % paramsAPI.GetVelocityAttr().Get())
+   print('volume: %s' % paramsAPI.GetVolumeAttr().Get())
 
 Codeless Schemas
 ****************
