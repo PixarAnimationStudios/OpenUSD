@@ -33,6 +33,7 @@
 
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/pragmas.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include <boost/preprocessor/arithmetic/inc.hpp>
 #include <boost/preprocessor/arithmetic/sub.hpp>
 #include <boost/preprocessor/cat.hpp>
@@ -141,7 +142,7 @@ ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 // 0.  No other values of c are allowed.  We can't use BOOST_PP_IFF() because
 // it won't expand during stringizing under MSVC.
 #define _TF_PP_EAT_PARENS_IFF(c, t, f) \
-    BOOST_PP_CAT(_TF_PP_EAT_PARENS_IFF_, c)(t, f)
+    TF_PP_CAT(_TF_PP_EAT_PARENS_IFF_, c)(t, f)
 #define _TF_PP_EAT_PARENS_IFF_0(t, f) f
 #define _TF_PP_EAT_PARENS_IFF_1(t, f) t
 
