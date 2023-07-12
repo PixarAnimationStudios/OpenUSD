@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/vt/api.h"
-#include "pxr/base/tf/preprocessorUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <boost/type_traits/has_trivial_assign.hpp>
 
