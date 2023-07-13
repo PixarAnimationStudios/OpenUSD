@@ -59,6 +59,7 @@
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
