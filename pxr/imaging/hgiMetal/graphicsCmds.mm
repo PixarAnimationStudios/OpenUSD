@@ -715,7 +715,7 @@ HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
         
     _CachedEncState.useMeshShaders = true;
     //TODO use better decision for thread count
-    [encoder drawMeshThreadgroups:MTLSizeMake(drawCount, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(256, 1, 1)];
+    [encoder drawMeshThreadgroups:MTLSizeMake(drawCount, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(192, 1, 1)];
     _hasWork = true;
 }
 

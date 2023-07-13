@@ -486,28 +486,29 @@ void main(void) {
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
         ApplyClipPlanes(vertexOut.Peye);
     }
-
-    const uint base = hd_LocalIndexID * 6;
+    
+    const uint base = hd_LocalIndexID * 9;
     //TODO try to place this work at the end of the group
     //So that if vertices are way fewer, have the work on the less used threads
-    if(hd_LocalIndexID < (meshletPrimitiveCount / 2)) {
-
+    if((hd_LocalIndexID * 3) < meshletPrimitiveCount) {
+    {
         mesh.set_primitive_count(meshletPrimitiveCount);
         //TODO actually set the primitive ID here
         PrimOut primOut;
         //TODO export a smarter primitive ID
-        mesh.set_primitive(hd_LocalIndexID * 2, primOut);
+        mesh.set_primitive(hd_LocalIndexID * 3, primOut);
 
         // Set the output indices.
         //TODO cache base index calc
         mesh.set_index(base, *(meshletIndicesStart + base));
         mesh.set_index(base+1, *(meshletIndicesStart + base + 1));
         mesh.set_index(base+2, *(meshletIndicesStart + base + 2));
-
+    }
+    {
         //TODO actually set the primitive ID here
         PrimOut primOut2;
         //TODO export a smarter primitive ID
-        mesh.set_primitive(hd_LocalIndexID * 2 + 1, primOut2);
+        mesh.set_primitive(hd_LocalIndexID * 3 + 1, primOut2);
 
         // Set the output indices.
         //TODO cache base index calc
@@ -515,6 +516,20 @@ void main(void) {
         mesh.set_index(base+4, *(meshletIndicesStart + base + 4));
         mesh.set_index(base+5, *(meshletIndicesStart + base + 5));
     }
+    {
+        //TODO actually set the primitive ID here
+        PrimOut primOut2;
+        //TODO export a smarter primitive ID
+        mesh.set_primitive(hd_LocalIndexID * 3 + 2, primOut2);
+
+        // Set the output indices.
+        //TODO cache base index calc
+        mesh.set_index(base+6, *(meshletIndicesStart + base + 6));
+        mesh.set_index(base+7, *(meshletIndicesStart + base + 7));
+        mesh.set_index(base+8, *(meshletIndicesStart + base + 8));
+    }
+    }
+    
 }
 
 
