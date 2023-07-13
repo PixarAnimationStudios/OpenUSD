@@ -59,6 +59,7 @@
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
@@ -247,11 +248,11 @@ enum SdfAuthoringError
 
 #define _SDF_UNITSLIST_CATEGORY(tup) BOOST_PP_TUPLE_ELEM(2, 0, tup)
 #define _SDF_UNITSLIST_TUPLES(tup) BOOST_PP_TUPLE_ELEM(2, 1, tup)
-#define _SDF_UNITSLIST_ENUM(elem) BOOST_PP_CAT(BOOST_PP_CAT(Sdf, \
+#define _SDF_UNITSLIST_ENUM(elem) TF_PP_CAT(TF_PP_CAT(Sdf, \
                                     _SDF_UNITSLIST_CATEGORY(elem)), Unit)
 
 #define _SDF_DECLARE_UNIT_ENUMERANT(r, tag, elem) \
-    BOOST_PP_CAT(Sdf ## tag ## Unit, _SDF_UNIT_TAG(elem)),
+    TF_PP_CAT(Sdf ## tag ## Unit, _SDF_UNIT_TAG(elem)),
 
 #define _SDF_DECLARE_UNIT_ENUM(r, unused, elem)          \
 enum _SDF_UNITSLIST_ENUM(elem) {                         \

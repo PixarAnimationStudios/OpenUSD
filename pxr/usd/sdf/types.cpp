@@ -171,7 +171,7 @@ static void _AddToUnitsMaps(_UnitsInfo &info,
 
 #define _ADD_UNIT_ENUM(r, category, elem)                               \
     TF_ADD_ENUM_NAME(                                                   \
-        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
+        TF_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),        \
         _SDF_UNIT_NAME(elem));
 
 #define _REGISTRY_FUNCTION(r, unused, elem)                          \
@@ -187,7 +187,7 @@ BOOST_PP_LIST_FOR_EACH(_REGISTRY_FUNCTION, ~, _SDF_UNITS)
 #define _ADD_UNIT_TO_MAPS(r, category, elem)                            \
     _AddToUnitsMaps(                                                    \
         *info,                                                          \
-        BOOST_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),     \
+        TF_PP_CAT(Sdf ## category ## Unit, _SDF_UNIT_TAG(elem)),        \
         _SDF_UNIT_NAME(elem),                                           \
         _SDF_UNIT_SCALE(elem), #category);
 
@@ -211,11 +211,11 @@ static _UnitsInfo &_GetUnitsInfo() {
 #undef _PROCESS_ENUMERANT
 
 #define _REGISTRY_FUNCTION(r, unused, elem)                          \
-TF_REGISTRY_FUNCTION_WITH_TAG(TfType, BOOST_PP_CAT(Type, _SDF_UNITSLIST_CATEGORY(elem))) \
+TF_REGISTRY_FUNCTION_WITH_TAG(TfType, TF_PP_CAT(Type, _SDF_UNITSLIST_CATEGORY(elem))) \
 {                                                                    \
     TfType::Define<_SDF_UNITSLIST_ENUM(elem)>();                     \
 }                                                                    \
-TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, BOOST_PP_CAT(Value, _SDF_UNITSLIST_CATEGORY(elem))) \
+TF_REGISTRY_FUNCTION_WITH_TAG(VtValue, TF_PP_CAT(Value, _SDF_UNITSLIST_CATEGORY(elem))) \
 {                                                                    \
     _RegisterEnumWithVtValue<_SDF_UNITSLIST_ENUM(elem)>();           \
 }
