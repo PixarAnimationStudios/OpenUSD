@@ -433,7 +433,7 @@ some API signatures will change from using boost to using the std equivalent.
   default and match the current behavior of Alembic 1.7.9+. 
   (PR: ([#2439](https://github.com/PixarAnimationStudios/OpenUSD/pull/2439))
 
-### MaterialX plugin
+### MaterialX
 
 - Added MaterialX v1.38.7 support to allow for MaterialX support on Metal. 
   (Issue: [#2216](https://github.com/PixarAnimationStudios/OpenUSD/issues/2216), 
