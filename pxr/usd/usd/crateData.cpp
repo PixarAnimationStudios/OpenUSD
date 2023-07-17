@@ -791,6 +791,8 @@ private:
         unordered_map<
             FieldSetIndex, SharedFieldValuePairVector, _Hasher> liveFieldSets;
 
+        bool caughtExceptions = false;
+
         for (auto fsBegin = fieldSets.begin(),
                  fsEnd = find(fsBegin, fieldSets.end(), FieldIndex());
              fsBegin != fieldSets.end();
@@ -801,9 +803,9 @@ private:
             TfAutoMallocTag tag("field data");
             auto &fieldValuePairs =
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
-                    
+
             dispatcher.Run(
-                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
+                [this, fsBegin, fsEnd, &fields, &fieldValuePairs, &caughtExceptions]() mutable {
                     try {
                         // XXX Won't need first two tags when bug #132031 is
                         // addressed
@@ -818,12 +820,18 @@ private:
                         }
                     } catch (const std::exception&) {
                         // Don't let exceptions from individual reader out,
-                        // otherwise it will crash in some destructors.
+                        // otherwise it will crash in the destructors of work
+                        // items in the dispatcher.
+                        caughtExceptions = true;
                     }
                 });
         }
                 
         dispatcher.Wait();
+
+        if (caughtExceptions) {
+            return false;
+        }
 
         // Create all the specData entries and store pointers to them.
         tbb::parallel_for(

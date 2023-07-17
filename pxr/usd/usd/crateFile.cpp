@@ -4008,7 +4008,7 @@ CrateFile::_UnpackValue(ValueRep rep, T *out) const
                          "%s, returning a value-initialized object",
                          GetAssetPath().c_str(),
                          ArchGetDemangled<T>().c_str());
-        *out = T();
+        throw;
     }
 }
 
@@ -4032,7 +4032,7 @@ CrateFile::_UnpackValue(ValueRep rep, VtArray<T> *out) const {
                          "VtArray<%s>, returning an empty array",
                          GetAssetPath().c_str(),
                          ArchGetDemangled<T>().c_str());
-        *out = VtArray<T>();
+        throw;
     }
 }
 
@@ -4059,7 +4059,7 @@ CrateFile::_UnpackValue(ValueRep rep, VtValue *result) const {
         TF_RUNTIME_ERROR("Corrupt asset <%s>: exception raised unpacking a "
                          "value, returning an empty VtValue",
                          GetAssetPath().c_str());
-        *result = VtValue();
+        throw;
     }
 }
 
