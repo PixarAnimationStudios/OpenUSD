@@ -74,7 +74,7 @@
 // 52 -> 53: Changing dirty bits of HdCoordSys.
 // 53 -> 54: Introducing HdFlattenedDataSourceProvider to make
 //           HdFlatteningSceneIndex modular.
-#define HD_API_VERSION 53
+#define HD_API_VERSION 54
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
