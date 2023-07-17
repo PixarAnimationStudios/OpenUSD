@@ -32,6 +32,6 @@
 // 6  -> 7 : make HdxShadowMatrixComputationSharedPtr std::shared_ptr instead of boost::shared_ptr
 // 7  -> 8 : added another HdxShadowMatrixComputation signature.
 // 8  -> 9 : added render index as argument to HdxSelectionTracker::GetSelectedPointColors.
-#define HDX_API_VERSION  8
+#define HDX_API_VERSION  9
 
 #endif // PXR_IMAGING_HDX_VERSION_H
