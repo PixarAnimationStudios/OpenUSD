@@ -451,16 +451,15 @@ void main(void) {
         gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
 
         SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
-        //This primitive ID is bogus
-        primitive_id = (ind)/3;
         hd_VertexID = ind;
-        dcMemb = GetDrawingCoordFull();
-        
     }
 
     if( hd_LocalIndexID < meshletVertexCount )
     {
+        dcMemb = GetDrawingCoordFull();
         uint index = *(meshletVerticesStart + ind * numUintsPerVertex + 1);
+        //todo resolve the index
+        primitive_id = index/3;
         //TODO investigate this
         
 
@@ -491,11 +490,12 @@ void main(void) {
     //TODO try to place this work at the end of the group
     //So that if vertices are way fewer, have the work on the less used threads
     if(hd_LocalIndexID < (meshletPrimitiveCount / 2)) {
-
         mesh.set_primitive_count(meshletPrimitiveCount);
         //TODO actually set the primitive ID here
         PrimOut primOut;
         //TODO export a smarter primitive ID
+        uint index0 = *(meshletVerticesStart + (hd_LocalIndexID * 2) * numUintsPerVertex + 1);
+        primOut.primitive_id_ms = index0/3;
         mesh.set_primitive(hd_LocalIndexID * 2, primOut);
 
         // Set the output indices.
@@ -506,6 +506,8 @@ void main(void) {
 
         //TODO actually set the primitive ID here
         PrimOut primOut2;
+        uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 2 + 1) * numUintsPerVertex + 1);
+        primOut2.primitive_id_ms = index1/3;
         //TODO export a smarter primitive ID
         mesh.set_primitive(hd_LocalIndexID * 2 + 1, primOut2);
 
@@ -1659,6 +1661,7 @@ vec4 GetInterpolatedPatchCoord()
 -- glsl Mesh.Fragment
 
 hd_drawingCoord dcMemb;
+uint primitive_id_ms;
 
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset

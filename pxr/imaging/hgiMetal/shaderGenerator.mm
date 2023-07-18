@@ -1727,6 +1727,10 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 
     // Execute all code that hooks into the entry point function
     ss << "\n// //////// Entry Point Function Executions ////////\n";
+    if (_descriptor.meshDescriptor.meshUser) {
+        ss << _generatorShaderSections->GetScopeInstanceName();
+        ss << ".primitive_id_ms = vsOutput.primOut.primitive_id_ms;\n";
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         if (section->VisitEntryPointFunctionExecutions(
                 ss, _generatorShaderSections->GetScopeInstanceName())) {

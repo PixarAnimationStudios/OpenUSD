@@ -1190,7 +1190,9 @@ bool
 HgiMetalParameterMeshInputShaderSection::VisitGlobalMemberDeclarations(
     std::ostream &ss)
 {
-    ss << "struct PrimOut { };\n";
+    ss << "struct PrimOut {\n";
+    ss << "uint primitive_id_ms;\n";
+    ss << "};\n";
     ss << "struct VertexOut {\n";
     
     for (auto &member : GetStructTypeDeclaration()->GetMembers()) {
@@ -1494,7 +1496,9 @@ bool
 HgiMetalStageOutputMeshShaderSection::VisitGlobalMemberDeclarations(
     std::ostream &ss)
 {
-    ss << "struct PrimOut { };\n";
+    ss << "struct PrimOut {\n";
+    ss << "uint primitive_id_ms;\n";
+    ss << "};\n";
     _structTypeDeclaration->WriteDeclaration(ss);
     ss << "\n";
     return true;
