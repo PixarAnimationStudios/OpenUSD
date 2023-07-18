@@ -356,6 +356,7 @@ struct HgiShaderFunctionMeshDesc
     uint32_t maxTotalThreadsPerMeshletThreadgroup;
     uint32_t maxTotalThreadgroupsPerMeshObject;
     uint32_t maxTotalThreadgroupsPerMeshlet;
+    bool meshUser = false;
 };
 
 HGI_API

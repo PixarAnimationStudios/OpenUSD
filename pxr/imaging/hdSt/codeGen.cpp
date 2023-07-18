@@ -2680,6 +2680,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             fsDesc.meshDescriptor.meshTopology = HgiShaderFunctionMeshDesc::MeshTopology::Triangle;
         }
         if (_hasMS) {
+            fsDesc.meshDescriptor.meshUser = true;
             HgiShaderFunctionAddStageInput(
                                            &fsDesc, "drawIndexVS", "uint",
                                            "");
@@ -4447,6 +4448,37 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                         << "  return (patch_id - GetBasePrimitiveOffset());\n"
                         << "}\n";
         }
+    } else if (_hasMS) {
+        if (HdSt_GeometricShader::IsPrimTypeTriQuads(
+                                    _geometricShader->GetPrimitiveType())) {
+            primitiveID << "int GetPrimitiveID() {\n"
+                        << "  return primitive_id_ms / 2;\n"
+                        << "}\n"
+                        << "int GetTriQuadID() {\n"
+                        << "  return primitive_id_ms & 1;\n"
+                        << "}\n";
+
+        } else {
+            primitiveID << "int GetPrimitiveID() {\n"
+                        << "  return primitive_id_ms;\n"
+                        << "}\n";
+        }
+        /*
+        if (HdSt_GeometricShader::IsPrimTypeTriQuads(
+                                    _geometricShader->GetPrimitiveType())) {
+            primitiveID << "int GetPrimitiveID() {\n"
+                        << "  return gl_PrimitiveID / 2;\n"
+                        << "}\n"
+                        << "int GetTriQuadID() {\n"
+                        << "  return gl_PrimitiveID & 1;\n"
+                        << "}\n";
+
+        } else {
+            primitiveID << "int GetPrimitiveID() {\n"
+                        << "  return gl_PrimitiveID;\n"
+                        << "}\n";
+        }
+         */
     } else {
         if (HdSt_GeometricShader::IsPrimTypeTriQuads(
                                     _geometricShader->GetPrimitiveType())) {
@@ -4924,7 +4956,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
                  << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
                  << "  dc.elementCoord            = GetDrawingCoordField(2);\n"
-                 << "  dc.primitiveCoord          = GetDrawingCoordField(3) + primitive_id;\n"
+                 << "  dc.primitiveCoord          = GetDrawingCoordField(3);\n"
                  << "  dc.fvarCoord               = GetDrawingCoordField(4);\n"
                  << "  dc.shaderCoord             = GetDrawingCoordField(6);\n"
                  << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
@@ -4938,7 +4970,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         << "  dc.modelCoord              = GetDrawingCoordField(0);\n"
         << "  dc.constantCoord           = GetDrawingCoordField(1);\n"
         << "  dc.elementCoord            = GetDrawingCoordField(2);\n"
-        << "  dc.primitiveCoord          = GetDrawingCoordField(3) + GetPrimitiveID();\n"
+        << "  dc.primitiveCoord          = GetDrawingCoordField(3);\n"
         << "  dc.fvarCoord               = GetDrawingCoordField(4);\n"
         << "  dc.shaderCoord             = GetDrawingCoordField(6);\n"
         << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
