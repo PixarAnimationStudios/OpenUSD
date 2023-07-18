@@ -32,9 +32,6 @@ class TestTfPyStaticTokens(unittest.TestCase):
         testTokens = (
             ('orange', 'orange'),
             ('pear', "d'Anjou"),
-            ('Fuji', 'Fuji'),
-            ('Pippin', 'Pippin'),
-            ('McIntosh', 'McIntosh'),
             )
 
         for scope in (Tf._testStaticTokens, Tf._TestStaticTokens):
