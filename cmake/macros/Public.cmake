@@ -24,6 +24,14 @@
 include(Private)
 
 function(pxr_build_documentation)
+    # Cmake booleans are often, ie, "OFF", while Doxyfile requires booleans
+    # to be "YES" or "NO"
+    if(PXR_BUILD_HTML_DOCUMENTATION)
+        set(DOXYGEN_GENERATE_HTML "YES")
+    else()
+        set(DOXYGEN_GENERATE_HTML "NO")
+    endif()
+
     configure_file(${PROJECT_SOURCE_DIR}/docs/doxygen/Doxyfile.in
                    ${PROJECT_BINARY_DIR}/Doxyfile)
 
@@ -55,11 +63,13 @@ function(pxr_build_documentation)
         DESTINATION ${INST_DOCS_ROOT}
     )
 
-    set(BUILT_HTML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_html")
-    install(
-        DIRECTORY ${BUILT_HTML_DOCS}
-        DESTINATION ${INST_DOCS_ROOT}
-    )
+    if(PXR_BUILD_HTML_DOCUMENTATION)
+        set(BUILT_HTML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_html")
+        install(
+            DIRECTORY ${BUILT_HTML_DOCS}
+            DESTINATION ${INST_DOCS_ROOT}
+        )
+    endif()
 
     set(BUILT_XML_DOCS "${PROJECT_BINARY_DIR}/docs/doxy_xml")
     install(

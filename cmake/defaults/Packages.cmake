@@ -182,14 +182,16 @@ if (PXR_BUILD_DOCUMENTATION)
                 "doxygen not found, required for PXR_BUILD_DOCUMENTATION")
     endif()
 
-    find_program(DOT_EXECUTABLE
-        NAMES dot
-    )
-    if (EXISTS ${DOT_EXECUTABLE})
-        message(STATUS "Found dot: ${DOT_EXECUTABLE}") 
-    else()
-        message(FATAL_ERROR
-                "dot not found, required for PXR_BUILD_DOCUMENTATION")
+    if (PXR_BUILD_HTML_DOCUMENTATION)
+        find_program(DOT_EXECUTABLE
+            NAMES dot
+        )
+        if (EXISTS ${DOT_EXECUTABLE})
+            message(STATUS "Found dot: ${DOT_EXECUTABLE}") 
+        else()
+            message(FATAL_ERROR
+                    "dot not found, required for PXR_BUILD_DOCUMENTATION")
+        endif()
     endif()
 endif()
 
