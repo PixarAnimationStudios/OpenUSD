@@ -28,8 +28,42 @@ $extrastylesheet
     DoxygenAwesomeFragmentCopyButton.init()
 </script>
 
+<!-- Add warning banner to top of page if current page isn't the release version -->
+<script>
+function AddWarningBanner() 
+{
+  // Get current URL
+  const loc = new URL(location.href);
+  // Look for URL of the format "<USD hostname>/<version|dev|release>/api/<file.html>"
+  // NOTE: If versioning approach ever changes, this will need updating
+  var apiIndex = loc.pathname.indexOf("/api/");
+  if (apiIndex >= 0) {
+    // Truncate "/api/..." off path to get preceding path and "/" index
+    var truncString = loc.pathname.slice(0,apiIndex);
+    // Get index of first "/" before "/api/"
+    var preApiIndex = truncString.lastIndexOf("/");
+    var verString = truncString.slice(preApiIndex + 1);
+    // if the current page isn't the release version, add a warning banner 
+    if (verString !== "release") {
+      // Create alternate "release" URL for page
+      // NOTE: This won't always be a valid URL, e.g. if dev release has a brand new page
+      var relURL = loc.pathname.substring(0,preApiIndex) + "/release" + loc.pathname.substring(apiIndex);
+      var banner = document.createElement("div");
+      banner.className = "non_release_version_warning";
+      if (verString === "dev") {
+        banner.innerHTML = "This document is for a version of USD that is under development. See <a href='" + relURL + "'>this page</a> for the current release.";
+      } else {
+        // For now, we assume any other string is an older version string
+        banner.innerHTML = "This document is for an older version of USD. See <a href='" + relURL + "'>this page</a> for the current release.";
+      }
+      document.body.insertBefore(banner,document.body.childNodes[0]);
+    }
+  }
+} 
+</script>
+
 </head>
-<body>
+<body onload="AddWarningBanner()">
 <div id="top"><!-- do not remove this div, it is closed by doxygen! -->
 
 <!--BEGIN TITLEAREA-->
