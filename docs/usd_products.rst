@@ -368,7 +368,7 @@ industrial digitalization and perception AI applications.
 * `NVIDIA USD Resources <https://developer.nvidia.com/usd>`_
 * `NVIDIA USD Documentation <https://docs.omniverse.nvidia.com/usd>`_
 
-Omniverse connects the `top OpenUSD-based software applications <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_ 
+Omniverse connects `many top OpenUSD-based software applications <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_ 
 to unify your 3D workflow. Some of the applications are:
 
 * Adobe Photoshop
