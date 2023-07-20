@@ -654,7 +654,7 @@ _AllocateMeshletDispatchBuffer(
 
 //TODO IHH drive externally
 constexpr uint32_t max_primitives = 512;
-constexpr uint32_t max_vertices = 256;
+constexpr uint32_t max_vertices = 192;
 
 struct VertexInfo {
     uint32_t vertexId;
@@ -672,6 +672,7 @@ struct Meshlet {
     uint32_t primitiveCount;
     std::vector<VertexInfo> vertexInfo;
     std::vector<uint32_t> remappedIndices;
+    std::vector<uint32_t> remappedPrimIDs;
 };
 
 //process mesh at a time
@@ -684,8 +685,8 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
     bool maxVertsReached = false;
     bool maxPrimsReached = false;
     Meshlet meshlet;
-    int startPrimitive = meshStartLocation/3;
-    int endPrimitive = meshStartLocation/3;
+    int startPrimitive = meshStartLocation / 3;
+    int endPrimitive = meshStartLocation / 3;
     for(uint32_t i = meshStartLocation; i < meshEndLocation + 2; i += 3) {
         if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
             endPrimitive = ((i)/3);
@@ -704,6 +705,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3]]);
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+1]]);
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+2]]);
+                meshlet.remappedPrimIDs.push_back(n);
             }
             meshlet.vertexCount = meshlet.vertexInfo.size();
             meshlet.primitiveCount = (endPrimitive - startPrimitive);
@@ -802,12 +804,22 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoor
                 currentOffset += 2;
                 localOffset += 2;
             }
+            /*
             for (int k = 0; k < m.remappedIndices.size(); k++) {
                 flattenInto.push_back(m.remappedIndices[k]);
-                currentOffset++;
-                localOffset++;
+                currentOffset += 2;
+                localOffset += 2;
             }
-            if(j < (meshletsInMesh.size()-1)) {
+             */
+            for (int k = 0; k < m.remappedIndices.size()/3; k+= 3) {
+                flattenInto.push_back(m.remappedIndices[k]);
+                flattenInto.push_back(m.remappedIndices[k+1]);
+                flattenInto.push_back(m.remappedIndices[k+2]);
+                flattenInto.push_back(m.remappedPrimIDs[k]);
+                currentOffset += 4;
+                localOffset += 4;
+            }
+            if (j < (meshletsInMesh.size()-1)) {
                 flattenInto[lastOffset+(j+1)] = localOffset;
             }
         }

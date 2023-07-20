@@ -495,8 +495,8 @@ void main(void) {
         //TODO actually set the primitive ID here
         PrimOut primOut;
         //TODO export a smarter primitive ID
-        uint index0 = *(meshletVerticesStart + (hd_LocalIndexID * 2) * numUintsPerVertex + 1);
-        primOut.primitive_id_ms = index0/3;
+        uint index0 = *(meshletVerticesStart + (hd_LocalIndexID * 3) * numUintsPerVertex + 1);
+        primOut.primitive_id_ms = *(meshletIndicesStart + base + 3);
         mesh.set_primitive(hd_LocalIndexID * 3, primOut);
 
         // Set the output indices.
@@ -508,28 +508,30 @@ void main(void) {
     {
         //TODO actually set the primitive ID here
         PrimOut primOut2;
-        uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 2 + 1) * numUintsPerVertex + 1);
-        primOut2.primitive_id_ms = index1/3;
+        uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 3 + 1) * numUintsPerVertex + 1);
+        primOut2.primitive_id_ms = *(meshletIndicesStart + base + 7);
         //TODO export a smarter primitive ID
         mesh.set_primitive(hd_LocalIndexID * 3 + 1, primOut2);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+3, *(meshletIndicesStart + base + 3));
-        mesh.set_index(base+4, *(meshletIndicesStart + base + 4));
-        mesh.set_index(base+5, *(meshletIndicesStart + base + 5));
+        mesh.set_index(base+3, *(meshletIndicesStart + base + 4));
+        mesh.set_index(base+4, *(meshletIndicesStart + base + 5));
+        mesh.set_index(base+5, *(meshletIndicesStart + base + 6));
     }
     {
         //TODO actually set the primitive ID here
         PrimOut primOut2;
+ 	uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 3 + 2) * numUintsPerVertex + 1);
+        primOut2.primitive_id_ms = *(meshletIndicesStart + base + 11);
         //TODO export a smarter primitive ID
         mesh.set_primitive(hd_LocalIndexID * 3 + 2, primOut2);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+6, *(meshletIndicesStart + base + 6));
-        mesh.set_index(base+7, *(meshletIndicesStart + base + 7));
-        mesh.set_index(base+8, *(meshletIndicesStart + base + 8));
+        mesh.set_index(base+6, *(meshletIndicesStart + base + 8));
+        mesh.set_index(base+7, *(meshletIndicesStart + base + 9));
+        mesh.set_index(base+8, *(meshletIndicesStart + base + 10));
     }
     }
     
