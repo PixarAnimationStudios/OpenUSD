@@ -16,12 +16,17 @@ pxr_library(hdsi
         pxOsd
 
     PUBLIC_CLASSES
+        coordSysPrimSceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
+        legacyDisplayStyleOverrideSceneIndex
         materialBindingResolvingSceneIndex
         materialPrimvarTransferSceneIndex
+        nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex
-        terminalsResolvingSceneIndex
+        primTypePruningSceneIndex
+        renderSettingsFilteringSceneIndex
+        sceneGlobalsSceneIndex
 
     PUBLIC_HEADERS
         api.h

@@ -387,10 +387,10 @@ typedef boost::iterator_range<
 // Inform TfIterator it should feel free to make copies of the range type.
 template <>
 struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSiblingRange> : boost::true_type {};
+    Usd_PrimDataSiblingRange> : std::true_type {};
 template <>
 struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSiblingRange> : boost::true_type {};
+    const Usd_PrimDataSiblingRange> : std::true_type {};
 
 Usd_PrimDataSiblingIterator
 Usd_PrimData::_ChildrenBegin() const
@@ -448,10 +448,10 @@ typedef boost::iterator_range<
 // Inform TfIterator it should feel free to make copies of the range type.
 template <>
 struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSubtreeRange> : boost::true_type {};
+    Usd_PrimDataSubtreeRange> : std::true_type {};
 template <>
 struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSubtreeRange> : boost::true_type {};
+    const Usd_PrimDataSubtreeRange> : std::true_type {};
 
 Usd_PrimDataSubtreeIterator
 Usd_PrimData::_SubtreeBegin() const

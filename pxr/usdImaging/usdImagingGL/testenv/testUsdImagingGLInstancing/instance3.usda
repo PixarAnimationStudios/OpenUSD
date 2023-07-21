@@ -174,7 +174,7 @@ def Xform "Meshes" (
         )
     }
 
-    def "Mesh_2" (
+    def Xform "Mesh_2" (
         active = true
         references = </Mesh>
     )

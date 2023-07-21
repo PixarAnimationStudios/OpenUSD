@@ -36,6 +36,7 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
+#include <iterator>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -240,12 +241,12 @@ private:
 /// weak-to-strong order.
 ///
 class PcpPropertyReverseIterator
-    : public boost::reverse_iterator<PcpPropertyIterator>
+    : public std::reverse_iterator<PcpPropertyIterator>
 {
 public:
     PcpPropertyReverseIterator() { }
     explicit PcpPropertyReverseIterator(const PcpPropertyIterator& iter)
-        : boost::reverse_iterator<PcpPropertyIterator>(iter) { }
+        : std::reverse_iterator<PcpPropertyIterator>(iter) { }
         
     PcpNodeRef GetNode() const
     {
@@ -304,10 +305,10 @@ public:
     };                                                                  \
                                                                         \
     template <>                                                         \
-    struct Tf_ShouldIterateOverCopy<Range> : boost::true_type {};       \
+    struct Tf_ShouldIterateOverCopy<Range> : std::true_type {};         \
                                                                         \
     template <>                                                         \
-    struct Tf_ShouldIterateOverCopy<const Range> : boost::true_type {}
+    struct Tf_ShouldIterateOverCopy<const Range> : std::true_type {}
 
 PCP_DEFINE_RANGE(PcpNodeRange, PcpNodeIterator, PcpNodeReverseIterator);
 PCP_DEFINE_RANGE(PcpPrimRange, PcpPrimIterator, PcpPrimReverseIterator);

@@ -66,7 +66,8 @@ void HdSt_ApplyMaterialXFilter(
 MaterialX::ShaderPtr HdSt_GenMaterialXShader(
     MaterialX::DocumentPtr const& mxDoc,
     MaterialX::FileSearchPath const& searchPath,
-    HdSt_MxShaderGenInfo const& mxHdInfo=HdSt_MxShaderGenInfo());
+    HdSt_MxShaderGenInfo const& mxHdInfo=HdSt_MxShaderGenInfo(),
+    TfToken const& apiName=TfToken());
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

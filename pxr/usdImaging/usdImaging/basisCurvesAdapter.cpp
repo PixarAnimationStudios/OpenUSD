@@ -99,11 +99,12 @@ HdDataSourceLocatorSet
 UsdImagingBasisCurvesAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourceBasisCurvesPrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();
@@ -347,7 +348,7 @@ UsdImagingBasisCurvesAdapter::GetTopology(UsdPrim const& prim,
         topoCurveBasis = HdTokens->bezier;
     }
     else if(curveBasis == UsdGeomTokens->bspline) {
-        topoCurveBasis = HdTokens->bSpline;
+        topoCurveBasis = HdTokens->bspline;
     }
     else if(curveBasis == UsdGeomTokens->catmullRom) {
         topoCurveBasis = HdTokens->catmullRom;

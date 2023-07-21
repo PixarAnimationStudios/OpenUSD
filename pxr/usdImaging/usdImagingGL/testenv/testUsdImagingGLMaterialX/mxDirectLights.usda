@@ -11,7 +11,7 @@ def Sphere "mxSphere" (
 }
 
 def Scope "Materials" {
-    def Material "MaterialX" (
+    def "MaterialX" (
         references = [
             @./standard_surface_default.mtlx@</MaterialX>,
         ]

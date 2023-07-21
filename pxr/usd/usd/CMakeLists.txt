@@ -411,6 +411,13 @@ pxr_build_test(testUsdSchemaBase
         testenv/testUsdSchemaBase.cpp
 )
 
+pxr_build_test(testUsdSchemaRegistryCpp
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdSchemaRegistryCpp.cpp
+)
+
 pxr_build_test(testUsdResolveTarget
     LIBRARIES
         pcp
@@ -606,6 +613,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSchemaRegistry
     DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSchemaRegistry
+    DEST testUsdSchemaRegistryCpp
 )
 
 pxr_install_test_dir(
@@ -1123,6 +1135,11 @@ pxr_register_test(testUsdSchemaBasePy
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaRegistryCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryCpp"
     EXPECTED_RETURN_CODE 0
 )
 

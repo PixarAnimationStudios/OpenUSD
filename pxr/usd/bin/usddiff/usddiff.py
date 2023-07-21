@@ -40,7 +40,7 @@ def _exit(msg, exitCode):
     sys.exit(exitCode)
 
 # generates a command list representing a call which will generate
-# a temporary ascii file used during diffing. 
+# a temporary text file used during diffing.
 def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
     command = [usdcatCmd, inPath, '--out', outPath]
     if flatten:
@@ -52,6 +52,18 @@ def _generateCatCommand(usdcatCmd, inPath, outPath, flatten=None, fmt=None):
 
     return command
 
+def _splitDiffCommand(diffCmd):
+    diffCmdArgs = list()
+
+    if diffCmd is not None:
+        diffCmdList = diffCmd.split()
+        diffCmd = diffCmdList[0]
+        
+        if diffCmdList[1:]:
+            diffCmdArgs = diffCmdList[1:]
+
+    return (diffCmd, diffCmdArgs)
+
 # looks up a suitable diff tool, and locates usdcat
 def _findDiffTools():
     usdcatCmd = FindUsdBinary("usdcat")
@@ -60,18 +72,34 @@ def _findDiffTools():
               ERROR_EXIT_CODE)
 
     # prefer USD_DIFF, then DIFF, else use the internal unified diff.
-    diffCmd = (os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
-    diffCmdArgs = list()
-    if diffCmd:
-        diffCmdList = diffCmd.split()
-        diffCmd = diffCmdList[0]
-        if diffCmdList[1:]:
-            diffCmdArgs = diffCmdList[1:]
+    diffCmd, diffCmdArgs = _splitDiffCommand(
+        os.environ.get('USD_DIFF') or os.environ.get('DIFF'))
+
     if diffCmd and not FindUsdBinary(diffCmd):
         _exit("Error: Failed to find diff tool %s." % (diffCmd, ),
               ERROR_EXIT_CODE)
 
     return (usdcatCmd, diffCmd, diffCmdArgs)
+
+
+def _findImageDiffTools():
+    # prefer USD_IMAGE_DIFF, else use the internal filecmp.
+    imageDiffCommand, imageDiffCmdArgs = _splitDiffCommand(
+        os.environ.get('USD_IMAGE_DIFF'))
+
+    if imageDiffCommand and not FindUsdBinary(imageDiffCommand):
+        _exit("Error: Failed to find image diff tool %s." % (imageDiffCommand),
+              ERROR_EXIT_CODE)
+
+    return (imageDiffCommand, imageDiffCmdArgs)
+
+def _findImageDiffFormats():
+    imgFormatStr = os.environ.get('USD_IMAGE_DIFF_FORMATS')
+
+    if imgFormatStr is not None:
+        return set([x.lower() for x in imgFormatStr.split(',')])
+    else:
+        return {'bmp', 'jpg', 'jpeg', 'png', 'tga', 'hdr'}
 
 def _getFileExt(path):
     _, ext = os.path.splitext(path)
@@ -202,7 +230,131 @@ class FileManager(object):
             os.remove(self._typedBaseline)
         if self._typedComparison:
             os.remove(self._typedComparison)
+
+def _launchDiffTool(diffCmd, diffCmdArgs, baseline, comparison, brief):
+    if diffCmd:
+        # Run the external diff tool.
+        if brief:
+            diffCmdArgs.append("--brief")
+        return call([diffCmd] + diffCmdArgs + [baseline, comparison])
+
+    else:
+        # Read the files.
+        with open(baseline, "r") as f:
+            baselineData = f.readlines()
+        with open(comparison, "r") as f:
+            comparisonData = f.readlines()
+
+        if baselineData == comparisonData:
+            return 0
         
+        if brief:
+            print("Files %s and %s differ" % (baseline, comparison))
+        else:
+            # Generate unified diff and output if there are any
+            # differences.
+            diff = list(difflib.unified_diff(
+                baselineData, comparisonData,
+                baseline, comparison, n=0))
+            # Skip the file names.
+            for line in diff[2:]:
+                print(line, end='')
+        return 1
+
+# Creates a friendly readable path for a file in a usd archive
+def _getArchivePath(usdzStack, archiveFile):
+    from pxr import Ar
+    return Ar.JoinPackageRelativePath(usdzStack + [archiveFile])
+
+# Examines two usdz archives and attempts to diff their individual contents
+# This method attempts to optimize performance by oly extracting files from
+# the archive when it is determined that they may be different. In this case,
+# the files are sent through the normal diff flow.
+def _diffUsdzArchives(base, comp, brief):
+    return _diffUsdz(base, comp, brief, [base], [comp])
+
+def _diffUsdz(base, comp, brief, baseStack, compStack):
+    from pxr import Tf, Usd
+    diffResult = 0
+
+    imageFormats = _findImageDiffFormats()
+    imageDiffCmd, imageDiffCmdArgs = _findImageDiffTools()
+
+    baseZip = Usd.ZipFile.Open(base)
+    compZip = Usd.ZipFile.Open(comp)
+
+    baseFiles = set(baseZip.GetFileNames())
+    compFiles = set(compZip.GetFileNames())
+
+    common = list(baseFiles & compFiles)
+    baseOnly = baseFiles - compFiles
+    compareOnly = compFiles - baseFiles
+
+    diffResult = 1 if len(baseOnly) > 0 or len(compareOnly) > 0 else 0
+    common.sort()
+
+    for commonFile in common:
+        baseInfo = baseZip.GetFileInfo(commonFile)
+        compInfo = compZip.GetFileInfo(commonFile)
+        commonFileExt = _getFileExt(commonFile).lower()
+        isImageDiff = commonFileExt in imageFormats
+
+        if baseInfo.crc == compInfo.crc and \
+            baseInfo.uncompressedSize == compInfo.uncompressedSize:
+            continue
+
+        basePath = _getArchivePath(baseStack, commonFile)
+        compPath = _getArchivePath(compStack, commonFile)
+
+        # Check for cases where file extraction is not necessary
+        if isImageDiff and imageDiffCmd is None:
+            print("Differences in %s and %s:" % (basePath, compPath))
+            diffResult = 1
+            continue
+        elif commonFileExt == "usdz":
+            baseStack.append(commonFile)
+            compStack.append(commonFile)
+            diffResult |= _diffUsdz(basePath, compPath, brief,
+                                    baseStack, compStack)
+            baseStack.pop()
+            compStack.pop()
+            continue
+
+        # extract from the usdz archive and write to disk for diff procedure
+        with \
+        Tf.NamedTemporaryFile(suffix='__.' + commonFileExt) as tempBaseline, \
+        Tf.NamedTemporaryFile(suffix='__.' + commonFileExt) as tempComparison:
+
+            with open(tempBaseline.name, "wb") as tf:
+                tf.write(baseZip.GetFile(commonFile))
+
+            with open(tempComparison.name, "wb") as tf:
+                tf.write(compZip.GetFile(commonFile))
+
+            print("Differences in %s and %s:" % (basePath, compPath))
+
+            # run an image diff
+            if isImageDiff:
+                diffResult |= call([imageDiffCmd] + imageDiffCmdArgs + 
+                                    [tempBaseline.name, tempComparison.name])
+
+            #run a traditional diff
+            else:
+                _, diffCmd, diffCmdArgs = _findDiffTools()
+
+                diffResult |= _launchDiffTool(diffCmd, 
+                                                diffCmdArgs, 
+                                                tempBaseline.name, 
+                                                tempComparison.name, 
+                                                brief)
+
+    for b in baseOnly:
+        print('Only in baseline: %s.' % _getArchivePath(baseStack, b))
+
+    for c in compareOnly:
+        print('Not in baseline: %s.' % _getArchivePath(compStack, c))
+    
+    return diffResult
 
 def _runDiff(baseline, comparison, flatten, noeffect, brief):
     from pxr import Tf
@@ -222,6 +374,15 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
 
         if comparisonFileType is None:
             _exit(pluginError % comparison, ERROR_EXIT_CODE)
+
+        if baselineFileType == "usdz" and comparisonFileType == 'usdz':
+            return _diffUsdzArchives(
+                fmgr.GetBaselineName(), fmgr.GetComparisonName(), brief)
+        # Note comparing any non usdz to a usdz will automatically triggers a 
+        # a "These files are different" result 
+        elif baselineFileType == "usdz" or comparisonFileType == 'usdz':
+            print("Files %s and %s differ" % (baseline, comparison))
+            return 1
 
         # Generate recognizable suffixes for our files in the temp dir
         # location of the form /temp/string__originalFileName.usda where
@@ -251,33 +412,9 @@ def _runDiff(baseline, comparison, flatten, noeffect, brief):
             tempBaselineTimestamp = os.path.getmtime(tempBaseline.name)
             tempComparisonTimestamp = os.path.getmtime(tempComparison.name)
 
-            if diffCmd:
-                # Run the external diff tool.
-                if brief:
-                    diffCmdArgs.append("--brief")
-                diffResult = call([diffCmd] + diffCmdArgs +
-                                  [tempBaseline.name, tempComparison.name])
-
-            else:
-                # Read the files.
-                with open(tempBaseline.name, "r") as f:
-                    baselineData = f.readlines()
-                with open(tempComparison.name, "r") as f:
-                    comparisonData = f.readlines()
-
-                if baselineData != comparisonData:
-                    if brief:
-                        print("Files %s and %s differ" % (baseline, comparison))
-                    else:
-                        # Generate unified diff and output if there are any
-                        # differences.
-                        diff = list(difflib.unified_diff(
-                            baselineData, comparisonData,
-                            tempBaseline.name, tempComparison.name, n=0))
-                        # Skip the file names.
-                        for line in diff[2:]:
-                            print(line, end='')
-                    diffResult = 1
+            diffResult |= _launchDiffTool(diffCmd, diffCmdArgs, 
+                                           tempBaseline.name, 
+                                           tempComparison.name, brief)
 
             tempBaselineChanged = ( 
                 os.path.getmtime(tempBaseline.name) != tempBaselineTimestamp)
@@ -396,7 +533,16 @@ def main():
                             " Lastly, if neither of these is set, it will try" 
                             " to use the canonical unix program, diff."
                             " This will relay the exit code of the selected"
-                            " diff program.")
+                            " diff program."
+                            "When comparing two usdz files, each file"
+                            " contained in the package will be examined"
+                            " individually. The $USD_IMAGE_DIFF environment"
+                            " variable specifies a specific diff program for"
+                            " comparing image files. The"
+                            " $USD_IMAGE_DIFF_FORMATS environment variable"
+                            " specifies supported image formats using a \",\""
+                            "  separated list of file extensions."
+                            )
     parser.add_argument('files', nargs='+',
                         help='The files to compare. These must be of the form '
                              'DIR DIR, FILE... DIR, DIR FILE... or FILE FILE. ')

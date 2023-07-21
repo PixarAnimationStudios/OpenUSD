@@ -176,7 +176,7 @@ struct Tf_IteratorInterface<PcpNodeRef_PrivateChildrenConstRange, true> {
 };
 template <>
 struct Tf_ShouldIterateOverCopy<PcpNodeRef_PrivateChildrenConstRange> :
-    boost::true_type {};
+    std::true_type {};
 
 // Wrap a node for use by TF_FOR_ALL().
 inline

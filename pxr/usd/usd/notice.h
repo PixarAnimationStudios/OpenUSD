@@ -91,11 +91,13 @@ public:
     /// field not related to composition.
     ///
     /// When a prim is resynced, say "/foo/bar", it might have been created or
-    /// destroyed.  In that case "/foo"'s list of children will have changed,
-    /// but we *do not* consider "/foo" to be resynced.  If we did, it would
-    /// mean clients would have to consider all of "/foo/bar"'s siblings (and
-    /// their descendants) to be resynced which might be egregious
-    /// overinvalidation.
+    /// destroyed. Indication of possible changes flows down the resynced prim 
+    /// namespace, implicitly via prim resync notices. We *do not* consider the
+    /// parent "/foo" to be resynced, as this would incorrectly imply that
+    /// some or all of "/foo/bar"'s siblings (and their descendants) have 
+    /// also changed. Additionally, we do not propagate change indication to
+    /// objects associated with the changed object through relationships or 
+    /// connections.
     ///
     /// This notice provides API for two client use-cases.  Clients interested
     /// in testing whether specific objects are affected by the changes should

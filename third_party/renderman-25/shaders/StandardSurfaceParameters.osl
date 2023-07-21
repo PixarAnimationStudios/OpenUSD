@@ -1,0 +1,416 @@
+//
+// Copyright 2021 Pixar
+//
+// Licensed under the Apache License, Version 2.0 (the "Apache License")
+// with the following modification; you may not use this file except in
+// compliance with the Apache License and the following modification to it:
+// Section 6. Trademarks. is deleted and replaced with:
+//
+// 6. Trademarks. This License does not grant permission to use the trade
+//    names, trademarks, service marks, or product names of the Licensor
+//    and its affiliates, except as required to comply with Section 4(c) of
+//    the License and to reproduce the content of the NOTICE file.
+//
+// You may obtain a copy of the Apache License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the Apache License with the above modification is
+// distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied. See the Apache License for the specific
+// language governing permissions and limitations under the Apache License.
+//
+
+////////////////////////////////////////////////////////////////////////////////
+// MaterialX OSL Functions
+
+void mx_artistic_to_complex_ior(
+    color reflectivity, 
+    color edge_color, 
+    output vector ior, 
+    output vector extinction)
+{
+    color r = clamp(reflectivity, 0.0, 0.99);
+    color r_sqrt = sqrt(r);
+    color n_min = (1.0 - r) / (1.0 + r);
+    color n_max = (1.0 + r_sqrt) / (1.0 - r_sqrt);
+    ior = mix(n_max, n_min, edge_color);
+
+    color np1 = ior + 1.0;
+    color nm1 = ior - 1.0;
+    color k2 = (np1*np1 * r - nm1*nm1) / (1.0 - r);
+    k2 = max(k2, 0.0);
+    extinction = sqrt(k2);
+}
+
+void mx_luminance_color3(color in, color lumacoeffs, output color result)
+{
+    result = dot(in, lumacoeffs);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+// Standard Surface Adapter 
+shader StandardSurfaceParameters
+(
+    // Inputs
+    float base = 0.8,
+    color base_color = color(1.0, 1.0, 1.0),
+    float diffuse_roughness = 0.0,
+    
+    float metalness = 0.0,
+    float specular = 1.0,
+    color specular_color = color(1.0, 1.0, 1.0),
+    float specular_roughness = 0.2,
+    float specular_IOR = 1.5,
+    float specular_anisotropy = 0.0,
+    float specular_rotation = 0.0,
+
+    float transmission = 0.0,
+    color transmission_color = color(1.0, 1.0, 1.0),
+    float transmission_depth = 0.0,
+    color transmission_scatter = color(0.0, 0.0, 0.0),
+    float transmission_scatter_anisotropy = 0.0,
+    color opacity = color(1.0, 1.0, 1.0),
+
+    float subsurface_value = 0.0,
+    color subsurface_color = color(1.0, 1.0, 1.0),
+    color subsurface_radius = color(1.0, 1.0, 1.0),
+    float subsurface_scale = 1.0,
+    float subsurface_anisotropy = 0.0,
+    int thin_walled = 0
+        [[ string widget = "boolean" ]],
+
+    float sheen = 0.0,
+    color sheen_color = color(1.0, 1.0, 1.0),
+    float sheen_roughness = 0.3,
+
+    float coat = 0.0,
+    color coat_color = color(1.0, 1.0, 1.0),
+    float coat_roughness = 0.1,
+    float coat_anisotropy = 0.0,
+    float coat_rotation = 0.0,
+    float coat_IOR = 1.5,
+    float coat_affect_color = 0.0,
+    float coat_affect_roughness = 0.0,
+
+    float thin_film_thickness = 0.0,
+    float thin_film_IOR = 1.5,
+
+    float emission_value = 0.0,
+    color emission_color = color(1.0, 1.0, 1.0),
+
+    normal input_normal = normal(0.0, 0.0, 0.0),
+
+    // Diffuse outputs
+    output float diffuseGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color diffuseColorOut = color(1.0,1.0,1.0)
+        [[ string widget = "null" ]],
+    output float diffuseRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Specular outputs
+    output int specularFresnelModeOut = 1   // "Physical"
+        [[ string widget = "null" ]],
+    output int specularModelTypeOut = 1     // "GGX"
+        [[ string widget = "null" ]],
+    output color specularFaceColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output color specularEdgeColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float specularRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+    output color specularIorOut = color(0.0)
+        [[ string widget = "null" ]],
+    output color specularExtinctionCoeffOut = color(0.0)
+        [[ string widget = "null" ]],
+    output float specularAnisotropyOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Clearcoat outputs - clearCoatFresnelMode defaults to "Artistic"
+    output int clearcoatModelTypeOut = 1 // "GGX"
+        [[ string widget = "null" ]],
+    output color clearcoatFaceColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output color clearcoatEdgeColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float clearcoatRoughnessOut = 0.0
+        [[ string widget = "null" ]],
+    output float clearcoatAnisotropyOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Emissive outputs
+    output float glowGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color glowColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+
+    // Transmission outputs
+    output float reflectionGainOut = 0.0
+        [[ string widget = "null" ]],
+    output float refractionGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color refractionColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float glassIorOut = 0.0
+        [[ string widget = "null" ]],
+    output float glassRoughnessOut = 0.1
+        [[ string widget = "null" ]],
+    output float glassAnisotropyOut = 0.0
+        [[ string widget = "null" ]],
+    output int thinGlassOut = 0
+        [[ string widget = "null" ]],
+    output color ssAlbedoOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output color extinctionOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float g0Out = 0.0
+        [[ string widget = "null" ]],
+
+    // Subsurface outputs
+    output float subsurfaceGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color subsurfaceColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output float subsurfaceDmfpOut = 10.0
+        [[ string widget = "null" ]],
+    output color subsurfaceDmfpColorOut = color(1.0,1.0,1.0)
+        [[ string widget = "null" ]],
+    output float subsurfaceDirectionalityOut = 0.0
+        [[ string widget = "null" ]],
+    output float diffuseTransmitGainOut = 0.0
+        [[ string widget = "null" ]],
+    output color diffuseTransmitColorOut = color(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+    output int diffuseDoubleSidedOut = 0
+        [[ string widget = "null" ]],
+    
+    // Fuzz outputs
+    output float fuzzGainOut = 1.0
+        [[ string widget = "null" ]],
+    output color fuzzColorOut = color(1.0,1.0,1.0)
+        [[ string widget = "null" ]],
+    output float fuzzConeAngleOut = 8.0
+        [[ string widget = "null" ]],
+
+    // Iridescence outputs
+    output int iridescenceModeOut = 1 // Physical
+        [[ string widget = "null" ]],
+    output float iridescenceFaceGainOut = 0.0
+        [[ string widget = "null" ]],
+    output float iridescenceEdgeGainOut = 0.0
+        [[ string widget = "null" ]],
+    output float iridescenceThicknessOut = 0.0
+        [[ string widget = "null" ]],
+
+    // Normal outputs
+    output normal bumpNormalOut = normal(0.0,0.0,0.0)
+        [[ string widget = "null" ]],
+)
+{
+    color base_color_out = base_color;
+    color specular_color_out = specular_color;
+    color subsurface_color_out = subsurface_color;
+    color emission_color_out = emission_color;
+    float specular_roughness_out = specular_roughness;
+    float specular_IOR_out = specular_IOR;
+
+    // Clearcoat
+    if (coat > 0.0 && (coat_color[0] > 0.0 ||
+                       coat_color[1] > 0.0 ||
+                       coat_color[2] > 0.0)) 
+    {
+        float r = (1.0 - coat_IOR) / (1.0 + coat_IOR);
+        color coat_attenuation = mix(color(1.0, 1.0, 1.0), coat_color, coat);
+        clearcoatFaceColorOut = coat * r * r * coat_attenuation;
+        clearcoatEdgeColorOut = coat * coat_attenuation;
+        clearcoatRoughnessOut = coat_roughness;
+
+        // StandardSurface applies coat_attenuation to the base/specular layers
+        // and emission
+        base_color_out *= coat_attenuation;
+        emission_color_out *= coat_attenuation;
+
+        // Optional Parameters
+        clearcoatAnisotropyOut = coat_anisotropy;
+
+        // Saturate the deeper layers with the coat_affect_color parameter
+        base_color_out = pow(base_color_out, 1.0 + (coat * coat_affect_color));
+        subsurface_color_out = pow(subsurface_color_out, 
+                                   1.0 + (coat * coat_affect_color));
+
+        // Increase the roughness with the coat_affect_roughness parameter
+        specular_roughness_out = mix(specular_roughness_out, 
+                                 1.0, 
+                                 coat * coat_affect_roughness * coat_roughness);
+    }
+
+    // Iridescence
+    if (thin_film_thickness > 0.0 && thin_walled == 0)
+    {
+        iridescenceFaceGainOut = 1.0;
+        iridescenceEdgeGainOut = 1.0;
+        iridescenceThicknessOut = thin_film_thickness;
+        specular_IOR_out = thin_film_IOR;
+    }
+
+    // Emission 
+    if (emission_value > 0.0 && (emission_color_out[0] > 0.0 ||
+                                 emission_color_out[1] > 0.0 ||
+                                 emission_color_out[2] > 0.0))
+    {
+        glowGainOut = emission_value;
+        glowColorOut = emission_color_out;
+    }
+
+    // Diffuse
+    if (base_color_out[0] > 0.0 || 
+        base_color_out[1] > 0.0 || 
+        base_color_out[2] > 0.0)
+    {
+        diffuseGainOut = base;
+        diffuseColorOut = base_color_out;
+        diffuseRoughnessOut = diffuse_roughness;
+    }
+
+    // Specular
+    if (specular_color_out[0] > 0.0 ||
+        specular_color_out[1] > 0.0 ||
+        specular_color_out[2] > 0.0) 
+    {
+        float metal = clamp(metalness, 0.0, 1.0);
+        float r = (1.0 - specular_IOR_out) / (1.0 + specular_IOR_out);
+        
+        // StandardSurface uses the specular color as the edge color for 
+        // non-metals, relies on the ior/extinction values for metals 
+        specularEdgeColorOut = mix(specular * specular_color_out,
+                                   color(1.0),
+                                   metal);
+        specularFaceColorOut = base * base_color_out;
+        specularFaceColorOut *= mix(r * r, 1.0, metal);
+        specularRoughnessOut = specular_roughness_out;
+
+        // Specular Ior and Extinction
+        color artistic_ior_ior = color(0.0);
+        color artistic_ior_extinction = color(0.0);
+        mx_artistic_to_complex_ior(base_color_out * base, 
+                                   specular_color_out * specular,
+                                   artistic_ior_ior, artistic_ior_extinction);
+        specularIorOut = mix( color(specular_IOR_out), 
+                              artistic_ior_ior, 
+                              metal);
+        specular_IOR_out = specularIorOut[0];
+        specularExtinctionCoeffOut = mix( color(0.0),
+                                          artistic_ior_extinction, 
+                                          metal);
+
+        // Optional StandardSurface Anisotropy Parameters
+        // XXX ignoring specular_rotation
+        // specular_anisotropy range: 0 to 1
+        // PxrSurface anisotropy range: -1 to 1
+        specularAnisotropyOut = specular_anisotropy;
+        diffuseGainOut *= (1.0 - metal);
+    }
+
+    // Subsurface
+    if (subsurface_value > 0 && (subsurface_color_out[0] > 0.0 ||
+                                 subsurface_color_out[1] > 0.0 ||
+                                 subsurface_color_out[2] > 0.0)) 
+    {
+        // Diffuse Transmission 
+        diffuseDoubleSidedOut = 1;
+        diffuseTransmitGainOut = subsurface_value;
+        diffuseTransmitColorOut = subsurface_color_out;
+
+        // Subsurface Scattering when thin_walled is off 
+        if (!thin_walled) {
+            subsurfaceGainOut = subsurface_value;
+            subsurfaceColorOut = subsurface_color_out;
+            subsurfaceDmfpColorOut = subsurface_radius;
+            subsurfaceDmfpOut = subsurface_scale;
+            subsurfaceDirectionalityOut = subsurface_anisotropy;
+        }
+
+        // Scale back the diffuseGain by the subsurface_value
+        diffuseGainOut *= (1.0 - subsurface_value);
+    }
+
+    // Sheen
+    if (sheen > 0 && (sheen_color[0] > 0.0 ||
+                      sheen_color[1] > 0.0 ||
+                      sheen_color[2] > 0.0)) 
+    {
+        fuzzGainOut = sheen;
+        fuzzColorOut = sheen_color;
+
+        // XXX This is an inaccurate translation from sheen_roughness to 
+        // fuzzConeAngle since the corresponding calculations use different 
+        // formulas, and there is no simple mapping between the parameters. 
+        // sheen_roughness range: 0 to 1, fuzzConeAngle range: 0 to 32
+        fuzzConeAngleOut = 32 * sheen_roughness;
+
+        // Subsurface layer intensity reduced by the Sheen
+        diffuseTransmitGainOut *= (1 - sheen);
+        subsurfaceGainOut *= (1 - sheen);
+    }
+
+    // Transmission
+    if (transmission > 0 && (transmission_color[0] > 0.0 ||
+                              transmission_color[1] > 0.0 ||
+                              transmission_color[2] > 0.0))
+    {
+        color transmission_color_out = (transmission_depth == 0) 
+                                        ? transmission_color : color(1.0);
+        reflectionGainOut = transmission;
+        refractionGainOut =  transmission;
+        refractionColorOut = transmission_color_out;
+
+        // Glass Parameters
+        glassRoughnessOut = specular_roughness_out;
+        glassIorOut = specular_IOR_out;
+        glassAnisotropyOut = specular_anisotropy;
+        thinGlassOut = thin_walled;
+
+        // Optional (Scatter) Parameters
+        if (transmission_scatter[0] > 0.0 || 
+            transmission_scatter[1] > 0.0 ||
+            transmission_scatter[2] > 0.0) 
+        {
+            ssAlbedoOut = transmission * transmission_scatter;
+            extinctionOut = color(1.0); // should not be black for ssAlbedo to work
+            g0Out = transmission_scatter_anisotropy;   // directionality of scattering
+        }
+
+        // Opacity
+        color opacity_luminance_out = color(0.0);
+        mx_luminance_color3(opacity, color(0.272229, 0.674082, 0.0536895),
+                            opacity_luminance_out);
+        float opacity_weight = clamp(opacity_luminance_out[0], 0.0, 1.0);
+        diffuseGainOut *= (1.0 - opacity_weight);
+        refractionGainOut *= opacity_weight;
+    }
+
+    // Normal map
+    {
+        // Get the geometric normal
+        normal Ngn = N;
+        getattribute("builtin", "Ngn", Ngn);
+
+        // If we do not have a valid input_normal set the bumpNormal to the 
+        // geometric normal
+        if (dot(input_normal, input_normal) <= 0.0) {
+            bumpNormalOut = Ngn;
+        }
+        // Otherwise use the given input_normal
+        else {
+	        bumpNormalOut = normalize(input_normal);
+
+            // Is it backwards from the geometric normal
+            if (dot(Ngn, bumpNormalOut) < 0.0) {
+                bumpNormalOut = -bumpNormalOut;
+            }
+        }
+    }
+}

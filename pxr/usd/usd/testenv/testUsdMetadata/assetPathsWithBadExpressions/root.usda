@@ -1,0 +1,33 @@
+#usda 1.0
+(
+    customLayerData = {
+        asset assetPath = @`"${BAD"`@
+        asset[] assetPathArray = [@`"${BAD"`@]
+        dictionary subDict = {
+            asset assetPath = @`"${BAD"`@
+            asset[] assetPathArray = [@`"${BAD"`@]
+        }    
+    }
+    expressionVariables = {
+        string ASSET_NAME = "asset"
+    }
+)
+
+def "AssetPathTest" (
+    customData = {
+        asset assetPath = @`"${BAD"`@
+        asset[] assetPathArray = [@`"${BAD"`@]
+        dictionary subDict = {
+            asset assetPath = @`"${BAD"`@
+            asset[] assetPathArray = [@`"${BAD"`@]
+        }    
+    }
+)
+{
+    asset assetPath = @`"${BAD"`@
+    asset[] assetPathArray = [@`"${BAD"`@]
+    asset assetPath.timeSamples = {
+        0: @`"${BAD"`@,
+        1: @`"${BAD"`@,
+    }
+}

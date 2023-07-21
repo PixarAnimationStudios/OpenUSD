@@ -2003,7 +2003,7 @@ HdUnitTestDelegate::PopulateBasicTestSet()
                            HdInterpolationVertex, HdInterpolationVertex);
 
         dmat.SetTranslate(GfVec3d(xPos, 3.0, 0.0));
-        AddCurves(SdfPath("/curve3"), HdTokens->cubic, HdTokens->bSpline, GfMatrix4f(dmat),
+        AddCurves(SdfPath("/curve3"), HdTokens->cubic, HdTokens->bspline, GfMatrix4f(dmat),
                            HdInterpolationVertex, HdInterpolationConstant);
 
         dmat.SetTranslate(GfVec3d(xPos, 6.0, 0.0));

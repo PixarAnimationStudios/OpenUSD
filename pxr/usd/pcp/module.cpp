@@ -34,7 +34,10 @@ TF_WRAP_MODULE
     TF_WRAP( Cache );
     TF_WRAP( Errors );
     TF_WRAP( InstanceKey );
+
+    TF_WRAP( ExpressionVariablesSource ); // Required by LayerStackIdentifier
     TF_WRAP( LayerStackIdentifier );
+
     TF_WRAP( LayerStack );
     TF_WRAP( MapExpression );
     TF_WRAP( MapFunction );
@@ -43,6 +46,7 @@ TF_WRAP_MODULE
     TF_WRAP( PrimIndex );
     TF_WRAP( PropertyIndex );
     TF_WRAP( Site );
+    TF_WRAP( ExpressionVariables );
     TF_WRAP( TestChangeProcessor );
     TF_WRAP( Types );
 }

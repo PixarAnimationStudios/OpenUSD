@@ -30,7 +30,7 @@
    :caption: Collaborate
 
    Source Code @ GitHub <https://github.com/PixarAnimationStudios/USD>
-   usd-interest Group <https://groups.google.com/g/usd-interest>
+   OpenUSD Forum <https://forum.openusd.org>
    Contributing <contributing_to_usd>
    Contributors <contributors>
 

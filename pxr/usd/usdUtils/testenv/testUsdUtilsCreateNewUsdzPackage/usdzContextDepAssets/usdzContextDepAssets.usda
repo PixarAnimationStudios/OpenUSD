@@ -1,0 +1,24 @@
+#usda 1.0
+(
+    metersPerUnit = 0.01
+    upAxis = "Y"
+    subLayers = [
+        @./2.usdz@,
+    ]
+    defaultPrim = "ref1"
+)
+
+def "ref1" (
+    prepend references = @./1.usdz@
+)
+{
+
+}
+
+# The usdz package references in this file are specified using filesystem
+# relative paths, however the assets contained within them are specified
+# using paths the asset resolver deems to be context dependant.
+
+# Correct processing of this file ensures that file analysis does not
+# traverse into the referenced packages assets which results in the inclusion
+# of the packages an additional time using a remapped path.

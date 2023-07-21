@@ -58,8 +58,8 @@ using HdBufferArrayRangeSharedPtr =
     std::shared_ptr<class HdBufferArrayRange>;
 using HdStTextureHandleSharedPtr =
     std::shared_ptr<class HdStTextureHandle>;
-using HdComputationSharedPtr =
-    std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr =
+    std::shared_ptr<class HdStComputation>;
 
 class HioGlslfx;
 class HdSt_ResourceBinder;
@@ -209,7 +209,7 @@ public:
 
         HDST_API
         void AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                            HdComputationSharedPtr const &computation,
+                            HdStComputationSharedPtr const &computation,
                             HdStComputeQueue const queue);
         
         HdStResourceRegistry * GetResourceRegistry() const {

@@ -29,6 +29,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/version.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/usd/usd/prim.h"
 
@@ -106,18 +107,21 @@ public:
             UsdPrim const& prim,
             TfToken const& subprim,
             TfToken const& appliedInstanceName,
-            TfTokenVector const& properties);
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 };
 
 
-class UsdImagingAPISchemaAdapterFactoryBase : public TfType::FactoryBase {
+class UsdImagingAPISchemaAdapterFactoryBase : public TfType::FactoryBase
+{
 public:
     virtual UsdImagingAPISchemaAdapterSharedPtr New() const = 0;
 };
 
 template <class T>
 class UsdImagingAPISchemaAdapterFactory
-    : public UsdImagingAPISchemaAdapterFactoryBase {
+    : public UsdImagingAPISchemaAdapterFactoryBase
+{
 public:
     virtual UsdImagingAPISchemaAdapterSharedPtr New() const
     {

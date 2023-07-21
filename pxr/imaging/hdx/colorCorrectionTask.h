@@ -36,129 +36,11 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
+#include "pxr/base/work/dispatcher.h"
 
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-
-/// \class HdxColorCorrectionTask
-///
-/// A task for performing color correction (and optionally color grading) on a
-/// color buffer to transform its color for display.
-///
-class HdxColorCorrectionTask : public HdxTask
-{
-public:
-    HDX_API
-    HdxColorCorrectionTask(HdSceneDelegate* delegate, SdfPath const& id);
-
-    HDX_API
-    ~HdxColorCorrectionTask() override;
-
-    /// Prepare the tasks resources
-    HDX_API
-    void Prepare(HdTaskContext* ctx,
-                 HdRenderIndex* renderIndex) override;
-
-    /// Execute the color correction task
-    HDX_API
-    void Execute(HdTaskContext* ctx) override;
-
-protected:
-    /// Sync the render pass resources
-    HDX_API
-    void _Sync(HdSceneDelegate* delegate,
-               HdTaskContext* ctx,
-               HdDirtyBits* dirtyBits) override;
-
-private:
-    HdxColorCorrectionTask() = delete;
-    HdxColorCorrectionTask(const HdxColorCorrectionTask &) = delete;
-    HdxColorCorrectionTask &operator =(const HdxColorCorrectionTask &) = delete;
-
-    // Utility to create OCIO resources and returns the OCIO shadercode
-    std::string _CreateOpenColorIOResources();
-
-    // Utility to check if OCIO should be used
-    bool _GetUseOcio() const;
-
-    // Utility function to create the GL program for color correction
-    bool _CreateShaderResources();
-
-    // OCIO version-specific code for shader code generation.
-    std::string _CreateOpenColorIOShaderCode(std::string &ocioGpuShaderText,
-                                             HgiShaderFunctionDesc &fragDesc);
-
-    // Utility function to create buffer resources.
-    bool _CreateBufferResources();
-
-    // Utility to create resource bindings
-    bool _CreateResourceBindings(HgiTextureHandle const& aovTexture);
-
-    // OCIO version-specific code for setting LUT bindings.
-    void _CreateOpenColorIOLUTBindings(HgiResourceBindingsDesc &resourceDesc);
-
-    // Utility to create a pipeline
-    bool _CreatePipeline(HgiTextureHandle const& aovTexture);
-
-    // Utility to create a texture sampler
-    bool _CreateSampler();
-
-    // Apply color correction to the currently bound framebuffer.
-    void _ApplyColorCorrection(HgiTextureHandle const& aovTexture);
-
-    // OCIO version-specific code for setting constants.
-    void _SetConstants(HgiGraphicsCmds *gfxCmds);
-
-    // Destroy shader program and the shader functions it holds.
-    void _DestroyShaderProgram();
-
-    // Print shader compile errors.
-    void _PrintCompileErrors();
-
-    HgiAttachmentDesc _attachment0;
-    HgiBufferHandle _indexBuffer;
-    HgiBufferHandle _vertexBuffer;
-    HgiTextureHandle _texture3dLUT;
-    HgiSamplerHandle _sampler;
-
-    struct TextureSamplerInfo
-    {
-        unsigned char    dim;
-        std::string      texName;
-        HgiTextureHandle texHandle;
-        std::string      samplerName;
-        HgiSamplerHandle samplerHandle;
-    };
-    std::vector<TextureSamplerInfo> _textureLUTs;
-
-    struct BufferInfo
-    {
-        std::string      typeName;
-        std::string      name;
-        uint32_t         count;
-        HgiBufferHandle  handle;
-    };
-    std::vector<BufferInfo>    _bufferConstants;
-    std::vector<unsigned char> _constantValues;
-
-    HgiShaderProgramHandle _shaderProgram;
-    HgiResourceBindingsHandle _resourceBindings;
-    HgiGraphicsPipelineHandle _pipeline;
-
-    TfToken _colorCorrectionMode;
-    std::string _displayOCIO;
-    std::string _viewOCIO;
-    std::string _colorspaceOCIO;
-    std::string _looksOCIO;
-    int _lut3dSizeOCIO;
-
-    float _screenSize[2];
-
-    TfToken _aovName;
-};
-
 
 /// \class HdxColorCorrectionTaskParams
 ///
@@ -196,6 +78,147 @@ struct HdxColorCorrectionTaskParams
 
     // The name of the aov to color correct
     TfToken aovName;
+};
+
+
+/// \class HdxColorCorrectionTask
+///
+/// A task for performing color correction (and optionally color grading) on a
+/// color buffer to transform its color for display.
+///
+class HdxColorCorrectionTask : public HdxTask
+{
+public:
+    HDX_API
+    HdxColorCorrectionTask(HdSceneDelegate* delegate, SdfPath const& id);
+
+    HDX_API
+    ~HdxColorCorrectionTask() override;
+
+    /// Prepare the tasks resources
+    HDX_API
+    void Prepare(HdTaskContext* ctx,
+                 HdRenderIndex* renderIndex) override;
+
+    /// Execute the color correction task
+    HDX_API
+    void Execute(HdTaskContext* ctx) override;
+
+protected:
+    /// Sync the render pass resources
+    HDX_API
+    void _Sync(HdSceneDelegate* delegate,
+               HdTaskContext* ctx,
+               HdDirtyBits* dirtyBits) override;
+
+private:
+    HdxColorCorrectionTask() = delete;
+    HdxColorCorrectionTask(const HdxColorCorrectionTask &) = delete;
+    HdxColorCorrectionTask &operator =(const HdxColorCorrectionTask &) = delete;
+
+    // Description of a texture resource and sampler
+    struct _TextureSamplerDesc {
+        HgiTextureDesc     textureDesc;
+        HgiSamplerDesc     samplerDesc;
+        std::vector<float> samples;
+    };
+
+    // Description of a buffer resource
+    struct _UniformBufferDesc {
+        std::string          typeName;
+        std::string          name;
+        std::vector<uint8_t> data;
+        uint32_t             dataSize;
+        uint32_t             count;
+    };
+    friend struct HdxColorCorrectionTask_UboBuilder;
+
+    // Description of resources required by OCIO GPU implementation
+    struct _OCIOResources {
+        std::vector<_TextureSamplerDesc> luts;
+        std::vector<_UniformBufferDesc>  ubos;
+        std::vector<unsigned char> constantValues;
+        std::string gpuShaderText;
+    };
+
+    // Utility to query OCIO for required resources
+    static void
+    _CreateOpenColorIOResources(Hgi *hgi,
+                                HdxColorCorrectionTaskParams const& params,
+                                _OCIOResources *result);
+
+    // Utility to check if OCIO should be used
+    bool _GetUseOcio() const;
+
+    // Utility function to create the GL program for color correction
+    bool _CreateShaderResources();
+
+    // OCIO version-specific code for shader code generation.
+    std::string _CreateOpenColorIOShaderCode(std::string &ocioGpuShaderText,
+                                             HgiShaderFunctionDesc &fragDesc);
+
+    // Utility function to create buffer resources.
+    bool _CreateBufferResources();
+
+    // Utility to create resource bindings
+    bool _CreateResourceBindings(HgiTextureHandle const& aovTexture);
+
+    // OCIO version-specific code for setting LUT bindings.
+    void _CreateOpenColorIOLUTBindings(HgiResourceBindingsDesc &resourceDesc);
+
+    // Utility to create a pipeline
+    bool _CreatePipeline(HgiTextureHandle const& aovTexture);
+
+    // Utility to create an AOV sampler
+    bool _CreateAovSampler();
+
+    // Apply color correction to the currently bound framebuffer.
+    void _ApplyColorCorrection(HgiTextureHandle const& aovTexture);
+
+    // OCIO version-specific code for setting constants.
+    void _SetConstants(HgiGraphicsCmds *gfxCmds);
+
+    // Destroy shader program and the shader functions it holds.
+    void _DestroyShaderProgram();
+
+    // Print shader compile errors.
+    void _PrintCompileErrors();
+
+private: // data
+
+    HdxColorCorrectionTaskParams _params;
+    _OCIOResources _ocioResources;
+
+    HgiAttachmentDesc _attachment0;
+    HgiBufferHandle _indexBuffer;
+    HgiBufferHandle _vertexBuffer;
+    HgiSamplerHandle _aovSampler;
+
+    struct TextureSamplerInfo
+    {
+        unsigned char    dim;
+        std::string      texName;
+        HgiTextureHandle texHandle;
+        std::string      samplerName;
+        HgiSamplerHandle samplerHandle;
+    };
+    std::vector<TextureSamplerInfo> _textureLUTs;
+
+    struct BufferInfo
+    {
+        std::string      typeName;
+        std::string      name;
+        uint32_t         count;
+        HgiBufferHandle  handle;
+    };
+    std::vector<BufferInfo>    _bufferConstants;
+
+    HgiShaderProgramHandle _shaderProgram;
+    HgiResourceBindingsHandle _resourceBindings;
+    HgiGraphicsPipelineHandle _pipeline;
+    float _screenSize[2];
+
+    WorkDispatcher _workDispatcher;
 };
 
 // VtValue requirements

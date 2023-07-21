@@ -65,6 +65,9 @@ HdSt_BasisCurvesIndexBuilderComputation::GetBufferSpecs(
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 {
+    // Note: This is used only when the wrap mode is segmented and is similar to
+    //       the GL_LINES primitive mode. Vertices (0,1) form a line, (2,3) form
+    //       the next line and so on.
     std::vector<GfVec2i> indices;
     std::vector<int> primIndices;
     VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
@@ -119,14 +122,22 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildLinesIndexArray()
 HdSt_BasisCurvesIndexBuilderComputation::IndexAndPrimIndex
 HdSt_BasisCurvesIndexBuilderComputation::_BuildLineSegmentIndexArray()
 {
+    // Note: This is similiar to the GL_LINE_STRIP and GL_LINE_LOOP primitive
+    //       modes where each pair of adjacent vertices form a line.
     const TfToken basis = _topology->GetCurveBasis();
-    const bool skipFirstAndLastSegs = (basis == HdTokens->catmullRom);
+    const TfToken wrap = _topology->GetCurveWrap();
+    // Skip first and last segments for catRom when not using pinned wrap mode
+    // since the curve interpolates at all except the end points.
+    const bool skipFirstAndLastSegs =
+        (basis == HdTokens->catmullRom ||
+         basis == HdTokens->centripetalCatmullRom) &&
+         wrap != HdTokens->pinned;
 
     std::vector<GfVec2i> indices;
     // primIndices stores the curve index that generated each line segment.
     std::vector<int> primIndices;
     const VtArray<int> vertexCounts = _topology->GetCurveVertexCounts();
-    const bool periodic = _topology->GetCurveWrap() == HdTokens->periodic;
+    const bool periodic = wrap == HdTokens->periodic;
     int vertexIndex = 0; // Index of next vertex to emit
     int curveIndex = 0;  // Index of next curve to emit
     // For each curve
@@ -290,7 +301,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
                 const int v1 = std::min(v0 + 1, endIndex);
                 const int v2 = std::min(v0 + 2, endIndex);
 
-                if (basis == HdTokens->bSpline) {
+                if (basis == HdTokens->bspline) {
                     indices.push_back(GfVec4i(v0, v0, v0, v1));
                     primIndices.push_back(curveIndex);
                 }
@@ -304,7 +315,7 @@ HdSt_BasisCurvesIndexBuilderComputation::_BuildCubicIndexArray()
                                           lastSeg[3], lastSeg[3]));
                 primIndices.push_back(curveIndex);
 
-                if (basis == HdTokens->bSpline) {
+                if (basis == HdTokens->bspline) {
                     indices.push_back(GfVec4i(lastSeg[2], lastSeg[3],
                                               lastSeg[3], lastSeg[3]));
                     primIndices.push_back(curveIndex);

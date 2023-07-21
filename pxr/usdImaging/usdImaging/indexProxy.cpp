@@ -408,11 +408,10 @@ UsdImagingIndexProxy::MarkInstancerDirty(SdfPath const& cachePath,
 UsdImagingPrimAdapterSharedPtr
 UsdImagingIndexProxy::GetMaterialAdapter(UsdPrim const& materialPrim)
 {
-    if (!TF_VERIFY(!materialPrim.IsInstance())) {
-        return nullptr;
-    }
+    // Note that if the material is instanced, we ignore the instancing
+    // and just return a material adapter for the instance path instead.
     UsdImagingPrimAdapterSharedPtr materialAdapter =
-        _delegate->_AdapterLookup(materialPrim, false);
+        _delegate->_AdapterLookup(materialPrim, true);
     return materialAdapter &&
            materialAdapter->IsSupported(this) ? materialAdapter : nullptr;
 }

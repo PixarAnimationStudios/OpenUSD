@@ -1356,6 +1356,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
         GfMatrix4f cullMatrix;
         GfVec2f drawRangeNDC;
         uint32_t drawCommandNumUints;
+        uint32_t drawBatchId;
         int32_t resetPass;
     };
 
@@ -1418,6 +1419,7 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
                 _dispatchBuffer->GetCommandNumUints();
         cullParamsInstanced.cullMatrix = cullMatrix;
         cullParamsInstanced.drawRangeNDC = drawRangeNdc;
+        cullParamsInstanced.drawBatchId = reinterpret_cast<uintptr_t>(this);
 
         // Reset Pass
         cullParamsInstanced.resetPass = 1;

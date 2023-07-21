@@ -64,26 +64,20 @@ HdxColorCorrectionTask::HdxColorCorrectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
   : HdxTask(id)
-  , _indexBuffer()
-  , _vertexBuffer()
-  , _texture3dLUT()
-  , _sampler()
-  , _shaderProgram()
-  , _resourceBindings()
-  , _pipeline()
-  , _lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
-  , _screenSize{}
 {
+    _params.lut3dSizeOCIO = HDX_DEFAULT_LUT3D_SIZE_OCIO;
 }
 
 HdxColorCorrectionTask::~HdxColorCorrectionTask()
 {
-    if (_texture3dLUT) {
-        _GetHgi()->DestroyTexture(&_texture3dLUT);
-    }
+    // If we had queued up work in Sync(), we expect a subsequent
+    // invokation of Execute() will have waited on completion.
+    // However, as a precaution, cancel and wait on any tasks here.
+    _workDispatcher.Cancel();
+    _workDispatcher.Wait();
 
-    if (_sampler) {
-        _GetHgi()->DestroySampler(&_sampler);
+    if (_aovSampler) {
+        _GetHgi()->DestroySampler(&_aovSampler);
     }
 
     // Only for version 2 and above
@@ -132,106 +126,121 @@ HdxColorCorrectionTask::_GetUseOcio() const
             return false;
         }
 
-        return _colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
+        return _params.colorCorrectionMode == HdxColorCorrectionTokens->openColorIO;
     #else
         return false;
     #endif
 }
 
-#if defined(PXR_OCIO_PLUGIN_ENABLED)
-#if OCIO_VERSION_HEX >= 0x02000000
 
-struct UniformBufferData
+
+#ifdef PXR_OCIO_PLUGIN_ENABLED
+
+#if OCIO_VERSION_HEX < 0x02000000
+
+void
+HdxColorCorrectionTask::_CreateOpenColorIOResources(
+    Hgi *hgi,
+    HdxColorCorrectionTaskParams const& params,
+    HdxColorCorrectionTask::_OCIOResources *result)
 {
-    std::string          typeName;
-    std::string          name;
-    std::vector<uint8_t> data;
-    uint32_t             dataSize;
-    uint32_t             count;
-};
+    HD_TRACE_FUNCTION();
 
-using UniformBufferDataVector = std::vector<UniformBufferData>;
+    // Clear out any prior resource descriptions
+    result->luts.clear();
+    result->ubos.clear();
+    result->gpuShaderText.clear();
 
-template<typename T, int nElements = 1>
-void _SetConstantValue(UniformBufferDataVector& uniformData,
-                       std::string uniformType, std::string uniformName,
-                       T const* values, uint32_t count = 1)
-{
-    // Set the dummy value to 123456789
-    // that is easily recognizable in a buffer
-    const T dummyValue = T(123456789);
-    T const* v = count == 0 ? &dummyValue : values;
-    size_t dataSize = (count == 0) ? sizeof(T) : count * nElements * sizeof(T);
-    uniformData.emplace_back(UniformBufferData{uniformType, uniformName,
-        std::vector<uint8_t>(), (uint32_t)dataSize, count});
-    uniformData.back().data.resize(dataSize);
-    memcpy(uniformData.back().data.data(), v, dataSize);
-}
+    // Use client provided OCIO values, or use default fallback values
+    OCIO::ConstConfigRcPtr config = OCIO::GetCurrentConfig();
 
-UniformBufferDataVector
-_GetUniformBuffersData(OCIO::GpuShaderDescRcPtr const& shaderDesc)
-{
-    UniformBufferDataVector uniformData;
-    uniformData.reserve(1024);
+    const char* display = params.displayOCIO.empty() ?
+                            config->getDefaultDisplay() :
+                            params.displayOCIO.c_str();
 
-    const uint32_t maxUniforms = shaderDesc->getNumUniforms();
+    const char* view = params.viewOCIO.empty() ?
+                        config->getDefaultView(display) :
+                        params.viewOCIO.c_str();
 
-    int alignment = 4;
-    for (uint32_t idx = 0; idx < maxUniforms; ++idx) {
-        OCIO::GpuShaderDesc::UniformData data;
-        const char* uniformName = shaderDesc->getUniform(idx, data);
-        switch(data.m_type) {
-            case OCIO::UNIFORM_BOOL:
-            {
-                int v = data.m_getBool() == false ? 0 : 1;
-                _SetConstantValue<int>(uniformData, "int", uniformName, &v);
-            }
-                break;
-
-            case OCIO::UNIFORM_DOUBLE:
-            {
-                float v = data.m_getDouble();
-                _SetConstantValue<float>(uniformData, "float", uniformName, &v);
-            }
-            break;
-
-            case OCIO::UNIFORM_FLOAT3:
-            {
-                float const* v = data.m_getFloat3().data();
-                _SetConstantValue<float, 3>(uniformData, "vec3", uniformName, v);
-            }
-            break;
-
-            case OCIO::UNIFORM_VECTOR_INT:
-            {
-                int bufferLength = data.m_vectorInt.m_getSize();
-                _SetConstantValue<int>(uniformData, "int", uniformName,
-                    data.m_vectorInt.m_getVector(), bufferLength);
-            }
-            break;
-
-            case OCIO::UNIFORM_VECTOR_FLOAT:
-            {
-                int bufferLength = data.m_vectorFloat.m_getSize();
-                _SetConstantValue<float>(uniformData, "float", uniformName,
-                    data.m_vectorFloat.m_getVector(), bufferLength);
-            }
-            break;
-
-            case OCIO::UNIFORM_UNKNOWN:
-                TF_WARN("Unknown Uniform");
-        };
+    std::string inputColorSpace = params.colorspaceOCIO;
+    if (inputColorSpace.empty()) {
+        OCIO::ConstColorSpaceRcPtr cs = config->getColorSpace("default");
+        if (cs) {
+            inputColorSpace = cs->getName();
+        } else {
+            inputColorSpace = OCIO::ROLE_SCENE_LINEAR;
+        }
     }
 
-    return (uniformData);
-}
-#endif
-#endif
+    // Setup the transformation we need to apply
+    OCIO::DisplayTransformRcPtr transform =
+        OCIO::DisplayTransform::Create();
+    transform->setDisplay(display);
+    transform->setView(view);
+    transform->setInputColorSpaceName(inputColorSpace.c_str());
+    if (!params.looksOCIO.empty()) {
+        transform->setLooksOverride(params.looksOCIO.c_str());
+        transform->setLooksOverrideEnabled(true);
+    } else {
+        transform->setLooksOverrideEnabled(false);
+    }
 
-// Only for version 2 and above
-void _RGBtoRGBA(float const* lutValues,
-                int& valueCount,
-                std::vector<float>& float4AdaptedLutValues)
+
+    OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
+
+    // Create a GPU Shader Description
+    OCIO::GpuShaderDesc shaderDesc;
+    shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_3);
+    shaderDesc.setFunctionName("OCIODisplay");
+    shaderDesc.setLut3DEdgeLen(params.lut3dSizeOCIO);
+
+    // Compute the 3D LUT.
+    // In this version of the OCIO API we have one LUT entry.
+    result->luts.resize(1);
+    _TextureSamplerDesc &lut = result->luts[0];
+    const int num3Dentries =
+        3 * params.lut3dSizeOCIO * params.lut3dSizeOCIO * params.lut3dSizeOCIO;
+    lut.samples.resize(num3Dentries);
+    processor->getGpuLut3D(lut.samples.data(), shaderDesc);
+
+    // Set up Hgi texture description
+    HgiTextureDesc &texDesc = lut.textureDesc;
+    texDesc.debugName = "OCIO 3d LUT texture";
+    texDesc.type = HgiTextureType3D;
+    texDesc.dimensions = GfVec3i(params.lut3dSizeOCIO);
+    texDesc.format = HgiFormatFloat32Vec3;
+    texDesc.initialData = lut.samples.data();
+    texDesc.layerCount = 1;
+    texDesc.mipLevels = 1;
+    texDesc.pixelsByteSize = lut.samples.size() * sizeof(lut.samples[0]);
+    texDesc.sampleCount = HgiSampleCount1;
+    texDesc.usage = HgiTextureUsageBitsShaderRead;
+
+    // Set up Hgi sampler description
+    HgiSamplerDesc &sampDesc = lut.samplerDesc;
+    sampDesc.debugName = "OCIO 3d LUT sampler";
+    sampDesc.magFilter = HgiSamplerFilterLinear;
+    sampDesc.minFilter = HgiSamplerFilterLinear;
+    sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
+    sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
+
+    // Generate shader code
+    result->gpuShaderText = processor->getGpuShaderText(shaderDesc);
+}
+
+std::string
+HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
+    std::string &ocioGpuShaderText, HgiShaderFunctionDesc &fragDesc)
+{
+    return "#define OCIO_DISPLAY_FUNC(inCol) OCIODisplay(inCol, Lut3DIn)";
+}
+
+#else // OCIO_VERSION_HEX >= 0x02000000
+
+static void
+_RGBtoRGBA(float const* lutValues,
+           int& valueCount,
+           std::vector<float>& float4AdaptedLutValues)
 {
     if(valueCount % 3 != 0) {
         TF_WARN("Value count should be divisible by 3.");
@@ -254,135 +263,56 @@ void _RGBtoRGBA(float const* lutValues,
     }
 }
 
-#ifdef PXR_OCIO_PLUGIN_ENABLED
+// Helper struct to hold a templated helper method using a type
+// (_UniformBufferDesc) private to HdxColorCorrectionTask.
+struct HdxColorCorrectionTask_UboBuilder {
+    using _UniformBufferDesc = HdxColorCorrectionTask::_UniformBufferDesc;
+    std::vector<_UniformBufferDesc> &ubos;
 
-#if OCIO_VERSION_HEX < 0x02000000
-
-std::string
-HdxColorCorrectionTask::_CreateOpenColorIOResources()
-{
-    // Use client provided OCIO values, or use default fallback values
-    OCIO::ConstConfigRcPtr config = OCIO::GetCurrentConfig();
-
-    const char* display = _displayOCIO.empty() ?
-                            config->getDefaultDisplay() :
-                            _displayOCIO.c_str();
-
-    const char* view = _viewOCIO.empty() ?
-                        config->getDefaultView(display) :
-                        _viewOCIO.c_str();
-
-    std::string inputColorSpace = _colorspaceOCIO;
-    if (inputColorSpace.empty()) {
-        OCIO::ConstColorSpaceRcPtr cs = config->getColorSpace("default");
-        if (cs) {
-            inputColorSpace = cs->getName();
-        } else {
-            inputColorSpace = OCIO::ROLE_SCENE_LINEAR;
-        }
+    template<typename T, int N=1>
+    void Add(std::string const& typeName,
+             std::string const& name,
+             T const* values, uint32_t count = 1)
+    {
+        // Set the dummy value to 123456789
+        // that is easily recognizable in a buffer
+        const T dummyValue = T(123456789);
+        T const* v = count == 0 ? &dummyValue : values;
+        size_t dataSize = (count == 0) ? sizeof(T) : count * N * sizeof(T);
+        ubos.emplace_back(
+            _UniformBufferDesc{
+                typeName, name,
+                std::vector<uint8_t>(), (uint32_t)dataSize, count});
+        ubos.back().data.resize(dataSize);
+        memcpy(ubos.back().data.data(), v, dataSize);
     }
-
-    // Setup the transformation we need to apply
-    OCIO::DisplayTransformRcPtr transform =
-        OCIO::DisplayTransform::Create();
-    transform->setDisplay(display);
-    transform->setView(view);
-    transform->setInputColorSpaceName(inputColorSpace.c_str());
-    if (!_looksOCIO.empty()) {
-        transform->setLooksOverride(_looksOCIO.c_str());
-        transform->setLooksOverrideEnabled(true);
-    } else {
-        transform->setLooksOverrideEnabled(false);
-    }
-
-
-    OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
-
-    // Create a GPU Shader Description
-    OCIO::GpuShaderDesc shaderDesc;
-    shaderDesc.setLanguage(OCIO::GPU_LANGUAGE_GLSL_1_3);
-    shaderDesc.setFunctionName("OCIODisplay");
-    shaderDesc.setLut3DEdgeLen(_lut3dSizeOCIO);
-
-    // Compute and the 3D LUT
-    const int num3Dentries =
-        3 * _lut3dSizeOCIO * _lut3dSizeOCIO * _lut3dSizeOCIO;
-    std::vector<float> lut3d(num3Dentries);
-    processor->getGpuLut3D(lut3d.data(), shaderDesc);
-
-    // Load the data into an OpenGL 3D Texture
-    if (_texture3dLUT) {
-        _GetHgi()->DestroyTexture(&_texture3dLUT);
-    }
-
-    HgiTextureDesc lutDesc;
-    lutDesc.debugName = "OCIO 3d LUT";
-    lutDesc.type = HgiTextureType3D;
-    lutDesc.dimensions = GfVec3i(_lut3dSizeOCIO);
-    lutDesc.format = HgiFormatFloat32Vec3;
-    lutDesc.initialData = lut3d.data();
-    lutDesc.layerCount = 1;
-    lutDesc.mipLevels = 1;
-    lutDesc.pixelsByteSize = lut3d.size() * sizeof(lut3d[0]);
-    lutDesc.sampleCount = HgiSampleCount1;
-    lutDesc.usage = HgiTextureUsageBitsShaderRead;
-    _texture3dLUT = _GetHgi()->CreateTexture(lutDesc);
-
-    const char* gpuShaderText = processor->getGpuShaderText(shaderDesc);
-
-    return std::string(gpuShaderText);
-}
-
-std::string
-HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
-    std::string &ocioGpuShaderText, HgiShaderFunctionDesc &fragDesc)
-{
-    return "#define OCIO_DISPLAY_FUNC(inCol) OCIODisplay(inCol, Lut3DIn)";
-}
+};
 
 void
-HdxColorCorrectionTask::_CreateOpenColorIOLUTBindings(
-    HgiResourceBindingsDesc &resourceDesc)
+HdxColorCorrectionTask::_CreateOpenColorIOResources(
+    Hgi *hgi,
+    HdxColorCorrectionTaskParams const& params,
+    HdxColorCorrectionTask::_OCIOResources *result)
 {
-    if (_texture3dLUT) {
-        HgiTextureBindDesc texBind1;
-        texBind1.bindingIndex = 1;
-        texBind1.stageUsage = HgiShaderStageFragment;
-        texBind1.writable = false;
-        texBind1.textures.push_back(_texture3dLUT);
-        texBind1.samplers.push_back(_sampler);
-        resourceDesc.textures.push_back(std::move(texBind1));
-    }
-}
+    HD_TRACE_FUNCTION();
 
-void
-HdxColorCorrectionTask::_SetConstants(HgiGraphicsCmds *gfxCmds)
-{
-    gfxCmds->SetConstantValues(
-        _pipeline,
-        HgiShaderStageFragment,
-        0,
-        sizeof(_screenSize),
-        &_screenSize);
-}
+    // Clear out any prior resource descriptions
+    result->luts.clear();
+    result->ubos.clear();
+    result->gpuShaderText.clear();
 
-#else // OCIO_VERSION_HEX >= 0x02000000
-
-std::string
-HdxColorCorrectionTask::_CreateOpenColorIOResources()
-{
-    // Use client provided OCIO values, or use default fallback values
+    // Use client provided OCIO parameters, or use default fallback values
     OCIO::ConstConfigRcPtr config = OCIO::GetCurrentConfig();
 
-    const char* display = _displayOCIO.empty() ?
+    const char* display = params.displayOCIO.empty() ?
                             config->getDefaultDisplay() :
-                            _displayOCIO.c_str();
+                            params.displayOCIO.c_str();
 
-    const char* view = _viewOCIO.empty() ?
+    const char* view = params.viewOCIO.empty() ?
                         config->getDefaultView(display) :
-                        _viewOCIO.c_str();
+                        params.viewOCIO.c_str();
 
-    std::string inputColorSpace = _colorspaceOCIO;
+    std::string inputColorSpace = params.colorspaceOCIO;
     if (inputColorSpace.empty()) {
         OCIO::ConstColorSpaceRcPtr cs = config->getColorSpace("default");
         if (cs) {
@@ -398,46 +328,36 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
     transform->setDisplay(display);
     transform->setView(view);
     transform->setSrc(inputColorSpace.c_str());
-
-    if (!_looksOCIO.empty()) {
-        transform->setDisplay(_looksOCIO.c_str());
+    if (!params.looksOCIO.empty()) {
+        transform->setDisplay(params.looksOCIO.c_str());
         transform->setLooksBypass(true);
     } else {
         transform->setLooksBypass(false);
     }
 
+    // OCIO processors
     OCIO::ConstProcessorRcPtr processor = config->getProcessor(transform);
     OCIO::ConstGPUProcessorRcPtr gpuProcessor =
                 processor->getDefaultGPUProcessor();
 
-
+    // Create a GPU Shader Description
     OCIO::GpuShaderDescRcPtr shaderDesc =
                 OCIO::GpuShaderDesc::CreateShaderDesc();
     shaderDesc->setFunctionName("OCIODisplay");
     const float *lutValues = nullptr;
     shaderDesc->setLanguage(
-        _GetHgi()->GetAPIName() == HgiTokens->OpenGL ?
+        hgi->GetAPIName() == HgiTokens->OpenGL ?
                     OCIO::GPU_LANGUAGE_GLSL_4_0 :
                     OCIO::GPU_LANGUAGE_MSL_2_0);
-
     gpuProcessor->extractGpuShaderInfo(shaderDesc);
 
-    for (BufferInfo &buffer : _bufferConstants) {
-        _GetHgi()->DestroyBuffer(&buffer.handle);
-    }
-    _bufferConstants.clear();
-
-    for (TextureSamplerInfo &textureLut : _textureLUTs) {
-        _GetHgi()->DestroyTexture(&textureLut.texHandle);
-        _GetHgi()->DestroySampler(&textureLut.samplerHandle);
-    }
-    _textureLUTs.clear();
-
-    for (int i = 0; i < shaderDesc->getNum3DTextures(); ++i) {
+    //
+    // 3D LUT textures
+    //
+    for (size_t i = 0; i < shaderDesc->getNum3DTextures(); ++i) {
         const char* textureName;
         const char* samplerName;
         uint32_t edgeLen;
-        OCIO::GpuShaderCreator::TextureType channel;
         OCIO::Interpolation interpolation;
 
         shaderDesc->get3DTextureValues(i, lutValues);
@@ -454,36 +374,35 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         fmt = HgiFormatFloat32Vec4;
         channelPerPix = 4;
         lutValues = float4AdaptedLutValues.data();
-        // Load the data into a hgi texture
-        HgiTextureDesc lutDesc;
-        lutDesc.debugName = textureName;
-        lutDesc.type = HgiTextureType3D;
-        lutDesc.dimensions = GfVec3i(edgeLen);
-        lutDesc.format = fmt;
-        lutDesc.initialData = lutValues;
-        lutDesc.layerCount = 1;
-        lutDesc.mipLevels = 1;
-        lutDesc.pixelsByteSize = sizeof(float) * valueCount;
-        lutDesc.sampleCount = HgiSampleCount1;
-        lutDesc.usage = HgiTextureUsageBitsShaderRead;
 
+        // Texture description
+        HgiTextureDesc texDesc;
+        texDesc.debugName = textureName;
+        texDesc.type = HgiTextureType3D;
+        texDesc.dimensions = GfVec3i(edgeLen);
+        texDesc.format = fmt;
+        texDesc.layerCount = 1;
+        texDesc.mipLevels = 1;
+        texDesc.pixelsByteSize = sizeof(float) * valueCount;
+        texDesc.sampleCount = HgiSampleCount1;
+        texDesc.usage = HgiTextureUsageBitsShaderRead;
+
+        // Sampler description
         HgiSamplerDesc sampDesc;
-
         sampDesc.magFilter = HgiSamplerFilterLinear;
         sampDesc.minFilter = HgiSamplerFilterLinear;
-
         sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
         sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
 
-        _textureLUTs.emplace_back(TextureSamplerInfo{
-                                    static_cast<unsigned char>(3),
-                                    textureName,
-                                    _GetHgi()->CreateTexture(lutDesc),
-                                    samplerName,
-                                    _GetHgi()->CreateSampler(sampDesc)});
+        result->luts.emplace_back(
+            _TextureSamplerDesc{
+                texDesc, sampDesc, float4AdaptedLutValues});
     }
 
-    for(int i = 0; i < shaderDesc->getNumTextures(); ++i) {
+    //
+    // 1D and 2D LUT textures
+    //
+    for(size_t i = 0; i < shaderDesc->getNumTextures(); ++i) {
         const char* textureName;
         const char* samplerName;
         uint32_t width, height;
@@ -491,7 +410,6 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         OCIO::Interpolation interpolation;
         shaderDesc->getTexture(i, textureName, samplerName, width, height,
                                 channel, interpolation);
-
         shaderDesc->getTextureValues(i, lutValues);
 
         int channelPerPix =
@@ -510,20 +428,20 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
             lutValues = float4AdaptedLutValues.data();
         }
 
-        HgiTextureDesc lutDesc;
-        lutDesc.debugName = textureName;
-        lutDesc.type = height == 1 ? HgiTextureType1D : HgiTextureType2D;
-        lutDesc.dimensions = GfVec3i(width, height, 1);
-        lutDesc.format = fmt;
-        lutDesc.initialData = lutValues;
-        lutDesc.layerCount = 1;
-        lutDesc.mipLevels = 1;
-        lutDesc.pixelsByteSize = sizeof(float) * valueCount;
-        lutDesc.sampleCount = HgiSampleCount1;
-        lutDesc.usage = HgiTextureUsageBitsShaderRead;
+        // Texture description
+        HgiTextureDesc texDesc;
+        texDesc.debugName = textureName;
+        texDesc.type = height == 1 ? HgiTextureType1D : HgiTextureType2D;
+        texDesc.dimensions = GfVec3i(width, height, 1);
+        texDesc.format = fmt;
+        texDesc.layerCount = 1;
+        texDesc.mipLevels = 1;
+        texDesc.pixelsByteSize = sizeof(float) * valueCount;
+        texDesc.sampleCount = HgiSampleCount1;
+        texDesc.usage = HgiTextureUsageBitsShaderRead;
 
+        // Sampler description
         HgiSamplerDesc sampDesc;
-
         sampDesc.magFilter =
             interpolation == OCIO::Interpolation::INTERP_NEAREST ?
                 HgiSamplerFilterNearest : HgiSamplerFilterLinear;
@@ -533,60 +451,85 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources()
         sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
         sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
 
-        _textureLUTs.emplace_back(TextureSamplerInfo {
-                                    static_cast<unsigned char>(height == 1 ? 1 : 2),
-                                    textureName,
-                                    _GetHgi()->CreateTexture(lutDesc),
-                                    samplerName,
-                                    _GetHgi()->CreateSampler(sampDesc)});
+        result->luts.emplace_back(
+            _TextureSamplerDesc{
+                texDesc, sampDesc, float4AdaptedLutValues});
     }
 
-    UniformBufferDataVector uniformBuffersData = _GetUniformBuffersData(shaderDesc);
-    _constantValues.reserve(1024);
-    _constantValues.resize(sizeof(_screenSize));
-    for(UniformBufferData const &ubo : uniformBuffersData) {
-        if(ubo.count == 1)
-        {
-            _constantValues.insert(_constantValues.end(),
-                                    ubo.data.begin(),
-                                    ubo.data.end());
-            const float zero = 0.0f;
-            if(ubo.typeName == "vec3")
+    //
+    // Uniform buffers
+    //
+    HdxColorCorrectionTask_UboBuilder uboBuilder { result->ubos };
+    for (uint32_t i=0, n=shaderDesc->getNumUniforms(); i<n; ++i) {
+        OCIO::GpuShaderDesc::UniformData data;
+        std::string name = shaderDesc->getUniform(i, data);
+        switch(data.m_type) {
+        case OCIO::UNIFORM_BOOL:
             {
-                _constantValues.insert(_constantValues.end(),
+                int v = data.m_getBool();
+                uboBuilder.Add<int>("int", name, &v);
+            }
+            break;
+        case OCIO::UNIFORM_DOUBLE:
+            {
+                float v = data.m_getDouble();
+                uboBuilder.Add<float>("float", name, &v);
+            }
+            break;
+        case OCIO::UNIFORM_FLOAT3:
+            {
+                float const* v = data.m_getFloat3().data();
+                uboBuilder.Add<float, 3>("vec3", name, v);
+            }
+            break;
+        case OCIO::UNIFORM_VECTOR_INT:
+            {
+                int bufferLength = data.m_vectorInt.m_getSize();
+                uboBuilder.Add<int>("int", name,
+                                    data.m_vectorInt.m_getVector(),
+                                    bufferLength);
+            }
+            break;
+        case OCIO::UNIFORM_VECTOR_FLOAT:
+            {
+                int bufferLength = data.m_vectorFloat.m_getSize();
+                uboBuilder.Add<float>("float", name,
+                                      data.m_vectorFloat.m_getVector(),
+                                      bufferLength);
+            }
+            break;
+        case OCIO::UNIFORM_UNKNOWN:
+        default:
+            TF_CODING_ERROR("Unknown Uniform");
+            break;
+        };
+    }
+
+    //
+    // Constant values
+    //
+    result->constantValues.reserve(1024);
+    result->constantValues.resize(sizeof(_screenSize));
+    for (_UniformBufferDesc const &uboDesc : result->ubos) {
+        if (uboDesc.count == 1) {
+            result->constantValues.insert(result->constantValues.end(),
+                                          uboDesc.data.begin(),
+                                          uboDesc.data.end());
+            if (uboDesc.typeName == "vec3") {
+                const float zero = 0.0f;
+                result->constantValues.insert(result->constantValues.end(),
                         (const unsigned char*)&zero,
                         (const unsigned char*)&zero + sizeof(float));
             }
+        } else {
+            result->constantValues.insert(result->constantValues.end(),
+                    (const unsigned char*)&uboDesc.count,
+                    (const unsigned char*)&uboDesc.count + sizeof(uint32_t));
         }
-        else
-        {
-            _constantValues.insert(_constantValues.end(),
-                    (const unsigned char*)&ubo.count,
-                    (const unsigned char*)&ubo.count + sizeof(uint32_t));
-        }
-    }
-    for(UniformBufferData const &ubo : uniformBuffersData) {
-        HgiBufferDesc bufferDesc;
-        bufferDesc.usage = HgiBufferUsageUniform;
-        bufferDesc.debugName = ubo.name;
-        bufferDesc.initialData = ubo.data.data();
-        bufferDesc.byteSize = ubo.data.size();
-        if(bufferDesc.byteSize == 0) {
-            // Set the dummy value to 123456789
-            // that is easily recognizable in a buffer
-            static int dummyVal = 123456789;
-            bufferDesc.byteSize = 4;
-            bufferDesc.initialData = &dummyVal;
-        }
-        _bufferConstants.emplace_back(BufferInfo { ubo.typeName,
-            ubo.name, ubo.count,
-            ubo.count > 1 ? _GetHgi()->CreateBuffer(bufferDesc) :
-                            HgiHandle<HgiBuffer>()
-        });
     }
 
-    std::string ocioGeneratedShaderText = shaderDesc->getShaderText();
-    return ocioGeneratedShaderText;
+    // Generate shader code
+    result->gpuShaderText = shaderDesc->getShaderText();
 }
 
 std::string
@@ -678,6 +621,34 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
     return fsCode;
 }
 
+#endif // OCIO_VERSION_HEX >= 0x02000000
+
+#else // PXR_OCIO_PLUGIN_ENABLED
+
+void
+HdxColorCorrectionTask::_CreateOpenColorIOResources(
+    Hgi *hgi,
+    HdxColorCorrectionTaskParams const& params,
+    HdxColorCorrectionTask::_OCIOResources *result)
+{
+    TF_UNUSED(params);
+    TF_UNUSED(result);
+}
+
+std::string
+HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
+    std::string &ocioGpuShaderText, HgiShaderFunctionDesc &fragDesc)
+{
+    TF_UNUSED(ocioGpuShaderText);
+    TF_UNUSED(fragDesc);
+    return std::string();
+}
+
+#endif // PXR_OCIO_PLUGIN_ENABLED
+
+
+
+
 void
 HdxColorCorrectionTask::_CreateOpenColorIOLUTBindings(
     HgiResourceBindingsDesc &resourceDesc)
@@ -710,55 +681,35 @@ HdxColorCorrectionTask::_CreateOpenColorIOLUTBindings(
 void
 HdxColorCorrectionTask::_SetConstants(HgiGraphicsCmds *gfxCmds)
 {
-    if(_constantValues.size() < sizeof(_screenSize))
-    {
-        _constantValues.resize(sizeof(_screenSize));
+    if (_ocioResources.constantValues.size() < sizeof(_screenSize)) {
+        _ocioResources.constantValues.resize(sizeof(_screenSize));
     }
-    memcpy(_constantValues.data(), _screenSize, sizeof(_screenSize));
+    memcpy(_ocioResources.constantValues.data(),
+           _screenSize, sizeof(_screenSize));
 
     gfxCmds->SetConstantValues(
         _pipeline,
         HgiShaderStageFragment,
         0,
-        static_cast<uint32_t>(_constantValues.size()),
-        _constantValues.data());
+        static_cast<uint32_t>(_ocioResources.constantValues.size()),
+        _ocioResources.constantValues.data());
 }
-#endif // OCIO_VERSION_HEX >= 0x02000000
 
-#else // PXR_OCIO_PLUGIN_ENABLED
-
-std::string
-HdxColorCorrectionTask::_CreateOpenColorIOResources()
+static unsigned char
+_TextureDimensionCount(HgiTextureDesc &texDesc)
 {
-    return std::string();
+    switch (texDesc.type) {
+    case HgiTextureType1D:
+        return 1;
+    case HgiTextureType2D:
+        return 2;
+    case HgiTextureType3D:
+        return 3;
+    default:
+        TF_CODING_ERROR("Unhandled case");
+        return 1;
+    }
 }
-
-std::string
-HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
-    std::string &ocioGpuShaderText, HgiShaderFunctionDesc &fragDesc)
-{
-    return std::string();
-}
-
-void
-HdxColorCorrectionTask::_CreateOpenColorIOLUTBindings(
-    HgiResourceBindingsDesc &resourceDesc)
-{
-    // No implementation.
-}
-
-void
-HdxColorCorrectionTask::_SetConstants(HgiGraphicsCmds *gfxCmds)
-{
-    gfxCmds->SetConstantValues(
-        _pipeline,
-        HgiShaderStageFragment,
-        0,
-        sizeof(_screenSize),
-        &_screenSize);
-}
-
-#endif // PXR_OCIO_PLUGIN_ENABLED
 
 bool
 HdxColorCorrectionTask::_CreateShaderResources()
@@ -813,11 +764,60 @@ HdxColorCorrectionTask::_CreateShaderResources()
         // removed from glsl in 140.
         fsCode += "#define texture3D texture\n";
 
-        std::string ocioGpuShaderText = _CreateOpenColorIOResources();
+        // Ensure the OICO resource prep task has completed.
+        _workDispatcher.Wait();
 
-        fsCode += _CreateOpenColorIOShaderCode(ocioGpuShaderText, fragDesc);
+        // Discard prior GPU resources.
+        for (TextureSamplerInfo &textureLut : _textureLUTs) {
+            _GetHgi()->DestroyTexture(&textureLut.texHandle);
+            _GetHgi()->DestroySampler(&textureLut.samplerHandle);
+        }
+        _textureLUTs.clear();
+        for (BufferInfo &buffer : _bufferConstants) {
+            _GetHgi()->DestroyBuffer(&buffer.handle);
+        }
+        _bufferConstants.clear();
 
-        fsCode = fsCode + ocioGpuShaderText;
+        // Create new GPU resources.
+        for (_TextureSamplerDesc lut: _ocioResources.luts) {
+            lut.textureDesc.initialData = lut.samples.data();
+            _textureLUTs.emplace_back(
+                TextureSamplerInfo{
+                _TextureDimensionCount(lut.textureDesc),
+                lut.textureDesc.debugName,
+                _GetHgi()->CreateTexture(lut.textureDesc),
+                lut.samplerDesc.debugName,
+                _GetHgi()->CreateSampler(lut.samplerDesc)});
+        }
+        for (_UniformBufferDesc const &ubo : _ocioResources.ubos) {
+            HgiBufferDesc bufferDesc;
+            bufferDesc.usage = HgiBufferUsageUniform;
+            bufferDesc.debugName = ubo.name;
+            bufferDesc.initialData = ubo.data.data();
+            bufferDesc.byteSize = ubo.data.size();
+            if (bufferDesc.byteSize == 0) {
+                // Set the dummy value to 123456789
+                // that is easily recognizable in a buffer
+                static int dummyVal = 123456789;
+                bufferDesc.byteSize = 4;
+                bufferDesc.initialData = &dummyVal;
+            }
+            _bufferConstants.emplace_back(
+                BufferInfo {
+                ubo.typeName, ubo.name, ubo.count,
+                ubo.count > 1 ? _GetHgi()->CreateBuffer(bufferDesc) :
+                HgiHandle<HgiBuffer>() });
+        }
+
+        fsCode += _CreateOpenColorIOShaderCode(
+            _ocioResources.gpuShaderText, fragDesc);
+
+        fsCode = fsCode + _ocioResources.gpuShaderText;
+
+        // Clear out requested descriptions now that we are done
+        _ocioResources.luts.clear();
+        _ocioResources.ubos.clear();
+        _ocioResources.gpuShaderText.clear();
     }
     fsCode += glslfx.GetSource(_tokens->colorCorrectionFragment);
 
@@ -889,7 +889,7 @@ HdxColorCorrectionTask::_CreateResourceBindings(
     texBind0.stageUsage = HgiShaderStageFragment;
     texBind0.writable = false;
     texBind0.textures.push_back(aovTexture);
-    texBind0.samplers.push_back(_sampler);
+    texBind0.samplers.push_back(_aovSampler);
     resourceDesc.textures.push_back(std::move(texBind0));
 
     if (useOCIO) {
@@ -987,22 +987,17 @@ HdxColorCorrectionTask::_CreatePipeline(HgiTextureHandle const& aovTexture)
 }
 
 bool
-HdxColorCorrectionTask::_CreateSampler()
+HdxColorCorrectionTask::_CreateAovSampler()
 {
-    if (_sampler) {
+    if (_aovSampler) {
         return true;
     }
-
     HgiSamplerDesc sampDesc;
-
     sampDesc.magFilter = HgiSamplerFilterLinear;
     sampDesc.minFilter = HgiSamplerFilterLinear;
-
     sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
     sampDesc.addressModeV = HgiSamplerAddressModeClampToEdge;
-
-    _sampler = _GetHgi()->CreateSampler(sampDesc);
-
+    _aovSampler = _GetHgi()->CreateSampler(sampDesc);
     return true;
 }
 
@@ -1023,13 +1018,14 @@ HdxColorCorrectionTask::_ApplyColorCorrection(
     gfxCmds->BindResources(_resourceBindings);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
+
+    // Update viewport/screen size
     const GfVec4i vp(0, 0, dimensions[0], dimensions[1]);
     _screenSize[0] = static_cast<float>(dimensions[0]);
     _screenSize[1] = static_cast<float>(dimensions[1]);
-
     _SetConstants(gfxCmds.get());
-
     gfxCmds->SetViewport(vp);
+
     gfxCmds->DrawIndexed(_indexBuffer, 3, 0, 0, 1, 0);
     gfxCmds->PopDebugGroup();
 
@@ -1046,20 +1042,10 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
     HF_MALLOC_TAG_FUNCTION();
 
     if ((*dirtyBits) & HdChangeTracker::DirtyParams) {
-        HdxColorCorrectionTaskParams params;
-
-        if (_GetTaskParams(delegate, &params)) {
-            _colorCorrectionMode = params.colorCorrectionMode;
-            _displayOCIO = params.displayOCIO;
-            _viewOCIO = params.viewOCIO;
-            _colorspaceOCIO = params.colorspaceOCIO;
-            _looksOCIO = params.looksOCIO;
-            _lut3dSizeOCIO = params.lut3dSizeOCIO;
-            _aovName = params.aovName;
-
-            if (_lut3dSizeOCIO <= 0) {
+        if (_GetTaskParams(delegate, &_params)) {
+            if (_params.lut3dSizeOCIO <= 0) {
                 TF_CODING_ERROR("Invalid OCIO LUT size.");
-                _lut3dSizeOCIO = 65;
+                _params.lut3dSizeOCIO = 65;
             }
 
             // Rebuild Hgi objects when ColorCorrection params change
@@ -1070,6 +1056,17 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
             if (_pipeline) {
                 _GetHgi()->DestroyGraphicsPipeline(&_pipeline);
             }
+
+            // Start a background task to prepare OCIO resources.
+            // It is possible for the prior prep task to have not
+            // yet completed, so cancel and wait on it before enqueuing
+            // a new task with updated parameters.
+            _workDispatcher.Cancel();
+            _workDispatcher.Wait();
+            _workDispatcher.Run(&_CreateOpenColorIOResources,
+                                _GetHgi(),
+                                _params,
+                                &_ocioResources);
         }
     }
 
@@ -1089,7 +1086,7 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     HF_MALLOC_TAG_FUNCTION();
 
     // We currently only color correct the color aov.
-    if (_aovName != HdAovTokens->color) {
+    if (_params.aovName != HdAovTokens->color) {
         return;
     }
 
@@ -1109,7 +1106,7 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
     }
-    if (!TF_VERIFY(_CreateSampler())) {
+    if (!TF_VERIFY(_CreateAovSampler())) {
         return;
     }
     if (!TF_VERIFY(_CreateShaderResources())) {

@@ -105,7 +105,8 @@ private:
     mutable size_t  _hash;
     mutable bool    _hashValid;
 
-    TfHashMap<TfToken, HdStBindingRequest, TfToken::HashFunctor> _customBuffers;
+    // Lexicographic ordering for stable output between runs.
+    std::map<TfToken, HdStBindingRequest> _customBuffers;
 
     NamedTextureHandleVector _namedTextureHandles;
 

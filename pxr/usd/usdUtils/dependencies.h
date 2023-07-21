@@ -67,8 +67,10 @@ void UsdUtilsExtractExternalReferences(
 
 /// Creates a USDZ package containing the specified asset, identified by its 
 /// \p assetPath. The created package will include a localized version of the 
-/// asset itself and all of its external dependencies. Due to localization, the 
-/// packaged layers might be modified to have different asset paths.
+/// asset itself and all of its external dependencies. Any anonymous layers that
+/// are encountered during dependency discovery will be serialized into the
+/// resulting package. Due to localization, the packaged layers might be 
+/// modified to have different asset paths.
 ///
 /// You can optionally specify a different package-internal name for the first
 /// layer of the asset by specifying \p firstLayerName. By default,
@@ -108,7 +110,9 @@ UsdUtilsCreateNewUsdzPackage(
 /// implementation in ARKit operate under greater constraints than usdz files 
 /// for more general 'in house' uses, and this option attempts to ensure that
 /// these constraints are honored; this may involve more transformations to the 
-/// data, which may cause loss of features such as VariantSets.
+/// data, which may cause loss of features such as VariantSets. Any anonymous 
+/// layers that are encountered during dependency discovery will be serialized 
+/// into the resulting package.
 ///
 /// If \p firstLayerName is specified, it is modified to have the ".usdc" 
 /// extension, as required by the initial usdz implementation in ARKit.
@@ -148,7 +152,7 @@ UsdUtilsCreateNewARKitUsdzPackage(
 /// Any unresolved (layer and non-layer) asset paths are populated in 
 /// \p unresolvedPaths.
 /// 
-/// The input vectors to be populated with the results are are *cleared* before 
+/// The input vectors to be populated with the results are *cleared* before 
 /// any results are added to them.
 /// 
 /// Returns true if the given asset was resolved correctly.

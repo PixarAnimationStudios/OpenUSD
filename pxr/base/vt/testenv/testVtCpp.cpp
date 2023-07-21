@@ -219,6 +219,13 @@ static void testArray() {
 
         TF_AXIOM(array.size() == 5);
 
+        array.resize(10, 9.99);
+        TF_AXIOM(array.size() == 10);
+        TF_AXIOM(array[5] == 9.99 &&
+                 array[6] == 9.99 &&
+                 array[7] == 9.99 &&
+                 array[8] == 9.99 &&
+                 array[9] == 9.99);
     }
 
     {

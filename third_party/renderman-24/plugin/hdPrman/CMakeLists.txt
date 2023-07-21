@@ -88,7 +88,6 @@ pxr_plugin(${PXR_PACKAGE}
         lightFilterUtils
         material
         matfiltConvertPreviewMaterial
-        matfiltResolveTerminals
         matfiltResolveVstructs
         mesh
         outputFilterInvalidatingSceneIndexPlugin
@@ -114,6 +113,7 @@ pxr_plugin(${PXR_PACKAGE}
         pinnedCurveExpandingSceneIndexPlugin
         renderBuffer
         renderParam
+        renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
         velocityMotionBlurSceneIndexPlugin

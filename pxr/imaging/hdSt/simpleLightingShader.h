@@ -151,7 +151,8 @@ private:
     bool _useLighting;
     std::unique_ptr<class HioGlslfx> _glslfx;
 
-    TfHashMap<TfToken, HdStBindingRequest, TfToken::HashFunctor> _customBuffers;
+    // Lexicographic ordering for stable output between runs.
+    std::map<TfToken, HdStBindingRequest> _customBuffers;
 
     // The environment map used as source for the dome light textures.
     //

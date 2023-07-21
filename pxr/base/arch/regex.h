@@ -34,8 +34,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class ArchRegex {
 public:
-    static constexpr unsigned int CASE_INSENSITIVE = 1u;
-    static constexpr unsigned int GLOB             = 2u;
+    enum : unsigned int {
+        CASE_INSENSITIVE = 1u,
+        GLOB             = 2u
+    };
 
     /// Create an empty regex.
     ARCH_API ArchRegex();

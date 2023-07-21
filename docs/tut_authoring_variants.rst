@@ -344,9 +344,9 @@ these files to a working directory and make them writable.
    .. image:: http://openusd.org/images/tut_authoring_variants_helloworld2.png
                 
 #. In the interpreter you can see the variant selections that usdview authors to
-   the session layer. This is the same sparse override you would see if you
-   referenced this layer into another one and authored the variant selection in
-   the referencing layer.
+   the `session layer <#usdglossary-sessionlayer>`_ . This is the same sparse 
+   override you would see if you referenced this layer into another one and 
+   authored the variant selection in the referencing layer.
 
    .. code-block:: python
 

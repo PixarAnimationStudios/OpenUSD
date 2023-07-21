@@ -130,10 +130,15 @@ public:
     //    hgi = Hgi::CreatePlatformDefaultHgi()
     //    hgiDriver = new HdDriver<Hgi*>(HgiTokens→renderDriver, hgi)
     //    HdRenderIndex::New(_renderDelegate, {_hgiDriver})
+    // 
+    /// "instanceName" is an optional identifier useful for applications to
+    /// associate this render index with related resources (such as the scene
+    /// index instances).
     HD_API
     static HdRenderIndex* New(
         HdRenderDelegate *renderDelegate,
-        HdDriverVector const& drivers);
+        HdDriverVector const& drivers,
+        const std::string &instanceName=std::string());
 
     HD_API
     ~HdRenderIndex();
@@ -414,13 +419,16 @@ public:
     HD_API
     void SceneIndexEmulationNoticeBatchEnd();
 
+    HD_API
+    std::string GetInstanceName() const;
 
 private:
     // The render index constructor is private so we can check
     // renderDelegate before construction: see HdRenderIndex::New(...).
     HdRenderIndex(
         HdRenderDelegate *renderDelegate, 
-        HdDriverVector const& drivers);
+        HdDriverVector const& drivers,
+        const std::string &instanceName=std::string());
 
     // ---------------------------------------------------------------------- //
     // Private Helper methods 
@@ -537,6 +545,9 @@ private:
 
     HdRenderDelegate *_renderDelegate;
     HdDriverVector _drivers;
+
+
+    std::string _instanceName;
 
     // ---------------------------------------------------------------------- //
     // Sync State

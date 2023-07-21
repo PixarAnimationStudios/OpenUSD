@@ -68,13 +68,14 @@ public:
     bool ComposeValueStack(const TfToken &field, 
                            VtValueVector *values) const;
 
-private:
-    // Callback function for ComposeValue. This callback function will
-    // be passed values for the field given to ComposeValue from
-    // strongest to weakest available opinion and is free to copy or
-    // swap out the value as desired. 
-    using _ComposeFunction = std::function<void(VtValue &&)>;
+    /// Compose the \p value of the default field of the attribute with the 
+    /// given \p attributeName and return its current strongest opinion.
+    /// Returns true if a value for the field was found. 
+    PCP_API
+    bool ComposeAttributeDefaultValue(
+        const TfToken &attributeName, VtValue *value) const;
 
+private:
     /// Constructs a context. 
     /// \p parentNode and \p previousFrame are used to traverse the 
     /// current state of the prim index graph when composing the opinions on 
@@ -84,10 +85,13 @@ private:
     PcpDynamicFileFormatContext(
         const PcpNodeRef &parentNode, 
         PcpPrimIndex_StackFrame *previousFrame,
-        TfToken::Set *composedFieldNames);
+        TfToken::Set *composedFieldNames,
+        TfToken::Set *composedAttributeNames);
+
     /// Access to private constructor. Should only be called by prim indexing.
     friend PcpDynamicFileFormatContext Pcp_CreateDynamicFileFormatContext(
-        const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
+        const PcpNodeRef &, PcpPrimIndex_StackFrame *, 
+        TfToken::Set *, TfToken::Set *);
 
     /// Returns whether the given \p field is allowed to be used to generate
     /// file format arguments. It can also return whether the value type of 
@@ -101,6 +105,13 @@ private:
 
     // Cached names of fields that had values composed by this context.
     TfToken::Set *_composedFieldNames;
+
+    // Cached names of attributes that had default values composed by this 
+    // context.
+    TfToken::Set *_composedAttributeNames;
+
+    // Declare private helper.
+    class _ComposeValueHelper;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

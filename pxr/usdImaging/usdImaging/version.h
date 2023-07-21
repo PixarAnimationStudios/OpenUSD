@@ -53,8 +53,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Version 18 - Geom subsets accessed via UsdImagingDelegate::GetMeshTopology()
 //              will now have correctly prefixed index paths for id and 
 //              materialId.
+// Version 19 - UsdImagingPrimAdapter::InvalidateImagingSubprim takes
+//              invalidationType as argument.
 
-#define USD_IMAGING_API_VERSION 18
+#define USD_IMAGING_API_VERSION 19
 
 
 PXR_NAMESPACE_CLOSE_SCOPE

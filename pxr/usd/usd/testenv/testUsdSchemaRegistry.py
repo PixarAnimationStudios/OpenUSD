@@ -41,12 +41,22 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertTrue(primDef)
 
         self.assertEqual(set(primDef.ListMetadataFields()), 
-            set(["typeName", "testCustomMetadata", "hidden", "documentation"]))
+            set(["typeName", "testCustomMetadata", "testDictionaryMetadata",
+                 "hidden", "documentation"]))
         self.assertEqual(primDef.GetMetadata("typeName"), "MetadataTest")
         self.assertEqual(primDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
         self.assertEqual(primDef.GetMetadata("hidden"), True)
         self.assertEqual(primDef.GetMetadata("testCustomMetadata"), "garply")
+
+        # Dictionary metadata can be gotten by whole value as well as queried
+        # for individual keys in the metadata value.
+        self.assertEqual(primDef.GetMetadata("testDictionaryMetadata"), 
+            {"name" : "foo", "value" : 2})
+        self.assertEqual(primDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "name"), "foo")
+        self.assertEqual(primDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "value"), 2)
 
         self.assertEqual(primDef.GetDocumentation(),
                          "Testing documentation metadata")
@@ -54,77 +64,224 @@ class TestUsdSchemaRegistry(unittest.TestCase):
     def test_AttributeMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "MetadataTest")
+        self.assertTrue(primDef)
 
-        self.assertEqual(set(primDef.ListPropertyMetadataFields("testAttr")), 
+        # All data about an attribute can be accessed through both property API
+        # on the prim definition and API on the returned attribute defintion
+        # accessor. We test that both match up here.
+        attrDef = primDef.GetAttributeDefinition("testAttr")
+        self.assertTrue(attrDef)
+        self.assertEqual(attrDef.GetName(), "testAttr")
+        self.assertTrue(attrDef.IsAttribute())
+        self.assertFalse(attrDef.IsRelationship())
+
+        # Get spec type
+        self.assertEqual(attrDef.GetSpecType(), Sdf.SpecTypeAttribute)
+        self.assertEqual(primDef.GetSpecType("testAttr"), Sdf.SpecTypeAttribute)
+
+        # List metadata fields
+        self.assertEqual(set(attrDef.ListMetadataFields()), 
             set(["allowedTokens", "custom", "default", "displayGroup",
-                 "displayName", "documentation", "hidden",
-                 "testCustomMetadata", "typeName", "variability"]))
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "typeName"),
-                         "string")
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "allowedTokens"),
-                         Vt.TokenArray(["bar", "baz"]))
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "displayGroup"), 
-                         "Display Group")
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "displayName"), 
-                         "Display Name")
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "documentation"),
-                         "Testing documentation metadata")
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "hidden"), 
-                         True)
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "testCustomMetadata"), 
-                         "garply")
-        self.assertEqual(primDef.GetPropertyMetadata("testAttr", "default"), 
-                         "foo")
+                 "displayName", "documentation", "hidden", "testCustomMetadata",
+                 "testDictionaryMetadata", "typeName", "variability"]))
+        self.assertEqual(primDef.ListPropertyMetadataFields("testAttr"), 
+                         attrDef.ListMetadataFields())
 
+        # Verify that both the attrribute and prim defs return the same value
+        # for every metadata field on the attribute
+        for field in attrDef.ListMetadataFields():
+            self.assertEqual(attrDef.GetMetadata(field),
+                             primDef.GetPropertyMetadata("testAttr", field))
+
+        # Type name has special functions on the attribute def.
+        self.assertEqual(attrDef.GetMetadata("typeName"), "string")
+        self.assertEqual(attrDef.GetTypeName(), Sdf.ValueTypeNames.String)
+        self.assertEqual(attrDef.GetTypeNameToken(), "string")
+
+        # Variability has a special function on the attr def.
+        self.assertEqual(attrDef.GetMetadata("variability"), 
+                        Sdf.VariabilityVarying)
+        self.assertEqual(attrDef.GetVariability(), Sdf.VariabilityVarying)
+
+        # Fallback value has special functions on both the attribute and prim
+        # defs.
+        self.assertEqual(attrDef.GetMetadata("default"), "foo")
+        self.assertEqual(attrDef.GetFallbackValue(), "foo")
         self.assertEqual(primDef.GetAttributeFallbackValue("testAttr"), "foo")
+
+        # Documentation has special functions on both the attribute and prim
+        # defs.
+        self.assertEqual(attrDef.GetMetadata("documentation"),
+                         "Testing documentation metadata")
+        self.assertEqual(attrDef.GetDocumentation(),
+                         "Testing documentation metadata")
         self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
                          "Testing documentation metadata")
 
-        attrDef = primDef.GetSchemaAttributeSpec("testAttr")
-        self.assertTrue(attrDef)
+        # Dictionary metadata can be gotten by whole value as well as queried
+        # for individual keys in the metadata value.
+        self.assertEqual(attrDef.GetMetadata("testDictionaryMetadata"), 
+            {"name" : "bar", "value" : 3})
+        self.assertEqual(attrDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "name"), "bar")
+        self.assertEqual(attrDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "value"), 3)
+        # Can get the same dictionary value by key from the prim def via 
+        # GetPropertyMetadataByDictKey
+        self.assertEqual(primDef.GetPropertyMetadataByDictKey(
+            "testAttr", "testDictionaryMetadata", "name"), "bar")
+        self.assertEqual(primDef.GetPropertyMetadataByDictKey(
+            "testAttr", "testDictionaryMetadata", "value"), 3)
 
-        self.assertEqual(attrDef.GetInfo("allowedTokens"),
+        # The rest of the metadata without special accessor functions.
+        self.assertEqual(attrDef.GetMetadata("allowedTokens"),
                          Vt.TokenArray(["bar", "baz"]))
-        self.assertEqual(attrDef.GetInfo("displayGroup"), "Display Group")
-        self.assertEqual(attrDef.GetInfo("displayName"), "Display Name")
-        self.assertEqual(attrDef.GetInfo("documentation"),
-                         "Testing documentation metadata")
-        self.assertEqual(attrDef.GetInfo("hidden"), True)
-        self.assertEqual(attrDef.GetInfo("testCustomMetadata"), "garply")
+        self.assertEqual(attrDef.GetMetadata("displayGroup"), "Display Group")
+        self.assertEqual(attrDef.GetMetadata("displayName"), "Display Name")
+        self.assertEqual(attrDef.GetMetadata("hidden"), True)
+        self.assertEqual(attrDef.GetMetadata("testCustomMetadata"), "garply")
+
+        # Verify that we get the attribute as a property and it returns all the
+        # same metadata values.
+        propDef = primDef.GetPropertyDefinition("testAttr")
+        self.assertTrue(propDef)
+        self.assertEqual(propDef.GetName(), "testAttr")
+        self.assertTrue(propDef.IsAttribute())
+        self.assertFalse(propDef.IsRelationship())
+        for field in attrDef.ListMetadataFields():
+            self.assertEqual(attrDef.GetMetadata(field),
+                             propDef.GetMetadata(field))
 
     def test_RelationshipMetadata(self):
         primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
             "MetadataTest")
+        self.assertTrue(primDef)
 
-        self.assertEqual(set(primDef.ListPropertyMetadataFields("testRel")), 
-            set(["custom", "displayGroup", "displayName", "documentation",
-                 "hidden", "testCustomMetadata", "variability"]))
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayGroup"), 
-                         "Display Group")
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "displayName"), 
-                         "Display Name")
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "documentation"),
-                         "Testing documentation metadata")
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "hidden"), 
-                         True)
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "testCustomMetadata"), 
-                         "garply")
-        self.assertEqual(primDef.GetPropertyMetadata("testRel", "variability"), 
-                         Sdf.VariabilityUniform)
-
-        self.assertIsNone(primDef.GetAttributeFallbackValue("testRel"))
-        self.assertEqual(primDef.GetPropertyDocumentation("testRel"),
-                         "Testing documentation metadata")
-
-        relDef = primDef.GetSchemaRelationshipSpec("testRel")
+        # All data about an attribute can be accessed through both property API
+        # on the prim definition and API on the returned attribute defintion
+        # accessor. We test that both match up here.
+        relDef = primDef.GetRelationshipDefinition("testRel")
         self.assertTrue(relDef)
+        self.assertFalse(relDef.IsAttribute())
+        self.assertTrue(relDef.IsRelationship())
 
-        self.assertEqual(relDef.GetInfo("displayGroup"), "Display Group")
-        self.assertEqual(relDef.GetInfo("displayName"), "Display Name")
-        self.assertEqual(relDef.GetInfo("documentation"),
+        # Get spec type
+        self.assertEqual(relDef.GetSpecType(), Sdf.SpecTypeRelationship)
+        self.assertEqual(primDef.GetSpecType("testRel"), Sdf.SpecTypeRelationship)
+
+        # List metadata fields
+        self.assertEqual(set(relDef.ListMetadataFields()), 
+            set(["custom", "displayGroup", "displayName", "documentation",
+                 "hidden", "testCustomMetadata", "testDictionaryMetadata",
+                 "variability"]))
+        self.assertEqual(primDef.ListPropertyMetadataFields("testRel"), 
+                         relDef.ListMetadataFields())
+
+        # Verify that both the attrribute and prim defs return the same value
+        # for every metadata field on the attribute
+        for field in relDef.ListMetadataFields():
+            self.assertEqual(relDef.GetMetadata(field),
+                             primDef.GetPropertyMetadata("testRel", field))
+
+        # Variability has a special function on the rel def.
+        self.assertEqual(relDef.GetMetadata("variability"), 
+                         Sdf.VariabilityUniform)
+        self.assertEqual(relDef.GetVariability(), Sdf.VariabilityUniform)
+
+        # Documentation has special functions on both the attribute and prim
+        # defs.
+        self.assertEqual(relDef.GetMetadata("documentation"),
                          "Testing documentation metadata")
-        self.assertEqual(relDef.GetInfo("hidden"), True)
-        self.assertEqual(relDef.GetInfo("testCustomMetadata"), "garply")
+        self.assertEqual(relDef.GetDocumentation(),
+                         "Testing documentation metadata")
+        self.assertEqual(primDef.GetPropertyDocumentation("testAttr"),
+                         "Testing documentation metadata")
+
+        # Dictionary metadata can be gotten by whole value as well as queried
+        # for individual keys in the metadata value.
+        self.assertEqual(relDef.GetMetadata("testDictionaryMetadata"), 
+            {"name" : "baz", "value" : 5})
+        self.assertEqual(relDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "name"), "baz")
+        self.assertEqual(relDef.GetMetadataByDictKey(
+            "testDictionaryMetadata", "value"), 5)
+        # Can get the same dictionary value by key from the prim def via 
+        # GetPropertyMetadataByDictKey
+        self.assertEqual(primDef.GetPropertyMetadataByDictKey(
+            "testRel", "testDictionaryMetadata", "name"), "baz")
+        self.assertEqual(primDef.GetPropertyMetadataByDictKey(
+            "testRel", "testDictionaryMetadata", "value"), 5)
+
+        # The rest of the metadata without special accessor functions.
+        self.assertEqual(relDef.GetMetadata("displayGroup"), "Display Group")
+        self.assertEqual(relDef.GetMetadata("displayName"), "Display Name")
+        self.assertEqual(relDef.GetMetadata("hidden"), True)
+        self.assertEqual(relDef.GetMetadata("testCustomMetadata"), "garply")
+
+        # Verify that we get the attribute as a property and it returns all the
+        # same metadata values.
+        propDef = primDef.GetPropertyDefinition("testRel")
+        self.assertTrue(propDef)
+        self.assertEqual(propDef.GetName(), "testRel")
+        self.assertFalse(propDef.IsAttribute())
+        self.assertTrue(propDef.IsRelationship())
+        for field in relDef.ListMetadataFields():
+            self.assertEqual(relDef.GetMetadata(field),
+                             propDef.GetMetadata(field))
+
+    def test_InvalidProperties(self):
+        primDef = Usd.SchemaRegistry().FindConcretePrimDefinition(
+            "MetadataTest")
+        self.assertTrue(primDef)
+
+        def _VerifyInvalidDef(invalidDef, name):
+            # Invalid property definition will convert to false.
+            self.assertFalse(invalidDef)
+
+            # Querying IsAttribute and IsRelationship is allowed and will always
+            # return false.
+            self.assertFalse(invalidDef.IsAttribute())
+            self.assertFalse(invalidDef.IsRelationship())
+    
+            # Querying the name is okay as it doesn't depend on valid property
+            # data. The name will match the name of the requested property even
+            # if the property doesn't actually exist.
+            self.assertEqual(invalidDef.GetName(), name)
+
+            # All other data access is a RuntimeError
+            with self.assertRaises(RuntimeError):
+                invalidDef.GetSpecType()
+            with self.assertRaises(RuntimeError):
+                invalidDef.ListMetadataFields()
+            with self.assertRaises(RuntimeError):
+                invalidDef.GetVariability()
+            with self.assertRaises(RuntimeError):
+                invalidDef.GetMetadata("displayName")
+            # Note these methods only exist on Usd.PrimDefintion.Attribute but
+            # a runtime error still gets raised if invalidDef is not an 
+            # Attribute
+            with self.assertRaises(RuntimeError):
+                invalidDef.FallbackValue()
+            with self.assertRaises(RuntimeError):
+                invalidDef.TypeName()
+
+        # Verify invalid default constructed property definitions.
+        _VerifyInvalidDef(Usd.PrimDefinition.Property(), "")
+        _VerifyInvalidDef(Usd.PrimDefinition.Attribute(), "")
+        _VerifyInvalidDef(Usd.PrimDefinition.Relationship(), "")
+
+        # Verify invalid property definitions returned for properties that 
+        # don't exist in the prim definition.
+        _VerifyInvalidDef(primDef.GetPropertyDefinition("bogus"), "bogus")
+        _VerifyInvalidDef(primDef.GetAttributeDefinition("bogus"), "bogus")
+        _VerifyInvalidDef(primDef.GetRelationshipDefinition("bogus"), "bogus")
+
+        # Verify that trying to get an empty named schema property does not 
+        # return a valid property. We test this explicitly because, under the 
+        # hood, we store prim metadata fallbacks in the prim definition as the 
+        # empty name property and we don't want that implementation detail 
+        # creeping out into the public API.
+        _VerifyInvalidDef(primDef.GetPropertyDefinition(""), "")
 
     def test_GetUsdSchemaTypeName(self):
         abstractTest = Tf.Type.FindByName("TestUsdSchemaRegistryAbstractTest")
@@ -248,14 +405,14 @@ class TestUsdSchemaRegistry(unittest.TestCase):
         self.assertEqual(primDef.GetPropertyNames(), ['testAttr', 'testRel'])
 
         # Prim def has relationship/property spec for 'testRel'
-        self.assertTrue(primDef.GetSchemaPropertySpec('testRel'))
-        self.assertFalse(primDef.GetSchemaAttributeSpec('testRel'))
-        self.assertTrue(primDef.GetSchemaRelationshipSpec('testRel'))
+        self.assertTrue(primDef.GetPropertyDefinition('testRel'))
+        self.assertFalse(primDef.GetAttributeDefinition('testRel'))
+        self.assertTrue(primDef.GetRelationshipDefinition('testRel'))
 
         # Prim def has attribute/property spec for 'testAttr'.
-        self.assertTrue(primDef.GetSchemaPropertySpec('testAttr'))
-        self.assertTrue(primDef.GetSchemaAttributeSpec('testAttr'))
-        self.assertFalse(primDef.GetSchemaRelationshipSpec('testAttr'))
+        self.assertTrue(primDef.GetPropertyDefinition('testAttr'))
+        self.assertTrue(primDef.GetAttributeDefinition('testAttr'))
+        self.assertFalse(primDef.GetRelationshipDefinition('testAttr'))
 
         # Non-apply API schema. No prim definition
         self.assertFalse(Usd.SchemaRegistry().FindConcretePrimDefinition(
@@ -281,19 +438,19 @@ class TestUsdSchemaRegistry(unittest.TestCase):
              'collection:__INSTANCE_NAME__:includes'])
 
         # Prim def has relationship/property spec for 'excludes'
-        self.assertTrue(primDef.GetSchemaPropertySpec(
+        self.assertTrue(primDef.GetPropertyDefinition(
             'collection:__INSTANCE_NAME__:excludes'))
-        self.assertFalse(primDef.GetSchemaAttributeSpec(
+        self.assertFalse(primDef.GetAttributeDefinition(
             'collection:__INSTANCE_NAME__:excludes'))
-        self.assertTrue(primDef.GetSchemaRelationshipSpec(
+        self.assertTrue(primDef.GetRelationshipDefinition(
             'collection:__INSTANCE_NAME__:excludes'))
 
         # Prim def has attribute/property spec for 'expansionRule'.
-        self.assertTrue(primDef.GetSchemaPropertySpec(
+        self.assertTrue(primDef.GetPropertyDefinition(
             'collection:__INSTANCE_NAME__:expansionRule'))
-        self.assertTrue(primDef.GetSchemaAttributeSpec(
+        self.assertTrue(primDef.GetAttributeDefinition(
             'collection:__INSTANCE_NAME__:expansionRule'))
-        self.assertFalse(primDef.GetSchemaRelationshipSpec(
+        self.assertFalse(primDef.GetRelationshipDefinition(
             'collection:__INSTANCE_NAME__:expansionRule'))
 
         # API schema but not an applied schema. No prim definition
@@ -415,6 +572,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
             "documentation" : concretePrimDef.GetDocumentation(),
             "hidden" : True,
             "testCustomMetadata" : "garply",
+            "testDictionaryMetadata" : {"name" : "foo", "value" : 2},
             "specifier" : Sdf.SpecifierDef,
             "typeName" : "MetadataTest"
         }
@@ -429,6 +587,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "documentation" : "Testing documentation metadata",
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
+                "testDictionaryMetadata" : {"name" : "bar", "value" : 3},
                 "variability" : Sdf.VariabilityVarying
             },
             "testRel" : {
@@ -438,6 +597,7 @@ class TestUsdSchemaRegistry(unittest.TestCase):
                 "documentation" : "Testing documentation metadata",
                 "hidden" : True,
                 "testCustomMetadata" : "garply",
+                "testDictionaryMetadata" : {"name" : "baz", "value" : 5},
                 "variability" : Sdf.VariabilityUniform
             }
         }

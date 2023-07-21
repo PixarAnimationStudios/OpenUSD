@@ -7,9 +7,5 @@
 
 def Sphere "SphereWithFloatRadius" 
 { 
-    float radius = 10 
-    float radius.timeSamples = { 
-        1: 1, 
-        10: 10, 
-    }
+    double radius = 10 
 }

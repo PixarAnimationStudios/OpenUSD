@@ -96,7 +96,9 @@ def Scope "InstancedModelSkelBindings" (
     }
 }
 
-def SkelRoot "SkelBinding"
+def SkelRoot "SkelBinding"(
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
 {
     rel skel:animationSource = </Anim1>
 

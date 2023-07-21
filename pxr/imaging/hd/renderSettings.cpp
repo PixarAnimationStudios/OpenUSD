@@ -73,6 +73,7 @@ HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
     : HdBprim(id)
     , _active(false)
+    , _settingsVersion(1)
 {
 }
 
@@ -90,19 +91,25 @@ HdRenderSettings::GetNamespacedSettings() const
     return _namespacedSettings;
 }
 
+unsigned int
+HdRenderSettings::GetSettingsVersion() const
+ {
+    return _settingsVersion;
+}
+
 const HdRenderSettings::RenderProducts&
 HdRenderSettings::GetRenderProducts() const
 {
     return _products;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetIncludedPurposes() const
 {
     return _includedPurposes;
 }
 
-const TfTokenVector&
+const VtArray<TfToken>&
 HdRenderSettings::GetMaterialBindingPurposes() const
 {
     return _materialBindingPurposes;
@@ -135,6 +142,7 @@ HdRenderSettings::Sync(
             GetId(), HdRenderSettingsPrimTokens->namespacedSettings);
         if (vSettings.IsHolding<VtDictionary>()) {
             _namespacedSettings = vSettings.UncheckedGet<VtDictionary>();
+            _settingsVersion++;
         }
     }
 
@@ -151,8 +159,8 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->includedPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _includedPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _includedPurposes = vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 
@@ -160,8 +168,9 @@ HdRenderSettings::Sync(
 
         const VtValue vPurposes = sceneDelegate->Get(
             GetId(), HdRenderSettingsPrimTokens->materialBindingPurposes);
-        if (vPurposes.IsHolding<TfTokenVector>()) {
-            _materialBindingPurposes = vPurposes.UncheckedGet<TfTokenVector>();
+        if (vPurposes.IsHolding<VtArray<TfToken>>()) {
+            _materialBindingPurposes =
+                vPurposes.UncheckedGet<VtArray<TfToken>>();
         }
     }
 

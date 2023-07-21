@@ -9,7 +9,7 @@ Kitchen Set
 .. raw:: html
 
    <center>
-     <form method="get" action="https://graphics.pixar.com/usd/files/Kitchen_set.zip">
+     <form method="get" action="https://openusd.org/files/Kitchen_set.zip">
        <button type="submit">OK</button>
      </form>
    </center>

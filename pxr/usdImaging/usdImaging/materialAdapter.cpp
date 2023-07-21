@@ -88,17 +88,10 @@ UsdImagingMaterialAdapter::GetImagingSubprimData(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return HdOverlayContainerDataSource::New(
-            // provides only material
-            HdRetainedContainerDataSource::New(
-                HdPrimTypeTokens->material,
-                UsdImagingDataSourceMaterial::New(prim, stageGlobals)),
-
-            // provides primvars, etc
-            UsdImagingDataSourcePrim::New(
-                    prim.GetPath(),
-                    prim,
-                    stageGlobals));
+        return UsdImagingDataSourceMaterialPrim::New(
+            prim.GetPath(),
+            prim,
+            stageGlobals);
     }
 
     return nullptr;
@@ -108,30 +101,15 @@ HdDataSourceLocatorSet
 UsdImagingMaterialAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    HdDataSourceLocatorSet result =
-        UsdImagingPrimAdapter::InvalidateImagingSubprim(
-            prim, subprim, properties);
-
     if (subprim.IsEmpty()) {
-        UsdShadeMaterial material(prim);
-        if (material) {
-            // Public interface values changes
-            for (const TfToken &propertyName : properties) {
-                if (UsdShadeInput::IsInterfaceInputName(
-                        propertyName.GetString())) {
-                    // TODO, invalidate specifically connected node parameters.
-                    // FOR NOW: just dirty the whole material.
-
-                    result.insert(HdMaterialSchema::GetDefaultLocator());
-                    break;
-                }
-            }
-        }
+        return UsdImagingDataSourceMaterialPrim::Invalidate(
+            prim, subprim, properties, invalidationType);
     }
 
-    return result;
+    return HdDataSourceLocatorSet();
 }
 
 HdDataSourceLocatorSet
@@ -139,7 +117,8 @@ UsdImagingMaterialAdapter::InvalidateImagingSubprimFromDescendent(
         UsdPrim const& prim,
         UsdPrim const& descendentPrim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet result;
 
@@ -197,14 +176,20 @@ UsdImagingMaterialAdapter::Populate(
 
     // Also register dependencies on behalf of any descendent
     // UsdShadeShader prims, since they are consumed to
-    // create the material network.
-    for (UsdPrim const& child: prim.GetDescendants()) {
+    // create the material network. Note that if the material is an instance
+    // prim we want dependencies on the descendants inside the prototype...
+    UsdPrim ancestor = prim;
+    if (prim.IsInstance()) {
+        ancestor = prim.GetPrototype();
+        index->AddDependency(cachePath, ancestor);
+    }
+    for (UsdPrim const& child: ancestor.GetDescendants()) {
         if (child.IsA<UsdShadeShader>()) {
             index->AddDependency(cachePath, child);
         }
     }
 
-    return prim.GetPath();
+    return cachePath;
 }
 
 /* virtual */

@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/layerOffset.h"
 
-#include <boost/noncopyable.hpp>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -55,7 +54,9 @@ SDF_DECLARE_HANDLES(SdfLayer);
 /// We use TfRefPtr<SdfLayerTree> as handles to LayerTrees, as a simple way
 /// to pass them around as immutable trees without worrying about lifetime.
 ///
-class SdfLayerTree : public TfRefBase, public TfWeakBase, boost::noncopyable {
+class SdfLayerTree : public TfRefBase, public TfWeakBase {
+    SdfLayerTree(const SdfLayerTree&) = delete;
+    SdfLayerTree& operator=(const SdfLayerTree&) = delete;
 public:
     /// Create a new layer tree node.
     SDF_API

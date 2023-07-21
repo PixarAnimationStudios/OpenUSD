@@ -45,6 +45,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (isNiPrototype) \
     (specifier) \
     (piPropagatedPrototypes) \
+    (isLoaded) \
     (def) \
     (over) \
     ((class_, "class")) \
@@ -70,6 +71,8 @@ public:
     HdTokenDataSourceHandle GetSpecifier();
     USDIMAGING_API
     HdContainerDataSourceHandle GetPiPropagatedPrototypes();
+    USDIMAGING_API
+    HdBoolDataSourceHandle GetIsLoaded();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -84,7 +87,8 @@ public:
         const HdPathDataSourceHandle &niPrototypePath,
         const HdBoolDataSourceHandle &isNiPrototype,
         const HdTokenDataSourceHandle &specifier,
-        const HdContainerDataSourceHandle &piPropagatedPrototypes
+        const HdContainerDataSourceHandle &piPropagatedPrototypes,
+        const HdBoolDataSourceHandle &isLoaded
     );
 
     /// \class UsdImagingUsdPrimInfoSchema::Builder
@@ -108,6 +112,9 @@ public:
         USDIMAGING_API
         Builder &SetPiPropagatedPrototypes(
             const HdContainerDataSourceHandle &piPropagatedPrototypes);
+        USDIMAGING_API
+        Builder &SetIsLoaded(
+            const HdBoolDataSourceHandle &isLoaded);
 
         /// Returns a container data source containing the members set thus far.
         USDIMAGING_API
@@ -118,6 +125,7 @@ public:
         HdBoolDataSourceHandle _isNiPrototype;
         HdTokenDataSourceHandle _specifier;
         HdContainerDataSourceHandle _piPropagatedPrototypes;
+        HdBoolDataSourceHandle _isLoaded;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -128,6 +136,11 @@ public:
     USDIMAGING_API
     static UsdImagingUsdPrimInfoSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.

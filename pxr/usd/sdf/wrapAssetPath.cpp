@@ -95,6 +95,7 @@ void wrapAssetPath()
     typedef SdfAssetPath This;
 
     class_<This>("AssetPath", init<>())
+        .def(init<const This&>())
         .def(init<const std::string &>())
         .def(init<const std::string &, const std::string &>())
 
@@ -104,6 +105,10 @@ void wrapAssetPath()
 
         .def( self == self )
         .def( self != self )
+        .def( self < self )
+        .def( self > self )
+        .def( self <= self )
+        .def( self >= self)
         .def("__str__", _Str)
 
         .add_property("path", GetAssetPath)

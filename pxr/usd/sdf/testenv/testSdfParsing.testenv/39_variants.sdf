@@ -182,6 +182,7 @@ over MfScope "VariantNameCheck" (
         string i = ".5tartsWithDigitAndDot"
         string j = "7he|W-o_r|k-5_"
         string k = ".7he|W-o_r|k-5_"
+        string var_expr = "`'this_is_a_${VARIABLE}_expression'`"
     }
 )
 {

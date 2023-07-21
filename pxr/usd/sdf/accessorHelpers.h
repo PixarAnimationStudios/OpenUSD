@@ -31,6 +31,9 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
 
+#include <boost/call_traits.hpp>
+#include <type_traits>
+
 // This file defines macros intended to reduce the amount of boilerplate code
 // associated with adding new metadata to SdfSpec subclasses.  There's still a
 // lot of files to touch, but these at least reduce the copy/paste/edit load.
@@ -203,7 +206,7 @@ SDF_DEFINE_DICTIONARY_SET(setName_, key_)
 // spec. These templates capture those differences.
 
 template <class T,
-          bool IsForSpec = boost::is_base_of<SdfSpec, T>::value>
+          bool IsForSpec = std::is_base_of<SdfSpec, T>::value>
 struct Sdf_AccessorHelpers;
 
 template <class T>

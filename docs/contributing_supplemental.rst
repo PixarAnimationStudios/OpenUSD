@@ -2,7 +2,7 @@
 Supplemental Terms
 ===================
 
-By and in consideration for using a Pixar site (e.g., Pixar's USD-proposals
+By and in consideration for using a Pixar site (e.g., Pixar's OpenUSD-proposals
 site), providing Submissions to Pixar, or by clicking a box that states that
 you accept or agree to these terms, you signify your agreement to these
 Supplemental Terms.

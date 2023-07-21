@@ -248,14 +248,14 @@ HdSt_MeshTopology::GetQuadrangulateComputation(
         this, source, quadInfo, id);
 }
 
-HdComputationSharedPtr
+HdStComputationSharedPtr
 HdSt_MeshTopology::GetQuadrangulateComputationGPU(
     TfToken const &name, HdType dataType, SdfPath const &id)
 {
     // check if the quad table is already computed as all-quads.
     if (_quadInfo && _quadInfo->IsAllQuads()) {
         // no need of quadrangulation.
-        return HdComputationSharedPtr();
+        return nullptr;
     }
     return std::make_shared<HdSt_QuadrangulateComputationGPU>(
         this, name, dataType, id);
@@ -489,7 +489,7 @@ HdSt_MeshTopology::GetOsdRefineComputation(HdBufferSourceSharedPtr const &source
                                                     interpolation);
 }
 
-HdComputationSharedPtr
+HdStComputationSharedPtr
 HdSt_MeshTopology::GetOsdRefineComputationGPU(
     TfToken const &name,
     HdType dataType,

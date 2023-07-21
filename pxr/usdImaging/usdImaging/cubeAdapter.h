@@ -40,15 +40,16 @@ class UsdGeomCube;
 ///
 /// Delegate support for UsdGeomCube.
 ///
-class UsdImagingCubeAdapter : public UsdImagingGprimAdapter {
+class UsdImagingCubeAdapter : public UsdImagingGprimAdapter
+{
 public:
-    typedef UsdImagingGprimAdapter BaseAdapter;
+    using BaseAdapter = UsdImagingGprimAdapter;
 
     UsdImagingCubeAdapter()
         : UsdImagingGprimAdapter()
     {}
     USDIMAGING_API
-    virtual ~UsdImagingCubeAdapter();
+    ~UsdImagingCubeAdapter() override;
 
     // ---------------------------------------------------------------------- //
     /// \name Scene Index Support
@@ -72,7 +73,8 @@ public:
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
-            TfTokenVector const& properties) override;
+            TfTokenVector const& properties,
+            UsdImagingPropertyInvalidationType invalidationType) override;
 
     // ---------------------------------------------------------------------- //
     /// \name Initialization

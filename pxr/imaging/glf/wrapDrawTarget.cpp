@@ -73,5 +73,3 @@ void wrapDrawTarget()
         
         ;
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(GlfDrawTarget)

@@ -67,6 +67,27 @@ assert len(dynamicLayers) == 1
 # Export the new dynamic layer as usda for baseline comparison.
 dynamicLayers[0].Export("newDynamicContents.usda")
 
+# Change all the parametes back to the original values but do it by creating
+# attributes for each parameter and setting default values. Default values from
+# attributes will take precedence over the parameters in the metadata 
+# dictionary.
+p = stage.GetPrimAtPath('/Root')
+p.CreateAttribute('geomType', Sdf.ValueTypeNames.Token).Set("Cube")
+p.CreateAttribute('distance', Sdf.ValueTypeNames.Double).Set(6.0)
+p.CreateAttribute('numFrames', Sdf.ValueTypeNames.Int).Set(20)
+p.CreateAttribute('perSide', Sdf.ValueTypeNames.Int).Set(4)
+p.CreateAttribute('framesPerCycle', Sdf.ValueTypeNames.Int).Set(16)
+p.CreateAttribute('moveScale', Sdf.ValueTypeNames.Double).Set(1.5)
+
+# Find the dynamic layer again. Note that this layer has a different identity
+# as the file format arguments have changed.
+dynamicLayers = list(filter(lambda l: l.GetFileFormat() == dynamicFormat, 
+                            stage.GetUsedLayers()))
+assert len(dynamicLayers) == 1
+
+# Export the new dynamic layer as usda for baseline comparison.
+dynamicLayers[0].Export("dynamicContentsFromAttrs.usda")
+
 # Verify mute and unmute behavior on the dynamic layer itself. A muted layer
 # is empty (except the pseudoroot)
 premuteLayerString = dynamicLayers[0].ExportToString()

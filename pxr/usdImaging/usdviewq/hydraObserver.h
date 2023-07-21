@@ -164,6 +164,12 @@ private:
                 const HdSceneIndexBase &sender,
                 const DirtiedPrimEntries &entries) override;
 
+        USDVIEWQ_API
+        void PrimsRenamed(
+                const HdSceneIndexBase &sender,
+                const RenamedPrimEntries &entries) override;
+
+
         NoticeEntryVector notices;
     };
 

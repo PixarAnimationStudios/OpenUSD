@@ -52,7 +52,7 @@ using HdBufferSpecVector = std::vector<struct HdBufferSpec>;
 using HdSt_MaterialNetworkShaderSharedPtr =
         std::shared_ptr<class HdSt_MaterialNetworkShader>;
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
 
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<HdStResourceRegistry>;
@@ -151,7 +151,7 @@ bool HdStIsValidBAR(HdBufferArrayRangeSharedPtr const& range);
 HDST_API
 bool HdStCanSkipBARAllocationOrUpdate(
     HdBufferSourceSharedPtrVector const& sources,
-    HdStComputationSharedPtrVector const& computations,
+    HdStComputationComputeQueuePairVector const& computations,
     HdBufferArrayRangeSharedPtr const& curRange,
     HdDirtyBits dirtyBits);
 
@@ -221,7 +221,7 @@ void HdStPopulateConstantPrimvars(
     HdRprimSharedData *sharedData,
     HdSceneDelegate *delegate,
     HdRenderParam *renderParam,
-    HdDrawItem *drawItem,
+    HdStDrawItem *drawItem,
     HdDirtyBits *dirtyBits,
     HdPrimvarDescriptorVector const& constantPrimvars,
     bool *hasMirroredTransform = nullptr);
@@ -310,11 +310,11 @@ HDST_API
 uint64_t HdStComputeSharedPrimvarId(
     uint64_t baseId,
     HdBufferSourceSharedPtrVector const &sources,
-    HdStComputationSharedPtrVector const &computations);
+    HdStComputationComputeQueuePairVector const &computations);
 
 HDST_API
 void HdStGetBufferSpecsFromCompuations(
-    HdStComputationSharedPtrVector const& computations,
+    HdStComputationComputeQueuePairVector const& computations,
     HdBufferSpecVector *bufferSpecs);
 
 PXR_NAMESPACE_CLOSE_SCOPE

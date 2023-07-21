@@ -122,12 +122,6 @@ PXR_NAMESPACE_CLOSE_SCOPE
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (outputName)
-    (outputs)
-);
-
 static UsdAttribute
 _GetOrCreateSourceAttr(UsdShadeConnectionSourceInfo const &sourceInfo,
                        SdfValueTypeName fallbackTypeName)
