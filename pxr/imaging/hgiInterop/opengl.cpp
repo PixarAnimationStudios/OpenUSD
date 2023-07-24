@@ -110,6 +110,7 @@ HgiInteropOpenGL::HgiInteropOpenGL()
     , _fsDepth(0)
     , _prgNoDepth(0)
     , _prgDepth(0)
+    , _vao(0)
     , _vertexBuffer(0)
 {
     _vs = _CompileShader(_vertexFullscreen, GL_VERTEX_SHADER);
@@ -117,6 +118,7 @@ HgiInteropOpenGL::HgiInteropOpenGL()
     _fsDepth = _CompileShader(_fragmentDepthFullscreen, GL_FRAGMENT_SHADER);
     _prgNoDepth = _LinkProgram(_vs, _fsNoDepth);
     _prgDepth = _LinkProgram(_vs, _fsDepth);
+    glCreateVertexArrays(1, &_vao);
     _vertexBuffer = _CreateVertexBuffer();
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }
@@ -129,6 +131,7 @@ HgiInteropOpenGL::~HgiInteropOpenGL()
     glDeleteProgram(_prgNoDepth);
     glDeleteProgram(_prgDepth);
     glDeleteBuffers(1, &_vertexBuffer);
+    glDeleteVertexArrays(1, &_vao);
     TF_VERIFY(glGetError() == GL_NO_ERROR);
 }
 
@@ -202,10 +205,13 @@ HgiInteropOpenGL::CompositeToInterop(
     }
 
     // Get the current array buffer binding state
+    GLint restoreVao = 0;
+    glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &restoreVao);
     GLint restoreArrayBuffer = 0;
     glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &restoreArrayBuffer);
 
     // Vertex attributes
+    glBindVertexArray(_vao);
     const GLint locPosition = glGetAttribLocation(prg, "position");
     glBindBuffer(GL_ARRAY_BUFFER, _vertexBuffer);
     glVertexAttribPointer(locPosition, 4, GL_FLOAT, GL_FALSE,
@@ -271,6 +277,7 @@ HgiInteropOpenGL::CompositeToInterop(
     glDisableVertexAttribArray(locPosition);
     glDisableVertexAttribArray(locUv);
     glBindBuffer(GL_ARRAY_BUFFER, restoreArrayBuffer);
+    glBindVertexArray(restoreVao);
     
     if (!blendEnabled) {
         glDisable(GL_BLEND);

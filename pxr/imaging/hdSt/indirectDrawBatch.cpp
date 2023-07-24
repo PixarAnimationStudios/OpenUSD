@@ -109,11 +109,17 @@ HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     , _allowGpuFrustumCulling(allowGpuFrustumCulling)
     , _instanceCountOffset(0)
     , _cullInstanceCountOffset(0)
+    , _vao(0)
 {
     _Init(drawItemInstance);
 }
 
-HdSt_IndirectDrawBatch::~HdSt_IndirectDrawBatch() = default;
+HdSt_IndirectDrawBatch::~HdSt_IndirectDrawBatch()
+{
+    if (_vao) {
+        glDeleteVertexArrays(1, &_vao);
+    }
+}
 
 /*virtual*/
 void
@@ -1146,6 +1152,14 @@ HdSt_IndirectDrawBatch::_ExecuteDraw(
                                state.instancePrimvarBars);
     }
 
+    // OpenGL core profile requries a VAO for binding buffers.
+    if (capabilities->GetCoreProfile()) {
+        if (!_vao) {
+            glCreateVertexArrays(1, &_vao);
+        }
+        glBindVertexArray(_vao);
+    }
+
     state.BindResourcesForDrawing(renderPassState, *capabilities);
 
     HdSt_GeometricShaderSharedPtr geometricShader = state.geometricShader;
@@ -1374,6 +1388,15 @@ HdSt_IndirectDrawBatch::_ExecuteFrustumCull(
             cullingProgram.GetGeometricShader());
 
     Hgi * hgi = resourceRegistry->GetHgi();
+    HgiCapabilities const *capabilities = hgi->GetCapabilities();
+
+    // OpenGL core profile requries a VAO for binding buffers.
+    if (capabilities->GetCoreProfile()) {
+        if (!_vao) {
+            glCreateVertexArrays(1, &_vao);
+        }
+        glBindVertexArray(_vao);
+    }
 
     HgiGraphicsPipelineSharedPtr const & pso =
         _GetCullPipeline(resourceRegistry,
