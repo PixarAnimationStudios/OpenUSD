@@ -26,6 +26,7 @@
 #include "pxr/imaging/hgiGL/scopedStateHolder.h"
 #include "pxr/imaging/hgiGL/conversions.h"
 #include "pxr/imaging/hgiGL/diagnostic.h"
+#include "pxr/imaging/hgiGL/hgi.h"
 
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -33,8 +34,10 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
-    : _restoreRenderBuffer(0)
+HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder(
+    HgiCapabilities const& capabilities)
+    : _coreProfile(capabilities.GetCoreProfile())
+    , _restoreRenderBuffer(0)
     , _restoreVao(0)
     , _restoreDepthTest(false)
     , _restoreDepthWriteMask(false)
@@ -115,7 +118,9 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     glGetBooleanv(
         GL_SAMPLE_ALPHA_TO_ONE,
         (GLboolean*)&_restoreSampleAlphaToOne);
-    glGetFloatv(GL_LINE_WIDTH, &_lineWidth);
+    if (!_coreProfile) {
+        glGetFloatv(GL_LINE_WIDTH, &_lineWidth);
+    }
     glGetBooleanv(GL_CULL_FACE, (GLboolean*)&_cullFace);
     glGetIntegerv(GL_CULL_FACE_MODE, &_cullMode);
     glGetIntegerv(GL_FRONT_FACE, &_frontFace);
@@ -139,7 +144,9 @@ HgiGL_ScopedStateHolder::HgiGL_ScopedStateHolder()
     }
 
     glGetBooleanv(GL_MULTISAMPLE, (GLboolean*)&_restoreMultiSample);
-    glGetBooleanv(GL_POINT_SMOOTH, (GLboolean*)&_restorePointSmooth);
+    if (!_coreProfile) {
+        glGetBooleanv(GL_POINT_SMOOTH, (GLboolean*)&_restorePointSmooth);
+    }
 
     HGIGL_POST_PENDING_GL_ERRORS();
     #if defined(GL_KHR_debug)
@@ -235,7 +242,9 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
                _restoreViewport[2], _restoreViewport[3]);
     glBindVertexArray(_restoreVao);
     glBindRenderbuffer(GL_RENDERBUFFER, _restoreRenderBuffer);
-    glLineWidth(_lineWidth);
+    if (!_coreProfile) {
+        glLineWidth(_lineWidth);
+    }
     if (_cullFace) {
         glEnable(GL_CULL_FACE);
     } else {
@@ -285,10 +294,12 @@ HgiGL_ScopedStateHolder::~HgiGL_ScopedStateHolder()
         glDisable(GL_MULTISAMPLE);
     }
 
-    if (_restorePointSmooth) {
-        glEnable(GL_POINT_SMOOTH);
-    } else {
-        glDisable(GL_POINT_SMOOTH);
+    if (!_coreProfile) {
+        if (_restorePointSmooth) {
+            glEnable(GL_POINT_SMOOTH);
+        } else {
+            glDisable(GL_POINT_SMOOTH);
+        }
     }
 
     static const GLuint samplers[8] = {0};

@@ -769,7 +769,9 @@ HdStRenderPassState::Bind(HgiCapabilities const &hgiCapabilities)
         // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
         // circles instead of square.
         // XXX Switch points rendering to emit quad with FS that draws circle.
-        glEnable(GL_POINT_SMOOTH);
+        if (!hgiCapabilities.GetCoreProfile()) {
+            glEnable(GL_POINT_SMOOTH);
+        }
     }
 }
 
@@ -813,7 +815,9 @@ HdStRenderPassState::Unbind(HgiCapabilities const &hgiCapabilities)
     }
 
     glEnable(GL_MULTISAMPLE);
-    glDisable(GL_POINT_SMOOTH);
+    if (!hgiCapabilities.GetCoreProfile()) {
+        glDisable(GL_POINT_SMOOTH);
+    }
 }
 
 void

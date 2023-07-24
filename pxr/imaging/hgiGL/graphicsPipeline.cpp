@@ -114,6 +114,8 @@ HgiGLGraphicsPipeline::BindPipeline()
         glBindVertexArray(_vao);
     }
 
+    const bool coreProfile = _hgi->GetCapabilities()->GetCoreProfile();
+
     //
     // Depth Stencil State
     //
@@ -178,7 +180,9 @@ HgiGLGraphicsPipeline::BindPipeline()
         // If not using GL_MULTISAMPLE, use GL_POINT_SMOOTH to render points as 
         // circles instead of square.
         // XXX Switch points rendering to emit quad with FS that draws circle.
-        glEnable(GL_POINT_SMOOTH);
+        if (!coreProfile) {
+            glEnable(GL_POINT_SMOOTH);
+        }
     }
     if (_descriptor.multiSampleState.alphaToCoverageEnable) {
         glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
@@ -213,7 +217,7 @@ HgiGLGraphicsPipeline::BindPipeline()
         glFrontFace(GL_CCW);
     }
 
-    if (_descriptor.rasterizationState.lineWidth != 1.0f) {
+    if (!coreProfile && _descriptor.rasterizationState.lineWidth != 1.0f) {
         glLineWidth(_descriptor.rasterizationState.lineWidth);
     }
 

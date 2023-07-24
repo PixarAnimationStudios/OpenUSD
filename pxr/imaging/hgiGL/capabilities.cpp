@@ -57,6 +57,7 @@ static const int _DefaultMaxClipDistances             = 8;
 HgiGLCapabilities::HgiGLCapabilities()
     : _glVersion(0)
     , _glslVersion(_DefaultGLSLVersion)
+    , _coreProfile(false)
 {
     _LoadCapabilities();
 }
@@ -130,6 +131,11 @@ HgiGLCapabilities::_LoadCapabilities()
         glGetIntegerv(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT,
                       &uniformBufferOffsetAlignment);
         _uniformBufferOffsetAlignment = uniformBufferOffsetAlignment;
+    }
+    if (_glVersion >= 320) {
+        GLint profileMask = 0;
+        glGetIntegerv(GL_CONTEXT_PROFILE_MASK, &profileMask);
+        _coreProfile = (profileMask & GL_CONTEXT_CORE_PROFILE_BIT);
     }
     if (_glVersion >= 430) {
         GLint maxShaderStorageBlockSize = 0;
@@ -257,6 +263,11 @@ HgiGLCapabilities::GetAPIVersion() const {
 int
 HgiGLCapabilities::GetShaderVersion() const {
     return _glslVersion;
+}
+
+bool
+HgiGLCapabilities::GetCoreProfile() const {
+    return _coreProfile;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

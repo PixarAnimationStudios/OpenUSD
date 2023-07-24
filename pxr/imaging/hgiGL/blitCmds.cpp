@@ -136,7 +136,7 @@ HgiGLBlitCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
     // Capture OpenGL state before executing the 'ops' and restore it when this
     // function ends. We do this defensively because parts of our pipeline may
     // not set and restore all relevant gl state.
-    HgiGL_ScopedStateHolder openglStateGuard;
+    HgiGL_ScopedStateHolder openglStateGuard(*hgi->GetCapabilities());
 
     HgiGL* hgiGL = static_cast<HgiGL*>(hgi);
     HgiGLDevice* device = hgiGL->GetPrimaryDevice();

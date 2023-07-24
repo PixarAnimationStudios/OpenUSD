@@ -52,6 +52,9 @@ public:
     HGIGL_API
     int GetShaderVersion() const override;
 
+    HGIGL_API
+    bool GetCoreProfile() const override;
+
 private:
     void _LoadCapabilities();
 
@@ -60,6 +63,9 @@ private:
     
     // GLSL version 
     int _glslVersion; // 400, 410, ...
+
+    // Core Profile
+    bool _coreProfile;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
