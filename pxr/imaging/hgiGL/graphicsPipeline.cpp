@@ -42,7 +42,12 @@ HgiGLGraphicsPipeline::HgiGLGraphicsPipeline(
 {
 }
 
-HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline() = default;
+HgiGLGraphicsPipeline::~HgiGLGraphicsPipeline()
+{
+    if (_vao) {
+        glDeleteVertexArrays(1, &_vao);
+    }
+}
 
 void
 HgiGLGraphicsPipeline::BindPipeline()
@@ -50,6 +55,7 @@ HgiGLGraphicsPipeline::BindPipeline()
     if (_vao) {
         glBindVertexArray(0);
         glDeleteVertexArrays(1, &_vao);
+        _vao = 0;
     }
 
     if (!_descriptor.vertexBuffers.empty()) {
