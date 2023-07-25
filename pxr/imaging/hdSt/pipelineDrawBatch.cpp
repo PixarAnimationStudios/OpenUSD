@@ -804,18 +804,12 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoor
                 currentOffset += 2;
                 localOffset += 2;
             }
-            /*
-            for (int k = 0; k < m.remappedIndices.size(); k++) {
-                flattenInto.push_back(m.remappedIndices[k]);
-                currentOffset += 2;
-                localOffset += 2;
-            }
-             */
-            for (int k = 0; k < m.remappedIndices.size()/3; k+= 3) {
+            
+            for (int k = 0; k/3 < m.remappedIndices.size()/3; k+= 3) {
                 flattenInto.push_back(m.remappedIndices[k]);
                 flattenInto.push_back(m.remappedIndices[k+1]);
                 flattenInto.push_back(m.remappedIndices[k+2]);
-                flattenInto.push_back(m.remappedPrimIDs[k]);
+                flattenInto.push_back(m.remappedPrimIDs[k/3]);
                 currentOffset += 4;
                 localOffset += 4;
             }
