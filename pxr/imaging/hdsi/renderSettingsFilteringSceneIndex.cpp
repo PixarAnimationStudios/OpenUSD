@@ -47,9 +47,8 @@ namespace
 static const SdfPath s_renderScope("/Render");
 static const SdfPath s_fallbackPath("/Render/_FallbackSettings");
 
-// Builds and returns a data source to invalidate the 'active' locator on
-// the 'renderSettings' container when the 'activeRenderSettingsPrim' locator
-// on the 'sceneGlobals' container is dirtied.
+// Builds and returns a data source to invalidate the renderSettings.active
+// locator when the sceneGlobals.activeRenderSettingsPrim locator is dirtied.
 //
 HdContainerDataSourceHandle
 _GetDependenciesDataSource(
@@ -71,21 +70,23 @@ _GetDependenciesDataSource(
             .Build()
         );
     
-    if (HdContainerDataSourceHandle c = HdContainerDataSource::Cast(
-            existingDependenciesDs)) {
-        return HdOverlayContainerDataSource::New(c, renderSettingsDepDS);
-    }
-
-    return renderSettingsDepDS;
+    return HdOverlayContainerDataSource::OverlayedContainerDataSources(
+                HdContainerDataSource::Cast(existingDependenciesDs),
+                renderSettingsDepDS);
 }
 
-// Build and return a container with only the names that begin with the requested prefixes.
+// Build and return a container with only the names that begin with the
+// requested prefixes.
 //
 HdContainerDataSourceHandle
 _GetFilteredNamespacedSettings(
     const HdContainerDataSourceHandle &c,
     const VtArray<TfToken> &prefixes)
 {
+    if (!c) {
+        return HdContainerDataSourceHandle();
+    }
+
     TfTokenVector names = c->GetNames();
     names.erase(
         std::remove_if(names.begin(), names.end(),
@@ -153,11 +154,11 @@ public:
 
         HdDataSourceBaseHandle result = _input->Get(name);
 
-        if (name == HdRenderSettingsSchemaTokens->namespacedSettings) {
-            if (!_namespacePrefixes.empty()) {
-                return _GetFilteredNamespacedSettings(
-                    HdContainerDataSource::Cast(result), _namespacePrefixes);
-            }
+        if (name == HdRenderSettingsSchemaTokens->namespacedSettings &&
+            !_namespacePrefixes.empty()) {
+
+            return _GetFilteredNamespacedSettings(
+                HdContainerDataSource::Cast(result), _namespacePrefixes);
         }
 
         return result;
