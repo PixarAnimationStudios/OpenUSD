@@ -188,7 +188,7 @@ shader StandardSurfaceParameters
         [[ string widget = "null" ]],
     
     // Fuzz outputs
-    output float fuzzGainOut = 1.0
+    output float fuzzGainOut = 0.0
         [[ string widget = "null" ]],
     output color fuzzColorOut = color(1.0,1.0,1.0)
         [[ string widget = "null" ]],
