@@ -38,8 +38,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/iterator_adaptors.hpp>
-
 #include <algorithm>
 #include <atomic>
 #include <cstddef>
