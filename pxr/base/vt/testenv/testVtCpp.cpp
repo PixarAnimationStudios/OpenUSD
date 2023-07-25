@@ -1864,6 +1864,16 @@ testKnownValueTypeIndex()
     TF_AXIOM(!VtIsKnownValueType<TypeNotKnownToVt>());
 }
 
+static void testVtCheapToCopy() {
+    static_assert(VtValueTypeHasCheapCopy<float>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<int>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<GfVec3d>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<TfToken>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<std::string>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<float>>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<TfToken>>::value, "");
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1884,6 +1894,7 @@ int main(int argc, char *argv[])
 
     testVisitValue();
     testKnownValueTypeIndex();
+    testVtCheapToCopy();
 
     printf("Test SUCCEEDED\n");
 
