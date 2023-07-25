@@ -206,7 +206,7 @@ public:
     // Provides external access to resources used to set parameters for
     // scene options and the active integrator from the render settings map
     // (the latter is used by the ParamsSetter prim).
-    RtParamList &GetOptions() { return _legacyOptions; }
+    RtParamList &GetLegacyOptions() { return _legacyOptions; }
 
     HdPrman_CameraContext &GetCameraContext() { return _cameraContext; }
 
@@ -391,22 +391,6 @@ private:
     // Riley instance.
     riley::Riley *_riley;
 
-    riley::ShadingNode _ComputeIntegratorNode(
-        HdRenderDelegate * renderDelegate,
-        const HdPrmanCamera * cam);
-
-    riley::ShadingNode _ComputeQuickIntegratorNode(
-        HdRenderDelegate * renderDelegate,
-        const HdPrmanCamera * cam);
-
-    void _RenderThreadCallback();
-
-    void _CreateRileyDisplay(
-        const RtUString& productName, const RtUString& productType,
-        HdPrman_RenderViewDesc& renderViewDesc,
-        const std::vector<size_t>& renderOutputIndices,
-        RtParamList& displayParams, bool isXpu);
-
     std::unique_ptr<class HdRenderThread> _renderThread;
     std::unique_ptr<HdPrmanFramebuffer> _framebuffer;
 
@@ -455,9 +439,18 @@ private:
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
 
+    // Flag to indicate whether Riley scene options were set.
+    bool _initRileyOptions;
+
+    // Environment and fallback scene options.
+    RtParamList _envOptions;
+    RtParamList _fallbackOptions;
+
     /// ------------------------------------------------------------------------
     // Render settings prim driven state
     //
+
+    RtParamList _renderSettingsPrimOptions;
 
     // Render terminals
     SdfPath _renderSettingsIntegratorPath;

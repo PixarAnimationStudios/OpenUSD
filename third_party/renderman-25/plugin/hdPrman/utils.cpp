@@ -728,7 +728,10 @@ GetRileyOptionsFromEnvironment()
     const bool disableJitter = TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
     options.SetInteger(RixStr.k_hider_jitter, !disableJitter);
 
-    // XXX Missing HD_PRMAN_MAX_SAMPLES. 
+    if (ArchHasEnv("HD_PRMAN_MAX_SAMPLES")) {
+        const int maxSamples = TfGetenvInt("HD_PRMAN_MAX_SAMPLES", 64);
+        options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+    }
 
     // Searchpaths (TEXTUREPATH, etc)
     _UpdateSearchPathsFromEnvironment(options);

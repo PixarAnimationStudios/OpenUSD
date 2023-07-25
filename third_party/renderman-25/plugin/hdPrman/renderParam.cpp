@@ -99,6 +99,8 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_OSL_VERBOSE, 0,
                       "Override osl verbose in HdPrman");
 TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
                       "Disable hider jitter");
+TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
+                      "Defer first SetOptions call to render settings prim sync.");
 
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
@@ -1591,7 +1593,7 @@ void
 HdPrman_RenderParam::_DestroyRiley()
 {
     if (_mgr) {
-        if (_riley) {
+        if(_riley) {
             // Riley/RIS crashes if SetOptions hasn't been called prior to
             // destroying the riley instance.
             if (!_initRileyOptions) {
@@ -1855,33 +1857,17 @@ HdPrman_RenderParam::IsValid() const
 void 
 HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 {
-    //////////////////////////////////////////////////////////////////////// 
-    //
-    // Riley setup
-    //
+    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
+    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
+    // Initialize legacy options from the render settings map.
+    UpdateLegacyOptions();
+    
+    // Force initialization of Riley scene options.
+    // (see related comments in SetRileyOptions)
+    if (!HdRenderIndex::IsSceneIndexEmulationEnabled() ||
+        !TfGetEnvSetting(HD_PRMAN_DEFER_SET_OPTIONS))
     {
-        // Initialize scene options by composing opinions with the
-        // following precedence:
-        // fallback < legacy settings map < environment.
-        RtParamList &options = GetOptions();
-
-        options = HdPrman_Utils::GetDefaultRileyOptions();
-        SetOptionsFromRenderSettingsMap(
-            static_cast<HdPrmanRenderDelegate*>(renderDelegate)
-                ->GetRenderSettingsMap(), options);
-        options.Update(HdPrman_Utils::GetRileyOptionsFromEnvironment());
-        
-        RtParamList prunedOptions =
-            HdPrman_Utils::PruneDeprecatedOptions(options);
-        _riley->SetOptions(prunedOptions);
-
-        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
-            "Setting options from legacy settings map on riley initialization:"
-            "%s\n",
-            HdPrmanDebugUtil::RtParamListToString(prunedOptions).c_str());
-
-        // Safe to create riley objects since SetOptions has been called.
-        _CreateInternalPrims();
+        SetRileyOptions();
     }
         
     // Set the camera path before the first sync so that
@@ -2001,13 +1987,89 @@ void
 HdPrman_RenderParam::_CreateInternalPrims()
 {
     // See comment in SetRileyOptions on when this function needs to be called.
-    GetCameraContext().Begin(AcquireRiley());
+    GetCameraContext().CreateRileyCamera(AcquireRiley());
 
     _CreateFallbackMaterials();
 
     _CreateIntegrator(_renderDelegate);
     _CreateQuickIntegrator(_renderDelegate);
     _activeIntegratorId = GetIntegratorId();
+}
+
+static RtParamList
+_Compose(
+    RtParamList const &a,
+    RtParamList const &b,
+    RtParamList const &c,
+    RtParamList const &d)
+{
+    return
+        HdPrman_Utils::Compose(
+            a, HdPrman_Utils::Compose(b, HdPrman_Utils::Compose(c,d)));
+}
+
+void
+HdPrman_RenderParam::SetRenderSettingsPrimOptions(
+    RtParamList const &params)
+{
+    _renderSettingsPrimOptions = params;
+}
+
+void
+HdPrman_RenderParam::SetRileyOptions()
+{
+    // There are a couple of RIS/Riley limitations to call out:
+    // 1. Current Riley implementations require `SetOptions()` to be the first
+    //    call made before any scene manipulation (which includes the creation
+    //    of Riley scene objects).
+    // 2. Several riley settings are immutable and need to be set on the
+    //    first SetOptions call.
+    //
+    // When scene index emulation is enabled, the first SetOptions call is
+    // deferred until HdPrman_RenderSettings::Sync. A fallback render settings
+    // prim is added via HdPrman_RenderSettingsFilteringSceneIndexPlugin to
+    // allow this strategy to work for scenes without one.
+    //
+    // When scene index emulation is disabled, we have no way to know or
+    // guarantee that a render settings prim is present. The first SetOptions
+    // call is called after constructing the Riley instance in
+    // HdPrman_RenderParam::Begin.
+    //
+    {
+        // Compose scene options with the precedence:
+        //     env > render settings prim > legacy settings map > fallback
+        //
+        // XXX: Some riley clients require certain options to be present
+        // on every SetOptions call (e.g. XPU currently needs
+        // ri:searchpath:texture). As a conservative measure, compose
+        // all sources of options for initialization and subsequent updates.
+        // Ideally, the latter would require just the legacy and prim options.
+
+        RtParamList composedParams =
+            _Compose(_envOptions,
+                    _renderSettingsPrimOptions, 
+                    GetLegacyOptions(),
+                    _fallbackOptions);
+
+        RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
+                    composedParams);
+
+        riley::Riley * const riley = AcquireRiley();
+        riley->SetOptions(prunedOptions);
+
+        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+            "SetOptions called on the composed param list:\n  %s\n",
+            HdPrmanDebugUtil::RtParamListToString(
+                prunedOptions, /*indent = */2).c_str());
+    }
+
+    if (!_initRileyOptions) {
+        _initRileyOptions = true;
+
+        // Safe to create riley objects that aren't backed by the scene.
+        // See limitation (1) above.
+        _CreateInternalPrims();
+    }
 }
 
 void 
@@ -2996,9 +3058,7 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     }
     
     // Update the shutter interval on the legacy options param list and
-    // commit the scene options. Note that the legacy options has a weaker
-    // opinion that the env var HD_PRMAN_ENABLE_MOTIONBLUR and the render
-    // settings prim.
+    // commit the scene options.
     RtParamList &options = GetLegacyOptions();
     options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
     SetRileyOptions();

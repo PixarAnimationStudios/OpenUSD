@@ -216,7 +216,8 @@ _UpdateRprimVisibilityForPass(
 }
 
 const HdPrman_RenderSettings *
-_GetActiveRenderSettingsPrim(HdRenderIndex *renderIndex)
+_GetActiveRenderSettingsPrim(
+    HdRenderIndex *renderIndex)
 {
     SdfPath primPath;
     const bool hasActiveRenderSettingsPrim =
@@ -229,29 +230,6 @@ _GetActiveRenderSettingsPrim(HdRenderIndex *renderIndex)
     }
 
     return nullptr;
-}
-
-void
-_SetShutterCurve(bool isInteractive, HdPrman_CameraContext *cameraContext)
-{
-    // XXX Until we add support for PxrCameraAPI, hardcode the shutter opening
-    //     and closing rates as follows:
-    if (isInteractive) {
-        // Open instantaneously, remain fully open for the duration of the
-        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
-        // instantaneously.
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
-        };
-        cameraContext->SetShutterCurve(0.0f, 1.0f, pts);
-    } else {
-        // Open instantaneously and start closing immediately, rapidly at first
-        // decelerating until the end of the interval.
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
-        };
-        cameraContext->SetShutterCurve(0.0f, 0.0f, pts);
-    }
 }
 
 } // end anonymous namespace
@@ -374,7 +352,6 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
-    // Update the Camera Context
     HdPrman_CameraContext &cameraContext = _renderParam->GetCameraContext();
     _UpdateCameraPath(renderPassState, renderDelegate, &cameraContext);
 
@@ -545,6 +522,7 @@ HdPrman_RenderPass::_Execute(
 
     // Update options from the legacy settings map.
     if (legacySettingsChanged) {
+        // Update options from the legacy settings map.
         _renderParam->UpdateLegacyOptions();
     }
 
