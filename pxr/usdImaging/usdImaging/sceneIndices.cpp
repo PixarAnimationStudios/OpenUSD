@@ -32,14 +32,12 @@
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/materialBindingsSchema.h"
-#include "pxr/imaging/hd/purposeSchema.h"
+
+#include "pxr/usd/usdGeom/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -58,29 +56,10 @@ _AdditionalStageSceneIndexInputArgs(
     return ds;
 }
 
-// Use extentsHint (of models) for purpose geometry
-static
-HdContainerDataSourceHandle
-_ExtentResolvingSceneIndexInputArgs()
-{
-    HdDataSourceBaseHandle const purposeDataSources[] = {
-        HdRetainedTypedSampledDataSource<TfToken>::New(
-            HdTokens->geometry) };
-
-    return
-        HdRetainedContainerDataSource::New(
-            UsdImagingExtentResolvingSceneIndexTokens->purposes,
-            HdRetainedSmallVectorDataSource::New(
-                TfArraySize(purposeDataSources),
-                purposeDataSources));
-}
-
 UsdImagingSceneIndices
-UsdImagingCreateSceneIndices(
-    const UsdImagingCreateSceneIndicesInfo &createInfo)
+UsdImagingInstantiateSceneIndices(
+    const UsdImagingSceneIndicesCreateInfo &createInfo)
 {
-    TRACE_FUNCTION();
-
     UsdImagingSceneIndices result;
 
     HdSceneIndexBaseRefPtr sceneIndex;
@@ -103,65 +82,39 @@ UsdImagingCreateSceneIndices(
         sceneIndex =
             UsdImagingUnloadedDrawModeSceneIndex::New(sceneIndex);
     }
-    
+
+    // Use extentsHint for default_/geometry purpose
+    HdContainerDataSourceHandle const extentInputArgs =
+        HdRetainedContainerDataSource::New(
+            UsdGeomTokens->purpose,
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                UsdGeomTokens->default_));
+
     sceneIndex =
         UsdImagingExtentResolvingSceneIndex::New(
-            sceneIndex, _ExtentResolvingSceneIndexInputArgs());
+            sceneIndex, extentInputArgs);
 
     sceneIndex =
         UsdImagingPiPrototypePropagatingSceneIndex::New(sceneIndex);
 
-    {
-        // UsdImagingNiPrototypePropagatingSceneIndex
-
-        // Names of data sources that need to have the same values
-        // across native instances for the instances be aggregated
-        // together.
-        static const TfTokenVector instanceDataSourceNames = {
-            HdMaterialBindingsSchema::GetSchemaToken(),
-            HdPurposeSchema::GetSchemaToken(),
-            // We include model to aggregate scene indices
-            // by draw mode.
-            UsdImagingModelSchema::GetSchemaToken()
-        };
-
-        using SceneIndexAppendCallback =
-            UsdImagingNiPrototypePropagatingSceneIndex::
-            SceneIndexAppendCallback;
-
-        // The draw mode scene index needs to be inserted multiple times
-        // during prototype propagation because:
-        // - A native instance can be grouped under a prim with non-trivial
-        //   draw mode. In this case, the draw mode scene index needs to
-        //   filter out the native instance before instance aggregation.
-        // - A native instance itself can have a non-trivial draw mode.
-        //   In this case, we want to aggregate the native instances
-        //   with the same draw mode, so we need to run instance aggregation
-        //   first.
-        // - Advanced scenarios such as native instances in USD prototypes
-        //   and the composition semantics of draw mode: the draw mode is
-        //   inherited but apply draw mode is not and the draw mode is
-        //   only applied when it is non-trivial and apply draw mode is true.
-        //
-        // Thus, we give the prototype propagating scene index a callback.
-        //
-        SceneIndexAppendCallback callback;
-        if (createInfo.addDrawModeSceneIndex) {
-            callback = [](HdSceneIndexBaseRefPtr const &inputSceneIndex) {
-                return UsdImagingDrawModeSceneIndex::New(
-                    inputSceneIndex, /* inputArgs = */ nullptr); };
-        }
-
-        sceneIndex =
-            UsdImagingNiPrototypePropagatingSceneIndex::New(
-                sceneIndex, instanceDataSourceNames, callback);
-    }
+    sceneIndex =
+        UsdImagingNiPrototypePropagatingSceneIndex::New(sceneIndex);
 
     sceneIndex = result.selectionSceneIndex =
         UsdImagingSelectionSceneIndex::New(sceneIndex);
     
     sceneIndex =
         UsdImagingRenderSettingsFlatteningSceneIndex::New(sceneIndex);
+
+    sceneIndex =
+        HdFlatteningSceneIndex::New(
+            sceneIndex, UsdImagingFlattenedDataSourceProviders());
+
+    if (createInfo.addDrawModeSceneIndex) {
+        sceneIndex =
+            UsdImagingDrawModeSceneIndex::New(sceneIndex,
+                                              /* inputArgs = */ nullptr);
+    }
 
     result.finalSceneIndex = sceneIndex;
 
