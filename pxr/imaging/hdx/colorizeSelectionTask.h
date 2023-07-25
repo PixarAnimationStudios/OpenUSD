@@ -40,7 +40,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct HdxColorizeSelectionTaskParams
 {
     HdxColorizeSelectionTaskParams()
-        : enableSelection(false)
+        : enableSelectionHighlight(false)
+        , enableLocateHighlight(false)
         , selectionColor(0)
         , locateColor(0)
         , enableOutline(false)
@@ -50,7 +51,8 @@ struct HdxColorizeSelectionTaskParams
         , elementIdBufferPath()
         {}
 
-    bool enableSelection;
+    bool enableSelectionHighlight;
+    bool enableLocateHighlight;
     GfVec4f selectionColor;
     GfVec4f locateColor;
     bool enableOutline;

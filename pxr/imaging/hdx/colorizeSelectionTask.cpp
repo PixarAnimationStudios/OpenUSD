@@ -122,8 +122,11 @@ HdxColorizeSelectionTask::Prepare(HdTaskContext* ctx,
     if (sel && sel->GetVersion() != _lastVersion) {
         _lastVersion = sel->GetVersion();
         _hasSelection =
-            sel->GetSelectionOffsetBuffer(renderIndex, _params.enableSelection,
-                                          &_selectionOffsets);
+            sel->GetSelectionOffsetBuffer(
+                renderIndex,
+                _params.enableSelectionHighlight,
+                _params.enableLocateHighlight,
+                &_selectionOffsets);
     }
 }
 
@@ -439,7 +442,8 @@ std::ostream& operator<<(std::ostream& out,
                          const HdxColorizeSelectionTaskParams& pv)
 {
     out << "ColorizeSelectionTask Params: (...) "
-        << pv.enableSelection << " "
+        << pv.enableSelectionHighlight << " "
+        << pv.enableLocateHighlight << " "
         << pv.selectionColor << " "
         << pv.locateColor << " "
         << pv.primIdBufferPath << " "
@@ -451,12 +455,13 @@ std::ostream& operator<<(std::ostream& out,
 bool operator==(const HdxColorizeSelectionTaskParams& lhs,
                 const HdxColorizeSelectionTaskParams& rhs)
 {
-    return lhs.enableSelection      == rhs.enableSelection      &&
-           lhs.selectionColor       == rhs.selectionColor       &&
-           lhs.locateColor          == rhs.locateColor          &&
-           lhs.primIdBufferPath     == rhs.primIdBufferPath     &&
-           lhs.instanceIdBufferPath == rhs.instanceIdBufferPath &&
-           lhs.elementIdBufferPath  == rhs.elementIdBufferPath;
+    return lhs.enableSelectionHighlight == rhs.enableSelectionHighlight &&
+           lhs.enableLocateHighlight    == rhs.enableLocateHighlight    &&
+           lhs.selectionColor           == rhs.selectionColor           &&
+           lhs.locateColor              == rhs.locateColor              &&
+           lhs.primIdBufferPath         == rhs.primIdBufferPath         &&
+           lhs.instanceIdBufferPath     == rhs.instanceIdBufferPath     &&
+           lhs.elementIdBufferPath      == rhs.elementIdBufferPath;
 }
 
 bool operator!=(const HdxColorizeSelectionTaskParams& lhs,
