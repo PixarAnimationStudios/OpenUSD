@@ -330,6 +330,17 @@ _ProcessPreviewSurfaceNode(
     }
 }
 
+// Returns true if the given path is already a RtxPath meaning it is already
+// of the form:
+//  "rtxplugin:<>?filename=<>&wrapS=<>&wrapT=<>&sourceColorSpace=<>s"
+// This function checks if the path contains the "rtxPlugin:" prefix
+static bool
+_RtxPath(std::string path)
+{
+    const std::string pathPrefix = "rtxplugin:";
+    return path.substr(0, pathPrefix.length()) == pathPrefix;
+}
+
 // Update texture nodes that use non-native texture formats
 // to read them via a Renderman texture plugin.
 void
@@ -343,12 +354,14 @@ _ProcessUVTextureNode(
     bool needInvertT = false;
     VtValue vtFile;
     if (_GetParameter(netInterface, nodeName, _tokens->file, &vtFile) &&
-         vtFile.IsHolding<SdfAssetPath>()) {
+        (vtFile.IsHolding<SdfAssetPath>() || vtFile.IsHolding<std::string>())) {
 
-        std::string path = vtFile.Get<SdfAssetPath>().GetResolvedPath();
+        std::string path = vtFile.IsHolding<SdfAssetPath>()
+            ? vtFile.Get<SdfAssetPath>().GetResolvedPath()
+            : vtFile.Get<std::string>();
         std::string ext = ArGetResolver().GetExtension(path);
 
-        if (!ext.empty() && ext != "tex" && ext != "dds") {
+        if (!ext.empty() && ext != "tex" && ext != "dds" && !_RtxPath(path)) {
             std::string pluginName = 
                 std::string("RtxHioImage") + ARCH_LIBRARY_SUFFIX;
             // Check for wrap mode. In Renderman, the
@@ -360,7 +373,7 @@ _ProcessUVTextureNode(
             VtValue wrapTVal =
                 netInterface->GetNodeParameterValue(nodeName, _tokens->wrapT);
             TfToken wrapS =
-                        wrapSVal.GetWithDefault(_tokens->useMetadata);
+                wrapSVal.GetWithDefault(_tokens->useMetadata);
             TfToken wrapT =
                 wrapSVal.GetWithDefault(_tokens->useMetadata);  
 
@@ -385,7 +398,7 @@ _ProcessUVTextureNode(
                                 pluginName.c_str(), path.c_str(),
                                 wrapS.GetText(), wrapT.GetText(),
                                 sourceColorSpace.GetText());
-            
+
             netInterface->SetNodeParameterValue(
                 nodeName, _tokens->file, VtValue(path));
 
