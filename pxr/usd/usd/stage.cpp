@@ -2337,11 +2337,11 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     // resulting from this request, this will trigger recomposition of UsdPrims
     // that potentially didn't change; it seems like we could do better.
     TF_DEBUG(USD_CHANGES).Msg("\nProcessing Load/Unload changes\n");
-    _Recompose(changes);
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    _Recompose(changes, &resyncChanges);
 
     UsdStageWeakPtr self(this);
 
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
     for (SdfPath const &p: recomposePaths) {
         resyncChanges[p];
     }
@@ -4480,18 +4480,15 @@ void
 UsdStage::_Recompose(const PcpChanges &changes)
 {
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _Recompose(changes, (_PathsToChangesMap*)nullptr);
+    _PathsToChangesMap dummy;
+    _Recompose(changes, &dummy);
 }
 
 template <class T>
 void 
 UsdStage::_Recompose(const PcpChanges &changes,
-                     T *initialPathsToRecompose)
+                     T *pathsToRecompose)
 {
-    T newPathsToRecompose;
-    T *pathsToRecompose = initialPathsToRecompose ?
-        initialPathsToRecompose : &newPathsToRecompose;
-
     // Note: Calling changes.Apply() will result in recomputation of  
     // pcpPrimIndexes for changed prims, these get updated on the respective  
     // prims during _ComposeSubtreeImpl call. Using these outdated primIndexes
