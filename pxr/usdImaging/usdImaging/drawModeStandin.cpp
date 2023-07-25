@@ -1362,7 +1362,7 @@ _CardsDataCache::_CardsData::_ComputePoints(const _SchemaValues &values)
                     // symmetry about the center of the box.
                     // We also reverse the order of the points.
                     points.push_back(
-                        GfVec3f(1.0f) - _Transform(pts[3 - k], i));
+                        one - _Transform(pts[3 - k], i));
                 }
             }
         }
