@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/filter_iterator.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 #include <algorithm>
@@ -76,27 +75,82 @@ template <typename _Owner, typename _InnerIterator, typename _DummyPredicate>
 class Sdf_ChildrenViewTraits {
 private:
 
-    // Internal predicate object which will be passed to the filter
-    // iterator. This just calls through to the owner's predicate.
-    class _Predicate {
+    // Owner's predicate object will be used by the filter iterator.
+    // In C++20, consider using the ranges library to simplify this
+    class _FilterIterator {
     public:
-        typedef typename _Owner::value_type value_type;
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = typename _InnerIterator::value_type;
+        using reference = typename _InnerIterator::reference;
+        using pointer = typename _InnerIterator::pointer;
+        using difference_type = typename _InnerIterator::difference_type;
 
-        _Predicate() : _owner(NULL) { }
-        _Predicate(const _Owner* owner) : _owner(owner) { }
+        _FilterIterator() = default;
+        _FilterIterator(const _Owner* owner,
+                        const _InnerIterator& underlyingIterator,
+                        const _InnerIterator& end) :
+                            _owner(owner),
+                            _underlyingIterator(underlyingIterator),
+                            _end(end) {
+            _Filter();
+        }
 
-        bool operator()(const value_type& x) const
+        reference operator*() const {
+            return *_underlyingIterator;
+        }
+
+        pointer operator->() const {
+            return _underlyingIterator.operator->();
+        }
+
+        _FilterIterator& operator++() {
+            TF_DEV_AXIOM(_underlyingIterator != _end);
+            ++_underlyingIterator;
+            _Filter();
+            return *this;
+        }
+
+        _FilterIterator operator++(int) {
+            TF_DEV_AXIOM(_underlyingIterator != _end);
+            _FilterIterator result(*this);
+            ++_underlyingIterator;
+            _Filter();
+            return result;
+        }
+
+        bool operator==(const _FilterIterator& other) const {
+            return _underlyingIterator == other._underlyingIterator;
+        }
+
+        bool operator!=(const _FilterIterator& other) const {
+            return _underlyingIterator != other._underlyingIterator;
+        }
+
+        const _InnerIterator& GetBase() const { return _underlyingIterator; }
+
+    private:
+        // Skip any iterators that don't satisfy the predicate
+        bool _ShouldFilter(const value_type& x) const
         {
-            return _owner->GetPredicate()(
+            return !_owner->GetPredicate()(
                 _Owner::Adapter::Convert(x));
         }
 
-    private:
-        const _Owner* _owner;
+        void _Filter()
+        {
+            while (_underlyingIterator != _end &&
+                   _ShouldFilter(*_underlyingIterator)) {
+                ++_underlyingIterator;
+            }
+        }
+
+        const _Owner* _owner = nullptr;
+        _InnerIterator _underlyingIterator;
+        _InnerIterator _end;
     };
 
 public:
-    typedef boost::filter_iterator<_Predicate, _InnerIterator> const_iterator;
+    using const_iterator = _FilterIterator;
 
     // Convert from a private _InnerIterator to a public const_iterator.
     // filter_iterator requires an end iterator, which is constructed using
@@ -106,13 +160,13 @@ public:
                                       size_t size)
     {
         _InnerIterator end(owner,size);
-        return const_iterator(_Predicate(owner), i, end);
+        return const_iterator(owner, i, end);
     }
 
     // Convert from a public const_iterator to a private _InnerIterator.
     static const _InnerIterator& GetBase(const const_iterator& i)
     {
-        return i.base();
+        return i.GetBase();
     }
 };
 
