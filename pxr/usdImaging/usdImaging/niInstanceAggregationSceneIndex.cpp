@@ -385,10 +385,40 @@ public:
     {
         VtArray<GfMatrix4d> result(_instances->size());
         
-        int i = 0;
-        for (const SdfPath &instance : *_instances) {
-            result[i] = _GetPrimTransform(_inputSceneIndex, instance);
-            i++;
+        // We want the native instance's xform relative to the xform of the
+        // enclosing root (e.g. the prototype of a point instancer).
+        //
+        // The instancer instancing the native instance is already picking up
+        // the xform of the enclosing root, so we need the relative xform
+        // to avoid applying the same xform twice to a native instance.
+        //
+        // Note that the flattening scene index is invalidating the
+        // native instance's xform when the xform of the enclosing root
+        // is changing, so there is no special logic to invalidate this
+        // data source when the enclosing root is changing here.
+        //
+        // TODO: Note that the current implementation does not deal with time samples.
+        //
+        const GfMatrix4d rootInverse =
+            _GetPrimTransform(_inputSceneIndex, _enclosingPrototypeRoot)
+                .GetInverse();
+
+        static const GfMatrix4d id(1.0);
+
+        if (rootInverse == id) {
+            int i = 0;
+            for (const SdfPath &instance : *_instances) {
+                result[i] =
+                    _GetPrimTransform(_inputSceneIndex, instance);
+                i++;
+            }
+        } else {
+            int i = 0;
+            for (const SdfPath &instance : *_instances) {
+                result[i] =
+                    _GetPrimTransform(_inputSceneIndex, instance) * rootInverse;
+                i++;
+            }
         }
         return result;
     }
@@ -396,14 +426,17 @@ public:
 private:
     _InstanceTransformPrimvarValueDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances)
+        std::shared_ptr<SdfPathSet> const &instances,
+        const SdfPath &enclosingPrototypeRoot)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
+      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
+    const SdfPath _enclosingPrototypeRoot;
 };
 
 // Data source for locator primvars:instanceTransform for an instancer.
@@ -434,7 +467,7 @@ public:
         }
         if (name == HdPrimvarSchemaTokens->primvarValue) {
             return _InstanceTransformPrimvarValueDataSource::New(
-                _inputSceneIndex, _instances);
+                _inputSceneIndex, _instances, _enclosingPrototypeRoot);
         }
         // Does the instanceTransform have a role?
         return nullptr;
@@ -443,14 +476,17 @@ public:
 private:
     _InstanceTransformPrimvarDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances)
+        std::shared_ptr<SdfPathSet> const &instances,
+        const SdfPath &enclosingPrototypeRoot)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
+      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
+    const SdfPath _enclosingPrototypeRoot;
 };
 
 // Data source for locator primvars for an instancer.
@@ -476,7 +512,7 @@ public:
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == HdInstancerTokens->instanceTransform) {
             return _InstanceTransformPrimvarDataSource::New(
-                _inputSceneIndex, _instances);
+                _inputSceneIndex, _instances, _enclosingPrototypeRoot);
         }
         if (!_instances->empty()) {
             if (_IsConstantPrimvar(
@@ -491,14 +527,17 @@ public:
 private:
     _PrimvarsDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances)
+        std::shared_ptr<SdfPathSet> const &instances,
+        const SdfPath &enclosingPrototypeRoot)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
+      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
+    const SdfPath _enclosingPrototypeRoot;
 };
 
 // [0, 1, ..., n-1]
@@ -684,7 +723,7 @@ public:
         }
         if (name == HdPrimvarsSchema::GetSchemaToken()) {
             return _PrimvarsDataSource::New(
-                    _inputSceneIndex, _instances);
+                    _inputSceneIndex, _instances, _enclosingPrototypeRoot);
         }
         return nullptr;
     }
