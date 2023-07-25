@@ -30,6 +30,10 @@ pxr_library(usdUtils
         stitch
         stitchClips
         timeCodeRange
+        usdzPackage
+
+    PRIVATE_CLASSES
+        assetLocalization
 
     PUBLIC_HEADERS
         api.h
