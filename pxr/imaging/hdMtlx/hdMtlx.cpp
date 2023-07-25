@@ -552,7 +552,7 @@ HdMtlxCreateMtlxDocumentFromHdMaterialNetworkInterface(
     // Validate the MaterialX Document.
     std::string message;
     if (!mxDoc->validate(&message)) {
-        TF_WARN("Validation warnings for generated MaterialX file.\n%s\n", 
+        TF_WARN("Validation warnings for generated MaterialX file.\n%s", 
                 message.c_str());
     }
 
