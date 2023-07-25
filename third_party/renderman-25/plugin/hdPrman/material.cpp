@@ -550,6 +550,21 @@ _ConvertNodes(
     }
     // Convert connected inputs.
     for (auto const& connEntry: node.inputConnections) {
+        // Find the shader properties, so that we can look up
+        // the property implementation names.
+        SdrShaderPropertyConstPtr downstreamProp =
+            sdrEntry->GetShaderInput(connEntry.first);
+        if (!downstreamProp) {
+            TF_WARN("Unknown downstream property %s", connEntry.first.data());
+            continue;
+        }
+        RtUString name(downstreamProp->GetImplementationName().c_str());
+        TfToken const propType = downstreamProp->GetType();
+
+        // Gather input (or inputs, for array-valued inputs) for shader 
+        // property.
+        std::vector<RtUString> inputRefs;
+
         for (auto const& e: connEntry.second) {
             // Find the output & input shader nodes of the connection.
             HdMaterialNode2 const* upstreamNode =
@@ -572,18 +587,8 @@ _ConvertNodes(
                         e.upstreamNode.GetText());
                 continue;
             }
-            // Find the shader properties, so that we can look up
-            // the property implementation names.
-            SdrShaderPropertyConstPtr downstreamProp =
-                sdrEntry->GetShaderInput(connEntry.first);
             SdrShaderPropertyConstPtr upstreamProp =
                 upstreamSdrEntry->GetShaderOutput(e.upstreamOutputName);
-            if (!downstreamProp) {
-                TF_WARN("Unknown downstream property %s",
-                        connEntry.first.data());
-                continue;
-            }
-            TfToken propType = downstreamProp->GetType();
             // In the case of terminals there is no upstream output name
             // since the whole node is referenced as a whole
             if (!upstreamProp && propType != SdrPropertyTypes->Terminal) {
@@ -592,7 +597,6 @@ _ConvertNodes(
                 continue;
             }
             // Prman syntax for parameter references is "handle:param".
-            RtUString name(downstreamProp->GetImplementationName().c_str());
             RtUString inputRef;
             if (!upstreamProp) {
                 inputRef = RtUString(e.upstreamNode.GetString().c_str());
@@ -602,26 +606,78 @@ _ConvertNodes(
                     + upstreamProp->GetImplementationName().c_str())
                     .c_str());
             }
-
-            // Establish the Riley connection.
+            inputRefs.push_back(inputRef);
+        }
+        
+        // Establish the Riley connection.
+        size_t const numInputRefs = inputRefs.size();
+        if (numInputRefs > 0) {
             if (propType == SdrPropertyTypes->Color) {
-                sn.params.SetColorReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetColorReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetColorReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Vector) {
-                sn.params.SetVectorReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetVectorReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetVectorReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Point) {
-                sn.params.SetPointReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetPointReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetPointReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Normal) {
-                sn.params.SetNormalReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetNormalReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetNormalReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Float) {
-                sn.params.SetFloatReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetFloatReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetFloatReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Int) {
-                sn.params.SetIntegerReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetIntegerReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetIntegerReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->String) {
-                sn.params.SetStringReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetStringReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetStringReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else if (propType == SdrPropertyTypes->Struct) {
-                sn.params.SetStructReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetStructReference(name, inputRefs[0]);
+                } else {
+                     TF_WARN("Unsupported type struct array for property '%s' "
+                        "on shader '%s' at '%s'; ignoring.",
+                        connEntry.first.data(),
+                        sdrEntry->GetName().c_str(),
+                        nodePath.GetText());
+                }
             } else if (propType == SdrPropertyTypes->Terminal) {
-                sn.params.SetBxdfReference(name, inputRef);
+                if (numInputRefs == 1) {
+                    sn.params.SetBxdfReference(name, inputRefs[0]);
+                } else {
+                    sn.params.SetBxdfReferenceArray(
+                        name, inputRefs.data(), numInputRefs);
+                }
             } else {
                 TF_WARN("Unknown type '%s' for property '%s' "
                         "on shader '%s' at %s; ignoring.",
