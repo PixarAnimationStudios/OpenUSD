@@ -39,7 +39,7 @@
 #include <boost/preprocessor/config/limits.hpp>
 #include <mach/mach_time.h>
 #endif
-#if defined(ARCH_OS_LINUX)
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_FREEBSD)
 #include <dirent.h>
 #include <glob.h>
 #include <sys/param.h>
