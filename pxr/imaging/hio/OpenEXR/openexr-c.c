@@ -122,58 +122,32 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
     // https://bartwronski.com/2021/10/31/practical-gaussian-filter-binomial-filter-and-small-sigma-gaussians
     // chose sigma to suppress high frequencies that can't be represented 
     // in the downsampled image
-    const float ratio_w = (float)dstWidth / (float)srcWidth;
-    const float ratio_h = (float)dstHeight / (float)srcHeight;
-    const float sigma_w = 1.f / 2.f * ratio_w;
-    const float sigma_h = 1.f / 2.f * ratio_h;
+    const float ratio = (float)dstWidth / (float)srcWidth;
+    const float sigma = 1.f / 2.f * ratio;
     const float support = 0.995f;
-    float radius = ceilf(sqrtf(-2.0f * sigma_w * sigma_w * logf(1.0f - support)));
-    int filterSize_w = (int)radius;
-    if (!filterSize_w)
+    float radius = ceilf(sqrtf(-2.0f * sigma * sigma * logf(1.0f - support)));
+    int filterSize = (int)radius;
+    if (!filterSize)
         return false;
     
-    float* filter_w = (float*) malloc(sizeof(float) * (filterSize_w + 1) * 2);
+    float* filter = (float*) malloc(sizeof(float) * 1 + filterSize * 2);
     float sum = 0.0f;
-    for (int i = 0; i <= filterSize_w; i++) {
-        int idx = i + filterSize_w;
-        filter_w[idx] = integrate_gaussian((float) i, sigma_w);
+    for (int i = 0; i <= filterSize; i++) {
+        int idx = i + filterSize;
+        filter[idx] = integrate_gaussian((float) i, sigma);
         if (i > 0)
-            sum += 2 * filter_w[idx];
+            sum += 2 * filter[idx];
         else
-            sum = filter_w[idx];
+            sum = filter[idx];
     }
-    for (int i = 0; i <= filterSize_w; ++i) {
-        filter_w[i + filterSize_w] /= sum;
+    for (int i = 0; i <= filterSize; ++i) {
+        filter[i + filterSize] /= sum;
     }
-    for (int i = 0; i < filterSize_w; ++i) {
-        filter_w[filterSize_w - i - 1] = filter_w[i + filterSize_w + 1];
+    for (int i = 0; i < filterSize; ++i) {
+        filter[filterSize - i - 1] = filter[i + filterSize + 1];
     }
-    int fullFilterSize_w = filterSize_w * 2 + 1;
+    int fullFilterSize = filterSize * 2 + 1;
 
-    // again for height
-    radius = ceilf(sqrtf(-2.0f * sigma_h * sigma_h * logf(1.0f - support)));
-    int filterSize_h = (int)radius;
-    if (!filterSize_h)
-        return false;
-    
-    float* filter_h = (float*) malloc(sizeof(float) * (1 + filterSize_h) * 2);
-    sum = 0.0f;
-    for (int i = 0; i <= filterSize_h; i++) {
-        int idx = i + filterSize_h;
-        filter_h[idx] = integrate_gaussian((float) i, sigma_h);
-        if (i > 0)
-            sum += 2 * filter_h[idx];
-        else
-            sum = filter_h[idx];
-    }
-    for (int i = 0; i <= filterSize_h; ++i) {
-        filter_h[i + filterSize_h] /= sum;
-    }
-    for (int i = 0; i < filterSize_h; ++i) {
-        filter_h[filterSize_h - i - 1] = filter_h[i + filterSize_h + 1];
-    }
-    int fullFilterSize_h = filterSize_h * 2 + 1;
-    
     // first pass: resize horizontally
     int srcFloatsPerLine = src->channelCount * srcWidth;
     int dstFloatsPerLine = src->channelCount * dstWidth;
@@ -182,12 +156,12 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
         for (int x = 0; x < dstWidth; ++x) {
             for (int c = 0; c < src->channelCount; ++c) {
                 float sum = 0.0f;
-                for (int i = 0; i < fullFilterSize_w; ++i) {
-                    int srcX = (int)((x + 0.5f) / ratio_w - 0.5f) + i - filterSize_w;
+                for (int i = 0; i < fullFilterSize; ++i) {
+                    int srcX = (int)((x + 0.5f) / ratio - 0.5f) + i - filterSize;
                     if (srcX < 0 || srcX >= srcWidth)
                         continue;
                     int idx = y * srcFloatsPerLine + (srcX * src->channelCount) + c;
-                    sum += srcData[idx] * filter_w[i];
+                    sum += srcData[idx] * filter[i];
                 }
                 firstPass[y * dstFloatsPerLine + (x * src->channelCount) + c] = sum;
             }
@@ -200,19 +174,18 @@ bool nanoexr_Gaussian_resample(const nanoexr_ImageData_t* src,
         for (int x = 0; x < dstWidth; ++x) {
             for (int c = 0; c < src->channelCount; ++c) {
                 float sum = 0.0f;
-                for (int i = 0; i < fullFilterSize_h; ++i) {
-                    int srcY = (int)((y + 0.5f) / ratio_h - 0.5f) + i - filterSize_h;
+                for (int i = 0; i < fullFilterSize; ++i) {
+                    int srcY = (int)((y + 0.5f) / ratio - 0.5f) + i - filterSize;
                     if (srcY < 0 || srcY >= srcHeight)
                         continue;
                     int idx = src->channelCount * srcY * dstWidth + (x * src->channelCount) + c;
-                    sum += firstPass[idx] * filter_h[i];
+                    sum += firstPass[idx] * filter[i];
                 }
-                secondPass[dst->channelCount * y * dstWidth + (x * dst->channelCount) + c] = sum;
+                secondPass[src->channelCount * y * dstWidth + (x * src->channelCount) + c] = sum;
             }
         }
     }
-    free(filter_h);
-    free(filter_w);
+    free(filter);
     free(firstPass);
     return true;
 }
@@ -330,25 +303,14 @@ int nanoexr_read_header(nanoexr_Reader_t* reader, exr_read_func_ptr_t readFn,
     return rv;
 }
 
-exr_result_t nanoexr_write_exr(
+exr_result_t nanoexr_write_f16_exr(
     const char* filename,
     nanoexr_attrsAdd attrsAdd, void* attrsAdd_userData,
-    int width, int height, bool flipped,
-    exr_pixel_type_t pixel_type,
+    int width, int height,
     uint8_t* red,   int32_t redPixelStride,   int32_t redLineStride,
     uint8_t* green, int32_t greenPixelStride, int32_t greenLineStride,
-    uint8_t* blue,  int32_t bluePixelStride,  int32_t blueLineStride,
-    uint8_t* alpha, int32_t alphaPixelStride, int32_t alphaLineStride)
+    uint8_t* blue,  int32_t bluePixelStride,  int32_t blueLineStride)
 {
-
-    int channelCount = red ? 1 : 0;
-    channelCount += blue ? 1 : 0;
-    channelCount += green ? 1 : 0;
-    channelCount += alpha ? 1 : 0;
-    if (!channelCount) {
-        return EXR_ERR_INVALID_ARGUMENT;
-    }
-
     int partidx = 0;
     exr_context_t exr;
     exr_context_initializer_t init = EXR_DEFAULT_CONTEXT_INITIALIZER;
@@ -392,66 +354,47 @@ exr_result_t nanoexr_write_exr(
         return result;
     }
 
-    if (red) {
-        result = exr_add_channel(
-                     exr,
-                     partidx,
-                     "R",
-                     pixel_type,
-                     EXR_PERCEPTUALLY_LOGARITHMIC, // hint that data is an image
-                     1, 1); // x & y sampling rate
-        if (result != EXR_ERR_SUCCESS) {
-            return result;
-        }
+    result = exr_add_channel(
+        exr,
+        partidx,
+        "R",
+        EXR_PIXEL_HALF,
+        EXR_PERCEPTUALLY_LOGARITHMIC, // hint to compressor data is an image
+        1, 1); // x & y sampling rate
+    if (result != EXR_ERR_SUCCESS) {
+        return result;
     }
-
-    if (green) {
-        result = exr_add_channel(
-                     exr,
-                     partidx,
-                     "G",
-                     pixel_type,
-                     EXR_PERCEPTUALLY_LOGARITHMIC,
-                     1, 1); // x & y sampling rate
-        if (result != EXR_ERR_SUCCESS) {
-            return result;
-        }
+    
+    result = exr_add_channel(
+        exr,
+        partidx,
+        "G",
+        EXR_PIXEL_HALF,
+        EXR_PERCEPTUALLY_LOGARITHMIC,
+        1, 1); // x & y sampling rate
+    if (result != EXR_ERR_SUCCESS) {
+        return result;
     }
-
-    if (blue) {
-        result = exr_add_channel(
-                     exr,
-                     partidx,
-                     "B",
-                     pixel_type,
-                     EXR_PERCEPTUALLY_LOGARITHMIC,
-                     1, 1); // x & y sampling rate
-        if (result != EXR_ERR_SUCCESS) {
-            return result;
-        }
-    }
-
-    if (alpha) {
-        result = exr_add_channel(
-                     exr,
-                     partidx,
-                     "A",
-                     pixel_type,
-                     EXR_PERCEPTUALLY_LOGARITHMIC,
-                     1, 1); // x & y sampling rate
-        if (result != EXR_ERR_SUCCESS) {
-            return result;
-        }
+    
+    result = exr_add_channel(
+        exr,
+        partidx,
+        "B",
+        EXR_PIXEL_HALF,
+        EXR_PERCEPTUALLY_LOGARITHMIC,
+        1, 1); // x & y sampling rate
+    if (result != EXR_ERR_SUCCESS) {
+        return result;
     }
 
     result = exr_set_version(exr, partidx, 1); // 1 is the latest version
 
     // set chromaticities to Rec. ITU-R BT.709-3
     exr_attr_chromaticities_t chroma = {
-        0.6400f, 0.3300f,  // red
-        0.3000f, 0.6000f,  // green
-        0.1500f, 0.0600f,  // blue
-        0.3127f, 0.3290f}; // white
+        0.6400f, 0.3300f, // red
+        0.3000f, 0.6000f, // green
+        0.1500f, 0.0600f, // blue
+        0.3127f, 0.3290f};  // white
     result = exr_attr_set_chromaticities(exr, partidx, "chromaticities", &chroma);
     if (result != EXR_ERR_SUCCESS) {
         return result;
@@ -472,23 +415,9 @@ exr_result_t nanoexr_write_exr(
     exr_get_scanlines_per_chunk(exr, partidx, &scansperchunk);
     bool                  first = true;
 
-    uint8_t* pRed;
-    uint8_t* pGreen;
-    uint8_t* pBlue;
-    uint8_t* pAlpha;
-
-    if (flipped) {
-        pRed =   red + (height - 1) * redLineStride;
-        pGreen = green + (height - 1) * greenLineStride;
-        pBlue =  blue + (height - 1) * blueLineStride;
-        pAlpha = alpha + (height - 1) * alphaLineStride;
-    }
-    else {
-        pRed =   red;
-        pGreen = green;
-        pBlue =  blue;
-        pAlpha = alpha;
-    }
+    uint8_t* pRed = red + (height - 1) * redLineStride;
+    uint8_t* pGreen = green + (height - 1) * greenLineStride;
+    uint8_t* pBlue = blue + (height - 1) * blueLineStride;
     
     int chunkInfoIndex = 0;
     for (int y = dataw.min.y; y <= dataw.max.y; y += scansperchunk, ++chunkInfoIndex) {
@@ -509,38 +438,22 @@ exr_result_t nanoexr_write_exr(
             result = exr_encoding_update(exr, partidx, &cinfo, &encoder);
         }
         
-        int c = 0;
-        encoder.channel_count = channelCount;
-        if (red) {
-            encoder.channels[c].user_pixel_stride = redPixelStride;
-            encoder.channels[c].user_line_stride  = redLineStride;
-            encoder.channels[c].encode_from_ptr   = pRed;
-            encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
-            ++c;
-        }
-        if (green) {
-            encoder.channels[c].user_pixel_stride = greenPixelStride;
-            encoder.channels[c].user_line_stride  = greenLineStride;
-            encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
-            encoder.channels[c].encode_from_ptr   = pGreen;
-            ++c;
-        }
-        if (blue) {
-            encoder.channels[c].user_pixel_stride = bluePixelStride;
-            encoder.channels[c].user_line_stride  = blueLineStride;
-            encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].encode_from_ptr   = pBlue;
-            ++c;
-        }
-        if (alpha) {
-            encoder.channels[c].user_pixel_stride = alphaPixelStride;
-            encoder.channels[c].user_line_stride  = alphaLineStride;
-            encoder.channels[c].height            = scansperchunk; // chunk height
-            encoder.channels[c].width             = dataw.max.x - dataw.min.y + 1;
-            encoder.channels[c].encode_from_ptr   = pAlpha;
-        }
+        encoder.channel_count = 3;
+        encoder.channels[0].user_pixel_stride = redPixelStride;
+        encoder.channels[0].user_line_stride  = redLineStride;
+        encoder.channels[0].encode_from_ptr   = pRed;
+        encoder.channels[0].height            = scansperchunk; // chunk height
+        encoder.channels[0].width             = dataw.max.x - dataw.min.y + 1;
+        encoder.channels[1].user_pixel_stride = greenPixelStride;
+        encoder.channels[1].user_line_stride  = greenLineStride;
+        encoder.channels[1].height            = scansperchunk; // chunk height
+        encoder.channels[1].width             = dataw.max.x - dataw.min.y + 1;
+        encoder.channels[1].encode_from_ptr   = pGreen;
+        encoder.channels[2].user_pixel_stride = bluePixelStride;
+        encoder.channels[2].user_line_stride  = blueLineStride;
+        encoder.channels[2].height            = scansperchunk; // chunk height
+        encoder.channels[2].width             = dataw.max.x - dataw.min.y + 1;
+        encoder.channels[2].encode_from_ptr   = pBlue;
 
         if (first) {
             result = exr_encoding_choose_default_routines(exr, partidx, &encoder);
@@ -555,18 +468,9 @@ exr_result_t nanoexr_write_exr(
         }
 
         first = false;
-        if (flipped) {
-            pRed -= redLineStride;
-            pGreen -= greenLineStride;
-            pBlue -= blueLineStride;
-            pAlpha -= alphaLineStride;
-        }
-        else {
-            pRed += redLineStride;
-            pGreen += greenLineStride;
-            pBlue += blueLineStride;
-            pAlpha += alphaLineStride;
-        }
+        pRed -= redLineStride;
+        pGreen -= greenLineStride;
+        pBlue -= blueLineStride;
     }
 
     result = exr_encoding_destroy(exr, &encoder);
@@ -577,7 +481,6 @@ exr_result_t nanoexr_write_exr(
     result = exr_finish(&exr);
     return result;
 }
-
 
 int nanoexr_getPixelTypeSize(exr_pixel_type_t t)
 {
