@@ -381,7 +381,7 @@ _ResolveAssetPathRelativeToLayer(
     return ArGetResolver().Resolve(computedAssetPath);
 }
 
-// If anchorAssetPathsOnly is true, this function will only
+// If forFlattening is true, this function will only
 // update the authored assetPaths by anchoring them to the
 // anchor layer; it will not fill in the resolved path field.
 static void
@@ -389,7 +389,7 @@ _MakeResolvedAssetPathsImpl(const Usd_AssetPathContext &assetContext,
                             const ArResolverContext &resolverContext,
                             SdfAssetPath *assetPaths,
                             size_t numAssetPaths,
-                            bool anchorAssetPathsOnly)
+                            bool forFlattening)
 {
     ArResolverContextBinder binder(resolverContext);
     for (size_t i = 0; i != numAssetPaths; ++i) {
@@ -412,10 +412,22 @@ _MakeResolvedAssetPathsImpl(const Usd_AssetPathContext &assetContext,
                 r.value.UncheckedGet<std::string>() : std::string());
         }
 
-        if (anchorAssetPathsOnly) {
-            assetPaths[i] = SdfAssetPath(
-                _AnchorAssetPathRelativeToLayer(
-                    assetContext.layer, assetPaths[i].GetAssetPath()));
+        // When flattening, if the resolver can't handle this path 
+        // (e.g., it's a URI and no associated URI resolver is registered),
+        // the result of anchoring may be non-sensical. We try to detect this 
+        // by comparing the anchored result to the unanchored identifier.  
+        // If they're the same, then we assume the path is absolute since the 
+        // anchor had no effect, and we can just leave the path as-is.
+        if (forFlattening) {
+            const std::string anchoredPath = _AnchorAssetPathRelativeToLayer(
+                    assetContext.layer, assetPaths[i].GetAssetPath());
+
+            const std::string unanchoredPath = ArGetResolver().CreateIdentifier(
+                    assetPaths[i].GetAssetPath());
+
+            if (anchoredPath != unanchoredPath) {
+                assetPaths[i] = SdfAssetPath(anchoredPath);
+            }
         }
         else {
             assetPaths[i] = SdfAssetPath(
@@ -431,7 +443,7 @@ UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
                                   const UsdAttribute& attr,
                                   SdfAssetPath *assetPaths,
                                   size_t numAssetPaths,
-                                  bool anchorAssetPathsOnly) const
+                                  bool forFlattening) const
 {
     // Get the layer providing the strongest value and use that to anchor the
     // resolve.
@@ -439,7 +451,7 @@ UsdStage::_MakeResolvedAssetPaths(UsdTimeCode time,
     if (context) {
         _MakeResolvedAssetPathsImpl(
             context, GetPathResolverContext(), assetPaths, numAssetPaths,
-            anchorAssetPathsOnly);
+            forFlattening);
     }
 }
 
@@ -447,13 +459,13 @@ void
 UsdStage::_MakeResolvedAssetPathsValue(UsdTimeCode time,
                                        const UsdAttribute& attr,
                                        VtValue* value,
-                                       bool anchorAssetPathsOnly) const
+                                       bool forFlattening) const
 {
     if (value->IsHolding<SdfAssetPath>()) {
         SdfAssetPath assetPath;
         value->UncheckedSwap(assetPath);
         _MakeResolvedAssetPaths(
-            time, attr, &assetPath, 1, anchorAssetPathsOnly);
+            time, attr, &assetPath, 1, forFlattening);
         value->UncheckedSwap(assetPath);
             
     }
@@ -462,7 +474,7 @@ UsdStage::_MakeResolvedAssetPathsValue(UsdTimeCode time,
         value->UncheckedSwap(assetPaths);
         _MakeResolvedAssetPaths(
             time, attr, assetPaths.data(), assetPaths.size(), 
-            anchorAssetPathsOnly);
+            forFlattening);
         value->UncheckedSwap(assetPaths);
     }
 }
@@ -4992,7 +5004,7 @@ public:
         // Get the resolved metadata with any asset paths anchored.
         obj.GetStage()->_GetAllMetadata(
             obj, /* useFallbacks = */ false, resultMap, 
-            /* anchorAssetPathsOnly = */ true);
+            /* forFlattening = */ true);
     }
 
     static void ResolveValueForFlatten(
@@ -5001,7 +5013,7 @@ public:
     {
         // Asset path values are anchored for flatten operations
         attr.GetStage()->_MakeResolvedAssetPathsValue(
-            time, attr, value, /* anchorAssetPathsOnly = */ true);
+            time, attr, value, /* forFlattening = */ true);
         // Time based values are adjusted by layer offset when flattened to a
         // layer affected by an offset.
         if (!timeOffset.IsIdentity()) {
@@ -5623,21 +5635,21 @@ static void
 _ResolveAssetPath(SdfAssetPath *v,
                   const ArResolverContext &resolverContext,
                   const Usd_AssetPathContext &assetContext,
-                  bool anchorAssetPathsOnly)
+                  bool forFlattening)
 {
     _MakeResolvedAssetPathsImpl(
-        assetContext, resolverContext, v, 1, anchorAssetPathsOnly);
+        assetContext, resolverContext, v, 1, forFlattening);
 }
 
 static void
 _ResolveAssetPath(VtArray<SdfAssetPath> *v,
                   const ArResolverContext &resolverContext,
                   const Usd_AssetPathContext &assetContext,
-                  bool anchorAssetPathsOnly)
+                  bool forFlattening)
 {
     _MakeResolvedAssetPathsImpl(
         assetContext, resolverContext, v->data(), v->size(), 
-        anchorAssetPathsOnly);
+        forFlattening);
 }
 
 template <class T, class Storage>
@@ -5645,11 +5657,11 @@ static void
 _UncheckedResolveAssetPath(Storage storage,
                            const ArResolverContext &resolverContext,
                            const Usd_AssetPathContext &assetContext,
-                           bool anchorAssetPathsOnly)
+                           bool forFlattening)
 {
     T v;
     _UncheckedSwap(storage, v);
-    _ResolveAssetPath(&v, resolverContext, assetContext, anchorAssetPathsOnly);
+    _ResolveAssetPath(&v, resolverContext, assetContext, forFlattening);
     _UncheckedSwap(storage, v);
 }
 
@@ -5658,11 +5670,11 @@ static bool
 _TryResolveAssetPath(Storage storage,
                      const ArResolverContext &resolverContext,
                      const Usd_AssetPathContext &assetContext,
-                     bool anchorAssetPathsOnly)
+                     bool forFlattening)
 {
     if (_IsHolding<T>(storage)) {
         _UncheckedResolveAssetPath<T>(
-            storage, resolverContext, assetContext, anchorAssetPathsOnly);
+            storage, resolverContext, assetContext, forFlattening);
         return true;
     }
     return false;
@@ -5675,13 +5687,13 @@ static bool
 _TryResolveAssetPaths(Storage storage,
                       const ArResolverContext &resolverContext,
                       const Usd_AssetPathContext &assetContext,
-                      bool anchorAssetPathsOnly)
+                      bool forFlattening)
 {
     return 
         _TryResolveAssetPath<SdfAssetPath>(
-            storage, resolverContext, assetContext, anchorAssetPathsOnly) ||
+            storage, resolverContext, assetContext, forFlattening) ||
         _TryResolveAssetPath<VtArray<SdfAssetPath>>(
-            storage, resolverContext, assetContext, anchorAssetPathsOnly);
+            storage, resolverContext, assetContext, forFlattening);
 }
 
 template <class T, class Storage>
@@ -5732,25 +5744,25 @@ _ResolveValuesInDictionary(const Usd_AssetPathContext &anchor,
                            const ArResolverContext &context,
                            const LayerOffsetAccess *offsetAccess,
                            VtDictionary *dict,
-                           bool anchorAssetPathsOnly)
+                           bool forFlattening)
 {
     // If there is no layer offset, don't bother with resolving time codes and
     // just resolve asset paths.
     if (offsetAccess) {
         Usd_ResolveValuesInDictionary(dict, 
-            [&anchor, &context, &offsetAccess, &anchorAssetPathsOnly]
+            [&anchor, &context, &offsetAccess, &forFlattening]
                 (VtValue *value) 
             {
                 _TryResolveAssetPaths(
-                    value, context, anchor, anchorAssetPathsOnly) ||
+                    value, context, anchor, forFlattening) ||
                 _TryResolveTimeCodes(value, *offsetAccess);
             });
     } else {
         Usd_ResolveValuesInDictionary(dict, 
-            [&anchor, &context, &anchorAssetPathsOnly](VtValue *value) 
+            [&anchor, &context, &forFlattening](VtValue *value) 
             {
                 _TryResolveAssetPaths(
-                    value, context, anchor, anchorAssetPathsOnly);
+                    value, context, anchor, forFlattening);
             });
     }
 }
@@ -5763,13 +5775,13 @@ _TryResolveValuesInDictionary(Storage storage,
                               const Usd_AssetPathContext &anchor,
                               const ArResolverContext &context,
                               const LayerOffsetAccess *offsetAccess,
-                              bool anchorAssetPathsOnly)
+                              bool forFlattening)
 {
     if (_IsHolding<VtDictionary>(storage)) {
         VtDictionary resolvedDict;
         _UncheckedSwap(storage, resolvedDict);
         _ResolveValuesInDictionary(
-            anchor, context, offsetAccess, &resolvedDict, anchorAssetPathsOnly);
+            anchor, context, offsetAccess, &resolvedDict, forFlattening);
         _UncheckedSwap(storage, resolvedDict);
         return true;
     }
@@ -5780,7 +5792,7 @@ _TryResolveValuesInDictionary(Storage storage,
 namespace {
 
 // Non-virtual value composer base class. Helps provide shared functionality 
-// amongst the different derived value composer classed. The derived classes
+// amongst the different derived value composer classes. The derived classes
 // must all implement a ConsumeAuthored and ConsumeUsdFallback function.
 template <class Storage>
 struct ValueComposerBase
@@ -5799,8 +5811,8 @@ struct ValueComposerBase
 
 protected:
     // Protected constructor.
-    explicit ValueComposerBase(Storage s, bool anchorAssetPathsOnly = false)
-        : _value(s), _done(false), _anchorAssetPathsOnly(anchorAssetPathsOnly) 
+    explicit ValueComposerBase(Storage s, bool forFlattening = false)
+        : _value(s), _done(false), _forFlattening(forFlattening) 
         {}
 
     // Gets the value from the layer spec.
@@ -5849,7 +5861,7 @@ protected:
             // Try resolving the values in the dictionary.
             if (_TryResolveValuesInDictionary(
                     _value, { &stage, layer, specPath, node }, 
-                    context, &layerOffsetAccess, _anchorAssetPathsOnly)) {
+                    context, &layerOffsetAccess, _forFlattening)) {
                 // Merge the resolved dictionary.
                 VtDictionaryOverRecursive(
                     &tmpDict, _UncheckedGet<VtDictionary>(_value));
@@ -5887,7 +5899,7 @@ protected:
 
     Storage _value;
     bool _done;
-    bool _anchorAssetPathsOnly;
+    bool _forFlattening;
 };
 
 // Value composer for a type erased VtValue. This will check the type
@@ -5897,8 +5909,8 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
     using Base = ValueComposerBase<VtValue *>;
 
     explicit UntypedValueComposer(
-        VtValue *s, bool anchorAssetPathsOnly = false)
-        : Base(s, anchorAssetPathsOnly) {}
+        VtValue *s, bool forFlattening = false)
+        : Base(s, forFlattening) {}
 
     bool ConsumeAuthored(const UsdStage &stage,
                          const PcpNodeRef &node,
@@ -5972,7 +5984,7 @@ protected:
         // empty VtValue.
         if (_TryResolveValuesInDictionary(
                 this->_value, { &stage, layer, specPath, node },
-                context, &layerOffsetAccess, this->_anchorAssetPathsOnly)) {
+                context, &layerOffsetAccess, this->_forFlattening)) {
         } else {
             // Otherwise try resolving each of the the other resolvable 
             // types.
@@ -5981,7 +5993,7 @@ protected:
             _TryResolveAssetPaths(
                 this->_value, context,
                 { &stage, layer, specPath, node },
-                this->_anchorAssetPathsOnly) ||
+                this->_forFlattening) ||
             _TryResolveTimeCodes(this->_value, layerOffsetAccess);
         }
     }
@@ -5997,7 +6009,7 @@ struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
     using Base = ValueComposerBase<SdfAbstractDataValue *>;
 
     explicit StrongestValueComposer(SdfAbstractDataValue *s)
-        : Base(s, /* anchorAssetPathsOnly = */ false) {}
+        : Base(s, /* forFlattening = */ false) {}
 
 
     bool ConsumeAuthored(const UsdStage &stage,
@@ -6039,7 +6051,7 @@ struct TypeSpecificValueComposer :
     friend Base;
 
     explicit TypeSpecificValueComposer(SdfAbstractDataTypedValue<T> *s)
-        : Base(s, /*anchorAssetPathsOnly = */ false) {}
+        : Base(s, /*forFlattening = */ false) {}
 
     bool ConsumeAuthored(const UsdStage &stage,
                          const PcpNodeRef &node,
@@ -6102,7 +6114,7 @@ TypeSpecificValueComposer<SdfAssetPath>::_ResolveValue(
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
     _UncheckedResolveAssetPath<SdfAssetPath>(
         _value, context, { &stage, layer, specPath, node },
-        /*anchorAssetPathsOnly = */ false);
+        /*forFlattening = */ false);
 }
 
 template <>
@@ -6117,7 +6129,7 @@ TypeSpecificValueComposer<VtArray<SdfAssetPath>>::_ResolveValue(
         node.GetLayerStack()->GetIdentifier().pathResolverContext;
     _UncheckedResolveAssetPath<VtArray<SdfAssetPath>>(
         _value, context, { &stage, layer, specPath, node },
-        /*anchorAssetPathsOnly = */ false);
+        /*forFlattening = */ false);
 }
 
 template <>
@@ -7220,7 +7232,7 @@ void
 UsdStage::_GetAllMetadata(const UsdObject &obj,
                           bool useFallbacks,
                           UsdMetadataValueMap* resultMap,
-                          bool anchorAssetPathsOnly) const
+                          bool forFlattening) const
 {
     TRACE_FUNCTION();
 
@@ -7229,7 +7241,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        UntypedValueComposer composer(&val, anchorAssetPathsOnly);
+        UntypedValueComposer composer(&val, forFlattening);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }
