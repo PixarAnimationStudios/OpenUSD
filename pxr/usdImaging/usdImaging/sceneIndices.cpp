@@ -36,8 +36,7 @@
 #include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-
-#include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/imaging/hd/tokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -54,6 +53,23 @@ _AdditionalStageSceneIndexInputArgs(
             UsdImagingStageSceneIndexTokens->includeUnloadedPrims,
             HdRetainedTypedSampledDataSource<bool>::New(true));
     return ds;
+}
+
+// Use extentsHint (of models) for purpose geometry
+static
+HdContainerDataSourceHandle
+_ExtentResolvingSceneIndexInputArgs()
+{
+    HdDataSourceBaseHandle const purposeDataSources[] = {
+        HdRetainedTypedSampledDataSource<TfToken>::New(
+            HdTokens->geometry) };
+
+    return
+        HdRetainedContainerDataSource::New(
+            UsdImagingExtentResolvingSceneIndexTokens->purposes,
+            HdRetainedSmallVectorDataSource::New(
+                TfArraySize(purposeDataSources),
+                purposeDataSources));
 }
 
 UsdImagingSceneIndices
@@ -82,17 +98,10 @@ UsdImagingInstantiateSceneIndices(
         sceneIndex =
             UsdImagingUnloadedDrawModeSceneIndex::New(sceneIndex);
     }
-
-    // Use extentsHint for default_/geometry purpose
-    HdContainerDataSourceHandle const extentInputArgs =
-        HdRetainedContainerDataSource::New(
-            UsdGeomTokens->purpose,
-            HdRetainedTypedSampledDataSource<TfToken>::New(
-                UsdGeomTokens->default_));
-
+    
     sceneIndex =
         UsdImagingExtentResolvingSceneIndex::New(
-            sceneIndex, extentInputArgs);
+            sceneIndex, _ExtentResolvingSceneIndexInputArgs());
 
     sceneIndex =
         UsdImagingPiPrototypePropagatingSceneIndex::New(sceneIndex);

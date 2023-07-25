@@ -26,10 +26,85 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/vectorSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
+TF_DEFINE_PUBLIC_TOKENS(UsdImagingExtentResolvingSceneIndexTokens,
+                        USDIMAGINGEXTENTRESOLVINGSCENEINDEX_TOKENS);
+
+namespace UsdImagingExtentResolvingSceneIndex_Impl
+{
+
+TfToken::HashSet
+_GetPurposes(HdContainerDataSourceHandle const &inputArgs)
+{
+    static const TfToken defaultTokens[] = { HdTokens->geometry };
+    static const TfToken::HashSet defaultSet{ std::begin(defaultTokens),
+                                              std::end(defaultTokens) };
+
+    if (!inputArgs) {
+        return defaultSet;
+    }
+
+    HdTypedVectorSchema<TfToken> vecSchema(
+        HdVectorDataSource::Cast(
+            inputArgs->Get(
+                UsdImagingExtentResolvingSceneIndexTokens->purposes)));
+    if (!vecSchema) {
+        return defaultSet;
+    }
+
+    TfToken::HashSet result;
+
+    const size_t n = vecSchema.GetNumElements();
+    for (size_t i = 0; i < n; i++) {
+        if (HdTokenDataSourceHandle const ds = vecSchema.GetElement(i)) {
+            result.insert(ds->GetTypedValue(0.0f));
+        }
+    }
+    return result;
+}
+
+std::vector<size_t>
+_GetExtentsHintIndices(const TfToken::HashSet &purposes)
+{
+    std::vector<size_t> result;
+
+    const TfTokenVector &orderedPurposes =
+        UsdGeomImageable::GetOrderedPurposeTokens();
+    for (size_t i = 0; i < orderedPurposes.size(); ++i) {
+        const TfToken usdPurpose = orderedPurposes[i];
+        const TfToken purpose =
+            usdPurpose == UsdGeomTokens->default_
+            ? HdTokens->geometry
+            : usdPurpose;
+        if (purposes.find(purpose) != purposes.end()) {
+            result.push_back(i);
+        }
+    }
+
+    return result;
+}
+
+struct _Info
+{
+    _Info(HdContainerDataSourceHandle const &inputArgs)
+      : purposes(_GetPurposes(inputArgs))
+      , extentsHintIndices(_GetExtentsHintIndices(purposes))
+    {
+    }
+
+    /// When computing the bounding box, we only consider geometry
+    /// with purposes being in this set.
+    const TfToken::HashSet purposes;
+
+    /// Indices into UsdGeomModelAPI's extentsHint corresponding to
+    /// the above purposes.
+    const std::vector<size_t> extentsHintIndices;
+};
 
 using _DirtyEntryPredicate =
     bool(*)(const HdSceneIndexObserver::DirtiedPrimEntry&);
@@ -122,73 +197,86 @@ public:
 
     TfTokenVector GetNames() override {
         TfTokenVector result = _primSource->GetNames();
-        if (HdVectorDataSource::Cast(
-                _primSource->Get(UsdImagingTokens->extentsHint))) {
+        if (_GetExtentsHints()) {
             if (!_Contains(result, HdExtentSchema::GetSchemaToken())) {
                 result.push_back(HdExtentSchema::GetSchemaToken());
             }
         }
         return result;
     }
-    
+
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (HdDataSourceBaseHandle const result = _primSource->Get(name)) {
             return result;
         }
 
-        if (name != HdExtentSchema::GetSchemaToken()) {
-            return nullptr;
+        // Use extentsHint if extent is not given.
+        if (name == HdExtentSchema::GetSchemaToken()) {
+            return _GetExtentFromExtentsHint();
         }
 
-        HdVectorDataSourceHandle const extentsHintDs =
-            HdVectorDataSource::Cast(
-                _primSource->Get(
-                    UsdImagingTokens->extentsHint));
-        if (!extentsHintDs) {
-            return nullptr;
-        }
-        if (const HdDataSourceBaseHandle ds =
-                extentsHintDs->GetElement(_extentsHintIndex)) {
-            return ds;
-        }
-        return extentsHintDs->GetElement(0);
+        return nullptr;
     }
-    
+
 private:
     _PrimSource(HdContainerDataSourceHandle const &primSource,
-                const size_t extentsHintIndex)
+                _InfoSharedPtr const &info)
       : _primSource(primSource)
-      , _extentsHintIndex(extentsHintIndex)
+      , _info(info)
     {
     }
 
+    HdVectorDataSourceHandle _GetExtentsHints() const {
+        return HdVectorDataSource::Cast(
+            _primSource->Get(UsdImagingTokens->extentsHint));
+    }
+
+    HdDataSourceBaseHandle _GetExtentFromExtentsHint() const {
+        if (_info->extentsHintIndices.empty()) {
+            return nullptr;
+        }
+
+        HdSchemaBasedVectorSchema<HdExtentSchema> vecSchema(_GetExtentsHints());
+        if (!vecSchema) {
+            return nullptr;
+        }
+
+        if (_info->extentsHintIndices.size() == 1) {
+            return vecSchema.GetElement(
+                _info->extentsHintIndices[0]).GetContainer();
+        }
+
+        GfRange3d bbox;
+        for (const size_t extentsHintIndex : _info->extentsHintIndices) {
+            HdExtentSchema schema = vecSchema.GetElement(extentsHintIndex);
+            HdVec3dDataSourceHandle const minDs = schema.GetMin();
+            HdVec3dDataSourceHandle const maxDs = schema.GetMax();
+            if (minDs && maxDs) {
+                bbox.UnionWith(
+                    GfRange3d(
+                        minDs->GetTypedValue(0.0f),
+                        maxDs->GetTypedValue(0.0f)));
+            }
+        }
+
+        return
+            HdExtentSchema::Builder()
+                .SetMin(
+                    HdRetainedTypedSampledDataSource<GfVec3d>::New(
+                        bbox.GetMin()))
+                .SetMax(
+                    HdRetainedTypedSampledDataSource<GfVec3d>::New(
+                        bbox.GetMax()))
+                .Build();
+    }
+    
     HdContainerDataSourceHandle const _primSource;
-    const size_t _extentsHintIndex;
+    _InfoSharedPtr const _info;
 };
 
-size_t
-_GetExtentsHintIndex(HdContainerDataSourceHandle const &inputArgs)
-{
-    if (!inputArgs) {
-        return 0;
-    }
-    HdTokenDataSourceHandle const ds = HdTokenDataSource::Cast(
-        inputArgs->Get(UsdGeomTokens->purpose));
-    if (!ds) {
-        return 0;
-    }
-    const TfToken purpose = ds->GetTypedValue(0.0f);
-    const TfTokenVector &purposes =
-        UsdGeomImageable::GetOrderedPurposeTokens();
-    for (size_t i = 0; i < purposes.size(); ++i) {
-        if (purpose == purposes[i]) {
-            return i;
-        }
-    }
-    return 0;
 }
 
-}
+using namespace UsdImagingExtentResolvingSceneIndex_Impl;
 
 UsdImagingExtentResolvingSceneIndexRefPtr
 UsdImagingExtentResolvingSceneIndex::New(
@@ -204,7 +292,7 @@ UsdImagingExtentResolvingSceneIndex::UsdImagingExtentResolvingSceneIndex(
     const HdSceneIndexBaseRefPtr &inputSceneIndex,
     HdContainerDataSourceHandle const &inputArgs)
   : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
-  , _extentsHintIndex(_GetExtentsHintIndex(inputArgs))
+  , _info(std::make_shared<_Info>(inputArgs))
 {
 }
 
@@ -218,7 +306,7 @@ UsdImagingExtentResolvingSceneIndex::GetPrim(
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     if (prim.dataSource) {
-        prim.dataSource = _PrimSource::New(prim.dataSource, _extentsHintIndex);
+        prim.dataSource = _PrimSource::New(prim.dataSource, _info);
     }
 
     return prim;
