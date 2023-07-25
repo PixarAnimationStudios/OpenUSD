@@ -1194,6 +1194,7 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
                 HdInstancedBySchema::GetDefaultLocator().Append(
                     HdInstancedBySchemaTokens->prototypeRoots),
                 HdMaterialBindingsSchema::GetDefaultLocator(),
+                HdPurposeSchema::GetDefaultLocator(),
                 UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
 
             if (locators.Intersects(resyncLocators)) {
