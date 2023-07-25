@@ -23,11 +23,9 @@
 
 #include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
 
-#include "pxr/usdImaging/usdImaging/extentsHintSchema.h"
-#include "pxr/usdImaging/usdImaging/modelSchema.h"
-#include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/imaging/hd/tokens.h"
-#include "pxr/base/gf/range3d.h"
+#include "pxr/usdImaging/usdImaging/tokens.h"
+#include "pxr/usd/usdGeom/imageable.h"
+#include "pxr/imaging/hd/extentSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
