@@ -334,7 +334,7 @@ struct TestCase<SdfPathExpression>
             prim.CreateAttribute(TfToken("testPathExpr"),
                                  SdfValueTypeNames->PathExpression);
         TF_VERIFY(attr.Set(SdfPathExpression("p1"), UsdTimeCode(0.0)));
-        TF_VERIFY(attr.Set(SdfPathExpression("p1"), UsdTimeCode(2.0)));
+        TF_VERIFY(attr.Set(SdfPathExpression("p2"), UsdTimeCode(2.0)));
     }
     
     static void TestLinearInterpolation(const UsdPrim& prim)
@@ -346,9 +346,12 @@ struct TestCase<SdfPathExpression>
     static void TestHeldInterpolation(const UsdPrim& prim)
     {
         UsdAttribute attr = prim.GetAttribute(TfToken("testPathExpr"));
-        VerifyAttributeValue(attr, UsdTimeCode(0.0), SdfPathExpression("p1"));
-        VerifyAttributeValue(attr, UsdTimeCode(1.0), SdfPathExpression("p1"));
-        VerifyAttributeValue(attr, UsdTimeCode(2.0), SdfPathExpression("p2"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0),
+                             SdfPathExpression("/TestPrim/p1"));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0),
+                             SdfPathExpression("/TestPrim/p1"));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0),
+                             SdfPathExpression("/TestPrim/p2"));
     }
 };
 
