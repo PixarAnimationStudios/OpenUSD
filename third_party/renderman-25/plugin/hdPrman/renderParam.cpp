@@ -99,15 +99,10 @@ TF_DEFINE_ENV_SETTING(HD_PRMAN_OSL_VERBOSE, 0,
                       "Override osl verbose in HdPrman");
 TF_DEFINE_ENV_SETTING(HD_PRMAN_DISABLE_HIDER_JITTER, false,
                       "Disable hider jitter");
-TF_DEFINE_ENV_SETTING(HD_PRMAN_DEFER_SET_OPTIONS, true,
-                      "Defer first SetOptions call to render settings prim sync.");
 
 extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
-
-// Used when Creating Riley RenderView from the RenderSettings or RenderSpec
-static GfVec2i _fallbackResolution = GfVec2i(512,512);
 
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
@@ -1860,17 +1855,33 @@ HdPrman_RenderParam::IsValid() const
 void 
 HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
 {
-    _envOptions = HdPrman_Utils::GetRileyOptionsFromEnvironment();
-    _fallbackOptions = HdPrman_Utils::GetDefaultRileyOptions();
-    // Initialize legacy options from the render settings map.
-    UpdateLegacyOptions();
-    
-    // Force initialization of Riley scene options.
-    // (see related comments in SetRileyOptions)
-    if (!HdRenderIndex::IsSceneIndexEmulationEnabled() ||
-        !TfGetEnvSetting(HD_PRMAN_DEFER_SET_OPTIONS))
+    //////////////////////////////////////////////////////////////////////// 
+    //
+    // Riley setup
+    //
     {
-        SetRileyOptions();
+        // Initialize scene options by composing opinions with the
+        // following precedence:
+        // fallback < legacy settings map < environment.
+        RtParamList &options = GetOptions();
+
+        options = HdPrman_Utils::GetDefaultRileyOptions();
+        SetOptionsFromRenderSettingsMap(
+            static_cast<HdPrmanRenderDelegate*>(renderDelegate)
+                ->GetRenderSettingsMap(), options);
+        options.Update(HdPrman_Utils::GetRileyOptionsFromEnvironment());
+        
+        RtParamList prunedOptions =
+            HdPrman_Utils::PruneDeprecatedOptions(options);
+        _riley->SetOptions(prunedOptions);
+
+        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+            "Setting options from legacy settings map on riley initialization:"
+            "%s\n",
+            HdPrmanDebugUtil::RtParamListToString(prunedOptions).c_str());
+
+        // Safe to create riley objects since SetOptions has been called.
+        _CreateInternalPrims();
     }
         
     // Set the camera path before the first sync so that
@@ -1984,6 +1995,19 @@ HdPrman_RenderParam::SetRileyOptions()
         // See limitation (1) above.
         _CreateInternalPrims();
     }
+}
+
+void
+HdPrman_RenderParam::_CreateInternalPrims()
+{
+    // See comment in SetRileyOptions on when this function needs to be called.
+    GetCameraContext().Begin(AcquireRiley());
+
+    _CreateFallbackMaterials();
+
+    _CreateIntegrator(_renderDelegate);
+    _CreateQuickIntegrator(_renderDelegate);
+    _activeIntegratorId = GetIntegratorId();
 }
 
 void 
