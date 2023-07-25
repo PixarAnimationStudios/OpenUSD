@@ -218,35 +218,51 @@ Usd_DescribePrimData(const Usd_PrimData *p, SdfPath const &proxyPrimPath)
     if (!p)
         return "null prim";
 
-    bool isInstance = p->IsInstance();
-    bool isInstanceProxy = Usd_IsInstanceProxy(p, proxyPrimPath);
-    bool isInPrototype = isInstanceProxy ?
+    const bool isDead = p->_IsDead();
+    const bool isInstance = p->IsInstance();
+    const bool isInstanceProxy = Usd_IsInstanceProxy(p, proxyPrimPath);
+    const bool isInPrototype = isInstanceProxy ?
         Usd_InstanceCache::IsPathInPrototype(proxyPrimPath) : 
         p->IsInPrototype();
-    bool isPrototype = p->IsPrototype();
-    Usd_PrimDataConstPtr prototypeForInstance =
+    const bool isPrototype = p->IsPrototype();
+    const Usd_PrimDataConstPtr prototypeForInstance =
         isInstance && p->_stage ? p->GetPrototype() : nullptr;
 
-    return TfStringPrintf(
-        "%s%s%sprim %s<%s> %s%s%s",
-        Usd_IsDead(p) ? "expired " : (p->_flags[Usd_PrimActiveFlag] ?
+    std::string desc = TfStringPrintf(
+        "%s%s%sprim %s<%s> ",
+        isDead ? "expired " : (p->_flags[Usd_PrimActiveFlag] ?
                                       "" : "inactive "),
         p->GetTypeName().IsEmpty() ? "" :
             TfStringPrintf("'%s' ", p->GetTypeName().GetText()).c_str(),
         // XXX: Add applied schemas to this descriptor
         isInstance ? "instance " : isInstanceProxy ? "instance proxy " : "",
         isInPrototype ? "in prototype " : "",
-        isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText(),
-        (isInstanceProxy || isInstance) ? TfStringPrintf(
-            "with prototype <%s> ", isInstance ?
-            prototypeForInstance->GetPath().GetText() :
-            p->_path.GetText()).c_str() : "",
-        (isInstanceProxy || isPrototype || isInPrototype) ? TfStringPrintf(
-            "using prim index <%s> ",
-            p->GetSourcePrimIndex().GetPath().GetText()).c_str() : "",
-        p->_stage ? TfStringPrintf(
-            "on %s", UsdDescribe(p->_stage).c_str()).c_str() : ""
-        );
+        isInstanceProxy ? proxyPrimPath.GetText() : p->_path.GetText());
+
+    if (!isDead) {
+        if (isInstanceProxy || isInstance) {
+            if (isInstance && !prototypeForInstance) {
+                desc += "with expired prototype";
+            }
+            else {
+                desc += TfStringPrintf(
+                    "with prototype <%s> ", isInstance ?
+                    prototypeForInstance->GetPath().GetText() :
+                    p->_path.GetText());
+            }
+        }
+            
+        if (isInstanceProxy || isPrototype || isInPrototype) {
+            desc += TfStringPrintf(
+                "using prim index <%s> ",
+                p->GetSourcePrimIndex().GetPath().GetText());
+        }
+
+        desc += TfStringPrintf(
+            "on %s", UsdDescribe(p->_stage).c_str()).c_str();
+    }
+
+    return desc;
 }
 
 void
