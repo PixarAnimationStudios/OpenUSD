@@ -1179,12 +1179,14 @@ TfType::GetCanonicalTypeName(const std::type_info &t)
     using LookupMap =
         TfHashMap<std::type_index, std::string, std::hash<std::type_index>>;
 
-    // A std::type_index contains a pointer to a std::type_info and type_info
-    // objects may be defined in plugin libraries. On program exit, the plugins
-    // get unloaded from memory, potentially leaving type_index objects with
-    // dangling pointers and causing crashes when attempting to destroy a
-    // LookupMap. To avoid this, we allocate the LookupMap on the heap and
-    // simply let it leak at program exit so its destructor is never called.
+    // XXX: Ugly hack alert.
+    //
+    // There has been one program that has been occasionally crashing when
+    // invoking the destructor of a static LookupMap. We've been unable to find
+    // the source of the crash but since the destructor was only run at program
+    // exit and failing to run it is harmless, we've chosen to avoid the
+    // destructor entirely and allow the cache of canonical type names to be a
+    // memory leak instead.
     static LookupMap * const lookupMap = new LookupMap;
 
     ScopedLock regLock(GetRegistryMutex(), /*write=*/false);
