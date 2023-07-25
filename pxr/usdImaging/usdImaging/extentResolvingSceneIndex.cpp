@@ -26,6 +26,9 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/imaging/hd/extentSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hd/vectorSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,16 +68,42 @@ _GetPurposes(HdContainerDataSourceHandle const &inputArgs)
     return result;
 }
 
+std::vector<size_t>
+_GetExtentsHintIndices(const TfToken::HashSet &purposes)
+{
+    std::vector<size_t> result;
+
+    const TfTokenVector &orderedPurposes =
+        UsdGeomImageable::GetOrderedPurposeTokens();
+    for (size_t i = 0; i < orderedPurposes.size(); ++i) {
+        const TfToken usdPurpose = orderedPurposes[i];
+        const TfToken purpose =
+            usdPurpose == UsdGeomTokens->default_
+            ? HdTokens->geometry
+            : usdPurpose;
+        if (purposes.find(purpose) != purposes.end()) {
+            result.push_back(i);
+        }
+    }
+
+    return result;
+}
+
 struct _Info
 {
     _Info(HdContainerDataSourceHandle const &inputArgs)
       : purposes(_GetPurposes(inputArgs))
+      , extentsHintIndices(_GetExtentsHintIndices(purposes))
     {
     }
 
     /// When computing the bounding box, we only consider geometry
     /// with purposes being in this set.
     const TfToken::HashSet purposes;
+
+    /// Indices into UsdGeomModelAPI's extentsHint corresponding to
+    /// the above purposes.
+    const std::vector<size_t> extentsHintIndices;
 };
 
 using _DirtyEntryPredicate =
@@ -195,33 +224,31 @@ private:
     {
     }
 
-    UsdImagingExtentsHintSchema _GetExtentsHints() const {
-        return
-            UsdImagingExtentsHintSchema::GetFromParent(_primSource);
+    HdVectorDataSourceHandle _GetExtentsHints() const {
+        return HdVectorDataSource::Cast(
+            _primSource->Get(UsdImagingTokens->extentsHint));
     }
 
     HdDataSourceBaseHandle _GetExtentFromExtentsHint() const {
-        if (_info->purposes.empty()) {
+        if (_info->extentsHintIndices.empty()) {
             return nullptr;
         }
 
-        UsdImagingExtentsHintSchema extentsHintSchema = _GetExtentsHints();
-        if (!extentsHintSchema) {
+        HdSchemaBasedVectorSchema<HdExtentSchema> vecSchema(_GetExtentsHints());
+        if (!vecSchema) {
             return nullptr;
         }
-        
-        if (_info->purposes.size() == 1) {
-            return
-                extentsHintSchema
-                    .GetExtent(*_info->purposes.begin())
-                    .GetContainer();
+
+        if (_info->extentsHintIndices.size() == 1) {
+            return vecSchema.GetElement(
+                _info->extentsHintIndices[0]).GetContainer();
         }
 
         GfRange3d bbox;
-        for (const TfToken &purpose : _info->purposes) {
-            HdExtentSchema extentSchema = extentsHintSchema.GetExtent(purpose);
-            HdVec3dDataSourceHandle const minDs = extentSchema.GetMin();
-            HdVec3dDataSourceHandle const maxDs = extentSchema.GetMax();
+        for (const size_t extentsHintIndex : _info->extentsHintIndices) {
+            HdExtentSchema schema = vecSchema.GetElement(extentsHintIndex);
+            HdVec3dDataSourceHandle const minDs = schema.GetMin();
+            HdVec3dDataSourceHandle const maxDs = schema.GetMax();
             if (minDs && maxDs) {
                 bbox.UnionWith(
                     GfRange3d(
