@@ -400,6 +400,56 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXform);
 // ----------------------------------------------------------------------------
 
 ///
+/// \class UsdImagingDataSourceModel
+///
+/// Data source representing model API for a USD prim.
+///
+class UsdImagingDataSourceModel : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceModel);
+
+    /// Return attribute names of UsdImagingModelSchema.
+    ///
+    TfTokenVector GetNames() override;
+
+    /// Returns data authored on USD prim (without resolving inherited) for
+    /// attribute names of UsdImagingModelSchema.
+    ///
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    USDIMAGING_API
+    static HdDataSourceLocatorSet Invalidate(
+            UsdPrim const& prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties,
+            UsdImagingPropertyInvalidationType invalidationType);
+
+private:
+    /// C'tor.
+    ///
+    /// \p model is API schema from which this class can extract values from.
+    /// \p sceneIndexPath is the path of this object in the scene index.
+    /// \p stageGlobals represents the context object for the UsdStage with
+    /// which to evaluate this attribute data source.
+    ///
+    /// Note: client code calls this via static New().
+    UsdImagingDataSourceModel(
+            const UsdGeomModelAPI &model,
+            const SdfPath &sceneIndexPath,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+private:
+    UsdGeomModelAPI _model;
+    const SdfPath _sceneIndexPath;
+    const UsdImagingDataSourceStageGlobals &_stageGlobals;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceModel);
+
+// ----------------------------------------------------------------------------
+
+///
 /// \class UsdImagingDataSourcePrimOrigin
 ///
 /// Data source to access the underlying UsdPrim.

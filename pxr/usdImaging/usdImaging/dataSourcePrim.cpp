@@ -599,6 +599,90 @@ UsdImagingDataSourceModel::Get(const TfToken &name)
     return nullptr;
 }
 
+/* static */ HdDataSourceLocatorSet
+UsdImagingDataSourceModel::Invalidate(
+        UsdPrim const& prim,
+        const TfToken &subprim,
+        const TfTokenVector &properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
+{
+    HdDataSourceLocatorSet locators;
+
+    for (const TfToken &propertyName : properties) {
+        if (propertyName == UsdGeomTokens->modelDrawMode) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->drawMode);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelApplyDrawMode) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->applyDrawMode);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelDrawModeColor) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->drawModeColor);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardGeometry) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardGeometry);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureXPos) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureXPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureXNeg) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureXNeg);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureYPos) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureYPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureYNeg) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureYNeg);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureZPos) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureZPos);
+            locators.insert(locator);
+        }
+
+        if (propertyName == UsdGeomTokens->modelCardTextureZNeg) {
+            static const HdDataSourceLocator locator =
+                UsdImagingModelSchema::GetDefaultLocator().Append(
+                    UsdImagingModelSchemaTokens->cardTextureZNeg);
+            locators.insert(locator);
+        }
+    }
+
+    return locators;
+}
+
 // ----------------------------------------------------------------------------
 
 UsdImagingDataSourcePrimOrigin::UsdImagingDataSourcePrimOrigin(
@@ -699,7 +783,7 @@ UsdImagingDataSourcePrim::GetNames()
     }
 
     if (_GetUsdPrim().HasAPI<UsdGeomModelAPI>()) {
-        vec.push_back(UsdImagingModelSchemaTokens->model);
+        vec.push_back(UsdImagingModelSchema::GetSchemaToken());
     }
 
 
@@ -779,7 +863,7 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
         } else {
             return nullptr;
         }
-    } else if (name == UsdImagingModelSchemaTokens->model) {
+    } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
         UsdGeomModelAPI model(_GetUsdPrim());
         if (!model) {
             return nullptr;
@@ -840,78 +924,6 @@ UsdImagingDataSourcePrim::Invalidate(
             locators.insert(locator);
         }
 
-        // TODO: Move these into UsdImagingDataSourceModel::Invalidate.
-
-        if (propertyName == UsdGeomTokens->modelDrawMode) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->drawMode);
-            locators.insert(locator);  
-        }
-
-        if (propertyName == UsdGeomTokens->modelApplyDrawMode) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->applyDrawMode);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelDrawModeColor) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->drawModeColor);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardGeometry) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardGeometry);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureXPos) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureXPos);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureXNeg) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureXNeg);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureYPos) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureYPos);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureYNeg) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureYNeg);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureZPos) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureZPos);
-            locators.insert(locator);
-        }
-
-        if (propertyName == UsdGeomTokens->modelCardTextureZNeg) {
-            static const HdDataSourceLocator locator(
-                UsdImagingModelSchemaTokens->model,
-                UsdImagingModelSchemaTokens->cardTextureZNeg);
-            locators.insert(locator);
-        }
-
         if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {
             if (invalidationType == UsdImagingPropertyInvalidationType::Resync) {
                 locators.insert(
@@ -924,6 +936,10 @@ UsdImagingDataSourcePrim::Invalidate(
             }
         }
     }
+
+    locators.insert(
+        UsdImagingDataSourceModel::Invalidate(
+            prim, subprim, properties, invalidationType));
 
     return locators;
 }
