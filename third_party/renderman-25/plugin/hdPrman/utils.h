@@ -79,7 +79,6 @@ RtMatrixToGfMatrix(const RtMatrix4x4 &m)
         m.m[3][0], m.m[3][1], m.m[3][2], m.m[3][3]);
 }
 
-
 /// Attempt to extract a useful texture identifier from the given \p asset.
 /// If \p asset is determined to not be a .tex file, attempt to use the Hio
 /// based Rtx plugin to load the texture.  If \p asset is non-empty, we will
@@ -96,6 +95,21 @@ ResolveAssetToRtUString(
 RtParamList
 PruneDeprecatedOptions(
     const RtParamList &options);
+
+/// Returns a small set of options for default path tracer configuration.
+RtParamList
+GetDefaultRileyOptions();
+
+/// Returns the options driven by environment variables.
+RtParamList
+GetRileyOptionsFromEnvironment();
+
+/// Return a param list with params in \p a composed over \p b. This means that
+/// for params in both lists, \p a's opinion would trump \p b.
+RtParamList
+Compose(
+    RtParamList const &a,
+    RtParamList const &b);
 
 }
 

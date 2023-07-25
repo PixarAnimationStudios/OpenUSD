@@ -206,8 +206,10 @@ public:
     void DecreaseSceneLightCount() { --_sceneLightCount; }
     
     // Provides external access to resources used to set parameters for
-    // options and the active integrator.
-    RtParamList &GetOptions() { return _options; }
+    // scene options and the active integrator from the render settings map
+    // (the latter is used by the ParamsSetter prim).
+    RtParamList &GetOptions() { return _legacyOptions; }
+
     HdPrman_CameraContext &GetCameraContext() { return _cameraContext; }
 
     HdPrman_RenderViewContext &GetRenderViewContext() {
@@ -333,9 +335,12 @@ private:
     void _CreateRiley(const std::string &rileyVariant, 
         const std::string &xpuVariant,
         const std::vector<std::string>& extraArgs);
+
+    // Creation of riley prims that are not backed by the scene.
+    void _CreateInternalPrims();
     void _CreateFallbackMaterials();
-    void _CreateFallbackLight();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
+    void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
     
     void _DestroyRiley();
     void _DestroyStatsSession();
@@ -372,8 +377,6 @@ private:
     riley::ShadingNode _ComputeQuickIntegratorNode(
         HdRenderDelegate * renderDelegate,
         const HdPrmanCamera * cam);
-
-    void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
 
     void _RenderThreadCallback();
 
@@ -428,31 +431,41 @@ private:
     _HdToRileyCoordSysMap _hdToRileyCoordSysMap;
     std::mutex _coordSysMutex;
 
-    RtParamList _options;
     HdPrman_CameraContext _cameraContext;
     HdPrman_RenderViewContext _renderViewContext;
 
-    // Integrator
+    /// ------------------------------------------------------------------------
+    // Render settings prim driven state
+    //
+
+    // Render terminals
     SdfPath _renderSettingsIntegratorPath;
     HdMaterialNode2 _renderSettingsIntegratorNode;
     riley::IntegratorId _integratorId;
-    RtParamList _integratorParams; // XXX: this is mainly here for ParamsSetter
 
-    // SampleFilter
     SdfPathVector _connectedSampleFilterPaths;
     std::map<SdfPath, riley::ShadingNode> _sampleFilterNodes;
     riley::SampleFilterId _sampleFiltersId;
 
-    // DisplayFilter
     SdfPathVector _connectedDisplayFilterPaths;
     std::map<SdfPath, riley::ShadingNode> _displayFilterNodes;
     riley::DisplayFilterId _displayFiltersId;
+    /// ------------------------------------------------------------------------
+
+    /// ------------------------------------------------------------------------
+    // Legacy render settings driven state
+    //
+    // Params from the render settings map.
+    RtParamList _legacyOptions;
+    int _lastLegacySettingsVersion;
+
+    RtParamList _integratorParams; // XXX: this is mainly here for ParamsSetter
+    /// ------------------------------------------------------------------------
 
     // RIX or XPU
     bool _xpu;
     std::vector<int> _xpuGpuConfig;
 
-    int _lastLegacySettingsVersion;
 
     std::vector<std::string> _outputNames;
 
@@ -489,18 +502,6 @@ HdPrman_ResolveMaterial(HdSceneDelegate *sceneDelegate,
                         riley::Riley *riley,
                         riley::MaterialId *materialId,
                         riley::DisplacementId *dispId);
-
-/// Update the supplied list of options using searchpaths
-/// pulled from envrionment variables:
-///
-/// - RMAN_SHADERPATH
-/// - RMAN_TEXTUREPATH
-/// - RMAN_RIXPLUGINPATH
-/// - RMAN_PROCEDURALPATH
-///
-HDPRMAN_API
-void 
-HdPrman_UpdateSearchPathsFromEnvironment(RtParamList& options);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
