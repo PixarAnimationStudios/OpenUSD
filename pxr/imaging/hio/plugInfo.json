@@ -7,6 +7,11 @@
                         "bases": ["HioImage"],
                         "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
                         "precedence": 30
+                    },
+                    "Hio_OpenEXRImage" : {
+                        "bases": ["HioImage"],
+                        "imageTypes": ["exr"],
+                        "precedence": 30
                     }
                 }
             },
