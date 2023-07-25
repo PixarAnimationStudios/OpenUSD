@@ -902,7 +902,7 @@ namespace _CardsDrawMode {
 TF_DEFINE_PRIVATE_TOKENS(
     _primNameTokens,
 
-    (mesh)
+    (cardsMesh)
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -1958,7 +1958,7 @@ public:
 
     const TfTokenVector
     _GetChildNames() const override {
-        TfTokenVector names = { _primNameTokens->mesh };
+        TfTokenVector names = { _primNameTokens->cardsMesh };
         const _MaterialsDict mats = _dataCache->GetMaterials();
         for (const auto &kv : mats) {
             names.push_back(kv.first);
@@ -1968,7 +1968,7 @@ public:
 
     TfToken
     _GetChildPrimType(const TfToken &name) const override {
-        if (name == _primNameTokens->mesh) {
+        if (name == _primNameTokens->cardsMesh) {
             return HdPrimTypeTokens->mesh;
         }
         return HdPrimTypeTokens->material;
@@ -2032,7 +2032,8 @@ public:
                     .Append(HdPrimvarSchemaTokens->primvarValue);
             primDirtyLocators.insert(displayColorValue);
             entries->push_back(
-                {_path.AppendChild(_primNameTokens->mesh), primDirtyLocators});
+                {_path.AppendChild(_primNameTokens->cardsMesh),
+                    primDirtyLocators});
             static const HdDataSourceLocatorSet materialColorInputs =
                 _ComputeMaterialColorInputLocators();
             for (const auto &kv : _dataCache->GetMaterials()) {
@@ -2043,7 +2044,7 @@ public:
         }
 
         entries->push_back(
-            {_path.AppendChild(_primNameTokens->mesh), dirtyLocators});
+            {_path.AppendChild(_primNameTokens->cardsMesh), dirtyLocators});
     }
 
     TfToken GetDrawMode() const override {
