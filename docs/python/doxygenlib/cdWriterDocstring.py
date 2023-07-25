@@ -42,6 +42,11 @@ import re
 
 from .cdUtils import *
 
+
+API_RE_FIND = re.compile(r"""\b[A-Z]+_API(?:\s+|$)""")
+API_RE_REPLACE = ""
+
+
 class Writer:
     """
     Manage the formatting of Python docstrings and output file generation.
@@ -483,6 +488,7 @@ class Writer:
         ret = ret.replace('boost::', '')
         ret = ret.replace('vector', 'sequence')
         ret = ret.replace('::', '.')
+        ret = API_RE_FIND.sub(API_RE_REPLACE, ret)
         ret = ret.strip()
         if ret.startswith(self.prefix):
             ret = ret[len(self.prefix):]
