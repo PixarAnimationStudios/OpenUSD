@@ -213,6 +213,23 @@ float GetEdgeOpacityForPatch()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FinalEdgeOpacityNoForce
+
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill)
+{
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl MeshWire.Fragment.FinalEdgeOpacityForce
+
+vec4 ApplyFinalEdgeOpacity(vec4 Cfill)
+{
+    Cfill.a = 1.0;
+    return Cfill;
+}
+
+--- --------------------------------------------------------------------------
 -- glsl MeshWire.Fragment.NoEdge
 
 vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
@@ -241,7 +258,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -257,9 +274,8 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     // If wireColor is unset (zero), ignore it altogether
     
     Cfill.rgb = mix(Cfill.rgb, wireColor.rgb, wireColor.a);
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -270,8 +286,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -313,7 +328,7 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     vec4 Cedge = vec4(mix(Cfill.rgb, wireColor.rgb, wireColor.a), 1);
     Cfill.rgb = mix(Cfill.rgb, Cedge.rgb, p);
 
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
 
 --- --------------------------------------------------------------------------
@@ -324,7 +339,5 @@ vec4 ApplyEdgeColor(vec4 Cfill, vec4 patchCoord)
     float p = GetEdgeOpacity();
     if (p < 0.5) discard;
 
-    Cfill.a = 1.0; // edges ignore input opacity and are opaque.
-
-    return Cfill;
+    return ApplyFinalEdgeOpacity(Cfill);
 }
