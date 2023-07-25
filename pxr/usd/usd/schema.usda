@@ -241,6 +241,7 @@ class "CollectionAPI"
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
+#include "pxr/usd/sdf/pathExpression.h"
 """
         token apiSchemaType = "multipleApply"
         token propertyNamespacePrefix  = "collection"
@@ -288,6 +289,10 @@ class "CollectionAPI"
         UsdCollectionAPI::MembershipQuery::IsPathIncluded) 
         or of enumerating the objects belonging to the collection (see 
         UsdCollectionAPI::GetIncludedObjects)."""
+    )
+    uniform pathExpression membershipExpression (
+        doc = """Specifies a path expression that determines membership in this
+        collection."""
     )
     uniform opaque __INSTANCE_NAME__ (
         customData = {

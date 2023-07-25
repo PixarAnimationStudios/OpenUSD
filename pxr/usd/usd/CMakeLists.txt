@@ -27,6 +27,7 @@ pxr_library(usd
         attributeQuery
         collectionAPI
         collectionMembershipQuery
+        collectionPredicateLibrary
         common
         crateInfo
         debugCodes
@@ -230,6 +231,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdOpaqueAttributes.py
+    testenv/testUsdPathExpressionAttrs.py
     testenv/testUsdPayloads.py
     testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
@@ -1023,6 +1025,12 @@ pxr_register_test(testUsdStageLoadUnload
 pxr_register_test(testUsdPayloads
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPayloads"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdPathExpressionAttrs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPathExpressionAttrs"
     EXPECTED_RETURN_CODE 0
 )
 

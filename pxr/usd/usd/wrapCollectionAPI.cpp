@@ -65,6 +65,13 @@ _CreateIncludeRootAttr(UsdCollectionAPI &self,
 }
         
 static UsdAttribute
+_CreateMembershipExpressionAttr(UsdCollectionAPI &self,
+                                      object defaultVal, bool writeSparsely) {
+    return self.CreateMembershipExpressionAttr(
+        UsdPythonToSdfType(defaultVal, SdfValueTypeNames->PathExpression), writeSparsely);
+}
+        
+static UsdAttribute
 _CreateCollectionAttr(UsdCollectionAPI &self,
                                       object defaultVal, bool writeSparsely) {
     return self.CreateCollectionAttr(
@@ -174,6 +181,13 @@ void wrapUsdCollectionAPI()
              &This::GetIncludeRootAttr)
         .def("CreateIncludeRootAttr",
              &_CreateIncludeRootAttr,
+             (arg("defaultValue")=object(),
+              arg("writeSparsely")=false))
+        
+        .def("GetMembershipExpressionAttr",
+             &This::GetMembershipExpressionAttr)
+        .def("CreateMembershipExpressionAttr",
+             &_CreateMembershipExpressionAttr,
              (arg("defaultValue")=object(),
               arg("writeSparsely")=false))
         
