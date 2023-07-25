@@ -101,6 +101,8 @@ private:
 
 }
 
+UsdImagingFlattenedModelDataSourceProvider::~UsdImagingFlattenedModelDataSourceProvider() = default;
+
 HdContainerDataSourceHandle
 UsdImagingFlattenedModelDataSourceProvider::GetFlattenedDataSource(
     const Context &ctx) const
