@@ -1833,6 +1833,13 @@ HdPrman_RenderParam::_ComputeIntegratorNode(
 
     const RtUString rtIntegratorName(integratorName.c_str());
 
+    // If the settings map / env var say to use PbsPathTracer,
+    // we'll turn on volume aggregate rendering.
+    if (integratorName == HdPrmanIntegratorTokens->PbsPathTracer.GetString()) {
+        _SetParamValue(RtUString("volumeAggregate"), VtValue(4),
+            TfToken(), _integratorParams);
+    }
+
     SetIntegratorParamsFromRenderSettingsMap(
         static_cast<HdPrmanRenderDelegate*>(renderDelegate),
         integratorName,
