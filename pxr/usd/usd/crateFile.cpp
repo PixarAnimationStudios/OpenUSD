@@ -2629,7 +2629,7 @@ CrateFile::_AddDeferredSpecs()
 {
     // A map from sample time to VtValues within TimeSamples instances in
     // _deferredSpecs.
-    boost::container::flat_map<double, vector<VtValue *>> allValuesAtAllTimes;
+    pxr_tsl::robin_map<double, vector<VtValue *>> allValuesAtAllTimes;
 
     // Search for the TimeSamples, add to the allValuesAtAllTimes.
     for (auto &spec: _deferredSpecs) {
@@ -2643,12 +2643,22 @@ CrateFile::_AddDeferredSpecs()
         }
     }
 
+    // Create a sorted view of the underlying map keys.
+    std::vector<double> orderedTimes(allValuesAtAllTimes.size());
+    std::transform(std::cbegin(allValuesAtAllTimes),
+                   std::cend(allValuesAtAllTimes),
+                   std::begin(orderedTimes),
+                   [](const auto& element) { return element.first; });
+    std::sort(orderedTimes.begin(), orderedTimes.end());
+
     // Now walk through allValuesAtAllTimes in order and pack all the values,
     // swapping them out with the resulting reps.  This ensures that when we
     // pack the specs, which will re-pack the values, they'll be noops since
     // they are just holding value reps that point into the file.
-    for (auto const &p: allValuesAtAllTimes) {
-        for (VtValue *val: p.second)
+    for (auto const &t: orderedTimes) {
+        auto it = allValuesAtAllTimes.find(t);
+        TF_DEV_AXIOM(it != allValuesAtAllTimes.end());
+        for (VtValue *val: it->second)
             *val = _PackValue(*val);
     }
 
