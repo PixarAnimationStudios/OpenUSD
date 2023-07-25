@@ -204,11 +204,9 @@ HdPrmanRenderDelegate::_Initialize()
     if (!integratorEnv.empty()) {
         integrator = integratorEnv;
     }
-
-    // 64 samples is RenderMan default
-    int maxSamples = TfGetenvInt("HD_PRMAN_MAX_SAMPLES", 64);
-
-    float pixelVariance = 0.001f;
+ 
+    const int maxSamples = 64; // 64 samples is RenderMan default
+    const float pixelVariance = 0.001f;
 
     // Prepare list of render settings descriptors
     _settingDescriptors.reserve(5);

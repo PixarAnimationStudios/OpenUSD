@@ -990,10 +990,6 @@ int main(int argc, char *argv[])
         settingsMap[HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath] =
             camInfo.cameraPath;
 
-        AddNamespacedSettings(
-            UsdRenderComputeNamespacedSettings(
-                settings.GetPrim(), prmanNamespaces),
-            &settingsMap);
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
         HydraSetupAndRender(

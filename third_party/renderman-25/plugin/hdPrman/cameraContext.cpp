@@ -552,6 +552,11 @@ HdPrman_CameraContext::_UpdateRileyCamera(
     const GfRange2d &screenWindow,
     const HdPrmanCamera * const camera)
 {
+    // The riley camera should have been created before we get here.
+    if (!TF_VERIFY(_cameraId != riley::CameraId::InvalidId())) {
+        return;
+    }
+
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(camera->GetProjection()),
@@ -794,7 +799,7 @@ HdPrman_CameraContext::MarkValid()
 }
 
 void
-HdPrman_CameraContext::Begin(riley::Riley * const riley)
+HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
 {
     // Create camera
 

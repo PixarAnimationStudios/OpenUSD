@@ -32,8 +32,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class HdPrman_RenderSettingsFilteringSceneIndexPlugin
 ///
-/// Prman scene index plugin that configures the render settings filtering scene index to filter in
-/// Prman settings based on conventions used in UsdRiPxr-schemas applied to RenderSettings prims.
+/// Prman scene index plugin that
+/// * filters in settings properties based on conventions used in
+///   UsdRiPxr-schemas auto-applied to RenderSettings prims.
+/// * adds a fallback render settings prim (which will be used for scenes
+///   that don't have one).
 ///
 class HdPrman_RenderSettingsFilteringSceneIndexPlugin :
     public HdSceneIndexPlugin

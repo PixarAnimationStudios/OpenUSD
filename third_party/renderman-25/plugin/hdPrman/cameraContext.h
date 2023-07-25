@@ -69,7 +69,7 @@ public:
     bool IsInvalid() const;
 
     /// Create riley camera (with default settings).
-    void Begin(riley::Riley * riley);
+    void CreateRileyCamera(riley::Riley * riley);
 
     /// Get id of riley camera - valid only after Begin.
     const riley::CameraId &GetCameraId() const { return _cameraId; }

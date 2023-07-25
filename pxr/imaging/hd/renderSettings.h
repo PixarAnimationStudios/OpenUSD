@@ -149,9 +149,6 @@ public:
     const NamespacedSettings& GetNamespacedSettings() const;
 
     HD_API
-    unsigned int GetSettingsVersion() const;
-
-    HD_API
     const RenderProducts& GetRenderProducts() const;
 
     HD_API
@@ -201,7 +198,6 @@ private:
 
     bool _active;
     NamespacedSettings _namespacedSettings;
-    unsigned int _settingsVersion;
     RenderProducts _products;
     VtArray<TfToken> _includedPurposes;
     VtArray<TfToken> _materialBindingPurposes;

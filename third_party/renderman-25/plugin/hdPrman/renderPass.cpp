@@ -65,7 +65,6 @@ HdPrman_RenderPass::HdPrman_RenderPass(
 , _lastRenderedVersion(0)
 , _lastTaskRenderTagsVersion(0)
 , _lastRprimRenderTagVersion(0)
-, _lastRenderSettingsPrimVersion(0)
 , _quickIntegrateTime(0.2f)
 {
     TF_VERIFY(_renderParam);
@@ -217,6 +216,23 @@ _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
     }
 }
 
+const HdPrman_RenderSettings *
+_GetActiveRenderSettingsPrim(
+    HdRenderIndex *renderIndex)
+{
+    SdfPath primPath;
+    const bool hasActiveRenderSettingsPrim =
+        HdUtils::HasActiveRenderSettingsPrim(
+            renderIndex->GetTerminalSceneIndex(), &primPath);
+    
+    if (hasActiveRenderSettingsPrim) {
+        return dynamic_cast<const HdPrman_RenderSettings*>(
+            renderIndex->GetBprim(HdPrimTypeTokens->renderSettings, primPath));
+    }
+
+    return nullptr;
+}
+
 } // end anonymous namespace
 
 void
@@ -256,13 +272,13 @@ HdPrman_RenderPass::_Execute(
     //
 
     // Render settings can come from the legacy render settings map OR/AND
-    // the active render settings prim. We need to track and handle changes
-    // to either of them.
+    // the active render settings prim. We handle changes to the render settings
+    // prim during Sync.
+    const HdPrman_RenderSettings * const renderSettingsPrim
+        = _GetActiveRenderSettingsPrim(GetRenderIndex());
     bool legacySettingsChanged = false;
-    bool primSettingsChanged = false;
-    const HdPrman_RenderSettings *renderSettingsPrim = nullptr;
     {
-        // Legacy settings.
+        // Legacy settings version tracking.
         const int currentLegacySettingsVersion =
             renderDelegate->GetRenderSettingsVersion();
         legacySettingsChanged = _renderParam->GetLastLegacySettingsVersion() 
@@ -271,38 +287,8 @@ HdPrman_RenderPass::_Execute(
             _renderParam->SetLastLegacySettingsVersion(
                 currentLegacySettingsVersion);
         }
-
-        // Prim settings.
-        SdfPath curRsPrimPath;
-        const bool hasActiveRenderSettingsPrim =
-            HdUtils::HasActiveRenderSettingsPrim(
-                GetRenderIndex()->GetTerminalSceneIndex(), &curRsPrimPath);
-        
-        if (_lastRenderSettingsPrimPath != curRsPrimPath) {
-            _lastRenderSettingsPrimVersion = 0;
-            _lastRenderSettingsPrimPath = curRsPrimPath;
-        }
-
-        if (hasActiveRenderSettingsPrim) {
-            renderSettingsPrim = dynamic_cast<const HdPrman_RenderSettings*>(
-                GetRenderIndex()->GetBprim(
-                    HdPrimTypeTokens->renderSettings, curRsPrimPath));
-
-            if (TF_VERIFY(renderSettingsPrim)) {
-                const unsigned int curSettingsVersion =
-                    renderSettingsPrim->GetSettingsVersion();
-                
-                primSettingsChanged =
-                    curSettingsVersion != _lastRenderSettingsPrimVersion;
-                
-                if (primSettingsChanged) {
-                    _lastRenderSettingsPrimVersion = curSettingsVersion;
-                }
-            }
-        }
-
     }
-    
+
     HdPrman_CameraContext &cameraContext = _renderParam->GetCameraContext();
     // Camera path can come from render pass state or
     // from render settings. The camera from the render pass state
@@ -494,7 +480,7 @@ HdPrman_RenderPass::_Execute(
         if (resolutionChanged) {
             _renderParam->resolution = resolution;
             
-            _renderParam->GetOptions().SetIntegerArray(
+            _renderParam->GetLegacyOptions().SetIntegerArray(
                 RixStr.k_Ri_FormatResolution,
                 resolution.data(), 2);
             
@@ -508,7 +494,7 @@ HdPrman_RenderPass::_Execute(
             // the resolution didn't. This will make sure the Ri:CropWindow
             // option gets updated.
             cameraContext.SetRileyOptionsInteractive(
-                &(_renderParam->GetOptions()),
+                &(_renderParam->GetLegacyOptions()),
                 resolution);
         }
 
@@ -528,45 +514,15 @@ HdPrman_RenderPass::_Execute(
 
     if (legacySettingsChanged) {
         // Update options from the legacy settings map.
-        _renderParam->SetOptionsFromRenderSettingsMap(
-            renderDelegate->GetRenderSettingsMap(),
-            _renderParam->GetOptions());
+        _renderParam->UpdateLegacyOptions();
     }
 
-    // Commit settings options to riley
+    // Commit updated scene options.
     {
-        // Legacy settings (i.e., _renderParam->GetOptions())
         const bool updateLegacyOptions =
             legacySettingsChanged || camChanged || resolutionChanged;
         if (updateLegacyOptions) {
-            RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
-                _renderParam->GetOptions());
-
-            riley::Riley * const riley = _renderParam->AcquireRiley();
-            riley->SetOptions(prunedOptions);
-
-            TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
-                "Setting options from legacy data flow: \n%s", 
-                HdPrmanDebugUtil::RtParamListToString(prunedOptions).c_str());
-        }
-
-        // XXX Until we get to a cleaner data flow, we have to handle settings
-        //     opinions from legacy and (render settings) prim sources.
-        //     Commit the prim's opinions last to override the legacy opinion.
-        //     This needs to be done when either of the opinions are updated.
-        //
-        if (renderSettingsPrim &&
-            (updateLegacyOptions || primSettingsChanged)) {
-            RtParamList prunedOptions = HdPrman_Utils::PruneDeprecatedOptions(
-                renderSettingsPrim->GetOptions());
-
-            riley::Riley * const riley = _renderParam->AcquireRiley();
-            riley->SetOptions(prunedOptions);
-
-            TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
-                "Setting options from render settings prim %s:\n %s",
-                renderSettingsPrim->GetId().GetText(),
-                HdPrmanDebugUtil::RtParamListToString(prunedOptions).c_str());
+            _renderParam->SetRileyOptions();
         }
     }
 

@@ -59,7 +59,6 @@ private:
     int _lastTaskRenderTagsVersion;
     int _lastRprimRenderTagVersion;
 
-    unsigned int _lastRenderSettingsPrimVersion;
     SdfPath _lastRenderSettingsPrimPath;
 
     std::chrono::steady_clock::time_point _frameStart;

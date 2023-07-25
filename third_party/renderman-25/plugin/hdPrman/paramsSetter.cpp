@@ -58,8 +58,6 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
     HdPrman_RenderParam * const param =
         static_cast<HdPrman_RenderParam*>(renderParam);
 
-    riley::Riley * const riley = param->AcquireRiley();
-
     const SdfPath id = GetId();
 
     VtValue optionsValue = sceneDelegate->Get(id, _tokens->Options);
@@ -68,14 +66,16 @@ HdPrmanParamsSetter::Sync(HdSceneDelegate *sceneDelegate,
             optionsValue.UncheckedGet<std::map<TfToken, VtValue>>();
 
         if (!valueDict.empty()) {
-            RtParamList &options = param->GetOptions();
+            // Update the legacy options so it can be used to update the
+            // integrator below.
+            RtParamList &legacyOptions = param->GetLegacyOptions();
             for (const auto &tokenvalpair : valueDict) {
                 HdPrman_Utils::SetParamFromVtValue(
                     RtUString(tokenvalpair.first.data()), tokenvalpair.second,
-                        TfToken(), &options);
+                        TfToken(), &legacyOptions);
             }
 
-            riley->SetOptions(options);
+            param->SetRileyOptions();
         }
     }
 
