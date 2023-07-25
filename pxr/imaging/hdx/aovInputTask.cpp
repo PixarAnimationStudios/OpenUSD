@@ -56,6 +56,9 @@ HdxAovInputTask::~HdxAovInputTask()
     if (_depthTexture) {
         _GetHgi()->DestroyTexture(&_depthTexture);
     }
+    if (_depthTextureIntermediate) {
+        _GetHgi()->DestroyTexture(&_depthTextureIntermediate);
+    }
 }
 
 bool
