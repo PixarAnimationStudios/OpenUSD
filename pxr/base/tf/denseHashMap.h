@@ -33,8 +33,6 @@
 #include <memory>
 #include <vector>
 
-#include <boost/iterator/iterator_facade.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashMap
@@ -136,30 +134,65 @@ private:
     //
     // Clearly not a good thing.
     //
-    // Therefore we use boost::iterator_facade to create an iterator that uses
-    // the map's value_type as externally visible type.
+    // Therefore we create an iterator that uses the map's value_type as
+    // externally visible type.
     //
     template <class ElementType, class UnderlyingIterator>
-    class _IteratorBase :
-        public boost::iterator_facade<
-            _IteratorBase<ElementType, UnderlyingIterator>,
-            ElementType,
-            boost::bidirectional_traversal_tag>
+    class _IteratorBase
     {
     public:
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = ElementType;
+        using reference = ElementType&;
+        using pointer = ElementType*;
+        using difference_type = typename UnderlyingIterator::difference_type;
 
         // Empty ctor.
-        _IteratorBase() {}
+        _IteratorBase() = default;
 
         // Allow conversion of an iterator to a const_iterator.
         template<class OtherIteratorType>
         _IteratorBase(const OtherIteratorType &rhs)
         :   _iter(rhs._GetUnderlyingIterator()) {}
 
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return &(dereference()); }
+
+        _IteratorBase& operator++() {
+            increment();
+            return *this;
+        }
+
+        _IteratorBase& operator--() {
+            decrement();
+            return *this;
+        }
+
+        _IteratorBase operator++(int) {
+            _IteratorBase result(*this);
+            increment();
+            return result;
+        }
+
+        _IteratorBase operator--(int) {
+            _IteratorBase result(*this);
+            decrement();
+            return result;
+        }
+
+        template <class OtherIteratorType>
+        bool operator==(const OtherIteratorType& other) const {
+            return equal(other);
+        }
+
+        template <class OtherIteratorType>
+        bool operator!=(const OtherIteratorType& other) const {
+            return !equal(other);
+        }
+
     private:
 
         friend class TfDenseHashMap;
-        friend class boost::iterator_core_access;
 
         // Ctor from an underlying iterator.
         _IteratorBase(const UnderlyingIterator &iter)

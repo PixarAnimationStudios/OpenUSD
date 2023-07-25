@@ -33,8 +33,6 @@
 #include <memory>
 #include <vector>
 
-#include <boost/iterator/iterator_facade.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
