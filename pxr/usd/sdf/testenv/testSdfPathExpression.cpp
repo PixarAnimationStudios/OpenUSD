@@ -316,9 +316,85 @@ TestSearch()
             "/World/anim/sets/Bedroom/Furniture",
             "/World/anim/sets/Bedroom/Furniture/Bed",
             "/World/anim/sets/Bedroom/Furniture/Desk",
-            "/World/anim/sets/Bedroom/Furniture/Chair"
+            "/World/anim/sets/Bedroom/Furniture/Chair",
+            "/Foo",
+            "/Foo/geom",
+            "/Foo/geom/foo",
+            "/Foo/geom/foo/bar",
+            "/Foo/geom/foo/bar/foo",
+            "/Foo/geom/foo/bar/foo/bar",
+            "/Foo/geom/foo/bar/foo/bar/foo",
+            "/Foo/geom/foo/bar/foo/bar/foo/bar"
         }) {
         paths.push_back(SdfPath(pathStr));
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/Foo/g*m/foo/bar"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(p == SdfPath("/Foo/geom/foo/bar"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/Foo/g*m//foo/bar/foo"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/Foo/geom/foo/bar/foo") ||
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/Foo/g*m//foo//foo/bar/foo"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/Foo/g*m/foo//foo/bar"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//Foo//foo/bar"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/Foo/geom/foo/bar") ||
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
+                    p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
+            }
+        }
     }
 
     {

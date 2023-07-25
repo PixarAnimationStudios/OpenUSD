@@ -360,8 +360,9 @@ Sdf_PathExpressionEvalBase
         return Result::MakeConstant(false);
     }
 
-    // Check prefix.
-    if (!path.HasPrefix(_prefix)) {
+    // Check prefix if we aren't into matching segments yet.  If we are into
+    // segments, we have already checked the prefix.
+    if (search._segmentMatchDepths.empty() && !path.HasPrefix(_prefix)) {
         search._constantDepth = 0;
         search._constantValue = false;
         return Result::MakeConstant(false);
@@ -377,33 +378,70 @@ Sdf_PathExpressionEvalBase
     const size_t pathElemCount = path.GetPathElementCount();
     const size_t prefixElemCount = _prefix.GetPathElementCount();
 
-    // If this pattern has no components, it matches if it is the same as the
-    // prefix, or if it has the prefix and there's a stretch following.
+    // If this pattern has no components, it matches if there's a stretch or if
+    // it is the same length as the prefix (which means it is identical to the
+    // prefix, since we've already done the has-prefix check above).
     if (_components.empty()) {
         if (_stretchBegin || _stretchEnd) {
+            // The pattern allows arbitrary elements following the prefix.
             search._constantDepth = 0;
-            search._constantValue = path.HasPrefix(_prefix);
+            search._constantValue = true;
             return Result::MakeConstant(search._constantValue);
         }
         else if (pathElemCount > prefixElemCount) {
+            // The given path is descendant to the prefix, but the pattern
+            // requires an exact match.
             search._constantDepth = 0;
             search._constantValue = false;
             return Result::MakeConstant(search._constantValue);
         }
+        // The path is exactly _prefix.
         return Result::MakeVarying(true);
     }
 
     // We're not a constant value, the prefix matches, and we have components to
     // match against -- we're looking to match those components.  Get the
-    // segment we're trying to match -- it's the _matchDepths.size()th one.
+    // segment we're trying to match.  If we've already matched all segments but
+    // we're still searching, it means we need to try to re-match the final
+    // segment.  Consider a case like //Foo//foo/bar incrementally matching
+    // against the path /Foo/geom/foo/bar/foo/bar/foo/bar.  We'll keep
+    // rematching the final foo/bar bit, to get /Foo/geom/foo/bar,
+    // /Foo/geom/foo/bar/foo/bar, and /Foo/geom/foo/bar/foo/bar/foo/bar.  In
+    // this case we pop the final segment match depth to proceed with rematching
+    // that segment.
     using Segment = _PatternImplBase::_Segment;
-    Segment const &curSeg = _segments[search._segmentMatchDepths.size()];
+    if (search._segmentMatchDepths.size() == _segments.size()) {
+        // We're looking for a rematch with the final segment.
+        search._segmentMatchDepths.pop_back();
+    }
+    const size_t curSegIdx = search._segmentMatchDepths.size();
+    Segment const &curSeg = _segments[curSegIdx];
+    Segment const *prevSegPtr = curSegIdx ? &_segments[curSegIdx-1] : nullptr;
+    
+    // If we are attempting to match the first segment, ensure we have enough
+    // components (or exactly the right number if there is no stretch begin).
+    
+    const size_t numMatchComponents = pathElemCount - (
+        prevSegPtr ?
+        search._segmentMatchDepths.back() + prevSegPtr->GetSize() :
+        prefixElemCount);
 
-    // Do we have sufficent path components to match?
-    if (pathElemCount - prefixElemCount < curSeg.GetSize()) {
+    if (numMatchComponents < curSeg.GetSize()) {
+        // Not enough path components yet, but we could match once we
+        // descend to a long enough path.
         return Result::MakeVarying(false);
     }
-    
+
+    // If we're matching the first segment and there's no stretch begin, the
+    // number of components must match exactly.
+    if (!prevSegPtr &&
+        !_stretchBegin && numMatchComponents > curSeg.GetSize()) {
+        // Too many components; we cannot match this or any descendant path.
+        search._constantDepth = pathElemCount;
+        search._constantValue = false;
+        return Result::MakeConstant(false);
+    }
+
     // Check for a match here.  Go from the end of the path back, and look for
     // literal component matches first since those are the fastest to check.
 
@@ -461,7 +499,7 @@ Sdf_PathExpressionEvalBase
         }
     }
 
-    // We have matched this component here, so push on.
+    // We have matched this component here, so push its match depth.
     search._segmentMatchDepths.push_back(pathElemCount);
 
     // If we've completed matching, we can mark ourselves constant if we end
