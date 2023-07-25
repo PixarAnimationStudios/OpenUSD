@@ -49,8 +49,9 @@ namespace
 static const SdfPath s_renderScope("/Render");
 static const SdfPath s_fallbackPath("/Render/_FallbackSettings");
 
-// Builds and returns a data source to invalidate the renderSettings.active
-// locator when the sceneGlobals.activeRenderSettingsPrim locator is dirtied.
+// Builds and returns a data source to invalidate the 'active' locator on
+// the 'renderSettings' container when the 'activeRenderSettingsPrim' locator
+// on the 'sceneGlobals' container is dirtied.
 //
 HdContainerDataSourceHandle
 _BuildDependencyForActiveLocator()

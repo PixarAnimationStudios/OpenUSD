@@ -47,10 +47,9 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiRenderSettingsFilteringSceneIndex);
 /// - Filters the namespacedSettings based on the array of input prefixes 
 ///   (provided via the \p inputArgs constructor argument) that
 ///   are relevant to the renderer. An empty array implies no filtering.
-/// - Provides the computed opinion for the 'active' and 'shutterInterval'
-///   fields.
-/// - Registers dependencies to invalidate the 'active' and 'shutterInterval'
-///   locators.
+/// - Registers a dependency on the sceneGlobals.activeRenderSettings locator
+///   to invalidate the renderSetings.active locator.
+/// - Determines whether the render settings prim is active.
 /// - Optionally adds a fallback render settings prim whose container data
 ///   source is provided via the \p inputArgs constructor argument.
 ///
@@ -69,7 +68,7 @@ public:
     HDSI_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
-    /// Public API
+    // Public API
     HDSI_API
     static const SdfPath& GetFallbackPrimPath();
 
