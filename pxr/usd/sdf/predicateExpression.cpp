@@ -166,10 +166,10 @@ SdfPredicateExpression::GetText() const
 
     auto opName = [](Op k) {
         switch (k) {
-        case Not: return "not";
+        case Not: return "not ";
         case ImpliedAnd: return " ";
-        case And: return "and";
-        case Or: return "or";
+        case And: return " and ";
+        case Or: return " or ";
         default: break;
         };
         return "<unknown>";
@@ -232,9 +232,11 @@ SdfPredicateExpression::GetText() const
                         Sdf_FileIOUtility
                         ::StringFromVtValue(arg.value).c_str()));
             }
+            result += "(";
             if (!argStrs.empty()) {
-                result += "(" + TfStringJoin(argStrs, ", ") + ")";
+                result += TfStringJoin(argStrs, ", ");
             }
+            result += ")";
         } break;
         };
     };
@@ -244,11 +246,17 @@ SdfPredicateExpression::GetText() const
     return result;
 }
 
+std::ostream &
+operator<<(std::ostream &out, SdfPredicateExpression const &expr)
+{
+    return out << expr.GetText();
+}
+
 SdfPredicateExpression::SdfPredicateExpression(
     std::string const &input, std::string const &context)
 {
     using namespace tao::TAO_PEGTL_NAMESPACE;
-    
+
     Analyze<PredExpr>();
     try {
         SdfPredicateExprBuilder builder;
