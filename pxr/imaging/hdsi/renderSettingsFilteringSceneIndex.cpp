@@ -44,6 +44,9 @@ TF_DEFINE_PRIVATE_TOKENS(
 namespace
 {
 
+static const SdfPath s_renderScope("/Render");
+static const SdfPath s_fallbackPath("/Render/_FallbackSettings");
+
 // Builds and returns a data source to invalidate the 'active' locator on
 // the 'renderSettings' container when the 'activeRenderSettingsPrim' locator
 // on the 'sceneGlobals' container is dirtied.
@@ -237,6 +240,17 @@ _GetNamespacePrefixes(const HdContainerDataSourceHandle &inputArgs)
     return {};
 }
 
+HdContainerDataSourceHandle
+_GetFallbackPrimDataSource(const HdContainerDataSourceHandle &inputArgs)
+{
+    if (!inputArgs) {
+        return nullptr;
+    }
+
+    return HdContainerDataSource::Cast(inputArgs->Get(
+            HdsiRenderSettingsFilteringSceneIndexTokens->fallbackPrimDs));
+}
+
 } // namespace anonymous
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -257,6 +271,8 @@ HdsiRenderSettingsFilteringSceneIndex::HdsiRenderSettingsFilteringSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
 : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
 , _namespacePrefixes(_GetNamespacePrefixes(inputArgs))
+, _fallbackPrimDs(_GetFallbackPrimDataSource(inputArgs))
+, _addedFallbackPrim(false)
 {
 }
 
@@ -266,9 +282,15 @@ HdsiRenderSettingsFilteringSceneIndex::GetPrim(const SdfPath &primPath) const
     HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(primPath);
 
     if (prim.primType == HdPrimTypeTokens->renderSettings && prim.dataSource) {
+        // existing render settings prim
         prim.dataSource = _RenderSettingsPrimDataSource::New(
             prim.dataSource, _GetInputSceneIndex(), primPath,
             _namespacePrefixes);
+
+    } else if (_addedFallbackPrim  && primPath == GetFallbackPrimPath()) {
+
+        prim.primType = HdPrimTypeTokens->renderSettings;
+        prim.dataSource = _fallbackPrimDs;
     }
 
     return prim;
@@ -277,12 +299,36 @@ HdsiRenderSettingsFilteringSceneIndex::GetPrim(const SdfPath &primPath) const
 SdfPathVector
 HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
-{
-    if (auto input = _GetInputSceneIndex()) {
-        return input->GetChildPrimPaths(primPath);
+{ 
+    // Avoid a copy if possible.
+    if (ARCH_UNLIKELY(
+            (primPath == GetRenderScope() || primPath.IsAbsoluteRootPath()) &&
+             _addedFallbackPrim)) {
+        
+        SdfPathVector paths =
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+        paths.push_back(primPath.IsAbsoluteRootPath()
+                        ? GetRenderScope()
+                        : GetFallbackPrimPath());
+
+        return paths;
     }
 
-    return {};
+    return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+}
+
+/* static */
+const SdfPath&
+HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath()
+{
+    return s_fallbackPath;
+}
+
+/* static */
+const SdfPath&
+HdsiRenderSettingsFilteringSceneIndex::GetRenderScope()
+{
+    return s_renderScope;
 }
 
 void
@@ -290,7 +336,19 @@ HdsiRenderSettingsFilteringSceneIndex::_PrimsAdded(
     const HdSceneIndexBase &sender,
     const HdSceneIndexObserver::AddedPrimEntries &entries)
 {
-    _SendPrimsAdded(entries);
+    if (ARCH_UNLIKELY(_fallbackPrimDs && !_addedFallbackPrim)) {
+        
+        HdSceneIndexObserver::AddedPrimEntries addedEntries = entries;
+
+        addedEntries.emplace_back(
+            GetFallbackPrimPath(), HdPrimTypeTokens->renderSettings);
+
+        _addedFallbackPrim = true;
+        _SendPrimsAdded(addedEntries);
+
+    } else {
+        _SendPrimsAdded(entries);
+    }
 }
 
 void

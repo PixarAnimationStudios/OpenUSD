@@ -34,7 +34,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define HDSI_RENDER_SETTINGS_FILTERING_SCENE_INDEX_TOKENS \
-    (namespacePrefixes)
+    (namespacePrefixes)                                   \
+    (fallbackPrimDs)
 
 TF_DECLARE_PUBLIC_TOKENS(HdsiRenderSettingsFilteringSceneIndexTokens, HDSI_API,
     HDSI_RENDER_SETTINGS_FILTERING_SCENE_INDEX_TOKENS);
@@ -49,6 +50,8 @@ TF_DECLARE_WEAK_AND_REF_PTRS(HdsiRenderSettingsFilteringSceneIndex);
 /// - Registers a dependency on the sceneGlobals.activeRenderSettings locator
 ///   to invalidate the renderSetings.active locator.
 /// - Determines whether the render settings prim is active.
+/// - Optionally adds a fallback render settings prim whose container data
+///   source is provided via the \p inputArgs constructor argument.
 ///
 class HdsiRenderSettingsFilteringSceneIndex final :
     public HdSingleInputFilteringSceneIndexBase
@@ -64,6 +67,13 @@ public:
 
     HDSI_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
+
+    // Public API
+    HDSI_API
+    static const SdfPath& GetFallbackPrimPath();
+
+    HDSI_API
+    static const SdfPath& GetRenderScope();
 
 protected:
     HDSI_API
@@ -88,6 +98,9 @@ protected:
 
 private:
     const VtArray<TfToken> _namespacePrefixes;
+    HdContainerDataSourceHandle _fallbackPrimDs;
+
+    bool _addedFallbackPrim;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
