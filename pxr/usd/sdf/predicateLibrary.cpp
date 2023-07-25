@@ -30,6 +30,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+size_t
+SdfPredicateParamNamesAndDefaults::_CountDefaults() const
+{
+    size_t count = 0;
+    for (Param const &p: _params) {
+        if (!p.val.IsEmpty()) {
+            ++count;
+        }
+    }
+    return count;
+}
 
 bool
 SdfPredicateParamNamesAndDefaults::CheckValidity() const

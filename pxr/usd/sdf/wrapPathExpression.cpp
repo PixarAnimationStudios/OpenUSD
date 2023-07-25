@@ -25,6 +25,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/pySignatureExt.h" // wrap lvalue-ref-qualified mem fns.
+
+#include "pxr/base/vt/valueFromPython.h"
 #include "pxr/base/tf/pyEnum.h"
 #include "pxr/base/tf/pyFunction.h"
 
@@ -46,6 +48,28 @@ using PathExpr = SdfPathExpression;
 using ExpressionReference = PathExpr::ExpressionReference;
 using PathPattern = PathExpr::PathPattern;
 
+static std::string
+_Repr(SdfPathExpression const &self) {
+    if (!self) {
+        return TF_PY_REPR_PREFIX + "PathExpression()";
+    }
+    else {
+        return std::string(TF_PY_REPR_PREFIX + "PathExpression(")
+            + TfPyRepr(self.GetText()) + ")";
+    }
+}
+
+static std::string
+_PatternRepr(SdfPathExpression::PathPattern const &self) {
+    if (!self) {
+        return TF_PY_REPR_PREFIX + "PathExpression.PathPattern()";
+    }
+    else {
+        return std::string(TF_PY_REPR_PREFIX + "PathExpression.PathPattern(")
+            + TfPyRepr(self.GetText()) + ")";
+    }
+}
+
 void wrapPathExpression()
 {
     // For ResolveReferences.
@@ -60,8 +84,40 @@ void wrapPathExpression()
         .def(init<PathExpr const &>())
         .def(init<std::string, optional<std::string>>(
                  args("patternString", "parseContext")))
-        
-        .def("GetDebugString", &PathExpr::GetDebugString)
+
+        .def("Everything", &PathExpr::Everything,
+             return_value_policy<return_by_value>())
+        .staticmethod("Everything")
+
+        .def("Nothing", &PathExpr::Nothing,
+             return_value_policy<return_by_value>())
+        .staticmethod("Nothing")
+
+        .def("WeakerRef", &PathExpr::WeakerRef,
+             return_value_policy<return_by_value>())
+        .staticmethod("WeakerRef")
+
+        .def("MakeComplement",
+             +[](PathExpr const &r) {
+                 return PathExpr::MakeComplement(r);
+             }, arg("right"))
+        .staticmethod("MakeComplement")
+
+        .def("MakeOp",
+             +[](PathExpr::Op op, PathExpr const &l, PathExpr const &r) {
+                 return PathExpr::MakeOp(op, l, r);
+             }, (arg("op"), arg("left"), arg("right")))
+        .staticmethod("MakeOp")
+
+        .def("MakeAtom",
+             +[](PathExpr::ExpressionReference const &ref) {
+                 return PathExpr::MakeAtom(ref);
+             }, (arg("ref")))
+        .def("MakeAtom",
+             +[](PathExpr::PathPattern const &pat) {
+                 return PathExpr::MakeAtom(pat);
+             }, (arg("pattern")))
+        .staticmethod("MakeAtom")
 
         .def("ReplacePrefix",
              +[](PathExpr const &self,
@@ -97,8 +153,17 @@ void wrapPathExpression()
                  return self.Walk(logic, ref, pattern);
              }, (arg("logic"), arg("ref"), arg("pattern")))
 
-        .def("__bool__", &SdfPathExpression::operator bool)
+        .def("GetText", &PathExpr::GetText)
+
+        .def("IsEmpty", &PathExpr::IsEmpty)
+
+        .def("__bool__", &PathExpr::operator bool)
+        .def("__repr__", _Repr)
+        .def("__hash__", +[](PathExpr const &e) { return TfHash{}(e); })
+        .def(self == self)
+        .def(self != self)
         ;
+    VtValueFromPython<SdfPathExpression>();
 
     TfPyWrapEnum<PathExpr::Op>();
 
@@ -121,13 +186,25 @@ void wrapPathExpression()
              +[](PathPattern &self, SdfPath const &prefix) {
                  self.SetPrefix(prefix);
              }, (arg("prefix")))
-        .def("GetDebugString", &PathPattern::GetDebugString)
+        .def("GetText", &PathPattern::GetText)
         .def("__bool__", &PathPattern::operator bool)
+        .def("__repr__", &_PatternRepr)
+        .def("__hash__", +[](PathPattern const &p) { return TfHash{}(p); })
+        .def(self == self)
+        .def(self != self)
         ;
+    VtValueFromPython<PathPattern>();
 
     class_<ExpressionReference>("ExpressionReference")
         .def_readwrite("path", &ExpressionReference::path)
         .def_readwrite("name", &ExpressionReference::name)
+        .def("__hash__",
+             +[](ExpressionReference const &r) { return TfHash{}(r); })
+        .def(self == self)
+        .def(self != self)
+        .def("Weaker", &ExpressionReference::Weaker,
+             return_value_policy<return_by_value>())
+        .staticmethod("Weaker")
         ;        
-
+    VtValueFromPython<ExpressionReference>();
 }

@@ -27,6 +27,8 @@
 #include "pxr/usd/sdf/pathExpression.h"
 
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/type.h"
+#include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 
 #include "predicateExpressionParser.h"
@@ -47,6 +49,20 @@ TF_REGISTRY_FUNCTION(TfEnum)
     TF_ADD_ENUM_NAME(SdfPathExpression::Pattern);
 }
 
+TF_REGISTRY_FUNCTION(TfType)
+{
+    TfType::Define<SdfPathExpression>();
+    TfType::Define<VtArray<SdfPathExpression>>();
+}
+
+SdfPathExpression::ExpressionReference const &
+SdfPathExpression::ExpressionReference::Weaker()
+{
+    static ExpressionReference *theWeaker =
+        new ExpressionReference { SdfPath(), "_" };
+    return *theWeaker;
+}
+
 static bool
 ParsePathExpression(std::string const &inputStr,
                     std::string const &parseContext,
@@ -57,22 +73,65 @@ SdfPathExpression::SdfPathExpression(std::string const &inputStr,
                                      std::string const &parseContext)
 {
     std::string errMsg;
-    if (!ParsePathExpression(inputStr, parseContext, this, &errMsg)) {
+    if (!inputStr.empty() &&
+        !ParsePathExpression(inputStr, parseContext, this, &errMsg)) {
         _parseError = errMsg;
         *this = {};
         TF_RUNTIME_ERROR(errMsg);
     }
 }
 
+SdfPathExpression const &
+SdfPathExpression::Everything()
+{
+    static SdfPathExpression const *theEverything = new SdfPathExpression("//");
+    return *theEverything;
+}
+
+SdfPathExpression const &
+SdfPathExpression::EveryDescendant()
+{
+    static SdfPathExpression const *
+        theEveryDescendant = new SdfPathExpression(".//");
+    return *theEveryDescendant;
+}
+
+SdfPathExpression const &
+SdfPathExpression::Nothing()
+{
+    static SdfPathExpression const *theNothing = new SdfPathExpression {};
+    return *theNothing;
+}
+
+SdfPathExpression const &
+SdfPathExpression::WeakerRef()
+{
+    static SdfPathExpression const *theWeaker = new SdfPathExpression {
+        SdfPathExpression::MakeAtom(ExpressionReference::Weaker())
+    };
+    return *theWeaker;
+}
+
 SdfPathExpression
 SdfPathExpression::MakeComplement(SdfPathExpression &&right)
 {
-    // Move over the state, then push back 'Complement'.
     SdfPathExpression ret;
-    ret._ops = std::move(right._ops);
-    ret._refs = std::move(right._refs);
-    ret._patterns = std::move(right._patterns);
-    ret._ops.push_back(Complement);
+
+    // If right is either Everything or Nothing, its complement is just the
+    // other.
+    if (right == Everything()) {
+        ret = Nothing();
+    }
+    else if (right == Nothing()) {
+        ret = Everything();
+    }
+    else {
+        // Move over the state, then push back 'Complement'.
+        ret._ops = std::move(right._ops);
+        ret._refs = std::move(right._refs);
+        ret._patterns = std::move(right._patterns);
+        ret._ops.push_back(Complement);
+    }
     return ret;
 }
 
@@ -81,23 +140,48 @@ SdfPathExpression::MakeOp(
     Op op, SdfPathExpression &&left, SdfPathExpression &&right)
 {
     SdfPathExpression ret;
-    // Move the right ops, ensure we have enough space, then insert left.
-    // Finally push back this new op.
-    ret._ops = std::move(right._ops);
-    ret._ops.reserve(ret._ops.size() + left._ops.size() + 1);
-    ret._ops.insert(
-        ret._ops.end(), left._ops.begin(), left._ops.end());
-    ret._ops.push_back(op);
 
-    // Move the left patterns & refs, then move-insert the same of the right.
-    ret._refs = std::move(left._refs);
-    ret._refs.insert(ret._refs.end(),
-                     make_move_iterator(right._refs.begin()),
-                     make_move_iterator(right._refs.end()));
-    ret._patterns = std::move(left._patterns);
-    ret._patterns.insert(ret._patterns.end(),
-                     make_move_iterator(right._patterns.begin()),
-                     make_move_iterator(right._patterns.end()));
+    // If we have a Nothing or an Everything operand, then transform A - B into
+    // A & ~B.  This makes all cases commutative, simplifying the code.
+    if (op == Difference && (left == Nothing() || right == Nothing() ||
+                             left == Everything() || right == Everything())) {
+        op = Intersection;
+        right = MakeComplement(std::move(right));
+    }
+
+    // Handle nothing and everything.
+    if (left == Nothing()) {
+        ret = (op == Intersection) ? Nothing() : std::move(right);
+    }
+    else if (right == Nothing()) {
+        ret = (op == Intersection) ? Nothing() : std::move(left);
+    }
+    else if (left == Everything()) {
+        ret = (op == Intersection) ? std::move(right) : Everything();
+    }
+    else if (right == Everything()) {
+        ret = (op == Intersection) ? std::move(left) : Everything();
+    }
+    else {
+        // Move the right ops, ensure we have enough space, then insert left.
+        // Finally push back this new op.
+        ret._ops = std::move(right._ops);
+        ret._ops.reserve(ret._ops.size() + left._ops.size() + 1);
+        ret._ops.insert(
+            ret._ops.end(), left._ops.begin(), left._ops.end());
+        ret._ops.push_back(op);
+        
+        // Move the left patterns & refs, then move-insert the same of the
+        // right.
+        ret._refs = std::move(left._refs);
+        ret._refs.insert(ret._refs.end(),
+                         make_move_iterator(right._refs.begin()),
+                         make_move_iterator(right._refs.end()));
+        ret._patterns = std::move(left._patterns);
+        ret._patterns.insert(ret._patterns.end(),
+                             make_move_iterator(right._patterns.begin()),
+                             make_move_iterator(right._patterns.end()));
+    }
     return ret;
 }
 
@@ -122,8 +206,8 @@ SdfPathExpression::MakeAtom(PathPattern &&pattern)
 }
 
 void
-SdfPathExpression::Walk(
-    TfFunctionRef<void (Op, int)> logic,
+SdfPathExpression::WalkWithOpStack(
+    TfFunctionRef<void (std::vector<std::pair<Op, int>> const &)> logic,
     TfFunctionRef<void (ExpressionReference const &)> ref,
     TfFunctionRef<void (PathPattern const &)> pattern) const
 {
@@ -149,23 +233,24 @@ SdfPathExpression::Walk(
     //
     // index ----->      0     1      2
     // operation -> Union(<lhs>, <rhs>)
-    std::vector<std::pair<OpIter, int>> stack {1, {curOp, 0}};
+    std::vector<std::pair<Op, int>> stack {1, {*curOp, 0}};
 
     while (!stack.empty()) {
-        OpIter const &stackOp = stack.back().first;
+        Op stackOp = stack.back().first;
         int &operandIndex = stack.back().second;
         int operandIndexEnd = 0;
 
         // Invoke 'ref' for ExpressionRef operations, 'pattern' for PathPattern
         // operation, otherwise 'logic'.
-        if (*stackOp == ExpressionRef) {
+        if (stackOp == ExpressionRef) {
             ref(*curRef++);
-        } else if (*stackOp == Pattern) {
+        } else if (stackOp == Pattern) {
             pattern(*curPattern++);
         } else {
-            logic(*stackOp, operandIndex++);
+            logic(stack);
+            operandIndex++;
             operandIndexEnd =
-                *stackOp == Complement ? 2 : 3; // Complement is a unary op.
+                (stackOp == Complement) ? 2 : 3; // Complement is a unary op.
         }
 
         // If we've reached the end of an operation, pop it from the stack,
@@ -174,9 +259,21 @@ SdfPathExpression::Walk(
             stack.pop_back();
         }
         else {
-            stack.emplace_back(++curOp, 0);
+            stack.emplace_back(*(++curOp), 0);
         }
     }
+}
+
+void
+SdfPathExpression::Walk(
+    TfFunctionRef<void (Op, int)> logic,
+    TfFunctionRef<void (ExpressionReference const &)> ref,
+    TfFunctionRef<void (PathPattern const &)> pattern) const
+{
+    auto adaptLogic = [&logic](std::vector<std::pair<Op, int>> const &stack) {
+        return logic(stack.back().first, stack.back().second);
+    };
+    return WalkWithOpStack(adaptLogic, ref, pattern);
 }
 
 SdfPathExpression
@@ -197,6 +294,11 @@ SdfPathExpression::ReplacePrefix(SdfPath const &oldPrefix,
 bool
 SdfPathExpression::IsAbsolute() const
 {
+    for (auto &ref: _refs) {
+        if (!ref.path.IsEmpty() && !ref.path.IsAbsolutePath()) {
+            return false;
+        }
+    }
     for (auto const &pat: _patterns) {
         if (!pat.GetPrefix().IsAbsolutePath()) {
             return false;
@@ -243,13 +345,7 @@ SdfPathExpression::ResolveReferences(
     };
 
     auto resolveRef = [&stack, &resolve](ExpressionReference const &ref) {
-        // Try to resolve \p ref.  If the result is the empty expression, just
-        // preserve \p ref in the resulting expression.
-        SdfPathExpression resolved = resolve(ref);
-        if (!resolved) {
-            resolved = MakeAtom(ref);
-        }
-        stack.push_back(std::move(resolved));
+        stack.push_back(resolve(ref));
     };
     
     auto patternIdent = [&stack](PathPattern const &pattern) {
@@ -267,72 +363,79 @@ SdfPathExpression::ResolveReferences(
 SdfPathExpression
 SdfPathExpression::ComposeOver(SdfPathExpression const &weaker) &&
 {
+    if (IsEmpty()) {
+        *this = weaker;
+        return std::move(*this);
+    }
     auto resolve = [&weaker](ExpressionReference const &ref) {
-        return ref.name == "_" ? weaker : SdfPathExpression();
+        return ref.name == "_" ? weaker : SdfPathExpression::MakeAtom(ref);
     };
     return std::move(*this).ResolveReferences(resolve);
 }
 
 std::string
-SdfPathExpression::GetDebugString() const
+SdfPathExpression::GetText() const
 {
     std::string result;
     if (IsEmpty()) {
-        result = "<invalid>";
-        if (!_parseError.empty()) {
-            result += " (err='" + _parseError + "')";
-        }
         return result;
     }
 
     auto opName = [](Op k) {
         switch (k) {
         case Complement: return "~";
-        case ImpliedUnion: return "[+]";
-        case Union: return "+";
-        case Intersection: return "&";
-        case Difference: return "-";
-        case ExpressionRef: return "expression-ref";
-        case Pattern: return "path-pattern";
+        case ImpliedUnion: return " ";
+        case Union: return " + ";
+        case Intersection: return " & ";
+        case Difference: return " - ";
+        default: break;
         };
         return "<unknown>";
     };
 
-    result = TfStringPrintf("PathExpr @ %p: << ", this);
+    std::vector<Op> opStack;
 
-    auto printLogic = [&opName, &result](Op op, int argIndex) {
-        if (op == Complement) {
-            switch (argIndex) {
-            case 0: result += "~("; break;
-            case 1: result += ")"; break;
-            };
+    auto printLogic = [&opName, &opStack, &result](
+        std::vector<std::pair<Op, int>> const &stack) {
+
+        const Op op = stack.back().first;
+        const int argIndex = stack.back().second;
+        
+        // Parenthesize this subexpression if we have a parent op, and either:
+        // - the parent op has a stronger precedence than this op
+        // - the parent op has the same precedence as this op, and this op is
+        //   the right-hand-side of the parent op.
+        bool parenthesize = false;
+        if (stack.size() >= 2 /* has a parent op */) {
+            Op parentOp;
+            int parentIndex;
+            std::tie(parentOp, parentIndex) = stack[stack.size()-2];
+            parenthesize =
+                parentOp < op || (parentOp == op && parentIndex == 2);
         }
-        else {
-            switch (argIndex) {
-            case 0: result += "("; break;
-            case 1: result += TfStringPrintf(" %s ", opName(op)); break;
-            case 2: result += ")"; break;
-            };
+
+        if (parenthesize && argIndex == 0) {
+            result += '(';
         }
+        if (op == Complement ? argIndex == 0 : argIndex == 1) {
+            result += opName(op);
+        }
+        if (parenthesize &&
+            (op == Complement ? argIndex == 1 : argIndex == 2)) {
+            result += ')';
+        }                
     };
 
-    auto printExpressionRef = [&result](ExpressionReference const &ref) {
+    auto printExprRef = [&result](ExpressionReference const &ref) {
         result += "%" + ref.path.GetAsString();
-        if (ref.name == "_") {
-            result += "_";
-        }
-        else {
-            result += ":" + ref.name;
-        }
+        result += (ref.name == "_") ? "_" : ":" + ref.name;
     };
-    
+
     auto printPathPattern = [&result](PathPattern const &pattern) {
-        result += "<" + pattern.GetDebugString() + ">";
+        result += pattern.GetText();
     };
 
-    Walk(printLogic, printExpressionRef, printPathPattern);
-
-    result += " >>";
+    WalkWithOpStack(printLogic, printExprRef, printPathPattern);
     
     return result;
 }
@@ -377,8 +480,8 @@ SdfPathExpression::PathPattern::AppendChild(std::string const &text,
                                             SdfPredicateExpression &&predExpr)
 {
     if (_isProperty) {
-        TF_WARN("Cannot append child '%s' to property path '%s'",
-                text.c_str(), GetDebugString().c_str());
+        TF_WARN("Cannot append child '%s' to property path expression '%s'",
+                text.c_str(), GetText().c_str());
         return;
     }
                 
@@ -455,14 +558,26 @@ SdfPathExpression::PathPattern::SetPrefix(SdfPath &&p)
 }
 
 std::string
-SdfPathExpression::PathPattern::GetDebugString() const
+SdfPathExpression::PathPattern::GetText() const
 {
-    std::string result = _prefix.GetAsString();
+    std::string result;
+
+    if (_prefix == SdfPath::ReflexiveRelativePath()) {
+        if (_components.empty() || _components.front().IsStretch()) {
+            // If components is empty, or first component is a stretch, then we
+            // emit a leading '.', otherwise nothing.
+            result = ".";
+        }
+    }
+    else {
+        result = _prefix.GetAsString();
+    }
+
     const bool prefixIsAbsRoot = _prefix == SdfPath::AbsoluteRootPath();
     for (size_t i = 0, end = _components.size(); i != end; ++i) {
-        if (_components[i].text.empty()) {
+        if (_components[i].text.empty() &&
+            _components[i].predicateIndex == -1) {
             result += (i == 0 && prefixIsAbsRoot) ? "/" : "//";
-            TF_DEV_AXIOM(_components[i].predicateIndex == -1);
             continue;
         }
         if (!result.empty() && result.back() != '/') {
@@ -480,6 +595,12 @@ SdfPathExpression::PathPattern::GetDebugString() const
     }
     return result;
 }
+
+std::ostream &
+operator<<(std::ostream &out, SdfPathExpression const &expr)
+{
+    return out << expr.GetText();
+}    
 
 ////////////////////////////////////////////////////////////////////////
 // Parsing code.
@@ -644,7 +765,7 @@ struct PathPattern :
     if_must<AbsoluteStart, AbsPathPattern>,
     seq<DotDots, if_then_else<PathPatSep, opt<PathPatternElems>, success>>,
     PathPatternElems,
-    ReflexiveRelative
+    seq<ReflexiveRelative, opt<PathPatStretch, opt<PathPatternElems>>>
     >
 {};
 

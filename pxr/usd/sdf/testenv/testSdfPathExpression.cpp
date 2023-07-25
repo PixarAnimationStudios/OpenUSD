@@ -30,27 +30,16 @@
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-// For testing, provide overloads of SdfPathExpressionObjectToPath &
-// PathToObject so that just return the path itself.
-PXR_NAMESPACE_OPEN_SCOPE
+namespace {
 
-static SdfPath
-SdfPathExpressionObjectToPath(SdfPath const &path) {
-    return path;
-}
+struct PathIdentity {
+    SdfPath operator()(SdfPath const &p) const { return p; }
+};
 
-static SdfPath
-SdfPathExpressionPathToObject(SdfPath const &path, SdfPath const *) {
-    return path;
-}
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-static void
-TestBasics()
-{
+static SdfPredicateLibrary<SdfPath const &> const &
+GetBasicPredicateLib() {
     // Super simple predicate library for paths for testing.
-    auto predLib = SdfPredicateLibrary<SdfPath const &>()
+    static auto theLib = SdfPredicateLibrary<SdfPath const &>()
         .Define("isPrimPath", [](SdfPath const &p) {
             return p.IsPrimPath();
         })
@@ -58,10 +47,28 @@ TestBasics()
             return p.IsPropertyPath();
         })
         ;
+    return theLib;
+}
 
+struct MatchEval {
+    explicit MatchEval(SdfPathExpression const &expr)
+        : _eval(SdfMakePathExpressionEval(expr, GetBasicPredicateLib())) {}
+    explicit MatchEval(std::string const &exprStr) :
+        MatchEval(SdfPathExpression(exprStr)) {}
+    bool Match(SdfPath const &p) {
+        return static_cast<bool>(
+            _eval.Match(p, PathIdentity {}, PathIdentity {}));
+    }
+    SdfPathExpressionEval<SdfPath const &> _eval;
+};
+
+} // anon
+
+static void
+TestBasics()
+{
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo//bar"), predLib);
+        auto eval = MatchEval { SdfPathExpression("/foo//bar") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -71,9 +78,7 @@ TestBasics()
     }
     
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("//foo/bar/baz/qux/quux"),
-            predLib);
+        auto eval = MatchEval { SdfPathExpression("//foo/bar/baz/qux/quux") };
         
         TF_AXIOM(!eval.Match(SdfPath("/foo")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar")));
@@ -88,8 +93,7 @@ TestBasics()
     }
 
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo*//bar"), predLib);
+        auto eval = MatchEval { SdfPathExpression("/foo*//bar") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -105,9 +109,7 @@ TestBasics()
     }
 
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo*//bar{isPrimPath}"),
-            predLib);
+        auto eval = MatchEval { SdfPathExpression("/foo*//bar{isPrimPath}") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar")));
@@ -123,9 +125,8 @@ TestBasics()
     }
 
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/foo*//bar//{isPrimPath}"),
-            predLib);
+        auto eval = MatchEval { 
+            SdfPathExpression("/foo*//bar//{isPrimPath}") };
         
         TF_AXIOM(eval.Match(SdfPath("/foo/bar/a")));
         TF_AXIOM(eval.Match(SdfPath("/foo/x/bar/b")));
@@ -145,9 +146,8 @@ TestBasics()
     }
     
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/a /b /c /d/e/f"),
-            predLib);
+        auto eval = MatchEval { 
+            SdfPathExpression("/a /b /c /d/e/f") };
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/b")));
@@ -161,9 +161,8 @@ TestBasics()
     }
 
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/a// - /a/b/c"),
-            predLib);
+        auto eval = MatchEval { 
+            SdfPathExpression("/a// - /a/b/c") };
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/a/b")));
@@ -174,9 +173,8 @@ TestBasics()
     }
 
     {
-        auto eval = SdfMakePathExpressionEval(
-            SdfPathExpression("/a//{isPropertyPath} - /a/b.c"),
-            predLib);
+        auto eval = MatchEval { 
+            SdfPathExpression("/a//{isPropertyPath} - /a/b.c") };
 
         TF_AXIOM(!eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/a.b")));
@@ -204,8 +202,7 @@ TestBasics()
         TF_AXIOM(!composed.ContainsExpressionReferences());
         TF_AXIOM(composed.IsComplete());
         
-        auto eval = SdfMakePathExpressionEval(
-            composed, predLib);
+        auto eval = MatchEval { composed };
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/b")));
@@ -239,8 +236,7 @@ TestBasics()
         TF_AXIOM(resolved.IsComplete());
 
         // Resolved should be "/a /weaker /foo// - /foo/bar//"
-        auto eval = SdfMakePathExpressionEval(
-            resolved, predLib);
+        auto eval = MatchEval { resolved };
 
         TF_AXIOM(eval.Match(SdfPath("/a")));
         TF_AXIOM(eval.Match(SdfPath("/weaker")));
@@ -262,7 +258,7 @@ TestBasics()
         TF_AXIOM(abs.IsAbsolute());
         TF_AXIOM(abs.IsComplete());
 
-        auto eval = SdfMakePathExpressionEval(abs, predLib);
+        auto eval = MatchEval { abs };
 
         TF_AXIOM(eval.Match(SdfPath("/World/test/foo")));
         TF_AXIOM(!eval.Match(SdfPath("/World/test/bar")));
@@ -275,8 +271,7 @@ TestBasics()
             SdfPathExpression home =
                 abs.ReplacePrefix(SdfPath("/World"), SdfPath("/Home"));
             
-            auto eval =
-                SdfMakePathExpressionEval(home, predLib);
+            auto eval = MatchEval { home };
 
             TF_AXIOM(eval.Match(SdfPath("/Home/test/foo")));
             TF_AXIOM(!eval.Match(SdfPath("/Home/test/bar")));
@@ -287,10 +282,133 @@ TestBasics()
     }
 }
 
+
+static void
+TestSearch()
+{
+    // Super simple predicate library for paths for testing.
+    auto predLib = SdfPredicateLibrary<SdfPath const &>()
+        .Define("isPrimPath", [](SdfPath const &p) {
+            return p.IsPrimPath();
+        })
+        .Define("isPropertyPath", [](SdfPath const &p) {
+            return p.IsPropertyPath();
+        })
+        ;
+
+    // Paths must follow a depth-first traversal order.
+    SdfPathVector paths;
+    for (char const *pathStr: {
+            "/",
+            "/World",
+            "/World/anim",
+            "/World/anim/chars",
+            "/World/anim/chars/Mike",
+            "/World/anim/chars/Mike/geom",
+            "/World/anim/chars/Mike/geom/body_sbdv",
+            "/World/anim/chars/Mike/geom/body_sbdv.points",
+            "/World/anim/chars/Sully",
+            "/World/anim/chars/Sully/geom",
+            "/World/anim/chars/Sully/geom/body_sbdv",
+            "/World/anim/chars/Sully/geom/body_sbdv.points",
+            "/World/anim/sets",
+            "/World/anim/sets/Bedroom",
+            "/World/anim/sets/Bedroom/Furniture",
+            "/World/anim/sets/Bedroom/Furniture/Bed",
+            "/World/anim/sets/Bedroom/Furniture/Desk",
+            "/World/anim/sets/Bedroom/Furniture/Chair"
+        }) {
+        paths.push_back(SdfPath(pathStr));
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//geom/body_sbdv"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
+                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//chars//"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        int count = 0;
+        for (SdfPath const &p: paths) {
+            count += search.Next(p) ? 1 : 0;
+        }
+        TF_AXIOM(count == 9);
+    }
+    
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//{isPropertyPath}"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        int count = 0;
+        for (SdfPath const &p: paths) {
+            count += search.Next(p) ? 1 : 0;
+        }
+        TF_AXIOM(count == 2);
+    }
+    
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//chars/*/geom/body_sbdv "
+                              "//Bed"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
+                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv") ||
+                    p == SdfPath("/World/anim/sets/Bedroom/Furniture/Bed"));
+            }
+        }
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("//*sbdv"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
+                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+            }
+        }
+    }
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/World//chars//geom/*sbdv"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(
+                    p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
+                    p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+            }
+        }
+    }
+}
+
+
 int
 main(int argc, char **argv)
 {
     TestBasics();
+    TestSearch();
     
     printf(">>> Test SUCCEEDED\n");
     return 0;
