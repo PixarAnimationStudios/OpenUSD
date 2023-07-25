@@ -1178,19 +1178,26 @@ TfType::GetCanonicalTypeName(const std::type_info &t)
 
     using LookupMap =
         TfHashMap<std::type_index, std::string, std::hash<std::type_index>>;
-    static LookupMap lookupMap;
+
+    // A std::type_index contains a pointer to a std::type_info and type_info
+    // objects may be defined in plugin libraries. On program exit, the plugins
+    // get unloaded from memory, potentially leaving type_index objects with
+    // dangling pointers and causing crashes when attempting to destroy a
+    // LookupMap. To avoid this, we allocate the LookupMap on the heap and
+    // simply let it leak at program exit so its destructor is never called.
+    static LookupMap * const lookupMap = new LookupMap;
 
     ScopedLock regLock(GetRegistryMutex(), /*write=*/false);
 
     const std::type_index typeIndex(t);
-    const LookupMap &map = lookupMap;
+    const LookupMap &map = *lookupMap;
     const LookupMap::const_iterator iter = map.find(typeIndex);
-    if (iter != lookupMap.end()) {
+    if (iter != map.end()) {
         return iter->second;
     }
 
     regLock.UpgradeToWriter();
-    return lookupMap.insert({typeIndex, ArchGetDemangled(t)}).first->second;
+    return lookupMap->insert({typeIndex, ArchGetDemangled(t)}).first->second;
 }
 
 void
