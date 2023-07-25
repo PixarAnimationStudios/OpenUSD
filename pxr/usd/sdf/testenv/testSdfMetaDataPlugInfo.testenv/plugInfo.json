@@ -784,7 +784,25 @@
                     "timecode_single_default": {
                         "default": 1, 
                         "type": "timecode"
+                    },
+                    "pathExpression_shaped": {
+                        "type": "pathExpression[]"
                     }, 
+                    "pathExpression_shaped_default": {
+                        "default": [
+                            "/foo /bar", 
+                            "/bar /baz", 
+                            "/baz /qux"
+                        ], 
+                        "type": "pathExpression[]"
+                    }, 
+                    "pathExpression_single": {
+                        "type": "pathExpression"
+                    }, 
+                    "pathExpression_single_default": {
+                        "default": "/foo /bar", 
+                        "type": "pathExpression"
+                    },
                     "uchar_shaped": {
                         "type": "uchar[]"
                     }, 

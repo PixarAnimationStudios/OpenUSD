@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/opaqueValue.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 
@@ -340,21 +341,22 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 // When doing so, the type must be declared using the SDF_DECLARE_VALUE_TYPE
 // macro below. The type must also be registered in the associated schema using
 // SdfSchema::_RegisterValueType(s).
-#define _SDF_SCALAR_VALUE_TYPES                        \
-    ((Bool,       bool,       bool,           ()    )) \
-    ((UChar,      uchar,      unsigned char,  ()    )) \
-    ((Int,        int,        int,            ()    )) \
-    ((UInt,       uint,       unsigned int,   ()    )) \
-    ((Int64,      int64,      int64_t,        ()    )) \
-    ((UInt64,     uint64,     uint64_t,       ()    )) \
-    ((Half,       half,       GfHalf,         ()    )) \
-    ((Float,      float,      float,          ()    )) \
-    ((Double,     double,     double,         ()    )) \
-    ((TimeCode,   timecode,   SdfTimeCode,    ()    )) \
-    ((String,     string,     std::string,    ()    )) \
-    ((Token,      token,      TfToken,        ()    )) \
-    ((Asset,      asset,      SdfAssetPath,   ()    )) \
-    ((Opaque,     opaque,     SdfOpaqueValue, ()    ))
+#define _SDF_SCALAR_VALUE_TYPES                                \
+    ((Bool,           bool,           bool,              () )) \
+    ((UChar,          uchar,          unsigned char,     () )) \
+    ((Int,            int,            int,               () )) \
+    ((UInt,           uint,           unsigned int,      () )) \
+    ((Int64,          int64,          int64_t,           () )) \
+    ((UInt64,         uint64,         uint64_t,          () )) \
+    ((Half,           half,           GfHalf,            () )) \
+    ((Float,          float,          float,             () )) \
+    ((Double,         double,         double,            () )) \
+    ((TimeCode,       timecode,       SdfTimeCode,       () )) \
+    ((String,         string,         std::string,       () )) \
+    ((Token,          token,          TfToken,           () )) \
+    ((Asset,          asset,          SdfAssetPath,      () )) \
+    ((Opaque,         opaque,         SdfOpaqueValue,    () )) \
+    ((PathExpression, pathExpression, SdfPathExpression, () ))
 
 #define _SDF_DIMENSIONED_VALUE_TYPES                   \
     ((Matrix2d,   matrix2d,   GfMatrix2d,     (2,2) )) \
@@ -546,6 +548,7 @@ public:
     SdfValueTypeName TexCoord3h, TexCoord3f, TexCoord3d;
     SdfValueTypeName Opaque;
     SdfValueTypeName Group;
+    SdfValueTypeName PathExpression;
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
@@ -565,6 +568,7 @@ public:
     SdfValueTypeName Frame4dArray;
     SdfValueTypeName TexCoord2hArray, TexCoord2fArray, TexCoord2dArray;
     SdfValueTypeName TexCoord3hArray, TexCoord3fArray, TexCoord3dArray;
+    SdfValueTypeName PathExpressionArray;
 
     SDF_API ~Sdf_ValueTypeNamesType();
     struct _Init {
