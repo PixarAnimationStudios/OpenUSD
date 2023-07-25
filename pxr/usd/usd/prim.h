@@ -2222,6 +2222,9 @@ private:
     _ProtoToInstancePathMap _GetProtoToInstancePathMap() const;
 };
 
+    _ProtoToInstancePathMap _GetProtoToInstancePathMap() const;
+};
+
 /// Forward traversal iterator of sibling ::UsdPrim s.  This is a
 /// standard-compliant iterator that may be used with STL algorithms, etc.
 /// Filters according to a supplied predicate.

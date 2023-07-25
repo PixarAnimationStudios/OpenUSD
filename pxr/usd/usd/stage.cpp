@@ -5965,20 +5965,19 @@ _ResolveValuesInDictionary(const UsdObject &object,
     // If there is no layer offset, don't bother with resolving time codes and
     // just resolve asset paths.
     if (offsetAccess) {
-        Usd_ResolveValuesInDictionary(dict, 
-            [&anchor, &context, &offsetAccess, &forFlattening]
-                (VtValue *value) 
-            {
+        Usd_ResolveValuesInDictionary(
+            dict, [&](VtValue *value) {
                 _TryResolveAssetPaths(
                     value, context, anchor, forFlattening) ||
-                _TryResolveTimeCodes(value, *offsetAccess);
+                _TryResolveTimeCodes(value, *offsetAccess) ||
+                _TryResolvePathExprs(value, object, anchor.node);
             });
     } else {
-        Usd_ResolveValuesInDictionary(dict, 
-            [&anchor, &context, &forFlattening](VtValue *value) 
-            {
+        Usd_ResolveValuesInDictionary(
+            dict, [&](VtValue *value) {
                 _TryResolveAssetPaths(
-                    value, context, anchor, forFlattening);
+                    value, context, anchor, forFlattening) ||
+                _TryResolvePathExprs(value, object, anchor.node);
             });
     }
 }
@@ -5998,7 +5997,8 @@ _TryResolveValuesInDictionary(const UsdObject &object,
         VtDictionary resolvedDict;
         _UncheckedSwap(storage, resolvedDict);
         _ResolveValuesInDictionary(
-            anchor, context, offsetAccess, &resolvedDict, forFlattening);
+            object, anchor, context, offsetAccess,
+            &resolvedDict, forFlattening);
         _UncheckedSwap(storage, resolvedDict);
         return true;
     }
@@ -6028,8 +6028,13 @@ struct ValueComposerBase
 
 protected:
     // Protected constructor.
-    explicit ValueComposerBase(Storage s, bool forFlattening = false)
-        : _value(s), _done(false), _forFlattening(forFlattening) 
+    ValueComposerBase(Storage s,
+                      UsdObject const &object,
+                      bool forFlattening = false)
+        : _value(s)
+        , _object(object)
+        , _done(false)
+        , _forFlattening(forFlattening) 
         {}
 
     // Gets the value from the layer spec.
@@ -6077,7 +6082,7 @@ protected:
 
             // Try resolving the values in the dictionary.
             if (_TryResolveValuesInDictionary(
-                    _value, { &stage, layer, specPath, node }, 
+                    _object, _value, { &stage, layer, specPath, node },
                     context, &layerOffsetAccess, _forFlattening)) {
                 // Merge the resolved dictionary.
                 VtDictionaryOverRecursive(
@@ -6232,8 +6237,9 @@ struct UntypedValueComposer : public ValueComposerBase<VtValue *>
     using Base = ValueComposerBase<VtValue *>;
 
     explicit UntypedValueComposer(
-        VtValue *s, bool forFlattening = false)
-        : Base(s, forFlattening) {}
+        VtValue *s, UsdObject const &object,
+        bool forFlattening = false)
+        : Base(s, object, forFlattening) {}
 
     bool ConsumeAuthored(const UsdStage &stage,
                          const PcpNodeRef &node,
@@ -6326,7 +6332,8 @@ protected:
         // here to the cover the case when the storage container starts as an
         // empty VtValue.
         if (_TryResolveValuesInDictionary(
-                this->_value, { &stage, layer, specPath, node },
+                this->_object, this->_value,
+                { &stage, layer, specPath, node },
                 context, &layerOffsetAccess, this->_forFlattening)) {
         } else {
             // Otherwise try resolving each of the the other resolvable 
@@ -6337,7 +6344,8 @@ protected:
                 this->_value, context,
                 { &stage, layer, specPath, node },
                 this->_forFlattening) ||
-            _TryResolveTimeCodes(this->_value, layerOffsetAccess);
+            _TryResolveTimeCodes(this->_value, layerOffsetAccess) ||
+            _TryResolvePathExprs(this->_value, this->_object, node);
         }
     }
 };
@@ -6351,9 +6359,8 @@ struct StrongestValueComposer : public ValueComposerBase<SdfAbstractDataValue *>
 {
     using Base = ValueComposerBase<SdfAbstractDataValue *>;
 
-    explicit StrongestValueComposer(SdfAbstractDataValue *s)
-        : Base(s, /* forFlattening = */ false) {}
-
+    StrongestValueComposer(SdfAbstractDataValue *s, UsdObject const &object)
+        : Base(s, object, /* forFlattening = */ false) {}
 
     bool ConsumeAuthored(const UsdStage &stage,
                          const PcpNodeRef &node,
@@ -6393,8 +6400,9 @@ struct TypeSpecificValueComposer :
     using Base = ValueComposerBase<SdfAbstractDataValue *>;
     friend Base;
 
-    explicit TypeSpecificValueComposer(SdfAbstractDataTypedValue<T> *s)
-        : Base(s, /*forFlattening = */ false) {}
+    explicit TypeSpecificValueComposer(SdfAbstractDataTypedValue<T> *s,
+                                       UsdObject const &object = UsdObject())
+        : Base(s, object, /*forFlattening = */ false) {}
 
     bool ConsumeAuthored(const UsdStage &stage,
                          const PcpNodeRef &node,
@@ -7658,7 +7666,7 @@ UsdStage::_GetAllMetadata(const UsdObject &obj,
     TfTokenVector fieldNames = _ListMetadataFields(obj, useFallbacks);
     for (const auto& fieldName : fieldNames) {
         VtValue val;
-        UntypedValueComposer composer(&val, forFlattening);
+        UntypedValueComposer composer(&val, obj, forFlattening);
         _GetMetadataImpl(obj, fieldName, TfToken(), useFallbacks, &composer);
         result[fieldName] = val;
     }
