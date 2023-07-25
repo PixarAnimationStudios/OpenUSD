@@ -2135,6 +2135,15 @@ public:
     /// @}
 
 private:
+    class _ProtoToInstancePathMap {
+        friend class UsdPrim;
+    public:
+        using _Map = std::vector<std::pair<SdfPath, SdfPath>>;
+        SdfPath MapProtoToInstance(SdfPath const &protoPath) const;
+    private:
+        _Map _map;
+    };
+    
     friend class UsdObject;
     friend class UsdPrimSiblingIterator;
     friend class UsdPrimSubtreeIterator;
@@ -2142,6 +2151,7 @@ private:
     friend class UsdSchemaBase;
     friend class UsdAPISchemaBase;
     friend class UsdStage;
+    friend class Usd_StageImplAccess;
     friend class UsdPrimRange;
     friend class Usd_PrimData;
     friend class Usd_PrimFlagsPredicate;
@@ -2210,6 +2220,8 @@ private:
     _MakeResolveTargetFromEditTarget(
         const UsdEditTarget &editTarget,
         bool makeAsStrongerThan) const;
+
+    _ProtoToInstancePathMap _GetProtoToInstancePathMap() const;
 };
 
 #ifdef doxygen

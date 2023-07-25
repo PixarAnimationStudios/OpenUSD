@@ -1721,6 +1721,8 @@ private:
         static const bool value =
             std::is_same<T, SdfTimeCode>::value ||
             std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfPathExpression>::value ||
+            std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
             std::is_same<T, VtDictionary>::value;
     };
@@ -1980,6 +1982,11 @@ private:
                                 SdfTimeCode *timeCodes,
                                 size_t numTimeCodes) const;
 
+    void _MakeResolvedPathExpressions(
+        UsdTimeCode time, const UsdAttribute &attr,
+        SdfPathExpression *pathExprs,
+        size_t numPathExprs) const;
+
     void _MakeResolvedAttributeValue(UsdTimeCode time, const UsdAttribute &attr,
                                      VtValue *value) const;
 
@@ -1999,6 +2006,8 @@ public:
             std::is_same<T, VtArray<SdfAssetPath>>::value ||
             std::is_same<T, SdfTimeCode>::value ||
             std::is_same<T, VtArray<SdfTimeCode>>::value ||
+            std::is_same<T, SdfPathExpression>::value ||
+            std::is_same<T, VtArray<SdfPathExpression>>::value ||
             std::is_same<T, SdfTimeSampleMap>::value ||
             std::is_same<T, VtDictionary>::value;
     };

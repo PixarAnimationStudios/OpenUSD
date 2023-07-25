@@ -66,6 +66,26 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+SdfPath
+UsdPrim::_ProtoToInstancePathMap
+::MapProtoToInstance(SdfPath const &protoPath) const
+{
+    SdfPath ret = protoPath;
+    if (_map.empty()) {
+        return ret;
+    }
+
+    auto it = SdfPathFindLongestPrefix(
+        _map.begin(), _map.end(), ret,
+        [](auto const &p) { return p.first; });
+
+    if (it != _map.end()) {
+        ret = ret.ReplacePrefix(it->first, it->second);
+    }
+    
+    return ret;
+}
+
 UsdPrim
 UsdPrim::GetChild(const TfToken &name) const
 {
@@ -2034,6 +2054,43 @@ UsdPrim::_MakeResolveTargetFromEditTarget(
         // Return a resolve target starting at the edit node and layer.
         return UsdResolveTarget(resolveIndex, node, editTarget.GetLayer());
     }
+}
+
+UsdPrim::_ProtoToInstancePathMap
+UsdPrim::_GetProtoToInstancePathMap() const
+{
+    // Walk up to the root while we're in (nested) instance-land.  When we
+    // hit an instance or a prototype, add a mapping for the prototype
+    // source prim index path to this particular instance (proxy) path.
+
+    _ProtoToInstancePathMap pathMap;
+    if (_Prim()->IsInPrototype()) {
+        // This prim might be an instance proxy inside a prototype, if so use
+        // its prototype, but be sure to skip up to the parent if *this* prim is
+        // an instance.  Target paths on *this* prim are in the "space" of its
+        // next ancestral prototype, just as how attribute & metadata values
+        // come from the instance itself, not its prototype.
+
+        UsdPrim prim = *this;
+        if (prim.IsInstance()) {
+            prim = prim.GetParent();
+        }
+        for (; prim; prim = prim.GetParent()) {
+            UsdPrim prototype;
+            if (prim.IsInstance()) {
+                prototype = prim.GetPrototype();
+            } else if (prim.IsPrototype()) {
+                prototype = prim;
+            }
+            if (prototype) {
+                pathMap._map.emplace_back(
+                    prototype._GetSourcePrimIndex().GetPath(),
+                    prim.GetPath());
+            }
+        };
+        std::sort(pathMap._map.begin(), pathMap._map.end());
+    }
+    return pathMap;
 }
 
 UsdResolveTarget 
