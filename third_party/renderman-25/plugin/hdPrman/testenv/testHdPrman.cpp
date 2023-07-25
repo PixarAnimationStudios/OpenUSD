@@ -474,10 +474,11 @@ PopulateFallbackRenderSettings(
     // authored. This should match the list in AddNamespacedSettings.
     {
         UsdPrim prim = settings->GetPrim();
-        _SetFallbackValueIfUnauthored(_tokens->jitter, prim, false);
-        _SetFallbackValueIfUnauthored(_tokens->minSamples, prim, 4);
-        _SetFallbackValueIfUnauthored(_tokens->maxSamples, prim, 4);
-        _SetFallbackValueIfUnauthored(_tokens->pixelVariance, prim, 0.f);
+        _SetFallbackValueIfUnauthored(TfToken("ri:hider:jitter"), prim, true);
+        _SetFallbackValueIfUnauthored(TfToken("ri:hider:minsamples"), prim, 32);
+        _SetFallbackValueIfUnauthored(TfToken("ri:hider:maxsamples"), prim, 64);
+        _SetFallbackValueIfUnauthored(
+            TfToken("ri:Ri:PixelVariance"), prim, 0.01f);
     }
 
 
@@ -665,10 +666,10 @@ AddNamespacedSettings(
     VtDictionary const &namespacedSettings, HdRenderSettingsMap *settingsMap)
 {
     // Add fallback settings specific to testHdPrman 
-    (*settingsMap)[_tokens->jitter] = false;
-    (*settingsMap)[_tokens->minSamples] = 4;
-    (*settingsMap)[_tokens->maxSamples] = 4;
-    (*settingsMap)[_tokens->pixelVariance] = 0.f;
+    (*settingsMap)[TfToken("ri:hider:jitter")] = true;
+    (*settingsMap)[TfToken("ri:hider:minsamples")] = 32;
+    (*settingsMap)[TfToken("ri:hider:maxsamples")] = 64;
+    (*settingsMap)[TfToken("ri:Ri:PixelVariance")] = 0.01f;
 
     // Set namespaced settings 
     for (const auto &item : namespacedSettings) {
