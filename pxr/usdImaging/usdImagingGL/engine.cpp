@@ -25,23 +25,16 @@
 #include "pxr/usdImaging/usdImagingGL/engine.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/extentResolvingSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/unloadedDrawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
+#include "pxr/usdImaging/usdImaging/sceneIndices.h"
 
 #include "pxr/usd/usdGeom/tokens.h"
 #include "pxr/usd/usdGeom/camera.h"
 #include "pxr/usd/usdRender/tokens.h"
 #include "pxr/usd/usdRender/settings.h"
 
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/light.h"
 #include "pxr/imaging/hd/rendererPlugin.h"
@@ -1089,6 +1082,46 @@ UsdImagingGLEngine::_AppendSceneGlobalsSceneIndexCallback(
     return inputScene;
 }
 
+HdSceneIndexBaseRefPtr
+UsdImagingGLEngine::_AppendOverridesSceneIndices(
+    HdSceneIndexBaseRefPtr const &inputScene)
+{
+    HdSceneIndexBaseRefPtr sceneIndex = inputScene;
+
+    static HdContainerDataSourceHandle const materialPruningInputArgs =
+        HdRetainedContainerDataSource::New(
+            HdsiPrimTypePruningSceneIndexTokens->primTypes,
+            HdRetainedTypedSampledDataSource<TfTokenVector>::New(
+                { HdPrimTypeTokens->material }),
+            HdsiPrimTypePruningSceneIndexTokens->bindingToken,
+            HdRetainedTypedSampledDataSource<TfToken>::New(
+                HdMaterialBindingsSchema::GetSchemaToken()));
+
+    // Prune scene materials prior to flattening inherited
+    // materials bindings and resolving material bindings
+    sceneIndex = _materialPruningSceneIndex =
+        HdsiPrimTypePruningSceneIndex::New(
+            sceneIndex, materialPruningInputArgs);
+
+    static HdContainerDataSourceHandle const lightPruningInputArgs =
+        HdRetainedContainerDataSource::New(
+            HdsiPrimTypePruningSceneIndexTokens->primTypes,
+            HdRetainedTypedSampledDataSource<TfTokenVector>::New(
+                HdLightPrimTypeTokens()),
+            HdsiPrimTypePruningSceneIndexTokens->doNotPruneNonPrimPaths,
+            HdRetainedTypedSampledDataSource<bool>::New(
+                false));
+
+    sceneIndex = _lightPruningSceneIndex =
+        HdsiPrimTypePruningSceneIndex::New(
+            sceneIndex, lightPruningInputArgs);
+
+    sceneIndex = _rootOverridesSceneIndex =
+        UsdImagingRootOverridesSceneIndex::New(sceneIndex);
+
+    return inputScene;
+}
+
 void
 UsdImagingGLEngine::_SetRenderDelegate(
     HdPluginRenderDelegateUniqueHandle &&renderDelegate)
@@ -1134,82 +1167,19 @@ UsdImagingGLEngine::_SetRenderDelegate(
             _renderDelegate.Get(), {&_hgiDriver}, renderInstanceId));
 
     if (_GetUseSceneIndices()) {
-        HdContainerDataSourceHandle const stageInputArgs =
-            HdRetainedContainerDataSource::New(
-                UsdImagingStageSceneIndexTokens->includeUnloadedPrims,
-                HdRetainedTypedSampledDataSource<bool>::New(
-                    _displayUnloadedPrimsWithBounds));
+        UsdImagingSceneIndicesCreateInfo info;
+        info.displayUnloadedPrimsWithBounds = _displayUnloadedPrimsWithBounds;
+        info.overridesSceneIndexCallback =
+            std::bind(
+                &UsdImagingGLEngine::_AppendOverridesSceneIndices,
+                this, std::placeholders::_1);
 
-        // Create the scene index graph.
-        _sceneIndex = _stageSceneIndex =
-            UsdImagingStageSceneIndex::New(stageInputArgs);
-
-        static HdContainerDataSourceHandle const materialPruningInputArgs =
-            HdRetainedContainerDataSource::New(
-                HdsiPrimTypePruningSceneIndexTokens->primTypes,
-                HdRetainedTypedSampledDataSource<TfTokenVector>::New(
-                    { HdPrimTypeTokens->material }),
-                HdsiPrimTypePruningSceneIndexTokens->bindingToken,
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    HdMaterialBindingsSchema::GetSchemaToken()));
-
-        // Prune scene materials prior to flattening inherited
-        // materials bindings and resolving material bindings
-        _sceneIndex = _materialPruningSceneIndex =
-            HdsiPrimTypePruningSceneIndex::New(
-                _sceneIndex, materialPruningInputArgs);
-
-        static HdContainerDataSourceHandle const lightPruningInputArgs =
-            HdRetainedContainerDataSource::New(
-                HdsiPrimTypePruningSceneIndexTokens->primTypes,
-                HdRetainedTypedSampledDataSource<TfTokenVector>::New(
-                    HdLightPrimTypeTokens()),
-                HdsiPrimTypePruningSceneIndexTokens->doNotPruneNonPrimPaths,
-                HdRetainedTypedSampledDataSource<bool>::New(
-                    false));
-
-        _sceneIndex = _lightPruningSceneIndex =
-            HdsiPrimTypePruningSceneIndex::New(
-                _sceneIndex, lightPruningInputArgs);
-
-        // Use extentsHint for default_/geometry purpose
-        HdContainerDataSourceHandle const extentInputArgs =
-            HdRetainedContainerDataSource::New(
-                UsdGeomTokens->purpose,
-                HdRetainedTypedSampledDataSource<TfToken>::New(
-                    UsdGeomTokens->default_));
-
-        _sceneIndex =
-            UsdImagingExtentResolvingSceneIndex::New(
-                _sceneIndex, extentInputArgs);
-
-        if (_displayUnloadedPrimsWithBounds) {
-            _sceneIndex =
-                UsdImagingUnloadedDrawModeSceneIndex::New(_sceneIndex);
-        }
-
-        _sceneIndex = _rootOverridesSceneIndex =
-            UsdImagingRootOverridesSceneIndex::New(_sceneIndex);
-
-        _sceneIndex =
-            UsdImagingPiPrototypePropagatingSceneIndex::New(_sceneIndex);
+        const UsdImagingSceneIndices sceneIndices =
+            UsdImagingInstantiateSceneIndices(info);
         
-        _sceneIndex =
-            UsdImagingNiPrototypePropagatingSceneIndex::New(_sceneIndex);
-
-        _sceneIndex = _selectionSceneIndex =
-            UsdImagingSelectionSceneIndex::New(_sceneIndex);
-
-        _sceneIndex =
-            UsdImagingRenderSettingsFlatteningSceneIndex::New(_sceneIndex);
-
-        _sceneIndex =
-            HdFlatteningSceneIndex::New(
-                _sceneIndex, UsdImagingFlattenedDataSourceProviders());
-
-        _sceneIndex =
-            UsdImagingDrawModeSceneIndex::New(_sceneIndex,
-                                              /* inputArgs = */ nullptr);
+        _stageSceneIndex = sceneIndices.stageSceneIndex;
+        _selectionSceneIndex = sceneIndices.selectionSceneIndex;
+        _sceneIndex = sceneIndices.finalSceneIndex;
 
         _sceneIndex = _displayStyleSceneIndex =
             HdsiLegacyDisplayStyleOverrideSceneIndex::New(_sceneIndex);

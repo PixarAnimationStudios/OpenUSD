@@ -114,6 +114,7 @@ pxr_library(usdImaging
         renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
+        sceneIndices
         sphereAdapter
         sphereLightAdapter
         textureUtils
