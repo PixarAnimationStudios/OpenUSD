@@ -1141,9 +1141,19 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
         const SdfPath &path = entry.primPath;
         const HdDataSourceLocatorSet &locators = entry.dirtyLocators;
 
-        if (locators.Intersects(_resyncLocators)) {
-            _ResyncPrim(path);
-            continue;
+        {
+            static const HdDataSourceLocatorSet resyncLocators{
+                HdInstancedBySchema::GetDefaultLocator().Append(
+                    HdInstancedBySchemaTokens->prototypeRoots),
+                HdMaterialBindingsSchema::GetDefaultLocator(),
+                HdPurposeSchema::GetDefaultLocator(),
+                UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
+
+            if (locators.Intersects(resyncLocators)) {
+                _ResyncPrim(path);
+                continue;
+            }
+
         }
 
         {
