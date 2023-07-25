@@ -26,7 +26,6 @@
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usd/usdGeom/imageable.h"
 #include "pxr/imaging/hd/extentSchema.h"
-#include "pxr/imaging/hd/modelSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

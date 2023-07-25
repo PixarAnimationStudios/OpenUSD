@@ -55,6 +55,7 @@ pxr_library(usdImaging
         extentResolvingSceneIndex
         indexProxy
         materialParamUtils
+        modelSchema
         primvarUtils
         resolvedAttributeCache
         instancerContext

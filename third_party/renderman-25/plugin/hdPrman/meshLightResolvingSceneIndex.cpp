@@ -44,7 +44,6 @@
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
-#include "pxr/imaging/hd/modelSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -53,6 +52,8 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/usd/usdLux/tokens.h"
 
@@ -619,7 +620,7 @@ _BuildLightDataSource(
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out model
-    names.push_back(HdModelSchemaTokens->model);
+    names.push_back(UsdImagingModelSchemaTokens->model);
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out mesh
