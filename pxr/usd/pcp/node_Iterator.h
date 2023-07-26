@@ -44,15 +44,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// node in the prim index graph in strong-to-weak order.
 ///
 class PcpNodeRef_PrivateChildrenConstIterator
-    : public boost::iterator_facade<
-                 /* Derived =   */ PcpNodeRef_PrivateChildrenConstIterator, 
-                 /* ValueType = */ const PcpNodeRef,
-                 /* Category =  */ boost::forward_traversal_tag
-             >
 {
 public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = const PcpNodeRef;
+    using reference = const PcpNodeRef&;
+    using pointer = const PcpNodeRef*;
+    using difference_type = std::ptrdiff_t;
+
     // Required by TF_FOR_ALL but always assigned to afterwards.
-    PcpNodeRef_PrivateChildrenConstIterator() { }
+    PcpNodeRef_PrivateChildrenConstIterator() = default;
 
     /// Constructs an iterator pointing to \p node's first or past its
     /// last child.
@@ -66,8 +67,31 @@ public:
             : _nodes[_node._nodeIdx].indexes.firstChildIndex;
     }
 
+    reference operator*() const { return dereference(); }
+    pointer operator->() const { return &(dereference()); }
+
+    PcpNodeRef_PrivateChildrenConstIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    PcpNodeRef_PrivateChildrenConstIterator operator++(int) {
+        PcpNodeRef_PrivateChildrenConstIterator result(*this);
+        increment();
+        return result;
+    }
+
+    bool operator==(
+        const PcpNodeRef_PrivateChildrenConstIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(
+        const PcpNodeRef_PrivateChildrenConstIterator& other) const {
+        return !equal(other);
+    }
+
 private:
-    friend class boost::iterator_core_access;
     void increment()
     {
         _node._nodeIdx = _nodes[_node._nodeIdx].indexes.nextSiblingIndex;
@@ -95,15 +119,16 @@ private:
 /// node in the prim index graph in weak-to-strong order.
 ///
 class PcpNodeRef_PrivateChildrenConstReverseIterator
-    : public boost::iterator_facade<
-                 /* Derived =   */ PcpNodeRef_PrivateChildrenConstReverseIterator, 
-                 /* ValueType = */ const PcpNodeRef,
-                 /* Category =  */ boost::forward_traversal_tag
-             >
 {
 public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = const PcpNodeRef;
+    using reference = const PcpNodeRef&;
+    using pointer = const PcpNodeRef*;
+    using difference_type = std::ptrdiff_t;
+
     // Required by TF_FOR_ALL but always assigned to afterwards.
-    PcpNodeRef_PrivateChildrenConstReverseIterator() { }
+    PcpNodeRef_PrivateChildrenConstReverseIterator() = default;
 
     /// Constructs an iterator pointing to \p node's first or past its
     /// last child.
@@ -117,8 +142,31 @@ public:
             : _nodes[_node._nodeIdx].indexes.lastChildIndex;
     }
 
+    reference operator*() const { return dereference(); }
+    pointer operator->() const { return &(dereference()); }
+
+    PcpNodeRef_PrivateChildrenConstReverseIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    PcpNodeRef_PrivateChildrenConstReverseIterator operator++(int) {
+        PcpNodeRef_PrivateChildrenConstReverseIterator result(*this);
+        increment();
+        return result;
+    }
+
+    bool operator==(
+        const PcpNodeRef_PrivateChildrenConstReverseIterator& other) const {
+        return equal(other);
+    }
+
+    bool operator!=(
+        const PcpNodeRef_PrivateChildrenConstReverseIterator& other) const {
+        return !equal(other);
+    }
+
 private:
-    friend class boost::iterator_core_access;
     void increment()
     {
         _node._nodeIdx = _nodes[_node._nodeIdx].indexes.prevSiblingIndex;
