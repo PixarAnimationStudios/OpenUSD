@@ -28,25 +28,23 @@ def Scope "World"
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Cone "Cone" (
+    def Cube "BlueCube" (
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
-        token axis = "Y"
-        double height = 1.2
         rel material:binding = </Material/Blue>
         color3f[] primvars:displayColor = [(0.0436, 0.1311, 0.3634)]
-        double radius = 0.6
+        double size = 1.2
         double3 xformOp:translate = (-3.85, 0.65, 3.85)
         token[] xformOpOrder = ["xformOp:translate"]
     }
 
-    def Sphere "LargeSphere" (
+    def Cube "LargeCube" (
         prepend apiSchemas = ["MaterialBindingAPI"]
     )
     {
         rel material:binding = </Material/White>
-        double radius = 2
+        double size = 4
         double3 xformOp:translate = (0, 2, 0)
         token[] xformOpOrder = ["xformOp:translate"]
     }
@@ -143,6 +141,9 @@ def Scope "Render"
     {
         token outputs:ri:displayFilters.connect = </Render/DisplayFilter.outputs:result>
         token outputs:ri:sampleFilters.connect = </Render/SampleFilter.outputs:result>
+        float ri:Ri:PixelVariance = 0.0
+        int ri:hider:minsamples = 32
+        int ri:hider:maxsamples = 32
     }
 
     def PxrMurkFilter "SampleFilter"
