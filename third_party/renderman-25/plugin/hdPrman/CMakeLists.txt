@@ -119,6 +119,7 @@ pxr_plugin(${PXR_PACKAGE}
         renderSettingsFilteringSceneIndexPlugin
         renderViewContext
         resourceRegistry
+        terminalSceneIndexObserver
         utils
         velocityMotionBlurSceneIndexPlugin
         virtualStructResolvingSceneIndex

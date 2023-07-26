@@ -257,5 +257,22 @@ HdRenderDelegate::Restart()
     return false;
 }
 
+////////////////////////////////////////////////////////////////////////////
+///
+/// Hydra 2.0 API
+///
+////////////////////////////////////////////////////////////////////////////
+
+void
+HdRenderDelegate::SetTerminalSceneIndex(
+    const HdSceneIndexBaseRefPtr &terminalSceneIndex)
+{
+}
+
+void
+HdRenderDelegate::Update()
+{
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
 

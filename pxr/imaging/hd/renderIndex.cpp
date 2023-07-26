@@ -146,6 +146,8 @@ HdRenderIndex::HdRenderIndex(
             SdfPath::AbsoluteRootPath());
 
         _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
+
+        renderDelegate->SetTerminalSceneIndex(_terminalSceneIndex);
     }
 }
 
@@ -1388,6 +1390,20 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Render delegates driving prim updates from the scene index will expect
+    // an Update call; run this before legacy Hydra prim sync.
+    //
+
+    if (_IsEnabledSceneIndexEmulation()) {
+        _renderDelegate->Update();
+    }
+
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
 
     HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
 
