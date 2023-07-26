@@ -687,7 +687,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
     Meshlet meshlet;
     int startPrimitive = meshStartLocation / 3;
     int endPrimitive = meshStartLocation / 3;
-    for(uint32_t i = meshStartLocation; i < meshEndLocation + 2; i += 3) {
+    for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
         if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
             endPrimitive = ((i)/3);
             int count = 0;
@@ -709,13 +709,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
             }
             meshlet.vertexCount = meshlet.vertexInfo.size();
             meshlet.primitiveCount = (endPrimitive - startPrimitive);
-            //temp
-            /*
-            std::vector<uint32_t> inds;
-            for(int i = 0; i < endPrimitive * 3; i++) {
-                inds.push_back(indices[i]);
-            }
-             */
+
             maxVertsReached = false;
             maxPrimsReached = false;
             numPrimsProcessed = 0;
@@ -727,8 +721,14 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 continue;
             }
             meshlet = Meshlet();
-            startPrimitive = i/3;
+            startPrimitive = (i/3);
         }
+        
+        if((numVerticesProcessed + 3) > max_vertices) {
+            maxVertsReached = true;
+            continue;
+        }
+        
         int newVerts = 0;
         auto it1 = m.find(i);
         if (it1 != m.end()) {
@@ -741,10 +741,6 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
         auto it3 = m.find(i+2);
         if (it3 != m.end()) {
             newVerts++;
-        }
-        if((numVerticesProcessed + newVerts) > max_vertices) {
-            maxVertsReached = true;
-            continue;
         }
 
         if (it1 == m.end()) {
