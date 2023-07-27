@@ -34,7 +34,7 @@ Our test machines have the following software versions installed
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |
-| Doxygen       | 1.8.14               |                              |                                |
+| Doxygen       | 1.9.6                |                              |                                |
 | GraphViz      | 2.40.1               |                              |                                |
 | OpenVDB       | 7.1.0                | 7.1.0                        | 7.1.0                          |
 | Vulkan SDK    | 1.2.135.0            | 1.2.135.0                    | 1.2.135.0                      |
