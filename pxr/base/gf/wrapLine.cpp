@@ -80,12 +80,6 @@ void wrapLine()
     typedef GfLine This;
 
     def("FindClosestPoints", FindClosestPointsHelper, 
-        "FindClosestPoints( l1, l2 ) -> tuple<intersects = bool, p1 = GfVec3d, p2 = GfVec3d,"
-        " t1 = double, t2 = double>\n"
-        "\n"
-        "l1 : GfLine\n"
-        "l2 : GfLine\n"
-        "\n"
         "Computes the closest points between two lines, returning a "
         "tuple.  The first item in the tuple is true if the lines"
         "intersect.  The two points are returned in p1 and p2.  The "

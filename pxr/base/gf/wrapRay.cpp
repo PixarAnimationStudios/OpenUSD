@@ -165,12 +165,6 @@ void wrapRay()
     typedef GfRay This;
 
     def("FindClosestPoints", FindClosestPointsHelper1, 
-        "FindClosestPoints( r1, l2 ) -> tuple<intersects=bool, "
-        "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
-        "\n"
-        "r1 : GfRay\n"
-        "l2 : GfLine\n"
-        "\n"
         "Computes the closest points between a ray and a line,\n"
         "returning a tuple. The first item in the tuple is true if "
         "they intersect. The two points are returned in p1 and p2.\n"
@@ -179,12 +173,6 @@ void wrapRay()
         "----------------------------------------------------------------------"
         );
     def("FindClosestPoints", FindClosestPointsHelper2, 
-        "FindClosestPoints( r1, s2 ) -> tuple<intersects = bool, "
-        "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>\n"
-        "\n"
-        "r1 : GfRay\n"
-        "s2 : GfLineSeg\n"
-        "\n"
         "Computes the closest points between a ray and a line segment,\n"
         "returning a tuple. The first item in the tuple is true if "
         "they intersect. The two points are returned in p1 and p2.\n"
@@ -218,9 +206,6 @@ void wrapRay()
         .def("Transform", &This::Transform, return_self<>())
         
         .def("Intersect", IntersectHelper1,
-             "Intersect( p0, p1, p2 ) -> tuple<intersects = bool, dist =\n"
-             "float, barycentric = GfVec3d, frontFacing = bool>\n"
-             "\n"
              "Intersects the ray with the triangle formed by points p0,\n"
              "p1, and p2.  The first item in the tuple is true if the ray\n"
              "intersects the triangle. dist is the the parametric\n"
@@ -241,9 +226,6 @@ void wrapRay()
              "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper2,
-              "Intersect( plane ) -> tuple<intersects = bool, dist = float,\n"
-              "frontFacing = bool>\n"
-              "\n"
               "Intersects the ray with the Gf.Plane.  The first item in\n"
               "the returned tuple is true if the ray intersects the plane.\n"
               "dist is the parametric distance to the intersection point\n"
@@ -252,9 +234,6 @@ void wrapRay()
              "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper3,
-              "Intersect( range3d ) -> tuple<intersects = bool, enterDist\n"
-              "= float, exitDist = float>\n"
-              //\n"
               "Intersects the plane with an axis-aligned box in a\n"
               "Gf.Range3d.  intersects is true if the ray intersects it at\n"
               "all within bounds. If there is an intersection then enterDist\n"
@@ -263,9 +242,6 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper4,
-              "Intersect( bbox3d ) -> tuple<intersects = bool, enterDist\n"
-              "= float, exitDist = float>\n"
-              //\n"
               "Intersects the plane with an oriented box in a Gf.BBox3d.\n"
               "intersects is true if the ray intersects it at all within\n"
               "bounds. If there is an intersection then enterDist and\n"
@@ -274,9 +250,6 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper5,
-              "Intersect( center, radius ) -> tuple<intersects = bool,\n"
-              "enterDist = float, exitDist = float>\n"
-              "\n"
               "Intersects the plane with an sphere. intersects is true if\n"
               "the ray intersects it at all within the sphere. If there is\n"
               "an intersection then enterDist and exitDist will be the\n"
@@ -284,9 +257,6 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper6,
-              "Intersect( origin, axis, radius ) -> tuple<intersects = bool,\n"
-              "enterDist = float, exitDist = float>\n"
-              "\n"
               "Intersects the plane with an infinite cylinder. intersects\n"
               "is true if the ray intersects it at all within the\n"
               "sphere. If there is an intersection then enterDist and\n"
@@ -295,9 +265,6 @@ void wrapRay()
               "----------------------------------------------------------------------"
             )
         .def( "Intersect", IntersectHelper7,
-              "Intersect( origin, axis, radius, height ) -> \n"
-              "tuple<intersects = bool, enterDist = float, exitDist = float>\n"
-              "\n"
               "Intersects the plane with an cylinder. intersects\n"
               "is true if the ray intersects it at all within the\n"
               "sphere. If there is an intersection then enterDist and\n"

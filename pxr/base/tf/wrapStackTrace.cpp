@@ -61,18 +61,15 @@ void
 wrapStackTrace()
 {
     def("GetStackTrace", TfGetStackTrace,
-        "GetStackTrace()\n\n"
         "Return both the C++ and the python stack as a string.");
     
     def("PrintStackTrace", _PrintStackTrace,
-        "PrintStackTrace(file, str)\n\n"
         "Prints both the C++ and the python stack to the file provided.");
 
     def("LogStackTrace", TfLogStackTrace,
         (arg("reason"), arg("logToDb")=false));
 
     def("GetAppLaunchTime", TfGetAppLaunchTime,
-        "GetAppLaunchTime() -> int \n\n"
         "Return the time (in seconds since the epoch) at which "
         "the application was started.");
 }

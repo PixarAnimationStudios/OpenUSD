@@ -347,8 +347,6 @@ void wrapPrimSpec()
 
         .def("GetObjectAtPath",
             &This::GetObjectAtPath,
-            "GetObjectAtPath(path) -> object\n\n"
-            "path: Path\n\n"
             "Returns a prim or property given its namespace path.\n\n"
             "If path is relative then it will be interpreted as relative "
             "to this prim.  If it is absolute then it will be "

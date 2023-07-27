@@ -462,8 +462,7 @@ void VtWrapArray()
         .def(init<>())
         .def("__init__", make_constructor(VtArray__init__<Type>),
             (const char *)
-            "__init__(values)\n\n"
-            "values: a sequence (tuple, list, or another VtArray with "
+            "takes a sequence (tuple, list, or another VtArray with "
             "element type convertible to the new array's element type)\n\n"
             )
         .def("__init__", make_constructor(VtArray__init__2<Type>))

@@ -84,12 +84,6 @@ void wrapLineSeg()
     typedef GfLineSeg This;
 
     def("FindClosestPoints", FindClosestPointsHelper1, 
-        "FindClosestPoints( l1, s2 ) -> tuple< intersects = bool, "
-        "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
-        "\n\n"
-        "l1 : GfLine\n"
-        "s2 : GfLineSeg"
-        "\n\n"
         "Computes the closest points between a line and a line "
         "segment, returning a tuple. The first item in the tuple "
         "is true if they intersect. The two points are returned in "
@@ -97,12 +91,6 @@ void wrapLineSeg()
         "line and line segment is returned in t1 and t2.\n"
         "----------------------------------------------------------------------");
     def("FindClosestPoints", FindClosestPointsHelper2, 
-        "FindClosestPoints( s1, s2 ) -> tuple<result = bool,"
-        "p1 = GfVec3d, p2 = GfVec3d, t1 = double, t2 = double>"
-        "\n\n"
-        "l1 : GfLineSeg\n"
-        "l2 : GfLineSeg"
-        "\n\n"
         "Computes the closest points between two line segments, "
         "returning a tuple.  The first item in the tuple "
         "is true if they intersect.  The two points are returned in "

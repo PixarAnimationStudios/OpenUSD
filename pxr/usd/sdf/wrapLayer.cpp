@@ -879,8 +879,6 @@ void wrapLayer()
         .def("Find", &_Find,
             ( arg("identifier"),
               arg("args") = boost::python::dict()),
-            "Find(filename) -> LayerPtr\n\n"
-            "filename : string\n\n"
             "Returns the open layer with the given filename, or None.  "
             "Note that this is a static class method.")
         .staticmethod("Find")

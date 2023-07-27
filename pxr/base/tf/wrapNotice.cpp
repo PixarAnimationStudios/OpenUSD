@@ -232,10 +232,6 @@ void wrapNotice()
         .def("Register",
              Tf_PyNoticeInternal::RegisterWithPythonSender,
              return_value_policy<manage_new_object>(),
-         "Register( noticeType, callback, sender ) -> Listener \n\n"
-         "noticeType : Tf.Notice\n"
-         "callback : function\n"
-         "sender : object\n\n"
          "Register a listener as being interested in a TfNotice  "
          "type from a specific sender.  Notice listener will get sender  "
          "as an argument.   "
@@ -257,9 +253,6 @@ void wrapNotice()
         .def("RegisterGlobally",
              Tf_PyNoticeInternal::RegisterGlobally,
              return_value_policy<manage_new_object>(), 
-             "RegisterGlobally( noticeType, callback ) -> Listener \n\n"
-             "noticeType : Tf.Notice\n"
-             "callback : function\n\n"
              "Register a listener as being interested in a TfNotice "
              "type from any sender.  The notice listener does not get sender "
              "as an argument. "

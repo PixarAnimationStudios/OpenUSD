@@ -91,14 +91,6 @@ void wrapAttributeSpec()
         .def(SdfPySpec())
         .def("__unused__",
             SdfMakePySpecConstructor(wrapNewPrimAttr,
-                "__init__(ownerPrimSpec, name, typeName, "
-                "variability = Sd.VariabilityVarying, "
-                "declaresCustom = False)\n"
-                "ownerPrimSpec : PrimSpec\n"
-                "name : string\n"
-                "typeName : SdfValueTypeName\n"
-                "variability : SdfVariability\n"
-                "declaresCustom : bool\n\n"
                 "Create a custom attribute spec that is an attribute of "
                 "ownerPrimSpec with the given name and type."),
                 (arg("ownerPrimSpec"),

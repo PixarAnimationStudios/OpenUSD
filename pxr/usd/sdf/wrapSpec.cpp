@@ -139,10 +139,6 @@ void wrapSpec()
         .def("SetInfo", &_WrapSetInfo)
         .def("SetInfoDictionaryValue", &This::SetInfoDictionaryValue)
         .def("HasInfo", &This::HasInfo,
-             "HasInfo(key) -> bool\n\n"
-
-             "key : string\n\n"
-
              "Returns whether there is a setting for the scene spec "
              "info with the given key.\n\n"
             
@@ -162,10 +158,6 @@ void wrapSpec()
              "some of its scene spec info.")
 
         .def("ClearInfo", &This::ClearInfo,
-             "ClearInfo(key)\n\n"
-
-             "key : string\nn"
-
              "Clears the value for scene spec info with the given key. "
              "After calling this, HasInfo() will return false. "
              "To make HasInfo() return true, set a value for that scene "
@@ -173,19 +165,11 @@ void wrapSpec()
              (arg("key")))
 
         .def("GetTypeForInfo", &This::GetTypeForInfo,
-             "GetTypeForInfo(key)\n\n"
-
-             "key : string\n\n"
-
              "Returns the type of value for the given key. ")
 
         .def("GetFallbackForInfo",
               make_function(&This::GetFallbackForInfo,
                   return_value_policy<return_by_value>()),
-             "GetFallbackForInfo(key)\n\n"
-
-             "key : string\n\n"
-
              "Returns the fallback value for the given key. ")
 
         .add_property("isInert", &_WrapIsInertProperty,
