@@ -387,7 +387,10 @@ class Parser:
             prot = ''
             doc = self.__getAllDocStrings(node, name)
             location = node.getLocation()
-            ret = DocElement(name, kind, prot, doc, location)
+            if location != ('', ''):
+                # These elements shadow class elements of the same name, but they 
+                # lack any valuable information, and thus create empty docstrings.
+                ret = DocElement(name, kind, prot, doc, location)
         elif node.name == 'compounddef':
             kind = node.getKind()
             if kind == 'class' or kind == 'struct':
