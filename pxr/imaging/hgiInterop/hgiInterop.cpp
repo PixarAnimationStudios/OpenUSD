@@ -29,11 +29,14 @@
 #if defined(PXR_METAL_SUPPORT_ENABLED)
     #include "pxr/imaging/hgiMetal/hgi.h"
     #include "pxr/imaging/hgiInterop/metal.h"
-#elif defined(PXR_VULKAN_SUPPORT_ENABLED)
-    #include "pxr/imaging/hgiVulkan/hgi.h"
-    #include "pxr/imaging/hgiInterop/vulkan.h"
 #else
-    #include "pxr/imaging/hgiInterop/opengl.h"
+// Include Vulkan headers if vulkan build option option enabled.
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+    #include "pxr/imaging/hgiVulkan/hgi.h"
+#include "vulkan.h"
+#endif
+// Always include opengl (even if vulkan build option enabled)
+#include "pxr/imaging/hgiInterop/opengl.h"
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -63,7 +66,9 @@ void HgiInterop::TransferToApp(
     } else {
         TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
     }
-#elif defined(PXR_VULKAN_SUPPORT_ENABLED)
+#else
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
     if (srcApi==HgiTokens->Vulkan && dstApi==HgiTokens->OpenGL) {
         // Transfer Vulkan textures to OpenGL application
         if (!_vulkanToOpenGL) {
@@ -71,10 +76,10 @@ void HgiInterop::TransferToApp(
         }
         _vulkanToOpenGL->CompositeToInterop(
             srcColor, srcDepth, dstFramebuffer, dstRegion);
-    } else {
-        TF_CODING_ERROR("Unsupported Hgi backend: %s", srcApi.GetText());
+
     }
-#else
+    else
+#endif
     if (srcApi==HgiTokens->OpenGL && dstApi==HgiTokens->OpenGL) {
         // Transfer OpenGL textures to OpenGL application
         if (!_openGLToOpenGL) {

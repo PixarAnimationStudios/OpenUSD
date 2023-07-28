@@ -60,7 +60,7 @@ public:
         HdRenderDelegate *renderDelegate) override;
 
     /// Checks to see if the plugin is supported on the running system.
-    virtual bool IsSupported(bool gpuEnabled = true) const override;
+    virtual bool IsSupported(bool gpuEnabled = true, TfToken hgiToken = TfToken("")) const override;
 
 private:
     // This class does not support copying.

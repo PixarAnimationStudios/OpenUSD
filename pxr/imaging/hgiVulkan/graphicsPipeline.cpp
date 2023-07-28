@@ -143,7 +143,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     vertexInput.vertexAttributeDescriptionCount = (uint32_t) vertAttrs.size();
     vertexInput.pVertexBindingDescriptions = vertBufs.data();
     vertexInput.vertexBindingDescriptionCount = (uint32_t) vertBufs.size();
-    vertexInput.pNext = &vertexInputDivisor;
+    vertexInput.pNext = (vertBindingDivisors.size() > 0) ? &vertexInputDivisor : nullptr;
     
     pipeCreateInfo.pVertexInputState = &vertexInput;
 
@@ -605,7 +605,7 @@ _ProcessAttachment(
     vkAttachDesc->initialLayout = layout;
     vkAttachDesc->loadOp = HgiVulkanConversions::GetLoadOp(attachment.loadOp);
     vkAttachDesc->samples = HgiVulkanConversions::GetSampleCount(sampleCount);
-    vkAttachDesc->storeOp= HgiVulkanConversions::GetStoreOp(attachment.storeOp);
+    vkAttachDesc->storeOp = HgiVulkanConversions::GetStoreOp(attachment.storeOp);
     // XXX Hgi doesn't provide stencil ops, assume it matches depth attachment.
     vkAttachDesc->stencilLoadOp = vkAttachDesc->loadOp;
     vkAttachDesc->stencilStoreOp = vkAttachDesc->storeOp;

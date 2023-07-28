@@ -465,8 +465,11 @@ HdStInterleavedMemoryManager::_StripedInterleavedBuffer::Reallocate(
     // Skip buffers of zero size.
     if (totalSize > 0) {
         HgiBufferDesc bufDesc;
+        bufDesc.debugName = curRangeOwner_->GetResources().begin()->first.GetString();
         bufDesc.byteSize = totalSize;
-        bufDesc.usage = HgiBufferUsageUniform;
+        // Vulkan Validation layer is raising an error here because
+        // a usage flag of Uniform is applied to a buffer bound as storage
+        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
         newBuf = hgi->CreateBuffer(bufDesc);
     }
 

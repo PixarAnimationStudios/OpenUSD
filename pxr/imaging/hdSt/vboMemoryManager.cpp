@@ -350,7 +350,24 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         // Skip buffers of zero size
         if (bufferSize > 0) {
             HgiBufferDesc bufDesc;
-            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+            bufDesc.usage = HgiBufferUsageUniform;
+
+            // Vulkan Validation layer is raising an error here because
+            // a usage flag of Vertex is applied to an index buffer
+            if (resources[bresIdx].first == HdTokens->indices)
+            {
+                bufDesc.usage |= HgiBufferUsageIndex32;
+            }
+            else if (resources[bresIdx].first == HdTokens->points
+                || resources[bresIdx].first == HdTokens->displayColor)
+            {
+                bufDesc.usage |= HgiBufferUsageVertex;
+            }
+            else
+            {
+                bufDesc.usage |= HgiBufferUsageStorage;
+            }
+
             bufDesc.byteSize = bufferSize;
             bufDesc.vertexStride = bytesPerElement;
             bufDesc.debugName = resources[bresIdx].first.GetText();

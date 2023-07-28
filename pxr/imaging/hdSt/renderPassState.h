@@ -194,11 +194,17 @@ public:
     HDST_API
     void InitGraphicsPipelineDesc(
                 HgiGraphicsPipelineDesc * pipeDesc,
-                HdSt_GeometricShaderSharedPtr const & geometricShader) const;
+                HdSt_GeometricShaderSharedPtr const & geometricShader,
+                bool applyUserDefinedAovDesc = false) const;
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
     uint64_t GetGraphicsPipelineHash() const;
+
+    /// Locally caches Aov Description so the correct clear states are passed
+    /// to Hgi(preferably for Vulkan) for Render pass creation
+    HDST_API
+    void TempCacheAovDesc(HgiGraphicsCmdsDesc* cmdDesc);
 
 private:
     bool _UseAlphaMask() const;
@@ -228,7 +234,7 @@ private:
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
                 HdSt_GeometricShaderSharedPtr const & geometricShader) const;
-    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc) const;
+    void _InitAttachmentState(HgiGraphicsPipelineDesc * pipeDesc, bool applyUserDefinedAovDesc = false) const;
     void _InitDepthStencilState(HgiDepthStencilState * depthState) const;
     void _InitMultiSampleState(HgiMultiSampleState * multisampleState) const;
     void _InitRasterizationState(
@@ -257,6 +263,8 @@ private:
     float _alphaThresholdCurrent;
     bool _resolveMultiSampleAov;
     bool _useSceneMaterials;
+
+    HgiGraphicsCmdsDesc* _cachedAovDesc;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

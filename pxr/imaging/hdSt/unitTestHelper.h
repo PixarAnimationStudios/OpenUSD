@@ -617,7 +617,9 @@ private:
 class HdSt_TextureTestDriver
 {
 public:
+    HDST_API
     HdSt_TextureTestDriver();
+    HDST_API
     ~HdSt_TextureTestDriver();
 
     void Draw(HgiTextureHandle const &colorDst, 
@@ -649,7 +651,6 @@ private:
     HgiAttachmentDesc _attachment0;
     std::vector<uint8_t> _constantsData;
 };
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

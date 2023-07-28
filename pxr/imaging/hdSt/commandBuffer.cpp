@@ -172,7 +172,12 @@ HdStCommandBuffer::ExecuteDraw(
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
-        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
+        // Unless Aov attachments are cached again through another executing task,
+        // we do not want to reapply the load operations.
+        // Except the first batch, all following batch using other render passes
+        // will not use pre-defined load operations that may include clearing on
+        // load operation.
+        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry, (batch == _drawBatches.front()));
     }
 
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());

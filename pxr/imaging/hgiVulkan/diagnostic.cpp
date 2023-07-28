@@ -37,8 +37,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 0, "Enable debugging for HgiVulkan");
-TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 0, 
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG, 1, "Enable debugging for HgiVulkan");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_DEBUG_VERBOSE, 1, 
     "Enable verbose debugging for HgiVulkan");
 
 bool

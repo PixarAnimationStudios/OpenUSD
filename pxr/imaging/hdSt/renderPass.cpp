@@ -164,12 +164,14 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
     _hgi->SubmitCmds(prepareGfxCmds.get());
 
     // Create graphics work to render into aovs.
-    const HgiGraphicsCmdsDesc desc =
+    HgiGraphicsCmdsDesc desc =
         stRenderPassState->MakeGraphicsCmdsDesc(GetRenderIndex());
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(desc);
     if (!TF_VERIFY(gfxCmds)) {
         return;
     }
+
+    stRenderPassState->TempCacheAovDesc(&desc);
 
     std::string passName = "HdSt_RenderPass: " +
         collection.GetMaterialTag().GetString();

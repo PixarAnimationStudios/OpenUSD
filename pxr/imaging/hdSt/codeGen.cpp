@@ -53,10 +53,16 @@
 #include <sstream>
 #include <unordered_map>
 
+#ifdef PXR_VULKAN_SUPPORT_ENABLED
+#define PXR_DISABLE_OSD
+#endif
+
 #if defined(__APPLE__)
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
 #else
-#include <opensubdiv/osd/glslPatchShaderSource.h>
+    #if !defined(PXR_DISABLE_OSD)
+    #include <opensubdiv/osd/glslPatchShaderSource.h>
+    #endif
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -146,8 +152,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (early_fragment_tests)
 );
 
+// For now, looks like for Vulkan path, we require HGI Resource Generation path enabled
+#ifdef PXR_VULKAN_SUPPORT_ENABLED
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, true,
+    "Enable Hgi resource generation for codeGen");
+#else
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
-                      "Enable Hgi resource generation for codeGen");
+    "Enable Hgi resource generation for codeGen");
+#endif
 
 /* static */
 bool
@@ -1607,7 +1619,7 @@ _GetOSDCommonShaderSource()
        << "\n";
 
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
-#else
+#elif !defined(PXR_DISABLE_OSD)
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
        << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
@@ -1630,7 +1642,7 @@ _GetOSDPatchBasisShaderSource()
 #if defined(__APPLE__)
     ss << "#define OSD_PATCH_BASIS_METAL\n";
     ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
-#else
+#elif !defined(PXR_DISABLE_OSD)
     ss << "#define OSD_PATCH_BASIS_GLSL\n";
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
@@ -2910,7 +2922,10 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         resourceGen._GenerateHgiTextureResources(&gsDesc,
             HdShaderTokens->geometryShader, _resTextures, _metaData);
 
-        std::string const declarations = _genDefines.str() + _genDecl.str();
+        std::string declarations = _genDefines.str() + _genDecl.str();
+#ifdef PXR_DISABLE_OSD
+            declarations += _osd.str();
+#endif            
         std::string const source = _genAccessors.str() + _genGS.str();
 
         gsDesc.shaderCodeDeclarations = declarations.c_str();
