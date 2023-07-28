@@ -361,7 +361,7 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         WriteIdentifier(ss);
         ss << "(" << intCoordType << " uv, vec4 data) {\n";
         ss << sizeType << " textureSize = textureSize("; WriteIdentifier(ss); ss << arrayIndex << ", 0);";
-        ss << intCoordType << " uvFlipY = " << intCoordType << "(uv.x, " << intCoordType << "(1-textureSize.y) - uv.y);";        
+        ss << intCoordType << " uvFlipY = " << intCoordType << "(uv.x, " << intCoordType << "(textureSize.y-1) - uv.y);";        
         ss << "    ";
         ss << "imageStore(";
         WriteIdentifier(ss);
@@ -413,7 +413,7 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << "(" << arrayInput << floatCoordType << " coord, float lod) {\n";
         ss << "    ";
         ss << sizeType << " textureSize = textureSize("; WriteIdentifier(ss); ss << arrayIndex << ", 0);";
-        ss << floatCoordType << " coordFlipY= " << floatCoordType << "(coord.x, " << floatCoordType << "(1-textureSize.y) - coord.y);";
+        ss << floatCoordType << " coordFlipY= " << floatCoordType << "(coord.x, " << floatCoordType << "(textureSize.y-1) - coord.y);";
         ss << "return textureLod(";
         WriteIdentifier(ss);
         ss << arrayIndex << ", coordFlipY, lod);\n";
@@ -427,7 +427,7 @@ HgiVulkanTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
             ss << "(" << arrayInput << intCoordType << " coord) {\n";
             ss << "    ";
             ss << sizeType << " textureSize = textureSize("; WriteIdentifier(ss); ss << arrayIndex << ", 0);";
-            ss << intCoordType << " coordFlipY= " << intCoordType << "(coord.x, " << intCoordType << "(1-textureSize.y) - coord.y);";
+            ss << intCoordType << " coordFlipY= " << intCoordType << "(coord.x, " << intCoordType << "(textureSize.y-1) - coord.y);";
             _WriteSampledDataType(ss);
             ss << " result = texelFetch(";
             WriteIdentifier(ss);
