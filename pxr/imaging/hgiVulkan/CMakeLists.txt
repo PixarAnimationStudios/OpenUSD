@@ -46,9 +46,6 @@ pxr_library(hgiVulkan
         vulkan.h
         vk_mem_alloc.h
 
-    PRIVATE_CLASSES
-        spirv_reflect
-
     RESOURCE_FILES
         plugInfo.json
 )

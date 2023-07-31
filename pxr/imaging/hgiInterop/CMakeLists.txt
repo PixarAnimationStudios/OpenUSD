@@ -26,6 +26,13 @@ else()
     list(APPEND optionalPrivateHeaders opengl.h)
 endif()
 
+if (PXR_ENABLE_VULKAN_SUPPORT)
+    # Add vulkan libraries and sources
+    list(APPEND optionalLibraries hgiVulkan)
+    list(APPEND optionalCppFiles vulkan.cpp)
+    list(APPEND optionalPrivateHeaders vulkan.h)
+endif()
+
 pxr_library(hgiInterop
     LIBRARIES
         gf

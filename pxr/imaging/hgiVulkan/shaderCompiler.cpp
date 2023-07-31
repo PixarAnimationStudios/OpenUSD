@@ -27,7 +27,8 @@
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 #include "pxr/imaging/hgiVulkan/shaderCompiler.h"
-#include "pxr/imaging/hgiVulkan/spirv_reflect.h"
+
+#include <spirv_reflect.h>
 
 #include <shaderc/shaderc.hpp>
 

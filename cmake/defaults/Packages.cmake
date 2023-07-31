@@ -250,6 +250,28 @@ if (PXR_BUILD_IMAGING)
                 list(APPEND VULKAN_LIBS "${${EXTRA_LIBRARY}_PATH}")
             endforeach()
 
+            # On windows, forward slashes can cause issues, normalize
+            # the vulkan sdk path
+            file(TO_CMAKE_PATH "$ENV{VULKAN_SDK}" VULKAN_SDK_PATH)
+            set(SPIRV_REFLECT_SOURCE_PATH "${VULKAN_SDK_PATH}/Source/SPIRV-Reflect")
+            set(SPIRV_REFLECT_TARGET_NAME vulkan_spirv_reflect)
+
+            # shader_reflect doesn't come as a target but the source is present
+            # in the Vulkan SDK. Set up a target for it
+            add_library(${SPIRV_REFLECT_TARGET_NAME} STATIC
+                                                     "${SPIRV_REFLECT_SOURCE_PATH}/spirv_reflect.h"
+                                                     "${SPIRV_REFLECT_SOURCE_PATH}/spirv_reflect.c")
+            target_include_directories(${SPIRV_REFLECT_TARGET_NAME} PUBLIC "${SPIRV_REFLECT_SOURCE_PATH}")
+
+            # Add exports and install statements
+            export(TARGETS ${SPIRV_REFLECT_TARGET_NAME}
+                   APPEND
+                   FILE "${PROJECT_BINARY_DIR}/pxrTargets.cmake")
+            install(TARGETS ${SPIRV_REFLECT_TARGET_NAME} EXPORT
+                    EXPORT pxrTargets)
+            # Make spirv_reflect part of the VULKAN_LIBS
+            list(APPEND VULKAN_LIBS ${SPIRV_REFLECT_TARGET_NAME})
+
             # Find the OS specific libs we need
             if (APPLE)
                 find_library(MVK_LIBRARIES NAMES MoltenVK PATHS $ENV{VULKAN_SDK}/lib)
