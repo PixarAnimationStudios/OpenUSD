@@ -1003,11 +1003,13 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
     // complete with depth-compositing and selection, so we in-line add
     // some extra buffers if they weren't already requested.
     if (_IsStormRenderingBackend(GetRenderIndex())) {
-		TfToken depthToken = _depthStencilEnabled ? HdAovTokens->depthStencil : HdAovTokens->depth;
+        TfToken depthToken = _depthStencilEnabled
+            ? HdAovTokens->depthStencil
+            : HdAovTokens->depth;
         if (std::find(localOutputs.begin(), 
                       localOutputs.end(), depthToken) == localOutputs.end())
-		{
-			localOutputs.push_back(depthToken);
+        {
+            localOutputs.push_back(depthToken);
         }
     } else {
         std::set<TfToken> mainRenderTokens;
@@ -1103,8 +1105,9 @@ HdxTaskController::SetRenderOutputs(TfTokenVector const& outputs)
         aovBindingsNoClear[i] = aovBindingsClear[i];
         aovBindingsNoClear[i].clearValue = VtValue();
 
-        if (localOutputs[i] == HdAovTokens->depth || localOutputs[i] == HdAovTokens->depthStencil)
-		{
+        if (localOutputs[i] == HdAovTokens->depth ||
+            localOutputs[i] == HdAovTokens->depthStencil)
+        {
             aovInputBindings.push_back(aovBindingsNoClear[i]);
         }
     }
@@ -1166,7 +1169,9 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
             params.depthBufferPath = SdfPath::EmptyPath();
         } else if (name == HdAovTokens->color) {
             params.aovBufferPath = _GetAovPath(HdAovTokens->color);
-			params.depthBufferPath = _depthStencilEnabled ? _GetAovPath(HdAovTokens->depthStencil) : _GetAovPath(HdAovTokens->depth);
+            params.depthBufferPath = _depthStencilEnabled
+                                   ? _GetAovPath(HdAovTokens->depthStencil)
+                                   : _GetAovPath(HdAovTokens->depth);
         } else {
             params.aovBufferPath = _GetAovPath(name);
             params.depthBufferPath = SdfPath::EmptyPath();
@@ -1218,9 +1223,9 @@ HdxTaskController::SetViewportRenderOutput(TfToken const& name)
                 _GetAovPath(HdAovTokens->instanceId);
             pickParams.elementIdBufferPath =
                 _GetAovPath(HdAovTokens->elementId);
-			pickParams.depthBufferPath =
-				_depthStencilEnabled ? _GetAovPath(HdAovTokens->depthStencil) : 
-                _GetAovPath(HdAovTokens->depth);
+            pickParams.depthBufferPath = _depthStencilEnabled 
+                ? _GetAovPath(HdAovTokens->depthStencil)
+                : _GetAovPath(HdAovTokens->depth);
         } else {
             pickParams.primIdBufferPath = SdfPath::EmptyPath();
             pickParams.instanceIdBufferPath = SdfPath::EmptyPath();
