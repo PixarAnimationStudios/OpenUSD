@@ -687,6 +687,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
     Meshlet meshlet;
     int startPrimitive = meshStartLocation / 3;
     int endPrimitive = meshStartLocation / 3;
+    uint primId = 0;
     for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
         if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
             endPrimitive = ((i)/3);
@@ -701,11 +702,14 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 count++;
             }
             
+            //TODO maybe we don't need a prim id handling like this
+            //TODO are the indices actually optimized?
             for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3]]);
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+1]]);
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+2]]);
-                meshlet.remappedPrimIDs.push_back(n);
+                meshlet.remappedPrimIDs.push_back(primId);
+                primId++;
             }
             meshlet.vertexCount = meshlet.vertexInfo.size();
             meshlet.primitiveCount = (endPrimitive - startPrimitive);
@@ -724,23 +728,20 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
             startPrimitive = (i/3);
         }
         
-        if((numVerticesProcessed + 3) > max_vertices) {
+        //TODO see if we can be smarter
+        if((numVerticesProcessed + 4) > max_vertices) {
             maxVertsReached = true;
             continue;
         }
         
-        int newVerts = 0;
         auto it1 = m.find(i);
         if (it1 != m.end()) {
-            newVerts++;
         }
         auto it2 = m.find(i+1);
         if (it2 != m.end()) {
-            newVerts++;
         }
         auto it3 = m.find(i+2);
         if (it3 != m.end()) {
-            newVerts++;
         }
 
         if (it1 == m.end()) {

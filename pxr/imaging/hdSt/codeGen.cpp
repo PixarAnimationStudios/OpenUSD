@@ -4771,7 +4771,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                << "}\n"
 
                << "int GetCurrentInstance() {\n"
-               << "  return gl_InstanceID - gl_BaseInstance;\n"
+               << "  return gl_InstanceID - gl_BaseInstance -1;\n"
                << "}\n"
 
                << "int GetInstanceIndexCoord() {\n"
@@ -4839,8 +4839,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                 genAttr << "hd_instanceIndex GetInstanceIndex() {\n"
                 << "  hd_instanceIndex r;\n"
                 << "  for (int i = 0; i < HD_INSTANCE_INDEX_WIDTH; ++i)\n"
-                << "    r.indices[i] = culledInstanceIndices[GetBaseInstanceIndexCoord()"
-                " + (gl_InstanceID - gl_BaseInstance) * HD_INSTANCE_INDEX_WIDTH + i + 1];\n"
+                << "    r.indices[i] = HdGet_culledInstanceIndices(i);\n"
                 << "  return r;\n"
                 << "}\n";
             }
