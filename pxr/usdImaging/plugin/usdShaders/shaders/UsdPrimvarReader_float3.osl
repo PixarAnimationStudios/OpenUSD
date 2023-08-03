@@ -47,7 +47,8 @@ shader UsdPrimvarReader_float3
 
     color fallback = color(0.0)
     [[
-        string help = "return value if primvar not found."
+        string help = "return value if primvar not found.",
+        string role = "none"
     ]],
 
     output color result = 0.0
