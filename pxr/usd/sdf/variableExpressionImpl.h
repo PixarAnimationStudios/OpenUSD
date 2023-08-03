@@ -44,7 +44,11 @@ namespace Sdf_VariableExpressionImpl
 enum class ValueType
 {
     Unknown,
-    String
+    Boolean,
+    Integer,
+    String,
+    List,
+    None
 };
 
 /// Returns the value type held by \p val. If \p val is empty or is holding
@@ -52,6 +56,17 @@ enum class ValueType
 /// ValueType::Unknown.
 ValueType 
 GetValueType(const VtValue& val);
+
+/// Returns a descriptive name for the value type held by \p val.
+std::string
+GetValueTypeName(const VtValue& val);
+
+/// If \p val contains a type that may be converted to a supported value
+/// type, perform the conversion and return the result. If \p val already
+/// contains a supported value type or \p val cannot be converted, return an
+/// empty VtValue.
+VtValue
+CoerceIfUnsupportedValueType(const VtValue& val);
 
 /// \class EvalResult
 /// Contains the result of evaluating an expression.
@@ -135,6 +150,46 @@ public:
 
 private:
     std::string _var;
+};
+
+/// \class ConstantNode
+/// Expression node for simple constant values.
+template <class Type>
+class ConstantNode
+    : public Node
+{
+public:
+    ConstantNode(Type value);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    Type _value;
+};
+
+using IntegerNode = ConstantNode<int64_t>;
+using BoolNode = ConstantNode<bool>;
+
+/// \class NoneNode
+/// Expression node for special 'None' value.
+class NoneNode
+    : public Node
+{
+public:
+    NoneNode();
+    EvalResult Evaluate(EvalContext* ctx) const override;
+};
+
+/// \class ListNode
+/// Expression node for lists of values.
+class ListNode
+    : public Node
+{
+public:
+    ListNode(std::vector<std::unique_ptr<Node>>&& elements);
+    EvalResult Evaluate(EvalContext *ctx) const override;
+
+private:
+    std::vector<std::unique_ptr<Node>> _elements;
 };
 
 } // end namespace Sdf_VariableExpressionImpl

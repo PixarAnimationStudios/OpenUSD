@@ -22,7 +22,7 @@
 # KIND, either express or implied. See the Apache License for the specific
 # language governing permissions and limitations under the Apache License.
 
-from pxr import Sdf
+from pxr import Sdf, Vt
 import unittest
 
 class TestSdfVariableExpression(unittest.TestCase):
@@ -87,7 +87,22 @@ class TestSdfVariableExpression(unittest.TestCase):
         IsValidVariableType = Sdf.VariableExpression.IsValidVariableType
 
         self.assertTrue(IsValidVariableType("string"))
+        self.assertTrue(IsValidVariableType(True))
+        self.assertTrue(IsValidVariableType(None))
+
+        # Explicitly verify that both int and int64 are considered valid
+        # variable types, even though the result of evaluation will always
+        # be an int64.
+        self.assertTrue(IsValidVariableType(Vt.Int(123)))
+        self.assertTrue(IsValidVariableType(Vt.Int64(2**63-1)))
+
+        self.assertTrue(IsValidVariableType(Vt.StringArray(['a', 'b'])))
+        self.assertTrue(IsValidVariableType(Vt.BoolArray([True, False])))
+        self.assertTrue(IsValidVariableType(Vt.IntArray([123, 456])))
+        self.assertTrue(IsValidVariableType(Vt.Int64Array([123, 456])))
+
         self.assertFalse(IsValidVariableType(1.23))
+        self.assertFalse(IsValidVariableType(Vt.DoubleArray([1.23, 4.56])))
 
     def test_VarExpressions(self):
         """Test variable expressions consisting of just a top-level
@@ -98,6 +113,41 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertEvaluates(
             "`${FOO}`", {"FOO" : "string"}, 
             expected="string",
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : 42},
+            expected=42,
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : True},
+            expected=True,
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : None},
+            expected=None,
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : Vt.StringArray(['foo', 'bar'])},
+            expected=['foo', 'bar'],
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : Vt.IntArray([1, 2, 3])},
+            expected=[1, 2, 3],
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : Vt.Int64Array([1, 2, 3])},
+            expected=[1, 2, 3],
+            expectedUsedVars=["FOO"])
+
+        self.assertEvaluates(
+            "`${FOO}`", {"FOO" : Vt.BoolArray([True, False])},
+            expected=[True, False],
             expectedUsedVars=["FOO"])
 
         # If no value is found for the specified var, we should
@@ -156,6 +206,22 @@ class TestSdfVariableExpression(unittest.TestCase):
             expected="string_substitution_works",
             expectedUsedVars=["A", "B"])
 
+        # 'None' is considered an empty string for substitution purposes.
+        self.assertEvaluates(
+            '''`'none_sub_${A}'`''',
+            {"A" : None},
+            expected="none_sub_",
+            expectedUsedVars=["A"])
+
+        # Substitutions using other non-string types are disallowed.
+        self.assertEvaluationErrors(
+            '''`'bad_sub_${A}'`''', {"A" : 0},
+            ["String value required for substituting variable 'A', got int."])
+
+        self.assertEvaluationErrors(
+            '''`'bad_sub_${A}'`''', {"A" : True},
+            ["String value required for substituting variable 'A', got bool."])
+
         # No substitutions occur here since the '$' is escaped,
         # so \${A} and \${B} aren't recognized as subsitutions.
         self.assertEvaluates(
@@ -174,11 +240,126 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertInvalid('''`"unescaped_"quotes"_are_bad"`''')
         self.assertInvalid('''`'unescaped_'quotes'_are_bad'`''')
 
-        self.assertInvalid('`"bad_stage_var_${FOO"`')
-        self.assertInvalid('`"bad_stage_var_${FO-O}"`')
+        self.assertInvalid('`"bad_var_${FOO"`')
+        self.assertInvalid('`"bad_var_${FO-O}"`')
 
         self.assertInvalid("`'`")
         self.assertInvalid('`"`')
+
+    def test_IntegerExpressions(self):
+        """Test integer expressions."""
+        self.assertEvaluates("`0`", {}, 0)
+        self.assertEvaluates("`-1`", {}, -1)
+        self.assertEvaluates("`1`", {}, 1)
+
+        # Test that integer values within an int64's range are allowed
+        # and are invalid if they're outside that range.
+        self.assertEvaluates("`{}`".format(2**63-1), {}, 2**63-1)
+        self.assertInvalid("`{}`".format(2**63))
+
+        self.assertEvaluates("`{}`".format(-2**63), {}, -2**63)
+        self.assertInvalid("`{}`".format(-2**63-1))
+
+        self.assertInvalid("`42abc`")
+
+        # Explicitly test that both int and int64 values in the expression
+        # variables dictionary are accepted during evaluation, even though
+        # the final result will always be an int64.
+        self.assertEvaluates("`${FOO}`", {"FOO" : Vt.Int(0)}, 0)
+        self.assertEvaluates("`${FOO}`", {"FOO" : Vt.Int64(2**63-1)}, 2**63-1)
+
+    def test_BooleanExpressions(self):
+        """Test boolean expressions."""
+        self.assertEvaluates("`True`", {}, True)
+        self.assertEvaluates("`true`", {}, True)
+        self.assertEvaluates("`False`", {}, False)
+        self.assertEvaluates("`false`", {}, False)
+
+        self.assertInvalid("`Truee`")
+        self.assertInvalid("`truee`")
+        self.assertInvalid("`TRUE`")
+
+        self.assertInvalid("`Falsee`")
+        self.assertInvalid("`falsee`")
+        self.assertInvalid("`FALSE`")
+
+    def test_NoneExpressions(self):
+        """Test None expressions."""
+        self.assertEvaluates("`None`", {}, None)
+        self.assertEvaluates("`none`", {}, None)
+
+        self.assertInvalid("`Nonee`")
+        self.assertInvalid("`nonee`")
+
+    def test_Lists(self):
+        """Test list expressions."""
+        self.assertEvaluates("`[]`", {}, [])
+
+        # Test list of integers.
+        self.assertEvaluates(
+            "`[1]`", {}, Vt.Int64Array([1]))
+        self.assertEvaluates(
+            "`[1, 2]`", {}, Vt.Int64Array([1, 2]))
+        self.assertEvaluates(
+            "`[1, 2, 3]`", {}, Vt.Int64Array([1, 2, 3]))
+        self.assertEvaluates(
+            "`[${FOO}, 2, 3]`", {'FOO' : 1}, Vt.Int64Array([1, 2, 3]))
+        self.assertEvaluates(
+            "`[1, ${FOO}, 3]`", {'FOO' : 2}, Vt.Int64Array([1, 2, 3]))
+        self.assertEvaluates(
+            "`[1, 2, ${FOO}]`", {'FOO' : 3}, Vt.Int64Array([1, 2, 3]))
+
+        # Test list of strings.
+        self.assertEvaluates(
+            "`['a']`", {}, Vt.StringArray(['a']))
+        self.assertEvaluates(
+            "`['a', 'b']`", {}, Vt.StringArray(['a', 'b']))
+        self.assertEvaluates(
+            "`['a', 'b', 'c']`", {}, Vt.StringArray(['a', 'b', 'c']))
+        self.assertEvaluates(
+            "`['${FOO}a', 'b', 'c']`", {'FOO' :'a'}, 
+            Vt.StringArray(['aa', 'b', 'c']))
+        self.assertEvaluates(
+            "`['a', '${FOO}b', 'c']`", {'FOO' :'b'}, 
+            Vt.StringArray(['a', 'bb', 'c']))
+        self.assertEvaluates(
+            "`['a', 'b', '${FOO}c']`", {'FOO' :'c'}, 
+            Vt.StringArray(['a', 'b', 'cc']))
+
+        # Test list of variable substitutions.
+        self.assertEvaluates(
+            "`[${FOO}]`", {'FOO':'a'}, Vt.StringArray(['a']))
+        self.assertEvaluates(
+            "`[${FOO}, ${BAR}]`", {'FOO':'a', 'BAR':'b'}, 
+            Vt.StringArray(['a', 'b']))
+        self.assertEvaluates(
+            "`[${FOO}, ${BAR}, ${BAZ}]`", 
+            {'FOO':'a', 'BAR':'b', 'BAZ':'c'}, 
+            Vt.StringArray(['a', 'b', 'c']))
+
+        # None values encountered in lists are dropped.
+        self.assertEvaluates("`[None]`", {}, [])
+        self.assertEvaluates("`[None, 2, 3]`", {}, [2, 3])
+        self.assertEvaluates("`[1, ${FOO}, 3]`", {'FOO' : None}, [1, 3])
+
+        # Lists cannot contain other lists.
+        self.assertInvalid("`[[1, 2]]`")
+        self.assertEvaluationErrors(
+            "`[${L}]`", {'L': "`[]`"},
+            ["Unexpected value of type list in list at element 0"])
+        self.assertEvaluationErrors(
+            "`[${L}]`", {'L': Vt.IntArray([1,2]) },
+            ["Unexpected value of type list in list at element 0"])
+
+        # Lists must contain elements of the same type.
+        self.assertEvaluationErrors(
+            "`[1, 'foo', False, ${L}]`", {'L': "`[]`"},
+            ['Unexpected value of type string in list at element 1',
+             'Unexpected value of type bool in list at element 2',
+             'Unexpected value of type list in list at element 3'])
+
+        self.assertInvalid("`[`")
+        self.assertInvalid("`[foo]`")
 
     def test_NestedExpressions(self):
         """Test evaluating expressions with variable substitutions

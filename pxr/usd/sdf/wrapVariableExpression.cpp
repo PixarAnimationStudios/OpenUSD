@@ -27,8 +27,10 @@
 
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
+#include "pxr/base/vt/value.h"
 
 #include <boost/python/class.hpp>
+#include <boost/python/list.hpp>
 #include <boost/python/scope.hpp>
 #include <boost/python/tuple.hpp>
 
@@ -72,9 +74,10 @@ wrapVariableExpression()
 
     class_<This::Result>("Result", no_init)
         .add_property("value", 
-            make_getter(
-                &This::Result::value,
-                return_value_policy<return_by_value>()))
+            +[](const This::Result& r) {
+                return r.value.IsHolding<This::EmptyList>() ?
+                    object(list()) : object(r.value);
+            })
         .add_property("errors", 
             make_getter(
                 &This::Result::errors,
