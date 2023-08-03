@@ -723,12 +723,13 @@ blend shapes than are actually used on `</Mesh>`. This is because an animation
 source is providing animation data for a **complete model** (I.e., multiple
 geometric primitives). The _skel:blendShape_ attribute, as defined on `</Mesh>`,
 provides a mapping between the _blendShapeWeights_ animation data on `</Anim`>
--- which holds weight animation for multiple geometric primitives. The set
+-- which holds weight animation for multiple geometric primitives (although in 
+this example _blendShapeWeights_ is not animated). The set
 of blend shape targets specified by the _skel:blendShapeTargets_ rel identifies,
 for each mapped blend shape token in _skel:blendShapes_, the target
 UsdSkelBlendShape primitive to which animation data should apply.
 
-From the example above, shape `</Mesh/Foo>` is using shapes `['B', 'A']` (in that
+From the example above, `</Mesh>` is using shapes mapped to `['B', 'A']` (in that
 order). First we map the _blendShapeWeights_ from the ordering specified by
 `</Anim.blendShapes>` to the ordering on `</Mesh.blendShapes>`, which gives
 local weight values of [0.75,1.0]. For each token in `</Mesh.blendShapes>`,
