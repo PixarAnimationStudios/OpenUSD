@@ -895,41 +895,6 @@ _GetPrototypeRoot(HdContainerDataSourceHandle const &primSource)
     return result[0];
 }
 
-// We should implement a generic function to deep copy a data source
-// and use it here.
-HdDataSourceBaseHandle
-_MakeCopy(HdDataSourceBaseHandle const &ds)
-{
-    if (!ds) {
-        return nullptr;
-    }
-    if (HdContainerDataSourceHandle const container =
-            HdContainerDataSource::Cast(ds)) {
-        TfTokenVector names = container->GetNames();
-        std::vector<HdDataSourceBaseHandle> items;
-        items.reserve(names.size());
-        for (const TfToken &name : names) {
-            items.push_back(_MakeCopy(container->Get(name)));
-        }
-        return HdRetainedContainerDataSource::New(
-            names.size(), names.data(), items.data());
-    }
-    if (HdPathDataSourceHandle const pathDs =
-           HdPathDataSource::Cast(ds)) {
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(
-            pathDs->GetTypedValue(0.0f));
-    }
-    if (HdTokenDataSourceHandle const tokenDs =
-           HdTokenDataSource::Cast(ds)) {
-        return HdRetainedTypedSampledDataSource<TfToken>::New(
-            tokenDs->GetTypedValue(0.0f));
-    }
-
-    TF_CODING_ERROR("Unknown data source type");
-
-    return nullptr;
-}
-
 HdContainerDataSourceHandle
 _MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
 {
@@ -940,10 +905,9 @@ _MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
 
     return HdRetainedContainerDataSource::New(
         HdMaterialBindingsSchema::GetSchemaToken(),
-        _MakeCopy(materialBindingsSchema.GetContainer()),
+        HdMakeStaticCopy(materialBindingsSchema.GetContainer()),
         HdPurposeSchema::GetSchemaToken(),
-        _MakeCopy(purposeSchema.GetContainer()));
-
+        HdMakeStaticCopy(purposeSchema.GetContainer()));
 }
 
 struct _InstanceInfo {
