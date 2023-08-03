@@ -23,8 +23,8 @@ which:
 (1) FOO is listed in the "imageTypes" array; and
 (2) in the case of multiple matches, the highest numerical value of precedence.
 
-Note that OpenImageIO has a higher precedence than Stb, meaning that for image
-types that both plugins support, OpenImageIO will be used. Integration 
+Note that Stb has a higher precedence than OpenImageIO, meaning that for image
+types that both plugins support, the Stb version will be used. Integration 
 authors will want to choose their own precedence values accordingly.
 
 HioFieldTextureData provides a similar plugin-based abstraction for adding
