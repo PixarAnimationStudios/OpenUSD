@@ -854,8 +854,6 @@ _GetPrototypeRoot(HdContainerDataSourceHandle const &primSource)
     return result[0];
 }
 
-// Make a partial copy of the prim data source of a native
-// instance using instanceDataSourceNames.
 HdContainerDataSourceHandle
 _MakeBindingCopy(HdContainerDataSourceHandle const &primSource,
                  const TfTokenVector &instanceDataSourceNames)
@@ -873,9 +871,10 @@ _MakeBindingCopy(HdContainerDataSourceHandle const &primSource,
     }
 
     return HdRetainedContainerDataSource::New(
-        names.size(),
-        names.data(),
-        dataSources.data());
+        HdMaterialBindingsSchema::GetSchemaToken(),
+        HdMakeStaticCopy(materialBindingsSchema.GetContainer()),
+        HdPurposeSchema::GetSchemaToken(),
+        HdMakeStaticCopy(purposeSchema.GetContainer()));
 }
 
 struct _InstanceInfo {
