@@ -31,7 +31,6 @@
 
 #include "pxr/usd/usdGeom/xformable.h"
 #include "pxr/usd/usdGeom/boundable.h"
-#include "pxr/usd/usdGeom/modelAPI.h"
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
@@ -207,19 +206,24 @@ HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceExtent);
 
 /// \class UsdImagingDataSourceExtentsHint
 ///
-/// Data source representing extents hint of a model API prim.
-class UsdImagingDataSourceExtentsHint : public HdVectorDataSource
+/// Data source representing extents hint of a geom model API prim.
+class UsdImagingDataSourceExtentsHint : public HdContainerDataSource
 {
 public:
     HD_DECLARE_DATASOURCE(UsdImagingDataSourceExtentsHint);
 
-    /// Returns number of vec3 pairs authored on extentsHint.
+    /// Returns names of (hydra) purposes for which we have extentsHint.
     ///
-    size_t GetNumElements() override;
+    /// extentsHint in usd is an array. The names are computed using
+    /// the lenth of this array, by truncating
+    /// UsdGeomImagable::GetOrderedPurposeTokens() (and translating
+    /// UsdGeomTokens->default_ to HdTokens->geometry).
+    ///
+    TfTokenVector GetNames() override;
 
-    /// Returns i-th pair of vec3 authored on extentsHint as
-    /// extent schema.
-    HdDataSourceBaseHandle GetElement(size_t element) override;
+    /// Takes the hydra name of a purpose and returns the corresponding
+    /// values from extentsHint as HdExtentSchema.
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
 
 private:
     /// Use to construct a new UsdImagingDataSourceExtentsHint.
@@ -242,7 +246,6 @@ private:
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceExtent);
-
 
 // ----------------------------------------------------------------------------
 
@@ -393,56 +396,6 @@ private:
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceXform);
-
-// ----------------------------------------------------------------------------
-
-///
-/// \class UsdImagingDataSourceModel
-///
-/// Data source representing model API for a USD prim.
-///
-class UsdImagingDataSourceModel : public HdContainerDataSource
-{
-public:
-    HD_DECLARE_DATASOURCE(UsdImagingDataSourceModel);
-
-    /// Return attribute names of UsdImagingModelSchema.
-    ///
-    TfTokenVector GetNames() override;
-
-    /// Returns data authored on USD prim (without resolving inherited) for
-    /// attribute names of UsdImagingModelSchema.
-    ///
-    HdDataSourceBaseHandle Get(const TfToken &name) override;
-
-    USDIMAGING_API
-    static HdDataSourceLocatorSet Invalidate(
-            UsdPrim const& prim,
-            const TfToken &subprim,
-            const TfTokenVector &properties,
-            UsdImagingPropertyInvalidationType invalidationType);
-
-private:
-    /// C'tor.
-    ///
-    /// \p model is API schema from which this class can extract values from.
-    /// \p sceneIndexPath is the path of this object in the scene index.
-    /// \p stageGlobals represents the context object for the UsdStage with
-    /// which to evaluate this attribute data source.
-    ///
-    /// Note: client code calls this via static New().
-    UsdImagingDataSourceModel(
-            const UsdGeomModelAPI &model,
-            const SdfPath &sceneIndexPath,
-            const UsdImagingDataSourceStageGlobals &stageGlobals);
-
-private:
-    UsdGeomModelAPI _model;
-    const SdfPath _sceneIndexPath;
-    const UsdImagingDataSourceStageGlobals &_stageGlobals;
-};
-
-HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceModel);
 
 // ----------------------------------------------------------------------------
 

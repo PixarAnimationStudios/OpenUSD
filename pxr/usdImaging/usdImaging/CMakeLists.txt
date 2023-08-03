@@ -53,6 +53,7 @@ pxr_library(usdImaging
         drawModeAdapter
         drawModeSceneIndex
         extentResolvingSceneIndex
+        extentsHintSchema
         indexProxy
         materialParamUtils
         modelSchema
@@ -80,6 +81,7 @@ pxr_library(usdImaging
         flattenedDataSourceProviders
         flattenedModelDataSourceProvider
         geometryLightAdapter
+        geomModelAPIAdapter
         gprimAdapter
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils

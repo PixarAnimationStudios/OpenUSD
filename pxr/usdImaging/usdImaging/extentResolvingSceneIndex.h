@@ -45,7 +45,7 @@ TF_DECLARE_REF_PTRS(UsdImagingExtentResolvingSceneIndex);
 
 /// \class UsdImagingExtentResolvingSceneIndex
 ///
-/// A scene index that uses UsdGeoModelAPI's extentsHint if
+/// A scene index that uses UsdGeomModelAPI's extentsHint if
 /// UsdGeomBoundable's extent has not been authored.
 ///
 /// TODO: The UsdStageSceneIndex should consult the

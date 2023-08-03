@@ -286,6 +286,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "PluginLightFilter"
+                    },
+                    "UsdImagingGeomModelAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "GeomModelAPI"
                     }
                 }
             },
