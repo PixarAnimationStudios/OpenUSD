@@ -385,13 +385,13 @@ _CompressIntegers(Int const *begin, size_t numInts, char *output)
         encodeBuffer.get(), output, encodedSize);
 }
 
-template <class Int>
+template <class Compression, class Int>
 size_t _DecompressIntegers(char const *compressed, size_t compressedSize,
                            Int *ints, size_t numInts, char *workingSpace)
 {
     // Working space.
     size_t workingSpaceSize =
-        Usd_IntegerCompression::GetDecompressionWorkingSpaceSize(numInts);
+        Compression::GetDecompressionWorkingSpaceSize(numInts);
     std::unique_ptr<char[]> tmpSpace;
     if (!workingSpace) {
         tmpSpace.reset(new char[workingSpaceSize]);
@@ -445,8 +445,8 @@ Usd_IntegerCompression::DecompressFromBuffer(
     char const *compressed, size_t compressedSize,
     int32_t *ints, size_t numInts, char *workingSpace)
 {
-    return _DecompressIntegers(compressed, compressedSize,
-                               ints, numInts, workingSpace);
+    return _DecompressIntegers<Usd_IntegerCompression>(
+        compressed, compressedSize, ints, numInts, workingSpace);
 }
 
 size_t
@@ -454,8 +454,8 @@ Usd_IntegerCompression::DecompressFromBuffer(
     char const *compressed, size_t compressedSize,
     uint32_t *ints, size_t numInts, char *workingSpace)
 {
-    return _DecompressIntegers(compressed, compressedSize,
-                               ints, numInts, workingSpace);
+    return _DecompressIntegers<Usd_IntegerCompression>(
+        compressed, compressedSize, ints, numInts, workingSpace);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -493,8 +493,8 @@ Usd_IntegerCompression64::DecompressFromBuffer(
     char const *compressed, size_t compressedSize,
     int64_t *ints, size_t numInts, char *workingSpace)
 {
-    return _DecompressIntegers(compressed, compressedSize,
-                               ints, numInts, workingSpace);
+    return _DecompressIntegers<Usd_IntegerCompression64>(
+        compressed, compressedSize, ints, numInts, workingSpace);
 }
 
 size_t
@@ -502,8 +502,8 @@ Usd_IntegerCompression64::DecompressFromBuffer(
     char const *compressed, size_t compressedSize,
     uint64_t *ints, size_t numInts, char *workingSpace)
 {
-    return _DecompressIntegers(compressed, compressedSize,
-                               ints, numInts, workingSpace);
+    return _DecompressIntegers<Usd_IntegerCompression64>(
+        compressed, compressedSize, ints, numInts, workingSpace);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
