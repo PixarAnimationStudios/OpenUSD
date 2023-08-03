@@ -999,7 +999,10 @@ UsdImagingGLEngine::_SetRenderDelegateAndRestoreState(
     bool rootVisibility = true;
 
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7115): root transform, visibility...
+        if (_rootOverridesSceneIndex) {
+            rootTransform = _rootOverridesSceneIndex->GetRootTransform();
+            rootVisibility = _rootOverridesSceneIndex->GetRootVisibility();
+        }
     } else {
         if (_sceneDelegate) {
             rootTransform = _sceneDelegate->GetRootTransform();
@@ -1014,10 +1017,11 @@ UsdImagingGLEngine::_SetRenderDelegateAndRestoreState(
 
     // Reload saved state.
     if (_GetUseSceneIndices()) {
-        // XXX(USD-7115): root transform, visibility...
+        _rootOverridesSceneIndex->SetRootTransform(rootTransform);
+        _rootOverridesSceneIndex->SetRootVisibility(rootVisibility);
     } else {
-        _sceneDelegate->SetRootVisibility(rootVisibility);
         _sceneDelegate->SetRootTransform(rootTransform);
+        _sceneDelegate->SetRootVisibility(rootVisibility);
     }
     _selTracker->SetSelection(selection);
     _taskController->SetSelectionColor(_selectionColor);
