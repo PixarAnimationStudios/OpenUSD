@@ -76,7 +76,17 @@ ArFilesystemWritableAsset::ArFilesystemWritableAsset(TfSafeOutputFile&& file)
     }
 }
 
-ArFilesystemWritableAsset::~ArFilesystemWritableAsset() = default;
+ArFilesystemWritableAsset::~ArFilesystemWritableAsset()
+{
+    // XXX: If Close() has not been explicitly called for replacing an asset
+    // we will discard it, so we don't overwrite that asset with invalid data.
+    // When an asset has been opened for update we will allow the destructor
+    // of TfSafeOutput to close it properly
+    if (!_file.IsOpenForUpdate())
+    {
+        _file.Discard();
+    }
+}
 
 bool
 ArFilesystemWritableAsset::Close()

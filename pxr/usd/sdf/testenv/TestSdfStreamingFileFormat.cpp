@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/fileFormat.h"
 
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ar/writableAsset.h"
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/type.h"
@@ -99,8 +100,10 @@ public:
         const std::string& comment,
         const FileFormatArguments& args) const override
     {
-        return static_cast<bool>(ArGetResolver().OpenAssetForWrite(
-            ArResolvedPath(filePath), ArResolver::WriteMode::Replace));
+        std::shared_ptr<ArWritableAsset> asset =
+                ArGetResolver().OpenAssetForWrite(ArResolvedPath(filePath),
+                                                  ArResolver::WriteMode::Replace);
+        return asset->Close();
     }
 
 protected:
