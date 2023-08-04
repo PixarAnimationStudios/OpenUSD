@@ -103,6 +103,10 @@ HdxRenderTask::_Sync(HdSceneDelegate* delegate,
         VtValue valueVt = delegate->Get(GetId(), HdTokens->params);
         if (valueVt.IsHolding<HdxRenderTaskParams>()) {
             params = valueVt.UncheckedGet<HdxRenderTaskParams>();
+#ifdef PXR_VULKAN_SUPPORT_ENABLED
+            params.resolveAovMultiSample = false;
+            params.useAovMultiSample = false;
+#endif
 
             if (!_setupTask) {
                 // note that _setupTask should have the same id, since it will

@@ -173,8 +173,8 @@ struct HdxRenderTaskParams
         , blendConstantColor(0.0f, 0.0f, 0.0f, 0.0f)
         , blendEnable(false)
         , enableAlphaToCoverage(true)
-        , useAovMultiSample(true)
-        , resolveAovMultiSample(true)
+        , useAovMultiSample(false)
+        , resolveAovMultiSample(false)
         // Camera framing and viewer state
         , viewport(0.0)
         , cullStyle(HdCullStyleBackUnlessDoubleSided)

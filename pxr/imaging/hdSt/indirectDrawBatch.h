@@ -76,7 +76,8 @@ public:
     void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const &resourceRegistry) override;
+        HdStResourceRegistrySharedPtr const &resourceRegistry,
+        bool applyUserDefinedAovDesc = false) override;
 
     HDST_API
     void DrawItemInstanceChanged(

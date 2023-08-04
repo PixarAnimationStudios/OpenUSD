@@ -104,7 +104,8 @@ public:
     virtual void ExecuteDraw(
         HgiGraphicsCmds *gfxCmds,
         HdStRenderPassStateSharedPtr const &renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry) = 0;
+        HdStResourceRegistrySharedPtr const & resourceRegistry,
+        bool applyUserDefinedAovDesc = false) = 0;
 
     /// Let the batch know that one of it's draw item instances has changed
     /// NOTE: This callback is called from multiple threads, so needs to be

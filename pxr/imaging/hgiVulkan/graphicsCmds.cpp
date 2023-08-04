@@ -289,10 +289,11 @@ HgiVulkanGraphicsCmds::DrawIndexed(
 
     HgiVulkanBuffer* ibo = static_cast<HgiVulkanBuffer*>(indexBuffer.Get());
 
+    // Applying indexBufferByteOffset as device offset for the bind index buffer is incorrect
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
         ibo->GetVulkanBuffer(),
-        indexBufferByteOffset,
+        0,
         VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(

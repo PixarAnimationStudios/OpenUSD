@@ -69,6 +69,7 @@ Sdf_MakePathExpressionEvalImpl(
 class Sdf_PathExpressionEvalBase
 {
 public:
+    SDF_API
     friend bool
     Sdf_MakePathExpressionEvalImpl(
         Sdf_PathExpressionEvalBase &eval,

@@ -123,7 +123,10 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
 
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
-    _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
+    // There are currently some layout binding issues in Vulkan path that causes 
+    // the indirect draw buffer to not be populated, hence leading to runtime-crash.
+    // Until that is resolved, Do not enable draw indirect support for HgiVulkan.
+    _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, false);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, true);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);

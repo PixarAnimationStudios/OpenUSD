@@ -1258,7 +1258,8 @@ HgiGraphicsPipelineSharedPtr
 _GetDrawPipeline(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    _BindingState const & state)
+    _BindingState const & state,
+    bool applyUserDefinedAovDesc)
 {
     // Drawing pipeline is compatible as long as the shader and
     // pipeline state are the same.
@@ -1277,7 +1278,8 @@ _GetDrawPipeline(
         HgiGraphicsPipelineDesc pipeDesc;
 
         renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
-                                                  state.geometricShader);
+                                                  state.geometricShader,
+                                                  applyUserDefinedAovDesc);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
@@ -1346,7 +1348,8 @@ void
 HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool applyUserDefinedAovDesc)
 {
     TRACE_FUNCTION();
 
@@ -1395,7 +1398,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             _GetDrawPipeline(
                 renderPassState,
                 resourceRegistry,
-                state);
+                state,
+                applyUserDefinedAovDesc);
         
         HgiGraphicsPipelineHandle psoHandle = *pso.get();
         gfxCmds->BindPipeline(psoHandle);
@@ -1569,7 +1573,8 @@ _GetCullPipeline(
 void
 HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool applyUserDefinedAovDesc)
 {
     Hgi *hgi = resourceRegistry->GetHgi();
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
@@ -1588,7 +1593,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
         _GetDrawPipeline(
             renderPassState,
             resourceRegistry,
-            state);
+            state,
+            applyUserDefinedAovDesc);
     
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
 

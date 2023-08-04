@@ -88,7 +88,7 @@ HdStRenderPassState::HdStRenderPassState(
     , _fallbackLightingShader(std::make_shared<HdSt_FallbackLightingShader>())
     , _clipPlanesBufferSize(0)
     , _alphaThresholdCurrent(0)
-    , _resolveMultiSampleAov(true)
+    , _resolveMultiSampleAov(false)
     , _useSceneMaterials(true)
 {
     _lightingShader = _fallbackLightingShader;
@@ -1069,7 +1069,7 @@ HdStRenderPassState::_InitPrimitiveState(
 
 void
 HdStRenderPassState::_InitAttachmentState(
-    HgiGraphicsPipelineDesc * pipeDesc) const
+    HgiGraphicsPipelineDesc * pipeDesc, bool applyUserDefinedAovDesc) const
 {
     // For Metal we have to pass the color and depth descriptors down so
     // that they are available when creating the Render Pipeline State for
@@ -1090,11 +1090,45 @@ HdStRenderPassState::_InitAttachmentState(
                 pipeDesc->depthAttachmentDesc.usage |=
                     HgiTextureUsageBitsStencilTarget;
             }
+#if PXR_VULKAN_SUPPORT_ENABLED
+            // This fix ensures that the load and clear operations for the renderpass
+            // set through hydra is applied to the first batch only (for Vulkan). 
+            // Since draw calls are made in batches, applying a clear operation on the 
+            // render target for subsequent draw calls will clear the previous draws 
+            // made to that target. This leads to a partially rendered output.
+            if (applyUserDefinedAovDesc && _cachedAovDesc)
+            {
+                pipeDesc->depthAttachmentDesc.loadOp = _cachedAovDesc->depthAttachmentDesc.loadOp;
+                pipeDesc->depthAttachmentDesc.clearValue = _cachedAovDesc->depthAttachmentDesc.clearValue;
+            }
+#endif
         } else {
             HdFormat const hdFormat = binding.renderBuffer->GetFormat();
             HgiFormat const format = HdStHgiConversions::GetHgiFormat(hdFormat);
             HgiAttachmentDesc attachment;
             attachment.format = format;
+#if PXR_VULKAN_SUPPORT_ENABLED
+            // Vulkan requires that attachment usage for this aov is set
+            // before creation of the renderpass. So for now, assuming that
+            // this is a color target AOV
+            // Not using this fix will cause the following Vulkan error -
+            //"Error issued : Cannot determine image layout from invalid usage."
+            attachment.usage = HgiTextureUsageBitsColorTarget;
+
+            // This fix ensures that the load and clear operations for the renderpass
+            // set through hydra is applied to the first batch only (for Vulkan). 
+            // Since draw calls are made in batches, applying a clear operation on the 
+            // render target for subsequent draw calls will clear the previous draws 
+            // made to that target. This leads to a partially rendered output.
+            if (applyUserDefinedAovDesc && _cachedAovDesc)
+            {
+                if (aovIndex < _cachedAovDesc->colorAttachmentDescs.size())
+                {
+                    attachment.loadOp = _cachedAovDesc->colorAttachmentDescs[aovIndex].loadOp;
+                    attachment.clearValue = _cachedAovDesc->colorAttachmentDescs[aovIndex].clearValue;
+                }
+            }
+#endif
             _InitAttachmentDesc(attachment, aovIndex);
             pipeDesc->colorAttachmentDescs.push_back(attachment);
         }
@@ -1194,13 +1228,14 @@ HdStRenderPassState::_InitRasterizationState(
 void
 HdStRenderPassState::InitGraphicsPipelineDesc(
     HgiGraphicsPipelineDesc * pipeDesc,
-    HdSt_GeometricShaderSharedPtr const & geometricShader) const
+    HdSt_GeometricShaderSharedPtr const & geometricShader,
+    bool applyUserDefinedAovDesc) const
 {
     _InitPrimitiveState(pipeDesc, geometricShader);
     _InitDepthStencilState(&pipeDesc->depthState);
     _InitMultiSampleState(&pipeDesc->multiSampleState);
     _InitRasterizationState(&pipeDesc->rasterizationState, geometricShader);
-    _InitAttachmentState(pipeDesc);
+    _InitAttachmentState(pipeDesc, applyUserDefinedAovDesc);
 }
 
 uint64_t
@@ -1259,5 +1294,11 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
     return hash;
 }
 
+
+void 
+HdStRenderPassState::TempCacheAovDesc(HgiGraphicsCmdsDesc* cmdDesc)
+{
+    _cachedAovDesc = cmdDesc;
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE

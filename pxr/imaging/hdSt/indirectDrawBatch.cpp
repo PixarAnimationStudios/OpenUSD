@@ -79,13 +79,26 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ulocCullParams)
 );
 
-
-TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_FRUSTUM_CULLING, true,
-                      "Enable GPU frustum culling");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_COUNT_VISIBLE_INSTANCES, false,
-                      "Enable GPU frustum culling visible count query");
+    "Enable GPU frustum culling visible count query");
+
+#if PXR_VULKAN_SUPPORT_ENABLED
+// Enabling Multi-draw indirect causes runtime crashes when HgiVulkan is enabled.
+// Enabling GPU frustum culling on HgiVulkan will cause both glsl shader compilation failures
+// and runtime crashes.
+// Once the Vulkan path is stabilized and Multi-draw indirect issues are resolved,
+// GPU Frustum Culling and Instance Frustum Culling can be enabled.
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_FRUSTUM_CULLING, false,
+    "Enable GPU frustum culling");
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING, false,
+    "Enable GPU per-instance frustum culling");
+#else
+TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_FRUSTUM_CULLING, true,
+    "Enable GPU frustum culling");
 TF_DEFINE_ENV_SETTING(HD_ENABLE_GPU_INSTANCE_FRUSTUM_CULLING, true,
-                      "Enable GPU per-instance frustum culling");
+    "Enable GPU per-instance frustum culling");
+#endif
+
 
 HdSt_IndirectDrawBatch::HdSt_IndirectDrawBatch(
     HdStDrawItemInstance * drawItemInstance,
@@ -1083,7 +1096,8 @@ void
 HdSt_IndirectDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool applyUserDefinedAovDesc)
 {
     HgiGLGraphicsCmds* glGfxCmds = dynamic_cast<HgiGLGraphicsCmds*>(gfxCmds);
 
