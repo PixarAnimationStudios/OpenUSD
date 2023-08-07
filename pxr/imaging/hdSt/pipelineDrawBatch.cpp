@@ -652,7 +652,6 @@ _AllocateMeshletDispatchBuffer(
 
 } // annonymous namespace
 
-//TODO IHH drive externally
 constexpr uint32_t max_primitives = 512;
 constexpr uint32_t max_vertices = 192;
 
@@ -660,10 +659,10 @@ struct VertexInfo {
     uint32_t vertexId;
     uint32_t indexId; // this is a promise that of the primitive associated, this is the index row associated
     uint32_t GetDisplacementIndex() {
-        return indexId%3;
+        return indexId % 3;
     }
     uint32_t GetPrimitiveID() {
-        return indexId/3;
+        return indexId / 3;
     }
 };
 
@@ -702,8 +701,6 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 count++;
             }
             
-            //TODO maybe we don't need a prim id handling like this
-            //TODO are the indices actually optimized?
             for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3]]);
                 meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+1]]);
@@ -725,24 +722,17 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
                 continue;
             }
             meshlet = Meshlet();
-            startPrimitive = (i/3);
+            startPrimitive = ((i+1)/3);
         }
         
         //TODO see if we can be smarter
         if((numVerticesProcessed + 4) > max_vertices) {
             maxVertsReached = true;
-            continue;
         }
         
         auto it1 = m.find(i);
-        if (it1 != m.end()) {
-        }
         auto it2 = m.find(i+1);
-        if (it2 != m.end()) {
-        }
         auto it3 = m.find(i+2);
-        if (it3 != m.end()) {
-        }
 
         if (it1 == m.end()) {
             m[indices[i]] = {i};
@@ -870,7 +860,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     if (isMeshShader) {
         auto indexBar =
         std::static_pointer_cast<HdStBufferArrayRange>(
-                                                       _drawItemInstances.front()->GetDrawItem()->GetTopologyRange());
+            _drawItemInstances.front()->GetDrawItem()->GetTopologyRange());
         indexBuffer = indexBar->GetResource(HdTokens->indices);
         cpuBuffer = ((uint32_t*)indexBuffer->GetHandle()->GetCPUStagingAddress());
         for (size_t item = 0; item < numDrawItemInstances; ++item) {

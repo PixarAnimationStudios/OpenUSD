@@ -254,7 +254,6 @@ bool
 HdStMesh::IsEnabledPackedNormals()
 {
     static bool enabled = (TfGetEnvSetting(HD_ENABLE_PACKED_NORMALS) == 1);
-    return false;
     return enabled;
 }
 
@@ -1251,7 +1250,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                                   HdStDrawItem *drawItem,
                                   int geomSubsetDescIndex,
                                   HdDirtyBits *dirtyBits,
-                                  bool requireSmoothNormals)
+                                  bool requireSmoothNormals,
+                                  bool forcePackedSmoothNormalsOff)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1499,7 +1499,8 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
         bool usePackedSmoothNormals =
-            IsEnabledPackedNormals() && !(doRefine || doQuadrangulate);
+            IsEnabledPackedNormals() && !forcePackedSmoothNormalsOff
+                && !(doRefine || doQuadrangulate);
 
         generatedNormalsName = usePackedSmoothNormals ? 
             HdStTokens->packedSmoothNormals : HdStTokens->smoothNormals;
@@ -2258,6 +2259,10 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         std::static_pointer_cast<HdStResourceRegistry>(
         sceneDelegate->GetRenderIndex().GetResourceRegistry());
 
+    bool const hasMeshShaders =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+
     /* MATERIAL SHADER (may affect subsequent primvar population) */
     if ((*dirtyBits & HdChangeTracker::NewRepr) ||
         HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
@@ -2404,7 +2409,8 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
                                 drawItem,
                                 geomSubsetDescIndex,
                                 dirtyBits,
-                                requireSmoothNormals);
+                                requireSmoothNormals,
+                                hasMeshShaders);
     }
 
     /* FACEVARYING PRIMVARS */
