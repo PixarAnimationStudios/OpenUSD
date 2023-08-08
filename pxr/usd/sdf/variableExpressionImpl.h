@@ -101,6 +101,13 @@ public:
     /// will be evaluated and the result returned.
     std::pair<EvalResult, bool> GetVariable(const std::string& var);
 
+    /// Returns whether a variable named \p var is defined.
+    /// 
+    /// This does not examine the value of \p var if it is defined. If
+    /// its value is itself an expression, that expression will not be
+    /// evaluated.
+    bool HasVariable(const std::string& var);
+
     /// Returns the set of variables that were queried using GetVariable.
     std::unordered_set<std::string>& GetRequestedVariables()
     { return _requestedVariables; }
@@ -341,6 +348,78 @@ public:
 
 private:
     std::unique_ptr<Node> _condition;
+};
+
+/// \class ContainsNode
+/// Expression node for function that checks if a list contains a value
+/// or if a string contains a substring.
+class ContainsNode
+    : public FunctionWithNArgsNode<2>
+{
+public:
+    static const char* GetFunctionName();
+
+    ContainsNode(
+        std::unique_ptr<Node>&& searchIn,
+        std::unique_ptr<Node>&& searchFor);
+
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _searchIn;
+    std::unique_ptr<Node> _searchFor;
+};
+
+/// \class AtNode
+/// Expression node for function that retrieves a value from a list 
+/// or a character from a string at a given index.
+class AtNode
+    : public FunctionWithNArgsNode<2>
+{
+public:
+    static const char* GetFunctionName();
+
+    AtNode(
+        std::unique_ptr<Node>&& source,
+        std::unique_ptr<Node>&& index);
+
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _source;
+    std::unique_ptr<Node> _index;
+};
+
+/// \class LenNode
+/// Expression node for function that retrieves the number of elements
+/// in a list of the number of characters in a string.
+class LenNode
+    : public FunctionWithNArgsNode<1>
+{
+public:
+    static const char* GetFunctionName();
+
+    LenNode(std::unique_ptr<Node>&& source);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _source;
+};
+
+/// \class DefinedNode
+/// Expression node for function checking if one or more
+/// expression variables have been defined.
+class DefinedNode
+    : public FunctionWithAtLeastNArgsNode<1>
+{
+public:
+    static const char* GetFunctionName();
+
+    DefinedNode(std::vector<std::unique_ptr<Node>>&& nodes);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::vector<std::unique_ptr<Node>> _nodes;
 };
 
 } // end namespace Sdf_VariableExpressionImpl

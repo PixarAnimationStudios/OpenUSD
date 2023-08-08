@@ -194,6 +194,12 @@ EvalContext::EvalContext(const VtDictionary* variables)
 {
 }
 
+bool
+EvalContext::HasVariable(const std::string& var)
+{
+    return static_cast<bool>(TfMapLookupPtr(*_variables, var));
+}
+
 std::pair<EvalResult, bool>
 EvalContext::GetVariable(const std::string& var)
 {
@@ -738,6 +744,312 @@ LogicalNotNode::Evaluate(EvalContext* ctx) const
     }
 
     return EvalResult::Value(!condition.value.UncheckedGet<bool>());
+}
+
+// ------------------------------------------------------------
+
+const char* 
+ContainsNode::GetFunctionName()
+{
+    return "contains";
+}
+
+ContainsNode::ContainsNode(
+    std::unique_ptr<Node>&& searchIn,
+    std::unique_ptr<Node>&& searchFor)
+    : _searchIn(std::move(searchIn))
+    , _searchFor(std::move(searchFor))
+{
+}
+
+class _ContainsVisitor
+{
+public:
+    _ContainsVisitor(const VtValue& searchFor)
+        : _searchFor(searchFor)
+    { }
+
+    EvalResult
+    operator()(const std::string& searchIn) const
+    {
+        if (!_searchFor.IsHolding<std::string>()) {
+            return Error("Invalid search value");
+        }
+
+        return EvalResult::Value(TfStringContains(
+            searchIn, _searchFor.UncheckedGet<std::string>()));
+    }
+
+    template <class ListType>
+    std::enable_if_t<IsSupportedListType<ListType>::value, EvalResult>
+    operator()(const ListType& searchIn) const
+    {
+        using ElemType = typename ListType::value_type;
+        if (!_searchFor.IsHolding<ElemType>()) {
+            return Error("Invalid search value");
+        }
+
+        return EvalResult::Value(std::find(
+            searchIn.begin(), searchIn.end(), 
+            _searchFor.UncheckedGet<ElemType>()) != searchIn.end());
+    }
+
+    template <class T>
+    std::enable_if_t<!IsSupportedListType<T>::value, EvalResult>
+    operator()(const T& searchIn) const
+    {
+        return Error("Value to search must be a list or string");
+    }
+
+private:
+    static EvalResult
+    Error(const std::string& err)
+    {
+        return EvalResult::Error({_FormatFunctionError<ContainsNode>(err)});
+    }
+
+    const VtValue& _searchFor;
+};
+
+EvalResult
+ContainsNode::Evaluate(EvalContext* ctx) const
+{
+    EvalResult searchIn = _searchIn->Evaluate(ctx);
+    EvalResult searchFor = _searchFor->Evaluate(ctx);
+
+    std::vector<std::string> errors = _CombineErrors(&searchIn, &searchFor);
+    if (!errors.empty()) {
+        return EvalResult::Error(std::move(errors));
+    }
+
+    if (searchIn.value.IsHolding<SdfVariableExpression::EmptyList>()) {
+        return EvalResult::Value(false);
+    }
+
+    return VtVisitValue(searchIn.value, _ContainsVisitor(searchFor.value));
+}
+
+// ------------------------------------------------------------
+
+const char* 
+AtNode::GetFunctionName()
+{
+    return "at";
+}
+
+AtNode::AtNode(
+    std::unique_ptr<Node>&& source,
+    std::unique_ptr<Node>&& index)
+    : _source(std::move(source))
+    , _index(std::move(index))
+{
+}
+
+class _AtVisitor
+{
+public:
+    _AtVisitor(int64_t index)
+        : _index(index)
+    { }
+
+    EvalResult
+    operator()(const VtValue& v) const
+    {
+        if (v.IsHolding<SdfVariableExpression::EmptyList>()) {
+            return _Error("Index out of range");
+        }
+        return _Error("Only supported for lists or strings");
+    }
+
+    EvalResult
+    operator()(const std::string& s) const
+    {
+        const std::pair<size_t, bool> idx = _NormalizeIndex(s.size());
+        if (!idx.second) {
+            return _Error("Index out of range");
+        }
+
+        return EvalResult::Value(s.substr(idx.first, 1));
+    }
+
+    template <class ListType>
+    std::enable_if_t<IsSupportedListType<ListType>::value, EvalResult>
+    operator()(const ListType& l) const
+    {
+        const std::pair<size_t, bool> idx = _NormalizeIndex(l.size());
+        if (!idx.second) {
+            return _Error("Index out of range");
+        }
+
+        return EvalResult::Value(l[idx.first]);
+    }
+
+    template <class T>
+    std::enable_if_t<!IsSupportedListType<T>::value, EvalResult>
+    operator()(const T& searchIn) const
+    {
+        return _Error("Only supported for lists or strings");
+    }
+
+private:
+    static EvalResult
+    _Error(const std::string& err)
+    {
+        return EvalResult::Error({_FormatFunctionError<AtNode>(err)});
+    }
+
+    // Normalize index to support negative indices. Lifted from
+    // TfPyNormalizeIndex.
+    std::pair<size_t, bool>
+    _NormalizeIndex(size_t size) const
+    {
+        int64_t normalized = _index;
+        if (normalized < 0) {
+            normalized += size;
+        }
+
+        if (normalized < 0 || static_cast<size_t>(normalized) >= size) {
+            return std::make_pair(0, false);
+        }
+        return std::make_pair(static_cast<size_t>(normalized), true);
+    }
+
+    int64_t _index;
+};
+
+EvalResult
+AtNode::Evaluate(EvalContext* ctx) const
+{
+    EvalResult source = _source->Evaluate(ctx);
+    EvalResult index = _index->Evaluate(ctx);
+
+    std::vector<std::string> errors = _CombineErrors(&source, &index);
+    if (!errors.empty()) {
+        return EvalResult::Error(std::move(errors));
+    }
+
+    if (!index.value.IsHolding<int64_t>()) {
+        return EvalResult::Error({
+            _FormatFunctionError<AtNode>("Index must be an integer")});
+    }
+
+    return VtVisitValue(
+        source.value, _AtVisitor(index.value.UncheckedGet<int64_t>()));
+}
+
+// ------------------------------------------------------------
+
+const char*
+LenNode::GetFunctionName()
+{
+    return "len";
+}
+
+LenNode::LenNode(std::unique_ptr<Node>&& source)
+    : _source(std::move(source))
+{
+}
+
+class _LenVisitor
+{
+public:
+    EvalResult
+    operator()(const VtValue& v) const
+    {
+        if (v.IsHolding<SdfVariableExpression::EmptyList>()) {
+            return _GetResult(0);
+        }
+        return _GetUnsupportedTypeError();
+    }
+
+    template <class T>
+    using CanGetLength = std::integral_constant<
+        bool,
+        IsSupportedListType<T>::value || std::is_same<T, std::string>::value
+    >;
+
+    template <class T>
+    std::enable_if_t<CanGetLength<T>::value, EvalResult>
+    operator()(const T& v) const
+    {
+        return _GetResult(v.size());
+    }
+
+    template <class T>
+    std::enable_if_t<!CanGetLength<T>::value, EvalResult>
+    operator()(const T& v) const
+    {
+        return _GetUnsupportedTypeError();
+    }
+
+private:
+    EvalResult _GetResult(size_t len) const
+    {
+        // Explicitly cast to int64_t to ensure the result type
+        // holds a value that is supported by the expression 
+        // language.
+        return EvalResult::Value(static_cast<int64_t>(len));
+    }
+
+    EvalResult _GetUnsupportedTypeError() const
+    {
+        return EvalResult::Error({
+            _FormatFunctionError<LenNode>("Unsupported type")});
+    }
+};
+
+EvalResult
+LenNode::Evaluate(EvalContext* ctx) const
+{
+    EvalResult source = _source->Evaluate(ctx);
+    if (!source.errors.empty()) {
+        return EvalResult::Error(std::move(source.errors));
+    }
+
+    return VtVisitValue(source.value, _LenVisitor());
+}
+
+// ------------------------------------------------------------
+
+const char*
+DefinedNode::GetFunctionName()
+{
+    return "defined";
+}
+
+DefinedNode::DefinedNode(std::vector<std::unique_ptr<Node>>&& nodes)
+    : _nodes(std::move(nodes))
+{
+}
+
+EvalResult
+DefinedNode::Evaluate(EvalContext* ctx) const
+{
+    VtValue result;
+    std::vector<std::string> errors;
+
+    for (size_t i = 0; i < _nodes.size(); ++i) {
+        EvalResult varName = _nodes[i]->Evaluate(ctx);
+        if (_CollectErrors(&errors, &varName)) {
+            continue;
+        }
+        else if (!varName.value.IsHolding<std::string>()) {
+            errors.push_back(
+                _FormatFunctionError<DefinedNode>(
+                    TfStringPrintf(
+                        "Invalid type %s for argument %zu", 
+                        GetValueTypeName(varName.value).c_str(), i)));
+        }
+        else {
+            const bool isDefined = 
+                ctx->HasVariable(varName.value.UncheckedGet<std::string>());
+            result = result.GetWithDefault<bool>(true) && isDefined;
+        }
+    }
+
+    return errors.empty() ?
+        EvalResult::Value(result) :
+        EvalResult::Error(std::move(errors));
 }
 
 } // end namespace Sdf_VariableExpressionImpl
