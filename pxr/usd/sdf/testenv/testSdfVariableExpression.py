@@ -28,24 +28,36 @@ import unittest
 class TestSdfVariableExpression(unittest.TestCase):
     def assertEvaluates(self, e, exprVars, expected,
                           expectedUsedVars=None):
+        def _GetFailedAssertMessage():
+            return "Evaluating {} with vars {}".format(e, exprVars)
+
         expr = Sdf.VariableExpression(e)
-        self.assertTrue(expr)
+        self.assertTrue(expr, _GetFailedAssertMessage())
 
         result = expr.Evaluate(exprVars)
-        self.assertFalse(result.errors)
-        self.assertEqual(result.value, expected)
+        self.assertFalse(result.errors, _GetFailedAssertMessage())
+
+        self.assertEqual(
+            result.value, expected, _GetFailedAssertMessage())
  
         if expectedUsedVars:
-            self.assertEqual(set(result.usedVariables), set(expectedUsedVars))
+            self.assertEqual(
+                set(result.usedVariables), set(expectedUsedVars), 
+                _GetFailedAssertMessage())
 
     def assertEvaluationErrors(self, e, exprVars, expectedErrors):
+        def _GetFailedAssertMessage():
+            return "Evaluating {} with vars {}".format(e, exprVars)
+
         expr = Sdf.VariableExpression(e)
-        self.assertTrue(expr)
+        self.assertTrue(expr, _GetFailedAssertMessage())
 
         result = expr.Evaluate(exprVars)
-        self.assertIsNone(result.value)
-        self.assertTrue(result.errors)
-        self.assertEqual(set(result.errors), set(expectedErrors))
+        self.assertIsNone(result.value, _GetFailedAssertMessage())
+        self.assertTrue(result.errors, _GetFailedAssertMessage())
+        self.assertEqual(
+            set(result.errors), set(expectedErrors),
+            _GetFailedAssertMessage())
 
     def assertValid(self, e):
         expr = Sdf.VariableExpression(e)
@@ -360,6 +372,182 @@ class TestSdfVariableExpression(unittest.TestCase):
 
         self.assertInvalid("`[`")
         self.assertInvalid("`[foo]`")
+
+    def test_If(self):
+        """Test if function."""
+        self.assertInvalid("`if()`")
+        self.assertInvalid("`if(True)`")
+
+        self.assertEvaluates("`if(True, 'true', 'false')`", {}, 'true')
+        self.assertEvaluates("`if(False, 'true', 'false')`", {}, 'false')
+
+        self.assertEvaluates("`if(True, 'true')`", {}, 'true')
+        self.assertEvaluates("`if(False, 'true')`", {}, None)
+
+        self.assertEvaluates("`if(${B}, 1, 0)`", {'B' : True}, 1)
+        self.assertEvaluates("`if(${B}, 1, 0)`", {'B' : False}, 0)
+
+        self.assertEvaluates(
+            "`if(${B}, ${X}, ${Y})`", {'B' : True, 'X': 1, 'Y': 0}, 1)
+        self.assertEvaluates(
+            "`if(${B}, ${X}, ${Y})`", {'B' : False, 'X': 1, 'Y': 0}, 0)
+
+        self.assertEvaluates(
+            "`if(${B}, if(${X}, 1, 2), if(${Y}, 3, 4))`", 
+            {'B' : True, 'X': True, 'Y': True}, 1)
+        self.assertEvaluates(
+            "`if(${B}, if(${X}, 1, 2), if(${Y}, 3, 4))`", 
+            {'B' : True, 'X': False, 'Y': True}, 2)
+        self.assertEvaluates(
+            "`if(${B}, if(${X}, 1, 2), if(${Y}, 3, 4))`", 
+            {'B' : False, 'X': True, 'Y': True}, 3)
+        self.assertEvaluates(
+            "`if(${B}, if(${X}, 1, 2), if(${Y}, 3, 4))`", 
+            {'B' : False, 'X': True, 'Y': False}, 4)
+
+        self.assertEvaluationErrors(
+            "`if('non_bool', 1, 0)`", {},
+            ['if: Condition must be a boolean value'])
+        self.assertEvaluationErrors(
+            "`if(${B}, 1, 0)`", {'B' : 'non_bool'},
+            ['if: Condition must be a boolean value'])
+
+        # Evaluation errors from subexpressions should be reported to clients.
+        self.assertEvaluationErrors(
+            "`if(eq(1, '1'), 1, 0)`", {},
+            ['eq: Cannot compare values of type int and string'])
+
+    def test_Comparisons(self):
+        """Test comparison functions: eq, neq, lt, leq, gt, geq"""
+
+        def _Test(fnName, comparator):
+            def _MakeExpression(*operands):
+                operandStrs = [str(s) for s in operands]
+                x = "`{fnName}({operands})`".format(
+                    fnName=fnName, operands=",".join(operandStrs))
+                return x
+
+            # All comparison functions take 2 arguments.
+            self.assertInvalid(_MakeExpression()) # e.g., "`eq()`"
+            self.assertInvalid(_MakeExpression(1)) # e.g., "`eq(1)`"
+            self.assertInvalid(_MakeExpression(1, 2, 3)) # e.g., "`eq(1,2,3)`"
+
+            # Verify valid comparisons return the expected results.
+            # Note that comparing None values is only supported by the
+            # "eq" and "neq" functions.
+            testCases = [
+                (0, 1), (1, 1), (1, 2),
+                (r"'a'", r"'a'"), (r"'a'", r"'b'"), (r"'b'", r"'c'"),
+                (True, True), (True, False), (False, True)
+            ]
+
+            if fnName == "eq" or fnName == "neq":
+                testCases.append((None, None))
+
+            for testCase in testCases:
+                # e.g., check that "`eq(1, 1)`" evaluates to the same
+                # result as 1 == 1.
+                self.assertEvaluates(
+                    _MakeExpression(*testCase), {}, comparator(*testCase))
+                
+            # Verify that invalid comparisons return the expected errors.
+            testCases = [
+                (0, r"'a'",
+                 "{}: Cannot compare values of type int and string"
+                 .format(fnName)),
+                (0, False,
+                 "{}: Cannot compare values of type int and bool"
+                 .format(fnName)),
+                (0, "None",
+                 "{}: Cannot compare values of type int and None"
+                 .format(fnName)),
+                (r"'a'", False,
+                 "{}: Cannot compare values of type string and bool"
+                 .format(fnName)),
+                (r"'a'", "None", 
+                 "{}: Cannot compare values of type string and None"
+                 .format(fnName)),
+                (False, "None",
+                 "{}: Cannot compare values of type bool and None"
+                 .format(fnName)),
+            ]
+
+            if fnName != "eq" and fnName != "neq":
+                testCases.append(
+                    (None, None, 
+                     "{}: Comparison operation not supported for None"
+                     .format(fnName)))
+
+            for testCase in testCases:
+                self.assertEvaluationErrors(
+                    "`{fn}({0},{1})`".format(fn=fnName, *testCase), {}, 
+                    [testCase[2]])
+
+        _Test("eq", lambda x,y: x == y)
+        _Test("neq", lambda x,y: x != y)
+        _Test("lt", lambda x,y: x < y)
+        _Test("leq", lambda x,y: x <= y)
+        _Test("gt", lambda x,y: x > y)
+        _Test("geq", lambda x,y: x >= y)
+
+    def test_AndOr(self):
+        """Test logical and/or functions"""
+        
+        def _Test(fnName, comparator):
+            def _MakeExpression(*operands):
+                operandStrs = [str(s) for s in operands]
+                x = "`{fnName}({operands})`".format(
+                    fnName=fnName, operands=",".join(operandStrs))
+                return x
+
+            # "and" / "or" both require at least 2 arguments.
+            self.assertInvalid(_MakeExpression())
+            self.assertInvalid(_MakeExpression(True))
+
+            # Verify valid combinations return the the expected result.
+            testCases = [
+                (True, True),
+                (True, False),
+                (False, False),
+                (True, True, True),
+                (True, True, False)
+            ]
+
+            for testCase in testCases:
+                self.assertEvaluates(
+                    _MakeExpression(*testCase), {}, comparator(testCase))
+
+            # Verify that invalid combinations return the expected errors.
+            testCases = [
+                (True, 1, 
+                 "{}: Invalid type int for argument 1".format(fnName)),
+                (True, "'foo'", 
+                 "{}: Invalid type string for argument 1".format(fnName)),
+                (True, "None",
+                 "{}: Invalid type None for argument 1".format(fnName))
+            ]
+
+            for testCase in testCases:
+                self.assertEvaluationErrors(
+                    _MakeExpression(*testCase[0:2]), {}, [testCase[2]])
+
+        _Test("and", lambda l: all(l))
+        _Test("or", lambda l: any(l))
+
+    def test_Not(self):
+        """Test logical not function."""
+        self.assertInvalid("`not()`")
+        self.assertInvalid("`not(True, False)`")
+
+        self.assertEvaluates("`not(True)`", {}, False)
+        self.assertEvaluates("`not(False)`", {}, True)
+
+        self.assertEvaluationErrors(
+            "`not(1)`", {}, ["not: Invalid type int for argument"])
+        self.assertEvaluationErrors(
+            "`not('foo')`", {}, ["not: Invalid type string for argument"])
+        self.assertEvaluationErrors(
+            "`not(None)`", {}, ["not: Invalid type None for argument"])
 
     def test_NestedExpressions(self):
         """Test evaluating expressions with variable substitutions

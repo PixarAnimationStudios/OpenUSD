@@ -149,6 +149,45 @@ CoerceIfUnsupportedValueType(const VtValue& value)
 }
 
 // ------------------------------------------------------------
+// Helper functions for collecting or combining errors from one or
+// more EvalResult objects into a single list.
+
+static bool
+_CollectErrors(
+    std::vector<std::string>* errors,
+    EvalResult* result)
+{
+    if (result->errors.empty()) {
+        return false;
+    }
+
+    errors->insert(
+        errors->end(),
+        std::make_move_iterator(result->errors.begin()),
+        std::make_move_iterator(result->errors.end()));
+    return true;
+}
+
+template <class Result, class... Others>
+static bool
+_CollectErrors(
+    std::vector<std::string>* errors,
+    Result* result, Others*... others)
+{
+    // Bitwise-or is intentional to prevent short-circuiting.
+    return _CollectErrors(errors, result) | _CollectErrors(errors, others...);
+}
+
+template <class... Results>
+static std::vector<std::string>
+_CombineErrors(Results*... results)
+{
+    std::vector<std::string> errors;
+    _CollectErrors(&errors, results...);
+    return errors;
+}
+
+// ------------------------------------------------------------
 
 EvalContext::EvalContext(const VtDictionary* variables)
     : _variables(variables)
@@ -404,13 +443,9 @@ ListNode::Evaluate(EvalContext* ctx) const
     std::vector<std::string> errors;
     
     for (size_t i = 0; i < _elements.size(); ++i) {
-        const std::unique_ptr<Node>& element = _elements[i];
-
-        EvalResult r = element->Evaluate(ctx);
-        if (!r.errors.empty()) {
-            errors.insert(errors.end(),
-                std::make_move_iterator(r.errors.begin()),
-                std::make_move_iterator(r.errors.end()));
+        EvalResult r = _elements[i]->Evaluate(ctx);
+        if (_CollectErrors(&errors, &r)) {
+            continue;
         }
 
         if (r.value.IsEmpty()) {
@@ -437,6 +472,272 @@ ListNode::Evaluate(EvalContext* ctx) const
     }
 
     return EvalResult::Value(std::move(visitor.list));
+}
+
+// ------------------------------------------------------------
+
+template <class FunctionNode>
+static std::string
+_FormatFunctionError(const std::string& err)
+{
+    return TfStringPrintf(
+        "%s: %s", FunctionNode::GetFunctionName(), err.c_str());
+}
+
+// ------------------------------------------------------------
+
+const char* 
+IfNode::GetFunctionName()
+{
+    return "if";
+}
+
+EvalResult
+IfNode::_Evaluate(
+    EvalContext* ctx,
+    const std::unique_ptr<Node>& condition,
+    const std::unique_ptr<Node>& ifValue,
+    const std::unique_ptr<Node>& elseValue)
+{
+    EvalResult result = condition->Evaluate(ctx);
+    if (!result.errors.empty()) {
+        return EvalResult::Error(std::move(result.errors));
+    }
+
+    if (!result.value.IsHolding<bool>()) {
+        return EvalResult::Error({
+            _FormatFunctionError<IfNode>("Condition must be a boolean value")});
+    }
+
+    return result.value.UncheckedGet<bool>() ?
+        ifValue->Evaluate(ctx) : 
+        elseValue ? elseValue->Evaluate(ctx) : EvalResult::NoValue();
+}
+
+If2Node::If2Node(
+    std::unique_ptr<Node>&& condition,
+    std::unique_ptr<Node>&& ifValue)
+    : _condition(std::move(condition))
+    , _ifValue(std::move(ifValue))
+{
+}
+
+EvalResult
+If2Node::Evaluate(EvalContext* ctx) const
+{
+    return _Evaluate(ctx, _condition, _ifValue, nullptr);
+}
+
+If3Node::If3Node(
+    std::unique_ptr<Node>&& condition,
+    std::unique_ptr<Node>&& ifValue,
+    std::unique_ptr<Node>&& elseValue)
+    : _condition(std::move(condition))
+    , _ifValue(std::move(ifValue))
+    , _elseValue(std::move(elseValue))
+{
+}
+
+EvalResult
+If3Node::Evaluate(EvalContext* ctx) const
+{
+    return _Evaluate(ctx, _condition, _ifValue, _elseValue);
+}
+
+// ------------------------------------------------------------
+
+template <class T, template <typename> class Comparator>
+EvalResult
+_Compare(const T& x, const T& y)
+{
+    return EvalResult::Value(Comparator<T>()(x, y));
+}
+
+// Only allow equality comparisons for 'None' values.
+template <template <typename> class Comparator>
+EvalResult
+_Compare(const VtValue& x, const VtValue& y)
+{
+    return EvalResult::Error({
+        _FormatFunctionError<ComparisonNode<Comparator>>(
+            "Comparison operation not supported for None")});
+}
+
+template <>
+EvalResult
+_Compare<std::equal_to>(const VtValue& x, const VtValue& y)
+{
+    return EvalResult::Value(true);
+}
+
+template <>
+EvalResult
+_Compare<std::not_equal_to>(const VtValue& x, const VtValue& y)
+{
+    return EvalResult::Value(false);
+}
+
+template <template <typename> class Comparator>
+class _ComparisonVisitor
+{
+public:
+    _ComparisonVisitor(const VtValue& y) : _y(y) { }
+
+    EvalResult
+    operator()(const VtValue& x) const
+    {
+        TF_VERIFY(x.IsEmpty() && _y.IsEmpty());
+        return _Compare<Comparator>(x, _y);
+    }
+
+    template <class T>
+    std::enable_if_t<IsSupportedScalarType<T>::value, EvalResult>
+    operator()(const T& x) const
+    {
+        return _Compare<T, Comparator>(x, _y.UncheckedGet<T>());
+    }
+
+    template <class T>
+    std::enable_if_t<!IsSupportedScalarType<T>::value, EvalResult>
+    operator()(const T& x) const
+    {
+        return EvalResult::Error({
+            _FormatFunctionError<ComparisonNode<Comparator>>(
+                "Unsupported type for comparison")});
+    }
+
+private:
+    const VtValue& _y;
+};
+
+template <template <typename> class Comparator>
+ComparisonNode<Comparator>::ComparisonNode(
+    std::unique_ptr<Node>&& x, 
+    std::unique_ptr<Node>&& y)
+    : _x(std::move(x))
+    , _y(std::move(y))
+{
+}
+
+template <template <typename> class Comparator>
+EvalResult
+ComparisonNode<Comparator>::Evaluate(EvalContext* ctx) const
+{
+    EvalResult x = _x->Evaluate(ctx);
+    EvalResult y = _y->Evaluate(ctx);
+
+    std::vector<std::string> errors = _CombineErrors(&x, &y);
+    if (!errors.empty()) {
+        return EvalResult::Error(std::move(errors));
+    }
+
+    if (x.value.GetType() != y.value.GetType()) {
+        return EvalResult::Error({
+            _FormatFunctionError<ComparisonNode<Comparator>>(
+                TfStringPrintf(
+                    "Cannot compare values of type %s and %s",
+                    GetValueTypeName(x.value).c_str(),
+                    GetValueTypeName(y.value).c_str())
+            )});
+    }
+
+    return VtVisitValue(x.value, _ComparisonVisitor<Comparator>(y.value));
+}
+
+#define DEFINE_COMPARISON_NODE(ComparatorType, FunctionName)            \
+template class ComparisonNode<ComparatorType>;                          \
+template <> const char*                                                 \
+ComparisonNode<ComparatorType>::GetFunctionName() { return FunctionName; }
+
+DEFINE_COMPARISON_NODE(std::equal_to, "eq");
+DEFINE_COMPARISON_NODE(std::not_equal_to, "neq");
+DEFINE_COMPARISON_NODE(std::less, "lt");
+DEFINE_COMPARISON_NODE(std::less_equal, "leq");
+DEFINE_COMPARISON_NODE(std::greater, "gt");
+DEFINE_COMPARISON_NODE(std::greater_equal, "geq");
+
+// ------------------------------------------------------------
+
+template <template <typename> class Operator>
+LogicalNode<Operator>::LogicalNode(
+    std::vector<std::unique_ptr<Node>>&& conditions)
+    : _conditions(std::move(conditions))
+{
+}
+
+template <template <typename> class Operator>
+EvalResult
+LogicalNode<Operator>::Evaluate(EvalContext* ctx) const
+{
+    VtValue result;
+    std::vector<std::string> errors;
+
+    for (size_t i = 0; i < _conditions.size(); ++i) {
+        EvalResult condition = _conditions[i]->Evaluate(ctx);
+        if (_CollectErrors(&errors, &condition)) {
+            continue;
+        }
+        else if (!condition.value.IsHolding<bool>()) {
+            errors.push_back(
+                _FormatFunctionError<LogicalNode<Operator>>(
+                    TfStringPrintf(
+                        "Invalid type %s for argument %zu", 
+                        GetValueTypeName(condition.value).c_str(), i)));
+        }
+        else {
+            if (result.IsEmpty()) {
+                result = condition.value.UncheckedGet<bool>();
+            }
+            else {
+                result = Operator<bool>()(
+                    result.UncheckedGet<bool>(),
+                    condition.value.UncheckedGet<bool>());
+            }
+        }
+    };
+
+    return errors.empty() ?
+        EvalResult::Value(std::move(result)) : 
+        EvalResult::Error(std::move(errors));
+}
+    
+#define DEFINE_LOGICAL_NODE(LogicType, FunctionName)                \
+template class LogicalNode<LogicType>;                              \
+template <> const char*                                             \
+LogicalNode<LogicType>::GetFunctionName() { return FunctionName; }
+
+DEFINE_LOGICAL_NODE(std::logical_and, "and");
+DEFINE_LOGICAL_NODE(std::logical_or, "or");
+
+// ------------------------------------------------------------
+
+const char*
+LogicalNotNode::GetFunctionName()
+{
+    return "not";
+}
+
+LogicalNotNode::LogicalNotNode(std::unique_ptr<Node>&& condition)
+    : _condition(std::move(condition))
+{
+}
+
+EvalResult
+LogicalNotNode::Evaluate(EvalContext* ctx) const
+{
+    EvalResult condition = _condition->Evaluate(ctx);
+    if (!condition.errors.empty()) {
+        return EvalResult::Error(std::move(condition.errors));
+    }
+    else if (!condition.value.IsHolding<bool>()) {
+        return EvalResult::Error({
+            _FormatFunctionError<LogicalNotNode>(
+                TfStringPrintf(
+                    "Invalid type %s for argument",
+                    GetValueTypeName(condition.value).c_str()))});
+    }
+
+    return EvalResult::Value(!condition.value.UncheckedGet<bool>());
 }
 
 } // end namespace Sdf_VariableExpressionImpl

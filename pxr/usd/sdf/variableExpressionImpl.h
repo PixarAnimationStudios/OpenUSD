@@ -32,6 +32,7 @@
 #include <deque>
 #include <string>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -190,6 +191,156 @@ public:
 
 private:
     std::vector<std::unique_ptr<Node>> _elements;
+};
+
+/// \class FunctionWithNArgsNode
+/// Base class for nodes representing functions that require
+/// a specific number of arguments.
+template <size_t N>
+class FunctionWithNArgsNode
+    : public Node
+{
+public:
+    static constexpr bool IsVariadic = false;
+    static constexpr size_t NumArgs = N;
+
+protected:
+    FunctionWithNArgsNode() = default;
+};
+
+/// \class FunctionWithAtLeastNArgsNode
+/// Base class for nodes representing functions that require
+/// at least N arguments.
+template <size_t N>
+class FunctionWithAtLeastNArgsNode
+    : public Node
+{
+public:
+    static constexpr bool IsVariadic = true;
+    static constexpr auto MinNumArgs = N;
+
+protected:
+    FunctionWithAtLeastNArgsNode() = default;
+};
+
+/// \class IfNode
+/// Base class for conditional function node.
+class IfNode
+{
+public:
+    static const char* GetFunctionName();
+
+protected:
+    IfNode() = default;
+
+    static EvalResult
+    _Evaluate(
+        EvalContext* ctx,
+        const std::unique_ptr<Node>& condition,
+        const std::unique_ptr<Node>& ifValue,
+        const std::unique_ptr<Node>& elseValue);
+};
+
+/// \class If2Node
+/// Expression node for conditional function that takes two
+/// arguments: a condition and a value. The node evaluates
+/// to the value if the condition evaluates to True, otherwise
+/// it evalutes to None.
+class If2Node
+    : public IfNode
+    , public FunctionWithNArgsNode<2>
+{
+public:
+    If2Node(
+        std::unique_ptr<Node>&& condition,
+        std::unique_ptr<Node>&& ifValue);
+
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _condition;
+    std::unique_ptr<Node> _ifValue;
+};
+
+/// \class If2Node
+/// Expression node for conditional function that takes three
+/// arguments: a condition, an "if" value, and an "else" value. The 
+/// node evaluates to the "if" value if the condition evaluates to
+/// True, otherwise it evalutes to the "else" value.
+class If3Node
+    : public IfNode
+    , public FunctionWithNArgsNode<3>
+{
+public:
+    If3Node(
+        std::unique_ptr<Node>&& condition,
+        std::unique_ptr<Node>&& ifValue,
+        std::unique_ptr<Node>&& elseValue);
+
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _condition;
+    std::unique_ptr<Node> _ifValue;
+    std::unique_ptr<Node> _elseValue;
+};
+
+/// \class ComparisonNode
+/// Expression node for comparison functions.
+template <template <typename> class Comparator>
+class ComparisonNode
+    : public FunctionWithNArgsNode<2>
+{
+public:
+    static const char* GetFunctionName();
+
+    ComparisonNode(std::unique_ptr<Node>&& x, std::unique_ptr<Node>&& y);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _x;
+    std::unique_ptr<Node> _y;
+};
+
+using EqualNode = ComparisonNode<std::equal_to>;
+using NotEqualNode = ComparisonNode<std::not_equal_to>;
+using LessNode = ComparisonNode<std::less>;
+using LessEqualNode = ComparisonNode<std::less_equal>;
+using GreaterNode = ComparisonNode<std::greater>;
+using GreaterEqualNode = ComparisonNode<std::greater_equal>;
+
+/// \class LogicalNode
+/// Expression node for logic functions.
+template <template <typename> class Operator>
+class LogicalNode
+    : public FunctionWithAtLeastNArgsNode<2>
+{
+public:
+    static const char* GetFunctionName();
+
+    LogicalNode(std::vector<std::unique_ptr<Node>>&& conditions);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::vector<std::unique_ptr<Node>> _conditions;
+};
+
+using LogicalAndNode = LogicalNode<std::logical_and>;
+using LogicalOrNode = LogicalNode<std::logical_or>;
+
+/// \class LogicalNotNode
+/// Expression node for logical "not" function.
+class LogicalNotNode
+    : public FunctionWithNArgsNode<1>
+{
+public:
+    static const char* GetFunctionName();
+
+    LogicalNotNode(std::unique_ptr<Node>&& condition);
+    EvalResult Evaluate(EvalContext* ctx) const override;
+
+private:
+    std::unique_ptr<Node> _condition;
 };
 
 } // end namespace Sdf_VariableExpressionImpl

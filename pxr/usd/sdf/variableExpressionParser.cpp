@@ -30,6 +30,8 @@
 #include "pxr/base/tf/pxrPEGTL/pegtl.h"
 #include "pxr/base/tf/stringUtils.h"
 
+#include <tuple>
+
 using namespace tao::TAO_PEGTL_NAMESPACE;
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -48,7 +50,7 @@ class NodeCreator
 {
 public:
     virtual ~NodeCreator();
-    virtual std::unique_ptr<Impl::Node> CreateNode() = 0;
+    virtual std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) = 0;
 };
 
 NodeCreator::~NodeCreator() = default;
@@ -57,7 +59,7 @@ class StringNodeCreator
     : public NodeCreator
 {
 public:
-    std::unique_ptr<Impl::Node> CreateNode() override
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) override
     {
         return std::make_unique<Impl::StringNode>(std::move(parts));
     }
@@ -70,7 +72,7 @@ class VariableNodeCreator
     : public NodeCreator
 {
 public:
-    std::unique_ptr<Impl::Node> CreateNode() override
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) override
     {
         return std::make_unique<Impl::VariableNode>(std::move(var));
     }
@@ -83,7 +85,7 @@ class ConstantNodeCreator
     : public NodeCreator
 {
 public:
-    std::unique_ptr<Impl::Node> CreateNode() override
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) override
     {
         return std::make_unique<Impl::ConstantNode<Type>>(value);
     }
@@ -98,7 +100,7 @@ class NoneNodeCreator
     : public NodeCreator
 {
 public:
-    std::unique_ptr<Impl::Node> CreateNode() override
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) override
     {
         return std::make_unique<Impl::NoneNode>();
     }
@@ -108,12 +110,128 @@ class ListNodeCreator
     : public NodeCreator
 {
 public:
-    std::unique_ptr<Impl::Node> CreateNode() final
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) final
     {
         return std::make_unique<Impl::ListNode>(std::move(elements));
     };
 
     std::vector<std::unique_ptr<Impl::Node>> elements;
+};
+
+// List that defines the set of functions recognized by the expression parser.
+// To enable a new function, add the associated function node to this list.
+using AvailableFunctions = std::tuple<
+    Impl::If2Node,
+    Impl::If3Node,
+
+    Impl::EqualNode,
+    Impl::NotEqualNode,
+    Impl::LessNode,
+    Impl::LessEqualNode,
+    Impl::GreaterNode,
+    Impl::GreaterEqualNode,
+    Impl::LogicalAndNode,
+    Impl::LogicalOrNode,
+    Impl::LogicalNotNode
+>;
+
+class FunctionNodeCreator
+    : public NodeCreator
+{
+public:
+    FunctionNodeCreator(const std::string& functionName_)
+        : functionName(functionName_)
+    { };
+
+    std::unique_ptr<Impl::Node> CreateNode(std::string* errMsg) final
+    {
+        bool matchedFunctionName = false;
+        return _CreateNode(
+            errMsg, &matchedFunctionName, (AvailableFunctions*)(nullptr));
+    }
+
+    std::string functionName;
+    std::vector<std::unique_ptr<Impl::Node>> functionArgs;
+
+private:
+    // Search the list of available function nodes for one whose name matches
+    // the name we received from the parser, then try to construct an instance
+    // of that node with the arguments we parsed.
+    template <class NodeType, class... Others>
+    std::unique_ptr<Impl::Node>
+    _CreateNode(
+        std::string* errMsg, bool* matchedFunctionName,
+        std::tuple<NodeType, Others...>*)
+    {
+        if (functionName == NodeType::GetFunctionName()) {
+            *matchedFunctionName = true;
+
+            std::unique_ptr<Impl::Node> node = 
+                _CreateNodeHelper<NodeType>(errMsg);
+
+            // Return if we successfully created the node or tried to do so
+            // but got an error. Otherwise, we may have gotten a node with
+            // the right name but the wrong number of arguments, so we need
+            // to keep looking through our available function nodes.
+            if (node || !errMsg->empty()) {
+                return node;
+            }
+        }
+        return _CreateNode(
+            errMsg, matchedFunctionName, (std::tuple<Others...>*)(nullptr));
+    }
+
+    std::unique_ptr<Impl::Node>
+    _CreateNode(
+        std::string* errMsg, bool* matchedFunctionName, std::tuple<>*)
+    {
+        if (*matchedFunctionName) {
+            *errMsg = TfStringPrintf(
+                "Function '%s' does not take %zu arguments.", 
+                functionName.c_str(), functionArgs.size());
+        }
+        else {
+            *errMsg = TfStringPrintf(
+                "Unknown function %s", functionName.c_str());
+        }
+        return nullptr;
+    }
+
+    // Construct an instance of NodeType if it's a variadic function, i.e.
+    // it accepts any number of arguments beyond a given minimum.
+    template <class NodeType>
+    std::enable_if_t<NodeType::IsVariadic, std::unique_ptr<Impl::Node>>
+    _CreateNodeHelper(std::string* errMsg)
+    {
+        if (functionArgs.size() < NodeType::MinNumArgs) {
+            *errMsg = TfStringPrintf(
+                "Function '%s' requires at least %zu arguments.",
+                functionName.c_str(), NodeType::MinNumArgs);
+            return nullptr;
+        }
+        return std::make_unique<NodeType>(std::move(functionArgs));
+    }
+
+    // Construct an instance of NodeType if it's a function that requires a
+    // specific number of arguments. Note that functions may have overloads
+    // that accept different number of arguments.
+    template <class NodeType>
+    std::enable_if_t<!NodeType::IsVariadic, std::unique_ptr<Impl::Node>>
+    _CreateNodeHelper(std::string* errMsg)
+    {
+        if (functionArgs.size() != NodeType::NumArgs) {
+            return nullptr;
+        }
+        return _CreateFunctionNode<NodeType>(
+            errMsg, std::make_index_sequence<NodeType::NumArgs>());
+    }
+
+    template <class NodeType, size_t... I>
+    std::unique_ptr<Impl::Node> _CreateFunctionNode(
+        std::string* errMsg, std::index_sequence<I...>)
+    { 
+        return std::make_unique<NodeType>(std::move(functionArgs[I])...);
+    }
 };
 
 // Parser state -----------------------------------------------
@@ -171,7 +289,7 @@ public:
         std::unique_ptr<NodeCreator> creator = std::move(_nodeStack.back());
         _nodeStack.pop_back();
 
-        return creator->CreateNode();
+        return creator->CreateNode(errMsg);
     }
 
 private:
@@ -350,6 +468,50 @@ struct None
 
 // ----------------------------------------
 
+// Forward-declare to allow expression rule to be used for function arguments.
+struct ExpressionBody;
+
+struct FunctionName
+    : identifier
+{};
+
+struct FunctionArgumentStart
+    : pad<one<'('>, one<' '>>
+{};
+
+struct FunctionArgumentEnd
+    : pad<one<')'>, one<' '>>
+{};
+
+// A function argument can be any valid expression. We can't directly
+// derive from ExpressionBody because doing so would require ExpressionBody
+// to be a complete type. We use a templated wrapper class to work around
+// this requirement instead.
+template <class Base>
+struct FunctionArgumentWrapper
+    : public Base
+{};
+
+using FunctionArgument = FunctionArgumentWrapper<ExpressionBody>;
+
+// Function arguments are zero or more comma-separated arguments.
+struct FunctionArguments
+    : sor<
+        list<FunctionArgument, one<','>, one<' '>>,
+        star<one<' '>>
+    >
+{};
+
+struct Function
+    : if_must<
+        seq<FunctionName, FunctionArgumentStart>,
+        FunctionArguments,
+        FunctionArgumentEnd
+    >
+{};
+
+// ----------------------------------------
+
 struct ScalarExpression
     : sor<
         Variable,
@@ -357,7 +519,8 @@ struct ScalarExpression
         SingleQuotedString,
         Integer,
         Boolean,
-        None
+        None,
+        Function
     >
 {};
 
@@ -550,6 +713,39 @@ struct Action<ListElement>
     }
 };
 
+template<>
+struct Action<FunctionName>
+{
+    template <typename ActionInput>
+    static void apply(const ActionInput& in, ParserContext& context)
+    {
+        context.PushNodeCreator<FunctionNodeCreator>(in.string());
+    }
+};
+
+template<>
+struct Action<FunctionArgument>
+{
+    template <typename ActionInput>
+    static void apply(const ActionInput& in, ParserContext& context)
+    {
+        std::string errMsg;
+        std::unique_ptr<Impl::Node> argNode = 
+            context.CreateExpressionNode(&errMsg);
+        if (!argNode) {
+            _ThrowParseError(in, errMsg);
+        }
+
+        FunctionNodeCreator* fnCreator =
+            context.GetExistingNodeCreator<FunctionNodeCreator>();
+        if (!fnCreator) {
+            _ThrowParseError(in, "Unknown error");
+        }
+
+        fnCreator->functionArgs.push_back(std::move(argNode));
+    }
+};
+
 // Parser error messages ----------------------------------------
 
 template <typename Rule>
@@ -568,10 +764,12 @@ struct Errors
 #define MATCH_ERROR(rule, msg)                                  \
     template <> const std::string Errors<rule>::errorMsg = msg;
 
-// Should never hit this error because of how the rule is defined.
+// Should never hit these errors because of how the rules are defined.
 MATCH_ERROR(ListElements, "");
+MATCH_ERROR(FunctionArguments, "");
 
 MATCH_ERROR(ListEnd, "Missing ending ']'");
+MATCH_ERROR(FunctionArgumentEnd, "Missing ending ')'");
 MATCH_ERROR(ExpressionStart, "Expressions must begin with '`'");
 MATCH_ERROR(ExpressionBody, "Unexpected expression");
 MATCH_ERROR(ExpressionEnd, "Missing ending '`'");
