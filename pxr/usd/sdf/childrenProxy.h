@@ -33,7 +33,6 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/reverse_iterator.hpp>
 #include <iterator>
 #include <map>
 #include <utility>
@@ -207,9 +206,9 @@ private:
 public:
     typedef _ValueProxy reference;
     typedef _Iterator<This*, _inner_iterator, _PairProxy> iterator;
-    typedef boost::reverse_iterator<iterator> reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<iterator> reverse_iterator;
     typedef _Iterator<const This*, _inner_iterator, value_type> const_iterator;
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
 
     static const int CanSet    = 1;
     static const int CanInsert = 2;
