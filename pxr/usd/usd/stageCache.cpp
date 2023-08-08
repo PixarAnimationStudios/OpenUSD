@@ -25,23 +25,17 @@
 #include "pxr/usd/usd/stageCache.h"
 
 #include "pxr/usd/sdf/layer.h"
-#include "pxr/base/tf/hash.h"
+#include "pxr/usd/usd/common.h"
 #include "pxr/usd/usd/debugCodes.h"
 #include "pxr/usd/usd/stage.h"
 
 #include "pxr/usd/ar/resolverContext.h"
-
-#include <boost/multi_index_container.hpp>
-#include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/identity.hpp>
-#include <boost/multi_index/member.hpp>
-#include <boost/multi_index/global_fun.hpp>
-#include <boost/range/begin.hpp>
-#include <boost/range/end.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <atomic>
 #include <vector>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -65,69 +59,178 @@ std::atomic_long idCounter(9223000);
 Id GetNextId() { return Id::FromLongInt(++idCounter); }
 
 struct Entry {
-    Entry() {}
+    Entry() = default;
     Entry(const UsdStageRefPtr &stage, Id id) : stage(stage), id(id) {}
     UsdStageRefPtr stage;
     Id id;
 };
 
-struct ById {};
+using StagesById = std::unordered_map<Id, UsdStageRefPtr, TfHash>;
+using IdsByStage = std::unordered_map<UsdStageRefPtr, Id, TfHash>;
+using StagesByRootLayer = std::unordered_multimap<SdfLayerHandle,
+                                                  UsdStageRefPtr,
+                                                  TfHash>;
 
-struct ByStage {};
+/// The stage container provides a set of synchronized maps to enable
+/// lookup by Id, LayerHandle, or Stage. It provides a single insertion
+/// function to populate these maps and erasure by multiple key types.
+///
+/// This data structure does not add any thread safety guarantees. Users should
+/// lock appropriately before read and write.
+class StageContainer {
+public:
+    StageContainer() = default;
 
-struct ByRootLayer {
-    static SdfLayerHandle Get(const Entry &entry) {
-        return entry.stage->GetRootLayer();
+    /// Return an unordered_map of the stages indexed by id
+    const StagesById& ById() const { return _byId; }
+    /// Return an unordered_map of the ids indexed by stage
+    const IdsByStage& ByStage() const { return _byStage; }
+    /// Return an unordered_multimap of the stages indexed by root layer
+    /// NOTE: This is a multimap where multiple stages may mapped by a single
+    /// root layer.
+    const StagesByRootLayer& ByRootLayer() const { return _byRootLayer; }
+
+    // If the stage is already in the cache, return the pair {Id, false}
+    // If the stage is not in the cache, generate a new id, populate
+    // the synchronized maps, and return {NewId, true}
+    std::pair<Id, bool> Insert(const UsdStageRefPtr& stage) {
+        const auto it = _byStage.find(stage);
+        if (  it != _byStage.cend()) {
+            return std::make_pair(it->second, false);
+        }
+        const Id id = GetNextId();
+        TF_VERIFY(_byStage.emplace(stage, id).second);
+        TF_VERIFY(_byId.emplace(id, stage).second);
+        _byRootLayer.emplace(stage->GetRootLayer(), stage);
+        return std::make_pair(id, true);
     }
-};
 
-typedef boost::multi_index::multi_index_container<
+    // Return true if the stage was successfully erased
+    bool Erase(const UsdStageRefPtr& stage) {
+        const auto it = _byStage.find(stage);
+        if (it == _byStage.cend()) {
+            return false;
+        }
+        _EraseRootLayerEntry(stage);
+        TF_VERIFY(_byId.erase(it->second) == 1);
+        _byStage.erase(it);
+        return true;
+    }
 
-    Entry,
+    // Return true if the stage was successfully erased
+    bool Erase(const Id id) {
+        const auto it = _byId.find(id);
+        if (it == _byId.cend()) {
+            return false;
+        }
+        _EraseRootLayerEntry(it->second);
+        TF_VERIFY(_byStage.erase(it->second) == 1);
+        _byId.erase(it);
+        return true;
+    }
 
-    boost::multi_index::indexed_by<
+    size_t EraseAll(const SdfLayerHandle& rootLayer,
+                    vector<Entry>* erased) {
+        return _EraseAllIf(rootLayer,
+                           [](const auto& stage){ return true; },
+                           erased);
+    }
 
-        boost::multi_index::hashed_unique<
-            boost::multi_index::tag<ById>,
-            boost::multi_index::member<Entry, Id, &Entry::id>
-            >,
+    size_t EraseAll(const SdfLayerHandle& rootLayer,
+                    const SdfLayerHandle& sessionLayer,
+                    vector<Entry>* erased) {
+        return _EraseAllIf(rootLayer,
+                          [&sessionLayer](const auto& stage){
+                              return stage->GetSessionLayer() == sessionLayer;
+                          },
+                          erased);
+    }
 
-        boost::multi_index::hashed_unique<
-            boost::multi_index::tag<ByStage>,
-            boost::multi_index::member<Entry, UsdStageRefPtr, &Entry::stage>
-            >,
+    size_t EraseAll(const SdfLayerHandle& rootLayer,
+                    const SdfLayerHandle& sessionLayer,
+                    const ArResolverContext& resolverContext,
+                    vector<Entry>* erased) {
+        return _EraseAllIf(rootLayer,
+                          [&sessionLayer, &resolverContext](const auto& stage){
+                              return stage->GetSessionLayer() == sessionLayer &&
+                                     stage->GetPathResolverContext() == resolverContext;
+                          },
+                          erased);
+    }
 
-        boost::multi_index::hashed_non_unique<
-            boost::multi_index::tag<ByRootLayer>,
-            boost::multi_index::global_fun<
-                const Entry &, SdfLayerHandle, &ByRootLayer::Get>
-            >
-        >
-    > StageContainer;
+    size_t size() const { return _byId.size(); }
 
-typedef StageContainer::index<ById>::type StagesById;
-typedef StageContainer::index<ByStage>::type StagesByStage;
-typedef StageContainer::index<ByRootLayer>::type StagesByRootLayer;
-
-// Walk range, which must be from index, applying pred() to every element.  For
-// those elements where pred(element) is true, erase the element from the index
-// and invoke out->push_back(element) if out is not null.  Return the number of
-// elements erased.
-template <class Index, class Range, class Pred, class BackIns>
-size_t EraseIf(Index &index, Range range, Pred pred, BackIns *out) {
-    size_t numErased = 0;
-    while (range.first != range.second) {
-        if (pred(*range.first)) {
-            if (out)
-                out->push_back(*range.first);
-            index.erase(range.first++);
-            ++numErased;
+private:
+    // Helper function to erase the ByRootLayer() entry associated with the
+    // stage (and no other entries).
+    //
+    // This must be used in tandem with erase methods on ById() and ByStage()
+    // to uphold the synchronization invariant.
+    void _EraseRootLayerEntry(const UsdStageRefPtr& stage) {
+        const auto range = _byRootLayer.equal_range(
+            stage->GetRootLayer()
+        );
+        const auto it = std::find_if(
+            range.first, range.second,
+            [&stage](const auto& element){
+                return element.second == stage;
+            });
+        if (it != range.second) {
+            _byRootLayer.erase(it);
         } else {
-            ++range.first;
+            TF_CODING_ERROR(
+                "Internal StageCache is out of sync."
+                "Cannot find root layer entry for stage '%s'."
+                "Skipping erase of incomplete element.",
+                UsdDescribe(stage).c_str()
+            );
         }
     }
-    return numErased;
-}
+
+    template <typename ConditionFn>
+    size_t _EraseAllIf(const SdfLayerHandle& rootLayer,
+                       ConditionFn&& conditionFn,
+                       vector<Entry>* erased) {
+        const auto range = _byRootLayer.equal_range(rootLayer);
+        size_t erasedCount = 0;
+        // In C++20, consider using a filtered range with the condition
+        // function
+        for (auto it = range.first; it != range.second;) {
+            if (conditionFn(it->second)) {
+                const auto byStageIt = _byStage.find(it->second);
+                if (byStageIt == _byStage.cend()) {
+                    TF_CODING_ERROR(
+                        "Internal StageCache is out of sync. "
+                        "Cannot locate ID for stage '%s'."
+                        "Skipping erase of incomplete element.",
+                        UsdDescribe(it->second).c_str());
+                    ++it;
+                } else {
+                    if (erased) {
+                        erased->emplace_back(byStageIt->first,
+                                             byStageIt->second);
+                    }
+                    // Erase the ID => Stage map by value first and
+                    // verify it succeeded.
+                    TF_VERIFY(_byId.erase(byStageIt->second) == 1);
+                    // Erase the Stage => ID map using the found iterator
+                    _byStage.erase(byStageIt);
+                    // Erase the multimap last and increment it to the
+                    // next element in the equal_range
+                    it = _byRootLayer.erase(it);
+                    ++erasedCount;
+                }
+            } else {
+                ++it;
+            }
+        }
+        return erasedCount;
+    }
+
+    StagesById _byId;
+    IdsByStage _byStage;
+    StagesByRootLayer _byRootLayer;
+};
 
 struct DebugHelper
 {
@@ -143,15 +246,10 @@ struct DebugHelper
 
     bool IsEnabled() const { return _enabled; }
 
-    template <class Range>
-    void AddEntries(const Range &rng) {
-        if (IsEnabled())
-            _entries.insert(_entries.end(), boost::begin(rng), boost::end(rng));
-    }
-
-    void AddEntry(const Entry &entry) {
-        if (IsEnabled())
-            _entries.push_back(entry);
+    void AddEntry(const UsdStageRefPtr& stagePtr, const Id id) {
+        if (IsEnabled()) {
+            _entries.emplace_back(stagePtr, id);
+        }
     }
 
     void IssueMessage() const {
@@ -262,11 +360,10 @@ vector<UsdStageRefPtr>
 UsdStageCache::GetAllStages() const
 {
     LockGuard lock(_mutex);
-    StagesByStage &byStage = _impl->stages.get<ByStage>();
-    vector<UsdStageRefPtr> result;
-    result.reserve(_impl->stages.size());
-    for (auto const &entry: byStage)
-        result.push_back(entry.stage);
+    const IdsByStage &byStage = _impl->stages.ByStage();
+    vector<UsdStageRefPtr> result(_impl->stages.size());
+    std::transform(byStage.cbegin(), byStage.cend(), result.begin(),
+                   [](const auto& entry) { return entry.first; });
     return result;
 }
 
@@ -284,10 +381,14 @@ UsdStageCache::RequestStage(UsdStageCacheRequest &&request)
 
     { LockGuard lock(_mutex);
         // Does the cache currently have a match?  If so, done.
-        StagesByStage &byStage = _impl->stages.get<ByStage>();
-        for (auto const &entry: byStage)
-            if (request.IsSatisfiedBy(entry.stage))
-                return std::make_pair(entry.stage, false);
+        {
+            const IdsByStage &byStage = _impl->stages.ByStage();
+            for (auto const &element: byStage) {
+                if (request.IsSatisfiedBy(element.first)) {
+                    return std::make_pair(element.first, false);
+                }
+            }
+        }
 
         // Check to see if any pending requests can satisfy.
         for (auto *pending: _impl->pendingRequests) {
@@ -347,9 +448,9 @@ UsdStageCache::Find(Id id) const
 {
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
-        StagesById &byId = _impl->stages.get<ById>();
+        const StagesById& byId = _impl->stages.ById();
         StagesById::const_iterator iter = byId.find(id);
-        result = iter != byId.end() ? iter->stage : TfNullPtr;
+        result = iter != byId.end() ? iter->second : TfNullPtr;
     }
 
     DBG("%s for id=%s in %s\n",
@@ -365,9 +466,9 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer) const
 {
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+        const StagesByRootLayer& byRootLayer = _impl->stages.ByRootLayer();
         auto iter = byRootLayer.find(rootLayer);
-        result = iter != byRootLayer.end() ? iter->stage : TfNullPtr;
+        result = iter != byRootLayer.end() ? iter->second : TfNullPtr;
     }
 
     DBG("%s by rootLayer%s in %s\n",
@@ -385,12 +486,12 @@ UsdStageCache::FindOneMatching(const SdfLayerHandle &rootLayer,
 {
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+        const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
         auto range = byRootLayer.equal_range(rootLayer);
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
-            if (entry.stage->GetSessionLayer() == sessionLayer) {
-                result = entry.stage;
+            if (entry.second->GetSessionLayer() == sessionLayer) {
+                result = entry.second;
                 break;
             }
         }
@@ -414,12 +515,12 @@ UsdStageCache::FindOneMatching(
 {
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+        const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
         auto range = byRootLayer.equal_range(rootLayer);
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
-            if (entry.stage->GetPathResolverContext() == pathResolverContext) {
-                result = entry.stage;
+            if (entry.second->GetPathResolverContext() == pathResolverContext) {
+                result = entry.second;
                 break;
             }
         }
@@ -442,13 +543,13 @@ UsdStageCache::FindOneMatching(
 {
     UsdStageRefPtr result;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+        const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
         auto range = byRootLayer.equal_range(rootLayer);
         for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
             const auto& entry = *entryIt;
-            if (entry.stage->GetSessionLayer() == sessionLayer &&
-                entry.stage->GetPathResolverContext() == pathResolverContext) {
-                result = entry.stage;
+            if (entry.second->GetSessionLayer() == sessionLayer &&
+                entry.second->GetPathResolverContext() == pathResolverContext) {
+                result = entry.second;
                 break;
             }
         }
@@ -469,12 +570,12 @@ std::vector<UsdStageRefPtr>
 UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer) const
 {
     LockGuard lock(_mutex);
-    StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+    const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
     vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
          const auto& entry = *entryIt;
-        result.push_back(entry.stage);
+        result.push_back(entry.second);
     }
     return result;
 }
@@ -484,13 +585,13 @@ UsdStageCache::FindAllMatching(const SdfLayerHandle &rootLayer,
                                const SdfLayerHandle &sessionLayer) const
 {
     LockGuard lock(_mutex);
-    StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+    const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
     vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
-        if (entry.stage->GetSessionLayer() == sessionLayer)
-            result.push_back(entry.stage);
+        if (entry.second->GetSessionLayer() == sessionLayer)
+            result.push_back(entry.second);
     }
     return result;
 }
@@ -501,13 +602,13 @@ UsdStageCache::FindAllMatching(
     const ArResolverContext &pathResolverContext) const
 {
     LockGuard lock(_mutex);
-    StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+    const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
     vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
-        if (entry.stage->GetPathResolverContext() == pathResolverContext)
-            result.push_back(entry.stage);
+        if (entry.second->GetPathResolverContext() == pathResolverContext)
+            result.push_back(entry.second);
     }
     return result;
 }
@@ -519,14 +620,14 @@ UsdStageCache::FindAllMatching(
     const ArResolverContext &pathResolverContext) const
 {
     LockGuard lock(_mutex);
-    StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
+    const StagesByRootLayer &byRootLayer = _impl->stages.ByRootLayer();
     vector<UsdStageRefPtr> result;
     auto range = byRootLayer.equal_range(rootLayer);
     for (auto entryIt = range.first; entryIt != range.second; ++entryIt) { 
         const auto& entry = *entryIt;
-        if (entry.stage->GetSessionLayer() == sessionLayer &&
-            entry.stage->GetPathResolverContext() == pathResolverContext) {
-            result.push_back(entry.stage);
+        if (entry.second->GetSessionLayer() == sessionLayer &&
+            entry.second->GetPathResolverContext() == pathResolverContext) {
+            result.push_back(entry.second);
         }
     }
     return result;
@@ -536,9 +637,9 @@ UsdStageCache::Id
 UsdStageCache::GetId(const UsdStageRefPtr &stage) const
 {
     LockGuard lock(_mutex);
-    StagesByStage &byStage = _impl->stages.get<ByStage>();
+    const IdsByStage& byStage = _impl->stages.ByStage();
     auto iter = byStage.find(stage);
-    return iter != byStage.end() ? iter->id : Id();
+    return iter != byStage.end() ? iter->second : Id();
 }
 
 UsdStageCache::Id
@@ -553,11 +654,11 @@ UsdStageCache::Insert(const UsdStageRefPtr &stage)
     Id ret;
 
     { LockGuard lock(_mutex);
-        StagesByStage &byStage = _impl->stages.get<ByStage>();
-        auto iresult = byStage.insert(Entry(stage, GetNextId()));
-        if (iresult.second && debug.IsEnabled())
-            debug.AddEntry(*iresult.first);
-        ret = iresult.first->id;
+        auto iresult = _impl->stages.Insert(stage);
+        if (iresult.second && debug.IsEnabled()) {
+            debug.AddEntry(stage, iresult.first);
+        }
+        ret = iresult.first;
     }
     return ret;
 }
@@ -568,9 +669,14 @@ UsdStageCache::Erase(Id id)
     DebugHelper debug(*this, "erased");
     bool result;
     { LockGuard lock(_mutex);
-        if (debug.IsEnabled())
-            debug.AddEntries(_impl->stages.get<ById>().equal_range(id));
-        result = _impl->stages.get<ById>().erase(id);
+        if (debug.IsEnabled()) {
+            const StagesById& stagesById = _impl->stages.ById();
+            const auto it = stagesById.find(id);
+            if (it != stagesById.end()){
+                debug.AddEntry(it->second, it->first);
+            }
+        }
+        result = _impl->stages.Erase(id);
     }
     return result;
 }
@@ -581,9 +687,14 @@ UsdStageCache::Erase(const UsdStageRefPtr &stage)
     DebugHelper debug(*this, "erased");
     bool result;
     { LockGuard lock(_mutex);
-        if (debug.IsEnabled())
-            debug.AddEntries(_impl->stages.get<ByStage>().equal_range(stage));
-        result = _impl->stages.get<ByStage>().erase(stage);
+        if (debug.IsEnabled()) {
+            const IdsByStage& idsByStage = _impl->stages.ByStage();
+            const auto it = idsByStage.find(stage);
+            if (it != idsByStage.end()) {
+                debug.AddEntry(it->first, it->second);
+            }
+        }
+        result = _impl->stages.Erase(stage);
     }
     return result;
 }
@@ -594,29 +705,21 @@ UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer)
     DebugHelper debug(*this, "erased");
     size_t result;
     { LockGuard lock(_mutex);
-        if (debug.IsEnabled()) {
-            debug.AddEntries(
-                _impl->stages.get<ByRootLayer>().equal_range(rootLayer));
-        }
-        result = _impl->stages.get<ByRootLayer>().erase(rootLayer);
+        result = _impl->stages.EraseAll(rootLayer, debug.GetEntryVec());
     }
     return result;
 }
 
 size_t
 UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer,
-                         const SdfLayerHandle &sessionLayer)
+                        const SdfLayerHandle &sessionLayer)
 {
     DebugHelper debug(*this, "erased");
     size_t numErased;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        numErased =
-            EraseIf(byRootLayer, byRootLayer.equal_range(rootLayer),
-                    [&sessionLayer](Entry const &e) {
-                        return e.stage->GetSessionLayer() == sessionLayer;
-                    },
-                    debug.GetEntryVec());
+        numErased = _impl->stages.EraseAll(
+            rootLayer, sessionLayer, debug.GetEntryVec()
+        );
     }
     return numErased;
 }
@@ -629,15 +732,9 @@ UsdStageCache::EraseAll(const SdfLayerHandle &rootLayer,
     DebugHelper debug(*this, "erased");
     size_t numErased;
     { LockGuard lock(_mutex);
-        StagesByRootLayer &byRootLayer = _impl->stages.get<ByRootLayer>();
-        numErased =
-            EraseIf(byRootLayer, byRootLayer.equal_range(rootLayer),
-                    [&sessionLayer, &pathResolverContext](Entry const &e) {
-                        return (e.stage->GetSessionLayer() == sessionLayer &&
-                                e.stage->GetPathResolverContext() ==
-                                pathResolverContext);
-                    },
-                    debug.GetEntryVec());
+        numErased = _impl->stages.EraseAll(
+            rootLayer, sessionLayer, pathResolverContext, debug.GetEntryVec()
+        );
     }
     return numErased;
 }
@@ -650,8 +747,12 @@ UsdStageCache::Clear()
 
     UsdStageCache tmp;
     { LockGuard lock(_mutex);
-        if (debug.IsEnabled())
-            debug.AddEntries(_impl->stages.get<ByStage>());
+        if (debug.IsEnabled()) {
+            const IdsByStage& idsByStage = _impl->stages.ByStage();
+            for (const auto& element : idsByStage) {
+                debug.AddEntry(element.first, element.second);
+            }
+        }
         _impl.swap(tmp._impl);
     }
 }
