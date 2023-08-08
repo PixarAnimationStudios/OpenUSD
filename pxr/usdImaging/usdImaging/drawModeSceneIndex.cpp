@@ -25,6 +25,7 @@
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -53,6 +54,15 @@ TfToken
 _GetDrawMode(const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
+
+    if (_IsUsdNativeInstance(prim)) {
+        // Do not apply draw mode to native instance.
+        // Instead, the native instance prototype propagating scene index
+        // will create a copy of the prototype with the apply draw mode set
+        // and the draw mode scene index processing that prototype applies
+        // the draw mode.
+        return empty;
+    }
 
     UsdImagingModelSchema modelSchema =
         UsdImagingModelSchema::GetFromParent(prim.dataSource);

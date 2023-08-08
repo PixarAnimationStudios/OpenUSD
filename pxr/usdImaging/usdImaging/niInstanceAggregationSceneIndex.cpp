@@ -382,40 +382,19 @@ public:
     {
         VtArray<GfMatrix4d> result(_instances->size());
         
-        // We want the native instance's xform relative to the xform of the
-        // enclosing root (e.g. the prototype of a point instancer).
-        //
-        // The instancer instancing the native instance is already picking up
-        // the xform of the enclosing root, so we need the relative xform
-        // to avoid applying the same xform twice to a native instance.
-        //
-        // Note that the flattening scene index is invalidating the
-        // native instance's xform when the xform of the enclosing root
-        // is changing, so there is no special logic to invalidate this
-        // data source when the enclosing root is changing here.
-        //
-        // TODO: Note that the current implementation does not deal with time samples.
-        //
-        const GfMatrix4d rootInverse =
-            _GetPrimTransform(_inputSceneIndex, _enclosingPrototypeRoot)
-                .GetInverse();
-
-        static const GfMatrix4d id(1.0);
-
-        if (rootInverse == id) {
-            int i = 0;
-            for (const SdfPath &instance : *_instances) {
-                result[i] =
-                    _GetPrimTransform(_inputSceneIndex, instance);
-                i++;
-            }
-        } else {
-            int i = 0;
-            for (const SdfPath &instance : *_instances) {
-                result[i] =
-                    _GetPrimTransform(_inputSceneIndex, instance) * rootInverse;
-                i++;
-            }
+        int i = 0;
+        for (const SdfPath &instance : *_instances) {
+            // If this is for a native instance within a Usd point instancer's
+            // prototype, this transform will include the prototype's
+            // root transform.
+            //
+            // The instancer for this native instance has no transform and thus
+            // does not include the prototype's root transform.
+            //
+            // Thus, prototype's root transform will be applied exactly once.
+            result[i] =
+                _GetPrimTransform(_inputSceneIndex, instance);
+            i++;
         }
         return result;
     }
@@ -423,17 +402,14 @@ public:
 private:
     _InstanceTransformPrimvarValueDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances,
-        const SdfPath &enclosingPrototypeRoot)
+        std::shared_ptr<SdfPathSet> const &instances)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
-      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
-    const SdfPath _enclosingPrototypeRoot;
 };
 
 // Data source for locator primvars:instanceTransform for an instancer.
@@ -464,7 +440,7 @@ public:
         }
         if (name == HdPrimvarSchemaTokens->primvarValue) {
             return _InstanceTransformPrimvarValueDataSource::New(
-                _inputSceneIndex, _instances, _enclosingPrototypeRoot);
+                _inputSceneIndex, _instances);
         }
         // Does the instanceTransform have a role?
         return nullptr;
@@ -473,17 +449,14 @@ public:
 private:
     _InstanceTransformPrimvarDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances,
-        const SdfPath &enclosingPrototypeRoot)
+        std::shared_ptr<SdfPathSet> const &instances)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
-      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
-    const SdfPath _enclosingPrototypeRoot;
 };
 
 // Data source for locator primvars for an instancer.
@@ -509,7 +482,7 @@ public:
     HdDataSourceBaseHandle Get(const TfToken &name) override {
         if (name == HdInstancerTokens->instanceTransform) {
             return _InstanceTransformPrimvarDataSource::New(
-                _inputSceneIndex, _instances, _enclosingPrototypeRoot);
+                _inputSceneIndex, _instances);
         }
         if (!_instances->empty()) {
             if (_IsConstantPrimvar(
@@ -524,17 +497,14 @@ public:
 private:
     _PrimvarsDataSource(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        std::shared_ptr<SdfPathSet> const &instances,
-        const SdfPath &enclosingPrototypeRoot)
+        std::shared_ptr<SdfPathSet> const &instances)
       : _inputSceneIndex(inputSceneIndex)
       , _instances(instances)
-      , _enclosingPrototypeRoot(enclosingPrototypeRoot)
     {
     }
 
     HdSceneIndexBaseRefPtr const _inputSceneIndex;
     std::shared_ptr<SdfPathSet> const _instances;
-    const SdfPath _enclosingPrototypeRoot;
 };
 
 // [0, 1, ..., n-1]
@@ -720,7 +690,7 @@ public:
         }
         if (name == HdPrimvarsSchema::GetSchemaToken()) {
             return _PrimvarsDataSource::New(
-                    _inputSceneIndex, _instances, _enclosingPrototypeRoot);
+                    _inputSceneIndex, _instances);
         }
         return nullptr;
     }
@@ -854,6 +824,8 @@ _GetPrototypeRoot(HdContainerDataSourceHandle const &primSource)
     return result[0];
 }
 
+// Make a partial copy of the prim data source of a native
+// instance using instanceDataSourceNames.
 HdContainerDataSourceHandle
 _MakeBindingCopy(HdContainerDataSourceHandle const &primSource,
                  const TfTokenVector &instanceDataSourceNames)
@@ -871,10 +843,9 @@ _MakeBindingCopy(HdContainerDataSourceHandle const &primSource,
     }
 
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingsSchema::GetSchemaToken(),
-        HdMakeStaticCopy(materialBindingsSchema.GetContainer()),
-        HdPurposeSchema::GetSchemaToken(),
-        HdMakeStaticCopy(purposeSchema.GetContainer()));
+        names.size(),
+        names.data(),
+        dataSources.data());
 }
 
 struct _InstanceInfo {
@@ -1140,19 +1111,9 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
         const SdfPath &path = entry.primPath;
         const HdDataSourceLocatorSet &locators = entry.dirtyLocators;
 
-        {
-            static const HdDataSourceLocatorSet resyncLocators{
-                HdInstancedBySchema::GetDefaultLocator().Append(
-                    HdInstancedBySchemaTokens->prototypeRoots),
-                HdMaterialBindingsSchema::GetDefaultLocator(),
-                HdPurposeSchema::GetDefaultLocator(),
-                UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
-
-            if (locators.Intersects(resyncLocators)) {
-                _ResyncPrim(path);
-                continue;
-            }
-
+        if (locators.Intersects(_resyncLocators)) {
+            _ResyncPrim(path);
+            continue;
         }
 
         {
