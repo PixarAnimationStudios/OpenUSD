@@ -389,6 +389,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources(
 
         // Sampler description
         HgiSamplerDesc sampDesc;
+        sampDesc.debugName = samplerName;
         sampDesc.magFilter = HgiSamplerFilterLinear;
         sampDesc.minFilter = HgiSamplerFilterLinear;
         sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
@@ -557,22 +558,28 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
             // binding and layout. Therefore we subsitute sampler
             // name in the shader code in all its use-cases with the
             // one Hgi provides.
-            size_t samplerNameLength = texInfo.samplerName.length();
-            size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
-            if (offset != std::string::npos)
-            {
-                offset += samplerNameLength;
-                    // ignore first occurance that is variable definition
-                offset = ocioGpuShaderText.find(texInfo.samplerName, offset);
-                while (offset != std::string::npos)
-                {
-                    size_t texNameLength = texInfo.texName.length();
-                    ocioGpuShaderText.replace(
-                        offset, samplerNameLength,
-                        texInfo.texName.c_str(), texNameLength);
+            if (TF_VERIFY(!texInfo.texName.empty() &&
+                          !texInfo.samplerName.empty())) {
+                const size_t texNameLength = texInfo.texName.length();
+                const size_t samplerNameLength = texInfo.samplerName.length();
 
-                    offset += texNameLength;
-                    offset = ocioGpuShaderText.find(texInfo.samplerName, offset);
+                size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
+                if (offset != std::string::npos)
+                {
+                    offset += samplerNameLength;
+                        // ignore first occurance that is variable definition
+                    offset = ocioGpuShaderText.find(
+                                    texInfo.samplerName, offset);
+                    while (offset != std::string::npos)
+                    {
+                        ocioGpuShaderText.replace(
+                            offset, samplerNameLength,
+                            texInfo.texName.c_str(), texNameLength);
+
+                        offset += texNameLength;
+                        offset = ocioGpuShaderText.find(
+                                    texInfo.samplerName, offset);
+                    }
                 }
             }
         }
