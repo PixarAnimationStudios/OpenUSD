@@ -106,6 +106,9 @@ extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
+// Used when Creating Riley RenderView from the RenderSettings or RenderSpec
+static GfVec2i _fallbackResolution = GfVec2i(512,512);
+
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
