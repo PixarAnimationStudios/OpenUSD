@@ -2709,10 +2709,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
             HgiShaderKeywordTokens->hdBaryCoordNoPerspNV);
-
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_PrimitiveID", "uint",
-            HgiShaderKeywordTokens->hdPrimitiveID);
+        //Don't include when MS as not used
+        if(!_hasMS) {
+            HgiShaderFunctionAddStageInput(
+               &fsDesc, "gl_PrimitiveID", "uint",
+               HgiShaderKeywordTokens->hdPrimitiveID);
+        }
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FrontFacing", "bool",
             HgiShaderKeywordTokens->hdFrontFacing);

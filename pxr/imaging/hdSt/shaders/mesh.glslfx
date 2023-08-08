@@ -353,6 +353,7 @@ void main(void)
     uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
     uint baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
     uint baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
+    //TODO Remove from the draw command
     uint baseInstance = hd_LocalInvocationID.x;
     uint meshlCoord = GetDrawingField(meshletCoordOffset, hd_LocalInvocationID.x);
     uint numMeshlet = GetDrawingField(numMeshletsOffset, hd_LocalInvocationID.x);
@@ -423,16 +424,18 @@ uint32_t baseIndex;
 
 hd_drawingCoord dcMemb;
 void main(void) {
-    device uint *meshletStart = meshletRemap + payload.meshletCoord;
-    uint thisMeshCoord = *(meshletStart + hd_LocalInvocationID.y);
-    uint meshletVertexCount = *(meshletStart + thisMeshCoord);
-    uint meshletPrimitiveCount = *(meshletStart + thisMeshCoord + 1);
+    const device uint *meshletStart = meshletRemap + payload.meshletCoord;
+    const uint thisMeshCoordOff = *(meshletStart + hd_LocalInvocationID.y);
+    const device uint *thisMeshCoord = (meshletStart + thisMeshCoordOff);
+
+    const uint meshletVertexCount = *(thisMeshCoord);
+    const uint meshletPrimitiveCount = *(thisMeshCoord + 1);
 
     //TODO don't need to store this here
-    device uint *meshletVerticesStart = (meshletStart + thisMeshCoord + 2);
+    const device uint *meshletVerticesStart = (thisMeshCoord + 2);
 
     const uint numUintsPerVertex = 2;
-    device uint *meshletIndicesStart = (meshletStart + thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
+    const device uint *meshletIndicesStart = (thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
 
     //can be simplified to always use payload.baseVertex
     const uint endIndex  = meshletPrimitiveCount * 3;
@@ -440,42 +443,36 @@ void main(void) {
         return;
     }
 
-    const uint ind = hd_LocalIndexID;
-
-    if (ind < endIndex)
+    if (hd_LocalIndexID < endIndex)
     {
+        //TODO can we simply try to not use registers for this
+        //TODO probably not needed
         baseVertex = payload.baseVertex;
         //TODO probably not needed
         baseIndex = payload.baseIndex;
         gl_BaseInstance = payload.baseInstance;
         gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
-
-        SetDrawIndex(payload.drawCommandIndexPayload, hd_LocalInvocationID.x);
-        hd_VertexID = ind;
+        hd_VertexID = hd_LocalIndexID;
     }
 
     if( hd_LocalIndexID < meshletVertexCount )
     {
-        dcMemb = GetDrawingCoordFull();
-        uint index = *(meshletVerticesStart + ind * numUintsPerVertex + 1);
+        primitive_id = ((hd_LocalInvocationID.y * 512) + hd_LocalIndexID)/3;
+        const uint index = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex + 1);
         //todo resolve the index
-        primitive_id = index/3;
         //TODO investigate this
-        
-
         //this is problematic because of threads
 
         VertexOut vertexOut;
-        uint vertIndirection = *(meshletVerticesStart + ind * numUintsPerVertex);
+        const uint vertIndirection = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
+        dcMemb = GetDrawingCoordFull();
         ProcessPrimvarsIn(vertIndirection);
         float4 point = float4(HdGet_points(vertIndirection), 1.0f);
 
-        vec3 Neye0 = GetNormal(vec3(0),index);
-
-        //point = DisplacementTerminal(globalIndex%3, point, Neye0, GetPatchCoord(globalIndex%3));
-
-        MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+        vec3 Neye0 = GetNormal(vec3(0),vertIndirection);
+        const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
         vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+        vertexOut.Peye = DisplacementTerminal(hd_LocalIndexID%3, vertexOut.Peye, Neye0, GetPatchCoord(hd_LocalIndexID%3));
 
         vertexOut.Neye = Neye0; // normalized
 
@@ -487,51 +484,51 @@ void main(void) {
     }
     
     const uint base = hd_LocalIndexID * 9;
+    const uint base2 = hd_LocalIndexID * 12;
     //TODO try to place this work at the end of the group
     //So that if vertices are way fewer, have the work on the less used threads
-    if((hd_LocalIndexID * 3) < meshletPrimitiveCount) {
+    const device uint *indicesOff = meshletIndicesStart + base2;
+    const uint currPrim = hd_LocalIndexID * 3;
+    if((currPrim ) < (meshletPrimitiveCount)) {
     {
         mesh.set_primitive_count(meshletPrimitiveCount);
         //TODO actually set the primitive ID here
         PrimOut primOut;
         //TODO export a smarter primitive ID
-        uint index0 = *(meshletVerticesStart + (hd_LocalIndexID * 3) * numUintsPerVertex + 1);
-        primOut.primitive_id_ms = *(meshletIndicesStart + base + 3);
-        mesh.set_primitive(hd_LocalIndexID * 3, primOut);
+        primOut.primitive_id_ms = *(indicesOff + 3);
+        mesh.set_primitive(currPrim, primOut);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base, *(meshletIndicesStart + base));
-        mesh.set_index(base+1, *(meshletIndicesStart + base + 1));
-        mesh.set_index(base+2, *(meshletIndicesStart + base + 2));
+        mesh.set_index(base, *(indicesOff));
+        mesh.set_index(base+1, *(indicesOff + 1));
+        mesh.set_index(base+2, *(indicesOff + 2));
     }
     {
         //TODO actually set the primitive ID here
         PrimOut primOut2;
-        uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 3 + 1) * numUintsPerVertex + 1);
-        primOut2.primitive_id_ms = *(meshletIndicesStart + base + 7);
+        primOut2.primitive_id_ms = *(indicesOff + 7);
         //TODO export a smarter primitive ID
-        mesh.set_primitive(hd_LocalIndexID * 3 + 1, primOut2);
+        mesh.set_primitive(currPrim + 1, primOut2);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+3, *(meshletIndicesStart + base + 4));
-        mesh.set_index(base+4, *(meshletIndicesStart + base + 5));
-        mesh.set_index(base+5, *(meshletIndicesStart + base + 6));
+        mesh.set_index(base+3, *(indicesOff + 4));
+        mesh.set_index(base+4, *(indicesOff + 5));
+        mesh.set_index(base+5, *(indicesOff + 6));
     }
     {
         //TODO actually set the primitive ID here
-        PrimOut primOut2;
- 	uint index1 = *(meshletVerticesStart + (hd_LocalIndexID * 3 + 2) * numUintsPerVertex + 1);
-        primOut2.primitive_id_ms = *(meshletIndicesStart + base + 11);
+        PrimOut primOut3;
+        primOut3.primitive_id_ms = *(indicesOff + 11);
         //TODO export a smarter primitive ID
-        mesh.set_primitive(hd_LocalIndexID * 3 + 2, primOut2);
+        mesh.set_primitive(currPrim + 2, primOut3);
 
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+6, *(meshletIndicesStart + base + 8));
-        mesh.set_index(base+7, *(meshletIndicesStart + base + 9));
-        mesh.set_index(base+8, *(meshletIndicesStart + base + 10));
+        mesh.set_index(base+6, *(indicesOff + 8));
+        mesh.set_index(base+7, *(indicesOff + 9));
+        mesh.set_index(base+8, *(indicesOff + 10));
     }
     }
     
@@ -1750,6 +1747,5 @@ void main(void)
         discard;
     }
 #endif
-
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
