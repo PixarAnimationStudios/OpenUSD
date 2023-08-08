@@ -84,7 +84,7 @@ using RenderProducts = VtArray<HdRenderSettingsMap>;
 
 // Return the seconds between now and then.
 double
-_DiffTimeToNow(std::chrono::steady_clock::time_point const& then)
+_DiffTimeToNow(std::chrono::steady_clock::time_point const &then)
 {
     std::chrono::duration<double> diff;
     diff = std::chrono::duration_cast<std::chrono::duration<double>>
@@ -126,18 +126,16 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
 }
 
 const HdRenderBuffer *
-_GetRenderBuffer(const HdRenderPassAovBinding& aov,
+_GetRenderBuffer(const HdRenderPassAovBinding &aov,
                  const HdRenderIndex * const renderIndex)
 {
     if (aov.renderBuffer) {
         return aov.renderBuffer;
     }
     
-    return
-        dynamic_cast<HdRenderBuffer*>(
-            renderIndex->GetBprim(
-                HdPrimTypeTokens->renderBuffer,
-                aov.renderBufferId));
+    return dynamic_cast<HdRenderBuffer*>(
+        renderIndex->GetBprim(
+            HdPrimTypeTokens->renderBuffer, aov.renderBufferId));
 }
 
 bool
@@ -173,7 +171,7 @@ _UsesPrimaryIntegrator(const HdRenderDelegate * const renderDelegate)
 }
 
 bool
-_HasRenderProducts( const RenderProducts& renderProducts)
+_HasRenderProducts(const RenderProducts &renderProducts)
 {
     for (const auto &renderProduct : renderProducts) {
         if (!renderProduct.empty()) {
@@ -194,11 +192,12 @@ _HasRenderProducts( const RenderProducts& renderProducts)
 // After that tag based visibility is a per-pass problem.
 
 void
-_UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
-                             HdRenderIndex *index,
-                             riley::Riley *riley )
+_UpdateRprimVisibilityForPass(
+    TfTokenVector const & renderTags,
+    HdRenderIndex *index,
+    riley::Riley *riley )
 {
-    for(auto id : index->GetRprimIds()) {
+    for (auto id : index->GetRprimIds()) {
         HdRprim const *rprim = index->GetRprim(id);
         const TfToken tag = rprim->GetRenderTag();
 
@@ -210,15 +209,14 @@ _UpdateRprimVisibilityForPass(TfTokenVector const & renderTags,
 
         HdPrman_GprimBase const * hdprman_rprim =
                 dynamic_cast<HdPrman_GprimBase const *>(rprim);
-        if(hdprman_rprim) {
+        if (hdprman_rprim) {
             hdprman_rprim->UpdateInstanceVisibility( vis, riley);
         }
     }
 }
 
 const HdPrman_RenderSettings *
-_GetActiveRenderSettingsPrim(
-    HdRenderIndex *renderIndex)
+_GetActiveRenderSettingsPrim(HdRenderIndex *renderIndex)
 {
     SdfPath primPath;
     const bool hasActiveRenderSettingsPrim =
@@ -233,7 +231,91 @@ _GetActiveRenderSettingsPrim(
     return nullptr;
 }
 
+void
+_SetShutterCurve(bool isInteractive, HdPrman_CameraContext *cameraContext)
+{
+    // A hack to make tests pass.
+    // testHdPrman was hard-coding a particular shutter curve for offline
+    // renders. Ideally, we would have a render setting or camera attribute
+    // to control the curve instead.
+    if (isInteractive) {
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
+        };
+        cameraContext->SetShutterCurve(0.0f, 1.0f, pts);
+    } else {
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
+        };
+        cameraContext->SetShutterCurve(0.0f, 0.0f, pts);
+    }
+}
+
 } // end anonymous namespace
+
+void
+HdPrman_RenderPass::_UpdateCameraPath(
+    const HdRenderPassStateSharedPtr &renderPassState,
+    HdPrmanRenderDelegate * const renderDelegate,
+    HdPrman_CameraContext *cameraContext)
+{
+    // Camera path can come from render pass state, or the RenderSettingsMap
+    // on the RenderSpec. The camera from the render pass state wins.
+
+    if (const HdPrmanCamera * const cam =
+            static_cast<const HdPrmanCamera *>(renderPassState->GetCamera())) {
+        cameraContext->SetCameraPath(cam->GetId());
+    } else {
+        const VtDictionary &renderSpec =
+            renderDelegate->GetRenderSetting<VtDictionary>(
+                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
+                VtDictionary());
+        const SdfPath &cameraPath =
+            VtDictionaryGet<SdfPath>(
+                renderSpec,
+                HdPrmanExperimentalRenderSpecTokens->camera,
+                VtDefault = SdfPath());
+        if (!cameraPath.IsEmpty()) {
+            cameraContext->SetCameraPath(cameraPath);
+        }
+    }
+}
+
+// Update the Camera Framing from the RenderSettingsPrim, or RenderPassState
+// Return true if the dataWindow has changed.
+bool
+HdPrman_RenderPass::_UpdateCameraFraming(
+    const HdRenderPassStateSharedPtr &renderPassState,
+    HdPrman_CameraContext *cameraContext,
+    GfVec2i *resolution)
+{
+    // Update Camera Framing on the Camera Context
+    const GfRect2i prevDataWindow = cameraContext->GetFraming().dataWindow;
+
+    if (renderPassState->GetFraming().IsValid()) {
+        // For new clients setting the camera framing.
+        cameraContext->SetFraming(renderPassState->GetFraming());
+        cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
+    } else {
+        // For old clients using the viewport.
+        _GetRenderBufferSize(renderPassState->GetAovBindings(),
+                             GetRenderIndex(),
+                             resolution);
+
+        const GfVec4f &vp = renderPassState->GetViewport();
+        cameraContext->SetFraming(
+            CameraUtilFraming(
+                GfRect2i(
+                    // Note that the OpenGL-style viewport is y-Up
+                    // but the camera framing is y-Down, so converting here.
+                    GfVec2i(vp[0], (*resolution)[1] - (vp[1] + vp[3])),
+                    vp[2], vp[3])));
+        cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
+    }
+
+    return cameraContext->GetFraming().dataWindow != prevDataWindow;
+}
+
 
 void
 HdPrman_RenderPass::_Execute(
@@ -289,83 +371,29 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
+    // Update the Camera Context
     HdPrman_CameraContext &cameraContext = _renderParam->GetCameraContext();
-    // Camera path can come from render pass state or
-    // from render settings. The camera from the render pass state
-    // wins.
-    if (const HdPrmanCamera * const cam =
-            static_cast<const HdPrmanCamera *>(
-                renderPassState->GetCamera())) {
-        cameraContext.SetCameraPath(cam->GetId());
-    } else {
-        const VtDictionary &renderSpec =
-            renderDelegate->GetRenderSetting<VtDictionary>(
-                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-                VtDictionary());
-        const SdfPath &cameraPath =
-            VtDictionaryGet<SdfPath>(
-                renderSpec,
-                HdPrmanExperimentalRenderSpecTokens->camera,
-                VtDefault = SdfPath());
-        if (!cameraPath.IsEmpty()) {
-            cameraContext.SetCameraPath(cameraPath);
-        }
-    }
+    _UpdateCameraPath(renderPassState, renderDelegate, &cameraContext);
 
-
-    HdRenderPassAovBindingVector const &aovBindings =
-        renderPassState->GetAovBindings();
     GfVec2i resolution;
-
-    const GfRect2i prevDataWindow = cameraContext.GetFraming().dataWindow;
-    if (renderPassState->GetFraming().IsValid()) {
-        // For new clients setting the camera framing.
-        cameraContext.SetFraming(renderPassState->GetFraming());
-    } else {
-        // For old clients using the viewport.
-        _GetRenderBufferSize(aovBindings,
-                             GetRenderIndex(),
-                             &resolution);
-
-        const GfVec4f vp = renderPassState->GetViewport();
-        cameraContext.SetFraming(
-            CameraUtilFraming(
-                GfRect2i(
-                    // Note that the OpenGL-style viewport is y-Up
-                    // but the camera framing is y-Down, so converting here.
-                    GfVec2i(vp[0], resolution[1] - (vp[1] + vp[3])),
-                    vp[2], vp[3])));
-    }
     const bool dataWindowChanged =
-        (cameraContext.GetFraming().dataWindow != prevDataWindow);
+        _UpdateCameraFraming(renderPassState, &cameraContext, &resolution);
 
-    cameraContext.SetWindowPolicy(renderPassState->GetWindowPolicy());
-
-    // A hack to make tests pass.
-    // testHdPrman was hard-coding a particular shutter curve for offline
-    // renders. Ideally, we would have a render setting or camera attribute
-    // to control the curve instead.
-    if (renderDelegate->IsInteractive()) {
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
-        };
-        cameraContext.SetShutterCurve(0.0f, 1.0f, pts);
-    } else {
-        static const float pts[8] = {
-            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
-        };
-        cameraContext.SetShutterCurve(0.0f, 0.0f, pts);
-    }
+    _SetShutterCurve(renderDelegate->IsInteractive(), &cameraContext);
 
     const bool camChanged = cameraContext.IsInvalid();
     cameraContext.MarkValid();
+
+    // Create the Riley RenderView 
+    const HdRenderPassAovBindingVector &aovBindings =
+        renderPassState->GetAovBindings();
 
     const RenderProducts& renderProducts =
         renderDelegate->GetRenderSetting<RenderProducts>(
             HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
     
     if (_HasRenderProducts(renderProducts)) {
-        // Code path for Solaris render products
+        // Use RenderProducts from the RenderSettingsMap (Solaris)
         int frame =
             renderDelegate->GetRenderSetting<int>(
                 HdPrmanRenderSettingsTokens->houdiniFrame, 1);
@@ -512,8 +540,8 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
+    // Update options from the legacy settings map.
     if (legacySettingsChanged) {
-        // Update options from the legacy settings map.
         _renderParam->UpdateLegacyOptions();
     }
 
@@ -531,11 +559,10 @@ HdPrman_RenderPass::_Execute(
         if (const HdCamera * const cam =
                 cameraContext.GetCamera(GetRenderIndex())) {
             // Update the framebuffer Z scaling
-            framebuffer->proj =
 #if HD_API_VERSION >= 44
-                cam->ComputeProjectionMatrix();
+            framebuffer->proj = cam->ComputeProjectionMatrix();
 #else
-                cam->GetProjectionMatrix();
+            framebuffer->proj = cam->GetProjectionMatrix();
 #endif
         }
     }

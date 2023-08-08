@@ -106,6 +106,9 @@ extern TfEnvSetting<bool> HD_PRMAN_ENABLE_QUICKINTEGRATE;
 static bool _enableQuickIntegrate =
     TfGetEnvSetting(HD_PRMAN_ENABLE_QUICKINTEGRATE);
 
+// Used when Creating Riley RenderView from the RenderSettings or RenderSpec
+static GfVec2i _fallbackResolution = GfVec2i(512,512);
+
 TF_MAKE_STATIC_DATA(std::vector<HdPrman_RenderParam::IntegratorCameraCallback>,
                     _integratorCameraCallbacks)
 {
@@ -1393,14 +1396,13 @@ _ComputeRenderViewDesc(
     const riley::CameraId cameraId,
     const riley::IntegratorId integratorId,
     const riley::SampleFilterList &sampleFilterList,
-    const riley::DisplayFilterList &displayFilterList,
-    const GfVec2i &resolution)
+    const riley::DisplayFilterList &displayFilterList)
 {
     HdPrman_RenderViewDesc renderViewDesc;
 
     renderViewDesc.cameraId = cameraId;
     renderViewDesc.integratorId = integratorId;
-    renderViewDesc.resolution = resolution;
+    renderViewDesc.resolution = _fallbackResolution;
     renderViewDesc.sampleFilterList = sampleFilterList;
     renderViewDesc.displayFilterList = displayFilterList;
 
@@ -1504,7 +1506,7 @@ _ComputeRenderViewDesc(
         renderSettingsPrim.GetRenderProducts();
     renderViewDesc.resolution = !renderProducts.empty()
         ? renderSettingsPrim.GetRenderProducts().at(0).resolution
-        : GfVec2i(512, 512);
+        : _fallbackResolution;
 
     /* RenderProduct */
     int renderVarIndex = 0;
@@ -1567,8 +1569,7 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
             GetCameraContext().GetCameraId(),
             GetActiveIntegratorId(),
             GetSampleFilterList(),
-            GetDisplayFilterList(),
-            GfVec2i(512, 512));
+            GetDisplayFilterList());
 
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
