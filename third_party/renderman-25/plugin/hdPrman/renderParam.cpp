@@ -1593,7 +1593,7 @@ void
 HdPrman_RenderParam::_DestroyRiley()
 {
     if (_mgr) {
-        if(_riley) {
+        if (_riley) {
             // Riley/RIS crashes if SetOptions hasn't been called prior to
             // destroying the riley instance.
             if (!_initRileyOptions) {
@@ -2009,8 +2009,7 @@ _Compose(
 }
 
 void
-HdPrman_RenderParam::SetRenderSettingsPrimOptions(
-    RtParamList const &params)
+HdPrman_RenderParam::SetRenderSettingsPrimOptions(RtParamList const &params)
 {
     _renderSettingsPrimOptions = params;
 }
