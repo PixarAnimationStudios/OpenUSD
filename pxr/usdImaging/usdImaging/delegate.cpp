@@ -1194,7 +1194,7 @@ _HasConnectionChanged(const SdfPath &path, const PathRange &pathRange)
 {
     PathRange::const_iterator itr = pathRange.find(path);
     if (itr != pathRange.end()) {
-        for (const SdfChangeList::Entry *entry : itr.base()->second) {
+        for (const SdfChangeList::Entry *entry : itr.GetBase()->second) {
             if (entry->flags.didChangeAttributeConnection) {
                 return true;
             }

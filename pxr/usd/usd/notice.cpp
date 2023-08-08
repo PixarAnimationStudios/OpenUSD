@@ -68,7 +68,7 @@ TfTokenVector
 UsdNotice::ObjectsChanged::PathRange::const_iterator::GetChangedFields() const
 {
     TfTokenVector fields;
-    for (const SdfChangeList::Entry* entry : base()->second) {
+    for (const SdfChangeList::Entry* entry : _underlyingIterator->second) {
         fields.reserve(fields.size() + entry->infoChanged.size());
         std::transform(
             entry->infoChanged.begin(), entry->infoChanged.end(),
@@ -83,7 +83,7 @@ UsdNotice::ObjectsChanged::PathRange::const_iterator::GetChangedFields() const
 bool 
 UsdNotice::ObjectsChanged::PathRange::const_iterator::HasChangedFields() const
 {
-    for (const SdfChangeList::Entry* entry : base()->second) {
+    for (const SdfChangeList::Entry* entry : _underlyingIterator->second) {
         if (!entry->infoChanged.empty()) {
             return true;
         }

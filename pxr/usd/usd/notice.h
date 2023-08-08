@@ -149,15 +149,38 @@ public:
         {
         public:
             /// \class iterator
-            class iterator : public boost::iterator_adaptor<
-                iterator,                           // crtp base,
-                _PathsToChangesMap::const_iterator, // base iterator
-                const SdfPath&                      // value type
-            >
-            {
+            class iterator {
+                using _UnderlyingIterator = _PathsToChangesMap::const_iterator;
             public:
-                iterator() 
-                    : iterator_adaptor_(base_type()) {}
+                using iterator_category = std::forward_iterator_tag;
+                using value_type = const SdfPath&;
+                using reference = const SdfPath&;
+                using pointer = const SdfPath*;
+                using difference_type =
+                    typename _UnderlyingIterator::difference_type;
+
+                iterator() = default;
+                reference operator*() const { return dereference(); }
+                pointer operator->() const { return &(dereference()); }
+
+                iterator& operator++() {
+                    ++_underlyingIterator;
+                    return *this;
+                }
+
+                iterator operator++(int) {
+                    iterator result = *this;
+                    ++_underlyingIterator;
+                    return result;
+                }
+
+                bool operator==(const iterator& other) const{
+                    return _underlyingIterator == other._underlyingIterator;
+                }
+
+                bool operator!=(const iterator& other) const{
+                    return _underlyingIterator != other._underlyingIterator;
+                }
 
                 /// Return the set of changed fields in layers that affected 
                 /// the object at the path specified by this iterator.  See
@@ -171,15 +194,27 @@ public:
                 /// details.
                 USD_API bool HasChangedFields() const;
 
+                /// Returns the underlying iterator
+                _UnderlyingIterator GetBase() const {
+                    return _underlyingIterator;
+                }
+
+                /// \deprecated Use GetBase() instead.
+                _UnderlyingIterator base() const {
+                    return GetBase();
+                }
+
             private:
                 friend class PathRange;
-                friend class boost::iterator_core_access;
 
-                iterator(base_type baseIter) 
-                    : iterator_adaptor_(baseIter) {}
+                explicit iterator(_UnderlyingIterator baseIter)
+                    : _underlyingIterator(baseIter) {}
+
                 inline reference dereference() const { 
-                    return base()->first;
+                    return _underlyingIterator->first;
                 }
+
+                _UnderlyingIterator _underlyingIterator;
             };
 
             using const_iterator = iterator;
