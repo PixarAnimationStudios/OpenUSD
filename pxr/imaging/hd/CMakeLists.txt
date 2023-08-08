@@ -44,6 +44,7 @@ pxr_library(hd
         cubeSchema
         cylinderSchema
         dataSource
+        dataSourceHash
         dataSourceLegacyPrim
         dataSourceLocator
         dataSourceMaterialNetworkInterface

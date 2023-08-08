@@ -46,7 +46,7 @@ TF_DECLARE_REF_PTRS(UsdImaging_NiPrototypeSceneIndex);
 /// to be instanced by the instancer /UsdNiInstancer created
 /// by the UsdImaging_InstanceAggregationSceneIndex.
 /// Note that /UsdNiInstancer/UsdPrototype corresponds to a USD prototype.
-/// That is, te isolating scene index in the prototype propagating scene index
+/// That is, the isolating scene index in the prototype propagating scene index
 /// is taking a USD prototype at, e.g., /__Prototype_1 and moves it underneath
 /// /UsdNiInstancer/UsdPrototype.
 ///
@@ -65,14 +65,28 @@ class UsdImaging_NiPrototypeSceneIndex
             : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    // forPrototype = false indicates that this scene index is instantiated
-    // for the USD stage with all USD prototypes filtered out.
-    // forPrototype = true indicates that it is instantiated for a USD
+    // forNativePrototype = false indicates that this scene index is
+    // instantiated for the USD stage with all USD prototypes filtered out.
+    // forNativePrototype = true indicates that it is instantiated for a USD
     // prototype and it needs to populate the instancedBy data source.
+    //
+    // The given data source is overlayed over the prototype root prim's
+    // data source.
+    //
+    // If instances with a particular opinion about, say, purpose, are
+    // aggregated together, this opinion needs to be applied to the respective
+    // prototype. This can be done by passing it as prototypeRootOverlayDs
+    // here. A later flattening scene index can then apply the opinion to the
+    // descendants of the prototype root that do not have a stronger opinion.
+    //
+    // Note that the flattening scene index is not flattening
+    // model:applyDrawMode - but it still has an effect on the prototype root.
+    //
     static
     UsdImaging_NiPrototypeSceneIndexRefPtr
     New(HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        bool forPrototype);
+        bool forNativePrototype,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDs);
 
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
@@ -107,9 +121,11 @@ protected:
 private:
     UsdImaging_NiPrototypeSceneIndex(
         HdSceneIndexBaseRefPtr const &inputSceneIndex,
-        bool forPrototype);
+        bool forNativePrototype,
+        HdContainerDataSourceHandle const &prototypeRootOverlayDso);
 
-    const bool _forPrototype;
+    const bool _forNativePrototype;
+    HdContainerDataSourceHandle const _prototypeRootOverlaySource;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

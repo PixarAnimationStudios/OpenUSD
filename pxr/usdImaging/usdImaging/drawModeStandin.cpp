@@ -2067,8 +2067,8 @@ private:
 
 UsdImaging_DrawModeStandinSharedPtr
 UsdImaging_GetDrawModeStandin(const TfToken &drawMode,
-                                const SdfPath &path,
-                                const HdContainerDataSourceHandle &primSource)
+                              const SdfPath &path,
+                              const HdContainerDataSourceHandle &primSource)
 {
     if (drawMode.IsEmpty()) {
         return nullptr;
