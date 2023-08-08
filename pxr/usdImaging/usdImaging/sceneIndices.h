@@ -40,7 +40,7 @@ TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 
 /// Info needed to create a chain of filtering scene indices (resolving
 /// e.g. USD native instancing) for clients to consume a UsdStage.
-struct UsdImagingSceneIndicesCreateInfo
+struct UsdImagingCreateSceneIndicesInfo
 {
     using SceneIndexAppendCallback =
         std::function<
@@ -75,8 +75,8 @@ struct UsdImagingSceneIndices
 /// a UsdStage.
 USDIMAGING_API
 UsdImagingSceneIndices
-UsdImagingInstantiateSceneIndices(
-    const UsdImagingSceneIndicesCreateInfo &createInfo);
+UsdImagingCreateSceneIndices(
+    const UsdImagingCreateSceneIndicesInfo &createInfo);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

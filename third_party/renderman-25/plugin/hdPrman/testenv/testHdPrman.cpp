@@ -888,10 +888,10 @@ HydraSetupAndRender(
     std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
 
     if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
-        UsdImagingSceneIndicesCreateInfo createInfo;
+        UsdImagingCreateSceneIndicesInfo createInfo;
         createInfo.stage = stage;
         UsdImagingSceneIndices sceneIndices =
-            UsdImagingInstantiateSceneIndices(createInfo);
+            UsdImagingCreateSceneIndices(createInfo);
         sceneIndices.stageSceneIndex->SetTime(frameNum);
         hdRenderIndex->InsertSceneIndex(
             sceneIndices.finalSceneIndex, SdfPath::AbsoluteRootPath());

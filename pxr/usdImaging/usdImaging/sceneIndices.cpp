@@ -73,8 +73,8 @@ _ExtentResolvingSceneIndexInputArgs()
 }
 
 UsdImagingSceneIndices
-UsdImagingInstantiateSceneIndices(
-    const UsdImagingSceneIndicesCreateInfo &createInfo)
+UsdImagingCreateSceneIndices(
+    const UsdImagingCreateSceneIndicesInfo &createInfo)
 {
     UsdImagingSceneIndices result;
 

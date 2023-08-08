@@ -1171,7 +1171,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
             _renderDelegate.Get(), {&_hgiDriver}, renderInstanceId));
 
     if (_GetUseSceneIndices()) {
-        UsdImagingSceneIndicesCreateInfo info;
+        UsdImagingCreateSceneIndicesInfo info;
         info.displayUnloadedPrimsWithBounds = _displayUnloadedPrimsWithBounds;
         info.overridesSceneIndexCallback =
             std::bind(
@@ -1179,7 +1179,7 @@ UsdImagingGLEngine::_SetRenderDelegate(
                 this, std::placeholders::_1);
 
         const UsdImagingSceneIndices sceneIndices =
-            UsdImagingInstantiateSceneIndices(info);
+            UsdImagingCreateSceneIndices(info);
         
         _stageSceneIndex = sceneIndices.stageSceneIndex;
         _selectionSceneIndex = sceneIndices.selectionSceneIndex;
