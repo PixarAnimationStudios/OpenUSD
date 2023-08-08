@@ -132,7 +132,13 @@ using AvailableFunctions = std::tuple<
     Impl::GreaterEqualNode,
     Impl::LogicalAndNode,
     Impl::LogicalOrNode,
-    Impl::LogicalNotNode
+    Impl::LogicalNotNode,
+
+    Impl::ContainsNode,
+    Impl::AtNode,
+    Impl::LenNode,
+
+    Impl::DefinedNode
 >;
 
 class FunctionNodeCreator

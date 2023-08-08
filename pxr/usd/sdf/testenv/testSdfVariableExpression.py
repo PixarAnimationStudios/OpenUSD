@@ -549,6 +549,150 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertEvaluationErrors(
             "`not(None)`", {}, ["not: Invalid type None for argument"])
 
+    def test_Contains(self):
+        """Test contains function."""
+        # Test searching in lists.
+        self.assertEvaluates(
+            "`contains([], 1)`", {}, False)
+        self.assertEvaluates(
+            "`contains(${L}, 1)`", {'L' : Vt.IntArray([])}, False)
+        self.assertEvaluates(
+            "`contains(${L}, 1)`", {'L' : "`[]`"}, False)
+        
+        self.assertEvaluates("`contains([1, 2, 3], 1)`", {}, True)
+        self.assertEvaluates("`contains([1, 2, 3], 0)`", {}, False)
+
+        self.assertEvaluates(
+            "`contains(${L}, 1)`", {'L' : Vt.IntArray([1, 2, 3])}, True)
+        self.assertEvaluates(
+            "`contains(${L}, 0)`", {'L' : Vt.IntArray([1, 2, 3])}, False)
+
+        self.assertEvaluates("`contains([1, 2, 3], ${A})`", {'A' : 2}, True)
+        self.assertEvaluates("`contains([1, 2, 3], ${A})`", {'A' : 4}, False)
+
+        self.assertEvaluates(
+            "`contains([${A}, ${B}], 'a')`", {'A':'a', 'B':'b'}, True)
+        self.assertEvaluates(
+            "`contains([${A}, ${B}], 'c')`", {'A':'a', 'B':'b'}, False)
+
+        self.assertEvaluationErrors(
+            "`contains([1, 2, 3], 'a')`", {},
+            ["contains: Invalid search value"])
+        self.assertEvaluationErrors(
+            "`contains([1, 2, 3], None)`", {},
+            ["contains: Invalid search value"])
+
+        # Test searching in strings.
+        self.assertEvaluates("`contains('', 'a')`", {}, False)
+
+        self.assertEvaluates("`contains('abc', 'a')`", {}, True)
+        self.assertEvaluates("`contains('abc', 'z')`", {}, False)
+
+        self.assertEvaluates("`contains('abc', ${A})`", {'A':'a'}, True)
+        self.assertEvaluates("`contains('abc', ${Z})`", {'Z':'z'}, False)
+
+        self.assertEvaluates(
+            "`contains('${A}${B}', 'a')`", {'A':'a', 'B':'b'}, True)
+        self.assertEvaluates(
+            "`contains('${A}${B}', 'z')`", {'A':'a', 'B':'b'}, False)
+
+        self.assertEvaluationErrors(
+            "`contains('abcd', 1)`", {},
+            ["contains: Invalid search value"])
+        self.assertEvaluationErrors(
+            "`contains('abcd', None)`", {},
+            ["contains: Invalid search value"])
+
+        # Other errors
+        self.assertInvalid("`contains('abcd')`")
+        self.assertEvaluationErrors(
+            "`contains(1, 1)`", {},
+            ["contains: Value to search must be a list or string"])
+        self.assertEvaluationErrors(
+            "`contains(None, 1)`", {},
+            ["contains: Value to search must be a list or string"])
+
+    def test_At(self):
+        """Test at function."""
+        # Test getting value from list
+        self.assertEvaluates("`at([1, 2, 3], 0)`", {}, 1)
+        self.assertEvaluates("`at([1, 2, 3], 1)`", {}, 2)
+        self.assertEvaluates("`at([1, 2, 3], 2)`", {}, 3)
+        self.assertEvaluates("`at([1, 2, 3], -1)`", {}, 3)
+        self.assertEvaluates("`at([1, 2, 3], -2)`", {}, 2)
+        self.assertEvaluates("`at([1, 2, 3], -3)`", {}, 1)
+
+        self.assertEvaluationErrors(
+            "`at([1, 2, 3], 3)`", {}, ['at: Index out of range'])
+        self.assertEvaluationErrors(
+            "`at([1, 2, 3], -4)`", {}, ['at: Index out of range'])
+
+        self.assertEvaluationErrors(
+            "`at([], 0)`", {}, ['at: Index out of range'])
+
+        self.assertEvaluationErrors(
+            "`at([1, 2, 3], 'foo')`", {}, ['at: Index must be an integer'])
+        self.assertEvaluationErrors(
+            "`at([1, 2, 3], True)`", {}, ['at: Index must be an integer'])
+        self.assertEvaluationErrors(
+            "`at([1, 2, 3], None)`", {}, ['at: Index must be an integer'])
+
+        # Tests getting value from string
+        self.assertEvaluates("`at('abc', 0)`", {}, 'a')
+        self.assertEvaluates("`at('abc', 1)`", {}, 'b')
+        self.assertEvaluates("`at('abc', 2)`", {}, 'c')
+        self.assertEvaluates("`at('abc', -1)`", {}, 'c')
+        self.assertEvaluates("`at('abc', -2)`", {}, 'b')
+        self.assertEvaluates("`at('abc', -3)`", {}, 'a')
+
+        self.assertEvaluationErrors(
+            "`at('abc', 3)`", {}, ['at: Index out of range'])
+        self.assertEvaluationErrors(
+            "`at('abc', -4)`", {}, ['at: Index out of range'])
+
+        self.assertEvaluationErrors(
+            "`at('', 0)`", {}, ['at: Index out of range'])
+
+        self.assertEvaluationErrors(
+            "`at('abc', 'foo')`", {}, ['at: Index must be an integer'])
+        self.assertEvaluationErrors(
+            "`at('abc', True)`", {}, ['at: Index must be an integer'])
+        self.assertEvaluationErrors(
+            "`at('abc', None)`", {}, ['at: Index must be an integer'])
+
+    def test_Len(self):
+        """Tests len function."""
+        self.assertInvalid("`len()`")
+    
+        self.assertEvaluates("`len([])`", {}, 0)
+        self.assertEvaluates("`len([1, 2, 3])`", {}, 3)
+
+        self.assertEvaluates("`len('')`", {}, 0)
+        self.assertEvaluates("`len('abc')`", {}, 3)
+
+        self.assertEvaluationErrors(
+            "`len(1)`", {}, ['len: Unsupported type'])
+        self.assertEvaluationErrors(
+            "`len(False)`", {}, ['len: Unsupported type'])
+        self.assertEvaluationErrors(
+            "`len(None)`", {}, ['len: Unsupported type'])
+
+    def test_Defined(self):
+        """Tests defined function."""
+        self.assertInvalid("`defined()`")
+
+        self.assertEvaluates("`defined('X')`", {}, False)
+        self.assertEvaluates("`defined('X')`", {'X':0}, True)
+        self.assertEvaluates("`defined('X','Y')`", {'X':0}, False)
+        self.assertEvaluates("`defined('X','Y')`", {'X':0, 'Y':1}, True)
+
+        self.assertEvaluationErrors(
+            "`defined(1)`", {},
+            ["defined: Invalid type int for argument 0"])
+        self.assertEvaluationErrors(
+            "`defined(None)`", {},
+            ["defined: Invalid type None for argument 0"])
+
     def test_NestedExpressions(self):
         """Test evaluating expressions with variable substitutions
         when the variables are expressions themselves."""
