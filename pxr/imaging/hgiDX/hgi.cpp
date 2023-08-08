@@ -340,10 +340,16 @@ HgiDX::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
    // However, since we currently call garbage collection here and because
    // we only have one resource command buffer, we cannot support submitting
    // cmds from secondary threads until those issues are resolved.
+
+   /* On the one hand I am not convinced this is an issue with DirectX
+   * On the other hand this does happen and because of this check 
+   * commands are not submitted and resources are then, deleted while still in use
+   * I'll give this a try and see if it is really an issue submitting commands from 
+   * different threads.
    if (ARCH_UNLIKELY(_threadId != std::this_thread::get_id())) {
       TF_CODING_ERROR("Secondary threads should not submit cmds");
       return false;
-   }
+   }*/
 
    // Submit Cmds work
    bool result = false;

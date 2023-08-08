@@ -51,4 +51,4 @@
 
 //
 // activating this will result in lots of information being output about buffers allocation, update, freing and binding
-#define DEBUG_BUFFERS 0
+//#define DEBUG_BUFFERS 1

@@ -84,6 +84,13 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
                                                       featureData.HighestVersion,
                                                       &rootSignatureBlob,
                                                       &errorBlob);
+   if (FAILED(hr) || nullptr != errorBlob)
+   {
+      char err[20000]; // In some rare cases we can get very large errors text...
+      void* pBuffPtr = errorBlob->GetBufferPointer();
+      snprintf(err, 20000, "Error %08X   %s\n", hr, (char*)pBuffPtr);
+      OutputDebugString(err);
+   }
    CheckResult(hr, "Failed to serialize root signature");
 
    // Create the root signature.
@@ -129,20 +136,6 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
    //
    // TODO: I'll want to setup some of these settings below, properly
    // but for now the focus is elsewhere
-   /*
-   D3D12_RASTERIZER_DESC rasterizerDesc;
-   ZeroMemory(&rasterizerDesc, sizeof(rasterizerDesc));
-   rasterizerDesc.FillMode = D3D12_FILL_MODE_SOLID;
-   rasterizerDesc.CullMode = D3D12_CULL_MODE_NONE;// D3D12_CULL_MODE_BACK;
-   rasterizerDesc.FrontCounterClockwise = FALSE;
-   rasterizerDesc.DepthBias = D3D12_DEFAULT_DEPTH_BIAS;
-   rasterizerDesc.DepthBiasClamp = D3D12_DEFAULT_DEPTH_BIAS_CLAMP;
-   rasterizerDesc.SlopeScaledDepthBias = D3D12_DEFAULT_SLOPE_SCALED_DEPTH_BIAS;
-   rasterizerDesc.DepthClipEnable = FALSE;
-   rasterizerDesc.MultisampleEnable = FALSE;
-   rasterizerDesc.AntialiasedLineEnable = FALSE;
-   rasterizerDesc.ForcedSampleCount = 0;
-   rasterizerDesc.ConservativeRaster = D3D12_CONSERVATIVE_RASTERIZATION_MODE_OFF;*/
 
    /*
    D3D12_RENDER_TARGET_BLEND_DESC blendRenderTargetDesc;
@@ -186,9 +179,16 @@ HgiDXGraphicsPipeline::HgiDXGraphicsPipeline(HgiDXDevice* device, HgiGraphicsPip
    //depthStencilDesc.StencilWriteMask = ;
 
 
-   //pipelineDesc.RasterizerState = rasterizerDesc;
    pipelineDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+   pipelineDesc.RasterizerState.MultisampleEnable = desc.multiSampleState.multiSampleEnable;
+   pipelineDesc.RasterizerState.AntialiasedLineEnable = TRUE;
    pipelineDesc.RasterizerState.FrontCounterClockwise = (desc.rasterizationState.winding == HgiWindingCounterClockwise);
+   
+   //
+   // Dx does not have a cull front and back, and I am not sure what that even means...
+   pipelineDesc.RasterizerState.CullMode = (D3D12_CULL_MODE)(desc.rasterizationState.cullMode % 3 + 1);
+
+
    //pipelineDesc.BlendState = blendDesc;  
    pipelineDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
    pipelineDesc.SampleMask = UINT_MAX;

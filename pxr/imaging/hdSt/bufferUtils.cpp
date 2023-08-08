@@ -49,7 +49,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 template <typename T>
 VtValue

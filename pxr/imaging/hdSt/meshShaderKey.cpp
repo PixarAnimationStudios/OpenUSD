@@ -162,7 +162,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((noScalarOverrideFS,          "Fragment.NoScalarOverride"))
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     HdSt_GeometricShader::PrimitiveType primitiveType,
@@ -194,9 +195,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , lineWidth(lineWidth)
     , fvarPatchType(fvarPatchType)
 {
-    glslfx = (1 == dxHgiEnabled) ?
-      _tokens->baseHLSLFX:
-      _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
 
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {

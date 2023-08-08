@@ -57,13 +57,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((instancing,               "Instancing.Transform"))
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 HdSt_PointsShaderKey::HdSt_PointsShaderKey()
 {
-    glslfx = (1 == dxHgiEnabled) ?
-      _tokens->baseHLSLFX :
-      _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
     VS[0] = _tokens->instancing;
     VS[1] = _tokens->mainVS;
     VS[2] = _tokens->pointIdVS;

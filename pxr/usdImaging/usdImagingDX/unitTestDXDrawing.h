@@ -57,6 +57,7 @@ public:
     bool IsEnabledTestLighting() const { return _testLighting; }
     bool IsEnabledSceneLights() const { return _sceneLights; }
     bool IsEnabledCameraLight() const { return _cameraLight; }
+    bool IsEnabledSunLight() const { return _sunLight; }
     bool IsEnabledIdRender() const { return _testIdRender; }
     bool IsEnabledSceneMaterials() const { return _enableSceneMaterials; }
     bool IsEnabledUnloadedAsBounds() const { return _unloadedAsBounds; }
@@ -143,6 +144,7 @@ private:
     bool _testLighting;
     bool _sceneLights;
     bool _cameraLight;
+    bool _sunLight;
     std::string _cameraPath;
     bool _testIdRender;
     bool _enableSceneMaterials;

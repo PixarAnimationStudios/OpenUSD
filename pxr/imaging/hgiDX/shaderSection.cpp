@@ -136,15 +136,16 @@ HgiDXMacroShaderSection::VisitGlobalMacros(std::ostream &ss)
 /// </summary>
 HgiDXBufferShaderSection::HgiDXBufferShaderSection(const std::string& identifier,
                                                    const std::string& type,
-                                                   const std::string& arraySize,
                                                    const uint32_t registerIndex,
                                                    const uint32_t spaceIndex,
-                                                   bool bWritable)
-   : HgiDXShaderSection(identifier, {}, std::string(), arraySize)
+                                                   bool bWritable,
+                                                   bool bConst)
+   : HgiDXShaderSection(identifier)
    , _type(type)
    , _registerIdx(registerIndex)
    , _spaceIdx(spaceIndex)
    , _bWritable(bWritable)
+   , _bConst(bConst)
 {
 }
 
@@ -153,39 +154,22 @@ HgiDXBufferShaderSection::~HgiDXBufferShaderSection() = default;
 bool
 HgiDXBufferShaderSection::VisitGlobalMemberDeclarations(std::ostream& ss)
 {
-   bool bDynamicArray = false;
-   std::string strArraySize = GetArraySize();
-   if (!strArraySize.empty())
-   {
-      if(strArraySize == " ")
-         bDynamicArray = true;
-   }
-
    if (_bWritable)
       ss << "RWStructuredBuffer<" << _type << "> "; // UAV
+   else if(_bConst)
+      ss << "ConstantBuffer<" << _type << "> "; // CBV
    else
-   {
-      if (bDynamicArray)
-         ss << "StructuredBuffer<" << _type << "> "; // SRV
-      else
-         ss << "ConstantBuffer<" << _type << "> "; // CBV
-   }
-
+      ss << "StructuredBuffer<" << _type << "> "; // SRV
+   
    WriteIdentifier(ss);
 
-   if ((!strArraySize.empty()) && (strArraySize != " "))
-      ss << "[" << strArraySize.c_str() << "]";
-   
    ss << ": register( ";
    if (_bWritable)
       ss << "u"; // UAV
+   else if (_bConst)
+      ss << "b"; // CBV   
    else
-   {
-      if(bDynamicArray)
-         ss << "t"; // SRV
-      else
-         ss << "b"; // CBV   
-   }
+      ss << "t"; // SRV
    
    ss << _registerIdx << ", space" << _spaceIdx << "); " << std::endl;
 

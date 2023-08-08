@@ -443,7 +443,7 @@ static void Die(const char* fmt, ...)
 {
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    vfprintf_s(stderr, fmt, ap);
     va_end(ap);
     fflush(stderr);
     exit(1);
@@ -457,7 +457,7 @@ ParseError(const char* pname, const char* fmt, ...)
     fprintf(stderr, "%s: ", TfGetBaseName(pname).c_str());
     va_list ap;
     va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
+    vfprintf_s(stderr, fmt, ap);
     va_end(ap);
     fprintf(stderr, ".  Try '%s -' for help.\n", TfGetBaseName(pname).c_str());
     fflush(stderr);
@@ -494,6 +494,7 @@ static void Usage(int argc, char *argv[])
 "  -lighting           use simple lighting override shader\n"
 "  -sceneLights        use in combination with -lighting to utilize the lights \n"
 "                      defined in the scene\n"
+"  -sunLight           use in combination with -lighting to add an additional sun light"
 "  -camLight           use a single camera light\n"
 "  -idRender           ID rendering\n"
 "  -disableSceneMaterials\n"
@@ -678,8 +679,11 @@ UsdImagingDX_UnitTestDXDrawing::_Parse(int argc, char *argv[], _Args* args)
         else if (strcmp(argv[i], "-sceneLights") == 0) {
             _sceneLights = true;
         }
-        else if (strcmp(argv[i], "-camlight") == 0) {
+        else if (strcmp(argv[i], "-camLight") == 0) {
             _cameraLight = true;
+        }
+        else if (strcmp(argv[i], "-sunLight") == 0) {
+           _sunLight = true;
         }
         else if (strcmp(argv[i], "-camera") == 0) {
             CheckForMissingArguments(i, 1, argc, argv);

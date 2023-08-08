@@ -274,13 +274,15 @@ HgiDXTexture::ReadbackData(GfVec3i sourceTexelOffset,
       size_t dstPos = destinationByteOffset;
       size_t dstRowSize = dxDesc.Width * HgiGetDataSizeOfFormat(GetDescriptor().format);
       size_t srcRowSize = _copyDestLocation.PlacedFootprint.Footprint.RowPitch;
+      size_t dstSize = destinationBufferByteSize;
       for (uint32_t idx = 0; idx < dxDesc.Height; idx++)
       {
          dstPos += dstRowSize;
+         dstSize -= dstPos;
 
          if (dstPos <= destinationBufferByteSize)
          {
-            memcpy(dptr, sptr, dstRowSize);
+            memcpy_s(dptr, dstSize, sptr, dstRowSize);
             dptr += dstRowSize;
             sptr += srcRowSize;
          }

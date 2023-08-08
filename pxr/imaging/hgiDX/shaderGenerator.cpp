@@ -77,7 +77,7 @@ namespace {
       { "gl_InstanceID", {"uint", "SV_InstanceID", DXGI_FORMAT_R32_UINT}},
       { "hd_VertexID", {"uint", "SV_VertexID", DXGI_FORMAT_R32_UINT}},
       { "hd_InstanceID", {"uint", "SV_InstanceID", DXGI_FORMAT_R32_UINT}},
-      { "gl_BaryCoordNoPerspNV", {"noperspective float3", "SV_Barycentrics1", DXGI_FORMAT_R32G32B32_FLOAT}},
+      { "gl_BaryCoordNoPerspNV", {"noperspective float3", "SV_Barycentrics", DXGI_FORMAT_R32G32B32_FLOAT}},
       { "hd_GlobalInvocationID", {"uint3", "SV_DispatchThreadID", DXGI_FORMAT_R32G32B32_UINT}},
       // next one is used for Tesselation Control / Hull Shader
       { "gl_InvocationID", {"uint", "SV_ControlPointID", DXGI_FORMAT_R32_UINT}},
@@ -295,22 +295,26 @@ HgiDXShaderGenerator::_WriteBuffers(const HgiShaderFunctionBufferDescVector& buf
 
       const HgiShaderFunctionBufferDesc& bufferDescription = buffers[i];
 
-      std::string arraySize;
+      bool bConst = true;
       if ((bufferDescription.binding == HgiBindingType::HgiBindingTypeArray) ||
           (bufferDescription.binding == HgiBindingType::HgiBindingTypeUniformArray) ||
           (bufferDescription.binding == HgiBindingType::HgiBindingTypePointer)) {
-         if (bufferDescription.arraySize > 0)
-            arraySize = std::to_string(bufferDescription.arraySize);
-         else
-            arraySize = " "; // shitty trick to make sure we write the brackets
+          bConst = false;
       }
 
       DXShaderInfo::RootParamInfo rpi;
       rpi.strName = bufferDescription.nameInShader;
       rpi.strTypeName = bufferDescription.type;
-      rpi.bConst = arraySize != " "; // fixed size things can be const
+      rpi.nArrSize = bufferDescription.arraySize;
+      rpi.bConst = bConst;
       rpi.bWritable = bufferDescription.writable;
-      rpi.nShaderRegister = _bufRegisterIdx++;
+      rpi.nShaderRegister = _bufRegisterIdx;
+
+      //if(bufferDescription.arraySize > 1)
+      //   _bufRegisterIdx+=bufferDescription.arraySize;
+      //else 
+         _bufRegisterIdx++; // 0 or 1 is 1
+
       rpi.nRegisterSpace = 0;
       rpi.nSuggestedBindingIdx = bufferDescription.bindIndex;
       rpi.nBindingIdx = -1;
@@ -320,10 +324,10 @@ HgiDXShaderGenerator::_WriteBuffers(const HgiShaderFunctionBufferDescVector& buf
       GetShaderSections()->push_back(
          std::make_unique<HgiDXBufferShaderSection>(bufferDescription.nameInShader,
                                                     bufferDescription.type,
-                                                    arraySize,
                                                     rpi.nShaderRegister,
                                                     rpi.nRegisterSpace,
-                                                    bufferDescription.writable));
+                                                    bufferDescription.writable,
+                                                    bConst));
    }
 }
 
@@ -349,7 +353,7 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
       if (!param.arraySize.empty())
       {
          if (param.arraySize == " ")
-            TF_WARN("Variable size array here wil probably not work. ");
+            TF_WARN("Variable size array here will probably not work. ");
 
          strName += "[";
          strName += param.arraySize;
@@ -365,6 +369,7 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
    DXShaderInfo::RootParamInfo rpi;
    rpi.strName = strConstParamsInstName;
    rpi.strTypeName = strConstParamsStructName;
+   rpi.nArrSize = 1;
    rpi.bConst = true;
    rpi.nShaderRegister = _bufRegisterIdx++;
    rpi.nRegisterSpace = 0;
@@ -381,10 +386,10 @@ HgiDXShaderGenerator::_WriteConstantParams(const HgiShaderFunctionParamDescVecto
    GetShaderSections()->push_back(
       std::make_unique<HgiDXBufferShaderSection>(strConstParamsInstName,
                                                  strConstParamsStructName,
-                                                 "",
                                                  rpi.nShaderRegister,
                                                  rpi.nRegisterSpace,
-                                                 false));
+                                                 false,
+                                                 true));
 }
 
 void
@@ -1154,7 +1159,7 @@ HgiDXShaderGenerator::_WriteScopeEnd_StartMainFc(std::ostream& ss)
    {
       int nInValues = _GetGeomShaderNumInValues();
       std::string strOutMaxVerts = GetDescriptor().geometryDescriptor.outMaxVertices;
-      int nMaxPrimsOut = std::atoi(strOutMaxVerts.c_str());
+      int nMaxPrimsOut = std::stoi(strOutMaxVerts);
       std::string strInType = _GetGeomShaderInVarType();
       
       ss << "\n[maxvertexcount(" << nMaxPrimsOut << ")]\n";
@@ -1302,32 +1307,35 @@ HgiDXShaderGenerator::_GetMacroBlob()
       "#define mat4 float4x4\n"
       "\n"
 
-      /*
       // Hgi stuff that makes no sense and is hopefully useless
       //"#define hgi_ivec3 int3\n"
       //"#define hgi_vec3 float3\n"
       //"#define hgi_dvec3 double3\n"
       //"#define hgi_mat3 float3x3\n"
       //"#define hgi_dmat3 double3x3\n"
-      "struct hgi_ivec3 { hgi_ivec3(int a, int b, int c):x(a),y(b),z(c);   int x, y, z; };\n"
-      "struct hgi_vec3  { float  x, y, z; };\n"
-      "struct hgi_dvec3 { double x, y, z; };\n"
-      "struct hgi_mat3  { float  m00, m01, m02,\n"
-      "                          m10, m11, m12,\n"
-      "                          m20, m21, m22; };\n"
-      "struct hgi_dmat3 { double m00, m01, m02,\n"
-      "                          m10, m11, m12,\n"
-      "                          m20, m21, m22; };\n";
-      "\n"
-      //"// HD to HLSL.\n"
-      //"#define hd_ivec3 int3\n"
-      //"#define hd_vec3 float3\n"
-      //"#define hd_dvec3 double3\n"
-      //"#define hd_mat3 float3x3\n"
-      //"#define hd_dmat3 double3x3\n"
+      //"struct hgi_ivec3 { hgi_ivec3(int a, int b, int c):x(a),y(b),z(c);   int x, y, z; };\n"
+      //"struct hgi_vec3  { float  x, y, z; };\n"
+      //"struct hgi_dvec3 { double x, y, z; };\n"
+      //"struct hgi_mat3  { float  m00, m01, m02,\n"
+      //"                          m10, m11, m12,\n"
+      //"                          m20, m21, m22; };\n"
+      //"struct hgi_dmat3 { double m00, m01, m02,\n"
+      //"                          m10, m11, m12,\n"
+      //"                          m20, m21, m22; };\n";
       //"\n"
-      
+
+      //
+      // There are some rare cases when they still use these hd_ types.
+      // Found such a situation when using a point instancer
+      "// HD to HLSL.\n"
+      "#define hd_ivec3 int3\n"
+      "#define hd_vec3 float3\n"
+      "#define hd_dvec3 double3\n"
+      "#define hd_mat3 float3x3\n"
+      "#define hd_dmat3 double3x3\n"
       "\n"
+      
+      //"\n"
       // the ones below look like completely useless definitions
       //"ivec3 hd_ivec3_get(ivec3 v)    { return v; }\n"
       //"vec3  hd_vec3_get(vec3 v)      { return v; }\n"
@@ -1339,7 +1347,7 @@ HgiDXShaderGenerator::_GetMacroBlob()
       //"hd_dvec3 hd_dvec3_set(hd_dvec3 v) { return v; }\n"
       //"hd_mat3  hd_mat3_set(hd_mat3 v)   { return v; }\n"
       //"hd_dmat3 hd_dmat3_set(hd_dmat3 v) { return v; }\n"
-      */
+      
       "#pragma pack_matrix( column_major )\n"
       "#define hd_ivec3_get\n"
       "#define hd_vec3_get\n"

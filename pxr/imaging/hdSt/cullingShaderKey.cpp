@@ -48,14 +48,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainCS,           "ViewFrustumCull.Compute"))
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 HdSt_CullingShaderKey::HdSt_CullingShaderKey(
     bool instancing, bool tinyCull, bool counting)
 {
-    glslfx = (1 == dxHgiEnabled) ? 
-       _tokens->baseHLSLFX:
-       _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
 
     VS[0] = _tokens->instancing;
     VS[1] = counting ? _tokens->counting : _tokens->noCounting;
@@ -72,9 +71,7 @@ HdSt_CullingShaderKey::~HdSt_CullingShaderKey()
 HdSt_CullingComputeShaderKey::HdSt_CullingComputeShaderKey(
     bool instancing, bool tinyCull, bool counting)
 {
-   glslfx = (1 == dxHgiEnabled) ?
-      _tokens->baseHLSLFX :
-      _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
 
     CS[0] = _tokens->instancing;
     CS[1] = counting ? _tokens->counting : _tokens->noCounting;

@@ -50,6 +50,7 @@ public:
    {
       std::string strTypeName;
       std::string strName;
+      UINT nArrSize;
       bool bConst;
       bool bWritable;
       UINT nShaderRegister;

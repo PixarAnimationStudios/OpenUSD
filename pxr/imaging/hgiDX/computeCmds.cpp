@@ -235,8 +235,19 @@ bool
 HgiDXComputeCmds::_Submit(Hgi* hgi, HgiSubmitWaitType wait)
 {
    if (_ops.empty()) {
+      //
+      // it seems it can happen to have no ops in the list but to have some 
+      // buffers setup and accessed (probably on graphics list)
+      // and we should close such lists before we get later to deleting the buffers
+      _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
+      _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kCompute);
+      
       return false;
    }
+
+   //
+   // closing a list is a noop if the list is already closed, it's safer to do this here anyway
+   _hgi->GetPrimaryDevice()->SubmitCommandList(HgiDXDevice::eCommandType::kGraphics);
 
    for (HgiDXGfxFunction const& f : _ops) {
       f();

@@ -31,7 +31,7 @@
 
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getEnv.h"
+#include "pxr/base/tf/getenv.h"
 
 //#ifdef _DEBUG
 #include <dxgidebug.h>

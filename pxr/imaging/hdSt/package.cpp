@@ -32,7 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 static TfToken
 _GetShaderPath(char const * shader)
@@ -62,9 +63,7 @@ HdStPackageComputeShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
-      _GetShaderPath("compute.hlslfx"):
-      _GetShaderPath("compute.glslfx");
+    static TfToken s = dxHgiEnabled ? _GetShaderPath("compute.hlslfx") : _GetShaderPath("compute.glslfx");
     return s;
 }
 
@@ -74,9 +73,7 @@ HdStPackageDomeLightShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
-       _GetShaderPath("domeLight.hlslfx") :
-       _GetShaderPath("domeLight.glslfx");
+    static TfToken s = dxHgiEnabled ? _GetShaderPath("domeLight.hlslfx") : _GetShaderPath("domeLight.glslfx");
     return s;
 }
 
@@ -86,7 +83,7 @@ HdStPackageFallbackDomeLightTexture()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ? 
        _GetShaderPath("fallbackBlackDomeLight.hlslfx") :
        _GetShaderPath("fallbackBlackDomeLight.glslfx");
     return s;
@@ -98,7 +95,7 @@ HdStPackagePtexTextureShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("ptexTexture.hlslfx") :
        _GetShaderPath("ptexTexture.glslfx");
     return s;
@@ -110,7 +107,7 @@ HdStPackageRenderPassShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ? 
+    static TfToken s = dxHgiEnabled ? 
       _GetShaderPath("renderPassShader.hlslfx") : 
       _GetShaderPath("renderPassShader.glslfx");
     return s;
@@ -119,7 +116,7 @@ HdStPackageRenderPassShader()
 TfToken
 HdStPackageFallbackLightingShader()
 {
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("fallbackLightingShader.hlslfx") :
        _GetShaderPath("fallbackLightingShader.glslfx");
     return s;
@@ -131,7 +128,7 @@ HdStPackageFallbackMaterialNetworkShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("fallbackMaterialNetwork.hlslfx") :
        _GetShaderPath("fallbackMaterialNetwork.glslfx");
     return s;
@@ -150,7 +147,7 @@ HdStPackageFallbackVolumeShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("fallbackVolume.hlslfx") :
        _GetShaderPath("fallbackVolume.glslfx");
     return s;
@@ -162,7 +159,7 @@ HdStPackageImageShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("imageShader.hlslfx") :
        _GetShaderPath("imageShader.glslfx");
     return s;
@@ -174,7 +171,7 @@ HdStPackageSimpleLightingShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ? 
+    static TfToken s = dxHgiEnabled ? 
       _GetShaderPath("simpleLightingShader.hlslfx") : 
       _GetShaderPath("simpleLightingShader.glslfx");
     return s;
@@ -186,7 +183,7 @@ HdStPackageWidgetShader()
     //
     // TODO: this is a temporary solution to switch between (slightly different) libraries 
     // when Gl or DX Hgis are used. Will have to review this and find a cleaner solution.
-    static TfToken s = (1 == dxHgiEnabled) ?
+    static TfToken s = dxHgiEnabled ?
        _GetShaderPath("widgetShader.hlslfx") :
        _GetShaderPath("widgetShader.glslfx");
     return s;

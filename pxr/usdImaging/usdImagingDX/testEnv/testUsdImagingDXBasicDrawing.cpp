@@ -175,8 +175,21 @@ My_TestDXDrawing::InitTest()
             light.SetDiffuse(GfVec4f(1,1,1,1));
             light.SetAmbient(GfVec4f(0,0,0,1));
             light.SetSpecular(GfVec4f(1,1,1,1));
+
             GlfSimpleLightVector lights;
             lights.push_back(light);
+            
+            //
+            // adding a second light
+            if (IsEnabledSunLight())
+            {
+               GlfSimpleLight sunLight;
+               constexpr GfVec4f LIGHT_DEFAULT_AMBIENT(0.21f, 0.21f, 0.21f, 1.0f);
+               sunLight.SetAmbient(LIGHT_DEFAULT_AMBIENT);
+
+               lights.push_back(sunLight);
+            }
+            
             _lightingContext->SetLights(lights);
         }
 

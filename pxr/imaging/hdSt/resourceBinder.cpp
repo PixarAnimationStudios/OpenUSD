@@ -74,7 +74,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (topologyVisibility)
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 namespace {
     struct BindingLocator {

@@ -26,16 +26,18 @@
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getEnv.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/trace/trace.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGI_ENABLE_VULKAN, 0,
                       "Enable Vulkan as platform default Hgi backend (WIP)");
-TF_DEFINE_ENV_SETTING(HGI_ENABLE_DX, 0, 
+TF_DEFINE_ENV_SETTING(HGI_ENABLE_DX, false, 
                       "Enable DirectX as platform default Hgi backend (WIP)");
 
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 TF_REGISTRY_FUNCTION(TfType)
 {
@@ -89,7 +91,7 @@ _MakeNewPlatformDefaultHgi()
                 "Build requires PXR_VULKAN_SUPPORT_ENABLED=true to use Vulkan");
         #endif
     }
-	 else if (1 == TfGetenvInt("HGI_ENABLE_DX", 0)) {
+	 else if (dxHgiEnabled) {
 		hgiType = "HgiDX";
     }
 

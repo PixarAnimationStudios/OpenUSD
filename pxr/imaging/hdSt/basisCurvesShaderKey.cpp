@@ -153,7 +153,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((scalarOverrideFS,                "Fragment.ScalarOverride"))
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 static TfToken HdSt_BasisToShaderKey(const TfToken& basis){
     if (basis == HdTokens->bezier)
@@ -179,9 +180,7 @@ HdSt_BasisCurvesShaderKey::HdSt_BasisCurvesShaderKey(
     bool hasMetalTessellation)
     : useMetalTessellation(false)
 {
-    glslfx = (1 == dxHgiEnabled) ?
-      _tokens->baseHLSLFX :
-      _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
 
     bool drawThick = (drawStyle == HdSt_BasisCurvesShaderKey::HALFTUBE) || 
                      (drawStyle == HdSt_BasisCurvesShaderKey::RIBBON);

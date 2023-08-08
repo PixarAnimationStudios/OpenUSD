@@ -45,7 +45,7 @@
 #include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include "pxr/base/tf/envSetting.h"
-#include "pxr/base/tf/getEnv.h"
+#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -152,7 +152,8 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
                       "Enable Hgi resource generation for codeGen");
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 /* static */
 bool
@@ -1660,9 +1661,11 @@ _GetOSDCommonShaderSource()
        << "mat4 OsdModelViewMatrix() { return MAT4Init(1); }\n"
        << "\n";
 
-       ss << ((1 == dxHgiEnabled) ?
-           OpenSubdiv::Osd::HLSLPatchShaderSource::GetCommonShaderSource() :
-           OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource());
+    if (dxHgiEnabled)
+       ss << OpenSubdiv::Osd::HLSLPatchShaderSource::GetCommonShaderSource();
+    else
+       ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
+
 #endif
 #endif // OPENSUBDIV_VERSION_NUMBER
 
@@ -2091,12 +2094,33 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // even though nobody is setting a proper value for them.
     if (!_hasGS)
     {
-       _AddInterstageElement(&_resVS,
-                             HdSt_ResourceLayout::InOut::STAGE_OUT,
-                             /*name=*/TfToken("gsPatchCoord"),
-                             /*dataType=*/_tokens->vec4,
-                             TfToken(),
-                             TfToken());
+       //
+       // There are different cases:
+       // drawing a simple shape with "points" is once case,
+       // when drawing a line however, the PS does not (always) expect a gsPatchCoord
+       // so adding it here makes things worse.
+       
+       TfToken tokPC("gsPatchCoord");
+
+       bool bGSInFS = false;
+       for (const auto& item : _resFS)
+       {
+          if (item.name == tokPC)
+          {
+             bGSInFS = true;
+             break;
+          }
+       }
+
+       if (bGSInFS)
+       {
+          _AddInterstageElement(&_resVS,
+                                HdSt_ResourceLayout::InOut::STAGE_OUT,
+                                /*name=*/tokPC,
+                                /*dataType=*/_tokens->vec4,
+                                TfToken(),
+                                TfToken());
+       }
     }
 
 
@@ -2791,7 +2815,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
 
         if (builtinBarycentricsEnabled) {
-	        if (1 != dxHgiEnabled)
+	        if (!dxHgiEnabled)
 	        {
 	           //
 	           // Adding this for DirectX is harmful because it does not (always) match a stage output.
@@ -2799,6 +2823,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 	                &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
 	                baryAttribute);
 	        }
+	    }
 
         //
         // For the PrimitiveID, HLSL has some really crazy ideas about when this can or cannot be
@@ -2807,7 +2832,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         // For now, dealing with that with an ugly hack:
         // Adding the parameter here (with an interstage id of -1), while for the "_hasGS" case
         // it is properly added as an interstage element elsewhere (hlslfx file)
-        if ((1 != dxHgiEnabled) || (!_hasGS))
+        if (!dxHgiEnabled || !_hasGS)
         {
             HgiShaderFunctionAddStageInput(
                 &fsDesc, "gl_PrimitiveID", "uint",
@@ -2829,6 +2854,20 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 HgiShaderKeywordTokens->hdBaryCoordNoPersp);
         }
 
+        if (!_hasGS)
+        {
+           //
+           // one more case where, for DirectX we need parity in terms on stages in/out
+           // if we force-add "gl_PointSize" as VS "out" we need it also as fs "in".
+           char const* pointRole =
+              (_geometricShader->GetPrimitiveType() ==
+               HdSt_GeometricShader::PrimitiveType::PRIM_POINTS)
+              ? "point_size" : "";
+
+           HgiShaderFunctionAddStageInput(
+              &fsDesc, "gl_PointSize", "float", pointRole);
+        }
+
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;
         }
@@ -2842,7 +2881,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 
         //
         // tentative quick fix to get TCS to compile for DX
-        if (1 == dxHgiEnabled)
+        if (dxHgiEnabled)
         {
            HgiShaderFunctionAddStageInput(&tcsDesc, "gl_PrimitiveID", "uint", HgiShaderKeywordTokens->hdPrimitiveID);
            HgiShaderFunctionAddStageInput(&tcsDesc, "gl_InvocationID", "uint", "");

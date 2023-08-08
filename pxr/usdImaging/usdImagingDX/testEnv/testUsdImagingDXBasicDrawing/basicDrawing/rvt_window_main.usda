@@ -1,0 +1,18 @@
+#usda 1.0
+(
+    defaultPrim = "root"
+    upAxis = "Z"
+)
+
+def Xform "root"
+{
+    def Xform "partsRefs"
+    {
+        def Xform "Part_0" (
+            append references = @rvt_window_part_0.usda@</part_root>
+        )
+        {
+        }
+    }
+}
+

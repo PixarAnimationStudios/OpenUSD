@@ -127,10 +127,10 @@ public:
    HGIDX_API
    explicit HgiDXBufferShaderSection(const std::string& identifier, // buffer name
                                      const std::string& type,
-                                     const std::string& arraySize,
                                      const uint32_t registerIndex,
                                      const uint32_t spaceIndex,
-                                     bool bWritable);
+                                     bool bWritable,
+                                     bool bConst);
 
    HGIDX_API
    ~HgiDXBufferShaderSection() override;
@@ -147,6 +147,7 @@ private:
    const uint32_t _registerIdx;
    const uint32_t _spaceIdx;
    bool _bWritable;
+   bool _bConst;
 };
 
 

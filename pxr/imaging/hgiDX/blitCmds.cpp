@@ -179,7 +179,7 @@ HgiDXBlitCmds::InsertMemoryBarrier(HgiMemoryBarrier barrier)
 
    //
    // I will do the copies on the graphics queue - the copy queue cannot transition resources...
-   // In the meantime I realized there are 2 compromize solutions / alternatives:
+   // In the meantime I realized there are 2 compromise solutions / alternatives:
    // 1. do the resources transition on the graphics queue and the operations wherever they make sense
    // (although I am unsure what could be gained of that)
    // 2. I could revert resources back to their previous state after using them 

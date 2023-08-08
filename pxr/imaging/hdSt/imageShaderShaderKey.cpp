@@ -40,13 +40,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainFS,           "ImageShader.Fragment"))
 );
 
-static const int dxHgiEnabled = TfGetenvInt("HGI_ENABLE_DX", 0);
+// TODO: refactor this in the future
+static const bool dxHgiEnabled = TfGetenvBool("HGI_ENABLE_DX", false);
 
 HdSt_ImageShaderShaderKey::HdSt_ImageShaderShaderKey()
 {
-   glslfx = (1 == dxHgiEnabled) ?
-      _tokens->baseHLSLFX :
-      _tokens->baseGLSLFX;
+    glslfx = dxHgiEnabled ? _tokens->baseHLSLFX : _tokens->baseGLSLFX;
 
     VS[0] = _tokens->mainVS;
     VS[1] = TfToken();
