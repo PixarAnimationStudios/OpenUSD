@@ -92,14 +92,20 @@ void HgiWebGPUShaderFunction::_CreateTexturesGroupLayoutEntries(
         wgpu::BindGroupLayoutEntry textureEntry;
         wgpu::BindGroupLayoutEntry samplerEntry;
         textureEntry.visibility = stage;
+        if (t.writable) {
+            // TODO: This is the only access storage for now
+            textureEntry.storageTexture.access = wgpu::StorageTextureAccess::WriteOnly;
+            textureEntry.storageTexture.viewDimension = HgiWebGPUConversions::GetTextureViewDimension(t.dimensions);
+            textureEntry.storageTexture.format = HgiWebGPUConversions::GetPixelFormat(t.format);
+        } else {
+            textureEntry.texture.viewDimension = HgiWebGPUConversions::GetTextureViewDimension(t.dimensions);
+            textureEntry.texture.sampleType = HgiWebGPUConversions::GetTextureSampleType(t.format);
+        }
         samplerEntry.visibility = stage;
         textureEntry.binding = i;
         samplerEntry.binding = i;
-        textureEntry.texture.viewDimension = HgiWebGPUConversions::GetTextureViewDimension(t.dimensions);
-        textureEntry.texture.sampleType = HgiWebGPUConversions::GetTextureSampleType(t.format);
         // TODO: How to derive this?
         samplerEntry.sampler.type = wgpu::SamplerBindingType::Filtering;
-
         texturesBindGroupEntries.insert(std::make_pair(i,textureEntry));
         samplersBindGroupEntries.insert(std::make_pair(i,samplerEntry));
     }
@@ -154,12 +160,12 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
             };
 
             tint::writer::wgsl::Options options{};
-            auto result = tint::writer::wgsl::Generate(&program, options);
-            if (!result.success) {
-                _errors = result.error;
+            auto tintResult = tint::writer::wgsl::Generate(&program, options);
+            if (!tintResult.success) {
+                _errors = tintResult.error;
             }
 
-            wgslCode = std::move(result.wgsl);
+            wgslCode = std::move(tintResult.wgsl);
             wgslDesc.source = wgslCode.c_str();
 
         }

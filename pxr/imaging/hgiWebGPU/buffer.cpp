@@ -34,7 +34,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 HgiWebGPUBuffer::HgiWebGPUBuffer(HgiWebGPU *hgi, HgiBufferDesc const & desc)
     : HgiBuffer(desc)
-    , _hgi(hgi)
     , _bufferHandle(nullptr)
 {
     if (desc.byteSize == 0) {

@@ -40,6 +40,8 @@ HgiWebGPUComputeCmds::HgiWebGPUComputeCmds(HgiWebGPU* hgi, HgiComputeCmdsDesc co
     , _pushConstantsDirty(false)
     , _dispatchMethod(desc.dispatchMethod)
 {
+    _constantBindGroupEntry = {};
+    _constantBindGroupEntry.size = 0;
     _CreateCommandEncoder();
 
     // begin compute pass

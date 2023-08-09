@@ -68,7 +68,6 @@ private:
     HgiWebGPUBuffer & operator=(const HgiWebGPUBuffer&) = delete;
     HgiWebGPUBuffer(const HgiWebGPUBuffer&) = delete;
 
-    HgiWebGPU *_hgi;
     wgpu::Buffer _bufferHandle;
     std::vector<uint8_t> _cpuStagingBuffer;
 };

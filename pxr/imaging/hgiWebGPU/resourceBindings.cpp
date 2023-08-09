@@ -67,13 +67,12 @@ _CreateBindGroupEntries(HgiBufferBindDescVector const &buffers)
     for (HgiBufferBindDesc const &b : buffers)
     {
         if (!TF_VERIFY(b.buffers.size() == 1)) continue;
-        HgiWebGPUBuffer *buf = static_cast<HgiWebGPUBuffer *>(b.buffers.front().Get());
+        auto *buf = static_cast<HgiWebGPUBuffer *>(b.buffers.front().Get());
         wgpu::BindGroupEntry d;
         uint32_t bi = reorder ? (uint32_t)bindings.size() : b.bindingIndex;
         d.binding = bi;
         d.buffer = buf->GetBufferHandle();
         d.offset = b.offsets.front();
-        d.size = (b.sizes.size() == 0 || (b.sizes.size() > 0 && b.sizes.front() == 0)) ? buf->GetByteSizeOfResource() : b.sizes.front();
         bindings.push_back(d);
     }
 
@@ -101,11 +100,11 @@ _CreateTextureBindGroupEntries(HgiTextureBindDescVector const &textures) {
 
 static std::vector<wgpu::BindGroupEntry>
 _CreateSamplerBindGroupEntries(HgiTextureBindDescVector const &textures) {
-    std::vector<wgpu::BindGroupEntry> textureBindings;
-    // Textures
+    std::vector<wgpu::BindGroupEntry> samplerBindings;
+    // Samplers
     for (HgiTextureBindDesc const &t : textures)
     {
-        uint32_t bi = reorder ? (uint32_t)textureBindings.size() : t.bindingIndex;
+        uint32_t bi = reorder ? (uint32_t)samplerBindings.size() : t.bindingIndex;
         // TODO: What should be done with t.resourceType
         // WebGPU only supports textures in combination with samplers
         TF_VERIFY(t.textures.size() == t.samplers.size());
@@ -113,9 +112,9 @@ _CreateSamplerBindGroupEntries(HgiTextureBindDescVector const &textures) {
         wgpu::BindGroupEntry samplerEntry;
         samplerEntry.binding = bi;
         samplerEntry.sampler = sampler->GetSamplerHandle();
-        textureBindings.push_back(samplerEntry);
+        samplerBindings.push_back(samplerEntry);
     }
-    return textureBindings;
+    return samplerBindings;
 }
 
 HgiWebGPUResourceBindings::HgiWebGPUResourceBindings(
@@ -144,7 +143,7 @@ HgiWebGPUResourceBindings::_CreateBindGroups(
 {
     if (_firstInstance) {
         _firstInstance = false;
-        if (constantBindGroupEntry.size > 0) {
+        if (constantBindGroupEntry.size > 0 && isConstantDirty) {
             _bindings.push_back(constantBindGroupEntry);
         }
         _bindGroup = _CreateBindGroup(device, bindGroupLayoutList[HgiWebGPUBufferShaderSection::bindingSet], _bindings);

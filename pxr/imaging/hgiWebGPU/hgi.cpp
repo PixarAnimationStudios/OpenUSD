@@ -214,9 +214,8 @@ wgpu::Device GetDevice() {
     }
 #endif  // __EMSCRIPTEN__
 
-HgiWebGPU::HgiWebGPU(wgpu::Device device)
-: _device(device)
-, _currentCmds(nullptr)
+HgiWebGPU::HgiWebGPU()
+: _currentCmds(nullptr)
 , _workToFlush(false)
 {
     // get the webgpu device
@@ -230,6 +229,7 @@ HgiWebGPU::HgiWebGPU(wgpu::Device device)
 
 HgiWebGPU::~HgiWebGPU()
 {
+    _PerformGarbageCollection();
 }
 
 bool
@@ -299,10 +299,15 @@ HgiWebGPU::CreateTextureView(HgiTextureViewDesc const & desc)
 }
 
 void
-HgiWebGPU::DestroyTextureView(HgiTextureViewHandle* viewHandle)
-{
+HgiWebGPU::DestroyTextureView(HgiTextureViewHandle *viewHandle) {
     HgiTextureHandle texHandle = (*viewHandle)->GetViewTexture();
-    _TrashObject(&texHandle);
+    if (_workToFlush) {
+        _garbageCollectionHandlers.emplace_back([texHandle] {
+            delete texHandle.Get();
+        });
+    } else {
+        _TrashObject(&texHandle);
+    }
     (*viewHandle)->SetViewTexture(HgiTextureHandle());
     delete viewHandle->Get();
     *viewHandle = HgiTextureViewHandle();
@@ -471,6 +476,14 @@ HgiWebGPU::GetAPIVersion() const
     return GetCapabilities()->GetAPIVersion();
 }
 
+void
+HgiWebGPU::_PerformGarbageCollection() {
+    for (auto const& fn : _garbageCollectionHandlers)
+        fn();
+
+    _garbageCollectionHandlers.clear();
+}
+
 bool
 HgiWebGPU::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 {
@@ -478,6 +491,9 @@ HgiWebGPU::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
 
     if (cmds) {
         _workToFlush = Hgi::_SubmitCmds(cmds, wait);
+        if (_workToFlush) {
+            _PerformGarbageCollection();
+        }
         if (cmds == _currentCmds) {
             _currentCmds = nullptr;
         }

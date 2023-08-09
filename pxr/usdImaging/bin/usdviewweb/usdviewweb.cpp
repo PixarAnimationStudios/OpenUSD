@@ -428,9 +428,6 @@ struct VertexOutput {
 
             pxr::HgiTextureHandle colorTarget = glEngine->GetAovTexture(pxr::HdAovTokens->color);
 
-            pxr::HgiTextureDesc const &colorTargetDesc = colorTarget->GetDescriptor();
-
-
             wgpu::TextureView backbuffer = swapChain.GetCurrentTextureView();
             pxr::HgiWebGPUTexture* srcTexture =static_cast<pxr::HgiWebGPUTexture*>(colorTarget.Get());
             wgpu::Texture colorTexture = srcTexture->GetTextureHandle();
@@ -468,7 +465,7 @@ struct VertexOutput {
 
                 const wgpu::BindGroupLayout bindGroupLayout = pipeline.GetBindGroupLayout(0);
                 wgpu::BindGroupDescriptor bindGroupDsc = {};
-                std::string bindGroupDscLabel = "Mipmap BindGroupDescriptor";
+                std::string bindGroupDscLabel = "Texture BindGroupDescriptor";
                 bindGroupDsc.label = bindGroupDscLabel.c_str();
                 bindGroupDsc.layout = bindGroupLayout;
                 bindGroupDsc.entryCount = entries.size();

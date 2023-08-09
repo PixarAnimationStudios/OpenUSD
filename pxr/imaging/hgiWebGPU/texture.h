@@ -76,6 +76,7 @@ private:
     wgpu::Texture _textureHandle;
     wgpu::TextureView _textureView;
     wgpu::TextureFormat _pixelFormat;
+    bool _isTextureView;
 
     struct StagingData
     {

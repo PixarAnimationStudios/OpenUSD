@@ -33,6 +33,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureDesc const & desc)
     : HgiTexture(desc)
     , _textureHandle(nullptr)
     , _textureView(nullptr)
+    , _isTextureView(false)
 {
     wgpu::TextureDescriptor descriptor;
     // TODO: setting TextureBinding since renderAttachment texture could be use as binding in a following pass
@@ -126,6 +127,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureDesc const & desc)
 HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureViewDesc const & desc)
     : HgiTexture(desc.sourceTexture->GetDescriptor())
     , _textureHandle(nullptr)
+    , _isTextureView(true)
 {
     HgiWebGPUTexture* srcTexture =
         static_cast<HgiWebGPUTexture*>(desc.sourceTexture.Get());
@@ -133,7 +135,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureViewDesc const & de
     _descriptor.format = desc.format;
     _descriptor.layerCount = desc.layerCount;
     _descriptor.mipLevels = desc.mipLevels;
-    
+
     // TODO: probably make a *copy* of this resource rather than just a shallow copy of the handle
     _textureHandle = srcTexture->GetTextureHandle();
 
@@ -148,7 +150,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureViewDesc const & de
 
 HgiWebGPUTexture::~HgiWebGPUTexture()
 {
-    if (_textureHandle) {
+    if (_textureHandle && !_isTextureView) {
         _textureHandle.Destroy();
         _textureHandle = nullptr;
     }

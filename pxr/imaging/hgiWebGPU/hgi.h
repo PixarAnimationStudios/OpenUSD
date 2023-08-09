@@ -42,7 +42,7 @@ class HgiWebGPU final : public Hgi
 {
 public:
     HGIWEBGPU_API
-    HgiWebGPU(wgpu::Device device = nullptr);
+    HgiWebGPU();
 
     HGIWEBGPU_API
     ~HgiWebGPU() override;
@@ -161,6 +161,7 @@ protected:
 private:
     HgiWebGPU & operator=(const HgiWebGPU&) = delete;
     HgiWebGPU(const HgiWebGPU&) = delete;
+    void _PerformGarbageCollection();
 
     // Invalidates the resource handle and destroys the object.
     template<class T>
@@ -174,7 +175,7 @@ private:
     HgiCmds* _currentCmds;
 
     std::unique_ptr<HgiWebGPUCapabilities> _capabilities;
-    std::vector<HgiWebGPUCallback> _completedHandlers;
+    std::vector<HgiWebGPUCallback> _garbageCollectionHandlers;
     std::vector<HgiWebGPUCallback> _preSubmitHandlers;
     std::vector<wgpu::CommandBuffer> _commandBuffers;
 

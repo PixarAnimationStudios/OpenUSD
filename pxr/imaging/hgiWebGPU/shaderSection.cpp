@@ -89,10 +89,10 @@ HgiWebGPUTextureShaderSection::HgiWebGPUTextureShaderSection(
   , _samplerSharedIdentifier(identifier)
   , _dimensions(dimensions)
   , _format(format)
-  , _samplerShaderSectionDependency(samplerShaderSectionDependency)
   , _textureType(textureType)
   , _arraySize(arraySize)
   , _writable(writable)
+  , _samplerShaderSectionDependency(samplerShaderSectionDependency)
 {
 }
 
@@ -115,9 +115,9 @@ HgiWebGPUTextureShaderSection::_WriteTextureType(std::ostream &ss) const
 {
     if (_writable) {
         if (_textureType == HgiShaderTextureTypeArrayTexture) {
-            TF_CODING_ERROR("Missing Implementation of writable HgiShaderTextureTypeArrayTexture");
+            ss << "image" << _dimensions << "DArray";
         } else {
-            TF_CODING_ERROR("Missing Implementation of writable HgiShaderTexture");
+            ss << "image" << _dimensions << "D";
         }
     } else {
         if (_textureType == HgiShaderTextureTypeShadowTexture) {
@@ -185,18 +185,44 @@ HgiWebGPUTextureShaderSection::VisitGlobalFunctionDefinitions(std::ostream &ss)
         ss << " HgiGetSampler_" << _samplerSharedIdentifier;
         ss << "(uint index) {\n";
         ss << "    return ";
+        ss << "sampler" << _dimensions << "D(";
         WriteIdentifier(ss);
+        ss << ", ";
+        _samplerShaderSectionDependency->WriteIdentifier(ss);
+        ss << ")";
         ss << "[index];\n}\n";
     } else {
-        ss << "#define HgiGetSampler_";
-        WriteIdentifier(ss);
+        ss << "#define HgiGetSampler_" << _samplerSharedIdentifier;
         ss << "() ";
+        ss << "sampler" << _dimensions << "D(";
         WriteIdentifier(ss);
+        ss << ", ";
+        _samplerShaderSectionDependency->WriteIdentifier(ss);
+        ss << ")";
         ss << "\n";
     }
 
     if (_writable) {
-        TF_CODING_ERROR("Missing Implementation of writable globalFunction for TextureShaderSection");
+        // Write a function that lets you write to the texture with
+        // HgiSet_texName(uv, data).
+        ss << "void HgiSet_";
+        ss << _samplerSharedIdentifier;
+        ss << "(" << intCoordType << " uv, vec4 data) {\n";
+        ss << "    ";
+        ss << "imageStore(";
+        WriteIdentifier(ss);
+        ss << ", uv, data);\n";
+        ss << "}\n";
+
+        // HgiGetSize_texName()
+        ss << sizeType << " HgiGetSize_";
+        ss << _samplerSharedIdentifier;
+        ss << "() {\n";
+        ss << "    ";
+        ss << "return imageSize(";
+        WriteIdentifier(ss);
+        ss << ");\n";
+        ss << "}\n";
     } else {
         const std::string arrayInput = (_arraySize > 0) ? "uint index, " : "";
         const std::string arrayIndex = (_arraySize > 0) ? "[index]" : "";
