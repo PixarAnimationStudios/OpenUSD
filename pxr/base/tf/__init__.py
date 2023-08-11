@@ -40,7 +40,21 @@ if sys.version_info >= (3, 8) and platform.system() == "Windows":
         import_paths = os.getenv('PXR_USD_WINDOWS_DLL_PATH')
         if import_paths is None:
             import_paths = os.getenv('PATH', '')
-        for path in import_paths.split(os.pathsep):
+        # the underlying windows API call, AddDllDirectory, states that:
+        #
+        # > If AddDllDirectory is used to add more than one directory to the
+        # > process DLL search path, the order in which those directories are
+        # > searched is unspecified.
+        #
+        # https://learn.microsoft.com/en-us/windows/win32/api/libloaderapi/nf-libloaderapi-adddlldirectory
+        #
+        # However, in practice, it seems that the most-recently-added ones
+        # take precedence - so, reverse the order of entries in PATH to give
+        # it the same precedence
+        #
+        # Note that we have a test (testTfPyDllLink) to alert us if this
+        # undefined behavior changes.
+        for path in reversed(import_paths.split(os.pathsep)):
             # Calling add_dll_directory raises an exception if paths don't
             # exist, or if you pass in dot
             if os.path.exists(path) and path != '.':
