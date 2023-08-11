@@ -47,7 +47,6 @@
 #if defined(ARCH_COMPILER_MSVC)
 #include <boost/preprocessor/variadic/size.hpp>
 #include <boost/vmd/is_empty.hpp>
-#include <boost/vmd/is_tuple.hpp>
 ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
 #endif
 
@@ -108,27 +107,6 @@ ARCH_PRAGMA_MACRO_TOO_FEW_ARGUMENTS
     (__VA_ARGS__ BOOST_PP_REPEAT(BOOST_PP_INC(TF_MAX_ARITY), \
     _TF_NUM_ARGS_REP, _TF))
 #endif
-
-/// Exapnds to 1 if the argument is a tuple, and 0 otherwise.
-/// \ingroup group_tf_Preprocessor
-/// \hideinitializer
-#if defined(ARCH_COMPILER_MSVC)
-    #define TF_PP_IS_TUPLE(sequence) \
-        BOOST_VMD_IS_TUPLE(sequence)
-#else
-
-#define TF_PP_IS_TUPLE(arg) \
-    BOOST_PP_CAT(_TF_PP_IS_TUPLE, BOOST_PP_EXPAND(_TF_PP_IS_TUPLE arg)) )
-
-#define _TF_PP_IS_TUPLE(...) _TF
-
-#define _TF_PP_IS_TUPLE_TF _TF_PP_IS_TUPLE_TRUE(
-#define _TF_PP_IS_TUPLE_TF_PP_IS_TUPLE _TF_PP_IS_TUPLE_FALSE(
-
-#define _TF_PP_IS_TUPLE_TRUE() 1
-#define _TF_PP_IS_TUPLE_FALSE(arg) 0
-
-#endif 
 
 /// Count the number of elements in a preprocessor tuple.
 /// \ingroup group_tf_Preprocessor
