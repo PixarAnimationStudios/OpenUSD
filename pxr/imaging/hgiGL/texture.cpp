@@ -247,6 +247,28 @@ HgiGLTexture::HgiGLTexture(HgiTextureDesc const & desc)
     }
 
     if (desc.sampleCount == HgiSampleCount1) {
+        switch (HgiGetDataSizeOfFormat(desc.format))
+        {
+        case 1:
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            break;
+        case 2:
+        case 6:
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 2);
+            break;
+        case 4:
+        case 12:
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            break;
+        case 8:
+        case 16:
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 8);
+            break;
+        default:
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+            break;
+        }
+
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glTextureParameteri(_textureId, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);

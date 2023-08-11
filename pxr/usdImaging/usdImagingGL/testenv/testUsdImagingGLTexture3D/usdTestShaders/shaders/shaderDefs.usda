@@ -1,0 +1,82 @@
+#usda 1.0
+
+def Shader "UsdUVWTexture"(
+    doc = """Texture Node Specification represents a node that can be used to 
+    read UVW textures.
+"""
+    sdrMetadata = {
+        token role = "texture3d"
+    }
+)
+{
+    uniform token info:id = "UsdUVWTexture"
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./uvwTexture.glslfx@
+
+    asset inputs:file = @@ (
+        connectability = "interfaceOnly"
+        doc = """Path to the texture this node uses."""
+    )
+
+    token inputs:fieldpurpose = ""(
+        doc = """(e.g., BigCloud) corresponds to the partition name/grouping"""
+    )
+
+    int inputs:fieldindex = 0(
+        doc = """corresponds to the partition index"""
+    )
+
+    float outputs:r ( 
+        doc = "Outputs the red channel."
+        sdrMetadata = {
+            token swizzle = "x"
+        }
+    )
+
+    float outputs:g (
+        doc = "Outputs the green channel."
+        sdrMetadata = {
+            token swizzle = "y"
+        }
+    )
+
+    float outputs:b (
+        doc = "Outputs the blue channnel."
+        sdrMetadata = {
+            token swizzle = "z"
+        }
+    )
+
+    float outputs:a (
+        doc = "Outputs the alpha channnel."
+        sdrMetadata = {
+            token swizzle = "w"
+        }
+    )
+
+    float3 outputs:rgb (
+        doc = "Outputs the red, green and blue channels."
+        sdrMetadata = {
+            token swizzle = "xyz"
+        }
+    )
+}
+
+def Shader "SampleTexture3D" (
+    doc = "Surface shader that samples from a 3d texture."
+)
+{
+    uniform token info:id = "SampleTexture3D"
+    uniform token info:implementationSource = "sourceAsset"
+    uniform asset info:glslfx:sourceAsset = @./sampleTexture3D.glslfx@
+
+    # Outputs
+    token outputs:surface (
+        sdrMetadata = {
+            string renderType = "terminal surface"
+        }
+    )
+
+    float3 inputs:color = (0.0, 0.0, 0.0)(
+    )
+}

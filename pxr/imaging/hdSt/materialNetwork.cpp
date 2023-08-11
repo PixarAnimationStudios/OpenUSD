@@ -26,6 +26,7 @@
 #include "pxr/imaging/hdSt/materialParam.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/subtextureIdentifier.h"
+#include "pxr/imaging/hdSt/fieldSubtextureIdentifier.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
@@ -61,6 +62,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     (st)
     (uv)
     (fieldname)
+    (fieldIndex)
+    (fieldPurpose)
     (diffuseColor)
     (a)
 
@@ -1036,6 +1039,113 @@ _MakeMaterialParamsForFieldReader(
     params->push_back(std::move(param));
 }
 
+// There are cases that we read a 3D texture from file or memory
+static void
+_MakeMaterialParamsForTexture3DReader(
+    HdMaterialNetwork2 const& network,
+    HdMaterialNode2 const& node,
+    SdfPath const& nodePath,
+    TfToken const& paramName,
+    SdfPathSet* visitedNodes,
+    HdSt_MaterialParamVector* params,
+    HdStMaterialNetwork::TextureDescriptorVector* textureDescriptors)
+{
+    if (visitedNodes->find(nodePath) != visitedNodes->end()) return;
+
+    SdrRegistry& shaderReg = SdrRegistry::GetInstance();
+    SdrShaderNodeConstPtr sdrNode = shaderReg.GetShaderNodeByIdentifier(
+        node.nodeTypeId, { HioGlslfxTokens->glslfx, _tokens->mtlx });
+
+    HdSt_MaterialParam param;
+    param.paramType = HdSt_MaterialParam::ParamTypeTexture;
+    param.name = paramName;
+    param.textureType = HdTextureType::Field;
+    params->push_back(std::move(param));
+
+    // Extract texture file path
+    bool useTexturePrimToFindTexture = true;
+
+    SdfPath texturePrimPathForSceneDelegate;
+
+    HdStTextureIdentifier textureId;
+
+    NdrTokenVec const& assetIdentifierPropertyNames =
+        sdrNode->GetAssetIdentifierInputNames();
+
+    if (assetIdentifierPropertyNames.size() == 1) {
+        TfToken const& fileProp = assetIdentifierPropertyNames[0];
+        auto const& it = node.parameters.find(fileProp);
+        if (it != node.parameters.end()) {
+            const VtValue& v = it->second;
+            // We use the nodePath, not the filePath, for the 'connection'.
+            // Based on the connection path we will do a texture lookup via
+            // the scene delegate. The scene delegate will lookup this texture
+            // prim (by path) to query the file attribute value for filepath.
+            // The reason for this re-direct is to support other texture uses
+            // such as render-targets.
+            texturePrimPathForSceneDelegate = nodePath;
+
+            // Use the type of the filePath attribute to determine
+            // whether to use the Storm texture system (for
+            // SdfAssetPath/std::string/ HdStTextureIdentifier) or use
+            // the render buffer associated to a draw target.
+            //
+            if (v.IsHolding<HdStTextureIdentifier>()) {
+                //
+                // Clients can explicitly give an HdStTextureIdentifier for
+                // more direct control since they can give an instance of
+                // HdStSubtextureIdentifier.
+                //
+                // Examples are, e.g., HdStUvAssetSubtextureIdentifier
+                // allowing clients to flip the texture. Clients can even
+                // subclass from HdStDynamicUvSubtextureIdentifier and
+                // HdStDynamicUvTextureImplementation to implement their own
+                // texture loading and commit.
+                //
+                useTexturePrimToFindTexture = false;
+                textureId = v.UncheckedGet<HdStTextureIdentifier>();
+            }
+            else if (v.IsHolding<std::string>() ||
+                v.IsHolding<SdfAssetPath>()) {
+                const std::string filePath = _ResolveAssetPath(v);
+                int fieldIndex = _ResolveParameter(node, sdrNode, _tokens->fieldIndex, 0);
+                TfToken fieldPurpose = _ResolveParameter(node, sdrNode, _tokens->fieldPurpose, TfToken());
+
+                useTexturePrimToFindTexture = false;
+                textureId = HdStTextureIdentifier(
+                    TfToken(filePath),
+                    std::make_unique<HdStField3DAssetSubtextureIdentifier>(
+                        node.nodeTypeId, fieldIndex, fieldPurpose, false/*premultiplyAlpha*/
+                    )
+                );
+                // If the file attribute is an SdfPath, interpret it as path
+                // to a prim holding the texture resource (e.g., a render buffer).
+            }
+            else if (v.IsHolding<SdfPath>()) {
+                texturePrimPathForSceneDelegate = v.UncheckedGet<SdfPath>();
+            }
+        }
+    }
+    else {
+        TF_WARN("Invalid number of asset identifier input names: %s",
+            nodePath.GetText());
+    }
+
+    // Attribute is in Mebibytes, but Storm texture system expects
+    // bytes.
+    const size_t memoryRequest = 1048576 *
+        _ResolveParameter<float>(node, sdrNode, _tokens->textureMemory, 0.0f);
+
+    textureDescriptors->push_back(
+        { paramName,
+          textureId,
+          param.textureType,
+          {HdWrapRepeat, HdWrapRepeat, HdWrapRepeat, HdMinFilterLinear, HdMagFilterLinear},
+          memoryRequest,
+          useTexturePrimToFindTexture,
+          texturePrimPathForSceneDelegate });
+}
+
 static void
 _MakeParamsForInputParameter(
     HdMaterialNetwork2 const& network,
@@ -1104,6 +1214,16 @@ _MakeParamsForInputParameter(
                             paramName,
                             visitedNodes,
                             params);
+                        return;
+                    } else if (sdrRole == SdrNodeRole->Texture3D) {
+                        _MakeMaterialParamsForTexture3DReader(
+                            network,
+                            upstreamNode,
+                            upstreamPath,
+                            paramName,
+                            visitedNodes,
+                            params,
+                            textureDescriptors);
                         return;
                     } else if (sdrRole == SdrNodeRole->Math) {
                         _MakeMaterialParamsForTransform2d(

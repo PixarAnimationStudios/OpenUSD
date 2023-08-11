@@ -155,7 +155,9 @@ HdStTextureObject::_GetDebugName(const HdStTextureIdentifier &textureId) const
             filePath + " - "
             + f3dSubId->GetFieldName().GetString() + " "
             + std::to_string(f3dSubId->GetFieldIndex()) + " "
-            + f3dSubId->GetFieldPurpose().GetString();
+            + f3dSubId->GetFieldPurpose().GetString()
+            + " - premultiplyAlpha="
+            + std::to_string(int(f3dSubId->GetPremultiplyAlpha()));
     }
 
     if (const HdStAssetUvSubtextureIdentifier * const assetUvSubId =
@@ -542,7 +544,8 @@ HdStFieldTextureObject::_Load()
 
     _cpuData = std::make_unique<HdSt_FieldTextureCpuData>(
         texData,
-        _GetDebugName(GetTextureIdentifier()));
+        _GetDebugName(GetTextureIdentifier()),
+        _GetPremultiplyAlpha(GetTextureIdentifier().GetSubtextureIdentifier()));
 
     if (_cpuData->IsValid()) {
         if (_cpuData->GetTextureDesc().type != HgiTextureType3D) {

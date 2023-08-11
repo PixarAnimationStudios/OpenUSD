@@ -69,6 +69,15 @@ pxr_library(usdImagingGL
         plugInfo.json
 )
 
+set(DIRS
+    testenv/testUsdImagingGLTexture3D/hioMemtex3D
+    testenv/testUsdImagingGLTexture3D/usdTestShaders
+)
+
+foreach(d ${DIRS})
+    add_subdirectory(${d})
+endforeach()
+
 #
 # C++ tests - Only build on all platforms for now.
 # 
@@ -603,6 +612,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdImagingGLGeomSubsets
     DEST testUsdImagingGLGeomSubsets
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLTexture3D
+    DEST testUsdImagingGLTexture3D
 )
 
 #
@@ -4947,6 +4961,18 @@ pxr_register_test(testUsdImagingGLAovVisualization_Storm_depth
     WARN_PERCENT 0.002
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLAovVisualization
+)
+
+pxr_register_test(testUsdImagingGLTexture3D
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -lighting -stage testTexture3d.usda -write testUsdImagingGLTexture3D.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLTexture3D.png
+    FAIL 0.01
+    FAIL_PERCENT 10
+    WARN 0.01
+    WARN_PERCENT 5
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLTexture3D
 )
 
 # Register Embree Specific Tests
