@@ -484,7 +484,7 @@ void main(void) {
     }
     
     const uint base = hd_LocalIndexID * 9;
-    const uint base2 = hd_LocalIndexID * 12;
+    const uint base2 = hd_LocalIndexID * 6;
     //TODO try to place this work at the end of the group
     //So that if vertices are way fewer, have the work on the less used threads
     const device uint *indicesOff = meshletIndicesStart + base2;
@@ -495,40 +495,52 @@ void main(void) {
         //TODO actually set the primitive ID here
         PrimOut primOut;
         //TODO export a smarter primitive ID
-        primOut.primitive_id_ms = *(indicesOff + 3);
+        primOut.primitive_id_ms = *(indicesOff + 1);
         mesh.set_primitive(currPrim, primOut);
 
+        uint unpackedInds = *(indicesOff);
+        uint ind0 = unpackedInds & 0xFF;
+        uint ind1 = unpackedInds >> 8 & 0x000000FF;
+        uint ind2 = unpackedInds >> 16 & 0x000000FF;
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base, *(indicesOff));
-        mesh.set_index(base+1, *(indicesOff + 1));
-        mesh.set_index(base+2, *(indicesOff + 2));
+        mesh.set_index(base, ind0);
+        mesh.set_index(base+1, ind1);
+        mesh.set_index(base+2, ind2);
     }
     {
         //TODO actually set the primitive ID here
         PrimOut primOut2;
-        primOut2.primitive_id_ms = *(indicesOff + 7);
+        primOut2.primitive_id_ms = *(indicesOff + 3);
         //TODO export a smarter primitive ID
         mesh.set_primitive(currPrim + 1, primOut2);
 
+        uint unpackedInds = *(indicesOff + 2);
+        uint ind0 = unpackedInds & 0x000000FF;
+        uint ind1 = unpackedInds >> 8 & 0x000000FF;
+        uint ind2 = unpackedInds >> 16 & 0x000000FF;
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+3, *(indicesOff + 4));
-        mesh.set_index(base+4, *(indicesOff + 5));
-        mesh.set_index(base+5, *(indicesOff + 6));
+        mesh.set_index(base+3, ind0);
+        mesh.set_index(base+4, ind1);
+        mesh.set_index(base+5, ind2);
     }
     {
         //TODO actually set the primitive ID here
         PrimOut primOut3;
-        primOut3.primitive_id_ms = *(indicesOff + 11);
+        primOut3.primitive_id_ms = *(indicesOff + 5);
         //TODO export a smarter primitive ID
         mesh.set_primitive(currPrim + 2, primOut3);
 
+        uint unpackedInds = *(indicesOff + 4);
+        uint ind0 = unpackedInds & 0x000000FF;
+        uint ind1 = unpackedInds >> 8 & 0x000000FF;
+        uint ind2 = unpackedInds >> 16 & 0x000000FF;
         // Set the output indices.
         //TODO cache base index calc
-        mesh.set_index(base+6, *(indicesOff + 8));
-        mesh.set_index(base+7, *(indicesOff + 9));
-        mesh.set_index(base+8, *(indicesOff + 10));
+        mesh.set_index(base+6, ind0);
+        mesh.set_index(base+7, ind1);
+        mesh.set_index(base+8, ind2);
     }
     }
     

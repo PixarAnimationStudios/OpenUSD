@@ -702,9 +702,14 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
             }
             
             for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
-                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3]]);
-                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+1]]);
-                meshlet.remappedIndices.push_back(globalToLocalVertex[indices[n*3+2]]);
+                //We know that indices don't go over 256, we can pack them in a byte
+                uint ind0 = globalToLocalVertex[indices[n*3]];
+                uint ind1 = globalToLocalVertex[indices[n*3+1]];
+                uint ind2 = globalToLocalVertex[indices[n*3+2]];
+                uint packed = ind0;
+                packed |= ind1 << 8;
+                packed |= ind2 << 16;
+                meshlet.remappedIndices.push_back(packed);
                 meshlet.remappedPrimIDs.push_back(primId);
                 primId++;
             }
@@ -726,7 +731,7 @@ std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t 
         }
         
         //TODO see if we can be smarter
-        if((numVerticesProcessed + 4) > max_vertices) {
+        if((m.size() + 4) > max_vertices) {
             maxVertsReached = true;
         }
         
@@ -792,13 +797,12 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoor
                 localOffset += 2;
             }
             
-            for (int k = 0; k/3 < m.remappedIndices.size()/3; k+= 3) {
+            for (int k = 0; k < m.remappedIndices.size(); k++) {
                 flattenInto.push_back(m.remappedIndices[k]);
-                flattenInto.push_back(m.remappedIndices[k+1]);
-                flattenInto.push_back(m.remappedIndices[k+2]);
-                flattenInto.push_back(m.remappedPrimIDs[k/3]);
-                currentOffset += 4;
-                localOffset += 4;
+                flattenInto.push_back(m.remappedPrimIDs[k]);
+
+                currentOffset += 2;
+                localOffset += 2;
             }
             if (j < (meshletsInMesh.size()-1)) {
                 flattenInto[lastOffset+(j+1)] = localOffset;
