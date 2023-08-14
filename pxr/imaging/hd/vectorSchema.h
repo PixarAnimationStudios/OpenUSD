@@ -46,7 +46,7 @@ public:
     static HdVectorDataSourceHandle
     BuildRetained(
         size_t count,
-        HdDataSourceBaseHandle *values);
+        const HdDataSourceBaseHandle *values);
 
     /// Returns the vector data source that this schema is interpreting.
     HD_API

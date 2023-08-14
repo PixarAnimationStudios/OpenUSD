@@ -46,6 +46,48 @@ struct Js_Null
     }
 };
 
+// Wrapper around std::unique_ptr that should always be
+// dereferencable and whose equality is determined by
+// its held object. This is needed to make JsObject
+// and JsArray (which hold JsValues) holdable by JsValue
+template <typename T>
+class Js_Wrapper final {
+public:
+    // Js_Wrapper should never by null, so disallow
+    // defualt construction
+    Js_Wrapper() = delete;
+
+    // Copy semantics are not necessary as the _Holder
+    // type is not copyable
+    Js_Wrapper(const Js_Wrapper&) = delete;
+    Js_Wrapper& operator=(const Js_Wrapper&) = delete;
+
+    Js_Wrapper(Js_Wrapper&&) = default;
+    Js_Wrapper& operator=(Js_Wrapper&&) = default;
+    ~Js_Wrapper() = default;
+
+    explicit Js_Wrapper(const T& wrapped) :
+        _ptr(std::make_unique<T>(wrapped)) {}
+    explicit Js_Wrapper(T&& wrapped) :
+        _ptr(std::make_unique<T>(std::move(wrapped))) {}
+
+    const T& Get() const { return *_ptr; }
+
+    bool operator==(const Js_Wrapper& other) const {
+        return Get() == other.Get();
+    }
+
+    bool operator!=(const Js_Wrapper& other) const {
+        return Get() != other.Get();
+    }
+
+private:
+    std::unique_ptr<T> _ptr;
+};
+
+using Js_ObjectWrapper = Js_Wrapper<JsObject>;
+using Js_ArrayWrapper = Js_Wrapper<JsArray>;
+
 /// \struct JsValue::_Holder
 /// Private holder class used to abstract away how a value is stored
 /// internally in JsValue objects.
@@ -54,21 +96,25 @@ struct JsValue::_Holder
     // The order these types are defined in the variant is important. See the
     // comments in the implementation of IsUInt64 for details.
     typedef boost::variant<
-        boost::recursive_wrapper<JsObject>,
-        boost::recursive_wrapper<JsArray>,
+        Js_ObjectWrapper,
+        Js_ArrayWrapper,
         std::string, bool, int64_t, double, Js_Null, uint64_t>
         Variant;
 
     _Holder()
         : value(Js_Null()), type(JsValue::NullType) { }
     _Holder(const JsObject& value)
-        : value(value), type(JsValue::ObjectType) { }
+        : value(Js_ObjectWrapper(value)),
+          type(JsValue::ObjectType) { }
     _Holder(JsObject&& value)
-        : value(std::move(value)), type(JsValue::ObjectType) { }
+        : value(Js_ObjectWrapper(std::move(value))),
+          type(JsValue::ObjectType) { }
     _Holder(const JsArray& value)
-        : value(value), type(JsValue::ArrayType) { }
+        : value(Js_ArrayWrapper(value)),
+          type(JsValue::ArrayType) { }
     _Holder(JsArray&& value)
-        : value(std::move(value)), type(JsValue::ArrayType) { }
+        : value(Js_ArrayWrapper(std::move(value))),
+          type(JsValue::ArrayType) { }
     _Holder(const char* value)
         : value(std::string(value)), type(JsValue::StringType) { }
     _Holder(const std::string& value)
@@ -216,7 +262,7 @@ JsValue::GetJsObject() const
         return *_emptyObject;
     }
 
-    return *boost::get<JsObject>(&_holder->value);
+    return boost::get<Js_ObjectWrapper>(_holder->value).Get();
 }
 
 const JsArray&
@@ -230,7 +276,7 @@ JsValue::GetJsArray() const
         return *_emptyArray;
     }
 
-    return *boost::get<JsArray>(&_holder->value);
+    return boost::get<Js_ArrayWrapper>(_holder->value).Get();
 }
 
 const std::string&

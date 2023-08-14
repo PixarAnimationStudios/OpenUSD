@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/compressed_pair.hpp>
 #include <boost/iterator/filter_iterator.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
@@ -514,7 +513,7 @@ struct SdfAdaptedChildrenViewCreator
 
 // Allow TfIteration over children views.
 template <typename C, typename P, typename A>
-struct Tf_ShouldIterateOverCopy<SdfChildrenView<C, P, A> > : boost::true_type
+struct Tf_ShouldIterateOverCopy<SdfChildrenView<C, P, A> > : std::true_type
 {
 };
 template <typename C, typename P, typename A>

@@ -93,7 +93,6 @@
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/seq/push_back.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE

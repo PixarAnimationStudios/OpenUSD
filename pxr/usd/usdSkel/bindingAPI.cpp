@@ -443,7 +443,8 @@ UsdSkelBindingAPI::GetInheritedSkeleton() const
 
     if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
-            if (UsdSkelBindingAPI(p).GetSkeleton(&skel)) {
+            if (p.HasAPI<UsdSkelBindingAPI>() && 
+                UsdSkelBindingAPI(p).GetSkeleton(&skel)) {
                 return skel;
             }
         }
@@ -490,7 +491,8 @@ UsdSkelBindingAPI::GetInheritedAnimationSource() const
 
     if (UsdPrim p = GetPrim()) {
         for( ; !p.IsPseudoRoot(); p = p.GetParent()) {
-            if (UsdSkelBindingAPI(p).GetAnimationSource(&animPrim)) {
+            if (p.HasAPI<UsdSkelBindingAPI>() && 
+                UsdSkelBindingAPI(p).GetAnimationSource(&animPrim)) {
                 return animPrim;
             }
         }

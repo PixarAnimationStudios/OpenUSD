@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    defaultPrim = "Ref2"
+    expressionVariables = {
+        string REF2 = "B"
+    }
+)
+
+def "Ref2" (
+    references = @`"./${REF2}.sdf"`@
+)
+{
+}

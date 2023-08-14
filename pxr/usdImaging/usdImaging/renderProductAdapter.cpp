@@ -37,14 +37,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdImagingRenderProductAdapter Adapter;
+    using Adapter = UsdImagingRenderProductAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingRenderProductAdapter::~UsdImagingRenderProductAdapter() 
-{
-}
+UsdImagingRenderProductAdapter::~UsdImagingRenderProductAdapter() = default;
 
 // -------------------------------------------------------------------------- //
 // 2.0 Prim adapter API
@@ -85,11 +83,12 @@ HdDataSourceLocatorSet
 UsdImagingRenderProductAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourceRenderProductPrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();

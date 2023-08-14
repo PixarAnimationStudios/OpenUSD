@@ -175,6 +175,7 @@ protected:
         const HdSceneIndexBaseRefPtr &inputSceneIndex)
       : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
     {
+        SetDisplayName("HdSt: declare Storm dependencies");
     }
 
     void _PrimsAdded(

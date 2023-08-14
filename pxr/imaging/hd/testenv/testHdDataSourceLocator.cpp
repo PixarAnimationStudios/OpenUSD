@@ -45,30 +45,23 @@ _LocatorCompare(const char *msg, const HdDataSourceLocator &loc,
 
 // clang expects these functions to be forward declared or defined before
 // the template definition (_ValueCompare) call.
-static std::ostream & 
-operator<<(
-        std::ostream &out, const HdDataSourceLocator &locator)
-{
-    return out << locator.GetString();
-}
-
+template<typename T>
 static std::ostream &
-operator<<(std::ostream &out, const HdDataSourceLocatorSet &locatorSet)
+operator<<(std::ostream &out, const std::vector<T> &vec)
 {
     out << "{ ";
     bool separator = false;
-    for (auto const& l : locatorSet) {
+    for (auto const& e : vec) {
         if (separator) {
            out << ", ";
         } else {
             separator = true;
         }
-        out << l;
+        out << e;
     }
     out << " }";
     return out;
 }
-
 
 template<typename T>
 bool 
@@ -442,7 +435,7 @@ bool TestLocatorSet()
 //-----------------------------------------------------------------------------
 
 static bool
-TestLocatorSetIntersection()
+TestLocatorSetIntersects()
 {
     {
         // Exercise code-path where size is smaller than _binarySearchCuroff.
@@ -991,6 +984,173 @@ TestLocatorSetReplaces()
     return true;
 }
 
+static
+std::vector<HdDataSourceLocator>
+_ToVector(const HdDataSourceLocatorSet::IntersectionView &v)
+{
+    return {v.begin(), v.end()};
+}
+
+static bool
+TestLocatorSetIntersection()
+{
+    const HdDataSourceLocator empty;
+    const HdDataSourceLocator mesh(TfToken("mesh"));
+    const HdDataSourceLocator primvars(TfToken("primvars"));
+    const HdDataSourceLocator primvarsColor =
+        primvars.Append(TfToken("color"));
+    const HdDataSourceLocator primvarsColorInterpolation =
+        primvarsColor.Append(TfToken("interpolation"));
+    const HdDataSourceLocator primvarsOpacity =
+        primvars.Append(TfToken("opacity"));
+
+    {
+        const HdDataSourceLocatorSet locators;
+
+        const bool result =
+                _ValueCompare(
+                    "Compute intersection of empty locator set with empty locator",
+                    _ToVector(locators.Intersection(empty)),
+                    { })
+            &&  _ValueCompare(
+                    "Compute intersection of empty locator with non-empty locator",
+                    _ToVector(locators.Intersection(primvars)),
+                    { });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        const HdDataSourceLocatorSet locators{empty};
+
+        const bool result =
+                _ValueCompare(
+                    "Compute intersection of empty locator set with empty locator",
+                    _ToVector(locators.Intersection(empty)),
+                    { empty })
+            &&  _ValueCompare(
+                    "Compute intersection of empty locator with non-empty locator",
+                    _ToVector(locators.Intersection(primvars)),
+                    { primvars });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        const HdDataSourceLocatorSet locators{mesh, primvars};
+
+        const bool result =
+                _ValueCompare(
+                    "D",
+                    _ToVector(locators.Intersection(empty)),
+                    { mesh, primvars })
+            &&  _ValueCompare(
+                    "A",
+                    _ToVector(locators.Intersection(mesh)),
+                    { mesh })
+            &&  _ValueCompare(
+                    "B",
+                    _ToVector(locators.Intersection(primvars)),
+                    { primvars })
+            &&  _ValueCompare(
+                    "C",
+                    _ToVector(locators.Intersection(primvarsColor)),
+                    { primvarsColor });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        const HdDataSourceLocatorSet locators{
+            mesh,
+            primvarsColorInterpolation,
+            primvarsOpacity};
+
+        const bool result =
+                _ValueCompare(
+                    "E",
+                    _ToVector(locators.Intersection(primvars)),
+                    { primvarsColorInterpolation,
+                      primvarsOpacity })
+            &&  _ValueCompare(
+                    "F",
+                    _ToVector(locators.Intersection(primvarsColor)),
+                    { primvarsColorInterpolation });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        // Trigger path where we actually do binary search.
+
+        const HdDataSourceLocatorSet locators{
+            mesh,
+            primvarsColorInterpolation,
+            primvarsOpacity,
+            HdDataSourceLocator(TfToken("za")),
+            HdDataSourceLocator(TfToken("zb")),
+            HdDataSourceLocator(TfToken("zc")),
+            HdDataSourceLocator(TfToken("zd")),
+            HdDataSourceLocator(TfToken("ze")),
+            HdDataSourceLocator(TfToken("zf")),
+            HdDataSourceLocator(TfToken("zg")),
+            HdDataSourceLocator(TfToken("zh")),
+            HdDataSourceLocator(TfToken("zi")),
+            HdDataSourceLocator(TfToken("zj"))};
+
+        const bool result =
+                _ValueCompare(
+                    "E",
+                    _ToVector(locators.Intersection(primvars)),
+                    { primvarsColorInterpolation,
+                      primvarsOpacity })
+            &&  _ValueCompare(
+                    "F",
+                    _ToVector(locators.Intersection(primvarsColor)),
+                    { primvarsColorInterpolation });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+    {
+        const HdDataSourceLocatorSet locators{
+            mesh,
+            primvarsColor,
+            primvarsOpacity};
+        const HdDataSourceLocatorSet::IntersectionView v =
+            locators.Intersection(primvars);
+
+        std::vector<TfToken> lastElementsIntersection;
+        for (auto it = v.begin(); it != v.end(); it++) {
+            lastElementsIntersection.push_back(it->GetLastElement());
+        }
+
+        const bool result =
+            _ValueCompare(
+                "Test IntersectionIterator::operator-> and post increment",
+                lastElementsIntersection,
+                { primvarsColor.GetLastElement(),
+                  primvarsOpacity.GetLastElement() });
+
+        if (!result) {
+            return false;
+        }
+    }
+
+
+    return true;
+}
+
 //-----------------------------------------------------------------------------
 
 #define xstr(s) str(s)
@@ -1011,9 +1171,10 @@ int main(int argc, char**argv)
     TEST(TestAppendsAndReplaces);
     TEST(TestIntersection);
     TEST(TestLocatorSet);
-    TEST(TestLocatorSetIntersection);
+    TEST(TestLocatorSetIntersects);
     TEST(TestLocatorSetContains);
     TEST(TestLocatorSetReplaces);
+    TEST(TestLocatorSetIntersection);
 
     // ------------------------------------------------------------------------
     std::cout << "DONE testHdDataSourceLocator: SUCCESS" << std::endl;

@@ -167,7 +167,7 @@ UsdSkelCache::ComputeSkelBindings(const UsdSkelRoot& skelRoot,
         const UsdSkelBindingAPI binding(*it);
 
         UsdSkelSkeleton skel;
-        if (!binding.GetSkeleton(&skel)) {
+        if (!(it->HasAPI<UsdSkelBindingAPI>() && binding.GetSkeleton(&skel))) {
             skel = skelStack.back();
         } else  {
             TF_DEBUG(USDSKEL_CACHE).Msg(
@@ -260,7 +260,7 @@ UsdSkelCache::ComputeSkelBinding(const UsdSkelRoot& skelRoot,
         const UsdSkelBindingAPI binding(*it);
 
         UsdSkelSkeleton boundSkel;
-        if (!binding.GetSkeleton(&boundSkel)) {
+        if (!(it->HasAPI<UsdSkelBindingAPI>() && binding.GetSkeleton(&boundSkel))) {
             boundSkel = skelStack.back();
         } else  {
             TF_DEBUG(USDSKEL_CACHE).Msg(

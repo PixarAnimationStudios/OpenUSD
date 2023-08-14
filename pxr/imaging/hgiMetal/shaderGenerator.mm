@@ -273,6 +273,9 @@ _GetDeclarationDefinitions()
         " atomic_fetch_add_explicit(&a, v, memory_order_relaxed)\n"
         "#define ATOMIC_EXCHANGE(a, desired)"
         " atomic_exchange_explicit(&a, desired, memory_order_relaxed)\n"
+        "#define ATOMIC_COMP_SWAP(a, expected, desired) \\"
+        "  atomic_compare_exchange_strong_explicit(&a, &expected, desired, "
+        "memory_order_relaxed, memory_order_relaxed)\n"
         "\n";
 }
 

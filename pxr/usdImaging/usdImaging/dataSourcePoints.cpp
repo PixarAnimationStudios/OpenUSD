@@ -45,7 +45,7 @@ const UsdImagingDataSourceCustomPrimvars::Mappings &
 _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 {
     static const UsdImagingDataSourceCustomPrimvars::Mappings mappings = {
-        {HdTokens->widths, HdTokens->widths},
+        {HdPrimvarsSchemaTokens->widths, UsdGeomTokens->widths},
     };
 
     return mappings;
@@ -54,21 +54,17 @@ _GetCustomPrimvarMappings(const UsdPrim &usdPrim)
 HdDataSourceBaseHandle
 UsdImagingDataSourcePointsPrim::Get(const TfToken &name)
 {
-    HdDataSourceBaseHandle result = UsdImagingDataSourceGprim::Get(name);
-    if (name == HdPrimvarsSchema::GetDefaultLocator().GetFirstElement()) {
-        HdContainerDataSourceHandle customPvs =
-            UsdImagingDataSourceCustomPrimvars::New(
-                _GetSceneIndexPath(),
-                _GetUsdPrim(),
-                _GetCustomPrimvarMappings(_GetUsdPrim()),
-                _GetStageGlobals());
+    HdDataSourceBaseHandle const result = UsdImagingDataSourceGprim::Get(name);
 
-        if (HdContainerDataSourceHandle basePvs =
-                HdContainerDataSource::Cast(result)) {
-            result = HdOverlayContainerDataSource::New(basePvs, customPvs);
-        } else {
-            result = customPvs;
-        }
+    if (name == HdPrimvarsSchema::GetSchemaToken()) {
+        return
+            HdOverlayContainerDataSource::New(
+                HdContainerDataSource::Cast(result),
+                UsdImagingDataSourceCustomPrimvars::New(
+                    _GetSceneIndexPath(),
+                    _GetUsdPrim(),
+                    _GetCustomPrimvarMappings(_GetUsdPrim()),
+                    _GetStageGlobals()));
     }
 
     return result;
@@ -79,14 +75,17 @@ HdDataSourceLocatorSet
 UsdImagingDataSourcePointsPrim::Invalidate(
         UsdPrim const& prim,
         const TfToken &subprim,
-        const TfTokenVector &properties)
+        const TfTokenVector &properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    HdDataSourceLocatorSet result = UsdImagingDataSourceGprim::Invalidate(
-        prim, subprim, properties);
+    HdDataSourceLocatorSet result =
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     if (subprim.IsEmpty()) {
-        result.insert(UsdImagingDataSourceCustomPrimvars::Invalidate(
-            properties, _GetCustomPrimvarMappings(prim)));
+        result.insert(
+            UsdImagingDataSourceCustomPrimvars::Invalidate(
+                properties, _GetCustomPrimvarMappings(prim)));
     }
 
     return result;

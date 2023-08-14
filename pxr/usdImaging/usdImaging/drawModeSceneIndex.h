@@ -86,9 +86,6 @@ protected:
         const HdSceneIndexObserver::DirtiedPrimEntries &entries) override;
 
 private:
-    // Does prim have ancestor in _prims.
-    bool _HasDrawModeAncestor(const SdfPath &path);
-
     // Delete path and all descendents from _prims.
     void _DeleteSubtree(const SdfPath &path);
     // Pull prim at path and recursively its descendants from input
@@ -100,6 +97,13 @@ private:
         const SdfPath &path,
         const HdSceneIndexPrim &prim,
         HdSceneIndexObserver::AddedPrimEntries *entries);
+
+    // Finds prim or ancestor of prim with non-default drawmode in _prims map.
+    // relPathLen indicates whether the found entry is for the prim itself (0),
+    // an immediate parent (1) or further ancestor (2 or larger).
+    UsdImaging_DrawModeStandinSharedPtr
+    _FindStandinForPrimOrAncestor(
+        const SdfPath &path, size_t * const relPathLen) const;
 
     // For prims with non-default drawmode, store a DrawModeStandin object
     // that can be queried for the stand-in geometry.

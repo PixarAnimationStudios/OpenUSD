@@ -31,8 +31,6 @@
 #include "pxr/base/tf/errorTransport.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/noncopyable.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfErrorMark
@@ -63,8 +61,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///      }
 /// \endcode
 ///
-class TfErrorMark : boost::noncopyable
+class TfErrorMark
 {
+    TfErrorMark(const TfErrorMark&) = delete;
+    TfErrorMark& operator=(const TfErrorMark&) = delete;
   public:
 
     typedef TfDiagnosticMgr::ErrorIterator Iterator;

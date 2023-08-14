@@ -167,7 +167,7 @@ class SdfAssetPath;
 /// the root of the instance.  When you are authoring primvars on a 
 /// PointInstancer, think about it as if you were authoring them on a 
 /// point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-/// <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+/// <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
 /// "instance" for "point".
 /// 
 /// In other words, the (constant) value extracted for each instance

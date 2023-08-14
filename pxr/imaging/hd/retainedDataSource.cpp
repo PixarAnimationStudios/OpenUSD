@@ -338,8 +338,8 @@ HdRetainedContainerDataSource::New(
 // ----------------------------------------------------------------------------
 
 HdRetainedSmallVectorDataSource::HdRetainedSmallVectorDataSource(
-    size_t count, 
-    HdDataSourceBaseHandle *values) : 
+    const size_t count, 
+    const HdDataSourceBaseHandle *values) : 
     _values(count)
 {
     for (size_t i = 0; i < count; ++i) {

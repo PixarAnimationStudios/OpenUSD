@@ -15,7 +15,7 @@ USD Home
 
       |usdlogo| :usdtitletext:`Universal Scene Description`
 
-   .. image:: https://graphics.pixar.com/usd/images/piper-banner.jpg
+   .. image:: https://openusd.org/images/piper-banner.jpg
       :class: +card-img
 
 .. div:: usd-index-brief
@@ -60,7 +60,7 @@ USD Home
    ^^^^^^^^^^^^^
    - :doc:`Terms and Concepts <glossary>`
    - `API Documentation <api/index.html>`_
-   - `usd-interest Group <https://groups.google.com/g/usd-interest>`_
+   - `OpenUSD Forum <https://forum.openusd.org>`_
    - :doc:`Specifications <spec>`
    - :doc:`Proposals <wp>`
    - `USD Cookbook <https://github.com/ColinKennedy/USD-Cookbook>`_

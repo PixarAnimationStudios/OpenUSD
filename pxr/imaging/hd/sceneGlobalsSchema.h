@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -35,6 +35,10 @@
 
 #include "pxr/imaging/hd/schema.h" 
 
+
+#include "pxr/usd/sdf/path.h"
+#include "pxr/imaging/hd/sceneIndex.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
@@ -53,7 +57,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
 /// describes the information necessary to generate images from a single
 /// invocation of a renderer.
 ///
-/// We shall use the convention of a container data source at the root locator
+/// We shall use the convention of a container data source at the root prim
 /// of the scene index that is populated with this global state.
 /// The renderer and downstream scene indices can query it to configure their
 /// behavior as necessary.
@@ -103,6 +107,25 @@ public:
     private:
         HdPathDataSourceHandle _activeRenderSettingsPrim;
     };
+    
+    /// Constructs and returns a HdSceneGlobalsSchema from the root prim in the
+    /// scene index. Since the root prim might not have a data source for this
+    /// schema, the result should be checked with IsDefined() or a bool 
+    /// conversion before use.
+    ///
+    /// \note This API is preferable to GetFromParent(container).
+    HD_API
+    static HdSceneGlobalsSchema
+    GetFromSceneIndex(
+        const HdSceneIndexBaseRefPtr &si);
+    
+    /// Utility method to concretize the convention of parking the 
+    /// "sceneGlobals" container at the root prim of the scene index.
+    static const SdfPath&
+    GetDefaultPrimPath() {
+        return SdfPath::AbsoluteRootPath();
+    }
+
 
     /// Retrieves a container data source with the schema's default name token
     /// "sceneGlobals" from the parent container and constructs a
@@ -112,6 +135,11 @@ public:
     HD_API
     static HdSceneGlobalsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.

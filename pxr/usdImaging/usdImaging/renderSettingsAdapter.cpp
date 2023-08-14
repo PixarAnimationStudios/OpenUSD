@@ -42,6 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    ((outputsRiIntegrator, "outputs:ri:integrator"))
     ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
     ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
 );
@@ -97,11 +98,12 @@ HdDataSourceLocatorSet
 UsdImagingRenderSettingsAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
-    TfTokenVector const& properties)
+    TfTokenVector const& properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         return UsdImagingDataSourceRenderSettingsPrim::Invalidate(
-            prim, subprim, properties);
+            prim, subprim, properties, invalidationType);
     }
 
     return HdDataSourceLocatorSet();
@@ -163,20 +165,20 @@ UsdImagingRenderSettingsAdapter::Populate(
         }
     }
 
-    // Check for Sample and Display Filter Connections and:
+    // Check for Integrator, Sample and Display Filter Connections:
     // 1, Forward to their adapter for populating corresponding Hydra prims
     // 2. Add dependency *from* the corressponding USD prim(s) *to* the hydra
     //    render settings prim.
     {
-        const TfToken outputFilterTokens[] = {
+        const TfToken outputTokens[] = {
+            _tokens->outputsRiIntegrator,
             _tokens->outputsRiSampleFilters,
             _tokens->outputsRiDisplayFilters
         };
 
-        for (const auto token : outputFilterTokens) {
+        for (const auto token : outputTokens) {
             SdfPathVector connections;
-            prim.GetAttribute(token)
-                .GetConnections(&connections);
+            prim.GetAttribute(token).GetConnections(&connections);
             for (auto const& connPath : connections) {
                 const UsdPrim &connPrim = prim.GetStage()->GetPrimAtPath(
                     connPath.GetPrimPath());
@@ -241,12 +243,18 @@ UsdImagingRenderSettingsAdapter::ProcessPropertyChange(
     SdfPath const& cachePath, 
     TfToken const& propertyName)
 {
-    // XXX Process property changes on RenderSettings prim, as well as changes
-    //     to targeted RenderProduct and RenderVar prims.
-    //     For now, return AllDirty as a catch-all.
-    //     This should be HdRenderSettings::AllDirty, but UsdImagingDelegate
-    //     relies on the enum value below instead to flag resync.
-    return HdChangeTracker::AllDirty;
+    if (propertyName == UsdRenderTokens->includedPurposes) {
+        return HdRenderSettings::DirtyIncludedPurposes;
+    }
+    if (propertyName == UsdRenderTokens->materialBindingPurposes) {
+        return HdRenderSettings::DirtyMaterialBindingPurposes;
+    }
+    if (propertyName == UsdRenderTokens->renderingColorSpace) {
+        return HdRenderSettings::DirtyRenderingColorSpace;
+    }
+    // XXX Bucket all other changes as product or namespaced setting related.
+    return HdRenderSettings::DirtyNamespacedSettings |
+           HdRenderSettings::DirtyRenderProducts;
 }
 
 void

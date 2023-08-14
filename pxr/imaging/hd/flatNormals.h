@@ -26,16 +26,14 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/api.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
+
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
-#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
 
 class HdMeshTopology;
 
@@ -46,7 +44,8 @@ class HdMeshTopology;
 /// flat per-face normals.  It does this by breaking each face into
 /// a triangle fan centered at vertex 0, and averaging triangle normals.
 ///
-class Hd_FlatNormals final {
+class Hd_FlatNormals final
+{
 public:
     /// Computes the flat normals result using the supplied face coord
     /// information and points data. Returns an array of the same size and
@@ -73,36 +72,6 @@ private:
     ~Hd_FlatNormals() = delete;
 };
 
-/// \class Hd_FlatNormalsComputation
-///
-/// Flat normal computation CPU.
-///
-class Hd_FlatNormalsComputation : public HdComputedBufferSource {
-public:
-    HD_API
-    Hd_FlatNormalsComputation(HdMeshTopology const *topology,
-                              HdBufferSourceSharedPtr const &points,
-                              TfToken const &dstName,
-                              bool packed);
-
-    /// overrides
-    HD_API
-    virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
-    HD_API
-    virtual bool Resolve() override;
-    HD_API
-    virtual TfToken const &GetName() const override;
-
-protected:
-    HD_API
-    virtual bool _CheckValid() const override;
-
-private:
-    HdMeshTopology const *_topology;
-    HdBufferSourceSharedPtr const _points;
-    TfToken _dstName;
-    bool _packed;
-};
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

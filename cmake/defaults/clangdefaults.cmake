@@ -26,7 +26,10 @@ include(gccclangshareddefaults)
 
 set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
 
+# Prevent floating point result discrepancies on Apple platforms
+# due to multiplication+additions being converted to FMA
 if (APPLE)
+    set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -ffp-contract=off")
     _disable_warning("comma")
     _disable_warning("deprecated-register")
     _disable_warning("documentation")

@@ -34,8 +34,6 @@
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/errno.h"
 
-#include <boost/assign.hpp>
-#include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashset.h"
 

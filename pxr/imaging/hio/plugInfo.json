@@ -6,7 +6,7 @@
                     "Hio_StbImage" : {
                         "bases": ["HioImage"],
                         "imageTypes": ["bmp", "jpg", "jpeg", "png", "tga", "hdr"],
-                        "precedence": 2
+                        "precedence": 30
                     }
                 }
             },

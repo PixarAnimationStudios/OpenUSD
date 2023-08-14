@@ -32,7 +32,6 @@
 
 #include <string>
 #include <utility>
-#include <boost/operators.hpp>
 #include <boost/optional.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -44,7 +43,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A \c SdfAllowed either evaluates to \c true in a boolean context
 /// or evaluates to \c false and has a string annotation.
 ///
-class SdfAllowed : private boost::equality_comparable<SdfAllowed> {
+class SdfAllowed {
 private:
     typedef boost::optional<std::string> _State;
 
@@ -111,6 +110,11 @@ public:
     bool operator==(const SdfAllowed& other) const
     {
         return _state == other._state;
+    }
+
+    bool operator!=(const SdfAllowed& other) const
+    {
+        return !(*this == other);
     }
 
 private:

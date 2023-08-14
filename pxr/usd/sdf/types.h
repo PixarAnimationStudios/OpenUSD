@@ -66,7 +66,6 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/vt/value.h"
 
-#include <boost/noncopyable.hpp>
 #include <boost/preprocessor/list/for_each.hpp>
 #include <boost/preprocessor/list/size.hpp>
 #include <boost/preprocessor/punctuation/comma.hpp>
@@ -485,8 +484,7 @@ std::ostream &VtStreamOut(const SdfVariantSelectionMap &, std::ostream &);
 /// well as limited inspection and editing capabilities (e.g., moving
 /// this data to a different spec or field) even when the data type
 /// of the value isn't known.
-class SdfUnregisteredValue : 
-    public boost::equality_comparable<SdfUnregisteredValue>
+class SdfUnregisteredValue
 {
 public:
     /// Wraps an empty VtValue
@@ -514,6 +512,9 @@ public:
     /// Returns true if the wrapped VtValues are equal
     SDF_API bool operator==(const SdfUnregisteredValue &other) const;
 
+    /// Returns true if the wrapped VtValues are not equal
+    SDF_API bool operator!=(const SdfUnregisteredValue &other) const;
+
 private:
     VtValue _value;
 };
@@ -521,7 +522,9 @@ private:
 /// Writes the string representation of \c SdfUnregisteredValue to \a out.
 SDF_API std::ostream &operator << (std::ostream &out, const SdfUnregisteredValue &value);
 
-class Sdf_ValueTypeNamesType : boost::noncopyable {
+class Sdf_ValueTypeNamesType {
+    Sdf_ValueTypeNamesType(const Sdf_ValueTypeNamesType&) = delete;
+    Sdf_ValueTypeNamesType& operator=(const Sdf_ValueTypeNamesType&) = delete;
 public:
     SdfValueTypeName Bool;
     SdfValueTypeName UChar, Int, UInt, Int64, UInt64;

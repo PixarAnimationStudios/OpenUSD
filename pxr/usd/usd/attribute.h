@@ -404,6 +404,11 @@ public:
     /// stage's interpolation type.
     /// See \ref Usd_AttributeInterpolation.
     ///
+    /// If no value is authored and no fallback value is provided by the 
+    /// schema for this attribute, this function will return false. If the 
+    /// consumer's use-case requires a default value, the consumer will need
+    /// to provide one, possibly using GetTypeName().GetDefaultValue().
+    ///
     /// This templated accessor is designed for high performance data-streaming
     /// applications, allowing one to fetch data into the same container
     /// repeatedly, avoiding memory allocations when possible (VtArray

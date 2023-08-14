@@ -55,6 +55,26 @@ _GetInterpolation(const UsdAttribute &attr)
     return HdPrimvarSchemaTokens->vertex;
 }
 
+// Reject primvars:points since we always want to get the value from
+// the points attribute.
+// Similar for velocities and accelerations.
+static
+bool
+_RejectPrimvar(const TfToken &name)
+{
+    if (name == UsdGeomTokens->points) {
+        return true;
+    }
+    if (name == UsdGeomTokens->velocities) {
+        return true;
+    }
+    if (name == UsdGeomTokens->accelerations) {
+        return true;
+    }
+
+    return false;
+}
+
 UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
     const SdfPath &sceneIndexPath,
     UsdPrim const &usdPrim,
@@ -64,9 +84,11 @@ UsdImagingDataSourcePrimvars::UsdImagingDataSourcePrimvars(
 , _usdPrim(usdPrim)
 , _stageGlobals(stageGlobals)
 {
-    const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetPrimvars();
+    const std::vector<UsdGeomPrimvar> primvars = usdPrimvars.GetAuthoredPrimvars();
     for (const UsdGeomPrimvar & p : primvars) {
-        _namespacedPrimvars[p.GetPrimvarName()] = p;
+        if (!_RejectPrimvar(p.GetPrimvarName())) {
+            _namespacedPrimvars[p.GetPrimvarName()] = p;
+        }
     }
 }
 

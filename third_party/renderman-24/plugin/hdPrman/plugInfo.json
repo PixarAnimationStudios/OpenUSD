@@ -21,12 +21,6 @@
                         "priority": 0,
                         "displayName": "Prman MaterialX Filtering Scene Index"
                     },
-                    "HdPrman_TerminalsResolvingSceneIndexPlugin" : {
-                        "bases": ["HdSceneIndexPlugin"],
-                        "loadWithRenderer": "Prman",
-                        "priority": 0,
-                        "displayName": "Prman Terminals Resolving Scene Index"
-                    },
                     "HdPrman_VirtualStructResolvingSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
@@ -62,6 +56,12 @@
                         "loadWithRenderer": "Prman",
                         "priority": 0,
                         "displayName": "Prman ExtComputation Primvar Pruning Scene Index"
+                    },
+                    "HdPrman_RenderSettingsFilteringSceneIndexPlugin" : {
+                        "bases": ["HdSceneIndexPlugin"],
+                        "loadWithRenderer": "Prman",
+                        "priority": 0,
+                        "displayName": "Prman Render Settings Filtering Scene Index"
                     }
                 }
             },

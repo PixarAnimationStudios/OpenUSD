@@ -203,6 +203,7 @@ void main()
         ["mat4", "cullMatrix"],
         ["vec2", "drawRangeNDC"],
         ["uint", "drawCommandNumUints"],
+        ["uint",  "drawBatchId"],
         ["int",  "resetPass"]
     ],
     ["buffer readWrite", "DispatchBuffer", "dispatchBuffer",
@@ -277,6 +278,10 @@ void main()
         // are clearing same field to zero, and and so might not guard this
         // access as atomic.
         ATOMIC_STORE(drawCommands[instanceCountBufferOffset], 0);
+
+        // Sets first value of culledInstancesIndices to 0.
+        ATOMIC_STORE(culledInstanceIndices[GetBaseInstanceIndexCoord()], 0);
+
         return;
     }
 
@@ -293,9 +298,44 @@ void main()
         toClip, localMin, localMax, drawRangeNDC);
 
     if (isVisible) {
-        // increment the instance count and store instanceIndex to culledInstanceIndices.
+        // increment the instance count and store instanceIndex to 
+        // culledInstanceIndices.
 
         uint id = ATOMIC_ADD(drawCommands[instanceCountBufferOffset], 1);
+
+        // There is a potential correctness issue that happens when an instanced
+        // prim has geom subsets, resulting in multiple draw items with the same
+        // instanceIndices and culledInstanceIndices buffers (as we do not 
+        // duplicate these buffers for geom subset draw items). These geom 
+        // subset draw items will each try to read and write from the same 
+        // instanceIndices and culledInstanceIndices buffers from different
+        // threads of this shader. Given the potential difference in execution 
+        // order of the different threads, which each corresponding to a 
+        // different instance id, this can result in incorrect
+        // culledInstanceIndices.
+        // 
+        // To guard against this, we only allow one of these geom subset draw 
+        // items to write to the culledInstanceIndices buffer, by adding an 
+        // extra value at the start of culledInstanceIndices where we store
+        // the xor of the drawCommandIndex and drawBatchId for the first thread 
+        // to complete the atomic op below. Only this thread will be allowed to
+        // edit the culledInstanceIndices buffer.
+        int hash = drawCommandIndex ^ int(drawBatchId);
+
+        // XXX: There is a linking error in OpenGL when using atomicCompSwap 
+        // on bindless buffer culledInstanceIndices using the else case method.
+        // Thus we add this alternative.
+#ifdef HD_BINDLESS_BUFFERS_ENABLED
+        ATOMIC_COMP_SWAP(
+            culledInstanceIndices + GetBaseInstanceIndexCoord(), 0, hash);
+#else
+        ATOMIC_COMP_SWAP(
+            culledInstanceIndices[GetBaseInstanceIndexCoord()], 0, hash);
+#endif
+        
+        if (culledInstanceIndices[GetBaseInstanceIndexCoord()] != hash) {
+            return;
+        }
 
         SetCulledInstanceIndex(id);
         FrustumCullCountVisibleInstances(1);

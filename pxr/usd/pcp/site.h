@@ -31,7 +31,6 @@
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <boost/operators.hpp>
 #include <iosfwd>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -43,7 +42,7 @@ class PcpLayerStackSite;
 ///
 /// A site specifies a path in a layer stack of scene description.
 ///
-class PcpSite : boost::totally_ordered<PcpSite> 
+class PcpSite
 {
 public:
     PcpLayerStackIdentifier layerStackIdentifier;
@@ -59,13 +58,29 @@ public:
     PCP_API
     PcpSite( const SdfLayerHandle &, const SdfPath & path );
     PCP_API
-    explicit PcpSite( const PcpLayerStackSite & );
+    PcpSite( const PcpLayerStackSite & );
 
     PCP_API
     bool operator==(const PcpSite &rhs) const;
+
+    bool operator!=(const PcpSite &rhs) const {
+        return !(*this == rhs);
+    }
     
     PCP_API
     bool operator<(const PcpSite &rhs) const;
+
+    bool operator<=(const PcpSite &rhs) const {
+        return !(rhs < *this);
+    }
+
+    bool operator>(const PcpSite &rhs) const {
+        return rhs < *this;
+    }
+
+    bool operator>=(const PcpSite &rhs) const {
+        return !(*this < rhs);
+    }
 
     struct Hash {
         PCP_API
@@ -73,48 +88,11 @@ public:
     };
 };
 
-/// \class PcpSiteStr
-///
-/// A "string-based" version of PcpSite.  This stores layer identifiers as
-/// strings rather than SdfLayerHandles, making it stable wrt layer lifetimes.
-///
-class PcpSiteStr : boost::totally_ordered<PcpSiteStr>
-{
-public:
-    PcpLayerStackIdentifierStr layerStackIdentifierStr;
-    SdfPath path;
-    
-    PCP_API
-    PcpSiteStr();
-
-    PCP_API
-    PcpSiteStr( const PcpLayerStackIdentifierStr &, const SdfPath & path );
-    PCP_API
-    PcpSiteStr( const PcpLayerStackIdentifier &, const SdfPath & path );
-    PCP_API
-    PcpSiteStr( const SdfLayerHandle &, const SdfPath & path );
-    PCP_API
-    PcpSiteStr(PcpLayerStackSite const &);
-    PCP_API
-    PcpSiteStr(PcpSite const &);
-
-    PCP_API
-    bool operator==(const PcpSiteStr &rhs) const;
-    
-    PCP_API
-    bool operator<(const PcpSiteStr &rhs) const;
-
-    struct Hash {
-        PCP_API
-        size_t operator()(const PcpSiteStr &) const;
-    };
-};
-
 /// \class PcpLayerStackSite
 ///
 /// A site specifies a path in a layer stack of scene description.
 ///
-class PcpLayerStackSite : boost::totally_ordered<PcpLayerStackSite> 
+class PcpLayerStackSite
 {
 public:
     PcpLayerStackRefPtr layerStack;
@@ -129,8 +107,25 @@ public:
     PCP_API
     bool operator==(const PcpLayerStackSite &rhs) const;
 
+    bool operator!=(const PcpLayerStackSite &rhs) const {
+        return !(*this == rhs);
+    }
+
     PCP_API
     bool operator<(const PcpLayerStackSite &rhs) const;
+
+    bool operator<=(const PcpLayerStackSite &rhs) const {
+        return !(rhs < *this);
+    }
+
+    bool operator>(const PcpLayerStackSite &rhs) const {
+        return rhs < *this;
+    }
+
+    bool operator>=(const PcpLayerStackSite &rhs) const {
+        return !(*this < rhs);
+    }
+
 
     struct Hash {
         PCP_API
@@ -141,8 +136,6 @@ public:
 PCP_API
 std::ostream& operator<<(std::ostream&, const PcpSite&);
 PCP_API
-std::ostream& operator<<(std::ostream&, const PcpSiteStr&);
-PCP_API
 std::ostream& operator<<(std::ostream&, const PcpLayerStackSite&);
 
 static inline
@@ -150,13 +143,6 @@ size_t
 hash_value(const PcpSite& site)
 {
     return PcpSite::Hash()(site);
-}
-
-static inline
-size_t
-hash_value(const PcpSiteStr& site)
-{
-    return PcpSiteStr::Hash()(site);
 }
 
 static inline

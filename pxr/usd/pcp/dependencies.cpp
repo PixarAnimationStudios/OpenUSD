@@ -21,7 +21,6 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-/// \file Dependencies.cpp
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/dependencies.h"
@@ -85,7 +84,8 @@ void
 Pcp_Dependencies::Add(
     const PcpPrimIndex &primIndex,
     PcpCulledDependencyVector &&culledDependencies,
-    PcpDynamicFileFormatDependencyData &&fileFormatDependencyData)
+    PcpDynamicFileFormatDependencyData &&fileFormatDependencyData,
+    PcpExpressionVariablesDependencyData &&exprVarDependencyData)
 {
     TfAutoMallocTag2 tag("Pcp", "Pcp_Dependencies::Add");
     if (!primIndex.GetRootNode()) {
@@ -176,21 +176,49 @@ Pcp_Dependencies::Add(
     // Store the prim index's dynamic file format dependency of the prim index
     // if possible
     if (!fileFormatDependencyData.IsEmpty()) {
-        // Update the cache of field names that are are possible dynamic file
-        // format argument dependencies by incrementing its reference count, 
-        // adding the field to the cache if it isn't already there.
+        // Update the caches of field names and attribute names that are are 
+        // possible dynamic file format argument dependencies by incrementing 
+        // their reference counts, adding them to the appropriate cache if not
+        // already there.
         tbb::spin_mutex::scoped_lock lock;
         if (_concurrentPopulationContext) {
             lock.acquire(_concurrentPopulationContext->_mutex);
         }
-        for (const TfToken &field : 
-                fileFormatDependencyData.GetRelevantFieldNames()) {
-            auto it = _possibleDynamicFileFormatArgumentFields.emplace(field, 0);
-            it.first->second++;
-        }
+
+        auto addNamesToDepMapFn = [](
+            _FileFormatArgumentFieldDepMap &depMap, const TfToken::Set &names)
+        {
+            for (const TfToken &name : names) {
+                auto it = depMap.emplace(name, 0);
+                it.first->second++;
+            }
+        };
+        addNamesToDepMapFn(_possibleDynamicFileFormatArgumentFields,
+            fileFormatDependencyData.GetRelevantFieldNames());
+        addNamesToDepMapFn(_possibleDynamicFileFormatArgumentAttributes,
+            fileFormatDependencyData.GetRelevantAttributeNames());
+       
         // Take and store the dependency data.
         _fileFormatArgumentDependencyMap[primIndexPath] = 
             std::move(fileFormatDependencyData);
+    }
+
+    if (!exprVarDependencyData.IsEmpty()) {
+        tbb::spin_mutex::scoped_lock lock;
+        if (_concurrentPopulationContext) {
+            lock.acquire(_concurrentPopulationContext->_mutex);
+        }
+
+        exprVarDependencyData.ForEachDependency(
+            [&, this](
+                const PcpLayerStackPtr& layerStack,
+                const std::unordered_set<std::string>&)
+            {
+                _layerStackExprVarsMap[layerStack].push_back(primIndexPath);
+            });
+
+        _exprVarsDependencyMap[primIndexPath] = 
+            std::move(exprVarDependencyData);
     }
 
     if (count == 0) {
@@ -315,27 +343,60 @@ Pcp_Dependencies::Remove(const PcpPrimIndex &primIndex, PcpLifeboat *lifeboat)
     auto it = _fileFormatArgumentDependencyMap.find(primIndexPath);
     if (it != _fileFormatArgumentDependencyMap.end()) {
         if (TF_VERIFY(!it->second.IsEmpty())) {
-            // We need to also update the reference counts for the 
-            // dependency's relevant fields in the field name cache.
-            for (const auto &field : it->second.GetRelevantFieldNames()) {
-                auto fieldIt =
-                     _possibleDynamicFileFormatArgumentFields.find(field);
-                if (TF_VERIFY(fieldIt != 
-                              _possibleDynamicFileFormatArgumentFields.end())) {
-                    // If the field's reference count will drop to 0, we 
-                    // need to remove it completely as 
-                    // IsPossibleDynamicFileFormatArgumentField only tests
-                    // existence.
-                    if (fieldIt->second <= 1) {
-                        _possibleDynamicFileFormatArgumentFields.erase(fieldIt);
-                    } else {
-                        fieldIt->second--;
+
+            auto removeNamesFromDepMapFn = [](
+                _FileFormatArgumentFieldDepMap &depMap, const TfToken::Set &names)
+            {
+                for (const auto &name : names) {
+                    auto depMapIt = depMap.find(name);
+                    if (TF_VERIFY(depMapIt != depMap.end())) {
+                        // If the reference count will drop to 0, we need to 
+                        // remove it completely as the 
+                        // IsPossibleDynamicFileFormatArgument... functions only
+                        // test for existence of the name in the map.
+                        if (depMapIt->second <= 1) {
+                            depMap.erase(depMapIt);
+                        } else {
+                            depMapIt->second--;
+                        }
                     }
                 }
-            }
+            };
+
+            // We need to also update the reference counts for the 
+            // dependency's relevant fields and attributes in their respective
+            // name caches.
+            removeNamesFromDepMapFn(_possibleDynamicFileFormatArgumentFields,
+                it->second.GetRelevantFieldNames());
+            removeNamesFromDepMapFn(_possibleDynamicFileFormatArgumentAttributes,
+                it->second.GetRelevantAttributeNames());
         }
         // Remove the dependency data.
         _fileFormatArgumentDependencyMap.erase(it);
+    }
+
+    auto exprVarIt = _exprVarsDependencyMap.find(primIndexPath);
+    if (exprVarIt != _exprVarsDependencyMap.end()) {
+        exprVarIt->second.ForEachDependency(
+            [&, this](
+                const PcpLayerStackPtr& layerStack,
+                const std::unordered_set<std::string>&)
+            {
+                auto layerStackIt = _layerStackExprVarsMap.find(layerStack);
+                if (TF_VERIFY(layerStackIt != _layerStackExprVarsMap.end())) {
+                    SdfPathVector& primIndexPaths = layerStackIt->second;
+                    primIndexPaths.erase(
+                        std::remove(
+                            primIndexPaths.begin(), primIndexPaths.end(),
+                            primIndexPath),
+                        primIndexPaths.end());
+                    if (primIndexPaths.empty()) {
+                        _layerStackExprVarsMap.erase(layerStackIt);
+                    }
+                }
+            });
+
+        _exprVarsDependencyMap.erase(exprVarIt);
     }
 }
 
@@ -355,8 +416,11 @@ Pcp_Dependencies::RemoveAll(PcpLifeboat* lifeboat)
     _deps.clear();
     ++_layerStacksRevision;
     _possibleDynamicFileFormatArgumentFields.clear();
+    _possibleDynamicFileFormatArgumentAttributes.clear();
     _culledDependenciesMap.clear();
     _fileFormatArgumentDependencyMap.clear();
+    _exprVarsDependencyMap.clear();
+    _layerStackExprVarsMap.clear();
 }
 
 SdfLayerHandleSet 
@@ -407,9 +471,16 @@ Pcp_Dependencies::GetCulledDependencies(
 }
 
 bool 
-Pcp_Dependencies::HasAnyDynamicFileFormatArgumentDependencies() const
+Pcp_Dependencies::HasAnyDynamicFileFormatArgumentFieldDependencies() const
 {
     return !_possibleDynamicFileFormatArgumentFields.empty();
+}
+
+bool 
+Pcp_Dependencies::
+HasAnyDynamicFileFormatArgumentAttributeDependencies() const
+{
+    return !_possibleDynamicFileFormatArgumentAttributes.empty();
 }
 
 bool 
@@ -419,6 +490,15 @@ Pcp_Dependencies::IsPossibleDynamicFileFormatArgumentField(
     // Any field in the map will have at least one prim index dependency logged
     // for it.
     return _possibleDynamicFileFormatArgumentFields.count(field) > 0;
+}
+
+bool 
+Pcp_Dependencies::IsPossibleDynamicFileFormatArgumentAttribute(
+    const TfToken &attributeName) const
+{
+    // Any attribute name in the map will have at least one prim index 
+    // dependency logged for it.
+    return _possibleDynamicFileFormatArgumentAttributes.count(attributeName) > 0;
 }
 
 const PcpDynamicFileFormatDependencyData &
@@ -431,6 +511,35 @@ Pcp_Dependencies::GetDynamicFileFormatArgumentDependencyData(
         return empty;
     }
     return it->second;
+}
+
+const SdfPathVector&
+Pcp_Dependencies::GetPrimsUsingExpressionVariablesFromLayerStack(
+    const PcpLayerStackPtr& layerStack) const
+{
+    static const SdfPathVector empty;
+
+    const SdfPathVector* primIndexPaths = 
+        TfMapLookupPtr(_layerStackExprVarsMap, layerStack);
+    return primIndexPaths ? *primIndexPaths : empty;
+}
+
+const std::unordered_set<std::string>&
+Pcp_Dependencies::GetExpressionVariablesFromLayerStackUsedByPrim(
+    const SdfPath &primIndexPath,
+    const PcpLayerStackPtr &layerStack) const
+{
+    static const std::unordered_set<std::string> empty;
+    
+    const PcpExpressionVariablesDependencyData* exprVarDeps =
+        TfMapLookupPtr(_exprVarsDependencyMap, primIndexPath);
+    if (!exprVarDeps) {
+        return empty;
+    }
+
+    const std::unordered_set<std::string>* usedExprVars =
+        exprVarDeps->GetDependenciesForLayerStack(layerStack);
+    return usedExprVars ? *usedExprVars : empty;
 }
 
 void

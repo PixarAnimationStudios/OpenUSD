@@ -63,8 +63,3 @@ void wrap_TestPlugBase()
     wrap_TestPlugBase<_TestPlugBase3>("_TestPlugBase3");
     wrap_TestPlugBase<_TestPlugBase4>("_TestPlugBase4");
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase1)
-TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase2)
-TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase3)
-TF_REFPTR_CONST_VOLATILE_GET(_TestPlugBase4)

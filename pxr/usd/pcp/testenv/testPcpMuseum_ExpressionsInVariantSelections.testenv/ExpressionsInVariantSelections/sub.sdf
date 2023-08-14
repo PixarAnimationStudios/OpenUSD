@@ -1,0 +1,16 @@
+#sdf 1.4.32
+
+def "BadExpressionInSelection" (
+    variantSets = ["v"]
+    variants = {
+        string v = "`'sel_${ROOT_VAR_SEL}'`"
+    }
+)
+{
+    variantSet "v" = {
+        "sel_x" {
+        }
+        "sel_y" {
+        }
+    }
+}

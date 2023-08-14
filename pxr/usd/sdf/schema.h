@@ -59,8 +59,9 @@ TF_DECLARE_WEAK_PTRS(PlugPlugin);
 /// Generic class that provides information about scene description fields
 /// but doesn't actually provide any fields.
 ///
-class SdfSchemaBase : public TfWeakBase, public boost::noncopyable {
-
+class SdfSchemaBase : public TfWeakBase {
+    SdfSchemaBase(const SdfSchemaBase&) = delete;
+    SdfSchemaBase& operator=(const SdfSchemaBase&) = delete;
 protected:
     class _SpecDefiner;
 
@@ -313,6 +314,8 @@ public:
     static SdfAllowed IsValidSubLayer(const std::string& sublayer);
     SDF_API 
     static SdfAllowed IsValidVariantIdentifier(const std::string& name);
+    SDF_API
+    static SdfAllowed IsValidVariantSelection(const std::string& sel);
 
     /// @}
 
@@ -601,6 +604,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((DisplayUnit, "displayUnit"))                           \
     ((Documentation, "documentation"))                       \
     ((EndTimeCode, "endTimeCode"))                           \
+    ((ExpressionVariables, "expressionVariables"))           \
     ((FramePrecision, "framePrecision"))                     \
     ((FramesPerSecond, "framesPerSecond"))                   \
     ((Hidden, "hidden"))                                     \

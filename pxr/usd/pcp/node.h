@@ -31,7 +31,6 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <boost/operators.hpp>
 #include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
 
@@ -64,8 +63,7 @@ TF_DECLARE_REF_PTRS(PcpPrimIndex_Graph);
 /// as well as any value-mapping needed, such as to rename opinions
 /// from a model to use in a particular instance.
 ///
-class PcpNodeRef : 
-    public boost::totally_ordered<PcpNodeRef>
+class PcpNodeRef
 {
 public:
     typedef PcpNodeRef_ChildrenIterator child_const_iterator;
@@ -89,11 +87,35 @@ public:
         return _nodeIdx == rhs._nodeIdx && _graph == rhs._graph;
     }
 
+    /// Inequality operator
+    /// \sa PcpNodeRef::operator==(const PcpNodeRef&)
+    inline bool operator!=(const PcpNodeRef& rhs) const {
+        return !(*this == rhs);
+    }
+
     /// Returns true if this node is 'less' than \p rhs. 
     /// The ordering of nodes is arbitrary and does not indicate the relative
     /// strength of the nodes.
     PCP_API
     bool operator<(const PcpNodeRef& rhs) const;
+
+    /// Less than or equal operator
+    /// \sa PcpNodeRef::operator<(const PcpNodeRef&)
+    bool operator<=(const PcpNodeRef& rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// Greater than operator
+    /// \sa PcpNodeRef::operator<(const PcpNodeRef&)
+    bool operator>(const PcpNodeRef& rhs) const {
+        return rhs < *this;
+    }
+
+    /// Greater than or equal operator
+    /// \sa PcpNodeRef::operator<(const PcpNodeRef&)
+    bool operator>=(const PcpNodeRef& rhs) const {
+        return !(*this < rhs);
+    }
 
     /// Hash functor.
     struct Hash {
@@ -453,7 +475,7 @@ struct Tf_IteratorInterface<PcpNodeRef::child_const_range, true> {
 
 template <>
 struct Tf_ShouldIterateOverCopy<PcpNodeRef::child_const_range> :
-    boost::true_type {};
+    std::true_type {};
 
 /// Support for range-based for loops for PcpNodeRef children ranges.
 inline

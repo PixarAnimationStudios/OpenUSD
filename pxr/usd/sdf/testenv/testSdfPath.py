@@ -63,6 +63,7 @@ class TestSdfPath(unittest.TestCase):
             123test
             /Foo:Bar
             /Foo.bar.mapper[/Targ.attr].arg:name:space
+            /root_utf8_umlaute_ß_3
             '''.split()
         for badPath in badPaths:
             self.assertTrue(Sdf.Path(badPath).isEmpty)
@@ -75,6 +76,20 @@ class TestSdfPath(unittest.TestCase):
         self.assertTrue(Sdf.Path('aaa') < Sdf.Path('aab'))
         self.assertTrue(not Sdf.Path('aaa') < Sdf.Path())
         self.assertTrue(Sdf.Path('/') < Sdf.Path('/a'))
+
+        # Test greaterthan
+        self.assertGreater(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreater(Sdf.Path('/a'), Sdf.Path.emptyPath)
+
+        # Test lessequal
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aab'))
+        self.assertLessEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertLessEqual(Sdf.Path.emptyPath, Sdf.Path('/a'))
+
+        # Test greaterequal
+        self.assertGreaterEqual(Sdf.Path('aab'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('aaa'), Sdf.Path('aaa'))
+        self.assertGreaterEqual(Sdf.Path('/a'), Sdf.Path.emptyPath)
         
         # XXX test path from elements ['.prop'] when we have that wrapped?
         
@@ -130,6 +145,10 @@ class TestSdfPath(unittest.TestCase):
             self.assertEqual(path.IsPropertyPath(), testProperty[testIndex])
             prefixes = Sdf._PathElemsToPrefixes(path.IsAbsolutePath(), elements)
             self.assertEqual(path.GetPrefixes(), prefixes)
+            for i in range(path.pathElementCount):
+                prefixes = Sdf._PathElemsToPrefixes(
+                    path.IsAbsolutePath(), elements, i)
+                self.assertEqual(path.GetPrefixes(i), prefixes)
             self.assertEqual(path, eval(repr(path)))
             assert Sdf.Path.IsValidPathString(str(path))
         

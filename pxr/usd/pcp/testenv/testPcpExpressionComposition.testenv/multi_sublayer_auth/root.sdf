@@ -1,0 +1,13 @@
+#sdf 1.4.32
+
+def "Test_1" (
+    references = @./ref1.sdf@</Ref_1>
+)
+{
+}
+
+def "Test_2" (
+    references = @./ref2.sdf@</Ref_2>
+)
+{
+}

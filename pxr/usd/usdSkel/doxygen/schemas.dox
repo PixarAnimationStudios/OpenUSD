@@ -525,7 +525,7 @@ effect.
 
 Joint influences for skinning points are defined by setting the
 _primvars:skel:jointIndices_ and _primvars:skel:jointWeights_ 
-<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvars</a>,
+<a href="https://openusd.org/release/glossary.html#usdglossary-primvar">primvars</a>,
 using the UsdSkelBindingAPI. The _jointIndices_ primvar provides an array giving
 the joint index of an influence, while the _jointWeights_ primvar provides a
 weight value corresponding to each of those indices.
@@ -651,7 +651,7 @@ allowing a skinning kernel to exit from a point-deformation loop early.
 \subsection UsdSkel_BindingAPI_GeomBindTransform BindingAPI: GeomBindTransform
 
 For skinning to apply correctly, the constant _primvars:skel:geomBindTransform_ 
-<a href="https://graphics.pixar.com/usd/docs/USD-Glossary.html#USDGlossary-Primvar">primvar</a>
+<a href="https://openusd.org/release/glossary.html#usdglossary-primvar">primvar</a>
 should be authored on each skinnable primitive, using the UsdSkelBindingAPI.
 This primvar stores the world space transform of a skinned primitive at bind
 time. When skinning is applied, points of each skinnable primitive are

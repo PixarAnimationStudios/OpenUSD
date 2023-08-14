@@ -5,7 +5,9 @@
     upAxis = "Z"
 )
 
-def SkelRoot "SkelChar"
+def SkelRoot "SkelChar"(
+    prepend apiSchemas = ["SkelBindingAPI"]
+) 
 {
     rel skel:animationSource = </SkelChar/SkelAnim>
     rel skel:skeleton = </SkelChar/Skeleton>

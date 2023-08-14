@@ -82,7 +82,7 @@ TfTokenVector
 UsdImagingDataSourceVolumePrim::GetNames()
 {
     TfTokenVector result = UsdImagingDataSourceGprim::GetNames();
-    result.push_back(HdVolumeFieldBindingSchemaTokens->volumeFieldBinding);
+    result.push_back(HdVolumeFieldBindingSchema::GetSchemaToken());
 
     return result;
 }
@@ -90,7 +90,7 @@ UsdImagingDataSourceVolumePrim::GetNames()
 HdDataSourceBaseHandle
 UsdImagingDataSourceVolumePrim::Get(const TfToken &name)
 {
-    if (name == HdVolumeFieldBindingSchemaTokens->volumeFieldBinding) {
+    if (name == HdVolumeFieldBindingSchema::GetSchemaToken()) {
         return UsdImagingDataSourceVolumeFieldBindings::New(
             UsdVolVolume(_GetUsdPrim()), _GetStageGlobals());
     } else {
@@ -102,10 +102,12 @@ HdDataSourceLocatorSet
 UsdImagingDataSourceVolumePrim::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
-    const TfTokenVector &properties)
+    const TfTokenVector &properties,
+    const UsdImagingPropertyInvalidationType invalidationType)
 {
     HdDataSourceLocatorSet locators =
-        UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 
     static const std::string fieldPrefix =
         UsdVolTokens->field.GetString() + ":";

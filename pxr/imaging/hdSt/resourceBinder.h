@@ -456,12 +456,6 @@ public:
     void UnbindInstanceBufferArray(
         HdStBufferArrayRangeSharedPtr const &bar, int level) const;
 
-    /// bind/unbind shader parameters and textures
-    HDST_API
-    void BindShaderResources(HdStShaderCode const *shader) const;
-    HDST_API
-    void UnbindShaderResources(HdStShaderCode const *shader) const;
-
     /// piecewise buffer binding utility
     /// (to be used for frustum culling, draw indirect result)
     HDST_API

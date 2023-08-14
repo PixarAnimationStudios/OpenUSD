@@ -36,6 +36,7 @@
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -144,18 +145,18 @@ public:
 private:
     /// Use to construct a new UsdImagingDataSourceExtentCoordinate.
     ///
-    /// \p extentAttr is the float3 array holding all extent coordinates.
+    /// \p extentDs is the float3 array holding all extent coordinates.
     /// \p attrPath is the USD path of the underlying extents attribute.
-    /// \p index is the index of the value we want out of extentAttr.
+    /// \p index is the index of the value we want out of extentDs.
     ///
     /// Note: client code calls this via static New().
     UsdImagingDataSourceExtentCoordinate(
-            const HdVec3fArrayDataSourceHandle &extentAttr,
+            const HdVec3fArrayDataSourceHandle &extentDs,
             const SdfPath &attrPath,
             unsigned int index);
 
 private:
-    HdVec3fArrayDataSourceHandle _extentAttr;
+    HdVec3fArrayDataSourceHandle _extentDs;
     SdfPath _attrPath;
     unsigned int _index;
 };
@@ -197,7 +198,47 @@ private:
     // Note: the constructor takes sceneIndexPath for change-tracking,
     // but here we're storing the USD attribute path for error reporting!
     SdfPath _attrPath;
-    HdVec3fArrayDataSourceHandle _extentAttr;
+    HdVec3fArrayDataSourceHandle _extentDs;
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceExtent);
+
+// ----------------------------------------------------------------------------
+
+/// \class UsdImagingDataSourceExtentsHint
+///
+/// Data source representing extents hint of a model API prim.
+class UsdImagingDataSourceExtentsHint : public HdVectorDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceExtentsHint);
+
+    /// Returns number of vec3 pairs authored on extentsHint.
+    ///
+    size_t GetNumElements() override;
+
+    /// Returns i-th pair of vec3 authored on extentsHint as
+    /// extent schema.
+    HdDataSourceBaseHandle GetElement(size_t element) override;
+
+private:
+    /// Use to construct a new UsdImagingDataSourceExtentsHint.
+    ///
+    /// \p extentQuery is the USD attribute query holding extent data.
+    /// \p sceneIndexPath is the path of this object in the scene index.
+    /// \p stageGlobals is the context object for the USD stage.
+    ///
+    /// Note: client code calls this via static New().
+    UsdImagingDataSourceExtentsHint(
+            const UsdAttributeQuery &extentQuery,
+            const SdfPath &sceneIndexPath,
+            const UsdImagingDataSourceStageGlobals &stageGlobals);
+
+private:
+    // Note: the constructor takes sceneIndexPath for change-tracking,
+    // but here we're storing the USD attribute path for error reporting!
+    SdfPath _attrPath;
+    HdVec3fArrayDataSourceHandle _extentDs;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceExtent);
@@ -464,7 +505,8 @@ public:
     static HdDataSourceLocatorSet Invalidate(
             UsdPrim const& prim,
             const TfToken &subprim,
-            const TfTokenVector &properties);
+            const TfTokenVector &properties,
+            UsdImagingPropertyInvalidationType invalidationType);
 
 protected:
     /// Use to construct a new UsdImagingDataSourcePrim.
@@ -502,8 +544,6 @@ private:
     const SdfPath _sceneIndexPath;
     UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
-
-    UsdImagingDataSourcePrimvarsAtomicHandle _primvars;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourcePrim);

@@ -27,6 +27,7 @@
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdMtlx/hdMtlx.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/glslfx.h"
@@ -85,6 +86,14 @@ _GenMaterialXShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
     materialContext.getOptions().hwTransparency = hasTransparency;
     materialContext.getOptions().hwShadowMap = 
         materialContext.getOptions().hwShadowMap && !hasTransparency;
+
+    // MaterialX v1.38.5 added Transmission Refraction method as the default
+    // method, this maintains the previous Transmission Opacity behavior.
+#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
+    MATERIALX_BUILD_VERSION >= 5
+    materialContext.getOptions().hwTransmissionRenderMethod =
+        mx::HwTransmissionRenderMethod::TRANSMISSION_OPACITY;
+#endif
     
     // Use the domeLightPrefilter texture instead of sampling the Environment Map
     materialContext.getOptions().hwSpecularEnvironmentMethod =
@@ -97,11 +106,35 @@ _GenMaterialXShader(mx::GenContext & mxContext, mx::ElementPtr const& mxElem)
 static const std::string mxDirectLightString = 
 R"(
 <?xml version="1.0"?>
-<materialx version="1.37">
+<materialx version="1.38">
   <point_light name="pt_light" type="lightshader">
   </point_light>
+  <directional_light name="dir_light" type="lightshader">
+  </directional_light>
 </materialx>
 )";
+
+static mx::GenContext
+_CreateHdStMaterialXContext(
+    HdSt_MxShaderGenInfo const& mxHdInfo,
+    TfToken const& apiName)
+{
+#if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
+    MATERIALX_BUILD_VERSION >= 7
+    if(apiName == HgiTokens->Metal) {
+        return HdStMaterialXShaderGenMsl::create(mxHdInfo);
+    }
+#endif
+    if(apiName == HgiTokens->OpenGL) {
+        return HdStMaterialXShaderGenGlsl::create(mxHdInfo);
+    }
+    else {
+        TF_CODING_ERROR(
+            "MaterialX Shader Generator doesn't support %s API.",
+            apiName.GetText());
+        return mx::ShaderGeneratorPtr();
+    }
+}
 
 // Use the given mxDocument to generate the corresponding glsl shader
 // Based on MaterialXViewer Viewer::loadDocument()
@@ -109,12 +142,14 @@ mx::ShaderPtr
 HdSt_GenMaterialXShader(
     mx::DocumentPtr const& mxDoc,
     mx::FileSearchPath const& searchPath,
-    HdSt_MxShaderGenInfo const& mxHdInfo)
+    HdSt_MxShaderGenInfo const& mxHdInfo,
+    TfToken const& apiName)
 {
     // Initialize the Context for shaderGen. 
-    mx::GenContext mxContext = HdStMaterialXShaderGen::create(mxHdInfo);
+    mx::GenContext mxContext = _CreateHdStMaterialXContext(mxHdInfo, apiName);
 
-#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && MATERIALX_BUILD_VERSION == 3
+#if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
+    MATERIALX_BUILD_VERSION == 3
     mxContext.registerSourceCodeSearchPath(searchPath);
 #else
     // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
@@ -725,7 +760,8 @@ _GetMaterialTag(HdMaterialNode2 const& terminal)
 }
 
 // Gather the Material Params from the glslfx ShaderPtr
-void _AddMaterialXParams(
+void
+_AddMaterialXParams(
     mx::ShaderPtr const& glslfxShader,
     HdSt_MaterialParamVector* materialParams)
 {
@@ -863,6 +899,7 @@ _GenerateMaterialXShader(
     HdMaterialNode2 const& terminalNode,
     SdfPath const& terminalNodePath,
     TfToken const& materialTagToken,
+    TfToken const& apiName,
     bool const bindlessTexturesEnabled)
 {
     // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
@@ -901,7 +938,7 @@ _GenerateMaterialXShader(
     mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
     
     // Generate the glslfx source code from the mtlxDoc
-    return HdSt_GenMaterialXShader(mtlxDoc, searchPath, mxHdInfo);
+    return HdSt_GenMaterialXShader(mtlxDoc, searchPath, mxHdInfo, apiName);
 }
 
 void
@@ -926,6 +963,7 @@ HdSt_ApplyMaterialXFilter(
         const bool bindlessTexturesEnabled = 
             resourceRegistry->GetHgi()->GetCapabilities()->IsSet(
                 HgiDeviceCapabilitiesBitsBindlessTextures);
+        const TfToken apiName = resourceRegistry->GetHgi()->GetAPIName();
 
         // If the MaterialNetwork has just a terminal node, utilize the
         // Resource Registry to cache the generated MaterialX glslfx Shader
@@ -942,7 +980,7 @@ HdSt_ApplyMaterialXFilter(
                 // Generate the MaterialX glslfx ShaderPtr
                 glslfxShader = _GenerateMaterialXShader(
                     hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                    materialTagToken, bindlessTexturesEnabled);
+                    materialTagToken, apiName, bindlessTexturesEnabled);
 
                 // Store the mx::ShaderPtr 
                 glslfxInstance.SetValue(glslfxShader);
@@ -966,7 +1004,7 @@ HdSt_ApplyMaterialXFilter(
             // Process the network and generate the MaterialX glslfx ShaderPtr
             glslfxShader = _GenerateMaterialXShader(
                 hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                materialTagToken, bindlessTexturesEnabled);
+                materialTagToken, apiName, bindlessTexturesEnabled);
 
             // Add material parameters from the glslfxShader
             _AddMaterialXParams(glslfxShader, materialParams);

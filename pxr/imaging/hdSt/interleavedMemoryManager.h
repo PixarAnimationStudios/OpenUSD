@@ -27,11 +27,11 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
+
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/resource.h"
-#include "pxr/imaging/hd/strategyBase.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hgi/buffer.h"
@@ -51,7 +51,7 @@ struct HgiBufferCpuToGpuOp;
 ///
 /// Interleaved memory manager (base class).
 ///
-class HdStInterleavedMemoryManager : public HdAggregationStrategy {
+class HdStInterleavedMemoryManager : public HdStAggregationStrategy {
 protected:
     class _StripedInterleavedBuffer;
 
@@ -256,13 +256,8 @@ protected:
             return _elementStride;
         }
 
-        /// TODO: We need to distinguish between the primvar types here, we should
-        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
-        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
-        /// buffer types.
-
-        /// Returns the GPU resource. If the buffer array contains more than one
-        /// resource, this method raises a coding error.
+        /// Returns the GPU resource. If the buffer array contains more
+        /// than one resource, this method raises a coding error.
         HDST_API
         HdStBufferResourceSharedPtr GetResource() const;
 

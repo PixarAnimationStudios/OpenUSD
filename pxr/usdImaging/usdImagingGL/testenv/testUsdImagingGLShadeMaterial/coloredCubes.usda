@@ -18,7 +18,9 @@ def Xform "Cubes"
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 
-    def Cube "pCubeMaterial"
+    def Cube "pCubeMaterial" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/lambert1>
         custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (-6, 0, 0, 1) )
@@ -38,7 +40,9 @@ def Xform "Cubes"
         uniform token[] xformOpOrder = ["xformOp:transform"]
     }
 
-    def Cube "pInvalidMaterialCube"
+    def Cube "pInvalidMaterialCube" (
+        prepend apiSchemas = ["MaterialBindingAPI"]
+    )
     {
         custom rel material:binding = </Materials/Nonexistent>
         custom matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, -6, 0, 1) )
@@ -53,9 +57,7 @@ def Scope "Materials"
     )
     {
         # Material preview is fallback if gprim doesn't provide displayColor
-        # Desired syntax is below, but not yet support in UsdImaging
-        # color3f primvars:displayColor = (0, 0, 1)
-        custom color3f displayColor = (0, 0, 1)
+        custom color3f primvars:displayColor = (0, 0, 1)
         token outputs:ri:surface = </Materials/lambert1/diffuse1.outputs:out>
         token outputs:surface.connect = </Materials/lambert1/PbrPreview.outputs:surface>
 

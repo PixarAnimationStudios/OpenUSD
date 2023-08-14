@@ -103,12 +103,14 @@ HdPrmanCoordSys::Sync(HdSceneDelegate *sceneDelegate,
     *dirtyBits = HdChangeTracker::Clean;
 }
 
+#if HD_API_VERSION < 53
 /* virtual */
 HdDirtyBits
 HdPrmanCoordSys::GetInitialDirtyBitsMask() const
 {
     return HdChangeTracker::AllDirty;
 }
+#endif
 
 bool
 HdPrmanCoordSys::IsValid() const

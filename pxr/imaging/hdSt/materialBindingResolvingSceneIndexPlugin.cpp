@@ -20,11 +20,11 @@
 // distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
-#include "materialBindingResolvingSceneIndexPlugin.h"
+#include "pxr/imaging/hdSt/materialBindingResolvingSceneIndexPlugin.h"
 
 #include "pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h"
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -69,9 +69,9 @@ HdSt_MaterialBindingResolvingSceneIndexPlugin::_AppendSceneIndex(
         inputSceneIndex,
         {
             HdTokens->preview,
-            HdMaterialBindingSchemaTokens->allPurpose,
+            HdMaterialBindingsSchemaTokens->allPurpose,
         },
-        HdMaterialBindingSchemaTokens->allPurpose);
+        HdMaterialBindingsSchemaTokens->allPurpose);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

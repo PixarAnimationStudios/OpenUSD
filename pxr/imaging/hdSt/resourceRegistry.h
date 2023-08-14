@@ -28,11 +28,11 @@
 #include "pxr/base/vt/dictionary.h"
 
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/bufferArrayRegistry.h"
 
 #include "pxr/imaging/hgi/hgi.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferArrayRegistry.h"
 #include "pxr/imaging/hd/bufferSource.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/enums.h"
@@ -54,7 +54,7 @@ MATERIALX_NAMESPACE_END
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-using HdComputationSharedPtr = std::shared_ptr<class HdComputation>;
+using HdStComputationSharedPtr = std::shared_ptr<class HdStComputation>;
 using HdStDispatchBufferSharedPtr = std::shared_ptr<class HdStDispatchBuffer>;
 using HdStGLSLProgramSharedPtr = std::shared_ptr<class HdStGLSLProgram>;
 using HioGlslfxSharedPtr = std::shared_ptr<class HioGlslfx>;
@@ -75,8 +75,8 @@ using HdStBufferResourceSharedPtr =
     std::shared_ptr<class HdStBufferResource>;
 using HdStResourceRegistrySharedPtr = 
     std::shared_ptr<class HdStResourceRegistry>;
-using Hd_VertexAdjacencySharedPtr = 
-    std::shared_ptr<class Hd_VertexAdjacency>;
+using HdSt_VertexAdjacencyBuilderSharedPtr = 
+    std::shared_ptr<class HdSt_VertexAdjacencyBuilder>;
 using HdSt_MeshTopologySharedPtr = 
     std::shared_ptr<class HdSt_MeshTopology>;
 using HgiResourceBindingsSharedPtr = 
@@ -110,8 +110,8 @@ enum HdStComputeQueue {
     HdStComputeQueueThree,
     HdStComputeQueueCount};
 
-using HdStComputationSharedPtrVector = 
-    std::vector<std::pair<HdComputationSharedPtr, HdStComputeQueue>>;
+using HdStComputationComputeQueuePairVector = 
+    std::vector<std::pair<HdStComputationSharedPtr, HdStComputeQueue>>;
 
 
 /// \class HdStResourceRegistry
@@ -313,7 +313,7 @@ public:
     /// they are registered.
     HDST_API
     void AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                        HdComputationSharedPtr const &computation,
+                        HdStComputationSharedPtr const &computation,
                         HdStComputeQueue const queue);
 
     /// ------------------------------------------------------------------------
@@ -370,8 +370,9 @@ public:
         HdInstance<HdSt_BasisCurvesTopologySharedPtr>::ID id);
 
     HDST_API
-    HdInstance<Hd_VertexAdjacencySharedPtr>
-    RegisterVertexAdjacency(HdInstance<Hd_VertexAdjacencySharedPtr>::ID id);
+    HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+    RegisterVertexAdjacencyBuilder(
+        HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id);
 
     /// Topology Index buffer array range instancing
     /// Returns the HdInstance points to shared HdBufferArrayRange,
@@ -488,7 +489,7 @@ public:
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.
     void SetNonUniformAggregationStrategy(
-                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+                std::unique_ptr<HdStAggregationStrategy> &&strategy) {
         _nonUniformAggregationStrategy = std::move(strategy);
     }
 
@@ -496,28 +497,28 @@ public:
     /// (vertex, varying, facevarying)
     /// Takes ownership of the passed in strategy object.
     void SetNonUniformImmutableAggregationStrategy(
-                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+                std::unique_ptr<HdStAggregationStrategy> &&strategy) {
         _nonUniformImmutableAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for uniform (shader globals)
     /// Takes ownership of the passed in strategy object.
     void SetUniformAggregationStrategy(
-                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+                std::unique_ptr<HdStAggregationStrategy> &&strategy) {
         _uniformUboAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for SSBO (uniform primvars)
     /// Takes ownership of the passed in strategy object.
     void SetShaderStorageAggregationStrategy(
-                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+                std::unique_ptr<HdStAggregationStrategy> &&strategy) {
         _uniformSsboAggregationStrategy = std::move(strategy);
     }
 
     /// Set the aggregation strategy for single buffers (for nested instancer).
     /// Takes ownership of the passed in strategy object.
     void SetSingleStorageAggregationStrategy(
-                std::unique_ptr<HdAggregationStrategy> &&strategy) {
+                std::unique_ptr<HdStAggregationStrategy> &&strategy) {
         _singleAggregationStrategy = std::move(strategy);
     }
 
@@ -535,16 +536,16 @@ private:
     void _CommitTextures();
     // Wrapper function for BAR allocation
     HdBufferArrayRangeSharedPtr _AllocateBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
+        HdStAggregationStrategy *strategy,
+        HdStBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint);
     
     /// Wrapper function for BAR allocation/reallocation-migration.
     HdBufferArrayRangeSharedPtr _UpdateBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
+        HdStAggregationStrategy *strategy,
+        HdStBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferArrayRangeSharedPtr const& curRange,
         HdBufferSpecVector const &updatedOrAddedSpecs,
@@ -590,10 +591,10 @@ private:
     
     struct _PendingComputation{
         _PendingComputation(HdBufferArrayRangeSharedPtr const &range,
-                            HdComputationSharedPtr const &computation)
+                            HdStComputationSharedPtr const &computation)
             : range(range), computation(computation) { }
         HdBufferArrayRangeSharedPtr range;
-        HdComputationSharedPtr computation;
+        HdStComputationSharedPtr computation;
     };
 
     // If we need more 'compute queues' we can increase HdStComputeQueueCount.
@@ -603,19 +604,19 @@ private:
     _PendingComputationList  _pendingComputations[HdStComputeQueueCount];
 
     // aggregated buffer array
-    HdBufferArrayRegistry _nonUniformBufferArrayRegistry;
-    HdBufferArrayRegistry _nonUniformImmutableBufferArrayRegistry;
-    HdBufferArrayRegistry _uniformUboBufferArrayRegistry;
-    HdBufferArrayRegistry _uniformSsboBufferArrayRegistry;
-    HdBufferArrayRegistry _singleBufferArrayRegistry;
+    HdStBufferArrayRegistry _nonUniformBufferArrayRegistry;
+    HdStBufferArrayRegistry _nonUniformImmutableBufferArrayRegistry;
+    HdStBufferArrayRegistry _uniformUboBufferArrayRegistry;
+    HdStBufferArrayRegistry _uniformSsboBufferArrayRegistry;
+    HdStBufferArrayRegistry _singleBufferArrayRegistry;
 
     // current aggregation strategies
-    std::unique_ptr<HdAggregationStrategy> _nonUniformAggregationStrategy;
-    std::unique_ptr<HdAggregationStrategy>
+    std::unique_ptr<HdStAggregationStrategy> _nonUniformAggregationStrategy;
+    std::unique_ptr<HdStAggregationStrategy>
                                 _nonUniformImmutableAggregationStrategy;
-    std::unique_ptr<HdAggregationStrategy> _uniformUboAggregationStrategy;
-    std::unique_ptr<HdAggregationStrategy> _uniformSsboAggregationStrategy;
-    std::unique_ptr<HdAggregationStrategy> _singleAggregationStrategy;
+    std::unique_ptr<HdStAggregationStrategy> _uniformUboAggregationStrategy;
+    std::unique_ptr<HdStAggregationStrategy> _uniformSsboAggregationStrategy;
+    std::unique_ptr<HdStAggregationStrategy> _singleAggregationStrategy;
 
     typedef std::vector<HdStDispatchBufferSharedPtr>
         _DispatchBufferRegistry;
@@ -634,8 +635,8 @@ private:
         _basisCurvesTopologyRegistry;
 
     // Register vertex adjacency.
-    HdInstanceRegistry<Hd_VertexAdjacencySharedPtr>
-        _vertexAdjacencyRegistry;
+    HdInstanceRegistry<HdSt_VertexAdjacencyBuilderSharedPtr>
+        _vertexAdjacencyBuilderRegistry;
 
     // Register topology index buffers.
     typedef HdInstanceRegistry<HdBufferArrayRangeSharedPtr>

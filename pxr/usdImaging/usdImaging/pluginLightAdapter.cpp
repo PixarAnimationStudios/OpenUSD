@@ -73,18 +73,14 @@ UsdImagingPluginLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->pluginLight, prim.GetPath(), prim);
-    HD_PERF_COUNTER_INCR(HdPrimTypeTokens->pluginLight);
-
-    return prim.GetPath();
+    return _AddSprim(HdPrimTypeTokens->pluginLight, prim, index, instancerContext);
 }
 
 void
 UsdImagingPluginLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
-    _UnregisterLightCollections(cachePath);
-    index->RemoveSprim(HdPrimTypeTokens->pluginLight, cachePath);
+    _RemoveSprim(HdPrimTypeTokens->pluginLight, cachePath, index);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

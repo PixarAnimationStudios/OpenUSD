@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
-#include "pxr/imaging/hd/version.h"
-#include "pxr/imaging/hd/strategyBase.h"
+#include "pxr/imaging/hdSt/strategyBase.h"
+
 #include "pxr/imaging/hd/bufferArray.h"
 #include "pxr/imaging/hd/bufferSpec.h"
 #include "pxr/imaging/hd/bufferSource.h"
@@ -44,7 +44,7 @@ class HdStResourceRegistry;
 ///
 /// This class doesn't perform any aggregation.
 ///
-class HdStVBOSimpleMemoryManager : public HdAggregationStrategy
+class HdStVBOSimpleMemoryManager : public HdStAggregationStrategy
 {
 public:
     HdStVBOSimpleMemoryManager(HdStResourceRegistry* resourceRegistry)
@@ -64,7 +64,7 @@ public:
 
     /// Returns id for given bufferSpecs to be used for aggregation
     HDST_API
-    virtual HdAggregationStrategy::AggregationId ComputeAggregationId(
+    virtual HdStAggregationStrategy::AggregationId ComputeAggregationId(
         HdBufferSpecVector const &bufferSpecs,
         HdBufferArrayUsageHint usageHint) const;
 
@@ -261,13 +261,8 @@ protected:
             return _capacity;
         }
 
-        /// TODO: We need to distinguish between the primvar types here, we should
-        /// tag each HdBufferSource and HdBufferResource with Constant, Uniform,
-        /// Varying, Vertex, or FaceVarying and provide accessors for the specific
-        /// buffer types.
-
-        /// Returns the GPU resource. If the buffer array contains more than one
-        /// resource, this method raises a coding error.
+        /// Returns the GPU resource. If the buffer array contains more
+        /// than one resource, this method raises a coding error.
         HDST_API
         HdStBufferResourceSharedPtr GetResource() const;
 

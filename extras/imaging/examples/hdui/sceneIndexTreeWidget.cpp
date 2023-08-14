@@ -292,6 +292,13 @@ HduiSceneIndexTreeWidget::PrimsDirtied(
     }
 }
 
+void
+HduiSceneIndexTreeWidget::PrimsRenamed(
+    const HdSceneIndexBase &sender,
+    const RenamedPrimEntries &entries)
+{
+    ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+}
 
 void
 HduiSceneIndexTreeWidget::SetSceneIndex(HdSceneIndexBaseRefPtr inputSceneIndex)

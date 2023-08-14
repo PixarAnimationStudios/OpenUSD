@@ -262,7 +262,7 @@ versions of an API schema to be applied to the same prim might facilitate
 interchange between DCCs that are running different versions of USD. We
 believe that a preferable approach with fewer side-effects for accomplishing
 this same goal might be to extend the existing feature of `fallback prim types
-<https://graphics.pixar.com/usd/release/api/_usd__page__object_model.html#Usd_OM_FallbackPrimTypes>`_
+<https://openusd.org/release/api/_usd__page__object_model.html#Usd_OM_FallbackPrimTypes>`_
 to apply to authored API schemas (currently the feature is only defined for
 concrete prim type names) and to automatically determine fallback types for
 schema versions that are authored but don’t exist in the USD version. But

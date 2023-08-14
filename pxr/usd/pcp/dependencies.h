@@ -73,7 +73,8 @@ public:
     /// - Parent indices will be added before children
     void Add(const PcpPrimIndex &primIndex,
         PcpCulledDependencyVector &&culledDependencies,
-        PcpDynamicFileFormatDependencyData &&fileFormatDependencyData);
+        PcpDynamicFileFormatDependencyData &&fileFormatDependencyData,
+        PcpExpressionVariablesDependencyData &&exprVarDependencyData);
 
     /// Remove dependency information for the given PcpPrimIndex.
     /// Any layer stacks in use by any site are added to \p lifeboat,
@@ -200,15 +201,25 @@ public:
     static const PcpCulledDependencyVector&
     GetCulledDependencies(const PcpCache& cache, const SdfPath &primIndexPath);
 
-    /// Returns true if there are any dynamic file format argument dependencies
-    /// in this dependencies object. 
-    bool HasAnyDynamicFileFormatArgumentDependencies() const;
+    /// Returns true if there are any dynamic file format argument field
+    /// dependencies in this dependencies object. 
+    bool HasAnyDynamicFileFormatArgumentFieldDependencies() const;
+
+    /// Returns true if there are any dynamic file format argument attribute
+    /// default value dependencies in this dependencies object. 
+    bool HasAnyDynamicFileFormatArgumentAttributeDependencies() const;
 
     /// Returns true if the given \p field name is a field that was 
     /// composed while generating dynamic file format arguments for any prim 
     /// index that was added to this dependencies object. 
     bool IsPossibleDynamicFileFormatArgumentField(
         const TfToken &field) const;
+
+    /// Returns true if the given \p attribute name is an attribute whose 
+    /// default field was composed while generating dynamic file format
+    /// arguments for any prim index that was added to this dependencies object. 
+    bool IsPossibleDynamicFileFormatArgumentAttribute(
+        const TfToken &attributeName) const;
 
     /// Returns the dynamic file format dependency data object for the prim
     /// index with the given \p primIndexPath. This will return an empty 
@@ -217,6 +228,19 @@ public:
     const PcpDynamicFileFormatDependencyData &
     GetDynamicFileFormatArgumentDependencyData(
         const SdfPath &primIndexPath) const;
+
+    /// Returns the list of prim index paths that depend on one or more
+    /// expression variables from \p layerStack.
+    const SdfPathVector&
+    GetPrimsUsingExpressionVariablesFromLayerStack(
+        const PcpLayerStackPtr &layerStack) const;
+
+    /// Returns the set of expression variables in \p layerStack that are
+    /// used by the prim index at \p primIndexPath.
+    const std::unordered_set<std::string>&
+    GetExpressionVariablesFromLayerStackUsedByPrim(
+        const SdfPath &primIndexPath,
+        const PcpLayerStackPtr &layerStack) const;
 
     /// @}
 
@@ -258,6 +282,15 @@ private:
     using _FileFormatArgumentFieldDepMap = 
         std::unordered_map<TfToken, int, TfToken::HashFunctor>;
     _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentFields; 
+    _FileFormatArgumentFieldDepMap _possibleDynamicFileFormatArgumentAttributes; 
+
+    using _ExprVariablesDependencyMap = std::unordered_map<
+        SdfPath, PcpExpressionVariablesDependencyData, SdfPath::Hash>;
+    _ExprVariablesDependencyMap _exprVarsDependencyMap;
+
+    using _LayerStackToExprVarDepMap = std::unordered_map<
+        PcpLayerStackPtr, SdfPathVector, TfHash>;
+    _LayerStackToExprVarDepMap _layerStackExprVarsMap;
 
     ConcurrentPopulationContext *_concurrentPopulationContext;
 };

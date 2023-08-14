@@ -36,8 +36,6 @@
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/operators.hpp>
-#include <boost/preprocessor/punctuation/comma_if.hpp>
 
 #include <iosfwd>
 #include <string>
@@ -136,7 +134,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// // Returns 5, sets found to \c true
 /// \endcode
 ///
-class TfEnum : boost::totally_ordered<TfEnum>
+class TfEnum
 {
 public:
     /// Default constructor assigns integer value zero.
@@ -169,6 +167,12 @@ public:
             TfSafeTypeCompare(*t._typeInfo, *_typeInfo);
     }
 
+    /// Inequality operator
+    /// \sa TfEnum::operator==(const TfEnum&)
+    bool operator!=(const TfEnum& t) const {
+        return !(*this == t);
+    }
+
     /// Less than comparison. Enum values belonging to the same type are
     /// ordered according to their numeric value.  Enum values belonging to
     /// different types are ordered in a consistent but arbitrary way which
@@ -176,6 +180,24 @@ public:
     bool operator<(const TfEnum& t) const {
         return _typeInfo->before(*t._typeInfo) ||
             (!t._typeInfo->before(*_typeInfo) && _value < t._value);
+    }
+
+    /// Less than or equal operator
+    /// \sa TfEnum::operator<(const TfEnum&)
+    bool operator<=(const TfEnum& t) const {
+        return !(t < *this);
+    }
+
+    /// Greater than operator
+    /// \sa TfEnum::operator<(const TfEnum&)
+    bool operator>(const TfEnum& t) const {
+        return t < *this;
+    }
+
+    /// Greater than or equal operator
+    /// \sa TfEnum::operator<(const TfEnum&)
+    bool operator>=(const TfEnum& t) const {
+        return !(*this < t);
     }
 
     /// True if \c *this has been assigned with \c value.
@@ -447,10 +469,8 @@ TF_API std::ostream& operator<<(std::ostream& out, const TfEnum & e);
 /// \ingroup group_tf_RuntimeTyping
 /// \hideinitializer
 #define TF_ADD_ENUM_NAME(VAL, ...)                               \
-    TfEnum::_AddName(VAL,                                        \
-                     TF_PP_STRINGIZE(VAL)                        \
-                     BOOST_PP_COMMA_IF(TF_NUM_ARGS(__VA_ARGS__)) \
-                     __VA_ARGS__)
+    TfEnum::_AddName(VAL, TF_PP_STRINGIZE(VAL),                  \
+                     std::string{__VA_ARGS__});
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

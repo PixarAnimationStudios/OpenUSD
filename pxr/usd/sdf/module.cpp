@@ -44,11 +44,14 @@ TF_WRAP_MODULE
     TF_WRAP( Notice );
     TF_WRAP( OpaqueValue );
     TF_WRAP( Path );
+    TF_WRAP( PredicateExpression );
+    TF_WRAP( PathExpression ); // needs PredicateExpression for default args.
     TF_WRAP( Payload );
     TF_WRAP( Reference );
     TF_WRAP( TimeCode );
     TF_WRAP( Types );
     TF_WRAP( ValueType );
+    TF_WRAP( VariableExpression );
 
     TF_WRAP( Spec );
     TF_WRAP( VariantSpec );

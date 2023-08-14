@@ -25,6 +25,7 @@
 
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/bufferResource.h"
+#include "pxr/imaging/hdSt/computation.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/flatNormals.h"
@@ -40,6 +41,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/smoothNormals.h"
 #include "pxr/imaging/hdSt/tokens.h"
+#include "pxr/imaging/hdSt/vertexAdjacency.h"
 
 #include "pxr/imaging/hgi/capabilities.h"
 
@@ -50,13 +52,11 @@
 #include "pxr/base/tf/envSetting.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/flatNormals.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/repr.h"
 #include "pxr/imaging/hd/smoothNormals.h"
 #include "pxr/imaging/hd/tokens.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
 
 #include "pxr/imaging/hf/diagnostic.h"
@@ -89,7 +89,7 @@ namespace {
 HdStMesh::HdStMesh(SdfPath const& id)
     : HdMesh(id)
     , _topology()
-    , _vertexAdjacency()
+    , _vertexAdjacencyBuilder()
     , _topologyId(0)
     , _vertexPrimvarId(0)
     , _customDirtyBitsInUse(0)
@@ -727,7 +727,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             TF_VERIFY(*topology == *_topology);
         }
 
-        _vertexAdjacency.reset();
+        _vertexAdjacencyBuilder.reset();
     }
 
     // here, we have _topology up-to-date.
@@ -937,8 +937,9 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             const size_t numGeomSubsets = geomSubsets.size();
             for (size_t i = 0; i < geomSubsets.size(); ++i) {
                 HdGeomSubset geomSubset = geomSubsets[i];
-                HdDrawItem * subsetDrawItem = repr->GetDrawItemForGeomSubset(
-                    geomSubsetDescIndex, numGeomSubsets, i);
+                HdStDrawItem *subsetDrawItem = static_cast<HdStDrawItem*>(
+                    repr->GetDrawItemForGeomSubset(
+                        geomSubsetDescIndex, numGeomSubsets, i));
                 _CreateTopologyRangeForGeomSubset(resourceRegistry, 
                     changeTracker, renderParam, subsetDrawItem, indexToken, 
                     indicesSource, fvarIndicesSource, 
@@ -954,7 +955,7 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
     HdStResourceRegistrySharedPtr resourceRegistry,
     HdChangeTracker &changeTracker, 
     HdRenderParam *renderParam, 
-    HdDrawItem *drawItem, 
+    HdStDrawItem *drawItem, 
     const TfToken &indexToken,
     HdBufferSourceSharedPtr indicesSource, 
     HdBufferSourceSharedPtr fvarIndicesSource, 
@@ -1053,7 +1054,8 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
 }
 
 void
-HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegistry)
+HdStMesh::_PopulateAdjacency(
+    HdStResourceRegistrySharedPtr const &resourceRegistry)
 {
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
@@ -1062,38 +1064,41 @@ HdStMesh::_PopulateAdjacency(HdStResourceRegistrySharedPtr const &resourceRegist
     if (!_topology) return;
 
     // ask registry if there's a sharable vertex adjacency
-    HdInstance<Hd_VertexAdjacencySharedPtr> adjacencyInstance =
-        resourceRegistry->RegisterVertexAdjacency(_topologyId);
+    HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+        vertexAdjacencyBuilderInstance =
+            resourceRegistry->RegisterVertexAdjacencyBuilder(_topologyId);
 
-    if (adjacencyInstance.IsFirstInstance()) {
-         Hd_VertexAdjacencySharedPtr adjacency =
-             std::make_shared<Hd_VertexAdjacency>();
+    if (vertexAdjacencyBuilderInstance.IsFirstInstance()) {
+         HdSt_VertexAdjacencyBuilderSharedPtr vertexAdjacencyBuilder =
+             std::make_shared<HdSt_VertexAdjacencyBuilder>();
 
         // create adjacency table for smooth normals
-        HdBufferSourceSharedPtr adjacencyComputation =
-            adjacency->GetSharedAdjacencyBuilderComputation(_topology.get());
+        HdBufferSourceSharedPtr vertexAdjacencyComputation =
+            vertexAdjacencyBuilder->
+                GetSharedVertexAdjacencyBuilderComputation(_topology.get());
 
-        resourceRegistry->AddSource(adjacencyComputation);
+        resourceRegistry->AddSource(vertexAdjacencyComputation);
 
         // also send adjacency table to gpu
-        HdBufferSourceSharedPtr adjacencyForGpuComputation =
-            std::make_shared<Hd_AdjacencyBufferSource>(
-                adjacency.get(), adjacencyComputation);
+        HdBufferSourceSharedPtr vertexAdjacencyBufferSource =
+            std::make_shared<HdSt_VertexAdjacencyBufferSource>(
+                vertexAdjacencyBuilder->GetVertexAdjacency(),
+                vertexAdjacencyComputation);
 
         HdBufferSpecVector bufferSpecs;
-        adjacencyForGpuComputation->GetBufferSpecs(&bufferSpecs);
+        vertexAdjacencyBufferSource->GetBufferSpecs(&bufferSpecs);
 
-        HdBufferArrayRangeSharedPtr adjRange =
+        HdBufferArrayRangeSharedPtr vertexAdjacencyRange =
             resourceRegistry->AllocateNonUniformBufferArrayRange(
                 HdTokens->topology, bufferSpecs, HdBufferArrayUsageHint());
 
-        adjacency->SetAdjacencyRange(adjRange);
-        resourceRegistry->AddSource(adjRange,
-                                    adjacencyForGpuComputation);
+        vertexAdjacencyBuilder->SetVertexAdjacencyRange(vertexAdjacencyRange);
+        resourceRegistry->AddSource(vertexAdjacencyRange,
+                                    vertexAdjacencyBufferSource);
 
-        adjacencyInstance.SetValue(adjacency);
+        vertexAdjacencyBuilderInstance.SetValue(vertexAdjacencyBuilder);
     }
-    _vertexAdjacency = adjacencyInstance.GetValue();
+    _vertexAdjacencyBuilder = vertexAdjacencyBuilderInstance.GetValue();
 }
 
 
@@ -1103,13 +1108,13 @@ static void
 _QuadrangulatePrimvar(HdBufferSourceSharedPtr const &source,
                       HdSt_MeshTopologySharedPtr const &topology,
                       SdfPath const &id,
-                      HdStComputationSharedPtrVector *computations)
+                      HdStComputationComputeQueuePairVector *computations)
 {
     if (!TF_VERIFY(computations)) {
         return;
     }
     // GPU quadrangulation computation needs original vertices to be transfered
-    HdComputationSharedPtr computation =
+    HdStComputationSharedPtr computation =
         topology->GetQuadrangulateComputationGPU(
             source->GetName(), source->GetTupleType().type, id);
     // computation can be null for all quad mesh.
@@ -1160,7 +1165,7 @@ static void
 _RefinePrimvar(HdBufferSourceSharedPtr const &source,
                HdSt_MeshTopologySharedPtr const &topology,
                HdStResourceRegistrySharedPtr const &resourceRegistry,
-               HdStComputationSharedPtrVector *computations,
+               HdStComputationComputeQueuePairVector *computations,
                HdSt_MeshTopology::Interpolation interpolation,
                int channel = 0)
 {
@@ -1168,7 +1173,7 @@ _RefinePrimvar(HdBufferSourceSharedPtr const &source,
         return;
     }
     // GPU subdivision
-    HdComputationSharedPtr computation =
+    HdStComputationSharedPtr computation =
         topology->GetOsdRefineComputationGPU(
             source->GetName(),
             source->GetTupleType().type, 
@@ -1189,7 +1194,7 @@ _RefineOrQuadrangulateVertexAndVaryingPrimvar(
     bool doRefine,
     bool doQuadrangulate,
     HdStResourceRegistrySharedPtr const &resourceRegistry,
-    HdStComputationSharedPtrVector *computations,
+    HdStComputationComputeQueuePairVector *computations,
     HdSt_MeshTopology::Interpolation interpolation)
 {
     if (doRefine) {
@@ -1208,7 +1213,7 @@ _RefineOrQuadrangulateOrTriangulateFaceVaryingPrimvar(
     bool doRefine,
     bool doQuadrangulate,
     HdStResourceRegistrySharedPtr const &resourceRegistry,
-    HdStComputationSharedPtrVector *computations,
+    HdStComputationComputeQueuePairVector *computations,
     int channel)
 {
     //
@@ -1281,7 +1286,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdStComputationSharedPtrVector computations;
+    HdStComputationComputeQueuePairVector computations;
     sources.reserve(primvars.size());
 
     int numPoints = _topology ? _topology->GetNumPoints() : 0;
@@ -1488,7 +1493,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
         // clear DirtySmoothNormals (this is not a scene dirtybit)
         *dirtyBits &= ~DirtySmoothNormals;
 
-        TF_VERIFY(_vertexAdjacency);
+        TF_VERIFY(_vertexAdjacencyBuilder);
 
         // we can't use packed normals for refined/quad,
         // let's migrate the buffer to full precision
@@ -1502,9 +1507,9 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // Smooth normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
-            HdComputationSharedPtr smoothNormalsComputation =
+            HdStComputationSharedPtr smoothNormalsComputation =
                 std::make_shared<HdSt_SmoothNormalsComputationGPU>(
-                    _vertexAdjacency.get(),
+                    _vertexAdjacencyBuilder.get(),
                     HdTokens->points,
                     generatedNormalsName,
                     _pointsDataType,
@@ -1521,7 +1526,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
             // because, if we decided to refine/quadrangulate, we will have
             // forced unpacked normals.
             if (doRefine) {
-                HdComputationSharedPtr computation =
+                HdStComputationSharedPtr computation =
                     _topology->GetOsdRefineComputationGPU(
                         HdStTokens->smoothNormals, _pointsDataType,
                         resourceRegistry.get(),
@@ -1533,7 +1538,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
                         computation, _RefineNormalsCompQueue);
                 }
             } else if (doQuadrangulate) {
-                HdComputationSharedPtr computation =
+                HdStComputationSharedPtr computation =
                     _topology->GetQuadrangulateComputationGPU(
                         HdStTokens->smoothNormals,
                         _pointsDataType, GetId());
@@ -1739,7 +1744,7 @@ HdStMesh::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
     // add gpu computations to queue.
     for (auto const& compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetVertexPrimvarRange(), comp, queue);
@@ -1780,7 +1785,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
     HdBufferSourceSharedPtrVector sources;
     sources.reserve(primvars.size());
-    HdStComputationSharedPtrVector computations;
+    HdStComputationComputeQueuePairVector computations;
 
     int refineLevel = _GetRefineLevelForDesc(desc);
     int numFaceVaryings = _topology ? _topology->GetNumFaceVaryings() : 0;
@@ -1920,7 +1925,7 @@ HdStMesh::_PopulateFaceVaryingPrimvars(HdSceneDelegate *sceneDelegate,
 
     // add gpu computations to queue.
     for (auto const& compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetFaceVaryingPrimvarRange(), comp, queue);
@@ -2006,7 +2011,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
         }
     }
 
-    HdStComputationSharedPtrVector computations;
+    HdStComputationComputeQueuePairVector computations;
 
     TfToken generatedNormalsName;
 
@@ -2023,7 +2028,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
             // Flat normals will compute normals as the same datatype
             // as points, unless we ask for packed normals.
             // This is unfortunate; can we force them to be float?
-            HdComputationSharedPtr flatNormalsComputation =
+            HdStComputationSharedPtr flatNormalsComputation =
                 std::make_shared<HdSt_FlatNormalsComputationGPU>(
                     drawItem->GetTopologyRange(),
                     drawItem->GetVertexPrimvarRange(),
@@ -2092,7 +2097,7 @@ HdStMesh::_PopulateElementPrimvars(HdSceneDelegate *sceneDelegate,
     }
     // add gpu computations to queue.
     for (auto const& compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetElementPrimvarRange(), comp, queue);
@@ -2328,7 +2333,7 @@ HdStMesh::_UpdateDrawItem(HdSceneDelegate *sceneDelegate,
         requireFlatNormals = false;
     }
 
-    if (requireSmoothNormals && !_vertexAdjacency) {
+    if (requireSmoothNormals && !_vertexAdjacencyBuilder) {
         _PopulateAdjacency(resourceRegistry);
     }
 

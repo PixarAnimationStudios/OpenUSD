@@ -26,9 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hdSt/bufferResource.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
-#include "pxr/imaging/hd/bufferResource.h"
 #include "pxr/imaging/hd/types.h"
 
 #include "pxr/base/tf/hash.h"
@@ -161,7 +161,7 @@ public:
     /// A buffer resource binding. Binds a given buffer resource to a specified
     /// name.  The data type is set from the resource.
     HdStBindingRequest(HdStBinding::Type bindingType, TfToken const& name,
-                       HdBufferResourceSharedPtr const& resource)
+                       HdStBufferResourceSharedPtr const& resource)
         : _bindingType(bindingType)
         , _dataType(resource->GetTupleType().type)
         , _name(name)
@@ -177,7 +177,7 @@ public:
     /// structs will be generated, consuming a single binding point. Note that
     /// all resources in the buffer array must have the same underlying
     /// identifier, hence must be interleaved and bindable as a single resource.
-    /// Data types can be derived from each HdBufferResource of bar.
+    /// Data types can be derived from each HdStBufferResource of bar.
     HdStBindingRequest(HdStBinding::Type type, TfToken const& name,
                        HdBufferArrayRangeSharedPtr bar,
                        bool interleave, bool writable = false,
@@ -245,7 +245,7 @@ public:
     }
     /// Returns the single resource associated with this binding request or
     /// null when IsResource() returns false.
-    HdBufferResourceSharedPtr const& GetResource() const {
+    HdStBufferResourceSharedPtr const& GetResource() const {
         return _resource;
     }
     /// Returns the resource or buffer array range offset, defaults to zero.
@@ -322,7 +322,7 @@ private:
     TfToken _name;
 
     // Resource binding request
-    HdBufferResourceSharedPtr _resource;
+    HdStBufferResourceSharedPtr _resource;
 
     // Struct binding request
     HdBufferArrayRangeSharedPtr _bar;
