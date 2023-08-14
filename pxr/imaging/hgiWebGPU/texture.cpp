@@ -143,7 +143,9 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureViewDesc const & de
     wgpu::TextureViewDescriptor textureViewDesc;
     textureViewDesc.format = srcTexture->_pixelFormat;
     textureViewDesc.dimension = _descriptor.dimensions[1] > 1 ? ( _descriptor.dimensions[2] > 1 ? wgpu::TextureViewDimension::e3D : wgpu::TextureViewDimension::e2D) : wgpu::TextureViewDimension::e1D;
+    textureViewDesc.baseMipLevel = desc.sourceFirstMip;
 	textureViewDesc.mipLevelCount = desc.mipLevels;
+    textureViewDesc.baseArrayLayer = desc.sourceFirstLayer;
     textureViewDesc.arrayLayerCount = desc.layerCount;
 	_textureView = _textureHandle.CreateView(&textureViewDesc);
 }
