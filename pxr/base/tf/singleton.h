@@ -195,7 +195,12 @@ public:
 private:
     static T *_CreateInstance(std::atomic<T *> &instance);
     
+    // Suppress dll-interface warnings from MSVC; _instance
+    // is an inaccessible implementation detail of TfSingleton.
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_NEEDS_EXPORT_INTERFACE
     static std::atomic<T *> _instance;
+    ARCH_PRAGMA_POP
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
