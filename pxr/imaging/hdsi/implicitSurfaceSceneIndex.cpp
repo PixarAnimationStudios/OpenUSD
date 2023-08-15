@@ -572,7 +572,7 @@ private:
         if (HdDoubleDataSourceHandle const s = _GetHeightSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return 1.0;
+        return 2.0;
     }
 
     HdDoubleDataSourceHandle _GetRadiusSource() const {
@@ -600,7 +600,7 @@ private:
         if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return HdCylinderSchemaTokens->X;
+        return HdCylinderSchemaTokens->Z;
     }
 
     HdContainerDataSourceHandle _primDataSource;
@@ -926,7 +926,7 @@ private:
         if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return 1.0;
+        return 0.5;
     }
 
     HdTokenDataSourceHandle _GetAxisSource() const {
@@ -940,7 +940,7 @@ private:
         if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return HdCapsuleSchemaTokens->X;
+        return HdCapsuleSchemaTokens->Z;
     }
 
     HdContainerDataSourceHandle _primDataSource;
