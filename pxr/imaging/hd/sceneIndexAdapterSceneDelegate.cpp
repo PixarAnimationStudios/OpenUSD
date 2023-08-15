@@ -1382,9 +1382,6 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
     HdContainerDataSourceHandle renderSettingsDs =
             HdContainerDataSource::Cast(prim.dataSource->Get(
                 HdRenderSettingsSchemaTokens->renderSettings));
-    if (!renderSettingsDs) {
-        return VtValue();
-    }
 
     HdRenderSettingsSchema rsSchema = HdRenderSettingsSchema(renderSettingsDs);
     if (!rsSchema.IsDefined()) {
@@ -1404,7 +1401,6 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         if (HdBoolDataSourceHandle activeDS = rsSchema.GetActive()) {
             return VtValue(activeDS->GetTypedValue(0));
         }
-        return VtValue(false);
     }
 
     if (key == HdRenderSettingsPrimTokens->renderProducts) {
@@ -1436,6 +1432,14 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
                 rsSchema.GetRenderingColorSpace()) {
             
             return VtValue(colorSpaceDS->GetTypedValue(0));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->shutterInterval) {
+        if (HdVec2dDataSourceHandle shutterIntervalDS =
+                rsSchema.GetShutterInterval()) {
+            
+            return VtValue(shutterIntervalDS->GetTypedValue(0));
         }
     }
 

@@ -437,7 +437,8 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (renderProducts)                                  \
     (includedPurposes)                                \
     (materialBindingPurposes)                         \
-    (renderingColorSpace)
+    (renderingColorSpace)                             \
+    (shutterInterval)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \

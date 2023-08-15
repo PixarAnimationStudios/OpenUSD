@@ -2262,8 +2262,8 @@ public:
             }
         }
 
-        // Note: active can be skipped (instead of hardcoding it to false here)
-        //       since a downstream scene index will author its opinion.
+        // Note: Skip 'active' and 'shutterInterval' fields which are computed
+        //       by a downstream scene index.
 
         return HdSampledDataSourceHandle(
             Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
