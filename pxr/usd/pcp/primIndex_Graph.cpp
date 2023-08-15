@@ -613,7 +613,7 @@ PcpPrimIndex_Graph::_InsertChildInStrengthOrder(
 void 
 PcpPrimIndex_Graph::_DetachSharedNodePool()
 {
-    if (!_nodes.unique()) {
+    if (_nodes.use_count() != 1) {
         TRACE_FUNCTION();
         TfAutoMallocTag tag("_DetachSharedNodePool");
         _nodes = std::make_shared<_NodePool>(*_nodes);
@@ -623,7 +623,7 @@ PcpPrimIndex_Graph::_DetachSharedNodePool()
 void 
 PcpPrimIndex_Graph::_DetachSharedNodePoolForNewNodes(size_t numAddedNodes)
 {
-    if (!_nodes.unique()) {
+    if (_nodes.use_count() != 1) {
         TRACE_FUNCTION();
         TfAutoMallocTag tag("_DetachSharedNodePoolForNewNodes");
         // Create a new copy, but with some extra capacity since we are adding
