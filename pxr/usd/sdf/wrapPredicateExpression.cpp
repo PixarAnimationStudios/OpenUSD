@@ -33,7 +33,12 @@ _Repr(SdfPredicateExpression const &self) {
             + TfPyRepr(self.GetText()) + ")";
     }
 }
-                           
+
+static std::string const&
+_GetParseError(SdfPredicateExpression const &self) {
+    return self.GetParseError();
+}
+
 void wrapPredicateExpression()
 {
     TfPyFunctionFromPython<void (PredExpr::Op, int)> {};
@@ -79,9 +84,7 @@ void wrapPredicateExpression()
         .def(self == self)
         .def(self != self)
 
-        .def("GetParseError",
-             static_cast<std::string const &(PredExpr::*)() const &>(
-                 &PredExpr::GetParseError),
+        .def("GetParseError", &_GetParseError,
              return_value_policy<return_by_value>())
         ;
 
