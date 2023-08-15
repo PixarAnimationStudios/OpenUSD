@@ -547,8 +547,9 @@ HdStResourceRegistry::GarbageCollectDispatchBuffers()
     _dispatchBufferRegistry.erase(
         std::remove_if(
             _dispatchBufferRegistry.begin(), _dispatchBufferRegistry.end(),
-            std::bind(&HdStDispatchBufferSharedPtr::unique,
-                      std::placeholders::_1)),
+            [](const HdStDispatchBufferSharedPtr& ptr) {
+                return ptr.use_count() == 1;
+            }),
         _dispatchBufferRegistry.end());
 }
 
@@ -560,8 +561,9 @@ HdStResourceRegistry::GarbageCollectBufferResources()
     _bufferResourceRegistry.erase(
         std::remove_if(
             _bufferResourceRegistry.begin(), _bufferResourceRegistry.end(),
-            std::bind(&HdStBufferResourceSharedPtr::unique,
-                      std::placeholders::_1)),
+            [](const HdStBufferResourceSharedPtr& ptr) {
+                return ptr.use_count() == 1;
+            }),
         _bufferResourceRegistry.end());
 }
 
