@@ -250,6 +250,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
     (capsule)                                   \
+    (capsule_1)                                 \
     (cone)                                      \
     (cube)                                      \
     (cylinder)                                  \

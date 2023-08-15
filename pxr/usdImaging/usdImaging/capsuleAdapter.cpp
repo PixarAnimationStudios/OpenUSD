@@ -46,7 +46,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule_1, HdCapsuleSchema>;
+using _PrimSource_0 = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule, HdCapsuleSchema>;
+using _PrimSource_1 = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule_1, HdCapsule_1Schema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -56,7 +57,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingCapsuleAdapter::~UsdImagingCapsuleAdapter() 
+UsdImagingCapsuleAdapter::~UsdImagingCapsuleAdapter()
 {
 }
 
@@ -84,10 +85,18 @@ UsdImagingCapsuleAdapter::GetImagingSubprimData(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::New(
-            prim.GetPath(),
-            prim,
-            stageGlobals);
+        if (prim.IsA<UsdGeomCapsule>()) {
+            return _PrimSource_0::New(
+                prim.GetPath(),
+                prim,
+                stageGlobals);
+        } else { // IsA<UsdGeomCapsule_1>()
+            return _PrimSource_1::New(
+                prim.GetPath(),
+                prim,
+                stageGlobals);
+        }
+
     }
     return nullptr;
 }
@@ -99,9 +108,13 @@ UsdImagingCapsuleAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::Invalidate(prim, subprim, properties);
+        if (prim.IsA<UsdGeomCapsule>()) {
+            return _PrimSource_0::Invalidate(prim, subprim, properties);
+        } else {  // IsA<UsdGeomCapsule_1>()
+            return _PrimSource_1::Invalidate(prim, subprim, properties);
+        }
     }
-    
+
     return HdDataSourceLocatorSet();
 }
 
@@ -112,7 +125,7 @@ UsdImagingCapsuleAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 }
 
 SdfPath
-UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim, 
+UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 
@@ -121,11 +134,11 @@ UsdImagingCapsuleAdapter::Populate(UsdPrim const& prim,
                      prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
-void 
+void
 UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
-                                          UsdImagingInstancerContext const* 
+                                          UsdImagingInstancerContext const*
                                               instancerContext) const
 {
     BaseAdapter::TrackVariability(
@@ -139,11 +152,26 @@ UsdImagingCapsuleAdapter::TrackVariability(UsdPrim const& prim,
                    UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits, /*inherited*/false);
     }
-    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
-        _IsVarying(prim, UsdGeomTokens->radius,
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimvar,
-                   timeVaryingBits, /*inherited*/false);
+    if (prim.IsA<UsdGeomCapsule>()) {
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radius,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
+    } else { // IsA<UsdGeomCapsule_1>()
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radiusBottom,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radiusTop,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
     }
     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->axis,
@@ -160,6 +188,8 @@ UsdImagingCapsuleAdapter::ProcessPropertyChange(UsdPrim const& prim,
 {
     if (propertyName == UsdGeomTokens->height ||
         propertyName == UsdGeomTokens->radius ||
+        propertyName == UsdGeomTokens->radiusBottom ||
+        propertyName == UsdGeomTokens->radiusTop ||
         propertyName == UsdGeomTokens->axis) {
         return HdChangeTracker::DirtyPoints;
     }
@@ -256,7 +286,7 @@ UsdImagingCapsuleAdapter::GetPoints(UsdPrim const& prim,
     return VtValue(points);
 }
 
-/*virtual*/ 
+/*virtual*/
 VtValue
 UsdImagingCapsuleAdapter::GetTopology(UsdPrim const& prim,
                                       SdfPath const& cachePath,
