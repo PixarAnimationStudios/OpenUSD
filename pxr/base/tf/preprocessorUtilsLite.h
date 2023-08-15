@@ -324,8 +324,8 @@
 /// \ingroup group_tf_Preprocessor
 /// \hideinitializer
 //
-// If the arguments satisfy _TF_PP_EAT_PARENS_IS_PARENS() then we expand to
-// _TF_PP_EAT_PARENS_EXPAND1, otherwise to _TF_PP_EAT_PARENS_EXPAND.  The
+// If the arguments satisfy _TF_PP_IS_PARENS() then we expand to
+// _TF_PP_PARENS_EXPAND1, otherwise to _TF_PP_PARENS_EXPAND.  The
 // former eats the parentheses while the latter passes the arguments
 // unchanged.
 //
@@ -333,8 +333,8 @@
 // arguments. MSVC will complain about insufficient arguments otherwise.
 // The ~ will be discarded in any case.
 #define TF_PP_EAT_PARENS(...) \
-    _TF_PP_EAT_PARENS_IFF(_TF_PP_EAT_PARENS_IS_PARENS(__VA_ARGS__ ~),\
-        _TF_PP_EAT_PARENS_EXPAND1,_TF_PP_EAT_PARENS_EXPAND)(__VA_ARGS__)
+    _TF_PP_EAT_PARENS_IFF(_TF_PP_IS_PARENS(__VA_ARGS__ ~),\
+        _TF_PP_PARENS_EXPAND1,_TF_PP_PARENS_EXPAND)(__VA_ARGS__)
 
 /// Expand the arguments and make the result a string.
 // We can't use
@@ -355,42 +355,47 @@
 #define _TF_PP_EAT_PARENS_IFF_1(t, f) t
 
 // Force expansion of the arguments.
-#define _TF_PP_EAT_PARENS_EXPAND(...) __VA_ARGS__
+#define _TF_PP_PARENS_EXPAND(...) __VA_ARGS__
 
 // Similar to expand except it will eat the first matching pair of
-// parentheses. For example, _TF_PP_EAT_PARENS_EXPAND1((x)(y)) yields x(y).
-// The outer _TF_PP_EAT_PARENS_EXPAND() is needed for MSVC, which otherwise
-// would stringizing to "_TF_PP_EAT_PARENS_EXPAND " plus the literal
+// parentheses. For example, _TF_PP_PARENS_EXPAND1((x)(y)) yields x(y).
+// The outer _TF_PP_PARENS_EXPAND() is needed for MSVC, which otherwise
+// would stringizing to "_TF_PP_PARENS_EXPAND " plus the literal
 // substitution of the arguments.
-#define _TF_PP_EAT_PARENS_EXPAND1(...) \
-    _TF_PP_EAT_PARENS_EXPAND(_TF_PP_EAT_PARENS_EXPAND __VA_ARGS__)
+#define _TF_PP_PARENS_EXPAND1(...) \
+    _TF_PP_PARENS_EXPAND(_TF_PP_PARENS_EXPAND __VA_ARGS__)
 
 // This works around a MSVC bug.  When a macro expands to FOO(__VA_ARGS__,bar),
 // MSVC will separate the arguments of __VA_ARGS__ even if they're inside
 // matching parentheses. So, for example, if __VA_ARGS__ is (x,y) then we'll
 // expand to FOO(x,y,bar) instead of FOO((x,y),bar).  This macro works around
-// that.  Use: _TF_PP_EAT_PARENS_CALL(FOO,(__VA_ARGS__,bar)).
+// that.  Use: _TF_PP_PARENS_CALL(FOO,(__VA_ARGS__,bar)).
 //
-// We need the _TF_PP_EAT_PARENS_EXPAND() here otherwise stringizing will
+// We need the _TF_PP_PARENS_EXPAND() here otherwise stringizing will
 // stringize the literal replacements, not the result of the expansion of x y.
 // If FOO(x,y) expands to x+y then we'd get "FOO ((x,y),bar)" without
-// _TF_PP_EAT_PARENS_EXPAND() instead of the correct "(x,y)+bar".
-#define _TF_PP_EAT_PARENS_CALL(x, y) _TF_PP_EAT_PARENS_EXPAND(x y)
+// _TF_PP_PARENS_EXPAND() instead of the correct "(x,y)+bar".
+#define _TF_PP_PARENS_CALL(x, y) _TF_PP_PARENS_EXPAND(x y)
 
 // Expands to 1 if x starts with a matched parenthesis, otherwise expands to
-// 0. "_TF_PP_EAT_PARENS_IS_PARENS2 x" eats the parentheses if they exist and
-// expands to "x, 1,", otherwise it expands to _TF_PP_EAT_PARENS_IS_PARENS2
+// 0. "_TF_PP_IS_PARENS2 x" eats the parentheses if they exist and
+// expands to "x, 1,", otherwise it expands to _TF_PP_IS_PARENS2
 // and the literal expansion of x.  This result goes to
-// _TF_PP_EAT_PARENS_IS_PARENS_CHECK_N() which extracts the 1 expanded from
-// _TF_PP_EAT_PARENS_IS_PARENS2 or a 0 passed as a final argument.  In either
+// _TF_PP_IS_PARENS_CHECK_N() which extracts the 1 expanded from
+// _TF_PP_IS_PARENS2 or a 0 passed as a final argument.  In either
 // case the desired result is the second argument to
-// _TF_PP_EAT_PARENS_IS_PARENS_CHECK_N.
-#define _TF_PP_EAT_PARENS_IS_PARENS(x) \
-    _TF_PP_EAT_PARENS_IS_PARENS_CHECK(_TF_PP_EAT_PARENS_IS_PARENS2 x)
-#define _TF_PP_EAT_PARENS_IS_PARENS_CHECK(...) \
-    _TF_PP_EAT_PARENS_CALL(_TF_PP_EAT_PARENS_IS_PARENS_CHECK_N,(__VA_ARGS__,0,))
-#define _TF_PP_EAT_PARENS_IS_PARENS_CHECK_N(x, n, ...) n
-#define _TF_PP_EAT_PARENS_IS_PARENS_TRUE(x) x, 1,
-#define _TF_PP_EAT_PARENS_IS_PARENS2(...) _TF_PP_EAT_PARENS_IS_PARENS_TRUE(~)
+// _TF_PP_IS_PARENS_CHECK_N.
+#define _TF_PP_IS_PARENS(x) \
+    _TF_PP_IS_PARENS_CHECK(_TF_PP_IS_PARENS2 x)
+#define _TF_PP_IS_PARENS_CHECK(...) \
+    _TF_PP_PARENS_CALL(_TF_PP_IS_PARENS_CHECK_N,(__VA_ARGS__,0,))
+#define _TF_PP_IS_PARENS_CHECK_N(x, n, ...) n
+#define _TF_PP_IS_PARENS_TRUE(x) x, 1,
+#define _TF_PP_IS_PARENS2(...) _TF_PP_IS_PARENS_TRUE(~)
+
+/// Exapnds to 1 if the argument is a tuple, and 0 otherwise.
+/// \ingroup group_tf_Preprocessor
+/// \hideinitializer
+#define TF_PP_IS_TUPLE(arg) _TF_PP_IS_PARENS(arg)
 
 #endif // PXR_BASE_TF_PREPROCESSOR_UTILS_LITE_H

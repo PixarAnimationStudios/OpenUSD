@@ -76,7 +76,6 @@
 /// PRIVATE, you only need to use the DEFINE macro.
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
