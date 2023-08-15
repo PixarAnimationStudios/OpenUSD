@@ -71,9 +71,111 @@ _BuildDependencyForActiveLocator()
             .Build()
         );
     
-    return HdOverlayContainerDataSource::OverlayedContainerDataSources(
-                HdContainerDataSource::Cast(existingDependenciesDs),
-                renderSettingsDepDS);
+    return renderSettingsDepDS;
+}
+
+// Builds and returns a data source to:
+// (a) invalidate the renderSettings.shutterInterval locator when a targeted 
+// camera's shutterOpen or shutterClose locator is dirtied.
+// (b) invalidate the renderSettings.shutterInterval locator when the
+//     renderProducts locator is dirtied. Due to flattening, we can't limit
+//     this to just the cameraPrim
+// (c) invalidate the prim's dependencies when the render products locator
+//     is dirtied.
+//
+HdContainerDataSourceHandle
+_BuildDependenciesForShutterInterval(
+    const SdfPathVector &cameraPaths)
+{
+    const size_t numCameras = cameraPaths.size();
+    const size_t numDependencies = numCameras*2 /* (a) */ + 2 /* (b),(c) */;
+
+    TfTokenVector names;
+    names.reserve(numDependencies);
+    std::vector<HdDataSourceBaseHandle> values;
+    values.reserve(numDependencies);
+
+    static const HdDataSourceLocator shutterOpenLocator =
+        HdCameraSchema::GetDefaultLocator().Append(
+            HdCameraSchemaTokens->shutterOpen);
+    static const HdDataSourceLocator shutterCloseLocator =
+        HdCameraSchema::GetDefaultLocator().Append(
+            HdCameraSchemaTokens->shutterClose);
+    static const HdLocatorDataSourceHandle& shutterOpenLocatorDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            shutterOpenLocator);
+    static const HdLocatorDataSourceHandle& shutterCloseLocatorDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            shutterCloseLocator);
+    static const HdLocatorDataSourceHandle& shutterIntervalLocatorDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdRenderSettingsSchema::GetShutterIntervalLocator());
+    static const HdLocatorDataSourceHandle& productsLocatorDs =
+        HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+            HdRenderSettingsSchema::GetRenderProductsLocator());
+
+    static const std::string shutterOpenDepPrefix(
+        "renderSettings_depOn_cameraShutterOpen_");
+    static const std::string shutterCloseDepPrefix(
+        "renderSettings_depOn_cameraShutterClose_");
+
+    // (a)
+    for (size_t ii = 0; ii < numCameras; ++ii) {
+        // shutterOpen
+        names.push_back(TfToken(shutterOpenDepPrefix + std::to_string(ii)));
+        values.push_back(
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    cameraPaths[ii]))
+            .SetDependedOnDataSourceLocator(shutterOpenLocatorDs)
+            .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+            .Build()
+        );
+
+        // shutterClose
+        names.push_back(TfToken(shutterCloseDepPrefix + std::to_string(ii)));
+        values.push_back(
+            HdDependencySchema::Builder()
+            .SetDependedOnPrimPath(
+                HdRetainedTypedSampledDataSource<SdfPath>::New(
+                    cameraPaths[ii]))
+            .SetDependedOnDataSourceLocator(shutterCloseLocatorDs)
+            .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+            .Build()
+        );
+    }
+
+    // (b)
+    names.push_back(TfToken("shutterInterval_depOn_renderProducts"));
+    values.push_back(
+        HdDependencySchema::Builder()
+        .SetDependedOnPrimPath(
+            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                SdfPath::EmptyPath()))
+        .SetDependedOnDataSourceLocator(productsLocatorDs)
+        .SetAffectedDataSourceLocator(shutterIntervalLocatorDs)
+        .Build()
+    );
+
+    // (c)
+    names.push_back(TfToken("__dependencies_depOn_renderProducts"));
+    values.push_back(
+        HdDependencySchema::Builder()
+        .SetDependedOnPrimPath(
+            HdRetainedTypedSampledDataSource<SdfPath>::New(
+                SdfPath::EmptyPath()))
+        .SetDependedOnDataSourceLocator(productsLocatorDs)
+        .SetAffectedDataSourceLocator(
+            HdRetainedTypedSampledDataSource<HdDataSourceLocator>::New(
+                HdDependenciesSchema::GetDefaultLocator())
+        )
+        .Build()
+    );
+
+
+    return HdRetainedContainerDataSource::New(
+        names.size(), names.data(), values.data());
 }
 
 // Build and return a container with only the names that begin with the
@@ -84,8 +186,8 @@ _GetFilteredNamespacedSettings(
     const HdContainerDataSourceHandle &c,
     const VtArray<TfToken> &prefixes)
 {
-    if (!c) {
-        return HdContainerDataSourceHandle();
+    if (prefixes.empty() || !c) {
+        return c;
     }
 
     TfTokenVector names = c->GetNames();
@@ -323,7 +425,7 @@ public:
             !_namespacePrefixes.empty()) {
 
             return _GetFilteredNamespacedSettings(
-                HdContainerDataSource::Cast(result), _namespacePrefixes);
+                    HdContainerDataSource::Cast(result), _namespacePrefixes);
         }
 
         return result;
