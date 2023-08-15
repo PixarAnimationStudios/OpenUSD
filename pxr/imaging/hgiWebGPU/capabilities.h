@@ -47,6 +47,9 @@ public:
     HGIWEBGPU_API
     int GetShaderVersion() const override;
 
+    HGIWEBGPU_API
+    bool IsViewportYUp() const override;
+
 protected:
     friend class HgiWebGPU;
 

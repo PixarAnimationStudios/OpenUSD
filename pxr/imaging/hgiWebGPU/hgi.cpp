@@ -198,8 +198,16 @@ wgpu::Device GetDevice() {
         }
         TF_DEBUG(HGIWEBGPU_DEBUG_DEVICE_CREATION).Msg("\n\n");
 
-        // Toggle for debugging shader
         wgpu::DeviceDescriptor descriptor;
+        // Toggle for debugging shader
+        if (TfDebug::IsEnabled(HGIWEBGPU_DEBUG_SHADER_CODE)) {
+            wgpu::DawnTogglesDescriptor deviceTogglesDesc;
+            const char *const enabledToggles[] = {"dump_shaders", "disable_symbol_renaming"};
+            deviceTogglesDesc.enabledToggles = enabledToggles;
+            deviceTogglesDesc.enabledTogglesCount = 2;
+            descriptor.nextInChain = &deviceTogglesDesc;
+        }
+
         wgpu::FeatureName requiredFeatures = wgpu::FeatureName::Depth32FloatStencil8;
         descriptor.requiredFeatures = &requiredFeatures;
         descriptor.requiredFeaturesCount = 1;

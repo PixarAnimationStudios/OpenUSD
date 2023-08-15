@@ -118,6 +118,7 @@
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/registryManager.h"
 
+#include <boost/variant/get.hpp>
 #include <atomic>
 #include <string>
 
@@ -170,6 +171,8 @@ TfGetEnvSetting(TfEnvSetting<T>& setting) {
 bool Tf_ChooseEnvSettingType(bool);
 int Tf_ChooseEnvSettingType(int);
 std::string Tf_ChooseEnvSettingType(char const *);
+boost::variant<int, bool, std::string> const *
+    Tf_GetEnvSettingByName(std::string const& name);
 
 class Tf_EnvSettingRegistry;
 

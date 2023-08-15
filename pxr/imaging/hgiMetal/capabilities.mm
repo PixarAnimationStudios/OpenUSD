@@ -172,4 +172,11 @@ HgiMetalCapabilities::GetShaderVersion() const
     return 450;
 }
 
+bool HgiMetalCapabilities::IsViewportYUp() const {
+    // Actually the metal viewport Y is down but, we are already handling then Y flip by setting the
+    // Viewport height as a negative value and flipping the winding in graphicsCmds.mm
+    return true;
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

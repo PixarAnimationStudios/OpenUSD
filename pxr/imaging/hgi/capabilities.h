@@ -53,6 +53,9 @@ public:
     virtual int GetShaderVersion() const = 0;
 
     HGI_API
+    virtual bool IsViewportYUp() const = 0;
+
+    HGI_API
     size_t GetMaxUniformBlockSize() const {
         return _maxUniformBlockSize;
     }

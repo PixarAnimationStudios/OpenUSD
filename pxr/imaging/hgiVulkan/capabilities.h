@@ -53,6 +53,9 @@ public:
     HGIVULKAN_API
     int GetShaderVersion() const override;
 
+    HGIVULKAN_API
+    bool IsViewportYUp() const override;
+
     bool supportsTimeStamps;
     VkPhysicalDeviceProperties vkDeviceProperties;
     VkPhysicalDeviceProperties2 vkDeviceProperties2;

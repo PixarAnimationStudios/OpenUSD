@@ -70,11 +70,6 @@ TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_DEBUG_SCENE_DELEGATE_ID, "/",
 TF_DEFINE_ENV_SETTING(USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX, false,
                       "Use Scene Index API for imaging scene input");
 
-#if !defined(EMSCRIPTEN)
-// TODO: Resolve duplicated env variable issue, because HGI_ENABLE_WEBGPU has another definition in hgi
-    TF_DEFINE_ENV_SETTING(HGI_ENABLE_WEBGPU, 0,
-                          "Enable WebGPU as platform default Hgi backend (WIP)");
-#endif
 
 namespace UsdImagingGLEngine_Impl
 {
@@ -132,7 +127,8 @@ _GetPlatformDependentRendererDisplayName(HfPluginDesc const &pluginDescriptor)
 #if defined EMSCRIPTEN
     return "WebGPU";
 #else
-    if (TfGetEnvSetting(HGI_ENABLE_WEBGPU))
+
+    if (Tf_GetEnvSettingByName("HGI_ENABLE_WEBGPU"))
     #if defined(PXR_WEBGPU_SUPPORT_ENABLED)
             return "WebGPU";
     #else

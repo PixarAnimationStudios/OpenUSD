@@ -48,6 +48,9 @@ public:
     HGIMETAL_API
     int GetShaderVersion() const override;
 
+    HGIMETAL_API
+    bool IsViewportYUp() const override;
+
     MTLResourceOptions defaultStorageMode;
     bool hasVertexMemoryBarrier;
     bool useParallelEncoder;

@@ -33,6 +33,7 @@
 
 #include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hio/image.h"
+#include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/texture.h"
 
@@ -342,11 +343,11 @@ UsdImagingGL_UnitTestGLDrawing::WriteAovToFile(
             hgi, texture, &bufferSize);
 
     HgiTextureDesc const textureDesc = texture.Get()->GetDescriptor();
-
+    const HgiCapabilities *capabilities = hgi->GetCapabilities();
     HioImage::StorageSpec storage;
     storage.width = textureDesc.dimensions[0];
     storage.height = textureDesc.dimensions[1];
-    storage.flipped = true;
+    storage.flipped = capabilities->IsViewportYUp();
     storage.data = buffer.get();
 
     if (textureDesc.format == HgiFormatUNorm8Vec4) {

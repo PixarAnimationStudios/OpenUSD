@@ -56,4 +56,9 @@ HgiWebGPUCapabilities::GetShaderVersion() const
     return 460;
 }
 
+bool
+HgiWebGPUCapabilities::IsViewportYUp() const {
+    return false;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE
