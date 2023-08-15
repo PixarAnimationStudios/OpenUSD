@@ -178,7 +178,7 @@ Sdf_LayerRegistry::Find(
     SdfLayerHandle foundLayer;
 
     if (Sdf_IsAnonLayerIdentifier(inputLayerPath)) {
-        foundLayer = FindByIdentifier(inputLayerPath);
+        foundLayer = _FindByIdentifier(inputLayerPath);
     } else {
         ArResolver& resolver = ArGetResolver();
 
@@ -190,7 +190,7 @@ Sdf_LayerRegistry::Find(
         string assetPath, args;
         Sdf_SplitIdentifier(inputLayerPath, &assetPath, &args);
         if (!resolver.IsContextDependentPath(assetPath)) {
-            foundLayer = FindByIdentifier(layerPath);
+            foundLayer = _FindByIdentifier(layerPath);
         }
 
         // If the layer path is in repository form and we haven't yet
@@ -218,7 +218,7 @@ Sdf_LayerRegistry::Find(
 }
 
 SdfLayerHandle
-Sdf_LayerRegistry::FindByIdentifier(
+Sdf_LayerRegistry::_FindByIdentifier(
     const string& layerPath) const
 {
     TRACE_FUNCTION();
@@ -232,7 +232,7 @@ Sdf_LayerRegistry::FindByIdentifier(
         foundLayer = *identifierIt;
 
     TF_DEBUG(SDF_LAYER).Msg(
-        "Sdf_LayerRegistry::FindByIdentifier('%s') => %s\n",
+        "Sdf_LayerRegistry::_FindByIdentifier('%s') => %s\n",
         layerPath.c_str(),
         foundLayer ? "Found" : "Not Found");
 
