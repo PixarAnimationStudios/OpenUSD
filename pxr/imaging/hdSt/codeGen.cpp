@@ -3098,6 +3098,9 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &msDesc, "hd_LocalIndexID", "uint",
             HgiShaderKeywordTokens->hdLocalIndexID);
+        HgiShaderFunctionAddStageInput(
+            &msDesc, "hd_ThreadLocalIndexID", "uint",
+            HgiShaderKeywordTokens->hdThreadLocalIndexID);
         HgiShaderFunctionAddStageOutput(
                 &msDesc, "position", "vec4",
                 "position");
