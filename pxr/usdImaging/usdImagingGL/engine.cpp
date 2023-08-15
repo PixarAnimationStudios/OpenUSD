@@ -1123,7 +1123,7 @@ UsdImagingGLEngine::_AppendOverridesSceneIndices(
     sceneIndex = _rootOverridesSceneIndex =
         UsdImagingRootOverridesSceneIndex::New(sceneIndex);
 
-    return inputScene;
+    return sceneIndex;
 }
 
 void
