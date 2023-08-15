@@ -36,8 +36,8 @@
 #include "pxr/imaging/hgi/resourceBindings.h"
 #include "pxr/imaging/hgi/shaderProgram.h"
 #include "pxr/imaging/hgi/texture.h"
-#include "pxr/base/work/dispatcher.h"
 
+#include <memory>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -218,7 +218,8 @@ private: // data
     HgiGraphicsPipelineHandle _pipeline;
     float _screenSize[2];
 
-    WorkDispatcher _workDispatcher;
+    class _Impl;
+    std::unique_ptr<_Impl> _impl;
 };
 
 // VtValue requirements

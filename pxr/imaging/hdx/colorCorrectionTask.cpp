@@ -35,6 +35,7 @@
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
+#include "pxr/base/work/dispatcher.h"
 
 #include <iostream>
 
@@ -54,6 +55,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 static const int HDX_DEFAULT_LUT3D_SIZE_OCIO = 65;
 
+class HdxColorCorrectionTask::_Impl {
+public:
+    _Impl() {}
+
+    WorkDispatcher _workDispatcher;
+};
+
 HdxColorCorrectionTaskParams::HdxColorCorrectionTaskParams()
   : colorCorrectionMode(HdxColorCorrectionTokens->disabled)
   , lut3dSizeOCIO(HDX_DEFAULT_LUT3D_SIZE_OCIO)
@@ -63,7 +71,8 @@ HdxColorCorrectionTaskParams::HdxColorCorrectionTaskParams()
 HdxColorCorrectionTask::HdxColorCorrectionTask(
     HdSceneDelegate* delegate,
     SdfPath const& id)
-  : HdxTask(id)
+  : HdxTask(id),
+    _impl(new _Impl)
 {
     _params.lut3dSizeOCIO = HDX_DEFAULT_LUT3D_SIZE_OCIO;
 }
@@ -73,8 +82,8 @@ HdxColorCorrectionTask::~HdxColorCorrectionTask()
     // If we had queued up work in Sync(), we expect a subsequent
     // invokation of Execute() will have waited on completion.
     // However, as a precaution, cancel and wait on any tasks here.
-    _workDispatcher.Cancel();
-    _workDispatcher.Wait();
+    _impl->_workDispatcher.Cancel();
+    _impl->_workDispatcher.Wait();
 
     if (_aovSampler) {
         _GetHgi()->DestroySampler(&_aovSampler);
@@ -765,7 +774,7 @@ HdxColorCorrectionTask::_CreateShaderResources()
         fsCode += "#define texture3D texture\n";
 
         // Ensure the OICO resource prep task has completed.
-        _workDispatcher.Wait();
+        _impl->_workDispatcher.Wait();
 
         // Discard prior GPU resources.
         for (TextureSamplerInfo &textureLut : _textureLUTs) {
@@ -1061,9 +1070,9 @@ HdxColorCorrectionTask::_Sync(HdSceneDelegate* delegate,
             // It is possible for the prior prep task to have not
             // yet completed, so cancel and wait on it before enqueuing
             // a new task with updated parameters.
-            _workDispatcher.Cancel();
-            _workDispatcher.Wait();
-            _workDispatcher.Run(&_CreateOpenColorIOResources,
+            _impl->_workDispatcher.Cancel();
+            _impl->_workDispatcher.Wait();
+            _impl->_workDispatcher.Run(&_CreateOpenColorIOResources,
                                 _GetHgi(),
                                 _params,
                                 &_ocioResources);
