@@ -24,6 +24,8 @@
 #ifndef PXR_BASE_TF_DIAGNOSTIC_H
 #define PXR_BASE_TF_DIAGNOSTIC_H
 
+// testing noop change.
+
 /// \file tf/diagnostic.h
 /// \ingroup group_tf_Diagnostic
 /// Low-level utilities for informing users of various internal and external
