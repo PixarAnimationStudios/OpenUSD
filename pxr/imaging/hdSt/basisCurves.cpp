@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/computation.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -47,9 +48,7 @@
 #include "pxr/base/gf/vec2i.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "pxr/base/vt/value.h"
 
@@ -866,7 +865,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdStComputationSharedPtrVector computations;
+    HdStComputationComputeQueuePairVector computations;
     sources.reserve(primvars.size());
 
     HdSt_GetExtComputationPrimvarsComputations(
@@ -957,7 +956,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
     // add gpu computations to queue.
     for (auto const& compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetVertexPrimvarRange(), comp, queue);

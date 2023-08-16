@@ -169,8 +169,6 @@ HdStSimpleLightingShader::BindResources(const int program,
     }
     
     HdSt_TextureBinder::BindResources(binder, _namedTextureHandles);
-
-    binder.BindShaderResources(this);
 }
 
 /* virtual */
@@ -188,12 +186,7 @@ HdStSimpleLightingShader::UnbindResources(const int program,
 void
 HdStSimpleLightingShader::AddBufferBinding(HdStBindingRequest const& req)
 {
-    auto it = _customBuffers.insert({req.GetName(), req});
-    // Entry already existed and was equal to what we want to set it.
-    if (!it.second && it.first->second == req) {
-        return;
-    }
-    it.first->second = req;
+    _customBuffers[req.GetName()] = req;
 }
 
 void
@@ -273,31 +266,6 @@ HdSt_MaterialParamVector const&
 HdStSimpleLightingShader::GetParams() const 
 {
     return _lightTextureParams;
-}
-
-void
-HdStSimpleLightingShader::SetLightingStateFromOpenGL()
-{
-    _lightingContext->SetStateFromOpenGL();
-}
-
-void
-HdStSimpleLightingShader::SetLightingState(
-    GlfSimpleLightingContextPtr const &src)
-{
-    if (src) {
-        _useLighting = true;
-        _lightingContext->SetUseLighting(!src->GetLights().empty());
-        _lightingContext->SetLights(src->GetLights());
-        _lightingContext->SetMaterial(src->GetMaterial());
-        _lightingContext->SetSceneAmbient(src->GetSceneAmbient());
-        _lightingContext->SetShadows(src->GetShadows());
-    } else {
-        // XXX:
-        // if src is null, turn off lights (this is temporary used for shadowmap drawing).
-        // see GprimUsdBaseIcBatch::Draw()
-        _useLighting = false;
-    }
 }
 
 static

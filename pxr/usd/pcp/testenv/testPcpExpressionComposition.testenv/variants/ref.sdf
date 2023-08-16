@@ -1,0 +1,23 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string REF = "x"
+    }
+)
+
+def "Ref" (
+    variantSets = ["v"]
+    variants = {
+        string v = "`'${REF}_sel'`"
+    }
+)
+{
+    variantSet "v" = {
+        "x_sel" {
+        }
+        "y_sel" {
+        }
+        "z_sel" {
+        }
+    }
+}

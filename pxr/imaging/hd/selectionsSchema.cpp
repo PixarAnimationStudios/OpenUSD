@@ -45,6 +45,13 @@ HdSelectionsSchema::GetFromParent(
 }
 
 /*static*/
+const TfToken &
+HdSelectionsSchema::GetSchemaToken()
+{
+    return HdSelectionsSchemaTokens->selections;
+}
+
+/*static*/
 const HdDataSourceLocator &
 HdSelectionsSchema::GetDefaultLocator()
 {

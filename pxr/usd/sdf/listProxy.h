@@ -35,15 +35,11 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/iterator.h"
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
-#include <boost/operators.hpp>
 #include <boost/optional.hpp>
-#include <boost/type_traits/is_base_of.hpp>
-#include <boost/type_traits/remove_cv.hpp>
-#include <boost/type_traits/remove_reference.hpp>
 
 #include <memory>
+#include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -56,9 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// insertion sequence). 
 ///
 template <class _TypePolicy>
-class SdfListProxy :
-    boost::totally_ordered<SdfListProxy<_TypePolicy>,
-                           std::vector<typename _TypePolicy::value_type> > {
+class SdfListProxy {
 public:
     typedef _TypePolicy TypePolicy;
     typedef SdfListProxy<TypePolicy> This;
@@ -67,7 +61,7 @@ public:
 
 private:
     // Proxies an item in a list editor list.
-    class _ItemProxy : boost::totally_ordered<_ItemProxy> {
+    class _ItemProxy {
     public:
         explicit _ItemProxy(This* owner, size_t index) :
             _owner(owner), _index(index)
@@ -89,12 +83,30 @@ private:
             return _owner->_Get(_index);
         }
 
+        // Operators rely on implicit conversion to value_type
+        // for comparing two _ItemProxy instances
         bool operator==(const value_type& x) const {
             return _owner->_Get(_index) == x;
         }
 
+        bool operator!=(const value_type& x) const {
+            return !(*this == x);
+        }
+
         bool operator<(const value_type& x) const {
             return _owner->_Get(_index) < x;
+        }
+
+        bool operator>(const value_type& x) const {
+            return x < value_type(*this);
+        }
+
+        bool operator>=(const value_type& x) const {
+            return !(*this < x);
+        }
+
+        bool operator<=(const value_type& x) const {
+            return !(x < value_type(*this));
         }
 
     private:
@@ -123,43 +135,129 @@ private:
     friend class _ConstGetHelper;
 
     template <class Owner, class GetItem>
-    class _Iterator :
-        public boost::iterator_facade<
-            _Iterator<Owner, GetItem>,
-            typename boost::remove_cv<
-                typename boost::remove_reference<
-                    typename GetItem::result_type
-                >::type
-            >::type,
-            std::random_access_iterator_tag,
-            typename GetItem::result_type> {
+    class _Iterator {
+        class _PtrProxy {
+        public:
+            std::add_pointer_t<typename GetItem::result_type> operator->() {
+                return std::addressof(_result);
+            }
+        private:
+            friend class _Iterator;
+            explicit _PtrProxy(
+                std::add_const_t<
+                    std::add_lvalue_reference_t<
+                        typename GetItem::result_type>
+                > result) : _result(result) {}
+            typename GetItem::result_type _result;
+        };
     public:
-        typedef _Iterator<Owner, GetItem> This;
-        typedef
-            boost::iterator_facade<
-                _Iterator<Owner, GetItem>,
-                typename boost::remove_cv<
-                    typename boost::remove_reference<
-                        typename GetItem::result_type
-                    >::type
-                >::type,
-                std::random_access_iterator_tag,
-                typename GetItem::result_type> Parent;
-        typedef typename Parent::reference reference;
-        typedef typename Parent::difference_type difference_type;
+        using This = _Iterator<Owner, GetItem>;
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = std::remove_cv_t<
+                std::remove_reference_t<
+                    typename GetItem::result_type
+                >
+            >;
+        using reference = typename GetItem::result_type;
+        using pointer = _PtrProxy;
+        using difference_type = std::ptrdiff_t;
 
-        _Iterator() : _owner(NULL), _index(0)
-        {
-            // Do nothing
-        }
+        static_assert(!std::is_lvalue_reference<reference>::value,
+                      "reference is an lvalue_reference and usage of "
+                      "this class unnecessarily instantiates a _PtrProxy.");
+
+        _Iterator() = default;
 
         _Iterator(Owner owner, size_t index) : _owner(owner), _index(index)
         {
             // Do nothing
         }
 
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return pointer(dereference()); }
+        reference operator[](const difference_type index) const {
+            This advanced(*this);
+            advanced.advance(index);
+            return advanced.dereference();
+        }
+
+        difference_type operator-(const This& other) const {
+            return -distance_to(other);
+        }
+
+        This& operator++() {
+            increment();
+            return *this;
+        }
+
+        This& operator--() {
+            decrement();
+            return *this;
+        }
+
+        This operator++(int) {
+            This result(*this);
+            increment();
+            return result;
+        }
+
+        This operator--(int) {
+            This result(*this);
+            decrement();
+            return result;
+        }
+
+        This operator+(const difference_type increment) const {
+            This result(*this);
+            result.advance(increment);
+            return result;
+        }
+
+        This operator-(const difference_type decrement) const {
+            This result(*this);
+            result.advance(-decrement);
+            return result;
+        }
+
+        This& operator+=(const difference_type increment) {
+            advance(increment);
+            return *this;
+        }
+
+        This& operator-=(const difference_type decrement) {
+            advance(-decrement);
+            return *this;
+        }
+
+        bool operator==(const This& other) const {
+            return equal(other);
+        }
+
+        bool operator!=(const This& other) const {
+            return !equal(other);
+        }
+
+        bool operator<(const This& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _index < other._index;
+        }
+
+        bool operator<=(const This& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _index <= other._index;
+        }
+
+        bool operator>(const This& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _index > other._index;
+        }
+
+        bool operator>=(const This& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _index >= other._index;
+        }
+
     private:
-        friend class boost::iterator_core_access;
 
         reference dereference() const {
             return _getItem(_owner, _index);
@@ -192,8 +290,8 @@ private:
 
     private:
         GetItem _getItem;
-        Owner _owner;
-        size_t _index;
+        Owner _owner = nullptr;
+        size_t _index = 0;
     };
 
 public:
@@ -416,14 +514,59 @@ public:
         return value_vector_type(*this) == y;
     }
 
+    /// Equality comparision
+    friend bool operator==(const value_vector_type& x, const SdfListProxy& y) {
+        return y == x;
+    }
+
+    /// Inequality comparison.
+    bool operator!=(const value_vector_type& y) const {
+        return !(*this == y);
+    }
+
+    /// Inequality comparision
+    friend bool operator!=(const value_vector_type& x, const SdfListProxy& y) {
+        return y != x;
+    }
+
     /// Less-than comparison.
     bool operator<(const value_vector_type& y) const {
         return value_vector_type(*this) < y;
     }
 
+    /// Less-than comparison
+    friend bool operator<(const value_vector_type& x, const SdfListProxy& y) {
+        return x < value_vector_type(y);
+    }
+
     /// Greater-than comparison.
     bool operator>(const value_vector_type& y) const {
         return value_vector_type(*this) > y;
+    }
+
+    /// Greater-than comparison.
+    friend bool operator>(const value_vector_type& x, const SdfListProxy& y) {
+        return x > value_vector_type(y);
+    }
+
+    /// Less-than or equal to comparison.
+    bool operator<=(const value_vector_type& y) const {
+        return !(*this > y);
+    }
+
+    /// Less-than or equal to comparison.
+    friend bool operator<=(const value_vector_type& x, const SdfListProxy& y) {
+        return x <= value_vector_type(y);
+    }
+
+    /// Greater-than or equal to comparison.
+    bool operator>=(const value_vector_type& y) const {
+        return !(*this < y);
+    }
+
+    /// Greater-than or equal to comparison.
+    friend bool operator>=(const value_vector_type& x, const SdfListProxy& y) {
+        return x >= value_vector_type(y);
     }
 
     /// Explicit bool conversion operator. The list proxy object converts to 
@@ -627,7 +770,7 @@ private:
 
 // Allow TfIteration over list proxies.
 template <typename T>
-struct Tf_ShouldIterateOverCopy<SdfListProxy<T> > : boost::true_type
+struct Tf_ShouldIterateOverCopy<SdfListProxy<T> > : std::true_type
 {
 };
 

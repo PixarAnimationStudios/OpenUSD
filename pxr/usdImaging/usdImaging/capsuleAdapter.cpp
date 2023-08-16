@@ -105,13 +105,16 @@ HdDataSourceLocatorSet
 UsdImagingCapsuleAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
     if (subprim.IsEmpty()) {
         if (prim.IsA<UsdGeomCapsule>()) {
-            return _PrimSource_0::Invalidate(prim, subprim, properties);
+            return _PrimSource_0::Invalidate(
+				prim, subprim, properties, invalidationType);
         } else {  // IsA<UsdGeomCapsule_1>()
-            return _PrimSource_1::Invalidate(prim, subprim, properties);
+            return _PrimSource_1::Invalidate(
+				prim, subprim, properties, invalidationType);
         }
     }
 

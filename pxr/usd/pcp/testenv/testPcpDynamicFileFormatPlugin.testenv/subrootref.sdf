@@ -3,7 +3,7 @@
 # Tests a reference to a dynamic subroot prim of another dynamically generated
 # prim
 def "Root" (
-references = [@./root.sdf@</RootMulti/Xform_1_2_0>]
+references = [@./root.sdf@</RootMulti/Xform_Pl1_2_0>]
 )
 {
 }

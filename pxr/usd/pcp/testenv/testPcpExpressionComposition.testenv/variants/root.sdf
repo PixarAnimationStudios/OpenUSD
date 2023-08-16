@@ -1,0 +1,27 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string ROOT = "x"
+    }
+)
+
+def "Basic" (
+    variantSets = ["v"]
+    variants = {
+        string v = "`'${ROOT}_sel'`"
+    }
+)
+{
+    variantSet "v" = {
+        "x_sel" {
+        }
+        "y_sel" {
+        }
+    }
+}
+
+def "Reference" (
+    references = @./ref.sdf@</Ref>
+)
+{
+}

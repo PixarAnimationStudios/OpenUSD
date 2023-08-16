@@ -627,12 +627,15 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
     for (const HgiBufferBindDesc &buffer :
          resourceBindings->GetDescriptor().buffers) {
         if (buffer.resourceType == HgiBindResourceTypeTessFactors) {
-            HgiMetalBuffer* mtlBuffer =
-                static_cast<HgiMetalBuffer*>(buffer.buffers[0].Get());
-            [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
-                                         offset:buffer.offsets[0]
-                                        atIndex:ArgIndex_PatchFactorsBuffer];
-            usedExplicitTessFactorBuffer = true;
+            if (buffer.buffers[0]) {
+                HgiMetalBuffer* mtlBuffer =
+                    static_cast<HgiMetalBuffer*>(buffer.buffers[0].Get());
+
+                [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
+                                             offset:buffer.offsets[0]
+                                            atIndex:ArgIndex_PatchFactorsBuffer];
+                usedExplicitTessFactorBuffer = true;
+            }
         }
     }
     if (pipelineDesc.primitiveType == HgiPrimitiveTypePatchList &&
@@ -665,13 +668,15 @@ HgiMetalIndirectCommandEncoder::_EncodeDraw(
     uint32_t index = 0;
 
     for (auto const& binding : bindings) {
-        HgiMetalBuffer* mtlBuffer =
-            static_cast<HgiMetalBuffer*>(binding.buffer.Get());
-        [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
-                                     offset:binding.byteOffset
-                                    atIndex:ArgIndex_Buffers + index];
-        [encoder useResource:mtlBuffer->GetBufferId()
-                       usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+        if (binding.buffer) {
+            HgiMetalBuffer* mtlBuffer =
+                static_cast<HgiMetalBuffer*>(binding.buffer.Get());
+            [function.argumentEncoder setBuffer:mtlBuffer->GetBufferId()
+                                         offset:binding.byteOffset
+                                        atIndex:ArgIndex_Buffers + index];
+            [encoder useResource:mtlBuffer->GetBufferId()
+                           usage:(MTLResourceUsageRead | MTLResourceUsageWrite)];
+        }
         index++;
     }
 

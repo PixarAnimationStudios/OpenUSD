@@ -233,7 +233,7 @@ public:
     // --------------------------------------------------------------------- //
     /// The id is an identifier for the type or purpose of the 
     /// shader. E.g.: Texture or FractalFloat.
-    /// The use of this id will depend on the render target: some will turn it
+    /// The use of this id will depend on the render context: some will turn it
     /// into an actual shader path, some will use it to generate shader source 
     /// code dynamically.
     /// 

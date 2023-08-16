@@ -25,7 +25,6 @@
 #include "hdPrman/renderParam.h"
 #include "hdPrman/debugCodes.h"
 #include "hdPrman/matfiltConvertPreviewMaterial.h"
-#include "hdPrman/matfiltResolveTerminals.h"
 #include "hdPrman/matfiltResolveVstructs.h"
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 #include "hdPrman/matfiltMaterialX.h"

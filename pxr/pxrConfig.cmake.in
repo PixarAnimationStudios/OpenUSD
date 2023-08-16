@@ -40,7 +40,11 @@ if(@PXR_ENABLE_PYTHON_SUPPORT@)
         endif()
     endif()
 
-    find_package(Python3 COMPONENTS Development REQUIRED)
+    if (NOT DEFINED Python3_VERSION)
+        find_package(Python3 "@Python3_VERSION@" EXACT COMPONENTS Development REQUIRED)
+    else()
+        find_package(Python3 COMPONENTS Development REQUIRED)
+    endif()
 endif()
 
 # If MaterialX support was enabled for this USD build, try to find the

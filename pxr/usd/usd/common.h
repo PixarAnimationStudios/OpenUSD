@@ -74,7 +74,7 @@ USD_API
 std::string UsdDescribe(const UsdStageCache &);
 
 // XXX:
-// Currently used for querying composed values from ascii layers, so VtValue is
+// Currently used for querying composed values from text layers, so VtValue is
 // the optimal value-store, but this may not always be the case.
 typedef std::map<class TfToken, VtValue,
                  TfDictionaryLessThan

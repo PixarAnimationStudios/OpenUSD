@@ -44,7 +44,7 @@ HdxSelectionTask::HdxSelectionTask(HdSceneDelegate* delegate,
     : HdTask(id)
     , _lastVersion(-1)
     , _hasSelection(false)
-    , _params({false, 0.5, GfVec4f(), GfVec4f()})
+    , _params({false, false, 0.5, GfVec4f(), GfVec4f()})
     , _selOffsetBar(nullptr)
     , _selUniformBar(nullptr)
     , _selPointColorsBar(nullptr)
@@ -161,8 +161,11 @@ HdxSelectionTask::Prepare(HdTaskContext* ctx,
         // Offsets
         //
         VtIntArray offsets;
-        _hasSelection = sel->GetSelectionOffsetBuffer(renderIndex,
-                _params.enableSelection, &offsets);
+        _hasSelection = sel->GetSelectionOffsetBuffer(
+                renderIndex,
+                _params.enableSelectionHighlight,
+                _params.enableLocateHighlight,
+                &offsets);
         hdStResourceRegistry->AddSource(
             _selOffsetBar,
             std::make_shared<HdVtBufferSource>(
@@ -202,7 +205,8 @@ HdxSelectionTask::Execute(HdTaskContext* ctx)
 std::ostream& operator<<(std::ostream& out,
                          const HdxSelectionTaskParams& pv)
 {
-    out << pv.enableSelection << " ";
+    out << pv.enableSelectionHighlight << " ";
+    out << pv.enableLocateHighlight << " ";
     out << pv.selectionColor << " ";
     out << pv.locateColor;
     return out;
@@ -210,7 +214,8 @@ std::ostream& operator<<(std::ostream& out,
 
 bool operator==(const HdxSelectionTaskParams& lhs,
                 const HdxSelectionTaskParams& rhs) {
-    return lhs.enableSelection == rhs.enableSelection
+    return lhs.enableSelectionHighlight == rhs.enableSelectionHighlight
+        && lhs.enableLocateHighlight == rhs.enableLocateHighlight
         && lhs.selectionColor == rhs.selectionColor 
         && lhs.locateColor == rhs.locateColor;
 }

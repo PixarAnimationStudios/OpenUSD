@@ -152,14 +152,11 @@ void Tf_PyIdHandle::Acquire() const {
 PyObject *
 Tf_PyIdHandle::Ptr() const {
     if (_weakRef) {
-    TfPyLock lock;
+        TfPyLock lock;
         return PyWeakref_GetObject(_weakRef);
     }
     return 0;
 }
-
-
-
 
 
 typedef TfHashMap<void const *, Tf_PyIdHandle, TfHash> _IdentityMap;
@@ -172,6 +169,10 @@ static _IdentityMap& _GetIdentityMap()
 
 
 static void _WeakBaseDied(void const *key) {
+    // Python may be already shut down (like in exit()).  If so, do nothing.
+    if (!Py_IsInitialized()) {
+        return;
+    }    
     // Erase python identity.
     Tf_PyIdentityHelper::Erase(key);
 };

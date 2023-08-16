@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/sprim.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/base/gf/vec2i.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <vector>

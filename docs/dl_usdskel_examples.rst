@@ -9,7 +9,7 @@ UsdSkel Examples
 .. raw:: html
 
    <center>
-     <form method="get" action="https://graphics.pixar.com/usd/files/UsdSkelExamples.zip">
+     <form method="get" action="https://openusd.org/files/UsdSkelExamples.zip">
        <button type="submit">OK</button>
      </form>
    </center>

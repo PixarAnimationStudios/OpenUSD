@@ -103,11 +103,7 @@ public:
     void SetCamera(
         GfMatrix4d const &worldToViewMatrix,
         GfMatrix4d const &projectionMatrix) override;
-    HDST_API
-    void SetLightingStateFromOpenGL();
-    HDST_API
-    void SetLightingState(GlfSimpleLightingContextPtr const &lightingContext);
-
+    
     GlfSimpleLightingContextRefPtr GetLightingContext() const {
         return _lightingContext;
     };
@@ -151,7 +147,8 @@ private:
     bool _useLighting;
     std::unique_ptr<class HioGlslfx> _glslfx;
 
-    TfHashMap<TfToken, HdStBindingRequest, TfToken::HashFunctor> _customBuffers;
+    // Lexicographic ordering for stable output between runs.
+    std::map<TfToken, HdStBindingRequest> _customBuffers;
 
     // The environment map used as source for the dome light textures.
     //

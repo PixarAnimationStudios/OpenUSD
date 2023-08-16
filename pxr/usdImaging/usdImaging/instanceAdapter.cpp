@@ -1606,6 +1606,12 @@ UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
                                                  UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+     UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(instancerPrim, instancerPath, &proto, &instancerContext)) {
+        return proto->adapter->GetInstancerTransform(
+            _GetPrim(proto->path), instancerPath, time);
+    }
     return GetRootTransform();
 }
 
@@ -1952,6 +1958,40 @@ UsdImagingInstanceAdapter::GetMaterialId(UsdPrim const& usdPrim,
     }
 
     return BaseAdapter::GetMaterialId(usdPrim, cachePath, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingInstanceAdapter::GetLightParamValue(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    const TfToken& paramName,
+    UsdTimeCode time) const
+{
+    UsdImagingInstancerContext instancerContext;
+    const _ProtoPrim* proto;
+    if (_GetProtoPrimForChild(prim, cachePath, &proto, &instancerContext)) {
+        UsdPrim protoPrim = _GetPrim(proto->path);
+        return proto->adapter->GetLightParamValue(
+            protoPrim, cachePath, paramName, time);
+    }
+    return BaseAdapter::GetLightParamValue(prim, cachePath, paramName, time);
+}
+
+/*virtual*/
+VtValue
+UsdImagingInstanceAdapter::GetMaterialResource(
+    const UsdPrim& prim,
+    const SdfPath& cachePath,
+    UsdTimeCode time) const
+{
+    UsdImagingInstancerContext instancerContext;
+    const _ProtoPrim* proto;
+    if (_GetProtoPrimForChild(prim, cachePath, &proto, &instancerContext)) {
+        UsdPrim protoPrim = _GetPrim(proto->path);
+        return proto->adapter->GetMaterialResource(protoPrim, cachePath, time);
+    }
+    return BaseAdapter::GetMaterialResource(prim, cachePath, time);
 }
 
 /*virtual*/

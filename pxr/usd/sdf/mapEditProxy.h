@@ -36,9 +36,7 @@
 #include "pxr/base/vt/value.h"  // for Vt_DefaultValueFactory
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/mallocTag.h"
-#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/reverse_iterator.hpp>
-#include <boost/operators.hpp>
 #include <iterator>
 #include <utility>
 
@@ -117,8 +115,7 @@ public:
 /// \sa SdfIdentityMapEditProxyValuePolicy
 ///
 template <class T, class _ValuePolicy = SdfIdentityMapEditProxyValuePolicy<T> >
-class SdfMapEditProxy :
-    boost::totally_ordered<SdfMapEditProxy<T, _ValuePolicy>, T> {
+class SdfMapEditProxy {
 public:
     typedef T Type;
     typedef _ValuePolicy ValuePolicy;
@@ -232,12 +229,26 @@ private:
     };
 
     template <class Owner, class I, class R>
-    class _Iterator :
-        public boost::iterator_facade<_Iterator<Owner, I, R>, R,
-                                      std::bidirectional_iterator_tag, R> {
+    class _Iterator {
+        class _PtrProxy {
+        public:
+            std::add_pointer_t<R> operator->() {
+                return std::addressof(_result);
+            }
+        private:
+            friend class _Iterator;
+            explicit _PtrProxy(const R& result) : _result(result) {}
+            R _result;
+        };
     public:
-        _Iterator() :
-            _owner(NULL), _data(NULL) { }
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = R;
+        using reference = R;
+        using pointer = std::conditional_t<std::is_lvalue_reference<R>::value,
+                                           std::add_pointer_t<R>, _PtrProxy>;
+        using difference_type = std::ptrdiff_t;
+
+        _Iterator() = default;
 
         _Iterator(Owner owner, const Type* data, I i) :
             _owner(owner), _data(data), _pos(i)
@@ -252,9 +263,57 @@ private:
             // Do nothing
         }
 
+        reference operator*() const { return dereference(); }
+
+        // In C++20, when pointer can be `void` and `operator->` elided,
+        // this conditional behavior may be deprecated. The `operator->`
+        // implementation is keyed off of whether the underlying pointer
+        // requires a proxy type
+        template <typename PointerType=pointer,
+                  typename std::enable_if_t<
+                    std::is_pointer<PointerType>::value, int> = 0>
+        pointer operator->() const { return std::addressof(dereference()); }
+        template <typename PointerType=pointer,
+                  typename std::enable_if_t<
+                    !std::is_pointer<PointerType>::value, int> = 0>
+        pointer operator->() const { return pointer(dereference()); }
+
+
         const I& base() const
         {
             return _pos;
+        }
+
+        _Iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        _Iterator& operator--() {
+            decrement();
+            return *this;
+        }
+
+        _Iterator operator++(int) {
+            _Iterator result(*this);
+            increment();
+            return result;
+        }
+
+        _Iterator operator--(int) {
+            _Iterator result(*this);
+            decrement();
+            return result;
+        }
+
+        template <class Owner2, class I2, class R2>
+        bool operator==(const _Iterator<Owner2, I2, R2>& other) const {
+            return equal(other);
+        }
+
+        template <class Owner2, class I2, class R2>
+        bool operator!=(const _Iterator<Owner2, I2, R2>& other) const {
+            return !equal(other);
         }
 
     private:
@@ -289,11 +348,10 @@ private:
         }
 
     private:
-        Owner _owner;
-        const Type* _data;
+        Owner _owner = nullptr;
+        const Type* _data = nullptr;
         I _pos;
 
-        friend class boost::iterator_core_access;
         template <class Owner2, class I2, class R2> friend class _Iterator;
     };
 
@@ -578,6 +636,21 @@ public:
         return _Validate() ? _CompareEqual(other) : false;
     }
 
+    bool operator!=(const Type& other) const
+    {
+        return !(*this == other);
+    }
+
+    friend bool operator==(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs == lhs;
+    }
+
+    friend bool operator!=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs != lhs;
+    }
+
     bool operator<(const Type& other) const
     {
         return _Validate() ? _Compare(other) < 0 : false;
@@ -586,6 +659,36 @@ public:
     bool operator>(const Type& other) const
     {
         return _Validate() ? _Compare(other) > 0 : false;
+    }
+
+    bool operator>=(const Type& other) const
+    {
+        return !(*this < other);
+    }
+
+    bool operator<=(const Type& other) const
+    {
+        return !(*this > other);
+    }
+
+    friend bool operator<(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs > lhs;
+    }
+
+    friend bool operator>(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs < lhs;
+    }
+
+    friend bool operator<=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs >= lhs;
+    }
+
+    friend bool operator>=(const Type& lhs, const SdfMapEditProxy& rhs)
+    {
+        return rhs <= lhs;
     }
 
     template <class U, class UVP>

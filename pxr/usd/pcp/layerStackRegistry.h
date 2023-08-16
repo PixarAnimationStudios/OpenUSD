@@ -51,6 +51,7 @@ class Pcp_LayerStackRegistry : public TfRefBase, public TfWeakBase {
 public:
     /// Create a new Pcp_LayerStackRegistry.
     static Pcp_LayerStackRegistryRefPtr New(
+        const PcpLayerStackIdentifier& rootLayerStackIdentifier,
         const std::string& fileFormatTarget = std::string(),
         bool isUsd=false);
 
@@ -109,7 +110,8 @@ public:
 
 private:
     /// Private constructor -- see New().
-    Pcp_LayerStackRegistry(const std::string& fileFormatTarget,
+    Pcp_LayerStackRegistry(const PcpLayerStackIdentifier& rootLayerStackId,
+                           const std::string& fileFormatTarget,
                            bool isUsd);
     ~Pcp_LayerStackRegistry();
 
@@ -123,6 +125,10 @@ private:
     // Update the layer-stack-by-layer maps by setting the layers for the
     // given layer stack.
     void _SetLayers(const PcpLayerStack*);
+
+    // Returns the identifier of the root layer stack associated with
+    // this registry.
+    const PcpLayerStackIdentifier& _GetRootLayerStackIdentifier() const;
 
     // Returns the file format target for layer stacks managed by this
     // registry.

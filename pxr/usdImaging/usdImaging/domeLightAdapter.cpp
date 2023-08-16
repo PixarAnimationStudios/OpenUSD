@@ -71,19 +71,14 @@ UsdImagingDomeLightAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
-    index->InsertSprim(HdPrimTypeTokens->domeLight, prim.GetPath(), prim);
-    HD_PERF_COUNTER_INCR(UsdImagingTokens->usdPopulatedPrimCount);
-    _RegisterLightCollections(prim);
-
-    return prim.GetPath();
+    return _AddSprim(HdPrimTypeTokens->domeLight, prim, index, instancerContext);
 }
 
 void
 UsdImagingDomeLightAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
-    _UnregisterLightCollections(cachePath);
-    index->RemoveSprim(HdPrimTypeTokens->domeLight, cachePath);
+    _RemoveSprim(HdPrimTypeTokens->domeLight, cachePath, index);
 }
 
 

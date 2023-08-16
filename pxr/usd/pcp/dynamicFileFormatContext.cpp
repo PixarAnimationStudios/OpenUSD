@@ -32,40 +32,47 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace {
-
 // Helper class for composing a field value from the context's inputs.
-class _ComposeValueHelper
+class PcpDynamicFileFormatContext::_ComposeValueHelper
 {
 public:
-    // Templated static function is the only public interface. ComposeFunc is
-    // expected to be a function of type void (VtValue &&)
+    // ComposeFunc is expected to be a function of type void (VtValue &&)
     template <typename ComposeFunc>
     static 
-    bool ComposeValue(    
-        const PcpNodeRef &parentNode, 
-        PcpPrimIndex_StackFrame *previousFrame,
+    bool ComposeFieldValue(
+        const PcpDynamicFileFormatContext *context,
         const TfToken &fieldName, 
         bool strongestOpinionOnly,
         const ComposeFunc &composeFunc)
     {
-        // Create the a new composer with the context state.
-        _ComposeValueHelper composer(
-            parentNode, previousFrame, fieldName, strongestOpinionOnly);
-        // Initiate composition using the compose function and return if
-        // a value was found.
-        composer._ComposeOpinionFromAncestors(composeFunc);
+        _ComposeValueHelper composer(context, strongestOpinionOnly);
+        composer._ComposeOpinionFromAncestors(TfToken(), fieldName, composeFunc);
+        return composer._foundValue;
+    }
+
+    // ComposeFunc is expected to be a function of type void (VtValue &&)
+    template <typename ComposeFunc>
+    static 
+    bool ComposeAttributeDefaultValue(
+        const PcpDynamicFileFormatContext *context,
+        const TfToken &propName,
+        const ComposeFunc &composeFunc)
+    {
+        // Unlike metadata fields, attributes cannot have dictionary values 
+        // which simplifies this function compared to ComposeFieldValue. We 
+        // compose by just grabbing the strongest default value for the 
+        // attribute if one exists.
+        _ComposeValueHelper composer(context);
+        composer._ComposeOpinionFromAncestors(
+            propName, SdfFieldKeys->Default, composeFunc);
         return composer._foundValue;
     }
 
 private:
     _ComposeValueHelper(
-        const PcpNodeRef &parentNode,
-        PcpPrimIndex_StackFrame *&previousStackFrame,
-        const TfToken &fieldName, 
-        bool strongestOpinionOnly)
-        : _iterator(parentNode, previousStackFrame)
-        , _fieldName(fieldName)
+        const PcpDynamicFileFormatContext *context,
+        bool strongestOpinionOnly = true)
+        : _iterator(context->_parentNode, context->_previousStackFrame)
         , _strongestOpinionOnly(strongestOpinionOnly)
     {
     }
@@ -73,14 +80,20 @@ private:
     // Composes the values from the node and its subtree. Return true if 
     // composition should stop.
     template <typename ComposeFunc>
-    bool _ComposeOpinionInSubtree(const PcpNodeRef &node, 
+    bool _ComposeOpinionInSubtree(const PcpNodeRef &node,
+                                  const TfToken &propName,
+                                  const TfToken &fieldName, 
                                   const ComposeFunc &composeFunc)
     {
+        // Get the prim or property path within the node's spec.
+        const SdfPath &path = propName.IsEmpty() ? 
+            node.GetPath() : node.GetPath().AppendProperty(propName);
+
         // Search the node's layer stack in strength order for the field on
         // the spec.
-        for (const SdfLayerHandle &layer : node.GetLayerStack()->GetLayers()) {
+        for (const auto &layer : node.GetLayerStack()->GetLayers()) {
             VtValue value;
-            if (layer->HasField(node.GetPath(), _fieldName, &value)) {
+            if (layer->HasField(path, fieldName, &value)) {
                 // Process the value and mark found
                 composeFunc(std::move(value));
                 _foundValue = true;
@@ -92,7 +105,8 @@ private:
         }
 
         TF_FOR_ALL(childNode, Pcp_GetChildrenRange(node)) {
-            if (_ComposeOpinionInSubtree(*childNode, composeFunc)) {
+            if (_ComposeOpinionInSubtree(
+                    *childNode, propName, fieldName, composeFunc)) {
                 return true;
             }
         }
@@ -104,7 +118,10 @@ private:
     // their subtrees in strength order. Returns true if composition should 
     // stop.
     template <typename ComposeFunc>
-    bool _ComposeOpinionFromAncestors(const ComposeFunc &composeFunc)
+    bool _ComposeOpinionFromAncestors(
+        const TfToken &propName,
+        const TfToken &fieldName, 
+        const ComposeFunc &composeFunc)
     {
         PcpNodeRef currentNode = _iterator.node;
 
@@ -112,13 +129,15 @@ private:
         _iterator.Next();
         if (_iterator.node) {
             // Recurse on parent node's ancestors.
-            if (_ComposeOpinionFromAncestors(composeFunc)) {
+            if (_ComposeOpinionFromAncestors(
+                    propName, fieldName, composeFunc)) {
                 return true;
             }
         }
 
-        // Otherwise compose from the current node and it subtrees.
-        if (_ComposeOpinionInSubtree(currentNode, composeFunc)) {
+        // Otherwise compose from the current node and its subtrees.
+        if (_ComposeOpinionInSubtree(
+                currentNode, propName, fieldName, composeFunc)) {
             return true;
         }
         return false;
@@ -126,20 +145,19 @@ private:
 
     // State during value composition.
     PcpPrimIndex_StackFrameIterator _iterator;
-    const TfToken &_fieldName;
     bool _strongestOpinionOnly;
     bool _foundValue {false};
 };
 
-} // anonymous namespace
-
 PcpDynamicFileFormatContext::PcpDynamicFileFormatContext(
     const PcpNodeRef &parentNode, 
     PcpPrimIndex_StackFrame *previousStackFrame,
-    TfToken::Set *composedFieldNames)
+    TfToken::Set *composedFieldNames,
+    TfToken::Set *composedAttributeNames)
     : _parentNode(parentNode)
     , _previousStackFrame(previousStackFrame)
     , _composedFieldNames(composedFieldNames)
+    , _composedAttributeNames(composedAttributeNames)
 {
 }
 
@@ -188,8 +206,8 @@ PcpDynamicFileFormatContext::ComposeValue(
     // strongest to weakest opinions.
     if (fieldIsDictValued) {
         VtDictionary composedDict;
-        if (_ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
-                field, /*findStrongestOnly = */ false,
+        if (_ComposeValueHelper::ComposeFieldValue(
+                this, field, /*findStrongestOnly = */ false,
                 [&composedDict](VtValue &&val){
                     if (val.IsHolding<VtDictionary>()) {
                         VtDictionaryOverRecursive(
@@ -208,9 +226,9 @@ PcpDynamicFileFormatContext::ComposeValue(
     } else {
         // For all other value type we compose by just grabbing the strongest 
         // opinion if it exists.
-        return _ComposeValueHelper::ComposeValue(_parentNode, 
-            _previousStackFrame, field, /*findStrongestOnly = */ true,
-            [&value](VtValue &&val){
+        return _ComposeValueHelper::ComposeFieldValue(
+            this, field, /*findStrongestOnly = */ true,
+            [&value](VtValue &&val) {
                 // Take advantage of VtValue's move assignment
                 // operator.
                 *value = std::move(val); 
@@ -233,7 +251,7 @@ PcpDynamicFileFormatContext::ComposeValueStack(
 
     // For the value stack, just add all opinions we can find for the field
     // in strength order.
-    return _ComposeValueHelper::ComposeValue(_parentNode, _previousStackFrame, 
+    return _ComposeValueHelper::ComposeFieldValue(this, 
         field, /*findStrongestOnly = */ false,
         [&values](VtValue &&val){
              // Take advantage of VtValue's move assignment
@@ -242,15 +260,35 @@ PcpDynamicFileFormatContext::ComposeValueStack(
         });
 }
 
+bool 
+PcpDynamicFileFormatContext::ComposeAttributeDefaultValue(
+    const TfToken &attributeName, VtValue *value) const
+{
+    // Update the cached attribute names for dependency tracking.
+    if (_composedAttributeNames) {
+        _composedAttributeNames->insert(attributeName);
+    }
+
+    // Unlike metadata fields, attributes cannot have dictionary values which
+    // simplifies this function compared to ComputeValue.
+    return _ComposeValueHelper::ComposeAttributeDefaultValue(
+        this, attributeName,
+        [&value](VtValue &&val) {
+            // Take advantage of VtValue's move assignment operator.
+            *value = std::move(val); 
+        });
+}
+
 // "Private" function for creating a PcpDynamicFileFormatContext; should only
 // be used by prim indexing.
 PcpDynamicFileFormatContext
 Pcp_CreateDynamicFileFormatContext(const PcpNodeRef &parentNode, 
                                    PcpPrimIndex_StackFrame *previousFrame,
-                                   TfToken::Set *composedFieldNames)
+                                   TfToken::Set *composedFieldNames,
+                                   TfToken::Set *composedAttributeNames)
 {
     return PcpDynamicFileFormatContext(
-        parentNode, previousFrame, composedFieldNames);
+        parentNode, previousFrame, composedFieldNames, composedAttributeNames);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

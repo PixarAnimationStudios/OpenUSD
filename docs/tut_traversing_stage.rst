@@ -77,7 +77,8 @@ folder to a working directory and make its contents writable.
 
    .. image:: http://openusd.org/images/tut_traversing_stage_refexample.png
 
-   You can inspect the contents of the session layer in the interpreter to see
+   You can inspect the contents of the 
+   `session layer <#usdglossary-sessionlayer>`_ in the interpreter to see
    the authored deactivation opinion.
 
    .. code-block:: pycon

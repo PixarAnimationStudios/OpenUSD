@@ -156,6 +156,16 @@ Test_TfEnum()
     TF_AXIOM(e.GetValueAsInt() == 3);
     TF_AXIOM(e.GetValue<Season>() == SUMMER);
 
+    // Test coverage for operators
+    TF_AXIOM(TfEnum(SUMMER) == TfEnum(SUMMER));
+    TF_AXIOM(TfEnum(SUMMER) <= TfEnum(SUMMER));
+    TF_AXIOM(TfEnum(SUMMER) >= TfEnum(SUMMER));
+    TF_AXIOM(TfEnum(SUMMER) != TfEnum(SPRING));
+    TF_AXIOM(TfEnum(SUMMER) > TfEnum(SPRING));
+    TF_AXIOM(TfEnum(SUMMER) >= TfEnum(SPRING));
+    TF_AXIOM(TfEnum(SPRING) <= TfEnum(SUMMER));
+    TF_AXIOM(TfEnum(SPRING) < TfEnum(SUMMER));
+
     return true;
 }
 

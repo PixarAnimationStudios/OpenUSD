@@ -631,3 +631,14 @@ void GetInfo<SdfOpaqueValue>(VtArray<SdfOpaqueValue> *array, string *name)
     // No initialization necessary; SdfOpaqueValue is an empty struct.
     *array = VtArray<SdfOpaqueValue>(3);
 }
+
+template <>
+void
+GetInfo<SdfPathExpression>(VtArray<SdfPathExpression> *array, string *name)
+{
+    *name = "pathExpression";
+    *array = VtArray<SdfPathExpression>(3);
+    (*array)[0] = SdfPathExpression("/foo /bar");
+    (*array)[1] = SdfPathExpression("/bar /baz");
+    (*array)[2] = SdfPathExpression("/baz /qux");
+}

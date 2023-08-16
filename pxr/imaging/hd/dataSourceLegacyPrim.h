@@ -96,9 +96,10 @@ private:
 
     HdDataSourceBaseHandle _GetPrimvarsDataSource();
     HdDataSourceBaseHandle _GetExtComputationPrimvarsDataSource();
-    HdDataSourceBaseHandle _GetMaterialBindingDataSource();
+    HdDataSourceBaseHandle _GetMaterialBindingsDataSource();
     HdDataSourceBaseHandle _GetXformDataSource();
     HdDataSourceBaseHandle _GetMaterialDataSource();
+    HdDataSourceBaseHandle _GetIntegratorDataSource();
     HdDataSourceBaseHandle _GetSampleFilterDataSource();
     HdDataSourceBaseHandle _GetDisplayFilterDataSource();
     HdDataSourceBaseHandle _GetDisplayStyleDataSource();
@@ -114,6 +115,7 @@ private:
     HdDataSourceBaseHandle _GetPrmanParamsDataSource();
 
     bool _IsLight();
+    bool _IsInstanceable();
 
 private:
     SdfPath _id;

@@ -189,22 +189,6 @@
                         "isInternal": true,
                         "primTypeName": "RenderVar"
                     },
-                    "UsdImagingSampleFilterAdapter": {
-                        "bases": [
-                            "UsdImagingPrimAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "PxrSampleFilterPluginBase",
-                        "includeDerivedPrimTypes" : true 
-                    },
-                    "UsdImagingDisplayFilterAdapter": {
-                        "bases": [
-                            "UsdImagingPrimAdapter"
-                        ],
-                        "isInternal": true,
-                        "primTypeName": "PxrDisplayFilterPluginBase",
-                        "includeDerivedPrimTypes": true
-                    },
                     "UsdImagingVolumeAdapter": {
                         "bases": [
                             "UsdImagingGprimAdapter"
@@ -304,6 +288,13 @@
                         ],
                         "isInternal": true,
                         "primTypeName": "PluginLightFilter"
+                    },
+                    "UsdImagingGeomModelAPIAdapter": {
+                        "bases": [
+                            "UsdImagingAPISchemaAdapter"
+                        ],
+                        "isInternal": true,
+                        "apiSchemaName": "GeomModelAPI"
                     }
                 }
             },

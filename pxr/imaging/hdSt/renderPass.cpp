@@ -176,7 +176,7 @@ HdSt_RenderPass::_Execute(HdRenderPassStateSharedPtr const &renderPassState,
 
     gfxCmds->PushDebugGroup(passName.c_str());
 
-    gfxCmds->SetViewport(stRenderPassState->ComputeViewport(desc));
+    gfxCmds->SetViewport(stRenderPassState->ComputeViewport());
 
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();

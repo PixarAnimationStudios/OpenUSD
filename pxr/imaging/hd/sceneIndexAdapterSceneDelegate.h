@@ -71,6 +71,10 @@ public:
         const HdSceneIndexBase &sender,
         const DirtiedPrimEntries &entries) override;
 
+    void PrimsRenamed(
+        const HdSceneIndexBase &sender,
+        const RenamedPrimEntries &entries) override;
+
     // ------------------------------------------------------------------------
     // HdSceneIndexDelegate API
 

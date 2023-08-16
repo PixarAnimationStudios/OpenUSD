@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -50,7 +50,7 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
     VtArray<int> matchingPrototypes;
 
     // If we can't get the instance indices datasource, not much point...
-    HdTypedVectorSchema<VtArray<int>> indicesSchema = GetInstanceIndices();
+    HdIntArrayVectorSchema indicesSchema = GetInstanceIndices();
     if (!indicesSchema) {
         return result;
     }
@@ -94,7 +94,8 @@ HdInstancerTopologySchema::ComputeInstanceIndicesForProto(SdfPath const &path)
             }
         } else {
             for (int instanceIndex : instanceIndices) {
-                if (mask[instanceIndex]) {
+                if (instanceIndex >= static_cast<int>(mask.size()) ||
+                        mask[instanceIndex]) {
                     result.push_back(instanceIndex);
                 }
             }
@@ -180,6 +181,12 @@ HdInstancerTopologySchema::GetFromParent(
         : nullptr);
 }
 
+/*static*/
+const TfToken &
+HdInstancerTopologySchema::GetSchemaToken()
+{
+    return HdInstancerTopologySchemaTokens->instancerTopology;
+} 
 /*static*/
 const HdDataSourceLocator &
 HdInstancerTopologySchema::GetDefaultLocator()

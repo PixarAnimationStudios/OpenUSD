@@ -479,9 +479,16 @@ HioGlslfx::_ParseGLSLSectionLine(vector<string> const & tokens,
 
     // Emit a comment for more helpful compile / link diagnostics.
     // note: #line with source file name is not allowed in GLSL.
+    //
+    // Use the file's basename rather than full path to avoid
+    // burning unnecessary extra context into the generated code
+    // that could weaken GL driver shader caching, such as build
+    // artifact serial numbers.
+    //
     _sourceMap[context.currentSectionId].append(
         TfStringPrintf("// line %d \"%s\"\n",
-                       context.lineNo, context.filename.c_str()));
+                       context.lineNo,
+                       TfGetBaseName(context.filename).c_str()));
 
     return true;
 }

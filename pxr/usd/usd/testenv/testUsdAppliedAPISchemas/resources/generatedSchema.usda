@@ -393,120 +393,164 @@ class "TestNestedMultiApplyCycle3API" (
     )
 }
 
-class TestPropTypeConflictsPrim "TestPropTypeConflictsPrim" (
-    apiSchemas = ["TestPropTypeConflictBuiltinAPI"]
+class "TestPropCompOneAPI"
+{
+    string nestedAttr1 = "one" (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    int nestedAttr2 (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    double nestedAttr3 = 1 (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    point3f nestedAttr4 = (1, 1, 1) (
+        doc = "From TestPropCompOneAPI"
+        hidden = false
+    )
+    int oneAttr1 = 1 (
+        doc = "From TestPropCompOneAPI"
+        hidden = false
+    )
+    double oneAttr2 = 1 (
+        doc = "From TestPropCompOneAPI"
+    )
+    color3f oneAttr3 (
+        doc = "From TestPropCompOneAPI"
+        hidden = false
+    )
+    token oneAttr4 (
+        doc = "From TestPropCompOneAPI"
+    )
+    token oneAttr5 (
+        doc = "From TestPropCompOneAPI"
+    )
+    token otherMetadataAttr
+    int twoAttr1 = 1 (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    double twoAttr2 = 1 (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    color3f twoAttr3 = (1, 1, 1) (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    token twoAttr4 = "one" (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+    float twoAttr5 = 1 (
+        doc = "From TestPropCompOneAPI"
+        hidden = true
+    )
+}
+
+class "TestPropCompTwoAPI"
+{
+    string nestedAttr1 = "two" (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    int nestedAttr2 = 2 (
+        doc = "From TestPropCompTwoAPI"
+    )
+    double nestedAttr3 = 2 (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    color3f nestedAttr4 = (2, 2, 2) (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    uniform int oneAttr1 = 2 (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    uniform double oneAttr2 = 2 (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    uniform color3f oneAttr3 = (2, 2, 2) (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    uniform token oneAttr4 = "two" (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    uniform string oneAttr5 = "two" (
+        doc = "From TestPropCompTwoAPI"
+        hidden = true
+    )
+    token otherMetadataAttr = "two" (
+        allowedTokens = ["two", "2"]
+        displayGroup = "Two Group"
+        displayName = "OtherTwoAttr"
+        doc = "From TestPropCompTwoAPI"
+        hidden = false
+    )
+    int twoAttr1 = 2 (
+        doc = "From TestPropCompTwoAPI"
+        hidden = false
+    )
+    double twoAttr2 = 2 (
+        doc = "From TestPropCompTwoAPI"
+    )
+    color3f twoAttr3 (
+        doc = "From TestPropCompTwoAPI"
+        hidden = false
+    )
+    token twoAttr4 (
+        doc = "From TestPropCompTwoAPI"
+    )
+    double twoAttr5 (
+        doc = "From TestPropCompTwoAPI"
+    )
+}
+
+class "TestPropCompNestedAPI" (
+    apiSchemas = ["TestPropCompOneAPI"]
 )
 {
-    int attr1 = 1 (
-        doc = "From TestPropTypeConflictsPrim"
+    string nestedAttr1 = "nested" (
+        doc = "From TestPropCompNestedAPI"
+        hidden = false
     )
-    int attr2 = 2 (
-        doc = "From TestPropTypeConflictsPrim"
+    int nestedAttr2 (
+        doc = "From TestPropCompNestedAPI"
     )
-    int attr3 = 3 (
-        doc = "From TestPropTypeConflictsPrim"
+    double nestedAttr3 (
+        doc = "From TestPropCompNestedAPI"
+        hidden = false
     )
-    color3f attr5 = (1, 1, 1) (
-        doc = "From TestPropTypeConflictsPrim"
-    )
-    int attr6 = 6 (
-        doc = "From TestPropTypeConflictsPrim"
-    )
-    rel rel1 (
-        doc = "From TestPropTypeConflictsPrim"
-    )
-    int rel2 (
-        doc = "From TestPropTypeConflictsPrim"
+    color3f nestedAttr4 (
+        doc = "From TestPropCompNestedAPI"
     )
 }
 
-class "TestPropTypeConflictBuiltinAPI"
-{
-    double attr2 = 0 (
-        doc = "From TestPropTypeConflictBuiltinAPI"
-    )
-    int attr4 = 4 (
-        doc = "From TestPropTypeConflictBuiltinAPI"
-    )
-    int rel1 (
-        doc = "From TestPropTypeConflictBuiltinAPI"
-    )
-    rel rel2 (
-        doc = "From TestPropTypeConflictBuiltinAPI"
-    )
-}
-
-class "TestPropTypeConflictAuthoredOneAPI"
-{
-    int attr1 = 0 (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-    double attr2 = 0 (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-    point3f attr5 = (0, 0, 0) (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-    int attr6 = 20 (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-    int rel1 (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-    rel rel2 (
-        doc = "From TestPropTypeConflictAuthoredOneAPI"
-    )
-}
-
-class "TestPropTypeConflictAuthoredTwoAPI"
-{
-    int attr3 = 10 (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-    string attr4 = "foo" (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-    float3 attr5 = (1, 2, 3) (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-    int attr6 = 10 (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-    rel rel1 (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-    int rel2 (
-        doc = "From TestPropTypeConflictAuthoredTwoAPI"
-    )
-}
-
-class "TestPropTypeConflictNestedAuthoredAPI" (
-    apiSchemas = ["TestPropTypeConflictAuthoredOneAPI"]
+class TestPropCompsPrim "TestPropCompsPrim" (
+    apiSchemas = ["TestPropCompTwoAPI"]
 )
 {
-    int attr1 = 1 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
+    string nestedAttr1 = "prim" (
+        doc = "From TestPropCompsPrim"
+        hidden = false
     )
-    int attr2 = 2 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
+    int nestedAttr2 (
+        doc = "From TestPropCompsPrim"
     )
-    int attr3 = 3 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
+    double nestedAttr3 (
+        doc = "From TestPropCompsPrim"
+        hidden = false
     )
-    int attr4 = 4 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
-    )
-    color3f attr5 = (1, 1, 1) (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
-    )
-    token attr6 = "bar" (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
-    )
-    rel rel1 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
-    )
-    int rel2 (
-        doc = "From TestPropTypeConflictNestedAuthoredAPI"
+    point3f nestedAttr4 (
+        doc = "From TestPropCompsPrim"
     )
 }
 

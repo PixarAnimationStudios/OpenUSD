@@ -26,7 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
-#include "pxr/imaging/hd/computation.h"
+#include "pxr/imaging/hdSt/computation.h"
+
+#include "pxr/base/tf/token.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -50,7 +52,8 @@ using HdStSimpleLightingShaderPtr =
 /// will only be created by the computation with level = 0 and the
 /// computations with level > 0 will use the same texture.
 ///
-class HdSt_DomeLightComputationGPU : public HdComputation {
+class HdSt_DomeLightComputationGPU : public HdStComputation
+{
 public:
     /// Constructor
     HDST_API

@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -125,6 +125,11 @@ public:
     USDIMAGING_API
     static UsdImagingUsdRenderVarSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
+
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    USDIMAGING_API
+    static const TfToken &GetSchemaToken();
 
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.

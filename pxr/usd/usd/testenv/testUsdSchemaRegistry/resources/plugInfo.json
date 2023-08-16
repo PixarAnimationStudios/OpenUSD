@@ -9,6 +9,9 @@
                     "testCustomMetadata": {
                         "default": "default value", 
                         "type": "string"
+                    },
+                    "testDictionaryMetadata": {
+                        "type": "dictionary"
                     }
                 }, 
                 "Types": {

@@ -540,19 +540,19 @@ public:
     GetNames() override
     {
         TfTokenVector names = _input->GetNames();
-        names.push_back(HdRenderSettingsSchemaTokens->renderSettings);
-        names.push_back(HdDependenciesSchemaTokens->__dependencies);
+        names.push_back(HdRenderSettingsSchema::GetSchemaToken());
+        names.push_back(HdDependenciesSchema::GetSchemaToken());
         return names;
     }
 
     HdDataSourceBaseHandle
     Get(const TfToken &name) override
     {
-        if (name == HdRenderSettingsSchemaTokens->renderSettings) {
+        if (name == HdRenderSettingsSchema::GetSchemaToken()) {
             return _RenderSettingsDataSource::New(_input, _si);
 
         }
-        if (name == HdDependenciesSchemaTokens->__dependencies) {
+        if (name == HdDependenciesSchema::GetSchemaToken()) {
             return _GetRenderSettingsDependenciesDataSource(
                         _input, _si, _primPath);
         }

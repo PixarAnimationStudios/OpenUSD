@@ -549,7 +549,7 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         kCFAllocatorDefault,
         width,
         height,
-        kCVPixelFormatType_32BGRA,
+        kCVPixelFormatType_64RGBAHalf,
         (__bridge CFDictionaryRef)cvBufferProperties,
         &_pixelBuffer);
     
@@ -598,7 +598,7 @@ HgiInteropMetal::_SetAttachmentSize(int width, int height)
         _cvmtlTextureCache,
         _pixelBuffer,
         (__bridge CFDictionaryRef)metalTextureProperties,
-        MTLPixelFormatBGRA8Unorm,
+        MTLPixelFormatRGBA16Float,
         width,
         height,
         0,
@@ -805,7 +805,7 @@ HgiInteropMetal::_BlitToOpenGL(VtValue const &framebuffer,
     glBlendFuncSeparate(/*srcColor*/GL_ONE,
                         /*dstColor*/GL_ONE_MINUS_SRC_ALPHA,
                         /*srcAlpha*/GL_ONE,
-                        /*dstAlpha*/GL_ONE);
+                        /*dstAlpha*/GL_ONE_MINUS_SRC_ALPHA);
     glBlendEquationSeparate(GL_FUNC_ADD, GL_FUNC_ADD);
     
     ShaderContext &shader = _shaderProgramContext[shaderIndex];

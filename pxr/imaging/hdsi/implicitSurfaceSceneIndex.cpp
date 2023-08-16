@@ -287,10 +287,10 @@ _ComputePrimDataSource(
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdCubeSchemaTokens->cube, cubeDataSource,
-            HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
-            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
+            HdCubeSchema::GetSchemaToken(), cubeDataSource,
+            HdMeshSchema::GetSchemaToken(), meshDataSource,
+            HdPrimvarsSchema::GetSchemaToken(), primvarsDataSource,
+            HdDependenciesSchema::GetSchemaToken(), dependenciesDataSource),
         primDataSource
     };
 
@@ -381,8 +381,9 @@ private:
     }
 
     HdDoubleDataSourceHandle _GetHeightSource() const {
-        static const HdDataSourceLocator sizeLocator(
-            HdConeSchemaTokens->cone, HdConeSchemaTokens->height);
+        static const HdDataSourceLocator sizeLocator =
+            HdConeSchema::GetDefaultLocator().Append(
+                HdConeSchemaTokens->height);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
@@ -395,8 +396,9 @@ private:
     }
 
     HdDoubleDataSourceHandle _GetRadiusSource() const {
-        static const HdDataSourceLocator locator(
-            HdConeSchemaTokens->cone, HdConeSchemaTokens->radius);
+        static const HdDataSourceLocator locator =
+            HdConeSchema::GetDefaultLocator().Append(
+                HdConeSchemaTokens->radius);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, locator));
     }
@@ -409,8 +411,9 @@ private:
     }
 
     HdTokenDataSourceHandle _GetAxisSource() const {
-        static const HdDataSourceLocator locator(
-            HdConeSchemaTokens->cone, HdConeSchemaTokens->axis);
+        static const HdDataSourceLocator locator =
+            HdConeSchema::GetDefaultLocator().Append(
+                HdConeSchemaTokens->axis);
         return HdTokenDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, locator));
     }
@@ -469,10 +472,10 @@ _ComputePrimDataSource(
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdConeSchemaTokens->cone, coneDataSource,
-            HdMeshSchemaTokens->mesh, meshDataSource,
-            HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
-            HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
+            HdConeSchema::GetSchemaToken(), coneDataSource,
+            HdMeshSchema::GetSchemaToken(), meshDataSource,
+            HdPrimvarsSchema::GetSchemaToken(), primvarsDataSource,
+            HdDependenciesSchema::GetSchemaToken(), dependenciesDataSource),
         primDataSource
     };
 

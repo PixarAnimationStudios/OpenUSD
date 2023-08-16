@@ -486,7 +486,11 @@ class TestUsdStage(unittest.TestCase):
                 rootLayer.subLayerPaths.append(subLayer.identifier)
                 rootLayer.subLayerPaths.append(anonLayer.identifier)
 
-                primPath = "/" + rootLayerName
+                # XXX: Strip non-ascii-identifier chars from `rootLayerName` --
+                # this should be removed once support for utf-8 identifiers is
+                # in.
+                primName = Tf.MakeValidIdentifier(rootLayerName)
+                primPath = Sdf.Path.absoluteRootPath.AppendChild(primName)
                 subLayerPrim = Sdf.CreatePrimInLayer(subLayer, primPath)
                 subLayerPrim.referenceList.Add(
                     Sdf.Reference(refLayer.identifier, primPath))
