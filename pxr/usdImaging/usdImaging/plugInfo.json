@@ -51,7 +51,7 @@
                         "includeSchemaFamily": true,
                         "primTypeName": "Capsule"
                     },
-                     "UsdImagingCollectionAPIAdapter" : {
+                    "UsdImagingCollectionAPIAdapter" : {
                         "bases": ["UsdImagingAPISchemaAdapter"],
                         "isInternal": true,
                         "apiSchemaName": "CollectionAPI"

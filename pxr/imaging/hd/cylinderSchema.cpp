@@ -291,6 +291,4 @@ HdCylinder_1Schema::Builder::Build()
     );
 }
 
-
-
 PXR_NAMESPACE_CLOSE_SCOPE

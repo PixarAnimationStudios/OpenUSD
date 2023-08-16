@@ -109,7 +109,8 @@ const TfToken &
 HdCapsuleSchema::GetSchemaToken()
 {
     return HdCapsuleSchemaTokens->capsule;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdCapsuleSchema::GetDefaultLocator()
@@ -119,6 +120,7 @@ HdCapsuleSchema::GetDefaultLocator()
     );
     return locator;
 }
+
 HdCapsuleSchema::Builder &
 HdCapsuleSchema::Builder::SetHeight(
     const HdDoubleDataSourceHandle &height)
