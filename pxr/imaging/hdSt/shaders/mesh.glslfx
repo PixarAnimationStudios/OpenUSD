@@ -409,33 +409,6 @@ vec4 GetPatchCoord(int index)
     return InterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
-inline bool cullPointsScreenSpace( float4 p0,float4 p1,float4 p2)
-{
-  
-  bool backPlane = p0.w <= 0 & p1.w <= 0 & p2.w <= 0;
-  p0.w *= p0.w <= 0 ? -1 : 1;
-  p1.w *= p1.w <= 0 ? -1 : 1;
-  p2.w *= p2.w <= 0 ? -1 : 1;
-  
-  p0.xy /= (p0.w * 2.0f);
-  p0.xy += 0.5;
-  
-  p1.xy /= (p1.w * 2.0f);
-  p1.xy += 0.5;
-  
-  p2.xy /= (p2.w * 2.0f);
-  p2.xy += 0.5;
-  
-  float minx = min(min(p0.x,p1.x),p2.x);
-  float miny = min(min(p0.y,p1.y),p2.y);
-  float maxx = max(max(p0.x,p1.x),p2.x);
-  float maxy = max(max(p0.y,p1.y),p2.y);
-  //here there is a special case where we disable backplane testing if is orthographic, this is
-  //because we use ortho to do cascade shadow maps and we want to clamp the depth of stuff that is not visible
-  //behind the backplane but could project a shadow
-  return (maxx < 0) | (maxy < 0) | (minx > 1) | (miny > 1) | (backPlane );
-}
-
 bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
 {
   // back face culling
@@ -465,18 +438,17 @@ vec2 getScreenPos(vec4 hPos)
     return vec2((hPos.xy * 0.5f + 0.5) * (renderPassState.viewport.zw - renderPassState.viewport.xy));
 }
 
-bool testTriangle(vec2 a, vec2 b, vec2 c, float winding, uint abits, uint bbits, uint cbits)
+bool testTriangle(const vec2 a, const vec2 b, const vec2 c, const float winding, const uchar3 cullBits)
 {
-    //return (abits & bbits & cbits) == 0;
-    if ((abits & bbits & cbits) == 0) {
+    if ((cullBits.x & cullBits.y & cullBits.z) == 0) {
         return testTriangle(a,b,c,winding);
     }
     return false;
 }
 
-uint getCullBits(vec4 hPos)
+uchar getCullBits(vec4 hPos)
 {
-    uint cullBits = 0;
+    uchar cullBits = 0;
     cullBits |= hPos.x < -hPos.w ?  1 : 0;
     cullBits |= hPos.x >  hPos.w ?  2 : 0;
     cullBits |= hPos.y < -hPos.w ?  4 : 0;
@@ -503,7 +475,7 @@ uint32_t baseIndex;
 
 hd_drawingCoord dcMemb;
 void main(void) {
-    if(hd_LocalIndexID == 0){
+    if(hd_LocalIndexID == 191){
         atomic_store_explicit(&accumulator,0,memory_order_relaxed);
     }
     const device uint *meshletStart = meshletRemap + payload.meshletCoord;
@@ -559,7 +531,11 @@ void main(void) {
         vertexOut.Neye = Neye0; // normalized
 
         vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
-        posCache[hd_LocalIndexID] = vertexOut.position;
+        vec3 posCached;
+        posCached.xy = getScreenPos(vertexOut.position);
+        uchar cullBits = getCullBits(vertexOut.position);
+        posCached.z = reinterpret_cast<thread float &>(cullBits);
+        posCache[hd_LocalIndexID] = posCached;
         vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
         ProcessPrimvarsOut(vertexOut);
         mesh.set_vertex(hd_LocalIndexID, vertexOut);
@@ -568,132 +544,63 @@ void main(void) {
     
     const uint base = hd_LocalIndexID * 9;
     const uint base2 = hd_LocalIndexID * 6;
-    //TODO try to place this work at the end of the group
-    //So that if vertices are way fewer, have the work on the less used threads
     const device uint *indicesOff = meshletIndicesStart + base2;
     const uint currPrim = hd_LocalIndexID * 3;
     //TODO Thor -> should I maybe be checking this for every one of them?
-    bool culledOverall = true;
     threadgroup_barrier(mem_flags::mem_threadgroup);
     if((currPrim ) < (meshletPrimitiveCount)) {
-        
-    
         //TODO unpack right away into a vec2?
         uint unpackedIndsA = *(indicesOff);
-        uint ind0A = unpackedIndsA & 0xFF;
-        uint ind1A = unpackedIndsA >> 8 & 0x000000FF;
-        uint ind2A = unpackedIndsA >> 16 & 0x000000FF;
-        float4 p0A = posCache[ind0A];
-        float4 p1A = posCache[ind1A];
-        float4 p2A = posCache[ind2A];
+        uchar3 indA;
+        indA.x = unpackedIndsA & 0xFF;
+        indA.y = unpackedIndsA >> 8 & 0x000000FF;
+        indA.z = unpackedIndsA >> 16 & 0x000000FF;
+        vec3 p0A = posCache[indA.x];
+        vec3 p1A = posCache[indA.y];
+        vec3 p2A = posCache[indA.z];
 
-        //do frustum culling of the 3 points
-        bool culledA = false;
-        
-        bool frustumCulledA = true;
+        uchar3 cullBitsA;
+        cullBitsA.x = *((reinterpret_cast<thread uint *>(&p0A))+2);
+        cullBitsA.y = *((reinterpret_cast<thread uint *>(&p1A))+2);
+        cullBitsA.z = *((reinterpret_cast<thread uint *>(&p2A))+2);
 
-        vec2 asA = getScreenPos(p0A);
-        vec2 bsA = getScreenPos(p1A);
-        vec2 csA = getScreenPos(p2A);
-
-        uint abitsA = getCullBits(p0A);
-        uint bbitsA = getCullBits(p1A);
-        uint cbitsA = getCullBits(p2A);
-
-        frustumCulledA = !testTriangle(asA.xy, bsA.xy, csA.xy, 1.0, abitsA, bbitsA, cbitsA);
-        //frustumCulledA = cullPointsScreenSpace(p0A,p1A,p2A);
-
-        /*
-        //TODO: here we have an early out, does it help or is it faster if we bruteforce the math?
-        for(int i =0; i <6; ++i)
-        {
-          frustumCulledA &= cullPointsScreenSpace(p0A,p1A,p2A);
-          if(!frustumCulledA) break;
-        }
-        */
-        bool backfaceCullA = determinant(float3x3(  p0A.xyw, p1A.xyw, p2A.xyw ) ) <= 0;
-        //culled = (backfaceCull | frustumCulled);
-        culledA = frustumCulledA;
-
-        //TODO also check if current prim is over the allowed
+        bool culledA = !testTriangle(p0A.xy, p1A.xy, p2A.xy, 1.0, cullBitsA);
     
         uint unpackedIndsB = *(indicesOff + 2);
-        uint ind0B = unpackedIndsB & 0xFF;
-        uint ind1B = unpackedIndsB >> 8 & 0x000000FF;
-        uint ind2B = unpackedIndsB >> 16 & 0x000000FF;
-        float4 p0B = posCache[ind0B];
-        float4 p1B = posCache[ind1B];
-        float4 p2B = posCache[ind2B];
+        uchar3 indB;
+        indB.x = unpackedIndsB & 0xFF;
+        indB.y = unpackedIndsB >> 8 & 0x000000FF;
+        indB.z = unpackedIndsB >> 16 & 0x000000FF;
+        vec3 p0B = posCache[indB.x];
+        vec3 p1B = posCache[indB.y];
+        vec3 p2B = posCache[indB.z];
 
-        //do frustum culling of the 3 points
-        bool culledB = false;
-        
-        bool frustumCulledB = true;
+        uchar3 cullBitsB;
+        cullBitsB.x = *((reinterpret_cast<thread uint *>(&p0B))+2);
+        cullBitsB.y = *((reinterpret_cast<thread uint *>(&p1B))+2);
+        cullBitsB.z = *((reinterpret_cast<thread uint *>(&p2B))+2);
 
-        vec2 asB = getScreenPos(p0B);
-        vec2 bsB = getScreenPos(p1B);
-        vec2 csB = getScreenPos(p2B);
-
-        uint abitsB = getCullBits(p0B);
-        uint bbitsB = getCullBits(p1B);
-        uint cbitsB = getCullBits(p2B);
-
-        frustumCulledB = !testTriangle(asB.xy, bsB.xy, csB.xy, 1.0, abitsB, bbitsB, cbitsB);
-        //frustumCulledB = cullPointsScreenSpace(p0B,p1B,p2B);
-
-        //TODO: here we have an early out, does it help or is it faster if we bruteforce the math?
-        /*
-        for(int i =0; i <6; ++i)
-        {
-          frustumCulledB &= cullPointsScreenSpace(p0B,p1B,p2B);
-          if(!frustumCulledB) break;
-        }
-        */
-    
-        bool backfaceCullB = !determinant(float3x3(  p0B.xyw, p1B.xyw, p2B.xyw ) ) <= 0;
-        //culled = (backfaceCull | frustumCulled);
-        culledB = frustumCulledB;
-
+        bool culledB  = !testTriangle(p0B.xy, p1B.xy, p2B.xy, 1.0, cullBitsB);
     
         uint unpackedIndsC = *(indicesOff + 4);
-        uint ind0C = unpackedIndsC & 0xFF;
-        uint ind1C = unpackedIndsC >> 8 & 0x000000FF;
-        uint ind2C = unpackedIndsC >> 16 & 0x000000FF;
-        float4 p0C = posCache[ind0C];
-        float4 p1C = posCache[ind1C];
-        float4 p2C = posCache[ind2C];
+        uchar3 indC;
+        indC.x = unpackedIndsC & 0xFF;
+        indC.y = unpackedIndsC >> 8 & 0x000000FF;
+        indC.z = unpackedIndsC >> 16 & 0x000000FF;
+        vec3 p0C = posCache[indC.x];
+        vec3 p1C = posCache[indC.y];
+        vec3 p2C = posCache[indC.z];
 
         //do frustum culling of the 3 points
-        bool culledC = false;
-        
-        bool frustumCulledC = true;
 
-        vec2 asC = getScreenPos(p0C);
-        vec2 bsC = getScreenPos(p1C);
-        vec2 csC = getScreenPos(p2C);
+        uchar3 cullBitsC;
+        cullBitsC.x = *((reinterpret_cast<thread uint *>(&p0C))+2);
+        cullBitsC.y = *((reinterpret_cast<thread uint *>(&p1C))+2);
+        cullBitsC.z = *((reinterpret_cast<thread uint *>(&p2C))+2);
 
-        uint abitsC = getCullBits(p0C);
-        uint bbitsC = getCullBits(p1C);
-        uint cbitsC = getCullBits(p2C);
+        bool culledC = !testTriangle(p0C.xy, p1C.xy, p2C.xy, 1.0, cullBitsC);
 
-        frustumCulledC = !testTriangle(asC.xy, bsC.xy, csC.xy, 1.0, abitsC, bbitsC, cbitsC);
-        //frustumCulledC = cullPointsScreenSpace(p0C,p1C,p2C);
-
-        /*
-        //TODO: here we have an early out, does it help or is it faster if we bruteforce the math?
-        for(int i =0; i <6; ++i)
-        {
-          frustumCulledC &= cullPointsScreenSpace(p0C,p1C,p2C);
-          if(!frustumCulledC) break;
-        }
-        */
-    
-        bool backfaceCullC = determinant(float3x3(  p0C.xyw, p1C.xyw, p2C.xyw ) ) <= 0;
-        //culled = (backfaceCull | frustumCulled);
-        culledC = frustumCulledC;
-
-        culledOverall = (culledA && culledB && culledC) ;
-        //culledOverall = false;
+        bool culledOverall = (culledA && culledB && culledC) ;
 
         //now we know if a triangle got culled or not, we can focus on figuring out
         //how to compact and write it out
@@ -717,67 +624,57 @@ void main(void) {
         //lets give the value of the local offset to all the threads in the clique
         localOffset = simd_broadcast(localOffset,0);
         //int passingPrimsLocal = min(passingPrims - currPrim, three);
+        int writePrim = (localIndex + localOffset);
+        int writeIndex = writePrim * 3;
         if(!culledOverall)
         {
-            int writePrim = (localIndex + localOffset);
-            int writeIndex = writePrim * 3;
-
-            PrimOut primOut;
+            PrimOut primOutA;
             //TODO export a smarter primitive ID
-            primOut.primitive_id_ms = *(indicesOff + 1);
+            primOutA.primitive_id_ms = *(indicesOff + 1);
             //TODO fix write prim
-            mesh.set_primitive(writePrim, primOut);
+            mesh.set_primitive(writePrim, primOutA);
 
             // Set the output indices.
             //TODO cache base index calc
-            mesh.set_index(writeIndex , ind0A);
-            mesh.set_index(writeIndex  + 1, ind1A);
-            mesh.set_index(writeIndex + 2, ind2A);
-        }
-
-        //TODO simplify nested checks
-        if(!culledOverall && primsHere > 1)
-        {
-            //TODO only calculate it once
-            int writePrim = (localIndex + localOffset);
-            int writeIndex = writePrim * 3;
-            PrimOut primOut;
-            //TODO export a smarter primitive ID
-            primOut.primitive_id_ms = *(indicesOff + 3);
-            mesh.set_primitive(writePrim + 1, primOut);
-
-            // Set the output indices.
-            //TODO cache base index calc
-            mesh.set_index(writeIndex + 3, ind0B);
-            mesh.set_index(writeIndex + 4, ind1B);
-            mesh.set_index(writeIndex + 5, ind2B);
-        }
-
-        if(!culledOverall && primsHere > 2)
-        {
-            //TODO only calculate it once
-            int writePrim = (localIndex + localOffset);
-            int writeIndex = writePrim * 3;
-            PrimOut primOut;
-            //TODO export a smarter primitive ID
-            primOut.primitive_id_ms = *(indicesOff + 5);
-            mesh.set_primitive(writePrim + 2, primOut);
-
-            // Set the output indices.
-            //TODO cache base index calc
-            mesh.set_index(writeIndex + 6, ind0C);
-            mesh.set_index(writeIndex + 7, ind1C);
-            mesh.set_index(writeIndex + 8, ind2C);
-        }
-
+            mesh.set_index(writeIndex , indA.x);
+            mesh.set_index(writeIndex  + 1, indA.y);
+            mesh.set_index(writeIndex + 2, indA.z);
         
+
+            if(primsHere > 1)
+            {
+                PrimOut primOutB;
+                //TODO export a smarter primitive ID
+                primOutB.primitive_id_ms = *(indicesOff + 3);
+                mesh.set_primitive(writePrim + 1, primOutB);
+
+                // Set the output indices.
+                //TODO cache base index calc
+                mesh.set_index(writeIndex + 3, indB.x);
+                mesh.set_index(writeIndex + 4, indB.y);
+                mesh.set_index(writeIndex + 5, indB.z);
+            }
+
+            if(primsHere > 2)
+            {
+                //TODO only calculate it once
+                PrimOut primOutC;
+                //TODO export a smarter primitive ID
+                primOutC.primitive_id_ms = *(indicesOff + 5);
+                mesh.set_primitive(writePrim + 2, primOutC);
+
+                // Set the output indices.
+                //TODO cache base index calc
+                mesh.set_index(writeIndex + 6, indC.x);
+                mesh.set_index(writeIndex + 7, indC.y);
+                mesh.set_index(writeIndex + 8, indC.z);
+            }
+        }
     }
     //TODO fix this
     threadgroup_barrier(mem_flags::mem_threadgroup);
-    if(hd_LocalIndexID == 0){
+    if(hd_LocalIndexID == 1){
         int accumulatorValue = (int)atomic_load_explicit(&accumulator,memory_order_relaxed);
-        int zero = 0;
-        //mesh.set_primitive_count(max(accumulatorValue * 3 - (3 - ((int)(meshletPrimitiveCount) % 3)), zero));
         mesh.set_primitive_count(accumulatorValue);
         //mesh.set_primitive_count(meshletPrimitiveCount);
     }
