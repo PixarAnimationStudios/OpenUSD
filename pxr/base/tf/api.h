@@ -26,6 +26,8 @@
 
 #include "pxr/base/arch/export.h"
 
+// Adding some whitespace and comments as a test.
+
 #if defined(PXR_STATIC)
 #   define TF_API
 #   define TF_API_TEMPLATE_CLASS(...)
