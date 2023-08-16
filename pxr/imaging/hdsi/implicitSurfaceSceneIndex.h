@@ -79,6 +79,7 @@ private:
     const TfToken _coneMode;
     const TfToken _cubeMode;
     const TfToken _cylinderMode;
+    const TfToken _cylinder_1Mode;
     const TfToken _sphereMode;
 };
 

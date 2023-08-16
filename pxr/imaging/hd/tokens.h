@@ -254,6 +254,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (cone)                                      \
     (cube)                                      \
     (cylinder)                                  \
+    (cylinder_1)                                \
     (mesh)                                      \
     (basisCurves)                               \
     (points)                                    \

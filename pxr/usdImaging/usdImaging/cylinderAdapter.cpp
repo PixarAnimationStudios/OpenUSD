@@ -44,7 +44,10 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
-using _PrimSource = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder_1, HdCylinderSchema>;
+using _PrimSource_0 = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder,
+      HdCylinderSchema>;
+using _PrimSource_1 = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder_1,
+      HdCylinder_1Schema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)
@@ -54,7 +57,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingCylinderAdapter::~UsdImagingCylinderAdapter() 
+UsdImagingCylinderAdapter::~UsdImagingCylinderAdapter()
 {
 }
 
@@ -82,10 +85,17 @@ UsdImagingCylinderAdapter::GetImagingSubprimData(
         const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::New(
-            prim.GetPath(),
-            prim,
-            stageGlobals);
+        if (prim.IsA<UsdGeomCylinder>()) {
+            return _PrimSource_0::New(
+                prim.GetPath(),
+                prim,
+                stageGlobals);
+        } else { // IsA<UsdGeomCylinder_1>()
+            return _PrimSource_1::New(
+                prim.GetPath(),
+                prim,
+                stageGlobals);
+        }
     }
     return nullptr;
 }
@@ -97,9 +107,13 @@ UsdImagingCylinderAdapter::InvalidateImagingSubprim(
         TfTokenVector const& properties)
 {
     if (subprim.IsEmpty()) {
-        return _PrimSource::Invalidate(prim, subprim, properties);
+        if (prim.IsA<UsdGeomCylinder>()) {
+            return _PrimSource_0::Invalidate(prim, subprim, properties);
+        } else { // IsA<UsdGeomCylinder_1>()
+            return _PrimSource_1::Invalidate(prim, subprim, properties);
+        }
     }
-    
+
     return HdDataSourceLocatorSet();
 }
 
@@ -110,7 +124,7 @@ UsdImagingCylinderAdapter::IsSupported(UsdImagingIndexProxy const* index) const
 }
 
 SdfPath
-UsdImagingCylinderAdapter::Populate(UsdPrim const& prim, 
+UsdImagingCylinderAdapter::Populate(UsdPrim const& prim,
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 
@@ -119,11 +133,11 @@ UsdImagingCylinderAdapter::Populate(UsdPrim const& prim,
                      prim, index, GetMaterialUsdPath(prim), instancerContext);
 }
 
-void 
+void
 UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
                                           SdfPath const& cachePath,
                                           HdDirtyBits* timeVaryingBits,
-                                          UsdImagingInstancerContext const* 
+                                          UsdImagingInstancerContext const*
                                               instancerContext) const
 {
     BaseAdapter::TrackVariability(
@@ -143,11 +157,26 @@ UsdImagingCylinderAdapter::TrackVariability(UsdPrim const& prim,
                    UsdImagingTokens->usdVaryingPrimvar,
                    timeVaryingBits, /*inherited*/false);
     }
-    if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
-        _IsVarying(prim, UsdGeomTokens->radius,
-                   HdChangeTracker::DirtyPoints,
-                   UsdImagingTokens->usdVaryingPrimvar,
-                   timeVaryingBits, /*inherited*/false);
+    if (prim.IsA<UsdGeomCylinder>()) {
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radius,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
+    } else { // IsA<UsdGeomCylinder_1>()
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radiusBottom,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
+        if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
+            _IsVarying(prim, UsdGeomTokens->radiusTop,
+                       HdChangeTracker::DirtyPoints,
+                       UsdImagingTokens->usdVaryingPrimvar,
+                       timeVaryingBits, /*inherited*/false);
+        }
     }
     if ((*timeVaryingBits & HdChangeTracker::DirtyPoints) == 0) {
         _IsVarying(prim, UsdGeomTokens->axis,
@@ -164,6 +193,8 @@ UsdImagingCylinderAdapter::ProcessPropertyChange(UsdPrim const& prim,
 {
     if (propertyName == UsdGeomTokens->height ||
         propertyName == UsdGeomTokens->radius ||
+        propertyName == UsdGeomTokens->radiusBottom ||
+        propertyName == UsdGeomTokens->radiusTop ||
         propertyName == UsdGeomTokens->axis) {
         return HdChangeTracker::DirtyPoints;
     }
@@ -172,7 +203,10 @@ UsdImagingCylinderAdapter::ProcessPropertyChange(UsdPrim const& prim,
     return BaseAdapter::ProcessPropertyChange(prim, cachePath, propertyName);
 }
 
-static void extractRadii(UsdGeomCylinder const& cylinder, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+static void extractRadii(UsdGeomCylinder const& cylinder,
+                         UsdTimeCode time,
+                         double& radiusBottomOut,
+                         double& radiusTopOut)
 {
     if (!cylinder.GetRadiusAttr().Get(&radiusBottomOut, time)) {
         TF_WARN("Could not evaluate double-valued radius attribute on prim %s",
@@ -183,21 +217,28 @@ static void extractRadii(UsdGeomCylinder const& cylinder, UsdTimeCode time, doub
 }
 
 
-static void extractRadii(UsdGeomCylinder_1 const& cylinder, UsdTimeCode time, double& radiusBottomOut, double& radiusTopOut)
+static void extractRadii(UsdGeomCylinder_1 const& cylinder,
+                         UsdTimeCode time,
+                         double& radiusBottomOut,
+                         double& radiusTopOut)
 {
     if (!cylinder.GetRadiusBottomAttr().Get(&radiusBottomOut, time)) {
-        TF_WARN("Could not evaluate double-valued bottom radius attribute on prim %s",
-            cylinder.GetPath().GetText());
+        TF_WARN("Could not evaluate double-valued bottom radius attribute on " \
+                "prim %s", cylinder.GetPath().GetText());
     }
     if (!cylinder.GetRadiusTopAttr().Get(&radiusTopOut, time)) {
-        TF_WARN("Could not evaluate double-valued top radius attribute on prim %s",
-            cylinder.GetPath().GetText());
+        TF_WARN("Could not evaluate double-valued top radius attribute on " \
+                "prim %s", cylinder.GetPath().GetText());
     }
 }
 
 template<typename CylinderType>
-static void extractCylinderParameters(UsdPrim const& prim, UsdTimeCode time, double& heightOut, double& radiusBottomOut,
-        double& radiusTopOut, TfToken& axisOut)
+static void extractCylinderParameters(UsdPrim const& prim,
+                                      UsdTimeCode time,
+                                      double& heightOut,
+                                      double& radiusBottomOut,
+                                      double& radiusTopOut,
+                                      TfToken& axisOut)
 {
     if (!prim.IsA<CylinderType>()) {
         return;
@@ -227,8 +268,10 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
     double radiusBottom = 1.0;
     double radiusTop = 1.0;
     TfToken axis = UsdGeomTokens->z;
-    extractCylinderParameters<UsdGeomCylinder>(prim, time, height, radiusBottom, radiusTop, axis);
-    extractCylinderParameters<UsdGeomCylinder_1>(prim, time, height, radiusBottom, radiusTop, axis);
+    extractCylinderParameters<UsdGeomCylinder>(prim, time, height, radiusBottom,
+        radiusTop, axis);
+    extractCylinderParameters<UsdGeomCylinder_1>(prim, time, height,
+        radiusBottom, radiusTop, axis);
 
 
     const GfMatrix4d basis = UsdImagingGprimAdapter::GetImplicitBasis(axis);
@@ -237,7 +280,7 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
         GeomUtilCylinderMeshGenerator::ComputeNumPoints(numRadial);
 
     VtVec3fArray points(numPoints);
-        
+
     const double sweepDegrees = 360;
     GeomUtilCylinderMeshGenerator::GeneratePoints(
         points.begin(),
@@ -252,7 +295,7 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
     return VtValue(points);
 }
 
-/*virtual*/ 
+/*virtual*/
 VtValue
 UsdImagingCylinderAdapter::GetTopology(UsdPrim const& prim,
                                        SdfPath const& cachePath,
@@ -260,7 +303,7 @@ UsdImagingCylinderAdapter::GetTopology(UsdPrim const& prim,
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    
+
     // All cylinders share the same topology.
     static const HdMeshTopology topology =
         HdMeshTopology(GeomUtilCylinderMeshGenerator::GenerateTopology(

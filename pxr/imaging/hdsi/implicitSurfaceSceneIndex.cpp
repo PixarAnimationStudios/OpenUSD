@@ -519,6 +519,7 @@ _ComputeMeshDataSource()
             .Build();
 }
 
+template <int SCHEMA_VERSION>
 class _PointsDataSource : public HdVec3fArrayDataSource
 {
 public:
@@ -537,23 +538,20 @@ public:
         GeomUtilCylinderMeshGenerator::GeneratePoints(
             points.begin(),
             numRadial,
-            _GetRadius(shutterOffset),
+            _GetRadiusBottom(shutterOffset),
+            _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
+            /* sweepDegrees = */ 360.0,
             &basis
         );
-        
+
         return points;
     }
 
     bool GetContributingSampleTimesForInterval(
                             const Time startTime,
                             const Time endTime,
-                            std::vector<Time> * const outSampleTimes) override {
-        HdSampledDataSourceHandle sources[] = {
-            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
-        return HdGetMergedContributingSampleTimesForInterval(
-            TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
-    }
+                            std::vector<Time> * const outSampleTimes) override;
 
 private:
     _PointsDataSource(const HdContainerDataSourceHandle &primDataSource)
@@ -561,12 +559,7 @@ private:
     {
     }
 
-    HdDoubleDataSourceHandle _GetHeightSource() const {
-        static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->height);
-        return HdDoubleDataSource::Cast(
-            HdContainerDataSource::Get(_primDataSource, sizeLocator));
-    }
+    HdDoubleDataSourceHandle _GetHeightSource() const;
 
     double _GetHeight(const Time shutterOffset) const {
         if (HdDoubleDataSourceHandle const s = _GetHeightSource()) {
@@ -575,26 +568,26 @@ private:
         return 2.0;
     }
 
-    HdDoubleDataSourceHandle _GetRadiusSource() const {
-        static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->radius);
-        return HdDoubleDataSource::Cast(
-            HdContainerDataSource::Get(_primDataSource, sizeLocator));
-    }
+    HdDoubleDataSourceHandle _GetRadiusBottomSource() const;
 
-    double _GetRadius(const Time shutterOffset) const {
-        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+    double _GetRadiusBottom(const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusBottomSource()) {
             return s->GetTypedValue(shutterOffset);
         }
         return 1.0;
     }
 
-    HdTokenDataSourceHandle _GetAxisSource() const {
-        static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
-        return HdTokenDataSource::Cast(
-            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    HdDoubleDataSourceHandle _GetRadiusTopSource() const;
+
+    double _GetRadiusTop(
+            const Time shutterOffset) const {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusTopSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
     }
+
+    HdTokenDataSourceHandle _GetAxisSource() const;
 
     TfToken _GetAxis(const Time shutterOffset) const {
         if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
@@ -606,6 +599,94 @@ private:
     HdContainerDataSourceHandle _primDataSource;
 };
 
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<0>::_GetHeightSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->height);
+    return HdDoubleDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<0>::_GetRadiusBottomSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->radius);
+    return HdDoubleDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<0>::_GetRadiusTopSource() const {
+    return _GetRadiusBottomSource(); // Version 0 only have a single radius
+}
+
+template<>
+HdTokenDataSourceHandle _PointsDataSource<0>::_GetAxisSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
+    return HdTokenDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<1>::_GetHeightSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinder_1SchemaTokens->cylinder_1, HdCylinderSchemaTokens->height);
+    return HdDoubleDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<1>::_GetRadiusBottomSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinder_1SchemaTokens->cylinder_1,
+        HdCylinder_1SchemaTokens->radiusBottom);
+    return HdDoubleDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdDoubleDataSourceHandle _PointsDataSource<1>::_GetRadiusTopSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinder_1SchemaTokens->cylinder_1,
+        HdCylinder_1SchemaTokens->radiusTop);
+    return HdDoubleDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+template<>
+HdTokenDataSourceHandle _PointsDataSource<1>::_GetAxisSource() const {
+    static const HdDataSourceLocator sizeLocator(
+        HdCylinder_1SchemaTokens->cylinder_1, HdCylinder_1SchemaTokens->axis);
+    return HdTokenDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, sizeLocator));
+}
+
+
+template<>
+bool _PointsDataSource<0>::GetContributingSampleTimesForInterval(
+        const Time startTime,
+        const Time endTime,
+        std::vector<Time> * const outSampleTimes) {
+    HdSampledDataSourceHandle sources[] = {
+        _GetHeightSource(), _GetRadiusBottomSource(), _GetAxisSource() };
+    return HdGetMergedContributingSampleTimesForInterval(
+        TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
+}
+
+template<>
+bool _PointsDataSource<1>::GetContributingSampleTimesForInterval(
+        const Time startTime,
+        const Time endTime,
+        std::vector<Time> * const outSampleTimes) {
+    HdSampledDataSourceHandle sources[] = {
+        _GetHeightSource(), _GetRadiusBottomSource(),
+        _GetRadiusTopSource(), _GetAxisSource() };
+    return HdGetMergedContributingSampleTimesForInterval(
+        TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
+}
+
+template <int SCHEMA_VERSION>
 HdContainerDataSourceHandle
 _ComputePointsPrimvarDataSource(
     const HdContainerDataSourceHandle &primDataSource)
@@ -621,19 +702,23 @@ _ComputePointsPrimvarDataSource(
         HdPrimvarSchema::Builder()
             .SetRole(roleDataSource)
             .SetInterpolation(interpolationDataSource)
-            .SetPrimvarValue(_PointsDataSource::New(primDataSource))
+            .SetPrimvarValue(
+                    _PointsDataSource<SCHEMA_VERSION>::New(primDataSource))
             .Build();
 }
 
+template <int SCHEMA_VERSION>
 HdContainerDataSourceHandle
 _ComputePrimvarsDataSource(const HdContainerDataSourceHandle &primDataSource)
 {
     return
         HdRetainedContainerDataSource::New(
             HdPrimvarsSchemaTokens->points,
-                    _ComputePointsPrimvarDataSource(primDataSource));
+                    _ComputePointsPrimvarDataSource<SCHEMA_VERSION>(
+                        primDataSource));
 }
 
+template <int SCHEMA_VERSION>
 HdContainerDataSourceHandle
 _ComputePrimDataSource(
     const SdfPath &primPath,
@@ -644,13 +729,15 @@ _ComputePrimDataSource(
     static HdDataSourceBaseHandle const meshDataSource =
         _ComputeMeshDataSource();
     HdDataSourceBaseHandle const primvarsDataSource =
-        _ComputePrimvarsDataSource(primDataSource);
+        _ComputePrimvarsDataSource<SCHEMA_VERSION>(primDataSource);
     HdDataSourceBaseHandle const dependenciesDataSource =
         _ComputePointsDependenciesDataSource<HdCylinderSchema>(primPath);
 
+    const TfToken& name = SCHEMA_VERSION == 0 ?
+        HdCylinderSchemaTokens->cylinder : HdCylinder_1SchemaTokens->cylinder_1;
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdCylinderSchemaTokens->cylinder, cylinderDataSource,
+            name, cylinderDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
             HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
             HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
@@ -1117,6 +1204,7 @@ _ComputePrimDataSource(
 namespace _CylinderToTransformedCylinder
 {
 
+template <int SCHEMA_VERSION>
 class _MatrixDataSource : public HdMatrixDataSource
 {
 public:
@@ -1139,7 +1227,7 @@ public:
         return HdGetMergedContributingSampleTimesForInterval(
             TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
-    
+
 private:
     _MatrixDataSource(const HdContainerDataSourceHandle &primDataSource)
       : _primDataSource(primDataSource)
@@ -1157,12 +1245,7 @@ private:
         return GfMatrix4d(1.0);
     }
 
-    HdTokenDataSourceHandle _GetAxisSource() const {
-        static const HdDataSourceLocator locator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
-        return HdTokenDataSource::Cast(
-            HdContainerDataSource::Get(_primDataSource, locator));
-    }
+    HdTokenDataSourceHandle _GetAxisSource() const;
 
     TfToken _GetAxis(const Time shutterOffset) const {
         if (HdTokenDataSourceHandle const src = _GetAxisSource()) {
@@ -1196,6 +1279,23 @@ private:
     HdContainerDataSourceHandle _primDataSource;
 };
 
+template<>
+HdTokenDataSourceHandle _MatrixDataSource<0>::_GetAxisSource() const {
+    static const HdDataSourceLocator locator(
+        HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
+    return HdTokenDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, locator));
+}
+
+template<>
+HdTokenDataSourceHandle _MatrixDataSource<1>::_GetAxisSource() const {
+    static const HdDataSourceLocator locator(
+        HdCylinder_1SchemaTokens->cylinder_1, HdCylinder_1SchemaTokens->axis);
+    return HdTokenDataSource::Cast(
+        HdContainerDataSource::Get(_primDataSource, locator));
+}
+
+template <int SCHEMA_VERSION>
 HdContainerDataSourceHandle
 _ComputePrimDataSource(
     const SdfPath &primPath,
@@ -1203,12 +1303,12 @@ _ComputePrimDataSource(
 {
     HdContainerDataSourceHandle xformSrc =
         HdXformSchema::Builder()
-            .SetMatrix(_MatrixDataSource::New(primDataSource))
+            .SetMatrix(_MatrixDataSource<SCHEMA_VERSION>::New(primDataSource))
             .Build();
-    HdDataSourceBaseHandle const dependenciesDataSource =
-        _ComputeMatrixDependenciesDataSource<HdCylinderSchema>(primPath);
+    HdDataSourceBaseHandle const dependenciesDataSource = SCHEMA_VERSION == 0 ?
+        _ComputeMatrixDependenciesDataSource<HdCylinderSchema>(primPath) :
+        _ComputeMatrixDependenciesDataSource<HdCylinder_1Schema>(primPath);
 
-    
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdXformSchemaTokens->xform, std::move(xformSrc),
@@ -1219,7 +1319,7 @@ _ComputePrimDataSource(
     return HdOverlayContainerDataSource::New(TfArraySize(sources), sources);
 }
 
-} // namespace _AxisToTransform
+} // namespace _CylinderToTransformedCylinder
 
 namespace _ConeToTransformedCone
 {
@@ -1392,9 +1492,10 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
   , _coneMode(_GetMode(inputArgs, HdPrimTypeTokens->cone))
   , _cubeMode(_GetMode(inputArgs, HdPrimTypeTokens->cube))
   , _cylinderMode(_GetMode(inputArgs, HdPrimTypeTokens->cylinder))
+  , _cylinder_1Mode(_GetMode(inputArgs, HdPrimTypeTokens->cylinder_1))
   , _sphereMode(_GetMode(inputArgs, HdPrimTypeTokens->sphere))
 {
-    
+
 }
 
 HdSceneIndexPrim
@@ -1430,14 +1531,29 @@ HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
         if (_cylinderMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
             return {
                 HdPrimTypeTokens->mesh,
-                _CylinderToMesh::_ComputePrimDataSource(
+                _CylinderToMesh::_ComputePrimDataSource<0>(
                     primPath, prim.dataSource) };
         }
-        if (_cylinderMode == 
+        if (_cylinderMode ==
                 HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
             return {
                 prim.primType,
-                _CylinderToTransformedCylinder::_ComputePrimDataSource(
+                _CylinderToTransformedCylinder::_ComputePrimDataSource<0>(
+                    primPath, prim.dataSource) };
+        }
+    }
+    if (prim.primType == HdPrimTypeTokens->cylinder_1) {
+        if (_cylinder_1Mode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) {
+            return {
+                HdPrimTypeTokens->mesh,
+                _CylinderToMesh::_ComputePrimDataSource<1>(
+                    primPath, prim.dataSource) };
+        }
+        if (_cylinder_1Mode ==
+                HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
+            return {
+                prim.primType,
+                _CylinderToTransformedCylinder::_ComputePrimDataSource<1>(
                     primPath, prim.dataSource) };
         }
     }
@@ -1493,6 +1609,8 @@ HdsiImplicitSurfaceSceneIndex::_PrimsAdded(
              _coneMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
             (entries[i].primType == HdPrimTypeTokens->cylinder &&
              _cylinderMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
+            (entries[i].primType == HdPrimTypeTokens->cylinder_1 &&
+             _cylinder_1Mode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
             (entries[i].primType == HdPrimTypeTokens->sphere &&
              _sphereMode == HdsiImplicitSurfaceSceneIndexTokens->toMesh) ||
             (entries[i].primType == HdPrimTypeTokens->capsule &&
