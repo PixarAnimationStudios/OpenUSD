@@ -68,7 +68,8 @@ enum PcpErrorType {
     PcpErrorType_PropertyPermissionDenied,
     PcpErrorType_SublayerCycle,
     PcpErrorType_TargetPermissionDenied,
-    PcpErrorType_UnresolvedPrimPath
+    PcpErrorType_UnresolvedPrimPath,
+    PcpErrorType_VariableExpressionError
 };
 
 // Forward declarations:
@@ -846,6 +847,49 @@ private:
     /// Constructor is private. Use New() instead.
     PcpErrorUnresolvedPrimPath();
 };
+
+///////////////////////////////////////////////////////////////////////////////
+
+// Forward declarations:
+class PcpErrorVariableExpressionError;
+typedef std::shared_ptr<PcpErrorVariableExpressionError>
+    PcpErrorVariableExpressionErrorPtr;
+
+/// \class PcpErrorVariableExpressionError
+///
+/// Error when evaluating a variable expression.
+///
+class PcpErrorVariableExpressionError : public PcpErrorBase {
+public:
+    static PcpErrorVariableExpressionErrorPtr New();
+
+    PCP_API ~PcpErrorVariableExpressionError() override;
+
+    PCP_API std::string ToString() const override;
+
+    /// The expression that was evaluated.
+    std::string expression;
+
+    /// The error generated during evaluation.
+    std::string expressionError;
+
+    /// The context where the expression was authored, e.g.
+    /// "sublayer", "reference", etc.
+    std::string context;
+
+    /// The source layer where the expression was authored.
+    SdfLayerHandle sourceLayer;
+
+    /// The source path where the expression was authored. This
+    /// may be the absolute root path.
+    SdfPath sourcePath;
+
+private:
+    /// Constructor is private. Use New() instead.
+    PcpErrorVariableExpressionError();
+};
+
+///////////////////////////////////////////////////////////////////////////////
 
 /// Raise the given errors as runtime errors.
 PCP_API

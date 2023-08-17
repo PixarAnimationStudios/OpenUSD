@@ -209,7 +209,7 @@ public:
     /// requirements based on DMA and format support in browsers and consumer 
     /// devices. The allowed audio filetypes for usdz are M4A, MP3, WAV 
     /// (in order of preference).
-    /// \sa <a href="http://graphics.pixar.com/usd/docs/Usdz-File-Format-Specification.html#UsdzFileFormatSpecification-UsdzSpecification">Usdz Specification</a>
+    /// \sa <a href="https://openusd.org/release/spec_usdz.html">Usdz Specification</a>
     /// 
     ///
     /// | ||

@@ -27,14 +27,14 @@ Our test machines have the following software versions installed
 | Qt for Python | PySide2 5.14.1       | PySide6 6.3.1                | PySide2 5.14.1                 |
 | PyOpenGL      | 3.1.5                | 3.1.5                        | 3.1.5                          |
 | Embree        | 3.2.2                | 3.13.3                       | 3.2.2                          |
-| RenderMan     | 24.4                 | 24.4                         | 24.4                           |
+| RenderMan     | 24.4, 25.0           | 24.4, 25.0                   | 24.4, 25.0                     |
 | Alembic       | 1.7.10               | 1.8.3                        | 1.7.10                         |
 | OpenEXR       | 2.4.3                | 2.4.3                        | 2.5.2                          |
 | MaterialX     | 1.38.7               | 1.38.7                       | 1.38.7                         |
 | Jinja2        | 2.0                  |                              |                                |
 | Flex          | 2.5.39               |                              |                                |
 | Bison         | 2.4.1                |                              |                                |
-| Doxygen       | 1.8.14               |                              |                                |
+| Doxygen       | 1.9.6                |                              |                                |
 | GraphViz      | 2.40.1               |                              |                                |
 | OpenVDB       | 7.1.0                | 7.1.0                        | 7.1.0                          |
 | Vulkan SDK    | 1.2.135.0            | 1.2.135.0                    | 1.2.135.0                      |

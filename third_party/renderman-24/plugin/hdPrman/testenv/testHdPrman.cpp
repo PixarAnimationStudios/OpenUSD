@@ -44,6 +44,7 @@
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -560,7 +561,8 @@ HydraSetupAndRender(
         HdSceneIndexBaseRefPtr siChainHead;
         siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(
                         usdStageSceneIndex);
-        siChainHead = HdFlatteningSceneIndex::New(siChainHead);
+        siChainHead = HdFlatteningSceneIndex::New(
+            siChainHead, UsdImagingFlattenedDataSourceProviders());
 
         // Insert scene index chain into the render index.
         hdRenderIndex->InsertSceneIndex(

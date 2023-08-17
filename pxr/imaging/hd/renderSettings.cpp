@@ -114,6 +114,12 @@ HdRenderSettings::GetRenderingColorSpace() const
     return _renderingColorSpace;
 }
 
+const VtValue&
+HdRenderSettings::GetShutterInterval() const
+{
+    return _vShutterInterval;
+}
+
 void
 HdRenderSettings::Sync(
     HdSceneDelegate *sceneDelegate,
@@ -173,6 +179,11 @@ HdRenderSettings::Sync(
         if (vColorSpace.IsHolding<TfToken>()) {
             _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+        _vShutterInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
     }
 
     // Allow subclasses to do any additional processing if necessary.

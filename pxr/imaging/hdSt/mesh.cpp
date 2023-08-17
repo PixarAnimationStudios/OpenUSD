@@ -2636,7 +2636,8 @@ HdStMesh::_UpdateDrawItemGeometricShader(HdSceneDelegate *sceneDelegate,
                                  _hasMirroredTransform,
                                  hasInstancer,
                                  desc.enableScalarOverride,
-                                 _pointsShadingEnabled);
+                                 _pointsShadingEnabled,
+                                 desc.forceOpaqueEdges);
 
     HdSt_GeometricShaderSharedPtr geomShader =
         HdSt_GeometricShader::Create(shaderKey, resourceRegistry);

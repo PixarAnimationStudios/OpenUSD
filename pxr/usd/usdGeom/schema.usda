@@ -1202,7 +1202,7 @@ class NurbsPatch "NurbsPatch" (
     surface, with optional trim curves.
     
     The encoding mostly follows that of RiNuPatch and RiTrimCurve: 
-    https://renderman.pixar.com/resources/current/RenderMan/geometricPrimitives.html#rinupatch , with some minor renaming and coalescing for clarity.
+    https://renderman.pixar.com/resources/RenderMan_20/geometricPrimitives.html#rinupatch , with some minor renaming and coalescing for clarity.
     
     The layout of control vertices in the \\em points attribute inherited
     from UsdGeomPointBased is row-major with U considered rows, and V columns.
@@ -1696,7 +1696,7 @@ class Points "Points" (
         }
     }
     inherits = </PointBased>
-    doc = """Points are analogous to the <A HREF="https://renderman.pixar.com/resources/current/RenderMan/appnote.18.html">RiPoints spec</A>.  
+    doc = """Points are analogous to the <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.18.html">RiPoints spec</A>.  
     
     Points can be an efficient means of storing and rendering particle
     effects comprised of thousands or millions of small particles.  Points
@@ -1844,7 +1844,7 @@ class PointInstancer "PointInstancer" (
     the root of the instance.  When you are authoring primvars on a 
     PointInstancer, think about it as if you were authoring them on a 
     point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-    <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+    <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
     "instance" for "point".
     
     In other words, the (constant) value extracted for each instance

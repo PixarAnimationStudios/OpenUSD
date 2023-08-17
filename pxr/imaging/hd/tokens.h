@@ -285,6 +285,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (points)                                    \
     (sphere)                                    \
     (volume)                                    \
+    (model)
 
 #define HD_SPRIMTYPE_TOKENS                     \
     /* Sprims */                                \
@@ -327,6 +328,9 @@ bool HdPrimTypeIsGprim(TfToken const& primType);
 
 HD_API
 bool HdPrimTypeIsLight(TfToken const& primType);
+
+HD_API
+const TfTokenVector &HdLightPrimTypeTokens();
 
 #define HD_PRIMVAR_ROLE_TOKENS                  \
     ((none, ""))                                \
@@ -436,7 +440,8 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (renderProducts)                                  \
     (includedPurposes)                                \
     (materialBindingPurposes)                         \
-    (renderingColorSpace)
+    (renderingColorSpace)                             \
+    (shutterInterval)
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \

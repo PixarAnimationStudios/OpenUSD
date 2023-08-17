@@ -174,6 +174,7 @@ class DrawModeWidget(QtWidgets.QWidget):
         if currentDrawMode != newDrawModeSelection:
             with self._makeTimer("change model:drawMode on <%s> to %s" % 
                              (self._modelAPI.GetPath(), newDrawModeSelection)):
+                self._modelAPI = UsdGeom.ModelAPI.Apply(self._primViewItem.prim)
                 self._modelAPI.CreateModelDrawModeAttr().Set(
                         newDrawModeSelection)
 

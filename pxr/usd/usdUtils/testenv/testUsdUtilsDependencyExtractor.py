@@ -44,6 +44,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('infile')
     parser.add_argument('outfile', default='-')
+    parser.add_argument('--open-as-anon', dest='openAsAnon', action='store_true')
     args = parser.parse_args()
 
     if not os.path.exists(args.infile):
@@ -52,11 +53,19 @@ if __name__ == '__main__':
 
     # Open layer and turn off edit permission, to validate that the dependency
     # extractor does not require modifying the layer
-    layer = Sdf.Layer.FindOrOpen(args.infile)
-    layer.SetPermissionToEdit(False)
+    if args.openAsAnon:
+        layer = Sdf.Layer.OpenAsAnonymous(args.infile)
+        layer.SetPermissionToEdit(False)
+        identifier = layer.identifier
+
+    else:
+        layer = Sdf.Layer.FindOrOpen(args.infile)
+        layer.SetPermissionToEdit(False)
+        identifier = args.infile
 
     sublayers, references, payloads = \
-        UsdUtils.ExtractExternalReferences(args.infile)
+        UsdUtils.ExtractExternalReferences(identifier)
+
     with stream(args.outfile, 'w') as ofp:
         presult(ofp, args.infile, 'sublayers', sublayers)
         presult(ofp, args.infile, 'references', references)

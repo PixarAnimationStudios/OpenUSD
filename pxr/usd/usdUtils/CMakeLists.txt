@@ -30,6 +30,10 @@ pxr_library(usdUtils
         stitch
         stitchClips
         timeCodeRange
+        usdzPackage
+
+    PRIVATE_CLASSES
+        assetLocalization
 
     PUBLIC_HEADERS
         api.h
@@ -189,6 +193,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencyExtractor
     DEST testUsdUtilsDependencyExtractor4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor5
 )
 
 pxr_install_test_dir(
@@ -478,6 +487,13 @@ pxr_register_test(testUsdUtilsDependencyExtractor4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usd crate-usd.txt"
     DIFF_COMPARE crate-usd.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencyExtractor5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor --open-as-anon anon.usda anon.txt"
+    DIFF_COMPARE anon.txt
     EXPECTED_RETURN_CODE 0
 )
 

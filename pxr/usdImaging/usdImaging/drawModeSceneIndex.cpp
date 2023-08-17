@@ -24,7 +24,8 @@
 #include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
 #include "pxr/usdImaging/usdImaging/drawModeStandin.h"
 
-#include "pxr/imaging/hd/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
+#include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -32,6 +33,19 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace
 {
+
+bool
+_IsUsdNativeInstance(const HdSceneIndexPrim &prim)
+{
+    UsdImagingUsdPrimInfoSchema primInfoSchema =
+        UsdImagingUsdPrimInfoSchema::GetFromParent(prim.dataSource);
+
+    HdPathDataSourceHandle const ds = primInfoSchema.GetNiPrototypePath();
+    if (!ds) {
+        return false;
+    }
+    return !ds->GetTypedValue(0.0f).IsEmpty();
+}
 
 // Resolve draw mode for prim from input scene index.
 // Default draw mode can be expressed by either the empty token
@@ -41,8 +55,17 @@ _GetDrawMode(const HdSceneIndexPrim &prim)
 {
     static const TfToken empty;
 
-    HdModelSchema modelSchema =
-        HdModelSchema::GetFromParent(prim.dataSource);
+    if (_IsUsdNativeInstance(prim)) {
+        // Do not apply draw mode to native instance.
+        // Instead, the native instance prototype propagating scene index
+        // will create a copy of the prototype with the apply draw mode set
+        // and the draw mode scene index processing that prototype applies
+        // the draw mode.
+        return empty;
+    }
+
+    UsdImagingModelSchema modelSchema =
+        UsdImagingModelSchema::GetFromParent(prim.dataSource);
 
     HdBoolDataSourceHandle const applySrc = modelSchema.GetApplyDrawMode();
     if (!applySrc) {
@@ -266,6 +289,7 @@ UsdImagingDrawModeSceneIndex::_PrimsAdded(
             // the PrimsAdded message for that prim was emitted by the
             // UsdImagingStageSceneIndex.
             //
+            _DeleteSubtree(path);
             removedEntries.push_back({path});
 
             // The prim needs to be replaced by stand-in geometry.
@@ -318,10 +342,10 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
     std::set<SdfPath> paths;
 
     static const HdDataSourceLocatorSet drawModeLocators{
-        HdModelSchema::GetDefaultLocator().Append(
-            HdModelSchemaTokens->drawMode),
-        HdModelSchema::GetDefaultLocator().Append(
-            HdModelSchemaTokens->applyDrawMode)};
+        UsdImagingModelSchema::GetDefaultLocator().Append(
+            UsdImagingModelSchemaTokens->drawMode),
+        UsdImagingModelSchema::GetDefaultLocator().Append(
+            UsdImagingModelSchemaTokens->applyDrawMode)};
             
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
         if (drawModeLocators.Intersects(entry.dirtyLocators)) {
@@ -345,6 +369,16 @@ UsdImagingDrawModeSceneIndex::_PrimsDirtied(
                 continue;
             }
             lastPath = SdfPath();
+
+            // Suppress prims from input scene delegate that have an ancestor
+            // with a draw mode.
+            size_t relPathLen;
+            if (UsdImaging_DrawModeStandinSharedPtr standin =
+                _FindStandinForPrimOrAncestor(path, &relPathLen)) {
+                if (relPathLen > 0) {
+                    continue;
+                }
+            }
             
             // Determine new draw mode.
             const HdSceneIndexPrim prim = _GetInputSceneIndex()->GetPrim(path);

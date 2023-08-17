@@ -45,9 +45,27 @@ HdCamera::HdCamera(SdfPath const &id)
   , _focalLength(0.0f)
   , _fStop(0.0f)
   , _focusDistance(0.0f)
+  , _focusOn(false)
+  , _dofAspect(1.0f)
+  , _splitDiopterCount(0)
+  , _splitDiopterAngle(0.0f)
+  , _splitDiopterOffset1(0.0f)
+  , _splitDiopterWidth1(0.0f)
+  , _splitDiopterFocusDistance1(0.0f)
+  , _splitDiopterOffset2(0.0f)
+  , _splitDiopterWidth2(0.0f)
+  , _splitDiopterFocusDistance2(0.0f)
   , _shutterOpen(0.0)
   , _shutterClose(0.0)
   , _exposure(0.0f)
+  , _lensDistortionType(HdCameraTokens->standard)
+  , _lensDistortionK1(0.0f)
+  , _lensDistortionK2(0.0f)
+  , _lensDistortionCenter(0.0f)
+  , _lensDistortionAnaSq(1.0f)
+  , _lensDistortionAsym(0.0f)
+  , _lensDistortionScale(1.0f)
+  , _lensDistortionIor(0.0f)
   , _windowPolicy(CameraUtilFit)
 {
 }
@@ -143,7 +161,79 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
         if (!vFocusDistance.IsEmpty()) {
             _focusDistance = vFocusDistance.Get<float>();
         }
-        
+
+        const VtValue vFocusOn =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->focusOn);
+        if (!vFocusOn.IsEmpty()) {
+            _focusOn = vFocusOn.Get<bool>();
+        }
+
+        const VtValue vDofAspect =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->dofAspect);
+        if (!vDofAspect.IsEmpty()) {
+            _dofAspect = vDofAspect.Get<float>();
+        }
+
+        const VtValue vSplitDiopterCount =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterCount);
+        if (!vSplitDiopterCount.IsEmpty()) {
+            _splitDiopterCount = vSplitDiopterCount.Get<int>();
+        }
+
+        const VtValue vSplitDiopterAngle =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterAngle);
+        if (!vSplitDiopterAngle.IsEmpty()) {
+            _splitDiopterAngle = vSplitDiopterAngle.Get<float>();
+        }
+
+        const VtValue vSplitDiopterOffset1 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterOffset1);
+        if (!vSplitDiopterOffset1.IsEmpty()) {
+            _splitDiopterOffset1 = vSplitDiopterOffset1.Get<float>();
+        }
+
+        const VtValue vSplitDiopterWidth1 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterWidth1);
+        if (!vSplitDiopterWidth1.IsEmpty()) {
+            _splitDiopterWidth1 = vSplitDiopterWidth1.Get<float>();
+        }
+
+        const VtValue vSplitDiopterFocusDistance1 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterFocusDistance1);
+        if (!vSplitDiopterFocusDistance1.IsEmpty()) {
+            _splitDiopterFocusDistance1 =
+                vSplitDiopterFocusDistance1.Get<float>();
+        }
+
+        const VtValue vSplitDiopterOffset2 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterOffset2);
+        if (!vSplitDiopterOffset2.IsEmpty()) {
+            _splitDiopterOffset2 = vSplitDiopterOffset2.Get<float>();
+        }
+
+        const VtValue vSplitDiopterWidth2 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterWidth2);
+        if (!vSplitDiopterWidth2.IsEmpty()) {
+            _splitDiopterWidth2 = vSplitDiopterWidth2.Get<float>();
+        }
+
+        const VtValue vSplitDiopterFocusDistance2 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->splitDiopterFocusDistance2);
+        if (!vSplitDiopterFocusDistance2.IsEmpty()) {
+            _splitDiopterFocusDistance2 =
+                vSplitDiopterFocusDistance2.Get<float>();
+        }
+
         const VtValue vShutterOpen =
             sceneDelegate->GetCameraParamValue(
                 id, HdCameraTokens->shutterOpen);
@@ -163,6 +253,62 @@ HdCamera::Sync(HdSceneDelegate * sceneDelegate,
                 id, HdCameraTokens->exposure);
         if (!vExposure.IsEmpty()) {
             _exposure = vExposure.Get<float>();
+        }
+
+        const VtValue vLensDistortionType =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionType);
+        if (!vLensDistortionType.IsEmpty()) {
+            _lensDistortionType = vLensDistortionType.Get<TfToken>();
+        }
+
+        const VtValue vLensDistortionK1 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionK1);
+        if (!vLensDistortionK1.IsEmpty()) {
+            _lensDistortionK1 = vLensDistortionK1.Get<float>();
+        }
+
+        const VtValue vLensDistortionK2 =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionK2);
+        if (!vLensDistortionK2.IsEmpty()) {
+            _lensDistortionK2 = vLensDistortionK2.Get<float>();
+        }
+
+        const VtValue vLensDistortionCenter =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionCenter);
+        if (!vLensDistortionCenter.IsEmpty()) {
+            _lensDistortionCenter = vLensDistortionCenter.Get<GfVec2f>();
+        }
+
+        const VtValue vLensDistortionAnaSq =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionAnaSq);
+        if (!vLensDistortionAnaSq.IsEmpty()) {
+            _lensDistortionAnaSq = vLensDistortionAnaSq.Get<float>();
+        }
+
+        const VtValue vLensDistortionAsym =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionAsym);
+        if (!vLensDistortionAsym.IsEmpty()) {
+            _lensDistortionAsym = vLensDistortionAsym.Get<GfVec2f>();
+        }
+
+        const VtValue vLensDistortionScale =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionScale);
+        if (!vLensDistortionScale.IsEmpty()) {
+            _lensDistortionScale = vLensDistortionScale.Get<float>();
+        }
+
+        const VtValue vLensDistortionIor =
+            sceneDelegate->GetCameraParamValue(
+                id, HdCameraTokens->lensDistortionIor);
+        if (!vLensDistortionIor.IsEmpty()) {
+            _lensDistortionIor = vLensDistortionIor.Get<float>();
         }
     }
 

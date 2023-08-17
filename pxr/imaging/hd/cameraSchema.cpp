@@ -97,6 +97,69 @@ HdCameraSchema::GetClippingPlanes()
         HdCameraSchemaTokens->clippingPlanes);
 }
 
+HdFloatDataSourceHandle
+HdCameraSchema::GetFStop()
+{
+    return _GetTypedDataSource<HdFloatDataSource>(
+        HdCameraSchemaTokens->fStop);
+}
+
+HdFloatDataSourceHandle
+HdCameraSchema::GetFocusDistance()
+{
+    return _GetTypedDataSource<HdFloatDataSource>(
+        HdCameraSchemaTokens->focusDistance);
+}
+
+HdDoubleDataSourceHandle
+HdCameraSchema::GetShutterOpen()
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdCameraSchemaTokens->shutterOpen);
+}
+
+HdDoubleDataSourceHandle
+HdCameraSchema::GetShutterClose()
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdCameraSchemaTokens->shutterClose);
+}
+
+HdFloatDataSourceHandle
+HdCameraSchema::GetExposure()
+{
+    return _GetTypedDataSource<HdFloatDataSource>(
+        HdCameraSchemaTokens->exposure);
+}
+
+HdBoolDataSourceHandle
+HdCameraSchema::GetFocusOn()
+{
+    return _GetTypedDataSource<HdBoolDataSource>(
+        HdCameraSchemaTokens->focusOn);
+}
+
+HdFloatDataSourceHandle
+HdCameraSchema::GetDofAspect()
+{
+    return _GetTypedDataSource<HdFloatDataSource>(
+        HdCameraSchemaTokens->dofAspect);
+}
+
+HdSplitDiopterSchema
+HdCameraSchema::GetSplitDiopter()
+{
+    return HdSplitDiopterSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdCameraSchemaTokens->splitDiopter));
+}
+
+HdLensDistortionSchema
+HdCameraSchema::GetLensDistortion()
+{
+    return HdLensDistortionSchema(_GetTypedDataSource<HdContainerDataSource>(
+        HdCameraSchemaTokens->lensDistortion));
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdCameraSchema::BuildRetained(
@@ -107,11 +170,20 @@ HdCameraSchema::BuildRetained(
         const HdFloatDataSourceHandle &verticalApertureOffset,
         const HdFloatDataSourceHandle &focalLength,
         const HdVec2fDataSourceHandle &clippingRange,
-        const HdVec4dArrayDataSourceHandle &clippingPlanes
+        const HdVec4dArrayDataSourceHandle &clippingPlanes,
+        const HdFloatDataSourceHandle &fStop,
+        const HdFloatDataSourceHandle &focusDistance,
+        const HdDoubleDataSourceHandle &shutterOpen,
+        const HdDoubleDataSourceHandle &shutterClose,
+        const HdFloatDataSourceHandle &exposure,
+        const HdBoolDataSourceHandle &focusOn,
+        const HdFloatDataSourceHandle &dofAspect,
+        const HdContainerDataSourceHandle &splitDiopter,
+        const HdContainerDataSourceHandle &lensDistortion
 )
 {
-    TfToken names[8];
-    HdDataSourceBaseHandle values[8];
+    TfToken names[17];
+    HdDataSourceBaseHandle values[17];
 
     size_t count = 0;
     if (projection) {
@@ -154,6 +226,51 @@ HdCameraSchema::BuildRetained(
         values[count++] = clippingPlanes;
     }
 
+    if (fStop) {
+        names[count] = HdCameraSchemaTokens->fStop;
+        values[count++] = fStop;
+    }
+
+    if (focusDistance) {
+        names[count] = HdCameraSchemaTokens->focusDistance;
+        values[count++] = focusDistance;
+    }
+
+    if (shutterOpen) {
+        names[count] = HdCameraSchemaTokens->shutterOpen;
+        values[count++] = shutterOpen;
+    }
+
+    if (shutterClose) {
+        names[count] = HdCameraSchemaTokens->shutterClose;
+        values[count++] = shutterClose;
+    }
+
+    if (exposure) {
+        names[count] = HdCameraSchemaTokens->exposure;
+        values[count++] = exposure;
+    }
+
+    if (focusOn) {
+        names[count] = HdCameraSchemaTokens->focusOn;
+        values[count++] = focusOn;
+    }
+
+    if (dofAspect) {
+        names[count] = HdCameraSchemaTokens->dofAspect;
+        values[count++] = dofAspect;
+    }
+
+    if (splitDiopter) {
+        names[count] = HdCameraSchemaTokens->splitDiopter;
+        values[count++] = splitDiopter;
+    }
+
+    if (lensDistortion) {
+        names[count] = HdCameraSchemaTokens->lensDistortion;
+        values[count++] = lensDistortion;
+    }
+
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
@@ -174,7 +291,8 @@ const TfToken &
 HdCameraSchema::GetSchemaToken()
 {
     return HdCameraSchemaTokens->camera;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdCameraSchema::GetDefaultLocator()
@@ -269,6 +387,78 @@ HdCameraSchema::Builder::SetClippingPlanes(
     return *this;
 }
 
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetFStop(
+    const HdFloatDataSourceHandle &fStop)
+{
+    _fStop = fStop;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetFocusDistance(
+    const HdFloatDataSourceHandle &focusDistance)
+{
+    _focusDistance = focusDistance;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetShutterOpen(
+    const HdDoubleDataSourceHandle &shutterOpen)
+{
+    _shutterOpen = shutterOpen;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetShutterClose(
+    const HdDoubleDataSourceHandle &shutterClose)
+{
+    _shutterClose = shutterClose;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetExposure(
+    const HdFloatDataSourceHandle &exposure)
+{
+    _exposure = exposure;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetFocusOn(
+    const HdBoolDataSourceHandle &focusOn)
+{
+    _focusOn = focusOn;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetDofAspect(
+    const HdFloatDataSourceHandle &dofAspect)
+{
+    _dofAspect = dofAspect;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetSplitDiopter(
+    const HdContainerDataSourceHandle &splitDiopter)
+{
+    _splitDiopter = splitDiopter;
+    return *this;
+}
+
+HdCameraSchema::Builder &
+HdCameraSchema::Builder::SetLensDistortion(
+    const HdContainerDataSourceHandle &lensDistortion)
+{
+    _lensDistortion = lensDistortion;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdCameraSchema::Builder::Build()
 {
@@ -280,7 +470,16 @@ HdCameraSchema::Builder::Build()
         _verticalApertureOffset,
         _focalLength,
         _clippingRange,
-        _clippingPlanes
+        _clippingPlanes,
+        _fStop,
+        _focusDistance,
+        _shutterOpen,
+        _shutterClose,
+        _exposure,
+        _focusOn,
+        _dofAspect,
+        _splitDiopter,
+        _lensDistortion
     );
 }
 

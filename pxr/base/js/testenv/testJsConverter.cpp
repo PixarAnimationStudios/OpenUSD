@@ -335,6 +335,20 @@ int main(int argc, char const *argv[])
             indent << "checking null conversion" << std::endl;
             TF_AXIOM(object[p.first].IsNull());
             TF_AXIOM(IsEmpty(p.second));
+        } else if (p.first == "ArrayOfObjects") {
+            indent << "checking array of object conversion" << std::endl;
+            TF_AXIOM(object[p.first].IsArray());
+            TF_AXIOM(object[p.first].Is<JsArray>());
+            const auto arrayOfObjects = object[p.first].Get<JsArray>();
+            TF_AXIOM(arrayOfObjects.size() == 2);
+            TF_AXIOM(arrayOfObjects[0].IsObject());
+            TF_AXIOM(arrayOfObjects[1].IsObject());
+            // Test coverage for equivalence of nested structures
+            const static JsArray EXPECTED = {
+                JsObject({{"String", JsValue{"value1"}}}),
+                JsObject({{"Real", JsValue{5.0}}})
+            };
+            TF_AXIOM(arrayOfObjects == EXPECTED);
         }
     }
 

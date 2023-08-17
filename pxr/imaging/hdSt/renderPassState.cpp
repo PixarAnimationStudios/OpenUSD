@@ -209,21 +209,6 @@ _ComputeDataWindow(
 }
 
 static
-const GfVec3i &
-_GetFramebufferSize(const HgiGraphicsCmdsDesc &desc)
-{
-    for (const HgiTextureHandle &color : desc.colorTextures) {
-        return color->GetDescriptor().dimensions;
-    }
-    if (desc.depthTexture) {
-        return desc.depthTexture->GetDescriptor().dimensions;
-    }
-    
-    static const GfVec3i fallback(0);
-    return fallback;
-}
-
-static
 GfVec4i
 _ToVec4i(const GfVec4f &v)
 {
@@ -232,9 +217,8 @@ _ToVec4i(const GfVec4f &v)
 
 static
 GfVec4i
-_ComputeViewport(const GfRect2i &dataWindow, const GfVec3i &framebufferSize)
+_ComputeViewport(const GfRect2i &dataWindow, unsigned int framebufferHeight)
 {
-    const int framebufferHeight = framebufferSize[1];
     if (framebufferHeight > 0) {
         return GfVec4i(
             dataWindow.GetMinX(),
@@ -248,16 +232,12 @@ _ComputeViewport(const GfRect2i &dataWindow, const GfVec3i &framebufferSize)
 }
 
 GfVec4i
-HdStRenderPassState::ComputeViewport(const HgiGraphicsCmdsDesc &desc) const
+HdStRenderPassState::ComputeViewport() const
 {
-    // TODO: Use _GetFramebufferHeight (using HdRenderBuffer::GetHeight())
-    // instead of _GetFramebufferSize here to be consistent with the above
-    // methods.
-
     const CameraUtilFraming &framing = GetFraming();
     // Use data window for clients using the new camera framing API.
     if (framing.IsValid()) {
-        return _ComputeViewport(framing.dataWindow, _GetFramebufferSize(desc));
+        return _ComputeViewport(framing.dataWindow, _GetFramebufferHeight());
     }
 
     // For clients not using the new camera framing API, fallback

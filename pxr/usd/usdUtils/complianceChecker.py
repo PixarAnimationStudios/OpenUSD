@@ -1031,7 +1031,7 @@ class ComplianceChecker(object):
     def CheckCompliance(self, inputFile):
         from pxr import Sdf, Usd, UsdUtils
         if not Usd.Stage.IsSupportedFile(inputFile):
-            _AddError("Cannot open file '%s' on a USD stage." % args.inputFile)
+            self._AddError("Cannot open file '%s' on a USD stage." % inputFile)
             return
 
         # Collect all warnings using a diagnostic delegate.

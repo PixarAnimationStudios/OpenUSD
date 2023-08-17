@@ -103,11 +103,7 @@ public:
     void SetCamera(
         GfMatrix4d const &worldToViewMatrix,
         GfMatrix4d const &projectionMatrix) override;
-    HDST_API
-    void SetLightingStateFromOpenGL();
-    HDST_API
-    void SetLightingState(GlfSimpleLightingContextPtr const &lightingContext);
-
+    
     GlfSimpleLightingContextRefPtr GetLightingContext() const {
         return _lightingContext;
     };

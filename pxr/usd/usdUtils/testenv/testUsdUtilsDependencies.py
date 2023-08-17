@@ -126,5 +126,20 @@ class TestUsdUtilsDependencies(unittest.TestCase):
                     for f in ["image_d.<UDIM>.exr",
                             "image_e.<UDIM>.exr"]]))
 
+    def test_ComputeAllDependenciesAnonymousLayer(self):
+        """Test for resolving dependencies of anonymous layers"""
+        layer = Sdf.Layer.CreateAnonymous(".usda")
+        Sdf.Layer.CreateAnonymous(".usda").Export("anon_sublayer.usda")
+
+        layer.subLayerPaths.append("anon_sublayer.usda")
+        layer.subLayerPaths.append("unresolved.usda")
+
+        layers, _, unresolved = UsdUtils.ComputeAllDependencies(layer.identifier)
+        self.assertEqual(layers, [
+            Sdf.Layer.Find(layer.identifier), 
+            Sdf.Layer.Find("anon_sublayer.usda")])
+        self.assertEqual(unresolved, ["unresolved.usda"])
+
+
 if __name__=="__main__":
     unittest.main()

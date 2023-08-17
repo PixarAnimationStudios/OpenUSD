@@ -4527,12 +4527,16 @@ SpvReflectResult spvReflectChangeOutputVariableLocation(
 const char* spvReflectSourceLanguage(SpvSourceLanguage source_lang)
 {
   switch (source_lang) {
-    case SpvSourceLanguageUnknown    : return "Unknown";
-    case SpvSourceLanguageESSL       : return "ESSL";
-    case SpvSourceLanguageGLSL       : return "GLSL";
-    case SpvSourceLanguageOpenCL_C   : return "OpenCL_C";
-    case SpvSourceLanguageOpenCL_CPP : return "OpenCL_CPP";
-    case SpvSourceLanguageHLSL       : return "HLSL";
+    case SpvSourceLanguageUnknown        : return "Unknown";
+    case SpvSourceLanguageESSL           : return "ESSL";
+    case SpvSourceLanguageGLSL           : return "GLSL";
+    case SpvSourceLanguageOpenCL_C       : return "OpenCL_C";
+    case SpvSourceLanguageOpenCL_CPP     : return "OpenCL_CPP";
+    case SpvSourceLanguageHLSL           : return "HLSL";
+#if SPV_VERSION == 0x10600
+    case SpvSourceLanguageCPP_for_OpenCL : return "CPP_for_OpenCL";
+    case SpvSourceLanguageSYCL           : return "SYCL";
+#endif
 
     case SpvSourceLanguageMax:
       break;

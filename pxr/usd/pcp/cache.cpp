@@ -113,7 +113,8 @@ PcpCache::PcpCache(
     _layerStackIdentifier(layerStackIdentifier),
     _usd(usd),
     _fileFormatTarget(fileFormatTarget),
-    _layerStackCache(Pcp_LayerStackRegistry::New(_fileFormatTarget, _usd)),
+    _layerStackCache(Pcp_LayerStackRegistry::New(
+        _layerStackIdentifier, _fileFormatTarget, _usd)),
     _primDependencies(new Pcp_Dependencies())
 {
     // Do nothing
@@ -968,6 +969,23 @@ PcpCache::GetDynamicFileFormatArgumentDependencyData(
         primIndexPath);
 }
 
+const SdfPathVector&
+PcpCache::GetPrimsUsingExpressionVariablesFromLayerStack(
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetPrimsUsingExpressionVariablesFromLayerStack(
+        layerStack);
+}
+
+const std::unordered_set<std::string>& 
+PcpCache::GetExpressionVariablesFromLayerStackUsedByPrim(
+    const SdfPath &primIndexPath,
+    const PcpLayerStackPtr &layerStack) const
+{
+    return _primDependencies->GetExpressionVariablesFromLayerStackUsedByPrim(
+        primIndexPath, layerStack);
+}
+
 void
 PcpCache::Apply(const PcpCacheChanges& changes, PcpLifeboat* lifeboat)
 {
@@ -1551,7 +1569,8 @@ struct PcpCache::_ParallelIndexer
         _cache->_primDependencies->Add(
             *mutableIndex, 
             std::move(outputItem.second.culledDependencies),
-            std::move(outputItem.second.dynamicFileFormatDependency));
+            std::move(outputItem.second.dynamicFileFormatDependency),
+            std::move(outputItem.second.expressionVariablesDependency));
         return mutableIndex;
     }
                      
@@ -1688,7 +1707,8 @@ PcpCache::_ComputePrimIndexWithCompatibleInputs(
     _primDependencies->Add(
         outputs.primIndex, 
         std::move(outputs.culledDependencies),
-        std::move(outputs.dynamicFileFormatDependency));
+        std::move(outputs.dynamicFileFormatDependency),
+        std::move(outputs.expressionVariablesDependency));
 
     // Update _includedPayloads if we included a discovered payload.
     if (outputs.payloadState == PcpPrimIndexOutputs::IncludedByPredicate) {

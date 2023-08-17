@@ -40,6 +40,17 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 using PredExpr = SdfPredicateExpression;
 
+static std::string
+_Repr(SdfPredicateExpression const &self) {
+    if (!self) {
+        return TF_PY_REPR_PREFIX + "PredicateExpression()";
+    }
+    else {
+        return std::string(TF_PY_REPR_PREFIX + "PredicateExpression(")
+            + TfPyRepr(self.GetText()) + ")";
+    }
+}
+                           
 void wrapPredicateExpression()
 {
     TfPyFunctionFromPython<void (PredExpr::Op, int)> {};
@@ -75,10 +86,15 @@ void wrapPredicateExpression()
                  return expr.Walk(logic, call);
              }, (arg("logic"), arg("call")))
 
-        .def("GetDebugString", &PredExpr::GetDebugString)
+        .def("GetText", &PredExpr::GetText)
 
         .def("IsEmpty", &PredExpr::IsEmpty)
         .def("__bool__", &PredExpr::operator bool)
+        .def("__repr__", &_Repr)
+        .def("__str__", &PredExpr::GetText)
+        .def("__hash__", +[](PredExpr const &e) { return TfHash{}(e); })
+        .def(self == self)
+        .def(self != self)
 
         .def("GetParseError",
              static_cast<std::string const &(PredExpr::*)() const &>(
@@ -94,6 +110,10 @@ void wrapPredicateExpression()
             .def_readwrite("kind", &PredExpr::FnCall::kind)
             .def_readwrite("funcName", &PredExpr::FnCall::funcName)
             .def_readwrite("args", &PredExpr::FnCall::args)
+            .def("__hash__",
+                 +[](PredExpr::FnCall const &c) { return TfHash{}(c); })
+            .def(self == self)
+            .def(self != self)
             ;
         TfPyWrapEnum<PredExpr::FnCall::Kind>();
     }
@@ -113,6 +133,9 @@ void wrapPredicateExpression()
                           arg.value = val;
                       }
             )
+        .def("__hash__", +[](PredExpr::FnArg const &a) { return TfHash{}(a); })
+        .def(self == self)
+        .def(self != self)
         ;
 
     class_<std::vector<PredExpr::FnArg>>("_PredicateExpressionFnArgVector")

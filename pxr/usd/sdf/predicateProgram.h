@@ -61,13 +61,16 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
 /// The main public interface this class exposes is the function-call
 /// operator(), accepting a single argument of type `DomainType`, as it is
 /// specified to the template.  Consider using `const Type &` as the
-/// `DomainType`/// for both SdfPredicateProgram and SdfPredicateLibrary if it's
+/// `DomainType` for both SdfPredicateProgram and SdfPredicateLibrary if it's
 /// important that domain type instances aren't passed by-value.
 ///
 template <class DomainType>
 class SdfPredicateProgram
 {
 public:
+    using PredicateFunction =
+        typename SdfPredicateLibrary<DomainType>::PredicateFunction;
+    
     friend SdfPredicateProgram
     SdfLinkPredicateExpression<DomainType>(
         SdfPredicateExpression const &expr,
@@ -79,13 +82,31 @@ public:
     }
 
     /// Run the predicate program on \p obj, and return the result.
-    bool
-    operator()(DomainType obj) const {
-        bool result = false;
+    SdfPredicateFunctionResult
+    operator()(DomainType const &obj) const {
+        SdfPredicateFunctionResult result =
+            SdfPredicateFunctionResult::MakeConstant(false);
         int nest = 0;
         auto funcIter = _funcs.cbegin();
         auto opIter = _ops.cbegin(), opEnd = _ops.cend();
 
+        // The current implementation favors short-circuiting over constance
+        // propagation.  It might be beneficial to avoid short-circuiting when
+        // constancy isn't known, in hopes of establishing constancy.  For
+        // example, if we have 'A or B', and 'A' evaluates to 'true' with
+        // MayVaryOverDescendants, we will skip evaluating B
+        // (short-circuit). This means we would miss the possibility of
+        // upgrading the constancy in case B returned 'true' with
+        // ConstantOverDescendants.  This isn't a simple switch to flip though;
+        // we'd have to do some code restructuring here.
+        //
+        // For posterity, the rules for propagating constancy are the following,
+        // where A and B are the truth-values, and c(A), c(B), are whether or
+        // not the constancy is ConstantOverDescendants for A, B, respectively:
+        //
+        // c(A  or B) =  (A and c(A)) or  (B and c(B)) or (c(A) and c(B))
+        // c(A and B) = (!A and c(A)) or (!B and c(B)) or (c(A) and c(B))
+        
         // Helper for short-circuiting "and" and "or" operators.  Advance,
         // ignoring everything until we reach the next Close that brings us to
         // the starting nest level.
@@ -109,7 +130,9 @@ public:
         // invoking predicate functions.
         for (; opIter != opEnd; ++opIter) {
             switch (*opIter) {
-            case Call: result = static_cast<bool>((*funcIter++)(obj)); break;
+            case Call:
+                result.SetAndPropagateConstancy((*funcIter++)(obj));
+                break;
             case Not: result = !result; break;
             case And: case Or: {
                 const bool decidingValue = *opIter != And;
@@ -130,7 +153,7 @@ public:
 private:
     enum _Op { Call, Not, Open, Close, And, Or };
     std::vector<_Op> _ops;
-    std::vector<std::function<SdfPredicateFunctionResult (DomainType)>> _funcs;
+    std::vector<PredicateFunction> _funcs;
 };
 
 
@@ -145,9 +168,9 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
     using Expr = SdfPredicateExpression;
     using Program = SdfPredicateProgram<DomainType>;
     
-    SdfPredicateProgram<DomainType> prog;
     // Walk expr and populate prog, binding calls with lib.
 
+    Program prog;
     std::string errs;
 
     auto exprToProgramOp = [](Expr::Op op) {
@@ -170,11 +193,7 @@ SdfLinkPredicateExpression(SdfPredicateExpression const &expr,
         case Expr::ImpliedAnd: // Binary logic ops are infix to facilitate
         case Expr::And:        // short-circuiting.
         case Expr::Or:
-            if (argIndex == 0) {
-                prog._ops.push_back(Program::Open);
-            }
-            else if (argIndex == 1) {
-                prog._ops.push_back(Program::Close);
+            if (argIndex == 1) {
                 prog._ops.push_back(exprToProgramOp(op));
                 prog._ops.push_back(Program::Open);
             }

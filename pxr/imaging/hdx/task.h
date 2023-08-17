@@ -86,6 +86,19 @@ protected:
     HDX_API
     void _ToggleRenderTarget(HdTaskContext* ctx);
 
+    // Swaps the depth target and depthIntermediate target.
+    // This is used when a task wishes to read from the depth and also write
+    // to it. We use two depth targets and ping-pong between them.
+    HDX_API
+    void _ToggleDepthTarget(HdTaskContext* ctx);
+
+    // Helper function to facilitate texture ping-ponging.
+    HDX_API
+    void _SwapTextures(
+        HdTaskContext* ctx,
+        const TfToken& textureToken,
+        const TfToken& textureIntermediateToken);
+
     // Return pointer to Hydra Graphics Interface.
     HDX_API
     Hgi* _GetHgi() const;

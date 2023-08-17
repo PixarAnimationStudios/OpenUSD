@@ -16,6 +16,7 @@ pxr_library(hdsi
         pxOsd
 
     PUBLIC_CLASSES
+        coordSysPrimSceneIndex
         extComputationPrimvarPruningSceneIndex
         implicitSurfaceSceneIndex
         legacyDisplayStyleOverrideSceneIndex
@@ -23,6 +24,7 @@ pxr_library(hdsi
         materialPrimvarTransferSceneIndex
         nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex
+        primTypePruningSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
 

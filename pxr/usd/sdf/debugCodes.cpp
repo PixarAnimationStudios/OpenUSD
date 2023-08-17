@@ -39,8 +39,8 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(
         SDF_LAYER, "Sdf layer loading and lifetime");
     TF_DEBUG_ENVIRONMENT_SYMBOL(
-        SDF_STAGE_VARIABLE_EXPRESSION_PARSING, 
-        "Sdf stage variable expression parsing");
+        SDF_VARIABLE_EXPRESSION_PARSING, 
+        "Sdf variable expression parsing");
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

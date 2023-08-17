@@ -1042,6 +1042,23 @@ public:
     SDF_API
     void ClearCustomLayerData();
 
+    /// Returns the expression variables dictionary authored on this layer.
+    /// See \ref Sdf_Page_VariableExpressions for more details.
+    SDF_API
+    VtDictionary GetExpressionVariables() const;
+    
+    /// Sets the expression variables dictionary for this layer.
+    SDF_API
+    void SetExpressionVariables(const VtDictionary& expressionVars);
+
+    /// Returns true if expression variables are authored on this layer.
+    SDF_API
+    bool HasExpressionVariables() const;
+
+    /// Clears the expression variables dictionary authored on this layer.
+    SDF_API
+    void ClearExpressionVariables();
+
     /// @}
     /// \name Prims
     /// @{
@@ -1613,7 +1630,7 @@ private:
     // reference itself internally without being susceptible to a race.)
     bool _WaitForInitializationAndCheckIfSuccessful();
 
-    // Returns whether or not this menv layer should post change 
+    // Returns whether or not this layer should post change 
     // notification.  This simply returns (!_GetIsLoading())
     bool _ShouldNotify() const;
 

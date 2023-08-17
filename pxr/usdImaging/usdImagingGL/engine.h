@@ -77,6 +77,7 @@ TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingRootOverridesSceneIndex);
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiLegacyDisplayStyleOverrideSceneIndex);
+TF_DECLARE_REF_PTRS(HdsiPrimTypePruningSceneIndex);
 TF_DECLARE_REF_PTRS(HdsiSceneGlobalsSceneIndex);
 TF_DECLARE_REF_PTRS(HdSceneIndexBase);
 
@@ -715,6 +716,10 @@ private:
         const std::string &renderInstanceId,
         const HdSceneIndexBaseRefPtr &inputScene,
         const HdContainerDataSourceHandle &inputArgs);
+
+    HdSceneIndexBaseRefPtr
+    _AppendOverridesSceneIndices(
+        const HdSceneIndexBaseRefPtr &inputScene);
     
     UsdImagingGLEngine_Impl::_AppSceneIndicesSharedPtr _appSceneIndices;
 
@@ -726,6 +731,8 @@ private:
     UsdImagingSelectionSceneIndexRefPtr _selectionSceneIndex;
     UsdImagingRootOverridesSceneIndexRefPtr _rootOverridesSceneIndex;
     HdsiLegacyDisplayStyleOverrideSceneIndexRefPtr _displayStyleSceneIndex;
+    HdsiPrimTypePruningSceneIndexRefPtr _materialPruningSceneIndex;
+    HdsiPrimTypePruningSceneIndexRefPtr _lightPruningSceneIndex;
     HdSceneIndexBaseRefPtr _sceneIndex;
     
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;

@@ -153,4 +153,4 @@ html_js_files = [
 
 html_sidebars = { '**': ['globaltoc.html', 'relations.html', 'sourcelink.html', 'searchbox.html'] }
 
-html_favicon = 'https://graphics.pixar.com/usd/images/USDIcon.ico'
+html_favicon = 'https://openusd.org/images/USDIcon.ico'

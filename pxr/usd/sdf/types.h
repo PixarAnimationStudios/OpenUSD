@@ -33,6 +33,7 @@
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/opaqueValue.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/usd/sdf/valueTypeName.h"
 
@@ -58,7 +59,6 @@
 #include "pxr/base/gf/vec4h.h"
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/enum.h"
-#include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
@@ -68,7 +68,6 @@
 
 #include <boost/preprocessor/list/for_each.hpp>
 #include <boost/preprocessor/list/size.hpp>
-#include <boost/preprocessor/punctuation/comma.hpp>
 #include <boost/preprocessor/selection/max.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/seq.hpp>
@@ -340,21 +339,22 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 // When doing so, the type must be declared using the SDF_DECLARE_VALUE_TYPE
 // macro below. The type must also be registered in the associated schema using
 // SdfSchema::_RegisterValueType(s).
-#define _SDF_SCALAR_VALUE_TYPES                        \
-    ((Bool,       bool,       bool,           ()    )) \
-    ((UChar,      uchar,      unsigned char,  ()    )) \
-    ((Int,        int,        int,            ()    )) \
-    ((UInt,       uint,       unsigned int,   ()    )) \
-    ((Int64,      int64,      int64_t,        ()    )) \
-    ((UInt64,     uint64,     uint64_t,       ()    )) \
-    ((Half,       half,       GfHalf,         ()    )) \
-    ((Float,      float,      float,          ()    )) \
-    ((Double,     double,     double,         ()    )) \
-    ((TimeCode,   timecode,   SdfTimeCode,    ()    )) \
-    ((String,     string,     std::string,    ()    )) \
-    ((Token,      token,      TfToken,        ()    )) \
-    ((Asset,      asset,      SdfAssetPath,   ()    )) \
-    ((Opaque,     opaque,     SdfOpaqueValue, ()    ))
+#define _SDF_SCALAR_VALUE_TYPES                                \
+    ((Bool,           bool,           bool,              () )) \
+    ((UChar,          uchar,          unsigned char,     () )) \
+    ((Int,            int,            int,               () )) \
+    ((UInt,           uint,           unsigned int,      () )) \
+    ((Int64,          int64,          int64_t,           () )) \
+    ((UInt64,         uint64,         uint64_t,          () )) \
+    ((Half,           half,           GfHalf,            () )) \
+    ((Float,          float,          float,             () )) \
+    ((Double,         double,         double,            () )) \
+    ((TimeCode,       timecode,       SdfTimeCode,       () )) \
+    ((String,         string,         std::string,       () )) \
+    ((Token,          token,          TfToken,           () )) \
+    ((Asset,          asset,          SdfAssetPath,      () )) \
+    ((Opaque,         opaque,         SdfOpaqueValue,    () )) \
+    ((PathExpression, pathExpression, SdfPathExpression, () ))
 
 #define _SDF_DIMENSIONED_VALUE_TYPES                   \
     ((Matrix2d,   matrix2d,   GfMatrix2d,     (2,2) )) \
@@ -484,8 +484,7 @@ std::ostream &VtStreamOut(const SdfVariantSelectionMap &, std::ostream &);
 /// well as limited inspection and editing capabilities (e.g., moving
 /// this data to a different spec or field) even when the data type
 /// of the value isn't known.
-class SdfUnregisteredValue : 
-    public boost::equality_comparable<SdfUnregisteredValue>
+class SdfUnregisteredValue
 {
 public:
     /// Wraps an empty VtValue
@@ -512,6 +511,9 @@ public:
 
     /// Returns true if the wrapped VtValues are equal
     SDF_API bool operator==(const SdfUnregisteredValue &other) const;
+
+    /// Returns true if the wrapped VtValues are not equal
+    SDF_API bool operator!=(const SdfUnregisteredValue &other) const;
 
 private:
     VtValue _value;
@@ -544,6 +546,7 @@ public:
     SdfValueTypeName TexCoord3h, TexCoord3f, TexCoord3d;
     SdfValueTypeName Opaque;
     SdfValueTypeName Group;
+    SdfValueTypeName PathExpression;
 
     SdfValueTypeName BoolArray;
     SdfValueTypeName UCharArray, IntArray, UIntArray, Int64Array, UInt64Array;
@@ -563,6 +566,7 @@ public:
     SdfValueTypeName Frame4dArray;
     SdfValueTypeName TexCoord2hArray, TexCoord2fArray, TexCoord2dArray;
     SdfValueTypeName TexCoord3hArray, TexCoord3fArray, TexCoord3dArray;
+    SdfValueTypeName PathExpressionArray;
 
     SDF_API ~Sdf_ValueTypeNamesType();
     struct _Init {

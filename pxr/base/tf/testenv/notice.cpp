@@ -31,8 +31,6 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/arch/systemInfo.h"
 
-#include <boost/function.hpp>
-
 #include <chrono>
 #include <cstdio>
 #include <iostream>

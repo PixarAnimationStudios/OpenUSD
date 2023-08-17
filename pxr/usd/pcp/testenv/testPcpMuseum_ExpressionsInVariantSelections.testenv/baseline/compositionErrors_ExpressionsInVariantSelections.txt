@@ -1,0 +1,5 @@
+------------------------------------------------------------------------
+Errors while composing </BadExpressionInSelection>
+
+Error evaluating expression `'${BAD_SYNTAX'` for variant at /BadExpressionInSelection in @ExpressionsInVariantSelections/root.sdf@: Missing ending '}' at character 14
+

@@ -106,11 +106,13 @@ if ',' in modules:
     # Loop through module list and create a Writer for each module to 
     # load and generate the doc strings for the specific module
     for moduleName in moduleList:
+        if not moduleName:
+            continue
         writer = Writer(packageName, moduleName)
         # Parser.traverse builds the docElement tree for all the 
         # doxygen XML files, so we only need to call it once if we're
         # processing multiple modules
-        if (docList == None):
+        if (docList is None):
             docList = parser.traverse(writer)
             Debug("Processed %d DocElements from doxygen XML" % len(docList))
         Debug("Processing module %s" % moduleName)
@@ -120,8 +122,12 @@ if ',' in modules:
         module_output_file = os.path.join(module_output_dir, "__DOC.py")
         writer.generate(module_output_file, docList)
 else:
+    moduleName = modules
     # Processing a single module. Writer's constructor will sanity
     # check module and verify it can be loaded
-    writer = Writer()
+    if not output_file.endswith(".py"):
+        module_output_dir = os.path.join(output_file, moduleName)
+        output_file = os.path.join(module_output_dir, "__DOC.py")
+    writer = Writer(packageName, moduleName)
     docList = parser.traverse(writer)
     writer.generate(output_file, docList)

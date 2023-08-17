@@ -52,29 +52,6 @@ class Writer:
     # we can combine property docstrings for getters/setters.
     propertyTable = {}
 
-    # Default constructor that assumes we're processing a single module
-    def __init__(self):
-        #
-        # Parse the extra arguments required by this plugin
-        #
-        project = GetArgValue(['--package', '-p'])
-        package = GetArgValue(['--module', '-m'])
-
-        if not project:
-            Error("Required option --package not specified")
-        if not package:
-            Error("Required option --module not specified")
-
-        # Import the python module that these docs pertain to
-        if not Import("from " +project+ " import " +package+ " as " +package):
-            Error("Could not import %s" % (package))
-
-        self.module = eval(package)
-        self.prefix = self.module.__name__.split('.')[-1]
-        self.seenPaths = {}
-
-    # Constructor that takes package and module name, used when processing 
-    # a list of modules
     def __init__(self, packageName, moduleName):
 
         # Import the python module 
@@ -295,11 +272,14 @@ class Writer:
         if len(lines) == 1:
             lines.append("    pass")
 
+        outputDir = os.path.split(output_file)[0]
+        if not os.path.exists(outputDir):
+            os.makedirs(outputDir)
+
         # output the lines to disk...
         try:
-            logfile = open(output_file, 'w')
-            logfile.write('\n'.join(lines))
-            logfile.close()
+            with open(output_file, 'w') as logfile:
+                logfile.write('\n'.join(lines))
         except:
             Error("Could not write to file: %s" % output_file)
 
@@ -502,11 +482,14 @@ class Writer:
         if doxy.isFunction():
             cnt = 1;
             pnames = []
-            for ptype, pname in doxy.params:
+            for ptype, pname, pdefault in doxy.params:
                 if len(pname):
-                    pnames.append(pname)
+                    arg = pname
                 else:
-                    pnames.append('arg%s' % cnt)
+                    arg = 'arg%s' % cnt
+                if pdefault is not None:
+                    arg += '=...'
+                pnames.append(arg)
                 cnt += 1
             sig = '('+', '.join(pnames)+')'
             retType = self.__convertTypeName(doxy.returnType)
@@ -520,7 +503,7 @@ class Writer:
         if doxy.isFunction():
             cnt = 0
             lines = []
-            for ptype, pname in doxy.params:
+            for ptype, pname, pdefault in doxy.params:
                 cnt += 1
                 if not len(pname):
                     pname = 'arg%s' % cnt
@@ -593,11 +576,11 @@ class Writer:
         
         if len(overloads) == 1:
             lines += self.__getFullDoc(pyname, pyobj, overloads[0])
-            if overloads[0].static == 'yes':
+            if overloads[0].isStatic():
                 docString = LABEL_STATIC # set the return type to static
         else:
             for doxy in overloads:
-                if doxy.static == 'yes':
+                if doxy.isStatic():
                     docString = LABEL_STATIC # set the return type to static
                     
                 desc = self.__getFullDoc(pyname, pyobj, doxy)

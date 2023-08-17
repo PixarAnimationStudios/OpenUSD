@@ -244,8 +244,10 @@ GetShowThroughOpacity()
 // Input AOV textures are provided by the task.
 void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 {
+    color.rgb *= color.a;
+
     if (HasOccludedSelection(gl_FragCoord.xy)) {
-        color.a = GetShowThroughOpacity();
+        color.a *= GetShowThroughOpacity();
     }
 
     colorOut = color;

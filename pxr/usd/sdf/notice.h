@@ -170,7 +170,7 @@ public:
     
     /// \class LayerDidReplaceContent
     ///
-    /// Sent after a menv layer has been loaded from a file.
+    /// Sent after a layer has been loaded from a file.
     ///
     class LayerDidReplaceContent : public Base {
     public:

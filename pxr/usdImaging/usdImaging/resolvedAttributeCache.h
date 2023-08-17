@@ -728,7 +728,8 @@ struct UsdImaging_MaterialStrategy {
                 &implData->GetBindingsCache(), 
                 &implData->GetCollectionQueryCache(),
                 implData->GetMaterialPurpose(),
-                &bindingRel);
+                &bindingRel,
+                true /*supportLegacyBindings*/);
 
         if (materialPrim) {
             return materialPrim.GetPath();

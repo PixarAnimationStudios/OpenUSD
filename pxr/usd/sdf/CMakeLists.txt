@@ -48,6 +48,8 @@ pxr_library(sdf
         notice
         opaqueValue
         path
+        pathExpression
+        pathExpressionEval
         pathNode
         pathTable
         payload
@@ -66,12 +68,12 @@ pxr_library(sdf
         siteUtils
         spec
         specType
-        stageVariableExpression
         textFileFormat
         timeCode
         tokens
         types
         valueTypeName
+        variableExpression
         variantSetSpec
         variantSpec
 
@@ -111,11 +113,11 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
-        stageVariableExpressionImpl
-        stageVariableExpressionParser
         subLayerListEditor
         textParserContext
         valueTypeRegistry
+        variableExpressionImpl
+        variableExpressionParser
         vectorListEditor
 
     PRIVATE_HEADERS
@@ -147,6 +149,7 @@ pxr_library(sdf
         wrapNotice.cpp
         wrapOpaqueValue.cpp
         wrapPath.cpp
+        wrapPathExpression.cpp
         wrapPayload.cpp
         wrapPredicateExpression.cpp
         wrapPrimSpec.cpp
@@ -155,7 +158,7 @@ pxr_library(sdf
         wrapRelationshipSpec.cpp
         wrapReference.cpp
         wrapSpec.cpp
-        wrapStageVariableExpression.cpp
+        wrapVariableExpression.cpp
         wrapTimeCode.cpp
         wrapTypes.cpp
         wrapValueTypeName.cpp
@@ -171,7 +174,7 @@ pxr_library(sdf
     DOXYGEN_FILES
         overview.dox
         doxygen/fileFormatPlugin.dox
-        doxygen/stageVariableExpressions.dox
+        doxygen/variableExpressions.dox
 )
 
 # Validate that the checked in generated code matches the sources. This requires
@@ -198,6 +201,7 @@ else()
 endif()
 
 pxr_test_scripts(
+    testenv/testSdfAssetPath.py
     testenv/testSdfAttribute.py
     testenv/testSdfAttributeBlocking.py
     testenv/testSdfBatchNamespaceEdit.py
@@ -217,9 +221,10 @@ pxr_test_scripts(
     testenv/testSdfPrim.py
     testenv/testSdfReference.py
     testenv/testSdfSpecHash.py
-    testenv/testSdfStageVariableExpression.py
     testenv/testSdfTimeCode.py
     testenv/testSdfTypes.py
+    testenv/testSdfVariableExpression.py
+    testenv/testSdfVariants.py
 )
 
 pxr_build_test_shared_lib(TestSdfFileFormatCapabilities
@@ -306,6 +311,13 @@ pxr_build_test(testSdfMetaDataPlugInfo
         testenv/testSdfMetaDataPlugInfo.cpp
 )
 
+pxr_build_test(testSdfPathExpression_Cpp
+    LIBRARIES
+        sdf
+    CPPFILES
+        testenv/testSdfPathExpression.cpp
+)
+
 pxr_build_test(testSdfPathParser
     LIBRARIES
         sdf
@@ -369,6 +381,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
+)
+
+pxr_register_test(testSdfAssetPath
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfAssetPath"
 )
 
 pxr_register_test(testSdfAttribute
@@ -458,6 +475,10 @@ pxr_register_test(testSdfMetaDataPlugInfo
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfMetaDataPlugInfo"
 )
 
+pxr_register_test(testSdfPathExpression_Cpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPathExpression_Cpp"
+)
+
 pxr_register_test(testSdfParsing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
@@ -514,10 +535,6 @@ pxr_register_test(testSdfSpecHash
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfSpecHash"
 )
-pxr_register_test(testSdfStageVariableExpression
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfStageVariableExpression"
-)
 pxr_register_test(testSdfTimeCode
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTimeCode"
@@ -525,4 +542,12 @@ pxr_register_test(testSdfTimeCode
 pxr_register_test(testSdfTypes
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTypes"
+)
+pxr_register_test(testSdfVariableExpression
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariableExpression"
+)
+pxr_register_test(testSdfVariants
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfVariants"
 )

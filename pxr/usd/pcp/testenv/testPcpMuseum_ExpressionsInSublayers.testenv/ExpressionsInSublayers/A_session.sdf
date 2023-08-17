@@ -1,0 +1,13 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string C = "D"
+    }
+    subLayers = [
+        @`"${C}_session.sdf"`@
+    ]
+)
+
+over "Root"
+{
+}

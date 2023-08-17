@@ -1,0 +1,28 @@
+Loading session @ExpressionsInSublayers/session.sdf@
+
+Loading @ExpressionsInSublayers/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     session.sdf
+     A_session.sdf
+     C_session.sdf
+     B_session.sdf
+     root.sdf
+     A.sdf
+     C.sdf
+     B.sdf
+
+------------------------------------------------------------------------
+Results for composing </Root>
+
+Prim Stack:
+    session.sdf          /Root
+    A_session.sdf        /Root
+    C_session.sdf        /Root
+    B_session.sdf        /Root
+    root.sdf             /Root
+    A.sdf                /Root
+    C.sdf                /Root
+    B.sdf                /Root
+

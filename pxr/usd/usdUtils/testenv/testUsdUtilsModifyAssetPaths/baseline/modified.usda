@@ -16,6 +16,8 @@ def Xform "Model" (
             asset[] bar = [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@]
             asset foo = @SUCCESS_foo.usd@
         }
+        dictionary emptyDict = {
+        }
         asset foo = @SUCCESS_foo.usd@
     }
     payload = [
@@ -31,6 +33,7 @@ def Xform "Model" (
 )
 {
     asset[] bar = [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@]
+    asset[] emptyArr = []
     asset foo = @SUCCESS_foo.usd@
     asset[] varBar.timeSamples = {
         1: [@SUCCESS_foo.usd@, @SUCCESS_bar.usd@],

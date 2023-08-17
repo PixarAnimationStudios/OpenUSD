@@ -53,8 +53,10 @@ pxr_library(usdImaging
         drawModeAdapter
         drawModeSceneIndex
         extentResolvingSceneIndex
+        extentsHintSchema
         indexProxy
         materialParamUtils
+        modelSchema
         primvarUtils
         resolvedAttributeCache
         instancerContext
@@ -76,7 +78,10 @@ pxr_library(usdImaging
         distantLightAdapter
         domeLightAdapter
         fieldAdapter
+        flattenedDataSourceProviders
+        flattenedModelDataSourceProvider
         geometryLightAdapter
+        geomModelAPIAdapter
         gprimAdapter
         hermiteCurvesAdapter
         implicitSurfaceMeshUtils
@@ -112,6 +117,7 @@ pxr_library(usdImaging
         renderVarAdapter
         representedByAncestorPrimAdapter
         rerootingSceneIndex
+        sceneIndices
         sphereAdapter
         sphereLightAdapter
         textureUtils

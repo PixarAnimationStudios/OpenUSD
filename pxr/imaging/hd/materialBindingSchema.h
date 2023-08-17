@@ -40,8 +40,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 //-----------------------------------------------------------------------------
 
 #define HDMATERIALBINDING_SCHEMA_TOKENS \
-    (materialBinding) \
-    ((allPurpose, "")) \
+    (path) \
+    (bindingStrength) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens, HD_API,
     HDMATERIALBINDING_SCHEMA_TOKENS);
@@ -54,38 +54,51 @@ public:
     HdMaterialBindingSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
+    //ACCESSORS
+
+    HD_API
+    HdPathDataSourceHandle GetPath();
+    HD_API
+    HdTokenDataSourceHandle GetBindingStrength();
+
+    // RETRIEVING AND CONSTRUCTING
+
+    /// Builds a container data source which includes the provided child data
+    /// sources. Parameters with nullptr values are excluded. This is a
+    /// low-level interface. For cases in which it's desired to define
+    /// the container with a sparse set of child fields, the Builder class
+    /// is often more convenient and readable.
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        size_t count,
-        TfToken *names,
-        HdDataSourceBaseHandle *values);
+        const HdPathDataSourceHandle &path,
+        const HdTokenDataSourceHandle &bindingStrength
+    );
 
-    HD_API
-    HdPathDataSourceHandle GetMaterialBinding();
-    
-    HD_API
-    HdPathDataSourceHandle GetMaterialBinding(TfToken const &purpose);
+    /// \class HdMaterialBindingSchema::Builder
+    /// 
+    /// Utility class for setting sparse sets of child data source fields to be
+    /// filled as arguments into BuildRetained. Because all setter methods
+    /// return a reference to the instance, this can be used in the "builder
+    /// pattern" form.
+    class Builder
+    {
+    public:
+        HD_API
+        Builder &SetPath(
+            const HdPathDataSourceHandle &path);
+        HD_API
+        Builder &SetBindingStrength(
+            const HdTokenDataSourceHandle &bindingStrength);
 
+        /// Returns a container data source containing the members set thus far.
+        HD_API
+        HdContainerDataSourceHandle Build();
 
-    /// Retrieves a container data source with the schema's default name token
-    /// "materialBinding" from the parent container and constructs a
-    /// HdMaterialBindingSchema instance.
-    /// Because the requested container data source may not exist, the result
-    /// should be checked with IsDefined() or a bool comparison before use.
-    HD_API
-    static HdMaterialBindingSchema GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer);
-
-    /// Returns a token where the container representing this schema is found in
-    /// a container by default.
-    HD_API
-    static const TfToken &GetSchemaToken();
-
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the container representing this schema is found by default.
-    HD_API
-    static const HdDataSourceLocator &GetDefaultLocator();
+    private:
+        HdPathDataSourceHandle _path;
+        HdTokenDataSourceHandle _bindingStrength;
+    };
 
 };
 

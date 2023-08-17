@@ -224,6 +224,30 @@ _TestRandomAccessOperations(IteratorType first, IteratorType last)
     }
 }
 
+// Ensure that using increment/decrement operators and std::prev / std::next
+// produce symmetrical results
+template <class IteratorType>
+static void
+_TestIncrementAndAdvanceSymmetry(IteratorType first, IteratorType last)
+{
+    TF_AXIOM(first != last);
+    TF_AXIOM(std::distance(first, last) > 2);
+
+    IteratorType byIncrement = first;
+    ++byIncrement;
+    ++byIncrement;
+    --byIncrement;
+
+    IteratorType byAdvance = std::prev(std::next(first, 2));
+
+    TF_AXIOM(std::distance(first, byIncrement) == 1);
+    TF_AXIOM(std::distance(first, byAdvance) == 1);
+    TF_AXIOM(std::distance(byIncrement, first) == -1);
+    TF_AXIOM(std::distance(byAdvance, first) == -1);
+    TF_AXIOM(std::distance(byAdvance, byIncrement) == 0);
+    TF_AXIOM(byIncrement == byAdvance);
+}
+
 static std::unique_ptr<PcpCache>
 _CreateCacheForRootLayer(const std::string& rootLayerPath)
 {
@@ -294,6 +318,27 @@ main(int argc, char** argv)
 
         const PcpPropertyRange propRange = propIndex.GetPropertyRange();
         _TestComparisonOperations(propRange.first, propRange.second);
+    }
+
+    std::cout << "Testing Increment / Advance Symmetry" << std::endl;
+    {
+        PcpErrorVector errors;
+        const PcpPrimIndex& primIndex =
+            cache->ComputePrimIndex(SdfPath("/Model"), &errors);
+        PcpRaiseErrors(errors);
+
+        const PcpNodeRange nodeRange = primIndex.GetNodeRange();
+        _TestIncrementAndAdvanceSymmetry(nodeRange.first, nodeRange.second);
+
+        const PcpPrimRange primRange = primIndex.GetPrimRange();
+        _TestIncrementAndAdvanceSymmetry(primRange.first, primRange.second);
+
+        const PcpPropertyIndex& propIndex =
+            cache->ComputePropertyIndex(SdfPath("/Model.a"), &errors);
+        PcpRaiseErrors(errors);
+
+        const PcpPropertyRange propRange = propIndex.GetPropertyRange();
+        _TestIncrementAndAdvanceSymmetry(propRange.first, propRange.second);
     }
 
     std::cout << "Testing random access operations..." << std::endl;

@@ -32,6 +32,7 @@
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/instancing.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -306,13 +307,38 @@ PcpPrimIndex::ComposeAuthoredVariantSelections() const
     SdfVariantSelectionMap result;
     const TfToken field = SdfFieldKeys->VariantSelection;
     TF_FOR_ALL(i, GetPrimRange()) {
-        Pcp_SdSiteRef site = i.base()._GetSiteRef();
-        const VtValue& value = site.layer->GetField(site.path, field);
-        if (value.IsHolding<SdfVariantSelectionMap>()) {
-            const SdfVariantSelectionMap & vselMap =
-                value.UncheckedGet<SdfVariantSelectionMap>();
-            result.insert(vselMap.begin(), vselMap.end());
+        const Pcp_SdSiteRef site = i.base()._GetSiteRef();
+
+        SdfVariantSelectionMap vselMap;
+        if (!site.layer->HasField(site.path, field, &vselMap)) {
+            continue;
         }
+
+        for (auto it = vselMap.begin(); it != vselMap.end(); ) {
+            std::string& vsel = it->second;
+            if (Pcp_IsVariableExpression(vsel)) {
+                const PcpLayerStackRefPtr& layerStack =
+                    i.base().GetNode().GetLayerStack();
+
+                PcpErrorVector exprErrors;
+                vsel = Pcp_EvaluateVariableExpression(
+                    vsel, layerStack->GetExpressionVariables(),
+                    "variant", site.layer, site.path, nullptr, &exprErrors);
+
+                // If an error occurred evaluating this expression, we ignore
+                // this variant selection and look for the next weakest opinion.
+                // We don't emit any errors here since they would have already
+                // been captured as composition errors during prim indexing.
+                // See PcpComposeSiteVariantSelection.
+                if (!exprErrors.empty()) {
+                    it = vselMap.erase(it);
+                    continue;
+                }
+            }
+            ++it;
+        }
+
+        result.insert(vselMap.begin(), vselMap.end());
     }
     return result;
 }
@@ -376,10 +402,12 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
     }
-    // Append the contents of the child's file format dependency object to
-    // ours.
+
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
+
+    expressionVariablesDependency.AppendDependencyData(
+        std::move(childOutputs.expressionVariablesDependency));
 
     culledDependencies.insert(
         culledDependencies.end(),
@@ -1919,8 +1947,52 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
             const ArResolverContext& pathResolverContext =
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
-            PcpLayerStackIdentifier layerStackIdentifier(
-                layer, SdfLayerHandle(), pathResolverContext );
+            
+            // We want to use the expression variables composed up to node's
+            // layer stack to compose over the variables in the referenced layer
+            // stack.
+            // 
+            // Note that we specify the source of this node's layer stack's
+            // PcpExpressionVariables object as the "expression variable
+            // override source" in the referenced layer stack. This allows us to
+            // share layer stacks across prim indexes when expression variables
+            // are sparsely authored (which is the expected use case).
+            //
+            // For example, consider two prim indexes /A and /B:
+            //
+            //                    ref              ref 
+            // /A: @root.sdf@</A> ---> @a.sdf@</A> ---> @model.sdf@</Model>
+            //
+            //                    ref              ref 
+            // /B: @root.sdf@</B> ---> @b.sdf@</B> ---> @model.sdf@</Model>
+            //
+            // If expression variables are only authored on root.sdf, the
+            // override source for all downstream layer stacks will be
+            // root.sdf. This means the model.sdf layer stack in /A and /B are
+            // the same object.
+            // 
+            // If we instead used the layer stack identifier of this node as the
+            // expression variable override source, the identifiers for the
+            // model.sdf layer stack in /A and /B would differ, even though they
+            // would be equivalent since they'd have the same layers and
+            // composed expression variables.
+            //
+            // The approach we take maximizes sharing but requires that change
+            // processing triggers resyncs when an override source changes.  For
+            // example, if expression variables are additionally authored on
+            // a.sdf, change processing needs to determine that that layer stack
+            // now provides the variable overrides instead of root.sdf, which
+            // means that /A needs to be resynced so that the reference to
+            // model.sdf is recomputed. At that point, the model.sdf layer
+            // stacks in /A and /B are no longer equivalent and become two
+            // different objects since they have different composed expression
+            // variables. If the variables in a.sdf were then removed, change
+            // processing should again resync /A, at which point the model.sdf
+            // layer stacks in /A and /B would be the same object once more.
+            const PcpLayerStackIdentifier layerStackIdentifier(
+                layer, SdfLayerHandle(), pathResolverContext,
+                node.GetLayerStack()->GetExpressionVariables().GetSource());
+
             layerStack = indexer->inputs.cache->ComputeLayerStack( 
                 layerStackIdentifier, &indexer->outputs->allErrors);
 
@@ -2040,7 +2112,21 @@ _EvalNodeReferences(
     // Compose value for local references.
     SdfReferenceVector refArcs;
     PcpSourceArcInfoVector refInfo;
-    PcpComposeSiteReferences(node, &refArcs, &refInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSiteReferences(
+        node, &refArcs, &refInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     // Add each reference arc.
     _EvalRefOrPayloadArcs<SdfReference, PcpArcTypeReference>(
@@ -2067,7 +2153,21 @@ _EvalNodePayloads(
     // Compose value for local payloads.
     SdfPayloadVector payloadArcs;
     PcpSourceArcInfoVector payloadInfo;
-    PcpComposeSitePayloads(node, &payloadArcs, &payloadInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSitePayloads(
+        node, &payloadArcs, &payloadInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     if (payloadArcs.empty()) {
         return;
@@ -3421,7 +3521,7 @@ _ComposeVariantSelectionForNode(
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     TF_VERIFY(!pathInNode.IsEmpty());
 
@@ -3447,8 +3547,26 @@ _ComposeVariantSelectionForNode(
                 node.GetPath());
         }
 
-        if (PcpComposeSiteVariantSelection(
-                site.layerStack, site.path, vset, vsel)) {
+        std::unordered_set<std::string> exprVarDependencies;
+        PcpErrorVector errors;
+
+        const bool foundSelection = 
+            PcpComposeSiteVariantSelection(
+                site.layerStack, site.path, vset, vsel, 
+                &exprVarDependencies, &errors);
+
+        if (!exprVarDependencies.empty()) {
+            indexer->outputs->expressionVariablesDependency.AddDependencies(
+                site.layerStack, std::move(exprVarDependencies));
+        }
+
+        if (!errors.empty()) {
+            for (const PcpErrorBasePtr& err : errors) {
+                indexer->RecordError(err);
+            }
+        }
+
+        if (foundSelection) {
             *nodeWithVsel = node;
             return true;
         }
@@ -3521,11 +3639,11 @@ _ComposeVariantSelectionAcrossStackFrames(
     std::string *vsel,
     _StackFrameAndChildNodeVector *stackFrames,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     // Compose variant selection in strong-to-weak order.
     if (_ComposeVariantSelectionForNode(
-            node, pathInNode, vset, vsel, nodeWithVsel, outputs)) {
+            node, pathInNode, vset, vsel, nodeWithVsel, indexer)) {
         return true;
     }
 
@@ -3554,7 +3672,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty()) {
             return _ComposeVariantSelectionAcrossStackFrames(
                 childNode, pathInChildNode, vset, vsel, stackFrames, 
-                nodeWithVsel, outputs);
+                nodeWithVsel, indexer);
         }
 
         return false;
@@ -3568,7 +3686,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty() &&
             _ComposeVariantSelectionAcrossStackFrames(
                 *child, pathInChildNode, vset, vsel, stackFrames,
-                nodeWithVsel, outputs)) {
+                nodeWithVsel, indexer)) {
             return true;
         }
     }
@@ -3595,14 +3713,12 @@ _ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
 
 static void
 _ComposeVariantSelection(
-    int ancestorRecursionDepth,
-    PcpPrimIndex_StackFrame *previousFrame,
-    PcpNodeRef node,
+    const PcpNodeRef &node,
     const SdfPath &pathInNode,
+    Pcp_PrimIndexer *indexer,
     const std::string &vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    PcpNodeRef *nodeWithVsel)
 {
     TRACE_FUNCTION();
     TF_VERIFY(!pathInNode.IsEmpty());
@@ -3636,12 +3752,13 @@ _ComposeVariantSelection(
     // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
     // accounts for any ancestral recursion.
     if (_FindPriorVariantSelection(rootNode, pathInRoot,
-                                   ancestorRecursionDepth,
+                                   indexer->ancestorRecursionDepth,
                                    vset, vsel, nodeWithVsel)) {
         return;
     }
 
-    while (previousFrame) {
+    for (PcpPrimIndex_StackFrame *previousFrame = indexer->previousFrame;
+         previousFrame; previousFrame = previousFrame->previousFrame) {
         // There may not be a valid mapping for the current path across 
         // the previous stack frame. For example, this may happen when
         // trying to compose ancestral variant selections on a sub-root
@@ -3672,7 +3789,7 @@ _ComposeVariantSelection(
         // stack as well.
         if (_FindPriorVariantSelection(rootNodeInPreviousFrame, 
                                        pathInPreviousFrame,
-                                       ancestorRecursionDepth,
+                                       indexer->ancestorRecursionDepth,
                                        vset, vsel, nodeWithVsel)) {
             return;
         }
@@ -3686,15 +3803,13 @@ _ComposeVariantSelection(
         // frame.
         rootNode = rootNodeInPreviousFrame;
         pathInRoot = pathInPreviousFrame;
-
-        previousFrame = previousFrame->previousFrame;
     }
 
     // Now recursively walk the prim index in strong-to-weak order
     // looking for a variant selection.
     _ComposeVariantSelectionAcrossStackFrames(
         rootNode, pathInRoot, vset, vsel, &previousStackFrames,
-        nodeWithVsel, outputs);
+        nodeWithVsel, indexer);
 }
 
 static bool
@@ -3899,11 +4014,8 @@ _EvalNodeAuthoredVariant(
     // Determine the authored variant selection for this set, if any.
     std::string vsel;
     PcpNodeRef nodeWithVsel;
-    _ComposeVariantSelection(indexer->ancestorRecursionDepth,
-                             indexer->previousFrame, node,
-                             node.GetPath().StripAllVariantSelections(),
-                             vset, &vsel, &nodeWithVsel,
-                             indexer->outputs);
+    _ComposeVariantSelection(node, node.GetPath().StripAllVariantSelections(),
+                             indexer, vset, &vsel, &nodeWithVsel);
     if (!vsel.empty()) {
         PCP_INDEXING_MSG(
             indexer, node, "Found variant selection {%s=%s} at %s",

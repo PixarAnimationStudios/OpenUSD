@@ -1606,6 +1606,12 @@ UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
                                                  UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+     UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(instancerPrim, instancerPath, &proto, &instancerContext)) {
+        return proto->adapter->GetInstancerTransform(
+            _GetPrim(proto->path), instancerPath, time);
+    }
     return GetRootTransform();
 }
 

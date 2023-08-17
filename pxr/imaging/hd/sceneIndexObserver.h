@@ -60,6 +60,7 @@ public:
         SdfPath primPath;
         TfToken primType;
 
+        AddedPrimEntry() {}
         AddedPrimEntry(const SdfPath &primPath, const TfToken &primType)
         : primPath(primPath)
         , primType(primType)

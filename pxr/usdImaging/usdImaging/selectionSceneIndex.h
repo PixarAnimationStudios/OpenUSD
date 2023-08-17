@@ -32,7 +32,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace UsdImagingSelectionSceneIndex_Impl
 {
-using _SelectionSharedPtr = std::shared_ptr<struct _Selection>;
+using _SelectionInfoSharedPtr = std::shared_ptr<struct _SelectionInfo>;
 }
 
 TF_DECLARE_REF_PTRS(UsdImagingSelectionSceneIndex);
@@ -49,6 +49,8 @@ public:
     USDIMAGING_API
     static UsdImagingSelectionSceneIndexRefPtr New(
         HdSceneIndexBaseRefPtr const &inputSceneIndex);
+
+    ~UsdImagingSelectionSceneIndex() override;
 
     USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
@@ -85,7 +87,8 @@ private:
     UsdImagingSelectionSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex);
 
-    UsdImagingSelectionSceneIndex_Impl::_SelectionSharedPtr _selection;
+    UsdImagingSelectionSceneIndex_Impl::
+    _SelectionInfoSharedPtr _selectionInfo;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

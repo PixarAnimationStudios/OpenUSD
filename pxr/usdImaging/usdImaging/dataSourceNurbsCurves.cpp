@@ -116,13 +116,13 @@ UsdImagingDataSourceNurbsCurvesPrim::Get(const TfToken & name)
     if (name == HdPrimvarsSchema::GetSchemaToken()) {
         return
             HdOverlayContainerDataSource::New(
+                HdContainerDataSource::Cast(
+                    UsdImagingDataSourceGprim::Get(name)),
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     _GetCustomPrimvarMappings(_GetUsdPrim()),
-                    _GetStageGlobals()),
-                HdContainerDataSource::Cast(
-                    UsdImagingDataSourceGprim::Get(name)));
+                    _GetStageGlobals()));
     }
 
     return UsdImagingDataSourceGprim::Get(name);

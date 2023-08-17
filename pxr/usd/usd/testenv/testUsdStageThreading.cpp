@@ -157,9 +157,6 @@ _WorkTask(size_t msecsToRun, bool runForever)
         sw.Start();
         const int i = dist(mt);
 
-        printf("  Thread %s running test case %d\n",
-               TfStringify(threadId).c_str(), i);
-                                    
         const _Result & expected = _testCases[i].second;
         const _Result & actual   = _ComputeResult(_testCases[i].first);
         TF_VERIFY(actual.didLoad == expected.didLoad);
@@ -191,9 +188,11 @@ int main(int argc, char const **argv)
 
     // Pull on the schema registry to create any schema layers so we can get a
     // baseline of # of loaded layers.
+    printf("pulling schema registry\n");
     UsdSchemaRegistry::GetInstance();
     size_t baselineNumLayers = SdfLayer::GetLoadedLayers().size();
-
+    printf("done\n");
+    
     printf("==================================================\n");
     printf("SETUP PHASE (MAIN THREAD ONLY)\n");
     for (const auto& assetPath : *_testPaths) {
@@ -223,16 +222,15 @@ int main(int argc, char const **argv)
     TfStopwatch sw;
     sw.Start();
 
-    WorkWithScopedParallelism([&]() {
-            WorkDispatcher wd;
-            auto localMsecsToRun = msecsToRun;
-            auto localRunForever = runForever;
-            for (size_t i = 0; i < numThreads; ++i) {
-                wd.Run([localMsecsToRun, localRunForever]() {
-                        _WorkTask(localMsecsToRun, localRunForever);
-                    });
-            }
-        });
+    WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
+        auto localMsecsToRun = msecsToRun;
+        auto localRunForever = runForever;
+        for (size_t i = 0; i < numThreads; ++i) {
+            wd.Run([localMsecsToRun, localRunForever]() {
+                _WorkTask(localMsecsToRun, localRunForever);
+            });
+        }
+    });
 
     sw.Stop();
 

@@ -27,6 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/fileIO.h"
 #include "pxr/usd/sdf/fileIO_Common.h"
+#include "pxr/usd/sdf/pathExpression.h"
 
 #include "pxr/base/tf/stringUtils.h"
 
@@ -154,6 +155,12 @@ static string
 _StringFromValue(const SdfAssetPath& assetPath)
 {
     return _StringFromAssetPath(assetPath.GetAssetPath());
+}
+
+static string
+_StringFromValue(const SdfPathExpression& pathExpr)
+{
+    return Sdf_FileIOUtility::Quote(pathExpr.GetText());
 }
 
 template <class T>
@@ -846,7 +853,8 @@ Sdf_FileIOUtility::StringFromVtValue(const VtValue &value)
     string s;
     if (_StringFromVtValueHelper<string>(&s, value) || 
         _StringFromVtValueHelper<TfToken>(&s, value) ||
-        _StringFromVtValueHelper<SdfAssetPath>(&s, value)) {
+        _StringFromVtValueHelper<SdfAssetPath>(&s, value) ||
+        _StringFromVtValueHelper<SdfPathExpression>(&s, value)) {
         return s;
     }
     

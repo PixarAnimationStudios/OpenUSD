@@ -26,6 +26,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/changes.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
@@ -434,6 +435,51 @@ PcpLayerStack::PcpLayerStack(
     const PcpLayerStackIdentifier& identifier,
     const Pcp_LayerStackRegistry& registry)
     : _identifier(identifier)
+    , _expressionVariables(
+        [&identifier, &registry]() {
+            const PcpLayerStackIdentifier& selfId = identifier;
+            const PcpLayerStackIdentifier& rootLayerStackId =
+                registry._GetRootLayerStackIdentifier();
+
+            // Optimization: If the layer stack providing expression variable
+            // overrides has already been computed, use its expression variables
+            // to compose this layer stack's expression variables, This is the
+            // common case that happens during prim indexing.
+            //
+            // Otherwise, we need to take a slower code path that computes
+            // the full chain of overrides. 
+            const PcpLayerStackIdentifier& overrideLayerStackId =
+                selfId.expressionVariablesOverrideSource
+                .ResolveLayerStackIdentifier(rootLayerStackId);
+
+            const PcpLayerStackPtr overrideLayerStack =
+                overrideLayerStackId != selfId ? 
+                registry.Find(overrideLayerStackId) : TfNullPtr;
+
+            PcpExpressionVariables composedExpressionVars;
+
+            if (overrideLayerStack) {
+                composedExpressionVars = PcpExpressionVariables::Compute(
+                    selfId, rootLayerStackId, 
+                    &overrideLayerStack->GetExpressionVariables());
+
+                // Optimization: If the composed expression variables for this
+                // layer stack are the same as those in the overriding layer
+                // stack, just share their PcpExpressionVariables object.
+                if (composedExpressionVars == 
+                    overrideLayerStack->GetExpressionVariables()) {
+                    return overrideLayerStack->_expressionVariables;
+                }
+            }
+            else {
+                composedExpressionVars = PcpExpressionVariables::Compute(
+                    selfId, rootLayerStackId);
+            }
+
+            return std::make_shared<PcpExpressionVariables>(
+                std::move(composedExpressionVars));
+
+        }())
     , _isUsd(registry._IsUsd())
 
     // Note that we do not set the _registry member here. This will be
@@ -474,7 +520,83 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
 {
     // Invalidate the layer stack as necessary, recomputing immediately.
     // Recomputing immediately assists optimal change processing --
-    // e.g. it lets us examine the before/after chagnge to relocations.
+    // e.g. it lets us examine the before/after change to relocations.
+
+    // Update expression variables if necessary. This needs to be done up front
+    // since they may be needed when computing the full layer stack.
+    if (changes.didChangeSignificantly || 
+        changes.didChangeExpressionVariables || 
+        changes._didChangeExpressionVariablesSource) {
+
+        const auto updateExpressionVariables = 
+            [&](const VtDictionary& newExprVars, 
+                const PcpExpressionVariablesSource& newSource)
+            {
+                const PcpLayerStackIdentifier& newSourceId =
+                    newSource.ResolveLayerStackIdentifier(
+                        _registry->_GetRootLayerStackIdentifier());
+
+                if (newSourceId == GetIdentifier()) {
+                    // If this layer stack is the new source for its expression
+                    // vars, either update _expressionVariables or create a new
+                    // one based on whether it's already sourced from this layer
+                    // stack.
+                    if (_expressionVariables->GetSource() == newSource) {
+                        _expressionVariables->SetVariables(newExprVars);
+                    }
+                    else {
+                        _expressionVariables = 
+                            std::make_shared<PcpExpressionVariables>(
+                                newSource, newExprVars);
+                    }
+                }
+                else {
+                    // Optimization: If some other layer stack is the source for
+                    // this layer stack's expression vars, grab that other layer
+                    // stack's _expressionVariables. See matching optimization
+                    // in c'tor.
+                    const PcpLayerStackPtr overrideLayerStack = 
+                        _registry->Find(newSourceId);
+                    if (overrideLayerStack) {
+                        _expressionVariables =
+                            overrideLayerStack->_expressionVariables;
+
+                        // Update _expressionVariables if it doesn't have the
+                        // newly-computed expression variables. This is okay
+                        // even if _expressionVariables is shared by other layer
+                        // stacks, since we expect those layer stacks would have
+                        // been updated in the same way.
+                        if (newExprVars !=
+                            _expressionVariables->GetVariables()) {
+                            _expressionVariables->SetVariables(newExprVars);
+                        }
+                    }
+                    else {
+                        _expressionVariables =
+                            std::make_shared<PcpExpressionVariables>(
+                                newSource, newExprVars);
+                    }
+
+                }
+            };
+
+        if (changes.didChangeSignificantly) {
+            const PcpExpressionVariables newExprVars =
+                PcpExpressionVariables::Compute(
+                    GetIdentifier(), _registry->_GetRootLayerStackIdentifier());
+            updateExpressionVariables(
+                newExprVars.GetVariables(), newExprVars.GetSource());
+        }
+        else {
+            updateExpressionVariables(
+                changes.didChangeExpressionVariables ?
+                    changes.newExpressionVariables :
+                    _expressionVariables->GetVariables(),
+                changes._didChangeExpressionVariablesSource ?
+                    changes._newExpressionVariablesSource : 
+                    _expressionVariables->GetSource());
+        }
+    }
     
     // Blow layer tree/offsets if necessary.
     if (changes.didChangeLayers || changes.didChangeLayerOffsets) {
@@ -707,6 +829,7 @@ PcpLayerStack::_BlowLayers()
     _layerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
     _mutedAssetPaths.clear();
+    _expressionVariableDependencies.clear();
 }
 
 void
@@ -878,24 +1001,65 @@ PcpLayerStack::_BuildLayerStack(
     _mapFunctions.push_back(mapFunction);
         
     // Recurse over sublayers to build subtrees.
-    const vector<string> &sublayers = layer->GetSubLayerPaths();
+    vector<string> sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
-    size_t numSublayers = sublayers.size();
-    std::vector<bool> isMuted(numSublayers);
-    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
-    std::vector<std::string> errCommentary(numSublayers);
+    const size_t numSublayers = sublayers.size();
 
-    // Compute mutedness first.
+    // Evaluate expressions and compute mutedness first.
     for(size_t i=0; i != numSublayers; ++i) {
+        if (Pcp_IsVariableExpression(sublayers[i])) {
+            sublayers[i] = Pcp_EvaluateVariableExpression(
+                sublayers[i], *_expressionVariables,
+                "sublayer", layer, SdfPath::AbsoluteRootPath(),
+                &_expressionVariableDependencies, errors);
+
+            if (sublayers[i].empty()) {
+                continue;
+            }
+        }
+
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {
             _mutedAssetPaths.insert(canonicalMutedPath);
-            isMuted[i] = true;
+            sublayers[i].clear();
         }
     }
 
+    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
+    std::vector<std::string> errCommentary(numSublayers);
     std::vector<_SublayerSourceInfo> localSourceInfo(numSublayers);
+
+    auto loadSublayer = [&](size_t i) {
+        // Resolve and open sublayer.
+        TfErrorMark m;
+                
+        SdfLayer::FileFormatArguments localArgs;
+        const SdfLayer::FileFormatArguments& layerArgs = 
+            Pcp_GetArgumentsForFileFormatTarget(
+                sublayers[i], &defaultLayerArgs, &localArgs);
+                
+        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
+        // but we want to keep track of the final sublayer path after
+        // anchoring it to the layer.
+        string sublayerPath = SdfComputeAssetPathRelativeToLayer(
+            layer, sublayers[i]);
+        sublayerRefPtrs[i] = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
+                
+        localSourceInfo[i] =
+            _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
+                
+        // Produce commentary for eventual PcpError created below.
+        if (!m.IsClean()) {
+            vector<string> commentary;
+            for (auto const &err: m) {
+                commentary.push_back(err.GetCommentary());
+            }
+            m.Clear();
+            errCommentary[i] = TfStringJoin(commentary.begin(),
+                                            commentary.end(), "; ");
+        }
+    };
     
     // Open all the layers in parallel.
     WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
@@ -905,52 +1069,28 @@ PcpLayerStack::_BuildLayerStack(
             TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH);
 
         for (size_t i=0; i != numSublayers; ++i) {
-            if (isMuted[i]) {
+            if (sublayers[i].empty()) {
                 continue;
             }
-            auto code = [&, i]() {
-                // Resolve and open sublayer.
-                TfErrorMark m;
-                
-                SdfLayer::FileFormatArguments localArgs;
-                const SdfLayer::FileFormatArguments& layerArgs = 
-                    Pcp_GetArgumentsForFileFormatTarget(
-                        sublayers[i], &defaultLayerArgs, &localArgs);
-                
-                // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
-                // but we want to keep track of the final sublayer path after
-                // anchoring it to the layer.
-                string sublayerPath = SdfComputeAssetPathRelativeToLayer(
-                    layer, sublayers[i]);
-                sublayerRefPtrs[i] =
-                    SdfLayer::FindOrOpen(sublayerPath, layerArgs);
-                
-                localSourceInfo[i] =
-                    _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
-                
-                // Produce commentary for eventual PcpError created below.
-                if (!m.IsClean()) {
-                    vector<string> commentary;
-                    for (auto const &err: m) {
-                        commentary.push_back(err.GetCommentary());
-                    }
-                    m.Clear();
-                    errCommentary[i] = TfStringJoin(commentary.begin(),
-                                                    commentary.end(), "; ");
-                }
-            };
+
             if (goParallel) {
-                wd.Run(code);
+                wd.Run(
+                    [i, &loadSublayer, &pathResolverContext]() { 
+                        // Context binding is thread-specific, so we need to
+                        // bind the context here.
+                        ArResolverContextBinder binder(pathResolverContext);
+                        loadSublayer(i);
+                    });
             }
             else {
-                code();
+                loadSublayer(i);
             }
         }
     });
 
     Pcp_SublayerInfoVector sublayerInfo;
     for (size_t i=0; i != numSublayers; ++i) {
-        if (isMuted[i]) {
+        if (sublayers[i].empty()) {
             continue;
         }
         if (!sublayerRefPtrs[i]) {

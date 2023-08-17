@@ -50,6 +50,7 @@
 #include "pxr/imaging/hd/capsuleSchema.h"
 #include "pxr/imaging/hd/categoriesSchema.h"
 #include "pxr/imaging/hd/coneSchema.h"
+#include "pxr/imaging/hd/coordSysSchema.h"
 #include "pxr/imaging/hd/coordSysBindingSchema.h"
 #include "pxr/imaging/hd/cubeSchema.h"
 #include "pxr/imaging/hd/cylinderSchema.h"
@@ -70,7 +71,7 @@
 #include "pxr/imaging/hd/integratorSchema.h"
 #include "pxr/imaging/hd/legacyDisplayStyleSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
@@ -495,13 +496,13 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
             }
 
             SdfPath materialId = SdfPath();
-            HdMaterialBindingSchema materialBinding = 
-                HdMaterialBindingSchema::GetFromParent(gsSchema.GetContainer());
-            if (materialBinding.IsDefined()) {
-                if (HdPathDataSourceHandle materialIdDs = 
-                    materialBinding.GetMaterialBinding()) {
-                    materialId = materialIdDs->GetTypedValue(0.0f);
-                }
+            HdMaterialBindingsSchema materialBindings = 
+                HdMaterialBindingsSchema::GetFromParent(
+                    gsSchema.GetContainer());
+            HdMaterialBindingSchema materialBinding =
+                materialBindings.GetMaterialBinding();
+            if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
+                materialId = ds->GetTypedValue(0.0f);
             }
 
             VtIntArray indices = VtIntArray(0);
@@ -840,18 +841,15 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialId(SdfPath const & id)
     HF_MALLOC_TAG_FUNCTION();
     HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
 
-    HdMaterialBindingSchema mat = HdMaterialBindingSchema::GetFromParent(
-        prim.dataSource);
-    if (!mat.IsDefined()) {
-        return SdfPath();
+    HdMaterialBindingsSchema materialBindings =
+        HdMaterialBindingsSchema::GetFromParent(
+            prim.dataSource);
+    HdMaterialBindingSchema materialBinding =
+        materialBindings.GetMaterialBinding();
+    if (HdPathDataSourceHandle const ds = materialBinding.GetPath()) {
+        return ds->GetTypedValue(0.0f);
     }
-
-    HdPathDataSourceHandle bindingDs = mat.GetMaterialBinding();
-    if (!bindingDs) {
-        return SdfPath();
-    }
-
-    return bindingDs->GetTypedValue(0);
+    return SdfPath();
 }
 
 HdIdVectorSharedPtr
@@ -1384,9 +1382,6 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
     HdContainerDataSourceHandle renderSettingsDs =
             HdContainerDataSource::Cast(prim.dataSource->Get(
                 HdRenderSettingsSchemaTokens->renderSettings));
-    if (!renderSettingsDs) {
-        return VtValue();
-    }
 
     HdRenderSettingsSchema rsSchema = HdRenderSettingsSchema(renderSettingsDs);
     if (!rsSchema.IsDefined()) {
@@ -1406,7 +1401,6 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
         if (HdBoolDataSourceHandle activeDS = rsSchema.GetActive()) {
             return VtValue(activeDS->GetTypedValue(0));
         }
-        return VtValue(false);
     }
 
     if (key == HdRenderSettingsPrimTokens->renderProducts) {
@@ -1438,6 +1432,14 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
                 rsSchema.GetRenderingColorSpace()) {
             
             return VtValue(colorSpaceDS->GetTypedValue(0));
+        }
+    }
+
+    if (key == HdRenderSettingsPrimTokens->shutterInterval) {
+        if (HdVec2dDataSourceHandle shutterIntervalDS =
+                rsSchema.GetShutterInterval()) {
+            
+            return VtValue(shutterIntervalDS->GetTypedValue(0));
         }
     }
 
@@ -1855,6 +1857,20 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
             if (HdSampledDataSourceHandle valueSrc =
                     HdSampledDataSource::Cast(capsuleSrc->Get(key))) {
                 return valueSrc->GetValue(0);
+            }
+        }
+    }
+
+    if (prim.primType == HdPrimTypeTokens->coordSys) {
+        static TfToken nameKey(
+            SdfPath::JoinIdentifier(
+                TfTokenVector{HdCoordSysSchema::GetSchemaToken(),
+                              HdCoordSysSchemaTokens->name}));
+        if (key == nameKey) {
+            if (HdTokenDataSourceHandle const nameDs =
+                    HdCoordSysSchema::GetFromParent(prim.dataSource)
+                        .GetName()) {
+                return nameDs->GetValue(0.0f);
             }
         }
     }

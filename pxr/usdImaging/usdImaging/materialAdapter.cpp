@@ -176,14 +176,20 @@ UsdImagingMaterialAdapter::Populate(
 
     // Also register dependencies on behalf of any descendent
     // UsdShadeShader prims, since they are consumed to
-    // create the material network.
-    for (UsdPrim const& child: prim.GetDescendants()) {
+    // create the material network. Note that if the material is an instance
+    // prim we want dependencies on the descendants inside the prototype...
+    UsdPrim ancestor = prim;
+    if (prim.IsInstance()) {
+        ancestor = prim.GetPrototype();
+        index->AddDependency(cachePath, ancestor);
+    }
+    for (UsdPrim const& child: ancestor.GetDescendants()) {
         if (child.IsA<UsdShadeShader>()) {
             index->AddDependency(cachePath, child);
         }
     }
 
-    return prim.GetPath();
+    return cachePath;
 }
 
 /* virtual */

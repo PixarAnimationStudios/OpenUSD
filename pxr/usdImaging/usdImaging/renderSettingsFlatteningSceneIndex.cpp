@@ -463,8 +463,9 @@ public:
     TfTokenVector
     GetNames() override
     {
-        // Note: 'active' is skipped here; it will be handled in a standalone
-        //       scene index to accommodate emulation.
+        // Note: 'active' and 'shutterInterval' are skipped here; these are
+        //        expected to be provided by a downstream scene index.
+        //        (e.g., HdsiRenderSettingsFilteringSceneIndex)
         static TfTokenVector names = {
                 HdRenderSettingsSchemaTokens->namespacedSettings,
                 HdRenderSettingsSchemaTokens->renderProducts,

@@ -15,7 +15,7 @@ USD Home
 
       |usdlogo| :usdtitletext:`Universal Scene Description`
 
-   .. image:: https://graphics.pixar.com/usd/images/piper-banner.jpg
+   .. image:: https://openusd.org/images/piper-banner.jpg
       :class: +card-img
 
 .. div:: usd-index-brief

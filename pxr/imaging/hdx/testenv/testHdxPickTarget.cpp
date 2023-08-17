@@ -126,7 +126,7 @@ Hdx_TestDriver::_Init(HdReprSelector const &reprSelector)
         VtValue(_collection));
 
     HdxSelectionTaskParams selParam;
-    selParam.enableSelection = true;
+    selParam.enableSelectionHighlight = true;
     selParam.selectionColor = GfVec4f(1, 1, 0, 1);
     selParam.locateColor = GfVec4f(1, 0, 1, 1);
     delegate.SetTaskParam(selectionTask, HdTokens->params,
