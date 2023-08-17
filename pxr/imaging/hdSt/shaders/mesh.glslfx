@@ -409,6 +409,19 @@ vec4 GetPatchCoord(int index)
     return InterpolatePatchCoordTriangle(uv[index], patchParam);
 }
 
+bool pixelBboxCull(vec2 pixelMin, vec2 pixelMax) 
+{
+  // Apply some safety around the bbox to take into account fixed point rasterization.
+  // This logic will only work without MSAA active.
+  const float epsilon = (1.0 / 256.0);
+  pixelMin -= epsilon;
+  pixelMax += epsilon;
+  // bbox culling
+  pixelMin = round(pixelMin);
+  pixelMax = round(pixelMax);
+  return ( ( pixelMin.x == pixelMax.x) || ( pixelMin.y == pixelMax.y));
+}
+
 bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
 {
   // back face culling
@@ -420,15 +433,12 @@ bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
   //possibly needs reversal
   cross_product = cross_product;
   if (cross_product * winding < 0.0f) {return false;}
-  
-  /*
-  // compute the min and max in each X and Y direction
+
   vec2 pixelMin = min(a,min(b,c));
   vec2 pixelMax = max(a,max(b,c));
 
-  // viewport culling
-  if (frustum && ((pixelMax.x < 0) || (pixelMin.x >= scene.viewportf.x) || (pixelMax.y < 0) || (pixelMin.y >= scene.viewportf.y))) return false;
-  */
+  if (pixelBboxCull(pixelMin, pixelMax)) return false;
+
   return true;
 }
 
@@ -600,16 +610,15 @@ void main(void) {
 
         bool culledC = !testTriangle(p0C.xy, p1C.xy, p2C.xy, 1.0, cullBitsC);
 
-        bool culledOverall = (culledA && culledB && culledC) ;
-
         //now we know if a triangle got culled or not, we can focus on figuring out
         //how to compact and write it out
         //we compute a local (in clique) scan offset
         const uint three = 3;
         uint primsHere = min(meshletPrimitiveCount - currPrim, three);
-        int localIndex = simd_prefix_exclusive_sum(int(!culledOverall) * primsHere);
+        uint nonCulled = 3 - (uint(culledA) + uint(culledB) + uint(culledC));
+        int localIndex = simd_prefix_exclusive_sum(nonCulled);
         //here we also compute how many primitives in the clique pass
-        int passingPrims = simd_sum(int(!culledOverall) * primsHere);
+        int passingPrims = simd_sum(nonCulled);
          
         int localOffset = 0;
         //one thread per wave/clique will need to increment the atomic
@@ -621,12 +630,14 @@ void main(void) {
         {
            localOffset = atomic_fetch_add_explicit(&accumulator,passingPrims,memory_order_relaxed);
         }
+        //TODO barrier
         //lets give the value of the local offset to all the threads in the clique
         localOffset = simd_broadcast(localOffset,0);
         //int passingPrimsLocal = min(passingPrims - currPrim, three);
         int writePrim = (localIndex + localOffset);
         int writeIndex = writePrim * 3;
-        if(!culledOverall)
+        uint writeIndexOffset = 0;
+        if(!culledA)
         {
             PrimOut primOutA;
             //TODO export a smarter primitive ID
@@ -639,36 +650,37 @@ void main(void) {
             mesh.set_index(writeIndex , indA.x);
             mesh.set_index(writeIndex  + 1, indA.y);
             mesh.set_index(writeIndex + 2, indA.z);
-        
+            writeIndexOffset += 3;
+        }
 
-            if(primsHere > 1)
-            {
-                PrimOut primOutB;
-                //TODO export a smarter primitive ID
-                primOutB.primitive_id_ms = *(indicesOff + 3);
-                mesh.set_primitive(writePrim + 1, primOutB);
+        if(primsHere > 1 && !culledB)
+        {
+            PrimOut primOutB;
+            //TODO export a smarter primitive ID
+            primOutB.primitive_id_ms = *(indicesOff + 3);
+            mesh.set_primitive(writePrim + 1, primOutB);
 
-                // Set the output indices.
-                //TODO cache base index calc
-                mesh.set_index(writeIndex + 3, indB.x);
-                mesh.set_index(writeIndex + 4, indB.y);
-                mesh.set_index(writeIndex + 5, indB.z);
-            }
+            // Set the output indices.
+            //TODO cache base index calc
+            mesh.set_index(writeIndex + writeIndexOffset, indB.x);
+            mesh.set_index(writeIndex + 1 + writeIndexOffset, indB.y);
+            mesh.set_index(writeIndex + 2 + writeIndexOffset, indB.z);
+            writeIndexOffset +=3;
+        }
 
-            if(primsHere > 2)
-            {
-                //TODO only calculate it once
-                PrimOut primOutC;
-                //TODO export a smarter primitive ID
-                primOutC.primitive_id_ms = *(indicesOff + 5);
-                mesh.set_primitive(writePrim + 2, primOutC);
+        if(primsHere > 2 && !culledC)
+        {
+            //TODO only calculate it once
+            PrimOut primOutC;
+            //TODO export a smarter primitive ID
+            primOutC.primitive_id_ms = *(indicesOff + 5);
+            mesh.set_primitive(writePrim + 2, primOutC);
 
-                // Set the output indices.
-                //TODO cache base index calc
-                mesh.set_index(writeIndex + 6, indC.x);
-                mesh.set_index(writeIndex + 7, indC.y);
-                mesh.set_index(writeIndex + 8, indC.z);
-            }
+            // Set the output indices.
+            //TODO cache base index calc
+            mesh.set_index(writeIndex + writeIndexOffset, indC.x);
+            mesh.set_index(writeIndex + 1 + writeIndexOffset, indC.y);
+            mesh.set_index(writeIndex + 2 + writeIndexOffset, indC.z);
         }
     }
     //TODO fix this
