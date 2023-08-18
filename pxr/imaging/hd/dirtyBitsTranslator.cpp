@@ -429,6 +429,9 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdRenderSettings::DirtyRenderingColorSpace) {
             set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
         }
+        if (bits & HdRenderSettings::DirtyShutterInterval) {
+            set->append(HdRenderSettingsSchema::GetShutterIntervalLocator());
+        }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
             set->append(HdVolumeFieldSchema::GetDefaultLocator());
@@ -964,6 +967,11 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
                 HdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyRenderingColorSpace;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetShutterIntervalLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyShutterInterval;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {
