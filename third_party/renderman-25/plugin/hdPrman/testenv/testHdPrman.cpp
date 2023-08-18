@@ -983,13 +983,6 @@ int main(int argc, char *argv[])
         // Create HdRenderSettingsMap for the RenderDelegate
         HdRenderSettingsMap settingsMap;
 
-        // XXX This can be removed once hdPrman is updated to use the camera and
-        //     shutter from the render settings prim.
-        // Add the camera Path to the Settings Map as well so that the Render
-        // Delegate can have it before syncing for shutter interval
-        settingsMap[HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath] =
-            camInfo.cameraPath;
-
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
         HydraSetupAndRender(

@@ -1877,25 +1877,20 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     // HdPrmanCamera::Sync can detect whether it is syncing the
     // current camera and needs to set the riley shutter interval
     // which needs to be set before any time-sampled primvars are
-    // synced.
-    // 
-    // XXX This would ideally come directly from the Render Settings prim
-    SdfPath cameraPath =
-        renderDelegate->GetRenderSetting<SdfPath>(
-            HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath, 
-            SdfPath()); 
-    // If there was no cameraPath specified, then check the RenderSpec
-    if (cameraPath.IsEmpty()) {
+    // synced. This is a workaround that is necessary only when a well-formed
+    // render settings prim isn't available.
+    //
+    {
         const VtDictionary &renderSpec =
             renderDelegate->GetRenderSetting<VtDictionary>(
                 HdPrmanRenderSettingsTokens->experimentalRenderSpec,
                 VtDictionary());
-        cameraPath = VtDictionaryGet<SdfPath>(
+        SdfPath cameraPath = VtDictionaryGet<SdfPath>(
             renderSpec,
             HdPrmanExperimentalRenderSpecTokens->camera,
             VtDefault = SdfPath());
+        GetCameraContext().SetCameraPath(cameraPath);
     }
-    GetCameraContext().SetCameraPath(cameraPath);
 }
 
 void
@@ -1927,6 +1922,11 @@ void
 HdPrman_RenderParam::SetRenderSettingsPrimOptions(RtParamList const &params)
 {
     _renderSettingsPrimOptions = params;
+
+    TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+        "Updating render settings param list \n %s\n",
+        HdPrmanDebugUtil::RtParamListToString(params).c_str()
+    );
 }
 
 void
@@ -2839,7 +2839,9 @@ HdPrman_RenderParam::GetActiveIntegratorId()
 riley::Riley *
 HdPrman_RenderParam::AcquireRiley()
 {
-    StopRender();
+    // Scene manipulation API can only be called during the "editing" phase
+    // (when Render() is not running).
+    StopRender(/*blocking = true*/);
     sceneVersion++;
 
     return _riley;
@@ -2942,7 +2944,9 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     // Fallback shutter interval.
     float shutterInterval[2] = { 0.0f, 0.5f };
     
-    // Try to get shutter interval from camera.
+    // Try to get shutter interval from camera. Note that shutter open and close
+    // times are frame relative and refer to the times the shutter begins to
+    // open and fully closes respectively.
     if (const HdCamera * const camera =
             _cameraContext.GetCamera(renderIndex)) {
         shutterInterval[0] = camera->GetShutterOpen();
@@ -2968,7 +2972,9 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
     }
     
     // Update the shutter interval on the legacy options param list and
-    // commit the scene options.
+    // commit the scene options. Note that the legacy options has a weaker
+    // opinion that the env var HD_PRMAN_ENABLE_MOTIONBLUR and the render
+    // settings prim.
     RtParamList &options = GetLegacyOptions();
     options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
     SetRileyOptions();

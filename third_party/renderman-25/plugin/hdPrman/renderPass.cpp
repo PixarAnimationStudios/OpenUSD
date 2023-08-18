@@ -234,16 +234,19 @@ _GetActiveRenderSettingsPrim(HdRenderIndex *renderIndex)
 void
 _SetShutterCurve(bool isInteractive, HdPrman_CameraContext *cameraContext)
 {
-    // A hack to make tests pass.
-    // testHdPrman was hard-coding a particular shutter curve for offline
-    // renders. Ideally, we would have a render setting or camera attribute
-    // to control the curve instead.
+    // XXX Until we add support for PxrCameraAPI, hardcode the shutter opening
+    //     and closing rates as follows:
     if (isInteractive) {
+        // Open instantaneously, remain fully open for the duration of the
+        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
+        // instantaneously.
         static const float pts[8] = {
             0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
         };
         cameraContext->SetShutterCurve(0.0f, 1.0f, pts);
     } else {
+        // Open instantaneously and start closing immediately, rapidly at first
+        // decelerating until the end of the interval.
         static const float pts[8] = {
             0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
         };

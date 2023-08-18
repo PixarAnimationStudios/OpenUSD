@@ -164,12 +164,21 @@ void HdPrman_RenderSettings::_Sync(
     }
 
     if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        // Note: We don't get fine-grained invalidation per-setting, so we
+        //       recompute all settings. Since this resets the param list, we
+        //       readd the shutter interval param explicitly below.
         _settingsOptions = _GenerateParamList(GetNamespacedSettings());
-        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
-            "Processed dirty namespaced settings for %s and generated the "
-            "param list \n  %s\n", GetId().GetText(),
-            HdPrmanDebugUtil::RtParamListToString(_settingsOptions).c_str()
-        );
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval ||
+        *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        if (GetShutterInterval().IsHolding<GfVec2d>()) {
+            HdPrman_Utils::SetParamFromVtValue(
+                RixStr.k_Ri_Shutter,
+                GetShutterInterval(),
+                /* role = */ TfToken(),
+                &_settingsOptions);
+        }
     }
 
     // XXX Preserve existing data flow for clients that don't populate the
@@ -188,17 +197,19 @@ void HdPrman_RenderSettings::_Sync(
     if (IsActive() || !hasActiveRsp) {
 
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
-            *dirtyBits & HdRenderSettings::DirtyActive) {
+            *dirtyBits & HdRenderSettings::DirtyActive ||
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
             
-            const VtDictionary& namespacedSettings = GetNamespacedSettings();
-        
             // Handle attributes ...
-            // Note: We don't get fine-grained invalidation per-setting, so we
-            //       recompute all settings.
             param->SetRenderSettingsPrimOptions(_settingsOptions);
             param->SetRileyOptions();
+        }
 
-            // ... and connections.
+        // ... and connections.
+        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
+            *dirtyBits & HdRenderSettings::DirtyActive) {
+
+            const VtDictionary& namespacedSettings = GetNamespacedSettings();
             // Set the integrator connected to this Render Settings prim
             {
                 // XXX Should use SdfPath rather than a vector.
