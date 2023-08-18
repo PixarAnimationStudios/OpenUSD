@@ -508,7 +508,7 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
     const UsdNotice::ObjectsChanged::PathRange pathsToResync =
         notice.GetResyncedPaths();
     for (auto it = pathsToResync.begin(); it != pathsToResync.end(); ++it) {
-        if (it->IsPrimPath()) {
+        if (it->IsAbsoluteRootOrPrimPath()) {
             _usdPrimsToResync.push_back(*it);
             TF_DEBUG(USDIMAGING_CHANGES).Msg(" - Resync queued: %s\n",
                     it->GetText());
@@ -530,7 +530,7 @@ UsdImagingStageSceneIndex::_OnUsdObjectsChanged(
     const SdfSchema& schema = SdfSchema::GetInstance();
 
     for (auto it = pathsToUpdate.begin(); it != pathsToUpdate.end(); ++it) {
-        if (it->IsPrimPath()) {
+        if (it->IsAbsoluteRootOrPrimPath()) {
             // By default, resync the prim if there are any changes to plugin
             // fields and ignore changes to built-in fields. Schemas typically
             // register their own plugin metadata fields instead of relying on
