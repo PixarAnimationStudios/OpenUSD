@@ -923,6 +923,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     _imageMetadataTokens,
 
     (worldtoscreen)
+    (worldToNDC)
 );
 
 // Helper to produce, e.g., FooXPosBar.
@@ -1146,29 +1147,53 @@ GetWorldToScreenFromImageMetadata(
     //   in row major order.
     // - GfMatrix4f or GfMatrix4d
     VtValue worldtoscreen;
-    if (!img->GetMetadata(_imageMetadataTokens->worldtoscreen, &worldtoscreen)) {
-        return false;
-    }
 
+    // XXX: OpenImageIO >= 2.2 no longer flips 'worldtoscreen' with 'worldToNDC'
+    // on read and write, so assets where 'worldtoscreen' was written with > 2.2
+    // have 'worldToNDC' actually in the metadata, and OIIO < 2.2 would read
+    // and return 'worldToNDC' from the file in response to a request for 
+    // 'worldtoscreen'. OIIO >= 2.2 no longer does either, so 'worldtoscreen'
+    // gets written as 'worldtoscreen' and returned when asked for
+    // 'worldtoscreen'. Issues only arise when trying to read 'worldtoscreen'
+    // from an asset written with OIIO < 2.2, when the authoring program told
+    // OIIO to write it as 'worldtoscreen'. Old OIIO flipped it to 'worldToNDC'.
+    // So new OIIO needs to read 'worldToNDC' to retrieve it.
+    //
+    // See https://github.com/OpenImageIO/oiio/pull/2609
+    //
+    // OIIO's change is correct -- the two metadata matrices have different
+    // semantic meanings, and should not be conflated. Unfortunately, users will
+    // have to continue to conflate them for a while as assets transition into
+    // vfx2022 (which uses OIIO 2.3). So we will need to check for both.
+    
+    if (!img->GetMetadata(_imageMetadataTokens->worldtoscreen, &worldtoscreen)) {
+        if (img->GetMetadata(_imageMetadataTokens->worldToNDC, &worldtoscreen)) {
+            TF_WARN("The texture asset '%s' may have been authored by an "
+            "earlier version of the VFX toolset. To silence this warning, "
+            "please regenerate the asset with the current toolset.",
+            file.c_str());
+        } else {
+            TF_WARN("The texture asset '%s' lacks a worldtoscreen matrix in "
+            "metadata. Cards draw mode may not appear as expected.", 
+            file.c_str());
+            return false;
+        }
+    }
+    
     if (worldtoscreen.IsHolding<std::vector<float>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<float>>(), mat);
-    }
-    if (worldtoscreen.IsHolding<std::vector<double>>()) {
+    } else if (worldtoscreen.IsHolding<std::vector<double>>()) {
         return _ConvertToMatrix(
             worldtoscreen.UncheckedGet<std::vector<double>>(), mat);
-    }
-    if (worldtoscreen.IsHolding<GfMatrix4f>()) {
+    } else if (worldtoscreen.IsHolding<GfMatrix4f>()) {
         *mat = GfMatrix4d(worldtoscreen.UncheckedGet<GfMatrix4f>());
         return true;
-    }
-    if (worldtoscreen.IsHolding<GfMatrix4d>()) {
+    } else if (worldtoscreen.IsHolding<GfMatrix4d>()) {
         *mat = worldtoscreen.UncheckedGet<GfMatrix4d>();
         return true;
     }
-
-    TF_WARN(
-        "worldtoscreen metadata holding unexpected type '%s'",
+    TF_WARN("worldtoscreen metadata holding unexpected type '%s'",
         worldtoscreen.GetTypeName().c_str());
     return false;
 }
