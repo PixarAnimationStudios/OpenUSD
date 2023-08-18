@@ -41,7 +41,7 @@
    :hidden:
    :caption: Collaborate
 
-   Source Code @ GitHub <https://github.com/PixarAnimationStudios/USD>
+   Source Code @ GitHub <https://github.com/PixarAnimationStudios/OpenUSD>
    OpenUSD Forum <https://forum.openusd.org>
    Contributing <contributing_to_usd>
    Contributors <contributors>

@@ -133,7 +133,7 @@ setuptools.setup(
     project_urls={
         "Documentation": "https://graphics.pixar.com/usd/docs/index.html",
         "Developer Docs": "https://graphics.pixar.com/usd/docs/USD-Developer-API-Reference.html",
-        "Source": "https://github.com/PixarAnimationStudios/USD",
+        "Source": "https://github.com/PixarAnimationStudios/OpenUSD",
         "Discussion Group": "https://groups.google.com/g/usd-interest"
     },
     packages=setuptools.find_packages(os.path.join(BUILD_DIR, 'lib/python')),

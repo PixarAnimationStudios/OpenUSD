@@ -678,7 +678,7 @@ the directory containing the USD Python modules:
 
 Where :file:`<inst>` represents the :makevar:`CMAKE_INSTALL_PREFIX` set in your
 build configuration. See `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 more information.
 
 Why Isn't This Plugin Being Built?
@@ -686,7 +686,7 @@ Why Isn't This Plugin Being Built?
 
 The plugins included in the USD distribution are disabled by default.
 See `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 instructions on how to enable these plugins.
 
 Why Isn't My App Finding USD DLLs and Plugins on Windows?
@@ -721,6 +721,6 @@ for more details on how Windows searches for DLLs at runtime.
 If you prefer not to have to install a large number of DLLs, you can build a 
 single monolithic USD DLL using the :code:`PXR_BUILD_MONOLITHIC` cmake flag. See 
 `Advanced Build Configuration 
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ for
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ for
 more information. Note that you will still need to install the USD plugins 
 directory along with the monolithic USD DLL.

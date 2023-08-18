@@ -79,7 +79,7 @@ up against two key limitations:
 
        This can be problematic in systems like Maya that natively allow unique
        shader bindings to instances, as recently reported in `Issue 332
-       <https://github.com/PixarAnimationStudios/USD/issues/332>`_ . This has
+       <https://github.com/PixarAnimationStudios/OpenUSD/issues/332>`_ . This has
        been problematic for our Katana-based set-shading workflows, as well, in
        which a set of unshaded, instanced components are referenced into a set,
        and we wish to bind set-level Materials to the primitives inside the

@@ -6,11 +6,11 @@ USD Tutorials
 .. include:: rolesAndUtils.rst
 
 USD provides a set of tutorials in the `Github repository
-<https://github.com/PixarAnimationStudios/USD>`_. The tutorial code is located
+<https://github.com/PixarAnimationStudios/OpenUSD>`_. The tutorial code is located
 in the :filename:`extras/usd/tutorials` directory unless otherwise noted. Each
 tutorial indicates which version of USD it was tested with. These versions
 correspond to releases on `Github
-<https://github.com/PixarAnimationStudios/USD/releases>`_.
+<https://github.com/PixarAnimationStudios/OpenUSD/releases>`_.
 
 Environment Setup
 *****************
@@ -20,7 +20,7 @@ programs in the :doc:`toolset` rely on one another.  So please set the following
 environment variables to successfully complete the tutorials. Make sure to use 
 the Python interpreter corresponding to the version used to build USD (for 
 supported Python versions see `3rd Party Library and Application Versions 
-<https://github.com/PixarAnimationStudios/USD/blob/release/VERSIONS.md>`_,
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/VERSIONS.md>`_,
 note that Python 2.x is not supported). These tutorials assume the interpreter 
 is named "python". 
 
@@ -38,7 +38,7 @@ is named "python".
 +---------------------+------------+----------------------------------------+
 
 For more information see `Advanced Build Configuration
-<https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_.
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_.
 
 .. toctree::
    :titlesonly:
