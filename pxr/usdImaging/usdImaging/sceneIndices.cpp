@@ -79,6 +79,8 @@ UsdImagingSceneIndices
 UsdImagingCreateSceneIndices(
     const UsdImagingCreateSceneIndicesInfo &createInfo)
 {
+    TRACE_FUNCTION();
+
     UsdImagingSceneIndices result;
 
     HdSceneIndexBaseRefPtr sceneIndex;
