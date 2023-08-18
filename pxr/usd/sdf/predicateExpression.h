@@ -112,9 +112,8 @@ public:
         }
 
         friend void swap(FnArg &l, FnArg &r) {
-            auto lt = std::tie(l.argName, l.value);
-            auto rt = std::tie(r.argName, r.value);
-            swap(lt, rt);
+            swap(l.argName, r.argName);
+            swap(l.value, r.value);
         }
     };
 
