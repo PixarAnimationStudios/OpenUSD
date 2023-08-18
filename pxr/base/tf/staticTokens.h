@@ -82,7 +82,6 @@
 
 #include <vector>
 
-#include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/control/iif.hpp>
 #include <boost/preprocessor/control/expr_iif.hpp>
 #include <boost/preprocessor/logical/and.hpp>
