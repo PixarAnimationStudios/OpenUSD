@@ -116,7 +116,8 @@ def GetXcodeDeveloperDirectory():
 def GetVisualStudioCompilerAndVersion():
     """Returns a tuple containing the path to the Visual Studio compiler
     and a tuple for its version, e.g. (14, 0). If the compiler is not found
-    or version number cannot be determined, returns None."""
+    or version number cannot be determined, returns None.
+    NOTE: path possibly to be None, please don't depend on it"""
     if not Windows():
         return None
 
@@ -129,6 +130,19 @@ def GetVisualStudioCompilerAndVersion():
             os.environ.get("VisualStudioVersion", ""))
         if match:
             return (msvcCompiler, tuple(int(v) for v in match.groups()))
+
+    # if VisualStudioVersion environment variable was not set, which happened
+    # for most users, CMake was used to search. A python version of CMake
+    # search method also provided on github PyVisualStudioSetupConfiguration,
+    # but unnecessary.
+    # Exact path of cl is never be used, so left to be None here.
+    output = subprocess.getoutput("cmake --help")
+    if output:
+        m = re.search('\* *(Visual Studio (\d+) (\d+))', output)
+        if m:
+            msvcMajorVersion    = int(m.group(2))
+            msvcMinorVerson     = 0   # no minor version info
+            return (None, (msvcMajorVersion, msvcMinorVerson))
     return None
 
 def IsVisualStudioVersionOrGreater(desiredVersion):
