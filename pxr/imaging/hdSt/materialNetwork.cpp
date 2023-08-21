@@ -954,7 +954,8 @@ _MakeMaterialParamsForTexture(
     // Handle texture scale and bias
     HdSt_MaterialParam texScaleParam;
     texScaleParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
-    texScaleParam.name = TfToken(paramName.GetString() + "_" + 
+    texScaleParam.name = TfToken(paramName.GetString() + "_" +
+                                 HdStTokens->stormGenerated.GetString() + "_" +
                                  HdStTokens->scale.GetString());
     texScaleParam.fallbackValue = VtValue(_ResolveParameter(node, 
                                                             sdrNode, 
@@ -964,7 +965,8 @@ _MakeMaterialParamsForTexture(
 
     HdSt_MaterialParam texBiasParam;
     texBiasParam.paramType = HdSt_MaterialParam::ParamTypeFallback;
-    texBiasParam.name = TfToken(paramName.GetString() + "_" + 
+    texBiasParam.name = TfToken(paramName.GetString() + "_" +
+                                HdStTokens->stormGenerated.GetString() + "_" +
                                 HdStTokens->bias.GetString());
     texBiasParam.fallbackValue = VtValue(_ResolveParameter(node, 
                                                            sdrNode, 

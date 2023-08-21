@@ -3433,12 +3433,12 @@ static void _EmitTextureAccessors(
     // Forward declare texture scale and bias
     if (hasTextureScaleAndBias) {
         accessors 
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
-            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->scale 
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "\n"
+            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale 
             << "());\n"
             << "#endif\n"
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias  << "\n"
-            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->bias 
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias  << "\n"
+            << "FORWARD_DECL(vec4 HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias 
             << "());\n"
             << "#endif\n";
     }
@@ -3595,11 +3595,11 @@ static void _EmitTextureAccessors(
             }
         }
         accessors
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
-            << "    * HdGet_" << name << "_" << HdStTokens->scale << "()\n"
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "\n"
+            << "    * HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "()\n"
             << "#endif\n" 
-            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias << "\n"
-            << "    + HdGet_" << name << "_" << HdStTokens->bias  << "()\n"
+            << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias << "\n"
+            << "    + HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias  << "()\n"
             << "#endif\n"
             << ")" << swizzle << ");\n";
     } else {
@@ -3655,12 +3655,12 @@ static void _EmitTextureAccessors(
                 << name
                 << HdSt_ResourceBindingSuffixTokens->fallback
                 << fallbackSwizzle << ")\n"
-                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->scale << "\n"
-                << "        * HdGet_" << name << "_" << HdStTokens->scale 
+                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "\n"
+                << "        * HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->scale 
                 << "()" << swizzle << "\n"
                 << "#endif\n" 
-                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->bias << "\n"
-                << "        + HdGet_" << name << "_" << HdStTokens->bias 
+                << "#ifdef HD_HAS_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias << "\n"
+                << "        + HdGet_" << name << "_" << HdStTokens->stormGenerated << "_" << HdStTokens->bias
                 << "()" << swizzle << "\n"
                 << "#endif\n"
                 << ");\n"
@@ -5937,13 +5937,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
             accessors 
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_" 
                 << HdStTokens->scale << "\n"
                 << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->scale << "();\n"
                 << "#endif\n"
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->bias << "\n"
                 << "vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->bias << "();\n"
                 << "#endif\n";
                 
@@ -5985,13 +5989,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                     << HdSt_ResourceBindingSuffixTokens->fallback
                     << fallbackSwizzle << ")\n"
                     << "#ifdef HD_HAS_" << it->second.name << "_"
+                    << HdStTokens->stormGenerated << "_"
                     << HdStTokens->scale << "\n"
                     << "    * HdGet_" << it->second.name << "_" 
+                    << HdStTokens->stormGenerated << "_"
                     << HdStTokens->scale << "()" << swizzle << "\n"
                     << "#endif\n" 
                     << "#ifdef HD_HAS_" << it->second.name << "_" 
+                    << HdStTokens->stormGenerated << "_"
                     << HdStTokens->bias << "\n"
                     << "    + HdGet_" << it->second.name << "_" 
+                    << HdStTokens->stormGenerated << "_"
                     << HdStTokens->bias  << "()" << swizzle << "\n"
                     << "#endif\n"
                     << "    );\n  }\n";
@@ -6000,13 +6008,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             accessors
                 << "  return (ret\n"
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->scale << "\n"
                 << "    * HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->scale << "()\n"
                 << "#endif\n" 
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_" 
                 << HdStTokens->bias << "\n"
                 << "    + HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_" 
                 << HdStTokens->bias  << "()\n"
                 << "#endif\n"
                 << "  )" << swizzle << ";\n}\n";
@@ -6057,13 +6069,17 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
 
             accessors 
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->scale << "\n"
                 << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->scale << "());\n"
                 << "#endif\n"
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_"
                 << HdStTokens->bias << "\n"
                 << "FORWARD_DECL(vec4 HdGet_" << it->second.name << "_" 
+                << HdStTokens->stormGenerated << "_" 
                 << HdStTokens->bias << "());\n"
                 << "#endif\n";
                 
@@ -6107,14 +6123,14 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
                     << HdSt_ResourceBindingSuffixTokens->fallback
                     << fallbackSwizzle << ")\n"
                     << "#ifdef HD_HAS_" << it->second.name << "_"
-                    << HdStTokens->scale << "\n"
+                    << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "\n"
                     << "    * HdGet_" << it->second.name << "_" 
-                    << HdStTokens->scale << "()" << swizzle << "\n"
+                    << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "()" << swizzle << "\n"
                     << "#endif\n" 
                     << "#ifdef HD_HAS_" << it->second.name << "_" 
-                    << HdStTokens->bias << "\n"
+                    << HdStTokens->stormGenerated << "_" << HdStTokens->bias << "\n"
                     << "    + HdGet_" << it->second.name << "_" 
-                    << HdStTokens->bias  << "()" << swizzle << "\n"
+                    << HdStTokens->stormGenerated << "_" << HdStTokens->bias  << "()" << swizzle << "\n"
                     << "#endif\n"
                     << "    );\n  }\n";
             }
@@ -6122,14 +6138,14 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             accessors
                 << "  return (ret\n"
                 << "#ifdef HD_HAS_" << it->second.name << "_"
-                << HdStTokens->scale << "\n"
+                << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "\n"
                 << "    * HdGet_" << it->second.name << "_" 
-                << HdStTokens->scale << "()\n"
+                << HdStTokens->stormGenerated << "_" << HdStTokens->scale << "()\n"
                 << "#endif\n" 
                 << "#ifdef HD_HAS_" << it->second.name << "_" 
-                << HdStTokens->bias << "\n"
+                << HdStTokens->stormGenerated << "_" << HdStTokens->bias << "\n"
                 << "    + HdGet_" << it->second.name << "_" 
-                << HdStTokens->bias  << "()\n"
+                << HdStTokens->stormGenerated << "_" << HdStTokens->bias  << "()\n"
                 << "#endif\n"
                 << "  )" << swizzle << ";\n}\n";
 
