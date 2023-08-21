@@ -42,7 +42,13 @@ HgiWebGPUSampler::HgiWebGPUSampler(
     samplerDesc.label = desc.debugName.c_str();
     samplerDesc.magFilter = HgiWebGPUConversions::GetMinMagFilter(desc.magFilter);
     samplerDesc.minFilter = HgiWebGPUConversions::GetMinMagFilter(desc.minFilter);
+    if (desc.mipFilter == HgiMipFilter::HgiMipFilterNotMipmapped) {
+        // We need to emulate this filter as there is no correspondence in the WebGPU API
+        samplerDesc.lodMaxClamp = 0;
+        samplerDesc.lodMinClamp = 0;
+    }
     samplerDesc.mipmapFilter = HgiWebGPUConversions::GetMipFilter(desc.mipFilter);
+
     samplerDesc.addressModeU =
         HgiWebGPUConversions::GetSamplerAddressMode(desc.addressModeU);
     samplerDesc.addressModeV =

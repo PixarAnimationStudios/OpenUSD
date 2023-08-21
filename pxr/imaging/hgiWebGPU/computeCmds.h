@@ -103,6 +103,7 @@ private:
     bool _pushConstantsDirty;
     std::vector<std::function<void(void)>> _pendingUpdates;
     HgiComputeDispatch _dispatchMethod;
+    GfVec3i _localWorkGroupSize;
 
     // Cmds is used only one frame so storing multi-frame state on will not
     // survive.

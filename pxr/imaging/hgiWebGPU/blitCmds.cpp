@@ -265,7 +265,7 @@ HgiWebGPUBlitCmds::CopyBufferGpuToCpu(HgiBufferGpuToCpuOp const& copyOp)
         return;
     }
 
-    HgiWebGPUBuffer* buffer = static_cast<HgiWebGPUBuffer*>(copyOp.gpuSourceBuffer.Get());
+    auto buffer = dynamic_cast<HgiWebGPUBuffer*>(copyOp.gpuSourceBuffer.Get());
 
     if (buffer) {
         _MapAsyncAndWait(buffer->GetBufferHandle(), wgpu::MapMode::Read,0, copyOp.byteSize);
@@ -290,13 +290,19 @@ HgiWebGPUBlitCmds::CopyBufferToTexture(HgiBufferToTextureOp const& copyOp)
 void
 HgiWebGPUBlitCmds::FillBuffer(HgiBufferHandle const& buffer, uint8_t value)
 {
-    TF_CODING_ERROR("Missing Implementation FillBuffer");
+    auto wgpuBuffer = dynamic_cast<HgiWebGPUBuffer*>(buffer.Get());
+    if (wgpuBuffer) {
+        HgiBufferDesc const& desc = wgpuBuffer->GetDescriptor();
+        std::vector<uint8_t> fillVector(desc.byteSize, value);
+
+        _hgi->GetQueue().WriteBuffer(wgpuBuffer->GetBufferHandle(), 0, fillVector.data(), desc.byteSize);
+    }
 }
 
 void
 HgiWebGPUBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
-    HgiWebGPUTexture* wgpuTex = static_cast<HgiWebGPUTexture*>(texture.Get());
+    auto wgpuTex = static_cast<HgiWebGPUTexture*>(texture.Get());
     HgiTextureDesc const& desc = texture->GetDescriptor();
     _mipmapGenerator.generateMipmap(wgpuTex->GetTextureHandle(), desc);
 }
