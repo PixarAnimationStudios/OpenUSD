@@ -67,8 +67,11 @@ void HgiWebGPUShaderFunction::_CreateBuffersBindingGroupLayoutEntries(
         wgpu::BufferBindingLayout bufferLayout;
         bufferLayout.type = HgiWebGPUConversions::GetBufferBindingType(b.binding, b.writable);
 
-        if (stage & wgpu::ShaderStage::Vertex && b.writable && bufferLayout.type == wgpu::BufferBindingType::Storage) {
-            TF_WARN("No support for writable buffers in vertex stage");
+        if ((stage & wgpu::ShaderStage::Vertex || stage & wgpu::ShaderStage::Fragment)
+            && b.writable && bufferLayout.type == wgpu::BufferBindingType::Storage) {
+            // Even though webgpu supports read-write buffers for Fragment shaders, we need to unify the
+            // shader code declaration between the two stages
+            TF_WARN("No support for writable buffers in vertex or fragment stage");
             bufferLayout.type = wgpu::BufferBindingType::ReadOnlyStorage;
         }
         entry.binding = b.bindIndex;
@@ -131,8 +134,7 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
     wgpu::ShaderModuleWGSLDescriptor wgslDesc;
     wgpu::ShaderModuleDescriptor shaderModuleDesc;
     wgslDesc.sType = wgpu::SType::ShaderModuleWGSLDescriptor;
-    shaderModuleDesc.label = _descriptor.debugName.empty() ?
-                             "HdStorm on WebGPU POC" : _descriptor.debugName.c_str();
+    shaderModuleDesc.label = _descriptor.debugName.c_str();
     shaderModuleDesc.nextInChain = &wgslDesc;
     std::string wgslCode;
 
