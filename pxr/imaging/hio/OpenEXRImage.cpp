@@ -149,7 +149,7 @@ HioFormat Hio_OpenEXRImage::GetFormat() const
         {
         case 1:  return HioFormatFloat16;
         case 2:  return HioFormatFloat16Vec2;
-        case 3:  return HioFormatFloat16Vec4; // promote to 4
+        case 3:  return HioFormatFloat16Vec3;
         case 4:  return HioFormatFloat16Vec4;
         default: return HioFormatInvalid;
         }
@@ -159,7 +159,7 @@ HioFormat Hio_OpenEXRImage::GetFormat() const
         {
         case 1:  return HioFormatFloat32;
         case 2:  return HioFormatFloat32Vec2;
-        case 3:  return HioFormatFloat32Vec4; // promote to 4
+        case 3:  return HioFormatFloat32Vec3;
         case 4:  return HioFormatFloat32Vec4;
         default: return HioFormatInvalid;
         }
@@ -263,15 +263,15 @@ namespace {
             }
         }
     };
-    
+   
 } // anon
 
 bool Hio_OpenEXRImage::ReadCropped(
                 int const cropTop,  int const cropBottom,
                 int const cropLeft, int const cropRight, 
-                StorageSpec const &storage)
+                StorageSpec const& storage)
 {
-    // not opened for read prior to calling ReadCropped.
+	// not opened for read prior to calling ReadCropped.
     if (!_asset)
         return false;
 
@@ -315,6 +315,8 @@ bool Hio_OpenEXRImage::ReadCropped(
         // resizing is not supported for uint types.
         return false;
     }
+    
+    bool flip = storage.flipped;
 
     if (outputIsUInt) {
         // no conversion to float; read the data, and crop it if necessary.
@@ -328,14 +330,17 @@ bool Hio_OpenEXRImage::ReadCropped(
         if (rv != EXR_ERR_SUCCESS) {
             return false;
         }
-        ImageProcessor<uint32_t>::FlipImage(reinterpret_cast<uint32_t*>(img.data),
-                                            fileWidth, fileHeight,
-                                            img.channelCount);
         ImageProcessor<uint32_t>::CropImage(reinterpret_cast<uint32_t*>(img.data),
                                             fileWidth, fileHeight,
                                             img.channelCount,
                                             cropTop, cropBottom,
                                             cropLeft, cropRight);
+        if (flip) {
+            ImageProcessor<uint32_t>::FlipImage(reinterpret_cast<uint32_t*>(img.data),
+                                                fileWidth - cropLeft - cropRight,
+                                                fileHeight - cropTop - cropBottom,
+                                                img.channelCount);
+        }
 
         // copy the data to the output buffer.
         memcpy(storage.data, img.data, outWidth * outHeight * outputBytesPerPixel);
@@ -351,7 +356,7 @@ bool Hio_OpenEXRImage::ReadCropped(
         halfInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
     }
     std::vector<float> floatInputBuffer;
-    if (inputIsHalf && (resizing || outputIsFloat)) {
+    if (inputIsFloat || (inputIsHalf && (resizing || outputIsFloat))) {
         floatInputBuffer.resize(fileWidth * fileHeight * maxChannelCount);
     }
 
@@ -377,24 +382,30 @@ bool Hio_OpenEXRImage::ReadCropped(
 
         // flip and crop the image in place
         if (inputIsHalf) {
-            ImageProcessor<GfHalf>::FlipImage(&halfInputBuffer[0],
-                                              fileWidth, fileHeight,
-                                              img.channelCount);
             ImageProcessor<GfHalf>::CropImage(&halfInputBuffer[0],
                                               fileWidth, fileHeight,
                                               img.channelCount,
                                               cropTop, cropBottom,
                                               cropLeft, cropRight);
+            if (flip) {
+                ImageProcessor<GfHalf>::FlipImage(&halfInputBuffer[0],
+                                                  fileWidth - cropLeft - cropRight,
+                                                  fileHeight - cropTop - cropBottom,
+                                                  img.channelCount);
+            }
         }
         else {
-            ImageProcessor<float>::FlipImage(&floatInputBuffer[0],
-                                             fileWidth, fileHeight,
-                                             fileChannelCount);
             ImageProcessor<float>::CropImage(&floatInputBuffer[0],
                                              fileWidth, fileHeight,
-                                             fileChannelCount,
+                                             img.channelCount,
                                              cropTop, cropBottom,
                                              cropLeft, cropRight);
+            if (flip) {
+                ImageProcessor<float>::FlipImage(&floatInputBuffer[0],
+                                                 fileWidth - cropLeft - cropRight,
+                                                 fileHeight - cropTop - cropBottom,
+                                                 img.channelCount);
+            }
         }
     }
 
@@ -410,15 +421,16 @@ bool Hio_OpenEXRImage::ReadCropped(
                &floatInputBuffer[0], outSize);
         }
         else if (outputIsFloat) {
+            GfHalf* src = halfInputBuffer.data();
+            float* dst = reinterpret_cast<float*>(storage.data);
             for (size_t i = 0; i < outCount; ++i)
-                reinterpret_cast<float*>(storage.data)[i]
-                    = half_to_float(halfInputBuffer[i]);
+                dst[i] = src[i];
         }
         else {
-            // output is half
+            float* src = floatInputBuffer.data();
+            GfHalf* dst = reinterpret_cast<GfHalf*>(storage.data);
             for (size_t i = 0; i < outCount; ++i)
-                reinterpret_cast<uint16_t*>(storage.data)[i]
-                    = float_to_half(floatInputBuffer[i]);
+                dst[i] = src[i];
         }
         return true;
     }
@@ -435,7 +447,7 @@ bool Hio_OpenEXRImage::ReadCropped(
 
     std::vector<float> resizeOutputBuffer;
 
-    nanoexr_ImageData_t src;
+    nanoexr_ImageData_t src = { 0 };
     src.data = reinterpret_cast<uint8_t*>(&floatInputBuffer[0]);
     src.channelCount = fileChannelCount;
     src.dataSize = readWidth * readHeight * GetBytesPerPixel();
@@ -443,7 +455,7 @@ bool Hio_OpenEXRImage::ReadCropped(
     src.width = readWidth;
     src.height = readHeight;
 
-    nanoexr_ImageData_t dst;
+    nanoexr_ImageData_t dst = { 0 };
     dst.channelCount = outChannelCount;
     dst.dataSize = outWidth * outHeight * outChannelCount * sizeof(float);
     dst.pixelType = EXR_PIXEL_FLOAT;
@@ -458,12 +470,16 @@ bool Hio_OpenEXRImage::ReadCropped(
         dst.data = reinterpret_cast<uint8_t*>(&resizeOutputBuffer[0]);
     }
     nanoexr_Gaussian_resample(&src, &dst);
-    if (outputIsFloat)
+    if (outputIsFloat) {
+        memcpy(reinterpret_cast<void*>(storage.data), dst.data, dst.dataSize);
         return true;
+    }
 
     ImageProcessor<float>::FloatToHalf(&resizeOutputBuffer[0],
                                        reinterpret_cast<GfHalf*>(dst.data),
                                        outWidth, outHeight, outChannelCount);
+    memcpy(reinterpret_cast<void*>(storage.data), &resizeOutputBuffer[0],
+           outWidth * outHeight * GetBytesPerPixel());
     return true;
 }
 
@@ -817,35 +833,105 @@ void Hio_OpenEXRImage::_AttributeWriteCallback(void* self_, exr_context_t exr) {
 bool Hio_OpenEXRImage::Write(StorageSpec const &storage,
                              VtDictionary const &metadata)
 {
-    const HioType type = HioGetHioType(storage.format);
-    if (type != HioTypeFloat && type != HioTypeHalfFloat) {
-        TF_CODING_ERROR("Unsupported pixel type %d", type);
-        return false;
-    }
-    switch (storage.format) {
-        case HioFormatFloat16:
-        case HioFormatFloat16Vec2:
-        case HioFormatFloat16Vec3:
-        case HioFormatFloat16Vec4:
-            break;
-        default:
-            TF_CODING_ERROR("Unsupported pixel format %d", storage.format);
-            return false;
-    }
-
     _callbackDict = &metadata;
+    exr_result_t rv;
+    const HioType type = HioGetHioType(storage.format);
     int32_t pxsize = type == HioTypeFloat ? sizeof(float) : sizeof(GfHalf);
     int32_t ch = HioGetComponentCount(storage.format);
-    uint8_t* pixels = reinterpret_cast<uint8_t*>(storage.data);
-    int32_t lineStride = storage.width * pxsize * ch;
     int32_t pixelStride = pxsize * ch;
-    exr_result_t rv = nanoexr_write_f16_exr(
-                        _filename.c_str(),
-                        _AttributeWriteCallback, this,
-                        storage.width, storage.height,
-                        pixels + (pxsize * 2), pixelStride, lineStride,  // red
-                        pixels +  pxsize,      pixelStride, lineStride,  // green
-                        pixels,                pixelStride, lineStride); // blue
+    int32_t lineStride = storage.width * pxsize * ch;
+    if (type == HioTypeUnsignedByte) {
+        // glf will attempt to write 8 bit unsigned frame buffer data to exr
+        // files, so promote the pixels to float16.
+        int32_t ch = HioGetComponentCount(storage.format);
+        std::vector<GfHalf> pixels(storage.width * storage.height * ch);
+        const uint8_t* src = reinterpret_cast<const uint8_t*>(storage.data);
+        GfHalf* dst = pixels.data();
+        for (int i = 0; i < storage.width * storage.height * ch; ++i) {
+            *dst++ = GfHalf(*src++) / 255.0f;
+        }
+        int pixMul = ch - 1;
+        uint8_t* red = nullptr;
+        uint8_t* green = nullptr;
+        uint8_t* blue = nullptr;
+        uint8_t* alpha = nullptr;
+        if (ch > 0) {
+            red = (uint8_t*) pixels.data() + (pxsize * pixMul);
+            --pixMul;
+        }
+        if (ch > 1) {
+            green = (uint8_t*) pixels.data() + (pxsize * pixMul);
+            --pixMul;
+        }
+        if (ch > 2) {
+            blue = (uint8_t*) pixels.data() + (pxsize * pixMul);
+            --pixMul;
+        }
+        if (ch > 3) {
+            alpha = (uint8_t*) pixels.data() + (pxsize * pixMul);
+            --pixMul;
+        }
+        rv = nanoexr_write_exr(
+                _filename.c_str(),
+                _AttributeWriteCallback, this,
+                storage.width, storage.height, storage.flipped,
+                EXR_PIXEL_HALF,
+                (uint8_t*) red,   pixelStride, lineStride,
+                (uint8_t*) green, pixelStride, lineStride,
+                (uint8_t*) blue,  pixelStride, lineStride,
+                (uint8_t*) alpha, pixelStride, lineStride);
+        _callbackDict = nullptr;
+        return rv == EXR_ERR_SUCCESS;
+    }
+    else if (type != HioTypeFloat && type != HioTypeHalfFloat) {
+        TF_CODING_ERROR("Unsupported pixel type %d", type);
+        _callbackDict = nullptr;
+        return false;
+    }
+
+    uint8_t* pixels = reinterpret_cast<uint8_t*>(storage.data);
+    int pixMul = ch - 1;
+    uint8_t* red = nullptr;
+    uint8_t* green = nullptr;
+    uint8_t* blue = nullptr;
+    uint8_t* alpha = nullptr;
+    if (ch > 0) {
+        red = pixels + (pxsize * pixMul);
+        --pixMul;
+    }
+    if (ch > 1) {
+        green = pixels + (pxsize * pixMul);
+        --pixMul;
+    }
+    if (ch > 2) {
+        blue = pixels + (pxsize * pixMul);
+        --pixMul;
+    }
+    if (ch > 3) {
+        alpha = pixels + (pxsize * pixMul);
+        --pixMul;
+    }
+
+    if (type == HioTypeFloat)
+        rv = nanoexr_write_exr(
+                _filename.c_str(),
+                _AttributeWriteCallback, this,
+                storage.width, storage.height, storage.flipped,
+                EXR_PIXEL_FLOAT,
+                red,   pixelStride, lineStride,
+                green, pixelStride, lineStride,
+                blue,  pixelStride, lineStride,
+                alpha, pixelStride, lineStride);
+    else
+        rv = nanoexr_write_exr(
+                _filename.c_str(),
+                _AttributeWriteCallback, this,
+                storage.width, storage.height, storage.flipped,
+                EXR_PIXEL_HALF,
+                red,   pixelStride, lineStride,
+                green, pixelStride, lineStride,
+                blue,  pixelStride, lineStride,
+                alpha, pixelStride, lineStride);
 
     _callbackDict = nullptr;
     return rv == EXR_ERR_SUCCESS;
