@@ -90,8 +90,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (binding)
     (coordSys)
-    (prmanParams)
-    ((prmanParamsNames, ""))
 );
 
 // ----------------------------------------------------------------------------
@@ -2494,10 +2492,6 @@ HdDataSourceLegacyPrim::GetNames()
         result.push_back(HdPrimTypeTokens->drawTarget);
     }
 
-    if (_type == _tokens->prmanParams) {
-        result.push_back(_tokens->prmanParams);
-    }
-
     result.push_back(HdSceneIndexEmulationTokens->sceneDelegate);
 
     return result;
@@ -2972,49 +2966,6 @@ HdDataSourceLegacyPrim::_GetInstanceCategoriesDataSource()
     );
 }
 
-HdDataSourceBaseHandle
-HdDataSourceLegacyPrim::_GetPrmanParamsDataSource()
-{
-    VtValue namesValue = _sceneDelegate->Get(_id, _tokens->prmanParamsNames);
-    if (!namesValue.IsHolding<TfTokenVector>()) {
-        return nullptr;
-    }
-
-    TfTokenVector dictKeys;
-    std::vector<HdDataSourceBaseHandle> dicts;
-
-    for (const TfToken &dictName : namesValue.UncheckedGet<TfTokenVector>()) {
-        VtValue dictValue = _sceneDelegate->Get(_id, dictName);
-
-        if (!dictValue.IsHolding<std::map<TfToken, VtValue>>()) {
-            continue;
-        }
-
-        std::map<TfToken, VtValue> dict =
-            dictValue.UncheckedGet<std::map<TfToken, VtValue>>();
-
-        if (dict.empty()) {
-            continue;
-        }
-
-        TfTokenVector valueKeys;
-        std::vector<HdDataSourceBaseHandle> values;
-        for (const auto &valuePair : dict) {
-            valueKeys.push_back(valuePair.first);
-            values.push_back(
-                HdRetainedSampledDataSource::New(valuePair.second));
-        }
-
-        dictKeys.push_back(dictName);
-        dicts.push_back(HdRetainedContainerDataSource::New(
-            valueKeys.size(), valueKeys.data(), values.data()));
-    }
-
-
-    return HdRetainedContainerDataSource::New(
-            dictKeys.size(), dictKeys.data(), dicts.data());
-}
-
 HdDataSourceBaseHandle 
 HdDataSourceLegacyPrim::Get(const TfToken &name)
 {
@@ -3082,10 +3033,6 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
             Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
         return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
-    } else if (name == _tokens->prmanParams) {
-        if (_type == _tokens->prmanParams) {
-            return _GetPrmanParamsDataSource();
-        }
     }
 
     return nullptr;
