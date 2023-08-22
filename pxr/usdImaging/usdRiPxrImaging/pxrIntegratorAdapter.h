@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,33 +21,33 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_PXR_SAMPLE_FILTER_ADAPTER_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_PXR_SAMPLE_FILTER_ADAPTER_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_INTEGRATOR_ADAPTER_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_INTEGRATOR_ADAPTER_H
 
-/// \file usdRiImaging/pxrSampleFilterAdapter.h
+/// \file usdRiPxrImaging/pxrIntegratorAdapter.h
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdRiImaging/api.h"
+#include "pxr/usdImaging/usdRiPxrImaging/api.h"
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class UsdRiImagingPxrSampleFilterAdapter
+/// \class UsdRiPxrImagingIntegratorAdapter
 ///
-/// Delegate support for Sample Filter Prims.
+/// Delegate support for Integrator Prims.
 ///
-class UsdRiImagingPxrSampleFilterAdapter : public UsdImagingPrimAdapter
+class UsdRiPxrImagingIntegratorAdapter : public UsdImagingPrimAdapter
 {
 public:
     using BaseAdapter = UsdImagingPrimAdapter;
 
-    UsdRiImagingPxrSampleFilterAdapter()
+    UsdRiPxrImagingIntegratorAdapter()
         : UsdImagingPrimAdapter()
     {}
 
-    USDRIIMAGING_API
-    ~UsdRiImagingPxrSampleFilterAdapter() override;
+    USDRIPXRIMAGING_API
+    ~UsdRiPxrImagingIntegratorAdapter() override;
 
     // ---------------------------------------------------------------------- //
     /// \name Scene Index Support
@@ -78,13 +78,13 @@ public:
     /// \name Initialization
     // ---------------------------------------------------------------------- //
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const*
                      instancerContext = nullptr) override;
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     bool IsSupported(UsdImagingIndexProxy const* index) const override;
 
     // ---------------------------------------------------------------------- //
@@ -92,7 +92,7 @@ public:
     // ---------------------------------------------------------------------- //
 
     /// Thread Safe.
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     void TrackVariability(UsdPrim const& prim,
                           SdfPath const& cachePath,
                           HdDirtyBits* timeVaryingBits,
@@ -101,7 +101,7 @@ public:
 
 
     /// Thread Safe.
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     void UpdateForTime(UsdPrim const& prim,
                        SdfPath const& cachePath,
                        UsdTimeCode time,
@@ -115,12 +115,12 @@ public:
 
     /// Returns a bit mask of attributes to be udpated, or
     /// HdChangeTracker::AllDirty if the entire prim must be resynchronized.
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     HdDirtyBits ProcessPropertyChange(UsdPrim const& prim,
                                       SdfPath const& cachePath,
                                       TfToken const& propertyName) override;
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     void MarkDirty(UsdPrim const& prim,
                    SdfPath const& cachePath,
                    HdDirtyBits dirty,
@@ -130,7 +130,7 @@ public:
     /// \name Data access
     // ---------------------------------------------------------------------- //
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     VtValue Get(UsdPrim const& prim,
                 SdfPath const& cachePath,
                 TfToken const& key,
@@ -138,7 +138,7 @@ public:
                 VtIntArray *outIndices) const override;
 
 protected:
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     void _RemovePrim(SdfPath const& cachePath,
                      UsdImagingIndexProxy* index) override;
 
@@ -147,4 +147,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_RI_IMAGING_PXR_SAMPLE_FILTER_ADAPTER_H
+#endif // PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_INTEGRATOR_ADAPTER_H

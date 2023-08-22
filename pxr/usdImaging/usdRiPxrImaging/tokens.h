@@ -21,17 +21,17 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_TOKENS_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_TOKENS_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_TOKENS_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_TOKENS_H
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdRiImaging/api.h"
+#include "pxr/usdImaging/usdRiPxrImaging/api.h"
 #include "pxr/base/tf/staticTokens.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define USDRIIMAGING_TOKENS   \
+#define USDRIPXRIMAGING_TOKENS   \
     ((infoSource, "info:source")) \
     (faceIndexPrimvar)      \
     (faceOffsetPrimvar)     \
@@ -61,8 +61,10 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pxrIntMultLightFilter) \
     (pxrRodLightFilter)
 
-TF_DECLARE_PUBLIC_TOKENS(UsdRiImagingTokens, USDRIIMAGING_API, USDRIIMAGING_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(
+    UsdRiPxrImagingTokens,
+    USDRIPXRIMAGING_API, USDRIPXRIMAGING_TOKENS);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif //PXR_USD_IMAGING_USD_RI_IMAGING_TOKENS_H
+#endif //PXR_USD_IMAGING_USD_RI_PXR_IMAGING_TOKENS_H

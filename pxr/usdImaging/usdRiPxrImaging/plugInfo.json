@@ -3,14 +3,14 @@
         {
             "Info": {
                 "Types": {
-                    "UsdRiImagingPxrBarnLightFilterAdapter": {
+                    "UsdRiPxrImagingBarnLightFilterAdapter": {
                         "bases": [
                             "UsdImagingLightFilterAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "PxrBarnLightFilter"
                     },
-                    "UsdRiImagingPxrDisplayFilterAdapter": {
+                    "UsdRiPxrImagingDisplayFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
                         ],
@@ -18,7 +18,7 @@
                         "primTypeName": "PxrDisplayFilterPluginBase",
                         "includeDerivedPrimTypes": true
                     },
-                    "UsdRiImagingPxrIntegratorAdapter": {
+                    "UsdRiPxrImagingIntegratorAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
                         ],
@@ -26,21 +26,21 @@
                         "primTypeName": "PxrIntegratorPluginBase",
                         "includeDerivedPrimTypes" : true 
                     },
-                    "UsdRiImagingPxrIntMultLightFilterAdapter": {
+                    "UsdRiPxrImagingIntMultLightFilterAdapter": {
                         "bases": [
                             "UsdImagingLightFilterAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "PxrIntMultLightFilter"
                     },
-                    "UsdRiImagingPxrRodLightFilterAdapter": {
+                    "UsdRiPxrImagingRodLightFilterAdapter": {
                         "bases": [
                             "UsdImagingLightFilterAdapter"
                         ],
                         "isInternal": true,
                         "primTypeName": "PxrRodLightFilter"
                     },
-                    "UsdRiImagingPxrSampleFilterAdapter": {
+                    "UsdRiPxrImagingSampleFilterAdapter": {
                         "bases": [
                             "UsdImagingPrimAdapter"
                         ],
@@ -51,7 +51,7 @@
                 }
             },
             "LibraryPath": "@PLUG_INFO_LIBRARY_PATH@",
-            "Name": "usdRiImaging",
+            "Name": "usdRiPxrImaging",
             "ResourcePath": "@PLUG_INFO_RESOURCE_PATH@",
             "Root": "@PLUG_INFO_ROOT@",
             "Type": "library"

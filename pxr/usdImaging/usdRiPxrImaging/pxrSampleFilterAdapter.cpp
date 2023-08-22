@@ -21,9 +21,9 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdRiImaging/pxrSampleFilterAdapter.h"
-#include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
-#include "pxr/usdImaging/usdRiImaging/dataSourcePxrRenderTerminalPrims.h"
+#include "pxr/usdImaging/usdRiPxrImaging/pxrSampleFilterAdapter.h"
+#include "pxr/usdImaging/usdRiPxrImaging/pxrRenderTerminalHelper.h"
+#include "pxr/usdImaging/usdRiPxrImaging/dataSourcePxrRenderTerminalPrims.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -43,13 +43,13 @@ TF_DEFINE_PRIVATE_TOKENS(
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    using Adapter = UsdRiImagingPxrSampleFilterAdapter;
+    using Adapter = UsdRiPxrImagingSampleFilterAdapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdRiImagingPxrSampleFilterAdapter::
-~UsdRiImagingPxrSampleFilterAdapter() = default;
+UsdRiPxrImagingSampleFilterAdapter::
+~UsdRiPxrImagingSampleFilterAdapter() = default;
 
 
 // -------------------------------------------------------------------------- //
@@ -57,13 +57,13 @@ UsdRiImagingPxrSampleFilterAdapter::
 // -------------------------------------------------------------------------- //
 
 TfTokenVector
-UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprims(UsdPrim const& prim)
+UsdRiPxrImagingSampleFilterAdapter::GetImagingSubprims(UsdPrim const& prim)
 {
     return { TfToken() };
 }
 
 TfToken
-UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimType(
+UsdRiPxrImagingSampleFilterAdapter::GetImagingSubprimType(
     UsdPrim const& prim,
     TfToken const& subprim)
 {
@@ -74,14 +74,14 @@ UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimType(
 }
 
 HdContainerDataSourceHandle
-UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimData(
+UsdRiPxrImagingSampleFilterAdapter::GetImagingSubprimData(
     UsdPrim const& prim,
     TfToken const& subprim,
     const UsdImagingDataSourceStageGlobals &stageGlobals)
 {
     if (subprim.IsEmpty()) {
         return 
-            UsdRiImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
+            UsdRiPxrImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
                 New(prim.GetPath(), prim,
                     _tokens->riSampleFilterShaderId, stageGlobals);
     }
@@ -90,7 +90,7 @@ UsdRiImagingPxrSampleFilterAdapter::GetImagingSubprimData(
 }
 
 HdDataSourceLocatorSet
-UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
+UsdRiPxrImagingSampleFilterAdapter::InvalidateImagingSubprim(
     UsdPrim const& prim,
     TfToken const& subprim,
     TfTokenVector const& properties,
@@ -98,7 +98,7 @@ UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
 {
     if (subprim.IsEmpty()) {
         return 
-            UsdRiImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
+            UsdRiPxrImaging_DataSourceRenderTerminalPrim<HdSampleFilterSchema>::
             Invalidate(
                 prim, subprim, properties, invalidationType);
     }
@@ -111,7 +111,7 @@ UsdRiImagingPxrSampleFilterAdapter::InvalidateImagingSubprim(
 // -------------------------------------------------------------------------- //
 
 bool
-UsdRiImagingPxrSampleFilterAdapter::IsSupported(
+UsdRiPxrImagingSampleFilterAdapter::IsSupported(
     UsdImagingIndexProxy const* index) const
 {
     bool supported = index->IsSprimTypeSupported(HdPrimTypeTokens->sampleFilter);
@@ -119,7 +119,7 @@ UsdRiImagingPxrSampleFilterAdapter::IsSupported(
 }
 
 SdfPath
-UsdRiImagingPxrSampleFilterAdapter::Populate(
+UsdRiPxrImagingSampleFilterAdapter::Populate(
     UsdPrim const& prim, 
     UsdImagingIndexProxy* index,
     UsdImagingInstancerContext const* instancerContext)
@@ -136,7 +136,7 @@ UsdRiImagingPxrSampleFilterAdapter::Populate(
 }
 
 void
-UsdRiImagingPxrSampleFilterAdapter::_RemovePrim(
+UsdRiPxrImagingSampleFilterAdapter::_RemovePrim(
     SdfPath const& cachePath,
     UsdImagingIndexProxy* index)
 {
@@ -144,7 +144,7 @@ UsdRiImagingPxrSampleFilterAdapter::_RemovePrim(
 }
 
 void 
-UsdRiImagingPxrSampleFilterAdapter::TrackVariability(
+UsdRiPxrImagingSampleFilterAdapter::TrackVariability(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits* timeVaryingBits,
@@ -164,7 +164,7 @@ UsdRiImagingPxrSampleFilterAdapter::TrackVariability(
 // Thread safe.
 //  * Populate dirty bits for the given \p time.
 void 
-UsdRiImagingPxrSampleFilterAdapter::UpdateForTime(
+UsdRiPxrImagingSampleFilterAdapter::UpdateForTime(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     UsdTimeCode time,
@@ -175,7 +175,7 @@ UsdRiImagingPxrSampleFilterAdapter::UpdateForTime(
 }
 
 HdDirtyBits
-UsdRiImagingPxrSampleFilterAdapter::ProcessPropertyChange(
+UsdRiPxrImagingSampleFilterAdapter::ProcessPropertyChange(
     UsdPrim const& prim,
     SdfPath const& cachePath, 
     TfToken const& propertyName)
@@ -184,7 +184,7 @@ UsdRiImagingPxrSampleFilterAdapter::ProcessPropertyChange(
 }
 
 void
-UsdRiImagingPxrSampleFilterAdapter::MarkDirty(
+UsdRiPxrImagingSampleFilterAdapter::MarkDirty(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     HdDirtyBits dirty,
@@ -194,7 +194,7 @@ UsdRiImagingPxrSampleFilterAdapter::MarkDirty(
 }
 
 VtValue
-UsdRiImagingPxrSampleFilterAdapter::Get(
+UsdRiPxrImagingSampleFilterAdapter::Get(
     UsdPrim const& prim,
     SdfPath const& cachePath,
     TfToken const& key,
@@ -203,7 +203,7 @@ UsdRiImagingPxrSampleFilterAdapter::Get(
 {
     if (key == HdSampleFilterSchemaTokens->resource) {
         return VtValue(
-            UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
+            UsdRiPxrImagingRenderTerminalHelper::CreateHdMaterialNode2(
                 prim,
                 _tokens->riSampleFilterShaderId,
                 HdPrimTypeTokens->sampleFilter));

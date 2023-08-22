@@ -21,11 +21,11 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdRiImaging/pxrRodLightFilterAdapter.h"
+#include "pxr/usdImaging/usdRiPxrImaging/pxrBarnLightFilterAdapter.h"
 #include "pxr/usdImaging/usdImaging/lightAdapter.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
-#include "pxr/usdImaging/usdRiImaging/tokens.h"
+#include "pxr/usdImaging/usdRiPxrImaging/tokens.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
@@ -34,17 +34,17 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_REGISTRY_FUNCTION(TfType)
 {
-    typedef UsdRiImagingPxrRodLightFilterAdapter Adapter;
+    typedef UsdRiPxrImagingBarnLightFilterAdapter Adapter;
     TfType t = TfType::Define<Adapter, TfType::Bases<Adapter::BaseAdapter> >();
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdRiImagingPxrRodLightFilterAdapter::~UsdRiImagingPxrRodLightFilterAdapter() 
+UsdRiPxrImagingBarnLightFilterAdapter::~UsdRiPxrImagingBarnLightFilterAdapter() 
 {
 }
 
 bool
-UsdRiImagingPxrRodLightFilterAdapter::IsSupported(
+UsdRiPxrImagingBarnLightFilterAdapter::IsSupported(
         UsdImagingIndexProxy const* index) const
 {
     return UsdImagingLightAdapter::IsEnabledSceneLights() &&
@@ -52,7 +52,7 @@ UsdRiImagingPxrRodLightFilterAdapter::IsSupported(
 }
 
 SdfPath
-UsdRiImagingPxrRodLightFilterAdapter::Populate(UsdPrim const& prim, 
+UsdRiPxrImagingBarnLightFilterAdapter::Populate(UsdPrim const& prim, 
                             UsdImagingIndexProxy* index,
                             UsdImagingInstancerContext const* instancerContext)
 {
@@ -63,7 +63,7 @@ UsdRiImagingPxrRodLightFilterAdapter::Populate(UsdPrim const& prim,
 }
 
 void
-UsdRiImagingPxrRodLightFilterAdapter::_RemovePrim(SdfPath const& cachePath,
+UsdRiPxrImagingBarnLightFilterAdapter::_RemovePrim(SdfPath const& cachePath,
                                          UsdImagingIndexProxy* index)
 {
     index->RemoveSprim(HdPrimTypeTokens->lightFilter, cachePath);

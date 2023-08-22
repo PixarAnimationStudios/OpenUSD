@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/usdImaging)
-set(PXR_PACKAGE usdRiImaging)
+set(PXR_PACKAGE usdRiPxrImaging)
 
-pxr_library(usdRiImaging
+pxr_library(usdRiPxrImaging
     LIBRARIES
         gf
         tf

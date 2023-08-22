@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_PXR_RENDER_TERMINAL_HELPER_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_PXR_RENDER_TERMINAL_HELPER_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_RENDER_TERMINAL_HELPER_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_RENDER_TERMINAL_HELPER_H
 
-/// \file usdRiImaging/pxrRenderTerminalHelper.h
+/// \file usdRiPxrImaging/pxrRenderTerminalHelper.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usd/prim.h"
@@ -33,12 +33,12 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-/// \class UsdRiImagingPxrRenderTerminalHelper
+/// \class UsdRiPxrImagingRenderTerminalHelper
 ///
 /// Helper to translate the PxrRenderTerminalsAPI (Integrator, Sample Filter 
 /// and Display Filter) prims into their corresponding HdMaterialNode2 resource.
 ///
-class UsdRiImagingPxrRenderTerminalHelper
+class UsdRiPxrImagingRenderTerminalHelper
 {
 public:
     static
@@ -52,4 +52,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_RI_IMAGING_PXR_RENDER_TERMINAL_HELPER_H
+#endif // PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_RENDER_TERMINAL_HELPER_H

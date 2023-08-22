@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/usdImaging/usdRiImaging/pxrRenderTerminalHelper.h"
+#include "pxr/usdImaging/usdRiPxrImaging/pxrRenderTerminalHelper.h"
 #include "pxr/usd/usd/attribute.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -52,7 +52,7 @@ _GetNodeTypeId(
 
 /* static */
 HdMaterialNode2
-UsdRiImagingPxrRenderTerminalHelper::CreateHdMaterialNode2(
+UsdRiPxrImagingRenderTerminalHelper::CreateHdMaterialNode2(
     UsdPrim const& prim,
     TfToken const& shaderIdToken,
     TfToken const& primTypeToken)

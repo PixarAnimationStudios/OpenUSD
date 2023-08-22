@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2017 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,18 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_VERSION_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_VERSION_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_API_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_API_H
 
-#include "pxr/pxr.h"
+#include "pxr/base/arch/export.h"
 
-PXR_NAMESPACE_OPEN_SCOPE
+#if defined(PXR_STATIC)
+#   define USDRIPXRIMAGING_API
+#   define USDRIPXRIMAGING_API_TEMPLATE_CLASS(...)
+#   define USDRIPXRIMAGING_API_TEMPLATE_STRUCT(...)
+#   define USDRIPXRIMAGING_LOCAL
+#else
+#   if defined(USDRIPXRIMAGING_EXPORTS)
+#       define USDRIPXRIMAGING_API ARCH_EXPORT
+#       define USDRIPXRIMAGING_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDRIPXRIMAGING_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define USDRIPXRIMAGING_API ARCH_IMPORT
+#       define USDRIPXRIMAGING_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define USDRIPXRIMAGING_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define USDRIPXRIMAGING_LOCAL ARCH_HIDDEN
+#endif
 
-// Version 1 -- clone off PXR_USD_IMAGING_USD_RI_IMAGING_VERSION_H and add light filter support
-
-#define USD_RI_IMAGING_API_VERSION 1
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif // PXR_USD_IMAGING_USD_RI_IMAGING_VERSION_H
+#endif // PXR_USD_IMAGING_USD_RI_PXR_IMAGING_API_H

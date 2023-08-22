@@ -22,20 +22,20 @@
 // language governing permissions and limitations under the Apache License.
 //
 
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H
 
 #include "pxr/usdImaging/usdImaging/dataSourcePrim.h"
 
 #include "pxr/imaging/hd/dataSource.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
-#include "pxr/usdImaging/usdRiImaging/api.h"
+#include "pxr/usdImaging/usdRiPxrImaging/api.h"
 
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdRiImaging_DataSourceRenderTerminalPrim
+/// \class UsdRiPxrImaging_DataSourceRenderTerminalPrim
 ///
 /// A prim data source representing Render Terminal prims inheriting from 
 ///     PxrDisplayFilterPluginBase, 
@@ -43,18 +43,18 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///     PxrSampleFilterPluginBase
 ///
 template <typename TerminalSchema>
-class UsdRiImaging_DataSourceRenderTerminalPrim : public UsdImagingDataSourcePrim
+class UsdRiPxrImaging_DataSourceRenderTerminalPrim : public UsdImagingDataSourcePrim
 {
 public:
-    HD_DECLARE_DATASOURCE(UsdRiImaging_DataSourceRenderTerminalPrim);
+    HD_DECLARE_DATASOURCE(UsdRiPxrImaging_DataSourceRenderTerminalPrim);
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     TfTokenVector GetNames() override;
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     static
     HdDataSourceLocatorSet
     Invalidate(
@@ -65,7 +65,7 @@ public:
 
 private:
     // Private constructor, use static New() instead.
-    UsdRiImaging_DataSourceRenderTerminalPrim(
+    UsdRiPxrImaging_DataSourceRenderTerminalPrim(
         const SdfPath &sceneIndexPath,
         UsdPrim usdPrim,
         const TfToken &shaderId,
@@ -146,8 +146,8 @@ _ComputeResourceDS(
 }
 
 template <typename TerminalSchema>
-UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::
-UsdRiImaging_DataSourceRenderTerminalPrim(
+UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::
+UsdRiPxrImaging_DataSourceRenderTerminalPrim(
     const SdfPath &sceneIndexPath,
     UsdPrim usdPrim,
     const TfToken &shaderId,
@@ -159,7 +159,7 @@ UsdRiImaging_DataSourceRenderTerminalPrim(
 
 template <typename TerminalSchema>
 TfTokenVector 
-UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::GetNames()
+UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::GetNames()
 {
     // Note: Skip properties on UsdImagingDataSourcePrim.
     return { TerminalSchema::GetSchemaToken() };
@@ -167,7 +167,7 @@ UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::GetNames()
 
 template <typename TerminalSchema>
 HdDataSourceBaseHandle 
-UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Get(
+UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Get(
     const TfToken & name)
 {
     if (name == TerminalSchema::GetSchemaToken()) {
@@ -183,7 +183,7 @@ UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Get(
 
 template <typename TerminalSchema>
 HdDataSourceLocatorSet
-UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
+UsdRiPxrImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
     UsdPrim const& prim,
     const TfToken &subprim,
     const TfTokenVector &properties,
@@ -206,4 +206,4 @@ UsdRiImaging_DataSourceRenderTerminalPrim<TerminalSchema>::Invalidate(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_RI_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H
+#endif // PXR_USD_IMAGING_USD_RI_PXR_IMAGING_DATA_SOURCE_RENDER_TERMINAL_PRIMS_H

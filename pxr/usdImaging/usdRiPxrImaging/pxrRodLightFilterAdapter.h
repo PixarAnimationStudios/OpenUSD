@@ -21,13 +21,13 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_USD_IMAGING_USD_RI_IMAGING_PXR_INTMULT_LIGHT_FILTER_ADAPTER_H
-#define PXR_USD_IMAGING_USD_RI_IMAGING_PXR_INTMULT_LIGHT_FILTER_ADAPTER_H
+#ifndef PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_ROD_LIGHT_FILTER_ADAPTER_H
+#define PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_ROD_LIGHT_FILTER_ADAPTER_H
 
-/// \file usdRiImaging/pxrIntMultLightFilterAdapter.h
+/// \file usdRiPxrImaging/pxrRodLightFilterAdapter.h
 
 #include "pxr/pxr.h"
-#include "pxr/usdImaging/usdRiImaging/api.h"
+#include "pxr/usdImaging/usdRiPxrImaging/api.h"
 #include "pxr/usdImaging/usdImaging/lightFilterAdapter.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -35,27 +35,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class UsdPrim;
 
-/// \class UsdRiImagingPxrIntMultLightFilterAdapter
+/// \class UsdRiPxrImagingRodLightFilterAdapter
 ///
-/// Adapter class for lights of type PxrIntMultLightFilter
+/// Adapter class for lights of type PxrRodLightFilter
 ///
-class UsdRiImagingPxrIntMultLightFilterAdapter : public UsdImagingLightFilterAdapter {
+class UsdRiPxrImagingRodLightFilterAdapter : public UsdImagingLightFilterAdapter {
 public:
     typedef UsdImagingLightFilterAdapter BaseAdapter;
 
-    UsdRiImagingPxrIntMultLightFilterAdapter()
+    UsdRiPxrImagingRodLightFilterAdapter()
         : UsdImagingLightFilterAdapter()
     {}
 
-    USDRIIMAGING_API
-    virtual ~UsdRiImagingPxrIntMultLightFilterAdapter();
+    USDRIPXRIMAGING_API
+    virtual ~UsdRiPxrImagingRodLightFilterAdapter();
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     virtual SdfPath Populate(UsdPrim const& prim,
                      UsdImagingIndexProxy* index,
                      UsdImagingInstancerContext const* instancerContext = NULL);
 
-    USDRIIMAGING_API
+    USDRIPXRIMAGING_API
     virtual bool IsSupported(UsdImagingIndexProxy const* index) const;
 
 protected:
@@ -67,4 +67,4 @@ protected:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_RI_IMAGING_PXR_INTMULT_LIGHT_FILTER_ADAPTER_H
+#endif // PXR_USD_IMAGING_USD_RI_PXR_IMAGING_PXR_ROD_LIGHT_FILTER_ADAPTER_H
