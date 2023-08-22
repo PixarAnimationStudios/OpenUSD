@@ -140,13 +140,15 @@ typedef void (*nanoexr_attrsAdd)(void*, exr_context_t);
 
 // simplified write for the most basic case of a single part file containing
 // rgb data in half format.
-exr_result_t nanoexr_write_f16_exr(
+exr_result_t nanoexr_write_exr(
                const char* filename,
                nanoexr_attrsAdd, void* attrsAdd_userData,
-               int width, int height,
+               int width, int height, bool flipped,
+               exr_pixel_type_t pixel_type,
                uint8_t* red,   int32_t redPixelStride,   int32_t redLineStride,
                uint8_t* green, int32_t greenPixelStride, int32_t greenLineStride,
-               uint8_t* blue,  int32_t bluePixelStride,  int32_t blueLineStride);
+               uint8_t* blue,  int32_t bluePixelStride,  int32_t blueLineStride,
+               uint8_t* alpha, int32_t alphaPixelStride, int32_t alphaLineStride);
 
 void nanoexr_release_image_data(nanoexr_ImageData_t* imageData);
 
