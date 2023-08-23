@@ -555,7 +555,7 @@ linking against USD.
 ```bash
 cmake -DPXR_BUILD_MONOLITHIC=ON ...
 ```
-
+"
 ##### External Monolithic Library
 
 This mode is similar to the
@@ -633,7 +633,7 @@ elseif(CMAKE_COMPILER_IS_GNUCXX)
     target_link_libraries(mylib -Wl,--whole-archive usd_m -Wl,--no-whole-archive)
 elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
     target_link_libraries(mylib -Wl,-force_load usd_m)
-endif()
+endif()"
 ```
 
 On Windows cmake cannot recognize 'usd_m' as a library when appended to
@@ -652,7 +652,7 @@ not desirable, python static linking can be disabled using the flag
 ```
 -DPXR_PY_UNDEFINED_DYNAMIC_LOOKUP=ON
 ```
-
+"
 The primary motivating case for this is generating wheel packages for PyPI, but
 the parameter was made more generic in case it has other uses in the future. It
 is useful when we want to take advantage of python's approach to ABI
@@ -682,4 +682,4 @@ string. If this is set, USD will use these paths instead.
 Note that the above does not apply to Anaconda python 3.8+ interpreters, as they
 are modified to behave like pre-3.8 python interpreters, and so continue to use
 the PATH for DLL dependencies.  When running under Anaconda users should
-configure their system the same way they did for pre-python 3.8."
+configure their system the same way they did for pre-python 3.8.""
