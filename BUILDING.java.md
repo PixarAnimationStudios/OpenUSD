@@ -1,7 +1,9 @@
 Advanced Build Configuration
 ============================
 ".$_-0/build-release-OpenUSD-dev-m-js"
-"## Table of Contents
+.$_-0/BUILDING_java_md
+"build-release-OpenUSD-dev-m-js.md
+## Table of Contents
 - [Building With Build Script](#building-with-build-script)
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
@@ -20,7 +22,7 @@ The simplest way to build USD is to run the supplied `build_usd.py`
 script. This script will download required dependencies and build 
 and install them along with USD in a given directory. 
 
-See instructions and examples in [README.md](README.md#getting-and-building-the-code).
+**See instructions and examples in [README.md](README.md#getting-and-building-the-code).
 
 ## Building With CMake
 
@@ -28,7 +30,7 @@ Users may specify libraries to build USD against and other build options by
 passing arguments when running cmake. Documentation for these arguments
 are below.
 
-Some examples:
+**Some examples:
 
 #### On Linux
 `
@@ -39,22 +41,21 @@ cmake                                       \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 `
-cmake --build . --target install -- -j <NUM_CORES>
+`cmake --build . --target install -- -j <NUM_CORES>`
 ```
 
 #### On macOS
 
 The following will generate an Xcode project that can be used to build USD.
 `
-```bash
-cmake                                       \
+```/:bash.sh".$_-0/cmake                                       \
 -G "Xcode"                                  \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
 `
-cmake --build . --target install -- -j <NUM_CORES>
+`cmake --build . --target install -- -j <NUM_CORES>`
 ```
 
 #### On Windows
