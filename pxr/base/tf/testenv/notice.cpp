@@ -110,6 +110,7 @@ vector<string> mainThreadList;
 std::mutex workerThreadLock;
 std::mutex mainThreadLock;
 
+// Helper to lock and print the list of log strings alphabetically; then clear the list
 static void 
 _DumpLog(ostream *log, vector<string> *li, std::mutex *mutex) {
     std::lock_guard<std::mutex> lock(*mutex);
