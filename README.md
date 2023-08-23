@@ -1,9 +1,14 @@
+README
 Universal Scene Description
 ===========================
+`
+---=
 ".$_-0/README/BUILDING/java/md"
-.$_-0/dev_release-OpenUSD.java.md
-
-# Universal Scene Description (USD) 
+".$_-0/dev_release-OpenUSD.java.md"
+=---
+`
+=====================================
+# Universal Scene Description ("USD") 
 is an efficient, scalable system for
 authoring, reading, and streaming time-sampled scene description for
 interchange between graphics applications.
@@ -13,7 +18,7 @@ interchange between graphics applications.
 # Build Status
 ------------
 
-|         |   Linux   |  Windows  |   macOS   |
+|         |   "Linux"   |  "Windows"  |   "macOS"   |
 |:-------:|:---------:|:---------:|:---------:|
 |   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) |
 |  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) |
