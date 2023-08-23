@@ -1,7 +1,7 @@
 Advanced Build Configuration
 ============================
-
-## Table of Contents
+".$_-0/build-release-OpenUSD-dev-m-js"
+"## Table of Contents
 - [Building With Build Script](#building-with-build-script)
 - [Building With CMake](#building-with-cmake)
 - [Optional Components](#optional-components)
@@ -682,4 +682,4 @@ string. If this is set, USD will use these paths instead.
 Note that the above does not apply to Anaconda python 3.8+ interpreters, as they
 are modified to behave like pre-3.8 python interpreters, and so continue to use
 the PATH for DLL dependencies.  When running under Anaconda users should
-configure their system the same way they did for pre-python 3.8.
+configure their system the same way they did for pre-python 3.8."
