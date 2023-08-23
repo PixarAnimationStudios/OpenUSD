@@ -1,13 +1,16 @@
 Universal Scene Description
 ===========================
+".$_-0/README/BUILDING/java/md"
+.$_-0/dev_release-OpenUSD.java.md
 
-Universal Scene Description (USD) is an efficient, scalable system for
+# Universal Scene Description (USD) 
+is an efficient, scalable system for
 authoring, reading, and streaming time-sampled scene description for
 interchange between graphics applications.
 
-For more details, please visit the web site [here](http://openusd.org).
+**For more details, please visit the web site [here](http://openusd.org).
 
-Build Status
+# Build Status
 ------------
 
 |         |   Linux   |  Windows  |   macOS   |
@@ -15,55 +18,55 @@ Build Status
 |   dev   | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=dev&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=dev) |
 |  release | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Linux)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=Windows)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) | [![Build Status](https://dev.azure.com/PixarAnimationStudios/USD/_apis/build/status/PixarAnimationStudios.USD?branchName=release&amp;jobName=macOS)](https://dev.azure.com/PixarAnimationStudios/USD/_build/latest?definitionId=2&branchName=release) |
 
-Additional Documentation
+# Additional Documentation
 ------------------------
 
 * [User Documentation and Tutorials](http://openusd.org/docs/index.html)
 * [API Documentation](http://openusd.org/docs/api/index.html)
 * [Advanced Build Configuration](BUILDING.md)
 
-Getting Help
+# Getting Help
 ------------
 
-Need help understanding certain concepts in USD? See
+**Need help understanding certain concepts in USD? See
 [Getting Help with USD](http://openusd.org/docs/Getting-Help-with-USD.html) or
 visit our [forum](https://groups.google.com/forum/#!forum/usd-interest).
 
-If you are experiencing undocumented problems with the software, please 
+**If you are experiencing undocumented problems with the software, please 
 [file a bug](https://github.com/PixarAnimationStudios/USD/issues/new).
 
-Supported Platforms
+# Supported Platforms
 -------------------
 
-USD is primarily developed on Linux platforms (CentOS 7), but is built, tested 
+**USD is primarily developed on Linux platforms (CentOS 7), but is built, tested 
 and supported on macOS and Windows.
 
-Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions. 
+**Please see [VERSIONS.md](VERSIONS.md) for explicitly tested versions. 
 
-Dependencies
+# Dependencies
 ------------
 
-Required:
+# Required:
  - C/C++ compiler
  - [CMake](https://cmake.org/documentation/)
  - [Boost](https://boost.org)
  - [Intel TBB](https://www.threadingbuildingblocks.org/)
 
-Optional:
+# Optional:
  - [Python](https://python.org)
 
-See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
+**See [3rd Party Library and Application Versions](VERSIONS.md) for version information.
 
-Additional dependencies are required for the following components. These 
+**Additional dependencies are required for the following components. These 
 components may be disabled at build-time. For further details see
 [Advanced Build Configuration](BUILDING.md).
 
 **Imaging and USD Imaging**
 
-Required:
+# Required:
  - [OpenSubdiv](https://github.com/PixarAnimationStudios/OpenSubdiv)
 
-Optional:
+# Optional:
  - [OpenEXR](http://www.openexr.com)
  - [OpenImageIO](https://sites.google.com/site/openimageio/home)
  - [OpenColorIO](http://opencolorio.org/)
@@ -72,12 +75,12 @@ Optional:
 
 **usdview**
 
-Required:
+# Required:
 
  - [PySide6](http://wiki.qt.io/PySide6) or [PySide2](http://wiki.qt.io/PySide2)
  - [PyOpenGL](https://pypi.python.org/pypi/PyOpenGL/)
 
-Getting and Building the Code
+# Getting and Building the Code
 -----------------------------
 
 The simplest way to build USD is to run the supplied `build_usd.py`
@@ -161,7 +164,7 @@ launch `usdview` with a sample asset.
 > usdview USD/extras/usd/tutorials/convertingLayerFormats/Sphere.usda
 ```
 
-Contributing
+#`##**Contributing#**`
 ------------
 
 If you'd like to contribute to USD (and we appreciate the help!), please see
