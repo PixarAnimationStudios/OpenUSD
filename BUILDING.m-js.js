@@ -31,21 +31,21 @@ are below.
 Some examples:
 
 #### On Linux
-
+`
 ```bash
 cmake                                       \
 -DTBB_ROOT_DIR=/path/to/tbb                 \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
-
+`
 cmake --build . --target install -- -j <NUM_CORES>
 ```
 
 #### On macOS
 
 The following will generate an Xcode project that can be used to build USD.
-
+`
 ```bash
 cmake                                       \
 -G "Xcode"                                  \
@@ -53,7 +53,7 @@ cmake                                       \
 -DOPENSUBDIV_ROOT_DIR=/path/to/opensubdiv   \
 -DBOOST_ROOT=/path/to/boost                 \
 /path/to/USD/source
-
+`
 cmake --build . --target install -- -j <NUM_CORES>
 ```
 
@@ -61,7 +61,7 @@ cmake --build . --target install -- -j <NUM_CORES>
 
 The following will generate a Visual Studio 2017 solution that can be used to
 build USD.
-
+`
 ```cmd.exe
 "C:\Program Files\CMake\bin\cmake.exe"      ^
 -G "Visual Studio 15 2017 Win64"            ^
@@ -69,15 +69,15 @@ build USD.
 -DOPENSUBDIV_ROOT_DIR=C:\path\to\opensubdiv ^
 -DBOOST_ROOT=C:\path\to\boost               ^
 \path\to\USD\source
-
-cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%
+`
+`cmake --build . --target install -- /m:%NUMBER_OF_PROCESSORS%`
 ```
 
 For other versions of Visual Studio, use the following cmake arguments:
-
+`
 - For VS2019: `-G "Visual Studio 16 2019" -A x64`
 - For VS2022: `-G "Visual Studio 17 2022" -A x64`
-
+`
 For more information on Visual Studio generators for cmake, see 
 [Visual Studio Generators](https://cmake.org/cmake/help/latest/manual/cmake-generators.7.html#visual-studio-generators).
 
@@ -88,15 +88,15 @@ but may be disabled when invoking cmake. Disabling these components
 removes the need for their dependencies when building USD.
 
 ##### Python
-
+`
 Some optional USD components use Python:
 - [The USD Toolset](https://graphics.pixar.com/usd/docs/USD-Toolset.html)
 - [Third Party Plugins](https://graphics.pixar.com/usd/docs/USD-3rd-Party-Plugins.html)
 - Python language bindings for the USD C++ API
 - Unit tests using Python
-
+`
 Please refer to [VERSIONS.md](VERSIONS.md) for supported Python versions.
-
+`
 Support for Python can optionally be disabled by specifying the cmake flag
 `PXR_ENABLE_PYTHON_SUPPORT=FALSE`.
 
@@ -109,7 +109,7 @@ that depend on GL, including:
 - Hydra GL imaging
 
 ##### Metal
-
+`
 Building USD with Metal enabled requires macOS Mojave (10.14) or newer.
 Support for Metal can optionally be disabled by specifying the cmake flag
 `PXR_ENABLE_METAL_SUPPORT=FALSE`.  This will skip components and libraries
