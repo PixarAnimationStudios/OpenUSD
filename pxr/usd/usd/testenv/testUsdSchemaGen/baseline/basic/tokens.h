@@ -490,6 +490,10 @@ struct UsdContrivedTokensType {
     /// 
     /// Property namespace prefix for the UsdContrivedMultipleApplyAPI schema.
     const TfToken test;
+    /// \brief "test:__INSTANCE_NAME__"
+    /// 
+    /// UsdContrivedMultipleApplyAPI
+    const TfToken test_MultipleApplyTemplate_;
     /// \brief "test:__INSTANCE_NAME__:testAttrOne"
     /// 
     /// UsdContrivedMultipleApplyAPI
@@ -518,6 +522,10 @@ struct UsdContrivedTokensType {
     /// 
     /// Property namespace prefix for the UsdContrivedPublicMultipleApplyAPI schema.
     const TfToken testo;
+    /// \brief "testo:__INSTANCE_NAME__"
+    /// 
+    /// UsdContrivedPublicMultipleApplyAPI
+    const TfToken testo_MultipleApplyTemplate_;
     /// \brief "testo:__INSTANCE_NAME__:testAttrOne"
     /// 
     /// UsdContrivedPublicMultipleApplyAPI

@@ -48,20 +48,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
-
-    // tokens for RenderMan-specific light parameters
-    ((cheapCaustics,                "inputs:ri:light:cheapCaustics"))
-    ((cheapCausticsExcludeGroup,    "inputs:ri:light:cheapCausticsExcludeGroup"))
-    ((fixedSampleCount,             "inputs:ri:light:fixedSampleCount"))
-    ((importanceMultiplier,         "inputs:ri:light:importanceMultiplier"))
-    ((intensityNearDist,            "inputs:ri:light:intensityNearDist"))
-    ((thinShadow,                   "inputs:ri:light:thinShadow"))
-    ((traceLightPaths,              "inputs:ri:light:traceLightPaths"))
-    ((visibleInRefractionPath,      "inputs:ri:light:visibleInRefractionPath"))
-    ((lightGroup,                   "inputs:ri:light:lightGroup"))
-    ((colorMapGamma,                "inputs:ri:light:colorMapGamma"))
-    ((colorMapSaturation,           "inputs:ri:light:colorMapSaturation"))
-
+    (meshLight)
     ((meshLightSourceMesh,          "sourceMesh"))
 );
 
@@ -70,6 +57,10 @@ HdPrmanLight::HdPrmanLight(SdfPath const& id, TfToken const& lightType)
     , _hdLightType(lightType)
     , _shaderId(riley::LightShaderId::InvalidId())
     , _instanceId(riley::LightInstanceId::InvalidId())
+    // Note: _groupPrototypeId isn't used yet. I.e., it's always invalid. 
+    , _groupPrototypeId(riley::GeometryPrototypeId::InvalidId())
+    , _geometryPrototypeId(riley::GeometryPrototypeId::InvalidId())
+    , _instanceMaterialId(riley::MaterialId::InvalidId())
 {
     /* NOTHING */
 }
@@ -103,15 +94,16 @@ HdPrmanLight::_ResetLight(HdPrman_RenderParam *renderParam, bool clearFilterPath
     }
 
     if (_instanceId != riley::LightInstanceId::InvalidId()) {
-        riley->DeleteLightInstance(
-            riley::GeometryPrototypeId::InvalidId(),
-            _instanceId);
+        riley->DeleteLightInstance(_groupPrototypeId, _instanceId);
         _instanceId = riley::LightInstanceId::InvalidId();
     }
     if (_shaderId != riley::LightShaderId::InvalidId()) {
         riley->DeleteLightShader(_shaderId);
         _shaderId = riley::LightShaderId::InvalidId();
     }
+
+    _geometryPrototypeId = riley::GeometryPrototypeId::InvalidId();
+    _instanceMaterialId = riley::MaterialId::InvalidId();
 }
 
 static bool
@@ -276,96 +268,90 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_shadowSubset("shadowSubset");
     static const RtUString us_default("default");
 
-
     SdfPath id = GetId();
 
-    // Set default riley args.
-    riley::GeometryPrototypeId geometryPrototypeId = 
-        riley::GeometryPrototypeId::InvalidId();
-    riley::MaterialId instanceMaterialId = 
-        riley::MaterialId::InvalidId();
+    // XXX -- Only update mesh lights if *lighting* bits are dirty.
+    // i.e., ignore mesh/transform/primvar/etc. changes.
+    // This helps to prevent a Prman crash resulting from simultaneous 
+    // edits to both the sprim and rprim pieces of a mesh light.
+    // https://jira.pixar.com/browse/RMAN-20136
+    
+    bool dirtyLightingBits = false;
+    if (_hdLightType == _tokens->meshLight) {
 
-    HdPrman_RenderParam * const param =
-            static_cast<HdPrman_RenderParam*>(renderParam);
+        // Make sure we have required resources. If we don't, we need to sync.
+        if (_geometryPrototypeId == riley::GeometryPrototypeId::InvalidId() ||
+                _instanceMaterialId  == riley::MaterialId::InvalidId()) {
+            dirtyLightingBits = true;
+        }
 
-    // Early mesh light tests. See if the geometry prototype exists (yet).
-    // Sprims get created before rprims, but for mesh lights we *need* the
-    // source mesh rprim, since that's our geometry prototype. If it hasn't
-    // yet been created, we return early. In that case, the light is still 
-    // marked as "dirty", so this will run again.
-    const VtValue sourceMesh = sceneDelegate->GetLightParamValue(id, 
+        // Are there dirty resource bits?
+        if (*dirtyBits & HdLight::DirtyResource) {
+            dirtyLightingBits = true;
+        }
+
+        // Are there dirty transform bits?
+        if (*dirtyBits & HdLight::DirtyTransform) {
+            dirtyLightingBits = true;
+        }
+
+        // Has source mesh changed? Is the rprim still there?
+        const VtValue sourceMesh = sceneDelegate->GetLightParamValue(id, 
             _tokens->meshLightSourceMesh);
-
-    if (sourceMesh.IsHolding<SdfPath>()) {
-
-        const SdfPath sourceMeshPath = sourceMesh.UncheckedGet<SdfPath>();
-        const HdRprim *rprim = 
-                sceneDelegate->GetRenderIndex().GetRprim(sourceMeshPath);
-
-        if (!rprim) {
-            // No prim. It may not have been created yet. Leave the light 
-            // "dirty" and return.
-            return;            
-        }
-
-        auto mesh = static_cast<const HdPrman_Mesh*>(rprim);
-        std::vector<riley::GeometryPrototypeId> prototypeIds = 
-                mesh->GetPrototypeIds();
-
-        if (prototypeIds.empty()) {
-            TF_WARN("Could not find prototype for mesh at '%s'."
-                    " Skipping '%s'.", 
-                    sourceMeshPath.GetText(), 
-                    id.GetText());
-            // Light stays dirty.
-            return;
-        }
-
-        // Find geometry prototype id.
-        for (const auto &protoTypeId: prototypeIds) {
-            if (protoTypeId != riley::GeometryPrototypeId::InvalidId()) {
-                geometryPrototypeId = protoTypeId;
-                break;
+        if (sourceMesh.IsHolding<SdfPath>()) {
+            const SdfPath sourceMeshPath = sourceMesh.UncheckedGet<SdfPath>();
+            if (sourceMeshPath != _sourceMeshPath) {
+                dirtyLightingBits = true;
+                _sourceMeshPath = sourceMeshPath;
+            } else {
+                const HdRprim *rprim = 
+                    sceneDelegate->GetRenderIndex().GetRprim(_sourceMeshPath);
+                if (!rprim) {
+                    dirtyLightingBits = true;
+                }
             }
         }
 
-        // Find instance material id.
-        const SdfPath materialPath = sceneDelegate->GetMaterialId(
-                sourceMeshPath);
-        if (materialPath == SdfPath()) {
-            // Leave the light "dirty" and return.
-            return;
-        } 
-        const HdSprim *sprim = 
-                sceneDelegate->GetRenderIndex().GetSprim(
-                        HdSprimTypeTokens->material,
-                        materialPath);
-        if (!sprim) {
-            // No prim. It may not have been created yet. Leave the light 
-            // "dirty" and return.            
-            return;
+        // Has linking changed?
+        TfToken lightLink;
+        VtValue val =
+            sceneDelegate->GetLightParamValue(id, HdTokens->lightLink);
+        if (val.IsHolding<TfToken>()) {
+            lightLink = val.UncheckedGet<TfToken>();
+        } else {
+            dirtyLightingBits = true;                        
         }
-        auto hdPrmanMaterial = static_cast<const HdPrmanMaterial*>(sprim);
-        instanceMaterialId = hdPrmanMaterial->GetMaterialId();
-
-        if (instanceMaterialId == riley::MaterialId::InvalidId()) {
-            TF_WARN("Could not find material for mesh at '%s'."
-                    " Skipping '%s'.", 
-                    sourceMeshPath.GetText(), 
-                    id.GetText());
-            // Stay dirty. Return.
-            return;
+        if (_lightLink != lightLink) {
+            dirtyLightingBits = true;                        
         }
 
-        // Note: If we've returned early, we'll need to revisit this light 
-        // once the other prims have been processed. This will continue 
-        // until we succeed (and "bits" is marked "clean", which happens 
-        // below). In the meshlight case, we're synthesizing the 
-        // dependencies, so we know we'll succeed quickly. However, misuse 
-        // of this code might result in a loop.
+        // Have filters changed?
+        // XXX -- We don't actually support filters yet.
+        SdfPathVector lightFilterPaths;
+        val = sceneDelegate->GetLightParamValue(id, HdTokens->filters);
+        if (val.IsHolding<SdfPathVector>()) {
+            SdfPathVector lightFilterPaths = val.UncheckedGet<SdfPathVector>();
+        } else {
+            dirtyLightingBits = true;                                    
+        }
+        if (_lightFilterPaths != lightFilterPaths) {
+            dirtyLightingBits = true;
+        }                        
 
-        // TODO: Dependency tracking here?
+        if (!dirtyLightingBits) {
+            // No dirty lighting bits. We can skip this update.
+            *dirtyBits = HdChangeTracker::Clean;
+            return;
+        }
     }
+
+    if (dirtyLightingBits) {
+        *dirtyBits = GetInitialDirtyBitsMask();
+
+    }
+
+    HdPrman_RenderParam * const param =
+            static_cast<HdPrman_RenderParam*>(renderParam);
 
     riley::Riley *const riley = param->AcquireRiley();
 
@@ -386,6 +372,78 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // For simplicity just re-create the light.  In the future we may
     // want to consider adding a path to use the Modify() API in Riley.
     _ResetLight(param, clearFilterPaths);
+
+    // Early mesh light case test. See if the geometry prototype exists (yet).
+    // Sprims get created before rprims, but for mesh lights we *need* the
+    // source mesh rprim, since that's our geometry prototype. If it hasn't
+    // yet been created, we return early. In that case, the light is still 
+    // marked as "dirty", so this will run again.
+    if (_hdLightType == _tokens->meshLight) {
+        const HdRprim *rprim = 
+                sceneDelegate->GetRenderIndex().GetRprim(_sourceMeshPath);
+
+        if (!rprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.
+            return;            
+        }
+
+        auto mesh = static_cast<const HdPrman_Mesh*>(rprim);
+        std::vector<riley::GeometryPrototypeId> prototypeIds = 
+                mesh->GetPrototypeIds();
+
+        if (prototypeIds.empty()) {
+            TF_WARN("Could not find prototype for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    _sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Light stays dirty.
+            return;
+        }
+
+        // Find geometry prototype id.
+        for (const auto &protoTypeId: prototypeIds) {
+            if (protoTypeId != riley::GeometryPrototypeId::InvalidId()) {
+                _geometryPrototypeId = protoTypeId;
+                break;
+            }
+        }
+
+        // Find instance material id.
+        const SdfPath materialPath = sceneDelegate->GetMaterialId(
+                _sourceMeshPath);
+        if (materialPath == SdfPath()) {
+            // Leave the light "dirty" and return.
+            return;
+        } 
+        const HdSprim *sprim = 
+                sceneDelegate->GetRenderIndex().GetSprim(
+                        HdSprimTypeTokens->material,
+                        materialPath);
+        if (!sprim) {
+            // No prim. It may not have been created yet. Leave the light 
+            // "dirty" and return.            
+            return;
+        }
+        auto hdPrmanMaterial = static_cast<const HdPrmanMaterial*>(sprim);
+        _instanceMaterialId = hdPrmanMaterial->GetMaterialId();
+
+        if (_instanceMaterialId == riley::MaterialId::InvalidId()) {
+            TF_WARN("Could not find material for mesh at '%s'."
+                    " Skipping '%s'.", 
+                    _sourceMeshPath.GetText(), 
+                    id.GetText());
+            // Stay dirty. Return.
+            return;
+        }
+
+        // Note: If we've returned early, we'll need to revisit this light 
+        // once the other prims have been processed. This will continue 
+        // until we succeed (and "bits" is marked "clean", which happens 
+        // below). In the meshlight case, we're synthesizing the 
+        // dependencies, so we know we'll succeed quickly. However, misuse 
+        // of this code might result in a loop.
+    }
 
     std::vector<riley::ShadingNode> lightNodes;
 
@@ -557,20 +615,17 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
 
     geomMat.SetScale(geomScale);
 
-    // adjust orientation to make prman match the USD spec
-    // TODO: Add another orientMat for PxrEnvDayLight when supported
+    // Adjust orientation to make prman match the USD spec.
+    // TODO: Add another orientMat for PxrEnvDayLight when supported.
     GfMatrix4d orientMat(1.0);
-    if (lightNode.name == us_PxrDomeLight)
-    {
+    if (lightNode.name == us_PxrDomeLight) {
         // Transform Dome to match OpenEXR spec for environment maps
         // Rotate -90 X, Rotate 90 Y
         orientMat = GfMatrix4d(0.0, 0.0, -1.0, 0.0, 
                                -1.0, 0.0, 0.0, 0.0, 
                                0.0, 1.0, 0.0, 0.0, 
                                0.0, 0.0, 0.0, 1.0);
-    }
-    else
-    {
+    } else if (lightNode.name != us_PxrMeshLight) {
         // Transform lights to match correct orientation
         // Scale -1 Z, Rotate 180 Z
         orientMat = GfMatrix4d(-1.0, 0.0, 0.0, 0.0, 
@@ -578,7 +633,6 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                                0.0, 0.0, -1.0, 0.0, 
                                0.0, 0.0, 0.0, 1.0);
     }
-
     geomMat = orientMat * geomMat;
 
     for (size_t i=0; i < xf.count; ++i) {
@@ -590,14 +644,16 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     // Instance attributes.
     attrs.SetInteger(RixStr.k_lighting_mute, !sceneDelegate->GetVisible(id));
 
-    // Light instance
+    // Coordsys.
     riley::CoordinateSystemList const coordsysList = {
                              unsigned(coordsysIds.size()), coordsysIds.data()};
+
+    // Light instance.
     _instanceId = riley->CreateLightInstance(
         riley::UserId(stats::AddDataLocation(id.GetText()).GetValue()),
-        riley::GeometryPrototypeId::InvalidId(), // no group
-        geometryPrototypeId, // No geo id, unless this is a mesh light.
-        instanceMaterialId, // No material id, unless this is a mesh light.
+        _groupPrototypeId,
+        _geometryPrototypeId, // No geo id, unless this is a mesh light.
+        _instanceMaterialId, // No material id, unless this is a mesh light.
         _shaderId,
         coordsysList,
         xform,

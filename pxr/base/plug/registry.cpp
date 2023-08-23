@@ -36,6 +36,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -148,7 +149,19 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo,
                         &PlugRegistry::_RegisterPlugin<NewPluginsVec>,
                         this, std::placeholders::_1, &newPlugins),
                     &taskArena);
-            });
+        }, /*dropPythonGIL=*/false);
+        // We explicitly do not drop the GIL here because of sad stories like
+        // the following. A shared library loads and during its initialization,
+        // it wants to look up information from plugins, and thus invokes this
+        // code to do first-time plugin registration. The dynamic loader holds
+        // its own lock while it loads the shared library. If this code holds
+        // the GIL (say the library is being loaded due to a python 'import')
+        // and was to drop it during the parallelism, then other Python-based
+        // threads can take the GIL and wind up calling, dlsym() for example.
+        // This will wait on the dynamic loader's lock, but this thread will
+        // never release it since it will wait to reacquire the GIL. This causes
+        // a deadlock between the dynamic loader's lock and the Python GIL.
+        // Retaining the GIL here prevents this scenario.
     }
 
     if (!newPlugins.empty()) {

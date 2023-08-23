@@ -136,7 +136,7 @@ HdStShaderCode::ResourceContext::AddSources(
 void
 HdStShaderCode::ResourceContext::AddComputation(
     HdBufferArrayRangeSharedPtr const &range,
-    HdComputationSharedPtr const &computation,
+    HdStComputationSharedPtr const &computation,
     HdStComputeQueue const queue)
 {
     _registry->AddComputation(range, computation, queue);

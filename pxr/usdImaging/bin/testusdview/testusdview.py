@@ -62,7 +62,8 @@ class TestUsdView(Usdviewq.Launcher):
     def __LaunchProcess(self, arg_parse_result):
         callBack = self._ValidateTestFile(arg_parse_result.testScript)
         (app, appController) = (
-            super(TestUsdView, self).LaunchPreamble(arg_parse_result))
+            super(TestUsdView, self).LaunchPreamble(
+                arg_parse_result, overrideMaxSamples = False))
 
         # Set a fixed size on the stage view so that any image tests get a
         # consistent resolution - but only if we've created a viewer
@@ -118,11 +119,8 @@ class TestUsdView(Usdviewq.Launcher):
                     'File: ' + filePath + '\n'
                     'Error: %s')
 
-        if sys.version_info.major >= 3:
-            (args, varargs, keywords, defaults, _, _, _) = \
-                                               inspect.getfullargspec(callBack)
-        else:
-            (args, varargs, keywords, defaults) = inspect.getargspec(callBack)
+        (args, varargs, keywords, defaults, _, _, _) = \
+                                           inspect.getfullargspec(callBack)
 
         assert not varargs, errorMsg % 'Varargs are disallowed'
         assert not keywords, errorMsg % 'Kwargs are disallowed'

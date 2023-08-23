@@ -33,7 +33,6 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/noncopyable.hpp>
 #include "pxr/base/tf/hashmap.h"
 
 #include <typeinfo>
@@ -60,7 +59,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// given entry.
 ///
 template <class VALUE>
-class TfTypeInfoMap : public boost::noncopyable {
+class TfTypeInfoMap {
+    TfTypeInfoMap(const TfTypeInfoMap&) = delete;
+    TfTypeInfoMap& operator=(const TfTypeInfoMap&) = delete;
 public:
 
     // Default constructor passes 0 to TfHashMap constructors to keep size

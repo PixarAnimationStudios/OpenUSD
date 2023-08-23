@@ -105,9 +105,9 @@ public:
     /// multi-sampled aovs, the aovs will be resolved at the end of the render
     /// pass. If false or the aov is not multi-sampled or the render pass is not
     /// rendering into the multi-sampled aov, no resolution takes place.
-    HD_API
+    HDST_API
     void SetResolveAovMultiSample(bool state);
-    HD_API
+    HDST_API
     bool GetResolveAovMultiSample() const;
 
     /// Set lighting shader
@@ -179,7 +179,7 @@ public:
     /// This is either using the modern camera framing, which is always y-down,
     /// or the legacy viewport.
     HDST_API
-    GfVec4i ComputeViewport(const HgiGraphicsCmdsDesc &desc) const;
+    GfVec4i ComputeViewport() const;
 
     // Helper to get graphics cmds descriptor describing textures
     // we render into and the blend state, constructed from
@@ -202,6 +202,22 @@ public:
 
 private:
     bool _UseAlphaMask() const;
+    unsigned int _GetFramebufferHeight() const;
+    GfRange2f _ComputeFlippedFilmbackWindow() const;
+    // A 4d-vector v encodes a 2d-transform as follows:
+    // (x, y) |-> (v[0] * x + v[2], v[1] * y + v[3]).
+    using _AxisAlignedAffineTransform = GfVec4f;
+    // Computes the transform from pixel coordinates to the horizontally
+    // normalized filmback space which has the following properties:
+    // 1. x = -1 and +1 corresponds to the left and right edge of the filmback,
+    //    respectively.
+    // 2. (0, 0) corresponds to the center of the filmback.
+    // 3. Moving a unit in either the x- or y-direction moves by the same
+    //    distance on the filmback. In other words, y = -1/a and +1/a
+    //    corresponds to the bottom and top edge of the filmback, respectively,
+    //    where a is the camera's aspect ratio.
+    _AxisAlignedAffineTransform
+    _ComputeImageToHorizontallyNormalizedFilmback() const;
 
     // Helper to set up the aov attachment desc so that it matches the blend
     // setting of the render pipeline state.

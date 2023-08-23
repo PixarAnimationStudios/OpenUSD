@@ -427,6 +427,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/nullPtr.h"
 #include "pxr/base/tf/refBase.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -435,7 +436,6 @@
 
 #include "pxr/base/arch/hints.h"
 
-#include <boost/functional/hash_fwd.hpp>
 
 #include <typeinfo>
 #include <type_traits>
@@ -1329,11 +1329,7 @@ template <class T>
 inline size_t
 hash_value(const TfRefPtr<T>& ptr)
 {
-    // Make the boost::hash type depend on T so that we don't have to always
-    // include boost/functional/hash.hpp in this header for the definition of
-    // boost::hash.
-    auto refBase = ptr._refBase;
-    return boost::hash<decltype(refBase)>()(refBase);
+    return TfHash()(ptr);
 }
 
 template <class HashState, class T>
@@ -1346,25 +1342,6 @@ TfHashAppend(HashState &h, const TfRefPtr<T> &ptr)
 #endif // !doxygen
 
 #define TF_SUPPORTS_REFPTR(T) std::is_base_of<TfRefBase, T>::value
-
-#if defined(ARCH_COMPILER_MSVC) 
-// There is a bug in the compiler which means we have to provide this
-// implementation. See here for more information:
-// https://connect.microsoft.com/VisualStudio/Feedback/Details/2852624
-
-#define TF_REFPTR_CONST_VOLATILE_GET(x)                                       \
-        namespace boost                                                       \
-        {                                                                     \
-            template<>                                                        \
-            const volatile x*                                                 \
-                get_pointer(const volatile x* p)                              \
-            {                                                                 \
-                return p;                                                     \
-            }                                                                 \
-        }
-#else
-#define TF_REFPTR_CONST_VOLATILE_GET(x)
-#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

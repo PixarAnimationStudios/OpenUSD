@@ -134,11 +134,17 @@ TestPrimQueries()
 
     UsdCollectionAPI coll = UsdCollectionAPI::Apply(prim, TfToken("testColl"));
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>());
+    TF_AXIOM(prim.HasAPIInFamily<UsdCollectionAPI>(
+        UsdSchemaRegistry::VersionPolicy::All));
 
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
+    TF_AXIOM(prim.HasAPIInFamily<UsdCollectionAPI>(
+        UsdSchemaRegistry::VersionPolicy::All, TfToken("testColl")));
 
     TF_AXIOM(!prim.HasAPI<UsdCollectionAPI>(
             /*instanceName*/ TfToken("nonExistentColl")));
+    TF_AXIOM(!prim.HasAPIInFamily<UsdCollectionAPI>(
+        UsdSchemaRegistry::VersionPolicy::All, TfToken("nonExistentColl")));
 
     printf("--------Removing UsdCollectionAPI -------\n");
 
@@ -155,6 +161,13 @@ TestPrimQueries()
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>());
 
     TF_AXIOM(prim.HasAPI<UsdCollectionAPI>(/*instanceName*/ TfToken("testColl")));
+
+    printf("--------Finding UsdCollectionAPI SchemaInfo -------\n");
+
+    const UsdSchemaRegistry::SchemaInfo *schemaInfo = 
+        UsdSchemaRegistry::FindSchemaInfo<UsdCollectionAPI>();
+    TF_AXIOM(schemaInfo);
+    TF_AXIOM(schemaInfo->type == TfType::Find<UsdCollectionAPI>());
 }
 
 int main(int argc, char** argv)

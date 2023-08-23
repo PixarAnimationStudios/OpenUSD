@@ -37,8 +37,7 @@
 #include "pxr/base/gf/matrixData.h"
 #include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/traits.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 #include <vector>
@@ -224,12 +223,12 @@ public:
 
     /// Hash.
     friend inline size_t hash_value(GfMatrix2d const &m) {
-        int nElems = 2 * 2;
-        size_t h = 0;
-        const double *p = m.GetArray();
-        while (nElems--)
-            boost::hash_combine(h, *p++);
-        return h;
+        return TfHash::Combine(
+            m._mtx[0][0],
+            m._mtx[0][1],
+            m._mtx[1][0],
+            m._mtx[1][1]
+        );
     }
 
     /// Tests for element-wise matrix equality. All elements must match

@@ -1,0 +1,30 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string REF = "A"
+    }
+)
+
+def "NoExpressionRef" (
+    references = @./A.sdf@
+)
+{
+}
+
+def "NoExpressionPayload" (
+    references = @./A.sdf@
+)
+{
+}
+
+def "Ref" (
+    references = @`"./${REF}.sdf"`@
+)
+{
+}
+
+def "Payload" (
+    payload = @`"./${REF}.sdf"`@
+)
+{
+}

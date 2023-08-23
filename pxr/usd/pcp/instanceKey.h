@@ -32,8 +32,7 @@
 #include "pxr/usd/pcp/types.h"
 
 #include "pxr/usd/sdf/layerOffset.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <string>
 #include <utility>
@@ -67,6 +66,12 @@ public:
     PCP_API
     bool operator!=(const PcpInstanceKey& rhs) const;
 
+    /// Appends hash value for this instance key.
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const PcpInstanceKey& key)
+    {
+        h.Append(key._hash);
+    }
     /// Returns hash value for this instance key.
     friend size_t hash_value(const PcpInstanceKey& key) 
     {
@@ -108,12 +113,11 @@ private:
                 _timeOffset == rhs._timeOffset;
         }
 
-        size_t GetHash() const
-        {
-            size_t hash = _arcType;
-            boost::hash_combine(hash, _sourceSite);
-            boost::hash_combine(hash, _timeOffset.GetHash());
-            return hash;
+        template <typename HashState>
+        friend void TfHashAppend(HashState &h, const _Arc& arc) {
+            h.Append(arc._arcType);
+            h.Append(arc._sourceSite);
+            h.Append(arc._timeOffset);
         }
 
         PcpArcType _arcType;

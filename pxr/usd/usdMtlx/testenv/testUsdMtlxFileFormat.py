@@ -243,5 +243,10 @@ class TestFileFormat(unittest.TestCase):
             'usd_preview_surface_gold.usdz[usd_preview_surface_gold.mtlx]')
         stage.GetRootLayer().Export('usd_preview_surface_gold.usda')
 
+    def test_Capabilities(self):
+        self.assertTrue(Sdf.FileFormat.FormatSupportsReading('.mtlx'))
+        self.assertFalse(Sdf.FileFormat.FormatSupportsWriting('.mtlx'))
+        self.assertFalse(Sdf.FileFormat.FormatSupportsEditing('.mtlx'))
+
 if __name__ == '__main__':
     unittest.main()

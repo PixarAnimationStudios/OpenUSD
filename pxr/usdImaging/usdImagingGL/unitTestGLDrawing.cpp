@@ -388,6 +388,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
       , pixelAspectRatio(1.0f)
       , dataWindow{0, 0, 0, 0}
       , displayWindow{0.0f, 0.0f, 0.0f, 0.0f}
+      , windowPolicy{CameraUtilMatchVertically}
     {
     }
 
@@ -403,6 +404,7 @@ struct UsdImagingGL_UnitTestGLDrawing::_Args {
     float pixelAspectRatio;
     int dataWindow[4];
     float displayWindow[4];
+    CameraUtilConformWindowPolicy windowPolicy;
 };
 
 static void Die(const char* fmt, ...) ARCH_PRINTF_FUNCTION(1, 2);
@@ -507,6 +509,9 @@ static void Usage(int argc, char *argv[])
 "                      Specifies data window for rendering\n"
 "  -displayWindow x y width height\n"
 "                      Specifies display window for rendering\n"
+"  -windowPolicy [matchVertically|matchHorizontally|fit|crop|dontConform]\n"
+"                      Forces the window policy\n"
+"                      (defaults to matchVertically to match usdview)\n"
 ;
 
     Die(usage, TfGetBaseName(argv[0]).c_str());
@@ -739,6 +744,28 @@ UsdImagingGL_UnitTestGLDrawing::_Parse(int argc, char *argv[], _Args* args)
             args->displayWindow[2] = (float)ParseDouble(i, argc, argv);
             args->displayWindow[3] = (float)ParseDouble(i, argc, argv);
         }
+        else if (strcmp(argv[i], "-windowPolicy") == 0) {
+            CheckForMissingArguments(i, 1, argc, argv);
+            const char * const policy = ParseString(i, argc, argv);
+            if (strcmp(policy, "matchVertically") == 0) {
+                args->windowPolicy = CameraUtilMatchVertically;
+            }
+            else if (strcmp(policy, "matchHorizontally") == 0) {
+                args->windowPolicy = CameraUtilMatchHorizontally;
+            }
+            else if (strcmp(policy, "fit") == 0) {
+                args->windowPolicy = CameraUtilFit;
+            }
+            else if (strcmp(policy, "crop") == 0) {
+                args->windowPolicy = CameraUtilCrop;
+            }
+            else if (strcmp(policy, "dontConform") == 0) {
+                args->windowPolicy = CameraUtilDontConform;
+            }
+            else {
+                ParseError(argv[0], "Unknown window policy '%s'", policy);
+            }
+        }
         else if (strcmp(argv[i], "-renderSetting") == 0) {
             CheckForMissingArguments(i, 2, argc, argv);
             const char * const key = ParseString(i, argc, argv);
@@ -814,6 +841,7 @@ UsdImagingGL_UnitTestGLDrawing::RunTest(int argc, char *argv[])
     _dataWindow = GfRect2i(
         GfVec2i(args.dataWindow[0], args.dataWindow[1]),
         args.dataWindow[2], args.dataWindow[3]);
+    _windowPolicy = args.windowPolicy;
 
     _drawMode = UsdImagingGLDrawMode::DRAW_SHADED_SMOOTH;
 

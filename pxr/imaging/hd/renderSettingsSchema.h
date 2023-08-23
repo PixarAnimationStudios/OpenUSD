@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -42,6 +42,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HDRENDERSETTINGS_SCHEMA_TOKENS \
     (renderSettings) \
     (namespacedSettings) \
+    (active) \
+    (renderProducts) \
+    (includedPurposes) \
+    (materialBindingPurposes) \
+    (renderingColorSpace) \
+    (shutterInterval) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HDRENDERSETTINGS_SCHEMA_TOKENS);
@@ -58,6 +64,26 @@ public:
 
     HD_API
     HdContainerDataSourceHandle GetNamespacedSettings();
+    HD_API
+    HdBoolDataSourceHandle GetActive();
+    HD_API
+    HdRenderProductVectorSchema GetRenderProducts();
+    HD_API
+    HdTokenArrayDataSourceHandle GetIncludedPurposes();
+    HD_API
+    HdTokenArrayDataSourceHandle GetMaterialBindingPurposes();
+    HD_API
+    HdTokenDataSourceHandle GetRenderingColorSpace();
+
+    // Frame-relative time interval representing the sampling window for data
+    // relevant to motion blur. Renderers can use this interval when querying
+    // time-sampled data (e.g., xforms, points, velocities, ...) to simulate
+    // motion blur effects. Note: This closely relates to the (frame-
+    // relative) shutter interval of a camera specified via shutter open and
+    // close times and is expected to span the union of the shutter intervals
+    // of cameras used in generating the render artifacts.
+    HD_API
+    HdVec2dDataSourceHandle GetShutterInterval();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -69,7 +95,13 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &namespacedSettings
+        const HdContainerDataSourceHandle &namespacedSettings,
+        const HdBoolDataSourceHandle &active,
+        const HdVectorDataSourceHandle &renderProducts,
+        const HdTokenArrayDataSourceHandle &includedPurposes,
+        const HdTokenArrayDataSourceHandle &materialBindingPurposes,
+        const HdTokenDataSourceHandle &renderingColorSpace,
+        const HdVec2dDataSourceHandle &shutterInterval
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -84,6 +116,24 @@ public:
         HD_API
         Builder &SetNamespacedSettings(
             const HdContainerDataSourceHandle &namespacedSettings);
+        HD_API
+        Builder &SetActive(
+            const HdBoolDataSourceHandle &active);
+        HD_API
+        Builder &SetRenderProducts(
+            const HdVectorDataSourceHandle &renderProducts);
+        HD_API
+        Builder &SetIncludedPurposes(
+            const HdTokenArrayDataSourceHandle &includedPurposes);
+        HD_API
+        Builder &SetMaterialBindingPurposes(
+            const HdTokenArrayDataSourceHandle &materialBindingPurposes);
+        HD_API
+        Builder &SetRenderingColorSpace(
+            const HdTokenDataSourceHandle &renderingColorSpace);
+        HD_API
+        Builder &SetShutterInterval(
+            const HdVec2dDataSourceHandle &shutterInterval);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -91,6 +141,12 @@ public:
 
     private:
         HdContainerDataSourceHandle _namespacedSettings;
+        HdBoolDataSourceHandle _active;
+        HdVectorDataSourceHandle _renderProducts;
+        HdTokenArrayDataSourceHandle _includedPurposes;
+        HdTokenArrayDataSourceHandle _materialBindingPurposes;
+        HdTokenDataSourceHandle _renderingColorSpace;
+        HdVec2dDataSourceHandle _shutterInterval;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -102,10 +158,65 @@ public:
     static HdRenderSettingsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the container representing this schema is found by default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
+
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the namespacedsettings data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetNamespacedSettingsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the active data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetActiveLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderproducts data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetRenderProductsLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the includedpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetIncludedPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the materialbindingpurposes data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetMaterialBindingPurposesLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the renderingcolorspace data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetRenderingColorSpaceLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the shutterinterval data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetShutterIntervalLocator();
 
 };
 

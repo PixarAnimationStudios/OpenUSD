@@ -692,5 +692,17 @@ class TestUsdGeomPrimvarsAPI(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             u1.GetElementSize()
 
+    def test_Hash(self):
+        """Validate different primvar objects referring to the same underlying
+        property hash to the same value."""
+        stage = Usd.Stage.CreateInMemory()
+        mesh = UsdGeom.Mesh.Define(stage, '/mesh')
+        meshPrimvarsAPI = UsdGeom.PrimvarsAPI(mesh)
+        primvar = meshPrimvarsAPI.CreatePrimvar("pv", Sdf.ValueTypeNames.Int)
+        self.assertTrue(primvar)
+        self.assertIsNot(primvar, meshPrimvarsAPI.GetPrimvar("pv"))
+        self.assertEqual(primvar, meshPrimvarsAPI.GetPrimvar("pv"))
+        self.assertEqual(hash(primvar), hash(meshPrimvarsAPI.GetPrimvar("pv")))
+
 if __name__ == "__main__":
     unittest.main()

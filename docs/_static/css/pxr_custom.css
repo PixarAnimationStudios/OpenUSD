@@ -47,7 +47,7 @@ h4 {
 
 .icon-home:before {
     vertical-align: middle;
-    content: url("https://graphics.pixar.com/usd/images/USDLogo24.svg");
+    content: url("https://openusd.org/images/USDLogo24.svg");
 }
 
 #usd-home > h1 {

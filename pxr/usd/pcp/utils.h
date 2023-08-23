@@ -27,13 +27,50 @@
 /// \file pcp/utils.h
 
 #include "pxr/pxr.h"
+#include "pxr/usd/pcp/errors.h"
 #include "pxr/usd/pcp/node.h"
 #include "pxr/usd/sdf/layer.h"
 
 #include <string>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class PcpExpressionVariables;
+class VtDictionary;
+
+// Returns the result of evaluating the variable expression \p expression using
+// the variables \p expressionVars. Variables that are used during evaluation
+// will be inserted in \p usedVariables. Any errors that occur during evaluation
+// will be appended to \p errors. \p context (a string like "sublayer" or
+// "reference"), \p sourceLayer, and \p sourcePath are used to describe the
+// source of the expression for use in error messages.
+// 
+// The result of \p expression is assumed to be string-valued; if it is not, an
+// error will be generated and the empty string will be returned.
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars,
+    const std::string& context,
+    const SdfLayerHandle& sourceLayer,
+    const SdfPath& sourcePath,
+    std::unordered_set<std::string>* usedVariables,
+    PcpErrorVector* errors);
+
+// Convenience overload of above that does not populate \p usedVariables or 
+// \p errors.
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars);
+
+// Returns true if \p str is a variable expression, false otherwise.
+bool
+Pcp_IsVariableExpression(
+    const std::string& str);
 
 // Returns an SdfLayer::FileFormatArguments object with the "target" argument
 // set to \p target if \p target is not empty.

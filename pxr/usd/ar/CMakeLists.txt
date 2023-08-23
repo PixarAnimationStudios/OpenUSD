@@ -204,6 +204,15 @@ if (BUILD_SHARED_LIBS)
             testenv/testArURIResolver.cpp
     )
 
+    pxr_test_scripts(
+        testenv/testArURIResolver.py
+    )
+
+    pxr_register_test(testArURIResolver
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver"
+    )
+
     pxr_register_test(testArURIResolver_CPP
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
     )
@@ -238,6 +247,15 @@ pxr_build_test(testArResolverContext_CPP
         ar
     CPPFILES
         testenv/testArResolverContext.cpp
+) 
+
+pxr_build_test(testArThreadedAssetCreation
+    LIBRARIES
+        arch
+        tf
+        ar
+    CPPFILES
+        testenv/testArThreadedAssetCreation.cpp
 ) 
 
 pxr_register_test(testArAssetInfo
@@ -281,4 +299,8 @@ pxr_register_test(testArResolverContext
 
 pxr_register_test(testArResolverContext_CPP
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArResolverContext_CPP"
+)
+
+pxr_register_test(testArThreadedAssetCreation
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArThreadedAssetCreation"
 )

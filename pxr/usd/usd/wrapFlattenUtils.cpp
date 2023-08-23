@@ -24,6 +24,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/pragmas.h"
 
+#include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 
 #include "pxr/usd/usd/flattenUtils.h"
@@ -79,4 +80,37 @@ void wrapUsdFlattenUtils()
     def("FlattenLayerStackResolveAssetPath",
         UsdFlattenLayerStackResolveAssetPath,
         (arg("sourceLayer"), arg("assetPath")));
+
+    using Context = UsdFlattenResolveAssetPathContext;
+    class_<Context>
+        ("FlattenResolveAssetPathContext", no_init)
+        .add_property("sourceLayer", 
+            +[](const Context& c) { return c.sourceLayer; })
+        .add_property("assetPath", 
+            +[](const Context& c) { return c.assetPath; })
+        .add_property("expressionVariables", 
+            +[](const Context& c) { return c.expressionVariables; })
+        ;
+
+    using Py_UsdFlattenResolveAssetPathAdvancedSig =
+        std::string(const UsdFlattenResolveAssetPathContext&);
+
+    TfPyFunctionFromPython<Py_UsdFlattenResolveAssetPathAdvancedSig>();
+
+    // This function requires a different name to distinguish itself
+    // from the other FlattenLayerStack function that also takes a
+    // callback because TfPyFunctionFromFunction doesn't let us
+    // distinguish between the two different callback types.
+    def("FlattenLayerStackAdvanced",
+        (SdfLayerRefPtr(*)(
+            const PcpLayerStackRefPtr&,
+            const UsdFlattenResolveAssetPathAdvancedFn&,
+            const std::string&))&UsdFlattenLayerStack,
+        (arg("layerStack"), arg("resolveAssetPathFn"), 
+            arg("tag")=std::string()),
+        return_value_policy<TfPyRefPtrFactory<SdfLayerHandle>>());
+
+    def("FlattenLayerStackResolveAssetPathAdvanced",
+        &UsdFlattenLayerStackResolveAssetPathAdvanced,
+        (arg("context")));
 }

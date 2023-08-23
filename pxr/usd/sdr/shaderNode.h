@@ -56,15 +56,16 @@ PXR_NAMESPACE_OPEN_SCOPE
 // are used inside of a renderer. For instance during 'pattern' evaluation to
 // feed into a surface or volume shader. For BXDFs used in 'surface' and
 // 'volume' rendering situations.
-#define SDR_NODE_CONTEXT_TOKENS      \
-    ((Pattern, "pattern"))           \
-    ((Surface, "surface"))           \
-    ((Volume, "volume"))             \
-    ((Displacement, "displacement")) \
-    ((Light, "light"))               \
-    ((LightFilter, "lightFilter"))   \
-    ((SampleFilter, "sampleFilter")) \
-    ((PixelFilter, "pixelFilter"))
+#define SDR_NODE_CONTEXT_TOKENS         \
+    ((Pattern, "pattern"))              \
+    ((Surface, "surface"))              \
+    ((Volume, "volume"))                \
+    ((Displacement, "displacement"))    \
+    ((Light, "light"))                  \
+    ((DisplayFilter, "displayFilter"))  \
+    ((LightFilter, "lightFilter"))      \
+    ((PixelFilter, "pixelFilter"))      \
+    ((SampleFilter, "sampleFilter"))    
 
 #define SDR_NODE_ROLE_TOKENS         \
     ((Primvar, "primvar"))           \

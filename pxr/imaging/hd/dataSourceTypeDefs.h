@@ -56,6 +56,8 @@ using HdDoubleDataSource = HdTypedSampledDataSource<double>;
 using HdDoubleDataSourceHandle = HdDoubleDataSource::Handle;
 using HdFloatArrayDataSource = HdTypedSampledDataSource<VtArray<float>>;
 using HdFloatArrayDataSourceHandle = HdFloatArrayDataSource::Handle;
+using HdDoubleArrayDataSource = HdTypedSampledDataSource<VtArray<double>>;
+using HdDoubleArrayDataSourceHandle = HdDoubleArrayDataSource::Handle;
 
 // Bool
 using HdBoolDataSource = HdTypedSampledDataSource<bool>;
@@ -85,8 +87,12 @@ using HdVec2iDataSource = HdTypedSampledDataSource<GfVec2i>;
 using HdVec2iDataSourceHandle = HdVec2iDataSource::Handle;
 using HdVec2fDataSource = HdTypedSampledDataSource<GfVec2f>;
 using HdVec2fDataSourceHandle = HdVec2fDataSource::Handle;
+using HdVec2dDataSource = HdTypedSampledDataSource<GfVec2d>;
+using HdVec2dDataSourceHandle = HdVec2dDataSource::Handle;
 using HdVec2fArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec2f>>;
 using HdVec2fArrayDataSourceHandle = HdVec2fArrayDataSource::Handle;
+using HdVec2dArrayDataSource = HdTypedSampledDataSource<VtArray<GfVec2d>>;
+using HdVec2dArrayDataSourceHandle = HdVec2dArrayDataSource::Handle;
 
 using HdVec3iDataSource = HdTypedSampledDataSource<GfVec3i>;
 using HdVec3iDataSourceHandle = HdVec3iDataSource::Handle;

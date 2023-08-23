@@ -250,6 +250,17 @@ public:
                           SdfPath const& cachePath, 
                           UsdTimeCode time) const override;
 
+    VtValue GetLightParamValue(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        const TfToken& paramName,
+        UsdTimeCode time) const override;
+    
+    VtValue GetMaterialResource(
+        const UsdPrim& prim,
+        const SdfPath& cachePath,
+        UsdTimeCode time) const override;
+
     HdExtComputationInputDescriptorVector
     GetExtComputationInputs(UsdPrim const& prim,
                             SdfPath const& cachePath,
@@ -460,6 +471,7 @@ private:
 
     struct _PopulateInstanceSelectionFn;
     struct _GetScenePrimPathsFn;
+    struct _GetInstanceCategoriesFn;
 
     // Helper functions for dealing with "actual" instances to be drawn.
     //

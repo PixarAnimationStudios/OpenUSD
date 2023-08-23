@@ -2,7 +2,6 @@
 \page work_page_front Work : Multi-threaded Dispatch
 \if ( PIXAR_MFB_BUILD )
 \mainpage Work : Multi-threaded Dispatch
-\publicLib
 \endif
 
 \section work_Summary Summary

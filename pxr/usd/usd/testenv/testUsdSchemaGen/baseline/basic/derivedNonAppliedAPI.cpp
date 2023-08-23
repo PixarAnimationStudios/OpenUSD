@@ -24,7 +24,6 @@
 #include "pxr/usd/usdContrived/derivedNonAppliedAPI.h"
 #include "pxr/usd/usd/schemaRegistry.h"
 #include "pxr/usd/usd/typed.h"
-#include "pxr/usd/usd/tokens.h"
 
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/sdf/assetPath.h"
@@ -38,11 +37,6 @@ TF_REGISTRY_FUNCTION(TfType)
         TfType::Bases< UsdContrivedNonAppliedAPI > >();
     
 }
-
-TF_DEFINE_PRIVATE_TOKENS(
-    _schemaTokens,
-    (DerivedNonAppliedAPI)
-);
 
 /* virtual */
 UsdContrivedDerivedNonAppliedAPI::~UsdContrivedDerivedNonAppliedAPI()

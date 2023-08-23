@@ -215,7 +215,9 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOW:DISTANCE 
     // --------------------------------------------------------------------- //
-    /// The maximum distance shadows are cast.
+    /// The maximum distance shadows are cast. The distance is
+    /// measured as the distance between the point on the surface and the 
+    /// occluder.
     /// The default value (-1) indicates no limit.
     /// 
     ///
@@ -239,8 +241,13 @@ public:
     // --------------------------------------------------------------------- //
     // SHADOW:FALLOFF 
     // --------------------------------------------------------------------- //
-    /// The near distance at which shadow falloff begins.
-    /// The default value (-1) indicates no falloff.
+    /// The size of the shadow falloff zone within the shadow max 
+    /// distance, which can be used to hide the hard cut-off for shadows seen 
+    /// stretching past the max distance. The falloff zone is the area that 
+    /// fades from full shadowing at the beginning of the falloff zone to no 
+    /// shadowing at the max distance from the occluder. The falloff zone 
+    /// distance cannot exceed the shadow max distance. A falloff value equal 
+    /// to or less than zero (with -1 as the default) indicates no falloff. 
     /// 
     ///
     /// | ||
@@ -264,7 +271,8 @@ public:
     // SHADOW:FALLOFFGAMMA 
     // --------------------------------------------------------------------- //
     /// A gamma (i.e., exponential) control over shadow strength
-    /// with linear distance within the falloff zone.
+    /// with linear distance within the falloff zone. This controls the rate
+    /// of the falloff.
     /// This requires the use of shadowDistance and shadowFalloff.
     ///
     /// | ||

@@ -193,3 +193,33 @@ class "TestMultiApplyWithAPIVersionConflict_API" (
 )
 {
 }
+
+class "TestVersionedAutoApplyAPI" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned", "TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr
+}
+
+class "TestVersionedAutoApplyAPI_2" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr2
+}
+
+class "TestVersionedAutoApplyAPI_10" (
+    inherits = </APISchemaBase>
+    customData = {
+        token[] apiSchemaAutoApplyTo = ["TestBasicVersioned_1"]
+    }
+)
+{
+    int a_attr10
+}

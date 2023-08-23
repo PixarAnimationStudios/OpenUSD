@@ -27,6 +27,7 @@ pxr_library(usd
         attributeQuery
         collectionAPI
         collectionMembershipQuery
+        collectionPredicateLibrary
         common
         crateInfo
         debugCodes
@@ -230,6 +231,7 @@ pxr_test_scripts(
     testenv/testUsdModel.py
     testenv/testUsdNotices.py
     testenv/testUsdOpaqueAttributes.py
+    testenv/testUsdPathExpressionAttrs.py
     testenv/testUsdPayloads.py
     testenv/testUsdPrimCompositionQuery.py
     testenv/testUsdPrimFlagsPredicate.py
@@ -409,6 +411,13 @@ pxr_build_test(testUsdSchemaBase
         usd
     CPPFILES
         testenv/testUsdSchemaBase.cpp
+)
+
+pxr_build_test(testUsdSchemaRegistryCpp
+    LIBRARIES
+        usd
+    CPPFILES
+        testenv/testUsdSchemaRegistryCpp.cpp
 )
 
 pxr_build_test(testUsdResolveTarget
@@ -606,6 +615,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdSchemaRegistry
     DEST testUsdSchemaRegistry
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdSchemaRegistry
+    DEST testUsdSchemaRegistryCpp
 )
 
 pxr_install_test_dir(
@@ -1014,6 +1028,12 @@ pxr_register_test(testUsdPayloads
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdPathExpressionAttrs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdPathExpressionAttrs"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdCratePayloadConversionFromVersion07
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdCratePayloadConversionFromVersion07"
@@ -1123,6 +1143,11 @@ pxr_register_test(testUsdSchemaBasePy
 pxr_register_test(testUsdSchemaRegistry
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistry"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdSchemaRegistryCpp
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdSchemaRegistryCpp"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -82,6 +82,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderSettingsBase
     const TfToken camera;
+    /// \brief "collection:renderVisibility:includeRoot"
+    /// 
+    /// UsdRenderPass
+    const TfToken collectionRenderVisibilityIncludeRoot;
     /// \brief "color3f"
     /// 
     /// Fallback value for UsdRenderVar::GetDataTypeAttr()
@@ -202,6 +206,10 @@ struct UsdRenderTokensType {
     /// 
     /// UsdRenderPass
     const TfToken renderSource;
+    /// \brief "renderVisibility"
+    /// 
+    ///  This token represents the collection name to use with UsdCollectionAPI to represent renderVisibility of a RenderPass prim. 
+    const TfToken renderVisibility;
     /// \brief "resolution"
     /// 
     /// UsdRenderSettingsBase

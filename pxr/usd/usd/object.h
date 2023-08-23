@@ -35,6 +35,8 @@
 #include "pxr/usd/sdf/abstractData.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/hash.h"
+
 #include <type_traits>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -180,8 +182,15 @@ public:
     }
 
     // hash_value overload for std/boost hash.
-    USD_API
-    friend size_t hash_value(const UsdObject &obj);
+    friend size_t hash_value(const UsdObject &obj) {
+        return TfHash()(obj);
+    }
+
+    // TfHash support
+    template <class HashState>
+    friend void TfHashAppend(HashState &h, const UsdObject &obj) {
+        h.Append(obj._type, obj._prim, obj._proxyPrimPath, obj._propName);
+    }
 
     /// Return the stage that owns the object, and to whose state and lifetime
     /// this object's validity is tied.

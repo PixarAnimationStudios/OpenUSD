@@ -1,0 +1,7 @@
+#usda 1.0
+
+def "Root" (
+    references = @./subdir/sub.usda@</Sub>
+)
+{
+}

@@ -31,8 +31,7 @@
 #include "pxr/base/gf/math.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/api.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <iosfwd>
 
@@ -267,10 +266,7 @@ public:
     }
 
     friend inline size_t hash_value(const GfRect2i &r) {
-        size_t h = 0;
-        boost::hash_combine(h, r._min);
-        boost::hash_combine(h, r._max);
-        return h;
+        return TfHash::Combine(r._min, r._max);
     }        
 
     /// Returns true if \p r1 and \p r2 are equal.

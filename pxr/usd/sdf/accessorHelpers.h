@@ -31,6 +31,8 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
 
+#include <type_traits>
+
 // This file defines macros intended to reduce the amount of boilerplate code
 // associated with adding new metadata to SdfSpec subclasses.  There's still a
 // lot of files to touch, but these at least reduce the copy/paste/edit load.
@@ -170,6 +172,13 @@ SDF_ACCESSOR_CLASS::name_(                                                     \
 
 // Convenience macros to provide common combinations of value accessors
 
+// Convert non-trivial types like `std::string` to `const std::string&` while
+// preserving the type for `int`, `bool`, `char`, etc.
+template <typename T>
+using Sdf_SetParameter = std::conditional<
+    std::is_arithmetic<T>::value, std::add_const_t<T>,
+    std::add_lvalue_reference_t<std::add_const_t<T>>>;
+
 #define SDF_DEFINE_TYPED_GET_SET(name_, key_, getType_, setType_)              \
 SDF_DEFINE_GET(name_, key_, getType_)                                          \
 SDF_DEFINE_SET(name_, key_, setType_)
@@ -181,11 +190,11 @@ SDF_DEFINE_CLEAR(name_, key_)
 
 #define SDF_DEFINE_GET_SET(name_, key_, type_)                                 \
 SDF_DEFINE_TYPED_GET_SET(name_, key_, type_,                                   \
-                         boost::call_traits<type_>::param_type)
+                         Sdf_SetParameter<type_>::type)
 
 #define SDF_DEFINE_GET_SET_HAS_CLEAR(name_, key_, type_)                       \
 SDF_DEFINE_TYPED_GET_SET_HAS_CLEAR(name_, key_, type_,                         \
-                                   boost::call_traits<type_>::param_type)
+                                   Sdf_SetParameter<type_>::type)
 
 #define SDF_DEFINE_IS_SET(name_, key_)                                         \
 SDF_DEFINE_IS(name_, key_)                                                     \
@@ -203,7 +212,7 @@ SDF_DEFINE_DICTIONARY_SET(setName_, key_)
 // spec. These templates capture those differences.
 
 template <class T,
-          bool IsForSpec = boost::is_base_of<SdfSpec, T>::value>
+          bool IsForSpec = std::is_base_of<SdfSpec, T>::value>
 struct Sdf_AccessorHelpers;
 
 template <class T>

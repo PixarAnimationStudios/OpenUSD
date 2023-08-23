@@ -35,6 +35,7 @@
 
 #include <set>
 #include <string>
+#include <utility>
 
 namespace bp = boost::python;
 
@@ -82,18 +83,26 @@ void wrapToken()
     TfPyContainerConversions::from_python_sequence<
         std::set<TfToken> , 
         TfPyContainerConversions::set_policy >();
+    bp::to_python_converter<
+        std::set<TfToken>, 
+        TfPySequenceToPythonSet<std::set<TfToken> > >();
 
     TfPyContainerConversions::from_python_sequence<
         std::vector<TfToken>,
         TfPyContainerConversions::variable_capacity_policy >();
-
-    boost::python::to_python_converter<
+    bp::to_python_converter<
         std::vector<TfToken>, 
         TfPySequenceToPython<std::vector<TfToken> > >();
 
     // Tokens are represented directly as Python strings in Python.
-    bp::to_python_converter<TfToken, Tf_TokenToPythonString>();
     Tf_TokenFromPythonString();
+    bp::to_python_converter<TfToken, Tf_TokenToPythonString>();
+
+    TfPyContainerConversions::from_python_tuple_pair<
+        std::pair<TfToken, TfToken>>();
+    bp::to_python_converter<
+        std::pair<TfToken, TfToken>,
+        TfPyContainerConversions::to_tuple<std::pair<TfToken, TfToken>>>();
 
     // Stats.
     bp::def("DumpTokenStats", TfDumpTokenStats);

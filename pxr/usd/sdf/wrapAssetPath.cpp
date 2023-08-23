@@ -28,7 +28,6 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/vt/wrapArray.h"
 
-#include <boost/functional/hash.hpp>
 #include <boost/python/class.hpp>
 #include <boost/python/def.hpp>
 #include <boost/python/implicit.hpp>
@@ -74,10 +73,7 @@ static bool _Nonzero(SdfAssetPath const &self)
 
 static size_t _Hash(SdfAssetPath const &self)
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, self.GetAssetPath());
-    boost::hash_combine(hash, self.GetResolvedPath());
-    return hash;
+    return self.GetHash();
 }
 
 static std::string
@@ -98,15 +94,20 @@ void wrapAssetPath()
     typedef SdfAssetPath This;
 
     class_<This>("AssetPath", init<>())
+        .def(init<const This&>())
         .def(init<const std::string &>())
         .def(init<const std::string &, const std::string &>())
 
         .def("__repr__", _Repr)
-        .def(TfPyBoolBuiltinFuncName, _Nonzero)
+        .def("__bool__", _Nonzero)
         .def("__hash__", _Hash)
 
         .def( self == self )
         .def( self != self )
+        .def( self < self )
+        .def( self > self )
+        .def( self <= self )
+        .def( self >= self)
         .def("__str__", _Str)
 
         .add_property("path", GetAssetPath)

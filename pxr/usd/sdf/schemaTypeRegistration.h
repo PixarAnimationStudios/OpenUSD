@@ -69,6 +69,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfFieldKeys->Documentation,           std::string))                   \
 ((SdfFieldKeys->EndFrame,                double))                        \
 ((SdfFieldKeys->EndTimeCode,             double))                        \
+((SdfFieldKeys->ExpressionVariables,     VtDictionary))                  \
 ((SdfFieldKeys->FramePrecision,          int))                           \
 ((SdfFieldKeys->FramesPerSecond,         double))                        \
 ((SdfFieldKeys->Hidden,                  bool))                          \

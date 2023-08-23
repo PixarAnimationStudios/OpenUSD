@@ -78,6 +78,10 @@ struct UsdTokensType {
     /// 
     /// Property namespace prefix for the UsdCollectionAPI schema.
     const TfToken collection;
+    /// \brief "collection:__INSTANCE_NAME__"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_;
     /// \brief "collection:__INSTANCE_NAME__:excludes"
     /// 
     /// UsdCollectionAPI
@@ -94,6 +98,10 @@ struct UsdTokensType {
     /// 
     /// UsdCollectionAPI
     const TfToken collection_MultipleApplyTemplate_Includes;
+    /// \brief "collection:__INSTANCE_NAME__:membershipExpression"
+    /// 
+    /// UsdCollectionAPI
+    const TfToken collection_MultipleApplyTemplate_MembershipExpression;
     /// \brief "exclude"
     /// 
     ///  This is the token used to exclude a path from a collection.  Although it is not a possible value for the "expansionRule" attribute, it is used as the expansionRule for excluded paths  in UsdCollectionAPI::MembershipQuery::IsPathIncluded. 

@@ -2,7 +2,6 @@
 \page pcp_page_front Pcp : PrimCache Population (Composition)
 \if ( PIXAR_MFB_BUILD )
 \mainpage Pcp : PrimCache Population (Composition)
-\publicLib
 \endif
 
 \section pcp_Intro Introduction

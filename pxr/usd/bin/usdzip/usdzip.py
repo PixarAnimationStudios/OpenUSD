@@ -24,6 +24,7 @@
 #
 from __future__ import print_function
 import argparse
+import glob
 import os
 import sys
 
@@ -62,6 +63,92 @@ def _ListContents(listLocation, zipFile):
     with _Stream(listLocation, "w") as ofp:
         for fileName in zipFile.GetFileNames():
             _Print(ofp, fileName)
+
+# Runs UsdUtils.ComplianceChecker on the given layer
+def _CheckUsdzCompliance(rootLayer, arkit=False):
+    """
+    Runs UsdUtils.ComplianceChecker on the given layer and reports errors.
+    Returns True if no errors or failed checks were reported, False otherwise.
+    """
+
+    checker = UsdUtils.ComplianceChecker(arkit=arkit,
+        skipARKitRootLayerCheck=True)
+    checker.CheckCompliance(rootLayer)
+    errors = checker.GetErrors()
+    failedChecks = checker.GetFailedChecks()
+    warnings = checker.GetWarnings()
+    for msg in errors + failedChecks:
+        _Err(msg)
+    if len(warnings) > 0:
+        _Err("*********************************************\n"
+             "Possible correctness problems to investigate:\n"
+             "*********************************************\n")
+        for msg in warnings:
+            _Err(msg)
+    return len(errors) == 0 and len(failedChecks) == 0
+
+# Creates a usdz package under usdzFile
+def _CreateUsdzPackage(usdzFile, filesToAdd, recurse, ensureCompliance, verbose):
+    """
+    Creates a usdz package with the files provided in filesToAdd and saves as
+    the usdzFile.
+    If filesToAdd contains nested subdirectories, recurse flag can be specified,
+    which will make sure to recurse through the directory structure and include
+    the files in the usdz archive.
+    Specifying ensureCompliance, will additionally run 
+    UsdUtils.ComplianceChecker on the rootLayer of the usdz package being 
+    created. Failing compliance, will result in a Runtime exception being raised
+    Returns True on successful creation of the usdz package.
+    Note that any encountered exception will cause the usdzFile to be discarded, 
+    and the exception re-raised for clients to handle.
+    """
+    if (not usdzFile.endswith('.usdz')):
+        return False
+
+    with Usd.ZipFileWriter.CreateNew(usdzFile) as usdzWriter:
+        # Note that any exception raised here will result in ZipFileWriter's 
+        # exit discarding the usdzFile. 
+        fileList = []
+        while filesToAdd:
+            # Pop front (first file) from the list of files to add.
+            f = filesToAdd[0]
+            filesToAdd = filesToAdd[1:]
+
+            if os.path.isdir(f):
+                # If a directory is specified, add all files in the directory.
+                filesInDir = glob.glob(os.path.join(f, '*'))
+                # If the recurse flag is not specified, remove sub-directories.
+                if not recurse:
+                    filesInDir = [f for f in filesInDir if not os.path.isdir(f)]
+                # glob.glob returns files in arbitrary order. Hence, sort them
+                # here to get consistent ordering of files in the package.
+                filesInDir.sort()
+                filesToAdd += filesInDir
+            else:
+                if verbose:
+                    print('.. adding: %s' % f)
+                if os.path.getsize(f) > 0:
+                    fileList.append(f)
+                else:
+                    _Err("Skipping empty file '%s'." % f)
+
+        if ensureCompliance and len(fileList) > 0:
+            rootLayer = fileList[0]
+            if not _CheckUsdzCompliance(rootLayer):
+                # Fails compliance when it was requested, raise an exception as
+                # it was requested by the client
+                raise RuntimeError("Root layer (%s) of the usdz package " \
+                        "(%s), failed compliance check." %(rootLayer, usdzFile))
+
+        for f in fileList:
+            try:
+                usdzWriter.AddFile(f)
+            except Tf.ErrorException as e:
+                _Err('CreateUsdzPackage failed to add file \'%s\' to package. '
+                     'Discarding package.' % f)
+                # Raise this to the client
+                raise
+        return True
 
 def main():
     parser = argparse.ArgumentParser(description='Utility for creating a .usdz '
@@ -163,7 +250,8 @@ def main():
                       (usdzFile, inputFiles))
 
             if args.asset or args.arkitAsset:
-                Tf.Debug.SetDebugSymbolsByName("USDUTILS_CREATE_USDZ_PACKAGE", 1)
+                Tf.Debug.SetDebugSymbolsByName(
+                    "USDUTILS_CREATE_USDZ_PACKAGE", 1)
 
             if not args.recurse:
                 print('Not recursing into sub-directories.')
@@ -176,14 +264,20 @@ def main():
 
     success = True
     if len(inputFiles) > 0:
-        success = UsdUtils.CreateUsdzPackage(usdzFile, inputFiles, args.recurse, 
-                args.checkCompliance, args.verbose) and success
+        try:
+            success = _CreateUsdzPackage(usdzFile, inputFiles, args.recurse, 
+                    args.checkCompliance, args.verbose) and success
+        except Exception as e:
+            success = False
+            _Err("Failed to create usdz package (%s) containing (%s) files, "
+                 "as the following exception was raised: \n\t(%s)"
+                        %(usdzFile, ','.join(inputFiles), e))
 
     elif args.asset:
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.asset)
         if args.checkCompliance:
-            success = UsdUtils.CheckUsdzCompliance(resolvedAsset, 
+            success = _CheckUsdzCompliance(resolvedAsset, 
                     arkit=False) and success
 
         context = r.CreateDefaultContextForAsset(resolvedAsset) 
@@ -196,7 +290,7 @@ def main():
         r = Ar.GetResolver()
         resolvedAsset = r.Resolve(args.arkitAsset)
         if args.checkCompliance:
-            success = UsdUtils.CheckUsdzCompliance(resolvedAsset, 
+            success = _CheckUsdzCompliance(resolvedAsset, 
                     arkit=True) and success
 
         context = r.CreateDefaultContextForAsset(resolvedAsset)

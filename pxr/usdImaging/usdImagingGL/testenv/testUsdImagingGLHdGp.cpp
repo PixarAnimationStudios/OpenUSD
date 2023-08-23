@@ -107,6 +107,13 @@ public:
         }
     }
 
+    void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+    {
+        ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+    }
+
     EventVector GetEvents()
     {
         return _events;

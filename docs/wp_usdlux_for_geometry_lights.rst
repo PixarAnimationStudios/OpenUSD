@@ -43,7 +43,7 @@ add GeometryLight support to Hydra and HdPrman, we need to address two concerns:
 In support of the first concern, we have had extensive internal discussions
 about workflow. This document and the proposal it contains are derived from
 those discussions, with inspiration also from several key discussions on the
-usd-interest forum.
+OpenUSD forum.
 
 In support of the second concern, we have done a documentation search on
 `RenderMan <https://rmanwiki.pixar.com/display/REN23/PxrMeshLight>`_, `Arnold
@@ -415,7 +415,7 @@ Continuing the analogy of Lights to Material networks, we address this
 identification problem by additionally looking for :usda:`light:shaderId`
 attributes on the light prim whose name is prefixed with one of the renderer's
 registered `MaterialRenderContexts
-<https://github.com/PixarAnimationStudios/USD/blob/7a5f8c4311fed3ef2271d5e4b51025fb0f513730/pxr/imaging/hd/renderDelegate.h#L393-L399>`_
+<https://github.com/PixarAnimationStudios/OpenUSD/blob/7a5f8c4311fed3ef2271d5e4b51025fb0f513730/pxr/imaging/hd/renderDelegate.h#L393-L399>`_
 . So, using RenderMan and its "ri" context as an example, usdImaging would use
 the following logic to determine the shader to assign to a particular light.
 

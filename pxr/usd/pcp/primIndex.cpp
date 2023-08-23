@@ -32,6 +32,7 @@
 #include "pxr/usd/pcp/dependencies.h"
 #include "pxr/usd/pcp/diagnostic.h"
 #include "pxr/usd/pcp/dynamicFileFormatInterface.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/instancing.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
@@ -306,13 +307,38 @@ PcpPrimIndex::ComposeAuthoredVariantSelections() const
     SdfVariantSelectionMap result;
     const TfToken field = SdfFieldKeys->VariantSelection;
     TF_FOR_ALL(i, GetPrimRange()) {
-        Pcp_SdSiteRef site = i.base()._GetSiteRef();
-        const VtValue& value = site.layer->GetField(site.path, field);
-        if (value.IsHolding<SdfVariantSelectionMap>()) {
-            const SdfVariantSelectionMap & vselMap =
-                value.UncheckedGet<SdfVariantSelectionMap>();
-            result.insert(vselMap.begin(), vselMap.end());
+        const Pcp_SdSiteRef site = i.base()._GetSiteRef();
+
+        SdfVariantSelectionMap vselMap;
+        if (!site.layer->HasField(site.path, field, &vselMap)) {
+            continue;
         }
+
+        for (auto it = vselMap.begin(); it != vselMap.end(); ) {
+            std::string& vsel = it->second;
+            if (Pcp_IsVariableExpression(vsel)) {
+                const PcpLayerStackRefPtr& layerStack =
+                    i.base().GetNode().GetLayerStack();
+
+                PcpErrorVector exprErrors;
+                vsel = Pcp_EvaluateVariableExpression(
+                    vsel, layerStack->GetExpressionVariables(),
+                    "variant", site.layer, site.path, nullptr, &exprErrors);
+
+                // If an error occurred evaluating this expression, we ignore
+                // this variant selection and look for the next weakest opinion.
+                // We don't emit any errors here since they would have already
+                // been captured as composition errors during prim indexing.
+                // See PcpComposeSiteVariantSelection.
+                if (!exprErrors.empty()) {
+                    it = vselMap.erase(it);
+                    continue;
+                }
+            }
+            ++it;
+        }
+
+        result.insert(vselMap.begin(), vselMap.end());
     }
     return result;
 }
@@ -376,10 +402,12 @@ PcpPrimIndexOutputs::Append(PcpPrimIndexOutputs&& childOutputs,
     if (childOutputs.primIndex.GetGraph()->HasPayloads()) {
         parent.GetOwningGraph()->SetHasPayloads(true);
     }
-    // Append the contents of the child's file format dependency object to
-    // ours.
+
     dynamicFileFormatDependency.AppendDependencyData(
         std::move(childOutputs.dynamicFileFormatDependency));
+
+    expressionVariablesDependency.AppendDependencyData(
+        std::move(childOutputs.expressionVariablesDependency));
 
     culledDependencies.insert(
         culledDependencies.end(),
@@ -1125,7 +1153,10 @@ struct Pcp_PrimIndexer
                             PcpPrimIndex *primIndex,
                             PcpErrorVector *allErrors) {
         // Capacity errors are reported at most once.
-        if (err->ShouldReportAtMostOnce()) {
+        if (err->errorType == PcpErrorType_IndexCapacityExceeded ||
+            err->errorType == PcpErrorType_ArcCapacityExceeded ||
+            err->errorType == PcpErrorType_ArcNamespaceDepthCapacityExceeded) {
+
             for (PcpErrorBasePtr const& e: *allErrors) {
                 if (e->errorType == err->errorType) {
                     // Already reported.
@@ -1133,6 +1164,7 @@ struct Pcp_PrimIndexer
                 }
             }
         }
+
         allErrors->push_back(err);
         if (!primIndex->_localErrors) {
             primIndex->_localErrors.reset(new PcpErrorVector);
@@ -1372,7 +1404,7 @@ _AddArc(
     PCP_INDEXING_PHASE(
         indexer,
         parent, 
-        "Adding new %s arc to %s to %s", 
+        "Adding new %s arc to %s from %s", 
         TfEnum::GetDisplayName(arcType).c_str(),
         Pcp_FormatSite(site).c_str(),
         Pcp_FormatSite(parent.GetSite()).c_str());
@@ -1731,7 +1763,7 @@ _GetDefaultPrimPath(SdfLayerHandle const &layer)
 // implemented in dynamicFileFormatContext.cpp
 PcpDynamicFileFormatContext
 Pcp_CreateDynamicFileFormatContext(
-    const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *);
+    const PcpNodeRef &, PcpPrimIndex_StackFrame *, TfToken::Set *, TfToken::Set *);
 
 // Generates dynamic file format arguments for a payload's asset path if the 
 // asset's file format supports it.
@@ -1754,8 +1786,9 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
         // state of the index. This context will also populate a list of the
         // fields that it composed for dependency tracking
         TfToken::Set composedFieldNames;
+        TfToken::Set composedAttributeNames;
         PcpDynamicFileFormatContext context = Pcp_CreateDynamicFileFormatContext(
-            node, indexer.previousFrame, &composedFieldNames);
+            node, indexer.previousFrame, &composedFieldNames, &composedAttributeNames);
         // Ask the file format to generate dynamic file format arguments for 
         // the asset in this context.
         VtValue dependencyContextData;
@@ -1765,7 +1798,7 @@ _ComposeFieldsForFileFormatArguments(const PcpNodeRef &node,
         // Add this dependency context to dynamic file format dependency object.
         indexer.outputs->dynamicFileFormatDependency.AddDependencyContext(
             dynamicFileFormat, std::move(dependencyContextData), 
-            std::move(composedFieldNames));
+            std::move(composedFieldNames), std::move(composedAttributeNames));
     }
 }
 
@@ -1804,11 +1837,12 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
         bool fail = false;
 
-        // Verify that the reference or payload targets the default 
-        // reference/payload target or a root prim.
+        // Verify that the reference or payload targets either the default 
+        // reference/payload target, or a prim with an absolute path.
         if (!refOrPayload.GetPrimPath().IsEmpty() &&
             !(refOrPayload.GetPrimPath().IsAbsolutePath() && 
-              refOrPayload.GetPrimPath().IsPrimPath())) {
+              refOrPayload.GetPrimPath().IsPrimPath() &&
+              !refOrPayload.GetPrimPath().ContainsPrimVariantSelection())) {
             PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
             err->rootSite = PcpSite(node.GetRootNode().GetSite());
             err->site = PcpSite(node.GetSite());
@@ -1913,8 +1947,52 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
             const ArResolverContext& pathResolverContext =
                 node.GetLayerStack()->GetIdentifier().pathResolverContext;
-            PcpLayerStackIdentifier layerStackIdentifier(
-                layer, SdfLayerHandle(), pathResolverContext );
+            
+            // We want to use the expression variables composed up to node's
+            // layer stack to compose over the variables in the referenced layer
+            // stack.
+            // 
+            // Note that we specify the source of this node's layer stack's
+            // PcpExpressionVariables object as the "expression variable
+            // override source" in the referenced layer stack. This allows us to
+            // share layer stacks across prim indexes when expression variables
+            // are sparsely authored (which is the expected use case).
+            //
+            // For example, consider two prim indexes /A and /B:
+            //
+            //                    ref              ref 
+            // /A: @root.sdf@</A> ---> @a.sdf@</A> ---> @model.sdf@</Model>
+            //
+            //                    ref              ref 
+            // /B: @root.sdf@</B> ---> @b.sdf@</B> ---> @model.sdf@</Model>
+            //
+            // If expression variables are only authored on root.sdf, the
+            // override source for all downstream layer stacks will be
+            // root.sdf. This means the model.sdf layer stack in /A and /B are
+            // the same object.
+            // 
+            // If we instead used the layer stack identifier of this node as the
+            // expression variable override source, the identifiers for the
+            // model.sdf layer stack in /A and /B would differ, even though they
+            // would be equivalent since they'd have the same layers and
+            // composed expression variables.
+            //
+            // The approach we take maximizes sharing but requires that change
+            // processing triggers resyncs when an override source changes.  For
+            // example, if expression variables are additionally authored on
+            // a.sdf, change processing needs to determine that that layer stack
+            // now provides the variable overrides instead of root.sdf, which
+            // means that /A needs to be resynced so that the reference to
+            // model.sdf is recomputed. At that point, the model.sdf layer
+            // stacks in /A and /B are no longer equivalent and become two
+            // different objects since they have different composed expression
+            // variables. If the variables in a.sdf were then removed, change
+            // processing should again resync /A, at which point the model.sdf
+            // layer stacks in /A and /B would be the same object once more.
+            const PcpLayerStackIdentifier layerStackIdentifier(
+                layer, SdfLayerHandle(), pathResolverContext,
+                node.GetLayerStack()->GetExpressionVariables().GetSource());
+
             layerStack = indexer->inputs.cache->ComputeLayerStack( 
                 layerStackIdentifier, &indexer->outputs->allErrors);
 
@@ -1972,13 +2050,18 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         SdfPath const &primPath = defaultPrimPath.IsEmpty() ? 
             refOrPayload.GetPrimPath() : defaultPrimPath;
 
-        // References and payloads only map values under the source path, aka 
-        // the reference root.  Any paths outside the reference root do
-        // not map across.
+        // The mapping for a reference (or payload) arc makes the source
+        // and target map to each other.  Paths outside these will not map,
+        // except for the case of internal references.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
                 /* source */ primPath, /* targetNode */ node, 
                 indexer->inputs, layerOffset);
+        if (isInternal) {
+            // Internal references maintain full namespace visibility
+            // outside the source & target.
+            mapExpr = mapExpr.AddRootIdentity();
+        }
 
         // Only need to include ancestral opinions if the prim path is
         // not a root prim.
@@ -2029,7 +2112,21 @@ _EvalNodeReferences(
     // Compose value for local references.
     SdfReferenceVector refArcs;
     PcpSourceArcInfoVector refInfo;
-    PcpComposeSiteReferences(node, &refArcs, &refInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSiteReferences(
+        node, &refArcs, &refInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     // Add each reference arc.
     _EvalRefOrPayloadArcs<SdfReference, PcpArcTypeReference>(
@@ -2056,7 +2153,21 @@ _EvalNodePayloads(
     // Compose value for local payloads.
     SdfPayloadVector payloadArcs;
     PcpSourceArcInfoVector payloadInfo;
-    PcpComposeSitePayloads(node, &payloadArcs, &payloadInfo);
+    std::unordered_set<std::string> exprVarDependencies;
+    PcpErrorVector errors;
+    PcpComposeSitePayloads(
+        node, &payloadArcs, &payloadInfo, &exprVarDependencies, &errors);
+
+    if (!exprVarDependencies.empty()) {
+        indexer->outputs->expressionVariablesDependency.AddDependencies(
+            node.GetLayerStack(), std::move(exprVarDependencies));
+    }
+
+    if (!errors.empty()) {
+        for (const PcpErrorBasePtr& err : errors) {
+            indexer->RecordError(err);
+        }
+    }
 
     if (payloadArcs.empty()) {
         return;
@@ -2709,15 +2820,31 @@ _AddClassBasedArcs(
     Pcp_PrimIndexer* indexer)
 {
     for (size_t arcNum=0; arcNum < classArcs.size(); ++arcNum) {
+        SdfPath const& arcPath = classArcs[arcNum];
+
         PCP_INDEXING_MSG(indexer, node, "Found %s to <%s>", 
             TfEnum::GetDisplayName(arcType).c_str(),
-            classArcs[arcNum].GetText());
+            arcPath.GetText());
+
+        // Verify that the class-based arc (i.e., inherit or specialize)
+        // targets a prim path, with no variant selection.
+        if (!arcPath.IsEmpty() &&
+            !(arcPath.IsPrimPath() &&
+              !arcPath.ContainsPrimVariantSelection())) {
+            PcpErrorInvalidPrimPathPtr err = PcpErrorInvalidPrimPath::New();
+            err->rootSite = PcpSite(node.GetRootNode().GetSite());
+            err->site = PcpSite(node.GetSite());
+            err->primPath = arcPath;
+            err->arcType = arcType;
+            indexer->RecordError(err);
+            continue;
+        }
 
         // The mapping for a class arc maps the class to the instance.
         // Every other path maps to itself.
         PcpMapExpression mapExpr = 
             _CreateMapExpressionForArc(
-                /* source */ classArcs[arcNum], /* targetNode */ node,
+                /* source */ arcPath, /* targetNode */ node,
                 indexer->inputs)
             .AddRootIdentity();
 
@@ -3394,7 +3521,7 @@ _ComposeVariantSelectionForNode(
     const std::string & vset,
     std::string *vsel,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     TF_VERIFY(!pathInNode.IsEmpty());
 
@@ -3420,8 +3547,26 @@ _ComposeVariantSelectionForNode(
                 node.GetPath());
         }
 
-        if (PcpComposeSiteVariantSelection(
-                site.layerStack, site.path, vset, vsel)) {
+        std::unordered_set<std::string> exprVarDependencies;
+        PcpErrorVector errors;
+
+        const bool foundSelection = 
+            PcpComposeSiteVariantSelection(
+                site.layerStack, site.path, vset, vsel, 
+                &exprVarDependencies, &errors);
+
+        if (!exprVarDependencies.empty()) {
+            indexer->outputs->expressionVariablesDependency.AddDependencies(
+                site.layerStack, std::move(exprVarDependencies));
+        }
+
+        if (!errors.empty()) {
+            for (const PcpErrorBasePtr& err : errors) {
+                indexer->RecordError(err);
+            }
+        }
+
+        if (foundSelection) {
             *nodeWithVsel = node;
             return true;
         }
@@ -3494,11 +3639,11 @@ _ComposeVariantSelectionAcrossStackFrames(
     std::string *vsel,
     _StackFrameAndChildNodeVector *stackFrames,
     PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    Pcp_PrimIndexer *indexer)
 {
     // Compose variant selection in strong-to-weak order.
     if (_ComposeVariantSelectionForNode(
-            node, pathInNode, vset, vsel, nodeWithVsel, outputs)) {
+            node, pathInNode, vset, vsel, nodeWithVsel, indexer)) {
         return true;
     }
 
@@ -3527,7 +3672,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty()) {
             return _ComposeVariantSelectionAcrossStackFrames(
                 childNode, pathInChildNode, vset, vsel, stackFrames, 
-                nodeWithVsel, outputs);
+                nodeWithVsel, indexer);
         }
 
         return false;
@@ -3541,7 +3686,7 @@ _ComposeVariantSelectionAcrossStackFrames(
         if (!pathInChildNode.IsEmpty() &&
             _ComposeVariantSelectionAcrossStackFrames(
                 *child, pathInChildNode, vset, vsel, stackFrames,
-                nodeWithVsel, outputs)) {
+                nodeWithVsel, indexer)) {
             return true;
         }
     }
@@ -3568,14 +3713,12 @@ _ConvertToRootNodeAndPath(PcpNodeRef *node, SdfPath *path)
 
 static void
 _ComposeVariantSelection(
-    int ancestorRecursionDepth,
-    PcpPrimIndex_StackFrame *previousFrame,
-    PcpNodeRef node,
+    const PcpNodeRef &node,
     const SdfPath &pathInNode,
+    Pcp_PrimIndexer *indexer,
     const std::string &vset,
     std::string *vsel,
-    PcpNodeRef *nodeWithVsel,
-    PcpPrimIndexOutputs *outputs)
+    PcpNodeRef *nodeWithVsel)
 {
     TRACE_FUNCTION();
     TF_VERIFY(!pathInNode.IsEmpty());
@@ -3609,12 +3752,13 @@ _ComposeVariantSelection(
     // stack frame. Try all nodes in all parent frames; ancestorRecursionDepth
     // accounts for any ancestral recursion.
     if (_FindPriorVariantSelection(rootNode, pathInRoot,
-                                   ancestorRecursionDepth,
+                                   indexer->ancestorRecursionDepth,
                                    vset, vsel, nodeWithVsel)) {
         return;
     }
 
-    while (previousFrame) {
+    for (PcpPrimIndex_StackFrame *previousFrame = indexer->previousFrame;
+         previousFrame; previousFrame = previousFrame->previousFrame) {
         // There may not be a valid mapping for the current path across 
         // the previous stack frame. For example, this may happen when
         // trying to compose ancestral variant selections on a sub-root
@@ -3645,7 +3789,7 @@ _ComposeVariantSelection(
         // stack as well.
         if (_FindPriorVariantSelection(rootNodeInPreviousFrame, 
                                        pathInPreviousFrame,
-                                       ancestorRecursionDepth,
+                                       indexer->ancestorRecursionDepth,
                                        vset, vsel, nodeWithVsel)) {
             return;
         }
@@ -3659,15 +3803,13 @@ _ComposeVariantSelection(
         // frame.
         rootNode = rootNodeInPreviousFrame;
         pathInRoot = pathInPreviousFrame;
-
-        previousFrame = previousFrame->previousFrame;
     }
 
     // Now recursively walk the prim index in strong-to-weak order
     // looking for a variant selection.
     _ComposeVariantSelectionAcrossStackFrames(
         rootNode, pathInRoot, vset, vsel, &previousStackFrames,
-        nodeWithVsel, outputs);
+        nodeWithVsel, indexer);
 }
 
 static bool
@@ -3872,11 +4014,8 @@ _EvalNodeAuthoredVariant(
     // Determine the authored variant selection for this set, if any.
     std::string vsel;
     PcpNodeRef nodeWithVsel;
-    _ComposeVariantSelection(indexer->ancestorRecursionDepth,
-                             indexer->previousFrame, node,
-                             node.GetPath().StripAllVariantSelections(),
-                             vset, &vsel, &nodeWithVsel,
-                             indexer->outputs);
+    _ComposeVariantSelection(node, node.GetPath().StripAllVariantSelections(),
+                             indexer, vset, &vsel, &nodeWithVsel);
     if (!vsel.empty()) {
         PCP_INDEXING_MSG(
             indexer, node, "Found variant selection {%s=%s} at %s",
@@ -4116,6 +4255,73 @@ _ComputedAssetPathWouldCreateDifferentNode(
     return nodeRootLayer != newLayer;
 }
 
+template <PcpArcType RefOrPayload>
+auto _GetSourceArcs(const PcpNodeRef& node, PcpSourceArcInfoVector* info);
+
+template <>
+auto _GetSourceArcs<PcpArcTypeReference>(
+    const PcpNodeRef& node, PcpSourceArcInfoVector* info)
+{
+    SdfReferenceVector refs;
+    PcpComposeSiteReferences(node, &refs, info);
+    return refs;
+}
+
+template <>
+auto _GetSourceArcs<PcpArcTypePayload>(
+    const PcpNodeRef& node, PcpSourceArcInfoVector* info)
+{
+    SdfPayloadVector payloads;
+    PcpComposeSitePayloads(node, &payloads, info);
+    return payloads;
+}
+
+// Check the reference or payload arcs on the given node to determine if
+// their asset paths now resolve to a different layer. See _EvalNodeReferences
+// and _EvalNodePaylods.
+template <PcpArcType RefOrPayload>
+static bool
+_NeedToRecomputeDueToAssetPathChange(
+    const PcpNodeRef& node)
+{
+    auto arcRange = _GetDirectChildRange(node, RefOrPayload);
+    if (arcRange.first != arcRange.second) {
+        PcpSourceArcInfoVector sourceInfo;
+        const auto sourceArcs = _GetSourceArcs<RefOrPayload>(node, &sourceInfo);
+        TF_VERIFY(sourceArcs.size() == sourceInfo.size());
+
+        const size_t numArcs = std::distance(arcRange.first, arcRange.second);
+        if (numArcs != sourceArcs.size()) {
+            // This could happen if there was some scene description
+            // change that added/removed arcs, but also if a 
+            // layer couldn't be opened when this index was computed. 
+            // We conservatively mark this index as needing recomputation
+            // in the latter case to simplify things.
+            return true;
+        }
+
+        for (size_t i = 0; i < sourceArcs.size(); ++i, ++arcRange.first) {
+            // Skip internal references/payloads since there's no asset path
+            // computation that occurs when processing them.
+            if (sourceArcs[i].GetAssetPath().empty()) {
+                continue;
+            }
+
+            // PcpComposeSiteReferences/Payloads will have filled in each
+            // object with the same asset path that would be used
+            // during composition to open layers.
+            const std::string& anchoredAssetPath = sourceArcs[i].GetAssetPath();
+
+            if (_ComputedAssetPathWouldCreateDifferentNode(
+                    *arcRange.first, anchoredAssetPath)) {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
 bool
 Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
 {
@@ -4129,82 +4335,9 @@ Pcp_NeedToRecomputeDueToAssetPathChange(const PcpPrimIndex& index)
             continue;
         }
 
-        // Handle reference arcs. See _EvalNodeReferences.
-        auto refNodeRange = _GetDirectChildRange(node, PcpArcTypeReference);
-        if (refNodeRange.first != refNodeRange.second) {
-            SdfReferenceVector refs;
-            PcpSourceArcInfoVector sourceInfo;
-            PcpComposeSiteReferences(node, &refs, &sourceInfo);
-            TF_VERIFY(refs.size() == sourceInfo.size());
-            
-            const size_t numReferenceArcs = 
-                std::distance(refNodeRange.first, refNodeRange.second) ;
-            if (numReferenceArcs != refs.size()) {
-                // This could happen if there was some scene description
-                // change that added/removed references, but also if a 
-                // layer couldn't be opened when this index was computed. 
-                // We conservatively mark this index as needing recomputation
-                // in the latter case to simplify things.
-                return true;
-            }
-            
-            for (size_t i = 0; i < refs.size(); ++i, ++refNodeRange.first) {
-                // Skip internal references since there's no asset path
-                // computation that occurs when processing them.
-                if (refs[i].GetAssetPath().empty()) {
-                    continue;
-                }
-
-                // PcpComposeSiteReferences will have filled in each
-                // SdfReference with the same asset path that would be used
-                // during composition to open layers.
-                const std::string& anchoredAssetPath = refs[i].GetAssetPath();
-
-                if (_ComputedAssetPathWouldCreateDifferentNode(
-                        *refNodeRange.first, anchoredAssetPath)) {
-                    return true;
-                }
-            }
-        }
-
-        // Handle payload arcs. See _EvalNodePayloads.
-        // XXX: This is identical to the loop for references except for the 
-        // type and PcpComposeSite* function. When payloads are fully conformed
-        // to references, it would be worth refactoring this.
-        auto payloadNodeRange = _GetDirectChildRange(node, PcpArcTypePayload);
-        if (payloadNodeRange.first != payloadNodeRange.second) {
-            SdfPayloadVector payloads;
-            PcpSourceArcInfoVector sourceInfo;
-            PcpComposeSitePayloads(node, &payloads, &sourceInfo);
-
-            const size_t numPayloadArcs = 
-                std::distance(payloadNodeRange.first, payloadNodeRange.second) ;
-            if (numPayloadArcs != payloads.size()) {
-                // This could happen if there was some scene description
-                // change that added/removed payloads, but also if a 
-                // layer couldn't be opened when this index was computed. 
-                // We conservatively mark this index as needing recomputation
-                // in the latter case to simplify things.
-                return true;
-            }
-
-            for (size_t i = 0; i < payloads.size(); ++i, ++payloadNodeRange.first) {
-                // Skip internal payloads since there's no asset path
-                // computation that occurs when processing them.
-                if (payloads[i].GetAssetPath().empty()) {
-                    continue;
-                }
-
-                // PcpComposeSitePayloads will have filled in each
-                // SdfPayload with the same asset path that would be used
-                // during composition to open layers.
-                const std::string& anchoredAssetPath = payloads[i].GetAssetPath();
-
-                if (_ComputedAssetPathWouldCreateDifferentNode(
-                        *payloadNodeRange.first, anchoredAssetPath)) {
-                    return true;
-                }
-            }
+        if (_NeedToRecomputeDueToAssetPathChange<PcpArcTypeReference>(node) ||
+            _NeedToRecomputeDueToAssetPathChange<PcpArcTypePayload>(node)) {
+            return true;
         }
     }
 

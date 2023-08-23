@@ -41,14 +41,9 @@ class TestUsdAppUtilsFrameRecorder(unittest.TestCase):
             from PySide6.QtWidgets import QApplication
             PySideModule = 'PySide6'
         except ImportError:
-            try:
-                from PySide2 import QtOpenGL
-                from PySide2.QtWidgets import QApplication
-                PySideModule = 'PySide2'
-            except ImportError:
-                from PySide import QtOpenGL
-                from PySide.QtGui import QApplication
-                PySideModule = 'PySide'
+            from PySide2 import QtOpenGL
+            from PySide2.QtWidgets import QApplication
+            PySideModule = 'PySide2'
 
         application = QApplication(sys.argv)
 

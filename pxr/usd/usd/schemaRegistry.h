@@ -35,12 +35,14 @@
 #include "pxr/base/tf/singleton.h"
 
 #include <unordered_map>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 SDF_DECLARE_HANDLES(SdfAttributeSpec);
 SDF_DECLARE_HANDLES(SdfRelationshipSpec);
 
+class UsdSchemaBase;
 class UsdPrimDefinition;
 
 /// Schema versions are specified as a single unsigned integer value.
@@ -65,8 +67,13 @@ using UsdSchemaVersion = unsigned int;
 /// classes, to enumerate all properties for a given schema class, and finally 
 /// to provide fallback values for unauthored built-in properties.
 ///
-class UsdSchemaRegistry : public TfWeakBase, boost::noncopyable {
+class UsdSchemaRegistry : public TfWeakBase {
+    UsdSchemaRegistry(const UsdSchemaRegistry&) = delete;
+    UsdSchemaRegistry& operator=(const UsdSchemaRegistry&) = delete;
 public:
+    using TokenToTokenVectorMap = 
+        std::unordered_map<TfToken, TfTokenVector, TfHash>;
+
     /// Structure that holds the information about a schema that is registered
     /// with the schema registry.
     struct SchemaInfo {
@@ -168,6 +175,22 @@ public:
     USD_API
     static const SchemaInfo *
     FindSchemaInfo(const TfType &schemaType);
+
+    /// Finds and returns the schema info for a registered schema with the 
+    /// C++ schema class \p SchemaType. 
+    ///
+    /// All generated C++ schema classes, i.e. classes that derive from 
+    /// UsdSchemaBase, are expected to have their types registered with the
+    /// schema registry and as such, the return value from this function should
+    /// never be null. A null return value is indication of a coding error even
+    /// though this function itself will not report an error.
+    template <class SchemaType>
+    static const SchemaInfo *
+    FindSchemaInfo() {
+        static_assert(std::is_base_of<UsdSchemaBase, SchemaType>::value,
+            "Provided type must derive UsdSchemaBase.");
+        return FindSchemaInfo(SchemaType::_GetStaticTfType());
+    }
 
     /// Finds and returns the schema info for a registered schema with the 
     /// given \p schemaIdentifier. Returns null if no registered schema with the 
@@ -403,7 +426,7 @@ public:
     /// include derived types of the listed types, the type lists returned by 
     /// this function do not. 
     USD_API
-    static const std::map<TfToken, TfTokenVector> &GetAutoApplyAPISchemas();
+    static const TokenToTokenVectorMap &GetAutoApplyAPISchemas();
 
     /// Collects all the additional auto apply schemas that can be defined in 
     /// a plugin through "AutoApplyAPISchemas" metadata and adds the mappings
@@ -418,7 +441,7 @@ public:
     /// may want to collect just these plugin API schema mappings.
     USD_API
     static void CollectAddtionalAutoApplyAPISchemasFromPlugins(
-        std::map<TfToken, TfTokenVector> *autoApplyAPISchemas);
+        TokenToTokenVectorMap *autoApplyAPISchemas);
 
     /// Creates a name template that can represent a property or API schema that
     /// belongs to a multiple apply schema and will therefore have multiple 
@@ -546,15 +569,14 @@ private:
     void _ComposeAPISchemasIntoPrimDefinition(
         UsdPrimDefinition *primDef, 
         const TfTokenVector &appliedAPISchemas,
-        _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions,
-        bool allowDupes = false) const;
+        _FamilyAndInstanceToVersionMap *seenSchemaFamilyVersions) const;
 
     // Private class for helping initialize the schema registry. Defined 
     // entirely in the implementation. Declared here for private access to the
     // registry.
     class _SchemaDefInitHelper;
 
-    SdfLayerRefPtr _schematics;
+    std::vector<SdfLayerRefPtr> _schematicsLayers;
 
     std::unordered_map<TfToken, const std::unique_ptr<UsdPrimDefinition>,
          TfHash> _concreteTypedPrimDefinitions;
@@ -582,9 +604,15 @@ USD_API_TEMPLATE_CLASS(TfSingleton<UsdSchemaRegistry>);
 void Usd_GetAPISchemaPluginApplyToInfoForType(
     const TfType &apiSchemaType,
     const TfToken &apiSchemaName,
-    std::map<TfToken, TfTokenVector> *autoApplyAPISchemasMap,
-    TfHashMap<TfToken, TfTokenVector, TfHash> *canOnlyApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *autoApplyAPISchemasMap,
+    UsdSchemaRegistry::TokenToTokenVectorMap *canOnlyApplyAPISchemasMap,
     TfHashMap<TfToken, TfToken::Set, TfHash> *allowedInstanceNamesMap);
+
+// Utility for sorting a list of auto-applied API schemas. It is useful for 
+// certain clients to be able to make sure they can perform this type of sort
+// in the exact same way as UsdSchemaRegistry does.
+void Usd_SortAutoAppliedAPISchemas(
+    TfTokenVector *autoAppliedAPISchemas);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

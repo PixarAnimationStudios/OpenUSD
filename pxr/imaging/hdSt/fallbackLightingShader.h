@@ -58,7 +58,7 @@ public:
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
     HDST_API
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     // HdStLightingShader overrides
     HDST_API

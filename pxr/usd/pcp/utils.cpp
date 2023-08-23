@@ -26,10 +26,69 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/utils.h"
+
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
+#include "pxr/usd/sdf/variableExpression.h"
+#include "pxr/base/vt/value.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars,
+    const std::string& context,
+    const SdfLayerHandle& sourceLayer,
+    const SdfPath& sourcePath,
+    std::unordered_set<std::string>* usedVariables,
+    PcpErrorVector* errors)
+{
+    SdfVariableExpression::Result r =
+        SdfVariableExpression(expression)
+        .EvaluateTyped<std::string>(expressionVars.GetVariables());
+
+    if (usedVariables) {
+        usedVariables->insert(
+            std::make_move_iterator(r.usedVariables.begin()),
+            std::make_move_iterator(r.usedVariables.end()));
+    }
+
+    if (errors && !r.errors.empty()) {
+        PcpErrorVariableExpressionErrorPtr varErr =
+            PcpErrorVariableExpressionError::New();
+
+        varErr->expression = expression;
+        varErr->expressionError =
+            TfStringJoin(r.errors.begin(), r.errors.end(), "; ");
+        varErr->context = context;
+        varErr->sourceLayer = sourceLayer;
+        varErr->sourcePath = sourcePath;
+
+        errors->push_back(std::move(varErr));
+    }
+
+    return r.value.IsHolding<std::string>() ?
+        r.value.UncheckedGet<std::string>() : std::string();
+}
+
+std::string
+Pcp_EvaluateVariableExpression(
+    const std::string& expression,
+    const PcpExpressionVariables& expressionVars)
+{
+    return Pcp_EvaluateVariableExpression(
+        expression, expressionVars,
+        std::string(), SdfLayerHandle(), SdfPath(), nullptr, nullptr);
+}
+
+bool
+Pcp_IsVariableExpression(
+    const std::string& str)
+{
+    return SdfVariableExpression::IsExpression(str);
+}
 
 static bool
 _TargetIsSpecifiedInIdentifier(

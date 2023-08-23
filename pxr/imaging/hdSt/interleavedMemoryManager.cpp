@@ -44,6 +44,8 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -133,7 +135,7 @@ HdStInterleavedUBOMemoryManager::CreateBufferArray(
             HdPerfTokens->garbageCollectedUbo);
 }
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStInterleavedUBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const
@@ -174,7 +176,7 @@ HdStInterleavedSSBOMemoryManager::CreateBufferArray(
             HdPerfTokens->garbageCollectedSsbo);
 }
 
-HdAggregationStrategy::AggregationId
+HdStAggregationStrategy::AggregationId
 HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint) const

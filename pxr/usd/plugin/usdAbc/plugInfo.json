@@ -13,7 +13,8 @@
                         ],
                         "formatId": "abc",
                         "primary": true,
-                        "target": "usd"
+                        "target": "usd",
+                        "supportsEditing": false
                     }
                 }
             },

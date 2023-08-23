@@ -36,7 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HgiCapabilities;
 struct HgiIndirectCommands;
-using HdBindingRequestVector = std::vector<HdBindingRequest>;
+using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
 /// \class HdSt_PipelineDrawBatch
 ///
@@ -124,7 +124,7 @@ private:
     protected:
         // _DrawingProgram overrides
         void _GetCustomBindings(
-            HdBindingRequestVector * customBindings,
+            HdStBindingRequestVector * customBindings,
             bool * enableInstanceDraw) const override;
     private:
         bool _useDrawIndexed;
@@ -156,6 +156,11 @@ private:
                 HdStRenderPassStateSharedPtr const & renderPassState,
                 HdStResourceRegistrySharedPtr const & resourceRegistry);
 
+    void _ExecutePTCS(
+            HgiGraphicsCmds *ptcsGfxCmds,
+            HdStRenderPassStateSharedPtr const & renderPassState,
+            HdStResourceRegistrySharedPtr const & resourceRegistry);
+
     void _BeginGPUCountVisibleInstances(
         HdStResourceRegistrySharedPtr const & resourceRegistry);
 
@@ -165,6 +170,8 @@ private:
 
     HdStDispatchBufferSharedPtr _dispatchBuffer;
     HdStDispatchBufferSharedPtr _dispatchBufferCullInput;
+
+    HdStBufferResourceSharedPtr _tessFactorsBuffer;
 
     std::vector<uint32_t> _drawCommandBuffer;
     bool _drawCommandBufferDirty;

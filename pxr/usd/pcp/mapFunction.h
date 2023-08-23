@@ -28,6 +28,7 @@
 #include "pxr/usd/pcp/api.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/layerOffset.h"
+#include "pxr/usd/sdf/pathExpression.h"
 
 #include <atomic>
 #include <memory>
@@ -150,6 +151,52 @@ public:
     PCP_API
     SdfPath MapTargetToSource(const SdfPath &path) const;
 
+    /// Map all path pattern prefix paths and expression reference paths in the
+    /// source namespace to the target.  For any references or patterns with
+    /// prefix paths that are not in the domain, replace with an
+    /// SdfPathPattern::Nothing() subexpression, to be simplified.
+    ///
+    /// For example, if the mapping specifies /Foo -> /World/Foo_1, and the
+    /// expression is '/Foo/Bar//Baz + /Something/Else//Entirely', the resulting
+    /// expression will be '/World/Foo_1/Bar//Baz', since the
+    /// /Something/Else prefix is outside the domain.
+    ///
+    /// If \p excludedPatterns and/or \p excludedReferences are supplied, they
+    /// are populated with those patterns & references that could not be
+    /// translated and were replaced with SdfPathPattern::Nothing().
+    PCP_API
+    SdfPathExpression
+    MapSourceToTarget(
+        const SdfPathExpression &pathExpr,
+        std::vector<SdfPathExpression::PathPattern>
+            *unmappedPatterns = nullptr,
+        std::vector<SdfPathExpression::ExpressionReference>
+            *unmappedRefs = nullptr
+        ) const;
+
+    /// Map all path pattern prefix paths and expression reference paths in the
+    /// target namespace to the source.  For any references or patterns with
+    /// prefix paths that are not in the co-domain, replace with an
+    /// SdfPathPattern::Nothing() subexpression, to be simplified.
+    ///
+    /// For example, if the mapping specifies /World/Foo_1 -> /Foo, and the
+    /// expression is '/World/Foo_1/Bar//Baz + /World/Bar//', the resulting
+    /// expression will be '/Foo/Bar//Baz', since the /World/Bar prefix is
+    /// outside the co-domain.
+    ///
+    /// If \p excludedPatterns and/or \p excludedReferences are supplied, they
+    /// are populated with those patterns & references that could not be
+    /// translated and were replaced with SdfPathPattern::Nothing().
+    PCP_API
+    SdfPathExpression
+    MapTargetToSource(
+        const SdfPathExpression &pathExpr,
+        std::vector<SdfPathExpression::PathPattern>
+            *unmappedPatterns = nullptr,
+        std::vector<SdfPathExpression::ExpressionReference>
+            *unmappedRefs = nullptr
+        ) const;
+    
     /// Compose this map over the given map function.
     /// The result will represent the application of f followed by
     /// the application of this function.
@@ -192,9 +239,18 @@ private:
                    SdfLayerOffset offset,
                    bool hasRootIdentity);
 
+    PCP_API
+    SdfPathExpression
+    _MapPathExpressionImpl(
+        bool invert,
+        const SdfPathExpression &pathExpr,
+        std::vector<SdfPathExpression::PathPattern> *unmappedPatterns,
+        std::vector<SdfPathExpression::ExpressionReference> *unmappedRefs
+        ) const;
+
 private:
     friend PcpMapFunction *Pcp_MakeIdentity();
-    
+
     static const int _MaxLocalPairs = 2;
     struct _Data final {
         _Data() {};
@@ -290,6 +346,13 @@ private:
             return !(*this == other);
         }
 
+        template <class HashState>
+        friend void TfHashAppend(HashState &h, _Data const &data){
+            h.Append(data.hasRootIdentity);
+            h.Append(data.numPairs);
+            h.AppendRange(std::begin(data), std::end(data));
+        }
+
         union {
             PathPair localPairs[_MaxLocalPairs > 0 ? _MaxLocalPairs : 1];
             std::shared_ptr<PathPair> remotePairs;
@@ -299,6 +362,14 @@ private:
         bool hasRootIdentity = false;
     };
 
+    // Specialize TfHashAppend for PcpMapFunction.
+    template <typename HashState>
+    friend inline
+    void TfHashAppend(HashState& h, const PcpMapFunction& x){
+        h.Append(x._data);
+        h.Append(x._offset);
+    }
+
     _Data _data;
     SdfLayerOffset _offset;
 };
@@ -307,7 +378,7 @@ private:
 inline
 size_t hash_value(const PcpMapFunction& x)
 {
-    return x.Hash();
+    return TfHash{}(x);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -39,7 +39,6 @@
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 #include "pxr/base/tf/pyObjWrapper.h"
-#include <boost/operators.hpp>
 
 #include <cstddef>
 #include <type_traits>
@@ -51,7 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 /// Provides the ability to hold an arbitrary TfWeakPtr in a non-type-specific
 /// manner in order to observe whether it has expired or not
-class TfAnyWeakPtr : boost::totally_ordered<TfAnyWeakPtr>
+class TfAnyWeakPtr
 {
     struct _Data {
         void* space[4];
@@ -118,8 +117,28 @@ public:
     /// equality operator
     TF_API bool operator ==(const TfAnyWeakPtr &rhs) const;
 
+    /// inequality operator
+    bool operator !=(const TfAnyWeakPtr &rhs) const {
+        return !(*this == rhs);
+    }
+
     /// comparison operator
     TF_API bool operator <(const TfAnyWeakPtr &rhs) const;
+
+    /// less than or equal operator
+    bool operator <=(const TfAnyWeakPtr& rhs) const {
+        return !(rhs < *this);
+    }
+
+    /// greater than operator
+    bool operator >(const TfAnyWeakPtr& rhs) const {
+        return rhs < *this;
+    }
+
+    /// greater than or equal operator
+    bool operator >=(const TfAnyWeakPtr& rhs) const {
+        return !(*this < rhs);
+    }
 
     /// returns the type_info of the underlying WeakPtr
     TF_API const std::type_info & GetTypeInfo() const;

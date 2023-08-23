@@ -39,6 +39,7 @@
 
 #include "pxr/base/work/withScopedParallelism.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
@@ -1519,14 +1520,6 @@ UsdGeomBBoxCache::_PrimContext::ToString() const {
                               prim.GetPath().GetText());
     }
 }
-
-size_t hash_value(const UsdGeomBBoxCache::_PrimContext &key)
-{
-    size_t hash = hash_value(key.prim);
-    boost::hash_combine(hash, key.instanceInheritablePurpose.Hash());
-    return hash;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

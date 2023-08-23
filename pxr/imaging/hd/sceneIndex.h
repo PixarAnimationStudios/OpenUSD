@@ -31,6 +31,8 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/singleton.h"
+#include "pxr/base/tf/denseHashSet.h"
+
 
 #include "pxr/usd/sdf/path.h"
 
@@ -62,6 +64,8 @@ struct HdSceneIndexPrim
 class HdSceneIndexBase : public TfRefBase, public TfWeakBase
 {
 public:
+    HD_API
+    HdSceneIndexBase();
 
     HD_API
     ~HdSceneIndexBase() override;
@@ -117,6 +121,47 @@ public:
                 GetPrim(primPath).dataSource, locator);
     }
 
+    // ------------------------------------------------------------------------
+    // User Interface Utilities
+    // ------------------------------------------------------------------------
+
+    /// Returns a value previously set by SetDisplayName. If no value (or an
+    /// empty string) was last set, this returns a symbol-demangled version of
+    /// the class type itself. This is in service of user interfaces with views
+    /// of scene index chains or graphs.
+    HD_API
+    std::string GetDisplayName() const;
+
+    /// Allows for scene index instances to be identified in a more contextually
+    /// relevant way. This is in service of user interfaces with views of scene
+    /// index chains or graphs.
+    HD_API
+    void SetDisplayName(const std::string &n);
+
+    /// Adds a specified tag token to a scene index instance. This is in service
+    /// of user interfaces which want to filter views of a scene index chain
+    /// or graph.
+    HD_API
+    void AddTag(const TfToken &tag);
+
+    /// Removes a specified tag token to a scene index instance.
+    /// This is in service of user interfaces which want to filter views of a
+    /// scene index chain or graph.
+    HD_API
+    void RemoveTag(const TfToken &tag);
+
+    /// Returns true if a specified tag token has been added to a scene index
+    /// instance. This is in service of user interfaces which want to filter
+    /// views of a scene index chain or graph.
+    HD_API
+    bool HasTag(const TfToken &tag) const;
+
+    /// Returns all tag tokens currently added to a scene index instance. This
+    /// is in service of user interfaces which want to filter views of a scene
+    /// index chain or graph.
+    HD_API
+    TfTokenVector GetTags() const;
+
 protected:
 
     /// Notify attached observers of prims added to the scene. The set of
@@ -150,6 +195,16 @@ protected:
     void _SendPrimsDirtied(
         const HdSceneIndexObserver::DirtiedPrimEntries &entries);
 
+
+    /// Notify attached observers of prims (and their descendents) which have
+    /// been renamed or reparented.
+    /// This function is not threadsafe; some observers expect it to be called
+    /// from a single thread.
+    HD_API
+    void _SendPrimsRenamed(
+        const HdSceneIndexObserver::RenamedPrimEntries &entries);
+
+
     /// Returns whether the scene index has any registered observers; this
     /// information can be used to skip work preparing notices when there are
     /// no observers.
@@ -157,9 +212,28 @@ protected:
     bool _IsObserved() const;
 
 private:
+    void _RemoveExpiredObservers();
 
-    using _ObserverSet = std::set<HdSceneIndexObserverPtr>;
-    _ObserverSet _observers;
+    // Scoped (RAII) helper to manage tracking recursion depth,
+    // and to remove expired observers after completing delivery.
+    struct _NotifyScope;
+
+    // Registered observers, in order of registration.
+    using _Observers = std::vector<HdSceneIndexObserverPtr>;
+    _Observers _observers;
+
+    // Count of in-flight observer notifications
+    int _notifyDepth;
+
+    // Flag hinting that expired observers may exist.
+    bool _shouldRemoveExpiredObservers;
+
+    // User-visible label for this scene index
+    std::string _displayName;
+
+    // Tags used to categorize this scene index
+    using _TagSet = TfDenseHashSet<TfToken, TfHash, std::equal_to<TfToken>, 8>;
+    _TagSet _tags;
 };
 
 

@@ -59,12 +59,16 @@ public:
     static HdSelectionsSchema GetFromParent(
         const HdContainerDataSourceHandle &fromParentContainer);
 
+    /// Returns a token where the container representing this schema is found in
+    /// a container by default.
+    HD_API
+    static const TfToken &GetSchemaToken();
+
     /// Returns an HdDataSourceLocator (relative to the prim-level data source)
     /// where the vector data source representing this schema is found by
     /// default.
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

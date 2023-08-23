@@ -37,18 +37,18 @@ class HdSt_NodeIdentifierResolvingSceneIndex
     : public HdMaterialFilteringSceneIndexBase
 {
 public:
-    static HdSt_NodeIdentifierResolvingSceneIndexRefPtr
-    New(const HdSceneIndexBaseRefPtr& inputSceneIndex);
+    static
+    HdSt_NodeIdentifierResolvingSceneIndexRefPtr
+    New(HdSceneIndexBaseRefPtr const &inputSceneIndex);
+
+    ~HdSt_NodeIdentifierResolvingSceneIndex() override;
 
 protected: // HdMaterialFilteringSceneIndexBase overrides
     FilteringFnc _GetFilteringFunction() const override;
 
-protected:
-    HdSt_NodeIdentifierResolvingSceneIndex(
-        const HdSceneIndexBaseRefPtr& inputSceneIndex);
-    ~HdSt_NodeIdentifierResolvingSceneIndex() override;
-
 private:
+    HdSt_NodeIdentifierResolvingSceneIndex(
+        HdSceneIndexBaseRefPtr const &inputSceneIndex);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

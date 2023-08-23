@@ -170,9 +170,11 @@ namespace {
 
 /*virtual*/
 bool
-HdxSelectionTracker::GetSelectionOffsetBuffer(const HdRenderIndex * const index,
-                                              const bool enableSelection,
-                                              VtIntArray* const offsets) const
+HdxSelectionTracker::GetSelectionOffsetBuffer(
+    const HdRenderIndex * const index,
+    const bool enableSelectionHighlight,
+    const bool enableLocateHighlight,
+    VtIntArray* const offsets) const
 {
     TRACE_FUNCTION();
     TfAutoMallocTag2 tag("Hdx", "GetSelectionOffsetBuffer");
@@ -216,15 +218,16 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(const HdRenderIndex * const index,
 
     (*offsets)[0] = numHighlightModes;
 
-    HdSelectionSharedPtr const selection =
-        enableSelection
+    HdSelectionSharedPtr const highlights =
+        enableSelectionHighlight || enableLocateHighlight
         ? _mergedSelection->ComputeSelection(index)
         : nullptr;
 
-    // We expect the collection of selected items to be created externally and
-    // set via SetSelection. Exit early if the tracker doesn't have one set,
-    // or it's empty. Likewise if enableSelection is false.
-    if (!selection || selection->IsEmpty()) {
+    // We expect the collection of highlighted items to be created externally
+    // and set via SetSelection. Exit early if the tracker doesn't have one set,
+    // or it's empty. Likewise if both enableSelectionHighlight and
+    // enableLocateHighlight are false (in which case highlights is nullptr).
+    if (!highlights || highlights->IsEmpty()) {
         for (int mode = HdSelection::HighlightModeSelect;
                  mode < HdSelection::HighlightModeCount;
                  mode++) {
@@ -235,17 +238,29 @@ HdxSelectionTracker::GetSelectionOffsetBuffer(const HdRenderIndex * const index,
     }
 
     size_t copyOffset = headerSize;
+    
+    // XXX: This must match the order of the HdSelection::HighlightMode enum.
+    // This is not very nice, unfortunately. Much of this code appears to have
+    // been concerned with making it easy to add additional highlighting modes,
+    // but the more recent need for fine-grained control over which modes are
+    // active means we're now starting to fight against that earlier approach.
+    const bool modeEnabled[] = {
+        enableSelectionHighlight,
+        enableLocateHighlight
+    };
+
+    TF_VERIFY(sizeof(modeEnabled) / sizeof(modeEnabled[0]) == HdSelection::HighlightModeCount);
 
     for (int mode = HdSelection::HighlightModeSelect;
              mode < HdSelection::HighlightModeCount;
              mode++) {
        
         std::vector<int> output;
-        const bool modeHasSelection =
-            _GetSelectionOffsets(
-                selection,
-                static_cast<HdSelection::HighlightMode>(mode),
-                index, copyOffset, &output);
+        const bool modeHasSelection = modeEnabled[mode] && _GetSelectionOffsets(
+            highlights,
+            static_cast<HdSelection::HighlightMode>(mode),
+            index, copyOffset, &output);
+
         hasSelection = hasSelection || modeHasSelection;
 
         (*offsets)[mode + 1] = modeHasSelection? copyOffset : SELECT_NONE;

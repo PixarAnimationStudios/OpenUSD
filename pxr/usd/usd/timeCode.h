@@ -29,8 +29,7 @@
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/staticTokens.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <limits>
 #include <iosfwd>
@@ -195,7 +194,7 @@ public:
 
     /// Hash function.
     friend size_t hash_value(const UsdTimeCode &time) {
-        return boost::hash_value(time._value);
+        return TfHash()(time._value);
     }
 
 private:

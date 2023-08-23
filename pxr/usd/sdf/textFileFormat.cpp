@@ -41,7 +41,6 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/arch/fileSystem.h"
 
-#include <boost/assign.hpp>
 #include <ostream>
 
 using std::string;

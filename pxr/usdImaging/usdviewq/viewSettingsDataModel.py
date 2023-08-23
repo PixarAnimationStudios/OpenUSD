@@ -104,7 +104,7 @@ class OCIOSettings():
     def colorSpace(self):
         return self._colorSpace
 
-class ViewSettingsDataModel(QtCore.QObject, StateSource):
+class ViewSettingsDataModel(StateSource, QtCore.QObject):
     """Data model containing settings related to the rendered view of a USD
     file.
     """

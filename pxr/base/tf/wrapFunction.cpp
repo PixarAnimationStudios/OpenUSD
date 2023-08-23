@@ -24,6 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/pyFunction.h"
+#include "pxr/base/tf/pyObjWrapper.h"
 
 #include <boost/python/object.hpp>
 
@@ -41,4 +42,5 @@ void wrapFunction() {
     TfPyFunctionFromPython<double ()>();
     TfPyFunctionFromPython<std::string ()>();
     TfPyFunctionFromPython<python::object ()>();
+    TfPyFunctionFromPython<TfPyObjWrapper ()>();
 }

@@ -144,20 +144,22 @@ namespace {
 
 static object
 _WrapComputeBoundMaterial(const UsdShadeMaterialBindingAPI &bindingAPI,
-                          const TfToken &materialPurpose) {
+                          const TfToken &materialPurpose,
+                          bool supportLegacyBindings) {
     UsdRelationship bindingRel;
     UsdShadeMaterial mat = bindingAPI.ComputeBoundMaterial(materialPurpose,
-            &bindingRel);
+            &bindingRel, supportLegacyBindings);
     return boost::python::make_tuple(mat, bindingRel);
 }
 
 static object
 _WrapComputeBoundMaterials(const std::vector<UsdPrim> &prims, 
-                           const TfToken &materialPurpose)
+                           const TfToken &materialPurpose, 
+                           bool supportLegacyBindings)
 {
     std::vector<UsdRelationship> bindingRels; 
     auto materials = UsdShadeMaterialBindingAPI::ComputeBoundMaterials(prims,
-        materialPurpose, &bindingRels);
+        materialPurpose, &bindingRels, supportLegacyBindings);
     return boost::python::make_tuple(materials, bindingRels);
 }
 
@@ -278,10 +280,12 @@ WRAP_CUSTOM {
             .staticmethod("GetResolvedTargetPathFromBindingRel")
 
         .def("ComputeBoundMaterial", &_WrapComputeBoundMaterial,
-             arg("materialPurpose")=UsdShadeTokens->allPurpose)
+             (arg("materialPurpose")=UsdShadeTokens->allPurpose,
+             arg("supportLegacyBindings")=true))
 
         .def("ComputeBoundMaterials", &_WrapComputeBoundMaterials,
-             (arg("prims"), arg("materialPurpose")=UsdShadeTokens->allPurpose))
+             (arg("prims"), arg("materialPurpose")=UsdShadeTokens->allPurpose,
+              arg("supportLegacyBindings")=true))
             .staticmethod("ComputeBoundMaterials")
 
         .def("CreateMaterialBindSubset", 

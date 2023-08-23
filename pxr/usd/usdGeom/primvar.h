@@ -508,10 +508,10 @@ public:
     /// same value is repeated many times in the array value of a primvar. An 
     /// indexed primvar can be used in such cases to optimize for data storage
     /// if the primvar's interpolation is uniform, varying, or vertex.
-    /// For **faceVarying primvars,**  however, indexing serves a higher
+    /// For **faceVarying primvars**, however, indexing serves a higher
     /// purpose (and should be used *only* for this purpose, since renderers
     /// and OpenSubdiv will assume it) of establishing a surface topology
-    /// for the primvar.  That is, faveVarying primvars use indexing to 
+    /// for the primvar.  That is, faceVarying primvars use indexing to 
     /// unambiguously define discontinuities in their functions at edges
     /// and vertices.  Please see the <a href="http://graphics.pixar.com/opensubdiv/docs/subdivision_surfaces.html#face-varying-interpolation-rules">
     /// OpenSubdiv documentation on FaceVarying Primvars</a> for more 
@@ -694,10 +694,15 @@ public:
         return lhs.GetAttr().GetPath() < rhs.GetAttr().GetPath();
     }
 
+    // Specialize TfHashAppend for TfHash
+    template <typename HashState>
+    friend void TfHashAppend(HashState& h, const UsdGeomPrimvar& obj) {
+        h.Append(obj.GetAttr());
+    }
+
     // hash_value overload for std/boost hash.
-    USDGEOM_API
     friend size_t hash_value(const UsdGeomPrimvar &obj) {
-        return hash_value(obj.GetAttr());
+        return TfHash{}(obj);
     }
 
 

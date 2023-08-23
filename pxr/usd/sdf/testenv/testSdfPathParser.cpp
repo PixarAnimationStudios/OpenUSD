@@ -26,52 +26,43 @@
 #include <cstdio>
 
 #include "pxr/pxr.h"
+#include "pxr/usd/sdf/path.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/usd/sdf/pathParser.h"
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-const char* path;
-
-void testPaths(char const *paths[], int expect) {
-
-    Sdf_PathParserContext context;
-
-    // Initialize the scanner, allowing it to be reentrant.
-    SdfPathYylex_init(&context.scanner);
+void testPaths(char const *paths[], bool expectEmpty) {
 
     while(*paths) {
 
         printf("testing: %s\n", *paths);
-        SdfPathYy_scan_string(*paths, context.scanner);
-        int result = SdfPathYyparse(&context);
 
+        SdfPath resultPath(*paths);
+        
         // Report parse errors.
-        if (result != expect) {
-            fprintf(stderr, "parse error: %s in %s\n",
-                    context.errStr.c_str(), *paths);
-            TF_AXIOM(result == expect);
+        if (resultPath.IsEmpty() != expectEmpty) {
+            TF_FATAL_ERROR("Expected <%s> %sto parse",
+                           *paths, expectEmpty ? "not " : "");
         }
 
         // Report mismatches between original string and the string
         // representation of the parsed path.  We allow whitespace to
         // be different.
-        if (result == 0) {
-            std::string s = context.path.GetToken().GetString();
+        if (!resultPath.IsEmpty()) {
+            std::string s = resultPath.GetAsString();
             std::string expected = TfStringReplace(*paths, " ", "");
-            TF_VERIFY(s == expected,
-                      "mismatch: %s -> %s\n", *paths, s.c_str());
-            char const *debugText = Sdf_PathGetDebuggerPathText(context.path);
-            TF_VERIFY(std::string(debugText) == expected,
-                      "debug mismatch: %s -> %s\n",
-                      debugText, expected.c_str());
+            if (s != expected) {
+                TF_FATAL_ERROR("mismatch: %s -> %s", *paths, expected.c_str());
+            }
+            char const *debugText = Sdf_PathGetDebuggerPathText(resultPath);
+            if (std::string(debugText) != expected) {
+                TF_FATAL_ERROR("debug mismatch: %s -> %s",
+                               debugText, expected.c_str());
+            }
         }
         ++paths;
     }
-
-    // Clean up.
-    SdfPathYylex_destroy(context.scanner);
 }
 
 int main()
@@ -230,6 +221,7 @@ int main()
         "foo{a=:}",
         "foo{a=x:}",
         "Foo.attr.mapper[/Bar].arg:baz",
+        "/root_utf8_umlaute_ß_3", // Move to "good" when we support utf-8.
         NULL
     };
 

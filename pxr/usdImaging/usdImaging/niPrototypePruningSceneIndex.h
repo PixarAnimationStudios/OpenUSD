@@ -24,7 +24,7 @@
 #ifndef PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_PRUNING_SCENE_INDEX_H
 #define PXR_USD_IMAGING_USD_IMAGING_NI_PROTOTYPE_PRUNING_SCENE_INDEX_H
 
-#include "pxr/usdImaging/usdImaging/api.h"
+#include "pxr/pxr.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
@@ -52,10 +52,8 @@ public:
                 inputSceneIndex));
     }
 
-    USDIMAGING_API
     HdSceneIndexPrim GetPrim(const SdfPath &primPath) const override;
 
-    USDIMAGING_API
     SdfPathVector GetChildPrimPaths(const SdfPath &primPath) const override;
 
 protected:
@@ -72,7 +70,6 @@ protected:
         const HdSceneIndexObserver::RemovedPrimEntries &entries) override;
 
 private:
-    USDIMAGING_API
     UsdImaging_NiPrototypePruningSceneIndex(
         HdSceneIndexBaseRefPtr const &inputSceneIndex);
 

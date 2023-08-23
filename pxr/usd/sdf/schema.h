@@ -59,8 +59,9 @@ TF_DECLARE_WEAK_PTRS(PlugPlugin);
 /// Generic class that provides information about scene description fields
 /// but doesn't actually provide any fields.
 ///
-class SdfSchemaBase : public TfWeakBase, public boost::noncopyable {
-
+class SdfSchemaBase : public TfWeakBase {
+    SdfSchemaBase(const SdfSchemaBase&) = delete;
+    SdfSchemaBase& operator=(const SdfSchemaBase&) = delete;
 protected:
     class _SpecDefiner;
 
@@ -291,17 +292,30 @@ public:
     /// used directly.
     /// @{
 
+    SDF_API 
     static SdfAllowed IsValidAttributeConnectionPath(const SdfPath& path);
+    SDF_API 
     static SdfAllowed IsValidIdentifier(const std::string& name);
+    SDF_API 
     static SdfAllowed IsValidNamespacedIdentifier(const std::string& name);
+    SDF_API 
     static SdfAllowed IsValidInheritPath(const SdfPath& path);
+    SDF_API 
     static SdfAllowed IsValidPayload(const SdfPayload& payload);
+    SDF_API 
     static SdfAllowed IsValidReference(const SdfReference& ref);
+    SDF_API 
     static SdfAllowed IsValidRelationshipTargetPath(const SdfPath& path);
+    SDF_API 
     static SdfAllowed IsValidRelocatesPath(const SdfPath& path);
+    SDF_API 
     static SdfAllowed IsValidSpecializesPath(const SdfPath& path);
+    SDF_API 
     static SdfAllowed IsValidSubLayer(const std::string& sublayer);
+    SDF_API 
     static SdfAllowed IsValidVariantIdentifier(const std::string& name);
+    SDF_API
+    static SdfAllowed IsValidVariantSelection(const std::string& sel);
 
     /// @}
 
@@ -590,6 +604,7 @@ SDF_API_TEMPLATE_CLASS(TfSingleton<SdfSchema>);
     ((DisplayUnit, "displayUnit"))                           \
     ((Documentation, "documentation"))                       \
     ((EndTimeCode, "endTimeCode"))                           \
+    ((ExpressionVariables, "expressionVariables"))           \
     ((FramePrecision, "framePrecision"))                     \
     ((FramesPerSecond, "framesPerSecond"))                   \
     ((Hidden, "hidden"))                                     \

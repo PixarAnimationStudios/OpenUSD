@@ -21,6 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+#include "pxr/imaging/hdSt/binding.h"
 #include "pxr/imaging/hdSt/codeGen.h"
 #include "pxr/imaging/hdSt/commandBuffer.h"
 #include "pxr/imaging/hdSt/debugCodes.h"
@@ -34,7 +35,6 @@
 #include "pxr/imaging/hdSt/renderPassState.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
-#include "pxr/imaging/hd/binding.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
@@ -42,6 +42,8 @@
 #include "pxr/imaging/hio/glslfx.h"
 
 #include "pxr/base/tf/getenv.h"
+
+#include <boost/functional/hash.hpp>
 
 #include <mutex>
 
@@ -323,7 +325,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
     }
 
     // determine binding points and populate metaData
-    HdBindingRequestVector customBindings;
+    HdStBindingRequestVector customBindings;
     bool instanceDraw = true;
     _GetCustomBindings(&customBindings, &instanceDraw);
 
@@ -376,7 +378,7 @@ HdSt_DrawBatch::_DrawingProgram::CompileShader(
 /* virtual */
 void
 HdSt_DrawBatch::_DrawingProgram::_GetCustomBindings(
-    HdBindingRequestVector *customBindings,
+    HdStBindingRequestVector *customBindings,
     bool *enableInstanceDraw) const
 {
     if (!TF_VERIFY(enableInstanceDraw)) return;

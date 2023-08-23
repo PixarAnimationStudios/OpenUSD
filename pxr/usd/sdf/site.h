@@ -30,7 +30,6 @@
 
 #include <set>
 #include <vector>
-#include <boost/operators.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -40,8 +39,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// opinions may possibly be found. It is simply a pair of layer and path
 /// within that layer.
 ///
-class SdfSite 
-    : public boost::totally_ordered<SdfSite>
+class SdfSite
 {
 public:
     SdfSite() { }
@@ -55,10 +53,30 @@ public:
         return layer == other.layer && path == other.path;
     }
 
+    bool operator!=(const SdfSite& other) const
+    {
+        return !(*this == other);
+    }
+
     bool operator<(const SdfSite& other) const
     {
         return layer < other.layer ||
                (!(other.layer < layer) && path < other.path);
+    }
+
+    bool operator>(const SdfSite& other) const
+    {
+        return other < *this;
+    }
+
+    bool operator<=(const SdfSite& other) const
+    {
+        return !(other < *this);
+    }
+
+    bool operator>=(const SdfSite& other) const
+    {
+        return !(*this < other);
     }
 
     /// Explicit bool conversion operator. A site object converts to \c true iff 

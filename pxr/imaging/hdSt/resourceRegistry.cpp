@@ -505,7 +505,7 @@ HdStResourceRegistry::AddSource(HdBufferSourceSharedPtr const &source)
 
 void
 HdStResourceRegistry::AddComputation(HdBufferArrayRangeSharedPtr const &range,
-                                   HdComputationSharedPtr const &computation,
+                                   HdStComputationSharedPtr const &computation,
                                    HdStComputeQueue const queue)
 {
     HD_TRACE_FUNCTION();
@@ -600,11 +600,11 @@ HdStResourceRegistry::RegisterBasisCurvesTopology(
                      HdPerfTokens->instBasisCurvesTopology);
 }
 
-HdInstance<Hd_VertexAdjacencySharedPtr>
-HdStResourceRegistry::RegisterVertexAdjacency(
-        HdInstance<Hd_VertexAdjacencySharedPtr>::ID id)
+HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>
+HdStResourceRegistry::RegisterVertexAdjacencyBuilder(
+        HdInstance<HdSt_VertexAdjacencyBuilderSharedPtr>::ID id)
 {
-    return _Register(id, _vertexAdjacencyRegistry,
+    return _Register(id, _vertexAdjacencyBuilderRegistry,
                      HdPerfTokens->instVertexAdjacency);
 }
 
@@ -871,7 +871,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 if (dstRange) {
                     // ask the size of destination buffer of the gpu computation
@@ -979,7 +979,7 @@ HdStResourceRegistry::_Commit()
         //
         for (_PendingComputationList& compVec : _pendingComputations) {
             for (_PendingComputation &pendingComp : compVec) {
-                HdComputationSharedPtr const &comp = pendingComp.computation;
+                HdStComputationSharedPtr const &comp = pendingComp.computation;
                 HdBufferArrayRangeSharedPtr &dstRange = pendingComp.range;
                 comp->Execute(dstRange, this);
                 HD_PERF_COUNTER_INCR(HdPerfTokens->computationsCommited);
@@ -1059,7 +1059,7 @@ HdStResourceRegistry::_GarbageCollect()
     }
 
     {
-        size_t count = _vertexAdjacencyRegistry.GarbageCollect();
+        size_t count = _vertexAdjacencyBuilderRegistry.GarbageCollect();
         HD_PERF_COUNTER_SET(HdPerfTokens->instVertexAdjacency, count);
     }
 
@@ -1120,8 +1120,8 @@ HdStResourceRegistry::_GarbageCollect()
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_AllocateBufferArrayRange(
-    HdAggregationStrategy *strategy,
-    HdBufferArrayRegistry &bufferArrayRegistry,
+    HdStAggregationStrategy *strategy,
+    HdStBufferArrayRegistry &bufferArrayRegistry,
     TfToken const &role,
     HdBufferSpecVector const &bufferSpecs,
     HdBufferArrayUsageHint usageHint)
@@ -1135,8 +1135,8 @@ HdStResourceRegistry::_AllocateBufferArrayRange(
 
 HdBufferArrayRangeSharedPtr
 HdStResourceRegistry::_UpdateBufferArrayRange(
-        HdAggregationStrategy *strategy,
-        HdBufferArrayRegistry &bufferArrayRegistry,
+        HdStAggregationStrategy *strategy,
+        HdStBufferArrayRegistry &bufferArrayRegistry,
         TfToken const &role,
         HdBufferArrayRangeSharedPtr const& curRange,
         HdBufferSpecVector const &updatedOrAddedSpecs,

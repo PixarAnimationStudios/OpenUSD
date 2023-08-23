@@ -29,9 +29,11 @@ pxr_library(pcp
         dynamicFileFormatDependencyData
         dynamicFileFormatInterface
         errors
+        expressionVariables
+        expressionVariablesDependencyData
+        expressionVariablesSource
         instanceKey
         iterator
-        layerPrefetchRequest
         layerStack
         layerStackIdentifier
         mapExpression
@@ -70,6 +72,8 @@ pxr_library(pcp
         wrapDependency.cpp
         wrapDynamicFileFormatDependencyData.cpp
         wrapErrors.cpp
+        wrapExpressionVariables.cpp
+        wrapExpressionVariablesSource.cpp
         wrapInstanceKey.cpp
         wrapPrimIndex.cpp
         wrapLayerStack.cpp
@@ -93,6 +97,9 @@ pxr_library(pcp
 pxr_test_scripts(
     testenv/testPcpCache.py
     testenv/testPcpChanges.py
+    testenv/testPcpExpressionComposition.py
+    testenv/testPcpExpressionVariables.py
+    testenv/testPcpExpressionVariablesSource.py
     testenv/testPcpInstanceKey.py
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
@@ -241,8 +248,18 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpExpressionComposition.testenv
+    DEST testPcpExpressionComposition
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpDynamicFileFormatPlugin.testenv
     DEST testPcpDynamicFileFormatPlugin
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpDynamicFileFormatPlugin.testenv
+    DEST testPcpDynamicFileFormatPlugin_AttributeInputs
 )
 
 pxr_install_test_dir(
@@ -406,6 +423,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_BasicVariantWithReference.testenv
+    DEST testPcpMuseum_BasicVariantWithReference
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicOwner.testenv
     DEST testPcpMuseum_BasicOwner
 )
@@ -433,6 +455,26 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testPcpMuseum_BasicSpecializesAndVariants.testenv
     DEST testPcpMuseum_BasicSpecializesAndVariants
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInPayloads.testenv
+    DEST testPcpMuseum_ExpressionsInPayloads
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInReferences.testenv
+    DEST testPcpMuseum_ExpressionsInReferences
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInSublayers.testenv
+    DEST testPcpMuseum_ExpressionsInSublayers
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ExpressionsInVariantSelections.testenv
+    DEST testPcpMuseum_ExpressionsInVariantSelections
 )
 
 pxr_install_test_dir(
@@ -885,6 +927,11 @@ pxr_install_test_dir(
     DEST testPcpMuseum_ErrorRelocateToSelf
 )
 
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_ErrorRelocateWithVariantSelection.testenv
+    DEST testPcpMuseum_ErrorRelocateWithVariantSelection
+)
+
 pxr_register_test(testPcpMuseum_BasicInstancing
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInstancing/root.sdf"
@@ -965,9 +1012,11 @@ pxr_register_test(testPcpMuseum_BasicRelocateToAnimInterface
 
 pxr_register_test(testPcpMuseum_BasicInherits
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicInherits/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_BasicInherits.txt BasicInherits/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicInherits.txt
-    DIFF_COMPARE compositionResults_BasicInherits.txt 
+    DIFF_COMPARE compositionResults_BasicInherits.txt compositionErrors_BasicInherits.txt
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
 )
 
 pxr_register_test(testPcpMuseum_BasicLocalAndGlobalClassCombination
@@ -1033,6 +1082,13 @@ pxr_register_test(testPcpMuseum_BasicVariantWithConnections
     DIFF_COMPARE compositionResults_BasicVariantWithConnections.txt 
 )
 
+pxr_register_test(testPcpMuseum_BasicVariantWithReference
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicVariantWithReference/root.sdf" 
+    STDOUT_REDIRECT compositionResults_BasicVariantWithReference.txt
+    DIFF_COMPARE compositionResults_BasicVariantWithReference.txt 
+)
+
 pxr_register_test(testPcpMuseum_BasicOwner
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --session BasicOwner/session.sdf BasicOwner/root.sdf" 
@@ -1073,6 +1129,34 @@ pxr_register_test(testPcpMuseum_BasicSpecializesAndVariants
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults BasicSpecializesAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_BasicSpecializesAndVariants.txt
     DIFF_COMPARE compositionResults_BasicSpecializesAndVariants.txt 
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInPayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInPayloads/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInPayloads.txt
+    DIFF_COMPARE compositionResults_ExpressionsInPayloads.txt
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInReferences
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInReferences/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInReferences.txt
+    DIFF_COMPARE compositionResults_ExpressionsInReferences.txt
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInSublayers
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInSublayers/root.sdf --session ExpressionsInSublayers/session.sdf --errorFile compositionErrors_ExpressionsInSublayers.txt" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInSublayers.txt
+    DIFF_COMPARE compositionResults_ExpressionsInSublayers.txt compositionErrors_ExpressionsInSublayers.txt
+)
+
+pxr_register_test(testPcpMuseum_ExpressionsInVariantSelections
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults ExpressionsInVariantSelections/root.sdf --errorFile compositionErrors_ExpressionsInVariantSelections.txt" 
+    STDOUT_REDIRECT compositionResults_ExpressionsInVariantSelections.txt
+    DIFF_COMPARE compositionResults_ExpressionsInVariantSelections.txt compositionErrors_ExpressionsInVariantSelections.txt
 )
 
 pxr_register_test(testPcpMuseum_ImpliedAndAncestralInherits
@@ -1177,9 +1261,11 @@ pxr_register_test(testPcpMuseum_SubrootReferenceAndRelocates
 
 pxr_register_test(testPcpMuseum_SubrootReferenceAndVariants
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults SubrootReferenceAndVariants/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_SubrootReferenceAndVariants.txt SubrootReferenceAndVariants/root.sdf" 
     STDOUT_REDIRECT compositionResults_SubrootReferenceAndVariants.txt
-    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt 
+    DIFF_COMPARE compositionResults_SubrootReferenceAndVariants.txt compositionErrors_SubrootReferenceAndVariants.txt 
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
 )
 
 pxr_register_test(testPcpMuseum_TimeCodesPerSecond1
@@ -1654,6 +1740,14 @@ pxr_register_test(testPcpMuseum_ErrorRelocateToSelf
     DIFF_COMPARE compositionResults_ErrorRelocateToSelf_pcp.txt compositionErrors_ErrorRelocateToSelf_pcp.txt
 )
 
+pxr_register_test(testPcpMuseum_ErrorRelocateWithVariantSelection
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --errorFile compositionErrors_ErrorRelocateWithVariantSelection.txt ErrorRelocateWithVariantSelection/root.sdf" 
+    STDOUT_REDIRECT compositionResults_ErrorRelocateWithVariantSelection.txt
+    DIFF_COMPARE compositionResults_ErrorRelocateWithVariantSelection.txt compositionErrors_ErrorRelocateWithVariantSelection.txt
+    ENV 
+        SDF_SCHEMA_PROHIBIT_INVALID_VARIANT_SELECTIONS=0
+)
 
 pxr_register_test(testPcpIterator
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpIterator"
@@ -1805,6 +1899,34 @@ pxr_register_test(testPcpPathTranslation
 pxr_register_test(testPcpDynamicFileFormatPlugin
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=0
+)
+
+pxr_register_test(testPcpDynamicFileFormatPlugin_AttributeInputs
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpDynamicFileFormatPlugin"
+    EXPECTED_RETURN_CODE 0  
+    ENV
+        TEST_PCP_DYNAMIC_FILE_FORMAT_TOKENS_USE_ATTRIBUTE_INPUTS=1
+)
+
+pxr_register_test(testPcpExpressionComposition
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionComposition"
+    EXPECTED_RETURN_CODE 0  
+)
+
+pxr_register_test(testPcpExpressionVariables
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionVariables"
+    EXPECTED_RETURN_CODE 0  
+)
+
+pxr_register_test(testPcpExpressionVariablesSource
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpExpressionVariablesSource"
     EXPECTED_RETURN_CODE 0  
 )
 

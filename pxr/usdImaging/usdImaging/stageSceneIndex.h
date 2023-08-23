@@ -28,34 +28,33 @@
 
 #include "pxr/usdImaging/usdImaging/api.h"
 #include "pxr/usdImaging/usdImaging/dataSourceStageGlobals.h"
+#include "pxr/usdImaging/usdImaging/types.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/concurrent_unordered_map.h>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingPrimAdapter;
-using UsdImagingPrimAdapterSharedPtr = std::shared_ptr<UsdImagingPrimAdapter>;
+#define USDIMAGING_STAGE_SCENE_INDEX_TOKENS \
+    (includeUnloadedPrims)                  \
 
-class UsdImagingAPISchemaAdapter;
-using UsdImagingAPISchemaAdapterSharedPtr =
-    std::shared_ptr<UsdImagingAPISchemaAdapter>;
+TF_DECLARE_PUBLIC_TOKENS(UsdImagingStageSceneIndexTokens, USDIMAGING_API,
+                         USDIMAGING_STAGE_SCENE_INDEX_TOKENS);
 
+using UsdImagingPrimAdapterSharedPtr =
+    std::shared_ptr<class UsdImagingPrimAdapter>;
+class UsdImaging_AdapterManager;
 
-class UsdImagingStageSceneIndex;
 TF_DECLARE_REF_PTRS(UsdImagingStageSceneIndex);
 
 class UsdImagingStageSceneIndex : public HdSceneIndexBase
 {
 public:
-
-    static UsdImagingStageSceneIndexRefPtr New() {
-        return TfCreateRefPtr(new UsdImagingStageSceneIndex());
+    static UsdImagingStageSceneIndexRefPtr New(
+                    HdContainerDataSourceHandle const &inputArgs = nullptr) {
+        return TfCreateRefPtr(new UsdImagingStageSceneIndex(inputArgs));
     }
 
     USDIMAGING_API
@@ -78,10 +77,6 @@ public:
     USDIMAGING_API
     void SetStage(UsdStageRefPtr stage);
 
-    // Traverse the scene collecting imaging prims, and then call PrimsAdded.
-    USDIMAGING_API
-    void Populate();
-
     // Set the time, and call PrimsDirtied for any time-varying attributes.
     USDIMAGING_API
     void SetTime(UsdTimeCode time);
@@ -100,45 +95,16 @@ public:
 
 private:
     USDIMAGING_API
-    UsdImagingStageSceneIndex();
+    UsdImagingStageSceneIndex(HdContainerDataSourceHandle const &inputArgs);
 
     Usd_PrimFlagsConjunction _GetTraversalPredicate() const;
 
-    using _APISchemaEntry =
-        std::pair<UsdImagingAPISchemaAdapterSharedPtr, TfToken>;
-    using _APISchemaAdapters = TfSmallVector<_APISchemaEntry, 8>;
-
-    // Adapter delegation.
-
-    _APISchemaAdapters _AdapterSetLookup(UsdPrim prim,
-            // optionally return the prim adapter (which will also be
-            // included in wrapped form as  part of the ordered main result)
-            UsdImagingPrimAdapterSharedPtr *outputPrimAdapter=nullptr) const;
-
-    UsdImagingAPISchemaAdapterSharedPtr _APIAdapterLookup(
-            const TfToken &adapterKey) const;
-
-    UsdImagingPrimAdapterSharedPtr _PrimAdapterLookup(
-            const TfToken &adapterKey) const;
-
-    TfTokenVector _GetImagingSubprims(
-            UsdPrim const& prim, const _APISchemaAdapters &adapters) const;
-    
-    TfToken _GetImagingSubprimType(
-            const _APISchemaAdapters &adapters,
-            UsdPrim const& prim,
-            const TfToken &subprim) const;
-
-    HdContainerDataSourceHandle _GetImagingSubprimData(
-            const _APISchemaAdapters &adapters,
-            UsdPrim const& prim, const TfToken& subprim) const;
-
-    HdDataSourceLocatorSet _InvalidateImagingSubprim(
-            const _APISchemaAdapters &adapters,
-            UsdPrim const& prim,
-            TfToken const& subprim, TfTokenVector const& properties) const;
-
     void _ApplyPendingResyncs();
+    void _ComputeDirtiedEntries(
+        const std::map<SdfPath, TfTokenVector> &pathToUsdProperties,
+        SdfPathVector * primPathsToResync,
+        UsdImagingPropertyInvalidationType invalidationType,
+        HdSceneIndexObserver::DirtiedPrimEntries * dirtiedPrims) const;
 
     class _StageGlobals : public UsdImagingDataSourceStageGlobals
     {
@@ -171,11 +137,14 @@ private:
         UsdTimeCode _time;
     };
 
+    const bool _includeUnloadedPrims;
+
     UsdStageRefPtr _stage;
     _StageGlobals _stageGlobals;
 
     // Population
-    void _Populate(UsdPrim subtreeRoot);
+    void _Populate();
+    void _PopulateSubtree(UsdPrim subtreeRoot);
 
     // Edit processing
     void _OnUsdObjectsChanged(UsdNotice::ObjectsChanged const& notice,
@@ -186,40 +155,12 @@ private:
     SdfPathVector _usdPrimsToResync;
     // Property changes get converted into PrimsDirtied messages.
     std::map<SdfPath, TfTokenVector> _usdPropertiesToUpdate;
-
-    // Usd Prim Type to Adapter lookup table, concurrent because it could
-    // be potentially filled during concurrent GetPrim calls rather than
-    // just during single-threaded population.
-    using _PrimAdapterMap = tbb::concurrent_unordered_map<
-        TfToken, UsdImagingPrimAdapterSharedPtr, TfHash>;
-
-    mutable _PrimAdapterMap _primAdapterMap;
-
-    using _ApiAdapterMap = tbb::concurrent_unordered_map<
-        TfToken, UsdImagingAPISchemaAdapterSharedPtr, TfHash>;
-
-    mutable _ApiAdapterMap _apiAdapterMap;
-
-    struct _AdapterSetEntry
-    {
-         // ordered and inclusive of primAdapter
-        _APISchemaAdapters allAdapters;
-
-        // for identifying prim adapter within same lookup
-        UsdImagingPrimAdapterSharedPtr primAdapter; 
-    };
-
-    // Use UsdPrimTypeInfo pointer as key because they are guaranteed to be
-    // cached at least as long as the stage is open.
-    using _AdapterSetMap = tbb::concurrent_unordered_map<
-        const UsdPrimTypeInfo *, _AdapterSetEntry, TfHash>;
-
-    mutable _AdapterSetMap _adapterSetMap;
-
+    std::map<SdfPath, TfTokenVector> _usdPropertiesToResync;
 
     using _PrimAdapterPair = std::pair<UsdPrim, UsdImagingPrimAdapterSharedPtr>;
-    _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim);
+    _PrimAdapterPair _FindResponsibleAncestor(const UsdPrim &prim) const;
 
+    std::unique_ptr<UsdImaging_AdapterManager> const _adapterManager;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

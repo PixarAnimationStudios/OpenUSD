@@ -25,12 +25,9 @@ pxr_library(hd
         basisCurvesSchema
         basisCurvesTopology
         basisCurvesTopologySchema
-        binding
         bprim
         bufferArray
         bufferArrayRange
-        bufferArrayRegistry
-        bufferResource
         bufferSource
         bufferSpec
         camera
@@ -39,15 +36,15 @@ pxr_library(hd
         categoriesSchema
         changeTracker
         command
-        compExtCompInputSource
-        computation
         coneSchema
         containerDataSourceEditor
         coordSys
+        coordSysSchema
         coordSysBindingSchema
         cubeSchema
         cylinderSchema
         dataSource
+        dataSourceHash
         dataSourceLegacyPrim
         dataSourceLocator
         dataSourceMaterialNetworkInterface
@@ -62,9 +59,6 @@ pxr_library(hd
         drawItem
         engine
         enums
-        extCompCpuComputation
-        extCompInputSource
-        extCompPrimvarBufferSource
         extComputation
         extComputationContext
         extComputationContextInternal
@@ -77,6 +71,14 @@ pxr_library(hd
         extentSchema
         field
         filteringSceneIndex
+        flattenedDataSourceProvider
+        flattenedDataSourceProviders
+        flattenedOverlayDataSourceProvider
+        flattenedMaterialBindingsDataSourceProvider
+        flattenedPrimvarsDataSourceProvider
+        flattenedPurposeDataSourceProvider
+        flattenedVisibilityDataSourceProvider
+        flattenedXformDataSourceProvider
         flatteningSceneIndex
         flatNormals
         geomSubset
@@ -84,18 +86,22 @@ pxr_library(hd
         geomSubsetsSchema
         instanceCategoriesSchema
         instancedBySchema
+        instanceIndicesSchema
         instancer
         instanceRegistry
         instancerTopologySchema
         instanceSchema
+        integratorSchema
         lazyContainerDataSource
         legacyDisplayStyleSchema
         legacyPrimSceneIndex
+        lensDistortionSchema
         light
         lightSchema
         mapContainerDataSource
         material
         materialBindingSchema
+        materialBindingsSchema
         materialConnectionSchema
         materialFilteringSceneIndexBase
         materialNetworkSchema
@@ -109,6 +115,9 @@ pxr_library(hd
         meshTopologySchema
         meshUtil
         noticeBatchingSceneIndex
+        nurbsCurvesSchema
+        nurbsPatchSchema
+        nurbsPatchTrimCurveSchema
         overlayContainerDataSource
         perfLog
         pluginRenderDelegateUniqueHandle
@@ -130,11 +139,12 @@ pxr_library(hd
         renderIndex
         renderPass
         renderPassState
+        renderProductSchema
         renderSettings
         renderSettingsSchema
+        renderVarSchema
         renderThread
         repr
-        resource
         resourceRegistry
         retainedDataSource
         retainedSceneIndex
@@ -143,12 +153,13 @@ pxr_library(hd
         rprimSharedData
         sampleFilterSchema
         sceneDelegate
-        sceneExtCompInputSource
+        sceneGlobalsSchema
         sceneIndex
         sceneIndexAdapterSceneDelegate
         sceneIndexObserver
         sceneIndexPlugin
         sceneIndexPluginRegistry
+        sceneIndexPrimView
         schema
         selection
         selectionSchema
@@ -156,8 +167,8 @@ pxr_library(hd
         smoothNormals
         sortedIds
         sphereSchema
+        splitDiopterSchema
         sprim
-        strategyBase
         subdivisionTagsSchema
         systemSchema
         task
@@ -169,6 +180,7 @@ pxr_library(hd
         unitTestHelper
         unitTestNullRenderDelegate
         unitTestNullRenderPass
+        utils
         vectorSchema
         vertexAdjacency
         visibilitySchema
@@ -182,6 +194,7 @@ pxr_library(hd
         api.h
         dataSourceTypeDefs.h
         driver.h
+        invalidatableContainerDataSource.h
         materialNetworkInterface.h
         vectorSchemaTypeDefs.h
         version.h

@@ -51,8 +51,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// particular UsdTimeCode. The images generated will be effectively the same
 /// as what you would see in the viewer in usdview.
 ///
-/// Note that it is assumed that an OpenGL context has already been setup if
-/// the UsdAppUtilsFrameRecorder instance is created with the GPU enabled.
+/// Note that it is assumed that an OpenGL context has already been setup for
+/// the UsdAppUtilsFrameRecorder if OpenGL is being used as the underlying HGI
+/// device. This is not required for Metal or Vulkan.
 class UsdAppUtilsFrameRecorder
 {
 public:
@@ -73,11 +74,16 @@ public:
     }
 
     /// Sets the Hydra renderer plugin to be used for recording.
+    /// This also resets the presentation flag on the HdxPresentTask to false,
+    /// to avoid the need for an OpenGL context.
     ///
     /// Note that the renderer plugins that may be set will be restricted if
     /// this UsdAppUtilsFrameRecorder instance has disabled the GPU.
     bool SetRendererPlugin(const TfToken& id) {
-        return _imagingEngine.SetRendererPlugin(id);
+        const bool succeeded = _imagingEngine.SetRendererPlugin(id);
+        _imagingEngine.SetEnablePresentation(false);
+
+        return succeeded;
     }
 
     /// Sets the width of the recorded image.

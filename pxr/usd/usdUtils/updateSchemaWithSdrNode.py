@@ -110,9 +110,9 @@ def _CreateAttrSpecFromNodeAttribute(primSpec, prop, primDefForAttrPruning,
     # error and early out if duplicate property on primDefForAttrPruning exists
     # and has different types
     if primDefForAttrPruning:
-        primDefAttr = primDefForAttrPruning.GetSchemaAttributeSpec(propName)
+        primDefAttr = primDefForAttrPruning.GetAttributeDefinition(propName)
         if primDefAttr:
-            usdAttrType = primDefAttr.typeName
+            usdAttrType = primDefAttr.GetTypeName()
             if (usdAttrType != attrType):
                 Tf.Warn("Generated schema's property type '%s', "
                         "differs usd schema's property type '%s', for "

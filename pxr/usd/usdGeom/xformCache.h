@@ -32,10 +32,9 @@
 #include "pxr/usd/usdGeom/xformable.h"
 
 #include "pxr/base/gf/matrix4d.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/token.h"
-
-#include <boost/functional/hash.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -170,7 +169,7 @@ private:
     // Helper function to get or create a new entry for a prim in the ctm cache.
     _Entry * _GetCacheEntryForPrim(const UsdPrim &prim);
 
-    typedef TfHashMap<UsdPrim, _Entry, boost::hash<UsdPrim> > _PrimHashMap;
+    typedef TfHashMap<UsdPrim, _Entry, TfHash> _PrimHashMap;
     _PrimHashMap _ctmCache;
     
     // The time at which this stack is querying and caching attribute values.

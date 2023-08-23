@@ -604,16 +604,16 @@ HdGpGenerativeProceduralResolvingSceneIndex::_UpdateProceduralDependencies(
             }
         }
 
-        for (const auto& pathLocatorsPair : newDependencies) {
-            const SdfPath &dependencyPath = pathLocatorsPair.first;
-            if (procEntry.dependencies.find(dependencyPath)
-                    == procEntry.dependencies.end()) {
-                _dependencies[dependencyPath].insert(proceduralPrimPath);
-            }
-        }
-
-        if (!dependencesToRemove.empty()) {
+        if (!newDependencies.empty() || !dependencesToRemove.empty()) {
             _MapLock depsLock(_dependenciesMutex);
+
+            for (const auto& pathLocatorsPair : newDependencies) {
+                const SdfPath &dependencyPath = pathLocatorsPair.first;
+                if (procEntry.dependencies.find(dependencyPath)
+                        == procEntry.dependencies.end()) {
+                    _dependencies[dependencyPath].insert(proceduralPrimPath);
+                }
+            }
             for (const SdfPath &dependencyPath : dependencesToRemove) {
                 _DependencyMap::iterator it =
                     _dependencies.find(dependencyPath);

@@ -41,7 +41,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class UsdImagingDataSourceMaterial
 ///
-/// A data source mapping to HdMaterialSchema from an UsdShadeMaterial prim
+/// A data source mapping for data source material.
+///
+/// Creates HdMaterialSchema from a UsdShadeMaterial prim
 ///
 class UsdImagingDataSourceMaterial : public HdContainerDataSource
 {
@@ -51,7 +53,7 @@ public:
     TfTokenVector GetNames() override;
     HdDataSourceBaseHandle Get(const TfToken &name) override;
 
-    ~UsdImagingDataSourceMaterial();
+    ~UsdImagingDataSourceMaterial() override;
 
 private:
 
@@ -60,7 +62,7 @@ private:
     /// material (with relationships to the prims serving as terminal shader
     /// nodes). This is relevant for light and light filter cases.
     UsdImagingDataSourceMaterial(
-        UsdPrim usdPrim,
+        const UsdPrim &usdPrim,
         const UsdImagingDataSourceStageGlobals &stageGlobals,
         const TfToken &fixedTerminalName = TfToken()
         );
@@ -68,7 +70,7 @@ private:
 
 private:
 
-    UsdPrim _usdPrim;
+    const UsdPrim _usdPrim;
     const UsdImagingDataSourceStageGlobals &_stageGlobals;
 
     // Cache the networks by context name.
@@ -76,11 +78,42 @@ private:
         TfToken, HdDataSourceBaseHandle, TfToken::HashFunctor>;
 
 
-    TfToken _fixedTerminalName;
+    const TfToken _fixedTerminalName;
     _ContextMap _networks;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceMaterial);
+
+// ----------------------------------------------------------------------------
+
+/// \class UsdImagingDataSourceMaterial
+///
+/// A prim data source mapping for a UsdShadeMaterial prim
+///
+class UsdImagingDataSourceMaterialPrim : public UsdImagingDataSourcePrim
+{
+public:
+    HD_DECLARE_DATASOURCE(UsdImagingDataSourceMaterialPrim);
+
+    TfTokenVector GetNames() override;
+    HdDataSourceBaseHandle Get(const TfToken &name) override;
+
+    ~UsdImagingDataSourceMaterialPrim() override;
+
+    static HdDataSourceLocatorSet Invalidate(
+            const UsdPrim &prim,
+            const TfToken &subprim,
+            const TfTokenVector &properties,
+            UsdImagingPropertyInvalidationType invalidationType);
+
+private:
+    UsdImagingDataSourceMaterialPrim(
+        const SdfPath &sceneIndexPath,
+        const UsdPrim &usdPrim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals);
+};
+
+HD_DECLARE_DATASOURCE_HANDLES(UsdImagingDataSourceMaterialPrim);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

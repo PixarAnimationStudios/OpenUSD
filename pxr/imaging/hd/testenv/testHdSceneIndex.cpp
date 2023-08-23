@@ -32,6 +32,7 @@
 #include "pxr/imaging/hd/dependencyForwardingSceneIndex.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
+#include "pxr/imaging/hd/flattenedDataSourceProviders.h"
 
 #include "pxr/imaging/hd/dependenciesSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
@@ -95,6 +96,15 @@ public:
             std::cout << std::endl;
         }
     }
+
+    void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+    {
+        ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
+    }
+
+
 
 private:
 
@@ -179,6 +189,13 @@ public:
                     entry.primPath, TfToken(), locator});
             }
         }
+    }
+
+    void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+    {
+        ConvertPrimsRenamedToRemovedAndAdded(sender, entries, this);
     }
 
     EventVector GetEvents()
@@ -339,7 +356,8 @@ bool TestFlatteningSceneIndex()
 {
     HdRetainedSceneIndexRefPtr sceneIndex_ = HdRetainedSceneIndex::New();
     HdFlatteningSceneIndexRefPtr flatteningSceneIndex_ =
-        HdFlatteningSceneIndex::New(sceneIndex_);
+        HdFlatteningSceneIndex::New(
+            sceneIndex_, HdFlattenedDataSourceProviders());
 
     HdRetainedSceneIndex &sceneIndex = *sceneIndex_;
     HdFlatteningSceneIndex &flatteningSceneIndex = *flatteningSceneIndex_;
@@ -1188,92 +1206,177 @@ void TestDependencyForwardingSceneIndexEviction_InitScenes(
 
 bool TestDependencyForwardingSceneIndexEviction()
 {
-    
+    using EventType = RecordingSceneIndexObserver::EventType;
+    using Event = RecordingSceneIndexObserver::Event;
+    using EventSet = RecordingSceneIndexObserver::EventSet;
+
     HdRetainedSceneIndexRefPtr retainedScene;
     HdDependencyForwardingSceneIndexRefPtr dependencyForwardingScene;
 
     //---------------------
+    {
+        TestDependencyForwardingSceneIndexEviction_InitScenes(
+                &retainedScene, &dependencyForwardingScene);
+        
+        RecordingSceneIndexObserver recordingScene;
+        dependencyForwardingScene->AddObserver(
+            HdSceneIndexObserverPtr(&recordingScene));
+
+        retainedScene->RemovePrims({SdfPath("/B")});
+
+        // Validate recorded events.
+        // Since nothing depends on B, we should see just the removal event.
+        {
+            auto baseline = EventSet{
+                Event{
+                    EventType::EventType_PrimRemoved,
+                    SdfPath("/B"), TfToken(),
+                    HdDataSourceLocator()
+                },
+            };
+
+            if (!_CompareValue("Removing \"/B\" ->",
+                    recordingScene.GetEventsAsSet(), baseline)) {
+                return false;
+            }
+        }
+
+        // Validate bookkeeping.
+        {
+            SdfPathVector removedAffectedPrimPaths;
+            SdfPathVector removedDependedOnPrimPaths;
+            dependencyForwardingScene->RemoveDeletedEntries(
+                    &removedAffectedPrimPaths,
+                    &removedDependedOnPrimPaths);
+
+            //std::sort(
+            //    removedAffectedPrimPaths.begin(), removedAffectedPrimPaths.end());
+            //std::sort(
+            //    removedDependedOnPrimPaths.begin(), removedDependedOnPrimPaths.end());
+
+            SdfPathVector baselineAffected = {SdfPath("/B")};
+            SdfPathVector baselineDependedOn = {SdfPath("/A")};
+
+            if (!_CompareValue("Remove Affected (affected paths): ",
+                    removedAffectedPrimPaths, baselineAffected)) {
+                return false;
+            }
+            if (!_CompareValue("Remove Affected (depended on paths): ",
+                    removedDependedOnPrimPaths, baselineDependedOn)) {
+                return false;
+            }
+        }
+    }
+
+    //---------------------
+    {
+        TestDependencyForwardingSceneIndexEviction_InitScenes(
+                &retainedScene, &dependencyForwardingScene);
+
+        RecordingSceneIndexObserver recordingScene;
+        dependencyForwardingScene->AddObserver(
+            HdSceneIndexObserverPtr(&recordingScene));
+
+        retainedScene->RemovePrims({SdfPath("/A")});
+
+        // Validate recorded events.
+        // Since B depends on A, we should see it getting a dirty notice in
+        // addition to A's removal.
+        {
+                auto baseline = EventSet{
+                Event{
+                    EventType::EventType_PrimRemoved,
+                    SdfPath("/A"), TfToken(),
+                    HdDataSourceLocator()
+                },
+                Event{
+                    EventType::EventType_PrimDirtied,
+                    SdfPath("/B"), TfToken(),
+                    HdDataSourceLocator(TfToken("chicken"))
+                },
+            };
+
+            if (!_CompareValue("Removing \"/A\" ->",
+                    recordingScene.GetEventsAsSet(), baseline)) {
+                return false;
+            }
+        }
+
+        // Validate bookkeeping.
+        {
+            // NOTE: this should be removing /A from affected paths also!
+            //       (since we pulled on it, it should have checked for
+            //        dependencies and dirtied a group)
+            SdfPathVector baselineAffected = {SdfPath("/B")};
+            SdfPathVector baselineDependedOn = {SdfPath("/A")};
+            SdfPathVector removedAffectedPrimPaths;
+            SdfPathVector removedDependedOnPrimPaths;
+            dependencyForwardingScene->RemoveDeletedEntries(
+                &removedAffectedPrimPaths,
+                &removedDependedOnPrimPaths);
+
+            if (!_CompareValue("Remove Depended On (affected paths): ",
+                    removedAffectedPrimPaths, baselineAffected)) {
+                return false;
+            }
+            if (!_CompareValue("Remove Depended On (depended on paths): ",
+                    removedDependedOnPrimPaths, baselineDependedOn)) {
+                return false;
+            }
+        }
+    }
+
+    //---------------------
     TestDependencyForwardingSceneIndexEviction_InitScenes(
             &retainedScene, &dependencyForwardingScene);
+    
+    RecordingSceneIndexObserver recordingScene;
+        dependencyForwardingScene->AddObserver(
+            HdSceneIndexObserverPtr(&recordingScene));
+    
+    retainedScene->RemovePrims({SdfPath("/C")});
 
-    retainedScene->RemovePrims({SdfPath("/B")});
+    // Validate recorded events.
+    // Since nothing depends on C, we should see just the removal event.
+    {
+            auto baseline = EventSet{
+            Event{
+                EventType::EventType_PrimRemoved,
+                SdfPath("/C"), TfToken(),
+                HdDataSourceLocator()
+            },
+        };
 
-    SdfPathVector removedAffectedPrimPaths;
-    SdfPathVector removedDependedOnPrimPaths;
-    dependencyForwardingScene->RemoveDeletedEntries(
+        if (!_CompareValue("Removing \"/C\" ->",
+                recordingScene.GetEventsAsSet(), baseline)) {
+            return false;
+        }
+    }
+
+    // Validate bookkeeping.
+    {
+        // expecting nothing as _UpdateDependencies exits early if there is no
+        // dependency data source
+        SdfPathVector baselineAffected = {};
+        SdfPathVector baselineDependedOn = {};
+        SdfPathVector removedAffectedPrimPaths;
+        SdfPathVector removedDependedOnPrimPaths;
+
+        dependencyForwardingScene->RemoveDeletedEntries(
             &removedAffectedPrimPaths,
             &removedDependedOnPrimPaths);
 
-    //std::sort(
-    //    removedAffectedPrimPaths.begin(), removedAffectedPrimPaths.end());
-    //std::sort(
-    //    removedDependedOnPrimPaths.begin(), removedDependedOnPrimPaths.end());
-
-    SdfPathVector baselineAffected = {SdfPath("/B")};
-    SdfPathVector baselineDependedOn = {SdfPath("/A")};
-
-    if (!_CompareValue("Remove Affected (affected paths): ",
-            removedAffectedPrimPaths, baselineAffected)) {
-        return false;
+        if (!_CompareValue(
+            "Remove Prim Without Dependencies (affected paths): ",
+                removedAffectedPrimPaths, baselineAffected)) {
+            return false;
+        }
+        if (!_CompareValue(
+            "Remove Prim Without Dependencies  (depended on paths): ",
+                removedDependedOnPrimPaths, baselineDependedOn)) {
+            return false;
+        }
     }
-    if (!_CompareValue("Remove Affected (depended on paths): ",
-            removedDependedOnPrimPaths, baselineDependedOn)) {
-        return false;
-    }
-
-    //---------------------
-    TestDependencyForwardingSceneIndexEviction_InitScenes(
-            &retainedScene, &dependencyForwardingScene);
-    retainedScene->RemovePrims({SdfPath("/A")});
-
-    // NOTE: this should be removing /A from affected paths also!
-    //       (since we pulled on it, it should have checked for
-    //        dependencies and dirtied a group)
-
-    removedAffectedPrimPaths.clear();
-    removedDependedOnPrimPaths.clear();
-    dependencyForwardingScene->RemoveDeletedEntries(
-        &removedAffectedPrimPaths,
-        &removedDependedOnPrimPaths);
-
-    if (!_CompareValue("Remove Depended On (affected paths): ",
-            removedAffectedPrimPaths, baselineAffected)) {
-        return false;
-    }
-    if (!_CompareValue("Remove Depended On (depended on paths): ",
-            removedDependedOnPrimPaths, baselineDependedOn)) {
-        return false;
-    }
-
-
-    //---------------------
-    TestDependencyForwardingSceneIndexEviction_InitScenes(
-            &retainedScene, &dependencyForwardingScene);
-
-    // expecting nothing as _UpdateDependencies exits early if there is no
-    // dependency data source
-    baselineAffected = {};
-    baselineDependedOn = {};
-
-    retainedScene->RemovePrims({SdfPath("/C")});
-
-    removedAffectedPrimPaths.clear();
-    removedDependedOnPrimPaths.clear();
-    dependencyForwardingScene->RemoveDeletedEntries(
-        &removedAffectedPrimPaths,
-        &removedDependedOnPrimPaths);
-
-    if (!_CompareValue(
-        "Remove Prim Without Dependencies (affected paths): ",
-            removedAffectedPrimPaths, baselineAffected)) {
-        return false;
-    }
-    if (!_CompareValue(
-        "Remove Prim Without Dependencies  (depended on paths): ",
-            removedDependedOnPrimPaths, baselineDependedOn)) {
-        return false;
-    }
-
 
     return true;
 }

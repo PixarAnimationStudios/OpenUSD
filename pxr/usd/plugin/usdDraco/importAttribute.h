@@ -47,6 +47,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class UsdDracoImportAttributeInterface {
 public:
+    virtual ~UsdDracoImportAttributeInterface() = default;
+
     virtual const UsdDracoAttributeDescriptor &GetDescriptor() const = 0;
     virtual void SetToMesh(UsdGeomMesh *usdMesh) const = 0;
     virtual void PopulateValues() = 0;

@@ -46,7 +46,7 @@ class HgiGLGarbageCollector final
 {
 public:
     HGIGL_API
-    HgiGLGarbageCollector(HgiGL* hgi);
+    HgiGLGarbageCollector();
 
     HGIGL_API
     ~HgiGLGarbageCollector();
@@ -80,8 +80,6 @@ private:
     /// is thread safe as long as the vector is only used by the calling thread.
     template<class T>
     T* _GetThreadLocalStorageList(std::vector<T*>* collector);
-
-    HgiGL* _hgi;
 
     // List of all the per-thread-vectors of objects that need to be destroyed.
     // The vectors are static (shared across HGIs), because we use thread_local

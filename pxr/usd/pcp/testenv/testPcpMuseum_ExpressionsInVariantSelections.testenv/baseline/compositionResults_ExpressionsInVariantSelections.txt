@@ -1,0 +1,51 @@
+Loading @ExpressionsInVariantSelections/root.sdf@
+
+------------------------------------------------------------------------
+Layer Stack:
+     root.sdf
+     sub.sdf
+
+------------------------------------------------------------------------
+Results for composing </BadExpressionInSelection>
+
+Prim Stack:
+    root.sdf             /BadExpressionInSelection
+    sub.sdf              /BadExpressionInSelection
+    sub.sdf              /BadExpressionInSelection{v=sel_x}
+
+Variant Selections:
+    {v = sel_x}
+
+------------------------------------------------------------------------
+Results for composing </BasicVariantSelection>
+
+Prim Stack:
+    root.sdf             /BasicVariantSelection
+    root.sdf             /BasicVariantSelection{v=x_sel}
+
+Variant Selections:
+    {v = x_sel}
+
+------------------------------------------------------------------------
+Results for composing </VariantSelectionInReference>
+
+Prim Stack:
+    root.sdf             /VariantSelectionInReference
+    ref.sdf              /Ref
+    ref.sdf              /Ref{v=y_sel}
+
+Variant Selections:
+    {v = y_sel}
+
+------------------------------------------------------------------------
+Results for composing </OverriddenVariantSelectionInReference>
+
+Prim Stack:
+    root.sdf             /OverriddenVariantSelectionInReference
+    override_ref.sdf     /OverrideRef
+    ref.sdf              /Ref
+    ref.sdf              /Ref{v=x_sel}
+
+Variant Selections:
+    {v = x_sel}
+

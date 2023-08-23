@@ -9,6 +9,7 @@ pxr_library(usdUtils
         sdf
         usd
         usdGeom
+        usdShade
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
@@ -29,6 +30,10 @@ pxr_library(usdUtils
         stitch
         stitchClips
         timeCodeRange
+        usdzPackage
+
+    PRIVATE_CLASSES
+        assetLocalization
 
     PUBLIC_HEADERS
         api.h
@@ -72,6 +77,7 @@ pxr_test_scripts(
     testenv/testUsdUtilsConstantsGroup.py
     testenv/testUsdUtilsCreateNewUsdzPackage.py
     testenv/testUsdUtilsDependencies.py
+    testenv/testUsdUtilsDependenciesCustomResolver.py
     testenv/testUsdUtilsDependencyExtractor.py
     testenv/testUsdUtilsFlattenLayerStack.py
     testenv/testUsdUtilsIntrospection.py
@@ -83,7 +89,20 @@ pxr_test_scripts(
     testenv/testUsdUtilsStitchClips.py
     testenv/testUsdUtilsTimeCodeRange.py
     testenv/testUsdUtilsUpdateSchemaWithSdrNode.py
+    testenv/testUsdUtilsUsdzUtils.py
     testenv/testUsdUtilsVarSelsSessionLayer.py
+)
+
+pxr_build_test_shared_lib(TestUsdUtilsDependenciesCustomResolver
+    CREATE_FRAMEWORK
+    INSTALL_PREFIX UsdUtilsPlugins
+    LIBRARIES
+        ar
+        sdf
+        tf
+
+    CPPFILES
+        testenv/TestUsdUtilsDependenciesCustomResolver_plugin.cpp
 )
 
 pxr_build_test(testUsdUtilsCoalescingDiagnosticDelegateCpp
@@ -137,8 +156,23 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageContextDep
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies
     DEST testUsdUtilsDependencies
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependenciesCustomResolver
+    DEST testUsdUtilsDependenciesCustomResolver
 )
 
 pxr_install_test_dir(
@@ -159,6 +193,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencyExtractor
     DEST testUsdUtilsDependencyExtractor4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor5
 )
 
 pxr_install_test_dir(
@@ -199,6 +238,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsUpdateSchemaWithSdrNode
     DEST testUsdUtilsUpdateSchemaWithSdrNodeError
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsUsdzUtils
+    DEST testUsdUtilsUsdzUtils
 )
 
 pxr_register_test(testUsdUtilsAuthoring
@@ -392,9 +436,29 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageContextDep
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_usdz_context_dep_assets.txt usdzContextDepAssets.usdz usdzContextDepAssets/usdzContextDepAssets.usda"
+    DIFF_COMPARE contents_usdz_context_dep_assets.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_filter_metadata_keys.txt filter_metadata_keys.usdz filterMetadataKeys/filter_metadata_keys.usda"
+    DIFF_COMPARE contents_filter_metadata_keys.txt
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsDependencies
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependenciesCustomResolver
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependenciesCustomResolver"
     EXPECTED_RETURN_CODE 0
 )
 
@@ -423,6 +487,13 @@ pxr_register_test(testUsdUtilsDependencyExtractor4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usd crate-usd.txt"
     DIFF_COMPARE crate-usd.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencyExtractor5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor --open-as-anon anon.usda anon.txt"
+    DIFF_COMPARE anon.txt
     EXPECTED_RETURN_CODE 0
 )
 
@@ -516,5 +587,11 @@ pxr_register_test(testUsdUtilsTimeCodeRangeCpp
 pxr_register_test(testUsdUtilsVarSelsSessionLayer
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsVarSelsSessionLayer"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsUsdzUtils
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsUsdzUtils"
     EXPECTED_RETURN_CODE 0
 )

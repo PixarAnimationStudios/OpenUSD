@@ -81,17 +81,18 @@ _GetPrimvarsForMaterial(const VtValue & vtMaterial)
     return primvars;
 }
 
-UsdImagingGprimAdapter::~UsdImagingGprimAdapter() 
-{
-}
+UsdImagingGprimAdapter::~UsdImagingGprimAdapter() = default;
 
 HdDataSourceLocatorSet
 UsdImagingGprimAdapter::InvalidateImagingSubprim(
         UsdPrim const& prim,
         TfToken const& subprim,
-        TfTokenVector const& properties)
+        TfTokenVector const& properties,
+        const UsdImagingPropertyInvalidationType invalidationType)
 {
-    return UsdImagingDataSourceGprim::Invalidate(prim, subprim, properties);
+    return
+        UsdImagingDataSourceGprim::Invalidate(
+            prim, subprim, properties, invalidationType);
 }
 
 /* static */

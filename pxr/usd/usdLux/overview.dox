@@ -2,7 +2,6 @@
 \page usdLux_page_front UsdLux : USD Lighting Schema
 \if ( PIXAR_MFB_BUILD )
 \mainpage UsdLux : USD Lighting Schema
-\publicLib
 \endif
 
 \section usdLux_overview Overview

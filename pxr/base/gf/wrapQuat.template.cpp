@@ -69,6 +69,10 @@ static {{ QUAT }}& __itruediv__({{ QUAT }} &self, {{ SCL }} value)
     return self /= value;
 }
 
+static size_t __hash__({{ QUAT }} const &self) {
+    return TfHash()(self);
+}
+
 // Zero-initialized default ctor for python.
 static {{ QUAT }} *__init__() { return new {{ QUAT }}(0); }
 
@@ -157,7 +161,7 @@ void wrapQuat{{ SUFFIX }}()
         .def({{ SCL }}() * self)
         .def(self / {{ SCL }}())
         .def("__repr__", __repr__)
-
+        .def("__hash__", __hash__)
         ;
 
 {% for S in SCALARS if S != SCL and ALLOW_IMPLICIT_CONVERSION(S, SCL) %}

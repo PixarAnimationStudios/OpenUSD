@@ -25,13 +25,7 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/tf/spinRWMutex.h"
-#include "pxr/base/arch/defines.h"
-
-// Needed for ARCH_SPIN_PAUSE on Windows in builds with precompiled
-// headers disabled.
-#ifdef ARCH_COMPILER_MSVC
-#include <intrin.h>
-#endif
+#include "pxr/base/arch/threads.h"
 
 #include <thread>
 

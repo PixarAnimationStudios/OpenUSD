@@ -26,8 +26,8 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/layerStack.h"
 #include "pxr/usd/pcp/changes.h"
+#include "pxr/usd/pcp/expressionVariables.h"
 #include "pxr/usd/pcp/layerStackRegistry.h"
-#include "pxr/usd/pcp/layerPrefetchRequest.h"
 #include "pxr/usd/pcp/utils.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerUtils.h"
@@ -36,6 +36,8 @@
 #include "pxr/base/trace/trace.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
+#include "pxr/base/work/dispatcher.h"
+#include "pxr/base/work/withScopedParallelism.h"
 
 #include <algorithm>
 #include <iterator>
@@ -50,12 +52,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 ////////////////////////////////////////////////////////////////////////
 // Computing layer stacks
 
-// XXX Parallel layer prefetch is disabled until Sd thread-safety issues
-// can be fixed, specifically plugin loading:
+// XXX Parallel layer prefetch is only available in usd-mode, until Sd
+// thread-safety issues can be fixed, specifically plugin loading:
 // - FileFormat plugins
 // - value type plugins for parsing AnimSplines
 TF_DEFINE_ENV_SETTING(
-    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, false,
+    PCP_ENABLE_PARALLEL_LAYER_PREFETCH, true,
     "Enables parallel, threaded pre-fetch of sublayers.");
 
 TF_DEFINE_ENV_SETTING(
@@ -70,6 +72,7 @@ PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled()
 }
 
 struct Pcp_SublayerInfo {
+    Pcp_SublayerInfo() = default;
     Pcp_SublayerInfo(const SdfLayerRefPtr& layer_, const SdfLayerOffset& offset_,
                      double timeCodesPerSecond_)
         : layer(layer_)
@@ -159,8 +162,8 @@ _ApplyOwnedSublayerOrder(
             if (std::distance(first, last) > 1) {
                 PcpErrorInvalidSublayerOwnershipPtr error =
                     PcpErrorInvalidSublayerOwnership::New();
-                error->rootSite = PcpSiteStr(identifier,
-                                             SdfPath::AbsoluteRootPath());
+                error->rootSite = 
+                    PcpSite(identifier, SdfPath::AbsoluteRootPath());
                 error->owner = sessionOwner;
                 error->layer = layer;
                 for (; first != last; ++first) {
@@ -170,6 +173,12 @@ _ApplyOwnedSublayerOrder(
             }
         }
     }
+}
+
+static bool
+_IsValidRelocatesPath(SdfPath const& path)
+{
+    return path.IsPrimPath() && !path.ContainsPrimVariantSelection();
 }
 
 void
@@ -221,6 +230,30 @@ Pcp_ComputeRelocationsForLayerStack(
                 // Absolutize source/target paths.
                 SdfPath source = reloc->first .MakeAbsolutePath(primPath);
                 SdfPath target = reloc->second.MakeAbsolutePath(primPath);
+
+                // The SdfSchema should already enforce that these
+                // are valid paths for relocates, however we still
+                // double-check here to avoid problematic results
+                // under composition.
+                //
+                // XXX As with the case below, high-level code emits a
+                // warning in this case.  If we introduce a path to
+                // emit PcpErrors in this code, we'd use it here too.
+                if (!_IsValidRelocatesPath(source)) {
+                    TF_WARN("Ignoring invalid relocate source "
+                            "path <%s> in layer @%s@",
+                            source.GetText(),
+                            (*layer)->GetIdentifier().c_str());
+                    continue;
+                }
+                if (!_IsValidRelocatesPath(target)) {
+                    TF_WARN("Ignoring invalid relocate target "
+                            "path <%s> in layer @%s@",
+                            target.GetText(),
+                            (*layer)->GetIdentifier().c_str());
+                    continue;
+                }
+
                 if (source == target || source.HasPrefix(target)) {
                     // Skip relocations from a path P back to itself and
                     // relocations from a path P to an ancestor of P.
@@ -400,11 +433,59 @@ Pcp_NeedToRecomputeLayerStackTimeCodesPerSecond(
 
 PcpLayerStack::PcpLayerStack(
     const PcpLayerStackIdentifier& identifier,
-    const std::string &fileFormatTarget,
-    const Pcp_MutedLayers &mutedLayers,
-    bool isUsd) :
-    _identifier(identifier),
-    _isUsd(isUsd)
+    const Pcp_LayerStackRegistry& registry)
+    : _identifier(identifier)
+    , _expressionVariables(
+        [&identifier, &registry]() {
+            const PcpLayerStackIdentifier& selfId = identifier;
+            const PcpLayerStackIdentifier& rootLayerStackId =
+                registry._GetRootLayerStackIdentifier();
+
+            // Optimization: If the layer stack providing expression variable
+            // overrides has already been computed, use its expression variables
+            // to compose this layer stack's expression variables, This is the
+            // common case that happens during prim indexing.
+            //
+            // Otherwise, we need to take a slower code path that computes
+            // the full chain of overrides. 
+            const PcpLayerStackIdentifier& overrideLayerStackId =
+                selfId.expressionVariablesOverrideSource
+                .ResolveLayerStackIdentifier(rootLayerStackId);
+
+            const PcpLayerStackPtr overrideLayerStack =
+                overrideLayerStackId != selfId ? 
+                registry.Find(overrideLayerStackId) : TfNullPtr;
+
+            PcpExpressionVariables composedExpressionVars;
+
+            if (overrideLayerStack) {
+                composedExpressionVars = PcpExpressionVariables::Compute(
+                    selfId, rootLayerStackId, 
+                    &overrideLayerStack->GetExpressionVariables());
+
+                // Optimization: If the composed expression variables for this
+                // layer stack are the same as those in the overriding layer
+                // stack, just share their PcpExpressionVariables object.
+                if (composedExpressionVars == 
+                    overrideLayerStack->GetExpressionVariables()) {
+                    return overrideLayerStack->_expressionVariables;
+                }
+            }
+            else {
+                composedExpressionVars = PcpExpressionVariables::Compute(
+                    selfId, rootLayerStackId);
+            }
+
+            return std::make_shared<PcpExpressionVariables>(
+                std::move(composedExpressionVars));
+
+        }())
+    , _isUsd(registry._IsUsd())
+
+    // Note that we do not set the _registry member here. This will be
+    // done by Pcp_LayerStackRegistry itself when it decides to register
+    // this layer stack.
+    // , _registry(TfCreateWeakPtr(&registry))
 {
     TfAutoMallocTag2 tag("Pcp", "PcpLayerStack::PcpLayerStack");
     TRACE_FUNCTION();
@@ -413,7 +494,7 @@ PcpLayerStack::PcpLayerStack(
         return;
     }
 
-    _Compute(fileFormatTarget, mutedLayers);
+    _Compute(registry._GetFileFormatTarget(), registry._GetMutedLayers());
 
     if (!_isUsd) {
         Pcp_ComputeRelocationsForLayerStack(_layers, 
@@ -439,7 +520,83 @@ PcpLayerStack::Apply(const PcpLayerStackChanges& changes, PcpLifeboat* lifeboat)
 {
     // Invalidate the layer stack as necessary, recomputing immediately.
     // Recomputing immediately assists optimal change processing --
-    // e.g. it lets us examine the before/after chagnge to relocations.
+    // e.g. it lets us examine the before/after change to relocations.
+
+    // Update expression variables if necessary. This needs to be done up front
+    // since they may be needed when computing the full layer stack.
+    if (changes.didChangeSignificantly || 
+        changes.didChangeExpressionVariables || 
+        changes._didChangeExpressionVariablesSource) {
+
+        const auto updateExpressionVariables = 
+            [&](const VtDictionary& newExprVars, 
+                const PcpExpressionVariablesSource& newSource)
+            {
+                const PcpLayerStackIdentifier& newSourceId =
+                    newSource.ResolveLayerStackIdentifier(
+                        _registry->_GetRootLayerStackIdentifier());
+
+                if (newSourceId == GetIdentifier()) {
+                    // If this layer stack is the new source for its expression
+                    // vars, either update _expressionVariables or create a new
+                    // one based on whether it's already sourced from this layer
+                    // stack.
+                    if (_expressionVariables->GetSource() == newSource) {
+                        _expressionVariables->SetVariables(newExprVars);
+                    }
+                    else {
+                        _expressionVariables = 
+                            std::make_shared<PcpExpressionVariables>(
+                                newSource, newExprVars);
+                    }
+                }
+                else {
+                    // Optimization: If some other layer stack is the source for
+                    // this layer stack's expression vars, grab that other layer
+                    // stack's _expressionVariables. See matching optimization
+                    // in c'tor.
+                    const PcpLayerStackPtr overrideLayerStack = 
+                        _registry->Find(newSourceId);
+                    if (overrideLayerStack) {
+                        _expressionVariables =
+                            overrideLayerStack->_expressionVariables;
+
+                        // Update _expressionVariables if it doesn't have the
+                        // newly-computed expression variables. This is okay
+                        // even if _expressionVariables is shared by other layer
+                        // stacks, since we expect those layer stacks would have
+                        // been updated in the same way.
+                        if (newExprVars !=
+                            _expressionVariables->GetVariables()) {
+                            _expressionVariables->SetVariables(newExprVars);
+                        }
+                    }
+                    else {
+                        _expressionVariables =
+                            std::make_shared<PcpExpressionVariables>(
+                                newSource, newExprVars);
+                    }
+
+                }
+            };
+
+        if (changes.didChangeSignificantly) {
+            const PcpExpressionVariables newExprVars =
+                PcpExpressionVariables::Compute(
+                    GetIdentifier(), _registry->_GetRootLayerStackIdentifier());
+            updateExpressionVariables(
+                newExprVars.GetVariables(), newExprVars.GetSource());
+        }
+        else {
+            updateExpressionVariables(
+                changes.didChangeExpressionVariables ?
+                    changes.newExpressionVariables :
+                    _expressionVariables->GetVariables(),
+                changes._didChangeExpressionVariablesSource ?
+                    changes._newExpressionVariablesSource : 
+                    _expressionVariables->GetSource());
+        }
+    }
     
     // Blow layer tree/offsets if necessary.
     if (changes.didChangeLayers || changes.didChangeLayerOffsets) {
@@ -672,6 +829,7 @@ PcpLayerStack::_BlowLayers()
     _layerTree = TfNullPtr;
     _sublayerSourceInfo.clear();
     _mutedAssetPaths.clear();
+    _expressionVariableDependencies.clear();
 }
 
 void
@@ -708,21 +866,6 @@ PcpLayerStack::_Compute(const std::string &fileFormatTarget,
     // or opening sublayers.
     const SdfLayer::FileFormatArguments layerArgs =
         Pcp_GetArgumentsForFileFormatTarget(fileFormatTarget);
-
-    // Do a parallel pre-fetch request of the shot layer stack. This
-    // resolves and parses the layers, retaining them until we do a
-    // serial pass below to stitch them into a layer tree. The post-pass
-    // is serial in order to get deterministic ordering of errors,
-    // and to keep the layer stack composition algorithm as simple as
-    // possible while doing the high-latency work up front in parallel.
-    PcpLayerPrefetchRequest prefetch;
-    if (TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH)) {
-        if (_identifier.sessionLayer) {
-            prefetch.RequestSublayerStack(_identifier.sessionLayer, layerArgs);
-        }
-        prefetch.RequestSublayerStack(_identifier.rootLayer, layerArgs);
-        prefetch.Run(mutedLayers);
-    }
 
     // The session owner.  This will be empty if there is no session owner
     // in the session layer.
@@ -858,59 +1001,115 @@ PcpLayerStack::_BuildLayerStack(
     _mapFunctions.push_back(mapFunction);
         
     // Recurse over sublayers to build subtrees.
-    Pcp_SublayerInfoVector sublayerInfo;
-    const vector<string> &sublayers = layer->GetSubLayerPaths();
+    vector<string> sublayers = layer->GetSubLayerPaths();
     const SdfLayerOffsetVector &sublayerOffsets = layer->GetSubLayerOffsets();
-    for(size_t i=0, numSublayers = sublayers.size(); i<numSublayers; i++) {
+    const size_t numSublayers = sublayers.size();
+
+    // Evaluate expressions and compute mutedness first.
+    for(size_t i=0; i != numSublayers; ++i) {
+        if (Pcp_IsVariableExpression(sublayers[i])) {
+            sublayers[i] = Pcp_EvaluateVariableExpression(
+                sublayers[i], *_expressionVariables,
+                "sublayer", layer, SdfPath::AbsoluteRootPath(),
+                &_expressionVariableDependencies, errors);
+
+            if (sublayers[i].empty()) {
+                continue;
+            }
+        }
+
         string canonicalMutedPath;
         if (mutedLayers.IsLayerMuted(layer, sublayers[i], 
                                      &canonicalMutedPath)) {
             _mutedAssetPaths.insert(canonicalMutedPath);
-            continue;
+            sublayers[i].clear();
         }
+    }
 
+    std::vector<SdfLayerRefPtr> sublayerRefPtrs(numSublayers);
+    std::vector<std::string> errCommentary(numSublayers);
+    std::vector<_SublayerSourceInfo> localSourceInfo(numSublayers);
+
+    auto loadSublayer = [&](size_t i) {
         // Resolve and open sublayer.
         TfErrorMark m;
-
+                
         SdfLayer::FileFormatArguments localArgs;
         const SdfLayer::FileFormatArguments& layerArgs = 
             Pcp_GetArgumentsForFileFormatTarget(
                 sublayers[i], &defaultLayerArgs, &localArgs);
-
-        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer, but we
-        // want to keep track of the final sublayer path after anchoring it
-        // to the layer.
+                
+        // This is equivalent to SdfLayer::FindOrOpenRelativeToLayer,
+        // but we want to keep track of the final sublayer path after
+        // anchoring it to the layer.
         string sublayerPath = SdfComputeAssetPathRelativeToLayer(
             layer, sublayers[i]);
-        SdfLayerRefPtr sublayer = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
+        sublayerRefPtrs[i] = SdfLayer::FindOrOpen(sublayerPath, layerArgs);
+                
+        localSourceInfo[i] =
+            _SublayerSourceInfo(layer, sublayers[i], sublayerPath);
+                
+        // Produce commentary for eventual PcpError created below.
+        if (!m.IsClean()) {
+            vector<string> commentary;
+            for (auto const &err: m) {
+                commentary.push_back(err.GetCommentary());
+            }
+            m.Clear();
+            errCommentary[i] = TfStringJoin(commentary.begin(),
+                                            commentary.end(), "; ");
+        }
+    };
+    
+    // Open all the layers in parallel.
+    WorkWithScopedDispatcher([&](WorkDispatcher &wd) {
+        // Cannot use parallelism for non-USD clients due to thread-safety
+        // issues in file format plugins & value readers.
+        const bool goParallel = _isUsd && numSublayers > 1 &&
+            TfGetEnvSetting(PCP_ENABLE_PARALLEL_LAYER_PREFETCH);
 
-        _sublayerSourceInfo.emplace_back(layer, sublayers[i], sublayerPath);
+        for (size_t i=0; i != numSublayers; ++i) {
+            if (sublayers[i].empty()) {
+                continue;
+            }
 
-        if (!sublayer) {
+            if (goParallel) {
+                wd.Run(
+                    [i, &loadSublayer, &pathResolverContext]() { 
+                        // Context binding is thread-specific, so we need to
+                        // bind the context here.
+                        ArResolverContextBinder binder(pathResolverContext);
+                        loadSublayer(i);
+                    });
+            }
+            else {
+                loadSublayer(i);
+            }
+        }
+    });
+
+    Pcp_SublayerInfoVector sublayerInfo;
+    for (size_t i=0; i != numSublayers; ++i) {
+        if (sublayers[i].empty()) {
+            continue;
+        }
+        if (!sublayerRefPtrs[i]) {
             PcpErrorInvalidSublayerPathPtr err = 
                 PcpErrorInvalidSublayerPath::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer = layer;
-            err->sublayerPath = sublayerPath;
-            if (!m.IsClean()) {
-                vector<string> commentary;
-                for (auto const &err: m) {
-                    commentary.push_back(err.GetCommentary());
-                }
-                m.Clear();
-                err->messages = TfStringJoin(commentary.begin(),
-                                             commentary.end(), "; ");
-            }
-            errors->push_back(err);
+            err->sublayerPath = localSourceInfo[i].computedSublayerPath;
+            err->messages = std::move(errCommentary[i]);
+            errors->push_back(std::move(err));
             continue;
         }
 
         // Check for cycles.
-        if (seenLayers->count(sublayer)) {
+        if (seenLayers->count(sublayerRefPtrs[i])) {
             PcpErrorSublayerCyclePtr err = PcpErrorSublayerCycle::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer = layer;
-            err->sublayer = sublayer;
+            err->sublayer = sublayerRefPtrs[i];
             errors->push_back(err);
             continue;
         }
@@ -924,7 +1123,7 @@ PcpLayerStack::_BuildLayerStack(
                 PcpErrorInvalidSublayerOffset::New();
             err->rootSite = PcpSite(_identifier, SdfPath::AbsoluteRootPath());
             err->layer       = layer;
-            err->sublayer    = sublayer;
+            err->sublayer    = sublayerRefPtrs[i];
             err->offset      = sublayerOffset;
             errors->push_back(err);
             sublayerOffset = SdfLayerOffset();
@@ -932,7 +1131,7 @@ PcpLayerStack::_BuildLayerStack(
 
         // Apply the scale from computed layer TCPS to sublayer TCPS to sublayer
         // layer offset.
-        const double sublayerTcps = sublayer->GetTimeCodesPerSecond();
+        const double sublayerTcps = sublayerRefPtrs[i]->GetTimeCodesPerSecond();
         if (!PcpIsTimeScalingForLayerTimeCodesPerSecondDisabled() &&
             layerTcps != sublayerTcps) {
             sublayerOffset.SetScale(sublayerOffset.GetScale() * 
@@ -944,9 +1143,21 @@ PcpLayerStack::_BuildLayerStack(
         sublayerOffset = offset * sublayerOffset;
 
         // Store the info for later recursion.
-        sublayerInfo.push_back(Pcp_SublayerInfo(
-            sublayer, sublayerOffset, sublayerTcps));
+        sublayerInfo.emplace_back(
+            sublayerRefPtrs[i], sublayerOffset, sublayerTcps);
     }
+
+    // Append localSourceInfo items into _sublayerSourceInfo, skipping any for
+    // which don't have a layer (these entries correspond to layers that were
+    // muted).
+    _sublayerSourceInfo.reserve(
+        _sublayerSourceInfo.size() + localSourceInfo.size());
+    for (_SublayerSourceInfo &localInfo: localSourceInfo) {
+        if (localInfo.layer) {
+            _sublayerSourceInfo.push_back(std::move(localInfo));
+        }
+    }
+    localSourceInfo.clear();
 
     // Reorder sublayers according to sessionOwner.
     _ApplyOwnedSublayerOrder(_identifier, layer, sessionOwner, &sublayerInfo,

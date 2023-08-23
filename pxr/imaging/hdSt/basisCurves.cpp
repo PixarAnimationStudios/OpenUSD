@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/basisCurvesShaderKey.h"
 #include "pxr/imaging/hdSt/basisCurvesTopology.h"
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
+#include "pxr/imaging/hdSt/computation.h"
 #include "pxr/imaging/hdSt/drawItem.h"
 #include "pxr/imaging/hdSt/extCompGpuComputation.h"
 #include "pxr/imaging/hdSt/geometricShader.h"
@@ -47,9 +48,7 @@
 #include "pxr/base/gf/vec2i.h"
 
 #include "pxr/imaging/hd/bufferSource.h"
-#include "pxr/imaging/hd/computation.h"
 #include "pxr/imaging/hd/repr.h"
-#include "pxr/imaging/hd/vertexAdjacency.h"
 #include "pxr/imaging/hf/diagnostic.h"
 #include "pxr/base/vt/value.h"
 
@@ -289,16 +288,9 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         std::static_pointer_cast<HdStResourceRegistry>(
             renderIndex.GetResourceRegistry());
     
-    // For the time being, don't use complex curves on Metal. Support for this
-    // is planned for the future.
-    const bool hasMetalTessellation =
-        resourceRegistry->GetHgi()->GetCapabilities()->
-        IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
-    
     TfToken curveType = _topology->GetCurveType();
     TfToken curveBasis = _topology->GetCurveBasis();
-    bool supportsRefinement = _SupportsRefinement(_refineLevel) &&
-        !hasMetalTessellation;
+    bool supportsRefinement = _SupportsRefinement(_refineLevel);
     if (!supportsRefinement) {
         // XXX: Rendering non-linear (i.e., cubic) curves as linear segments
         // when unrefined can be confusing. Should we continue to do this?
@@ -329,8 +321,7 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
     case HdBasisCurvesGeomStylePatch:
     {
         if (_SupportsRefinement(_refineLevel) &&
-            _SupportsUserWidths(drawItem) &&
-            !hasMetalTessellation) {
+            _SupportsUserWidths(drawItem)) {
             if (_SupportsUserNormals(drawItem)){
                 drawStyle = HdSt_BasisCurvesShaderKey::RIBBON;
                 normalStyle = HdSt_BasisCurvesShaderKey::ORIENTED;
@@ -381,6 +372,10 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
         }
     }
 
+    bool const hasMetalTessellation =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsMetalTessellation);
+
     HdSt_BasisCurvesShaderKey shaderKey(curveType,
                                         curveBasis,
                                         drawStyle,
@@ -389,7 +384,8 @@ HdStBasisCurves::_UpdateDrawItemGeometricShader(
                                         _basisNormalInterpolation,
                                         shadingTerminal,
                                         hasAuthoredTopologicalVisiblity,
-                                        _pointsShadingEnabled);
+                                        _pointsShadingEnabled,
+                                        hasMetalTessellation);
 
     TF_DEBUG(HD_RPRIM_UPDATED).
             Msg("HdStBasisCurves(%s) - Shader Key PrimType: %s\n ",
@@ -869,7 +865,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     HdBufferSourceSharedPtrVector sources;
     HdBufferSourceSharedPtrVector reserveOnlySources;
     HdBufferSourceSharedPtrVector separateComputationSources;
-    HdStComputationSharedPtrVector computations;
+    HdStComputationComputeQueuePairVector computations;
     sources.reserve(primvars.size());
 
     HdSt_GetExtComputationPrimvarsComputations(
@@ -960,7 +956,7 @@ HdStBasisCurves::_PopulateVertexPrimvars(HdSceneDelegate *sceneDelegate,
     }
     // add gpu computations to queue.
     for (auto const& compQueuePair : computations) {
-        HdComputationSharedPtr const& comp = compQueuePair.first;
+        HdStComputationSharedPtr const& comp = compQueuePair.first;
         HdStComputeQueue queue = compQueuePair.second;
         resourceRegistry->AddComputation(
             drawItem->GetVertexPrimvarRange(), comp, queue);

@@ -108,11 +108,20 @@ class SdfAssetPath;
 /// 
 /// Each instance's transformation is a combination of the SRT affine transform
 /// described by its scale, orientation, and position, applied \em after
-/// (i.e. less locally) than the transformation computed at the root of the
-/// prototype it is instancing.  In other words, to put an instance of a 
-/// PointInstancer into the space of the PointInstancer's parent prim:
+/// (i.e. less locally than) the local to parent transformation computed at 
+/// the root of the prototype it is instancing. 
 /// 
-/// 1. Apply (most locally) the authored transformation for 
+/// If your processing of prototype geometry naturally takes into account the 
+/// transform of the prototype root, then this term can be omitted from the 
+/// computation of each instance transform, and this can be controlled when 
+/// computing instance transformation matrices using the 
+/// UsdGeomPointInstancer::PrototypeXformInclusion enumeration.
+/// 
+/// To understand the computation of the instance transform, in order to put
+/// an instance of a PointInstancer into the space of the PointInstancer's 
+/// parent prim we do the following:
+/// 
+/// 1. Apply (most locally) the authored local to parent transformation for 
 /// <em>prototypes[protoIndices[i]]</em>
 /// 2. If *scales* is authored, next apply the scaling matrix from *scales[i]*
 /// 3. If *orientations* is authored: **if *angularVelocities* is authored**, 
@@ -158,7 +167,7 @@ class SdfAssetPath;
 /// the root of the instance.  When you are authoring primvars on a 
 /// PointInstancer, think about it as if you were authoring them on a 
 /// point-cloud (e.g. a UsdGeomPoints gprim).  The same 
-/// <A HREF="http://renderman.pixar.com/resources/current/rps/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
+/// <A HREF="https://renderman.pixar.com/resources/RenderMan_20/appnote.22.html#classSpecifiers">interpolation rules for points</A> apply here, substituting
 /// "instance" for "point".
 /// 
 /// In other words, the (constant) value extracted for each instance

@@ -23,6 +23,7 @@
 //
 #include "pxr/usdImaging/usdImaging/nurbsPatchAdapter.h"
 
+#include "pxr/usdImaging/usdImaging/dataSourceNurbsPatch.h"
 #include "pxr/usdImaging/usdImaging/delegate.h"
 #include "pxr/usdImaging/usdImaging/indexProxy.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
@@ -47,9 +48,7 @@ TF_REGISTRY_FUNCTION(TfType)
     t.SetFactory< UsdImagingPrimAdapterFactory<Adapter> >();
 }
 
-UsdImagingNurbsPatchAdapter::~UsdImagingNurbsPatchAdapter() 
-{
-}
+UsdImagingNurbsPatchAdapter::~UsdImagingNurbsPatchAdapter() = default;
 
 bool
 UsdImagingNurbsPatchAdapter::IsSupported(
@@ -217,6 +216,51 @@ UsdImagingNurbsPatchAdapter::GetTopology(UsdPrim const& prim,
     HF_MALLOC_TAG_FUNCTION();
 
     return GetMeshTopology(prim, time);
+}
+
+TfTokenVector
+UsdImagingNurbsPatchAdapter::GetImagingSubprims(UsdPrim const& prim)
+{
+    return { TfToken() };
+}
+
+TfToken
+UsdImagingNurbsPatchAdapter::GetImagingSubprimType(
+        UsdPrim const& prim,
+        TfToken const& subprim)
+{
+    if (subprim.IsEmpty()) {
+        return HdPrimTypeTokens->nurbsPatch;
+    }
+    return TfToken();
+}
+
+HdContainerDataSourceHandle
+UsdImagingNurbsPatchAdapter::GetImagingSubprimData(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        const UsdImagingDataSourceStageGlobals &stageGlobals)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceNurbsPatchPrim::New(
+            prim.GetPath(), prim, stageGlobals);
+    }
+    return nullptr;
+}
+
+HdDataSourceLocatorSet
+UsdImagingNurbsPatchAdapter::InvalidateImagingSubprim(
+        UsdPrim const& prim,
+        TfToken const& subprim,
+        TfTokenVector const& properties,
+        UsdImagingPropertyInvalidationType invalidationType)
+{
+    if (subprim.IsEmpty()) {
+        return UsdImagingDataSourceNurbsPatchPrim::Invalidate(
+            prim, subprim, properties, invalidationType);
+    }
+
+    return HdDataSourceLocatorSet();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

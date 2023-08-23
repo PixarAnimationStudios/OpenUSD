@@ -55,12 +55,11 @@ def Scope "Scene" (
             uniform token[] xformOpOrder = ["xformOp:transform", "xformOp:translate"]
         }
 
-        def Sphere "SphereWithFloatRadius" (
+        def Sphere "Sphere" (
             prepend apiSchemas = ["MaterialBindingAPI"]
         )
         {
             rel material:binding = </Scene/Looks/MaterialTagMat>
-            float radius = 2
             custom double3 xformOp:translate = (2, 0, 0)
             uniform token[] xformOpOrder = ["xformOp:translate"]
         }

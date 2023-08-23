@@ -1,0 +1,216 @@
+#usda 1.0
+
+class Scope "models"
+{
+    def Xform "model"
+    {
+        def Cone "cone" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            token axis = "Y"
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            double height = 2
+            rel material:binding = </models/model/materials/cone_material>
+            double radius = 1
+        }
+
+        def Scope "materials"
+        {
+            def Material "cone_material"
+            {
+                token outputs:surface.connect = </models/model/materials/cone_material/shader.outputs:surface>
+
+                def Shader "shader"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (1.0, 0.5, 0.0)
+                    token outputs:surface
+                }
+            }
+        }
+    }
+}
+
+def Camera "camera"
+{
+    double3 xformOp:translate = (0, -20, 40)
+    float xformOp:rotateX = 28
+    uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateX"]
+}
+
+def Xform "world" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </world/materials/green_material> (
+        bindMaterialAs = "strongerThanDescendants"
+    )
+
+    def "cone" (
+        active = false
+        prepend references = </models/model>
+    )
+    {
+        matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 4, 1) )
+        uniform token[] xformOpOrder = ["xformOp:rotateY", "xformOp:transform"]
+    }
+
+    def "cone_0" (
+        active = true
+        instanceable = true
+        append references = </world/cone>
+    )
+    {
+        float xformOp:rotateY = -15
+    }
+
+    def "cone_1" (
+        active = true
+        instanceable = true
+        append references = </world/cone>
+    )
+    {
+        float xformOp:rotateY = 15
+    }
+
+    def "cone_2" (
+        active = true
+        instanceable = true
+        append references = </world/cone>
+    )
+    {
+        float xformOp:rotateY = 45
+    }
+
+    def Xform "cube" (
+        active = false
+    )
+    {
+        def Cube "shape" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
+        {
+            float3[] extent = [(-1, -1, -1), (1, 1, 1)]
+            rel material:binding = </world/cube/materials/cube_material>
+            double size = 1.8
+            matrix4d xformOp:transform = ( (0.7, 0, 0, 0), (0, 1, 0, 0), (0, 0, 0.7, 0), (0, 1, 10, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def Scope "materials"
+        {
+            def Material "cube_material"
+            {
+                token outputs:surface.connect = </world/cube/materials/cube_material/shader.outputs:surface>
+
+                def Shader "shader"
+                {
+                    uniform token info:id = "UsdPreviewSurface"
+                    color3f inputs:diffuseColor = (1.0, 0.0, 0.5)
+                    token outputs:surface
+                }
+            }
+        }
+    }
+
+    def Xform "cubes"
+    {
+        def "cube_0" (
+            active = true
+            append references = </world/cube>
+        )
+        {
+            matrix4d xformOp:transform = ( (1, 0, 0, 0), (0, 1, 0, 0), (0, 0, 1, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "cube_1" (
+            active = true
+            append references = </world/cube>
+        )
+        {
+            matrix4d xformOp:transform = ( (0.9876883405951378, 0, -0.15643446504023087, 0), (0, 1, 0, 0), (0.15643446504023087, 0, 0.9876883405951378, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+
+        def "cube_2" (
+            active = true
+            append references = </world/cube>
+        )
+        {
+            matrix4d xformOp:transform = ( (0.9510565162951535, 0, -0.3090169943749474, 0), (0, 1, 0, 0), (0.3090169943749474, 0, 0.9510565162951535, 0), (0, 0, 0, 1) )
+            uniform token[] xformOpOrder = ["xformOp:transform"]
+        }
+    }
+
+    def PointInstancer "sphersCylindersInstancer"
+    {
+        float3[] extent = [(-7.4898567, -0.95019877, -7.4937644), (7.1098676, 0.95019877, 7.286495)]
+        int64[] invisibleIds = []
+        point3f[] positions = [(-4.368703, 0, -0.5455779), (-6.7582035, 0, -0.88914996), (1.9370021, 0, -3.029954)]
+        int[] protoIndices = [0, 1, 0]
+        rel prototypes = [
+            </world/sphersCylindersInstancer/Prototypes/cylinder>,
+            </world/sphersCylindersInstancer/Prototypes/sphere>,
+        ]
+
+        def Scope "Prototypes"
+        {
+            def Xform "sphere"
+            {
+                def Sphere "shape" (
+                    prepend apiSchemas = ["MaterialBindingAPI"]
+                )
+                {
+                    float3[] extent = [(-0.77, -0.77, -0.77), (0.77, 0.77, 0.77)]
+                    rel material:binding = </world/sphersCylindersInstancer/Prototypes/sphere/materials/sphere_material>
+                    double radius = 1.2
+                }
+
+                def Scope "materials"
+                {
+                    def Material "sphere_material"
+                    {
+                        token outputs:surface.connect = </world/sphersCylindersInstancer/Prototypes/sphere/materials/sphere_material/sphere_material.outputs:surface>
+
+                        def Shader "sphere_material"
+                        {
+                            uniform token info:id = "UsdPreviewSurface"
+                            color3f inputs:diffuseColor = (1.0, 0.0, 0.0)
+                            token outputs:surface
+                        }
+                    }
+                }
+            }
+
+            def Xform "cylinder"
+            {
+                def Cylinder "shape"
+                {
+                    token axis = "Y"
+                    float3[] extent = [(-0.62, -1, -0.62), (0.62, 1, 0.62)]
+                    double height = 3
+                    double radius = 1.2
+                }
+            }
+        }
+    }
+
+    def Scope "materials"
+    {
+        def Material "green_material"
+        {
+            token outputs:surface.connect = </world/materials/green_material/green_material.outputs:surface>
+
+            def Shader "green_material"
+            {
+                uniform token info:id = "UsdPreviewSurface"
+                color3f inputs:diffuseColor = (0, 1, 0)
+                token outputs:displacement
+                token outputs:surface
+            }
+        }
+    }
+}
+

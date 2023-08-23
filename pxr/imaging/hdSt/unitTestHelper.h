@@ -302,8 +302,9 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
     TF_VERIFY(camera);
 
     for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
-        renderPassState->SetCameraAndFraming(
-            camera, framing, { false, CameraUtilFit });
+        renderPassState->SetCamera(camera);
+        renderPassState->SetFraming(framing);
+        renderPassState->SetOverrideWindowPolicy({ false, CameraUtilFit });
     }
 }
 
@@ -585,7 +586,7 @@ public:
     HDST_API
     void UnbindResources(int program,
                          HdSt_ResourceBinder const &binder) override;
-    void AddBindings(HdBindingRequestVector *customBindings) override;
+    void AddBindings(HdStBindingRequestVector *customBindings) override;
 
     /// HdStLightingShader overrides
     void SetCamera(GfMatrix4d const &worldToViewMatrix,

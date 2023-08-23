@@ -44,5 +44,5 @@
 .. role:: usdtitletext
    :class: usd-title-text sidebar-title
           
-.. |usdlogo| image:: https://graphics.pixar.com/usd/images/USDLogoUnsized.svg
+.. |usdlogo| image:: https://openusd.org/images/USDLogoUnsized.svg
    :class: usd-logo-image

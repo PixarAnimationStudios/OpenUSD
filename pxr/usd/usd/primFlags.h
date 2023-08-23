@@ -76,8 +76,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/bitUtils.h"
-
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <bitset>
 
@@ -275,10 +274,9 @@ private:
 
     // hash overload.
     friend size_t hash_value(const Usd_PrimFlagsPredicate &p) {
-        size_t hash = p._mask.to_ulong();
-        boost::hash_combine(hash, p._values.to_ulong());
-        boost::hash_combine(hash, p._negate);
-        return hash;
+        return TfHash::Combine(
+            p._mask.to_ulong(), p._values.to_ulong(), p._negate
+        );
     }
 
     // Whether or not to negate the predicate's result.

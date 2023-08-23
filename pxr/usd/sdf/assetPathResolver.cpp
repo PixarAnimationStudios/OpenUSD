@@ -261,7 +261,7 @@ Sdf_GetAnonLayerIdentifierTemplate(
 
     // Ensure that URL-encoded characters are not misinterpreted as
     // format strings to TfStringPrintf in Sdf_ComputeAnonLayerIdentifier.
-    // See discussion in https://github.com/PixarAnimationStudios/USD/pull/2022
+    // See discussion in https://github.com/PixarAnimationStudios/OpenUSD/pull/2022
     idTag = TfStringReplace(idTag, "%", "%%");
 
     return _Tokens->AnonLayerPrefix.GetString() + "%p" +

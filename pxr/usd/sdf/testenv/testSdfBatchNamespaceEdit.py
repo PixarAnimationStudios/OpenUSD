@@ -31,6 +31,35 @@ verbose = False
 #verbose = True
 
 class TestSdfBatchNamespaceEdit(unittest.TestCase):
+    def test_EqualityOperators(self):
+        self.assertEqual(Sdf.NamespaceEdit('/A', '/B'), Sdf.NamespaceEdit('/A', '/B'))
+        self.assertNotEqual(Sdf.NamespaceEdit('/B', '/A'), Sdf.NamespaceEdit('/A', '/B'))
+
+        # Validate the equality operators by varying a single field from a prototype edit
+        # at a time
+        prototype = Sdf.NamespaceEditDetail(
+            Sdf.NamespaceEditDetail.Okay,
+            Sdf.NamespaceEdit('/A', '/B'),
+            "reason"
+        )
+        self.assertEqual(prototype, Sdf.NamespaceEditDetail(
+            prototype.result,
+            prototype.edit,
+            prototype.reason))
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
+            Sdf.NamespaceEditDetail.Unbatched,
+            prototype.edit,
+            prototype.reason))
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
+            prototype.result,
+            Sdf.NamespaceEdit('/C', '/D'),
+            prototype.reason))
+        self.assertNotEqual(prototype, Sdf.NamespaceEditDetail(
+            prototype.result,
+            prototype.edit,
+            "a different reason"))
+
+
     def test_Basic(self):
         print('Test constructors')
 

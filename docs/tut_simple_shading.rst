@@ -90,7 +90,7 @@ multiple times). In another command shell, try:
 
 We should see something like:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/simpleShading.png
+.. image:: http://openusd.org/images/tut_simple_shading_1.png
 
 Make a Material
 ===============
@@ -186,5 +186,5 @@ And lastly, apply MaterialBindingAPI on the billboard prim, bind the Mesh to our
 
 In usdview, we should now see something like:
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/580914176/simpleShading_2.png
+.. image:: http://openusd.org/images/tut_simple_shading_2.png
 

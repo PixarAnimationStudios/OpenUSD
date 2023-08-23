@@ -104,6 +104,10 @@ _ComputeJointRestRelativeTransforms(UsdSkelSkeletonQuery& self,
     return xforms;
 }
 
+static size_t __hash__(const UsdSkelSkeletonQuery &self)
+{
+    return TfHash{}(self);
+}
 
 } // namespace
 
@@ -119,6 +123,7 @@ void wrapUsdSkelSkeletonQuery()
         .def(self != self)
         
         .def("__str__", &This::GetDescription)
+        .def("__hash__" , __hash__)
 
         .def("GetPrim", &This::GetPrim,
              return_value_policy<return_by_value>())

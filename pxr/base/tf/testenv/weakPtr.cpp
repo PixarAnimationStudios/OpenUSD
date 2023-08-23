@@ -28,8 +28,6 @@
 #include "pxr/base/tf/singleton.h"
 #include "pxr/base/tf/weakPtr.h"
 
-#include <boost/noncopyable.hpp>
-
 #include <chrono>
 #include <condition_variable>
 #include <cstdio>
@@ -124,6 +122,19 @@ static void _TestComparisons()
     TF_AXIOM( !(NULL == x) );
 }
 
+static void _TestHash()
+{
+    TF_AXIOM(TfHash()(MonkeyInterfaceWeakPtr()) ==
+             TfHash()(MonkeyInterfaceWeakPtr(nullptr)));
+    {
+        Human h;
+        MonkeyInterfaceWeakPtr p(&h);
+        TF_AXIOM(TfHash()(p) == TfHash()(p));
+        TF_AXIOM(TfHash()(p) == TfHash()(MonkeyInterfaceWeakPtr(p)));
+    }
+}
+
+
 static bool
 Test_TfWeakPtr()
 {
@@ -173,6 +184,7 @@ Test_TfWeakPtr()
     delete human;
     TF_AXIOM(!hPtr);
     _TestComparisons();
+    _TestHash();
 
     return true;
 }
@@ -188,7 +200,10 @@ Test_TfWeakPtr()
 TF_DECLARE_WEAK_AND_REF_PTRS(ProtectedBase);
 
 // Singleton registry of instances.
-class ProtectedBase_Registry : public boost::noncopyable {
+class ProtectedBase_Registry {
+    ProtectedBase_Registry() = default;
+    ProtectedBase_Registry(const ProtectedBase_Registry&) = delete;
+    ProtectedBase_Registry& operator=(const ProtectedBase_Registry&) = delete;
 public:
     static ProtectedBase_Registry &GetInstance() {
         return TfSingleton<ProtectedBase_Registry>::GetInstance();
@@ -208,7 +223,9 @@ private:
 std::mutex ProtectedBase_Registry::_mutex;
 
 // Simple semaphore.
-class Semaphore : boost::noncopyable {
+class Semaphore {
+    Semaphore(const Semaphore&) = delete;
+    Semaphore& operator=(const Semaphore&) = delete;
 public:
     Semaphore() : _count(0) { }
 

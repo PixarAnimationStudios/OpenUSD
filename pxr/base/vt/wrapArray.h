@@ -48,7 +48,6 @@
 #include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
-#include <boost/preprocessor/facilities/empty.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -258,8 +257,8 @@ template <typename T>
 void
 setitem_index(VtArray<T> &self, int64_t idx, object value)
 {
-    static const bool tile = true;
-    setArraySlice(self, slice(idx, idx + 1), value, tile);
+    idx = TfPyNormalizeIndex(idx, self.size(), /*throwError=*/true);
+    setArraySlice(self, slice(idx, idx+1), value, /*tile=*/true);
 }
 
 template <typename T>
@@ -426,11 +425,12 @@ VtArray<T> *VtArray__init__2(size_t size, object const &values)
 ARCH_PRAGMA_PUSH
 ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
 ARCH_PRAGMA_UNARY_MINUS_ON_UNSIGNED
-VTOPERATOR_WRAP(+,__add__,__radd__)
-VTOPERATOR_WRAP_NONCOMM(-,__sub__,__rsub__)
-VTOPERATOR_WRAP(*,__mul__,__rmul__)
-VTOPERATOR_WRAP_NONCOMM(/,__div__,__rdiv__)
-VTOPERATOR_WRAP_NONCOMM(%,__mod__,__rmod__)
+
+VTOPERATOR_WRAP(__add__,__radd__)
+VTOPERATOR_WRAP_NONCOMM(__sub__,__rsub__)
+VTOPERATOR_WRAP(__mul__,__rmul__)
+VTOPERATOR_WRAP_NONCOMM(__div__,__rdiv__)
+VTOPERATOR_WRAP_NONCOMM(__mod__,__rmod__)
 
 VTOPERATOR_WRAP_BOOL(Equal,==)
 VTOPERATOR_WRAP_BOOL(NotEqual,!=)
@@ -444,7 +444,7 @@ ARCH_PRAGMA_POP
 template <typename T>
 static std::string _VtStr(T const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 template <typename T>
@@ -524,19 +524,6 @@ void VtWrapArray()
 #endif
 
         ;
-
-#if PY_MAJOR_VERSION == 2
-    // The above generates bindings for scalar division of arrays, but we
-    // need to explicitly add bindings for __truediv__ and __rtruediv__
-    // in Python 2 to support "from __future__ import division".
-    if (PyObject_HasAttrString(selfCls.ptr(), "__div__")) {
-        selfCls.attr("__truediv__") = selfCls.attr("__div__");
-    }
-
-    if (PyObject_HasAttrString(selfCls.ptr(), "__rdiv__")) {
-        selfCls.attr("__rtruediv__") = selfCls.attr("__rdiv__");
-    }
-#endif
 
 #define WRITE(z, n, data) BOOST_PP_COMMA_IF(n) data
 #define VtCat_DEF(z, n, unused) \

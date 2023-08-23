@@ -31,7 +31,7 @@ Generating New Schema Classes
               - This is a path list which Python uses to find modules.
               - $PYTHONPATH:**USD_INSTALL_ROOT/lib/python/**
 
-   For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ .
+   For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ .
 
 The files used in this tutorial are available in
 USD/extras/usd/examples/usdSchemaExamples/. The objective of this tutorial is 
@@ -383,7 +383,7 @@ Create a usd file named Test.usda with the following content:
 .. code-block:: usda
    :caption: Test.usda
 
-    #usda 1.0
+   #usda 1.0
    
     def ComplexPrim "Complex"
     {
@@ -404,7 +404,7 @@ Create a usd file named Test.usda with the following content:
 You should be able to load the above usda file in usdview without warnings or 
 errors.
 
-.. image:: http://graphics.pixar.com/usd/docs/attachments/368705840/565776867.png
+.. image:: http://openusd.org/images/tut_generating_new_schema_usdview.png
 
 C++ Example
 ***********
@@ -442,20 +442,20 @@ and uses the API provided by schema code generation.
 .. code-block:: python
    :caption: Python Example
 
-    from pxr import Usd, UsdSchemaExamples
-    stage = Usd.Stage.Open("Test.usda")
-    cp = stage.GetPrimAtPath("/Complex")
-    simple = UsdSchemaExamples.Simple(cp)
-    target = simple.GetTargetRel()
-    intAttr = simple.GetIntAttrAttr()
-    complex = UsdSchemaExamples.Complex(cp)
-    print('complexString: %s' % complex.GetComplexStringAttr().Get())
-    obj = stage.GetPrimAtPath("/Object")
-    paramsAPI = UsdSchemaExamples.ParamsAPI.Apply(obj)
-    assert obj.HasAPI(UsdSchemaExamples.ParamsAPI)
-    print('mass: %s' % paramsAPI.GetMassAttr().Get())
-    print('velocity: %s' % paramsAPI.GetVelocityAttr().Get())
-    print('volume: %s' % paramsAPI.GetVolumeAttr().Get())
+   from pxr import Usd, UsdSchemaExamples
+   stage = Usd.Stage.Open("Test.usda")
+   cp = stage.GetPrimAtPath("/Complex")
+   simple = UsdSchemaExamples.Simple(cp)
+   target = simple.GetTargetRel()
+   intAttr = simple.GetIntAttrAttr()
+   complex = UsdSchemaExamples.Complex(cp)
+   print('complexString: %s' % complex.GetComplexStringAttr().Get())
+   obj = stage.GetPrimAtPath("/Object")
+   paramsAPI = UsdSchemaExamples.ParamsAPI.Apply(obj)
+   assert obj.HasAPI(UsdSchemaExamples.ParamsAPI)
+   print('mass: %s' % paramsAPI.GetMassAttr().Get())
+   print('velocity: %s' % paramsAPI.GetVelocityAttr().Get())
+   print('volume: %s' % paramsAPI.GetVolumeAttr().Get())
 
 Codeless Schemas
 ****************

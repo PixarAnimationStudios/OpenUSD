@@ -108,3 +108,18 @@ class "TestMultiApplyWithAPIVersionConflict_API" (
 {
 }
 
+class "TestVersionedAutoApplyAPI"
+{
+    int a_attr
+}
+
+class "TestVersionedAutoApplyAPI_2"
+{
+    int a_attr2
+}
+
+class "TestVersionedAutoApplyAPI_10"
+{
+    int a_attr10
+}
+

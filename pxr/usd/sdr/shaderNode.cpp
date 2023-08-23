@@ -28,6 +28,7 @@
 #include "pxr/usd/sdr/shaderNode.h"
 #include "pxr/usd/sdr/shaderProperty.h"
 
+#include <algorithm>
 #include <unordered_set>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -203,7 +204,19 @@ SdrShaderNode::GetAllVstructNames() const
 {
     std::unordered_set<std::string> vstructs;
 
+    auto hasVstructMetadata = [] (const SdrShaderPropertyConstPtr& property) {
+        const NdrTokenMap& metadata = property->GetMetadata();
+        const auto t = metadata.find(SdrPropertyMetadata->Tag);
+        return (t != metadata.end() && t->second == "vstruct");
+    };
+
     for (const auto& input : _shaderInputs) {
+
+        if (hasVstructMetadata(input.second)) {
+            vstructs.insert(input.first);
+            continue;
+        }
+
         if (!input.second->IsVStructMember()) {
             continue;
         }
@@ -216,6 +229,12 @@ SdrShaderNode::GetAllVstructNames() const
     }
 
     for (const auto& output : _shaderOutputs) {
+
+        if (hasVstructMetadata(output.second)) {
+            vstructs.insert(output.first);
+            continue;
+        }
+
         if (!output.second->IsVStructMember()) {
             continue;
         }

@@ -29,9 +29,8 @@
 #include "pxr/usd/sdf/timeCode.h"
 #include "pxr/base/gf/math.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/functional/hash/hash.hpp>
 
 #include <climits>
 #include <limits>
@@ -138,10 +137,10 @@ SdfLayerOffset::operator<(const SdfLayerOffset &rhs) const
 size_t
 SdfLayerOffset::GetHash() const
 {
-    size_t hash = 0;
-    boost::hash_combine(hash, _offset);
-    boost::hash_combine(hash, _scale);
-    return hash;
+    return TfHash::Combine(
+        _offset,
+        _scale
+    );
 }
 
 std::ostream & operator<<( std::ostream &out,

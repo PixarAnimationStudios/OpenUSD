@@ -41,7 +41,8 @@ class HdSceneDelegate;
 
 struct HdxSelectionTaskParams
 {
-    bool enableSelection;
+    bool enableSelectionHighlight;
+    bool enableLocateHighlight;
     float occludedSelectionOpacity; // lerp factor when blending 
                                     // occluded selection
     GfVec4f selectionColor; // "active" selection color

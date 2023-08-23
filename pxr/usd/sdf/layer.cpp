@@ -216,6 +216,8 @@ SdfLayer::SdfLayer(
 
 SdfLayer::~SdfLayer()
 {
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     TF_DEBUG(SDF_LAYER).Msg(
         "SdfLayer::~SdfLayer('%s')\n", GetIdentifier().c_str());
 
@@ -385,6 +387,7 @@ SdfLayer::_CreateAnonymousWithFormat(
         return SdfLayerRefPtr();
     }
 
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
     tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
 
     SdfLayerRefPtr layer =
@@ -604,6 +607,7 @@ SdfLayer::_CreateNew(
     // registry mutex lock before destroying the layer.
     SdfLayerRefPtr layer;
     {
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
         tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
 
         // Check for existing layer with this identifier.
@@ -882,6 +886,8 @@ SdfLayer::OpenAsAnonymous(
     bool metadataOnly,
     const std::string &tag)
 {
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
+
     _FindOrOpenLayerInfo layerInfo;
     if (!_ComputeInfoToFindOrOpenLayer(layerPath, FileFormatArguments(), 
                                        &layerInfo)) {
@@ -1116,6 +1122,13 @@ SdfLayer::_Read(
         TfStringify(metadataOnly).c_str());
 
     SdfFileFormatConstPtr format = GetFileFormat();
+    if (!format->SupportsReading()) {
+        TF_CODING_ERROR("Cannot read layer @%s@: %s file format does not"
+                        "support reading",
+                        identifier.c_str(),
+                        format->GetFormatId().GetText());
+        return false;
+    }
     return IsIncludedByDetachedLayerRules(identifier) ?
         format->ReadDetached(this, resolvedPath, metadataOnly) :
         format->Read(this, resolvedPath, metadataOnly);
@@ -1139,10 +1152,9 @@ SdfLayer::_Find(const string &identifier,
                 ScopedLock& lock,
                 bool retryAsWriter)
 {
-    // We don't need to drop the GIL here, since _TryToFindLayer() doesn't
-    // invoke any plugin code, and if we do wind up calling
-    // _WaitForInitializationAndCheckIfSuccessful() then we'll drop the GIL in
-    // there.
+    // Drop the GIL here, since python identity object management may be invoked
+    // when we convert the weakptr to refptr in _TryToFindLayer().
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
 
     _FindOrOpenLayerInfo layerInfo;
     if (!_ComputeInfoToFindOrOpenLayer(identifier, args, &layerInfo)) {
@@ -1833,6 +1845,30 @@ void
 SdfLayer::ClearCustomLayerData()
 {
     EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->CustomLayerData);
+}
+
+VtDictionary
+SdfLayer::GetExpressionVariables() const
+{
+    return _GetValue<VtDictionary>(SdfFieldKeys->ExpressionVariables);
+}
+
+void
+SdfLayer::SetExpressionVariables(const VtDictionary& dict)
+{
+    _SetValue(SdfFieldKeys->ExpressionVariables, dict);
+}
+
+bool 
+SdfLayer::HasExpressionVariables() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
+void 
+SdfLayer::ClearExpressionVariables()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
 }
 
 SdfPrimSpecHandle
@@ -2545,6 +2581,7 @@ SdfLayer::UpdateAssetInfo()
                     _assetInfo->resolverContext));
         }    
 
+        TF_PY_ALLOW_THREADS_IN_SCOPE();
         tbb::queuing_rw_mutex::scoped_lock lock(_GetLayerRegistryMutex());
         _InitializeFromIdentifier(GetIdentifier());
     }
@@ -3224,6 +3261,7 @@ SdfLayer::_UpdatePrimCompositionDependencyPaths(
 void
 SdfLayer::DumpLayerInfo()
 {
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
     tbb::queuing_rw_mutex::scoped_lock
         lock(_GetLayerRegistryMutex(), /*write=*/false);
     std::cerr << "Layer Registry Dump:" << std::endl
@@ -3242,6 +3280,7 @@ SdfLayer::WriteDataFile(const string &filename)
 set<SdfLayerHandle>
 SdfLayer::GetLoadedLayers()
 {
+    TF_PY_ALLOW_THREADS_IN_SCOPE();
     tbb::queuing_rw_mutex::scoped_lock
         lock(_GetLayerRegistryMutex(), /*write=*/false);
     return _layerRegistry->GetLayers();
@@ -4081,8 +4120,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         if (!updater.unrecognizedFields.empty()) {
             vector<string> fieldDescrs;
             fieldDescrs.reserve(updater.unrecognizedFields.size());
-            for (std::pair<TfToken, SdfPath> const &tokenPath:
-                     updater.unrecognizedFields) {
+            for (auto const &tokenPath: updater.unrecognizedFields) {
                 fieldDescrs.push_back(
                     TfStringPrintf("'%s' first seen at <%s>",
                                    tokenPath.first.GetText(),
@@ -4706,6 +4744,14 @@ SdfLayer::_WriteToFile(const string & newFileName,
     if (!TF_VERIFY(fileFormat)) {
         TF_RUNTIME_ERROR("Unknown file format when attempting to write '%s'",
             newFileName.c_str());
+        return false;
+    }
+
+    if (!fileFormat->SupportsWriting()) {
+        TF_CODING_ERROR("Cannot save layer @%s@: %s file format does not"
+                        "support writing",
+                        newFileName.c_str(),
+                        fileFormat->GetFormatId().GetText());
         return false;
     }
 

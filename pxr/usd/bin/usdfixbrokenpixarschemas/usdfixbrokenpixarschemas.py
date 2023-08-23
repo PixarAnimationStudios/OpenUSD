@@ -74,13 +74,35 @@ def _ValidateFileNames(inputFile, backupFile, isUsdzFile):
             return False
     return True
 
+def _CheckUsdzCompliance(rootLayer):
+    """
+    Runs UsdUtils.ComplianceChecker on the given layer and reports errors.
+    Returns True if no errors or failed checks were reported, False otherwise.
+    """
+
+    checker = UsdUtils.ComplianceChecker(skipARKitRootLayerCheck=True)
+    checker.CheckCompliance(rootLayer)
+    errors = checker.GetErrors()
+    failedChecks = checker.GetFailedChecks()
+    warnings = checker.GetWarnings()
+    for msg in errors + failedChecks:
+        _Err(msg)
+    if len(warnings) > 0:
+        _Err("*********************************************\n"
+             "Possible correctness problems to investigate:\n"
+             "*********************************************\n")
+        for msg in warnings:
+            _Err(msg)
+    return len(errors) == 0 and len(failedChecks) == 0
+
 def main():
     parser = argparse.ArgumentParser(description="""Fixes usd / usdz layer
     by applying appropriate fixes defined in the UsdUtils.FixBrokenPixarSchemas.
-    If the given usd file has any fixes to be saved, a backup is created for the
-    same. If a usdz package is provided, it is extracted recursively at a temp 
-    location, and fixes are applied on each layer individually, which are then 
-    packaged into a new usdz package, while creating a backup of the original.
+    If the given usd file has any fixes to be saved, a backup is created for 
+    that file. If a usdz package is provided, it is extracted recursively at a 
+    temp location, and fixes are applied on each layer individually, which are 
+    then packaged into a new usdz package, while creating a backup of the 
+    original.
     """)
 
     parser.add_argument('inputFile', type=str, nargs='?',
@@ -102,33 +124,43 @@ def main():
     if not _ValidateFileNames(inputFile, backupFile, isUsdzFile):
         _Err("Invalid extensions on input (%s) or backup (%s) filename." \
                 %(inputFile, backupFile))
-        return 0
+        return 1
 
-    success = False
+    success = True
 
     if not os.path.exists(inputFile):
         _Err("Input file ('%s') doesn't exist." %(inputFile))
-        return 0
-
-    currentWorkingDir = os.getcwd()
+        return 1
+    
     if isUsdzFile:
         shutil.copyfile(inputFile, backupFile)
         # UsdzAssetIterator will make sure to extract and pack when done!
-        with UsdUtils.UsdzAssetIterator(inputFile, args.verbose) as usdAssetItr:
-            # Generators for usdAssets giving us recursive lazy access to 
-            # usdAssets within the usdz package for applying fixes.
-            for usdAsset in usdAssetItr.UsdAssets():
-                if usdAsset:
-                    success |= _FixUsdAsset(usdAsset)
+        try:
+            with UsdUtils.UsdzAssetIterator(
+                    inputFile, args.verbose) as usdAssetItr:
+                # Generators for usdAssets giving us recursive lazy access to 
+                # usdAssets within the usdz package for applying fixes.
+                for usdAsset in usdAssetItr.UsdAssets():
+                    if usdAsset:
+                        success |= _FixUsdAsset(usdAsset)
+        except Exception as e:
+            _Err("Error fixing or repacking usdz: %s" % str(e))
+            success = False
+
     else:
         shutil.copyfile(inputFile, backupFile)
         success = _FixUsdAsset(inputFile)
 
-    if not success:
+    if success:
+        _CheckUsdzCompliance(inputFile)
+    else:
         _Err("Unable to fix or no fixes required for input layer '%s'." \
                 %inputFile)
-        os.chdir(currentWorkingDir)
+        
         shutil.move(backupFile, inputFile)
+        return 1
+
+    return 0
 
 if __name__ == '__main__':
     sys.exit(main())
