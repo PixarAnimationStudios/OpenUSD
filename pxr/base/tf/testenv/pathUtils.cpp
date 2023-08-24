@@ -103,12 +103,25 @@ TestTfRealPath()
     }
 
     if (testSymlinks) {
+#if defined(ARCH_OS_WINDOWS)
+        // On Windows, TfRealPath explicitly lower-cases drive letters if the given path contains symlinks,
+        // otherwise it returns the same as os.path.abspath.
+        // This is inconsistent, using TfNormPath to test the current behavior.
         // Leaf dir is symlink
         TF_AXIOM(TfNormPath(TfRealPath("d", true)) == TfNormPath(TfAbsPath("subdir")));
         // Symlinks through to dir
         TF_AXIOM(TfNormPath(TfRealPath("d/e", true)) == TfNormPath(TfAbsPath("subdir/e")));
         // Symlinks through to nonexistent dirs
         TF_AXIOM(TfNormPath(TfRealPath("d/e/f/g/h", true)) == TfNormPath(TfAbsPath("subdir/e/f/g/h")));
+#else
+        // Leaf dir is symlink
+        TF_AXIOM(TfRealPath("d", true) == TfAbsPath("subdir"));
+        // Symlinks through to dir
+        TF_AXIOM(TfRealPath("d/e", true) == TfAbsPath("subdir/e"));
+        // Symlinks through to nonexistent dirs
+        TF_AXIOM(TfRealPath("d/e/f/g/h", true) == TfAbsPath("subdir/e/f/g/h"));
+        // Symlinks through to broken link
+#endif
         // Symlinks through to broken link
         TF_AXIOM(TfRealPath("g", true) == "");
     }
