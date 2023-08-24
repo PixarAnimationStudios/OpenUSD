@@ -485,12 +485,6 @@ static const std::set<MTLPixelFormat> unfilterableIosFormats =
         {MTLPixelFormatRGBA32Float}
 };
 
-
-static const std::set<MTLPixelFormat> unfilterableIosFormats =
-{
-        {MTLPixelFormatRGBA32Float}
-};
-
 bool
 IsFilterable(MTLPixelFormat format)
 {
