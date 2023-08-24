@@ -8,4 +8,5 @@ pxr_cpp_bin(sdffilter
         arch
         tf
         sdf
+        ${BIN_PYTHON_LIBRARIES}
 )

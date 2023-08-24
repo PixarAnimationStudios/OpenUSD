@@ -7,4 +7,5 @@ pxr_cpp_bin(sdfdump
         plug
         tf
         sdf
+        ${BIN_PYTHON_LIBRARIES}
 )

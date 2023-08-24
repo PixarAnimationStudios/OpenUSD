@@ -7,6 +7,7 @@ pxr_cpp_bin(usdcat
         sdf
         usd
         usdUtils
+        ${BIN_PYTHON_LIBRARIES}
         )
 
 pxr_install_test_dir(

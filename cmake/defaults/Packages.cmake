@@ -100,10 +100,15 @@ if(PXR_ENABLE_PYTHON_SUPPORT)
 
         # This option indicates that we don't want to explicitly link to the
         # python libraries. See BUILDING.md for details.
+        # Note: If the libraries dont link with python, that means the
+        # applications using them must do so. We define APP_PYTHON_LIBRARIES
+        # for the applications built with USD, such as usdcat, to use.
         if(PXR_PY_UNDEFINED_DYNAMIC_LOOKUP AND NOT WIN32)
             set(PYTHON_LIBRARIES "")
+            set(BIN_PYTHON_LIBRARIES "${package}::Python")
         else()
             set(PYTHON_LIBRARIES "${package}::Python")
+            set(BIN_PYTHON_LIBRARIES "")
         endif()
     endmacro()
 

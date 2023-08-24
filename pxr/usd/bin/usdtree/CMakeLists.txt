@@ -9,6 +9,7 @@ pxr_cpp_bin(usdtree
         tf
         usd
         usdUtils
+        ${BIN_PYTHON_LIBRARIES}
         )
 
 pxr_install_test_dir(
