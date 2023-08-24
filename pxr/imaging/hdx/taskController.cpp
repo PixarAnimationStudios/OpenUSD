@@ -210,6 +210,7 @@ HdxTaskController::HdxTaskController(HdRenderIndex *renderIndex,
     , _renderBufferSize(0, 0)
     , _overrideWindowPolicy{false, CameraUtilFit}
     , _viewport(0, 0, 1, 1)
+    , _enableVisualization(true)
 {
     _CreateRenderGraph();
 }
@@ -692,7 +693,7 @@ bool
 HdxTaskController::_VisualizeAovEnabled() const
 {
     // Only non-color AOVs need special colorization for viz.
-    if (_viewportAov != HdAovTokens->color) {
+    if (_enableVisualization && _viewportAov != HdAovTokens->color) {
         return true;
     }
     return false;
@@ -1982,6 +1983,14 @@ HdxTaskController::SetBBoxParams(
         GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
             _boundingBoxTaskId, HdChangeTracker::DirtyParams);
     }
+}
+
+void 
+HdxTaskController::SetEnableVisualization(bool status)
+{
+    // This controls whether or not to run visualization passes or output the
+    // raw unvisualized data.
+    _enableVisualization = status;
 }
 
 void 
