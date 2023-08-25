@@ -1,0 +1,15 @@
+{
+    "Plugins": [
+        {
+            "Type": "python",
+            "Name": "TestPlugModuleUnicode",
+            "Info": {
+                "Types": {
+                    "TestPlugModuleUnicode.TestPlugPythonUnicode": {
+                        "bases": ["_TestPlugBase<1>"]
+                    }
+                }
+            }
+        }
+    ]
+}
