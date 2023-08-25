@@ -30,12 +30,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_ENV_SETTING(HD_PRMAN_ENABLE_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN,
-                      true,
-                      "If true, enables a plugin necessary for coord sys "
-                      "to work with hdPrman and the "
-                      "UsdImagingStageSceneIndex.");
-
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     ((sceneIndexPluginName, "HdPrman_CoordSysPrimSceneIndexPlugin"))
@@ -69,11 +63,7 @@ HdPrman_CoordSysPrimSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    if (TfGetEnvSetting(HD_PRMAN_ENABLE_COORD_SYS_PRIM_SCENE_INDEX_PLUGIN)) {
-        return HdsiCoordSysPrimSceneIndex::New(inputScene);
-    } else {
-        return inputScene;
-    }
+    return HdsiCoordSysPrimSceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
