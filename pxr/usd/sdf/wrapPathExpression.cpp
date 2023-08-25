@@ -133,6 +133,9 @@ void wrapPathExpression()
         .def("ContainsExpressionReferences",
              &PathExpr::ContainsExpressionReferences)
 
+        .def("ContainsWeakerExpressionReference",
+             &PathExpr::ContainsWeakerExpressionReference)
+
         .def("ResolveReferences",
              +[](PathExpr const &self,
                  std::function<

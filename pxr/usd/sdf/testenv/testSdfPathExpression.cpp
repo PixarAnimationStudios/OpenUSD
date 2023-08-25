@@ -194,12 +194,16 @@ TestBasics()
         SdfPathExpression c("%_ /c");
 
         TF_AXIOM(!a.ContainsExpressionReferences());
+        TF_AXIOM(!a.ContainsWeakerExpressionReference());
         TF_AXIOM(b.ContainsExpressionReferences());
+        TF_AXIOM(b.ContainsWeakerExpressionReference());
         TF_AXIOM(c.ContainsExpressionReferences());
+        TF_AXIOM(c.ContainsWeakerExpressionReference());
         
         SdfPathExpression composed = c.ComposeOver(b).ComposeOver(a);
 
         TF_AXIOM(!composed.ContainsExpressionReferences());
+        TF_AXIOM(!composed.ContainsWeakerExpressionReference());
         TF_AXIOM(composed.IsComplete());
         
         auto eval = MatchEval { composed };
