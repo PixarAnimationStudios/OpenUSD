@@ -35,7 +35,7 @@ def Xform "Model" (
     }
 )
 {
-    asset foo = @foo.usd@(
+    asset foo = @foo.usd@ (
         customData = {
             asset foo = @foo.usd@
             asset[] bar = [@foo.usd@, @bar.usd@]
