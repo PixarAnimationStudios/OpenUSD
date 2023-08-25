@@ -771,6 +771,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                                 -1.0, 0.0, 0.0, 0.0, 
                                 0.0, 1.0, 0.0, 0.0, 
                                 0.0, 0.0, 0.0, 1.0);
+            // Apply domeOffset if present
+            VtValue domeOffset = sceneDelegate->GetLightParamValue(id,
+                HdLightTokens->domeOffset);
+            if (domeOffset.IsHolding<GfMatrix4d>()) {
+                orientMat = orientMat * domeOffset.UncheckedGet<GfMatrix4d>();
+            }
         } else if (_lightShaderType != us_PxrMeshLight) {
             // Transform lights to match correct orientation
             // Scale -1 Z, Rotate 180 Z

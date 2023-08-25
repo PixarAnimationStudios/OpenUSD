@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDLUX_GENERATED_DOMELIGHT_H
-#define USDLUX_GENERATED_DOMELIGHT_H
+#ifndef USDLUX_GENERATED_DOMELIGHT_1_H
+#define USDLUX_GENERATED_DOMELIGHT_1_H
 
-/// \file usdLux/domeLight.h
+/// \file usdLux/domeLight_1.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdLux/api.h"
@@ -47,18 +47,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// DOMELIGHT                                                                  //
+// DOMELIGHT_1                                                                //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdLuxDomeLight
+/// \class UsdLuxDomeLight_1
 ///
 /// Light emitted inward from a distant external environment,
 /// such as a sky or IBL light probe.
 /// 
-/// In this version of the dome light, the dome's default orientation is such
-/// that its top pole is aligned with the world's +Y axis. This adheres to the
-/// OpenEXR specification for latlong environment maps.  From the OpenEXR
-/// documentation:
+/// In this version of the dome light, the dome's default orientation is
+/// determined by its *poleAxis* property. The fallback value, "scene", means
+/// that the dome starts with its top pole aligned with the stage's up axis.
+/// 
+/// Note that the rotation necessary to align the dome light with its *poleAxis*
+/// is intended to be applied by a renderer to only the dome itself, and *not*
+/// to inherit down to any USD namespace children of the dome light prim.
+/// 
+/// If *poleAxis* is set to "Y" or "scene" and the stage's up axis is "Y", the
+/// dome's default orientation will adhere to the OpenEXR specification for
+/// latlong environment maps.  From the OpenEXR documentation:
 /// 
 /// -------------------------------------------------------------------------
 /// Latitude-Longitude Map:
@@ -79,13 +86,18 @@ class SdfAssetPath;
 /// where N can be any integer greater than 0.
 /// -------------------------------------------------------------------------
 /// 
+/// If *poleAxis* is set to "Z" or "scene" and the stage's up axis is "Z",
+/// latitudes -pi/2 and +pi/2 will instead correspond to the negative and
+/// positive Z direction, and latitude 0, longitude 0 will instead point into
+/// the negative Y direction in 3D space.
+/// 
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdLuxTokens.
 /// So to set an attribute to the value "rightHanded", use UsdLuxTokens->rightHanded
 /// as the value.
 ///
-class UsdLuxDomeLight : public UsdLuxNonboundableLightBase
+class UsdLuxDomeLight_1 : public UsdLuxNonboundableLightBase
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -93,26 +105,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdLuxDomeLight on UsdPrim \p prim .
-    /// Equivalent to UsdLuxDomeLight::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdLuxDomeLight_1 on UsdPrim \p prim .
+    /// Equivalent to UsdLuxDomeLight_1::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdLuxDomeLight(const UsdPrim& prim=UsdPrim())
+    explicit UsdLuxDomeLight_1(const UsdPrim& prim=UsdPrim())
         : UsdLuxNonboundableLightBase(prim)
     {
     }
 
-    /// Construct a UsdLuxDomeLight on the prim held by \p schemaObj .
-    /// Should be preferred over UsdLuxDomeLight(schemaObj.GetPrim()),
+    /// Construct a UsdLuxDomeLight_1 on the prim held by \p schemaObj .
+    /// Should be preferred over UsdLuxDomeLight_1(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdLuxDomeLight(const UsdSchemaBase& schemaObj)
+    explicit UsdLuxDomeLight_1(const UsdSchemaBase& schemaObj)
         : UsdLuxNonboundableLightBase(schemaObj)
     {
     }
 
     /// Destructor.
     USDLUX_API
-    virtual ~UsdLuxDomeLight();
+    virtual ~UsdLuxDomeLight_1();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -121,17 +133,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdLuxDomeLight holding the prim adhering to this
+    /// Return a UsdLuxDomeLight_1 holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdLuxDomeLight(stage->GetPrimAtPath(path));
+    /// UsdLuxDomeLight_1(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDLUX_API
-    static UsdLuxDomeLight
+    static UsdLuxDomeLight_1
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -157,7 +169,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDLUX_API
-    static UsdLuxDomeLight
+    static UsdLuxDomeLight_1
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
@@ -262,6 +274,37 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // POLEAXIS 
+    // --------------------------------------------------------------------- //
+    /// A token which indicates the starting alignment of the dome
+    /// light's top pole. This alignment is for the dome itself and is *not*
+    /// inherited by the namespace children of the dome.
+    /// Valid values are:
+    /// - scene: The dome light's top pole is aligned with the stage's up axis.
+    /// - Y: The dome light's top pole is aligned with the +Y axis.
+    /// - Z: The dome light's top pole is aligned with the +Z axis.
+    /// 
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform token poleAxis = "scene"` |
+    /// | C++ Type | TfToken |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    /// | \ref UsdLuxTokens "Allowed Values" | scene, Y, Z |
+    USDLUX_API
+    UsdAttribute GetPoleAxisAttr() const;
+
+    /// See GetPoleAxisAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDLUX_API
+    UsdAttribute CreatePoleAxisAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // PORTALS 
     // --------------------------------------------------------------------- //
     /// Optional portals to guide light sampling.
@@ -285,18 +328,6 @@ public:
     //  - Close the include guard with #endif
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
-
-    /// Adds a transformation op, if neeeded, to orient the dome to align with
-    /// the stage's up axis.  Uses UsdLuxTokens->orientToStageUpAxis as the op
-    /// suffix.  If an op with this suffix already exists, this method assumes
-    /// it is already applying the proper correction and does nothing further.
-    /// If no op is required to match the stage's up axis, no op will be
-    /// created.
-    ///
-    /// \see UsdGeomXformOp
-    /// \see UsdGeomGetStageUpAxis
-    USDLUX_API
-    void OrientToStageUpAxis() const;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

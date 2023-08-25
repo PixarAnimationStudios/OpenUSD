@@ -224,6 +224,13 @@
                         "isInternal": true,
                         "primTypeName": "DomeLight"
                     },
+                    "UsdImagingDomeLight_1Adapter": {
+                        "bases": [
+                            "UsdImagingLightAdapter"
+                        ],
+                        "isInternal": true,
+                        "primTypeName": "DomeLight_1"
+                    },
                     "UsdImagingRectLightAdapter": {
                         "bases": [
                             "UsdImagingLightAdapter"
