@@ -4,10 +4,10 @@
     endTimeCode = 10 
 )
 
-def Sphere "Sphere"
+def Sphere "SphereWithFloatRadius"
 {
-    double radius = 10
-    double radius.timeSamples = {
+    float radius = 10
+    float radius.timeSamples = {
          1: 0.5,
         11: 1.5
     }

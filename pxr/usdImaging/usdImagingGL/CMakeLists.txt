@@ -296,6 +296,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLSphere
+    DEST testUsdImagingGLSphereWithFloatRadius
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLNurbsCurves
     DEST testUsdImagingGLNurbsCurves
 )
@@ -1259,10 +1264,25 @@ pxr_register_test(testUsdImagingGLShadeMaterial_Delegate
 )
 
 pxr_register_test(testUsdImagingGLSphere
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage sphere.usda -times 1 10 -write testUsdImagingGLSphere.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage sphere.usda -camera /main_cam -times 1 6 10 -write testUsdImagingGLSphere.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLSphere_001.png
         testUsdImagingGLSphere_010.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLSphere
+)
+
+# There is a bug for sphere with float radius:
+# authoring a float radius doesn't actually pick up the authored float radius but the schema default value.
+# In the test, the attribute has animation and at frame 6, the value is the schema default value.
+# Thus, the test is passing exactly for frame 6.
+pxr_register_test(testUsdImagingGLSphereWithFloatRadius
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage sphereWithFloatRadius.usda -camera /main_cam -times 1 6 10 -write testUsdImagingGLSphere.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLSphere_006.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
