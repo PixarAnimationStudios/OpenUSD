@@ -179,7 +179,6 @@ UsdImagingCylinderAdapter::GetPoints(UsdPrim const& prim,
     UsdGeomCylinder cylinder(prim);
 
     double height = 2.0;
-    UsdGeomSphere sphere(prim);
     if (!cylinder.GetHeightAttr().Get(&height, time)) {
         TF_WARN("Could not evaluate double-valued height attribute on prim %s",
             prim.GetPath().GetText());
