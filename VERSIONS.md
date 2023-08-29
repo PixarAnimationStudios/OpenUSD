@@ -14,7 +14,7 @@ Our test machines have the following software versions installed
 | Software      | Linux                | macOS                        | Windows                        |
 | ------------- | -------------------- | ---------------------------- | ------------------------------ |
 | OS            | CentOS Linux 7       | 10.15.7                      | Windows 10                     |
-| C++ Compiler  | gcc 6.3.1            | Apple clang 12.0.0 (Xcode 12.4) | Visual Studio 2017 15.9     |
+| C++ Compiler  | gcc 6.3.1            | Apple clang 13.1.6 (Xcode 13.3) | Visual Studio 2017 15.9     |
 | CMake         | 3.14.6               | 3.19.5                       | 3.16.5                         |
 | Python        | 3.6.8                | 3.7.7                        | 3.7.4, 3.8.10                  |
 | Boost         | 1.70.0               | 1.76.0                       | 1.70.0                         |
