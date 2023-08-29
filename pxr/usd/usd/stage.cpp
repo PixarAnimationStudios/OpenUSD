@@ -2527,7 +2527,7 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     // resulting from this request, this will trigger recomposition of UsdPrims
     // that potentially didn't change; it seems like we could do better.
     TF_DEBUG(USD_CHANGES).Msg("\nProcessing Load/Unload changes\n");
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     _Recompose(changes, &resyncChanges);
 
     UsdStageWeakPtr self(this);
@@ -2536,7 +2536,7 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
         resyncChanges[p];
     }
 
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
 
     UsdNotice::StageContentsChanged(self).Send(self);
 }
@@ -2593,9 +2593,9 @@ UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
 
     // Notify.
     UsdStageWeakPtr self(this);
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     resyncChanges[SdfPath::AbsoluteRootPath()];
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -2611,9 +2611,9 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 
     // Notify.
     UsdStageWeakPtr self(this);
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     resyncChanges[SdfPath::AbsoluteRootPath()];
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -3955,11 +3955,10 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     }
 
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap resyncChanges, infoChanges;
+    _PathsToChangesMap resyncChanges;
     _Recompose(changes, &resyncChanges);
 
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
-        .Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -9661,9 +9660,9 @@ UsdStage::SetInterpolationType(UsdInterpolationType interpolationType)
 
         // Notify, as interpolated attributes values have likely changed.
         UsdStageWeakPtr self(this);
-        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
         resyncChanges[SdfPath::AbsoluteRootPath()];
-        UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+        UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
         UsdNotice::StageContentsChanged(self).Send(self);
     }
 }

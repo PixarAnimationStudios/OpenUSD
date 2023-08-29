@@ -91,7 +91,21 @@ UsdNotice::ObjectsChanged::PathRange::const_iterator::HasChangedFields() const
     return false;
 }
 
-UsdNotice::ObjectsChanged::~ObjectsChanged() {}
+const UsdNotice::ObjectsChanged::_PathsToChangesMap&
+UsdNotice::ObjectsChanged::_GetEmptyChangesMap()
+{
+    static const _PathsToChangesMap empty;
+    return empty;
+}
+
+UsdNotice::ObjectsChanged::ObjectsChanged(
+    const UsdStageWeakPtr &stage,
+    const _PathsToChangesMap *resyncChanges)
+    : ObjectsChanged(stage, resyncChanges, &_GetEmptyChangesMap())
+{
+}
+
+UsdNotice::ObjectsChanged::~ObjectsChanged() = default;
 
 bool 
 UsdNotice::ObjectsChanged::ResyncedObject(const UsdObject &obj) const 

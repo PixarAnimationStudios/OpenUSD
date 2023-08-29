@@ -110,6 +110,8 @@ public:
         using _PathsToChangesMap = 
             std::map<SdfPath, std::vector<const SdfChangeList::Entry*>>;
 
+        static const _PathsToChangesMap& _GetEmptyChangesMap();
+
         friend class UsdStage;
         ObjectsChanged(const UsdStageWeakPtr &stage,
                        const _PathsToChangesMap *resyncChanges,
@@ -117,6 +119,10 @@ public:
             : StageNotice(stage)
             , _resyncChanges(resyncChanges)
             , _infoChanges(infoChanges) {}
+
+        ObjectsChanged(const UsdStageWeakPtr &stage,
+                       const _PathsToChangesMap *resyncChanges);
+
     public:
         USD_API virtual ~ObjectsChanged();
 
