@@ -933,7 +933,7 @@ class VtArray : public Vt_ArrayBase {
 // Declare basic array instantiations as extern templates.  They are explicitly
 // instantiated in array.cpp.
 #define VT_ARRAY_EXTERN_TMPL(r, unused, elem) \
-    extern template class VtArray< VT_TYPE(elem) >;
+    VT_API_TEMPLATE_CLASS(VtArray< VT_TYPE(elem) >);
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_EXTERN_TMPL, ~, VT_SCALAR_VALUE_TYPES)
 
 template <class HashState, class ELEM>
