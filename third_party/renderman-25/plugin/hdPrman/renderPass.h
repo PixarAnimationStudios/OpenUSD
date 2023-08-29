@@ -35,6 +35,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 class HdPrman_RenderParam;
 class HdPrman_CameraContext;
+class HdPrman_RenderSettings;
 class HdPrmanRenderDelegate;
 
 class HdPrman_RenderPass final : public HdRenderPass
@@ -58,11 +59,13 @@ private:
 
     // Helpers to update the Camera Context inside _Execute()
     void _UpdateCameraPath(
+        const HdPrman_RenderSettings *renderSettingsPrim,
         const HdRenderPassStateSharedPtr &renderPassState,
         HdPrmanRenderDelegate * const renderDelegate,
         HdPrman_CameraContext *cameraContext);
     
     bool _UpdateCameraFraming(
+        const HdPrman_RenderSettings *renderSettingsPrim,
         const HdRenderPassStateSharedPtr &renderPassState,
         HdPrman_CameraContext *cameraContext,
         GfVec2i *resolution);

@@ -44,6 +44,9 @@ TF_REGISTRY_FUNCTION(TfDebug)
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_MESHLIGHT, "Mesh lights");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_RENDER_SETTINGS,
         "Debug logging for all things render settings.");
+    TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_RENDER_PASS,
+        "Debug logging for HdPrman RenderPass dataflow and related Riley "
+        "computations.");
     TF_DEBUG_ENVIRONMENT_SYMBOL(HDPRMAN_TERMINAL_SCENE_INDEX_OBSERVER,
         "Debug logging for HdPrman terminal scene index observer.");
 }

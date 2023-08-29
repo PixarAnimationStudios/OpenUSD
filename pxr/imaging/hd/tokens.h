@@ -440,6 +440,15 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (renderingColorSpace)                             \
     (shutterInterval)
 
+/* Aspect Ratio Conform Policy Tokens used on render settings prims 
+ * Note that these mirror the conform policy tokens in UsdRenderTokens */
+#define HD_ASPECT_RATIO_CONFORM_POLICY                \
+    (adjustApertureWidth)                             \
+    (adjustApertureHeight)                            \
+    (expandAperture)                                  \
+    (cropAperture)                                    \
+    (adjustPixelAspectRatio)                          \
+
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
     (shaderFile)
@@ -470,6 +479,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens, HD_API,
                          HD_RENDER_SETTINGS_PRIM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API, 
+                         HD_ASPECT_RATIO_CONFORM_POLICY);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);

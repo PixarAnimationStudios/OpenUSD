@@ -149,6 +149,9 @@ public:
     bool IsActive() const;
 
     HD_API
+    bool IsValid() const;
+
+    HD_API
     const NamespacedSettings& GetNamespacedSettings() const;
 
     HD_API

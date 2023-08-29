@@ -1589,6 +1589,14 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsPrim(
             GetSampleFilterList(),
             GetDisplayFilterList());
 
+    // XXX Interactive viewport rendering using hdPrman currently relies on 
+    // having AOV bindings (via the task/render pass state) and uses the 
+    // "hydra" display driver to write rendered pixels into an intermediate 
+    // framebuffer which is then blit into the hydra AOVs. 
+    // XXX  To drive interactive viewport rendering with the RenderSettings 
+    // prim, the created Riley RenderViewDesc needs to use the "hydra" Riley
+    // DisplayDriver (analogous to the RenderProduct productType).
+
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
 
@@ -2469,6 +2477,12 @@ _AddRenderOutput(
         renderOutputDesc.filterWidth.Set( filterSize[0], filterSize[1] );
         renderOutputDesc.relativePixelVariance = relativePixelVariance;
         renderOutputDesc.params = extraParams;
+
+        TF_DEBUG(HDPRMAN_RENDER_PASS)
+            .Msg("Add RenderOutputDesc: \n - name: '%s'\n - type: '%d'\n"
+                 " - sourceName: '%s'\n - rule: '%s'\n - filter: '%s'\n\n",
+                 aovName.CStr(), int(rType), sourceName.CStr(), 
+                 rule.CStr(), filter.CStr());
 
         renderOutputDescs->push_back(std::move(renderOutputDesc));
         renderOutputIndices->push_back(renderOutputDescs->size()-1);
