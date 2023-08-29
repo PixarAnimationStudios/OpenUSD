@@ -1729,23 +1729,16 @@ PcpChanges::DidChangeAssetResolver(const PcpCache* cache)
     std::string summary;
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
 
-    const ArResolverContextBinder binder(
-        cache->GetLayerStackIdentifier().pathResolverContext);
-
-    cache->ForEachPrimIndex(
-        [this, cache, debugSummary](const PcpPrimIndex& primIndex) {
-            if (Pcp_NeedToRecomputeDueToAssetPathChange(primIndex)) {
-                DidChangeSignificantly(cache, primIndex.GetPath());
-                PCP_APPEND_DEBUG("    %s\n", primIndex.GetPath().GetText());
-            }
-        }
-    );
-
     cache->ForEachLayerStack(
         [this, &cache, debugSummary](const PcpLayerStackPtr& layerStack) {
             // This matches logic in _DidChange when processing changes
             // to a layer's resolved path.
-            if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
+            const bool needToRecompute =
+                Pcp_NeedToRecomputeDueToAssetPathChange(layerStack);
+
+            _DidChangeLayerStackResolvedPath(
+                cache, layerStack, needToRecompute, debugSummary);
+            if (needToRecompute) {
                 _DidChangeLayerStack(
                     cache, layerStack, 
                     /* requiresLayerStackChange = */ true, 
