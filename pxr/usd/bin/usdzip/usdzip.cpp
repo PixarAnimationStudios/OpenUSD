@@ -37,10 +37,7 @@
 #include <pxr/usd/usdUtils/dependencies.h>
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
-
 #include <Python.h>
-
-using namespace boost::python;
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
 
