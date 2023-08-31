@@ -31,9 +31,17 @@
 #include <pxr/usd/sdf/assetPath.h>
 #include <pxr/base/tf/pathUtils.h>
 #include <pxr/base/tf/fileUtils.h>
+#include "pxr/base/tf/stringUtils.h"
 #include <pxr/usd/usd/zipFile.h>
 #include <pxr/base/tf/debug.h>
 #include <pxr/usd/usdUtils/dependencies.h>
+
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+
+#include <Python.h>
+
+using namespace boost::python;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -99,9 +107,77 @@ void Configure(CLI::App *app, Args &args) {
                   " output to stdout");
 }
 
+/// CheckCompliance has to use the Python checker functions currently.
+/// So we call out to Python if USD has been built with Python, otherwise we print an error and fail
+/// Return true if successful or false if not
 bool CheckCompliance(const std::string &rootLayer, bool arkit = false) {
-    std::cerr << "Compliance checking is not implemented yet." << std::endl;
+#ifdef PXR_PYTHON_SUPPORT_ENABLED
+    auto cmd = TfStringPrintf(
+            "import sys\n"
+            "from pxr import Ar, Sdf, Tf, Usd, UsdUtils\n"
+            "def _Err(msg):\n"
+            "    sys.stderr.write(msg + '\\n')\n"
+            "\n\n"
+            "def _CheckUsdzCompliance():\n"
+            "    checker = UsdUtils.ComplianceChecker(arkit=%d, skipARKitRootLayerCheck=True)\n"
+            "    checker.CheckCompliance('%s')\n"
+            "    errors = checker.GetErrors()\n"
+            "    failedChecks = checker.GetFailedChecks()\n"
+            "    warnings = checker.GetWarnings()\n"
+            "    for msg in errors + failedChecks:\n"
+            "        _Err(msg)\n"
+            "    if len(warnings) > 0:\n"
+            "        _Err(\"*********************************************\\n\"\n"
+            "             \"Possible correctness problems to investigate:\\n\"\n"
+            "             \"*********************************************\\n\")\n"
+            "        for msg in warnings:\n"
+            "            _Err(msg)\n"
+            "    return len(errors) == 0 and len(failedChecks) == 0\n", arkit, rootLayer.c_str());
+
+    // Using regular Py_Initialize because TfPyInitialize was causing random segfaults
+    Py_Initialize();
+    PyObject * pymodule = PyImport_AddModule("__main__");
+    if (!pymodule) {
+        TF_CODING_ERROR("Failed to initialize __main__ module");
+        return false;
+    }
+    auto localDict = PyDict_Copy(PyModule_GetDict(pymodule));
+    if (!localDict) {
+        TF_CODING_ERROR("Failed to initialize __main__ module dictionary");
+        return false;
+    }
+    PyObject * code = Py_CompileString(cmd.c_str(), "__main__", Py_file_input);
+    if (!code) {
+        TF_CODING_ERROR("Failed to compile checker Python code");
+        return false;
+    }
+    auto evaluated = PyEval_EvalCode(code, localDict, localDict);
+    if (!evaluated) {
+        TF_CODING_ERROR("Failed to evaluate checker Python code");
+        return false;
+    }
+    auto func = PyDict_GetItemString(localDict, "_CheckUsdzCompliance");
+    if (!func) {
+        TF_CODING_ERROR("Failed to find _CheckUsdzCompliance function.");
+        return false;
+    }
+
+    PyObject * args = PyTuple_New(0);
+    auto called = PyObject_Call(func, args, NULL);
+    if (!called) {
+        TF_CODING_ERROR("Failed to run checker python code.");
+        return false;
+    }
+    bool value = PyObject_IsTrue(called);
+    Py_Finalize();
+    if (!value) {
+        std::cerr << "Failed USD Checker." << std::endl;
+    }
+    return value;
+#else
+    std::cerr << "Compliance checking requires a build with Python." << std::endl;
     return false;
+#endif // PXR_PYTHON_SUPPORT_ENABLED
 }
 
 bool CreateUsdzPackage(const std::string &usdzFile, const std::vector<std::string> &filesToAdd, bool recurse,
@@ -138,7 +214,6 @@ bool CreateUsdzPackage(const std::string &usdzFile, const std::vector<std::strin
             return false;
         }
     }
-
 
     auto writer = UsdZipFileWriter::CreateNew(usdzFile);
     for (auto &f: fileList) {
@@ -314,6 +389,7 @@ int USDZip(Args &args) {
     }
 
     if (!success) {
+        std::cerr << "Failed to author USDZ file" << std::endl;
         return 1;
     }
 
@@ -356,10 +432,8 @@ std::string GetVersionString() {
 }
 
 int main(int argc, char const *argv[]) {
-    auto description = "usdzip " + GetVersionString()
-                       + " : Utility for creating a .usdz file containing USD assets and for "
-                       + "inspecting existing .usdz files.";
-    CLI::App app(description, "usdzip");
+    CLI::App app("Utility for creating a .usdz file containing USD assets and for "
+                 "inspecting existing .usdz files.", "usdzip");
     Args args;
     Configure(&app, args);
     CLI11_PARSE(app, argc, argv);

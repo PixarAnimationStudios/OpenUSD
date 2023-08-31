@@ -3,10 +3,14 @@ set(PXR_PACKAGE usd)
 
 pxr_cpp_bin(usdzip
         LIBRARIES
+        ar
         tf
         sdf
         usd
         usdUtils
+        ${Boost_PYTHON_LIBRARY}
+        INCLUDE_DIRS
+        ${Boost_INCLUDE_DIRS}
 )
 
 pxr_install_test_dir(
