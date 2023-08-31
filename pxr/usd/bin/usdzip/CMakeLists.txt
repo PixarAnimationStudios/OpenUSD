@@ -1,9 +1,12 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
-pxr_python_bin(usdzip
-    DEPENDENCIES
+pxr_cpp_bin(usdzip
+        LIBRARIES
+        tf
+        sdf
         usd
+        usdUtils
 )
 
 pxr_install_test_dir(
