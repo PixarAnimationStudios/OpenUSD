@@ -68,6 +68,8 @@ struct HdEmbreeInstanceContext
     RTCScene rootScene;
     /// The instance id of this instance.
     int32_t instanceId;
+    /// The light index (if this is a light)
+    int lightIndex = -1;
 };
 
 

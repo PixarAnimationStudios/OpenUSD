@@ -24,7 +24,8 @@
 #ifndef PXR_IMAGING_PLUGIN_HD_EMBREE_RENDERER_H
 #define PXR_IMAGING_PLUGIN_HD_EMBREE_RENDERER_H
 
-#include "pxr/pxr.h"
+#include "light.h"
+#include "pcg_basic.h"
 
 #include "pxr/imaging/hd/renderThread.h"
 #include "pxr/imaging/hd/renderPassState.h"
@@ -33,12 +34,41 @@
 #include "pxr/base/gf/rect2i.h"
 
 #include <embree3/rtcore.h>
+#include <embree3/rtcore_device.h>
 #include <embree3/rtcore_ray.h>
 
-#include <random>
 #include <atomic>
+#include <map>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+class PCG
+{
+    pcg32_random_t _state;
+
+public:
+    PCG(uint64_t seed) {
+        pcg32_srandom_r(&_state, seed, 17);
+    }
+
+    uint32_t next() {
+        return pcg32_random_r(&_state);
+    }
+
+    float uniform() {
+        /// XXX: Taken from PBRT
+        return fminf(float(0x1.fffffep-1), next() * 0x1p-32f);
+    }
+};
+
+enum RayMask: uint32_t  {
+    None = 0,    
+
+    Camera = 1 << 0,
+    Shadow = 1 << 1,
+
+    All = UINT_MAX,
+};
 
 /// \class HdEmbreeRenderer
 ///
@@ -76,6 +106,9 @@ public:
     /// Set the aov bindings to use for rendering.
     ///   \param aovBindings A list of aov bindings.
     void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
+
+    /// Set a light
+    unsigned SetLight(SdfPath const& lightPath, Light light, RTCDevice device);
 
     /// Get the aov bindings being used for rendering.
     ///   \return the current aov bindings.
@@ -133,17 +166,18 @@ private:
     // rays, and following them/calculating color with _TraceRay. This function
     // renders all tiles between tileStart and tileEnd.
     void _RenderTiles(HdRenderThread *renderThread,
+                      int progression,
                       size_t tileStart, size_t tileEnd);
 
     // Cast a ray into the scene and if it hits an object, write to the bound
     // aov buffers.
     void _TraceRay(unsigned int x, unsigned int y,
                    GfVec3f const& origin, GfVec3f const& dir,
-                   std::default_random_engine &random);
+                   PCG& pcg);
 
     // Compute the color at the given ray hit.
     GfVec4f _ComputeColor(RTCRayHit const& rayHit,
-                          std::default_random_engine &random,
+                          PCG& pcg,
                           GfVec4f const& clearColor);
     // Compute the depth at the given ray hit.
     bool _ComputeDepth(RTCRayHit const& rayHit, float *depth, bool clip);
@@ -163,7 +197,13 @@ private:
     // the light contribution of an infinitely far, pure white dome light.
     float _ComputeAmbientOcclusion(GfVec3f const& position,
                                    GfVec3f const& normal,
-                                   std::default_random_engine &random);
+                                   PCG& pcg);
+
+    // Return the visibility from `position` along `direction`
+    float _Visibility(GfVec3f const& position, GfVec3f const& direction, float offset = 1.0e-3f);
+
+    // Should the ray continue based on the possibly intersected prim's visibility settings?
+    bool _RayShouldContinue(RTCRayHit const& rayHit) const;
 
     // The bound aovs for this renderer.
     HdRenderPassAovBindingVector _aovBindings;
@@ -204,6 +244,11 @@ private:
 
     // How many samples have been completed.
     std::atomic<int> _completedSamples;
+
+    // Lights
+    std::map<SdfPath, unsigned> _lightMap;
+    std::vector<Light> _lights;
+    int _domeIndex;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -32,6 +32,8 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+class HdEmbreeRenderer;
+
 ///
 /// \class HdEmbreeRenderParam
 ///
@@ -44,9 +46,10 @@ class HdEmbreeRenderParam final : public HdRenderParam
 public:
     HdEmbreeRenderParam(RTCDevice device, RTCScene scene,
                         HdRenderThread *renderThread,
+                        HdEmbreeRenderer *renderer,
                         std::atomic<int> *sceneVersion)
         : _scene(scene), _device(device)
-        , _renderThread(renderThread), _sceneVersion(sceneVersion)
+        , _renderThread(renderThread), _renderer(renderer), _sceneVersion(sceneVersion)
     {}
 
     /// Accessor for the top-level embree scene.
@@ -58,6 +61,8 @@ public:
     /// Accessor for the top-level embree device (library handle).
     RTCDevice GetEmbreeDevice() { return _device; }
 
+    HdEmbreeRenderer* GetRenderer() { return _renderer; }
+
 private:
     /// A handle to the top-level embree scene.
     RTCScene _scene;
@@ -65,6 +70,7 @@ private:
     RTCDevice _device;
     /// A handle to the global render thread.
     HdRenderThread *_renderThread;
+    HdEmbreeRenderer* _renderer;
     /// A version counter for edits to _scene.
     std::atomic<int> *_sceneVersion;
 };

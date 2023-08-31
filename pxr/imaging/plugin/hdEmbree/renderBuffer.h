@@ -183,7 +183,7 @@ private:
     // For multisampled buffers: the input write buffer.
     std::vector<uint8_t> _sampleBuffer;
     // For multisampled buffers: the sample count buffer.
-    std::vector<uint8_t> _sampleCount;
+    std::vector<uint32_t> _sampleCount;
 
     // The number of callers mapping this buffer.
     std::atomic<int> _mappers;

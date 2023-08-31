@@ -911,6 +911,7 @@ HdEmbreeMesh::_PopulateRtMesh(HdSceneDelegate* sceneDelegate,
             HdEmbreeInstanceContext *ctx = new HdEmbreeInstanceContext;
             ctx->rootScene = _rtcMeshScene;
             ctx->instanceId = i;
+            ctx->lightIndex = -1;
             rtcSetGeometryUserData(geom,ctx);
             _rtcInstanceGeometries[i] = geom;
         }
