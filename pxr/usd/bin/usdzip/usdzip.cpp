@@ -423,11 +423,6 @@ int USDZip(Args &args) {
     return 0;
 }
 
-std::string GetVersionString() {
-    return std::to_string(PXR_MAJOR_VERSION) + "." + std::to_string(PXR_MINOR_VERSION) + "." +
-           std::to_string(PXR_PATCH_VERSION);
-}
-
 int main(int argc, char const *argv[]) {
     CLI::App app("Utility for creating a .usdz file containing USD assets and for "
                  "inspecting existing .usdz files.", "usdzip");
