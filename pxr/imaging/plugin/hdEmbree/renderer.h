@@ -9,19 +9,34 @@
 
 #include "pxr/pxr.h"
 
+#include "pxr/imaging/plugin/hdEmbree/context.h"
+#include "pxr/imaging/plugin/hdEmbree/light.h"
+
+#include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/renderThread.h"
-#include "pxr/imaging/hd/renderPassState.h"
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/rect2i.h"
 
 #include <embree3/rtcore.h>
+#include <embree3/rtcore_device.h>
 #include <embree3/rtcore_ray.h>
 
 #include <random>
 #include <atomic>
+#include <map>
+#include <mutex>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+enum HdEmbree_RayMask: uint32_t  {
+    None = 0,
+
+    Camera = 1 << 0,
+    Shadow = 1 << 1,
+
+    All = UINT_MAX,
+};
 
 /// \class HdEmbreeRenderer
 ///
@@ -37,6 +52,9 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HdEmbreeRenderer final
 {
 public:
+    using WriteMutex = std::mutex;
+    using ScopedLock = std::scoped_lock<WriteMutex>;
+
     /// Renderer constructor.
     HdEmbreeRenderer();
 
@@ -59,6 +77,12 @@ public:
     /// Set the aov bindings to use for rendering.
     ///   \param aovBindings A list of aov bindings.
     void SetAovBindings(HdRenderPassAovBindingVector const &aovBindings);
+
+    /// Add a light
+    void AddLight(SdfPath const& lightPath, HdEmbree_Light* light);
+
+    /// Remove a light
+    void RemoveLight(SdfPath const& lightPath, HdEmbree_Light* light);
 
     /// Get the aov bindings being used for rendering.
     ///   \return the current aov bindings.
@@ -104,6 +128,9 @@ public:
     int GetCompletedSamples() const;
 
 private:
+    // Perform validation and setup immediately before starting a render
+    void _PreRenderSetup();
+
     // Validate the internal consistency of aov bindings provided to
     // SetAovBindings. If the aov bindings are invalid, this will issue
     // appropriate warnings. If the function returns false, Render() will fail
@@ -154,6 +181,22 @@ private:
                                    GfVec3f const& normal,
                                    std::default_random_engine &random);
 
+    ///If the scene has lights, sample them to return the color at a given
+    ///position
+    GfVec3f _ComputeLighting(
+        GfVec3f const& position,
+        GfVec3f const& normal,
+        std::default_random_engine &random,
+        HdEmbreePrototypeContext const* prototypeContext) const;
+
+    // Return the visibility from `position` along `direction`
+    float _Visibility(GfVec3f const& position,
+                      GfVec3f const& direction,
+                      float offset = 1.0e-3f) const;
+
+    // Should the ray continue based on the possibly intersected prim's visibility settings?
+    bool _RayShouldContinue(RTCRayHit const& rayHit) const;
+
     // The bound aovs for this renderer.
     HdRenderPassAovBindingVector _aovBindings;
     // Parsed AOV name tokens.
@@ -195,6 +238,10 @@ private:
 
     // How many samples have been completed.
     std::atomic<int> _completedSamples;
+
+    // Lights
+    mutable WriteMutex _lightsWriteMutex; // protects the 2 below
+    std::map<SdfPath, HdEmbree_Light*> _lightMap;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
