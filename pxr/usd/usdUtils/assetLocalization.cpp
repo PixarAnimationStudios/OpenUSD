@@ -80,12 +80,6 @@ UsdUtils_FileAnalyzer::UsdUtils_FileAnalyzer(const std::string &referencePath,
             return;
         }
 
-        // If the newly opened layer is a package, it we do not need to traverse
-        // into it as the entire package will be included as a dependency.
-        if (_layer->GetFileFormat()->IsPackage()) {
-            return;
-        }
-
         _AnalyzeDependencies();
     }
 
