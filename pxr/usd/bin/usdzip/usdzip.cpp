@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Apple
+// Copyright 2023 Apple
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -283,7 +283,7 @@ void DumpContents(const std::string &path, UsdZipFile &zipfile) {
 }
 
 int USDZip(Args &args) {
-    if (!args.asset.empty() and !args.arkitAsset.empty()) {
+    if (!args.asset.empty() && !args.arkitAsset.empty()) {
         std::cerr << "Specify either --asset or --arkitAsset, not both." << std::endl;
         return 1;
     }
