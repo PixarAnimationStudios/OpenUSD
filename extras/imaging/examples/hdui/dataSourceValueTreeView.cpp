@@ -26,6 +26,7 @@
 
 #include <QAbstractItemModel>
 #include <QHeaderView>
+#include <QString>
 
 #include <sstream>
 
@@ -56,7 +57,7 @@ public:
             if (index.column() == 0) {
                 std::ostringstream buffer;
                 buffer << _value;
-                return QVariant(buffer.str().data());
+                return QVariant(QLatin1String(buffer.str().data()));
             }
         }
 
@@ -141,7 +142,7 @@ public:
             if (index.row() < static_cast<int>(_array.size())) {
                 std::ostringstream buffer;
                 buffer << _array.cdata()[index.row()];
-                return QVariant(buffer.str().data());
+                return QVariant(QLatin1String(buffer.str().data()));
             }
         }
 
@@ -154,7 +155,7 @@ public:
             if (section == 1) {
                 std::ostringstream buffer;
                 buffer << _array.size() << " values";
-                return QVariant(buffer.str().c_str());
+                return QVariant(QLatin1String(buffer.str().c_str()));
             }
         }
 

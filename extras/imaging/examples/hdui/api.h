@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,38 +21,27 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
-#define PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
+#ifndef EXTRAS_IMAGING_EXAMPLES_HDUI_API_H
+#define EXTRAS_IMAGING_EXAMPLES_HDUI_API_H
 
-#include "api.h"
+#include "pxr/base/arch/export.h"
 
-#include "pxr/pxr.h"
+#if defined(PXR_STATIC)
+#   define HDUI_API
+#   define HDUI_API_TEMPLATE_CLASS(...)
+#   define HDUI_API_TEMPLATE_STRUCT(...)
+#   define HDUI_LOCAL
+#else
+#   if defined(HDUI_EXPORTS)
+#       define HDUI_API ARCH_EXPORT
+#       define HDUI_API_TEMPLATE_CLASS(...) ARCH_EXPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDUI_API_TEMPLATE_STRUCT(...) ARCH_EXPORT_TEMPLATE(struct, __VA_ARGS__)
+#   else
+#       define HDUI_API ARCH_IMPORT
+#       define HDUI_API_TEMPLATE_CLASS(...) ARCH_IMPORT_TEMPLATE(class, __VA_ARGS__)
+#       define HDUI_API_TEMPLATE_STRUCT(...) ARCH_IMPORT_TEMPLATE(struct, __VA_ARGS__)
+#   endif
+#   define HDUI_LOCAL ARCH_HIDDEN
+#endif
 
-#include <QPushButton>
-#include <QLabel>
-
-PXR_NAMESPACE_OPEN_SCOPE
-
-class HduiSceneIndexObserverLoggingTreeView;
-
-class HDUI_API HduiSceneIndexObserverLoggingWidget : public QWidget
-{
-    Q_OBJECT;
-public:
-    HduiSceneIndexObserverLoggingWidget(QWidget *parent = Q_NULLPTR);
-
-    HduiSceneIndexObserverLoggingTreeView * GetTreeView();
-
-    void SetLabel(const std::string &labelText);
-
-private:
-    QPushButton *_startStopButton;
-    QPushButton *_clearButton;
-    HduiSceneIndexObserverLoggingTreeView *_treeView;
-
-    QLabel *_label;
-};
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif //PXR_IMAGING_HDUI_SCENE_INDEX_OBSERVER_LOGGING_WIDGET_H
+#endif // EXTRAS_IMAGING_EXAMPLES_HDUI_API_H

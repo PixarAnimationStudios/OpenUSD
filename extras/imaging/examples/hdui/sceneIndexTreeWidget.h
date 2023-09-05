@@ -24,6 +24,7 @@
 #ifndef PXR_IMAGING_HDUI_SCENE_INDEX_TREE_WIDGET_H
 #define PXR_IMAGING_HDUI_SCENE_INDEX_TREE_WIDGET_H
 
+#include "api.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
 
@@ -36,7 +37,7 @@ class Hdui_SceneIndexPrimTreeWidgetItem;
 
 //-----------------------------------------------------------------------------
 
-class HduiSceneIndexTreeWidget : public QTreeWidget, public HdSceneIndexObserver
+class HDUI_API HduiSceneIndexTreeWidget : public QTreeWidget, public HdSceneIndexObserver
 {
     Q_OBJECT;
 public:

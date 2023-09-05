@@ -24,6 +24,8 @@
 #ifndef PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
 #define PXR_IMAGING_HDUI_SCENE_INDEX_DEBUGGING_WIDGET_H
 
+#include "api.h"
+
 #include "pxr/imaging/hd/sceneIndex.h"
 
 #include <QLabel>
@@ -38,7 +40,7 @@ class HduiDataSourceTreeWidget;
 class HduiDataSourceValueTreeView;
 class HduiRegisteredSceneIndexChooser;
 
-class HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
+class HDUI_API HduiSceneIndexDebuggerWidget : public QWidget, public TfWeakBase
 {
     Q_OBJECT;
 public:
