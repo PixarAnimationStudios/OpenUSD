@@ -397,4 +397,8 @@
 /// \hideinitializer
 #define TF_PP_IS_TUPLE(arg) _TF_PP_IS_PARENS(arg)
 
+/// Expands to the 'index' element of a non-empty 'tuple'.
+#define TF_PP_TUPLE_ELEM(index, tuple) \
+    TF_PP_VARIADIC_ELEM(index, TF_PP_EAT_PARENS(tuple))
+
 #endif // PXR_BASE_TF_PREPROCESSOR_UTILS_LITE_H

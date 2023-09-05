@@ -236,12 +236,12 @@ enum SdfAuthoringError
 (Angular, _SDF_ANGULAR_UNITS),              \
 (Dimensionless, _SDF_DIMENSIONLESS_UNITS))
 
-#define _SDF_UNIT_TAG(tup) BOOST_PP_TUPLE_ELEM(3, 0, tup)
-#define _SDF_UNIT_NAME(tup) BOOST_PP_TUPLE_ELEM(3, 1, tup)
-#define _SDF_UNIT_SCALE(tup) BOOST_PP_TUPLE_ELEM(3, 2, tup)
+#define _SDF_UNIT_TAG(tup) TF_PP_TUPLE_ELEM(0, tup)
+#define _SDF_UNIT_NAME(tup) TF_PP_TUPLE_ELEM(1, tup)
+#define _SDF_UNIT_SCALE(tup) TF_PP_TUPLE_ELEM(2, tup)
 
-#define _SDF_UNITSLIST_CATEGORY(tup) BOOST_PP_TUPLE_ELEM(2, 0, tup)
-#define _SDF_UNITSLIST_TUPLES(tup) BOOST_PP_TUPLE_ELEM(2, 1, tup)
+#define _SDF_UNITSLIST_CATEGORY(tup) TF_PP_TUPLE_ELEM(0, tup)
+#define _SDF_UNITSLIST_TUPLES(tup) TF_PP_TUPLE_ELEM(1, tup)
 #define _SDF_UNITSLIST_ENUM(elem) TF_PP_CAT(TF_PP_CAT(Sdf, \
                                     _SDF_UNITSLIST_CATEGORY(elem)), Unit)
 
@@ -366,8 +366,8 @@ SDF_API TfToken SdfGetRoleNameForValueTypeName(TfToken const &typeName);
 #define SDF_VALUE_TYPES _SDF_SCALAR_VALUE_TYPES _SDF_DIMENSIONED_VALUE_TYPES
 
 // Accessors for individual elements in the value types tuples.
-#define SDF_VALUE_CPP_TYPE(tup) BOOST_PP_TUPLE_ELEM(4, 2, tup)
-#define SDF_VALUE_CPP_ARRAY_TYPE(tup) VtArray<BOOST_PP_TUPLE_ELEM(4, 2, tup)> 
+#define SDF_VALUE_CPP_TYPE(tup) TF_PP_TUPLE_ELEM(2, tup)
+#define SDF_VALUE_CPP_ARRAY_TYPE(tup) VtArray<TF_PP_TUPLE_ELEM(2, tup)>
 
 template <class T>
 struct SdfValueTypeTraits {
