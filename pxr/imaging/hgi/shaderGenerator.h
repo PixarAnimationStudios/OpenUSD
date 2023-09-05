@@ -57,7 +57,7 @@ public:
     // Return generated shader source.
     HGI_API
     const char *GetGeneratedShaderCode() const;
-
+    const HgiShaderFunctionDesc &_descriptor;
 protected:
     HGI_API
     explicit HgiShaderGenerator(const HgiShaderFunctionDesc &descriptor);
@@ -73,9 +73,8 @@ protected:
 
     HGI_API
     HgiShaderStage _GetShaderStage() const;
-
+    
 private:
-    const HgiShaderFunctionDesc &_descriptor;
 
     // This is used if the descriptor does not specify a string
     // to be used as the destination for generated output.

@@ -174,6 +174,8 @@ struct HgiShaderFunctionParamDesc
     HgiStorageType storage;
     std::string role;
     std::string arraySize;
+    bool isThreadGroupParam = false;
+    bool isPointerToValue = false;
 };
 
 using HgiShaderFunctionParamDescVector =
@@ -324,7 +326,50 @@ bool operator!=(
         const HgiShaderFunctionTessellationDesc& lhs,
         const HgiShaderFunctionTessellationDesc& rhs);
 
-/// \struct HgiShaderFunctionGeometryDesc
+/// \struct HgiShaderFunctionMeshDesc
+///
+/// Describes a mesh shader's function description
+///
+/// <ul>
+/// <li>meshTopology:
+///   The type of topology</li>
+/// <li>maxMeshletVertexCount
+///   Max number of vertices per meshlet in shader</li>
+/// <li>maxPrimitiveCount
+///   Max number of primitives in shader</li>
+/// <li>maxTotalThreadsPerObjectThreadgroup
+///   Max number of threads per object threadgroup</li>
+/// <li>maxTotalThreadsPerMeshletThreadgroup:
+///   Maximum total threads per meshlet threadgroup</li>
+/// <li>maxTotalThreadgroupsPerMeshObject:
+///   Maximum total threadgroups per mesh object shader</li>
+/// <li>maxTotalThreadgroupsPerMeshlet:
+///   Max total threadgroups per meshlet shader</li>
+/// </ul>
+///
+struct HgiShaderFunctionMeshDesc
+{
+    enum class MeshTopology { Point, Line, Triangle, None };
+    MeshTopology meshTopology = MeshTopology::None;
+    uint32_t maxMeshletVertexCount;
+    uint32_t maxPrimitiveCount;
+    uint32_t maxTotalThreadsPerObjectThreadgroup;
+    uint32_t maxTotalThreadsPerMeshletThreadgroup;
+    uint32_t maxTotalThreadgroupsPerMeshObject;
+    uint32_t maxTotalThreadgroupsPerMeshlet;
+    bool meshUser = false;
+};
+
+HGI_API
+bool operator==(
+        const HgiShaderFunctionMeshDesc& lhs,
+        const HgiShaderFunctionMeshDesc& rhs);
+
+HGI_API
+bool operator!=(
+        const HgiShaderFunctionMeshDesc& lhs,
+        const HgiShaderFunctionMeshDesc& rhs);
+
 ///
 /// Describes a geometry function's description
 ///
@@ -448,10 +493,13 @@ struct HgiShaderFunctionDesc
     std::vector<HgiShaderFunctionParamDesc> constantParams;
     std::vector<HgiShaderFunctionParamDesc> stageGlobalMembers;
     std::vector<HgiShaderFunctionParamDesc> stageInputs;
+    std::vector<HgiShaderFunctionParamDesc> stagePayload;
     std::vector<HgiShaderFunctionParamDesc> stageOutputs;
+    std::vector<HgiShaderFunctionParamDesc> payloadMembers;
     std::vector<HgiShaderFunctionParamBlockDesc> stageInputBlocks;
     std::vector<HgiShaderFunctionParamBlockDesc> stageOutputBlocks;
     HgiShaderFunctionComputeDesc computeDescriptor;
+    HgiShaderFunctionMeshDesc meshDescriptor;
     HgiShaderFunctionTessellationDesc tessellationDescriptor;
     HgiShaderFunctionGeometryDesc geometryDescriptor;
     HgiShaderFunctionFragmentDesc fragmentDescriptor;
@@ -515,6 +563,15 @@ HgiShaderFunctionAddBuffer(
     HgiBindingType binding,
     const uint32_t arraySize = 0);
 
+/// Adds a member to descriptor to given shader function payload's descriptor.
+HGI_API
+void
+HgiShaderFunctionAddPayloadMember(
+    HgiShaderFunctionDesc *desc,
+    const std::string &nameInShader,
+    const std::string &type,
+    const uint32_t arraySize = 0);
+
 /// Adds buffer descriptor to given shader function descriptor.
 HGI_API
 void
@@ -560,7 +617,8 @@ HgiShaderFunctionAddGlobalVariable(
    HgiShaderFunctionDesc *desc,
    const std::string &nameInShader,
    const std::string &type,
-   const std::string &arraySize);
+   const std::string &arraySize,
+   const bool isThreadGroupParam = false);
 
 /// Adds stage output function param descriptor to given shader function
 /// descriptor.
