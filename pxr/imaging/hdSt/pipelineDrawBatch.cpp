@@ -71,6 +71,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     (dispatchBuffer)
     (drawCullInput)
+    (drawBuffer)
 
     (drawIndirect)
     (drawIndirectCull)

@@ -98,6 +98,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (primID)                                    \
     (primitiveParam)                            \
     (tessFactors)                               \
+    (meshletRemap)                              \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \
@@ -233,6 +234,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (tessEvalShader)                            \
     (postTessControlShader)                     \
     (postTessVertexShader)                      \
+    (meshObjectShader)                          \
+    (meshletShader)                             \
     (tessLevel)                                 \
     (viewport)                                  \
     (vertexShader)                              \
