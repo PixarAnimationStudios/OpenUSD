@@ -69,8 +69,8 @@ public:
     HGIGL_API
     void BindPipeline(HgiGraphicsPipelineHandle pipeline) override;
 
-    HGIGL_API
-    void BindResources(HgiResourceBindingsHandle resources) override;
+    HGI_API
+    void BindResources(HgiResourceBindingsHandle resources, bool useMeshShaders = false) override;
 
     HGIGL_API
     void SetConstantValues(
@@ -106,6 +106,11 @@ public:
         uint32_t baseVertex,
         uint32_t instanceCount,
         uint32_t baseInstance) override;
+
+    HGIGL_API
+    void DrawIndexedMeshIndirect(
+            HgiBufferHandle const& indexBuffer,
+            uint32_t indexCount) override {}
 
     HGIGL_API
     void DrawIndexedIndirect(

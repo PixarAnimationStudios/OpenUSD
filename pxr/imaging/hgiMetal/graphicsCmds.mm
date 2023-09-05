@@ -64,10 +64,9 @@ _SetVertexBindings(id<MTLRenderCommandEncoder> encoder,
         if (binding.buffer) {
             HgiMetalBuffer* mtlBuffer =
                 static_cast<HgiMetalBuffer*>(binding.buffer.Get());
-
-            [encoder setVertexBuffer:mtlBuffer->GetBufferId()
-                              offset:binding.byteOffset
-                             atIndex:binding.index];
+                [encoder setVertexBuffer:mtlBuffer->GetBufferId()
+                                  offset:binding.byteOffset
+                                 atIndex:binding.index];
         }
     }
 }
@@ -311,10 +310,12 @@ HgiMetalGraphicsCmds::_SetCachedEncoderState(id<MTLRenderCommandEncoder> encoder
     if (_CachedEncState.resourceBindings) {
         _CachedEncState.resourceBindings->BindResources(_hgi,
                                                         encoder,
-                                                        _CachedEncState.argumentBuffer);
+                                                        _CachedEncState.argumentBuffer,
+                                                        _CachedEncState.useMeshShaders);
     }
-
-    _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
+    if (!_CachedEncState.useMeshShaders) {
+        _SetVertexBindings(encoder, _CachedEncState.vertexBindings);
+    }
 }
 
 void
@@ -482,8 +483,9 @@ HgiMetalGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 }
 
 void
-HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
+HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r, bool useMeshShaders)
 {
+    _CachedEncState.useMeshShaders = useMeshShaders;
     _CreateArgumentBuffer();
 
     _CachedEncState.resourceBindings =
@@ -494,7 +496,8 @@ HgiMetalGraphicsCmds::BindResources(HgiResourceBindingsHandle r)
         for (auto& encoder : _encoders) {
             _CachedEncState.resourceBindings->BindResources(_hgi,
                                                             encoder,
-                                                            _argumentBuffer);
+                                                            _argumentBuffer,
+                                                            useMeshShaders);
         }
     }
 }
@@ -517,6 +520,9 @@ void
 HgiMetalGraphicsCmds::BindVertexBuffers(
     HgiVertexBufferBindingVector const &bindings)
 {
+    if (_CachedEncState.useMeshShaders) {
+        return;
+    }
     _stepFunctions.Bind(bindings);
 
     _CachedEncState.vertexBindings.insert(
@@ -656,7 +662,8 @@ HgiMetalGraphicsCmds::DrawIndexed(
     id<MTLRenderCommandEncoder> encoder = GetEncoder();
         
     _stepFunctions.SetVertexBufferOffsets(encoder, baseInstance);
-
+    
+    
     if (_primitiveType == HgiPrimitiveTypePatchList) {
         const NSUInteger controlPointCount = _primitiveIndexSize;
 
@@ -684,6 +691,26 @@ HgiMetalGraphicsCmds::DrawIndexed(
                           baseInstance:baseInstance];
     }
 
+    _hasWork = true;
+}
+
+void
+HgiMetalGraphicsCmds::DrawIndexedMeshIndirect(
+    HgiBufferHandle const& indexBuffer,
+    uint32_t drawCount)
+{
+    _SyncArgumentBuffer();
+
+    HgiMetalBuffer* indexBuf = static_cast<HgiMetalBuffer*>(indexBuffer.Get());
+
+    MTLPrimitiveType mtlType =
+        HgiMetalConversions::GetPrimitiveType(_primitiveType);
+
+    id<MTLRenderCommandEncoder> encoder = GetEncoder();
+        
+    _CachedEncState.useMeshShaders = true;
+    //TODO use better decision for thread count
+    [encoder drawMeshThreadgroups:MTLSizeMake(drawCount, 1, 1) threadsPerObjectThreadgroup:MTLSizeMake(1, 1, 1) threadsPerMeshThreadgroup:MTLSizeMake(256, 1, 1)];
     _hasWork = true;
 }
 

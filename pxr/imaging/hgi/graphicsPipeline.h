@@ -385,6 +385,15 @@ struct HgiTessellationState
     HgiTessellationLevel tessellationLevel;
 };
 
+struct HgiMeshState
+{
+    bool useMeshShader = false;
+    uint32_t maxTotalThreadsPerObjectThreadgroup;
+    uint32_t maxTotalThreadsPerMeshThreadgroup;
+    uint32_t maxTotalThreadGroupsPerObject;
+    uint32_t maxTotalThreadGroupsPerMesh;
+};
+
 /// \struct HgiGraphicsPipelineDesc
 ///
 /// Describes the properties needed to create a GPU pipeline.
@@ -437,6 +446,7 @@ struct HgiGraphicsPipelineDesc
     HgiAttachmentDesc depthResolveAttachmentDesc;
     HgiGraphicsShaderConstantsDesc shaderConstantsDesc;
     HgiTessellationState tessellationState;
+    HgiMeshState meshState;
 };
 
 HGI_API

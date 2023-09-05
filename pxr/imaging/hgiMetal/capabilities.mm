@@ -46,7 +46,25 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     bool unifiedMemory = false;
     bool barycentrics = false;
     bool hasAppleSilicon = false;
+    bool hasMeshShaders = false;
     bool icbSupported = false;
+    //Only use on recent GPUs
+    try {
+        if (@available(macOS 14.0, *)) {
+            auto arch = [device architecture];
+            NSArray *archSpl =
+            [[arch name] componentsSeparatedByString:@"_"];
+            NSString *gpu = archSpl[1];
+            NSString *archNumS = [gpu substringWithRange:NSMakeRange(1, 3)];
+            NSInteger archNum = [archNumS integerValue];
+            //TODO Thor verify
+            if (archNum > 13) {
+                hasMeshShaders = true;
+            }
+        }
+    } catch (NSException *ex) {
+        hasMeshShaders = false;
+    }
     if (@available(macOS 100.100, ios 12.0, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
@@ -55,6 +73,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 #else
         unifiedMemory = [device isLowPower];
 #endif
+        
         // On macOS 10.15 and 11.0 the AMD drivers reported the wrong value for
         // supportsShaderBarycentricCoordinates so check both flags.
         // Also, Intel GPU drivers do not correctly support barycentrics.
@@ -97,6 +116,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
     
     _SetFlag(HgiDeviceCapabilitiesBitsIndirectCommandBuffers, icbSupported);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsMeshShading, hasMeshShaders);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset

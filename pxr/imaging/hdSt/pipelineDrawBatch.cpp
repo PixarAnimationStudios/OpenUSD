@@ -133,6 +133,9 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     _useDrawIndexed = static_cast<bool>(drawItem->GetTopologyRange());
     _useInstancing  = static_cast<bool>(drawItem->GetInstanceIndexRange());
     _useGpuCulling  = _allowGpuFrustumCulling && IsEnabledGPUFrustumCulling();
+    _allowIndirectCommandEncoding =
+        _allowIndirectCommandEncoding &&
+        !drawItem->GetGeometricShader()->GetUseMeshShaders();
 
     // note: _useInstancing condition is not necessary. it can be removed
     //       if we decide always to use instance culling.
@@ -147,6 +150,7 @@ HdSt_PipelineDrawBatch::_Init(HdStDrawItemInstance * drawItemInstance)
     TF_DEBUG(HDST_DRAW_BATCH).Msg(
         "   Resetting dispatch buffer.\n");
     _dispatchBuffer.reset();
+    _meshletDispatchBuffer.reset();
 }
 
 void
@@ -174,8 +178,8 @@ HdSt_PipelineDrawBatch::IsEnabledGPUFrustumCulling()
     // when other GPU frustum culling is enabled. Both switches must be true
     // for PipelineDrawBatch to use GPU frustum culling.
     static bool isEnabled =
-        TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING);
-    return isEnabled && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
+            TfGetEnvSetting(HDST_ENABLE_PIPELINE_DRAW_BATCH_GPU_FRUSTUM_CULLING);
+        return isEnabled && HdSt_IndirectDrawBatch::IsEnabledGPUFrustumCulling();
 }
 
 /* static */
@@ -312,6 +316,20 @@ struct _DrawIndexedCommand
     _DrawingCoord drawingCoord;
 };
 
+struct _DrawIndexedMeshCommand
+{
+    struct {
+        uint32_t count;
+        uint32_t instanceCount;
+        uint32_t baseIndex;
+        uint32_t baseVertex;
+        uint32_t baseInstance;
+        uint32_t meshletCoord;
+        uint32_t numMeshlets;
+    } common;
+    _DrawingCoord drawingCoord;
+};
+
 // DrawIndexed + Instance culling : 19 integers (+ numInstanceLevels)
 struct _DrawIndexedInstanceCullCommand
 {
@@ -429,7 +447,8 @@ _DrawCommandTraits
 _GetDrawCommandTraits(int const instancerNumLevels,
                       bool const useDrawIndexed,
                       bool const useInstanceCulling,
-                      size_t const uint32Alignment)
+                      size_t const uint32Alignment,
+                      bool useMeshShaders = false)
 {
     _DrawCommandTraits traits;
     if (!useDrawIndexed) {
@@ -453,10 +472,17 @@ _GetDrawCommandTraits(int const instancerNumLevels,
             _SetInstanceCullTraits<CmdType>(&traits);
             _SetDrawingCoordTraits<CmdType>(&traits);
         } else {
-            using CmdType = _DrawIndexedCommand;
-            _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
-                                           uint32Alignment);
-            _SetDrawingCoordTraits<CmdType>(&traits);
+            if(useMeshShaders) {
+                using CmdType = _DrawIndexedMeshCommand;
+                _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                               uint32Alignment);
+                _SetDrawingCoordTraits<CmdType>(&traits);
+            } else {
+                using CmdType = _DrawIndexedCommand;
+                _SetDrawCommandTraits<CmdType>(&traits, instancerNumLevels,
+                                               uint32Alignment);
+                _SetDrawingCoordTraits<CmdType>(&traits);
+            }
         }
     }
     return traits;
@@ -600,7 +626,194 @@ _AllocateTessFactorsBuffer(
         HdTupleType{HdTypeHalfFloat, numElements*numTessFactorsPerElement});
 }
 
+HdStBufferResourceSharedPtr
+_AllocateMeshletDispatchBuffer(
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    std::vector<uint32_t> meshletDrawCommands)
+{
+    HdStBufferResourceSharedPtr buf = resourceRegistry->RegisterBufferResource(
+        HdTokens->meshletRemap,
+        HdTupleType{HdTypeInt32, meshletDrawCommands.size()});
+    // Use blit op to copy over the data.
+    Hgi* hgi = resourceRegistry->GetHgi();
+    HgiBlitCmdsUniquePtr blitCmds = hgi->CreateBlitCmds();
+    HgiBufferCpuToGpuOp blitOp;
+    blitOp.byteSize = meshletDrawCommands.size() * sizeof(uint32_t);
+    blitOp.cpuSourceBuffer = meshletDrawCommands.data();
+    blitOp.sourceByteOffset = 0;
+    blitOp.gpuDestinationBuffer = buf->GetHandle();
+    blitOp.destinationByteOffset = 0;
+    blitCmds->CopyBufferCpuToGpu(blitOp);
+    hgi->SubmitCmds(blitCmds.get());
+
+    return buf;;
+}
+
 } // annonymous namespace
+
+constexpr uint32_t max_primitives = 512;
+constexpr uint32_t max_vertices = 256;
+
+struct VertexInfo {
+    uint32_t vertexId;
+    uint32_t indexId; // this is a promise that of the primitive associated, this is the index row associated
+    uint32_t GetDisplacementIndex() {
+        return indexId % 3;
+    }
+    uint32_t GetPrimitiveID() {
+        return indexId / 3;
+    }
+};
+
+struct Meshlet {
+    uint32_t vertexCount;
+    uint32_t primitiveCount;
+    std::vector<VertexInfo> vertexInfo;
+    std::vector<uint32_t> remappedIndices;
+    std::vector<uint32_t> remappedPrimIDs;
+};
+
+//process mesh at a time
+std::vector<Meshlet> processIndices(uint32_t* indices, int indexCount, uint32_t meshStartLocation = 0, uint32_t meshEndLocation = 0) {
+    int numPrimsProcessed = 0;
+    int numVerticesProcessed = 0;
+    std::unordered_map<uint32_t, std::vector<uint32_t>> m;
+    std::vector<Meshlet> meshlets;
+    std::unordered_map<uint32_t, uint32_t> globalToLocalVertex;
+    bool maxVertsReached = false;
+    bool maxPrimsReached = false;
+    Meshlet meshlet;
+    int startPrimitive = meshStartLocation / 3;
+    int endPrimitive = meshStartLocation / 3;
+    uint primId = 0;
+    for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
+        if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
+            endPrimitive = ((i)/3);
+            int count = 0;
+            meshlet.vertexInfo.resize(m.size());
+            for(auto it = m.begin(); it != m.end(); ++it) {
+                VertexInfo vertexInfo;
+                vertexInfo.vertexId = it->first;
+                vertexInfo.indexId = it->second[0];
+                meshlet.vertexInfo[count] = vertexInfo;
+                globalToLocalVertex[it->first] = count;
+                count++;
+            }
+            
+            for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
+                //We know that indices don't go over 256, we can pack them in a byte
+                uint ind0 = globalToLocalVertex[indices[n*3]];
+                uint ind1 = globalToLocalVertex[indices[n*3+1]];
+                uint ind2 = globalToLocalVertex[indices[n*3+2]];
+                uint packed = ind0;
+                packed |= ind1 << 8;
+                packed |= ind2 << 16;
+                meshlet.remappedIndices.push_back(packed);
+                meshlet.remappedPrimIDs.push_back(primId);
+                primId++;
+            }
+            meshlet.vertexCount = meshlet.vertexInfo.size();
+            meshlet.primitiveCount = (endPrimitive - startPrimitive);
+
+            maxVertsReached = false;
+            maxPrimsReached = false;
+            numPrimsProcessed = 0;
+            numVerticesProcessed = 0;
+            m = std::unordered_map<uint32_t, std::vector<uint32_t>>();
+            globalToLocalVertex = std::unordered_map<uint32_t, uint32_t>();
+            meshlets.push_back(meshlet);
+            if(i >= meshEndLocation) {
+                continue;
+            }
+            meshlet = Meshlet();
+            startPrimitive = ((i+1)/3);
+        }
+        
+        //TODO see if we can be smarter
+        if((m.size() + 4) > max_vertices) {
+            maxVertsReached = true;
+        }
+        
+        auto it1 = m.find(i);
+        auto it2 = m.find(i+1);
+        auto it3 = m.find(i+2);
+
+        if (it1 == m.end()) {
+            m[indices[i]] = {i};
+            numVerticesProcessed++;
+        } else {
+            it1->second.push_back(i);
+        }
+        if (it2 == m.end()) {
+            m[indices[i+1]] = {i+1};
+            numVerticesProcessed++;
+        } else {
+            it2->second.push_back(i+1);
+        }
+        if (it3 == m.end()) {
+            m[indices[i+2]] = {i+2};
+            numVerticesProcessed++;
+        } else {
+            it3->second.push_back(i+2);
+        }
+        numPrimsProcessed++;
+        if(numPrimsProcessed >= max_primitives) {
+            maxPrimsReached = true;
+            continue;
+        }
+    }
+    return meshlets;
+}
+
+struct MeshletCoord
+{
+    uint32_t meshlet_coord;
+    uint32_t numMeshlets;
+};
+//has the coords for the meshlet at the start of this buffer
+void flattenMeshlets(std::vector<uint32_t> &flattenInto, std::vector<MeshletCoord> &drawingCoords, const std::vector<std::vector<Meshlet>> &meshlets) {
+    uint32_t currentOffset = 0;
+    uint32_t lastOffset = 0;
+    for(int i = 0; i < meshlets.size(); i++) {
+        int localOffset = 0;
+        const std::vector<Meshlet> &meshletsInMesh = meshlets[i];
+        for(int l = 0; l < meshletsInMesh.size(); l++) {
+            flattenInto.push_back(meshletsInMesh.size());
+            currentOffset++;
+            localOffset++;
+        }
+        for(int j = 0; j < meshletsInMesh.size(); j++) {
+            const Meshlet &m = meshletsInMesh[j];
+            flattenInto.push_back(m.vertexCount);
+            flattenInto.push_back(m.primitiveCount);
+            currentOffset += 2;
+            localOffset += 2;
+            for (uint32_t k = 0; k < m.vertexInfo.size(); k++) {
+                auto vertexInfo = m.vertexInfo[k];
+                flattenInto.push_back(vertexInfo.vertexId);
+                flattenInto.push_back(vertexInfo.indexId);
+                currentOffset += 2;
+                localOffset += 2;
+            }
+            
+            for (int k = 0; k < m.remappedIndices.size(); k++) {
+                flattenInto.push_back(m.remappedIndices[k]);
+                flattenInto.push_back(m.remappedPrimIDs[k]);
+
+                currentOffset += 2;
+                localOffset += 2;
+            }
+            if (j < (meshletsInMesh.size()-1)) {
+                flattenInto[lastOffset+(j+1)] = localOffset;
+            }
+        }
+        MeshletCoord mlCoord;
+        mlCoord.meshlet_coord = lastOffset;
+        lastOffset = currentOffset;
+        mlCoord.numMeshlets = meshlets[i].size();
+        drawingCoords.push_back(mlCoord);
+    }
+}
 
 void
 HdSt_PipelineDrawBatch::_CompileBatch(
@@ -619,6 +832,8 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     bool const useMetalTessellation =
         _drawItemInstances[0]->GetDrawItem()->
                 GetGeometricShader()->GetUseMetalTessellation();
+    bool isMeshShader = _drawItemInstances[0]->GetDrawItem()->
+        GetGeometricShader()->GetUseMeshShaders();
 
     // Align drawing commands to 32 bytes for Metal.
     size_t const uint32Alignment = useMetalTessellation ? 8 : 0;
@@ -628,17 +843,63 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         _GetDrawCommandTraits(instancerNumLevels,
                               _useDrawIndexed,
                               _useInstanceCulling,
-                              uint32Alignment);
+                              uint32Alignment,
+                              isMeshShader);
 
     TF_DEBUG(HDST_DRAW).Msg("\nCompile Dispatch Buffer\n");
     TF_DEBUG(HDST_DRAW).Msg(" - numUInt32: %zd\n", traits.numUInt32);
     TF_DEBUG(HDST_DRAW).Msg(" - useDrawIndexed: %d\n", _useDrawIndexed);
     TF_DEBUG(HDST_DRAW).Msg(" - useInstanceCulling: %d\n", _useInstanceCulling);
     TF_DEBUG(HDST_DRAW).Msg(" - num draw items: %zu\n", numDrawItemInstances);
-
     _drawCommandBuffer.resize(numDrawItemInstances * traits.numUInt32);
+    //estimate this required overallication
+    //_meshletDrawBuffer.resize(numDrawItemInstances * 2 * 258);
     std::vector<uint32_t>::iterator cmdIt = _drawCommandBuffer.begin();
-
+    
+    HdStBufferResourceSharedPtr indexBuffer;
+        
+    uint32_t* cpuBuffer;
+    std::vector<std::vector<Meshlet>> meshlets;
+    std::vector<MeshletCoord> meshletDrawCoord;
+    if (isMeshShader) {
+        auto indexBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(
+            _drawItemInstances.front()->GetDrawItem()->GetTopologyRange());
+        indexBuffer = indexBar->GetResource(HdTokens->indices);
+        cpuBuffer = ((uint32_t*)indexBuffer->GetHandle()->GetCPUStagingAddress());
+        for (size_t item = 0; item < numDrawItemInstances; ++item) {
+            HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
+            HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
+            
+            
+            _DrawItemState const dc(drawItem);
+            
+            // drawing coordinates.
+            uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
+            uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
+            
+            // 3 for triangles, 4 for quads, 6 for triquads, n for patches
+            uint32_t const numIndicesPerPrimitive =
+            drawItem->GetGeometricShader()->GetPrimitiveIndexSize();
+            
+            uint32_t const baseVertex = vertexDC;
+            uint32_t const vertexCount = _GetElementCount(dc.vertexBar);
+            
+            // if delegate fails to get vertex primvars, it could be empty.
+            // skip the drawitem to prevent drawing uninitialized vertices.
+            uint32_t const numElements =
+            vertexCount != 0 ? _GetElementCount(dc.indexBar) : 0;
+            
+            uint32_t const baseIndex = primitiveDC * numIndicesPerPrimitive;
+            uint32_t const indexCount = numElements * numIndicesPerPrimitive;
+            
+            auto meshlet = processIndices(cpuBuffer, indexCount, baseIndex, baseIndex + indexCount);
+            meshlets.push_back(meshlet);
+        }
+        flattenMeshlets(_meshletDrawBuffer, meshletDrawCoord, meshlets);
+    }
+    
+    
     // Count the number of visible items. We may actually draw fewer
     // items than this when GPU frustum culling is active.
     _numVisibleItems = 0;
@@ -656,7 +917,10 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                             drawItem->GetElementOffsetsHash());
 
         _DrawItemState const dc(drawItem);
-
+        MeshletCoord coord;
+        if (isMeshShader && !meshletDrawCoord.empty()) {
+            coord = meshletDrawCoord[item];
+        }
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
         uint32_t const constantDC      = _GetElementOffset(dc.constantBar);
@@ -754,11 +1018,17 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                     *cmdIt++ = baseIndex;
                     *cmdIt++ = baseVertex;
                     *cmdIt++ = baseInstance;
-
-                    *cmdIt++ = 1;             /* cullCount (always 1) */
-                    *cmdIt++ = instanceCount; /* cullInstanceCount */
-                    *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
-                    *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    if (isMeshShader) {
+                        *cmdIt++ = coord.meshlet_coord;
+                        *cmdIt++ = coord.numMeshlets;
+                        *cmdIt++ = 0;
+                        *cmdIt++ = 0;
+                    } else {
+                        *cmdIt++ = 1;             /* cullCount (always 1) */
+                        *cmdIt++ = instanceCount; /* cullInstanceCount */
+                        *cmdIt++ = 0;             /* cullBaseVertex (not used)*/
+                        *cmdIt++ = baseInstance;  /* cullBaseInstance */
+                    }
                 }
             } else {
                 // _DrawIndexedCommand
@@ -774,6 +1044,10 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                     *cmdIt++ = baseIndex;
                     *cmdIt++ = baseVertex;
                     *cmdIt++ = baseInstance;
+                    if(isMeshShader) {
+                        *cmdIt++ = coord.meshlet_coord;
+                        *cmdIt++ = coord.numMeshlets;
+                    }
                 }
             }
         }
@@ -843,7 +1117,9 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         resourceRegistry->RegisterDispatchBuffer(_tokens->drawIndirect,
                                                  numDrawItemInstances,
                                                  traits.numUInt32);
-
+    if (isMeshShader) {
+        _meshletDispatchBuffer = _AllocateMeshletDispatchBuffer(resourceRegistry, _meshletDrawBuffer);
+    }
     // allocate tessFactors buffer for Metal tessellation
     if (useMetalTessellation &&
         _drawItemInstances[0]->GetDrawItem()->
@@ -971,11 +1247,13 @@ HdSt_PipelineDrawBatch::PrepareDraw(
     // On the first time through, after batches have just been compiled,
     // the flag will be false because the resource registry will have already
     // uploaded the buffer.
+    
     bool const updateBufferData = _drawCommandBufferDirty;
     if (updateBufferData) {
         _dispatchBuffer->CopyData(_drawCommandBuffer);
         _drawCommandBufferDirty = false;
     }
+    
 
     if (_useGpuCulling) {
         // Ignore passed in gfxCmds for now since GPU frustum culling
@@ -1041,6 +1319,7 @@ struct _BindingState : public _DrawItemState
     void GetBindingsForDrawing(
                 HgiResourceBindingsDesc * bindingsDesc,
                 HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+                HdStBufferResourceSharedPtr const & meshletRemapBuffer,
                 bool bindTessFactors) const;
 
     HdStDispatchBufferSharedPtr dispatchBuffer;
@@ -1074,6 +1353,7 @@ void
 _BindingState::GetBindingsForDrawing(
     HgiResourceBindingsDesc * bindingsDesc,
     HdStBufferResourceSharedPtr const & tessFactorsBuffer,
+    HdStBufferResourceSharedPtr const & meshletRemapBuffer,
     bool bindTessFactors) const
 {
     GetBindingsForViewTransformation(bindingsDesc);
@@ -1087,6 +1367,14 @@ _BindingState::GetBindingsForDrawing(
     binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
     binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
+    
+    if (geometricShader->GetUseMeshShaders()) {
+        binder.GetBufferArrayBindingDesc(bindingsDesc, vertexBar);
+        binder.GetBufferBindingDesc(bindingsDesc,
+                                    HdTokens->meshletRemap,
+                                    meshletRemapBuffer,
+                                    meshletRemapBuffer->GetOffset());
+    }
 
     if (tessFactorsBuffer) {
         binder.GetBufferBindingDesc(bindingsDesc,
@@ -1265,10 +1553,10 @@ _GetDrawPipeline(
     HgiShaderProgramHandle const & programHandle =
                                         state.glslProgram->GetProgram();
 
-    static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
-    uint64_t hash = salt;
+    uint64_t hash = TfHash::Combine(
+        programHandle.Get(),
+        renderPassState->GetGraphicsPipelineHash());
     hash = TfHash::Combine(hash, programHandle.Get());
-    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);
@@ -1276,10 +1564,27 @@ _GetDrawPipeline(
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
 
-        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,      
                                                   state.geometricShader);
-
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
+        pipeDesc.meshState.useMeshShader = state.geometricShader->GetUseMeshShaders();
+        if (pipeDesc.meshState.useMeshShader) {
+            for (const auto& fun : programHandle->GetDescriptor().shaderFunctions) {
+                if (fun->GetDescriptor().shaderStage == HgiShaderStageMeshlet) {
+                    pipeDesc.meshState.maxTotalThreadsPerMeshThreadgroup =
+                        fun->GetDescriptor().meshDescriptor.
+                            maxTotalThreadsPerMeshletThreadgroup;
+                }
+                if (fun->GetDescriptor().shaderStage == HgiShaderStageMeshObject) {
+                    pipeDesc.meshState.maxTotalThreadsPerObjectThreadgroup =
+                        fun->GetDescriptor().meshDescriptor.
+                            maxTotalThreadsPerObjectThreadgroup;
+                    pipeDesc.meshState.maxTotalThreadGroupsPerObject =
+                        fun->GetDescriptor().meshDescriptor.
+                            maxTotalThreadgroupsPerMeshObject;
+                }
+            }
+        }
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
 
         Hgi* hgi = resourceRegistry->GetHgi();
@@ -1302,7 +1607,7 @@ _GetPTCSPipeline(
     // PTCS pipeline is compatible as long as the shader and
     // pipeline state are the same.
     HgiShaderProgramHandle const & programHandle =
-                                        state.glslProgram->GetProgram();
+        state.glslProgram->GetProgram();
 
     static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
     uint64_t hash = salt;
@@ -1401,12 +1706,24 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
         gfxCmds->BindPipeline(psoHandle);
 
         HgiResourceBindingsDesc bindingsDesc;
+        bool const useMeshShaders =
+                _drawItemInstances[0]->GetDrawItem()->
+                        GetGeometricShader()->GetUseMeshShaders();
+        if (useMeshShaders) {
+            state.binder.GetBufferBindingDesc(
+                &bindingsDesc,
+                _tokens->drawBuffer,
+                _dispatchBuffer->GetEntireResource(),
+                _dispatchBuffer->GetEntireResource()->GetOffset());
+             
+        }
         state.GetBindingsForDrawing(&bindingsDesc,
-                _tessFactorsBuffer, /*bindTessFactors=*/true);
-
+                _tessFactorsBuffer,
+                _meshletDispatchBuffer, /*bindTessFactors=*/true);
+        
         HgiResourceBindingsHandle resourceBindings =
                 hgi->CreateResourceBindings(bindingsDesc);
-        gfxCmds->BindResources(resourceBindings);
+        gfxCmds->BindResources(resourceBindings, useMeshShaders);
 
         HgiVertexBufferBindingVector bindings;
         _GetVertexBufferBindingsForDrawing(&bindings, state);
@@ -1419,9 +1736,9 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             capabilities->IsSet(HgiDeviceCapabilitiesBitsMultiDrawIndirect);
 
         if (drawIndirect) {
-            _ExecuteDrawIndirect(gfxCmds, state.indexBar);
+            _ExecuteDrawIndirect(gfxCmds, state.indexBar, psoHandle, renderPassState);
         } else {
-            _ExecuteDrawImmediate(gfxCmds, state.indexBar);
+            _ExecuteDrawImmediate(gfxCmds, state.indexBar, psoHandle);
         }
 
         hgi->DestroyResourceBindings(&resourceBindings);
@@ -1434,13 +1751,19 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
     HgiGraphicsCmds * gfxCmds,
-    HdStBufferArrayRangeSharedPtr const & indexBar)
+    HdStBufferArrayRangeSharedPtr const & indexBar,
+    HgiGraphicsPipelineHandle psoHandle,
+    HdStRenderPassStateSharedPtr const & renderPassState)
 {
     TRACE_FUNCTION();
 
     HdStBufferResourceSharedPtr paramBuffer = _dispatchBuffer->
         GetBufferArrayRange()->GetResource(HdTokens->drawDispatch);
     if (!TF_VERIFY(paramBuffer)) return;
+
+    bool const useMeshShaders =
+            _drawItemInstances[0]->GetDrawItem()->
+                    GetGeometricShader()->GetUseMeshShaders();
 
     if (!_useDrawIndexed) {
         gfxCmds->DrawIndirect(
@@ -1452,7 +1775,25 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
         HdStBufferResourceSharedPtr indexBuffer =
             indexBar->GetResource(HdTokens->indices);
         if (!TF_VERIFY(indexBuffer)) return;
+        if (useMeshShaders) {
+            struct Uniforms {
+                uint32_t drawIndexCount;
+                uint32_t drawCommandNumUints;
+                uint32_t drawCoordOffset;
+            };
 
+            // set instanced cull parameters
+            Uniforms cullParams;
+            cullParams.drawCommandNumUints = _dispatchBuffer->GetCommandNumUints();
+            cullParams.drawCoordOffset = uint32_t(_drawCoordOffset);
+
+            gfxCmds->SetConstantValues(
+                    psoHandle, 0, 27,
+                    sizeof(Uniforms), &cullParams);
+            gfxCmds->DrawIndexedMeshIndirect(
+                    indexBuffer->GetHandle(),
+                    _dispatchBuffer->GetCount());
+        } else {
         gfxCmds->DrawIndexedIndirect(
             indexBuffer->GetHandle(),
             paramBuffer->GetHandle(),
@@ -1462,12 +1803,14 @@ HdSt_PipelineDrawBatch::_ExecuteDrawIndirect(
             _drawCommandBuffer,
             _patchBaseVertexByteOffset);
     }
+    }
 }
 
 void
 HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
     HgiGraphicsCmds * gfxCmds,
-    HdStBufferArrayRangeSharedPtr const & indexBar)
+    HdStBufferArrayRangeSharedPtr const & indexBar,
+    HgiGraphicsPipelineHandle psoHandle)
 {
     TRACE_FUNCTION();
 
@@ -1496,6 +1839,9 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
         bool const useMetalTessellation =
             _drawItemInstances[0]->GetDrawItem()->
                     GetGeometricShader()->GetUseMetalTessellation();
+        bool const useMeshShaders =
+        _drawItemInstances[0]->GetDrawItem()->
+                GetGeometricShader()->GetUseMeshShaders();
 
         for (uint32_t i = 0; i < drawCount; ++i) {
             _DrawIndexedCommand const * cmd =
@@ -1506,6 +1852,10 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                 static_cast<uint32_t>(cmd->common.baseIndex * sizeof(uint32_t));
 
             if (cmd->common.count && cmd->common.instanceCount) {
+                if (useMeshShaders) {
+                    //We don't support direct drawing with mesh shaders.
+                    return;
+                } else {
                 if (useMetalTessellation) {
                     gfxCmds->DrawIndexed(
                         indexBuffer->GetHandle(),
@@ -1525,6 +1875,7 @@ HdSt_PipelineDrawBatch::_ExecuteDrawImmediate(
                 }
             }
         }
+    }
     }
 }
 
@@ -1594,7 +1945,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
 
     HgiResourceBindingsDesc bindingsDesc;
     state.GetBindingsForDrawing(&bindingsDesc,
-            _tessFactorsBuffer, /*bindTessFactors=*/true);
+            _tessFactorsBuffer,
+            _meshletDispatchBuffer, /*bindTessFactors=*/true);
 
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
@@ -1700,7 +2052,6 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
                 _tokens->drawIndirectResult,
                 _resultBuffer,
                 _resultBuffer->GetOffset());
-                
     }
 
     // bind destination buffer
@@ -1806,7 +2157,8 @@ HdSt_PipelineDrawBatch::_ExecutePTCS(
 
     HgiResourceBindingsDesc bindingsDesc;
     state.GetBindingsForDrawing(&bindingsDesc,
-            _tessFactorsBuffer, /*bindTessFactors=*/false);
+            _tessFactorsBuffer,
+            _meshletDispatchBuffer, /*bindTessFactors=*/false);
 
     HgiResourceBindingsHandle resourceBindings =
             hgi->CreateResourceBindings(bindingsDesc);
@@ -1817,9 +2169,9 @@ HdSt_PipelineDrawBatch::_ExecutePTCS(
     ptcsGfxCmds->BindVertexBuffers(bindings);
 
     if (drawIndirect) {
-        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar);
+        _ExecuteDrawIndirect(ptcsGfxCmds, state.indexBar, psoTessHandle, renderPassState);
     } else {
-        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar);
+        _ExecuteDrawImmediate(ptcsGfxCmds, state.indexBar, psoTessHandle);
     }
 
     hgi->DestroyResourceBindings(&resourceBindings);
@@ -1950,10 +2302,8 @@ HdSt_PipelineDrawBatch::_CreateCullingProgram(
             HdSt_GeometricShader::Create(shaderKey, resourceRegistry);
         _cullingProgram.SetDrawingCoordBufferBinding(drawingCoordBufferBinding);
         _cullingProgram.SetGeometricShader(cullShader);
-
         _cullingProgram.CompileShader(_drawItemInstances.front()->GetDrawItem(),
                                       resourceRegistry);
-
         _dirtyCullingProgram = false;
     }
 }
