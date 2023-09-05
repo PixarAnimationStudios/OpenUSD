@@ -146,7 +146,6 @@ void main(void)
 
 --- --------------------------------------------------------------------------
 -- layout Mesh.PostTessVertex.Quad
-
 [
     ["out block", "VertexData", "outData",
         ["vec4", "Peye"],
@@ -307,6 +306,334 @@ void main(void)
 
     ProcessPrimvarsOut(basis, 0, 1, 2, 4);
 }
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.MeshObject.Main
+[
+["uniform block", "Uniforms", "meshObjectParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.MeshObject.Main
+
+int GetDrawingField(uint off, uint drawCommandIndex)
+{
+    uint offset = drawCommandIndex * drawCommandNumUints;
+    offset += off;
+    return int(drawBuffer[offset]);
+}
+
+static constant constexpr uchar indexCountOffset = 0;
+static constant constexpr uchar instanceCountOffset = 1;
+static constant constexpr uchar baseIndexOffset = 2;
+static constant constexpr uchar baseVertexOffset = 3;
+static constant constexpr uchar baseInstanceOffset = 4;
+static constant constexpr uchar meshletCoordOffset = 5;
+static constant constexpr uchar numMeshletsOffset = 6;
+
+static constant constexpr uchar gl_InstanceID = 0;
+static constant constexpr uchar gl_BaseInstance = 0;
+
+void main(void)
+{   
+    if (hd_LocalIndexID == 0) {
+        payload.indexCount = GetDrawingField(indexCountOffset, hd_LocalInvocationID.x);
+        payload.baseIndex = GetDrawingField(baseIndexOffset, hd_LocalInvocationID.x);
+        payload.baseVertex = GetDrawingField(baseVertexOffset, hd_LocalInvocationID.x);
+        payload.meshletCoord = GetDrawingField(meshletCoordOffset, hd_LocalInvocationID.x);
+        payload.numberMeshlets = GetDrawingField(numMeshletsOffset, hd_LocalInvocationID.x);
+        payload.baseInstance = hd_LocalInvocationID.x;
+        payload.drawCommandIndexPayload = hd_LocalInvocationID.x;
+        payload.drawCommandNumUintLocal = drawCommandNumUints;
+
+        //IDEAS go in scan order
+        uint instanceCount = GetDrawingField(instanceCountOffset, hd_LocalInvocationID.x);
+        meshGridProperties->set_threadgroups_per_grid(uint3(instanceCount, payload.numberMeshlets, 1));
+    }
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Meshlet.Triangle.CullBackface
+
+
+bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
+{
+  // back face culling
+  
+  vec2 ab = b.xy - a.xy;
+  vec2 ac = c.xy - a.xy;
+  float cross_product = ab.x * ac.y - ab.y * ac.x;
+
+  //possibly needs reversal
+  if (cross_product * winding < 0.0f) {return false;}
+  #ifdef TINY_TRIANGLE_CULL
+  vec2 pixelMin = min(a,min(b,c));
+  vec2 pixelMax = max(a,max(b,c));
+
+  if (pixelBboxCull(pixelMin, pixelMax)) return false;
+  #endif
+  return true;
+}
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Meshlet.Triangle.NoCullBackface
+
+bool testTriangle(vec2 a, vec2 b, vec2 c, float winding)
+{
+  #ifdef TINY_TRIANGLE_CULL
+  vec2 pixelMin = min(a,min(b,c));
+  vec2 pixelMax = max(a,max(b,c));
+
+  if (pixelBboxCull(pixelMin, pixelMax)) return false;
+  #endif
+  return true;
+}
+
+
+--- --------------------------------------------------------------------------
+-- layout Mesh.Meshlet.Triangle
+[
+["out block", "VertexData", "outData",
+["vec4", "Peye"],
+["vec3", "Neye"]
+],
+["uniform block", "Uniforms", "meshletParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
+]
+
+--- --------------------------------------------------------------------------
+-- glsl Mesh.Meshlet.Triangle
+//start index list optimizer
+
+
+
+//end index list optimizer
+
+vec4 GetPatchCoord(int index)
+{
+    vec2 uv[3];
+    uv[0] = vec2(0, 0); // (0, 0, 1);
+    uv[1] = vec2(1, 0); // (1, 0, 0);
+    uv[2] = vec2(0, 1); // (0, 1, 0);
+
+    ivec3 patchParam = GetPatchParam();
+    return InterpolatePatchCoordTriangle(uv[index], patchParam);
+}
+
+bool pixelBboxCull(vec2 pixelMin, vec2 pixelMax) 
+{
+  // Apply some safety around the bbox to take into account fixed point rasterization.
+  // This logic will only work without MSAA active.
+  const float epsilon = (1.0 / 256.0);
+  pixelMin -= epsilon;
+  pixelMax += epsilon;
+  // bbox culling
+  pixelMin = round(pixelMin);
+  pixelMax = round(pixelMax);
+  return ( ( pixelMin.x == pixelMax.x) || ( pixelMin.y == pixelMax.y));
+}
+
+vec2 getScreenPos(vec4 hPos)
+{
+    hPos /= hPos.w;
+    return vec2((hPos.xy * 0.5f + 0.5) *
+        (renderPassState.viewport.zw - renderPassState.viewport.xy));
+}
+
+bool testTriangle(const vec2 a, const vec2 b, const vec2 c, const float winding, const uchar3 cullBits)
+{
+    if ((cullBits.x & cullBits.y & cullBits.z) == 0) {
+        return testTriangle(a,b,c,winding);
+    }
+    return false;
+}
+
+uchar getCullBits(vec4 hPos)
+{
+    uchar cullBits = 0;
+    cullBits |= hPos.x < -hPos.w ?  1 : 0;
+    cullBits |= hPos.x >  hPos.w ?  2 : 0;
+    cullBits |= hPos.y < -hPos.w ?  4 : 0;
+    cullBits |= hPos.y >  hPos.w ?  8 : 0;
+    cullBits |= hPos.z <  0.0f      ? 16 : 0;
+    cullBits |= hPos.z >  hPos.w ? 32 : 0;
+    cullBits |= hPos.w <= 0.0f      ? 64 : 0;
+    return cullBits;
+}
+
+
+// Fwd declare methods defined in pointId.glslfx, that are used below.
+FORWARD_DECL(int GetPointId());
+FORWARD_DECL(float GetPointRasterSize(int));
+FORWARD_DECL(void ProcessPointId(int));
+uint32_t hd_VertexID;
+uint32_t primitive_id;
+uint32_t gl_InstanceID;
+uint32_t gl_BaseInstance;
+uint32_t baseVertex;
+uint32_t baseIndex;
+
+
+hd_drawingCoord dcMemb;
+void main(void) {
+    if(hd_LocalIndexID == 191){
+        atomic_store_explicit(&accumulator,0,memory_order_relaxed);
+    }
+    const device uint *meshletStart = meshletRemap + payload.meshletCoord;
+    const uint thisMeshCoordOff = *(meshletStart + hd_LocalInvocationID.y);
+    const device uint *thisMeshCoord = (meshletStart + thisMeshCoordOff);
+
+    const uint meshletVertexCount = *(thisMeshCoord);
+    const uint meshletPrimitiveCount = *(thisMeshCoord + 1);
+
+    const device uint *meshletVerticesStart = (thisMeshCoord + 2);
+
+    const uint numUintsPerVertex = 2;
+    const device uint *meshletIndicesStart = 
+        (thisMeshCoord + 2 + (meshletVertexCount * numUintsPerVertex));
+    const uint endIndex  = meshletPrimitiveCount * 3;
+    if(endIndex < 1) {
+        return;
+    }
+
+    if (hd_LocalIndexID < endIndex)
+    {
+        baseVertex = payload.baseVertex;
+        baseIndex = payload.baseIndex;
+        gl_BaseInstance = payload.baseInstance;
+        gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
+        hd_VertexID = hd_LocalIndexID;
+    }
+
+    if( hd_LocalIndexID < meshletVertexCount )
+    {
+        primitive_id = ((hd_LocalInvocationID.y * MAX_PRIMITIVES) + hd_LocalIndexID)/3;
+        const uint index = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex + 1);
+
+        VertexOut vertexOut;
+        const uint vertIndirection = 
+            *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
+        dcMemb = GetDrawingCoordFull();
+        ProcessPrimvarsIn(vertIndirection);
+        float4 point = float4(HdGet_points(vertIndirection), 1.0f);
+
+        vec3 Neye0 = GetNormal(vec3(0),vertIndirection);
+        const MAT4 transform = ApplyInstanceTransform(HdGet_transform());
+        vertexOut.Peye = vec4(GetWorldToViewMatrix() * transform * point);
+        vertexOut.Peye = DisplacementTerminal(
+            hd_LocalIndexID%3, vertexOut.Peye, Neye0, GetPatchCoord(hd_LocalIndexID%3));
+
+        vertexOut.Neye = Neye0; // normalized
+
+        vertexOut.position = vec4(GetProjectionMatrix() * vertexOut.Peye);
+        vec3 posCached;
+        posCached.xy = getScreenPos(vertexOut.position);
+        uchar cullBits = getCullBits(vertexOut.position);
+        posCached.z = reinterpret_cast<thread float &>(cullBits);
+        posCache[hd_LocalIndexID] = posCached;
+        vertexOut.drawIndexVS = payload.drawCommandIndexPayload;
+        ProcessPrimvarsOut(vertexOut);
+        mesh.set_vertex(hd_LocalIndexID, vertexOut);
+        ApplyClipPlanes(vertexOut.Peye);
+    }
+    
+    const uint base2 = hd_LocalIndexID * 4;
+    const device uint *indicesOff = meshletIndicesStart + base2;
+    const uint currPrim = hd_LocalIndexID * 2;
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if((currPrim ) < (meshletPrimitiveCount)) {
+        uchar3 indA = as_type<uchar3>(*(indicesOff));
+        
+        vec3 p0A = posCache[indA.x];
+        vec3 p1A = posCache[indA.y];
+        vec3 p2A = posCache[indA.z];
+
+        //Not use vec3
+        uchar3 cullBitsA;
+        cullBitsA.x = *((reinterpret_cast<thread uint *>(&p0A))+2);
+        cullBitsA.y = *((reinterpret_cast<thread uint *>(&p1A))+2);
+        cullBitsA.z = *((reinterpret_cast<thread uint *>(&p2A))+2);
+
+        bool culledA = !testTriangle(p0A.xy, p1A.xy, p2A.xy, 1.0, cullBitsA);
+    
+        uchar3 indB = as_type<uchar3>(*(indicesOff + 2));
+        vec3 p0B = posCache[indB.x];
+        vec3 p1B = posCache[indB.y];
+        vec3 p2B = posCache[indB.z];
+
+        uchar3 cullBitsB;
+        cullBitsB.x = *((reinterpret_cast<thread uint *>(&p0B))+2);
+        cullBitsB.y = *((reinterpret_cast<thread uint *>(&p1B))+2);
+        cullBitsB.z = *((reinterpret_cast<thread uint *>(&p2B))+2);
+
+        uchar primsHere = uchar(min(meshletPrimitiveCount - currPrim, uint(2)));
+        bool culledB 
+            = !testTriangle(p0B.xy, p1B.xy, p2B.xy, 1.0, cullBitsB) && primsHere > 1;
+
+        //now we know if a triangle got culled or not, we can focus on figuring out
+        //how to compact and write it out
+        //we compute a local (in clique) scan offset
+        ushort total = ushort(!culledB) + ushort(!culledA);
+        ushort localIndex = simd_prefix_exclusive_sum(total);
+        //here we also compute how many primitives in the clique pass
+        ushort passingPrims = simd_sum(total);
+         
+        int localOffset = 0;
+        //one thread per wave/clique will need to increment the atomic
+        //this will give back the local offset. When we do the atomic, we reserve
+        //n element in the array, where N is the number of surviving triangles, we
+        //get back the numbre before the atomic, meaning localOffset + n is reserved for this
+        //clique and we can safely write to it
+        if(hd_ThreadLocalIndexID == 0)
+        {
+           localOffset = 
+               atomic_fetch_add_explicit(&accumulator,passingPrims,memory_order_relaxed);
+        }
+        //lets give the value of the local offset to all the threads in the clique
+        localOffset = simd_broadcast(localOffset,0);
+        uint writePrim = (localIndex + localOffset);
+        uint writeIndex = writePrim * 3;
+        if(!culledA)
+        {
+            PrimOut primOutA;
+            primOutA.primitive_id_ms = *(indicesOff + 1);
+            mesh.set_primitive(writePrim, primOutA);
+
+            // Set the output indices.
+            mesh.set_index(writeIndex , indA.x);
+            mesh.set_index(writeIndex + 1, indA.y);
+            mesh.set_index(writeIndex + 2, indA.z);
+            writePrim++;
+            writeIndex +=3;
+        }
+        if(!culledB)
+        {
+            PrimOut primOutB;
+            primOutB.primitive_id_ms = *(indicesOff + 3);
+            mesh.set_primitive(writePrim, primOutB);
+
+            // Set the output indices.
+            mesh.set_index(writeIndex, indB.x);
+            mesh.set_index(writeIndex + 1, indB.y);
+            mesh.set_index(writeIndex + 2, indB.z);
+        }
+    }
+    threadgroup_barrier(mem_flags::mem_threadgroup);
+    if(hd_LocalIndexID == 1){
+        int accumulatorValue = (int)atomic_load_explicit(&accumulator,memory_order_relaxed);
+        mesh.set_primitive_count(accumulatorValue);
+        //mesh.set_primitive_count(meshletPrimitiveCount);
+    }
+    
+}
+
 
 --- --------------------------------------------------------------------------
 -- layout Mesh.TessControl.BSplineQuad
@@ -1354,7 +1681,7 @@ vec2 GetPatchCoordLocalST()
 vec4 GetInterpolatedPatchCoord()
 {
     return InterpolatePatchCoordTriangle(
-                        GetPatchCoordLocalST(), GetPatchParam());
+                         GetPatchCoordLocalST(), GetPatchParam());
 }
 
 --- --------------------------------------------------------------------------
@@ -1437,11 +1764,24 @@ vec4 GetInterpolatedPatchCoord()
     ["in block", "VertexData", "inData",
         ["vec4", "Peye"],
         ["vec3", "Neye"]
-    ]
+    ],
+["uniform block", "Uniforms", "fragmentParams",
+["uint", "drawIndexCount"],
+["uint", "drawCommandNumUints"],
+["uint", "drawCoordOffset"]
+]
 ]
 
 --- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment
+
+//TODO Thor make sure only for specific ones
+hd_drawingCoord dcMemb;
+
+static constant constexpr uint gl_BaseInstance = 0;
+static constant constexpr uint gl_InstanceID = 1;
+
+uint primitive_id_ms;
 
 #ifndef HD_HAS_ptexFaceOffset
 #define HD_HAS_ptexFaceOffset
@@ -1476,6 +1816,7 @@ vec3 ComputeScreenSpaceNeye()
 
 void main(void)
 {
+    dcMemb = GetDrawingCoordFull();
     bool isFlipped = IsFlipped();
 
     DiscardBasedOnShading(gl_FrontFacing, isFlipped);
@@ -1504,7 +1845,6 @@ void main(void)
 
     vec4 patchCoord = GetPatchCoord();
     color = ShadingTerminal(vec4(Peye, 1), Neye, color, patchCoord);
-
     color = ApplyEdgeColor(color, patchCoord);
 
 #ifdef HD_MATERIAL_TAG_MASKED   
@@ -1512,6 +1852,5 @@ void main(void)
         discard;
     }
 #endif
-
     RenderOutput(vec4(Peye, 1), Neye, color, patchCoord);
 }
