@@ -127,6 +127,16 @@ public:
         return _ptvsSource;
     }
 
+    /// Return the generated mesh object shader source
+    const std::string &GetMeshObjectShaderSource() const {
+        return _mosSource;
+    }
+
+    /// Return the generated meshlet shader source
+    const std::string &GetMeshletShaderSource() const {
+        return _msSource;
+    }
+
     /// Return the pointer of metadata to be populated by resource binder.
     HdSt_ResourceBinder::MetaData *GetMetaData() { return &_metaData; }
 
@@ -168,9 +178,10 @@ private:
     std::stringstream _genDecl;
     std::stringstream _genAccessors;
     std::stringstream _genVS, _genTCS, _genTES;
-    std::stringstream _genPTCS, _genPTVS;
+    std::stringstream _genPTCS, _genPTVS, _genMOS, _genMS;
     std::stringstream _genGS, _genFS, _genCS;
     std::stringstream _procVS, _procTCS, _procTES, _procGS;
+    std::stringstream _procMSDecl, _procMSIn, _procMSOut;
     std::stringstream _procPTVSOut;
     std::stringstream _osd;
 
@@ -183,6 +194,8 @@ private:
     ElementVector _resFS;
     ElementVector _resPTCS;
     ElementVector _resPTVS;
+    ElementVector _resMOS;
+    ElementVector _resMS;
     ElementVector _resCS;
 
     ElementVector _resInterstage;
@@ -203,6 +216,8 @@ private:
     std::string _csSource;
     std::string _ptcsSource;
     std::string _ptvsSource;
+    std::string _mosSource;
+    std::string _msSource;
 
     bool _hasVS;
     bool _hasTCS;
@@ -212,6 +227,8 @@ private:
     bool _hasCS;
     bool _hasPTCS;
     bool _hasPTVS;
+    bool _hasMOS;
+    bool _hasMS;
 };
 
 

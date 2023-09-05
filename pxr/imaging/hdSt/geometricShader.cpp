@@ -47,6 +47,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool hasMirroredTransform,
                                        bool doubleSided,
                                        bool useMetalTessellation,
+                                       bool useMeshShaders,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
@@ -59,6 +60,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _hasMirroredTransform(hasMirroredTransform)
     , _doubleSided(doubleSided)
     , _useMetalTessellation(useMetalTessellation)
+    , _useMeshShaders(useMeshShaders)
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
     , _frustumCullingPass(cullingPass)
@@ -370,6 +372,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.HasMirroredTransform(),
                 shaderKey.IsDoubleSided(),
                 shaderKey.UseMetalTessellation(),
+                shaderKey.UseMeshShaders(),
                 shaderKey.GetPolygonMode(),
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),

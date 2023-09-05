@@ -141,6 +141,7 @@ HdxBoundingBoxTask::_CreateShaderResources()
     dashStartParam.nameInShader = "dashStart";
     dashStartParam.type = "vec2";
     dashStartParam.interpolation = HgiInterpolationFlat;
+    dashStartParam.isPointerToValue = false;
     HgiShaderFunctionAddStageOutput(
         &vertDesc, dashStartParam);
     addConstantParams(&vertDesc);
