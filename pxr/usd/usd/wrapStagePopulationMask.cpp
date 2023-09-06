@@ -29,6 +29,7 @@
 #include "pxr/usd/usd/stagePopulationMask.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/stringUtils.h"
 
 using std::string;
 
@@ -40,7 +41,7 @@ namespace {
 
 static std::string __str__(UsdStagePopulationMask const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 static string __repr__(UsdStagePopulationMask const &self)

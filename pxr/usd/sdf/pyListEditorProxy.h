@@ -200,8 +200,7 @@ private:
 
     static std::string _GetStr(const Type& x)
     {
-        return x._listEditor ? 
-            boost::lexical_cast<std::string>(*x._listEditor) : std::string();
+        return x._listEditor ? TfStringify(*x._listEditor) : std::string();
     }
 
     static void _SetExplicitProxy(Type& x, const value_vector_type& v)
