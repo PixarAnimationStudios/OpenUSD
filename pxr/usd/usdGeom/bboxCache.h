@@ -35,7 +35,6 @@
 #include "pxr/base/work/dispatcher.h"
 
 #include <boost/optional.hpp>
-#include <boost/shared_array.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -487,7 +486,7 @@ private:
 
         // Queries for attributes that need to be re-computed at each
         // time for this entry. This will be invalid for non-varying entries.
-        boost::shared_array<UsdAttributeQuery> queries;
+        std::shared_ptr<UsdAttributeQuery[]> queries;
 
         // Computed purpose info of the prim that's associated with the entry.
         // This data includes the prim's actual computed purpose as well as
