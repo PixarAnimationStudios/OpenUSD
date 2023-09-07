@@ -119,10 +119,7 @@ UsdNotice::ObjectsChanged::ResyncedObject(const UsdObject &obj) const
 bool 
 UsdNotice::ObjectsChanged::ChangedInfoOnly(const UsdObject &obj) const 
 {
-    // XXX: We don't need the longest prefix here, we just need to know if
-    // a prefix exists in the map.
-    return SdfPathFindLongestPrefix(
-        *_infoChanges, obj.GetPath()) != _infoChanges->end();
+    return _infoChanges->find(obj.GetPath()) != _infoChanges->end();
 }
 
 UsdNotice::ObjectsChanged::PathRange

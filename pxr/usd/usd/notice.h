@@ -142,7 +142,8 @@ public:
         USD_API bool ResyncedObject(const UsdObject &obj) const;
 
         /// Return true if \p obj was changed but not resynced by the layer
-        /// changes that generated this notice.
+        /// changes that generated this notice. This is the case if this
+        /// object's exact path is present in GetChangedInfoOnlyPaths().
         USD_API bool ChangedInfoOnly(const UsdObject &obj) const;
 
         /// \class PathRange

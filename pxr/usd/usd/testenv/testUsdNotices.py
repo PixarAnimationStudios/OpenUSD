@@ -148,15 +148,18 @@ class TestUsdNotices(unittest.TestCase):
             self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
             self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
-            self.assertTrue(not notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
+            self.assertFalse(notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
 
         def OnUpdate(notice, stage):
             self.assertEqual(notice.GetStage(), stage)
             self.assertEqual(notice.GetResyncedPaths(), [])
             self.assertEqual(notice.GetChangedInfoOnlyPaths(), [Sdf.Path("/Foo")])
             self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo")))
-            self.assertTrue(not notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
+            self.assertFalse(notice.AffectedObject(stage.GetPrimAtPath("/Foo/Bar")))
+            self.assertFalse(notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
+            self.assertFalse(notice.ResyncedObject(stage.GetPrimAtPath("/Foo/Bar")))
             self.assertTrue(notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
+            self.assertFalse(notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo/Bar")))
 
         for fmt in allFormats:
             self._ResetCounters()
@@ -165,6 +168,9 @@ class TestUsdNotices(unittest.TestCase):
             objectsChanged = Tf.Notice.Register(Usd.Notice.ObjectsChanged, 
                                                        OnResync, s)
             s.DefinePrim("/Foo")
+
+            del objectsChanged
+            s.DefinePrim("/Foo/Bar")
 
             objectsChanged = Tf.Notice.Register(Usd.Notice.ObjectsChanged, 
                                                        OnUpdate, s)
