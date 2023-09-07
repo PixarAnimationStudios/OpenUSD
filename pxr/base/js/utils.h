@@ -30,13 +30,12 @@
 #include "pxr/base/js/api.h"
 #include "pxr/base/js/value.h"
 
-#include <boost/none.hpp>
-#include <boost/optional.hpp>
+#include <optional>
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::optional<JsValue> JsOptionalValue;
+typedef std::optional<JsValue> JsOptionalValue;
 
 /// Returns the value associated with \p key in the given \p object. If no
 /// such key exists, and the supplied default is not supplied, this method
@@ -46,7 +45,7 @@ JS_API
 JsOptionalValue JsFindValue(
     const JsObject& object,
     const std::string& key,
-    const JsOptionalValue& defaultValue = boost::none);
+    const JsOptionalValue& defaultValue = std::nullopt);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
