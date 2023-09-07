@@ -248,5 +248,28 @@ class TestFileFormat(unittest.TestCase):
         self.assertFalse(Sdf.FileFormat.FormatSupportsWriting('.mtlx'))
         self.assertFalse(Sdf.FileFormat.FormatSupportsEditing('.mtlx'))
 
+    def test_unit_attribute(self):
+        """
+        Test that unit attributes are stored as custom data.
+        """
+        stage = UsdMtlx._TestFile('Unit.mtlx')
+        prim = stage.GetPrimAtPath("/MaterialX/Materials/mtl_test/NG_test/image_color")
+        self.assertTrue(prim)
+
+        shader = UsdShade.Shader(prim)
+        self.assertTrue(shader)
+
+        for inputName, unit in [
+            ('realworldimagesize', 'foot'),
+            ('realworldtilesize', 'inch')
+        ]:
+            input = shader.GetInput(inputName)
+            self.assertTrue(input)
+
+            attr = input.GetAttr()
+            self.assertTrue(attr)
+
+            self.assertEqual(attr.GetCustomDataByKey("unit"), unit)
+
 if __name__ == '__main__':
     unittest.main()

@@ -94,6 +94,7 @@ struct _AttributeNames {
     Name uimax            {"uimax"};
     Name uimin            {"uimin"};
     Name uiname           {"uiname"};
+    Name unit             {"unit"};
     Name value            {"value"};
     Name valuecurve       {"valuecurve"};
     Name valuerange       {"valuerange"};
@@ -111,6 +112,7 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     ((light, "light"))
     ((mtlxRenderContext, "mtlx"))
+    (unit)
 );
 
 // Returns the name of an element.
@@ -565,6 +567,11 @@ _SetUIAttributes(const UsdShadeInput& usd, const mx::ConstElementPtr& mtlx)
     }
     if (auto uiname = _Attr(mtlx, names.uiname)) {
         usd.GetAttr().SetDisplayName(uiname);
+    }
+
+    // If unit attribute exists, store it as custom data.
+    if (auto unit = _Attr(mtlx, names.unit)) {
+        usd.GetAttr().SetCustomDataByKey(_tokens->unit, VtValue(unit.str()));
     }
 
     _SetCoreUIAttributes(usd.GetAttr(), mtlx);

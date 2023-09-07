@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<materialx version="1.38">
+  <nodegraph name="NG_test">
+    <tiledimage name="image_color" type="color3">
+      <input name="file" type="filename" value="color.jpg" colorspace="srgb_texture" />
+      <input name="realworldimagesize" type="vector2" value="0.5 0.5" unit="foot" unittype="distance" />
+      <input name="realworldtilesize" type="vector2" value="0.5 0.5" unit="inch" unittype="distance" />
+    </tiledimage>
+    <output name="out_color" type="color3" nodename="image_color" />
+  </nodegraph>
+  <standard_surface name="standard_surface" type="surfaceshader">
+    <input name="base_color" type="color3" nodegraph="NG_test" output="out_color" />
+  </standard_surface>
+  <surfacematerial name="mtl_test" type="material">
+    <input name="surfaceshader" type="surfaceshader" nodename="standard_surface" />
+  </surfacematerial>
+</materialx>
