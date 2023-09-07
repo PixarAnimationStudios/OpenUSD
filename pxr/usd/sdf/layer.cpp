@@ -3328,8 +3328,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // initialization.  But now that the layer is in the registry, we release
     // the registry lock to avoid blocking progress of threads working with
     // other layers.
-    TF_VERIFY(_layerRegistry->
-              FindByIdentifier(layer->GetIdentifier()) == layer,
+    TF_VERIFY(_layerRegistry->Find(layer->GetIdentifier(),
+                                   layer->GetResolvedPath()) == layer,
               "Could not find %s", layer->GetIdentifier().c_str());
 
     lock.release();
