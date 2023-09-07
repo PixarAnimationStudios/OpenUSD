@@ -31,6 +31,7 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/arch/systemInfo.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <iostream>
@@ -109,10 +110,11 @@ vector<string> mainThreadList;
 std::mutex workerThreadLock;
 std::mutex mainThreadLock;
 
+// Helper to lock and print the list of log strings alphabetically; then clear the list
 static void 
 _DumpLog(ostream *log, vector<string> *li, std::mutex *mutex) {
     std::lock_guard<std::mutex> lock(*mutex);
-    sort(li->begin(), li->end());
+    std::sort(li->begin(), li->end());
     for(vector<string>::const_iterator n = li->begin(); 
         n != li->end(); ++ n) {
         *log << *n << endl;
