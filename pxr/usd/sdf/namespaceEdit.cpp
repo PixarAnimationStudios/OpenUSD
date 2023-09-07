@@ -30,11 +30,11 @@
 #include "pxr/base/tf/registryManager.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/ptr_container/ptr_set.hpp>
 #include <boost/variant.hpp>
 
 #include <memory>
 #include <ostream>
+#include <set>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -106,10 +106,29 @@ private:
     class _Node {
         _Node(const _Node&) = delete;
         _Node& operator=(const _Node&) = delete;
-        typedef boost::ptr_set<_Node> _Children;
+        struct _PtrCompare {
+            bool operator()(const std::unique_ptr<_Node>& lhs,
+                            const std::unique_ptr<_Node>& rhs) const {
+                return *lhs < *rhs;
+            }
+            bool operator()(const _Node& lhs,
+                            const std::unique_ptr<_Node>& rhs) const {
+                return lhs < *rhs;
+            }
+            bool operator()(const std::unique_ptr<_Node>& lhs,
+                            const _Node& rhs) const {
+                return *lhs < rhs;
+            }
+            // Setting is_transparent allows `std::set::find` to work
+            // on `_Node` references even though it stores
+            // `std::unique_ptr<_Node>`
+            using is_transparent = void;
+        };
+        using _Children = std::set<std::unique_ptr<_Node>, _PtrCompare>;
     public:
         // Create the root node.
-        _Node() : _key(_RootKey()), _parent(NULL), _children(new _Children),
+        _Node() : _key(_RootKey()), _parent(nullptr),
+            _children(std::make_unique<_Children>()),
             _originalPath(SdfPath::AbsoluteRootPath()) { }
 
         // Create key nodes.  These nodes must not be used as children.
@@ -175,7 +194,8 @@ private:
 
     private:
         _Node(_Node* parent, const _Key& key, const SdfPath& originalPath) :
-            _key(key), _parent(parent), _children(new _Children),
+            _key(key), _parent(parent),
+            _children(std::make_unique<_Children>()),
             _originalPath(originalPath)
         {
             // Do nothing
@@ -272,7 +292,7 @@ SdfNamespaceEdit_Namespace::_Node::GetChild(const SdfPath& path)
     _Node keyNode(path);
 
     _Children::iterator i = _children->find(keyNode);
-    return (i == _children->end()) ? NULL : &*i;
+    return (i == _children->end()) ? nullptr : i->get();
 }
 
 const SdfNamespaceEdit_Namespace::_Node*
@@ -283,7 +303,7 @@ SdfNamespaceEdit_Namespace::_Node::GetChild(const SdfPath& path) const
     _Node keyNode(path);
 
     _Children::const_iterator i = _children->find(keyNode);
-    return (i == _children->end()) ? NULL : &*i;
+    return (i == _children->end()) ? nullptr : i->get();
 }
 
 SdfNamespaceEdit_Namespace::_Node*
@@ -297,10 +317,10 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(const SdfPath& path)
     if (i == _children->end()) {
         SdfPath originalPath =
             path.ReplacePrefix(path.GetParentPath(), GetOriginalPath());
-        i = _children->insert(new _Node(this, keyNode.GetKey(),
-                                        originalPath)).first;
+        i = _children->emplace(new _Node(this, keyNode.GetKey(),
+                                         originalPath)).first;
     }
-    return &*i;
+    return i->get();
 }
 
 SdfNamespaceEdit_Namespace::_Node*
@@ -315,10 +335,10 @@ SdfNamespaceEdit_Namespace::_Node::FindOrCreateChild(
     _Children::iterator i = _children->find(keyNode);
     if ((*created = (i == _children->end()))) {
         SdfPath originalPath = GetOriginalPath().AppendTarget(originalTarget);
-        i = _children->insert(new _Node(this, keyNode.GetKey(),
-                                        originalPath)).first;
+        i = _children->emplace(new _Node(this, keyNode.GetKey(),
+                                         originalPath)).first;
     }
-    return &*i;
+    return i->get();
 }
 
 bool
@@ -339,17 +359,16 @@ SdfNamespaceEdit_Namespace::_Node::Remove(std::string* whyNot)
         return false;
     }
 
-    // Release the node from the parent.  After this call node is not
-    // owned by any object.
-    if (!TF_VERIFY(_parent->_children->release(i).release() == this)) {
+    if (!TF_VERIFY(i->get() == this)) {
         *whyNot = "Coding error: Found wrong node by key";
-
-        // Try to recover.
-        _parent->_children->insert(this);
         return false;
     }
 
-    _parent = NULL;
+    // Release the node from the parent.  After this call node is not
+    // owned by any object.
+    auto handle = _parent->_children->extract(i);
+    handle.value().release();
+    _parent = nullptr;
     return true;
 }
 
@@ -385,7 +404,7 @@ SdfNamespaceEdit_Namespace::_Node::Reparent(
     node->_key = keyNode.GetKey();
 
     // Insert the node into our children, taking ownership.
-    TF_VERIFY(_children->insert(node).second);
+    TF_VERIFY(_children->emplace(node).second);
     node->_parent = this;
 
     return true;
