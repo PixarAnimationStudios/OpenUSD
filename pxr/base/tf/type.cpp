@@ -51,13 +51,12 @@
 #include "pxr/base/tf/pyUtils.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED
 
-#include <boost/optional.hpp>
-
 #include <atomic>
 #include <algorithm>
 #include <iostream>
 #include <map>
 #include <memory>
+#include <optional>
 #include <vector>
 
 #include <thread>
@@ -128,9 +127,9 @@ struct TfType::_TypeInfo {
     std::unique_ptr<TfType::FactoryBase> factory;
 
     // Map of derived type aliases to derived types.
-    boost::optional<NameToTypeMap> aliasToDerivedTypeMap;
+    std::optional<NameToTypeMap> aliasToDerivedTypeMap;
     // Reverse map of derived types to their aliases.
-    boost::optional<TypeToNamesMap> derivedTypeToAliasesMap;
+    std::optional<TypeToNamesMap> derivedTypeToAliasesMap;
 
     // Map of functions for converting to other types.
     // This map is keyed by type_info and not TfType because the TfTypes
