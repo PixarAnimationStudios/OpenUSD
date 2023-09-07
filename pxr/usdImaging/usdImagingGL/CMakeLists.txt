@@ -536,6 +536,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLInvalidUniversalSurface
+    DEST testUsdImagingGLInvalidUniversalSurface_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLFallbackPrimTypes
     DEST testUsdImagingGLFallbackPrimTypes
 )
@@ -4316,6 +4321,7 @@ pxr_register_test(testUsdImagingGLInheritedPurpose_Instanced_all
     TESTENV testUsdImagingGLInheritedPurpose
 )
 
+# Note that in the UsdImagingDelegate, the displayColor authored on a material is stronger than the one authored as primvar on a prim using that material.
 pxr_register_test(testUsdImagingGLInvalidUniversalSurface
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage invalid_universal_surface.usda -write testUsdImagingGLInvalidUniversalSurface.png"
     IMAGE_DIFF_COMPARE
@@ -4325,6 +4331,22 @@ pxr_register_test(testUsdImagingGLInvalidUniversalSurface
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInvalidUniversalSurface
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=false
+)
+
+# Note that in the stage scene index, the displayColor authored on a material is ignored if there is a displayColor primvar authored on the prim using that material.
+pxr_register_test(testUsdImagingGLInvalidUniversalSurface_SceneIndex
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -frameAll -stage invalid_universal_surface.usda -write testUsdImagingGLInvalidUniversalSurface_SceneIndex.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInvalidUniversalSurface_SceneIndex.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInvalidUniversalSurface_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLNoFallbacks
