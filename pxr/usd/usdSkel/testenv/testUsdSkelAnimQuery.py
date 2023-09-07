@@ -54,14 +54,6 @@ class TestUsdSkelAnimQuery(unittest.TestCase):
         self._TestSkelAnimation(UsdSkel.Animation)
 
 
-    def test_PackedJointAnimation(self):
-        """
-        Test for backwards-compatibility with the deprecated
-        UsdSkelPackedJointAnimation schema.
-        """
-        self._TestSkelAnimation(UsdSkel.PackedJointAnimation)
-
-        
     def _TestSkelAnimation(self, animSchema):
 
         numFrames = 10
