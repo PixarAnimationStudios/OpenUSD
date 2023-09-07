@@ -62,7 +62,7 @@ def Scope "Materials" {
     def "MaterialX" (
         references = [
             # Standard Surface MaterialX Nodes
-            @./standard_surface_nodes.mtlx@</MaterialX>,
+            @./mtlxFiles/standard_surface_nodes.mtlx@</MaterialX>,
         ]
     )
     {

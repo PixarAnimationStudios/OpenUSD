@@ -1,6 +1,6 @@
 #usda 1.0
 (
-    upAxis = "Z"
+    upAxis = "Y"
 )
 
 def Sphere "mxSphere" (
@@ -14,7 +14,7 @@ def Sphere "mxSphere" (
 def Scope "Materials" {
     def "MaterialX" (
         references = [
-            @./standard_surface_nodes.mtlx@</MaterialX>,
+            @./mtlxFiles/standard_surface_nodes.mtlx@</MaterialX>,
         ]
     )
     {
@@ -26,14 +26,11 @@ def Xform "lights"
     def DomeLight "DomeLight"
     {
         asset inputs:texture:file = @./StinsonBeach.hdr@
-        float xformOp:rotateX:Zup = 90
-        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }
 }
 
 def Camera "FrontCamera"
 {
     double3 xformOp:translate = (0, 0, 7)
-    float xformOp:rotateX:Zup = 90 # change to Zup
-    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+    uniform token[] xformOpOrder = ["xformOp:translate"]
 }

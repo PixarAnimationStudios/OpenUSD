@@ -5,7 +5,7 @@
 
 def Scope "MaterialX" (
     references = [
- 		@./geomprop.mtlx@</MaterialX>,
+ 		@./mtlxFiles/geomprop.mtlx@</MaterialX>,
  	]
 )
 {

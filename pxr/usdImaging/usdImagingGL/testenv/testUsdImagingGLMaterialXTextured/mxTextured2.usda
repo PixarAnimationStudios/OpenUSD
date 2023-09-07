@@ -20,7 +20,7 @@ def Mesh "TestSphere" (
 
 def Scope "MaterialX" (
     references = [
-        @./textured.mtlx@</MaterialX>,
+        @./mtlxFiles/textured.mtlx@</MaterialX>,
     ]
 )
 {

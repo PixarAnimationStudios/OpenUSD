@@ -62,7 +62,7 @@ def Scope "Materials" {
 
     def Scope "MaterialX" (
         references = [
-            @./textured.mtlx@</MaterialX>,
+            @./mtlxFiles/textured.mtlx@</MaterialX>,
         ]
     )
     {

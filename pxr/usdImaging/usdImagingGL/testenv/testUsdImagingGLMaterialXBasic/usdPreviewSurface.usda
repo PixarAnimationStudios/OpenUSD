@@ -43,7 +43,7 @@ def Scope "Materials" {
     def "MaterialX" (
         references = [
             # USD Preview Surface MaterialX Nodes
-            @./usd_preview_surface_nodes.mtlx@</MaterialX>,
+            @./mtlxFiles/usd_preview_surface_nodes.mtlx@</MaterialX>,
         ]
     )
     {

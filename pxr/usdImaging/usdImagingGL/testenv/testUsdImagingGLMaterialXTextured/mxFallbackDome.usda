@@ -13,7 +13,7 @@ def "TestMaterial" (
 
 def Scope "MaterialX" (
     references = [
-        @./textureTest.mtlx@</MaterialX>,
+        @./mtlxFiles/textureTest.mtlx@</MaterialX>,
     ]
 )
 {

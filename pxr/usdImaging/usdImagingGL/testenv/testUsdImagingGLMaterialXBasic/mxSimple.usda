@@ -25,7 +25,7 @@ def Sphere "ball2" (
 def Scope "Materials" {
     def "MaterialX" (
         references = [
-            @./standard_surface_default.mtlx@</MaterialX>,
+            @./mtlxFiles/standard_surface_default.mtlx@</MaterialX>,
         ]
     )
     {

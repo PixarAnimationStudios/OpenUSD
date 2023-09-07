@@ -40,7 +40,7 @@ def Scope "Materials"
 {
     def Scope "MaterialX" (
         references = [
-            @./defaultGeompropVal.mtlx@</MaterialX>,
+            @./mtlxFiles/defaultGeompropVal.mtlx@</MaterialX>,
         ]
     )
     {

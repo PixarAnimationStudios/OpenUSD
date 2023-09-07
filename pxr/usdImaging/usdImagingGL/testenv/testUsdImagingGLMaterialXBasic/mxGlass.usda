@@ -61,7 +61,7 @@ def Sphere "USD_Glass" (
 
 def Scope "MaterialX" (
     references = [
-        @./glass.mtlx@</MaterialX>,
+        @./mtlxFiles/glass.mtlx@</MaterialX>,
     ]
 )
 {

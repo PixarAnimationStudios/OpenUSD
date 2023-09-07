@@ -33,7 +33,7 @@ def Sphere "ball3" (
 def Scope "Materials" {
     def "MaterialX" (
         references = [
-            @./standard_surface_marble_nodes.mtlx@</MaterialX>,
+            @./mtlxFiles/standard_surface_marble_nodes.mtlx@</MaterialX>,
         ]
     )
     {
