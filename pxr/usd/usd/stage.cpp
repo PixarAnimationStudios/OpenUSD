@@ -96,8 +96,6 @@
 #include "pxr/base/work/utils.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <boost/optional.hpp>
-
 #include <tbb/spin_rw_mutex.h>
 #include <tbb/spin_mutex.h>
 
@@ -105,6 +103,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1036,7 +1035,7 @@ _OpenLayer(
     const std::string &filePath,
     const ArResolverContext &resolverContext = ArResolverContext())
 {
-    boost::optional<ArResolverContextBinder> binder;
+    std::optional<ArResolverContextBinder> binder;
     if (!resolverContext.IsEmpty())
         binder.emplace(resolverContext);
 
@@ -1178,8 +1177,8 @@ public:
 
 private:
     SdfLayerHandle _rootLayer;
-    boost::optional<SdfLayerHandle> _sessionLayer;
-    boost::optional<ArResolverContext> _pathResolverContext;
+    std::optional<SdfLayerHandle> _sessionLayer;
+    std::optional<ArResolverContext> _pathResolverContext;
     UsdStage::InitialLoadSet _initialLoadSet;
 };
 
@@ -3251,11 +3250,11 @@ UsdStage::_ComposeSubtreesInParallel(
                 }
             }
             catch (...) {
-                _dispatcher = boost::none;
+                _dispatcher = std::nullopt;
                 throw;
             }
             
-            _dispatcher = boost::none;
+            _dispatcher = std::nullopt;
         });
 }
 
@@ -3408,7 +3407,7 @@ UsdStage::_DestroyPrimsInParallel(const vector<SdfPath>& paths)
                 });
             }
         }
-        _dispatcher = boost::none;
+        _dispatcher = std::nullopt;
     });
 }
 
@@ -8416,12 +8415,13 @@ struct UsdStage::_ResolveInfoResolver
     {
         const SdfLayerOffset layerToStageOffset =
             _GetLayerToStageOffset(node, layer);
-        boost::optional<double> localTime;
+        std::optional<double> localTime;
         if (time) {
             localTime = layerToStageOffset.GetInverse() * (*time);
         }
 
-        if (_HasTimeSamples(layer, specPath, localTime.get_ptr(), 
+        if (_HasTimeSamples(layer, specPath,
+                            localTime ? std::addressof(*localTime) : nullptr,
                             &_extraInfo->lowerSample, 
                             &_extraInfo->upperSample)) {
             _resolveInfo->_source = UsdResolveInfoSourceTimeSamples;

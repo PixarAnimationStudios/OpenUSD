@@ -42,8 +42,7 @@
 #include "pxr/base/gf/interval.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <boost/optional.hpp>
-
+#include <optional>
 #include <ostream>
 #include <string>
 #include <vector>
@@ -305,7 +304,7 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
         return true;
     }
 
-    boost::optional<ExternalTime> translatedLower, translatedUpper;
+    std::optional<ExternalTime> translatedLower, translatedUpper;
     auto _CanTranslate = [&time, &upperInClip, &lowerInClip, this, 
                           &translatedLower, &translatedUpper](
         const TimeMappings& mappings, size_t i1, size_t i2,
@@ -331,19 +330,19 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
 
         if (lower <= timeInClip && timeInClip <= upper) {
             if (map1.internalTime != map2.internalTime) {
-                translated.reset(
-                    this->_TranslateTimeToExternal(timeInClip, i1, i2));
+                translated =
+                    this->_TranslateTimeToExternal(timeInClip, i1, i2);
             } else {
                 const bool lowerUpperMatch = (lowerInClip == upperInClip);
                 if (lowerUpperMatch && time == map1.externalTime) {
-                    translated.reset(map1.externalTime);
+                    translated = map1.externalTime;
                 } else if (lowerUpperMatch && time == map2.externalTime) {
-                    translated.reset(map2.externalTime);
+                    translated = map2.externalTime;
                 } else {
                     if (translatingLower) {
-                        translated.reset(map1.externalTime);
+                        translated = map1.externalTime;
                     } else {
-                        translated.reset(map2.externalTime);
+                        translated = map2.externalTime;
                     }
                 }
             }
@@ -378,17 +377,17 @@ Usd_Clip::_GetBracketingTimeSamplesForPathFromClipLayer(
         // The 'timingOutsideClip' test case in testUsdModelClips exercises
         // this behavior.
         if (lowerInClip < times->front().internalTime) {
-            translatedLower.reset(times->front().externalTime);
+            translatedLower = times->front().externalTime;
         }
         else if (lowerInClip > times->back().internalTime) {
-            translatedLower.reset(times->back().externalTime);
+            translatedLower = times->back().externalTime;
         }
 
         if (upperInClip < times->front().internalTime) {
-            translatedUpper.reset(times->front().externalTime);
+            translatedUpper = times->front().externalTime;
         }
         else if (upperInClip > times->back().internalTime) {
-            translatedUpper.reset(times->back().externalTime);
+            translatedUpper = times->back().externalTime;
         }
     }
             

@@ -51,8 +51,6 @@
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
-
 #include <tbb/concurrent_vector.h>
 #include <tbb/concurrent_unordered_set.h>
 #include <tbb/concurrent_hash_map.h>
@@ -61,6 +59,7 @@
 #include <functional>
 #include <string>
 #include <memory>
+#include <optional>
 #include <unordered_map>
 #include <utility>
 
@@ -2321,7 +2320,7 @@ private:
     class _PendingChanges;
     _PendingChanges* _pendingChanges;
 
-    boost::optional<WorkDispatcher> _dispatcher;
+    std::optional<WorkDispatcher> _dispatcher;
 
     // To provide useful aggregation of malloc stats, we bill everything
     // for this stage - from all access points - to this tag.
