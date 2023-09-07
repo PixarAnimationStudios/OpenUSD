@@ -154,7 +154,7 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName);
 /// that silently returns an empty VtValue.
 USDMTLX_API
 VtValue
-UsdMtlxGetUsdValue(const MaterialX::ConstElementPtr& mtlx,
+UsdMtlxGetUsdValue(const MaterialX::ConstTypedElementPtr& mtlx,
                    bool getDefaultValue = false);
 
 /// Return the MaterialX values in \p values assuming it contains an
