@@ -691,10 +691,28 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
-if Windows():
-    BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
-else:
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
+# The default installation of boost on Windows puts headers in a versioned 
+# subdirectory, which we have to account for here. Specifying "layout=system" 
+# would cause the Windows header install to match Linux/MacOS, but the 
+# "layout=system" flag also changes the naming of the boost dlls in a 
+# manner that causes problems for dependent libraries that rely on boost's
+# trick of automatically linking the boost libraries via pragmas in boost's
+# standard include files. Dependencies that use boost's pragma linking
+# facility in general don't have enough configuration switches to also coerce 
+# the naming of the dlls and so it is best to rely on boost's most default
+# settings for maximum compatibility.
+#
+# On behalf of versions of visual studio prior to vs2022, we still support
+# boost 1.70. We don't completely know if boost 1.78 is in play on Windows, 
+# until we have determined whether Python 3 has been selected as a target. 
+# That isn't known at this point in the script, so we simplify the logic by 
+# checking for any of the possible boost header locations that are possible
+# outcomes from running this script.
+BOOST_VERSION_FILES = [
+    "include/boost/version.hpp",
+    "include/boost-1_70/boost/version.hpp",
+    "include/boost-1_78/boost/version.hpp"
+]
 
 def InstallBoost_Helper(context, force, buildArgs):
 
@@ -895,33 +913,15 @@ def InstallBoost(context, force, buildArgs):
     try:
         InstallBoost_Helper(context, force, buildArgs)
     except:
-        versionHeader = os.path.join(context.instDir, BOOST_VERSION_FILE)
-        if os.path.isfile(versionHeader):
-            try: os.remove(versionHeader)
-            except: pass
+        for versionHeader in [
+            os.path.join(context.instDir, f) for f in BOOST_VERSION_FILES
+        ]:
+            if os.path.isfile(versionHeader):
+                try: os.remove(versionHeader)
+                except: pass
         raise
 
-# The default installation of boost on Windows puts headers in a versioned 
-# subdirectory, which we have to account for here. Specifying "layout=system" 
-# would cause the Windows header install to match Linux/MacOS, but the 
-# "layout=system" flag also changes the naming of the boost dlls in a 
-# manner that causes problems for dependent libraries that rely on boost's
-# trick of automatically linking the boost libraries via pragmas in boost's
-# standard include files. Dependencies that use boost's pragma linking
-# facility in general don't have enough configuration switches to also coerce 
-# the naming of the dlls and so it is best to rely on boost's most default
-# settings for maximum compatibility.
-#
-# On behalf of versions of visual studio prior to vs2022, we still support
-# boost 1.70. We don't completely know if boost 1.78 is in play on Windows, 
-# until we have determined whether Python 3 has been selected as a target. 
-# That isn't known at this point in the script, so we simplify the logic by 
-# checking for any of the possible boost header locations that are possible
-# outcomes from running this script.
-BOOST = Dependency("boost", InstallBoost, 
-                   "include/boost/version.hpp",
-                   "include/boost-1_70/boost/version.hpp",
-                   "include/boost-1_78/boost/version.hpp")
+BOOST = Dependency("boost", InstallBoost, *BOOST_VERSION_FILES)
 
 ############################################################
 # Intel TBB
