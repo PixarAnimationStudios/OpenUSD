@@ -34,7 +34,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/work/dispatcher.h"
 
-#include <boost/optional.hpp>
+#include <optional>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -370,13 +370,13 @@ public:
     /// Return the base time if set, otherwise GetTime().  Use HasBaseTime() to
     /// observe if a base time has been set.
     UsdTimeCode GetBaseTime() const {
-        return _baseTime.get_value_or(GetTime());
+        return _baseTime.value_or(GetTime());
     }
 
     /// Clear this cache's baseTime if one has been set.  After calling this,
     /// the cache will use its time as the baseTime value.
     void ClearBaseTime() {
-        _baseTime = boost::none;
+        _baseTime = std::nullopt;
     }
 
     /// Return true if this cache has a baseTime that's been explicitly set,
@@ -570,7 +570,7 @@ private:
 
     WorkDispatcher _dispatcher;
     UsdTimeCode _time;
-    boost::optional<UsdTimeCode> _baseTime;
+    std::optional<UsdTimeCode> _baseTime;
     TfTokenVector _includedPurposes;
     UsdGeomXformCache _ctmCache;
     _PrimBBoxHashMap _bboxCache;
