@@ -2613,7 +2613,9 @@ UsdMtlxRead(
     ReadMaterials(mtlx, context);
 
     // Set the default prim.
-    stage->SetDefaultPrim(stage->GetPrimAtPath(internalPath));
+    if (auto internalPrim = stage->GetPrimAtPath(internalPath)) {
+        stage->SetDefaultPrim(internalPrim);
+    }
 
     // If there are no looks then we're done.
     if (mtlx->getLooks().empty()) {
