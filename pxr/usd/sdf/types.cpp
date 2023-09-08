@@ -160,8 +160,6 @@ struct _UnitsInfo {
     map<string, TfEnum> _DefaultUnitsMap;
     map<string, TfEnum> _UnitCategoryToDefaultUnitMap;
     map<string, string> _UnitTypeNameToUnitCategoryMap;
-    std::array<std::array<TfEnum, _Sdf_UnitMaxUnits>,
-               _Sdf_UnitNumTypes> _UnitIndicesTable;
     std::array<std::array<std::string, _Sdf_UnitMaxUnits>,
                _Sdf_UnitNumTypes> _UnitNameTable;
     map<string, TfEnum> _UnitNameToUnitMap;
@@ -197,7 +195,6 @@ static void _AddToUnitsMaps(_UnitsInfo &info,
     else {
         typeIndex = i->second;
     }
-    info._UnitIndicesTable[typeIndex][unit.GetValueAsInt()] = unit;
     info._UnitNameTable[typeIndex][unit.GetValueAsInt()] = unitName;
     info._UnitNameToUnitMap[unitName] = unit;
 }
