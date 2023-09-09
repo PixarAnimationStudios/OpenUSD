@@ -806,8 +806,8 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
-        else if (IsDigit(l) | IsDigit(r)) {
-            if (IsDigit(l) & IsDigit(r)) {
+        else if (IsDigit(l) || IsDigit(r)) {
+            if (IsDigit(l) && IsDigit(r)) {
                 // We backtrack to find the start of each digit string, then we
                 // scan each digit string, ignoring leading zeros to put the two
                 // strings into alignment with their most significant digits.
@@ -869,7 +869,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
                 curEnd = lcur + std::min(std::distance(lcur, lend),
                                          std::distance(rcur, rend));
             }
-            else if (IsDigit(l) | IsDigit(r)) {
+            else if (IsDigit(l) || IsDigit(r)) {
                 if (lcur == lstr.c_str()) {
                     return l < r;
                 }

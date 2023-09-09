@@ -4554,7 +4554,7 @@ typedef struct
    stbi__context *s;
    stbi_uc *idata, *expanded, *out;
    int depth;
-   float gamma = 0;
+   float gamma;
 } stbi__png;
 
 

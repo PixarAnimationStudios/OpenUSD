@@ -310,7 +310,7 @@ HioGlslfxConfig::_GetSourceKeyMap(VtDictionary const & dict,
 
     const VtDictionary& specDict = techniqueSpec.UncheckedGet<VtDictionary>();
     // get all of the shader stages specified in the spec
-    for (const std::pair<std::string, VtValue>& p : specDict) {
+    for (const std::pair<std::string, VtValue> p : specDict) {
         const string& shaderStageKey = p.first;
         const VtValue& shaderStageSpec = p.second;
 
@@ -438,7 +438,7 @@ HioGlslfxConfig::_GetParameters(VtDictionary const & dict,
 
     const VtDictionary& paramsDict = params.UncheckedGet<VtDictionary>();
     // pre-process the paramsDict in order to get the merged ordering
-    for (const std::pair<std::string, VtValue>& p : paramsDict) {
+    for (const std::pair<std::string, VtValue> p : paramsDict) {
         string paramName = p.first;
         if (std::find(paramOrder.begin(), paramOrder.end(), paramName) ==
                 paramOrder.end()) {
@@ -546,7 +546,7 @@ HioGlslfxConfig::_GetTextures(VtDictionary const & dict,
     }
 
     const VtDictionary& texturesDict = textures.UncheckedGet<VtDictionary>();
-    for (const std::pair<std::string, VtValue>& p : texturesDict) {
+    for (const std::pair<std::string, VtValue> p : texturesDict) {
         const string& textureName = p.first;
         const VtValue& textureData = p.second;
         if (!textureData.IsHolding<VtDictionary>()) {
@@ -617,7 +617,7 @@ HioGlslfxConfig::_GetAttributes(VtDictionary const & dict,
 
     const VtDictionary& attributesDict =
         attributes.UncheckedGet<VtDictionary>();
-    for (const std::pair<std::string, VtValue>& p : attributesDict) {
+    for (const std::pair<std::string, VtValue> p : attributesDict) {
         const string& attributeName = p.first;
         const VtValue& attributeData = p.second;
         if (!attributeData.IsHolding<VtDictionary>()) {
