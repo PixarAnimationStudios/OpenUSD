@@ -31,12 +31,13 @@
 #include "pxr/base/vt/value.h"
 
 #include <boost/numeric/conversion/cast.hpp>
-#include <boost/variant.hpp>
+#include <boost/variant/get.hpp>
 
 #include <functional>
 #include <limits>
 #include <string>
 #include <type_traits>
+#include <variant>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,8 +47,8 @@ bool Sdf_BoolFromString(const std::string &, bool *parseOk);
 namespace Sdf_ParserHelpers {
 
 // Internal variant type.
-typedef boost::variant<uint64_t, int64_t, double,
-                       std::string, TfToken, SdfAssetPath> _Variant;
+using _Variant = std::variant<uint64_t, int64_t, double,
+                              std::string, TfToken, SdfAssetPath>;
 
 ////////////////////////////////////////////////////////////////////////
 // Utilities that implement the Sdf_ParserHelpers::Value::Get<T>() method.  The
@@ -61,7 +62,7 @@ struct _GetImpl
 {
     typedef const T &ResultType;
     static const T &Visit(_Variant const &variant) {
-        return boost::get<T>(variant);
+        return std::get<T>(variant);
     }
 };
 
@@ -72,12 +73,11 @@ struct _GetImpl
 template <class T>
 struct _GetImpl<
     T, std::enable_if_t<std::is_integral<T>::value>>
-    : public boost::static_visitor<T>
 {
     typedef T ResultType;
 
     T Visit(_Variant const &variant) {
-        return boost::apply_visitor(*this, variant);
+        return std::visit(*this, variant);
     }
 
     // Fallback case: throw bad_get.
@@ -114,12 +114,11 @@ private:
 template <class T>
 struct _GetImpl<
     T, std::enable_if_t<std::is_floating_point<T>::value>>
-    : public boost::static_visitor<T>
 {
     typedef T ResultType;
 
     T Visit(_Variant const &variant) {
-        return boost::apply_visitor(*this, variant);
+        return std::visit(*this, variant);
     }
 
     // Fallback case: throw bad_get.
@@ -167,9 +166,9 @@ struct _GetImpl<SdfAssetPath>
     typedef SdfAssetPath ResultType;
 
     SdfAssetPath Visit(_Variant const &variant) {
-        if (std::string const *str = boost::get<std::string>(&variant))
+        if (std::string const *str = std::get_if<std::string>(&variant))
             return SdfAssetPath(*str);
-        return boost::get<SdfAssetPath>(variant);
+        return std::get<SdfAssetPath>(variant);
     }
 };
 
@@ -177,12 +176,12 @@ struct _GetImpl<SdfAssetPath>
 // Strings and tokens get parsed via Sdf_BoolFromString.  Otherwise throw
 // bad_get.
 template <>
-struct _GetImpl<bool> : public boost::static_visitor<bool>
+struct _GetImpl<bool>
 {
     typedef bool ResultType;
     
     bool Visit(_Variant const &variant) {
-        return boost::apply_visitor(*this, variant);
+        return std::visit(*this, variant);
     }
 
     // Parse string via Sdf_BoolFromString.
@@ -270,33 +269,37 @@ struct Value
     // boost::bad_get.
     template <class T>
     typename _GetImpl<T>::ResultType Get() const {
-        return _GetImpl<T>().Visit(_variant);
+        try {
+            return _GetImpl<T>().Visit(_variant);
+        } catch (std::bad_variant_access& e) {
+            throw boost::bad_get();
+        }
     }
 
     // Hopefully short-lived API that applies an external visitor to the held
     // variant type.
     template <class Visitor>
-    typename Visitor::result_type
+    auto
     ApplyVisitor(const Visitor &visitor) {
-        return boost::apply_visitor(visitor, _variant);
+        return std::visit(visitor, _variant);
     }
 
     template <class Visitor>
-    typename Visitor::result_type
+    auto
     ApplyVisitor(Visitor &visitor) {
-        return boost::apply_visitor(visitor, _variant);
+        return std::visit(visitor, _variant);
     }
 
     template <class Visitor>
-    typename Visitor::result_type
+    auto
     ApplyVisitor(const Visitor &visitor) const {
-        return _variant.apply_visitor(visitor);
+        return std::visit(visitor, _variant);
     }
 
     template <class Visitor>
-    typename Visitor::result_type
+    auto
     ApplyVisitor(Visitor &visitor) const {
-        return _variant.apply_visitor(visitor);
+        return std::visit(visitor, _variant);
     }
 
 private:

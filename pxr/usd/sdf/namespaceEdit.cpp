@@ -31,10 +31,10 @@
 #include "pxr/base/tf/stringUtils.h"
 
 #include <boost/ptr_container/ptr_set.hpp>
-#include <boost/variant.hpp>
 
 #include <memory>
 #include <ostream>
+#include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -91,7 +91,7 @@ private:
     // A key for a _Node.  _RootKey is for the root, SdfPath is for attribute
     // connections and relationship targets, and TfToken for prim and property
     // children.
-    typedef boost::variant<_RootKey, TfToken, SdfPath> _Key;
+    using _Key = std::variant<_RootKey, TfToken, SdfPath>;
 
     struct _TargetKey {
         _TargetKey(const SdfPath& path) : key(path) { }
@@ -161,7 +161,7 @@ private:
         // Test if the node was removed.  This returns true for key nodes.
         bool IsRemoved() const
         {
-            return !_parent && _key.which() != 0;
+            return !_parent && _key.index() != 0;
         }
 
         // Remove the node from its parent.  After this call returns \c true
@@ -567,7 +567,7 @@ SdfNamespaceEdit_Namespace::_FixBackpointers(
     for (_BackpointerMap::iterator j = i; j != n; ++j) {
         for (auto node : j->second) {
             node->SetKey(
-                boost::get<SdfPath>(node->GetKey()).
+                std::get<SdfPath>(node->GetKey()).
                     ReplacePrefix(currentPath, newPath, !fixTargetPaths));
         }
     }
