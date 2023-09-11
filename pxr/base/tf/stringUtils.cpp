@@ -62,6 +62,13 @@ using std::vector;
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+namespace {
+    bool _IsASCIIValue(char c)
+    {
+        return (c & (1<<7)) == 0;
+    }
+}
+
 string
 TfVStringPrintf(const std::string& fmt, va_list ap)
 {
@@ -802,7 +809,8 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         }
         l = *lcur, r = *rcur;
         // If they are letters that differ disregarding case, we're done.
-        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+        // but only if they are ASCII (i.e., the high bit is not set)
+        if (_IsASCIIValue(l) && _IsASCIIValue(r) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
@@ -871,7 +879,10 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
             }
             else if (IsDigit(l) | IsDigit(r)) {
                 if (lcur == lstr.c_str()) {
-                    return l < r;
+                    // special case could occur where one is a digit, but the other
+                    // might be a UTF-8 character, so we have to treat them
+                    // as unsigned in the comparison
+                    return static_cast<unsigned char>(l) < static_cast<unsigned char>(r);
                 }
                 // If one is a digit (but not both), then we have to check the
                 // preceding character to determine the outcome.  If the
@@ -884,7 +895,12 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         }
         else if (!IsAlpha(l) || !IsAlpha(r)) {
             // At least one isn't a letter.
-            return l < r;
+            // this either means it's an ASCII symbol (digit was checked above)
+            // or a utf-8 encoded unicode character
+            // we want ASCII symbols to sort first, so we can't treat the
+            // utf-8 characters as unsigned (and all ASCII values remain the same
+            // after the cast)
+            return static_cast<unsigned char>(l) < static_cast<unsigned char>(r);
         }
         else {
             // Both letters, differ by case, continue.
@@ -909,7 +925,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         rstr.c_str());
     
     l = *lcur, r = *rcur;
-    return (r == '0') | ((l != '0') & (l < r));
+    return (r == '0') | ((l != '0') & (static_cast<unsigned char>(l) < static_cast<unsigned char>(r)));
 
 }
 

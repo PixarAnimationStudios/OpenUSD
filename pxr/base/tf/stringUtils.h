@@ -496,6 +496,17 @@ TfMatchedStringTokenize(const std::string& source,
 /// Characters whose ASCII value are inbetween upper- and lowercase letters,
 /// such as underscore, are sorted to come after all letters.
 ///
+/// \note This comparison is used for the runtime to give a deterministic ordering to strings.
+/// ASCII strings will lexicographically sort according to the rules below.
+///   Strings with Unicode characters will follow these same rules until a
+///   Unicode character is encountered in which case it will be byte compared
+///   with the character in the other string.  Multi-byte encoded characters
+///   will operate this way for each of the bytes.
+/// Note that this results in a non-lexicographic ordering of strings that
+/// contain Unicode characters.  Clients interested in sorting strings 
+/// lexicographically should not rely on this function for doing so and should
+/// instead use a custom sort function (or use one provided by an already
+/// existing library such as Qt or ICU).
 struct TfDictionaryLessThan {
     /// Return true if \p lhs is less than \p rhs in dictionary order.
     ///
@@ -512,14 +523,15 @@ struct TfDictionaryLessThan {
     inline bool operator()(const std::string &lhs,
                            const std::string &rhs) const {
         // Check first chars first.  By far, it is most common that these
-        // characters are letters of the same case that differ, or of different
+        // characters are ASCII letters of the same case that differ, or of different
         // case that differ.  It is very rare that we have to account for
-        // different cases, or numerical comparisons, so we special-case this
+        // different cases, or numerical comparisons, or UTF-8 characters so we special-case this
         // first.
         char l = lhs.c_str()[0], r = rhs.c_str()[0];
-        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+        if ((((l & (1<<7)) == 0) && ((r & (1<<7)) == 0)) && (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f))) {
             // This bit about add 5 mod 32 makes it so that '_' sorts less than
             // all letters, which preserves existing behavior.
+            // but only when both characters are ASCII characters
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
         else {
