@@ -2270,6 +2270,11 @@ except Exception as e:
 
 verbosity = args.verbosity
 
+# fix for git-bash on Windows using code page 1252 as default instead
+# of unicode - functions like e.g. PrintCommandOutput fail writing
+# unicode characters for filenames containing them
+sys.stdout.reconfigure(encoding='utf-8')
+
 # Augment PATH on Windows so that 3rd-party dependencies can find libraries
 # they depend on. In particular, this is needed for building IlmBase/OpenEXR.
 extraPaths = []
