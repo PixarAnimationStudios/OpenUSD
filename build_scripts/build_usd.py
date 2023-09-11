@@ -2270,7 +2270,7 @@ except Exception as e:
 
 verbosity = args.verbosity
 
-if sys.version_info[0] >= 3 and sys.version_info[1] > 6:
+if (sys.version_info[0] == 3 and sys.version_info[1] > 6) or sys.version_info[0] > 3:
     # fix for git-bash on Windows using code page 1252 as default instead
     # of unicode - functions like e.g. PrintCommandOutput fail writing
     # unicode characters for filenames containing them
