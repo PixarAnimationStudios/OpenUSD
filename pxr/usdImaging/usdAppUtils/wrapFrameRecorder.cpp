@@ -45,7 +45,9 @@ wrapFrameRecorder()
         .def(init<const TfToken&, bool, const SdfPath&>(
             (arg("rendererPluginId") = TfToken(), 
              arg("gpuEnabled") = true,
+             arg("disableDefaultLight") = false,
              arg("renderSettingsPrimPath") = SdfPath())))
+        .def(init<const TfToken&, bool, bool>())
         .def("GetCurrentRendererId", &This::GetCurrentRendererId)
         .def("SetRendererPlugin", &This::SetRendererPlugin)
         .def("SetImageWidth", &This::SetImageWidth)
