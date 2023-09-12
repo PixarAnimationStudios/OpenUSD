@@ -176,7 +176,7 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     }
     
     // Bind the skydome texture 
-    _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
+    _compositor->BindTextures({_skydomeTexture});
 
     // Get the viewport size
     GfVec4i viewport = hdStRenderPassState->ComputeViewport();
