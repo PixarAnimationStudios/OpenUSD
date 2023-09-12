@@ -21,9 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "pxr/imaging/hdSt/resourceLayout.h"
-
-#include "pxr/imaging/hd/tokens.h"
+#include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
@@ -35,19 +33,20 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-TF_DEFINE_PUBLIC_TOKENS(HdStResourceLayoutTokens, HDST_RESOURCE_LAYOUT_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HioGlslfxResourceLayoutTokens,
+                        HIO_GLSLFX_RESOURCE_LAYOUT_TOKENS);
 
-HdSt_ResourceLayout::HdSt_ResourceLayout() = default;
-HdSt_ResourceLayout::~HdSt_ResourceLayout() = default;
+HioGlslfxResourceLayout::HioGlslfxResourceLayout() = default;
+HioGlslfxResourceLayout::~HioGlslfxResourceLayout() = default;
 
 namespace {
 
-using InOut = HdSt_ResourceLayout::InOut;
-using Kind = HdSt_ResourceLayout::Kind;
-using Member = HdSt_ResourceLayout::Member;
-using MemberVector = HdSt_ResourceLayout::MemberVector;
-using Element = HdSt_ResourceLayout::Element;
-using ElementVector = HdSt_ResourceLayout::ElementVector;
+using InOut = HioGlslfxResourceLayout::InOut;
+using Kind = HioGlslfxResourceLayout::Kind;
+using Member = HioGlslfxResourceLayout::Member;
+using MemberVector = HioGlslfxResourceLayout::MemberVector;
+using Element = HioGlslfxResourceLayout::Element;
+using ElementVector = HioGlslfxResourceLayout::ElementVector;
 
 using InputValue = VtValue;
 using InputValueVector = std::vector<VtValue>;
@@ -56,7 +55,7 @@ TfToken
 _Token(InputValue const & input)
 {
     return TfToken(input.GetWithDefault(
-                            HdStResourceLayoutTokens->unknown.GetString()));
+        HioGlslfxResourceLayoutTokens->unknown.GetString()));
 }
 
 InputValueVector
@@ -88,7 +87,7 @@ bool
 _ParseValue(InputValueVector const & input, Element *element)
 {
     if (input.size() != 3 && input.size() != 4) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->inValue) {
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->inValue) {
         *element = Element(InOut::STAGE_IN, Kind::VALUE,
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]));
@@ -96,7 +95,7 @@ _ParseValue(InputValueVector const & input, Element *element)
             element->qualifiers = _Token(input[3]);
         }
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->outValue) {
+    } else if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->outValue) {
         *element = Element(InOut::STAGE_OUT, Kind::VALUE,
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]));
@@ -113,13 +112,14 @@ bool
 _ParseValueArray(InputValueVector const & input, Element *element)
 {
     if (input.size() != 4) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->inValueArray) {
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->inValueArray) {
         *element = Element(InOut::STAGE_IN, Kind::VALUE,
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]),
                            /*arraySize=*/_Token(input[3]));
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->outValueArray) {
+    } else if (
+        _Token(input[0]) == HioGlslfxResourceLayoutTokens->outValueArray) {
         *element = Element(InOut::STAGE_OUT, Kind::VALUE,
                            /*dataType=*/_Token(input[1]),
                            /*name=*/_Token(input[2]),
@@ -137,16 +137,16 @@ bool
 _ParseBlock(InputValueVector const & input, Element *element)
 {
     if (input.size() < 4) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->inBlock) {
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->inBlock) {
         *element = Element(InOut::STAGE_IN, Kind::BLOCK,
-                           /*dataType=*/HdStResourceLayoutTokens->block,
+                           /*dataType=*/HioGlslfxResourceLayoutTokens->block,
                            /*name=*/_Token(input[2]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/3);
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->outBlock) {
+    } else if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->outBlock) {
         *element = Element(InOut::STAGE_OUT, Kind::BLOCK,
-                           /*dataType=*/HdStResourceLayoutTokens->block,
+                           /*dataType=*/HioGlslfxResourceLayoutTokens->block,
                            /*name=*/_Token(input[2]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/3);
@@ -163,17 +163,18 @@ bool
 _ParseBlockArray(InputValueVector const & input, Element *element)
 {
     if (input.size() < 5) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->inBlockArray) {
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->inBlockArray) {
         *element = Element(InOut::STAGE_IN, Kind::BLOCK,
-                           /*dataType=*/HdStResourceLayoutTokens->block,
+                           /*dataType=*/HioGlslfxResourceLayoutTokens->block,
                            /*name=*/_Token(input[2]),
                            /*arraySize=*/_Token(input[3]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/4);
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->outBlockArray) {
+    } else if (_Token(input[0]) ==
+               HioGlslfxResourceLayoutTokens->outBlockArray) {
         *element = Element(InOut::STAGE_OUT, Kind::BLOCK,
-                           /*dataType=*/HdStResourceLayoutTokens->block,
+                           /*dataType=*/HioGlslfxResourceLayoutTokens->block,
                            /*name=*/_Token(input[2]),
                            /*arraySize=*/_Token(input[3]));
         element->aggregateName = _Token(input[1]);
@@ -188,11 +189,11 @@ bool
 _ParseQualifier(InputValueVector const & input, Element *element)
 {
     if (input.size() != 2) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->inValue) {
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->inValue) {
         *element = Element(InOut::STAGE_IN, Kind::QUALIFIER);
         element->qualifiers = _Token(input[1]);
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->outValue) {
+    } else if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->outValue) {
         *element = Element(InOut::STAGE_OUT, Kind::QUALIFIER);
         element->qualifiers = _Token(input[1]);
         return true;
@@ -211,10 +212,11 @@ bool
 _ParseUniformBlock(InputValueVector const & input, Element *element)
 {
     if (input.size() < 4) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->uniformBlock) {
-        *element = Element(InOut::NONE, Kind::UNIFORM_BLOCK_CONSTANT_PARAMS,
-                           /*dataType=*/HdStResourceLayoutTokens->uniformBlock,
-                           /*name=*/_Token(input[2]));
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->uniformBlock) {
+        *element = Element(
+            InOut::NONE, Kind::UNIFORM_BLOCK_CONSTANT_PARAMS,
+            /*dataType=*/HioGlslfxResourceLayoutTokens->uniformBlock,
+            /*name=*/_Token(input[2]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/3);
         return true;
@@ -229,17 +231,20 @@ bool
 _ParseBuffer(InputValueVector const & input, Element *element)
 {
     if (input.size() < 4) return false;
-    if (_Token(input[0]) == HdStResourceLayoutTokens->bufferReadOnly) {
-        *element = Element(InOut::NONE, Kind::BUFFER_READ_ONLY,
-                           /*dataType=*/HdStResourceLayoutTokens->bufferReadOnly,
-                           /*name=*/_Token(input[2]));
+    if (_Token(input[0]) == HioGlslfxResourceLayoutTokens->bufferReadOnly) {
+        *element = Element(
+            InOut::NONE, Kind::BUFFER_READ_ONLY,
+            /*dataType=*/HioGlslfxResourceLayoutTokens->bufferReadOnly,
+            /*name=*/_Token(input[2]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/3);
         return true;
-    } else if (_Token(input[0]) == HdStResourceLayoutTokens->bufferReadWrite) {
-        *element = Element(InOut::NONE, Kind::BUFFER_READ_WRITE,
-                           /*dataType=*/HdStResourceLayoutTokens->bufferReadWrite,
-                           /*name=*/_Token(input[2]));
+    } else if (_Token(input[0]) ==
+               HioGlslfxResourceLayoutTokens->bufferReadWrite) {
+        *element = Element(
+            InOut::NONE, Kind::BUFFER_READ_WRITE,
+            /*dataType=*/HioGlslfxResourceLayoutTokens->bufferReadWrite,
+            /*name=*/_Token(input[2]));
         element->aggregateName = _Token(input[1]);
         element->members = _ParseMembers(input, /*fromElement=*/3);
         return true;
@@ -278,7 +283,7 @@ _ParsePerStageLayout(ElementVector *result, VtValue const &perStageLayout)
 
 /* static */
 void
-HdSt_ResourceLayout::ParseLayout(
+HioGlslfxResourceLayout::ParseLayout(
     ElementVector *result,
     TfToken const &shaderStage,
     VtDictionary const &layoutDict)

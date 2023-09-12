@@ -21,13 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_RESOURCE_LAYOUT_H
-#define PXR_IMAGING_HD_ST_RESOURCE_LAYOUT_H
+#ifndef PXR_IMAGING_HIO_GLSLFX_RESOURCE_LAYOUT_H
+#define PXR_IMAGING_HIO_GLSLFX_RESOURCE_LAYOUT_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hdSt/api.h"
 
-#include "pxr/imaging/hd/types.h"
+#include "pxr/imaging/hio/types.h"
 
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -37,7 +36,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 
-#define HDST_RESOURCE_LAYOUT_TOKENS             \
+#define HIO_GLSLFX_RESOURCE_LAYOUT_TOKENS       \
     (unknown)                                   \
     (block)                                     \
     ((inValue, "in"))                           \
@@ -52,12 +51,12 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((bufferReadOnly, "buffer readOnly"))       \
     ((bufferReadWrite, "buffer readWrite"))
 
-TF_DECLARE_PUBLIC_TOKENS(HdStResourceLayoutTokens, HDST_API,
-                         HDST_RESOURCE_LAYOUT_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HioGlslfxResourceLayoutTokens, HIO_API,
+                         HIO_GLSLFX_RESOURCE_LAYOUT_TOKENS);
 
 class VtDictionary;
 
-/// \class HdSt_ResourceLayout
+/// \class HioGlslfxResourceLayout
 /// The resource layout for stages in a shader pipeline.
 ///
 /// The main geometric shader pipelines for meshes, curves, points,
@@ -78,7 +77,7 @@ class VtDictionary;
 /// The dictionary layouts have been designed to match the concepts
 /// and syntax used by GLSL.
 ///
-class HdSt_ResourceLayout
+class HioGlslfxResourceLayout
 {
 public:
     /// Specifies whether a resource element is a shader input,
@@ -122,8 +121,8 @@ public:
     struct Element {
         Element(InOut inOut = InOut::NONE,
                 Kind kind = Kind::NONE,
-                TfToken dataType = HdStResourceLayoutTokens->unknown,
-                TfToken name = HdStResourceLayoutTokens->unknown,
+                TfToken dataType = HioGlslfxResourceLayoutTokens->unknown,
+                TfToken name = HioGlslfxResourceLayoutTokens->unknown,
                 TfToken arraySize = TfToken(),
                 TfToken qualifiers = TfToken())
             : inOut(inOut)
@@ -160,7 +159,7 @@ public:
         TextureElement(TfToken name,
                 int dim,
                 int bindingIndex,
-                HdFormat format = HdFormatFloat32Vec4,
+                HioFormat format = HioFormatFloat32Vec4,
                 TextureType textureType = TextureType::TEXTURE,
                 int arraySize = 0)
             : name(name)
@@ -173,17 +172,18 @@ public:
         TfToken name;
         int dim;
         int bindingIndex;
-        HdFormat format;
+        HioFormat format;
         TextureType textureType;
         int arraySize;
     };
     using TextureElementVector = std::vector<TextureElement>;
 
-    HdSt_ResourceLayout();
-    ~HdSt_ResourceLayout();
+    HioGlslfxResourceLayout();
+    ~HioGlslfxResourceLayout();
 
     /// Parses GLSLFX resource layout elements from the specified
     /// \a layoutDict and appends the parsed elements to \a result.
+    HIO_API
     static void ParseLayout(
         ElementVector *result,
         TfToken const &shaderStage,
@@ -193,4 +193,4 @@ public:
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HD_ST_RESOURCE_LAYOUT_H
+#endif  // PXR_IMAGING_HIO_GLSLFX_RESOURCE_LAYOUT_H
