@@ -36,7 +36,8 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/work/utils.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
+
 #include <tbb/concurrent_unordered_map.h>
 #include <functional>
 
