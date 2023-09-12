@@ -101,7 +101,8 @@ UsdNotice::ObjectsChanged::_GetEmptyChangesMap()
 UsdNotice::ObjectsChanged::ObjectsChanged(
     const UsdStageWeakPtr &stage,
     const _PathsToChangesMap *resyncChanges)
-    : ObjectsChanged(stage, resyncChanges, &_GetEmptyChangesMap())
+    : ObjectsChanged(
+        stage, resyncChanges, &_GetEmptyChangesMap(), &_GetEmptyChangesMap())
 {
 }
 
@@ -122,6 +123,16 @@ UsdNotice::ObjectsChanged::ChangedInfoOnly(const UsdObject &obj) const
     return _infoChanges->find(obj.GetPath()) != _infoChanges->end();
 }
 
+bool 
+UsdNotice::ObjectsChanged::ResolvedAssetPathsResynced(
+    const UsdObject &obj) const 
+{
+    // XXX: We don't need the longest prefix here, we just need to know if
+    // a prefix exists in the map.
+    return SdfPathFindLongestPrefix(
+        *_assetPathChanges, obj.GetPath()) != _assetPathChanges->end();
+}
+
 UsdNotice::ObjectsChanged::PathRange
 UsdNotice::ObjectsChanged::GetResyncedPaths() const
 {
@@ -132,6 +143,12 @@ UsdNotice::ObjectsChanged::PathRange
 UsdNotice::ObjectsChanged::GetChangedInfoOnlyPaths() const
 {
     return PathRange(_infoChanges);
+}
+
+UsdNotice::ObjectsChanged::PathRange
+UsdNotice::ObjectsChanged::GetResolvedAssetPathsResyncedPaths() const
+{
+    return PathRange(_assetPathChanges);
 }
 
 TfTokenVector 
