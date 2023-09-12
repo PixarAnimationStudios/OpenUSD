@@ -82,8 +82,6 @@
 
 #include <vector>
 
-#include <boost/preprocessor/control/iif.hpp>
-#include <boost/preprocessor/control/expr_iif.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/seq/filter.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
@@ -163,17 +161,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 // be a tuple on the form (name, value) or just a name.
 //
 #define _TF_TOKENS_DECLARE_MEMBER(r, data, elem)                            \
-    TfToken BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                              \
-        TF_PP_TUPLE_ELEM(0, elem), elem)                                    \
-        BOOST_PP_EXPR_IIF(TF_PP_IS_TUPLE(TF_PP_TUPLE_ELEM(1, elem)),        \
-        [BOOST_PP_SEQ_SIZE(TF_PP_TUPLE_ELEM(0,                              \
-            TF_PP_TUPLE_ELEM(1, elem)))]);
+    TfToken _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                \
+        TF_PP_TUPLE_ELEM(0, elem), elem);
+
+#define _TF_TOKENS_DECLARE_ARRAY_MEMBER_IMPL(identifier, size)              \
+    TfToken identifier[size];
+
+#define _TF_TOKENS_DECLARE_ARRAY_MEMBER(r, data, elem)                      \
+    _TF_TOKENS_DECLARE_ARRAY_MEMBER_IMPL(                                   \
+        TF_PP_TUPLE_ELEM(0, elem),                                          \
+        BOOST_PP_SEQ_SIZE(TF_PP_EAT_PARENS(TF_PP_TUPLE_ELEM(1, elem))))
 
 // Private macro used to declare the list of members as TfTokens
 //
 #define _TF_TOKENS_DECLARE_MEMBERS(seq) \
     BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_MEMBER, ~,                     \
-        seq _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq))                          \
+        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_NOT_ARRAY, ~, seq)                \
+        _TF_TOKENS_EXPAND_ARRAY_ELEMENTS(seq))                              \
+    BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_ARRAY_MEMBER, ~,               \
+        BOOST_PP_SEQ_FILTER(_TF_TOKENS_IS_ARRAY, ~, seq))                   \
     std::vector<TfToken> allTokens;
 
 // Private macro that expands all array elements to make them members
@@ -207,7 +213,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 //
 #define _TF_TOKENS_DEFINE_MEMBER(r, data, i, elem)                          \
     BOOST_PP_COMMA_IF(i)                                                    \
-    TF_PP_TUPLE_ELEM(0, BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                  \
+    TF_PP_TUPLE_ELEM(0, _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                    \
         (_TF_TOKENS_INITIALIZE_MEMBER_TUPLE(elem)),                         \
         (_TF_TOKENS_INITIALIZE_MEMBER(elem))))
 
@@ -218,13 +224,13 @@ PXR_NAMESPACE_OPEN_SCOPE
     elem(TF_PP_STRINGIZE(elem), TfToken::Immortal)
 
 #define _TF_TOKENS_DEFINE_ARRAY_MEMBER(r, data, i, elem)                    \
-    data[i] = BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                            \
+    data[i] = _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                              \
         TF_PP_TUPLE_ELEM(0, elem), elem);
 
 // Private macros to append tokens to the allTokens vector.
 //
 #define _TF_TOKENS_APPEND_MEMBER(r, data, i, elem)                          \
-    BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                                      \
+    _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                        \
         _TF_TOKENS_APPEND_MEMBER_BODY(~, ~,                                 \
                                       TF_PP_TUPLE_ELEM(0, elem)),           \
         _TF_TOKENS_APPEND_MEMBER_BODY(~, ~, elem))
