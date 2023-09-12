@@ -47,7 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 using _PrimSource_0 = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule, HdCapsuleSchema>;
-using _PrimSource_1 = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule_1, HdCapsule_1Schema>;
+using _PrimSource_1 = UsdImagingDataSourceImplicitsPrim<UsdGeomCapsule_1, HdCapsuleSchema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)

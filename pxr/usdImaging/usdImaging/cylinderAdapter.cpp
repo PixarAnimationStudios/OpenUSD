@@ -47,7 +47,7 @@ namespace {
 using _PrimSource_0 = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder,
       HdCylinderSchema>;
 using _PrimSource_1 = UsdImagingDataSourceImplicitsPrim<UsdGeomCylinder_1,
-      HdCylinder_1Schema>;
+      HdCylinderSchema>;
 }
 
 TF_REGISTRY_FUNCTION(TfType)
