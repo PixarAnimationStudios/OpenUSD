@@ -45,6 +45,8 @@ using HdFlattenedDataSourceProviderSharedPtr =
 class HdFlattenedDataSourceProvider
 {
 public:
+    virtual ~HdFlattenedDataSourceProvider() {};
+
     class Context
     {
     public:

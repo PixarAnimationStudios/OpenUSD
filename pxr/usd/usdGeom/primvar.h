@@ -865,8 +865,8 @@ UsdGeomPrimvar::_ComputeFlattenedHelper(const VtArray<ScalarType> &authored,
 
         if (errString) {
             *errString = TfStringPrintf(
-                "Found %ld invalid indices at positions [%s%s] that are out of "
-                "range [0,%ld).", invalidIndexPositions.size(), 
+                "Found %zu invalid indices at positions [%s%s] that are out of "
+                "range [0,%zu).", invalidIndexPositions.size(),
                 TfStringJoin(invalidPositionsStrVec, ", ").c_str(), 
                 invalidIndexPositions.size() > 5 ? ", ..." : "",
                 authored.size());

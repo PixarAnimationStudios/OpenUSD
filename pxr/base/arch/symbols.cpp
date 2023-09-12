@@ -128,7 +128,7 @@ ArchGetAddressInfo(
         }
 
         if (symbolName) {
-            *symbolName = symbol->Name ? symbol->Name : "";
+            *symbolName = symbol->Name[0] ? symbol->Name : "";
         }
 
         if (symbolAddress) {

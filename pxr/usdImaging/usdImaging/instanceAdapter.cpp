@@ -238,7 +238,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
         // prototypes.
         UsdPrimRange range(prototypePrim, _GetDisplayPredicate());
         int protoID = 0;
-        int primCount = 0;
 
         for (auto iter = range.begin(); iter != range.end(); ++iter) {
             // If we encounter an instance in this USD prototype, save it aside
@@ -329,7 +328,6 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 proto.path = iter->GetPath();
             }
             proto.adapter = primAdapter;
-            ++primCount;
 
             if (!isLeafInstancer) {
                 instancerData.childPointInstancers.insert(protoPath);
@@ -342,6 +340,8 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 }
             }
 
+            ARCH_PRAGMA_PUSH
+            ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
             TF_DEBUG(USDIMAGING_INSTANCER).Msg(
                 "[Add Instance NI] <%s>  %s (%s), adapter = %s\n",
                 instancerPath.GetText(), protoPath.GetText(),
@@ -349,6 +349,7 @@ UsdImagingInstanceAdapter::_Populate(UsdPrim const& prim,
                 primAdapter ?
                     TfType::GetCanonicalTypeName(typeid(*primAdapter)).c_str() :
                     "none");
+            ARCH_PRAGMA_POP
         }
 
         UsdPrim instancerPrim = _GetPrim(instancerPath);

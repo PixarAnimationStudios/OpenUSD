@@ -1081,9 +1081,9 @@ typedef enum libdeflate_result (*decompress_func_t)
 
 #ifdef arch_select_decompress_func
 static enum libdeflate_result
-dispatch_decomp(struct libdeflate_decompressor *d,
-		const void *in, size_t in_nbytes,
-		void *out, size_t out_nbytes_avail,
+dispatch_decomp(struct libdeflate_decompressor * restrict d,
+		const void * restrict in, size_t in_nbytes,
+		void * restrict out, size_t out_nbytes_avail,
 		size_t *actual_in_nbytes_ret, size_t *actual_out_nbytes_ret);
 
 static volatile decompress_func_t decompress_impl = dispatch_decomp;

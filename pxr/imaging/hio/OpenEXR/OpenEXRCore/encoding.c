@@ -31,7 +31,7 @@ default_compress_chunk (exr_encode_pipeline_t* encode)
         return pctxt->print_error (
             pctxt,
             rv,
-            "error allocating buffer %lu",
+            "error allocating buffer %zu",
             exr_compress_max_buffer_size (encode->packed_bytes));
     //return rv;
 

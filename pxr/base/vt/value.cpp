@@ -94,6 +94,8 @@ _NumericCast(VtValue const &val)
 {
     const From x = val.UncheckedGet<From>();
 
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_UNSAFE_USE_OF_BOOL
     // Use 'x == x' to check that x is not NaN.  NaNs don't compare equal to
     // themselves.
     if (x == x) {
@@ -104,6 +106,7 @@ _NumericCast(VtValue const &val)
             return VtValue(-std::numeric_limits<To>::infinity());
         }
     }
+    ARCH_PRAGMA_POP
 
     return _BoostNumericCast<From, To>(x);
 }

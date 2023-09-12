@@ -102,6 +102,12 @@
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND \
         _Pragma("clang diagnostic ignored \"-Wobjc-method-access\"")
 
+    #define ARCH_PRAGMA_INT_FLOAT_CONVERSION
+        _Pragma("clang diagnostic ignored \"-Wimplicit-const-int-float-conversion\"")
+
+    #define ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
+        _Pragma("clang diagnostic ignored \"-Wpotentially-evaluated-expression\"")
+
 #elif defined(ARCH_COMPILER_MSVC)
 
     #define ARCH_PRAGMA_PUSH \
@@ -138,6 +144,9 @@
 
     #define ARCH_PRAGMA_CONVERSION_FROM_SIZET \
         __pragma(warning(disable:4267)) 
+
+    #define ARCH_PRAGMA_NON_DLL_INTERFACE_CLASS_USED_AS_BASE_FOR_DLL_INTERFACE_CLASS \
+        __pragma(warning(disable:4275))
 
     #define ARCH_PRAGMA_MAY_NOT_BE_ALIGNED \
         __pragma(warning(disable:4316)) 
@@ -260,6 +269,18 @@
 
 #if !defined ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
     #define ARCH_PRAGMA_INSTANCE_METHOD_NOT_FOUND
+#endif
+
+#if !defined ARCH_PRAGMA_INT_FLOAT_CONVERSION
+    #define ARCH_PRAGMA_INT_FLOAT_CONVERSION
+#endif
+
+#if !defined ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
+    #define ARCH_PRAGMA_POTENTIALLY_EVALUATED_EXPRESSION
+#endif
+
+#if !defined ARCH_PRAGMA_NON_DLL_INTERFACE_CLASS_USED_AS_BASE_FOR_DLL_INTERFACE_CLASS
+    #define ARCH_PRAGMA_NON_DLL_INTERFACE_CLASS_USED_AS_BASE_FOR_DLL_INTERFACE_CLASS
 #endif
 
 #endif // PXR_BASE_ARCH_PRAGMAS_H

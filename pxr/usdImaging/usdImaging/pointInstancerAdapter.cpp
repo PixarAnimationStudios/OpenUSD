@@ -475,7 +475,7 @@ UsdImagingPointInstancerAdapter::_PopulatePrototype(
     }
 
     TF_DEBUG(USDIMAGING_POINT_INSTANCER_PROTO_CREATED).Msg(
-        "Prototype[%d]: <%s>, primCount: %lu, instantiatedPrimCount: %lu\n",
+        "Prototype[%d]: <%s>, primCount: %zu, instantiatedPrimCount: %zu\n",
         protoIndex,
         protoRootPrim.GetPath().GetText(),
         primCount,
@@ -2219,8 +2219,8 @@ UsdImagingPointInstancerAdapter::GetInstanceIndices(
                         instancerPrim, time);
 
                 if (pathIndex >= indices.size()) {
-                    TF_WARN("ProtoIndex %lu out of bounds "
-                            "(prototypes size = %lu) for (%s, %s)",
+                    TF_WARN("ProtoIndex %zu out of bounds "
+                            "(prototypes size = %zu) for (%s, %s)",
                                     pathIndex,
                                     indices.size(),
                                     instancerCachePath.GetText(),
