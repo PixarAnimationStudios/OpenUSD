@@ -358,6 +358,11 @@ pxr_install_test_dir(
     DEST testUsdviewExpressionVariableEdits
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdviewExpressionVariableEdits
+    DEST testUsdviewExpressionVariableEdits_Delegate
+)
+
 pxr_register_test(testUsdviewAlive
     PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
     PYTHON
