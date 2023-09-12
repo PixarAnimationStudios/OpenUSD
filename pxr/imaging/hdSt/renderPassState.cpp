@@ -164,13 +164,13 @@ HdStRenderPassState::_ComputeFlippedFilmbackWindow() const
     };
 }
 
-HdStRenderPassState::_AxisAlignedAffineTransform
-HdStRenderPassState::_ComputeImageToHorizontallyNormalizedFilmback() const
+HdStRenderPassState::AxisAlignedAffineTransform
+HdStRenderPassState::ComputeImageToHorizontallyNormalizedFilmback() const
 {
     const GfRange2f window = _ComputeFlippedFilmbackWindow();
 
     // Recall the documentation of
-    // _ComputeImageToHorizontallyNormalizedFilmback.
+    // ComputeImageToHorizontallyNormalizedFilmback.
     //
     // To achieve 1., we need x to change by 2 when moving from the
     // left to the right edge of window.
@@ -406,7 +406,7 @@ HdStRenderPassState::Prepare(
             doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->imageToHorizontallyNormalizedFilmback,
-            VtValue(_ComputeImageToHorizontallyNormalizedFilmback())),
+            VtValue(ComputeImageToHorizontallyNormalizedFilmback())),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(
