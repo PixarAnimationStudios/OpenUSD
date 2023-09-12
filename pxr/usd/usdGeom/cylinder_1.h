@@ -21,10 +21,10 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef USDGEOM_GENERATED_CAPSULE_H
-#define USDGEOM_GENERATED_CAPSULE_H
+#ifndef USDGEOM_GENERATED_CYLINDER_1_H
+#define USDGEOM_GENERATED_CYLINDER_1_H
 
-/// \file usdGeom/capsule.h
+/// \file usdGeom/cylinder_1.h
 
 #include "pxr/pxr.h"
 #include "pxr/usd/usdGeom/api.h"
@@ -47,24 +47,24 @@ PXR_NAMESPACE_OPEN_SCOPE
 class SdfAssetPath;
 
 // -------------------------------------------------------------------------- //
-// CAPSULE                                                                    //
+// CYLINDER_1                                                                 //
 // -------------------------------------------------------------------------- //
 
-/// \class UsdGeomCapsule
+/// \class UsdGeomCylinder_1
 ///
-/// Defines a primitive capsule, i.e. a cylinder capped by two half
-/// spheres, centered at the origin, whose spine is along the specified
-/// \em axis.
-/// The spherical cap heights (sagitta) of the two endcaps are a function of 
-/// the relative radii of the endcaps, such that cylinder tangent and sphere 
-/// tangent are coincident and maintain C1 continuity.
+/// Defines a primitive cylinder with closed ends, centered at the
+/// origin, whose spine is along the specified \em axis, with a pair of radii
+/// describing the size of the end points.
+/// 
+/// The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+/// they all pack into the same volume/bounds.
 ///
 /// For any described attribute \em Fallback \em Value or \em Allowed \em Values below
 /// that are text/tokens, the actual token is published and defined in \ref UsdGeomTokens.
 /// So to set an attribute to the value "rightHanded", use UsdGeomTokens->rightHanded
 /// as the value.
 ///
-class UsdGeomCapsule : public UsdGeomGprim
+class UsdGeomCylinder_1 : public UsdGeomGprim
 {
 public:
     /// Compile time constant representing what kind of schema this class is.
@@ -72,26 +72,26 @@ public:
     /// \sa UsdSchemaKind
     static const UsdSchemaKind schemaKind = UsdSchemaKind::ConcreteTyped;
 
-    /// Construct a UsdGeomCapsule on UsdPrim \p prim .
-    /// Equivalent to UsdGeomCapsule::Get(prim.GetStage(), prim.GetPath())
+    /// Construct a UsdGeomCylinder_1 on UsdPrim \p prim .
+    /// Equivalent to UsdGeomCylinder_1::Get(prim.GetStage(), prim.GetPath())
     /// for a \em valid \p prim, but will not immediately throw an error for
     /// an invalid \p prim
-    explicit UsdGeomCapsule(const UsdPrim& prim=UsdPrim())
+    explicit UsdGeomCylinder_1(const UsdPrim& prim=UsdPrim())
         : UsdGeomGprim(prim)
     {
     }
 
-    /// Construct a UsdGeomCapsule on the prim held by \p schemaObj .
-    /// Should be preferred over UsdGeomCapsule(schemaObj.GetPrim()),
+    /// Construct a UsdGeomCylinder_1 on the prim held by \p schemaObj .
+    /// Should be preferred over UsdGeomCylinder_1(schemaObj.GetPrim()),
     /// as it preserves SchemaBase state.
-    explicit UsdGeomCapsule(const UsdSchemaBase& schemaObj)
+    explicit UsdGeomCylinder_1(const UsdSchemaBase& schemaObj)
         : UsdGeomGprim(schemaObj)
     {
     }
 
     /// Destructor.
     USDGEOM_API
-    virtual ~UsdGeomCapsule();
+    virtual ~UsdGeomCylinder_1();
 
     /// Return a vector of names of all pre-declared attributes for this schema
     /// class and all its ancestor classes.  Does not include attributes that
@@ -100,17 +100,17 @@ public:
     static const TfTokenVector &
     GetSchemaAttributeNames(bool includeInherited=true);
 
-    /// Return a UsdGeomCapsule holding the prim adhering to this
+    /// Return a UsdGeomCylinder_1 holding the prim adhering to this
     /// schema at \p path on \p stage.  If no prim exists at \p path on
     /// \p stage, or if the prim at that path does not adhere to this schema,
     /// return an invalid schema object.  This is shorthand for the following:
     ///
     /// \code
-    /// UsdGeomCapsule(stage->GetPrimAtPath(path));
+    /// UsdGeomCylinder_1(stage->GetPrimAtPath(path));
     /// \endcode
     ///
     USDGEOM_API
-    static UsdGeomCapsule
+    static UsdGeomCylinder_1
     Get(const UsdStagePtr &stage, const SdfPath &path);
 
     /// Attempt to ensure a \a UsdPrim adhering to this schema at \p path
@@ -136,7 +136,7 @@ public:
     /// the opinion at the current EditTarget.
     ///
     USDGEOM_API
-    static UsdGeomCapsule
+    static UsdGeomCylinder_1
     Define(const UsdStagePtr &stage, const SdfPath &path);
 
 protected:
@@ -162,15 +162,14 @@ public:
     // --------------------------------------------------------------------- //
     // HEIGHT 
     // --------------------------------------------------------------------- //
-    /// The length of the capsule's spine along the specified
-    /// \em axis excluding the size of the two half spheres, i.e.
-    /// the length of the cylinder portion of the capsule.
-    /// If you author \em height you must also author \em extent.
+    /// The length of the cylinder's spine along the specified
+    /// \em axis.  If you author \em height you must also author \em extent.
+    /// 
     /// \sa GetExtentAttr()
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double height = 1` |
+    /// | Declaration | `double height = 2` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
@@ -186,34 +185,61 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
-    // RADIUS 
+    // RADIUSTOP 
     // --------------------------------------------------------------------- //
-    /// The radius of the capsule.  If you
-    /// author \em radius you must also author \em extent.
+    /// The radius of the top of the cylinder - i.e. the face located
+    /// along the positive \em axis. If you author \em radiusTop you must also
+    /// author \em extent.
     /// 
     /// \sa GetExtentAttr()
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `double radius = 0.5` |
+    /// | Declaration | `double radiusTop = 1` |
     /// | C++ Type | double |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
     USDGEOM_API
-    UsdAttribute GetRadiusAttr() const;
+    UsdAttribute GetRadiusTopAttr() const;
 
-    /// See GetRadiusAttr(), and also 
+    /// See GetRadiusTopAttr(), and also 
     /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
     /// If specified, author \p defaultValue as the attribute's default,
     /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
     /// the default for \p writeSparsely is \c false.
     USDGEOM_API
-    UsdAttribute CreateRadiusAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+    UsdAttribute CreateRadiusTopAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
+    // RADIUSBOTTOM 
+    // --------------------------------------------------------------------- //
+    /// The radius of the bottom of the cylinder - i.e. the face
+    /// point located along the negative \em axis. If you author
+    /// \em radiusBottom you must also author \em extent.
+    /// 
+    /// \sa GetExtentAttr()
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `double radiusBottom = 1` |
+    /// | C++ Type | double |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Double |
+    USDGEOM_API
+    UsdAttribute GetRadiusBottomAttr() const;
+
+    /// See GetRadiusBottomAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USDGEOM_API
+    UsdAttribute CreateRadiusBottomAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
 
 public:
     // --------------------------------------------------------------------- //
     // AXIS 
     // --------------------------------------------------------------------- //
-    /// The axis along which the spine of the capsule is aligned
+    /// The axis along which the spine of the cylinder is aligned
     ///
     /// | ||
     /// | -- | -- |
@@ -237,12 +263,12 @@ public:
     // --------------------------------------------------------------------- //
     // EXTENT 
     // --------------------------------------------------------------------- //
-    /// Extent is re-defined on Capsule only to provide a fallback
+    /// Extent is re-defined on Cylinder only to provide a fallback
     /// value. \sa UsdGeomGprim::GetExtentAttr().
     ///
     /// | ||
     /// | -- | -- |
-    /// | Declaration | `float3[] extent = [(-0.5, -0.5, -1), (0.5, 0.5, 1)]` |
+    /// | Declaration | `float3[] extent = [(-1, -1, -1), (1, 1, 1)]` |
     /// | C++ Type | VtArray<GfVec3f> |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Float3Array |
     USDGEOM_API
@@ -268,26 +294,28 @@ public:
     // ===================================================================== //
     // --(BEGIN CUSTOM CODE)--
 
-    /// Compute the extent for the capsule defined by the height, radius, and
-    /// axis.
+    /// Compute the extent for the cylinder defined by the height, radiusTop,
+    /// radiusBottom, and axis.
     ///
     /// \return true upon success, false if unable to calculate extent.
     ///
     /// On success, extent will contain an approximate axis-aligned bounding 
-    /// box of the capsule defined by the height, radius, and axis.
+    /// box of the cylinder defined by the height, radiusTop and radiusBottom, 
+    /// and axis.
     ///
     /// This function is to provide easy authoring of extent for usd authoring 
     /// tools, hence it is static and acts outside a specific prim (as in 
     /// attribute based methods).
     USDGEOM_API
-    static bool ComputeExtent(double height, double radius, const TfToken& axis,
-        VtVec3fArray* extent);
+    static bool ComputeExtent(double height, double radiusTop, 
+            double radiusBottom, const TfToken& axis, VtVec3fArray* extent);
 
     /// \overload
     /// Computes the extent as if the matrix \p transform was first applied.
     USDGEOM_API
-    static bool ComputeExtent(double height, double radius, const TfToken& axis,
-        const GfMatrix4d& transform, VtVec3fArray* extent);
+    static bool ComputeExtent(double height, double radiusTop, 
+            double radiusBottom, const TfToken& axis, 
+            const GfMatrix4d& transform, VtVec3fArray* extent);
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
