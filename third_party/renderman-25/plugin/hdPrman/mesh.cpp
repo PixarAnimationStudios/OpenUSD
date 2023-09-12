@@ -49,9 +49,15 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION > 2011
 HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id, const bool isMeshLight)
     : BASE(id)
     , _isMeshLight(isMeshLight)
+#else
+HdPrman_Mesh::HdPrman_Mesh(SdfPath const& id,
+                           SdfPath const& instancerId)
+    : BASE(id, instancerId)
+#endif
 {
 }
 
@@ -162,8 +168,14 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     //
     // Point positions (P)
     //
-    HdPrman_ConvertPointsPrimvar(sceneDelegate, id, primvars, npoints);
-
+    float primvarTime = 0.0f;
+    if( HdPrman_RenderParam::HasSceneIndexPlugin(
+            HdPrmanPluginTokens->velocityBlur) ) {
+        HdPrman_ConvertPointsPrimvar(sceneDelegate, id, primvars, npoints);
+    } else {
+        primvarTime = renderParam->ConvertPositions(
+            sceneDelegate, id, npoints, primvars);
+    }
     // Topology.
     primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverts.cdata(),
                               RtDetailType::k_uniform);
@@ -316,8 +328,9 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     primvars.SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
                               RtDetailType::k_uniform);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, nverts.size(),
-        npoints, npoints, verts.size());
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars, nverts.size(), npoints, npoints,
+        verts.size(), primvarTime);
 
     return primvars;
 }

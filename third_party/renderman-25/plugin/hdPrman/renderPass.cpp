@@ -549,6 +549,14 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
+    // Update options from the legacy settings map.
+    if (legacySettingsChanged) {
+        // This should happen before the camera related settings below,
+        // because some of those, like Ri:FormatResolution should win
+        // when coming from the camera context.
+        _renderParam->UpdateLegacyOptions();
+    }
+
     // XXX Integrator params are updated from certain settings on the legacy
     //     settings map as well as the camera.
     const bool updateIntegrators = legacySettingsChanged || camChanged;
@@ -606,11 +614,6 @@ HdPrman_RenderPass::_Execute(
                 GetRenderIndex(),
                 resolution);
         }
-    }
-
-    // Update options from the legacy settings map.
-    if (legacySettingsChanged) {
-        _renderParam->UpdateLegacyOptions();
     }
 
     // Commit updated scene options.

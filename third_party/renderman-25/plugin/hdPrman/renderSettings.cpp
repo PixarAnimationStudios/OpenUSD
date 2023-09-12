@@ -264,6 +264,17 @@ void HdPrman_RenderSettings::_Sync(
         }
     }
 
+    // Set the camera path here so that HdPrmanCamera::Sync can detect
+    // whether it is syncing the current camera
+    // and needs to set the riley shutter interval
+    // which needs to be set before any time-sampled primvars are synced.
+    const HdRenderSettings::RenderProducts &renderProducts =
+        GetRenderProducts();
+    if(!renderProducts.empty()) {
+        SdfPath cameraPath = renderProducts.at(0).cameraPath;
+        param->GetCameraContext().SetCameraPath(cameraPath);
+    }
+
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
         "}\nDone syncing render settings prim %s.\n", GetId().GetText());
         
