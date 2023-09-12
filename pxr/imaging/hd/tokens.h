@@ -295,6 +295,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (integrator)                                \
     (sampleFilter)                              \
     (displayFilter)                             \
+    (imageShader)                               \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \

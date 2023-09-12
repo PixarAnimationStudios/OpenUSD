@@ -48,6 +48,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/driver.h"
 #include "pxr/imaging/hd/extComputation.h"
+#include "pxr/imaging/hd/imageShader.h"
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -90,7 +91,8 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->distantLight,
     HdPrimTypeTokens->rectLight,
     HdPrimTypeTokens->simpleLight,
-    HdPrimTypeTokens->sphereLight
+    HdPrimTypeTokens->sphereLight,
+    HdPrimTypeTokens->imageShader
 };
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -413,6 +415,8 @@ HdStRenderDelegate::CreateSprim(TfToken const& typeId,
                 typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(sprimId, typeId);
+    } else if (typeId == HdPrimTypeTokens->imageShader) {
+        return new HdImageShader(sprimId);
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }
@@ -439,6 +443,8 @@ HdStRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
                 typeId == HdPrimTypeTokens->cylinderLight ||
                 typeId == HdPrimTypeTokens->rectLight) {
         return new HdStLight(SdfPath::EmptyPath(), typeId);
+    } else if (typeId == HdPrimTypeTokens->imageShader) {
+        return new HdImageShader(SdfPath::EmptyPath());
     } else {
         TF_CODING_ERROR("Unknown Sprim Type %s", typeId.GetText());
     }

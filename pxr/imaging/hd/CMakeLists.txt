@@ -84,6 +84,8 @@ pxr_library(hd
         geomSubset
         geomSubsetSchema
         geomSubsetsSchema
+        imageShader
+        imageShaderSchema
         instanceCategoriesSchema
         instancedBySchema
         instanceIndicesSchema
