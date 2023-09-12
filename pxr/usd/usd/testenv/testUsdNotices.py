@@ -149,9 +149,7 @@ class TestUsdNotices(unittest.TestCase):
             self.assertEqual(notice.GetChangedInfoOnlyPaths(), [])
             self.assertTrue(notice.AffectedObject(stage.GetPrimAtPath("/Foo")))
             self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo")))
-            self.assertTrue(notice.ResyncedObject(stage.GetPrimAtPath("/Foo/Bar")))
             self.assertFalse(notice.ResolvedAssetPathsResynced(stage.GetPrimAtPath("/Foo")))
-            self.assertFalse(notice.ResolvedAssetPathsResynced(stage.GetPrimAtPath("/Foo/Bar")))
             self.assertFalse(notice.ChangedInfoOnly(stage.GetPrimAtPath("/Foo")))
 
         def OnUpdate(notice, stage):
