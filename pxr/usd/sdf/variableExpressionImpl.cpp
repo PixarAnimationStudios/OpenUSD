@@ -454,10 +454,6 @@ ListNode::Evaluate(EvalContext* ctx) const
             continue;
         }
 
-        if (r.value.IsEmpty()) {
-            continue;
-        }
-
         if (!VtVisitValue(r.value, visitor)) {
             errors.push_back(TfStringPrintf(
                 "Unexpected value of type %s in list at element %zu",
@@ -515,9 +511,32 @@ IfNode::_Evaluate(
             _FormatFunctionError<IfNode>("Condition must be a boolean value")});
     }
 
-    return result.value.UncheckedGet<bool>() ?
-        ifValue->Evaluate(ctx) : 
+    // Verify that ifValue and elseValue either evaluate to the same type
+    // or one or the other evaluates to None. Nothing in the code actually
+    // depends on this. We choose to impose this as an extra requirement
+    // because it seems unlikely a user would do this intentionally, and
+    // raising this as an error could be a useful indicator. This does
+    // impose the extra cost of evaluating both branches, but we don't
+    // believe that would be significant.
+    const EvalResult ifValueResult = ifValue->Evaluate(ctx);
+    const EvalResult elseValueResult = 
         elseValue ? elseValue->Evaluate(ctx) : EvalResult::NoValue();
+
+    if (elseValue) {
+        const bool valuesHaveDifferentTypes =
+            ifValueResult.value.GetType() != elseValueResult.value.GetType();
+        const bool neitherValueIsNone =
+            !ifValueResult.value.IsEmpty() && !elseValueResult.value.IsEmpty();
+
+        if (valuesHaveDifferentTypes && neitherValueIsNone) {
+            return EvalResult::Error({
+                _FormatFunctionError<IfNode>(
+                    "if-value and else-value must evaluate to the same type "
+                    "or None.")});
+        }
+    }
+
+    return result.value.UncheckedGet<bool>() ? ifValueResult : elseValueResult;
 }
 
 If2Node::If2Node(
