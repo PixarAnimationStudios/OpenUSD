@@ -45,19 +45,20 @@ shader UsdPrimvarReader_float3
         string help = "Name of requested primvar."
     ]],
 
-    color fallback = color(0.0)
-    [[
-        string help = "return value if primvar not found.",
-        string role = "none"
+    float fallback[3] = {0.0, 0.0, 0.0} [[
+        string help = "return value if primvar not found."
     ]],
 
-    output color result = 0.0
-    [[
-        string widget = "null",
-        string role = "none"
-    ]]
+    //output color result = 0.0
+    //[[
+    //    string widget = "null",
+    //    string role = "none"
+    //]]
+    output float result[3] = {0.0, 0.0, 0.0}
+        [[ string widget = "null" ]]
 )
 {
+    //result = color(fallback[0], fallback[1], fallback[2]);
     result = fallback;
     getattribute("primvar", varname, result);
 }
