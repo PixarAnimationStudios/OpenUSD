@@ -150,14 +150,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Note that this needs to be a unique struct name for each translation unit. 
 //
 #define _TF_TOKENS_STRUCT_NAME_PRIVATE(key) \
-    BOOST_PP_CAT(key, _PrivateStaticTokenType)
+    TF_PP_CAT(key, _PrivateStaticTokenType)
 
 // Private macro to generate struct name from key.  This version is used
 // by the public token declarations, and so key must be unique for the entire
 // namespace.
 //
 #define _TF_TOKENS_STRUCT_NAME(key) \
-    BOOST_PP_CAT(key, _StaticTokenType)
+    TF_PP_CAT(key, _StaticTokenType)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Declaration Macros
