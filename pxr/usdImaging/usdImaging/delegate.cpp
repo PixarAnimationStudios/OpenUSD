@@ -65,6 +65,7 @@
 #include "pxr/base/work/loops.h"
 
 #include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/pyLock.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/ostreamMethods.h"
