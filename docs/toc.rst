@@ -23,6 +23,7 @@
    :maxdepth: 1
 
    Rendering with USD <user_guides/render_user_guide>
+   USD Variable Expressions <user_guides/variable_expressions>
 
 .. toctree::
    :hidden:
