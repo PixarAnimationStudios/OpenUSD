@@ -15,7 +15,7 @@
       <input name="texcoord" type="vector2" nodename="stcoords" />
     </tiledimage>
     <tiledimage name="image_roughness" type="float">
-      <input name="file" type="filename" value="brass_roughness.jpg" colorspace="srgb_texture" />
+      <input name="file" type="filename" value="brass_roughness.jpg" />
       <input name="uvtiling" type="vector2" value="4.0, 4.0"/>
       <input name="texcoord" type="vector2" nodename="stcoords" />
     </tiledimage>
@@ -24,11 +24,8 @@
   </nodegraph>
   <UsdPreviewSurface name="SR_usd_brass" type="surfaceshader">
     <input name="diffuseColor" type="color3" nodegraph="NG_Usd_Brass" output="out_color" />
-    <input name="useSpecularWorkflow" type="integer" value="0" />
-    <input name="specularColor" type="color3" value="0, 0, 0" />
-    <input name="metallic" type="float" value="1" />
+    <input name="metallic" type="float" value="0.5" />
     <input name="roughness" type="float" nodegraph="NG_Usd_Brass" output="out_roughness" />
-    <input name="ior" type="float" value="50" />
   </UsdPreviewSurface>
   <surfacematerial name="USD_Tiled_Brass" type="material">
     <input name="surfaceshader" type="surfaceshader" nodename="SR_usd_brass" />
@@ -41,7 +38,7 @@
       <input name="uvtiling" type="vector2" value="1.0, 1.0" />
     </tiledimage>
     <tiledimage name="image_roughness" type="float">
-      <input name="file" type="filename" value="brass_roughness.jpg" colorspace="srgb_texture" />
+      <input name="file" type="filename" value="brass_roughness.jpg" />
       <input name="uvtiling" type="vector2" value="1.0, 1.0" />
     </tiledimage>
     <output name="out_color" type="color3" nodename="image_color" />
@@ -49,9 +46,10 @@
   </nodegraph>
   <standard_surface name="SR_brass" type="surfaceshader">
     <input name="base" type="float" value="1" />
+    <input name="base_color" type="color3" value="1, 1, 1" />
     <input name="specular" type="float" value="0" />
     <input name="specular_roughness" type="float" nodegraph="NG_Brass" output="out_roughness" />
-    <input name="metalness" type="float" value="1" />
+    <input name="metalness" type="float" value="0.5" />
     <input name="coat" type="float" value="1" />
     <input name="coat_color" type="color3" nodegraph="NG_Brass" output="out_color" />
     <input name="coat_roughness" type="float" nodegraph="NG_Brass" output="out_roughness" />
@@ -72,7 +70,7 @@
       <input name="texcoord" type="vector2" nodename="stcoords" />
     </tiledimage>
     <tiledimage name="image_roughness" type="float">
-      <input name="file" type="filename" value="wood_roughness.jpg" colorspace="srgb_texture" />
+      <input name="file" type="filename" value="wood_roughness.jpg" />
       <input name="uvtiling" type="vector2" value="4.0, 4.0" />
       <input name="texcoord" type="vector2" nodename="stcoords" />
     </tiledimage>
