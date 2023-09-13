@@ -40,6 +40,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (color)                                                 \
     (colorTemperature)                                      \
     (enableColorTemperature)                                \
+    (domeOffset)                                            \
     (exposure)                                              \
     (height)                                                \
     (intensity)                                             \

@@ -204,8 +204,7 @@ public:
     void DecreaseSceneLightCount() { --_sceneLightCount; }
     
     // Provides external access to resources used to set parameters for
-    // scene options and the active integrator from the render settings map
-    // (the latter is used by the ParamsSetter prim).
+    // scene options from the render settings map.
     RtParamList &GetLegacyOptions() { return _legacyOptions; }
 
     HdPrman_CameraContext &GetCameraContext() { return _cameraContext; }
@@ -473,7 +472,7 @@ private:
     RtParamList _legacyOptions;
     int _lastLegacySettingsVersion;
 
-    RtParamList _integratorParams; // XXX: this is mainly here for ParamsSetter
+    RtParamList _integratorParams;
     /// ------------------------------------------------------------------------
 
     // RIX or XPU

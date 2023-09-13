@@ -468,6 +468,12 @@ public:
         return !_refs.empty();
     }
 
+    /// Return true if this expression contains one or more "weaker" expression
+    /// references, expressed as '%_' in the expression language.  Return false
+    /// otherwise.
+    SDF_API
+    bool ContainsWeakerExpressionReference() const;
+
     /// Return a new expression created by resolving collection references in
     /// this expression. This function calls \p resolve to produce a
     /// subexpression from a "%" ExpressionReference. To leave an expression

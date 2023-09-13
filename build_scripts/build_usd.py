@@ -93,6 +93,19 @@ if MacOS():
     import apple_utils
 
 def GetLocale():
+    if Windows():
+        # Windows handles encoding a little differently then Linux / Mac
+        # For interactive streams (isatty() == True) it will use the
+        # console codepage, otherwise it will return an ANSI codepage.
+        # To keep things consistent we'll force UTF-8 for non-interactive
+        # streams (which is recommended by Microsoft). See:
+        # https://docs.python.org/3.6/library/sys.html#sys.stdout
+        # https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
+        if sys.stdout.isatty():
+            return sys.stdout.encoding
+        else:
+            return "UTF-8"
+
     return sys.stdout.encoding or locale.getdefaultlocale()[1] or "UTF-8"
 
 def GetCommandOutput(command):

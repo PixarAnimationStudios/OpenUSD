@@ -320,6 +320,16 @@ SdfPathExpression::MakeAbsolute(SdfPath const &anchor) &&
     return std::move(*this);
 }
 
+bool
+SdfPathExpression::ContainsWeakerExpressionReference() const
+{
+    for (ExpressionReference const &ref: _refs) {
+        if (ref.name == "_") {
+            return true;
+        }
+    }
+    return false;
+}
 
 SdfPathExpression
 SdfPathExpression::ResolveReferences(

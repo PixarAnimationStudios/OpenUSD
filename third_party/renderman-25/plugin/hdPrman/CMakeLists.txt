@@ -92,7 +92,6 @@ pxr_plugin(${PXR_PACKAGE}
         matfiltResolveVstructs
         mesh
         renderTerminalOutputInvalidatingSceneIndexPlugin
-        paramsSetter
         points
         renderDelegate
         renderSettings

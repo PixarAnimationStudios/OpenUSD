@@ -100,18 +100,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// XXX: currently private and duplicated where used so as to not yet formally
-//      define this convention.
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (prmanParams)
-    ((prmanParamsNames, ""))
-
-    ((outputsRiSampleFilters, "outputs:ri:sampleFilters"))
-    ((outputsRiDisplayFilters, "outputs:ri:displayFilters"))
-);
-
-
 /* static */
 HdSceneIndexBaseRefPtr
 HdSceneIndexAdapterSceneDelegate::AppendDefaultSceneFilters(
@@ -1695,38 +1683,6 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
     // camera use of Get().
     if (prim.primType == HdPrimTypeTokens->camera) {
         return GetCameraParamValue(id, key);
-    }
-
-    // Temporary backdoor for getting arbitrary data to render delegates
-    // Currently supported for setting Options and active integrator parameters
-    // in hdPrman.
-    if (prim.primType == _tokens->prmanParams) {
-         HdContainerDataSourceHandle prmanParamsDs = HdContainerDataSource::Cast(
-                prim.dataSource->Get(_tokens->prmanParams));
-
-         if (!prmanParamsDs) {
-            return VtValue();
-         }
-
-         if (key == _tokens->prmanParamsNames) {
-            return VtValue(prmanParamsDs->GetNames());
-         } else {
-            if (HdContainerDataSourceHandle paramsDs =
-                    HdContainerDataSource::Cast(
-                        prmanParamsDs->Get(key))) {
-
-                std::map<TfToken, VtValue> valueDict;
-                for (const TfToken &name : paramsDs->GetNames()) {
-                    if (HdSampledDataSourceHandle sampledDs =
-                            HdSampledDataSource::Cast(paramsDs->Get(name))){
-                        valueDict[name] = sampledDs->GetValue(0.0f);
-                    }
-                }
-                return VtValue(valueDict);
-            }
-        }
-
-        return VtValue();
     }
 
     // drawTarget use of Get().
