@@ -83,6 +83,7 @@ pxr_library(tf
         type
         typeFunctions
         typeNotice
+        unicodeUtilsImpl
         warning
         weakBase
         weakPtr
@@ -146,6 +147,7 @@ pxr_library(tf
         staticTokens.h
         typeInfoMap.h
         type_Impl.h
+        unicodeUtils.h
 
     PYTHON_PUBLIC_HEADERS
         py3Compat.h
@@ -157,6 +159,7 @@ pxr_library(tf
         atomicRenameUtil
         debugCodes
         noticeRegistry
+        unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
         pyErrorInternal

@@ -35,6 +35,7 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/enum.h"
+#include "pxr/base/tf/unicodeUtils.h"
 
 #include <cstdarg>
 #include <cstring>
@@ -714,18 +715,7 @@ std::string TfStringCatPaths( const std::string &prefix,
 inline bool
 TfIsValidIdentifier(std::string const &identifier)
 {
-    char const *p = identifier.c_str();
-    auto letter = [](unsigned c) { return ((c-'A') < 26) || ((c-'a') < 26); };
-    auto number = [](unsigned c) { return (c-'0') < 10; };
-    auto under = [](unsigned c) { return c == '_'; };
-    unsigned x = *p;
-    if (!x || number(x)) {
-        return false;
-    }
-    while (letter(x) || number(x) || under(x)) {
-        x = *p++;
-    };
-    return x == 0;
+    return TfUnicodeUtils::IsValidUTF8Identifier(identifier.begin(), identifier.end());
 }
 
 /// Produce a valid identifier (see TfIsValidIdentifier) from \p in by
