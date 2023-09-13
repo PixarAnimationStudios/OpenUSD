@@ -174,7 +174,7 @@ _ProcessChildField(
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool childrenInDst,
     const SdfShouldCopyChildrenFn& shouldCopyChildren, _CopyStack* copyStack)
 {
-    boost::optional<VtValue> srcChildrenToCopy, dstChildrenToCopy;
+    std::optional<VtValue> srcChildrenToCopy, dstChildrenToCopy;
     if (!shouldCopyChildren(
             childField, 
             srcLayer, srcPath, childrenInSrc, dstLayer, dstPath, childrenInDst,
@@ -428,7 +428,7 @@ _AddFieldValueToCopy(
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
     const SdfShouldCopyValueFn& shouldCopyValue, _FieldValueList* valueList)
 {
-    boost::optional<VtValue> value;
+    std::optional<VtValue> value;
     if (shouldCopyValue(
             specType, field, 
             srcLayer, srcPath, fieldInSrc, dstLayer, dstPath, fieldInDst, 
@@ -699,7 +699,7 @@ SdfShouldCopyValue(
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* valueToCopy)
+    std::optional<VtValue>* valueToCopy)
 {
     if (fieldInSrc) {
         if (field == SdfFieldKeys->ConnectionPaths || 
@@ -784,8 +784,8 @@ SdfShouldCopyChildren(
     const TfToken& childrenField,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* srcChildren, 
-    boost::optional<VtValue>* dstChildren)
+    std::optional<VtValue>* srcChildren,
+    std::optional<VtValue>* dstChildren)
 {
     if (fieldInSrc) {
         if (childrenField == SdfChildrenKeys->ConnectionChildren ||

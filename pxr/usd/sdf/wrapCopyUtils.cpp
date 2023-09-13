@@ -87,7 +87,7 @@ _ShouldCopyValue(
     SdfSpecType specType, const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* value)
+    std::optional<VtValue>* value)
 {
     object result = pyFunc(
         specType, field, 
@@ -117,8 +117,8 @@ _ShouldCopyChildren(
     const TfToken& field,
     const SdfLayerHandle& srcLayer, const SdfPath& srcPath, bool fieldInSrc,
     const SdfLayerHandle& dstLayer, const SdfPath& dstPath, bool fieldInDst,
-    boost::optional<VtValue>* srcChildren, 
-    boost::optional<VtValue>* dstChildren)
+    std::optional<VtValue>* srcChildren,
+    std::optional<VtValue>* dstChildren)
 {
     object result = pyFunc(
         field, srcLayer, srcPath, fieldInSrc, dstLayer, dstPath, fieldInDst);
