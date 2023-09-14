@@ -63,7 +63,7 @@ HdPerfLog::AddCacheHit(TfToken const& name,
         return;
     _Lock lock(_mutex);
     _cacheMap[name].AddHit();
-    TF_DEBUG(HD_CACHE_HITS).Msg("Cache hit: %s %s %s hits: %lu\n",
+    TF_DEBUG(HD_CACHE_HITS).Msg("Cache hit: %s %s %s hits: %zu\n",
             name.GetText(),
             id.GetText(),
             tag.GetText(),
@@ -79,7 +79,7 @@ HdPerfLog::AddCacheMiss(TfToken const& name,
         return;
     _Lock lock(_mutex);
     _cacheMap[name].AddMiss();
-    TF_DEBUG(HD_CACHE_MISSES).Msg("Cache miss: %s %s %s Total misses: %lu\n",
+    TF_DEBUG(HD_CACHE_MISSES).Msg("Cache miss: %s %s %s Total misses: %zu\n",
             name.GetText(),
             id.GetText(),
             tag.GetText(),

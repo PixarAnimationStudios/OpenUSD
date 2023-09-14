@@ -93,10 +93,13 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->sphereLight
 };
 
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNUSED_VARIABLE
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 );
+ARCH_PRAGMA_POP
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
 

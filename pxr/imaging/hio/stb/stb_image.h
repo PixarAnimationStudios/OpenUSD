@@ -4549,12 +4549,12 @@ static int stbi__check_png_header(stbi__context *s)
    return 1;
 }
 
-typedef struct
+typedef struct tag_stbi__png
 {
    stbi__context *s;
    stbi_uc *idata, *expanded, *out;
    int depth;
-   float gamma = 0;
+   float gamma = 0.0F;
 } stbi__png;
 
 
