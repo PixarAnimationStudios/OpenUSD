@@ -110,6 +110,7 @@ struct TfMakePyPtr {
 namespace Tf_PyDefHelpers {
 
 using namespace boost::python;
+namespace bp = boost::python;
 
 template <typename Ptr>
 struct _PtrInterface {
@@ -309,7 +310,7 @@ converter::to_python_function_t
 _PtrToPythonWrapper<T>::_originalConverter = 0;
 
 struct WeakPtr : def_visitor<WeakPtr> {
-    friend class def_visitor_access;
+    friend class bp::def_visitor_access;
 
     template <typename WrapperPtrType, typename Wrapper, typename T>
     static void _RegisterConversions(Wrapper *, T *) {
@@ -405,7 +406,7 @@ struct WeakPtr : def_visitor<WeakPtr> {
 };
 
 struct RefAndWeakPtr : def_visitor<RefAndWeakPtr> {
-    friend class def_visitor_access;
+    friend class bp::def_visitor_access;
 
     template <typename CLS, typename Wrapper, typename T>
     static void _AddAPI(Wrapper *, T *) {

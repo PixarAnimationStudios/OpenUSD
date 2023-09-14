@@ -39,6 +39,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <algorithm>
 
 using std::cout;
 using std::endl;
@@ -112,7 +113,7 @@ std::mutex mainThreadLock;
 static void 
 _DumpLog(ostream *log, vector<string> *li, std::mutex *mutex) {
     std::lock_guard<std::mutex> lock(*mutex);
-    sort(li->begin(), li->end());
+    std::sort(li->begin(), li->end());
     for(vector<string>::const_iterator n = li->begin(); 
         n != li->end(); ++ n) {
         *log << *n << endl;

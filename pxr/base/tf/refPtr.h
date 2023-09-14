@@ -425,6 +425,7 @@
 ///
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/hash.h"
@@ -1079,9 +1080,12 @@ private:
     // not the first base class of T then the resulting pointer may
     // not point to a T.  Nevertheless, it should be consistent to
     // all calls to the tracking functions.
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_REINTERPRET_BASE_CLASS
     T* _GetObjectForTracking() const {
         return reinterpret_cast<T*>(const_cast<TfRefBase*>(_refBase));
     }
+    ARCH_PRAGMA_POP
 
     /// Call \c typeid on the object pointed to by a \c TfRefPtr.
     ///

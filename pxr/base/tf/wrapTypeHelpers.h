@@ -38,10 +38,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace TfType_WrapHelpers {
 
     using namespace boost::python;
+    namespace bp = boost::python;
 
     struct _PythonClass : def_visitor<_PythonClass>
     {
-        friend class def_visitor_access;
+        friend class bp::def_visitor_access;
             
     private:
         template <class CLS, class T>
