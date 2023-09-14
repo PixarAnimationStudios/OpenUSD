@@ -118,7 +118,7 @@ UsdImagingDrawModeSceneIndex::_FindStandinForPrimOrAncestor(
     const auto it = std::lower_bound(
         _prims.rbegin(), _prims.rend(),
         path, 
-        [](const value_type &a, const SdfPath &b) { return a.first > b; });
+        [](value_type &a, const SdfPath &b) { return a.first > b; });
     if (it == _prims.rend()) {
         return nullptr;
     }

@@ -70,7 +70,7 @@ class Sdf_PathExpressionEvalBase
 {
 public:
     friend bool
-    Sdf_MakePathExpressionEvalImpl(
+    SDF_API Sdf_MakePathExpressionEvalImpl(
         Sdf_PathExpressionEvalBase &eval,
         SdfPathExpression const &expr,
         TfFunctionRef<
