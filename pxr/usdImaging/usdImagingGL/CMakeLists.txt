@@ -2442,7 +2442,7 @@ pxr_register_test(testUsdImagingGLMeshQuadrangulation_refined
 )
 
 pxr_register_test(testUsdImagingGLSkeleton
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -shading wire -stage skeleton.usda -times 1 2 3 -write skeleton.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -guidesPurpose show -shading wire -stage skeleton.usda -times 1 2 3 -write skeleton.png"
     IMAGE_DIFF_COMPARE
         skeleton_001.png
         skeleton_002.png
