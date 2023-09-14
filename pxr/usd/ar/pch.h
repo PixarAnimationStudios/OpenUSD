@@ -166,7 +166,6 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <tbb/atomic.h>
 #include <tbb/concurrent_hash_map.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/spin_rw_mutex.h>

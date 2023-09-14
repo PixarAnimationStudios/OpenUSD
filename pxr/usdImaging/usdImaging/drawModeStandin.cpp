@@ -59,6 +59,7 @@
 #include <array>
 #include <functional>
 #include <bitset>
+#include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

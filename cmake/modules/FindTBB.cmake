@@ -197,7 +197,14 @@ if(NOT TBB_FOUND)
   ##################################
 
   if(TBB_INCLUDE_DIRS)
-    file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    # Use new oneTBB version header if it exists.
+    if(EXISTS "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h")
+      file(READ "${TBB_INCLUDE_DIRS}/oneapi/tbb/version.h" _tbb_version_file)
+    elseif (EXISTS "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h")
+      file(READ "${TBB_INCLUDE_DIRS}/tbb/tbb_stddef.h" _tbb_version_file)
+    else ()
+      MESSAGE (FATAL_ERROR "Failed to find TBB Version information.")
+    endif()
     string(REGEX REPLACE ".*#define TBB_VERSION_MAJOR ([0-9]+).*" "\\1"
         TBB_VERSION_MAJOR "${_tbb_version_file}")
     string(REGEX REPLACE ".*#define TBB_VERSION_MINOR ([0-9]+).*" "\\1"
@@ -205,6 +212,9 @@ if(NOT TBB_FOUND)
     string(REGEX REPLACE ".*#define TBB_INTERFACE_VERSION ([0-9]+).*" "\\1"
         TBB_INTERFACE_VERSION "${_tbb_version_file}")
     set(TBB_VERSION "${TBB_VERSION_MAJOR}.${TBB_VERSION_MINOR}")
+    if(NOT ${TBB_INTERFACE_VERSION} STREQUAL "")
+      math(EXPR TBB_INTERFACE_VERSION_MAJOR "${TBB_INTERFACE_VERSION} / 1000" OUTPUT_FORMAT DECIMAL)
+    endif()
   endif()
 
   ##################################
@@ -213,13 +223,18 @@ if(NOT TBB_FOUND)
 
   if(TBB_VERSION VERSION_LESS 4.3)
     set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
-  else()
+    list(APPEND TBB_FIND_COMPONENTS tbb)
+  elseif(TBB_INTERFACE_VERSION_MAJOR VERSION_LESS 12.0)
     set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    list(APPEND TBB_FIND_COMPONENTS tbb)
+  else()
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb${TBB_INTERFACE_VERSION_MAJOR})
+    list(APPEND TBB_FIND_COMPONENTS tbb${TBB_INTERFACE_VERSION_MAJOR})
   endif()
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};" MATCHES ";${_comp};")
 
       # Search for the libraries
       find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}

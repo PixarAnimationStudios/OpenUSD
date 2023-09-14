@@ -35,6 +35,9 @@
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <tbb/concurrent_hash_map.h>
+#include <tbb/concurrent_unordered_map.h>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USDIMAGING_STAGE_SCENE_INDEX_TOKENS \

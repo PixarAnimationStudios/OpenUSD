@@ -40,6 +40,10 @@ set(PXR_THREAD_LIBS "${CMAKE_THREAD_LIBS_INIT}")
 # Find Boost package before getting any boost specific components as we need to
 # disable boost-provided cmake config, based on the boost version found.
 find_package(Boost REQUIRED)
+if(Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    link_directories(${Boost_LIBRARY_DIRS})
+endif()
 
 # Boost provided cmake files (introduced in boost version 1.70) result in 
 # inconsistent build failures on different platforms, when trying to find boost 
@@ -152,8 +156,23 @@ endif()
 
 
 # --TBB
-find_package(TBB REQUIRED COMPONENTS tbb)
-add_definitions(${TBB_DEFINITIONS})
+if (PXR_ENABLE_ONEAPI_TBB)
+    find_package(TBB REQUIRED COMPONENTS tbb12) # OneAPI TBB encodes the major version on the library name.
+    if(TBB_FOUND)
+        add_definitions(${TBB_DEFINITIONS})
+        include_directories(${TBB_INCLUDE_DIRS})
+        link_directories(${TBB_LIBRARY}) # Required for tbb.lib/tbb_debug.lib to find their binary interface match tbb12.lib/tbb12_debug.lib
+        set(TBB_tbb_library ${TBB_LIBRARIES}) # Copy over the libraries to be linked into the previous variable name.
+    endif()
+else()
+    find_package(TBB REQUIRED COMPONENTS tbb)
+    if(TBB_FOUND)
+        add_definitions(${TBB_DEFINITIONS})
+    endif()
+endif()
+if(NOT TBB_FOUND)
+    message(FATAL_ERROR "Did not find TBB")
+endif()
 
 # --math
 if(WIN32)
