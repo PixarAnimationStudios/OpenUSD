@@ -1058,37 +1058,35 @@ pxr_register_test(testUsdviewPointInstancerVariant
     EXPECTED_RETURN_CODE 0
 )
 
-# Temporarily disabled pending upcoming fixes.
-# pxr_register_test(testUsdviewExpressionVariableEdits_Delegate
-#     PYTHON
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
-#     IMAGE_DIFF_COMPARE
-#         start.png
-#         step_1.png
-#         step_2.png
-#     FAIL 0.05
-#     FAIL_PERCENT 0.03
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-#     ENV
-#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
-# )
+pxr_register_test(testUsdviewExpressionVariableEdits_Delegate
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
+    IMAGE_DIFF_COMPARE
+        start.png
+        step_1.png
+        step_2.png
+    FAIL 0.05
+    FAIL_PERCENT 0.03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
+)
 
-# Temporarily disabled pending upcoming fixes.
-# pxr_register_test(testUsdviewExpressionVariableEdits
-#     PYTHON
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
-#     IMAGE_DIFF_COMPARE
-#         start.png
-#         step_1.png
-#         step_2.png
-#     FAIL 0.05
-#     FAIL_PERCENT 0.03
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-#     ENV
-#         USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
-# )
+pxr_register_test(testUsdviewExpressionVariableEdits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
+    IMAGE_DIFF_COMPARE
+        start.png
+        step_1.png
+        step_2.png
+    FAIL 0.05
+    FAIL_PERCENT 0.03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
+)
 
 if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})
     pxr_register_test(testUsdviewColorManagement
