@@ -223,7 +223,7 @@ public:
             HdInterpolation interpolation,
             const UsdImagingInstancerContext* instancerContext) const override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     VtValue 
     GetExtComputationInput(
             UsdPrim const& prim,
@@ -232,7 +232,7 @@ public:
             UsdTimeCode time,
             const UsdImagingInstancerContext* instancerContext) const override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     size_t
     SampleExtComputationInput(
             UsdPrim const& prim,
@@ -244,7 +244,7 @@ public:
             float *sampleTimes,
             VtValue *sampleValues) override;
 
-    USDIMAGING_API
+    USDSKELIMAGING_API
     std::string 
     GetExtComputationKernel(
             UsdPrim const& prim,
