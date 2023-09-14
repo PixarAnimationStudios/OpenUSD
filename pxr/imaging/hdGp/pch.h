@@ -120,7 +120,6 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
 #include <tbb/blocked_range.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_map.h>

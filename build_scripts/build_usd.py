@@ -938,13 +938,19 @@ elif MacOS():
 else:
     TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
 
+TBB_2021_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2021.9.0.zip"
+
 def InstallTBB(context, force, buildArgs):
-    if Windows():
-        InstallTBB_Windows(context, force, buildArgs)
-    elif MacOS():
-        InstallTBB_MacOS(context, force, buildArgs)
+    if context.tbbVersion == "2021":
+        with CurrentWorkingDirectory(DownloadURL(TBB_2021_URL, context, force)):
+            RunCMake(context, force, buildArgs)
     else:
-        InstallTBB_Linux(context, force, buildArgs)
+        if Windows():
+            InstallTBB_Windows(context, force, buildArgs)
+        elif MacOS():
+            InstallTBB_MacOS(context, force, buildArgs)
+        else:
+            InstallTBB_Linux(context, force, buildArgs)
 
 def InstallTBB_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_URL, context, force, 
@@ -1244,10 +1250,13 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
+OPENVDB_7_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
+OPENVDB_10_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.0.1.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
+    # oneTBB requires new OpenVDB
+    openvdb_url = OPENVDB_10_URL if context.tbbVersion == "2021" else OPENVDB_7_URL
+    with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
             '-DOPENVDB_BUILD_BINARIES=OFF',
@@ -2042,6 +2051,13 @@ subgroup.add_argument("--no-openvdb", dest="enable_openvdb",
                       action="store_false",
                       help="Disable OpenVDB support in imaging (default)")
 subgroup = group.add_mutually_exclusive_group()
+subgroup.add_argument("--onetbb", dest="enable_onetbb", action="store_true",
+                      default=False,
+                      help="Use new oneAPI TBB version")
+subgroup.add_argument("--no-onetbb", dest="enable_onetbb",
+                      action="store_false",
+                      help="Use old TBB version (default)")
+subgroup = group.add_mutually_exclusive_group()
 subgroup.add_argument("--usdview", dest="build_usdview",
                       action="store_true", default=True,
                       help="Build usdview (default)")
@@ -2213,6 +2229,9 @@ class InstallContext:
         self.buildExamples = args.build_examples
         self.buildTutorials = args.build_tutorials
         self.buildTools = args.build_tools
+
+        # - TBB
+        self.tbbVersion = "2021" if args.enable_onetbb else "2019"
 
         # - Imaging
         self.buildImaging = (args.build_imaging == IMAGING or
@@ -2478,6 +2497,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
+    TBB version:                {tbbVersion}
     Documentation               {buildDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
@@ -2539,6 +2559,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
+    tbbVersion=context.tbbVersion,
     buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),

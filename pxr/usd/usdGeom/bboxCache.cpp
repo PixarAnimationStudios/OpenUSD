@@ -46,6 +46,7 @@
 
 #include <tbb/enumerable_thread_specific.h>
 #include <algorithm>
+#include <atomic>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -124,11 +125,24 @@ private:
 
     struct _PrototypeTask
     {
-        _PrototypeTask() : numDependencies(0) { }
+        _PrototypeTask() noexcept
+            : numDependencies(0) { }
+
+        _PrototypeTask(const _PrototypeTask &other) noexcept
+            : dependentPrototypes(other.dependentPrototypes)
+        {
+            numDependencies.store(other.numDependencies.load());
+        }
+
+        _PrototypeTask(_PrototypeTask &&other) noexcept
+            : dependentPrototypes(std::move(other.dependentPrototypes))
+        {
+            numDependencies.store(other.numDependencies.load());
+        }
 
         // Number of dependencies -- prototype prims that must be resolved
         // before this prototype can be resolved.
-        tbb::atomic<size_t> numDependencies;
+        std::atomic<size_t> numDependencies;
 
         // List of prototype prims that depend on this prototype.
         std::vector<_PrimContext> dependentPrototypes;
@@ -220,7 +234,7 @@ private:
             _PrototypeTask& dependentPrototypeData =
                 prototypeTasks->find(dependentPrototype)->second;
             if (dependentPrototypeData.numDependencies
-                .fetch_and_decrement() == 1){
+                .fetch_sub(1) == 1){
                 dispatcher->Run(
                     &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
                     this, dependentPrototype, prototypeTasks, xfCaches,
@@ -1522,4 +1536,3 @@ UsdGeomBBoxCache::_PrimContext::ToString() const {
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

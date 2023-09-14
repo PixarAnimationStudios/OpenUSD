@@ -131,7 +131,6 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/spin_mutex.h>

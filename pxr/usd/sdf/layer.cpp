@@ -214,7 +214,7 @@ SdfLayer::SdfLayer(
     _MarkCurrentStateAsClean();
 }
 
-SdfLayer::~SdfLayer()
+SdfLayer::~SdfLayer() noexcept
 {
     TF_PY_ALLOW_THREADS_IN_SCOPE();
 

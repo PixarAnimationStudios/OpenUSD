@@ -178,7 +178,6 @@
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/variant.hpp>
-#include <tbb/atomic.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_vector.h>
