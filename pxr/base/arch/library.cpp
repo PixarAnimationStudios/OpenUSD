@@ -23,6 +23,7 @@
 //
 
 #include "pxr/pxr.h"
+#include "pxr/base/arch/pragmas.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/arch/errno.h"
 
@@ -88,7 +89,10 @@ int ArchLibraryClose(void* handle)
 void* ArchLibraryGetSymbolAddress(void* handle, const char* name)
 {
 #if defined(ARCH_OS_WINDOWS)
+    ARCH_PRAGMA_PUSH
+    ARCH_PRAGMA_MICROSOFT_CAST
     return GetProcAddress(reinterpret_cast<HMODULE>(handle), name);
+    ARCH_PRAGMA_POP
 #else
     return dlsym(handle, name);
 #endif
