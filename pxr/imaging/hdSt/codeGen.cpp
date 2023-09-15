@@ -2912,7 +2912,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         resourceGen._GenerateHgiTextureResources(&gsDesc,
             HdShaderTokens->geometryShader, _resTextures, _metaData);
 
-        std::string const declarations = _genDefines.str() + _genDecl.str();
+        std::string const declarations = _genDefines.str() + _genDecl.str() +
+            _osd.str();
         std::string const source = _genAccessors.str() + _genGS.str();
 
         gsDesc.shaderCodeDeclarations = declarations.c_str();
