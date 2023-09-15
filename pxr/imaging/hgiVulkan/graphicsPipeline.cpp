@@ -613,12 +613,16 @@ _ProcessAttachment(
     //
     // Clear value
     //
-    vkClearValue->color.float32[0] = attachment.clearValue[0];
-    vkClearValue->color.float32[1] = attachment.clearValue[1];
-    vkClearValue->color.float32[2] = attachment.clearValue[2];
-    vkClearValue->color.float32[3] = attachment.clearValue[3];
-    vkClearValue->depthStencil.depth = attachment.clearValue[0];
-    vkClearValue->depthStencil.stencil = uint32_t(attachment.clearValue[1]);
+    if (isDepthAttachment) {
+        vkClearValue->depthStencil.depth = attachment.clearValue[0];
+        vkClearValue->depthStencil.stencil =
+            static_cast<uint32_t>(attachment.clearValue[1]);
+    } else {
+        vkClearValue->color.float32[0] = attachment.clearValue[0];
+        vkClearValue->color.float32[1] = attachment.clearValue[1];
+        vkClearValue->color.float32[2] = attachment.clearValue[2];
+        vkClearValue->color.float32[3] = attachment.clearValue[3];
+    }
 }
 
 void

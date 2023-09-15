@@ -879,6 +879,10 @@ GfVec4f _ToVec4f(const VtValue &v)
     if (v.IsHolding<GfVec4d>()) {
         return GfVec4f(v.UncheckedGet<GfVec4d>());
     }
+    if (v.IsHolding<HdDepthStencilType>()) {
+        HdDepthStencilType val = v.UncheckedGet<HdDepthStencilType>();
+        return GfVec4f(val.first, val.second, 0.0, 0.0);
+    }
 
     TF_CODING_ERROR("Unsupported clear value for draw target attachment.");
     return GfVec4f(0.0);
