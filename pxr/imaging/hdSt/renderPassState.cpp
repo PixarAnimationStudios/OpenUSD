@@ -1113,6 +1113,14 @@ HdStRenderPassState::_InitAttachmentState(
         if (firstRenderBuffer->IsMultiSampled()) {
             sampleCount = HgiSampleCount(
                 firstRenderBuffer->GetMSAASampleCount());
+
+            if (GetResolveAovMultiSample()) {
+                VtValue resolveRes =
+                    firstRenderBuffer->GetResource(/*ms*/false);
+                if (TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
+                    pipeDesc->resolveAttachments = true;
+                }
+            }
         }
     }
 

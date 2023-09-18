@@ -469,10 +469,8 @@ HdxFullscreenShader::_Draw(
     _SetResourceBindings();
 
     const HgiAttachmentDescVector colorAttachmentDescs(1, _colorAttachment);
-    _SetColorAttachments(colorAttachmentDescs,
-        colorResolveDst ? colorAttachmentDescs : HgiAttachmentDescVector());
-    _SetDepthAttachment(_depthAttachment,
-        depthResolveDst ? _depthAttachment : HgiAttachmentDesc());
+    _SetColorAttachments(colorAttachmentDescs);
+    _SetDepthAttachment(_depthAttachment);
 
     _depthStencilState.depthWriteEnabled = writeDepth;
     _SetDepthStencilState(_depthStencilState);

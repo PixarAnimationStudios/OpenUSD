@@ -135,38 +135,30 @@ _MatchesAttachments(
 
 void
 HdxEffectsShader::_SetColorAttachments(
-    const HgiAttachmentDescVector& colorAttachmentDescs,
-    const HgiAttachmentDescVector& colorResolveAttachmentDescs)
+    const HgiAttachmentDescVector& colorAttachmentDescs)
 {
     if (_MatchesAttachments(_pipelineDesc.colorAttachmentDescs,
-                            colorAttachmentDescs) &&
-        _MatchesAttachments(_pipelineDesc.colorResolveAttachmentDescs,
-                            colorResolveAttachmentDescs)) {
+                            colorAttachmentDescs)) {
         return;
     }
 
     _DestroyPipeline();
 
     _pipelineDesc.colorAttachmentDescs = colorAttachmentDescs;
-    _pipelineDesc.colorResolveAttachmentDescs = colorResolveAttachmentDescs;
 }
 
 void
 HdxEffectsShader::_SetDepthAttachment(
-    const HgiAttachmentDesc& depthAttachmentDesc,
-    const HgiAttachmentDesc& depthResolveAttachmentDesc)
+    const HgiAttachmentDesc& depthAttachmentDesc)
 {
     if (_MatchesAttachment(_pipelineDesc.depthAttachmentDesc,
-                           depthAttachmentDesc) &&
-        _MatchesAttachment(_pipelineDesc.depthResolveAttachmentDesc,
-                           depthResolveAttachmentDesc)) {
+                           depthAttachmentDesc)) {
         return;
     }
 
     _DestroyPipeline();
 
     _pipelineDesc.depthAttachmentDesc = depthAttachmentDesc;
-    _pipelineDesc.depthResolveAttachmentDesc = depthResolveAttachmentDesc;
 }
 
 
@@ -508,11 +500,11 @@ HdxEffectsShader::_CreatePipeline(
         if (_MatchesFormatAndSampleCount(colorTextures,
                 _pipelineDesc.colorAttachmentDescs, sampleCount) &&
             _MatchesFormatAndSampleCount(colorResolveTextures,
-                _pipelineDesc.colorResolveAttachmentDescs, HgiSampleCount1) &&
+                _pipelineDesc.colorAttachmentDescs, HgiSampleCount1) &&
             _MatchesFormatAndSampleCount(depthTexture,
                 _pipelineDesc.depthAttachmentDesc, sampleCount) &&
             _MatchesFormatAndSampleCount(depthResolveTexture,
-                _pipelineDesc.depthResolveAttachmentDesc, HgiSampleCount1)) {
+                _pipelineDesc.depthAttachmentDesc, HgiSampleCount1)) {
             return;
         }
 
@@ -523,13 +515,14 @@ HdxEffectsShader::_CreatePipeline(
 
     _UpdateFormatAndUsage(colorTextures,
                           &_pipelineDesc.colorAttachmentDescs);
-    _UpdateFormatAndUsage(colorResolveTextures,
-                          &_pipelineDesc.colorResolveAttachmentDescs);
     _UpdateFormatAndUsage(depthTexture,
                           &_pipelineDesc.depthAttachmentDesc);
-    _UpdateFormatAndUsage(depthResolveTexture,
-                          &_pipelineDesc.depthResolveAttachmentDesc);
-
+    
+    if ((!colorResolveTextures.empty() && colorResolveTextures[0]) ||
+        depthResolveTexture) {
+        _pipelineDesc.resolveAttachments = true;
+    }
+    
     _pipeline = _hgi->CreateGraphicsPipeline(_pipelineDesc);
 }
 

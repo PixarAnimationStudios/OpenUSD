@@ -88,13 +88,11 @@ protected:
 
     HDX_API
     void _SetColorAttachments(
-        const HgiAttachmentDescVector& colorAttachmentDescs,
-        const HgiAttachmentDescVector& colorResolveAttachmentDescs);
+        const HgiAttachmentDescVector& colorAttachmentDescs);
 
     HDX_API
     void _SetDepthAttachment(
-        const HgiAttachmentDesc& depthAttachmentDesc,
-        const HgiAttachmentDesc& depthResolveAttachmentDesc);
+        const HgiAttachmentDesc& depthAttachmentDesc);
 
     HDX_API
     void _SetPrimitiveType(
