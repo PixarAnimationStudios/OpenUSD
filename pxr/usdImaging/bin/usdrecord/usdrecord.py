@@ -148,6 +148,10 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--multithreaded', '-mt', action='store_true', 
+                        help=('Enable for multi-threaded rendering of a sequence of frames.'
+                              'Defaults to a single thread.'))
+
     args = parser.parse_args()
 
     UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
@@ -195,17 +199,24 @@ def main():
 
     _Msg('Camera: %s' % usdCamera.GetPath().pathString)
     _Msg('Renderer plugin: %s' % frameRecorder.GetCurrentRendererId())
+    _Msg('Multithreaded: %s' % args.multithreaded)
 
-    for timeCode in args.frames:
-        _Msg('Recording time code: %s' % timeCode)
-        outputImagePath = args.outputImagePath.format(frame=timeCode.GetValue())
+    timeCode = [x for x in args.frames]
+    outputImagePath = [args.outputImagePath.format(frame=x.GetValue()) for x in timeCode]
+
+    if args.multithreaded:
         try:
             frameRecorder.Record(usdStage, usdCamera, timeCode, outputImagePath)
         except Tf.ErrorException as e:
-
-            _Err("Recording aborted due to the following failure at time code "
-                 "{0}: {1}".format(timeCode, str(e)))
-            break
+            _Err("Recording aborted. Exception: {0}".format(str(e)))
+    else:
+        for eachTimeCode, eachOutputImagePath in zip(timeCode, outputImagePath):
+            try:
+                frameRecorder.Record(usdStage, usdCamera, [eachTimeCode], [eachOutputImagePath])
+            except Tf.ErrorException as e:
+                _Err("Recording aborted due to the following failure at time code "
+                                "{0}: {1}".format(eachTimeCode, str(e)))
+                break
 
     # Release our reference to the frame recorder so it can be deleted before
     # the Qt stuff.
