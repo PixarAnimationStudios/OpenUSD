@@ -58,3 +58,9 @@ def Xform "Variants" (
     }
 }
 
+def "PrependPayload" (
+    prepend payload = @baz.usd@
+)
+{
+}
+
