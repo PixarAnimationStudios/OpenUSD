@@ -1208,7 +1208,8 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
 }
 
 uint64_t
-HdStRenderPassState::GetGraphicsPipelineHash() const
+HdStRenderPassState::GetGraphicsPipelineHash(
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
     // Hash all of the state that is captured in the pipeline state object.
     uint64_t hash = TfHash::Combine(
@@ -1221,7 +1222,6 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _depthTestEnabled,
         _depthClampEnabled,
         _depthRange,
-        _cullStyle,
         _stencilFunc,
         _stencilRef,
         _stencilMask,
@@ -1244,7 +1244,12 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _useMultiSampleAov,
         _conservativeRasterizationEnabled,
         GetClipPlanes().size(),
-        _multiSampleEnabled);
+        _multiSampleEnabled,
+        geometricShader->GetPolygonMode(),
+        geometricShader->GetLineWidth(),
+        geometricShader->ResolveCullMode(_cullStyle),
+        geometricShader->GetHgiPrimitiveType(),
+        geometricShader->GetPrimitiveIndexSize());
     
     // Hash the aov bindings by name and format.
     for (HdRenderPassAovBinding const& binding : GetAovBindings()) {

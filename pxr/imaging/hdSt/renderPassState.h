@@ -198,7 +198,8 @@ public:
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
-    uint64_t GetGraphicsPipelineHash() const;
+    uint64_t GetGraphicsPipelineHash(
+        HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
     // A 4d-vector v encodes a 2d-transform as follows:
     // (x, y) |-> (v[0] * x + v[2], v[1] * y + v[3]).
