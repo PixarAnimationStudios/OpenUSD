@@ -48,6 +48,7 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/imageRegistry.h"
@@ -2124,6 +2125,8 @@ HdPrman_RenderParam::StopRender(bool blocking)
     if (!_renderThread || !_renderThread->IsRendering()) {
         return;
     }
+
+    TF_DESCRIBE_SCOPE("Waiting for RenderMan to stop");
 
     if (!blocking) {
         {
