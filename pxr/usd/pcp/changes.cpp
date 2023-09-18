@@ -1565,29 +1565,6 @@ PcpChanges::DidMaybeFixAsset(
 }
 
 void
-PcpChanges::DidChangeLayers(const PcpCache* cache)
-{
-    TF_DEBUG(PCP_CHANGES).Msg("PcpChanges::DidChangeLayers: @%s@\n",
-                              cache->GetLayerStackIdentifier().rootLayer->
-                                  GetIdentifier().c_str());
-
-    PcpLayerStackChanges& changes = _GetLayerStackChanges(cache);
-    if (!changes.didChangeLayers) {
-        changes.didChangeLayers       = true;
-        changes.didChangeLayerOffsets = false;
-    }
-}
-
-void
-PcpChanges::DidChangeLayerOffsets(const PcpCache* cache)
-{
-    PcpLayerStackChanges& changes = _GetLayerStackChanges(cache);
-    if (!changes.didChangeLayers) {
-        changes.didChangeLayerOffsets = true;
-    }
-}
-
-void
 PcpChanges::DidChangeSignificantly(const PcpCache* cache, const SdfPath& path)
 {
     _GetCacheChanges(cache).didChangeSignificantly.insert(path);
@@ -1680,16 +1657,6 @@ PcpChanges::DidChangeTargets(const PcpCache* cache, const SdfPath& path,
                              PcpCacheChanges::TargetType targetType)
 {
     _GetCacheChanges(cache).didChangeTargets[path] |= targetType;
-}
-
-void
-PcpChanges::DidChangeRelocates(const PcpCache* cache, const SdfPath& path)
-{
-    // XXX For now we resync the prim entirely.  This is both because
-    // we do not yet have a way to incrementally update the mappings,
-    // as well as to ensure that we provide a change entry that will
-    // cause Csd to pull on the cache and keep its contents alive.
-    _GetCacheChanges(cache).didChangeSignificantly.insert(path);
 }
 
 void
@@ -1817,12 +1784,6 @@ PcpChanges::Apply() const
     TF_FOR_ALL(i, _cacheChanges) {
         i->first->Apply(i->second, &_lifeboat);
     }
-}
-
-PcpLayerStackChanges&
-PcpChanges::_GetLayerStackChanges(const PcpCache* cache)
-{
-    return _layerStackChanges[cache->GetLayerStack()];
 }
 
 PcpLayerStackChanges&
