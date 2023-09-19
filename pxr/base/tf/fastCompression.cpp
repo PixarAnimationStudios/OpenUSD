@@ -30,6 +30,7 @@
 // XXX: Need to isolate symbols here?
 #include "pxrLZ4/lz4.h"
 
+#include <algorithm>
 #include <cstring>
 
 PXR_NAMESPACE_OPEN_SCOPE
