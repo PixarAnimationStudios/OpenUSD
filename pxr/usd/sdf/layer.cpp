@@ -76,6 +76,7 @@
 #include <functional>
 #include <iostream>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <thread>
 #include <vector>
@@ -3204,7 +3205,7 @@ SdfLayer::GetExternalAssetDependencies() const
 // ModifyItemEdits() callback that updates a reference's or payload's
 // asset path for SdfReferenceListEditor and SdfPayloadListEditor.
 template <class RefOrPayloadType>
-static boost::optional<RefOrPayloadType>
+static std::optional<RefOrPayloadType>
 _UpdateRefOrPayloadPath(
     const string &oldLayerPath,
     const string &newLayerPath,
@@ -3213,7 +3214,7 @@ _UpdateRefOrPayloadPath(
     if (refOrPayload.GetAssetPath() == oldLayerPath) {
         // Delete if new layer path is empty, otherwise rename.
         if (newLayerPath.empty()) {
-            return boost::optional<RefOrPayloadType>();
+            return std::optional<RefOrPayloadType>();
         } else {
             RefOrPayloadType updatedRefOrPayload = refOrPayload;
             updatedRefOrPayload.SetAssetPath(newLayerPath);

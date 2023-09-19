@@ -135,7 +135,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
 }
 
 template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
-boost::optional<RefOrPayloadType>
+std::optional<RefOrPayloadType>
 UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
     const SdfLayerRefPtr &layer,
     const RefOrPayloadType& refOrPayload,
@@ -145,7 +145,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
     // these since they refer to the same layer where the payload was
     // authored.
     if (refOrPayload.GetAssetPath().empty()) {
-        return boost::optional<RefOrPayloadType>(refOrPayload);
+        return std::optional<RefOrPayloadType>(refOrPayload);
     }
 
     UsdUtilsDependencyInfo depInfo(refOrPayload.GetAssetPath());
@@ -153,7 +153,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
         layer, depInfo, DEP_TYPE);
 
     if (info.GetAssetPath().empty()) {
-        return boost::none;
+        return std::nullopt;
     }
 
     RefOrPayloadType processedRefOrPayload = refOrPayload;
@@ -165,7 +165,7 @@ UsdUtils_WritableLocalizationDelegate::_ProcessRefOrPayload(
     dependencies->insert(dependencies->end(), 
         info.GetDependencies().begin(), info.GetDependencies().end());
 
-    return boost::optional<RefOrPayloadType>(processedRefOrPayload);
+    return std::optional<RefOrPayloadType>(processedRefOrPayload);
 }
 
 // When beginning to process a value, if the value is a dictionary, explicitly

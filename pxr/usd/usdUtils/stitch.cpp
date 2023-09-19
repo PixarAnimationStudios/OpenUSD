@@ -82,7 +82,7 @@ template <typename T>
 VtValue
 _Reduce(const SdfListOp<T> &stronger, const SdfListOp<T> &weaker)
 {
-    boost::optional<SdfListOp<T>> r = stronger.ApplyOperations(weaker);
+    std::optional<SdfListOp<T>> r = stronger.ApplyOperations(weaker);
     if (r) {
         return VtValue(*r);
     }

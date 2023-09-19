@@ -204,7 +204,7 @@ private:
         const TfToken &listOpToken);
 
     template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
-    boost::optional<RefOrPayloadType> _ProcessRefOrPayload(
+    std::optional<RefOrPayloadType> _ProcessRefOrPayload(
         const SdfLayerRefPtr &layer,
         const RefOrPayloadType& refOrPayload,
         std::vector<std::string>* dependencies);
