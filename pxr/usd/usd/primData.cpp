@@ -158,8 +158,8 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
             const TfToken kind = UsdStage::_GetKind(this);
             // Use the kind registry to determine model/groupness.
             if (!kind.IsEmpty()) {
-                isGroup = KindRegistry::IsA(kind, KindTokens->group);
-                isModel = isGroup || KindRegistry::IsA(kind, KindTokens->model);
+                isGroup = KindRegistry::IsGroup(kind);
+                isModel = isGroup || KindRegistry::IsModel(kind);
             }
         }
         _flags[Usd_PrimGroupFlag] = isGroup;
