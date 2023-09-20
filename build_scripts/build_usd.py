@@ -965,9 +965,6 @@ def InstallTBB_Windows(context, force, buildArgs):
 def InstallTBB_MacOS(context, force, buildArgs):
     tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
     with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
-        # Append extra argument controlling libstdc++ ABI if specified.
-        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
-
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
                 [("-m64",
@@ -984,26 +981,27 @@ def InstallTBB_MacOS(context, force, buildArgs):
         if (secondaryArch == apple_utils.TARGET_X86):
             secondaryArch = "intel64"
 
-        makeTBBCmdPrimary = 'make -j{procs} arch={arch} {buildArgs}'.format(
-                                arch=primaryArch,
-                                procs=context.numJobs,
-                                buildArgs=" ".join(buildArgs))
-        Run(makeTBBCmdPrimary)
+        # Install both release and debug builds.
+        # See comments in InstallTBB_Linux.
+        def _RunBuild(arch):
+            if not arch:
+                return
+            makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
+                arch=arch, procs=context.numJobs,
+                buildArgs=" ".join(buildArgs))
+            Run(makeTBBCmd)
 
-        makeTBBCmdSecondary = None
-        if secondaryArch:
-            makeTBBCmdSecondary = \
-                'make -j{procs} arch={arch} {buildArgs}'.format(
-                        arch=secondaryArch,
-                        procs=context.numJobs,
-                        buildArgs=" ".join(buildArgs))
-            Run(makeTBBCmdSecondary)
+        _RunBuild(primaryArch)
+        _RunBuild(secondaryArch)
 
-        # Install both release and debug builds. USD requires the debug
-        # libraries when building in debug mode, and installing both
-        # makes it easier for users to install dependencies in some
-        # location that can be shared by both release and debug USD
-        # builds. Plus, the TBB build system builds both versions anyway.
+        # See comments in InstallTBB_Linux about why we patch the Makefile
+        # and rerun builds. This is only required for TBB 2020; 2019 and
+        # earlier build both release and debug, and 2021 has moved to CMake.
+        if "2020" in tbb_url:
+            PatchFile("Makefile", [("release", "debug")])
+            _RunBuild(primaryArch)
+            _RunBuild(secondaryArch)
+
         if context.targetUniversal:
             x86Files = glob.glob(os.getcwd() +
                 "/build/*intel64*_release/libtbb*.*")
@@ -1029,11 +1027,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
                 apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
         else:
             CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-            try:
-                CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
-            except:
-                PrintWarning(
-                    "TBB debug libraries are not available on this platform.")
+            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
 
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
@@ -1044,25 +1038,32 @@ def InstallTBB_Linux(context, force, buildArgs):
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # TBB does not support out-of-source builds in a custom location.
-        Run('make -j{procs} {buildArgs}'
-            .format(procs=context.numJobs, 
-                    buildArgs=" ".join(buildArgs)))
+        makeTBBCmd = 'make -j{procs} {buildArgs}'.format(
+            procs=context.numJobs, 
+            buildArgs=" ".join(buildArgs))
+        Run(makeTBBCmd)
 
         # Install both release and debug builds. USD requires the debug
         # libraries when building in debug mode, and installing both
         # makes it easier for users to install dependencies in some
         # location that can be shared by both release and debug USD
-        # builds. Plus, the TBB build system builds both versions anyway.
-        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-        
-        # Some platform/configuration combinations, such as mac/arm64
-        # cannot currently be built as debug. The try allows the build to
-        # proceed even when the debug build was not produced.
-        try:
-            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
-        except:
-            PrintWarning("TBB debug libraries are not available on this platform.")
+        # builds.
+        #
+        # As of TBB 2020 the build no longer produces a debug build along
+        # with the release build. There is also no way to specify a debug
+        # build when running make, even though the internals of the build
+        # still support it.
+        #
+        # To workaround this, we patch the Makefile to change "release" to
+        # "debug" and re-run the build, copying the debug libraries
+        # afterwards. 
+        #
+        # See https://github.com/oneapi-src/oneTBB/issues/207/
+        PatchFile("Makefile", [("release", "debug")])
+        Run(makeTBBCmd)
 
+        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+        CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
