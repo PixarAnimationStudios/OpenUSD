@@ -199,6 +199,13 @@ _WrapGetVersionIfHasAPIInFamily_2(
     return object();
 }
 
+static TfToken _GetKind(const UsdPrim &self)
+{
+    TfToken kind;
+    self.GetKind(&kind);
+    return kind;
+}
+
 
 } // anonymous namespace 
 
@@ -243,6 +250,9 @@ void wrapUsdPrim()
         .def("SetActive", &UsdPrim::SetActive, arg("active"))
         .def("ClearActive", &UsdPrim::ClearActive)
         .def("HasAuthoredActive", &UsdPrim::HasAuthoredActive)
+
+        .def("GetKind", _GetKind)
+        .def("SetKind", &UsdPrim::SetKind, arg("value"))
 
         .def("IsLoaded", &UsdPrim::IsLoaded)
         .def("IsModel", &UsdPrim::IsModel)

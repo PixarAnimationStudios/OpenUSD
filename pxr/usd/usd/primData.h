@@ -128,6 +128,7 @@ public:
 
     bool IsComponent() const { return _flags[Usd_PrimComponentFlag]; }
 
+    USD_API
     bool IsSubComponent() const; 
 
     /// Return true if this prim or any of its ancestors is a class.

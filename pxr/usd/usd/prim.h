@@ -505,6 +505,32 @@ public:
     USD_API
     bool HasProperty(const TfToken &propName) const;
 
+    /// Retrieve the authored \p kind for this prim.
+    /// 
+    /// To test whether the returned \p kind matches a particular known
+    /// "clientKind":
+    /// \code
+    /// TfToken kind;
+    ///
+    /// bool isClientKind = prim.GetKind(&kind) and
+    ///                     KindRegistry::IsA(kind, clientKind);
+    /// \endcode
+    ///
+    /// \return true if there was an authored kind that was successfully read,
+    /// otherwise false. Note that this will return false for pseudoroot even 
+    /// though pseudoroot is always a group, without any kind (in order to 
+    /// respect model hierarchy rules) 
+    ///
+    /// \sa \ref mainpage_kind "The Kind module" for further details on
+    /// how to use Kind for classification, and how to extend the taxonomy.
+    USD_API
+    bool GetKind(TfToken *kind) const;
+    
+    /// Author a \p kind for this prim, at the current UsdEditTarget.
+    /// \return true if \p kind was successully authored, otherwise false.
+    USD_API
+    bool SetKind(const TfToken &kind) const;
+
 private:
     // Helper functions for the public schema query and API schema
     // authoring functions. The public functions have overloads that take 
