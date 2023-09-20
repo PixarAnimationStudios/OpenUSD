@@ -126,6 +126,10 @@ public:
     /// model.
     bool IsGroup() const { return _flags[Usd_PrimGroupFlag]; }
 
+    bool IsComponent() const { return _flags[Usd_PrimComponentFlag]; }
+
+    bool IsSubComponent() const; 
+
     /// Return true if this prim or any of its ancestors is a class.
     bool IsAbstract() const { return _flags[Usd_PrimAbstractFlag]; }
 

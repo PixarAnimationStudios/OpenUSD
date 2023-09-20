@@ -91,6 +91,7 @@ enum Usd_PrimFlags {
     Usd_PrimLoadedFlag,
     Usd_PrimModelFlag,
     Usd_PrimGroupFlag,
+    Usd_PrimComponentFlag,
     Usd_PrimAbstractFlag,
     Usd_PrimDefinedFlag,
     Usd_PrimHasDefiningSpecifierFlag,

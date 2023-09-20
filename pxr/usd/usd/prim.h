@@ -274,7 +274,24 @@ public:
     /// Return true if this prim is a model group based on its kind metadata,
     /// false otherwise.  If this prim is a group, it is also necessarily a
     /// model.
+    ///
+    /// Note that pseudoroot is always a group (in order to respect model
+    /// hierarchy rules), even though it cannot have a kind.
     bool IsGroup() const { return _Prim()->IsGroup(); }
+
+    /// Return true if this prim is a component model based on its kind
+    /// metadata, false otherwise. If this prim is a component, it is also
+    /// necessarily a model.
+    bool IsComponent() const { return _Prim()->IsComponent(); }
+
+    /// Return true if this prim is a subcomponent based on its kind metadata,
+    /// false otherwise. 
+    ///
+    /// Note that subcomponent query is not cached because we only cache 
+    /// model-hierarchy-related information, and therefore will be considerably 
+    /// slower than other kind-based queries.
+    USD_API
+    bool IsSubComponent() const { return _Prim()->IsSubComponent(); }
 
     /// Return true if this prim or any of its ancestors is a class.
     bool IsAbstract() const { return _Prim()->IsAbstract(); }
