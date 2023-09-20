@@ -1449,7 +1449,11 @@ public:
     /// \sa GetFramesPerSecond()
     USD_API
     void SetFramesPerSecond(double framesPerSecond) const;
-    
+
+    /// Returns the union of all the time samples from the prims in the scene.
+    USD_API
+    std::vector<double> GetTimeSamplesFromPrims();
+
     /// @}
 
     // --------------------------------------------------------------------- //
