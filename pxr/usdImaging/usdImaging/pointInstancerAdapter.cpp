@@ -622,8 +622,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
             UsdGeomPrimvarsAPI primvars(prim);
             for (auto const &pv: primvars.GetPrimvarsWithValues()) {
                 TfToken const& interp = pv.GetInterpolation();
-                if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform &&
+                if (interp != UsdGeomTokens->uniform &&
                     pv.ValueMightBeTimeVarying()) {
                     *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
                     HD_PERF_COUNTER_INCR(_tokens->instancer);
@@ -720,14 +719,18 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             // Convert non-uniform primvars on UsdGeomPointInstancer into
             // instance-rate primvars. Note: this only gets local primvars.
             // Inherited primvars don't vary per-instance, so we let the
-            // prototypes pick them up.
+            // prototypes pick them up. Include constant-rate local primvars
+            // to let the renderer query settings on the point instancer
+            // itself, as not all settings can be applied at the prototype
+            // level.
             UsdGeomPrimvarsAPI primvars(instancer);
+            HdInterpolation interpOverride = HdInterpolationInstance;
             for (auto const &pv: primvars.GetPrimvarsWithValues()) {
                 TfToken const& interp = pv.GetInterpolation();
-                if (interp != UsdGeomTokens->constant &&
-                    interp != UsdGeomTokens->uniform) {
-                    HdInterpolation interp = HdInterpolationInstance;
-                    _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars, &interp);
+                if (interp != UsdGeomTokens->uniform) {
+                    _ComputeAndMergePrimvar(prim, pv, time, &vPrimvars,
+                        interp == UsdGeomTokens->constant
+                            ? nullptr : &interpOverride);
                 }
             }
         }
@@ -810,8 +813,7 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
     if (UsdGeomPrimvarsAPI::CanContainPropertyName(propertyName)) {
         // Ignore local constant/uniform primvars.
         UsdGeomPrimvar pv = UsdGeomPrimvarsAPI(prim).GetPrimvar(propertyName);
-        if (pv && (pv.GetInterpolation() == UsdGeomTokens->constant ||
-                   pv.GetInterpolation() == UsdGeomTokens->uniform)) {
+        if (pv && pv.GetInterpolation() == UsdGeomTokens->uniform) {
             return HdChangeTracker::Clean;
         }
 
