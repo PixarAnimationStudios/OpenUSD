@@ -73,6 +73,9 @@ TF_DEFINE_PRIVATE_TOKENS(_tokens,
     // Plugin metadata key for resolver URI schemes.
     (uriSchemes)
 
+    // Plugin metadata key for specifying primary resolver functionality
+    (primary)
+
     // Plugin metadata keys for specifying resolver functionality.
     (implementsContexts)
     (implementsScopedCaches)
@@ -117,7 +120,10 @@ public:
     // URI schemes associated with the resolver implementation.
     std::vector<std::string> uriSchemes;
 
-    // Whether this resolver can be used as a primary resolver.
+    // Whether this resolver is intended to be a primary resolver.
+    bool primary = false;
+
+    // Whether this resolver can be actually used as a primary resolver.
     bool canBePrimaryResolver = false;
 
     // Whether this resolver implements any context-related operations.
@@ -234,6 +240,15 @@ _GetAvailableResolvers()
             }
         }
 
+        // check if this resolver is marked as a resolver that can serve as a
+        // primary resolver
+        bool primary = false;
+        if (const JsOptionalValue primaryVal = JsFindValue(
+                plugin->GetMetadataForType(resolverType),
+                _tokens->primary.GetString())) {
+            primary = primaryVal->GetBool();
+        }
+
         const JsOptionalValue implementsContextsVal = 
             _FindMetadataValueOnTypeOrBase<bool>(
                 _tokens->implementsContexts, resolverType);
@@ -246,7 +261,10 @@ _GetAvailableResolvers()
         info.plugin = plugin;
         info.type = resolverType;
         info.uriSchemes = std::move(uriSchemes);
-        info.canBePrimaryResolver = info.uriSchemes.empty();
+
+        // a primary resolver is a resolver that is marked as such or does not
+        // specify any URI schemes
+        info.canBePrimaryResolver = info.uriSchemes.empty() || primary;
         if (implementsContextsVal) {
             info.implementsContexts = implementsContextsVal->GetBool();
         }

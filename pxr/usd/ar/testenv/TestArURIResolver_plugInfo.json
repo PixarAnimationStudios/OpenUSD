@@ -19,6 +19,11 @@
                     "_TestOtherURIResolver": {
                         "bases": ["_TestURIResolverBase"],
                         "uriSchemes": ["test_other"]
+                    },
+                    "_TestOtherPrimaryResolver": {
+                        "bases": ["_TestURIResolverBase"],
+                        "uriSchemes": ["test_primary"],
+                        "primary": true
                     }
                 }
             }

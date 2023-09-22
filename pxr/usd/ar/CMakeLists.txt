@@ -216,6 +216,19 @@ if (BUILD_SHARED_LIBS)
     pxr_register_test(testArURIResolver_CPP
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArURIResolver_CPP"
     )
+
+    pxr_build_test(testArPrimaryResolver_CPP
+        LIBRARIES
+            arch
+            tf
+            ar
+        CPPFILES
+            testenv/testArPrimaryResolver.cpp
+    )
+
+    pxr_register_test(testArPrimaryResolver_CPP
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testArPrimaryResolver_CPP"
+    )
 endif()
 
 pxr_build_test(testArDefaultResolver_CPP
