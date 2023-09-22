@@ -442,7 +442,7 @@ void _TokenizeToSegments(string const &src, char const *delimiters,
             continue;
         // have a token until the next delimiter.
         // push back a new segment, but we only know the begin point yet.
-        segments.push_back(make_pair(c, c));
+        segments.emplace_back(c, c);
         for (++c; c != end; ++c)
             if (IS_DELIMITER(*c))
                 break;
@@ -472,12 +472,12 @@ TfStringSplit(string const &src, string const &separator)
         pos = src.find(separator, from);
         if (pos == string::npos)
             break;
-        split.push_back(src.substr(from, pos-from));
+        split.emplace_back(src.substr(from, pos-from));
         from = pos + separator.size();
     }
 
     // Also add the 'last' substring
-    split.push_back(src.substr(from));
+    split.emplace_back(src.substr(from));
 
     return split;
 }
@@ -504,7 +504,7 @@ TfStringTokenizeToSet(string const &src, const char* delimiters)
     // Construct strings from the segments and insert them into the result.
     set<string> ret;
     for (size_t i = 0; i != segments.size(); ++i)
-        ret.insert(string(segments[i].first, segments[i].second));
+        ret.emplace(string(segments[i].first, segments[i].second));
 
     return ret;
 }
@@ -806,8 +806,8 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
-        else if (IsDigit(l) | IsDigit(r)) {
-            if (IsDigit(l) & IsDigit(r)) {
+        else if (IsDigit(l) || IsDigit(r)) {
+            if (IsDigit(l) && IsDigit(r)) {
                 // We backtrack to find the start of each digit string, then we
                 // scan each digit string, ignoring leading zeros to put the two
                 // strings into alignment with their most significant digits.
@@ -869,7 +869,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
                 curEnd = lcur + std::min(std::distance(lcur, lend),
                                          std::distance(rcur, rend));
             }
-            else if (IsDigit(l) | IsDigit(r)) {
+            else if (IsDigit(l) || IsDigit(r)) {
                 if (lcur == lstr.c_str()) {
                     return l < r;
                 }

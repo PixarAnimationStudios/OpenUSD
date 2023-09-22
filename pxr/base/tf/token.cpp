@@ -171,7 +171,7 @@ struct Tf_TokenRegistry
     void _DumpStats() const {
         std::vector<std::pair<size_t, size_t> > sizesWithSet;
         for (size_t i = 0; i != _NumSets; ++i) {
-            sizesWithSet.push_back(std::make_pair(_sets[i].size(), i));
+            sizesWithSet.emplace_back(_sets[i].size(), i);
         }
         std::sort(sizesWithSet.begin(), sizesWithSet.end());
         printf("Set # -- Size\n");

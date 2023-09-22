@@ -171,7 +171,7 @@ struct TfType::_TypeInfo {
             }
         }
         // need to add a new func.
-        castFuncs.push_back(std::make_pair(&baseType, func));
+        castFuncs.emplace_back(&baseType, func);
     }
 
     // Caller must hold at least a read lock on mutex.
@@ -731,7 +731,7 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
     seqs.reserve(2 + numBaseTypes);
 
     // 1st input sequence: This class.
-    seqs.push_back( TypeVector() );
+    seqs.emplace_back();
     seqs.back().push_back(*this);
 
     // 2nd input sequence: Direct bases, in order.
@@ -741,7 +741,7 @@ TfType::GetAllAncestorTypes(vector<TfType> *result) const
     TF_FOR_ALL(it, baseTypes) {
         // Populate the base's ancestor types directly into a new vector on
         // the back of seqs.
-        seqs.push_back( TypeVector() );
+        seqs.emplace_back();
         TypeVector &baseSeq = seqs.back();
         it->GetAllAncestorTypes(&baseSeq);
     }

@@ -66,7 +66,7 @@ TfDlopen(
     // Try to open the dynamic library
     bool state = _opening;
     _opening = true;
-    void* handle = ArchLibraryOpen(filename.c_str(), flag);
+    void* handle = ArchLibraryOpen(filename, flag);
     _opening = state;
 
     TF_DEBUG(TF_DLOPEN).Msg("TfDlopen: [opened] '%s' (handle=%p)\n",
