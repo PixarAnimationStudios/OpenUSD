@@ -40,6 +40,10 @@
 #include "pxr/usd/usdGeom/bboxCache.h"
 #include "pxr/usd/usdGeom/metrics.h"
 #include "pxr/usd/usdGeom/tokens.h"
+#include "pxr/usd/usdRender/settings.h"
+#include "pxr/usd/usdRender/product.h"
+
+#include "pxr/base/arch/fileSystem.h"
 
 #include <string>
 
@@ -48,16 +52,27 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 UsdAppUtilsFrameRecorder::UsdAppUtilsFrameRecorder(
     const TfToken& rendererPluginId,
-    bool gpuEnabled) :
+    bool gpuEnabled, 
+    const SdfPath& renderSettingsPrimPath) :
     _imagingEngine(HdDriver(), rendererPluginId, gpuEnabled),
     _imageWidth(960u),
     _complexity(1.0f),
     _colorCorrectionMode(HdxColorCorrectionTokens->disabled),
-    _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy})
+    _purposes({UsdGeomTokens->default_, UsdGeomTokens->proxy}),
+    _renderSettingsPrimPath(renderSettingsPrimPath)
 {
     // Disable presentation to avoid the need to create an OpenGL context when
     // using other graphics APIs such as Metal and Vulkan.
     _imagingEngine.SetEnablePresentation(false);
+
+    // Set the interactive to be false on the HdRenderSettingsMap 
+    _imagingEngine.SetRendererSetting(
+        HdRenderSettingsTokens->enableInteractive, VtValue(false));
+
+    // Set the Active RenderSettings Prim path when not empty.
+    if (!renderSettingsPrimPath.IsEmpty()) {
+        _imagingEngine.SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
+    }
 }
 
 static bool
@@ -89,8 +104,8 @@ UsdAppUtilsFrameRecorder::SetIncludedPurposes(const TfTokenVector& purposes)
                                    UsdGeomTokens->guide };
     _purposes = { UsdGeomTokens->default_ };
 
-    for ( TfToken const &p : purposes) {
-        if (_HasPurpose(allPurposes, p)){
+    for (TfToken const &p : purposes) {
+        if (_HasPurpose(allPurposes, p)) {
             _purposes.push_back(p);
         }
         else if (p != UsdGeomTokens->default_) {
@@ -275,12 +290,54 @@ private:
 
 }
 
+static bool
+_RenderProductsGenerated(
+    const UsdStagePtr& stage,
+    const SdfPath& renderSettingsPrimPath)
+{
+    if (renderSettingsPrimPath.IsEmpty()) {
+        return false;
+    }
+
+    bool productsGenerated = false;
+    UsdRenderSettings settings = 
+        UsdRenderSettings(stage->GetPrimAtPath(renderSettingsPrimPath));
+    
+    // Each Render Product should generate an image
+    SdfPathVector renderProductTargets;
+    settings.GetProductsRel().GetForwardedTargets(&renderProductTargets);
+
+    for (const auto productPath : renderProductTargets) {
+        UsdRenderProduct product =
+            UsdRenderProduct(stage->GetPrimAtPath(productPath));
+        TfToken productName;
+        product.GetProductNameAttr().Get(&productName);
+        if (ArchOpenFile(productName.GetText(), "r")) {
+            TF_STATUS("Product '%s' generated from RenderProduct prim <%s> "
+                      "on RenderSettings <%s>", productName.GetText(), 
+                      productPath.GetText(), renderSettingsPrimPath.GetText());
+            productsGenerated |= true;
+        } else {
+            TF_WARN("Missing generated Product '%s' from RenderProduct prim "
+                    "<%s> on RenderSettings <%s>", productName.GetText(),
+                    productPath.GetText(), renderSettingsPrimPath.GetText());
+        }
+    }
+
+    if (renderProductTargets.empty()) {
+        TF_WARN("No Render Prouducts found on the RenderSettings prim <%s>\n",
+                renderSettingsPrimPath.GetText());
+    }
+
+    return productsGenerated;
+}
+
 bool
 UsdAppUtilsFrameRecorder::Record(
-        const UsdStagePtr& stage,
-        const UsdGeomCamera& usdCamera,
-        const UsdTimeCode timeCode,
-        const std::string& outputImagePath)
+    const UsdStagePtr& stage,
+    const UsdGeomCamera& usdCamera,
+    const UsdTimeCode timeCode,
+    const std::string& outputImagePath)
 {
     if (!stage) {
         TF_CODING_ERROR("Invalid stage");
@@ -314,7 +371,6 @@ UsdAppUtilsFrameRecorder::Record(
     const size_t imageHeight = std::max<size_t>(
         static_cast<size_t>(static_cast<float>(_imageWidth) / aspectRatio),
         1u);
-    const GfVec2i renderResolution(_imageWidth, imageHeight);
 
     const GfFrustum frustum = gfCamera.GetFrustum();
     const GfVec3d cameraPos = frustum.GetPosition();
@@ -372,6 +428,11 @@ UsdAppUtilsFrameRecorder::Record(
         }
     };
 
+    // If the RenderProducts on RenderSettings Prim successfully generated
+    // images, we do not need to write to the outputImagePath.
+    if (_RenderProductsGenerated(stage, _renderSettingsPrimPath)) {
+        return true;
+    }
     TextureBufferWriter writer(&_imagingEngine);
     return writer.Write(outputImagePath);
 }

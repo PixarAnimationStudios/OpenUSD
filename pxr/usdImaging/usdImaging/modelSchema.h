@@ -41,6 +41,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 #define USDIMAGINGMODEL_SCHEMA_TOKENS \
     (model) \
+    (modelPath) \
+    (kind) \
+    (assetIdentifier) \
+    (assetName) \
+    (assetVersion) \
     (drawMode) \
     (applyDrawMode) \
     (drawModeColor) \
@@ -74,6 +79,16 @@ public:
     //ACCESSORS
 
     USDIMAGING_API
+    HdPathDataSourceHandle GetModelPath();
+    USDIMAGING_API
+    HdTokenDataSourceHandle GetKind();
+    USDIMAGING_API
+    HdAssetPathDataSourceHandle GetAssetIdentifier();
+    USDIMAGING_API
+    HdStringDataSourceHandle GetAssetName();
+    USDIMAGING_API
+    HdStringDataSourceHandle GetAssetVersion();
+    USDIMAGING_API
     HdTokenDataSourceHandle GetDrawMode();
     USDIMAGING_API
     HdBoolDataSourceHandle GetApplyDrawMode();
@@ -104,6 +119,11 @@ public:
     USDIMAGING_API
     static HdContainerDataSourceHandle
     BuildRetained(
+        const HdPathDataSourceHandle &modelPath,
+        const HdTokenDataSourceHandle &kind,
+        const HdAssetPathDataSourceHandle &assetIdentifier,
+        const HdStringDataSourceHandle &assetName,
+        const HdStringDataSourceHandle &assetVersion,
         const HdTokenDataSourceHandle &drawMode,
         const HdBoolDataSourceHandle &applyDrawMode,
         const HdVec3fDataSourceHandle &drawModeColor,
@@ -125,6 +145,21 @@ public:
     class Builder
     {
     public:
+        USDIMAGING_API
+        Builder &SetModelPath(
+            const HdPathDataSourceHandle &modelPath);
+        USDIMAGING_API
+        Builder &SetKind(
+            const HdTokenDataSourceHandle &kind);
+        USDIMAGING_API
+        Builder &SetAssetIdentifier(
+            const HdAssetPathDataSourceHandle &assetIdentifier);
+        USDIMAGING_API
+        Builder &SetAssetName(
+            const HdStringDataSourceHandle &assetName);
+        USDIMAGING_API
+        Builder &SetAssetVersion(
+            const HdStringDataSourceHandle &assetVersion);
         USDIMAGING_API
         Builder &SetDrawMode(
             const HdTokenDataSourceHandle &drawMode);
@@ -161,6 +196,11 @@ public:
         HdContainerDataSourceHandle Build();
 
     private:
+        HdPathDataSourceHandle _modelPath;
+        HdTokenDataSourceHandle _kind;
+        HdAssetPathDataSourceHandle _assetIdentifier;
+        HdStringDataSourceHandle _assetName;
+        HdStringDataSourceHandle _assetVersion;
         HdTokenDataSourceHandle _drawMode;
         HdBoolDataSourceHandle _applyDrawMode;
         HdVec3fDataSourceHandle _drawModeColor;

@@ -360,25 +360,33 @@ ZBrush
 NVIDIA Omniverse
 =================
 
-`NVIDIA Omniverse <https://www.nvidia.com/en-us/omniverse/>`_ is a platform for creating and operating metaverse applications.
-It is based on USD.
+`NVIDIA Omniverse <https://www.nvidia.com/en-us/omniverse/>`_ is a modular `development platform <https://developer.nvidia.com/omniverse>`_ for 
+building Universal Scene Description (OpenUSD)-based real time 3D simulations and workflows for 
+industrial digitalization and perception AI applications.
 
-`NVIDIA USD Documentation <https://www.nvidia.com/en-us/omniverse/usd/>`_
+* `NVIDIA USD Overview <https://www.nvidia.com/en-us/omniverse/usd/>`_
+* `NVIDIA USD Resources <https://developer.nvidia.com/usd>`_
+* `NVIDIA USD Documentation <https://docs.omniverse.nvidia.com/usd>`_
 
-Omniverse also adds USD connectors to many application, `listed here <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_.
-Some of the applications are:
+Omniverse connects `many top OpenUSD-based software applications <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_ 
+to unify your 3D workflow. Some of the applications are:
 
+* Adobe Photoshop
+* Adobe Substance 3D Designer
 * Archicad
-* Character Creator
-* Creo
-* iClone
-* ParaView
-* Revit
-* Rhino
-* SketchUp
+* Autodesk 3ds Max
+* Autodesk Maya
+* Autodesk Revit
+* Blender
+* Epic Games Unreal Engine
+* Kitware Paraview
+* McNeel Rhinoceros
+* PTC Creo
+* Reallusion Character Creator
+* Reallusion iClone
+* Trimble SketchUp
 
-Please see the `list <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_  for a
-fuller range of connectors, as there are more than listed here.
+Please see the latest `list of Omniverse Connectors <https://docs.omniverse.nvidia.com/con_connect/con_connect/connecting-to-omniverse.html>`_.
 
 --------
 

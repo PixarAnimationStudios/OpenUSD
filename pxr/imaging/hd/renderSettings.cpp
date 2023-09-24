@@ -84,6 +84,14 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
+bool
+HdRenderSettings::IsValid() const
+{
+    // The RenderSettings prim is considered valid if there is at least one 
+    // RenderProduct, and we have a camera path specified.
+    return !_products.empty() && !_products[0].cameraPath.IsEmpty();
+}
+
 const HdRenderSettings::NamespacedSettings&
 HdRenderSettings::GetNamespacedSettings() const
 {

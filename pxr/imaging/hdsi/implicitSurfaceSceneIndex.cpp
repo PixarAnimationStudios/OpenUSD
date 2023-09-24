@@ -540,20 +540,26 @@ public:
         GeomUtilCylinderMeshGenerator::GeneratePoints(
             points.begin(),
             numRadial,
-            _GetRadius(shutterOffset),
+            _GetRadiusBottom(shutterOffset),
+            _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
+            /* sweepDegrees = */ 360.0,
             &basis
         );
-        
+
         return points;
     }
 
     bool GetContributingSampleTimesForInterval(
                             const Time startTime,
                             const Time endTime,
-                            std::vector<Time> * const outSampleTimes) override {
+                            std::vector<Time> * const outSampleTimes) override
+    {
+        // Note contributing sources also include radius source for backward
+        // compatibility with cylinder schema with just 1 radius.
         HdSampledDataSourceHandle sources[] = {
-            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
+            _GetHeightSource(), _GetRadiusSource(), _GetRadiusBottomSource(), 
+            _GetRadiusTopSource(), _GetAxisSource() };
         return HdGetMergedContributingSampleTimesForInterval(
             TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
@@ -564,37 +570,79 @@ private:
     {
     }
 
-    HdDoubleDataSourceHandle _GetHeightSource() const {
+    HdDoubleDataSourceHandle _GetHeightSource() const
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->height);
+            HdCylinderSchema::GetSchemaToken(), 
+            HdCylinderSchemaTokens->height);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
-    }
+    };
 
     double _GetHeight(const Time shutterOffset) const {
         if (HdDoubleDataSourceHandle const s = _GetHeightSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return 1.0;
+        return 2.0;
     }
 
-    HdDoubleDataSourceHandle _GetRadiusSource() const {
+    // Deprecated
+    HdDoubleDataSourceHandle _GetRadiusSource() const
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->radius);
+            HdCylinderSchema::GetSchemaToken(),
+            HdCylinderSchemaTokens->radius);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
 
-    double _GetRadius(const Time shutterOffset) const {
+    HdDoubleDataSourceHandle _GetRadiusBottomSource() const
+    {
+        static const HdDataSourceLocator sizeLocator(
+            HdCylinderSchema::GetSchemaToken(),
+            HdCylinderSchemaTokens->radiusBottom);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetRadiusBottom(const Time shutterOffset) const 
+    {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusBottomSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        // Fallback to old cylinder schema - deprecated
         if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
             return s->GetTypedValue(shutterOffset);
         }
         return 1.0;
     }
 
-    HdTokenDataSourceHandle _GetAxisSource() const {
+    HdDoubleDataSourceHandle _GetRadiusTopSource() const 
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
+            HdCylinderSchema::GetSchemaToken(),
+            HdCylinderSchemaTokens->radiusTop);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetRadiusTop(const Time shutterOffset) const 
+    {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusTopSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        // Fallback to old cylinder schema - deprecated
+        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 1.0;
+    }
+
+    HdTokenDataSourceHandle _GetAxisSource() const
+    {
+        static const HdDataSourceLocator sizeLocator(
+            HdCylinderSchema::GetSchemaToken(), 
+            HdCylinderSchemaTokens->axis);
         return HdTokenDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
@@ -603,7 +651,7 @@ private:
         if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return HdCylinderSchemaTokens->X;
+        return HdCylinderSchemaTokens->Z;
     }
 
     HdContainerDataSourceHandle _primDataSource;
@@ -653,7 +701,7 @@ _ComputePrimDataSource(
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdCylinderSchemaTokens->cylinder, cylinderDataSource,
+            HdCylinderSchema::GetSchemaToken(), cylinderDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
             HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
             HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
@@ -880,8 +928,10 @@ public:
             points.begin(),
             numRadial,
             numCapAxial,
-            _GetRadius(shutterOffset),
+            _GetRadiusBottom(shutterOffset),
+            _GetRadiusTop(shutterOffset),
             _GetHeight(shutterOffset),
+            /* sweepDegrees = */ 360.0,
             &basis
         );
 
@@ -891,9 +941,13 @@ public:
     bool GetContributingSampleTimesForInterval(
                             const Time startTime,
                             const Time endTime,
-                            std::vector<Time> * const outSampleTimes) override {
+                            std::vector<Time> * const outSampleTimes) override
+    {
+        // Note contributing sources also include radius source for backward
+        // compatibility with cylinder schema with just 1 radius.
         HdSampledDataSourceHandle sources[] = {
-            _GetHeightSource(), _GetRadiusSource(), _GetAxisSource() };
+            _GetHeightSource(), _GetRadiusSource(), _GetRadiusBottomSource(),
+            _GetRadiusTopSource(), _GetAxisSource() };
         return HdGetMergedContributingSampleTimesForInterval(
             TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
@@ -904,37 +958,78 @@ private:
     {
     }
 
-    HdDoubleDataSourceHandle _GetHeightSource() const {
+    HdDoubleDataSourceHandle _GetHeightSource() const
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->height);
+            HdCapsuleSchema::GetSchemaToken(),
+            HdCapsuleSchemaTokens->height);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
 
-    double _GetHeight(const Time shutterOffset) const {
+    double _GetHeight(const Time shutterOffset) const
+    {
         if (HdDoubleDataSourceHandle const s = _GetHeightSource()) {
             return s->GetTypedValue(shutterOffset);
         }
         return 1.0;
     }
 
-    HdDoubleDataSourceHandle _GetRadiusSource() const {
+    HdDoubleDataSourceHandle _GetRadiusSource() const
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->radius);
+            HdCapsuleSchema::GetSchemaToken(), HdCapsuleSchemaTokens->radius);
         return HdDoubleDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
 
-    double _GetRadius(const Time shutterOffset) const {
+    HdDoubleDataSourceHandle _GetRadiusBottomSource() const
+    {
+        static const HdDataSourceLocator sizeLocator(
+            HdCapsuleSchema::GetSchemaToken(), 
+            HdCapsuleSchemaTokens->radiusBottom);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetRadiusBottom(const Time shutterOffset) const
+    {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusBottomSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        // Fallback to old cylinder schema - deprecated
         if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return 1.0;
+        return 0.5;
     }
 
-    HdTokenDataSourceHandle _GetAxisSource() const {
+    HdDoubleDataSourceHandle _GetRadiusTopSource() const
+    {
         static const HdDataSourceLocator sizeLocator(
-            HdCapsuleSchemaTokens->capsule, HdCapsuleSchemaTokens->axis);
+            HdCapsuleSchema::GetSchemaToken(),
+            HdCapsuleSchemaTokens->radiusTop);
+        return HdDoubleDataSource::Cast(
+            HdContainerDataSource::Get(_primDataSource, sizeLocator));
+    }
+
+    double _GetRadiusTop(const Time shutterOffset) const
+    {
+        if (HdDoubleDataSourceHandle const s = _GetRadiusTopSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        // Fallback to old cylinder schema - deprecated
+        if (HdDoubleDataSourceHandle const s = _GetRadiusSource()) {
+            return s->GetTypedValue(shutterOffset);
+        }
+        return 0.5;
+    }
+
+    HdTokenDataSourceHandle _GetAxisSource() const
+    {
+        static const HdDataSourceLocator sizeLocator(
+            HdCapsuleSchema::GetSchemaToken(),
+            HdCapsuleSchemaTokens->axis);
         return HdTokenDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, sizeLocator));
     }
@@ -943,7 +1038,7 @@ private:
         if (HdTokenDataSourceHandle const s = _GetAxisSource()) {
             return s->GetTypedValue(shutterOffset);
         }
-        return HdCapsuleSchemaTokens->X;
+        return HdCapsuleSchemaTokens->Z;
     }
 
     HdContainerDataSourceHandle _primDataSource;
@@ -993,7 +1088,7 @@ _ComputePrimDataSource(
 
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
-            HdCapsuleSchemaTokens->capsule, capsuleDataSource,
+            HdCapsuleSchema::GetSchemaToken(), capsuleDataSource,
             HdMeshSchemaTokens->mesh, meshDataSource,
             HdPrimvarsSchemaTokens->primvars, primvarsDataSource,
             HdDependenciesSchemaTokens->__dependencies, dependenciesDataSource),
@@ -1030,7 +1125,7 @@ public:
         return HdGetMergedContributingSampleTimesForInterval(
             TfArraySize(sources), sources, startTime, endTime, outSampleTimes);
     }
-    
+
 private:
     _MatrixDataSource(const HdContainerDataSourceHandle &primDataSource)
       : _primDataSource(primDataSource)
@@ -1050,7 +1145,8 @@ private:
 
     HdTokenDataSourceHandle _GetAxisSource() const {
         static const HdDataSourceLocator locator(
-            HdCylinderSchemaTokens->cylinder, HdCylinderSchemaTokens->axis);
+            HdCylinderSchema::GetSchemaToken(), 
+            HdCylinderSchemaTokens->axis);
         return HdTokenDataSource::Cast(
             HdContainerDataSource::Get(_primDataSource, locator));
     }
@@ -1096,10 +1192,10 @@ _ComputePrimDataSource(
         HdXformSchema::Builder()
             .SetMatrix(_MatrixDataSource::New(primDataSource))
             .Build();
+
     HdDataSourceBaseHandle const dependenciesDataSource =
         _ComputeMatrixDependenciesDataSource<HdCylinderSchema>(primPath);
 
-    
     HdContainerDataSourceHandle sources[] = {
         HdRetainedContainerDataSource::New(
             HdXformSchemaTokens->xform, std::move(xformSrc),
@@ -1110,7 +1206,7 @@ _ComputePrimDataSource(
     return HdOverlayContainerDataSource::New(TfArraySize(sources), sources);
 }
 
-} // namespace _AxisToTransform
+} // namespace _CylinderToTransformedCylinder
 
 namespace _ConeToTransformedCone
 {
@@ -1285,7 +1381,7 @@ HdsiImplicitSurfaceSceneIndex::HdsiImplicitSurfaceSceneIndex(
   , _cylinderMode(_GetMode(inputArgs, HdPrimTypeTokens->cylinder))
   , _sphereMode(_GetMode(inputArgs, HdPrimTypeTokens->sphere))
 {
-    
+
 }
 
 HdSceneIndexPrim
@@ -1324,7 +1420,7 @@ HdsiImplicitSurfaceSceneIndex::GetPrim(const SdfPath &primPath) const
                 _CylinderToMesh::_ComputePrimDataSource(
                     primPath, prim.dataSource) };
         }
-        if (_cylinderMode == 
+        if (_cylinderMode ==
                 HdsiImplicitSurfaceSceneIndexTokens->axisToTransform) {
             return {
                 prim.primType,

@@ -204,6 +204,20 @@ PcpPrimIndex::GetNodeIteratorAtNode(const PcpNodeRef &node) const
         get_pointer(_graph), _graph->GetNodeIndexForNode(node));
 }
 
+PcpNodeRange 
+PcpPrimIndex::GetNodeSubtreeRange(const PcpNodeRef &node) const
+{
+    if (!_graph) {
+        return PcpNodeRange();
+    }
+
+    const std::pair<size_t, size_t> range = 
+        _graph->GetNodeIndexesForSubtreeRange(node);
+    return PcpNodeRange(
+        PcpNodeIterator(get_pointer(_graph), range.first),
+        PcpNodeIterator(get_pointer(_graph), range.second));
+}
+
 PcpPrimRange 
 PcpPrimIndex::GetPrimRange(PcpRangeType rangeType) const
 {

@@ -25,12 +25,12 @@ def Xform "lights"
         float xformOp:rotateX:Zup = 90
         uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
     }
-    def SphereLight "Light"
+    def DistantLight "DistantLight"
     {
-        float inputs:radius = 25
+        float inputs:angle = 50
         float inputs:intensity = 5
-        Vec3f xformOp:translate = (0, -50, 0)
-        uniform token[] xformOpOrder = ["xformOp:translate"]
+        float3 xformOp:rotateXYZ = (90, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
     }
 }
 

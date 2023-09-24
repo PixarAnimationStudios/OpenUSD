@@ -831,7 +831,7 @@ HgiGLOps::BindFramebufferOp(
                     GL_DEPTH_STENCIL,
                     0,
                     depthAttachment.clearValue[0],
-                    depthAttachment.clearValue[1]);
+                    static_cast<uint32_t>(depthAttachment.clearValue[1]));
             } else {
                 glClearBufferfv(
                     GL_DEPTH,

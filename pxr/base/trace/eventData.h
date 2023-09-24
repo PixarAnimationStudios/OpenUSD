@@ -30,8 +30,8 @@
 #include "pxr/base/trace/api.h"
 #include "pxr/base/trace/event.h"
 
-#include <boost/variant.hpp>
 #include <string>
+#include <variant>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -88,7 +88,7 @@ private:
     struct _NoData {};
 
     using Variant = 
-        boost::variant<_NoData, std::string, bool, int64_t, uint64_t, double>;
+        std::variant<_NoData, std::string, bool, int64_t, uint64_t, double>;
     Variant _data;
 };
 

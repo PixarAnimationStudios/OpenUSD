@@ -24,84 +24,115 @@
 ///
 /// \file usdUtils/dependencies.cpp
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/assetLocalization.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/debugCodes.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/layerUtils.h"
 
 #include "pxr/base/trace/trace.h"
 
-#include <stack>
+#include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
 
 // XXX: don't even know if it's important to distinguish where
 // these asset paths are coming from..  if it's not important, maybe this
 // should just go into Sdf's _GatherPrimAssetReferences?  if it is important,
 // we could also have another function that takes 3 vectors.
-void
+void 
 UsdUtilsExtractExternalReferences(
     const std::string& filePath,
     std::vector<std::string>* subLayers,
     std::vector<std::string>* references,
     std::vector<std::string>* payloads)
 {
-    TRACE_FUNCTION();
     UsdUtils_ExtractExternalReferences(filePath, 
-        UsdUtils_FileAnalyzer::ReferenceType::All, 
+        UsdUtils_LocalizationContext::ReferenceType::All,
         subLayers, references, payloads);
 }
 
-
-
 bool
-UsdUtilsComputeAllDependencies(const SdfAssetPath &assetPath,
-                               std::vector<SdfLayerRefPtr> *layers,
-                               std::vector<std::string> *assets,
-                               std::vector<std::string> *unresolvedPaths)
+UsdUtilsComputeAllDependencies(
+    const SdfAssetPath &assetPath,
+    std::vector<SdfLayerRefPtr> *outLayers,
+    std::vector<std::string> *outAssets,
+    std::vector<std::string> *outUnresolvedPaths)
 {
-    // We are not interested in localizing here, hence pass in the empty string
-    // for destination directory.
-    UsdUtils_AssetLocalizer localizer(assetPath, 
-                              /* destDir */ std::string(), 
-                              /* enableMetadataFiltering */ true);
+    std::vector<SdfLayerRefPtr> layers;
+    std::vector<std::string> assets, unresolvedPaths;
 
-    // Clear the vectors before we start.
-    layers->clear();
-    assets->clear();
-    
-    // Reserve space in the vectors.
-    layers->reserve(localizer.GetLayerExportMap().size());
-    assets->reserve(localizer.GetFileCopyMap().size());
+    const auto processFunc = [&layers, &assets, &unresolvedPaths]( 
+        const SdfLayerRefPtr &layer, 
+        const std::string &,
+        const std::vector<std::string> &dependencies,
+        UsdUtilsDependencyType)
+    {
+        for (const auto & dependency : dependencies) {
+            const std::string anchoredPath = 
+                SdfComputeAssetPathRelativeToLayer(layer, dependency);
+            const std::string resolvedPath = ArGetResolver().Resolve(anchoredPath);
 
-    for (auto &layerAndDestPath : localizer.GetLayerExportMap()) {
-        layers->push_back(layerAndDestPath.first);
+            if (resolvedPath.empty()) {
+                unresolvedPaths.emplace_back(anchoredPath);
+            }
+            else if (UsdStage::IsSupportedFile(anchoredPath)) {
+                layers.push_back(SdfLayer::FindOrOpen(anchoredPath));
+            }
+            else {
+                assets.push_back(resolvedPath);
+            }
+        }
+    };
+
+    UsdUtils_ReadOnlyLocalizationDelegate delegate(processFunc);
+    UsdUtils_LocalizationContext context(&delegate);
+    context.SetMetadataFilteringEnabled(true);
+
+    SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(assetPath.GetAssetPath());
+
+    if (!rootLayer) {
+        return false;
     }
 
-    for (auto &srcAndDestPath : localizer.GetFileCopyMap()) {
-        assets->push_back(srcAndDestPath.first);
+    layers.emplace_back(rootLayer);
+
+    if (!context.Process(rootLayer)) {
+        return false;
     }
 
-    *unresolvedPaths = localizer.GetUnresolvedAssetPaths();
+    if (outLayers) {
+        *outLayers = std::move(layers);
+    }
+    if (outAssets) {
+        *outAssets = std::move(assets);
+    }
+    if (outUnresolvedPaths) {
+        *outUnresolvedPaths = std::move(unresolvedPaths);
+    }
 
-    // Return true if one or more layers or assets were added  to the results.
-    return !layers->empty() || !assets->empty();
+    return true;
 }
 
 void 
 UsdUtilsModifyAssetPaths(
-        const SdfLayerHandle& layer,
-        const UsdUtilsModifyAssetPathFn& modifyFn)
+    const SdfLayerHandle& layer,
+    const UsdUtilsModifyAssetPathFn& modifyFn)
 {
-    UsdUtils_FileAnalyzer(layer,
-        UsdUtils_FileAnalyzer::ReferenceType::All,
-        /* enableMetadataFiltering*/ false, 
-        [&modifyFn](const std::string& assetPath, 
-                    const SdfLayerRefPtr& layer) { 
+    using DependencyType = UsdUtilsDependencyType;
+
+    auto processingFunc = 
+        [&modifyFn](const SdfLayerRefPtr&, const std::string& assetPath, 
+            const std::vector<std::string>& additionalPaths, DependencyType)
+        {
             return modifyFn(assetPath);
-        }
-    );
+        };
+
+    UsdUtils_WritableLocalizationDelegate delegate(processingFunc);
+    UsdUtils_LocalizationContext context(&delegate);
+    context.Process(layer);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

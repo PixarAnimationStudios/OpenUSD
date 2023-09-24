@@ -88,7 +88,7 @@ static std::string
 _Repr(const UsdCollectionAPI &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
-    std::string instanceName = self.GetName();
+    std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
         "Usd.CollectionAPI(%s, '%s')",
         primRepr.c_str(), instanceName.c_str());
@@ -122,8 +122,8 @@ void wrapUsdCollectionAPI()
         cls("CollectionAPI");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
+        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
         .def(TfTypePythonClass())
 
         .def("Get",

@@ -509,7 +509,7 @@ bool Hio_OpenEXRImage::GetMetadata(TfToken const &key, VtValue *value) const
 
     auto convertM4dIfNecessary = [](const VtValue& v) -> VtValue {
         if (v.CanCastToTypeid(typeid(GfMatrix4d))) {
-            return v.CastToTypeid(v, typeid(GfMatrix4d()));
+            return v.CastToTypeid(v, typeid(GfMatrix4d));
         }
         return v;
     };

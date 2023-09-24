@@ -112,10 +112,46 @@ KindRegistry::_GetBaseKind(const TfToken &kind) const
     return it->second.baseKind;
 }
 
+/* static */
 bool
 KindRegistry::IsA(const TfToken& derivedKind, const TfToken &baseKind)
 {
     return KindRegistry::GetInstance()._IsA(derivedKind, baseKind);
+}
+
+/* static */
+bool
+KindRegistry::IsModel(const TfToken &kind)
+{
+    return IsA(kind, KindTokens->model);
+}
+
+/* static */
+bool
+KindRegistry::IsAssembly(const TfToken &kind)
+{
+    return IsA(kind, KindTokens->assembly);
+}
+
+/* static */
+bool
+KindRegistry::IsGroup(const TfToken &kind)
+{
+    return IsA(kind, KindTokens->group);
+}
+
+/* static */
+bool
+KindRegistry::IsComponent(const TfToken &kind)
+{
+    return IsA(kind, KindTokens->component);
+}
+
+/* static */
+bool
+KindRegistry::IsSubComponent(const TfToken &kind)
+{
+    return IsA(kind, KindTokens->subcomponent);
 }
 
 bool

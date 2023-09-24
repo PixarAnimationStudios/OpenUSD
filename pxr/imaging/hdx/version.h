@@ -34,6 +34,7 @@
 // 8  -> 9  : added render index as argument to HdxSelectionTracker::GetSelectedPointColors.
 // 9  -> 10 : replaced enableSelection with enableSelectionHighlight and 
 //            enableLocateHighlight on HdxSelectionTask and HdxColorizeSelectionTask params.
-#define HDX_API_VERSION  10
+// 10 -> 11 : New signature for HdxFullscreenShader::BindTextures.
+#define HDX_API_VERSION 11
 
 #endif // PXR_IMAGING_HDX_VERSION_H

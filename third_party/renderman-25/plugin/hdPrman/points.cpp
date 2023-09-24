@@ -37,8 +37,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION > 2011
 HdPrman_Points::HdPrman_Points(SdfPath const& id)
     : BASE(id)
+#else
+HdPrman_Points::HdPrman_Points(SdfPath const& id,
+                               SdfPath const& instancerId)
+    : BASE(id, instancerId)
+#endif
 {
 }
 
@@ -69,16 +75,45 @@ HdPrman_Points::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                   RtUString *primType,
                                   std::vector<HdGeomSubset> *geomSubsets)
 {
-    RtPrimVarList primvars;
+    if( HdPrman_RenderParam::HasSceneIndexPlugin(
+            HdPrmanPluginTokens->velocityBlur) ) {
 
-    const size_t npoints =
-        HdPrman_ConvertPointsPrimvarForPoints(sceneDelegate, id, primvars);
+        RtPrimVarList primvars;
 
-    *primType = RixStr.k_Ri_Points;
+        const size_t npoints =
+            HdPrman_ConvertPointsPrimvarForPoints(sceneDelegate, id, primvars);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
-                            npoints, npoints, npoints);
-    return primvars;
+        *primType = RixStr.k_Ri_Points;
+
+        HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
+                                npoints, npoints, npoints);
+
+        return primvars;
+    } else {
+        // There does not seem to be an equivalent GetMeshTopology() or
+        // GetBasisCurvesTopology() we can use for points.
+        // Instead get the point count from the points attribute itself.
+        VtValue pointsVal = sceneDelegate->Get(id, HdTokens->points);
+        const int pointsSize = pointsVal.GetArraySize();
+
+        RtPrimVarList primvars(
+            1, /* uniform */
+            pointsSize, /* vertex */
+            pointsSize, /* varying */
+            pointsSize /* facevarying */);
+
+        // Points
+        const float primvarTime = renderParam->ConvertPositions(
+            sceneDelegate, id, pointsSize, primvars);
+
+        *primType = RixStr.k_Ri_Points;
+
+        HdPrman_ConvertPrimvars(
+            sceneDelegate, id, primvars, 1, pointsSize, pointsSize, pointsSize,
+            primvarTime);
+
+        return primvars;
+    }
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

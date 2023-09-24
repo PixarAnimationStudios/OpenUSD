@@ -1264,6 +1264,28 @@ UsdPrim::HasProperty(const TfToken &propName) const
     return static_cast<bool>(GetProperty(propName));
 }
 
+bool
+UsdPrim::GetKind(TfToken *kind) const
+{
+    if (IsPseudoRoot()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return GetMetadata(SdfFieldKeys->Kind, kind);
+}
+
+bool
+UsdPrim::SetKind(const TfToken &kind) const
+{
+    if (IsPseudoRoot()) {
+        // Special-case to pre-empt coding errors.
+        return false;
+    }
+
+    return SetMetadata(SdfFieldKeys->Kind, kind);
+}
+
 TfTokenVector
 UsdPrim::GetPropertyOrder() const
 {

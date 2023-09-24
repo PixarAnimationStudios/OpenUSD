@@ -34,6 +34,7 @@ pxr_library(usdUtils
 
     PRIVATE_CLASSES
         assetLocalization
+        assetLocalizationDelegate
 
     PUBLIC_HEADERS
         api.h
@@ -170,11 +171,10 @@ pxr_install_test_dir(
     DEST testUsdUtilsCreateNewUsdzPackageUdim
 )
 
-# Commented out until completion of USD-8473
-# pxr_install_test_dir(
-#    SRC testenv/testUsdUtilsCreateNewUsdzPackage
-#    DEST testUsdUtilsCreateNewUsdzPackageRemapClipsDir
-# )
+pxr_install_test_dir(
+   SRC testenv/testUsdUtilsCreateNewUsdzPackage
+   DEST testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+)
 
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies

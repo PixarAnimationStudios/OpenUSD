@@ -60,7 +60,6 @@ void main(void)
 
 void main(void)
 {
-    float depth = HgiGet_depth(uvOut).x;
     hd_FragColor = vec4(HgiGet_colorIn(uvOut));
-    hd_FragDepth = depth;
+    gl_FragDepth = HgiGet_depth(uvOut).x;
 }

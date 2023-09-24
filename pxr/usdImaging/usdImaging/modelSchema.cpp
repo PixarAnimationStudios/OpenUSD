@@ -41,6 +41,41 @@ TF_DEFINE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens,
 
 
 
+HdPathDataSourceHandle
+UsdImagingModelSchema::GetModelPath()
+{
+    return _GetTypedDataSource<HdPathDataSource>(
+        UsdImagingModelSchemaTokens->modelPath);
+}
+
+HdTokenDataSourceHandle
+UsdImagingModelSchema::GetKind()
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        UsdImagingModelSchemaTokens->kind);
+}
+
+HdAssetPathDataSourceHandle
+UsdImagingModelSchema::GetAssetIdentifier()
+{
+    return _GetTypedDataSource<HdAssetPathDataSource>(
+        UsdImagingModelSchemaTokens->assetIdentifier);
+}
+
+HdStringDataSourceHandle
+UsdImagingModelSchema::GetAssetName()
+{
+    return _GetTypedDataSource<HdStringDataSource>(
+        UsdImagingModelSchemaTokens->assetName);
+}
+
+HdStringDataSourceHandle
+UsdImagingModelSchema::GetAssetVersion()
+{
+    return _GetTypedDataSource<HdStringDataSource>(
+        UsdImagingModelSchemaTokens->assetVersion);
+}
+
 HdTokenDataSourceHandle
 UsdImagingModelSchema::GetDrawMode()
 {
@@ -114,6 +149,11 @@ UsdImagingModelSchema::GetCardTextureZNeg()
 /*static*/
 HdContainerDataSourceHandle
 UsdImagingModelSchema::BuildRetained(
+        const HdPathDataSourceHandle &modelPath,
+        const HdTokenDataSourceHandle &kind,
+        const HdAssetPathDataSourceHandle &assetIdentifier,
+        const HdStringDataSourceHandle &assetName,
+        const HdStringDataSourceHandle &assetVersion,
         const HdTokenDataSourceHandle &drawMode,
         const HdBoolDataSourceHandle &applyDrawMode,
         const HdVec3fDataSourceHandle &drawModeColor,
@@ -126,10 +166,35 @@ UsdImagingModelSchema::BuildRetained(
         const HdAssetPathDataSourceHandle &cardTextureZNeg
 )
 {
-    TfToken _names[10];
-    HdDataSourceBaseHandle _values[10];
+    TfToken _names[15];
+    HdDataSourceBaseHandle _values[15];
 
     size_t _count = 0;
+    if (modelPath) {
+        _names[_count] = UsdImagingModelSchemaTokens->modelPath;
+        _values[_count++] = modelPath;
+    }
+
+    if (kind) {
+        _names[_count] = UsdImagingModelSchemaTokens->kind;
+        _values[_count++] = kind;
+    }
+
+    if (assetIdentifier) {
+        _names[_count] = UsdImagingModelSchemaTokens->assetIdentifier;
+        _values[_count++] = assetIdentifier;
+    }
+
+    if (assetName) {
+        _names[_count] = UsdImagingModelSchemaTokens->assetName;
+        _values[_count++] = assetName;
+    }
+
+    if (assetVersion) {
+        _names[_count] = UsdImagingModelSchemaTokens->assetVersion;
+        _values[_count++] = assetVersion;
+    }
+
     if (drawMode) {
         _names[_count] = UsdImagingModelSchemaTokens->drawMode;
         _values[_count++] = drawMode;
@@ -224,6 +289,46 @@ UsdImagingModelSchema::GetDrawModeLocator()
 
 
 UsdImagingModelSchema::Builder &
+UsdImagingModelSchema::Builder::SetModelPath(
+    const HdPathDataSourceHandle &modelPath)
+{
+    _modelPath = modelPath;
+    return *this;
+}
+
+UsdImagingModelSchema::Builder &
+UsdImagingModelSchema::Builder::SetKind(
+    const HdTokenDataSourceHandle &kind)
+{
+    _kind = kind;
+    return *this;
+}
+
+UsdImagingModelSchema::Builder &
+UsdImagingModelSchema::Builder::SetAssetIdentifier(
+    const HdAssetPathDataSourceHandle &assetIdentifier)
+{
+    _assetIdentifier = assetIdentifier;
+    return *this;
+}
+
+UsdImagingModelSchema::Builder &
+UsdImagingModelSchema::Builder::SetAssetName(
+    const HdStringDataSourceHandle &assetName)
+{
+    _assetName = assetName;
+    return *this;
+}
+
+UsdImagingModelSchema::Builder &
+UsdImagingModelSchema::Builder::SetAssetVersion(
+    const HdStringDataSourceHandle &assetVersion)
+{
+    _assetVersion = assetVersion;
+    return *this;
+}
+
+UsdImagingModelSchema::Builder &
 UsdImagingModelSchema::Builder::SetDrawMode(
     const HdTokenDataSourceHandle &drawMode)
 {
@@ -307,6 +412,11 @@ HdContainerDataSourceHandle
 UsdImagingModelSchema::Builder::Build()
 {
     return UsdImagingModelSchema::BuildRetained(
+        _modelPath,
+        _kind,
+        _assetIdentifier,
+        _assetName,
+        _assetVersion,
         _drawMode,
         _applyDrawMode,
         _drawModeColor,

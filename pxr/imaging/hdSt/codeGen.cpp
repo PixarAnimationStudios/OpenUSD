@@ -27,9 +27,9 @@
 #include "pxr/imaging/hdSt/glConversions.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hdSt/hgiConversions.h"
+#include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/package.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
-#include "pxr/imaging/hdSt/resourceLayout.h"
 #include "pxr/imaging/hdSt/shaderCode.h"
 #include "pxr/imaging/hdSt/tokens.h"
 
@@ -42,6 +42,7 @@
 #include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/imaging/hio/glslfx.h"
+#include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/hash.h"
@@ -221,7 +222,7 @@ _GetPtexTextureShaderSource()
 }
 
 // TODO: Shuffle code to remove these declarations.
-static void _EmitDeclaration(HdSt_ResourceLayout::ElementVector *elements,
+static void _EmitDeclaration(HioGlslfxResourceLayout::ElementVector *elements,
                              TfToken const &name,
                              TfToken const &type,
                              HdStBinding const &binding,
@@ -544,9 +545,9 @@ _ConvertBoolType(TfToken const &token)
 
 namespace {
 
-using InOut = HdSt_ResourceLayout::InOut;
-using Kind = HdSt_ResourceLayout::Kind;
-using TextureType = HdSt_ResourceLayout::TextureType;
+using InOut = HioGlslfxResourceLayout::InOut;
+using Kind = HioGlslfxResourceLayout::Kind;
+using TextureType = HioGlslfxResourceLayout::TextureType;
 
 class _ResourceGenerator
 {
@@ -563,33 +564,33 @@ public:
     void _GenerateHgiResources(
         HgiShaderFunctionDesc *funcDesc,
         TfToken const & shaderStage,
-        HdSt_ResourceLayout::ElementVector const & elements,
+        HioGlslfxResourceLayout::ElementVector const & elements,
         HdSt_ResourceBinder::MetaData const & metaData);
 
     void _GenerateHgiTextureResources(
         HgiShaderFunctionDesc *funcDesc,
         TfToken const & shaderStage,
-        HdSt_ResourceLayout::TextureElementVector const & textureElements,
+        HioGlslfxResourceLayout::TextureElementVector const & textureElements,
         HdSt_ResourceBinder::MetaData const & metaData);
 
     void _GenerateGLSLResources(
         HgiShaderFunctionDesc *funcDesc,
         std::stringstream &str,
         TfToken const &shaderStage,
-        HdSt_ResourceLayout::ElementVector const & elements,
+        HioGlslfxResourceLayout::ElementVector const & elements,
         HdSt_ResourceBinder::MetaData const & metaData);
 
     void _GenerateGLSLTextureResources(
         std::stringstream &str,
         TfToken const &shaderStage,
-        HdSt_ResourceLayout::TextureElementVector const & textureElements,
+        HioGlslfxResourceLayout::TextureElementVector const & textureElements,
         HdSt_ResourceBinder::MetaData const & metaData);
 
 private:
     using _SlotTable = std::unordered_map<TfToken, int32_t, TfHash>;
 
     int32_t _GetLocation(
-        HdSt_ResourceLayout::Element const &element,
+        HioGlslfxResourceLayout::Element const &element,
         HdSt_ResourceBinder::MetaData const & metaData)
     {
         if (element.location >= 0) {
@@ -696,11 +697,11 @@ void
 _ResourceGenerator::_GenerateHgiResources(
     HgiShaderFunctionDesc *funcDesc,
     TfToken const & shaderStage,
-    HdSt_ResourceLayout::ElementVector const & elements,
+    HioGlslfxResourceLayout::ElementVector const & elements,
     HdSt_ResourceBinder::MetaData const & metaData)
 {
-    using InOut = HdSt_ResourceLayout::InOut;
-    using Kind = HdSt_ResourceLayout::Kind;
+    using InOut = HioGlslfxResourceLayout::InOut;
+    using Kind = HioGlslfxResourceLayout::Kind;
 
     for (auto const & element : elements) {
         if (element.kind == Kind::VALUE) {
@@ -926,10 +927,10 @@ void
 _ResourceGenerator::_GenerateHgiTextureResources(
     HgiShaderFunctionDesc *funcDesc,
     TfToken const & shaderStage,
-    HdSt_ResourceLayout::TextureElementVector const & textureElements,
+    HioGlslfxResourceLayout::TextureElementVector const & textureElements,
     HdSt_ResourceBinder::MetaData const & metaData)
 {
-    using TextureType = HdSt_ResourceLayout::TextureType;
+    using TextureType = HioGlslfxResourceLayout::TextureType;
 
     for (auto const & texture : textureElements) {
         HgiShaderTextureType const textureType =
@@ -938,7 +939,8 @@ _ResourceGenerator::_GenerateHgiTextureResources(
                 : texture.textureType == TextureType::ARRAY_TEXTURE
                     ? HgiShaderTextureTypeArrayTexture
                     : HgiShaderTextureTypeTexture;
-
+        HdFormat const hdTextureFormat =
+            HdStHioConversions::GetHdFormat(texture.format);
         if (texture.arraySize > 0) {
             HgiShaderFunctionAddArrayOfTextures(
                 funcDesc,
@@ -946,7 +948,7 @@ _ResourceGenerator::_GenerateHgiTextureResources(
                 texture.arraySize,
                 texture.bindingIndex,
                 texture.dim,
-                HdStHgiConversions::GetHgiFormat(texture.format),
+                HdStHgiConversions::GetHgiFormat(hdTextureFormat),
                 textureType);
         } else {
             HgiShaderFunctionAddTexture(
@@ -954,7 +956,7 @@ _ResourceGenerator::_GenerateHgiTextureResources(
                 texture.name,
                 texture.bindingIndex,
                 texture.dim,
-                HdStHgiConversions::GetHgiFormat(texture.format),
+                HdStHgiConversions::GetHgiFormat(hdTextureFormat),
                 textureType);
         }
     }
@@ -965,28 +967,28 @@ _ResourceGenerator::_GenerateGLSLResources(
     HgiShaderFunctionDesc *funcDesc,
     std::stringstream &str,
     TfToken const &shaderStage,
-    HdSt_ResourceLayout::ElementVector const & elements,
+    HioGlslfxResourceLayout::ElementVector const & elements,
     HdSt_ResourceBinder::MetaData const & metaData)
 {
     for (auto const & element : elements) {
         switch (element.kind) {
-            case HdSt_ResourceLayout::Kind::VALUE:
+            case HioGlslfxResourceLayout::Kind::VALUE:
                 switch (element.inOut) {
-                    case HdSt_ResourceLayout::InOut::STAGE_IN:
+                    case HioGlslfxResourceLayout::InOut::STAGE_IN:
                         if (shaderStage == HdShaderTokens->vertexShader) {;
                             str << "layout (location = "
                                 << _GetLocation(element, metaData) << ") ";
                         }
                         str << "in ";
                         break;
-                    case HdSt_ResourceLayout::InOut::STAGE_OUT:
+                    case HioGlslfxResourceLayout::InOut::STAGE_OUT:
                         if (shaderStage == HdShaderTokens->fragmentShader) {
                             str << "layout (location = "
                                 << _GetLocation(element, metaData) << ") ";
                         }
                         str << "out ";
                         break;
-                    case HdSt_ResourceLayout::InOut::NONE:
+                    case HioGlslfxResourceLayout::InOut::NONE:
                         break;
                     default:
                         break;
@@ -1010,8 +1012,8 @@ _ResourceGenerator::_GenerateGLSLResources(
                     str << "[" << element.arraySize << "];\n";
                 }
                 break;
-            case HdSt_ResourceLayout::Kind::BLOCK:
-                if (element.inOut == HdSt_ResourceLayout::InOut::STAGE_IN) {
+            case HioGlslfxResourceLayout::Kind::BLOCK:
+                if (element.inOut == HioGlslfxResourceLayout::InOut::STAGE_IN) {
                     str << "in ";
                 } else {
                     str << "out ";
@@ -1033,7 +1035,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                     str << "[" << element.arraySize << "];\n";
                 }
                 break;
-            case HdSt_ResourceLayout::Kind::QUALIFIER:
+            case HioGlslfxResourceLayout::Kind::QUALIFIER:
                 if (shaderStage == HdShaderTokens->tessControlShader) {
                     if (element.inOut == InOut::STAGE_OUT) {
                         funcDesc->tessellationDescriptor.numVertsPerPatchOut =
@@ -1130,7 +1132,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                     funcDesc->fragmentDescriptor.earlyFragmentTests = true;
                 }
                 break;
-            case HdSt_ResourceLayout::Kind::UNIFORM_VALUE:
+            case HioGlslfxResourceLayout::Kind::UNIFORM_VALUE:
                 str << "layout(location = " <<
                         _GetLocation(element, metaData)
                     << ") uniform "
@@ -1140,7 +1142,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << ";\n";
                 break;
-            case HdSt_ResourceLayout::Kind::UNIFORM_BLOCK:
+            case HioGlslfxResourceLayout::Kind::UNIFORM_BLOCK:
                 str << "layout(std140, binding = " <<
                         _GetLocation(element, metaData)
                     << ") uniform ubo_" << element.name
@@ -1152,7 +1154,7 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << ";\n};\n";
                 break;
-            case HdSt_ResourceLayout::Kind::UNIFORM_BLOCK_CONSTANT_PARAMS:
+            case HioGlslfxResourceLayout::Kind::UNIFORM_BLOCK_CONSTANT_PARAMS:
                 str << "layout(std140, binding = " <<
                         _GetLocation(element, metaData)
                     << ") uniform ubo_" << element.name
@@ -1162,8 +1164,8 @@ _ResourceGenerator::_GenerateGLSLResources(
                 }
                 str << "};\n";
                 break;
-            case HdSt_ResourceLayout::Kind::BUFFER_READ_ONLY:
-            case HdSt_ResourceLayout::Kind::BUFFER_READ_WRITE:
+            case HioGlslfxResourceLayout::Kind::BUFFER_READ_ONLY:
+            case HioGlslfxResourceLayout::Kind::BUFFER_READ_WRITE:
                 {
                 auto const & member = element.members.front();
                 uint32_t location = _GetLocation(element, metaData);
@@ -1185,7 +1187,7 @@ void
 _ResourceGenerator::_GenerateGLSLTextureResources(
     std::stringstream &str,
     TfToken const &shaderStage,
-    HdSt_ResourceLayout::TextureElementVector const & textureElements,
+    HioGlslfxResourceLayout::TextureElementVector const & textureElements,
     HdSt_ResourceBinder::MetaData const & metaData)
 {
     for (auto const & texture : textureElements) {
@@ -1292,15 +1294,15 @@ _ResourceGenerator::_GenerateGLSLTextureResources(
 
 static void
 _AddVertexAttribElement(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
     int location,
     int arraySize = 0)
 {
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::STAGE_IN,
-        HdSt_ResourceLayout::Kind::VALUE,
+        HioGlslfxResourceLayout::InOut::STAGE_IN,
+        HioGlslfxResourceLayout::Kind::VALUE,
         dataType, name);
     if (location >= 0) {
         elements->back().location = static_cast<uint32_t>(location);
@@ -1309,8 +1311,8 @@ _AddVertexAttribElement(
 
 static void
 _AddInterstageElement(
-    HdSt_ResourceLayout::ElementVector *elements,
-    HdSt_ResourceLayout::InOut inOut,
+    HioGlslfxResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::InOut inOut,
     TfToken const &name,
     TfToken const &dataType,
     TfToken const &arraySize = TfToken(),
@@ -1318,23 +1320,23 @@ _AddInterstageElement(
 {
     elements->emplace_back(
         inOut,
-        HdSt_ResourceLayout::Kind::VALUE,
+        HioGlslfxResourceLayout::Kind::VALUE,
         dataType, name, arraySize, qualifier);
 }
 
 static void
 _AddInterstageBlockElement(
-    HdSt_ResourceLayout::ElementVector *elements,
-    HdSt_ResourceLayout::InOut inOut,
+    HioGlslfxResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::InOut inOut,
     TfToken const &blockName,
     TfToken const &instanceName,
-    HdSt_ResourceLayout::MemberVector const &members,
+    HioGlslfxResourceLayout::MemberVector const &members,
     TfToken const &arraySize = TfToken())
 {
     elements->emplace_back(
         inOut,
-        HdSt_ResourceLayout::Kind::BLOCK,
-        HdStResourceLayoutTokens->block,
+        HioGlslfxResourceLayout::Kind::BLOCK,
+        HioGlslfxResourceLayoutTokens->block,
         instanceName,
         arraySize);
     elements->back().aggregateName = blockName;
@@ -1343,7 +1345,7 @@ _AddInterstageBlockElement(
 
 static void
 _AddUniformValueElement(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
     int location,
@@ -1353,8 +1355,8 @@ _AddUniformValueElement(
         ((arraySize > 0) ? TfToken(std::to_string(arraySize)) : TfToken());
 
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::NONE,
-        HdSt_ResourceLayout::Kind::UNIFORM_VALUE,
+        HioGlslfxResourceLayout::InOut::NONE,
+        HioGlslfxResourceLayout::Kind::UNIFORM_VALUE,
         dataType, name, arraySizeArg);
     elements->back().members.emplace_back(dataType, name);
     if (location >= 0) {
@@ -1364,7 +1366,7 @@ _AddUniformValueElement(
 
 static void
 _AddUniformBufferElement(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
     int location,
@@ -1374,8 +1376,8 @@ _AddUniformBufferElement(
         ((arraySize > 0) ? TfToken(std::to_string(arraySize)) : TfToken());
 
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::NONE,
-        HdSt_ResourceLayout::Kind::UNIFORM_BLOCK,
+        HioGlslfxResourceLayout::InOut::NONE,
+        HioGlslfxResourceLayout::Kind::UNIFORM_BLOCK,
         dataType, name, arraySizeArg);
     elements->back().members.emplace_back(dataType, name);
     if (location >= 0) {
@@ -1385,15 +1387,15 @@ _AddUniformBufferElement(
 
 static void
 _AddBufferElement(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
     int location,
     int arraySize = 0)
 {
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::NONE,
-        HdSt_ResourceLayout::Kind::BUFFER_READ_ONLY,
+        HioGlslfxResourceLayout::InOut::NONE,
+        HioGlslfxResourceLayout::Kind::BUFFER_READ_ONLY,
         dataType, name);
     elements->back().members.emplace_back(dataType, name);
     if (location >= 0) {
@@ -1403,14 +1405,14 @@ _AddBufferElement(
 
 static void
 _AddWritableBufferElement(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
     int location)
 {
     elements->emplace_back(
-        HdSt_ResourceLayout::InOut::NONE,
-        HdSt_ResourceLayout::Kind::BUFFER_READ_WRITE,
+        HioGlslfxResourceLayout::InOut::NONE,
+        HioGlslfxResourceLayout::Kind::BUFFER_READ_WRITE,
         dataType, name);
     elements->back().members.emplace_back(dataType, name);
     if (location >= 0) {
@@ -1420,11 +1422,11 @@ _AddWritableBufferElement(
 
 static void
 _AddTextureElement(
-    HdSt_ResourceLayout::TextureElementVector *textureElements,
+    HioGlslfxResourceLayout::TextureElementVector *textureElements,
     TfToken const &name,
     int dim,
     int bindingIndex,
-    HdFormat format = HdFormatFloat32Vec4,
+    HioFormat format = HioFormatFloat32Vec4,
     TextureType textureType = TextureType::TEXTURE)
 {
     textureElements->emplace_back(
@@ -1433,11 +1435,11 @@ _AddTextureElement(
 
 static void
 _AddArrayOfTextureElement(
-    HdSt_ResourceLayout::TextureElementVector *textureElements,
+    HioGlslfxResourceLayout::TextureElementVector *textureElements,
     TfToken const &name,
     int dim,
     int bindingIndex,
-    HdFormat format = HdFormatFloat32Vec4,
+    HioFormat format = HioFormatFloat32Vec4,
     TextureType textureType = TextureType::TEXTURE,
     int arraySize = 0)
 {
@@ -1447,12 +1449,12 @@ _AddArrayOfTextureElement(
 
 static bool
 _IsAtomicBufferShaderResource(
-    HdSt_ResourceLayout::ElementVector &elements,
+    HioGlslfxResourceLayout::ElementVector &elements,
     TfToken const &name)
 {
     for (auto const &element : elements) {
         if (element.name == name &&
-            element.kind == HdSt_ResourceLayout::Kind::BUFFER_READ_WRITE) {
+            element.kind == HioGlslfxResourceLayout::Kind::BUFFER_READ_WRITE) {
             if (TF_VERIFY(element.members.size() == 1)) {
                 TfToken const &dataType = element.members.front().dataType;
                 if (dataType == _tokens->_atomic_int ||
@@ -1488,28 +1490,28 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
     for (auto const &shader : shaders) {
         VtDictionary layoutDict = shader->GetLayout(shaderStages);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resVS, HdShaderTokens->vertexShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resTCS, HdShaderTokens->tessControlShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resTES, HdShaderTokens->tessEvalShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resGS, HdShaderTokens->geometryShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resFS, HdShaderTokens->fragmentShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resPTCS, HdShaderTokens->postTessControlShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resPTVS, HdShaderTokens->postTessVertexShader, layoutDict);
 
-        HdSt_ResourceLayout::ParseLayout(
+        HioGlslfxResourceLayout::ParseLayout(
                 &_resCS, HdShaderTokens->computeShader, layoutDict);
     }
 }
@@ -1955,13 +1957,13 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     } else {
         if (_hasGS) {
             _AddInterstageElement(&_resGS,
-                HdSt_ResourceLayout::InOut::STAGE_OUT,
+                HioGlslfxResourceLayout::InOut::STAGE_OUT,
                 /*name=*/_tokens->hd_barycentricCoord,
                 /*dataType=*/_tokens->vec3,
                 TfToken(),
                 TfToken("noperspective"));
             _AddInterstageElement(&_resFS,
-                HdSt_ResourceLayout::InOut::STAGE_IN,
+                HioGlslfxResourceLayout::InOut::STAGE_IN,
                 /*name=*/_tokens->hd_barycentricCoord,
                 /*dataType=*/_tokens->vec3,
                 TfToken(),
@@ -1984,11 +1986,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // which can reconstruct the full three component barycentric form.
     if (_hasPTVS) {
         _AddInterstageElement(&_resPTVS,
-            HdSt_ResourceLayout::InOut::STAGE_OUT,
+            HioGlslfxResourceLayout::InOut::STAGE_OUT,
             /*name=*/_tokens->hd_tessCoord,
             /*dataType=*/_tokens->vec2);
         _AddInterstageElement(&_resFS,
-            HdSt_ResourceLayout::InOut::STAGE_IN,
+            HioGlslfxResourceLayout::InOut::STAGE_IN,
             /*name=*/_tokens->hd_tessCoord,
             /*dataType=*/_tokens->vec2);
 
@@ -2006,11 +2008,11 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (requiresPrimitiveIdEmulation) {
         if (_hasPTVS) {
             _AddInterstageElement(&_resPTVS,
-                HdSt_ResourceLayout::InOut::STAGE_OUT,
+                HioGlslfxResourceLayout::InOut::STAGE_OUT,
                 /*name=*/_tokens->hd_patchID,
                 /*dataType=*/_tokens->_uint);
             _AddInterstageElement(&_resFS,
-                HdSt_ResourceLayout::InOut::STAGE_IN,
+                HioGlslfxResourceLayout::InOut::STAGE_IN,
                 /*name=*/_tokens->hd_patchID,
                 /*dataType=*/_tokens->_uint);
         }
@@ -2910,7 +2912,8 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         resourceGen._GenerateHgiTextureResources(&gsDesc,
             HdShaderTokens->geometryShader, _resTextures, _metaData);
 
-        std::string const declarations = _genDefines.str() + _genDecl.str();
+        std::string const declarations = _genDefines.str() + _genDecl.str() +
+            _osd.str();
         std::string const source = _genAccessors.str() + _genGS.str();
 
         gsDesc.shaderCodeDeclarations = declarations.c_str();
@@ -2959,7 +2962,7 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
 }
 
 static void _EmitDeclaration(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &type,
     HdStBinding const &binding,
@@ -3075,7 +3078,7 @@ static void _EmitDeclaration(
 }
 
 static void _EmitDeclaration(
-    HdSt_ResourceLayout::ElementVector *elements,
+    HioGlslfxResourceLayout::ElementVector *elements,
     HdSt_ResourceBinder::MetaData::BindingDeclaration const &bindingDeclaration,
     int arraySize=0)
 {
@@ -4398,21 +4401,21 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         for (std::string const & param : drawingCoordParams) {
             TfToken const drawingCoordParamName("dc_" + param);
             _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
+                                  HioGlslfxResourceLayout::InOut::NONE,
                                   /*name=*/drawingCoordParamName,
                                   /*dataType=*/_tokens->_int);
         }
         for (int i = 0; i < instanceIndexWidth; ++i) {
             TfToken const name(TfStringPrintf("dc_instanceIndexI%d", i));
             _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
+                                  HioGlslfxResourceLayout::InOut::NONE,
                                   /*name=*/name,
                                   /*dataType=*/_tokens->_int);
         }
         for (int i = 0; i < instanceIndexWidth; ++i) {
             TfToken const name(TfStringPrintf("dc_instanceCoordsI%d", i));
             _AddInterstageElement(&_resInterstage,
-                                  HdSt_ResourceLayout::InOut::NONE,
+                                  HioGlslfxResourceLayout::InOut::NONE,
                                   /*name=*/name,
                                   /*dataType=*/_tokens->_int);
         }
@@ -5246,7 +5249,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     std::stringstream accessorsVS, accessorsTCS, accessorsTES,
         accessorsPTCS, accessorsPTVS, accessorsGS, accessorsFS;
 
-    HdSt_ResourceLayout::MemberVector interstagePrimvar;
+    HioGlslfxResourceLayout::MemberVector interstagePrimvar;
 
     // vertex 
     TF_FOR_ALL (it, _metaData.vertexData) {
@@ -5499,7 +5502,7 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     */
 
     // face varying
-    HdSt_ResourceLayout::MemberVector interstagePrimvarFVar;
+    HioGlslfxResourceLayout::MemberVector interstagePrimvarFVar;
 
     // FVar primvars are emitted by GS or FS
     TF_FOR_ALL (it, _metaData.fvarData) {
@@ -5560,31 +5563,31 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
     if (!interstagePrimvar.empty()) {
         // VS out
         _AddInterstageBlockElement(
-            &_resVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+            &_resVS, HioGlslfxResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
         // TCS in/out
         _AddInterstageBlockElement(
-            &_resTCS, HdSt_ResourceLayout::InOut::STAGE_IN,
+            &_resTCS, HioGlslfxResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
             _tokens->gl_MaxPatchVertices);
         _AddInterstageBlockElement(
-            &_resTCS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+            &_resTCS, HioGlslfxResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar,
             _tokens->HD_NUM_PATCH_EVAL_VERTS);
 
         // TES in/out
         _AddInterstageBlockElement(
-            &_resTES, HdSt_ResourceLayout::InOut::STAGE_IN,
+            &_resTES, HioGlslfxResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
             _tokens->gl_MaxPatchVertices);
         _AddInterstageBlockElement(
-            &_resTES, HdSt_ResourceLayout::InOut::STAGE_OUT,
+            &_resTES, HioGlslfxResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
         // GS in
         _AddInterstageBlockElement(
-            &_resGS, HdSt_ResourceLayout::InOut::STAGE_IN,
+            &_resGS, HioGlslfxResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar,
             _tokens->HD_NUM_PRIMITIVE_VERTS);
     }
@@ -5598,17 +5601,17 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
 
         // PTVS out
         _AddInterstageBlockElement(
-            &_resPTVS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+            &_resPTVS, HioGlslfxResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
         // GS out
         _AddInterstageBlockElement(
-            &_resGS, HdSt_ResourceLayout::InOut::STAGE_OUT,
+            &_resGS, HioGlslfxResourceLayout::InOut::STAGE_OUT,
             _tokens->PrimvarData, _tokens->outPrimvars, interstagePrimvar);
 
         // FS in
         _AddInterstageBlockElement(
-            &_resFS, HdSt_ResourceLayout::InOut::STAGE_IN,
+            &_resFS, HioGlslfxResourceLayout::InOut::STAGE_IN,
             _tokens->PrimvarData, _tokens->inPrimvars, interstagePrimvar);
     }
 
@@ -5834,7 +5837,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             _AddArrayOfTextureElement(&_resTextures,
                                       it->second.name, 2,
                                       binding.GetTextureUnit(),
-                                      HdFormatFloat32Vec4,
+                                      HioFormatFloat32Vec4,
                                       isShadowTexture
                                         ? TextureType::SHADOW_TEXTURE
                                         : TextureType::TEXTURE,
@@ -6011,7 +6014,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             _AddTextureElement(&_resTextures,
                                it->second.name, 2,
                                binding.GetTextureUnit(),
-                               HdFormatFloat32Vec4,
+                               HioFormatFloat32Vec4,
                                TextureType::ARRAY_TEXTURE);
 
             // vec4 HdGet_name(vec2 coord) { vec3 c = hd_sample_udim(coord);
@@ -6227,7 +6230,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             _AddTextureElement(&_resTextures,
                                it->second.name, 2,
                                binding.GetTextureUnit(),
-                               HdFormatFloat32Vec4,
+                               HioFormatFloat32Vec4,
                                TextureType::ARRAY_TEXTURE);
             if (it->second.processTextureFallbackValue) {
                 accessors
@@ -6330,7 +6333,7 @@ HdSt_CodeGen::_GenerateShaderParameters(bool bindlessTextureEnabled)
             _AddTextureElement(&_resTextures,
                                it->second.name, 1,
                                binding.GetTextureUnit(),
-                               HdFormatUInt16,
+                               HioFormatUInt16,
                                TextureType::ARRAY_TEXTURE);
 
         } else if (bindingType == HdStBinding::PRIMVAR_REDIRECT) {

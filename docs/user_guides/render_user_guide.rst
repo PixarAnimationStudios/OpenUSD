@@ -1051,6 +1051,99 @@ Note that, unlike material binding purpose, there's no way to specify at a globa
 level in RenderSettings which material render context to use. The context is 
 chosen by the renderer at render-time.
 
+.. _image_file_formats:
+
+*******************************
+Working With Image File Formats
+*******************************
+
+USD and renderers such as Hydra support various image formats used for textures
+and other purposes. This section provides guidelines for using specific image
+formats with USD and Hydra.
+
+.. _image_file_formats_all:
+
+Guidelines for All Supported Image Formats
+==========================================
+
+If the RGB output of a UsdUVTexture shader using a supported image format is
+connected to the "diffuseColor" input of a UsdPreviewSurface shader, and the
+UsdUVTexture's alpha output is also connected to the "opacity" input of the
+same UsdPreviewSurface, Hydra will premultiply the RGB values with the alpha 
+channel. This is the only circumstance under which Hydra performs automatic 
+premultiplication. This convention exists for historic reasons, and unless your 
+use-case requires this historic behavior we recommend avoiding this Shadegraph 
+configuration.
+
+JPEG
+====
+
+Single channel JPEG files will be treated as raw data, three channel files will 
+be treated as sRGB.
+
+PNG
+===
+
+PNG files may be encoded as linear, or with an sRGB gamma curve. The data in an 
+alpha channel, if it exists, will not be premultiplied except in the case 
+mentioned in :ref:`image_file_formats_all`.
+
+OpenEXR
+=======
+
+UsdImaging and Hydra have built-in support for OpenEXR files, with no need to
+compile additional plugins. USDZ, the zip-packaged USD archive and distribution 
+format, also includes OpenEXR support. This is intended to facilitate 
+consistent handling of HDR imagery in platforms and applications that rely on 
+USDZ.
+
+Tiled and scanline OpenEXR images are supported, however, some
+of the advanced features of OpenEXR are not. Deep pixels, multi-part images, 
+layered images, depth images, and cube maps are currently not supported 
+(see below for what happens if USD/Hydra is given multi-part or layered images).
+Note that tiled images are read in their entirety, partial 
+loading of tiled images is unsupported at this time.
+
+Currently OpenEXR files must use linear Rec709 chromaticities and whitepoint. 
+This is equivalent to sRGB without its associated electro-optical transfer 
+function (i.e. the same primaries and white-point as rec709). Pixels can be 
+stored in float16 or float32 format, and all compression types are supported.
+
+Alpha values encoded in referenced OpenEXR files are not considered to represent 
+geometric object coverage (i.e. alpha is unassociated with geometric 
+properties).
+
+If an OpenEXR file contains multiple layers, the layers will be inspected in order
+and the first layer discovered named r or red, or ending in .r or .red, will
+be chosen as the red channel, and any others ignored. Similar discovery will  
+occur for green, blue, and alpha.
+
+If an OpenEXR file contains multiple parts, only the first part will be read.
+
+OpenEXR files are read assuming that the data window and display windows agree
+in size. (0,0) corresponds to the left-bottom-most pixel.
+
+When reading an OpenEXR file, all metadata is read and stored unaltered. When
+writing, all stored metadata is written to the output file. When
+writing, any standard OpenEXR attributes that are not present in the stored 
+metadata are initialized to the default OpenEXR values.
+
+OpenEXR files are scene-referred, meaning that a value of 1.0 is considered to 
+be scene white, and is interpreted by a renderer accordingly. The value of the 
+white luminance standard attribute found in the OpenEXR file is presently ignored.
+
+Currently only single layer, single part, float16 and float32 RGB or RGBA images 
+are written by Hio and tools like :program:`usdrecord`. A moderate lossless 
+compression is applied. It is expected that more complex treatment of OpenEXR 
+files including the construction of multilayer files will be completed by 
+pipeline tools.
+
+See also:
+
+- `OpenEXR reference <https://openexr.com/en/latest/index.html#openexr>`__
+- `Rec709 standard <https://www.itu.int/rec/R-REC-BT.709-6-201506-I/en>`__
+- `Wikipedia entry on Rec709 standard <https://en.wikipedia.org/wiki/Rec._709>`__
+
 .. _render_camera:
 
 **************************

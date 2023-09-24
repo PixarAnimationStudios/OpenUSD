@@ -128,6 +128,7 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimLoadedFlag] = true;
         _flags[Usd_PrimModelFlag] = true;
         _flags[Usd_PrimGroupFlag] = true;
+        _flags[Usd_PrimComponentFlag] = false;
         _flags[Usd_PrimDefinedFlag] = true;
         _flags[Usd_PrimHasDefiningSpecifierFlag] = true;
         _flags[Usd_PrimPrototypeFlag] = isPrototypePrim;
@@ -153,17 +154,19 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         // children (groups or otherwise).  So if our parent is not a Model
         // Group, then this prim cannot be a model (or a model group).
         // Otherwise we look up the kind metadata and consult the kind registry.
-        bool isGroup = false, isModel = false;
+        bool isGroup = false, isModel = false, isComponent = false;
         if (parent->IsGroup()) {
             const TfToken kind = UsdStage::_GetKind(this);
             // Use the kind registry to determine model/groupness.
             if (!kind.IsEmpty()) {
-                isGroup = KindRegistry::IsA(kind, KindTokens->group);
-                isModel = isGroup || KindRegistry::IsA(kind, KindTokens->model);
+                isGroup = KindRegistry::IsGroup(kind);
+                isComponent = KindRegistry::IsComponent(kind);
+                isModel = isGroup || isComponent || KindRegistry::IsModel(kind);
             }
         }
         _flags[Usd_PrimGroupFlag] = isGroup;
         _flags[Usd_PrimModelFlag] = isModel;
+        _flags[Usd_PrimComponentFlag] = isComponent;
 
         // Get specifier.
         const SdfSpecifier specifier = GetSpecifier();
@@ -188,6 +191,13 @@ Usd_PrimData::_ComposeAndCacheFlags(Usd_PrimDataConstPtr parent,
         _flags[Usd_PrimInstanceFlag] = active && _primIndex->IsInstanceable();
         _flags[Usd_PrimPrototypeFlag] = parent->IsInPrototype();
     }
+}
+
+bool
+Usd_PrimData::IsSubComponent() const
+{
+    const TfToken kind = UsdStage::_GetKind(this);
+    return KindRegistry::IsSubComponent(kind);
 }
 
 Usd_PrimDataConstPtr 

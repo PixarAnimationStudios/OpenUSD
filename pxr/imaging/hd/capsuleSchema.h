@@ -43,6 +43,8 @@ PXR_NAMESPACE_OPEN_SCOPE
     (capsule) \
     (height) \
     (radius) \
+    (radiusTop) \
+    (radiusBottom) \
     (axis) \
     (X) \
     (Y) \
@@ -66,6 +68,10 @@ public:
     HD_API
     HdDoubleDataSourceHandle GetRadius();
     HD_API
+    HdDoubleDataSourceHandle GetRadiusTop();
+    HD_API
+    HdDoubleDataSourceHandle GetRadiusBottom();
+    HD_API
     HdTokenDataSourceHandle GetAxis();
 
     // RETRIEVING AND CONSTRUCTING
@@ -80,6 +86,8 @@ public:
     BuildRetained(
         const HdDoubleDataSourceHandle &height,
         const HdDoubleDataSourceHandle &radius,
+        const HdDoubleDataSourceHandle &radiusTop,
+        const HdDoubleDataSourceHandle &radiusBottom,
         const HdTokenDataSourceHandle &axis
     );
 
@@ -99,6 +107,12 @@ public:
         Builder &SetRadius(
             const HdDoubleDataSourceHandle &radius);
         HD_API
+        Builder &SetRadiusTop(
+            const HdDoubleDataSourceHandle &radiusTop);
+        HD_API
+        Builder &SetRadiusBottom(
+            const HdDoubleDataSourceHandle &radiusBottom);
+        HD_API
         Builder &SetAxis(
             const HdTokenDataSourceHandle &axis);
 
@@ -109,6 +123,8 @@ public:
     private:
         HdDoubleDataSourceHandle _height;
         HdDoubleDataSourceHandle _radius;
+        HdDoubleDataSourceHandle _radiusTop;
+        HdDoubleDataSourceHandle _radiusBottom;
         HdTokenDataSourceHandle _axis;
     };
 

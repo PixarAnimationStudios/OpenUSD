@@ -556,9 +556,7 @@ UsdImagingDataSourcePrim::GetNames()
     }
 
     if (_GetUsdPrim().IsModel()) {
-        if (UsdModelAPI(_GetUsdPrim()).IsKind(KindTokens->component)) {
-            vec.push_back(UsdImagingModelSchema::GetSchemaToken());
-        }
+        vec.push_back(UsdImagingModelSchema::GetSchemaToken());
     }
     
     if (UsdAttributeQuery(UsdGeomModelAPI(_GetUsdPrim()).GetExtentsHintAttr())
@@ -657,16 +655,50 @@ UsdImagingDataSourcePrim::Get(const TfToken &name)
             return nullptr;
         }
     } else if (name == UsdImagingModelSchema::GetSchemaToken()) {
-        // We set applyDrawMode for kind = component prims even if the
-        // prim is not a UsdGeomModelAPI.
-        if (_GetUsdPrim().IsModel()) {
-            if (UsdModelAPI(_GetUsdPrim()).IsKind(KindTokens->component)) {
-                static HdDataSourceBaseHandle const applyDrawModeDs =
-                    UsdImagingModelSchema::Builder()
-                        .SetApplyDrawMode(
-                            HdRetainedTypedSampledDataSource<bool>::New(true))
-                        .Build();
-                return applyDrawModeDs;
+        if (UsdModelAPI model = UsdModelAPI(_GetUsdPrim())) {
+            if (model.IsModel()) {
+                auto modelSchemaBuilder = UsdImagingModelSchema::Builder();
+
+                modelSchemaBuilder.SetModelPath(
+                    HdRetainedTypedSampledDataSource<SdfPath>::New(
+                        _sceneIndexPath));
+
+                TfToken kind;
+                if (model.GetKind(&kind)) {
+                    modelSchemaBuilder.SetKind(
+                        HdRetainedTypedSampledDataSource<TfToken>::New(kind));
+                }
+
+                SdfAssetPath assetIdentifier;
+                if (model.GetAssetIdentifier(&assetIdentifier)) {
+                    modelSchemaBuilder.SetAssetIdentifier(
+                        HdRetainedTypedSampledDataSource<SdfAssetPath>
+                        ::New(assetIdentifier));
+                }
+
+                std::string assetName;
+                if (model.GetAssetName(&assetName)) {
+                    modelSchemaBuilder.SetAssetName(
+                        HdRetainedTypedSampledDataSource<std::string>
+                        ::New(assetName));
+                }
+
+                std::string assetVersion;
+                if (model.GetAssetVersion(&assetVersion)) {
+                    modelSchemaBuilder.SetAssetVersion(
+                        HdRetainedTypedSampledDataSource<std::string>
+                        ::New(assetVersion));
+                }
+
+                // We set applyDrawMode for kind = component prims even if the
+                // prim is not a UsdGeomModelAPI.
+                if (model.IsKind(KindTokens->component)) {
+                    static auto boolTrueDs =
+                        HdRetainedTypedSampledDataSource<bool>::New(true);
+                    modelSchemaBuilder.SetApplyDrawMode(boolTrueDs);
+                }
+
+                return modelSchemaBuilder.Build();
             }
         }
     } else if (name == UsdImagingUsdPrimInfoSchema::GetSchemaToken()) {

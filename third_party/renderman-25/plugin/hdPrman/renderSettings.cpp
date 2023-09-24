@@ -36,9 +36,16 @@
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/renderSettingsFilteringSceneIndex.h"
 
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
+
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
+                      "Drive the render pass using the first RenderProduct on "
+                      "the render settings prim.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
@@ -126,6 +133,19 @@ HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
 }
 
 HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
+
+/* static */
+bool
+HdPrman_RenderSettings::DriveRenderPass() 
+{
+    // Currently the ability to drive the RenderPass with the RenderSettings
+    // and RenderProducts is behind this env var.
+    // XXX This should eventually be replaced with an attribute on the 
+    // RenderSettings prim itself.
+    static bool useRenderSettingsPrim =
+        TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS);
+    return useRenderSettingsPrim;
+}
 
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
@@ -242,6 +262,17 @@ void HdPrman_RenderSettings::_Sync(
                 param->SetConnectedDisplayFilterPaths(sceneDelegate, paths);
             }
         }
+    }
+
+    // Set the camera path here so that HdPrmanCamera::Sync can detect
+    // whether it is syncing the current camera
+    // and needs to set the riley shutter interval
+    // which needs to be set before any time-sampled primvars are synced.
+    const HdRenderSettings::RenderProducts &renderProducts =
+        GetRenderProducts();
+    if(!renderProducts.empty()) {
+        SdfPath cameraPath = renderProducts.at(0).cameraPath;
+        param->GetCameraContext().SetCameraPath(cameraPath);
     }
 
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(

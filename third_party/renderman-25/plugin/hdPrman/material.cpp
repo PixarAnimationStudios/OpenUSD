@@ -400,6 +400,9 @@ _ConvertNodes(
             } else if (propType == SdrPropertyTypes->Normal) {
                 sn.params.SetNormal(name, RtNormal3(v[0], v[1], v[2]));
                 ok = true;
+            } else if (propType == SdrPropertyTypes->Float) {
+                sn.params.SetFloatArray(name, v.data(), 3);
+                ok = true;
             }
         } else if (param.second.IsHolding<GfVec4f>()) {
             GfVec4f v = param.second.UncheckedGet<GfVec4f>();

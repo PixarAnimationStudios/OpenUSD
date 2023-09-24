@@ -51,9 +51,11 @@ TF_WRAP_MODULE
             TF_WRAP(UsdGeomBoundable);
                 TF_WRAP(UsdGeomGprim);
                     TF_WRAP(UsdGeomCapsule);
+                    TF_WRAP(UsdGeomCapsule_1);
                     TF_WRAP(UsdGeomCone);
                     TF_WRAP(UsdGeomCube);
                     TF_WRAP(UsdGeomCylinder);
+                    TF_WRAP(UsdGeomCylinder_1);
                     TF_WRAP(UsdGeomSphere);
                     TF_WRAP(UsdGeomPlane);
                     TF_WRAP(UsdGeomPointBased);

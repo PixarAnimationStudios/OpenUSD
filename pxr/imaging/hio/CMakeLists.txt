@@ -19,6 +19,7 @@ pxr_library(hio
         fieldTextureData
         glslfx
         glslfxConfig
+        glslfxResourceLayout
         image
         imageRegistry
         types

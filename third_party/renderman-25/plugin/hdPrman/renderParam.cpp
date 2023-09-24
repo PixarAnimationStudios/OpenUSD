@@ -23,7 +23,6 @@
 //
 
 #include "hdPrman/renderParam.h"
-
 #include "hdPrman/camera.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/coordSys.h"
@@ -35,7 +34,12 @@
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
+#include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
+
+#if PXR_VERSION >= 2205
+#include "hdPrman/velocityMotionBlurSceneIndexPlugin.h"
+#endif
 
 #include "pxr/base/arch/library.h"
 #include "pxr/base/plug/registry.h"
@@ -44,11 +48,15 @@
 #include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/scopeDescription.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdr/registry.h"
 #include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
+#if PXR_VERSION >= 2205
+#include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#endif
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderThread.h"
 
@@ -78,6 +86,13 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceName)
     (sourceType)
     (lpe)
+    (nonlinearSampleCount)
+    ((mblur,                "ri:object:mblur"))
+    ((vblur,                "ri:object:vblur"))
+    ((vblur_on,             "Velocity Blur"))
+    ((ablur_on,             "Acceleration Blur"))
+    ((geosamples,           "ri:object:geosamples"))
+    ((xformsamples,         "ri:object:xformsamples"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -206,14 +221,60 @@ size_t
 _ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
                       RtPrimVarList& primvars, const size_t * npointsHint)
 {
+    HdExtComputationPrimvarDescriptorVector compPrimvar;
+    if( !HdPrman_RenderParam::HasSceneIndexPlugin(
+            HdPrmanPluginTokens->extComp )) {
+        // Check if points is a ext computed primvar
+        {
+            HdExtComputationPrimvarDescriptorVector compPrimvars
+                = sceneDelegate->GetExtComputationPrimvarDescriptors(
+                    id, HdInterpolationVertex);
+            for (auto const& pv : compPrimvars) {
+                if (pv.name == HdTokens->points) {
+                    compPrimvar.emplace_back(pv);
+                }
+            }
+        }
+    }
+
+    // Get points time samples
     HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> points;
     {
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
-        sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
+        if (compPrimvar.empty()) {
+            sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
+        }
+        else {
+#if PXR_VERSION > 2102
+            HdExtComputationUtils::SampledValueStore<HDPRMAN_MAX_TIME_SAMPLES>
+                compSamples;
+            HdExtComputationUtils::SampleComputedPrimvarValues<
+                HDPRMAN_MAX_TIME_SAMPLES>(
+                    compPrimvar, sceneDelegate, HDPRMAN_MAX_TIME_SAMPLES,
+                    &compSamples);
+            boxedPoints = compSamples[HdTokens->points];
+#endif
+        }
+#if PXR_VERSION <= 2111
+        points.UnboxFrom(boxedPointsSamples);
+#else
         if (!points.UnboxFrom(boxedPoints)) {
             TF_WARN("<%s> points did not have expected type vec3f[]",
                     id.GetText());
         }
+#endif
+    }
+
+    // This motion blur check is for legacy purposes;
+    // it's only relevant for externally computed points
+    // that didn't result from scene index plug-in
+    if(!compPrimvar.empty() &&
+       !HdPrman_RenderParam::GetMotionBlur(sceneDelegate, id)) {
+        VtVec3fArray pointsVal = points.Resample(0.f);
+        primvars.SetPointDetail(
+            RixStr.k_P, (RtPoint3 const*)pointsVal.cdata(),
+            RtDetailType::k_vertex);
+        return pointsVal.size();
     }
 
     size_t npoints = 0;
@@ -229,7 +290,7 @@ _ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
             npoints,  /* varying */
             npoints   /* faceVarying */);
     }
-        
+
     primvars.SetTimes(points.count, &points.times[0]);
     for (size_t i=0; i < points.count; ++i) {
         if (points.values[i].size() == npoints) {
@@ -239,7 +300,7 @@ _ConvertPointsPrimvar(HdSceneDelegate *sceneDelegate, SdfPath const &id,
                 RtDetailType::k_vertex, 
                 i);
         } else {
-            TF_WARN("<%s> primvar 'points' size (%zu) dod not match "
+            TF_WARN("<%s> primvar 'points' size (%zu) did not match "
                     "expected (%zu)",
                     id.GetText(), 
                     points.values[i].size(),
@@ -341,8 +402,13 @@ _GetComputedPrimvars(HdSceneDelegate* sceneDelegate,
     HdExtComputationPrimvarDescriptorVector compPrimvars;
     compPrimvars = sceneDelegate->GetExtComputationPrimvarDescriptors
                                     (id,interp);
-    for (auto const& pv: compPrimvars) {
+    for (auto const& pv : compPrimvars) {
+#if PXR_VERSION > 2102
+        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)
+            && pv.name != HdTokens->points) {
+#else
         if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
+#endif
             dirtyCompPrimvars.emplace_back(pv);
         }
     }
@@ -423,7 +489,7 @@ enum _ParamType {
 static void
 _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
          HdInterpolation hdInterp, RtPrimVarList& params,
-         _ParamType paramType, int expectedSize)
+         _ParamType paramType, int expectedSize, float time = 0.f)
 {
     // XXX:TODO: To support array-valued types, we need more
     // shaping information.  Currently we assume arrays are
@@ -598,6 +664,13 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
         }
+#if PXR_VERSION >= 2108
+        // XXX HdPrman does not yet support time-sampled primvars,
+        // instead we find the sample at the requested time.
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> samples;
+        sceneDelegate->SamplePrimvar(id, primvar.name, &samples);
+        VtValue val = samples.Resample(time);
+#else
         // XXX HdPrman does not yet support time-sampled primvars,
         // but we want to exercise the SamplePrimvar() API, so use it
         // to request a single sample.
@@ -606,6 +679,8 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         VtValue val;
         sceneDelegate->SamplePrimvar(id, primvar.name, maxNumTimeSamples,
                                      times, &val);
+#endif
+
         TF_DEBUG(HDPRMAN_PRIMVARS)
             .Msg("HdPrman: <%s> %s %s \"%s\" (%s) = \"%s\"\n",
                  id.GetText(),
@@ -639,7 +714,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 void
 HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                         RtPrimVarList& primvars, int numUniform, int numVertex,
-                        int numVarying, int numFaceVarying)
+                        int numVarying, int numFaceVarying, float time)
 {
     const HdInterpolation hdInterpValues[] = {
         HdInterpolationConstant,
@@ -660,7 +735,7 @@ HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
     const int modeCount = 5;
     for (size_t i = 0; i < modeCount; ++i) {
         _Convert(sceneDelegate, id, hdInterpValues[i], primvars,
-                 _ParamTypePrimvar, primvarSizes[i]);
+                 _ParamTypePrimvar, primvarSizes[i], time);
     }
 }
 
@@ -1178,6 +1253,16 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
    _integratorCameraCallbacks->push_back(callback);
 }
 
+bool
+HdPrman_RenderParam::HasSceneIndexPlugin(const TfToken &id)
+{
+#if PXR_VERSION >= 2205
+    return HdSceneIndexPluginRegistry::GetInstance().IsRegisteredPlugin(id);
+#else
+    return false;
+#endif
+}
+
 void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
@@ -1588,6 +1673,14 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsPrim(
             GetActiveIntegratorId(), 
             GetSampleFilterList(),
             GetDisplayFilterList());
+
+    // XXX Interactive viewport rendering using hdPrman currently relies on 
+    // having AOV bindings (via the task/render pass state) and uses the 
+    // "hydra" display driver to write rendered pixels into an intermediate 
+    // framebuffer which is then blit into the hydra AOVs. 
+    // XXX  To drive interactive viewport rendering with the RenderSettings 
+    // prim, the created Riley RenderViewDesc needs to use the "hydra" Riley
+    // DisplayDriver (analogous to the RenderProduct productType).
 
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
@@ -2033,6 +2126,8 @@ HdPrman_RenderParam::StopRender(bool blocking)
         return;
     }
 
+    TF_DESCRIBE_SCOPE("Waiting for RenderMan to stop");
+
     if (!blocking) {
         {
             TRACE_SCOPE("riley::RequestUpdate");
@@ -2183,7 +2278,8 @@ _UpdateRmanAovAndSourceName(
     // If the sourceType hints that the source is an lpe, make sure
     // it starts with "lpe:" as required by prman.
     if (isLPE) {
-        std::string sn = (sn.find(RixStr.k_lpe.CStr()) == std::string::npos)
+        std::string sn = rmanSourceName->CStr();
+        sn = (sn.find(RixStr.k_lpe.CStr()) == std::string::npos)
             ? "lpe:" + std::string(rmanSourceName->CStr())
             : rmanSourceName->CStr();
         *rmanSourceName = RtUString(sn.c_str());
@@ -2469,6 +2565,12 @@ _AddRenderOutput(
         renderOutputDesc.filterWidth.Set( filterSize[0], filterSize[1] );
         renderOutputDesc.relativePixelVariance = relativePixelVariance;
         renderOutputDesc.params = extraParams;
+
+        TF_DEBUG(HDPRMAN_RENDER_PASS)
+            .Msg("Add RenderOutputDesc: \n - name: '%s'\n - type: '%d'\n"
+                 " - sourceName: '%s'\n - rule: '%s'\n - filter: '%s'\n\n",
+                 aovName.CStr(), int(rType), sourceName.CStr(), 
+                 rule.CStr(), filter.CStr());
 
         renderOutputDescs->push_back(std::move(renderOutputDesc));
         renderOutputIndices->push_back(renderOutputDescs->size()-1);
@@ -2970,6 +3072,17 @@ HdPrman_RenderParam::UpdateRileyShutterInterval(
         shutterInterval[0] = 0.0f;
         shutterInterval[1] = 0.0f;
     }
+
+    if( HdPrman_RenderParam::HasSceneIndexPlugin(
+            HdPrmanPluginTokens->velocityBlur) ) {
+        // When there's only one sample available the velocity blur plug-in doesn't
+        // have access to the correct shutter interval, so this is a workaround
+        // to provide it.
+#if PXR_VERSION >= 2205
+        HdPrman_VelocityMotionBlurSceneIndexPlugin::SetShutterInterval(
+            shutterInterval[0], shutterInterval[1]);
+#endif
+    }
     
     // Update the shutter interval on the legacy options param list and
     // commit the scene options. Note that the legacy options has a weaker
@@ -3244,5 +3357,315 @@ HdPrman_RenderParam::GetInstancer(const SdfPath& id)
     }
     return nullptr;
 }
+
+bool
+HdPrman_RenderParam::GetMotionBlur(HdSceneDelegate *sceneDelegate,
+                              const SdfPath &id)
+{
+    // Check global setting first
+    if(sceneDelegate->GetRenderIndex().GetRenderDelegate()->
+       GetRenderSetting<bool>(HdPrmanRenderSettingsTokens->disableMotionBlur,
+                              false)) {
+        return false;
+    }
+
+    // Then see if disabled locally
+    bool blur = true;
+    float t[1];
+    VtValue val;
+    sceneDelegate->SamplePrimvar(id, _tokens->mblur, 1, t, &val);
+    if (val.IsHolding<VtArray<bool>>()) {
+        blur = val.UncheckedGet<VtArray<bool>>()[0];
+    }
+    return blur;
+}
+
+bool
+HdPrman_RenderParam::GetVelocityBlur(HdSceneDelegate *sceneDelegate,
+                                 const SdfPath &id)
+{
+    bool vblur = true;
+    float t[1];
+    VtValue val;
+    sceneDelegate->SamplePrimvar(id, _tokens->vblur, 1, t, &val);
+    if(val == _tokens->vblur_on)
+    {
+        vblur = true;
+    }
+
+    return vblur;
+}
+
+bool
+HdPrman_RenderParam::GetAccelerationBlur(HdSceneDelegate *sceneDelegate,
+                                     const SdfPath &id)
+{
+    bool ablur = true;
+    float t[1];
+    VtValue val;
+    sceneDelegate->SamplePrimvar(id, _tokens->vblur, 1, t, &val);
+    if(val == _tokens->ablur_on)
+    {
+        ablur = true;
+    }
+
+    return ablur;
+}
+
+int
+HdPrman_RenderParam::GetNumGeoSamples(HdSceneDelegate *sceneDelegate,
+                                  const SdfPath &id)
+{
+    int nsamples = 2;
+    float t[1];
+    VtValue val;
+    sceneDelegate->SamplePrimvar(
+        id, _tokens->nonlinearSampleCount, 1, t, &val);
+    if (val.IsHolding<int>()) {
+        nsamples = val.UncheckedGet<int>();
+        return nsamples;
+    }
+    sceneDelegate->SamplePrimvar(id, _tokens->geosamples, 1, t, &val);
+    if (val.IsHolding<VtArray<int>>()) {
+        nsamples = val.UncheckedGet<VtArray<int>>()[0];
+    }
+
+    return nsamples;
+}
+
+int
+HdPrman_RenderParam::GetNumXformSamples(HdSceneDelegate *sceneDelegate,
+                                  const SdfPath &id)
+{
+    int nsamples = 2;
+    float t[1];
+    VtValue val;
+    sceneDelegate->SamplePrimvar(id, _tokens->xformsamples, 1, t, &val);
+    if (val.IsHolding<VtArray<int>>()) {
+        nsamples = val.UncheckedGet<VtArray<int>>()[0];
+    }
+    return nsamples;
+}
+
+// This method duplicates functionality in velocityMotionBlurSceneIndexPlugin,
+// and is for backward compatibility when scene index plug-ins aren't available.
+float
+HdPrman_RenderParam::ConvertPositions(
+    HdSceneDelegate* sceneDelegate,
+    const SdfPath& id,
+    int vertexPrimvarCount,
+    RtPrimVarList& primvars)
+{
+    int numSamples = 1;
+    float fps = 24.f; // TODO: get this from render settings?
+    float ifps = 1.f / fps;
+
+    // Check if points is a ext computed primvar
+    HdExtComputationPrimvarDescriptorVector compPrimvar;
+    {
+        HdExtComputationPrimvarDescriptorVector compPrimvars
+            = sceneDelegate->GetExtComputationPrimvarDescriptors(
+                id, HdInterpolationVertex);
+        for (auto const& pv : compPrimvars) {
+            if (pv.name == HdTokens->points) {
+                compPrimvar.emplace_back(pv);
+            }
+        }
+    }
+
+    // Get points time samples
+    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> pointsSamples;
+    {
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPointsSamples;
+        if (compPrimvar.empty()) {
+            sceneDelegate->SamplePrimvar(
+                id, HdTokens->points, &boxedPointsSamples);
+        }
+        else {
+#if PXR_VERSION > 2102
+            HdExtComputationUtils::SampledValueStore<HDPRMAN_MAX_TIME_SAMPLES>
+                compSamples;
+            HdExtComputationUtils::SampleComputedPrimvarValues<
+                HDPRMAN_MAX_TIME_SAMPLES>(
+                compPrimvar, sceneDelegate, HDPRMAN_MAX_TIME_SAMPLES,
+                &compSamples);
+            boxedPointsSamples = compSamples[HdTokens->points];
+#endif
+        }
+#if PXR_VERSION <= 2111
+        pointsSamples.UnboxFrom(boxedPointsSamples);
+#else
+        if (!pointsSamples.UnboxFrom(boxedPointsSamples)) {
+            TF_WARN(
+                "<%s> points did not have expected type vec3f[]", id.GetText());
+        }
+#endif
+    }
+
+    // Get motion blur settings
+    bool blur = GetMotionBlur(sceneDelegate, id);
+    float shutterOpen = 0.0f;
+    float shutterClose = 0.5f;
+    const HdPrman_CameraContext& camCtx = GetCameraContext();
+    const HdPrmanCamera* cam
+        = camCtx.GetCamera(&(sceneDelegate->GetRenderIndex()));
+    if (cam) {
+        shutterOpen = cam->GetShutterOpen();
+        shutterClose = cam->GetShutterClose();
+    }
+
+    // Do deformation blur unless velocity blur is requested
+    // or necessary due to changing numbers of P values
+    bool velocityBlur = false;
+    bool accelerationBlur = false;
+    if (blur) {
+        accelerationBlur = GetAccelerationBlur(sceneDelegate, id);
+        velocityBlur = (GetVelocityBlur(sceneDelegate, id) || accelerationBlur);
+        numSamples = GetNumGeoSamples(sceneDelegate, id);
+    }
+    // Attempt motion blur
+    if (blur && numSamples > 1 && (shutterOpen != shutterClose)) {
+        // Attempt velocity blur
+        if (velocityBlur) {
+            // Get velocities
+            VtVec3fArray velocities;
+            {
+                HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
+                    boxedVelocitiesSamples;
+                sceneDelegate->SamplePrimvar(
+                    id, HdTokens->velocities, &boxedVelocitiesSamples);
+                HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES>
+                    velocitiesSamples;
+                velocitiesSamples.UnboxFrom(boxedVelocitiesSamples);
+                velocities = velocitiesSamples.Resample(0.f);
+            }
+
+            // Can't do velocity blur if velocities aren't present
+            if (!velocities.empty()) {
+                VtVec3fArray accelerations;
+                if (accelerationBlur) {
+                    HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
+                        boxedAccelerationsSamples;
+                    sceneDelegate->SamplePrimvar(
+                        id, HdTokens->accelerations,
+                        &boxedAccelerationsSamples);
+                    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES>
+                        accelerationsSamples;
+                    accelerationsSamples.UnboxFrom(boxedAccelerationsSamples);
+                    // Get acceleration at time zero
+                    accelerations = accelerationsSamples.Resample(0.f);
+                    // Check acceleration is present
+                    accelerationBlur = !accelerations.empty();
+                }
+
+                // Only 2 samples are useful without acceleration
+                if (!accelerationBlur) {
+                    numSamples = 2;
+                }
+
+                // Shutter open
+                std::vector<float> shutterTimes;
+                shutterTimes.push_back(shutterOpen);
+
+                // Inbetween shutter samples
+                for (int i = 0; i < numSamples - 2; ++i) {
+                    shutterTimes.push_back(
+                        shutterOpen
+                        + (i + 1)
+                            * ((shutterClose - shutterOpen)
+                               / static_cast<float>(numSamples - 1)));
+                }
+                // Shutter close
+                shutterTimes.push_back(shutterClose);
+                primvars.SetTimes(shutterTimes.size(), shutterTimes.data());
+
+                VtVec3fArray points = pointsSamples.Resample(0.f);
+                // Sanity check that the number of points here matches the
+                // number that will be requested for other primvars.
+                if (points.size() == static_cast<size_t>(vertexPrimvarCount)) {
+                    for (size_t i = 0; i < shutterTimes.size(); ++i) {
+                        VtVec3fArray offsetPoints;
+                        offsetPoints.resize(points.size());
+                        // Velocity is per second.
+                        // Need to account for fps to convert from shutter time.
+                        const float time = shutterTimes[i] * ifps;
+                        for (size_t p = 0; p < points.size(); ++p) {
+                            offsetPoints[p]
+                                = points[p] + (velocities[p] * time);
+                            if (accelerationBlur) {
+                                offsetPoints[p]
+                                    += accelerations[p] * time * time * 0.5f;
+                            }
+                        }
+                        primvars.SetPointDetail(
+                            RixStr.k_P, (RtPoint3 const*)offsetPoints.cdata(),
+                            RtDetailType::k_vertex, i);
+                    }
+                }
+                else {
+                    TF_WARN(
+                        "<%s> primvar 'points' size (%zu) did not match expected (%zu)",
+                        id.GetText(), points.size(), 
+                        static_cast<size_t>(vertexPrimvarCount));
+                }
+
+                // Velocity blur success
+                return 0.f;
+            }
+        }
+
+        // Attempt deformation blur
+        {
+            // Get all possible sample shutter times.
+            std::vector<float> shutterTimes;
+            for (size_t i = 0; i < pointsSamples.count; ++i) {
+                if (pointsSamples.values[i].empty()) {
+                    continue;
+                }
+                if (pointsSamples.values[i].size() != 
+                        static_cast<size_t>(vertexPrimvarCount)) {
+                    // If any of the points arrays are different sizes, can't use for deforming blur
+                    TF_WARN(
+                        "<%s> primvar 'points' sample sizes differ: %zu %zu. Try velocity blur.",
+                        id.GetText(), static_cast<size_t>(vertexPrimvarCount),
+                        pointsSamples.values[i].size());
+                    continue;
+                }
+                shutterTimes.push_back(pointsSamples.times[i]);
+            }
+            // Check we have enough samples to do deformation motion blur.
+            if (shutterTimes.size() > 1) {
+                // TODO: Should we prune pointsSamples to match user requested numSamples?
+                primvars.SetTimes(shutterTimes.size(), shutterTimes.data());
+                size_t s = 0;
+                for (size_t i = 0; i < pointsSamples.count && s < shutterTimes.size(); ++i) {
+                    if (pointsSamples.times[i] == shutterTimes[s]) {
+                        primvars.SetPointDetail(
+                            RixStr.k_P, (RtPoint3 const*)pointsSamples.values[i].cdata(),
+                            RtDetailType::k_vertex, s);
+                        s++;
+                    }
+                }
+
+                // Deformation motion blur success
+                return shutterOpen + (shutterClose - shutterOpen) * 0.5f;
+            }
+        }
+
+    }
+
+    // No motion blur, just use time zero.
+    VtVec3fArray points = pointsSamples.Resample(0.f);
+    primvars.SetPointDetail(
+        RixStr.k_P, (RtPoint3 const*)points.cdata(),
+        RtDetailType::k_vertex);
+    if (points.size() != static_cast<size_t>(vertexPrimvarCount)) {
+        TF_WARN(
+            "<%s> primvar 'points' size (%zu) did not match expected (%zu)",
+            id.GetText(), points.size(), static_cast<size_t>(vertexPrimvarCount));
+    }
+    return 0.f;
+}
+
 
 PXR_NAMESPACE_CLOSE_SCOPE

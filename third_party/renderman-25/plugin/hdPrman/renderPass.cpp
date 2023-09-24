@@ -125,6 +125,24 @@ _Blit(HdPrmanFramebuffer * const framebuffer,
     }
 }
 
+void
+_MarkBindingsAsConverged(
+    HdRenderPassAovBindingVector const &aovBindings,
+    const HdRenderIndex * const renderIndex)
+{
+    for (const HdRenderPassAovBinding aovBinding : aovBindings) {
+        HdPrmanRenderBuffer * const rb =
+            static_cast<HdPrmanRenderBuffer*>(
+                renderIndex->GetBprim(
+                    HdPrimTypeTokens->renderBuffer, aovBinding.renderBufferId));
+
+        if (!TF_VERIFY(rb)) {
+            continue;
+        }
+        rb->SetConverged(true);
+    }
+}
+
 const HdRenderBuffer *
 _GetRenderBuffer(const HdRenderPassAovBinding &aov,
                  const HdRenderIndex * const renderIndex)
@@ -231,6 +249,14 @@ _GetActiveRenderSettingsPrim(HdRenderIndex *renderIndex)
     return nullptr;
 }
 
+// This helper function also exists in testHdPrman
+GfVec2i
+_MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
+{
+    return GfVec2i(std::roundf(a[0] * b[0]),
+                   std::roundf(a[1] * b[1]));
+}
+
 void
 _SetShutterCurve(bool isInteractive, HdPrman_CameraContext *cameraContext)
 {
@@ -258,29 +284,21 @@ _SetShutterCurve(bool isInteractive, HdPrman_CameraContext *cameraContext)
 
 void
 HdPrman_RenderPass::_UpdateCameraPath(
+    const HdPrman_RenderSettings * const renderSettingsPrim,
     const HdRenderPassStateSharedPtr &renderPassState,
     HdPrmanRenderDelegate * const renderDelegate,
     HdPrman_CameraContext *cameraContext)
 {
-    // Camera path can come from render pass state, or the RenderSettingsMap
-    // on the RenderSpec. The camera from the render pass state wins.
-
-    if (const HdPrmanCamera * const cam =
+    // Camera path can come from RenderProducts on the RenderSettings Prim.
+    // or render pass state.
+    if (renderSettingsPrim) {
+        const HdRenderSettings::RenderProducts &renderProducts =
+            renderSettingsPrim->GetRenderProducts();
+        SdfPath cameraPath = renderProducts.at(0).cameraPath;
+        cameraContext->SetCameraPath(cameraPath);
+    } else if (const HdPrmanCamera * const cam =
             static_cast<const HdPrmanCamera *>(renderPassState->GetCamera())) {
         cameraContext->SetCameraPath(cam->GetId());
-    } else {
-        const VtDictionary &renderSpec =
-            renderDelegate->GetRenderSetting<VtDictionary>(
-                HdPrmanRenderSettingsTokens->experimentalRenderSpec,
-                VtDictionary());
-        const SdfPath &cameraPath =
-            VtDictionaryGet<SdfPath>(
-                renderSpec,
-                HdPrmanExperimentalRenderSpecTokens->camera,
-                VtDefault = SdfPath());
-        if (!cameraPath.IsEmpty()) {
-            cameraContext->SetCameraPath(cameraPath);
-        }
     }
 }
 
@@ -288,6 +306,7 @@ HdPrman_RenderPass::_UpdateCameraPath(
 // Return true if the dataWindow has changed.
 bool
 HdPrman_RenderPass::_UpdateCameraFraming(
+    const HdPrman_RenderSettings * const renderSettingsPrim,
     const HdRenderPassStateSharedPtr &renderPassState,
     HdPrman_CameraContext *cameraContext,
     GfVec2i *resolution)
@@ -295,7 +314,24 @@ HdPrman_RenderPass::_UpdateCameraFraming(
     // Update Camera Framing on the Camera Context
     const GfRect2i prevDataWindow = cameraContext->GetFraming().dataWindow;
 
-    if (renderPassState->GetFraming().IsValid()) {
+    if (renderSettingsPrim) {
+        // For clients relying on the RenderSettings Prim
+        const HdRenderSettings::RenderProduct &product =
+            renderSettingsPrim->GetRenderProducts().at(0);
+        
+        *resolution = product.resolution;
+        GfRange2f displayWindow(GfVec2f(0.0f), GfVec2f(*resolution));
+        GfRange2f dataWindowNDC = product.dataWindowNDC;
+        const GfRect2i dataWindow(
+            _MultiplyAndRound(dataWindowNDC.GetMin(), *resolution),
+            _MultiplyAndRound(dataWindowNDC.GetMax(), *resolution) - GfVec2i(1));
+
+        cameraContext->SetFraming(
+            CameraUtilFraming(
+                displayWindow, dataWindow, product.pixelAspectRatio));
+        cameraContext->SetWindowPolicy(
+            HdUtils::ToConformWindowPolicy(product.aspectRatioConformPolicy));
+    } else if (renderPassState->GetFraming().IsValid()) {
         // For new clients setting the camera framing.
         cameraContext->SetFraming(renderPassState->GetFraming());
         cameraContext->SetWindowPolicy(renderPassState->GetWindowPolicy());
@@ -356,11 +392,43 @@ HdPrman_RenderPass::_Execute(
     //     - framing and data window
     //
 
+    const HdRenderPassAovBindingVector &aovBindings =
+        renderPassState->GetAovBindings();
+
     // Render settings can come from the legacy render settings map OR/AND
     // the active render settings prim. We handle changes to the render settings
     // prim during Sync.
-    const HdPrman_RenderSettings * const renderSettingsPrim
-        = _GetActiveRenderSettingsPrim(GetRenderIndex());
+    const HdPrman_RenderSettings * const rsPrim =
+        _GetActiveRenderSettingsPrim(GetRenderIndex());
+    
+    // Currently we only use the RenderSettings Prim in two situations
+    // 1. Behind the HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS env var,
+    //    with a valid Render Settings Prim, and a renderDelegate that is NOT
+    //    interactive.
+    // 2. In the HdPrman Test harness when we do not have any aovBindings.
+    // 
+    // XXX Interactive viewport rendering using hdPrman currently relies on 
+    // having AOV bindings and uses the "hydra" Display Driver to write 
+    // rendered pixels into an intermediate framebuffer which is then blit 
+    // into the Hydra AOVs. Using the render settings prim to drive the render 
+    // pass in an interactive viewport setting is not yet supported.
+    // 
+    // XXX Using the render settings prim to drive the render pass in an 
+    // interactive viewport setting is not yet supported. Interactive viewport 
+    // rendering using hdPrman currently relies on having AOV bindings and uses
+    // the "hydra" Display Driver to write rendered pixels into an intermediate 
+    // framebuffer which is then blit into the Hydra AOVs. 
+    const bool validRenderSettings = rsPrim && rsPrim->IsValid();
+    const bool driveWithRenderSettingsPrim = 
+        (validRenderSettings && rsPrim->DriveRenderPass() 
+            && !renderDelegate->IsInteractive()) || aovBindings.empty();
+    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+        "Drive with RenderSettingsPrim: \n"
+        " - HD_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS = %d\n"
+        " - validRenderSettingsPrim = %d\n - interactive renderDelegate %d\n",
+        rsPrim->DriveRenderPass(), validRenderSettings, 
+        renderDelegate->IsInteractive());
+
     bool legacySettingsChanged = false;
     {
         // Legacy settings version tracking.
@@ -376,11 +444,15 @@ HdPrman_RenderPass::_Execute(
 
     // Update the Camera Context
     HdPrman_CameraContext &cameraContext = _renderParam->GetCameraContext();
-    _UpdateCameraPath(renderPassState, renderDelegate, &cameraContext);
+    _UpdateCameraPath(
+        (driveWithRenderSettingsPrim) ? rsPrim : nullptr, 
+        renderPassState, renderDelegate, &cameraContext);
 
     GfVec2i resolution;
     const bool dataWindowChanged =
-        _UpdateCameraFraming(renderPassState, &cameraContext, &resolution);
+        _UpdateCameraFraming(
+            (driveWithRenderSettingsPrim) ? rsPrim : nullptr, 
+            renderPassState, &cameraContext, &resolution);
 
     _SetShutterCurve(renderDelegate->IsInteractive(), &cameraContext);
 
@@ -388,13 +460,10 @@ HdPrman_RenderPass::_Execute(
     cameraContext.MarkValid();
 
     // Create the Riley RenderView 
-    const HdRenderPassAovBindingVector &aovBindings =
-        renderPassState->GetAovBindings();
-
     const RenderProducts& renderProducts =
         renderDelegate->GetRenderSetting<RenderProducts>(
             HdPrmanRenderSettingsTokens->delegateRenderProducts, {});
-    
+
     if (_HasRenderProducts(renderProducts)) {
         // Use RenderProducts from the RenderSettingsMap (Solaris)
         int frame =
@@ -402,37 +471,35 @@ HdPrman_RenderPass::_Execute(
                 HdPrmanRenderSettingsTokens->houdiniFrame, 1);
         _renderParam->CreateRenderViewFromProducts(renderProducts, frame);
 
-    } else if (aovBindings.empty()) {
-        // Note: This is currently exercised by the hdPrman test harness,
-        //       although it is possible to exercise this if the render task
-        //       does not provide AOV bindings.
-
-        // When there are no AOV-bindings, check if we have an active render
-        // settings prim. If not, look up the legacy render settings map for
-        // the render spec dictionary to create the render view.
+    } else if (driveWithRenderSettingsPrim) {
+        // Note: This includes the case that we are rendering with the 
+        // render spec through the HdPrman test harness, in addition to using
+        // the render settings prim 
 
         // If we just switched from a render pass state with AOV bindings
         // to one without, we attempt to create a new render view from
         // the render settings prim or render spec - and can free the
         // intermediate framebuffer the AOV display driver writes into.
         //
-
         // XXX When using the render settings prim, factor whether the products
         //     were dirtied to re-create the render view.
         const bool createRenderView =
             _renderParam->DeleteFramebuffer() || legacySettingsChanged;
 
+        // If we do not have a valid render settings prim, look up the 
+        // legacy render settings map for the render spec dictionary to create
+        // the render view.
         if (createRenderView) {
-            // Use the Render Settings Prim if it generates render products.
-            if (renderSettingsPrim &&
-                !renderSettingsPrim->GetRenderProducts().empty()) {
-
+            if (validRenderSettings) {
+                TF_DEBUG(HDPRMAN_RENDER_PASS)
+                    .Msg("Create Riley RenderView from the RenderSettings Prim"
+                         " <%s>.\n", rsPrim->GetId().GetText());
                 // XXX Should return whether it was successful or not.
-                _renderParam->CreateRenderViewFromRenderSettingsPrim(
-                    *renderSettingsPrim);
+                _renderParam->CreateRenderViewFromRenderSettingsPrim(*rsPrim);
 
             } else {
-                // Try to use the experimentalRenderSpec dictionary.
+                TF_DEBUG(HDPRMAN_RENDER_PASS)
+                    .Msg("Create Riley RenderView from the RenderSpec.\n");
                 const VtDictionary &renderSpec =
                     renderDelegate->GetRenderSetting<VtDictionary>(
                         HdPrmanRenderSettingsTokens->experimentalRenderSpec,
@@ -440,18 +507,16 @@ HdPrman_RenderPass::_Execute(
                 
                 // XXX Should return whether it was successful or not.
                 _renderParam->CreateRenderViewFromRenderSpec(renderSpec);
+                resolution = cameraContext.GetResolutionFromDisplayWindow();
             }
         }
-
-        // XXX Data flow for resolution is from the render pass state's
-        //     framing / viewport-and-renderbuffer-resolution.
-        //     Update to factor render settings prim's products.
-        resolution = cameraContext.GetResolutionFromDisplayWindow();
 
     } else {
         // Use AOV-bindings to create render view with displays that
         // have drivers writing into the intermediate framebuffer blitted
         // to the AOVs.
+        TF_DEBUG(HDPRMAN_RENDER_PASS)
+            .Msg("Create Riley RenderView from AOV's\n");
         _renderParam->CreateFramebufferAndRenderViewFromAovs(aovBindings);
         
         _GetRenderBufferSize(aovBindings,
@@ -482,6 +547,14 @@ HdPrman_RenderPass::_Execute(
             _lastTaskRenderTagsVersion = taskRenderTagsVersion;
             _lastRprimRenderTagVersion = rprimRenderTagVersion;
         }
+    }
+
+    // Update options from the legacy settings map.
+    if (legacySettingsChanged) {
+        // This should happen before the camera related settings below,
+        // because some of those, like Ri:FormatResolution should win
+        // when coming from the camera context.
+        _renderParam->UpdateLegacyOptions();
     }
 
     // XXX Integrator params are updated from certain settings on the legacy
@@ -543,11 +616,6 @@ HdPrman_RenderPass::_Execute(
         }
     }
 
-    // Update options from the legacy settings map.
-    if (legacySettingsChanged) {
-        _renderParam->UpdateLegacyOptions();
-    }
-
     // Commit updated scene options.
     {
         const bool updateLegacyOptions =
@@ -579,6 +647,14 @@ HdPrman_RenderPass::_Execute(
     if (HdPrmanFramebuffer * const framebuffer =
             _renderParam->GetFramebuffer()) {
         _Blit(framebuffer, aovBindings, _converged);
+    }
+
+    // If the RenderPass is driven by the RenderSettings prim and we also have
+    // AOV bindings, mark all the associated RenderBuffers as converged since 
+    // they are not being used in favor of the RenderProducts from the
+    // RenderSettings prim.
+    if (driveWithRenderSettingsPrim && !aovBindings.empty()) {
+        _MarkBindingsAsConverged(aovBindings, GetRenderIndex());
     }
 }
 

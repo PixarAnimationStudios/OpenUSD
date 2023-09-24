@@ -642,8 +642,8 @@ public:
             const HdPrmanFramebuffer::AovDesc &aovDesc =
                 aovBuffer.desc;
 
-            const float* const srcWeights =
-                reinterpret_cast<const float*>(m_surface+m_weightsOffset);
+            const float* const srcWeights = m_weightsOffset != k_invalidOffset ? 
+                reinterpret_cast<const float*>(m_surface+m_weightsOffset) : nullptr;
             const bool shouldNormalize = aovDesc.ShouldNormalizeBySampleCount();
 
             const int cc = HdGetComponentCount(aovDesc.format);
@@ -782,8 +782,8 @@ public:
                                      [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
-                        const float* weights =
-                            srcWeights + begin * m_width;
+                        const float* weights = srcWeights ?
+                            srcWeights + begin * m_width : nullptr;
  
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
@@ -806,7 +806,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(shouldNormalize && *weights > 0.f)
+                                if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =
@@ -828,7 +828,7 @@ public:
                                 aovData += 4;
                                 srcColorR++;
                                 srcColorA++;
-                                weights++;
+                                if (weights) weights++;
                             }
                         }
                     });
@@ -844,8 +844,8 @@ public:
                                      (size_t begin, size_t end) {
 
 
-                        const float* weights =
-                            srcWeights + begin * m_width;
+                        const float* weights = srcWeights ?
+                            srcWeights + begin * m_width : nullptr;
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
                                 m_surface + srcOffset)
@@ -861,14 +861,14 @@ public:
                             for (uint32_t x = 0; x < m_width; x++)
                             {
                                 float isc = 1.f;
-                                if(shouldNormalize && *weights > 0.f)
+                                if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 *aovData = *srcColorR * isc;
 
                                 aovData++;
                                 srcColorR++;
-                                weights++;
+                                if (weights) weights++;
                             }
                         }
                     });
@@ -879,8 +879,8 @@ public:
                                      [this, &aovBuffer, &srcWeights, &srcOffset, shouldNormalize]
                                      (size_t begin, size_t end) {
 
-                        const float* weights =
-                            srcWeights + begin * m_width;
+                        const float* weights = srcWeights ?
+                            srcWeights + begin * m_width : nullptr;
                         const float* srcColorR =
                             reinterpret_cast<const float*>(
                                 m_surface + srcOffset)
@@ -894,7 +894,7 @@ public:
 
                             for (uint32_t x = 0; x < m_width; x++) {
                                 float isc = 1.f;
-                                if(shouldNormalize && *weights > 0.f)
+                                if(weights && shouldNormalize && *weights > 0.f)
                                     isc = 1.f / *weights;
 
                                 const float* const srcColorG =
@@ -908,7 +908,7 @@ public:
 
                                 aovData += 3;
                                 srcColorR++;
-                                weights++;
+                                if (weights) weights++;
                             }
                         }
                     });

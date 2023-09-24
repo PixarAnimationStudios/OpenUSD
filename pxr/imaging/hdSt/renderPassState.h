@@ -198,15 +198,13 @@ public:
 
     /// Generates the hash for the settings used to init the graphics pipeline.
     HDST_API
-    uint64_t GetGraphicsPipelineHash() const;
+    uint64_t GetGraphicsPipelineHash(
+        HdSt_GeometricShaderSharedPtr const & geometricShader) const;
 
-private:
-    bool _UseAlphaMask() const;
-    unsigned int _GetFramebufferHeight() const;
-    GfRange2f _ComputeFlippedFilmbackWindow() const;
     // A 4d-vector v encodes a 2d-transform as follows:
     // (x, y) |-> (v[0] * x + v[2], v[1] * y + v[3]).
-    using _AxisAlignedAffineTransform = GfVec4f;
+    using AxisAlignedAffineTransform = GfVec4f;
+
     // Computes the transform from pixel coordinates to the horizontally
     // normalized filmback space which has the following properties:
     // 1. x = -1 and +1 corresponds to the left and right edge of the filmback,
@@ -216,8 +214,14 @@ private:
     //    distance on the filmback. In other words, y = -1/a and +1/a
     //    corresponds to the bottom and top edge of the filmback, respectively,
     //    where a is the camera's aspect ratio.
-    _AxisAlignedAffineTransform
-    _ComputeImageToHorizontallyNormalizedFilmback() const;
+    HDST_API
+    AxisAlignedAffineTransform
+    ComputeImageToHorizontallyNormalizedFilmback() const;
+
+private:
+    bool _UseAlphaMask() const;
+    unsigned int _GetFramebufferHeight() const;
+    GfRange2f _ComputeFlippedFilmbackWindow() const;
 
     // Helper to set up the aov attachment desc so that it matches the blend
     // setting of the render pipeline state.

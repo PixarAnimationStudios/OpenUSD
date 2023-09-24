@@ -23,6 +23,7 @@
 //
 
 #include "hdPrman/velocityMotionBlurSceneIndexPlugin.h"
+#include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
@@ -38,9 +39,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (fps)
     ((sceneIndexPluginName, "HdPrman_VelocityMotionBlurSceneIndexPlugin"))
+    ((mblur,                "ri:object:mblur"))
+    ((vblur,                "ri:object:vblur"))
+    ((vblur_on,             "Velocity Blur"))
+    ((ablur_on,             "Acceleration Blur"))
+    ((vblur_off,            "No Velocity Blur"))
+    ((geosamples,           "ri:object:geosamples"))
+    ((xformsamples,         "ri:object:xformsamples"))
 );
-
-static const char * const _pluginDisplayName = "Prman";
 
 static const int _defaultNonlinearSampleCount = 3;
 
@@ -50,6 +56,10 @@ static const float _fps = 24.0f;
 
 static const float _minimumShutterInterval = 1.0e-10;
 
+static float _shutterOpen = 0.0f;
+static float _shutterClose = 0.0f;
+
+
 TF_REGISTRY_FUNCTION(TfType)
 {
     HdSceneIndexPluginRegistry::Define<
@@ -58,19 +68,23 @@ TF_REGISTRY_FUNCTION(TfType)
 
 TF_REGISTRY_FUNCTION(HdSceneIndexPlugin)
 {
-    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 0;
+    // This plug-in should be inserted *after* the extComp plug-in,
+    // so that disabling of blur, etc. will also affect points from extComp
+    const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 3;
 
     HdContainerDataSourceHandle const inputArgs =
         HdRetainedContainerDataSource::New(
             _tokens->fps,
             HdRetainedSampledDataSource::New(VtValue(_fps)));
 
-    HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
-        _pluginDisplayName,
-        _tokens->sceneIndexPluginName,
-        inputArgs,
-        insertionPhase,
-        HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    for( auto const& pluginDisplayName : HdPrman_GetPluginDisplayNames() ) {
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            pluginDisplayName,
+            _tokens->sceneIndexPluginName,
+            inputArgs,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtStart);
+    }
 }
 
 namespace
@@ -95,10 +109,12 @@ public:
     _PrimvarValueDataSource(
         const HdSampledDataSourceHandle &samplesSource,
         const HdContainerDataSourceHandle &primvarsSource,
-        const HdContainerDataSourceHandle &inputArgs)
+        const HdContainerDataSourceHandle &inputArgs,
+        bool isPoints = true)
       : _samplesSource(samplesSource)
       , _primvarsSource(primvarsSource)
       , _inputArgs(inputArgs)
+      , _isPoints(isPoints)
     {
     }
 
@@ -115,6 +131,10 @@ private:
     VtValue _GetSourceAccelerationsValue() const;
     int _GetSourceNonlinearSampleCount() const;
     float _GetSourceBlurScale() const;
+    bool _GetSourceEnableMotionBlur() const;
+    bool _GetSourceEnableVelocityBlur() const;
+    bool _GetSourceEnableAccelerationBlur() const;
+    int _GetSourceGeoSamples() const;
 
     std::pair<Time, Time> _GetSamplingInterval(
         Time startTime,
@@ -137,6 +157,7 @@ private:
     HdSampledDataSourceHandle _samplesSource;
     HdContainerDataSourceHandle _primvarsSource;
     HdContainerDataSourceHandle _inputArgs;
+    bool _isPoints;
 };
 
 HD_DECLARE_DATASOURCE_HANDLES(_PrimvarValueDataSource);
@@ -208,7 +229,78 @@ _PrimvarValueDataSource::_GetSourceNonlinearSampleCount() const
     static const HdDataSourceLocator locator(
         HdTokens->nonlinearSampleCount, HdPrimvarSchemaTokens->primvarValue);
     const VtValue value = _GetSourcePrimvarValue(locator);
+    if (!value.IsHolding<int>()) {
+        // If count not available on prim, fall back to this other method
+        return _GetSourceGeoSamples();
+    }
     return value.GetWithDefault<int>(_defaultNonlinearSampleCount);
+}
+
+bool
+_PrimvarValueDataSource::_GetSourceEnableMotionBlur() const
+{
+    bool blur = true;
+
+    // When motion blur is disabled globally by the disableMotionBlur
+    // render setting, _shutterOpen and _shutterClose are set to 0.
+    // Need to notice that and return false here,
+    // or else we'll end up sampling at shutterOpen time rather than time 0.
+    if(0.0 == _shutterOpen && _shutterOpen == _shutterClose) {
+        return false;
+    }
+    static const HdDataSourceLocator locator(
+        _tokens->mblur, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    if (value.IsHolding<VtArray<bool>>()) {
+        blur = value.UncheckedGet<VtArray<bool>>()[0];
+    }
+    return blur;
+}
+
+bool
+_PrimvarValueDataSource::_GetSourceEnableVelocityBlur() const
+{
+    // Assume velocity blur is desired when velcocities are present
+    // unless explicitly disabled
+    bool vblur = true;
+    static const HdDataSourceLocator locator(
+        _tokens->vblur, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    if(value == _tokens->vblur_off) {
+        vblur = false;
+    }
+
+    return vblur;
+}
+
+bool
+_PrimvarValueDataSource::_GetSourceEnableAccelerationBlur() const
+{
+    // Assume acceleration blur is desired when accelerations are present
+    // unless explicitly disabled
+    bool ablur = true;
+    static const HdDataSourceLocator locator(
+        _tokens->vblur, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    if(value == _tokens->vblur_off ||
+       value == _tokens->vblur_on) {
+        ablur = false;
+    }
+
+    return ablur;
+}
+
+int
+_PrimvarValueDataSource::_GetSourceGeoSamples() const
+{
+    int sampleCount = _defaultNonlinearSampleCount;
+    static const HdDataSourceLocator locator(
+        _tokens->geosamples, HdPrimvarSchemaTokens->primvarValue);
+    const VtValue value = _GetSourcePrimvarValue(locator);
+    if (value.IsHolding<VtArray<int>>()) {
+        sampleCount = value.UncheckedGet<VtArray<int>>()[0];
+    }
+    return sampleCount;
 }
 
 float
@@ -218,13 +310,23 @@ _PrimvarValueDataSource::_GetSourceBlurScale() const
     static const HdDataSourceLocator locator(
         HdTokens->blurScale, HdPrimvarSchemaTokens->primvarValue);
     const VtValue value = _GetSourcePrimvarValue(locator);
-    return std::fabs(value.GetWithDefault<float>(1.0f));
 
+    // No blur if motion blur is disbled
+    if (!_GetSourceEnableMotionBlur()) {
+        return 0.0f;
+    }
+
+    return std::fabs(value.GetWithDefault<float>(1.0f));
 }
 
 bool
 _PrimvarValueDataSource::_HasVelocities() const
 {
+    // Allow for velocity blur to be disabled even when velocities are present
+    if (!_GetSourceEnableVelocityBlur()) {
+        return false;
+    }
+
     const VtValue v = _GetSourceVelocitiesValue();
     if (!v.IsHolding<VtVec3fArray>()) {
         return false;
@@ -236,6 +338,11 @@ _PrimvarValueDataSource::_HasVelocities() const
 bool
 _PrimvarValueDataSource::_HasAccelerations() const
 {
+    // Allow for acceleration blur to be disabled even if accel vals are present
+    if (!_GetSourceEnableAccelerationBlur()) {
+        return false;
+    }
+
     const VtValue v = _GetSourceAccelerationsValue();
     if (!v.IsHolding<VtVec3fArray>()) {
         return false;
@@ -264,6 +371,11 @@ _PrimvarValueDataSource::GetValue(const Time givenShutterOffset)
 
     const Time shutterOffset = givenShutterOffset * blurScale;
 
+    if (!_HasVelocities()) {
+        // Velocities are either not present or are disabled
+        return _GetSourcePointsValue(shutterOffset);
+    }
+
     // Check that we have velocities matching the number of points.
     //
     // If this is not the case, simply use the points value from the source.
@@ -280,8 +392,10 @@ _PrimvarValueDataSource::GetValue(const Time givenShutterOffset)
     }
 
     const VtValue pointsValues = _GetSourcePointsValue(0.0f);
-    if (!pointsValues.IsHolding<VtVec3fArray>()) {
-        return _GetSourcePointsValue(shutterOffset);
+    if (!pointsValues.IsHolding<VtVec3fArray>() || !_isPoints) {
+        // Velocities are enabled, but we're deling with some other primvar,
+        // which needs to be sampled at the same time as points, ie. time 0.0
+        return _GetSourcePointsValue(0.0f);
     }
 
     const VtVec3fArray &pointsArray = pointsValues.UncheckedGet<VtVec3fArray>();
@@ -291,7 +405,10 @@ _PrimvarValueDataSource::GetValue(const Time givenShutterOffset)
         TF_WARN("Number %zu of velocity vectors does not match number %zu "
                 "of points.", velocitiesArray.size(), num);
 
-        return _GetSourcePointsValue(shutterOffset);
+        if(velocitiesArray.size() < num) {
+            // Be slightly forgiving - return values as long as there are enough
+            return _GetSourcePointsValue(shutterOffset);
+        }
     }
     
     // We have valid velocities, now alsocheck for valid acclerations before
@@ -339,7 +456,6 @@ _PrimvarValueDataSource::GetValue(const Time givenShutterOffset)
                 + time * velocitiesArray[i];
         }
     }
-    
     return VtValue(result);
 }
 
@@ -355,7 +471,6 @@ std::pair<HdSampledDataSource::Time, HdSampledDataSource::Time>
 _PrimvarValueDataSource::_GetSamplingInterval(
     const Time startTime, const Time endTime) const
 {
-
     if (std::numeric_limits<Time>::lowest() < startTime &&
         endTime < std::numeric_limits<Time>::max()) {
         // Client gives us a valid shutter interval. Use it.
@@ -371,7 +486,8 @@ _PrimvarValueDataSource::_GetSamplingInterval(
 
     // Not enough samples to reconstruct the shutter interval.
     if (sampleTimes.size() < 2) {
-        return { 0.0f, 0.0f };
+        // These fallback values are from the camera
+        return {_shutterOpen, _shutterClose};
     }
 
     const auto iteratorPair =
@@ -401,11 +517,38 @@ _PrimvarValueDataSource::GetContributingSampleTimesForInterval(
     if (_HasVelocities()) {
         // Velocities are given, forward call to source, applying
         // blurScale if non-trivial.
-        return _GetSamplesVelocityBlur(
-            startTime, endTime, outSampleTimes);
+        if (_isPoints) {
+            return _GetSamplesVelocityBlur(
+                startTime, endTime, outSampleTimes);
+        } else {
+            // primvars other than points can't be blurred; sample at 0.0
+            *outSampleTimes = { 0.0f };
+            return false;
+        }
     } else {
-        return _GetSamplesDeformBlur(
+        bool result = _GetSamplesDeformBlur(
             startTime, endTime, blurScale, outSampleTimes);
+        if (outSampleTimes->size() > 1) {
+            std::vector<size_t> ptArraySizes;
+            std::transform (outSampleTimes->begin(), outSampleTimes->end(),
+                            std::back_inserter(ptArraySizes),
+                            [&](float t) {return _GetSourcePointsValue(t).GetArraySize();});
+            if (!std::equal(ptArraySizes.begin() + 1,
+                            ptArraySizes.end(),
+                            ptArraySizes.begin())) {
+                // The lengths of point arrays for each sample do not match
+                // so disable deforming blur.
+                *outSampleTimes = { 0.0f };
+                result = false;
+            } else if(!_isPoints) {
+                // For primvars other than points, that can't be blurred,
+                // sample from the middle of the time range.
+                *outSampleTimes =
+                    { _shutterOpen + (_shutterClose - _shutterOpen) * 0.5f };
+                result = false;
+            }
+        }
+        return result;
     }
 }
     
@@ -520,66 +663,69 @@ _PrimvarValueDataSource::_GetSamplesVelocityBlur(
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 
-/// \class _PointsDataSource
+/// \class _PrimvarDataSource
 ///
 /// Serves as data source for locator primvars>points
 ///
-class _PointsDataSource final : public HdContainerDataSource
+class _PrimvarDataSource final : public HdContainerDataSource
 {
 public:
-    HD_DECLARE_DATASOURCE(_PointsDataSource);
+    HD_DECLARE_DATASOURCE(_PrimvarDataSource);
 
-    /// pointsSource: original source for locator primvars>points
+    /// primvarSource: original source for locator primvars>points
     /// primvarsSource: original source for locator primvars
     /// inputArgs: source from scene index plugin
-    _PointsDataSource(
-        const HdContainerDataSourceHandle &pointsSource,
+    _PrimvarDataSource(
+        const HdContainerDataSourceHandle &primvarSource,
         const HdContainerDataSourceHandle &primvarsSource,
-        const HdContainerDataSourceHandle &inputArgs)
-      : _pointsSource(pointsSource)
+        const HdContainerDataSourceHandle &inputArgs,
+        bool isPoints)
+      : _primvarSource(primvarSource)
       , _primvarsSource(primvarsSource)
       , _inputArgs(inputArgs)
+      , _isPoints(isPoints)
     {
     }
 
     TfTokenVector GetNames() override
     {
-        if (!_pointsSource) {
+        if (!_primvarSource) {
             return {};
         }
         
-        return _pointsSource->GetNames();
+        return _primvarSource->GetNames();
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override;
     
 private:
-    HdContainerDataSourceHandle _pointsSource;
+    HdContainerDataSourceHandle _primvarSource;
     HdContainerDataSourceHandle _primvarsSource;
     HdContainerDataSourceHandle _inputArgs;
+    bool                        _isPoints;
 };
 
-HD_DECLARE_DATASOURCE_HANDLES(_PointsDataSource);
+HD_DECLARE_DATASOURCE_HANDLES(_PrimvarDataSource);
 
 HdDataSourceBaseHandle
-_PointsDataSource::Get(const TfToken &name)
+_PrimvarDataSource::Get(const TfToken &name)
 {
-    if (!_pointsSource) {
+    if (!_primvarSource) {
         return nullptr;
     }
 
-    HdDataSourceBaseHandle const result = _pointsSource->Get(name);
+    HdDataSourceBaseHandle const result = _primvarSource->Get(name);
 
     if (name == HdPrimvarSchemaTokens->primvarValue) {
         // Use our own data source for primvars>points>primvarValue
         if (HdSampledDataSourceHandle const primvarValueSource =
                 HdSampledDataSource::Cast(result)) {
             return _PrimvarValueDataSource::New(
-                primvarValueSource, _primvarsSource, _inputArgs);
+                primvarValueSource, _primvarsSource, _inputArgs, _isPoints);
         }
     }
 
-    return _pointsSource->Get(name);
+    return _primvarSource->Get(name);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -631,13 +777,17 @@ _PrimvarsDataSource::Get(const TfToken &name)
 
     HdDataSourceBaseHandle const result = _primvarsSource->Get(name);
 
-    if (name == HdPrimvarsSchemaTokens->points) {
-        // Use our own data source for primvars>points
-        if (HdContainerDataSourceHandle const pointsSource =
-                HdContainerDataSource::Cast(result)) {
-            return _PointsDataSource::New(
-                pointsSource, _primvarsSource, _inputArgs);
-        }
+    // All primvars need to be handled, not just points, because their
+    // sample times are based on when the points end up being sampled,
+    // which depends on various things, like whether velocities are present,
+    // whether motion blur is enabled for the object, etc.
+    if (HdContainerDataSourceHandle const primvarSource =
+        HdContainerDataSource::Cast(result)) {
+        return _PrimvarDataSource::New(
+            primvarSource, _primvarsSource, _inputArgs,
+            // Are there more blurrable (by rman) primvars than these?
+            name == HdPrimvarsSchemaTokens->points ||
+            name == HdInstancerTokens->instanceTransform);
     }
 
     return result;
@@ -842,6 +992,18 @@ HdPrman_VelocityMotionBlurSceneIndexPlugin::_AppendSceneIndex(
     const HdContainerDataSourceHandle &inputArgs)
 {
     return _SceneIndex::New(inputScene, inputArgs);
+}
+
+// TODO: Query the camera's shutter interval in a better way!
+// This method is called by the camera to update
+// with its shutter interval, which is necessary
+// when we're doing velocity blur and UsdImaging doesn't have the sample times.
+void
+HdPrman_VelocityMotionBlurSceneIndexPlugin::SetShutterInterval(
+    float shutterOpen, float shutterClose)
+{
+    _shutterOpen = shutterOpen;
+    _shutterClose = shutterClose;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

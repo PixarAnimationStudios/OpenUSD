@@ -361,10 +361,10 @@ void wrapTypes()
     VtValueFromPython<SdfAuthoringError>();
 
     // Wrap all units enums.
-    #define _WRAP_ENUM(r, unused, elem)                     \
+    #define _WRAP_ENUM(elem)                                 \
         TfPyWrapEnum<_SDF_UNITSLIST_ENUM(elem)>();           \
         VtValueFromPython<_SDF_UNITSLIST_ENUM(elem)>();
-    BOOST_PP_LIST_FOR_EACH(_WRAP_ENUM, ~, _SDF_UNITS)
+    _SDF_FOR_EACH_UNITS(_WRAP_ENUM, _SDF_UNITS)
     #undef _WRAP_ENUM
 
     SdfPyWrapListProxy<SdfNameOrderProxy>();

@@ -125,16 +125,16 @@ setuptools.setup(
     name="usd-core",
     version=version,
     author="Pixar Animation Studios",
-    author_email="pixar.oss+usd_pypi@gmail.com",
-    description="Pixar's Universal Scene Description library",
+    author_email="openusd+usd_pypi@pixar.com",
+    description="Pixar's Universal Scene Description",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://graphics.pixar.com/usd/docs/index.html",
+    url="https://openusd.org",
     project_urls={
-        "Documentation": "https://graphics.pixar.com/usd/docs/index.html",
-        "Developer Docs": "https://graphics.pixar.com/usd/docs/USD-Developer-API-Reference.html",
+        "Documentation": "https://openusd.org",
+        "Developer Docs": "https://www.openusd.org/release/apiDocs.html",
         "Source": "https://github.com/PixarAnimationStudios/OpenUSD",
-        "Discussion Group": "https://groups.google.com/g/usd-interest"
+        "Discussion Group": "https://forum.openusd.org"
     },
     packages=setuptools.find_packages(os.path.join(BUILD_DIR, 'lib/python')),
     package_dir={"": os.path.join(BUILD_DIR, 'lib/python')},

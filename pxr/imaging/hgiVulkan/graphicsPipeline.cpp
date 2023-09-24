@@ -613,24 +613,24 @@ _ProcessAttachment(
     //
     // Clear value
     //
-    vkClearValue->color.float32[0] = attachment.clearValue[0];
-    vkClearValue->color.float32[1] = attachment.clearValue[1];
-    vkClearValue->color.float32[2] = attachment.clearValue[2];
-    vkClearValue->color.float32[3] = attachment.clearValue[3];
-    vkClearValue->depthStencil.depth = attachment.clearValue[0];
-    vkClearValue->depthStencil.stencil = uint32_t(attachment.clearValue[1]);
+    if (isDepthAttachment) {
+        vkClearValue->depthStencil.depth = attachment.clearValue[0];
+        vkClearValue->depthStencil.stencil =
+            static_cast<uint32_t>(attachment.clearValue[1]);
+    } else {
+        vkClearValue->color.float32[0] = attachment.clearValue[0];
+        vkClearValue->color.float32[1] = attachment.clearValue[1];
+        vkClearValue->color.float32[2] = attachment.clearValue[2];
+        vkClearValue->color.float32[3] = attachment.clearValue[3];
+    }
 }
 
 void
 HgiVulkanGraphicsPipeline::_CreateRenderPass()
 {
-    HgiSampleCount samples = _descriptor.multiSampleState.sampleCount;
-
-    if (!_descriptor.colorResolveAttachmentDescs.empty()) {
-        TF_VERIFY(
-            _descriptor.colorAttachmentDescs.size() ==
-            _descriptor.colorResolveAttachmentDescs.size(),
-            "Count mismatch between color and resolve attachments");
+    HgiSampleCount const samples = _descriptor.multiSampleState.sampleCount;
+    
+    if (_descriptor.resolveAttachments) {
         TF_VERIFY(
             samples > HgiSampleCount1,
             "Pipeline sample count must be greater than one to use resolve");
@@ -659,7 +659,8 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     }
 
     // Process depth attachment
-    bool hasDepth = _descriptor.depthAttachmentDesc.format != HgiFormatInvalid;
+    bool const hasDepth =
+        _descriptor.depthAttachmentDesc.format != HgiFormatInvalid;
     if (hasDepth) {
         HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
         uint32_t slot = (uint32_t) vkDescriptions.size();
@@ -671,30 +672,45 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
         vkDescriptions.push_back(vkDesc);
     }
 
-    // Process color resolve attachments
-    for (HgiAttachmentDesc const& desc:_descriptor.colorResolveAttachmentDescs){
-        uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
-        VkAttachmentDescription2 vkDesc;
-        VkAttachmentReference2 vkRef;
-        _ProcessAttachment(desc,slot,HgiSampleCount1,&vkClear, &vkDesc, &vkRef);
-        _vkClearValues.push_back(vkClear);
-        vkDescriptions.push_back(vkDesc);
-        vkColorResolveReferences.push_back(vkRef);
-    }
+    // Create resolve attachments if needed
+    if (_descriptor.resolveAttachments) {
+        for (HgiAttachmentDesc const& desc:_descriptor.colorAttachmentDescs){
+            uint32_t slot = (uint32_t) vkDescriptions.size();
+            VkClearValue vkClear;
+            VkAttachmentDescription2 vkDesc;
+            VkAttachmentReference2 vkRef;
+            _ProcessAttachment(
+                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, &vkRef);
+             // Don't care about initial contents of resolve attachment.
+            vkDesc.loadOp =
+                HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);
+            vkDesc.stencilLoadOp = vkDesc.loadOp;
+            // Want to store resolve attachment contents.
+            vkDesc.storeOp =
+                HgiVulkanConversions::GetStoreOp(HgiAttachmentStoreOpStore);
+            vkDesc.stencilStoreOp = vkDesc.storeOp;
+            vkDescriptions.push_back(vkDesc);
+            vkColorResolveReferences.push_back(vkRef);
+        }
 
-    // Process depth resolve attachment
-    bool hasDepthResolve =
-        _descriptor.depthResolveAttachmentDesc.format != HgiFormatInvalid;
-    if (hasDepthResolve) {
-        HgiAttachmentDesc const& desc = _descriptor.depthResolveAttachmentDesc;
-        uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
-        VkAttachmentDescription2 vkDesc;
-        VkAttachmentReference2* vkRef = &vkDepthResolveReference;
-        _ProcessAttachment(desc,slot,HgiSampleCount1, &vkClear, &vkDesc, vkRef);
-        _vkClearValues.push_back(vkClear);
-        vkDescriptions.push_back(vkDesc);
+        if (hasDepth) {
+            HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
+            uint32_t slot = (uint32_t) vkDescriptions.size();
+            VkClearValue vkClear;
+            VkAttachmentDescription2 vkDesc;
+            VkAttachmentReference2* vkRef = &vkDepthResolveReference;
+            _ProcessAttachment(
+                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, vkRef);
+            // Don't care about initial contents of resolve attachment.
+            vkDesc.loadOp =
+                HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);
+            vkDesc.stencilLoadOp = vkDesc.loadOp;
+            // Want to store resolve attachment contents.
+            vkDesc.storeOp =
+                HgiVulkanConversions::GetStoreOp(HgiAttachmentStoreOpStore);
+            vkDesc.stencilStoreOp = vkDesc.storeOp;
+            vkDescriptions.push_back(vkDesc);
+        }
     }
 
     //
@@ -711,12 +727,13 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     subpassDesc.pPreserveAttachments = nullptr;
     subpassDesc.colorAttachmentCount = (uint32_t) vkColorReferences.size();
     subpassDesc.pColorAttachments = vkColorReferences.data();
-    subpassDesc.pResolveAttachments = vkColorResolveReferences.data();
+    subpassDesc.pResolveAttachments = _descriptor.resolveAttachments ?
+        vkColorResolveReferences.data() : nullptr;
     subpassDesc.pDepthStencilAttachment= hasDepth ? &vkDepthReference : nullptr;
 
     VkSubpassDescriptionDepthStencilResolveKHR depthResolve =
         {VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_DEPTH_STENCIL_RESOLVE_KHR};
-    if (hasDepthResolve) {
+    if (hasDepth && _descriptor.resolveAttachments) {
         depthResolve.pDepthStencilResolveAttachment = &vkDepthResolveReference;
         depthResolve.depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
         depthResolve.stencilResolveMode = VK_RESOLVE_MODE_NONE;

@@ -452,7 +452,14 @@ MatfiltConvertPreviewMaterial(
         return;
     }
 
-    const TfTokenVector nodeNames = netInterface->GetNodeNames();
+    TfTokenVector nodeNames = netInterface->GetNodeNames();
+    if(nodeNames.size() > 1) {
+        std::unordered_set<TfToken, TfHash> nameSet;
+        nameSet.insert(nodeNames.begin(), nodeNames.end());
+        nodeNames.clear();
+        nodeNames.insert(nodeNames.end(), nameSet.begin(), nameSet.end());
+    }
+
     bool foundPreviewSurface = false;
 
     for (TfToken const &nodeName : nodeNames) {

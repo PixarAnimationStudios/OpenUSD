@@ -227,7 +227,7 @@ HdxColorizeSelectionTask::Execute(HdTaskContext* ctx)
         HdFormatUNorm8Vec4, 
         _outputBuffer);
 
-    _compositor->BindTextures({_tokens->colorIn}, {_texture});
+    _compositor->BindTextures({_texture});
 
     if (_UpdateParameterBuffer()) {
         const size_t byteSize = sizeof(_ParameterBuffer);

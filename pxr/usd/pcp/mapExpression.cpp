@@ -364,8 +364,8 @@ PcpMapExpression::_Node::Key::GetHash() const
 {
     return TfHash::Combine(
         op,
-        boost::get_pointer(arg1),
-        boost::get_pointer(arg2),
+        get_pointer(arg1),
+        get_pointer(arg2),
         valueForConstant
     );
 }

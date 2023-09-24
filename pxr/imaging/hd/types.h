@@ -487,6 +487,11 @@ size_t HdGetComponentCount(HdFormat f);
 HD_API
 size_t HdDataSizeOfFormat(HdFormat f);
 
+///
+/// Type representing a depth-stencil value.
+///
+using HdDepthStencilType = std::pair<float, uint32_t>;
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_IMAGING_HD_TYPES_H

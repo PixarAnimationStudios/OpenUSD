@@ -306,6 +306,7 @@ UseRenderSettingsPrim()
     return useRenderSettingsPrim;
 }
 
+// This function also exists in HdPrman_RenderPass
 GfVec2i
 MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
 {
@@ -334,32 +335,6 @@ ComputeFraming(const HydraSetupCameraInfo &cameraInfo)
 
     return CameraUtilFraming(
         displayWindow, dataWindow, cameraInfo.pixelAspectRatio);
-}
-
-CameraUtilConformWindowPolicy
-_RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
-{
-    if (usdToken == UsdRenderTokens->adjustApertureWidth) {
-        return CameraUtilMatchVertically;
-    }
-    if (usdToken == UsdRenderTokens->adjustApertureHeight) {
-        return CameraUtilMatchHorizontally;
-    }
-    if (usdToken == UsdRenderTokens->expandAperture) {
-        return CameraUtilFit;
-    }
-    if (usdToken == UsdRenderTokens->cropAperture) {
-        return CameraUtilCrop;
-    }
-    if (usdToken == UsdRenderTokens->adjustPixelAspectRatio) {
-        return CameraUtilDontConform;
-    }
-
-    TF_WARN(
-        "Invalid aspectRatioConformPolicy value '%s', "
-        "falling back to expandAperture.", usdToken.GetText());
-    
-    return CameraUtilFit;
 }
 
 void
@@ -676,10 +651,10 @@ AddNamespacedSettings(
     }
 }
 
-// Get the Camera information from the Render Spec and the command line, and
-// apply those command line overrides to the product itself. 
+// Apply Command line overrides to the RenderSpec's product since it will 
+// be used to create the Riley RenderView in HdPrman_RenderPass.
 HydraSetupCameraInfo
-GetCameraInfoAndUpdateProduct(
+ApplyCommandLineArgsToProduct(
     SdfPath const &sceneCamPath,
     float const sceneCamAspect,
     UsdRenderSpec::Product *product)
@@ -704,46 +679,49 @@ GetCameraInfoAndUpdateProduct(
     return camInfo;
 }
 
-
-// Get the Camera info from the RenderSettings prim and the command line. 
-HydraSetupCameraInfo
-GetCameraInfo(
+// Apply Command line overrides to the RenderProduct since it will be used to 
+// create the Riley RenderView in HdPrman_RenderPass.
+SdfPath
+ApplyCommandLineArgsToProduct(
     SdfPath const &sceneCamPath,
     float const sceneCamAspect,
+    UsdStageRefPtr const &stage,
     UsdRenderSettings const &settings)
 {
-    // XXX These attributes are populated from the Render Settings Prim, and  
-    // they should eventually come from the Render Product instead.
-    HydraSetupCameraInfo camInfo;
-    if (sceneCamPath.IsEmpty()) {
-        SdfPathVector targets; 
-        settings.GetCameraRel().GetForwardedTargets(&targets);
-        if (!targets.empty()) {
-            camInfo.cameraPath = targets[0];
+    SdfPath cameraPath;
+
+    // Override the values on the first RenderProduct 
+    // Note that at this point there should always be at least one RenderProduct
+    SdfPathVector productPaths;
+    settings.GetProductsRel().GetForwardedTargets(&productPaths);
+    if (!productPaths.empty()) {
+        UsdRenderProduct product(stage->GetPrimAtPath(productPaths[0]));
+
+        // Update the Product's CameraRel and store the cameraPath
+        if (!sceneCamPath.IsEmpty()) {
+            cameraPath = sceneCamPath;
+            product.GetCameraRel().SetTargets({sceneCamPath});
+        } else {
+            SdfPathVector cameraPaths;
+            product.GetCameraRel().GetForwardedTargets(&cameraPaths);
+            if (!cameraPaths.empty()) {
+                cameraPath = cameraPaths[0];
+            }
+        }
+        // Update the Product's Resolution
+        if (sceneCamAspect > 0.0) {
+            GfVec2i resolution;
+            if (product.GetResolutionAttr().IsAuthored()) {
+                product.GetResolutionAttr().Get(&resolution);
+            } else {
+                resolution = s_fallbackResolution;
+            }
+            resolution[1] = (int)(resolution[0]/sceneCamAspect);
+            product.CreateResolutionAttr(VtValue(resolution));
         }
     }
-    settings.GetResolutionAttr().Get(&camInfo.resolution);
-    settings.GetPixelAspectRatioAttr().Get(&camInfo.pixelAspectRatio);
-    settings.GetAspectRatioConformPolicyAttr().Get(&camInfo.aspectRatioConformPolicy);
 
-    // Convert dataWindowNDC from vec4 to range2.
-    GfVec4f dataWindowNDCVec;
-    if (settings.GetDataWindowNDCAttr().Get(&dataWindowNDCVec)) {
-        camInfo.dataWindowNDC = GfRange2f(
-            GfVec2f(dataWindowNDCVec[0], dataWindowNDCVec[1]),
-            GfVec2f(dataWindowNDCVec[2], dataWindowNDCVec[3]));
-    }
-
-    // Apply Command line overrides.
-    if (!sceneCamPath.IsEmpty()) {
-        camInfo.cameraPath = sceneCamPath;
-    }
-    if (sceneCamAspect > 0.0) {
-        camInfo.resolution[1] = (int)(camInfo.resolution[0]/sceneCamAspect);
-        // camInfo.apertureSize[1] = camInfo.apertureSize[0]/sceneCamAspect;
-    }
-
-    return camInfo;
+    return cameraPath;
 }
 
 HdSceneIndexBaseRefPtr
@@ -829,7 +807,8 @@ void
 HydraSetupAndRender(
     HdRenderSettingsMap const &settingsMap,
     SdfPath const &renderSettingsPrimPath,
-    HydraSetupCameraInfo const &cameraInfo,
+    const HydraSetupCameraInfo * const cameraInfo,
+    SdfPath const &cameraPath,
     const std::string &cullStyle,
     UsdStageRefPtr const &stage,
     const int frameNum, 
@@ -901,8 +880,8 @@ HydraSetupAndRender(
         hdUsdFrontend->Populate(stage->GetPseudoRoot());
         hdUsdFrontend->SetTime(frameNum);
         hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-        if (!cameraInfo.cameraPath.IsEmpty()) {
-            hdUsdFrontend->SetCameraForSampling(cameraInfo.cameraPath);
+        if (!cameraPath.IsEmpty()) {
+            hdUsdFrontend->SetCameraForSampling(cameraPath);
         }
         if (!cullStyle.empty()) {
             if (cullStyle == "none") {
@@ -928,8 +907,6 @@ HydraSetupAndRender(
     //   RenderSettings prim.
     // - "rprim collection" should be replaced with the Usd Collection opinion
     //   on the driving RenderPass prim.
-    // - Any overrides to the camera and framing should edit the active
-    //   RenderSettings prim instead of using renderPassState.
 
     const TfTokenVector renderTags{HdRenderTagTokens->geometry};
     // The collection of scene contents to render
@@ -947,19 +924,25 @@ HydraSetupAndRender(
     HdRenderPassStateSharedPtr const hdRenderPassState =
         renderDelegate->CreateRenderPassState();
 
-    const HdCamera * const camera = 
-        dynamic_cast<const HdCamera*>(
-            hdRenderIndex->GetSprim(HdTokens->camera, cameraInfo.cameraPath));
+    // The camera/framing information only needs to be set for the RenderSpec 
+    // pathway, when using RenderSettings, HdPrman_RenderPass will get the 
+    // camera information directly from the RenderProducts.
+    if (cameraInfo) {
+        const HdCamera * const camera = 
+            dynamic_cast<const HdCamera*>(
+                hdRenderIndex->GetSprim(
+                    HdTokens->camera, cameraInfo->cameraPath));
 
-    hdRenderPassState->SetCamera(camera);
-    hdRenderPassState->SetFraming(ComputeFraming(cameraInfo));
-    hdRenderPassState->SetOverrideWindowPolicy(
-        { true, _RenderSettingsTokenToConformWindowPolicy(
-                                cameraInfo.aspectRatioConformPolicy) });
+        hdRenderPassState->SetCamera(camera);
+        hdRenderPassState->SetFraming(ComputeFraming(*cameraInfo));
+        hdRenderPassState->SetOverrideWindowPolicy(
+            { true, HdUtils::ToConformWindowPolicy(
+                                    cameraInfo->aspectRatioConformPolicy) });
+    }
 
     auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;
     TF_VERIFY(sgsi);
-    fprintf(stdout, "Setting the active render settings prim path to %s.\n",
+    fprintf(stdout, "Setting the active render settings prim path to <%s>.\n",
             renderSettingsPrimPath.GetText());
     sgsi->SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
 
@@ -1143,8 +1126,8 @@ int main(int argc, char *argv[])
         printf("Rendering using the render settings prim <%s>...\n",
                settings.GetPath().GetText());
 
-        HydraSetupCameraInfo camInfo =
-            GetCameraInfo(sceneCamPath, sceneCamAspect, settings);
+        SdfPath cameraPath = ApplyCommandLineArgsToProduct(
+            sceneCamPath, sceneCamAspect, stage, settings);
 
         // Create HdRenderSettingsMap for the RenderDelegate
         HdRenderSettingsMap settingsMap;
@@ -1153,7 +1136,8 @@ int main(int argc, char *argv[])
 
         HydraSetupAndRender(
             settingsMap, settings.GetPath(),
-            camInfo, cullStyle, stage, frameNum, &timer_hydra);
+            nullptr /* camInfo */, cameraPath, cullStyle, stage, 
+            frameNum, &timer_hydra);
 
         printf("Rendered <%s>\n", settings.GetPath().GetText());
     }
@@ -1167,7 +1151,7 @@ int main(int argc, char *argv[])
         for (auto product: renderSpec.products) {
             printf("Rendering product %s...\n", product.name.GetText());
 
-            HydraSetupCameraInfo camInfo = GetCameraInfoAndUpdateProduct(
+            HydraSetupCameraInfo camInfo = ApplyCommandLineArgsToProduct(
                 sceneCamPath, sceneCamAspect, &product);
 
             // Create HdRenderSettingsMap for the RenderDelegate
@@ -1186,7 +1170,8 @@ int main(int argc, char *argv[])
 
             HydraSetupAndRender(
                 settingsMap, /* renderSettingsPrimPath */ SdfPath::EmptyPath(),
-                camInfo, cullStyle, stage, frameNum, &timer_hydra);
+                &camInfo, camInfo.cameraPath, cullStyle, stage, 
+                frameNum, &timer_hydra);
 
             printf("Rendered %s\n", product.name.GetText());
         }
