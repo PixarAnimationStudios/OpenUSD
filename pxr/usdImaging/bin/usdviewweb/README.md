@@ -8,16 +8,16 @@ It is a simple application for testing USD Hydra Storm raster renderer with HGI 
 
 Download and Install emscripten from [HERE](https://emscripten.org/docs/getting_started/downloads.html). (FYI [Official web site](https://emscripten.org))
 
-Set up the environment (i.e. source the required emsdk_env script). Current experiment and testing are based on emsdk v3.1.33.
+Set up the environment (i.e. source the required emsdk_env script). Current experiment and testing are based on emsdk v3.1.46.
 
 ### MacOS:
 
 ```
 # Download and install the latest SDK tools.
-./emsdk install 3.1.33
+./emsdk install 3.1.46
 
 # Make the specific SDK "active" for the current user. (writes .emscripten file)
-./emsdk activate 3.1.33
+./emsdk activate 3.1.46
 
 # Activate PATH and other environment variables in the current terminal
 source ./emsdk_env.sh
@@ -27,10 +27,10 @@ source ./emsdk_env.sh
 
 ```
 # Download and install the latest SDK tools.
-emsdk install 3.1.33
+emsdk install 3.1.46
 
 # Make the specific SDK for the current user. (writes .emscripten file)
-emsdk activate 3.1.33
+emsdk activate 3.1.46
 ```
 
 ## Build USD to WebAssembly

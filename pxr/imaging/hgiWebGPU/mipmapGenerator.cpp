@@ -44,12 +44,6 @@ WebGPUMipmapGenerator::WebGPUMipmapGenerator(wgpu::Device const &device)
 
 WebGPUMipmapGenerator::~WebGPUMipmapGenerator()
 {
-    if( _mipmapShaderModule ) {
-        _mipmapShaderModule.Release();
-    }
-    _sampler.Release();
-    // TODO: Should we release all pipelines?
-
 }
 
 wgpu::RenderPipeline WebGPUMipmapGenerator::_getMipmapPipeline(wgpu::TextureFormat const &format) {
@@ -58,7 +52,7 @@ wgpu::RenderPipeline WebGPUMipmapGenerator::_getMipmapPipeline(wgpu::TextureForm
         // Shader modules is shared between all pipelines, so only create once.
         if (!_mipmapShaderModule) {
             wgpu::ShaderModuleWGSLDescriptor wgslDesc = {};
-            wgslDesc.source = R"(
+            wgslDesc.code = R"(
             var<private> pos : array<vec2<f32>, 3> = array<vec2<f32>, 3>(
                           vec2<f32>(-1.0, -1.0), vec2<f32>(-1.0, 3.0), vec2<f32>(3.0, -1.0));
             struct VertexOutput {
@@ -225,7 +219,6 @@ wgpu::Texture WebGPUMipmapGenerator::generateMipmap(const wgpu::Texture& texture
 
             srcView = dstView;
         }
-        srcView.Release();
     }
 
     // If we didn't render to the source texture, finish by copying the mip results from the temporary mipmap texture

@@ -123,6 +123,7 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
     , _shaderModule(nullptr)
 {
     HgiWebGPUShaderGenerator shaderGenerator(hgi, desc);
+
     shaderGenerator.Execute();
     const char *shaderCode = shaderGenerator.GetGeneratedShaderCode();
 
@@ -139,7 +140,7 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
     std::string wgslCode;
 
     if (TfGetEnvSetting(HGIWEBGPU_ENABLE_WGSL)) {
-        wgslDesc.source = desc.shaderCode;
+        wgslDesc.code = desc.shaderCode;
     } else {
         const char* debugLbl = _descriptor.debugName.empty() ?
             "unknown" : _descriptor.debugName.c_str();
@@ -155,21 +156,23 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
 
         if (result) {
             //// SPIR-V
-            tint::Program program = tint::reader::spirv::Parse(spirvData);
+            tint::spirv::reader::Options readerOptions{};
+            readerOptions.allow_non_uniform_derivatives = true;
+            tint::Program program = tint::spirv::reader::Read(spirvData, readerOptions);
             if (!program.IsValid()) {
                 TF_CODING_ERROR("Tint SPIR-V reader failure:\nParser: " + program.Diagnostics().str() + "\n");
                 return;
             };
 
-            tint::writer::wgsl::Options options{};
-            auto tintResult = tint::writer::wgsl::Generate(&program, options);
-            if (!tintResult.success) {
-                _errors = tintResult.error;
+            tint::wgsl::writer::Options options{};
+            auto tintResult = tint::wgsl::writer::Generate(&program, options);
+            if (tintResult) {
+                wgslCode = tintResult->wgsl;
+            } else {
+                _errors = tintResult.Failure();
             }
 
-            wgslCode = std::move(tintResult.wgsl);
-            wgslDesc.source = wgslCode.c_str();
-
+            wgslDesc.code = wgslCode.c_str();
         }
     }
 

@@ -27,8 +27,6 @@
 
 #include <shaderc/shaderc.hpp>
 
-#include <unordered_map>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 

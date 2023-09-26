@@ -80,7 +80,7 @@ public:
     static wgpu::FilterMode GetMinMagFilter(HgiSamplerFilter mf);
 
     HGIWEBGPU_API
-    static wgpu::FilterMode GetMipFilter(HgiMipFilter mf);
+    static wgpu::MipmapFilterMode GetMipFilter(HgiMipFilter mf);
 
     HGIWEBGPU_API
     static wgpu::PrimitiveTopology GetPrimitiveType(HgiPrimitiveType pt);

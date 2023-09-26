@@ -11,10 +11,34 @@ endif()
 if(EMSCRIPTEN)
     SET(HGI_WEBGPU_LIBRARIES
         ${CMAKE_INSTALL_PREFIX}/lib/libshaderc_combined.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libtint.a
-        ${CMAKE_INSTALL_PREFIX}/lib/libtint_diagnostic_utils.a
-            )
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_api.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_api_common.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_ice.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_text.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer_ast_printer.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_generator.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_rtti.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_constant.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic_data.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_type.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_id.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_strconv.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_symbol.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast_transform.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_resolver.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_sem.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader_ast_parser.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_debug.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_program.a
+        ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_diagnostic.a
+        )
 else()
+    add_compile_definitions(_LIBCPP_ENABLE_CXX17_REMOVED_UNARY_BINARY_FUNCTION)
     message(STATUS "DAWN WebGPU support is ON")
     set(PXR_ENABLE_PRECOMPILED_HEADERS OFF)
     set(PXR_ENABLE_PRECOMPILED_HEADERS_PREV ${PXR_ENABLE_PRECOMPILED_HEADERS})
@@ -43,12 +67,58 @@ else()
             ${CMAKE_INSTALL_PREFIX}/lib/absl_raw_logging_internal${STATIC_LIB_SUFFIX}
             ${CMAKE_INSTALL_PREFIX}/lib/absl_throw_delegate${STATIC_LIB_SUFFIX}
             ${CMAKE_INSTALL_PREFIX}/lib/absl_base${STATIC_LIB_SUFFIX}
+
+            # tint
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_api_options${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_api_common${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_core${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_core_constant${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_core_intrinsic${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_core_intrinsic_data${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_core_type${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_hlsl_writer${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_hlsl_writer_ast_printer${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_hlsl_writer_ast_raise${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_hlsl_writer_common${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_spirv_reader${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_spirv_reader_ast_lower${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_spirv_reader_ast_parser${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_spirv_reader_common${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_ast${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_ast_transform${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_helpers${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_inspector${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_program${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_reader${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_reader_parser${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_resolver${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_sem${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_writer${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_writer_ast_printer${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_lang_wgsl_writer_syntax_tree_printer${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_containers${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_debug${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_diagnostic${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_generator${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_ice${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_id${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_macros${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_math${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_memory${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_reflection${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_result${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_rtti${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_strconv${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_symbol${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_text${STATIC_LIB_SUFFIX}
+            ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_utils_traits${STATIC_LIB_SUFFIX}
         )
     elseif(APPLE)
         set(STATIC_LIB_SUFFIX ${CMAKE_STATIC_LIBRARY_SUFFIX}) # .a (static library)
         set(SHARED_LIB_SUFFIX ${CMAKE_SHARED_LIBRARY_SUFFIX}) # .dylib (dynamic library)
     endif()
 
+    # shared libs for multiple platforms
     list(APPEND HGI_WEBGPU_LIBRARIES
         # dawn
         ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}dawn_native${SHARED_LIB_SUFFIX}
@@ -57,8 +127,9 @@ else()
         ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}dawn_wire${SHARED_LIB_SUFFIX}
         ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}webgpu_dawn${SHARED_LIB_SUFFIX}
         ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}dawncpp${STATIC_LIB_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint${STATIC_LIB_SUFFIX}
-        ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_diagnostic_utils${STATIC_LIB_SUFFIX}
+
+        # tint
+        ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}tint_api${STATIC_LIB_SUFFIX}
 
         # shaderc
         ${CMAKE_INSTALL_PREFIX}/lib/${LIB_PREFIX}shaderc_shared${SHARED_LIB_SUFFIX}

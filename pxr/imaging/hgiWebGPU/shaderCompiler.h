@@ -36,14 +36,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiWebGPUDevice;
-
-struct HgiWebGPUDescriptorSetInfo
-{
-  uint32_t setNumber;
-  std::vector<WGPUBindGroupLayoutDescriptor> bindings;
-};
-
 /// Compiles ascii shader code (glsl) into spirv binary code (spirvOut).
 /// Returns true if successful. Errors can optionally be captured.
 /// numShaderCodes determines how many strings are provided via shaderCodes.

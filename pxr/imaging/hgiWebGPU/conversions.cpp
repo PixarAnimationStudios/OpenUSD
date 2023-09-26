@@ -426,12 +426,12 @@ struct {
 
 struct {
     HgiMipFilter hgiMipFilter;
-    wgpu::FilterMode webGPUMF;
+    wgpu::MipmapFilterMode webGPUMF;
 } static const _mipFilterTable[HgiMipFilterCount] =
 {
-    {HgiMipFilterNotMipmapped, wgpu::FilterMode::Linear}, // TODO: no correct correspondence
-    {HgiMipFilterNearest,      wgpu::FilterMode::Nearest},
-    {HgiMipFilterLinear,       wgpu::FilterMode::Linear}
+    {HgiMipFilterNotMipmapped, wgpu::MipmapFilterMode::Linear}, // TODO: no correct correspondence
+    {HgiMipFilterNearest,      wgpu::MipmapFilterMode::Nearest},
+    {HgiMipFilterLinear,       wgpu::MipmapFilterMode::Linear}
 };
 
 struct {
@@ -580,7 +580,7 @@ HgiWebGPUConversions::GetMinMagFilter(HgiSamplerFilter mf)
     return _samplerFilterTable[mf].webGPUSF;
 }
 
-wgpu::FilterMode
+wgpu::MipmapFilterMode
 HgiWebGPUConversions::GetMipFilter(HgiMipFilter mf)
 {
     return _mipFilterTable[mf].webGPUMF;

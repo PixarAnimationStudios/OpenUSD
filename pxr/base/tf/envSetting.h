@@ -121,6 +121,8 @@
 #include <boost/variant/get.hpp>
 #include <atomic>
 #include <string>
+#include <variant>
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -171,8 +173,10 @@ TfGetEnvSetting(TfEnvSetting<T>& setting) {
 bool Tf_ChooseEnvSettingType(bool);
 int Tf_ChooseEnvSettingType(int);
 std::string Tf_ChooseEnvSettingType(char const *);
-boost::variant<int, bool, std::string> const *
-    Tf_GetEnvSettingByName(std::string const& name);
+
+TF_API
+std::variant<int, bool, std::string> const*
+Tf_GetEnvSettingByName(std::string const& name);
 
 class Tf_EnvSettingRegistry;
 

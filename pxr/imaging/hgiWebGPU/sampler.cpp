@@ -68,11 +68,6 @@ HgiWebGPUSampler::HgiWebGPUSampler(
 
 HgiWebGPUSampler::~HgiWebGPUSampler()
 {
-    if(_sampler)
-    {
-        _sampler.Release();
-        _sampler = nullptr;
-    }
 }
 
 uint64_t

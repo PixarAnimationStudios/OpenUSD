@@ -25,11 +25,18 @@ a project that you trust not to contain malicious DEPS files.
 Modified version of https://source.chromium.org/chromium/chromium/src/+/main:third_party/dawn/tools/fetch_dawn_dependencies.py
 """
 
-import os
 import subprocess
 from pathlib import Path
-import os
 
+# This two functions are defined so that when executing the DEPS file we don't get an error with these
+# functions, usually handled by depot_tools
+def Str(str):
+    return str
+
+def Var(str):
+    return str
+
+  
 def fetch_dependecies(required_submodules):
     root_dir = Path("").resolve()
 
@@ -51,6 +58,7 @@ def process_dir(dir_path, required_submodules):
     DEPS = open(deps_path).read()
 
     ldict = {}
+
     exec(DEPS, globals(), ldict)
     deps = ldict.get('deps')
     variables = ldict.get('vars', {})
@@ -73,16 +81,8 @@ def process_dir(dir_path, required_submodules):
                                         capture_output=True)
         
         log(f"Fetching dependency '{submodule}'")
-        
-        if not submodule_path.is_dir():
-            log(f"Shallow cloning '{git_url}' at '{git_tag}' into '{submodule_path}'"
-                )
-            shallow_clone(git, git_url, git_tag, submodule_path)
 
-            log(f"Checking out tag '{git_tag}'")
-            git('checkout', git_tag)
-
-        elif (submodule_path / ".git").is_dir():
+        if (submodule_path / ".git").is_dir():
             # The module was already cloned, but we may need to update it
             proc = git('rev-parse', 'HEAD')
             need_update = proc.stdout.decode().strip() != git_tag
@@ -100,9 +100,14 @@ def process_dir(dir_path, required_submodules):
                 git('checkout', git_tag)
 
         else:
-            # The caller may have "flattened" the source tree to get rid of
-            # some heavy submodules.
-            log(f"(Overridden by a local copy of the submodule)")
+            if not submodule_path.is_dir():
+                submodule_path.mkdir()
+
+            log(f"Shallow cloning '{git_url}' at '{git_tag}' into '{submodule_path}'")
+            shallow_clone(git, git_url, git_tag)
+
+            log(f"Checking out tag '{git_tag}'")
+            git('checkout', git_tag)
 
         # Recursive call
         required_subsubmodules = [
@@ -112,15 +117,13 @@ def process_dir(dir_path, required_submodules):
         process_dir(submodule_path, required_subsubmodules)
 
 
-def shallow_clone(git, git_url, git_tag, submodule_path):
+def shallow_clone(git, git_url, git_tag):
     """
     Fetching only 1 commit is not exposed in the git clone API, so we decompose
     it manually in git init, git fetch, git reset.
     """
-    submodule_path.mkdir()
     git('init')
-    git('remote', 'add', 'origin', git_url)
-    git('fetch', 'origin', git_tag, '--depth', '1')
+    git('fetch', git_url, git_tag, '--depth', '1')
 
 
 def log(msg):

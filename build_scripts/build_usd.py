@@ -364,7 +364,7 @@ def FormatMultiProcs(numJobs, generator):
 
     return "{tag}{procs}".format(tag=tag, procs=numJobs)
 
-def RunCMake(context, force, extraArgs = None):
+def RunCMake(context, force, extraArgs = None, target="install"):
     """Invoke CMake to configure, build, and install a library whose 
     source code is located in the current working directory."""
     # Create a directory for out-of-source builds in the build directory
@@ -462,8 +462,9 @@ def RunCMake(context, force, extraArgs = None):
                     toolset=(toolset or ""),
                     extraArgs=(" ".join(extraArgs) if extraArgs else "")))
         Run(('{} '.format('emmake.bat' if Windows() else 'emmake') if context.emscripten else '') +
-            "cmake --build . --config {config} --target install -- {multiproc}"
+            "cmake --build . --config {config} --target {target} -- {multiproc}"
             .format(config=config,
+                    target=target,
                     multiproc=FormatMultiProcs(context.numJobs, generator)))
         return buildDir
 
@@ -739,7 +740,9 @@ def InstallBoost_Helper(context, force, buildArgs):
     #   compatibility issues on Big Sur and Monterey.
     pyInfo = GetPythonInfo(context)
     pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
+    if context.emscripten:
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.82.0/source/boost_1_82_0.zip"
+    elif context.buildPython and pyVer >= (3, 10):
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     elif IsVisualStudio2022OrGreater():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
@@ -1566,7 +1569,17 @@ THREE = Dependency("ThreeJs", InstallThreeJs, "src/three.js")
 # Tint
 
 TINT_REPO = "https://dawn.googlesource.com/tint"
-TINT_COMMIT = "55af0f2207ab85c4344eb11bfa10ec9a6485fcd4"
+TINT_COMMIT = "a24353fab366855327dd40e66a19c0970f84ec34"
+TINT_CMAKE_OPTIONS = [
+    '-DTINT_BUILD_SPV_READER=ON',
+    '-DTINT_BUILD_SPV_WRITER=OFF',
+    '-DTINT_BUILD_WGSL_WRITER=ON',
+    '-DTINT_BUILD_DOCS=OFF',
+    '-DTINT_BUILD_TESTS=OFF',
+    '-DTINT_BUILD_CMD_TOOLS=OFF',
+    '-DTINT_BUILD_BENCHMARKS=OFF',
+    '-DTINT_BUILD_REMOTE_COMPILE=OFF'
+]
 
 def InstallTint(context, force, buildArgs):
     with CurrentWorkingDirectory(context.srcDir):
@@ -1593,23 +1606,24 @@ def InstallTint(context, force, buildArgs):
             google_depot_tools.fetch_dependecies(required_submodules)
 
             cmakeOptions = [
-                '-DTINT_BUILD_SPV_READER=ON',
-                '-DTINT_BUILD_WGSL_READER=OFF',
-                '-DTINT_BUILD_HLSL_WRITER=OFF',
-                '-DTINT_BUILD_MSL_WRITER=OFF',
-                '-DTINT_BUILD_SPV_WRITER=OFF',
-                '-DTINT_BUILD_WGSL_WRITER=ON',
-                '-DTINT_BUILD_WGSL_READER=OFF',
-                '-DTINT_BUILD_DOCS=OFF',
-                '-DTINT_BUILD_SAMPLES=OFF',
-                '-DTINT_BUILD_TESTS=OFF',
                 '-DCMAKE_CXX_FLAGS="-Wno-unsafe-buffer-usage -Wno-disabled-macro-expansion -Wno-#warnings -Wno-error '
                     + EMSCRIPTEN_CMAKE_CXX_FLAGS + '"',
                 '-DCMAKE_EXE_LINKER_FLAGS="' + EMSCRIPTEN_CMAKE_EXE_LINKER_FLAGS + '"',
                 '-DBUILD_SHARED_LIBS=OFF'
             ]
             cmakeOptions += buildArgs
-            buildDir = RunCMake(context, force, cmakeOptions)
+            cmakeOptions += TINT_CMAKE_OPTIONS
+            # In the case of the desktop build, we need to let tint specify the value of the readers and writers for
+            # the current platform, so that it also matches the corresponding Dawn backend (e.g. Metal).
+            # In contrast, the emscripten build just needs to process the glsl to wgsl and the browser implementation
+            # of WebGPU is the one responsible to interpret the wgsl shader code.
+            cmakeOptions += [
+                '-DTINT_BUILD_WGSL_READER=OFF',
+                '-DTINT_BUILD_GLSL_WRITER=OFF',
+                '-DTINT_BUILD_HLSL_WRITER=OFF',
+                '-DTINT_BUILD_MSL_WRITER=OFF',
+            ]
+            buildDir = RunCMake(context, force, cmakeOptions, target="tint_api")
 
         # installation scripts are missing in tint. Doing it manually until addressed
         with CurrentWorkingDirectory(srcDir):
@@ -1617,8 +1631,7 @@ def InstallTint(context, force, buildArgs):
             CopyDirectory(context, "src/tint", "include/src/tint")
 
         with CurrentWorkingDirectory(buildDir):
-            CopyFiles(context, "src/tint/libtint.a", "lib")
-            CopyFiles(context, "src/tint/libtint_diagnostic_utils.a", "lib")
+            CopyFiles(context, "src/tint/libtint*.a", "lib")
 
 
 TINT = Dependency("Tint", InstallTint, "include/tint/tint.h")
@@ -1626,7 +1639,7 @@ TINT = Dependency("Tint", InstallTint, "include/tint/tint.h")
 ############################################################
 # DAWN and 3rd parties
 DAWN_REPO = "https://dawn.googlesource.com/dawn"
-DAWN_CHROMIUM_VERSION = "5677"
+DAWN_CHROMIUM_VERSION = "6006"
 
 def InstallDawn(context, force, buildArgs):
     with CurrentWorkingDirectory(context.srcDir):
@@ -1650,15 +1663,25 @@ def InstallDawn(context, force, buildArgs):
                 'third_party/jinja2',
                 'third_party/markupsafe',
             ]
+            if Windows():
+                required_submodules_for_dx = [
+                    'third_party/dxheaders'
+                ]
+                required_submodules += required_submodules_for_dx
+
+                # Dawn native cmake needs revise for DX12
+                PatchFile("src/dawn/native/CMakeLists.txt",
+                    [('    target_link_libraries(dawn_native PRIVATE dxguid.lib)\n', 
+                     '    target_include_directories(dawn_native PRIVATE ${DAWN_THIRD_PARTY_DIR}/dxheaders/include/directx)\n' + 
+                     '    target_link_libraries(dawn_native PRIVATE dxguid.lib)\n')])
+
             google_depot_tools.fetch_dependecies(required_submodules)
             cmakeOptions = [
                 '-DBUILD_SHARED_LIBS={}'.format('OFF' if Windows() else 'ON'),
-                '-DTINT_BUILD_SPV_READER=ON',
-                '-DTINT_BUILD_WGSL_WRITER=ON',
-                '-DTINT_BUILD_SAMPLES=OFF',
-                '-DTINT_BUILD_TESTS=OFF'
+                '-DDAWN_BUILD_SAMPLES=OFF'
             ]
-            cmakeOptions += buildArgs;
+            cmakeOptions += TINT_CMAKE_OPTIONS
+            cmakeOptions += buildArgs
             buildDir = RunCMake(context, force, cmakeOptions)
         
     # installation scripts are missing in dawn. Doing it manually until addressed
@@ -1699,23 +1722,24 @@ DAWN = Dependency("Dawn", InstallDawn, "include/dawn/webgpu_cpp.h")
 ############################################################
 # shaderc
 
-SHADERC_URL = "https://github.com/google/shaderc/archive/refs/tags/v2023.3.zip"
+SHADERC_URL = "https://github.com/google/shaderc/archive/refs/tags/v2023.6.zip"
 
 def InstallShaderc(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(SHADERC_URL, context, force)):
         pythonInfo = GetPythonInfo(context)
 
         Run("{} ./utils/git-sync-deps".format(pythonInfo[0].replace('\\', '/')))
+        
         cmakeOptions = [
             '-DBUILD_SHARED_LIBS=OFF',
             '-DSHADERC_SKIP_TESTS=ON',
             '-DSHADERC_SKIP_EXAMPLES=ON',
             '-DSHADERC_SKIP_COPYRIGHT_CHECK=ON',
-            '-DENABLE_GLSLANG_BINARIES=OFF'
+            '-DENABLE_GLSLANG_BINARIES=OFF',
+            '-DSHADERC_ENABLE_WERROR_COMPILE=OFF',
         ]
 
         cmakeOptions += buildArgs
-
         # We link with tint same common dependencies and verify there are no issues with different version
         if context.emscripten:
             cmakeOptions += [
@@ -1726,8 +1750,28 @@ def InstallShaderc(context, force, buildArgs):
                 '-DSHADERC_SPIRV_TOOLS_DIR=' + os.path.join(
                     context.srcDir, 'tint', 'third_party', 'vulkan-deps', 'spirv-tools', 'src')
             ]
+        
         RunCMake(context, force, cmakeOptions)
 
+        if Windows():
+            # Remove uncessary folders and libs that conflict with SPIRV libs built from Dawn SDK
+            # TODO: replace glslang in Dawn with shaderc solution
+            with CurrentWorkingDirectory(context.instDir): # root folder
+                dirList = glob.glob('SPIRV*') # SPIRV folders generated by shaderc
+                for dirPath in dirList:
+                    shutil.rmtree(dirPath)
+
+                fileList = glob.glob('lib/SPIRV*.*') # SPIRV libs built by shaderc
+                for filePath in fileList:
+                    os.remove(filePath)
+
+                # Correct SPIRV tools are generated by Dawn SDK, we need to forcely kick off Dawn build
+                # so we could check include/Dawn file to make sure Dawn could be built after shaderc. In
+                # that case, the sprive-tools libs could be copied into speicfic lib/ folder correctly.
+                dawnIncludeFile = 'include/dawn/webgpu_cpp.h'
+                if os.path.exists(dawnIncludeFile):
+                    Print("Let's build Dawn again after shaderc...")
+                    os.remove(dawnIncludeFile)
 
 SHADERC = Dependency("Shaderc", InstallShaderc, "include/shaderc/shaderc.hpp")
 
@@ -2507,7 +2551,11 @@ if not context.emscripten:
     requiredDependencies += [ZLIB]
 
 if context.dawn:
-    requiredDependencies += [DAWN, SHADERC]
+    # Please keep the dependencies order of shaderc and dawn, 
+    # otherwise libs generated by Dawn will be overwroten 
+    # by shaderc, that leds to build break for hgiwebgpu.
+    # TODO: replace glslang in Dawn with shaderc solution
+    requiredDependencies += [SHADERC, DAWN]
 
 if context.emscripten and context.buildTests:
     requiredDependencies += [THREE]

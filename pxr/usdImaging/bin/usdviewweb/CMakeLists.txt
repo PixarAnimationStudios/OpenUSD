@@ -49,8 +49,31 @@ if (EMSCRIPTEN)
     target_link_libraries(${PXR_PACKAGE}
             ${RESOURCE_PARAMETERS}
             ${CMAKE_INSTALL_PREFIX}/lib/libshaderc_combined.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_diagnostic_utils.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_api.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_api_common.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_ice.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_text.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_program.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_diagnostic.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer_ast_printer.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_generator.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_rtti.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_constant.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic_data.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_type.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_id.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_strconv.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_symbol.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_sem.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast_transform.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_resolver.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader_ast_parser.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_debug.a
             ${TBB_tbb_LIBRARY}
             ${USD_EMSCRIPTEN_LINKER_FLAGS_OPEN}
             cameraUtil

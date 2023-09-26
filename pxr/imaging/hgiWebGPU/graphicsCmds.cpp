@@ -221,7 +221,7 @@ HgiWebGPUGraphicsCmds::BindVertexBuffers(
         }
     }
     for( uint32_t i=0; i<buffers.size(); i++ ) {
-        _renderPassEncoder.SetVertexBuffer(i, buffers[i], bufferOffsets[i], WGPU_WHOLE_SIZE);
+        _renderPassEncoder.SetVertexBuffer(i, buffers[i], bufferOffsets[i]);
     }
 }
 

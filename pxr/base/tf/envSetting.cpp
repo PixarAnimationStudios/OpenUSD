@@ -226,7 +226,6 @@ template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<bool> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<int> *);
 template void TF_API Tf_InitializeEnvSetting(TfEnvSetting<string> *);
 
-TF_API
 std::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const& name)
 {
