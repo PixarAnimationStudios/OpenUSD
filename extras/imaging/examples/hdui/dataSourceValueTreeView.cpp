@@ -57,7 +57,8 @@ public:
             if (index.column() == 0) {
                 std::ostringstream buffer;
                 buffer << _value;
-                return QVariant(QLatin1String(buffer.str().data()));
+                std::string str = buffer.str();
+                return QVariant(QString::fromUtf8(str.data(), str.size()));
             }
         }
 
@@ -142,7 +143,8 @@ public:
             if (index.row() < static_cast<int>(_array.size())) {
                 std::ostringstream buffer;
                 buffer << _array.cdata()[index.row()];
-                return QVariant(QLatin1String(buffer.str().data()));
+                std::string str = buffer.str();
+                return QVariant(QString::fromUtf8(str.data(), str.size()));
             }
         }
 
@@ -155,7 +157,8 @@ public:
             if (section == 1) {
                 std::ostringstream buffer;
                 buffer << _array.size() << " values";
-                return QVariant(QLatin1String(buffer.str().c_str()));
+                std::string str = buffer.str();
+                return QVariant(QString::fromUtf8(str.data(), str.size()));
             }
         }
 
