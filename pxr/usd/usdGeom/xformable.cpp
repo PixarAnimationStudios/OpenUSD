@@ -684,7 +684,7 @@ UsdGeomXformable::XformQuery::GetTimeSamplesInInterval(
         // This should never throw and exception because XformQuery's constructor
         // initializes an attribute query for all its xformOps.
         const UsdAttributeQuery &attrQuery = 
-            boost::get<UsdAttributeQuery>(xformOp._attr);
+            std::get<UsdAttributeQuery>(xformOp._attr);
         xformOpAttrQueries.push_back(attrQuery);
     }
     
