@@ -26,6 +26,7 @@
 #include "pxr/imaging/hgiMetal/resourceBindings.h"
 #include "pxr/imaging/hgi/tokens.h"
 
+#include <sstream>
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
