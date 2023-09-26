@@ -38,7 +38,6 @@
 
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
 
 #include <cstddef>
 #include <cstring>
@@ -142,9 +141,9 @@ VT_TYPE_IS_CHEAP_TO_COPY(TfToken);
 
 // Helper macros for extracting bits from a type tuple.
 #define VT_TYPE(elem) \
-BOOST_PP_TUPLE_ELEM(2, 0, elem)
+TF_PP_TUPLE_ELEM(0, elem)
 #define VT_TYPE_NAME(elem) \
-BOOST_PP_TUPLE_ELEM(2, 1, elem)   
+TF_PP_TUPLE_ELEM(1, elem)
 
 
 // Composite groups of types.

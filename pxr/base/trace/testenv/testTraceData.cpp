@@ -79,8 +79,8 @@ TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
         _TRACE_ARGS_TO_FUNC_PARAMS(TF_PP_CAT(TraceKeyData_, instance), \
             __VA_ARGS__));
 
-#define _TRACE_KEY_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem)
-#define _TRACE_VALUE_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 1, elem)
+#define _TRACE_KEY_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(0, elem)
+#define _TRACE_VALUE_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(1, elem)
 
 #define _TRACE_ARGS_TO_KEY_SEQ(...) \
     BOOST_PP_SEQ_TRANSFORM(\

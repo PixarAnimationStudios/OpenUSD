@@ -77,7 +77,7 @@ TF_REGISTRY_FUNCTION(TfType)
 #define _SDF_UNIT_MAX_UNITS_IMPL(seq)                    \
     BOOST_PP_SEQ_SIZE(seq),
 #define _SDF_UNIT_MAX_UNITS_OP(elem)                     \
-    _SDF_UNIT_MAX_UNITS_IMPL(BOOST_PP_TUPLE_ELEM(1, elem))
+    _SDF_UNIT_MAX_UNITS_IMPL(TF_PP_TUPLE_ELEM(1, elem))
 
 constexpr size_t _Sdf_UnitMaxUnits =
     std::max(
