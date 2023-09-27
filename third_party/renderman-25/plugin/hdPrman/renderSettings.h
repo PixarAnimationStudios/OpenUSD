@@ -38,6 +38,8 @@ public:
 
     ~HdPrman_RenderSettings() override;
 
+    static bool DriveRenderPass();
+
     const RtParamList& GetOptions() const {
         return _settingsOptions;
     }

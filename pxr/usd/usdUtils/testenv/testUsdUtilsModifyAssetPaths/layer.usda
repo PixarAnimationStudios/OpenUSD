@@ -68,3 +68,9 @@ def Xform "Variants" (
         }
     }
 }
+
+def "PrependPayload" (
+    prepend payload = @./payload.usda@
+)
+{
+}

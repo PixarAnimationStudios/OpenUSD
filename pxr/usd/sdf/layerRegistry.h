@@ -71,15 +71,14 @@ public:
     SdfLayerHandle Find(const std::string &layerPath,
                         const std::string &resolvedPath=std::string()) const;
 
-    /// Returns a layer from the registry, consulting the by_identifier index
-    /// with the \p layerPath as provided.
-    SdfLayerHandle FindByIdentifier(const std::string& layerPath) const;
-
     /// Returns all valid layers held in the registry as a set.
     SdfLayerHandleSet GetLayers() const;
 
 private:
-    
+    // Returns a layer from the registry, consulting the by_identifier index
+    // with the \p layerPath as provided.
+    SdfLayerHandle _FindByIdentifier(const std::string& layerPath) const;
+
     // Returns a layer from the registry, consulting the by_repository_path
     // index with the \p layerPath as provided.
     SdfLayerHandle _FindByRepositoryPath(const std::string& layerPath) const;

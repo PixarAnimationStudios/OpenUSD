@@ -69,6 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ri)
     ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
+    (renderCameraPath)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
@@ -572,6 +573,31 @@ HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
     return {_tokens->ri, _tokens->outputsRi};
 }
 #endif
+
+void
+HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key, 
+                                        VtValue const &value)
+{
+    HdRenderDelegate::SetRenderSetting(key, value);
+
+    if(key == _tokens->renderCameraPath)
+    {
+        // Need to know the name of the render camera as soon as possible
+        // so that as cameras are processed (directly after render settings),
+        // the shutter of the active camera can be passed to riley,
+        // prior to handling any geometry.
+        SdfPath camPath = value.UncheckedGet<SdfPath>();
+        _renderParam->GetCameraContext().SetCameraPath(camPath);
+        _renderParam->GetCameraContext().MarkCameraInvalid(camPath);
+        HdRenderIndex *renderIndex = GetRenderIndex();
+        if(renderIndex) {
+            renderIndex->GetChangeTracker().MarkSprimDirty(
+                camPath, HdChangeTracker::DirtyParams);
+            renderIndex->GetChangeTracker().MarkAllRprimsDirty(
+                HdChangeTracker::DirtyPoints);
+        }
+    }
+}
 
 bool
 HdPrmanRenderDelegate::IsStopSupported() const

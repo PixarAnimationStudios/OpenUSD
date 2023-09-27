@@ -741,7 +741,10 @@ class Capsule "Capsule" (
     inherits = </Gprim>
     doc = """Defines a primitive capsule, i.e. a cylinder capped by two half
     spheres, centered at the origin, whose spine is along the specified
-    \\em axis."""
+    \\em axis.
+    The spherical cap heights (sagitta) of the two endcaps are a function of 
+    the relative radii of the endcaps, such that cylinder tangent and sphere 
+    tangent are coincident and maintain C1 continuity."""
     customData = {
         dictionary extraPlugInfo = {
             bool implementsComputeExtent = true
@@ -749,9 +752,9 @@ class Capsule "Capsule" (
     }
 ) {
     double height = 1.0 (
-        doc = """The size of the capsule's spine along the specified
+        doc = """The length of the capsule's spine along the specified
         \\em axis excluding the size of the two half spheres, i.e.
-        the size of the cylinder portion of the capsule.
+        the length of the cylinder portion of the capsule.
         If you author \\em height you must also author \\em extent.
         \\sa GetExtentAttr()"""
     )
@@ -787,7 +790,7 @@ class Cone "Cone" (
     }
 ) {
     double height = 2.0 (
-        doc = """The size of the cone's spine along the specified
+        doc = """The length of the cone's spine along the specified
         \\em axis.  If you author \\em height you must also author \\em extent.
         
         \\sa GetExtentAttr()"""
@@ -805,6 +808,97 @@ class Cone "Cone" (
 
     float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
         doc = """Extent is re-defined on Cone only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Cylinder_1 "Cylinder_1" (
+    inherits = </Gprim>
+    doc = """Defines a primitive cylinder with closed ends, centered at the
+    origin, whose spine is along the specified \\em axis, with a pair of radii
+    describing the size of the end points.
+
+    The fallback values for Cube, Sphere, Cone, and Cylinder are set so that
+    they all pack into the same volume/bounds."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    double height = 2 (
+        doc = """The length of the cylinder's spine along the specified
+        \\em axis.  If you author \\em height you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusTop = 1.0 (
+        doc = """The radius of the top of the cylinder - i.e. the face located
+        along the positive \\em axis. If you author \\em radiusTop you must also
+        author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusBottom = 1.0 (
+        doc = """The radius of the bottom of the cylinder - i.e. the face
+        point located along the negative \\em axis. If you author
+        \\em radiusBottom you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the cylinder is aligned"""
+    )
+
+    float3[] extent = [(-1.0, -1.0, -1.0), (1.0, 1.0, 1.0)] (
+        doc = """Extent is re-defined on Cylinder only to provide a fallback
+        value. \\sa UsdGeomGprim::GetExtentAttr()."""
+    )
+}
+
+class Capsule_1 "Capsule_1" (
+    inherits = </Gprim>
+    doc = """Defines a primitive capsule, i.e. a cylinder capped by two half
+    spheres, with potentially different radii, centered at the origin, and whose
+    spine is along the specified \\em axis. 
+    The spherical cap heights (sagitta) of the two endcaps are a function of 
+    the relative radii of the endcaps, such that cylinder tangent and sphere 
+    tangent are coincident and maintain C1 continuity."""
+    customData = {
+        dictionary extraPlugInfo = {
+            bool implementsComputeExtent = true
+        }
+    }
+) {
+    double height = 1.0 (
+        doc = """The length of the capsule's spine along the specified
+        \\em axis excluding the size of the two half spheres, i.e.
+        the length of the cylinder portion of the capsule.
+        If you author \\em height you must also author \\em extent.
+        \\sa GetExtentAttr()"""
+    )
+    double radiusTop = 0.5 (
+        doc = """The radius of the capping sphere at the top of the capsule -
+        i.e. the sphere in the direction of the positive \\em axis. If you
+        author \\em radius you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    double radiusBottom = 0.5 (
+        doc = """The radius of the capping sphere at the bottom of the capsule -
+        i.e. the sphere located in the direction of the negative \\em axis. If
+        you author \\em radius you must also author \\em extent.
+
+        \\sa GetExtentAttr()"""
+    )
+    uniform token axis = "Z" (
+        allowedTokens = ["X", "Y", "Z"]
+        doc = """The axis along which the spine of the capsule is aligned"""
+    )
+
+    float3[] extent = [(-0.5, -0.5, -1.0), (0.5, 0.5, 1.0)] (
+        doc = """Extent is re-defined on Capsule only to provide a fallback
         value. \\sa UsdGeomGprim::GetExtentAttr()."""
     )
 }
@@ -2236,10 +2330,15 @@ class "GeomModelAPI"
     \\em model:applyDrawMode set at a lower level so each particle
     group draws individually.
 
-    Models of kind component are treated as if \\em model:applyDrawMode
-    were true.  This means a prim is drawn with proxy geometry when: the
-    prim has kind component, and/or \\em model:applyDrawMode is set; and
-    the prim's resolved value for \\em model:drawMode is not _default_.
+    Models of kind component are automatically treated as if 
+    \\em model:applyDrawMode were true if \\em model:applyDrawMode is not 
+    authored on the component prim. A component prim will be drawn drawn with a 
+    simplified representation when the prim has kind component, 
+    \\em model:applyDrawMode is not authored (or authored to be true), and the 
+    resolved (i.e. inherited down namespace) value for \\em model:drawMode is 
+    not _default_. If you don't want component prims to use the resolved 
+    non-default drawMode, you must apply the UsdGeomModelAPI schema on the prim 
+    and explicitly set \\em model:applyDrawMode to false.
 
     \\section UsdGeomModelAPI_cardGeometry Cards Geometry
 
@@ -2286,7 +2385,8 @@ class "GeomModelAPI"
         allowedTokens = ["origin", "bounds", "cards", "default", "inherited"]
         doc = """Alternate imaging mode; applied to this prim or child prims
                  where \\em model:applyDrawMode is true, or where the prim
-                 has kind \\em component. See \\ref UsdGeomModelAPI_drawMode
+                 has kind \\em component and \\em model:applyDrawMode is not
+                 authored. See \\ref UsdGeomModelAPI_drawMode
                  for mode descriptions."""
     )
     uniform bool model:applyDrawMode = false (

@@ -168,6 +168,11 @@ public:
     PCP_API
     PcpNodeIterator GetNodeIteratorAtNode(const PcpNodeRef &node) const;
 
+    /// Returns range of iterators that encompass the given \p node and all of
+    /// its descendants in strong-to-weak order.
+    PCP_API
+    PcpNodeRange GetNodeSubtreeRange(const PcpNodeRef &node) const;
+
     /// Returns range of iterators that encompasses all prims, in
     /// strong-to-weak order.
     PCP_API

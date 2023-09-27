@@ -377,15 +377,11 @@ _StageMallocTagString(const std::string &id)
 class UsdStage::_PendingChanges
 {
 public:
-    // Set to true to force ObjectsChanged notice to indicate recomposition
-    // of the pseudo-root regardless of what was actually recomposed.
-    bool notifyPseudoRootResync = false;
-
     PcpChanges pcpChanges;
 
     using PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     PathsToChangesMap recomposeChanges, otherResyncChanges, otherInfoChanges;
-    PathsToChangesMap primTypeInfoChanges, assetValueChanges;
+    PathsToChangesMap primTypeInfoChanges, assetPathResyncChanges;
 };
 
 // Object containing information used when resolving an asset path value.
@@ -2527,7 +2523,7 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
     // resulting from this request, this will trigger recomposition of UsdPrims
     // that potentially didn't change; it seems like we could do better.
     TF_DEBUG(USD_CHANGES).Msg("\nProcessing Load/Unload changes\n");
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     _Recompose(changes, &resyncChanges);
 
     UsdStageWeakPtr self(this);
@@ -2536,7 +2532,7 @@ UsdStage::LoadAndUnload(const SdfPathSet &loadSet,
         resyncChanges[p];
     }
 
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
 
     UsdNotice::StageContentsChanged(self).Send(self);
 }
@@ -2593,9 +2589,9 @@ UsdStage::SetLoadRules(UsdStageLoadRules const &rules)
 
     // Notify.
     UsdStageWeakPtr self(this);
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     resyncChanges[SdfPath::AbsoluteRootPath()];
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -2611,9 +2607,9 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 
     // Notify.
     UsdStageWeakPtr self(this);
-    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+    UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
     resyncChanges[SdfPath::AbsoluteRootPath()];
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -3955,11 +3951,10 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     }
 
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
-    _PathsToChangesMap resyncChanges, infoChanges;
+    _PathsToChangesMap resyncChanges;
     _Recompose(changes, &resyncChanges);
 
-    UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges)
-        .Send(self);
+    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
     UsdNotice::StageContentsChanged(self).Send(self);
 }
 
@@ -4257,7 +4252,7 @@ UsdStage::_HandleLayersDidChange(
     using _PathsToChangesMap = UsdNotice::ObjectsChanged::_PathsToChangesMap;
     _PathsToChangesMap& recomposeChanges = _pendingChanges->recomposeChanges;
     _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
-    _PathsToChangesMap& assetValueChanges = _pendingChanges->assetValueChanges;
+    _PathsToChangesMap& assetPathResyncChanges = _pendingChanges->assetPathResyncChanges;
     _PathsToChangesMap& otherResyncChanges = _pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
 
@@ -4431,7 +4426,7 @@ UsdStage::_HandleLayersDidChange(
         const PcpLayerStackPtr& layerStack = layerStackChange.first;
         const PcpLayerStackChanges& changes = layerStackChange.second;
         if (changes.didChangeExpressionVariables) {
-            _AddAffectedStagePaths(layerStack, *cache, &assetValueChanges);
+            _AddAffectedStagePaths(layerStack, *cache, &assetPathResyncChanges);
         }
     }
 
@@ -4463,123 +4458,106 @@ UsdStage::_ProcessPendingChanges()
     _PathsToChangesMap& otherResyncChanges=_pendingChanges->otherResyncChanges;
     _PathsToChangesMap& otherInfoChanges = _pendingChanges->otherInfoChanges;
     _PathsToChangesMap& primTypeInfoChanges = _pendingChanges->primTypeInfoChanges;
-    _PathsToChangesMap& assetValueChanges = _pendingChanges->assetValueChanges;
+    _PathsToChangesMap& assetPathResyncChanges = _pendingChanges->assetPathResyncChanges;
 
     _Recompose(changes, &recomposeChanges);
 
-    if (_pendingChanges->notifyPseudoRootResync) {
-        recomposeChanges.clear();
-        recomposeChanges[SdfPath::AbsoluteRootPath()];
+    // Filter out all changes to objects beneath instances and remap
+    // them to the corresponding object in the instance's prototype. Do this
+    // after _Recompose so that the instancing cache is up-to-date.
+    auto remapChangesToPrototypes = [this](_PathsToChangesMap* changes) {
+        std::vector<_PathsToChangesMap::value_type> prototypeChanges;
+        for (auto it = changes->begin(); it != changes->end(); ) {
+            if (_IsObjectDescendantOfInstance(it->first)) {
+                const SdfPath primIndexPath = 
+                    it->first.GetAbsoluteRootOrPrimPath();
+                for (const SdfPath& pathInPrototype :
+                     _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
+                         primIndexPath)) {
+                    prototypeChanges.emplace_back(
+                        it->first.ReplacePrefix(
+                            primIndexPath, pathInPrototype), 
+                        it->second);
+                }
+                it = changes->erase(it);
+                continue;
+            }
+            ++it;
+        }
 
-        otherResyncChanges.clear();
-        otherInfoChanges.clear();
-        primTypeInfoChanges.clear();
+        for (const auto& entry : prototypeChanges) {
+            auto& value = (*changes)[entry.first];
+            value.insert(value.end(), entry.second.begin(), entry.second.end());
+        }
+    };
+
+    remapChangesToPrototypes(&recomposeChanges);
+    remapChangesToPrototypes(&primTypeInfoChanges);
+    remapChangesToPrototypes(&assetPathResyncChanges);
+    remapChangesToPrototypes(&otherResyncChanges);
+    remapChangesToPrototypes(&otherInfoChanges);
+
+    // Before processing any prim type info changes, remove any that would
+    // already have been covered by the recomposed prims.
+    _MergeAndRemoveDescendentEntries(&recomposeChanges, &primTypeInfoChanges);
+
+    // Recompose the prim type info for the prims that need it. 
+    for (const auto &entry : primTypeInfoChanges) {
+        PathToNodeMap::const_accessor acc;
+        if (_primMap.find(acc, entry.first)) {
+            auto prim = acc->second.get();
+            if (prim) {
+                _ComposePrimTypeInfoImpl(prim);
+            }
+        }
+    }
+
+    // Even though we don't actually recompose prims that only have a type
+    // info change, we still treat them as recomposed as far as notification
+    // is concerned. 
+    if (recomposeChanges.empty()) {
+        recomposeChanges.swap(primTypeInfoChanges);
+    } else {
+        for (auto& entry : primTypeInfoChanges) {
+            recomposeChanges[entry.first] = std::move(entry.second);
+        }
+    }
+
+    // Add in all other paths that are marked as resynced.
+    if (recomposeChanges.empty()) {
+        recomposeChanges.swap(otherResyncChanges);
     }
     else {
-        // Filter out all changes to objects beneath instances and remap
-        // them to the corresponding object in the instance's prototype. Do this
-        // after _Recompose so that the instancing cache is up-to-date.
-        auto remapChangesToPrototypes = [this](_PathsToChangesMap* changes) {
-            std::vector<_PathsToChangesMap::value_type> prototypeChanges;
-            for (auto it = changes->begin(); it != changes->end(); ) {
-                if (_IsObjectDescendantOfInstance(it->first)) {
-                    const SdfPath primIndexPath = 
-                        it->first.GetAbsoluteRootOrPrimPath();
-                    for (const SdfPath& pathInPrototype :
-                         _instanceCache->GetPrimsInPrototypesUsingPrimIndexPath(
-                             primIndexPath)) {
-                        prototypeChanges.emplace_back(
-                            it->first.ReplacePrefix(
-                                primIndexPath, pathInPrototype), 
-                            it->second);
-                    }
-                    it = changes->erase(it);
-                    continue;
-                }
-                ++it;
-            }
-
-            for (const auto& entry : prototypeChanges) {
-                auto& value = (*changes)[entry.first];
-                value.insert(
-                    value.end(), entry.second.begin(), entry.second.end());
-            }
-        };
-
-        remapChangesToPrototypes(&recomposeChanges);
-        remapChangesToPrototypes(&primTypeInfoChanges);
-        remapChangesToPrototypes(&assetValueChanges);
-        remapChangesToPrototypes(&otherResyncChanges);
-        remapChangesToPrototypes(&otherInfoChanges);
-
-        // Before processing any prim type info changes, remove any that would
-        // already have been covered by the recomposed prims.
+        _RemoveDescendentEntries(&recomposeChanges);
         _MergeAndRemoveDescendentEntries(
-            &recomposeChanges, &primTypeInfoChanges);
-
-        // Recompose the prim type info for the prims that need it. 
-        for (const auto &entry : primTypeInfoChanges) {
-            PathToNodeMap::const_accessor acc;
-            if (_primMap.find(acc, entry.first)) {
-                auto prim = acc->second.get();
-                if (prim) {
-                    _ComposePrimTypeInfoImpl(prim);
-                }
-            }
+            &recomposeChanges, &otherResyncChanges);
+        for (auto& entry : otherResyncChanges) {
+            recomposeChanges[entry.first] = std::move(entry.second);
         }
+    }
 
-        // Even though we don't actually recompose prims that only have a type
-        // info change, we still treat them as recomposed as far as notification
-        // is concerned. 
-        if (recomposeChanges.empty()) {
-            recomposeChanges.swap(primTypeInfoChanges);
-        } else {
-            for (auto& entry : primTypeInfoChanges) {
-                recomposeChanges[entry.first] = std::move(entry.second);
-            }
-        }
+    // Collect the paths in otherChangedPaths that aren't under paths that
+    // were recomposed.  If the pseudo-root had been recomposed, we can
+    // just clear out otherChangedPaths since everything was recomposed.
+    if (!recomposeChanges.empty() &&
+        recomposeChanges.begin()->first == SdfPath::AbsoluteRootPath()) {
+        // If the pseudo-root is present, it should be the only path in the
+        // changes.
+        TF_VERIFY(recomposeChanges.size() == 1);
+        otherInfoChanges.clear();
+    }
 
-        // Process asset value changes as resyncs, making sure to remove any
-        // that are covered by the recomposed prims. See comment in 
-        // _HandleLayersDidChange.
+    // Now we want to remove all elements of otherInfoChanges that are
+    // prefixed by elements in recomposeChanges or beneath instances.
+    _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
+
+    // Since entries in assetPathResyncChanges imply subtree invalidation,
+    // remove descendent entries in that map. Also remove entries that are
+    // subsumed by the object resyncs in recomposeChanges.
+    if (!assetPathResyncChanges.empty()) {
+        _RemoveDescendentEntries(&assetPathResyncChanges);
         _MergeAndRemoveDescendentEntries(
-            &recomposeChanges, &assetValueChanges);
-
-        if (recomposeChanges.empty()) {
-            recomposeChanges.swap(assetValueChanges);
-        } else {
-            for (auto& entry : assetValueChanges) {
-                recomposeChanges[entry.first] = std::move(entry.second);
-            }
-        }
-
-        // Add in all other paths that are marked as resynced.
-        if (recomposeChanges.empty()) {
-            recomposeChanges.swap(otherResyncChanges);
-        }
-        else {
-            _RemoveDescendentEntries(&recomposeChanges);
-            _MergeAndRemoveDescendentEntries(
-                &recomposeChanges, &otherResyncChanges);
-            for (auto& entry : otherResyncChanges) {
-                recomposeChanges[entry.first] = std::move(entry.second);
-            }
-        }
-
-        // Collect the paths in otherChangedPaths that aren't under paths that
-        // were recomposed.  If the pseudo-root had been recomposed, we can
-        // just clear out otherChangedPaths since everything was recomposed.
-        if (!recomposeChanges.empty() &&
-            recomposeChanges.begin()->first == SdfPath::AbsoluteRootPath()) {
-            // If the pseudo-root is present, it should be the only path in the
-            // changes.
-            TF_VERIFY(recomposeChanges.size() == 1);
-            otherInfoChanges.clear();
-        }
-
-        // Now we want to remove all elements of otherInfoChanges that are
-        // prefixed by elements in recomposeChanges or beneath instances.
-        _MergeAndRemoveDescendentEntries(&recomposeChanges, &otherInfoChanges);
+            &recomposeChanges, &assetPathResyncChanges);
     }
 
     // If the local layer stack has changed, recompute whether the edit target
@@ -4597,12 +4575,15 @@ UsdStage::_ProcessPendingChanges()
     // alive, so the references we took above are still valid.
     _pendingChanges = nullptr;
 
-    if (!recomposeChanges.empty() || !otherInfoChanges.empty()) {
+    if (!recomposeChanges.empty() 
+        || !otherInfoChanges.empty()
+        || !assetPathResyncChanges.empty()) {
         UsdStageWeakPtr self(this);
 
         // Notify about changed objects.
         UsdNotice::ObjectsChanged(
-            self, &recomposeChanges, &otherInfoChanges).Send(self);
+            self, &recomposeChanges, &otherInfoChanges, &assetPathResyncChanges)
+            .Send(self);
 
         // Receivers can now refresh their caches... or just dirty them
         UsdNotice::StageContentsChanged(self).Send(self);
@@ -4654,11 +4635,7 @@ UsdStage::_HandleResolverDidChange(
     changes.DidChangeAssetResolver(_GetPcpCache());
 
     // Asset-path valued attributes on this stage may be invalidated.
-    // We don't want to incur the expense of scanning the entire stage
-    // to see if any such attributes exist so we conservatively notify
-    // clients that the pseudo-root has resynced, even though we may
-    // only be recomposing a subset of the stage.
-    _pendingChanges->notifyPseudoRootResync = true;
+    _pendingChanges->assetPathResyncChanges[SdfPath::AbsoluteRootPath()];
 
     // Process pending changes if we are the originators of the batch.
     if (_pendingChanges == &localPendingChanges) {
@@ -9661,9 +9638,9 @@ UsdStage::SetInterpolationType(UsdInterpolationType interpolationType)
 
         // Notify, as interpolated attributes values have likely changed.
         UsdStageWeakPtr self(this);
-        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges, infoChanges;
+        UsdNotice::ObjectsChanged::_PathsToChangesMap resyncChanges;
         resyncChanges[SdfPath::AbsoluteRootPath()];
-        UsdNotice::ObjectsChanged(self, &resyncChanges, &infoChanges).Send(self);
+        UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
         UsdNotice::StageContentsChanged(self).Send(self);
     }
 }

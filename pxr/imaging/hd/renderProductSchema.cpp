@@ -142,71 +142,71 @@ HdRenderProductSchema::BuildRetained(
         const HdContainerDataSourceHandle &namespacedSettings
 )
 {
-    TfToken names[12];
-    HdDataSourceBaseHandle values[12];
+    TfToken _names[12];
+    HdDataSourceBaseHandle _values[12];
 
-    size_t count = 0;
+    size_t _count = 0;
     if (path) {
-        names[count] = HdRenderProductSchemaTokens->path;
-        values[count++] = path;
+        _names[_count] = HdRenderProductSchemaTokens->path;
+        _values[_count++] = path;
     }
 
     if (type) {
-        names[count] = HdRenderProductSchemaTokens->type;
-        values[count++] = type;
+        _names[_count] = HdRenderProductSchemaTokens->type;
+        _values[_count++] = type;
     }
 
     if (name) {
-        names[count] = HdRenderProductSchemaTokens->name;
-        values[count++] = name;
+        _names[_count] = HdRenderProductSchemaTokens->name;
+        _values[_count++] = name;
     }
 
     if (resolution) {
-        names[count] = HdRenderProductSchemaTokens->resolution;
-        values[count++] = resolution;
+        _names[_count] = HdRenderProductSchemaTokens->resolution;
+        _values[_count++] = resolution;
     }
 
     if (renderVars) {
-        names[count] = HdRenderProductSchemaTokens->renderVars;
-        values[count++] = renderVars;
+        _names[_count] = HdRenderProductSchemaTokens->renderVars;
+        _values[_count++] = renderVars;
     }
 
     if (cameraPrim) {
-        names[count] = HdRenderProductSchemaTokens->cameraPrim;
-        values[count++] = cameraPrim;
+        _names[_count] = HdRenderProductSchemaTokens->cameraPrim;
+        _values[_count++] = cameraPrim;
     }
 
     if (pixelAspectRatio) {
-        names[count] = HdRenderProductSchemaTokens->pixelAspectRatio;
-        values[count++] = pixelAspectRatio;
+        _names[_count] = HdRenderProductSchemaTokens->pixelAspectRatio;
+        _values[_count++] = pixelAspectRatio;
     }
 
     if (aspectRatioConformPolicy) {
-        names[count] = HdRenderProductSchemaTokens->aspectRatioConformPolicy;
-        values[count++] = aspectRatioConformPolicy;
+        _names[_count] = HdRenderProductSchemaTokens->aspectRatioConformPolicy;
+        _values[_count++] = aspectRatioConformPolicy;
     }
 
     if (apertureSize) {
-        names[count] = HdRenderProductSchemaTokens->apertureSize;
-        values[count++] = apertureSize;
+        _names[_count] = HdRenderProductSchemaTokens->apertureSize;
+        _values[_count++] = apertureSize;
     }
 
     if (dataWindowNDC) {
-        names[count] = HdRenderProductSchemaTokens->dataWindowNDC;
-        values[count++] = dataWindowNDC;
+        _names[_count] = HdRenderProductSchemaTokens->dataWindowNDC;
+        _values[_count++] = dataWindowNDC;
     }
 
     if (disableMotionBlur) {
-        names[count] = HdRenderProductSchemaTokens->disableMotionBlur;
-        values[count++] = disableMotionBlur;
+        _names[_count] = HdRenderProductSchemaTokens->disableMotionBlur;
+        _values[_count++] = disableMotionBlur;
     }
 
     if (namespacedSettings) {
-        names[count] = HdRenderProductSchemaTokens->namespacedSettings;
-        values[count++] = namespacedSettings;
+        _names[_count] = HdRenderProductSchemaTokens->namespacedSettings;
+        _values[_count++] = namespacedSettings;
     }
 
-    return HdRetainedContainerDataSource::New(count, names, values);
+    return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 /*static*/
@@ -226,7 +226,8 @@ const TfToken &
 HdRenderProductSchema::GetSchemaToken()
 {
     return HdRenderProductSchemaTokens->renderProduct;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdRenderProductSchema::GetDefaultLocator()

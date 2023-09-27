@@ -58,9 +58,10 @@ USD Home
 
    :fa:`book` Learn
    ^^^^^^^^^^^^^
+   - `Learning Content on the USD Working Group Wiki <https://wiki.aswf.io/display/WGUSD/Learning+Content>`_
    - :doc:`Terms and Concepts <glossary>`
    - `API Documentation <api/index.html>`_
    - `OpenUSD Forum <https://forum.openusd.org>`_
    - :doc:`Specifications <spec>`
    - :doc:`Proposals <wp>`
-   - `USD Cookbook <https://github.com/ColinKennedy/USD-Cookbook>`_
+   

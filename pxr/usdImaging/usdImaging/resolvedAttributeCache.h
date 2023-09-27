@@ -33,6 +33,7 @@
 #include "pxr/usd/usdShade/tokens.h"
 #include "pxr/usd/sdf/path.h"
 
+#include "pxr/base/tf/hash.h"
 #include "pxr/base/work/utils.h"
 
 #include <boost/functional/hash.hpp>
@@ -68,15 +69,12 @@ class UsdImaging_ResolvedAttributeCache
 {
     friend Strategy;
     struct _Entry;
-    typedef tbb::concurrent_unordered_map<UsdPrim,
-                                          _Entry,
-                                          boost::hash<UsdPrim> > _CacheMap;
+    using _CacheMap = tbb::concurrent_unordered_map<UsdPrim, _Entry, TfHash>;
 public:
     typedef typename Strategy::value_type value_type;
     typedef typename Strategy::query_type query_type;
 
-    typedef TfHashMap<UsdPrim, value_type, boost::hash<UsdPrim> > 
-        ValueOverridesMap;
+    using ValueOverridesMap = TfHashMap<UsdPrim, value_type, TfHash>;
 
     /// Construct a new for the specified \p time.
     explicit UsdImaging_ResolvedAttributeCache(

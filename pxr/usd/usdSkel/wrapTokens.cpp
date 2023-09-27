@@ -89,7 +89,6 @@ void wrapUsdSkelTokens()
     _AddToken(cls, "translations", UsdSkelTokens->translations);
     _AddToken(cls, "weight", UsdSkelTokens->weight);
     _AddToken(cls, "BlendShape", UsdSkelTokens->BlendShape);
-    _AddToken(cls, "PackedJointAnimation", UsdSkelTokens->PackedJointAnimation);
     _AddToken(cls, "SkelAnimation", UsdSkelTokens->SkelAnimation);
     _AddToken(cls, "SkelBindingAPI", UsdSkelTokens->SkelBindingAPI);
     _AddToken(cls, "Skeleton", UsdSkelTokens->Skeleton);

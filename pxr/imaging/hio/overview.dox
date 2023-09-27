@@ -29,4 +29,8 @@ authors will want to choose their own precedence values accordingly.
 
 HioFieldTextureData provides a similar plugin-based abstraction for adding
 volume field readers, but does not include a precedence.
+
+For details on how Hydra handles OpenEXR data, see 
+<a href="https://openusd.org/release/user_guides/render_user_guide.html#working-with-image-file-formats">Working With Image File Formats</a>
+
 */

@@ -164,13 +164,13 @@ HdStRenderPassState::_ComputeFlippedFilmbackWindow() const
     };
 }
 
-HdStRenderPassState::_AxisAlignedAffineTransform
-HdStRenderPassState::_ComputeImageToHorizontallyNormalizedFilmback() const
+HdStRenderPassState::AxisAlignedAffineTransform
+HdStRenderPassState::ComputeImageToHorizontallyNormalizedFilmback() const
 {
     const GfRange2f window = _ComputeFlippedFilmbackWindow();
 
     // Recall the documentation of
-    // _ComputeImageToHorizontallyNormalizedFilmback.
+    // ComputeImageToHorizontallyNormalizedFilmback.
     //
     // To achieve 1., we need x to change by 2 when moving from the
     // left to the right edge of window.
@@ -406,7 +406,7 @@ HdStRenderPassState::Prepare(
             doublesSupported),
         std::make_shared<HdVtBufferSource>(
             HdShaderTokens->imageToHorizontallyNormalizedFilmback,
-            VtValue(_ComputeImageToHorizontallyNormalizedFilmback())),
+            VtValue(ComputeImageToHorizontallyNormalizedFilmback())),
         // Override color alpha component is used as the amount to blend in the
         // override color over the top of the regular fragment color.
         std::make_shared<HdVtBufferSource>(
@@ -879,6 +879,10 @@ GfVec4f _ToVec4f(const VtValue &v)
     if (v.IsHolding<GfVec4d>()) {
         return GfVec4f(v.UncheckedGet<GfVec4d>());
     }
+    if (v.IsHolding<HdDepthStencilType>()) {
+        HdDepthStencilType val = v.UncheckedGet<HdDepthStencilType>();
+        return GfVec4f(val.first, val.second, 0.0, 0.0);
+    }
 
     TF_CODING_ERROR("Unsupported clear value for draw target attachment.");
     return GfVec4f(0.0);
@@ -1109,6 +1113,14 @@ HdStRenderPassState::_InitAttachmentState(
         if (firstRenderBuffer->IsMultiSampled()) {
             sampleCount = HgiSampleCount(
                 firstRenderBuffer->GetMSAASampleCount());
+
+            if (GetResolveAovMultiSample()) {
+                VtValue resolveRes =
+                    firstRenderBuffer->GetResource(/*ms*/false);
+                if (TF_VERIFY(resolveRes.IsHolding<HgiTextureHandle>())) {
+                    pipeDesc->resolveAttachments = true;
+                }
+            }
         }
     }
 
@@ -1204,7 +1216,8 @@ HdStRenderPassState::InitGraphicsPipelineDesc(
 }
 
 uint64_t
-HdStRenderPassState::GetGraphicsPipelineHash() const
+HdStRenderPassState::GetGraphicsPipelineHash(
+    HdSt_GeometricShaderSharedPtr const & geometricShader) const
 {
     // Hash all of the state that is captured in the pipeline state object.
     uint64_t hash = TfHash::Combine(
@@ -1217,7 +1230,6 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _depthTestEnabled,
         _depthClampEnabled,
         _depthRange,
-        _cullStyle,
         _stencilFunc,
         _stencilRef,
         _stencilMask,
@@ -1240,7 +1252,12 @@ HdStRenderPassState::GetGraphicsPipelineHash() const
         _useMultiSampleAov,
         _conservativeRasterizationEnabled,
         GetClipPlanes().size(),
-        _multiSampleEnabled);
+        _multiSampleEnabled,
+        geometricShader->GetPolygonMode(),
+        geometricShader->GetLineWidth(),
+        geometricShader->ResolveCullMode(_cullStyle),
+        geometricShader->GetHgiPrimitiveType(),
+        geometricShader->GetPrimitiveIndexSize());
     
     // Hash the aov bindings by name and format.
     for (HdRenderPassAovBinding const& binding : GetAovBindings()) {

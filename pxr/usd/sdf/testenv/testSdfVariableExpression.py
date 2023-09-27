@@ -349,10 +349,16 @@ class TestSdfVariableExpression(unittest.TestCase):
             {'FOO':'a', 'BAR':'b', 'BAZ':'c'}, 
             Vt.StringArray(['a', 'b', 'c']))
 
-        # None values encountered in lists are dropped.
-        self.assertEvaluates("`[None]`", {}, [])
-        self.assertEvaluates("`[None, 2, 3]`", {}, [2, 3])
-        self.assertEvaluates("`[1, ${FOO}, 3]`", {'FOO' : None}, [1, 3])
+        # Lists cannot contain None values.
+        self.assertEvaluationErrors(
+            "`[None]`", {}, 
+            ["Unexpected value of type None in list at element 0"])
+        self.assertEvaluationErrors(
+            "`[None, 2, 3]`", {},
+            ["Unexpected value of type None in list at element 0"])
+        self.assertEvaluationErrors(
+            "`[1, ${FOO}, 3]`", {'FOO' : None},
+            ["Unexpected value of type None in list at element 1"])
 
         # Lists cannot contain other lists.
         self.assertInvalid("`[[1, 2]]`")
@@ -411,6 +417,18 @@ class TestSdfVariableExpression(unittest.TestCase):
         self.assertEvaluationErrors(
             "`if(${B}, 1, 0)`", {'B' : 'non_bool'},
             ['if: Condition must be a boolean value'])
+
+        # if and else values must be of the same type, or None.
+        self.assertEvaluates("`if(False, 1, None)`", {}, None)
+        self.assertEvaluates("`if(False, None, 1)`", {}, 1)
+        self.assertEvaluationErrors(
+            "`if(False, 1, 'foo')`", {},
+            ['if: if-value and else-value must evaluate to the same type '
+             'or None.'])
+        self.assertEvaluationErrors(
+            "`if(False, 'foo', 1)`", {},
+            ['if: if-value and else-value must evaluate to the same type '
+             'or None.'])
 
         # Evaluation errors from subexpressions should be reported to clients.
         self.assertEvaluationErrors(

@@ -1,0 +1,36 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def "TestSphere" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </MaterialX/Materials/TextureTest>
+}
+
+def Scope "MaterialX" (
+    references = [
+        @./mtlxFiles/textured.mtlx@</MaterialX>,
+    ]
+)
+{
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def DistantLight "DistantLight1"
+    {
+        float inputs:angle = 50
+        float inputs:intensity = 5
+        float3 xformOp:rotateXYZ = (0, 90, -90)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+}

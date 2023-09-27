@@ -176,6 +176,9 @@ public:
     TfTokenVector GetRenderSettingsNamespaces() const override;
 #endif
 
+    HDPRMAN_API 
+    void SetRenderSetting(TfToken const &key, VtValue const &value) override;
+
     /// NOTE: RenderMan has no notion of pausing the render threads.
     ///       We don't return true, because otherwise start/stop causes
     ///       the renderer to reset to increment zero, which gives a poor

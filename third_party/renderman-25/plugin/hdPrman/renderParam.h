@@ -30,6 +30,7 @@
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
+#include "hdPrman/tokens.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
 #include "pxr/imaging/hd/material.h"
@@ -167,8 +168,42 @@ public:
     RegisterIntegratorCallbackForCamera(
         IntegratorCameraCallback const& callback);
 
+    // Check if named scene index plugin has been loaded
+    HDPRMAN_API
+    static bool
+    HasSceneIndexPlugin(const TfToken &id);
+
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }
+
+    // Convert P values including applying motion blur (deforming or velocity).
+    // Returns a time to sample other primvars.
+    HDPRMAN_API
+    float ConvertPositions(
+        HdSceneDelegate* sceneDelegate,
+        const SdfPath& id,
+        int vertexPrimvarCount,
+        RtPrimVarList& primvars);
+
+    HDPRMAN_API
+    static bool GetMotionBlur(
+        HdSceneDelegate *sceneDelegate, const SdfPath& id);
+
+    HDPRMAN_API
+    static bool GetVelocityBlur(
+        HdSceneDelegate *sceneDelegate, const SdfPath& id);
+
+    HDPRMAN_API
+    static bool GetAccelerationBlur(
+        HdSceneDelegate *sceneDelegate, const SdfPath& id);
+
+    HDPRMAN_API
+    static int GetNumGeoSamples(
+        HdSceneDelegate *sceneDelegate, const SdfPath& id);
+
+    HDPRMAN_API
+    static int GetNumXformSamples(
+        HdSceneDelegate *sceneDelegate, const SdfPath& id);
 
     // Request edit access to the Riley scene and return it.
     riley::Riley * AcquireRiley();
@@ -500,7 +535,7 @@ HdPrman_ConvertPointsPrimvarForPoints(HdSceneDelegate *sceneDelegate, SdfPath co
 void
 HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                         RtPrimVarList& primvars, int numUniform, int numVertex,
-                        int numVarying, int numFaceVarying);
+                        int numVarying, int numFaceVarying, float time = 0.f);
 
 // Check for any primvar opinions on the material that should be Riley primvars.
 void

@@ -46,6 +46,7 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
+#include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -2274,6 +2275,78 @@ private:
 
 // ----------------------------------------------------------------------------
 
+class Hd_DataSourceImageShader : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(Hd_DataSourceImageShader);
+
+    Hd_DataSourceImageShader(
+        const SdfPath& id, HdSceneDelegate* sceneDelegate)
+    : _id(id), _sceneDelegate(sceneDelegate)
+    {
+        TF_VERIFY(_sceneDelegate);
+    }
+
+    TfTokenVector GetNames() override
+    {
+        static const TfTokenVector names = {
+            HdImageShaderSchemaTokens->enabled,
+            HdImageShaderSchemaTokens->priority,
+            HdImageShaderSchemaTokens->filePath,
+            HdImageShaderSchemaTokens->constants
+        };
+        return names;
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override
+    {
+        if (name == HdImageShaderSchemaTokens->enabled) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdImageShaderSchemaTokens->enabled);
+            if (value.IsHolding<bool>()) {
+                return HdRetainedTypedSampledDataSource<bool>::New(
+                    value.UncheckedGet<bool>());
+            }
+        }
+
+        if (name == HdImageShaderSchemaTokens->priority) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdImageShaderSchemaTokens->priority);
+            if (value.IsHolding<int>()) {
+                return HdRetainedTypedSampledDataSource<int>::New(
+                    value.UncheckedGet<int>());
+            }
+        }
+
+        if (name == HdImageShaderSchemaTokens->filePath) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdImageShaderSchemaTokens->filePath);
+            if (value.IsHolding<int>()) {
+                return HdRetainedTypedSampledDataSource<SdfAssetPath>::New(
+                    value.UncheckedGet<SdfAssetPath>());
+            }
+        }
+
+        if (name == HdImageShaderSchemaTokens->constants) {
+            const VtValue value = _sceneDelegate->Get(
+                _id, HdImageShaderSchemaTokens->constants);
+            if (value.IsHolding<VtDictionary>()) {
+                return _ToContainerDS(
+                    value.UncheckedGet<VtDictionary>());
+            }
+        }
+
+        return HdSampledDataSourceHandle(
+            Hd_GenericGetSampledDataSource::New(_sceneDelegate, _id, name));
+    }
+
+private:
+    SdfPath _id;
+    HdSceneDelegate* _sceneDelegate;
+};
+
+// ----------------------------------------------------------------------------
+
 TfToken _InterpolationAsToken(HdInterpolation interpolation)
 {
     switch (interpolation) {
@@ -2490,6 +2563,10 @@ HdDataSourceLegacyPrim::GetNames()
 
     if (_type == HdPrimTypeTokens->drawTarget) {
         result.push_back(HdPrimTypeTokens->drawTarget);
+    }
+
+    if (_type == HdPrimTypeTokens->imageShader) {
+        result.push_back(HdPrimTypeTokens->imageShader);
     }
 
     result.push_back(HdSceneIndexEmulationTokens->sceneDelegate);
@@ -3033,6 +3110,8 @@ HdDataSourceLegacyPrim::Get(const TfToken &name)
             Hd_LegacyDrawTargetContainerDataSource::New(_sceneDelegate, _id));
     } else if (name == HdExtComputationSchemaTokens->extComputation) {
         return Hd_DataSourceLegacyExtComputation::New(_id, _sceneDelegate);
+    } else if (name == HdImageShaderSchemaTokens->imageShader) {
+        return Hd_DataSourceImageShader::New(_id, _sceneDelegate);
     }
 
     return nullptr;

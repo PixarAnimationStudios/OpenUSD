@@ -3328,8 +3328,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // initialization.  But now that the layer is in the registry, we release
     // the registry lock to avoid blocking progress of threads working with
     // other layers.
-    TF_VERIFY(_layerRegistry->
-              FindByIdentifier(layer->GetIdentifier()) == layer,
+    TF_VERIFY(_layerRegistry->Find(layer->GetIdentifier(),
+                                   layer->GetResolvedPath()) == layer,
               "Could not find %s", layer->GetIdentifier().c_str());
 
     lock.release();
@@ -3971,7 +3971,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
             std::set<SdfPath> paths;
         };
 
-        _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
+        _SpecsToCreate specsToCreate(*get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
         SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
@@ -4520,7 +4520,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
 
     TraversalFunction eraseFunc = 
-        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
+        std::bind(&_EraseSpecAtPath, get_pointer(_data), ph::_1);
     Traverse(path, eraseFunc);
 }
 

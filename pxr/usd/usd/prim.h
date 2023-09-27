@@ -274,7 +274,24 @@ public:
     /// Return true if this prim is a model group based on its kind metadata,
     /// false otherwise.  If this prim is a group, it is also necessarily a
     /// model.
+    ///
+    /// Note that pseudoroot is always a group (in order to respect model
+    /// hierarchy rules), even though it cannot have a kind.
     bool IsGroup() const { return _Prim()->IsGroup(); }
+
+    /// Return true if this prim is a component model based on its kind
+    /// metadata, false otherwise. If this prim is a component, it is also
+    /// necessarily a model.
+    bool IsComponent() const { return _Prim()->IsComponent(); }
+
+    /// Return true if this prim is a subcomponent based on its kind metadata,
+    /// false otherwise. 
+    ///
+    /// Note that subcomponent query is not cached because we only cache 
+    /// model-hierarchy-related information, and therefore will be considerably 
+    /// slower than other kind-based queries.
+    USD_API
+    bool IsSubComponent() const { return _Prim()->IsSubComponent(); }
 
     /// Return true if this prim or any of its ancestors is a class.
     bool IsAbstract() const { return _Prim()->IsAbstract(); }
@@ -487,6 +504,32 @@ public:
     /// otherwise.
     USD_API
     bool HasProperty(const TfToken &propName) const;
+
+    /// Retrieve the authored \p kind for this prim.
+    /// 
+    /// To test whether the returned \p kind matches a particular known
+    /// "clientKind":
+    /// \code
+    /// TfToken kind;
+    ///
+    /// bool isClientKind = prim.GetKind(&kind) and
+    ///                     KindRegistry::IsA(kind, clientKind);
+    /// \endcode
+    ///
+    /// \return true if there was an authored kind that was successfully read,
+    /// otherwise false. Note that this will return false for pseudoroot even 
+    /// though pseudoroot is always a group, without any kind (in order to 
+    /// respect model hierarchy rules) 
+    ///
+    /// \sa \ref mainpage_kind "The Kind module" for further details on
+    /// how to use Kind for classification, and how to extend the taxonomy.
+    USD_API
+    bool GetKind(TfToken *kind) const;
+    
+    /// Author a \p kind for this prim, at the current UsdEditTarget.
+    /// \return true if \p kind was successully authored, otherwise false.
+    USD_API
+    bool SetKind(const TfToken &kind) const;
 
 private:
     // Helper functions for the public schema query and API schema

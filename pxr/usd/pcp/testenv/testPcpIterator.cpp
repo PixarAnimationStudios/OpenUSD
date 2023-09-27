@@ -156,6 +156,31 @@ _IterateAndPrintPrimIndex(
 }
 
 static void
+_IterateAndPrintPrimIndexSubtreeRanges(
+    std::ostream& out,
+    PcpCache* cache,
+    const SdfPath& primPath)
+{
+    PcpErrorVector errors;
+    const PcpPrimIndex& primIndex = cache->ComputePrimIndex(primPath, &errors);
+    PcpRaiseErrors(errors);
+
+    for (const auto &node : primIndex.GetNodeRange()) {
+        out << std::endl;
+        out << "Subtree iterating over subtree nodes starting at node " 
+            << Pcp_FormatSite(node.GetSite()) << ":"
+            << std::endl;
+
+        for (const PcpNodeRef &subtreeNode : primIndex.GetNodeSubtreeRange(node)) {
+            out << " ";
+            _ValidateAndPrintNode(out, subtreeNode);
+            out << std::endl;
+        }
+    }
+}
+
+
+static void
 _IterateAndPrintPropertyIndex(
     std::ostream& out,
     PcpCache* cache,
@@ -404,6 +429,13 @@ main(int argc, char** argv)
                     << "====================" << std::endl 
                     << std::endl;
         }
+
+        _IterateAndPrintPrimIndexSubtreeRanges(
+            outfile, cache.get(), SdfPath("/Model"));
+
+        outfile << std::endl 
+                << "====================" << std::endl 
+                << std::endl;
 
         _IterateAndPrintPropertyIndex(
             outfile, cache.get(), SdfPath("/Model.a"), /* localOnly */ true);

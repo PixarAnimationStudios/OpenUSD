@@ -231,44 +231,6 @@ class SkelAnimation "SkelAnimation" (
     )
 }
 
-class PackedJointAnimation "PackedJointAnimation" (
-    doc = "Deprecated. Please use SkelAnimation instead."
-)
-{
-    uniform token[] blendShapes (
-        doc = """Array of tokens identifying which blend shapes this
-         animation's data applies to. The tokens for blendShapes correspond to
-         the tokens set in the *skel:blendShapes* binding property of the
-         UsdSkelBindingAPI."""
-    )
-    float[] blendShapeWeights (
-        doc = """Array of weight values for each blend shape. Each weight value
-        is associated with the corresponding blend shape identified within the
-        *blendShapes* token array, and therefore must have the same length as
-        *blendShapes."""
-    )
-    uniform token[] joints (
-        doc = """Array of tokens identifying which joints this animation's
-        data applies to. The tokens for joints correspond to the tokens of
-        Skeleton primitives. The order of the joints as listed here may
-        vary from the order of joints on the Skeleton itself."""
-    )
-    quatf[] rotations (
-        doc = """Joint-local unit quaternion rotations of all affected joints, 
-        in 32-bit precision. Array length should match the size of the 
-        *joints* attribute."""
-    )
-    half3[] scales (
-        doc = """Joint-local scales of all affected joints, in
-        16 bit precision. Array length should match the size of the *joints* 
-        attribute."""
-    )
-    float3[] translations (
-        doc = """Joint-local translations of all affected joints. Array length 
-        should match the size of the *joints* attribute."""
-    )
-}
-
 class "SkelBindingAPI" (
     doc = '''Provides API for authoring and extracting all the skinning-related
     data that lives in the "geometry hierarchy" of prims and models that want

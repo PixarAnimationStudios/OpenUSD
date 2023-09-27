@@ -64,6 +64,9 @@ TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_RENDER_SETTINGS_TOKENS);
 TF_DEFINE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens,
                         HD_RENDER_SETTINGS_PRIM_TOKENS);
 
+TF_DEFINE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, 
+                        HD_ASPECT_RATIO_CONFORM_POLICY);
+
 TF_DEFINE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_RESOURCE_TYPE_TOKENS);
 
 TF_DEFINE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, 

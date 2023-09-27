@@ -54,22 +54,13 @@ SdfMakePathExpressionEval(SdfPathExpression const &expr,
 // fwd decl
 class Sdf_PathExpressionEvalBase;
 
-// fwd decl
-SDF_API
-bool
-Sdf_MakePathExpressionEvalImpl(
-    Sdf_PathExpressionEvalBase &eval,
-    SdfPathExpression const &expr,
-    TfFunctionRef<
-    void (SdfPathExpression::PathPattern const &)> translatePattern);
-
 // Helper base class for SdfPathExpressionEval.  This factors out as much
 // template-parameter independent code as possible to reduce bloat & compile
 // times.
 class Sdf_PathExpressionEvalBase
 {
 public:
-    friend bool
+    friend SDF_API bool
     Sdf_MakePathExpressionEvalImpl(
         Sdf_PathExpressionEvalBase &eval,
         SdfPathExpression const &expr,
