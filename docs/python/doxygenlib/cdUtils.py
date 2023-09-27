@@ -39,7 +39,7 @@ __debugMode = True
 ATTR_NOT_IN_PYTHON = 'notinpython'
 ATTR_STATIC_METHOD = 'staticmethod'
 
-LABEL_STATIC = '**static** '
+LABEL_STATIC = '**classmethod** '
 
 def Error(msg):
     """Output a fatal error message and exit the program."""
