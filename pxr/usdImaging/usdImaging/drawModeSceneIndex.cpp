@@ -108,24 +108,39 @@ UsdImagingDrawModeSceneIndex::UsdImagingDrawModeSceneIndex(
 
 UsdImagingDrawModeSceneIndex::~UsdImagingDrawModeSceneIndex() = default;
 
+static
+auto _FindPrefixOfPath(
+    const std::map<SdfPath, UsdImaging_DrawModeStandinSharedPtr> &container,
+    const SdfPath &path)
+{
+    // Use std::map::lower_bound over std::lower_bound since the latter
+    // is slow given that std::map iterators are not random access.
+    auto it = container.lower_bound(path);
+    if (it != container.end() && path == it->first) {
+        // Path itself is in the container
+        return it;
+    }
+    // If a prefix of path is in container, it will point to the next element
+    // in the container, rather than the prefix itself.
+    if (it == container.begin()) {
+        return container.end();
+    }
+    --it;
+    if (path.HasPrefix(it->first)) {
+        return it;
+    }
+    return container.end();
+}
+
 UsdImaging_DrawModeStandinSharedPtr
 UsdImagingDrawModeSceneIndex::_FindStandinForPrimOrAncestor(
     const SdfPath &path,
     size_t * const relPathLen) const
 {
-    using value_type = decltype(*_prims.begin());
-
-    const auto it = std::lower_bound(
-        _prims.rbegin(), _prims.rend(),
-        path, 
-        [](const value_type &a, const SdfPath &b) { return a.first > b; });
-    if (it == _prims.rend()) {
+    const auto it = _FindPrefixOfPath(_prims, path);
+    if (it == _prims.end()) {
         return nullptr;
     }
-    if (!path.HasPrefix(it->first)) {
-        return nullptr;
-    }
-
     *relPathLen = path.GetPathElementCount() - it->first.GetPathElementCount();
     return it->second;
 }
