@@ -708,9 +708,9 @@ _ResourceGenerator::_GenerateHgiResources(
             if (element.inOut == InOut::STAGE_IN) {
                 if (_IsVertexAttribInputStage(shaderStage)) {
                     HgiShaderFunctionParamDesc param;
-                        param.nameInShader = element.name;
-                        param.type = element.dataType;
-                        param.location = _GetLocation(element, metaData);
+                    param.nameInShader = element.name;
+                    param.type = element.dataType;
+                    param.location = _GetLocation(element, metaData);
                     if (shaderStage == HdShaderTokens->postTessControlShader ||
                         shaderStage == HdShaderTokens->postTessVertexShader) {
                         param.arraySize = "VERTEX_CONTROL_POINTS_PER_PATCH";
@@ -718,16 +718,13 @@ _ResourceGenerator::_GenerateHgiResources(
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 } else {
                     HgiShaderFunctionParamDesc param;
-                        param.nameInShader = element.name;
-                        param.type = element.dataType;
-                        param.interstageSlot = _GetSlot(element.name);
-                        param.interpolation =
-                            _GetInterpolation(element.qualifiers);
-                        param.sampling =
-                            _GetSamplingQualifier(element.qualifiers);
-                        param.storage =
-                            _GetStorageQualifier(element.qualifiers);
-                        param.arraySize = element.arraySize;
+                    param.nameInShader = element.name;
+                    param.type = element.dataType;
+                    param.interstageSlot = _GetSlot(element.name);
+                    param.interpolation = _GetInterpolation(element.qualifiers);
+                    param.sampling = _GetSamplingQualifier(element.qualifiers);
+                    param.storage = _GetStorageQualifier(element.qualifiers);
+                    param.arraySize = element.arraySize;
                     HgiShaderFunctionAddStageInput(funcDesc, param);
                 }
             } else if (element.inOut == InOut::STAGE_OUT) {
@@ -739,16 +736,13 @@ _ResourceGenerator::_GenerateHgiResources(
                         /*role=*/_GetOutputRoleName(element.name));
                 } else {
                     HgiShaderFunctionParamDesc param;
-                        param.nameInShader = element.name,
-                        param.type = element.dataType,
-                        param.interstageSlot = _GetSlot(element.name);
-                        param.interpolation =
-                                _GetInterpolation(element.qualifiers);
-                        param.sampling =
-                                _GetSamplingQualifier(element.qualifiers);
-                        param.storage =
-                                _GetStorageQualifier(element.qualifiers);
-                        param.arraySize = element.arraySize;
+                    param.nameInShader = element.name,
+                    param.type = element.dataType,
+                    param.interstageSlot = _GetSlot(element.name);
+                    param.interpolation = _GetInterpolation(element.qualifiers);
+                    param.sampling = _GetSamplingQualifier(element.qualifiers);
+                    param.storage = _GetStorageQualifier(element.qualifiers);
+                    param.arraySize = element.arraySize;
                     HgiShaderFunctionAddStageOutput(funcDesc, param);
                 }
             }
