@@ -597,7 +597,8 @@ _AllocateTessFactorsBuffer(
 
     return resourceRegistry->RegisterBufferResource(
         HdTokens->tessFactors,
-        HdTupleType{HdTypeHalfFloat, numElements*numTessFactorsPerElement});
+        HdTupleType{HdTypeHalfFloat, numElements*numTessFactorsPerElement},
+        HgiBufferUsageUniform);
 }
 
 } // annonymous namespace
@@ -1883,7 +1884,7 @@ HdSt_PipelineDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType);
+                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage);
     }
 
     // Reset visible item count
