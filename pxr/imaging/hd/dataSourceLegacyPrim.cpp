@@ -1369,7 +1369,8 @@ public:
             HdTokens->shadowLink,
             HdTokens->lightFilterLink,
             HdTokens->isLight,
-            HdTokens->materialSyncMode
+            HdTokens->materialSyncMode,
+            HdTokens->portals,
         };
         return result;
     }

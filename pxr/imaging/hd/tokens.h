@@ -91,6 +91,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pinned)                                    \
     (points)                                    \
     (pointsIndices)                             \
+    (portals)                                   \
     (power)                                     \
     (preview)                                   \
     (pointsVisibility)                          \
