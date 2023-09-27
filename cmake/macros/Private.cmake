@@ -54,9 +54,9 @@ function(_copy_headers LIBRARY_NAME)
             get_filename_component(dir_to_create "${outfile}" PATH)
             add_custom_command(
                 OUTPUT ${outfile}
-                COMMAND ${CMAKE_COMMAND} -E make_directory "${dir_to_create}"
-                COMMAND ${CMAKE_COMMAND} -Dinfile="${infile}" -Doutfile="${outfile}" -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
-                MAIN_DEPENDENCY "${infile}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory ${dir_to_create}
+                COMMAND ${CMAKE_COMMAND} -Dinfile=${infile} -Doutfile=${outfile} -P "${PROJECT_SOURCE_DIR}/cmake/macros/copyHeaderForBuild.cmake"
+                MAIN_DEPENDENCY ${infile}
                 COMMENT "Copying ${f} ..."
                 VERBATIM
             )
