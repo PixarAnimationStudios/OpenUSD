@@ -4652,7 +4652,7 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
       };
 
       // --------- instance data accessors ----------
-      vec3 HdGet_translate(int localIndex=0) {
+      vec3 HdGet_hydra_instanceTranslations(int localIndex=0) {
           return instanceData0[GetInstanceCoord()].translate;
       }
     */
@@ -4689,11 +4689,11 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
       note that instance primvar may or may not be defined for each level.
       we expect level is an unrollable constant to optimize out branching.
 
-      vec3 HdGetInstance_translate(int level, vec3 defaultValue) {
-          if (level == 0) return HdGet_translate_0();
+      vec3 HdGetInstance_hydra_instanceTranslations(int level, vec3 defaultValue) {
+          if (level == 0) return HdGet_hydra_instanceTranslations_0();
           // level==1 is not defined. use default
-          if (level == 2) return HdGet_translate_2();
-          if (level == 3) return HdGet_translate_3();
+          if (level == 2) return HdGet_hydra_instanceTranslations_2();
+          if (level == 3) return HdGet_hydra_instanceTranslations_3();
           return defaultValue;
       }
     */
@@ -4714,14 +4714,14 @@ HdSt_CodeGen::_GenerateInstancePrimvar()
       common accessor, if the primvar is defined on the instancer but not
       the rprim.
 
-      #if !defined(HD_HAS_translate)
-      #define HD_HAS_translate 1
-      vec3 HdGet_translate(int localIndex) {
+      #if !defined(HD_HAS_hydra_instanceTranslations)
+      #define HD_HAS_hydra_instanceTranslations 1
+      vec3 HdGet_hydra_instanceTranslations(int localIndex) {
           // 0 is the lowest level for which this is defined
-          return HdGet_translate_0();
+          return HdGet_hydra_instanceTranslations_0();
       }
-      vec3 HdGet_translate() {
-          return HdGet_translate(0);
+      vec3 HdGet_hydra_instanceTranslations() {
+          return HdGet_hydra_instanceTranslations(0);
       }
       #endif
     */

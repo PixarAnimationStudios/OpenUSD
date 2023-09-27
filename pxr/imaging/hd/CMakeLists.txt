@@ -358,6 +358,13 @@ pxr_build_test(testHdTypes
        testenv/testHdTypes.cpp
 )
 
+pxr_build_test(testHdInstancerDeprecatedPrimvars
+    LIBRARIES
+        hd
+        
+    CPPFILES
+        testenv/testHdInstancerDeprecatedPrimvars.cpp
+)
 
 pxr_install_test_dir(
     SRC testenv/testHdSortedIds
@@ -429,4 +436,10 @@ pxr_register_test(testHdTimeSampleArray
 
 pxr_register_test(testHdTypes
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdTypes"
+)
+
+pxr_register_test(testHdInstancerDeprecatedPrimvars
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdInstancerDeprecatedPrimvars"
+    ENV
+        HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES=true
 )

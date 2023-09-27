@@ -787,7 +787,11 @@ _PrimvarsDataSource::Get(const TfToken &name)
             primvarSource, _primvarsSource, _inputArgs,
             // Are there more blurrable (by rman) primvars than these?
             name == HdPrimvarsSchemaTokens->points ||
-            name == HdInstancerTokens->instanceTransform);
+            name == HdInstancerTokens->instanceTransform
+#if HD_API_VERSION >= 56
+            || name == HdInstancerTokens->instanceTransforms
+#endif
+            );
     }
 
     return result;

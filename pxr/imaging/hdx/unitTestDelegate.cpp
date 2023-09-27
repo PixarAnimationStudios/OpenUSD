@@ -31,6 +31,7 @@
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/renderBuffer.h"
+#include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hdSt/hioConversions.h"
 #include "pxr/imaging/hdSt/drawTarget.h"
@@ -850,15 +851,18 @@ Hdx_UnitTestDelegate::Get(SdfPath const& id, TfToken const& key)
         if(_meshes.find(id) != _meshes.end()) {
             return VtValue(_meshes[id].opacity);
         }
-    } else if (key == HdInstancerTokens->scale) {
+    } else if (key == HdInstancerTokens->instanceScales ||
+               key == HdInstancerTokens->scale) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].scale);
         }
-    } else if (key == HdInstancerTokens->rotate) {
+    } else if (key == HdInstancerTokens->instanceRotations ||
+               key == HdInstancerTokens->rotate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].rotate);
         }
-    } else if (key == HdInstancerTokens->translate) {
+    } else if (key == HdInstancerTokens->instanceTranslations ||
+               key == HdInstancerTokens->translate) {
         if (_instancers.find(id) != _instancers.end()) {
             return VtValue(_instancers[id].translate);
         }
@@ -947,9 +951,18 @@ Hdx_UnitTestDelegate::GetPrimvarDescriptors(SdfPath const& id,
     }
     if (interpolation == HdInterpolationInstance &&
         _instancers.find(id) != _instancers.end()) {
-        primvars.emplace_back(HdInstancerTokens->scale, interpolation);
-        primvars.emplace_back(HdInstancerTokens->rotate, interpolation);
-        primvars.emplace_back(HdInstancerTokens->translate, interpolation);
+        if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+            primvars.emplace_back(HdInstancerTokens->scale, interpolation);
+            primvars.emplace_back(HdInstancerTokens->rotate, interpolation);
+            primvars.emplace_back(HdInstancerTokens->translate, interpolation);
+        } else {
+            primvars.emplace_back(HdInstancerTokens->instanceScales,
+                interpolation);
+            primvars.emplace_back(HdInstancerTokens->instanceRotations,
+                interpolation);
+            primvars.emplace_back(HdInstancerTokens->instanceTranslations,
+                interpolation);
+        }
     }
     return primvars;
 }

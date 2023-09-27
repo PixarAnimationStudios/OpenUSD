@@ -355,7 +355,8 @@ private:
     const TfToken _primvarName;
 };
 
-// Data source for locator primvars:instanceTransform:primvarValue for an instancer.
+// Data source for locator primvars:hydra:instanceTransforms:primvarValue for an
+// instancer.
 //
 // Extracts the transforms of the native instances realized by the instancer.
 //
@@ -412,7 +413,7 @@ private:
     std::shared_ptr<SdfPathSet> const _instances;
 };
 
-// Data source for locator primvars:instanceTransform for an instancer.
+// Data source for locator primvars:hydra:instanceTransforms for an instancer.
 //
 // primvarValue: transforms of native instances realized by the instancer.
 // interpolation: instance.
@@ -461,7 +462,7 @@ private:
 
 // Data source for locator primvars for an instancer.
 //
-// Uses above data sources for instanceTransform and for constant
+// Uses above data sources for hydra:instanceTransforms and for constant
 // primvars authored on the native instances realized by the instancer.
 //
 class _PrimvarsDataSource : public HdContainerDataSource
@@ -475,12 +476,16 @@ public:
             result = _GetConstantPrimvarNames(
                 _inputSceneIndex, *(_instances->begin()));
         }
-        result.push_back(HdInstancerTokens->instanceTransform);
+        result.push_back(
+            (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->instanceTransform
+                : HdInstancerTokens->instanceTransforms));
         return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdInstancerTokens->instanceTransform) {
+        if (name == HdInstancerTokens->instanceTransforms ||
+            name == HdInstancerTokens->instanceTransform) {
             return _InstanceTransformPrimvarDataSource::New(
                 _inputSceneIndex, _instances);
         }
@@ -1123,7 +1128,10 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
             if (locators.Intersects(xformLocators)) {
                 static const HdDataSourceLocatorSet instanceTransformLocators{
                     HdPrimvarsSchema::GetDefaultLocator()
-                        .Append(HdInstancerTokens->instanceTransform)
+                        .Append((TfGetEnvSetting(
+                                HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                            ? HdInstancerTokens->instanceTransform
+                            : HdInstancerTokens->instanceTransforms))
                         .Append(HdPrimvarSchemaTokens->primvarValue)};
                 _DirtyInstancerForInstance(path, instanceTransformLocators);
             }

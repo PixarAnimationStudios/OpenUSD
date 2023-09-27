@@ -178,7 +178,7 @@ TF_DECLARE_REF_PTRS(UsdImagingNiPrototypePropagatingSceneIndex);
 ///             prototypes: [ /UsdNiPropagatedPrototypes/Bindings_423...234/__Prototype_1/UsdNiInstancer/UsdNiPrototype
 ///             instanceLocations: [ /Cube_1 ] # for picking
 ///         primvars:
-///             instanceTransform:
+///             hydra:instanceTransforms:
 ///                 primvarValue: [ identity matrix ]
 ///                 interpolation: instance
 /// /UsdNiPropagatedPrototypes/Bindings_423...234/__Prototype_1/UsdNiInstancer/UsdNiPrototype
