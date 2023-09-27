@@ -1480,9 +1480,33 @@ class PortalLight "PortalLight" (
     The rectangle is 1 unit in length."""
 )
 {
-    float3[] extent = [(-0.5, -0.5, 0), (0.5, 0.5, 0)] (
-        doc = """Boundary extent of the unit rectangle in the XY plane that 
-        defines the portal."""
+    float3[] extent (
+        doc = """Extent is a three dimensional range measuring the geometric
+        extent of the authored gprim in its own local space (i.e. its own
+        transform not applied), without accounting for any shader-induced
+        displacement. If __any__ extent value has been authored for a given 
+        Boundable, then it should be authored at every timeSample at which 
+        geometry-affecting properties are authored, to ensure correct 
+        evaluation via ComputeExtent(). If __no__ extent value has been 
+        authored, then ComputeExtent() will call the Boundable's registered 
+        ComputeExtentFunction(), which may be expensive, which is why we 
+        strongly encourage proper authoring of extent.
+        \\sa ComputeExtent()
+        \\sa \\ref UsdGeom_Boundable_Extent.
+        
+        An authored extent on a prim which has children is expected to include
+        the extent of all children, as they will be pruned from BBox computation
+        during traversal."""
+    )
+    float inputs:height = 1 (
+        displayGroup = "Geometry"
+        displayName = "Height"
+        doc = "Height of the portal rectangle in the local Y axis."
+    )
+    float inputs:width = 1 (
+        displayGroup = "Geometry"
+        displayName = "Width"
+        doc = "Width of the portal rectangle in the local X axis."
     )
     uniform token light:shaderId = "PortalLight"
     rel proxyPrim (

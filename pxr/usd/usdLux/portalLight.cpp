@@ -103,6 +103,40 @@ UsdLuxPortalLight::_GetTfType() const
     return _GetStaticTfType();
 }
 
+UsdAttribute
+UsdLuxPortalLight::GetWidthAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsWidth);
+}
+
+UsdAttribute
+UsdLuxPortalLight::CreateWidthAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsWidth,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
+UsdAttribute
+UsdLuxPortalLight::GetHeightAttr() const
+{
+    return GetPrim().GetAttribute(UsdLuxTokens->inputsHeight);
+}
+
+UsdAttribute
+UsdLuxPortalLight::CreateHeightAttr(VtValue const &defaultValue, bool writeSparsely) const
+{
+    return UsdSchemaBase::_CreateAttr(UsdLuxTokens->inputsHeight,
+                       SdfValueTypeNames->Float,
+                       /* custom = */ false,
+                       SdfVariabilityVarying,
+                       defaultValue,
+                       writeSparsely);
+}
+
 namespace {
 static inline TfTokenVector
 _ConcatenateAttributeNames(const TfTokenVector& left,const TfTokenVector& right)
@@ -120,6 +154,8 @@ const TfTokenVector&
 UsdLuxPortalLight::GetSchemaAttributeNames(bool includeInherited)
 {
     static TfTokenVector localNames = {
+        UsdLuxTokens->inputsWidth,
+        UsdLuxTokens->inputsHeight,
     };
     static TfTokenVector allNames =
         _ConcatenateAttributeNames(
@@ -148,16 +184,52 @@ PXR_NAMESPACE_CLOSE_SCOPE
 PXR_NAMESPACE_OPEN_SCOPE
 
 static bool
+_ComputeLocalExtent(const float width, const float height, VtVec3fArray *extent)
+{
+    if (!extent) {
+        return false;
+    }
+
+    extent->resize(2);
+    (*extent)[1] = GfVec3f(width * 0.5f, height * 0.5f, 0.0f);
+    (*extent)[0] = -(*extent)[1];
+    return true;
+}
+
+static bool 
 _ComputeExtent(
     const UsdGeomBoundable &boundable,
     const UsdTimeCode &time,
     const GfMatrix4d *transform,
     VtVec3fArray *extent)
 {
-    // Schema defined constant Boundary extent of the unit rectangle in the XY 
-    // plane that defines the portal.
-    return boundable.GetPrim().GetPrimDefinition().GetAttributeFallbackValue(
-            UsdLuxTokens->extent, extent);
+    const UsdLuxPortalLight light(boundable);
+    if (!TF_VERIFY(light)) {
+        return false;
+    }
+
+    float width;
+    if (!light.GetWidthAttr().Get(&width, time)) {
+        return false;
+    }
+
+    float height;
+    if (!light.GetHeightAttr().Get(&height, time)) {
+        return false;
+    }
+
+    if (!_ComputeLocalExtent(width, height, extent)) {
+        return false;
+    }
+
+    if (transform) {
+        GfBBox3d bbox(GfRange3d((*extent)[0], (*extent)[1]), *transform);
+        GfRange3d range = bbox.ComputeAlignedRange();
+        (*extent)[0] = GfVec3f(range.GetMin());
+        (*extent)[1] = GfVec3f(range.GetMax());
+    }
+
+    return true;
 }
 
 TF_REGISTRY_FUNCTION(UsdGeomBoundable)

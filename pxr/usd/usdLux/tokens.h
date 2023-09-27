@@ -94,10 +94,6 @@ struct UsdLuxTokensType {
     /// 
     /// Possible value for UsdLuxDomeLight::GetTextureFormatAttr(), Possible value for UsdLuxDomeLight_1::GetTextureFormatAttr()
     const TfToken cubeMapVerticalCross;
-    /// \brief "extent"
-    /// 
-    /// UsdLuxPortalLight
-    const TfToken extent;
     /// \brief "filterLink"
     /// 
     ///  This token represents the collection name to use with UsdCollectionAPI to represent filter-linking of a UsdLuxLightFilter prim. 
@@ -144,7 +140,7 @@ struct UsdLuxTokensType {
     const TfToken inputsExposure;
     /// \brief "inputs:height"
     /// 
-    /// UsdLuxRectLight
+    /// UsdLuxRectLight, UsdLuxPortalLight
     const TfToken inputsHeight;
     /// \brief "inputs:intensity"
     /// 
@@ -224,7 +220,7 @@ struct UsdLuxTokensType {
     const TfToken inputsTextureFormat;
     /// \brief "inputs:width"
     /// 
-    /// UsdLuxRectLight
+    /// UsdLuxRectLight, UsdLuxPortalLight
     const TfToken inputsWidth;
     /// \brief "latlong"
     /// 

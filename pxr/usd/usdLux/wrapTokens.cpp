@@ -72,7 +72,6 @@ void wrapUsdLuxTokens()
     _AddToken(cls, "consumeAndContinue", UsdLuxTokens->consumeAndContinue);
     _AddToken(cls, "consumeAndHalt", UsdLuxTokens->consumeAndHalt);
     _AddToken(cls, "cubeMapVerticalCross", UsdLuxTokens->cubeMapVerticalCross);
-    _AddToken(cls, "extent", UsdLuxTokens->extent);
     _AddToken(cls, "filterLink", UsdLuxTokens->filterLink);
     _AddToken(cls, "geometry", UsdLuxTokens->geometry);
     _AddToken(cls, "guideRadius", UsdLuxTokens->guideRadius);
