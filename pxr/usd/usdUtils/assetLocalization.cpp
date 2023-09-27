@@ -79,8 +79,7 @@ UsdUtils_LocalizationContext::Process(
         // package should be included as dependency if any file contained inside 
         // it is encountered.
         SdfLayerRefPtr layer = SdfLayer::FindOrOpen(anchoredPath);
-        if (_recurseLayerDependencies && 
-                layer && !layer->GetFileFormat()->IsPackage() ) {
+        if (layer && !layer->GetFileFormat()->IsPackage() ) {
             _ProcessLayer(layer);
         }
     }
@@ -93,7 +92,7 @@ UsdUtils_LocalizationContext::_EnqueueDependency(
     const SdfLayerRefPtr layer,
     const std::string &assetPath) 
 {
-    if (assetPath.empty()) {
+    if (!_recurseLayerDependencies || assetPath.empty()) {
         return;
     }
 
