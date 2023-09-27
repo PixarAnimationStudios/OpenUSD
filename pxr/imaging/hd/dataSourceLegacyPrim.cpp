@@ -106,6 +106,26 @@ HdLegacyPrimTypeIsVolumeField(TfToken const &primType)
 
 namespace {
 
+template<typename TimeSampleArray>
+static
+void _FillSampleTimes(
+    const TimeSampleArray &timeSamples,
+    const HdSampledDataSource::Time startTime,
+    const HdSampledDataSource::Time endTime,
+    std::vector<HdSampledDataSource::Time> * const outSampleTimes)
+{
+    if (!outSampleTimes) {
+        return;
+    }
+    for (size_t i = 0; i < timeSamples.count; ++i) {
+        const float t = timeSamples.times[i];
+        if (startTime <= t && t <= endTime) {
+            outSampleTimes->push_back(t);
+        }
+    }
+}
+
+
 class Hd_DataSourceLegacyPrimvarValue : public HdSampledDataSource
 {
 public:
@@ -155,13 +175,7 @@ public:
         // XXX: Start and end times come from the sene delegate, so we can't
         // get samples outside of those provided. However, we can clamp
         // returned samples to be in the right range.
-        if (outSampleTimes != nullptr) {
-            for (const float &t : _timeSamples.times) {
-                if (t >= startTime && t <= endTime) {
-                    outSampleTimes->push_back(t);
-                }
-            }
-        }
+        _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
         return true;
     }
@@ -223,13 +237,7 @@ public:
         // XXX: Start and end times come from the sene delegate, so we can't
         // get samples outside of those provided. However, we can clamp
         // returned samples to be in the right range.
-        if (outSampleTimes != nullptr) {
-            for (const float &t : _timeSamples.times) {
-                if (t >= startTime && t <= endTime) {
-                    outSampleTimes->push_back(t);
-                }
-            }
-        }
+        _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
         return true;
     }
@@ -298,13 +306,7 @@ public:
         // XXX: Start and end times come from the sene delegate, so we can't
         // get samples outside of those provided. However, we can clamp
         // returned samples to be in the right range.
-        if (outSampleTimes != nullptr) {
-            for (const float &t : _timeSamples.times) {
-                if (t >= startTime && t <= endTime) {
-                    outSampleTimes->push_back(t);
-                }
-            }
-        }
+        _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
         return true;
     }
@@ -452,13 +454,7 @@ public:
         // XXX: Start and end times come from the scene delegate, so we can't
         // get samples outside of those provided. However, we can clamp
         // returned samples to be in the right range.
-        if (outSampleTimes != nullptr) {
-            for (const float &t : _timeSamples.times) {
-                if (t >= startTime && t <= endTime) {
-                    outSampleTimes->push_back(t);
-                }
-            }
-        }
+        _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
         return true;
     }
@@ -1925,13 +1921,7 @@ public:
         // XXX: Start and end times come from the sene delegate, so we can't
         // get samples outside of those provided. However, we can clamp
         // returned samples to be in the right range.
-        if (outSampleTimes != nullptr) {
-            for (const float &t : _timeSamples.times) {
-                if (t >= startTime && t <= endTime) {
-                    outSampleTimes->push_back(t);
-                }
-            }
-        }
+        _FillSampleTimes(_timeSamples, startTime, endTime, outSampleTimes);
 
         return true;
     }
