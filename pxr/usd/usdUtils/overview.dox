@@ -12,12 +12,12 @@ creating USD assets. The high-level grouping of classes and functions is as foll
 \li \ref usdUtils/authoring.h "Authoring" provides 
     functionality for copying metadata between layers.
 
-\li \ref usdUtils/coalescingDiagnosticDelegate.h "Coalescing diagnostic
-    delegate" provides a utility to aggregate warnings and statuses emitted from
-    Tf's diagnostic mananegement system.
+\li \ref usdUtils/coalescingDiagnosticDelegate.h "Coalescing diagnostic delegate" 
+    provides a utility to aggregate warnings and statuses emitted from
+    Tf's diagnostic management system.
 
-\li \ref usdUtils/conditionalAbortDiagnosticDelegate.h "Conditionally abort
-    diagnostic delegate" provides a utility that can be used to abort operations
+\li \ref usdUtils/conditionalAbortDiagnosticDelegate.h "Conditionally abort diagnostic delegate" 
+    provides a utility that can be used to abort operations
     for a non fatal USD error or warning emitted from Tf's diagnostic management 
     system by operating on inclusion/exclusion rules defined for this delegate.
 
@@ -34,7 +34,7 @@ creating USD assets. The high-level grouping of classes and functions is as foll
     \ref UsdUtilsCreateNewUsdzPackage
 
 \li \ref usdUtils/introspection.h "Introspection" 
-    provides functionality for understanding various charactersitics
+    provides functionality for understanding various characteristics
     of a \ref UsdStage including memory usage, prim counts, prototype counts
     and more.
 
@@ -44,5 +44,8 @@ creating USD assets. The high-level grouping of classes and functions is as foll
 \li \ref usdUtils/stageCache.h "StageCache" provides a class,
     \ref UsdUtilsStageCache for managing a singleton instance \ref UsdStageCache
     to be shared amongst various clients.
+
+\li complianceChecker.py provides a set of Python classes and methods used for 
+    checking the compliance of a given USD asset or USDZ package.
 
 */
