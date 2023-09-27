@@ -52,6 +52,10 @@ public:
 
     virtual SdfPath GetMaterialPrimPath() const = 0;
 
+    /// Returns the nearest enclosing model asset name, as described by
+    /// the model schema, or empty string if none is available.
+    virtual std::string GetModelAssetName() const = 0;
+
     virtual TfTokenVector GetNodeNames() const  = 0;
     virtual TfToken GetNodeType(const TfToken &nodeName) const = 0;
 

@@ -329,7 +329,8 @@ _BuildLightShaderDataSource(
     }
     
     // interface with the material shader network
-    const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS);
+    const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS,
+                                                        originPrim.dataSource);
     // look up the surface/volume terminal connection
     const auto& terminalConn = srcMatNI.GetTerminalConnection(terminalToken);
     if (!terminalConn.first) {
@@ -355,7 +356,8 @@ _BuildLightShaderDataSource(
     }
 
     // interface with the original light shader network
-    HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS);
+    HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS,
+                                                  originPrim.dataSource);
     // look up the light terminal connection
     const auto lightTC = shaderNI.GetTerminalConnection(
         HdMaterialTerminalTokens->light);

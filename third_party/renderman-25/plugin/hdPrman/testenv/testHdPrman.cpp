@@ -135,7 +135,7 @@ public:
 
         // Interface with the light shader network
         HdDataSourceMaterialNetworkInterface shaderNI(
-            primPath, shaderDS);
+            primPath, shaderDS, prim.dataSource);
         
         // look up the light terminal connection
         const auto lightTC = shaderNI.GetTerminalConnection(

@@ -49,8 +49,14 @@ public:
     , _lastAccessedNode(nullptr)
     {}
 
+    HD_API
     SdfPath GetMaterialPrimPath() const override {
         return _materialPrimPath;
+    }
+
+    HD_API
+    std::string GetModelAssetName() const override {
+        return std::string();
     }
 
     HD_API
