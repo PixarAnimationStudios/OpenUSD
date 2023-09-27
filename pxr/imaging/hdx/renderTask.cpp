@@ -226,18 +226,15 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
     // it can access rprimIDs populated in RenderTask::_Sync.
     VtValue vo = (*ctx)[HdxTokens->selectionOffsets];
     VtValue vu = (*ctx)[HdxTokens->selectionUniforms];
-    VtValue vc = (*ctx)[HdxTokens->selectionPointColors];
 
     HdStRenderPassShaderSharedPtr renderPassShader
         = renderPassState->GetRenderPassShader();
 
-    if (!vo.IsEmpty() && !vu.IsEmpty() && !vc.IsEmpty()) {
+    if (!vo.IsEmpty() && !vu.IsEmpty()) {
         HdBufferArrayRangeSharedPtr obar
             = vo.Get<HdBufferArrayRangeSharedPtr>();
         HdBufferArrayRangeSharedPtr ubar
             = vu.Get<HdBufferArrayRangeSharedPtr>();
-        HdBufferArrayRangeSharedPtr cbar
-            = vc.Get<HdBufferArrayRangeSharedPtr>();
 
         renderPassShader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
@@ -247,14 +244,9 @@ HdxRenderTask::_SetHdStRenderPassState(HdTaskContext *ctx,
             HdStBindingRequest(HdStBinding::UBO,
                                HdxTokens->selectionUniforms, ubar,
                                /*interleave*/true));
-        renderPassShader->AddBufferBinding(
-            HdStBindingRequest(HdStBinding::SSBO,
-                               HdxTokens->selectionPointColors, cbar,
-                               /*interleave*/false));
     } else {
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionOffsets);
         renderPassShader->RemoveBufferBinding(HdxTokens->selectionUniforms);
-        renderPassShader->RemoveBufferBinding(HdxTokens->selectionPointColors);
     }
 }
 

@@ -91,7 +91,7 @@ private:
     HdxSelectionTaskParams _params;
     HdBufferArrayRangeSharedPtr _selOffsetBar;
     HdBufferArrayRangeSharedPtr _selUniformBar;
-    HdBufferArrayRangeSharedPtr _selPointColorsBar;
+    size_t _pointColorsBufferSize;
 
     HdxSelectionTask() = delete;
     HdxSelectionTask(const HdxSelectionTask &) = delete;
