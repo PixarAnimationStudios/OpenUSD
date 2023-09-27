@@ -221,6 +221,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (uboSize)                                   \
     (vboRelocated)
 
+// XXX Move to hdSt.
 #define HD_SHADER_TOKENS                        \
     (alphaThreshold)                            \
     (clipPlanes)                                \
@@ -243,6 +244,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (pointSize)                                 \
     (pointSelectedSize)                         \
     (materialTag)                               \
+    (numClipPlanes)                             \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (postTessControlShader)                     \

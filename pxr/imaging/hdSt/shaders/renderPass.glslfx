@@ -170,13 +170,11 @@ vec2 HorizontallyNormalizedFilmbackCoordinates()
 
 void ApplyClipPlanes(vec4 Peye)
 {
+#if defined(HD_HAS_numClipPlanes)
 #if defined(HD_HAS_clipPlanes)
-#if defined(HD_NUM_clipPlanes) // more than 1 (clipPlanes[N])
-    for (int i=0; i<HD_NUM_clipPlanes; ++i) {
+    for (int i=0; i<HdGet_numClipPlanes(); ++i) {
         gl_ClipDistance[i] = dot(HdGet_clipPlanes(i), Peye);
     }
-#else                          // only 1      (clipPlanes)
-    gl_ClipDistance[0] = dot(HdGet_clipPlanes(), Peye);
 #endif
 #endif
 }

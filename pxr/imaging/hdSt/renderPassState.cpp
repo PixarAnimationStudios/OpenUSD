@@ -274,7 +274,7 @@ HdStRenderPassState::Prepare(
 
     // allocate bar if it does not exist
     if (!_renderPassStateBar || 
-        (_clipPlanesBufferSize != clipPlanes.size()) ||
+        _clipPlanesBufferSize < clipPlanes.size() ||
         _alphaThresholdCurrent != _alphaThreshold) {
         HdBufferSpecVector bufferSpecs;
 
@@ -343,12 +343,18 @@ HdStRenderPassState::Prepare(
             HdShaderTokens->viewport,
             HdTupleType{HdTypeFloatVec4, 1});
 
-        if (clipPlanes.size() > 0) {
-            bufferSpecs.emplace_back(
-                HdShaderTokens->clipPlanes,
-                HdTupleType{HdTypeFloatVec4, clipPlanes.size()});
-        }
-        _clipPlanesBufferSize = clipPlanes.size();
+        // Avoid shader permutations when using 0-4 clip planes by always
+        // allocating storage for 4 clip planes.
+        static constexpr size_t s_minNumClipPlanes = 4;
+        _clipPlanesBufferSize =
+            std::max<size_t>(clipPlanes.size(), s_minNumClipPlanes);
+        bufferSpecs.emplace_back(
+            HdShaderTokens->clipPlanes,
+            HdTupleType{HdTypeFloatVec4, _clipPlanesBufferSize});
+
+        bufferSpecs.emplace_back(
+            HdShaderTokens->numClipPlanes,
+            HdTupleType{HdTypeUInt32, 1});
 
         // allocate interleaved buffer
         _renderPassStateBar = 
@@ -466,6 +472,10 @@ HdStRenderPassState::Prepare(
                 VtValue(clipPlanes),
                 clipPlanes.size()));
     }
+    sources.push_back(
+    std::make_shared<HdVtBufferSource>(
+        HdShaderTokens->numClipPlanes,
+        VtValue(uint32_t(clipPlanes.size()))));
 
     hdStResourceRegistry->AddSources(_renderPassStateBar, std::move(sources));
 
@@ -824,7 +834,10 @@ HdStRenderPassState::GetShaderHash() const
     if (_renderPassShader) {
         boost::hash_combine(hash, _renderPassShader->ComputeHash());
     }
-    boost::hash_combine(hash, GetClipPlanes().size());
+
+    // See note earlier about avoiding shader variants when 0-4 clip planes are
+    // used.
+    boost::hash_combine(hash, _clipPlanesBufferSize);
     boost::hash_combine(hash, _UseAlphaMask());
     return hash;
 }

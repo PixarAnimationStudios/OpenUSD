@@ -735,7 +735,9 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
 
     int vboStride = VBO->GetStride();
     size_t vboOffset = VBO->GetOffset() + vboStride * _index;
-    int dataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const vboDataSize = HdDataSizeOfTupleType(VBO->GetTupleType());
+    size_t const sourceDataSize =
+        HdDataSizeOfTupleType(bufferSource->GetTupleType());
     size_t const elementStride = _stripedBuffer->GetElementStride();
 
     const unsigned char *data =
@@ -744,7 +746,14 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
     HgiBufferCpuToGpuOp blitOp;
     blitOp.gpuDestinationBuffer = VBO->GetHandle();
     blitOp.sourceByteOffset = 0;
-    blitOp.byteSize = dataSize;
+    if (sourceDataSize <= vboDataSize) {
+        blitOp.byteSize = sourceDataSize;
+    } else {
+        TF_WARN("Source data size (%zu bytes) is larger than buffer resource "
+                "(%zu bytes). Clamping copy op to the latter.\n",
+                sourceDataSize, vboDataSize);
+        blitOp.byteSize = vboDataSize;
+    }
     
     HdStStagingBuffer *stagingBuffer =
         GetResourceRegistry()->GetStagingBuffer();
@@ -756,7 +765,7 @@ HdStInterleavedMemoryManager::_StripedInterleavedBufferRange::CopyData(
         stagingBuffer->StageCopy(blitOp);
         
         vboOffset += elementStride;
-        data += dataSize;
+        data += vboDataSize;
     }
 
     HD_PERF_COUNTER_ADD(HdStPerfTokens->copyBufferCpuToGpu,
