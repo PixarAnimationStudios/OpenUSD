@@ -227,7 +227,9 @@ private:
     // setting of the render pipeline state.
     // If an aovIndex is specified then the color mask will be correlated.
     void _InitAttachmentDesc(HgiAttachmentDesc &attachmentDesc,
-                             int aovIndex = -1) const;
+                             HdRenderPassAovBinding const & binding,
+                             HdRenderBuffer const * renderBuffer,
+                             int aovIndex) const;
 
     void _InitPrimitiveState(
                 HgiGraphicsPipelineDesc * pipeDesc,
