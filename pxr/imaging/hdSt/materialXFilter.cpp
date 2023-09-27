@@ -40,6 +40,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include <MaterialXGenShader/Util.h>
+#include <MaterialXGenShader/DefaultColorManagementSystem.h>
 #include <MaterialXRender/Util.h>
 #include <MaterialXRender/LightHandler.h> 
 
@@ -68,6 +69,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (domeLightFallback)
     (ND_image_color3)
     (file)
+
+    // Colorspace Tokens
+    (colorSpace)
+    (sourceColorSpace)
 );
 
 
@@ -141,6 +146,7 @@ _CreateHdStMaterialXContext(
 mx::ShaderPtr
 HdSt_GenMaterialXShader(
     mx::DocumentPtr const& mxDoc,
+    mx::DocumentPtr const& stdLibraries,
     mx::FileSearchPath const& searchPath,
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
@@ -164,6 +170,18 @@ HdSt_GenMaterialXShader(
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
 #endif
+
+    // Initialize the color management system
+    mx::DefaultColorManagementSystemPtr cms =
+        mx::DefaultColorManagementSystem::create(
+            mxContext.getShaderGenerator().getTarget());
+    cms->loadLibrary(stdLibraries);
+    mxContext.getShaderGenerator().setColorManagementSystem(cms);
+
+    // Set the colorspace
+    // XXX: This is the equivalent of the default source colorSpace, which does
+    // not yet have a schema and is therefore not yet accessable here 
+    mxDoc->setColorSpace("lin_rec709");
 
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
@@ -270,8 +288,7 @@ _GetHdTextureParameters(
 }
 
 static void
-_AddDefaultMtlxTextureValues(
-    std::map<TfToken, VtValue>* hdTextureParams)
+_AddDefaultMtlxTextureValues(std::map<TfToken, VtValue>* hdTextureParams)
 {
     // MaterialX uses repeat/periodic for the default wrap values, without
     // this the texture will use the Hydra default useMetadata. 
@@ -280,6 +297,10 @@ _AddDefaultMtlxTextureValues(
         VtValue(HdStTextureTokens->repeat);
     (*hdTextureParams)[HdStTextureTokens->wrapT] = 
         VtValue(HdStTextureTokens->repeat);
+
+    // Set the default colorSpace to be 'raw'. This allows MaterialX to handle
+    // colorspace transforms.
+    (*hdTextureParams) [_tokens->sourceColorSpace] = VtValue(HdStTokens->raw);
 }
 
 // Find the HdNode and its corresponding NodePath in the given HdNetwork 
@@ -938,7 +959,8 @@ _GenerateMaterialXShader(
     mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
     
     // Generate the glslfx source code from the mtlxDoc
-    return HdSt_GenMaterialXShader(mtlxDoc, searchPath, mxHdInfo, apiName);
+    return HdSt_GenMaterialXShader(
+        mtlxDoc, stdLibraries, searchPath, mxHdInfo, apiName);
 }
 
 void
@@ -972,6 +994,13 @@ HdSt_ApplyMaterialXFilter(
             Tf_HashState terminalNodeHash;
             TfHashAppend(terminalNodeHash, terminalNode.nodeTypeId);
             TfHashAppend(terminalNodeHash, materialTagToken);
+            for (auto param : terminalNode.parameters) {
+                auto result = SdfPath::StripPrefixNamespace(
+                        param.first.GetString(), _tokens->colorSpace);
+                if (result.second) {
+                    TfHashAppend(terminalNodeHash, param);
+                }
+            }
             HdInstance<mx::ShaderPtr> glslfxInstance = 
                 resourceRegistry->RegisterMaterialXShader(
                     terminalNodeHash.GetCode());

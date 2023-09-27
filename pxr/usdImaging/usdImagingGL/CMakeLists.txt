@@ -3965,6 +3965,18 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialXBasic
     )
+
+    pxr_register_test(testUsdImagingGLMaterialXBasic_mxColorspaces
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxColorspaces.usda -write mxColorspaces.png"
+        IMAGE_DIFF_COMPARE
+            mxColorspaces.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXBasic
+    )
     
     # MaterialX materials using texture, texture coordinates, and geompropvalues.
     pxr_install_test_dir(
@@ -4061,6 +4073,18 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage mxCustomNodeDef.usda -write mxCustomNodeDef.png"
         IMAGE_DIFF_COMPARE
             mxCustomNodeDef.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXTextured
+    )
+
+    pxr_register_test(testUsdImagingGLMaterialXTextured_mxTexColorspaces
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxTexColorspaces.usda -write mxTexColorspaces.png"
+        IMAGE_DIFF_COMPARE
+            mxTexColorspaces.png
         FAIL 0.5
         FAIL_PERCENT 0.005
         WARN 0.05

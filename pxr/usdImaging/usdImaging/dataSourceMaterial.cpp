@@ -93,6 +93,14 @@ public:
             UsdAttribute attr(input.GetValueProducingAttribute(&attrType));
             if (attrType == UsdShadeAttributeType::Input) {
                 result.push_back(input.GetBaseName());
+
+                // If the attribute has a colorspace add 'colorSpace:attrName'
+                // to the result
+                if (attr.HasColorSpace()) {
+                    TfToken colorSpaceInputName(SdfPath::JoinIdentifier(
+                        SdfFieldKeys->ColorSpace, input.GetBaseName()));
+                    result.push_back(colorSpaceInputName);
+                }
             }
         }
         return result;
@@ -100,6 +108,22 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
+        // If this is a colorspace attribute the name will be of the form
+        // 'colorSpace:attrName'
+        const std::pair<std::string, bool> result =
+            SdfPath::StripPrefixNamespace(
+                name.GetString(), SdfFieldKeys->ColorSpace.GetString());
+        if (result.second) {
+            UsdShadeInput input = _shaderNode.GetInput(TfToken(result.first));
+            UsdShadeAttributeType attrType;
+            UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+            if (attrType == UsdShadeAttributeType::Input && 
+                attr.HasColorSpace()) {
+                return HdRetainedSampledDataSource::New(
+                    VtValue(attr.GetColorSpace()));
+            }
+        }
+
         UsdShadeInput input = _shaderNode.GetInput(name);
         if (!input.IsDefined()) {
             return nullptr;
@@ -118,8 +142,8 @@ public:
         // fallback case for requested but unauthored inputs on lights or
         // light filters -- which will not return a value for
         // GetValueProducingAttribute but can still provide an attr
-        if (_shaderNode.GetPrim().HasAPI<UsdLuxLightAPI>()
-                || _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
+        if (_shaderNode.GetPrim().HasAPI<UsdLuxLightAPI>() ||
+            _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
             attr = input.GetAttr();
             if (attr) {
                 return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
@@ -383,10 +407,8 @@ public:
                     _locatorPrefix.IsEmpty()
                         ? _locatorPrefix
                         : _locatorPrefix
-                            .Append(
-                                _shaderNode.GetPrim().GetPath().GetToken())
-                            .Append(
-                                HdMaterialNodeSchemaTokens->parameters)
+                            .Append(_shaderNode.GetPrim().GetPath().GetToken())
+                            .Append(HdMaterialNodeSchemaTokens->parameters)
                             );
 
         }

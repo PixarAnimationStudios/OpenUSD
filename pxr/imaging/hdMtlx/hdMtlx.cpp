@@ -30,6 +30,7 @@
 #include "pxr/base/gf/matrix4d.h"
 
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/schema.h"
 #include "pxr/usd/sdr/registry.h"
 
 #include "pxr/base/arch/fileSystem.h"
@@ -172,6 +173,9 @@ HdMtlxConvertToString(VtValue const& hdParameterValue)
     else if (hdParameterValue.IsHolding<std::string>()) {
         return hdParameterValue.UncheckedGet<std::string>();
     }
+    else if (hdParameterValue.IsHolding<TfToken>()) {
+        return hdParameterValue.UncheckedGet<TfToken>();
+    }
     else {
         TF_WARN("Unsupported Parameter Type '%s'", 
                 hdParameterValue.GetTypeName().c_str());
@@ -190,6 +194,17 @@ _ContainsTexcoordNode(mx::NodeDefPtr const& mxNodeDef)
         }
     }
     return false;
+}
+
+static std::string
+_GetInputType(mx::NodeDefPtr const& mxNodeDef, std::string const& mxInputName)
+{
+    std::string mxInputType;
+    mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
+    if (mxInput) {
+        mxInputType = mxInput->getType();
+    }
+    return mxInputType;
 }
 
 // Add a MaterialX version of the hdNode to the mxDoc/mxNodeGraph
@@ -232,20 +247,39 @@ _AddMaterialXNode(
 
     // For each of the HdNode parameters add the corresponding parameter/input 
     // to the mxNode
+    mx::StringMap inputColorspaces;
     TfTokenVector hdNodeParamNames =
         netInterface->GetAuthoredNodeParameterNames(hdNodeName);
     for (TfToken const &paramName : hdNodeParamNames) {
         // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        std::string mxInputType;
-        mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
-        if (mxInput) {
-            mxInputType = mxInput->getType();
-        }
         std::string mxInputValue = HdMtlxConvertToString(
             netInterface->GetNodeParameterValue(hdNodeName, paramName));
 
+        // Save Colorspace and associated inputName, colorspaces applied below.
+        // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
+        const std::pair<std::string, bool> result = 
+            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
+        if (result.second) {
+            inputColorspaces[result.first] = mxInputValue;
+            continue;
+        }
+
+        // Set the input value on the mxNode
+        const std::string mxInputType = _GetInputType(mxNodeDef, mxInputName);
         mxNode->setInputValue(mxInputName, mxInputValue, mxInputType);
+    }
+
+    // Apply Colorspaces to inputs. 
+    for (auto inputColorspacePair : inputColorspaces) {
+        mx::InputPtr mxInput = mxNode->getInput(inputColorspacePair.first);
+        if (mxInput) {
+            mxInput->setColorSpace(inputColorspacePair.second);
+        } else {
+            TF_WARN("Input '%s' on '%s' node not found, unable to set '%s'"
+                    "colorspace.", inputColorspacePair.first.c_str(), 
+                    hdNodeName.GetText(), inputColorspacePair.second.c_str());
+        }
     }
 
     // MaterialX nodes that use textures are assumed to have a filename input
@@ -452,18 +486,38 @@ _AddParameterInputsToTerminalNode(
         return;
     }
 
+    mx::StringMap inputColorspaces;
     for (TfToken const &paramName : paramNames) {
         // Get the MaterialX Parameter info
         const std::string &mxInputName = paramName.GetString();
-        std::string mxInputType;
-        mx::InputPtr mxInput = mxNodeDef->getActiveInput(mxInputName);
-        if (mxInput) {
-            mxInputType = mxInput->getType();
-        }
         std::string mxInputValue = HdMtlxConvertToString(
             netInterface->GetNodeParameterValue(terminalNodeName, paramName));
 
+        // Save Colorspace and associated inputName, colorspaces applied below.
+        // Note: Colorspace inputNames are of the form 'colorSpace:inputName'
+        const std::pair<std::string, bool> result = 
+            SdfPath::StripPrefixNamespace(mxInputName, SdfFieldKeys->ColorSpace);
+        if (result.second) {
+            inputColorspaces[result.first] = mxInputValue;
+            continue;
+        }
+
+        // Set the Input value on the mxShaderNode
+        const std::string mxInputType = _GetInputType(mxNodeDef, mxInputName);
         mxShaderNode->setInputValue(mxInputName, mxInputValue, mxInputType);
+    }
+
+    // Apply Colorspaces to inputs. 
+    for (auto inputColorspacePair : inputColorspaces) {
+        mx::InputPtr mxInput = mxShaderNode->getInput(inputColorspacePair.first);
+        if (mxInput) {
+            mxInput->setColorSpace(inputColorspacePair.second);
+        } else {
+            TF_WARN("Input '%s' on '%s' terminal node not found, unable to "
+                    "set '%s' colorspace.", inputColorspacePair.first.c_str(), 
+                    terminalNodeName.GetText(), 
+                    inputColorspacePair.second.c_str());
+        }
     }
 }
 

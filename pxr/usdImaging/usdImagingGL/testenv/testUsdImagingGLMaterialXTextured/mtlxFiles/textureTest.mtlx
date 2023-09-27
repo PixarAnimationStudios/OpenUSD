@@ -3,7 +3,7 @@
   <nodegraph name="NG_imagetex1">
     <texcoord name="texcoord0" type="vector2" />
     <image name="image0_color" type="color3" nodedef="ND_image_color3">
-      <input name="file" type="filename" uniform="true" value="./grid.png" />
+      <input name="file" type="filename" uniform="true" value="./grid.png" colorspace="srgb_texture"/>
       <input name="texcoord" type="vector2" nodename="texcoord0" />
     </image>
     <output name="out_color_0" type="color3" nodename="image0_color" />
@@ -24,7 +24,7 @@
       <input name="scale" type="vector2" value="0.1, 0.1" />
     </place2d>
     <image name="image0_color" type="color3" nodedef="ND_image_color3">
-      <input name="file" type="filename" uniform="true" value="./grid.png" />
+      <input name="file" type="filename" uniform="true" value="./grid.png" colorspace="srgb_texture"/>
       <input name="texcoord" type="vector2" nodename="place2d" />
       <input name="uaddressmode" type="string" value="mirror"/>
     </image>

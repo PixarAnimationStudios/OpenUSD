@@ -49,7 +49,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((discoveryType, "mtlx"))
     ((sourceType, ""))
 
-    (colorspace)
     (defaultgeomprop)
     (defaultinput)
     (doc)
@@ -294,7 +293,7 @@ ShaderBuilder::AddProperty(
 
     // Record the colorspace on inputs and outputs.
     if (isOutput || element->isA<mx::Input>()) {
-        const auto& colorspace = element->getAttribute(_tokens->colorspace);
+        const auto& colorspace = element->getColorSpace();
         if (!colorspace.empty() &&
                 colorspace != element->getParent()->getActiveColorSpace()) {
             metadata.emplace(SdrPropertyMetadata->Colorspace, colorspace);
