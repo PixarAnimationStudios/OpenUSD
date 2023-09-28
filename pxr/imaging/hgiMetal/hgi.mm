@@ -515,7 +515,7 @@ HgiMetal::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     TRACE_FUNCTION();
 
     if (cmds) {
-        _workToFlush = Hgi::_SubmitCmds(cmds, wait);
+        Hgi::_SubmitCmds(cmds, wait);
         if (cmds == _currentCmds) {
             _currentCmds = nullptr;
         }
