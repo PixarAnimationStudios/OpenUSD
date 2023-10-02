@@ -153,6 +153,11 @@ pxr_install_test_dir(
 
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewARKitUsdzPackageInPlace
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
     DEST testUsdUtilsCreateNewUsdzPackage
 )
 
@@ -174,6 +179,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
    SRC testenv/testUsdUtilsCreateNewUsdzPackage
    DEST testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+)
+
+pxr_install_test_dir(
+   SRC testenv/testUsdUtilsCreateNewUsdzPackage
+   DEST testUsdUtilsCreateNewUsdzPackageEditInPlace
 )
 
 pxr_install_test_dir(
@@ -440,6 +450,12 @@ pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackage
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewARKitUsdzPackageInPlace
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers flat.usda --check --arkit package_flat.usdz flat.usda -l contents_arkit_flat_in_place.txt"
+    EXPECTED_RETURN_CODE 0
+)
+
 pxr_register_test(testUsdUtilsCreateNewUsdzPackage
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents.txt package.usdz root.usd"
@@ -468,13 +484,19 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageUdim
     EXPECTED_RETURN_CODE 0
 )
 
-# Commented out until completion of USD-8473
-# pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
-#    PYTHON
-#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_remap_clips_dir.txt remapClipsDir.usdz remapClipsDir/root.usda"
-#    DIFF_COMPARE contents_remap_clips_dir.txt
-#    EXPECTED_RETURN_CODE 0
-#)
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+   PYTHON
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_remap_clips_dir.txt remapClipsDir.usdz remapClipsDir/root.usda"
+   DIFF_COMPARE contents_remap_clips_dir.txt
+   EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageEditInPlace
+   PYTHON
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --editLayersInPlace --expectedDirtyLayers nestedUsdz/combined.usda --check combined.usdz nestedUsdz/combined.usda -l contents_nested_in_place.txt"
+   DIFF_COMPARE contents_nested_in_place.txt
+   EXPECTED_RETURN_CODE 0
+)
 
 pxr_register_test(testUsdUtilsDependencies
     PYTHON

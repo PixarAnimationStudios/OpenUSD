@@ -91,6 +91,12 @@ private:
 
 class UsdUtils_UsdzPackageBuilder {
 public:
+    UsdUtils_UsdzPackageBuilder()
+    : _delegate(std::bind(
+            &UsdUtils_UsdzPackageBuilder::_ProcessDependency, this, 
+            std::placeholders::_1, std::placeholders::_2, 
+            std::placeholders::_3, std::placeholders::_4))
+    {}
 
     // Sets the original file path for this asset.
     // This is used with creating an ARKit usdz package as there may be some
@@ -109,6 +115,12 @@ public:
         _dependenciesToSkip = dependenciesToSkip;
     }
 
+    // Controls whether layers are edited in place
+    // Refer to UsdUtils_WritableLocalizationDelegate::SetEditLayersInPlace
+    inline void SetEditLayersInPlace(bool editLayersInPlace) {
+        _delegate.SetEditLayersInPlace(editLayersInPlace);
+    }
+
     // Processes the asset, updating the layers and performing directory
     // remapping.
     bool Build(const SdfAssetPath& assetPath, const std::string &firstLayerName)
@@ -121,7 +133,7 @@ public:
             return false;
         }
 
-        _rootLayer =SdfLayer::FindOrOpen(assetPathStr);
+        _rootLayer = SdfLayer::FindOrOpen(assetPathStr);
         if (!_rootLayer) {
             return false;
         }
@@ -131,13 +143,7 @@ public:
             ? TfGetBaseName(_rootLayer->GetRealPath()) 
             : firstLayerName;
 
-        auto binding = std::bind(
-            &UsdUtils_UsdzPackageBuilder::_ProcessDependency, 
-            this, Placeholders::_1, Placeholders::_2, 
-            Placeholders::_3, Placeholders::_4);
-
-        UsdUtils_WritableLocalizationDelegate delegate(binding);
-        UsdUtils_LocalizationContext context(&delegate);
+        UsdUtils_LocalizationContext context(&_delegate);
         context.SetMetadataFilteringEnabled(true);
         context.SetDependenciesToSkip(_dependenciesToSkip);
         context.Process(_rootLayer);
@@ -167,8 +173,8 @@ public:
                 continue;
             }
 
-            const SdfLayerRefPtr layer = SdfLayer::FindOrOpen(layerDep.first);
-            success &= _AddLayerToPackage(&writer, layer, layerDep.second);
+            success &= _AddLayerToPackage(&writer, 
+                SdfLayer::FindOrOpen(layerDep.first), layerDep.second);
         }
 
         for (const auto & fileDep : _filesToCopy) {
@@ -351,8 +357,10 @@ private:
     }
 
     bool _AddLayerToPackage(UsdZipFileWriter *writer, 
-        const SdfLayerRefPtr layer, const std::string &destPath)
+        SdfLayerRefPtr sourceLayer, const std::string &destPath)
     {
+        SdfLayerConstHandle layer = 
+            _delegate.GetLayerUsedForWriting(sourceLayer);
         TF_DEBUG(USDUTILS_CREATE_USDZ_PACKAGE).Msg(
             ".. adding layer @%s@ to package at path '%s'.\n", 
             layer->GetIdentifier().c_str(), destPath.c_str());
@@ -425,8 +433,12 @@ private:
                     _usdzFilePath.c_str());
                 return false;
             } else {
-                // The file has been added to the package successfully. We can 
-                // delete it now.
+                // XXX: This is here to work around an issue with exporting
+                // anonymous layers that are backed by crate files.  Temporary
+                // layers used for layer modifications need to be cleared to
+                // prevent a mapped file descriptor from being held after
+                // export to temporary file.
+                _delegate.ClearLayerUsedForWriting(sourceLayer);
                 TfDeleteFile(tmpLayerExportPath);
             }
         }
@@ -474,6 +486,8 @@ private:
     SdfLayerRefPtr _rootLayer;
     UsdUtils_DirectoryRemapper _directoryRemapper;
 
+    UsdUtils_WritableLocalizationDelegate _delegate;
+
     // User supplied first layer override name
     std::string _firstLayerName;
 
@@ -483,7 +497,7 @@ private:
     // The resolved path of the root usd layer
     std::string _rootFilePath;
 
-    // The output path that the USDZ package will be writtent o
+    // The output path that the USDZ package will be written to
     std::string _usdzFilePath;
 
     // List of dependencies to skip during packaging.
@@ -506,12 +520,14 @@ _CreateNewUsdzPackage(const SdfAssetPath &assetPath,
                       const std::string &usdzFilePath,
                       const std::string &firstLayerName,
                       const std::string &origRootFilePath=std::string(),
-                      const std::vector<std::string> &dependenciesToSkip
-                            =std::vector<std::string>())
+                      const std::vector<std::string> &dependenciesToSkip =
+                          std::vector<std::string>(),
+                      bool editLayersInPlace = false)
 {
     UsdUtils_UsdzPackageBuilder builder;
     builder.SetOriginalRootFilePath(origRootFilePath);
     builder.SetDependenciesToSkip(dependenciesToSkip);
+    builder.SetEditLayersInPlace(editLayersInPlace);
 
     if (!builder.Build(assetPath, firstLayerName)) {
         return false;
@@ -524,16 +540,24 @@ bool
 UsdUtilsCreateNewUsdzPackage(
     const SdfAssetPath& assetPath,
     const std::string& usdzFilePath,
-    const std::string& firstLayerName)
+    const std::string& firstLayerName,
+    bool editLayersInPlace)
 {
-    return _CreateNewUsdzPackage(assetPath, usdzFilePath, firstLayerName);
+    return _CreateNewUsdzPackage(
+        assetPath,
+        usdzFilePath,
+        firstLayerName,
+        /*origRootFilePath*/ "",
+        /*origRootFilePath*/ {},
+        editLayersInPlace);
 }
 
 bool
 UsdUtilsCreateNewARKitUsdzPackage(
     const SdfAssetPath &assetPath,
     const std::string &inUsdzFilePath,
-    const std::string &firstLayerName)
+    const std::string &firstLayerName,
+    bool editLayersInPlace)
 {
     auto &resolver = ArGetResolver();
 
@@ -567,14 +591,21 @@ UsdUtilsCreateNewARKitUsdzPackage(
     // invoke the regular packaging function.
     if (sublayers.empty() && references.empty() && payloads.empty()) {
         if (renamingRootLayer) {
-            return _CreateNewUsdzPackage(assetPath, usdzFilePath, 
+            return _CreateNewUsdzPackage(
+                    assetPath, 
+                    usdzFilePath, 
                     /*firstLayerName*/ targetBaseName, 
-                    /* origRootFilePath*/ resolvedPath,
-                    /* dependenciesToSkip */ {resolvedPath});
+                    /*origRootFilePath*/ resolvedPath,
+                    /*dependenciesToSkip*/ {resolvedPath},
+                    editLayersInPlace);
         } else {
-            return _CreateNewUsdzPackage(assetPath, usdzFilePath, 
+            return _CreateNewUsdzPackage(
+                assetPath, 
+                usdzFilePath, 
                 /*firstLayerName*/ targetBaseName, 
-                /* origRootFilePath*/ resolvedPath);
+                /*origRootFilePath*/ resolvedPath,
+                /*dependenciesToSkip*/ {},
+                editLayersInPlace);
         }
     }
 
@@ -599,10 +630,13 @@ UsdUtilsCreateNewARKitUsdzPackage(
         return false;
     }
 
-    bool success = _CreateNewUsdzPackage(SdfAssetPath(tmpFileName), 
-        usdzFilePath, /* firstLayerName */ targetBaseName,
+    bool success = _CreateNewUsdzPackage(
+        /*assetPath*/ SdfAssetPath(tmpFileName), 
+        usdzFilePath, 
+        /* firstLayerName */ targetBaseName,
         /* origRootFilePath*/ resolvedPath,
-        /*dependenciesToSkip*/ {resolvedPath});
+        /*dependenciesToSkip*/ {resolvedPath},
+        editLayersInPlace);
 
     if (success) {
         TfDeleteFile(tmpFileName);

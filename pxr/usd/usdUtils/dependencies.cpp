@@ -132,6 +132,7 @@ UsdUtilsModifyAssetPaths(
 
     UsdUtils_WritableLocalizationDelegate delegate(processingFunc);
     UsdUtils_LocalizationContext context(&delegate);
+    delegate.SetEditLayersInPlace(true);
     context.SetRecurseLayerDependencies(false);
     context.Process(layer);
 }

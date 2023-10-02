@@ -170,7 +170,7 @@ UsdUtils_LocalizationContext::_ProcessSublayers(
     for (const auto& sublayerPath : sublayers) {
         _EnqueueDependency(layer, sublayerPath);
     }
-    _delegate->ProcessSublayers(layer, &sublayers);
+    _delegate->ProcessSublayers(layer);
 
 }
 
@@ -296,7 +296,7 @@ UsdUtils_LocalizationContext::_ProcessPayloads(
         }
     }
 
-    _delegate->ProcessPayloads(layer, primSpec, &payloads);
+    _delegate->ProcessPayloads(layer, primSpec);
 }
 
 void
@@ -315,7 +315,7 @@ UsdUtils_LocalizationContext::_ProcessReferences(
         }
     }
 
-    _delegate->ProcessReferences(layer, primSpec, &references);
+    _delegate->ProcessReferences(layer, primSpec);
 }
 
 void
@@ -559,7 +559,7 @@ void UsdUtils_ExtractExternalReferences(
         UsdUtilsDependencyType dependencyType)
     {
         switch(dependencyType) {
-            case UsdUtilsDependencyType::SubLayer:
+            case UsdUtilsDependencyType::Sublayer:
                 for (const auto& dependency : dependencies) {
                     sublayers.emplace_back(dependency);
                 }

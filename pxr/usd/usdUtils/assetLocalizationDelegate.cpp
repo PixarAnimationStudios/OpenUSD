@@ -31,49 +31,98 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// Processes sublayer paths, removing duplicates and only updates the paths in
+// the writable layer if the processed list differs from the source lis.
 void 
 UsdUtils_WritableLocalizationDelegate::ProcessSublayers(
-    const SdfLayerRefPtr &layer,
-    SdfSubLayerProxy *sublayers)
+    const SdfLayerRefPtr &layer)
 {
-    sublayers->ModifyItemEdits(
-        [this, &layer](const std::string& path) {
-            std::vector<std::string> dependencies = {path};
+    SdfSubLayerProxy sublayerPaths = layer->GetSubLayerPaths();
+    std::vector<std::string> processedPaths;
 
-            const std::string processedPath = _processingFunc( 
-                layer, path, dependencies, UsdUtilsDependencyType::Payload);
+    for (const std::string& sublayerPath : sublayerPaths) {
+        std::vector<std::string> dependencies = {sublayerPath};
 
-            return processedPath.empty() ?
-                boost::optional<std::string>() :
-                boost::optional<std::string>(std::move(processedPath));
-    });
+        const std::string processedPath = _processingFunc( 
+            layer, sublayerPath, dependencies, UsdUtilsDependencyType::Sublayer);
+
+        if (processedPath.empty()) {
+            continue;
+        }
+
+        // duplicate paths are not allowed when calling SetSubLayerPaths
+        auto existingValue = std::find(
+            processedPaths.begin(), processedPaths.end(), processedPath);
+        if (existingValue != processedPaths.end()) {
+            continue;
+        }
+
+        processedPaths.emplace_back(processedPath);
+    }
+
+    if (processedPaths != sublayerPaths) {
+        SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+        writableLayer->SetSubLayerPaths(processedPaths);
+    }
 }
 
 void 
 UsdUtils_WritableLocalizationDelegate::ProcessPayloads(
     const SdfLayerRefPtr &layer,
-    const SdfPrimSpecHandle &,
-    SdfPayloadsProxy *payloads)
+    const SdfPrimSpecHandle &primSpec)
 {
-    payloads->ModifyItemEdits(
-        [this, &layer](const SdfPayload& payload){
-            return _ProcessRefOrPayload<SdfPayload, 
-                UsdUtilsDependencyType::Payload>(layer, payload);
-        });
+    _ProcessReferencesOrPayloads
+        <SdfPayloadListOp, UsdUtilsDependencyType::Payload>(
+        layer, primSpec, SdfFieldKeys->Payload);
 }
 
 void 
 UsdUtils_WritableLocalizationDelegate::ProcessReferences(
     const SdfLayerRefPtr &layer,
-    const SdfPrimSpecHandle &,
-    SdfReferencesProxy *references)
+    const SdfPrimSpecHandle &primSpec)
 {
-    references->ModifyItemEdits(
-        [this, &layer](const SdfReference& ref){
-            return _ProcessRefOrPayload<SdfReference, 
-                UsdUtilsDependencyType::Reference>(layer, ref);
-        }
+    _ProcessReferencesOrPayloads
+        <SdfReferenceListOp, UsdUtilsDependencyType::Reference>(
+        layer, primSpec, SdfFieldKeys->References);
+}
+
+
+// Processes references or payloads for a prim.
+// Will only attempt to get a writable layer if asset path processing modifies
+// existing list ops.
+template <class ListOpType, UsdUtilsDependencyType DEP_TYPE>
+void
+UsdUtils_WritableLocalizationDelegate::_ProcessReferencesOrPayloads(
+    const SdfLayerRefPtr &layer,
+    const SdfPrimSpecHandle &primSpec,
+    const TfToken &listOpToken)
+{
+    ListOpType processedListOps;
+    if (!primSpec->HasField(listOpToken, &processedListOps)) {
+        return;
+    }
+
+    const bool modified = processedListOps.ModifyOperations(
+        [this, &layer](const typename ListOpType::ItemType& item){
+            return _ProcessRefOrPayload<typename ListOpType::ItemType, 
+                DEP_TYPE>(layer, item);
+        },
+        /*removeDuplicates*/ true
     );
+
+    if (!modified) {
+        return;
+    }
+
+    SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+    SdfPrimSpecHandle writablePrim = 
+        writableLayer->GetPrimAtPath(primSpec->GetPath());
+    
+    if (processedListOps.HasKeys()) {
+        writablePrim->SetField(listOpToken, processedListOps);
+    } else {
+        writablePrim->ClearField(listOpToken);
+    }
 }
 
 template <class RefOrPayloadType, UsdUtilsDependencyType DEP_TYPE>
@@ -211,7 +260,7 @@ UsdUtils_WritableLocalizationDelegate::_GetUpdatedValue(
 
     return updatedValue;
 }
-
+ 
 void 
 UsdUtils_WritableLocalizationDelegate::EndProcessValue(
     const SdfLayerRefPtr &layer,
@@ -220,11 +269,18 @@ UsdUtils_WritableLocalizationDelegate::EndProcessValue(
     const VtValue &val)
 {
     VtValue updatedValue = _GetUpdatedValue(val);
+
+    if (updatedValue == val) {
+        return;
+    }
+
+    SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+
     if (updatedValue.IsEmpty()) {
-        layer->EraseField(path, key);
+        writableLayer->EraseField(path, key);
     }
     else if (val != updatedValue) {
-        layer->SetField(path, key, updatedValue);
+        writableLayer->SetField(path, key, updatedValue);
     }
 }
 
@@ -236,10 +292,17 @@ UsdUtils_WritableLocalizationDelegate::EndProcessTimeSampleValue(
         const VtValue &val)
 {
     VtValue updatedValue = _GetUpdatedValue(val);
+
+    if (updatedValue == val) {
+        return;
+    } 
+    
+    SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+
     if (updatedValue.IsEmpty()) {
-        layer->EraseTimeSample(path, t);
-    } else if ( updatedValue != val) {
-        layer->SetTimeSample(path, t, updatedValue);
+        writableLayer->EraseTimeSample(path, t);
+    } else {
+        writableLayer->SetTimeSample(path, t, updatedValue);
     }
 }
 
@@ -258,7 +321,11 @@ UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
         return;
     }
 
-    VtValue clipsValue = primSpec->GetInfo(UsdTokens->clips);
+    SdfLayerRefPtr writableLayer = _GetOrCreateWritableLayer(layer);
+    SdfPrimSpecHandle writablePrim = 
+        writableLayer->GetPrimAtPath(primSpec->GetPath());
+
+    VtValue clipsValue = writablePrim->GetInfo(UsdTokens->clips);
     const VtDictionary origClipsDict = clipsValue.UncheckedGet<VtDictionary>();
 
     VtDictionary clipsDict = origClipsDict;
@@ -266,7 +333,7 @@ UsdUtils_WritableLocalizationDelegate::ProcessClipTemplateAssetPath(
 
     clipSetDict[UsdClipsAPIInfoKeys->templateAssetPath] = VtValue(processedTemplatePath);
 
-    primSpec->SetInfo(UsdTokens->clips, VtValue(clipsDict));
+    writablePrim->SetInfo(UsdTokens->clips, VtValue(clipsDict));
 }
 
 std::string 
@@ -282,24 +349,72 @@ UsdUtils_WritableLocalizationDelegate::_GetRelativeKeyPath(
     }
 }
 
+SdfLayerRefPtr 
+UsdUtils_WritableLocalizationDelegate::_GetOrCreateWritableLayer(
+    const SdfLayerRefPtr& layer)
+{
+    if (_editLayersInPlace || !layer) {
+        return layer;
+    }
+
+    auto result = 
+        _layerCopyMap.insert(std::make_pair(layer, layer));
+
+    // a writable layer already exists
+    if (!result.second) {
+        return result.first->second;
+    }
+
+    SdfLayerRefPtr copiedLayer = SdfLayer::CreateAnonymous( 
+        layer->GetDisplayName(),layer->GetFileFormat(), 
+        layer->GetFileFormatArguments());
+    copiedLayer->TransferContent(layer);
+
+    result.first->second = copiedLayer;
+
+    return copiedLayer;
+}
+
+SdfLayerConstHandle
+UsdUtils_WritableLocalizationDelegate::GetLayerUsedForWriting(
+    const SdfLayerRefPtr& layer) 
+{
+    if (_editLayersInPlace || !layer) {
+        return layer;
+    }
+
+    auto result = _layerCopyMap.find(layer);
+
+    if (result != _layerCopyMap.end()) {
+        return result->second;
+    }
+
+    return layer;
+}
+
+void
+UsdUtils_WritableLocalizationDelegate::ClearLayerUsedForWriting(
+    const SdfLayerRefPtr& layer)
+{
+    _layerCopyMap.erase(layer);
+}
+
 void 
 UsdUtils_ReadOnlyLocalizationDelegate::ProcessSublayers(
-    const SdfLayerRefPtr &layer,
-    SdfSubLayerProxy *sublayers)
+    const SdfLayerRefPtr &layer)
 {
-    for (const auto &path : *sublayers) {
+    for (const auto &path : layer->GetSubLayerPaths()) {
         std::vector<std::string> dependencies = {path};
         _processingFunc(layer, path, dependencies, 
-            UsdUtilsDependencyType::SubLayer);
+            UsdUtilsDependencyType::Sublayer);
     }
 }
 
 void UsdUtils_ReadOnlyLocalizationDelegate::ProcessPayloads(
     const SdfLayerRefPtr &layer,
-    const SdfPrimSpecHandle &,
-    SdfPayloadsProxy *payloads)
+    const SdfPrimSpecHandle &primSpec)
 {
-    for (auto const& payload: payloads->GetAppliedItems()){
+    for (auto const& payload: primSpec->GetPayloadList().GetAppliedItems()) {
         // If the asset path is empty this is a local payload. We can ignore
         // these since they refer to the same layer where the payload was
         // authored.
@@ -316,10 +431,11 @@ void UsdUtils_ReadOnlyLocalizationDelegate::ProcessPayloads(
 void 
 UsdUtils_ReadOnlyLocalizationDelegate::ProcessReferences(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &,
-        SdfReferencesProxy *references)
+        const SdfPrimSpecHandle &primSpec)
 {
-    for (const auto& reference: references->GetAppliedItems()){
+    SdfReferencesProxy references = primSpec->GetReferenceList();
+
+    for (const auto& reference: references.GetAppliedItems()) {
         _ProcessRefOrPayload<SdfReference, UsdUtilsDependencyType::Reference>(
             layer, reference);
     }

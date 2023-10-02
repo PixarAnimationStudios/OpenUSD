@@ -103,7 +103,7 @@ void UsdUtilsModifyAssetPaths(
 // Enum class representing the type of dependency.
 enum class UsdUtilsDependencyType {
     Reference,
-    SubLayer,
+    Sublayer,
     Payload
 };
 

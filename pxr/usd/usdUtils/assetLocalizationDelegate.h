@@ -33,7 +33,7 @@
 
 #include <vector>
 #include <string>
-#include <map>
+#include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -42,18 +42,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 struct UsdUtils_LocalizationDelegate
 {
     virtual void ProcessSublayers(
-        const SdfLayerRefPtr &layer,
-        SdfSubLayerProxy *sublayers) {}
+        const SdfLayerRefPtr &layer) {}
 
     virtual void ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfPayloadEditorProxy *payloads) {}
+        const SdfPrimSpecHandle &primSpec) {}
 
     virtual void ProcessReferences(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfReferencesProxy *references) {}
+        const SdfPrimSpecHandle &primSpec) {}
 
     // Signals the start of a new value.  This will only be triggered if the 
     // value is relevant for localization.  Therefore it will be either a
@@ -113,18 +110,15 @@ public:
     {}
 
     virtual void ProcessSublayers(
-        const SdfLayerRefPtr &layer,
-        SdfSubLayerProxy *sublayers) override;
+        const SdfLayerRefPtr &layer) override;
 
     virtual void ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfPayloadsProxy *payloads) override;
+        const SdfPrimSpecHandle &primSpec) override;
 
     virtual void ProcessReferences(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfReferencesProxy *references) override;
+        const SdfPrimSpecHandle &primSpec) override;
 
     virtual void BeginProcessValue(
         const SdfLayerRefPtr &layer,
@@ -164,14 +158,43 @@ public:
         const std::string &clipSetName,
         const std::string &templateAssetPath,
         std::vector<std::string> dependencies) override;
+
+    // Controls whether layers are edited in place.  If this is enabled, the
+    // source layers will be written to directly.  If diabled, anonymous copies 
+    // of layers will be created before writing any changes to asset paths as a
+    // result of the user supplied processing function.
+    inline void SetEditLayersInPlace(bool editLayersInPlace)
+    {
+        _editLayersInPlace = editLayersInPlace;
+    }
+
+    // Returns the layer that was used for writing the passed in layer.
+    // Note that if _editLayersInPlace is true, or there were no edits to
+    // the particular layer, the passed in value will be returned.
+    SdfLayerConstHandle GetLayerUsedForWriting(const SdfLayerRefPtr& layer);
+
+    // Removes the reference to the layer used for writing changes to the
+    // source layer.
+    void ClearLayerUsedForWriting(const SdfLayerRefPtr& layer);
     
 private:
+    template <class ListOpType, UsdUtilsDependencyType DEP_TYPE>
+    void _ProcessReferencesOrPayloads(
+        const SdfLayerRefPtr &layer,
+        const SdfPrimSpecHandle &primSpec,
+        const TfToken &listOpToken);
+
     template <class RefOrPayloadType, UsdUtilsDependencyType DEP_TYPE>
     boost::optional<RefOrPayloadType> _ProcessRefOrPayload(
         const SdfLayerRefPtr &layer,
         const RefOrPayloadType& refOrPayload);
 
     VtValue _GetUpdatedValue(const VtValue &val);
+
+    // Creates or retrieves the anonymous layer used for writing changes to the
+    // source layer. If _editLayersInPlace is true then the passed in layer will
+    // be returned.
+    SdfLayerRefPtr _GetOrCreateWritableLayer(const SdfLayerRefPtr& layer);
 
     static std::string _GetRelativeKeyPath(const std::string& fullPath);
         
@@ -188,6 +211,11 @@ private:
 
     // Current state of the asset[] being processed
     VtArray<SdfAssetPath> _currentPathArray;
+
+    bool _editLayersInPlace = false;
+
+    // Maps source layer identifiers to their anonymous writable copies.
+    std::map<SdfLayerRefPtr, SdfLayerRefPtr> _layerCopyMap;
 };
 
 // This delegate provides clients with ReadOnly access to processed
@@ -206,18 +234,15 @@ public:
         : _processingFunc(processingFunc) {}
 
     virtual void ProcessSublayers(
-        const SdfLayerRefPtr &layer,
-        SdfSubLayerProxy *sublayers) override;
+        const SdfLayerRefPtr &layer) override;
 
     virtual void ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfPayloadsProxy *payloads);
+        const SdfPrimSpecHandle &primSpec);
 
     virtual void ProcessReferences(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec,
-        SdfReferencesProxy *references) override;
+        const SdfPrimSpecHandle &primSpec) override;
 
     virtual void ProcessValuePath(
         const SdfLayerRefPtr &layer,
