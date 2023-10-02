@@ -32,11 +32,83 @@
 #include "pxr/imaging/hd/tokens.h"
 
 #include "pxr/imaging/hd/instancerTopologySchema.h"
+#include "pxr/imaging/hd/mapContainerDataSource.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+namespace
+{
+
+bool
+_IsConstantOrUniformPrimvar(HdPrimvarSchema schema)
+{
+    if (HdTokenDataSourceHandle const ds = schema.GetInterpolation()) {
+        const TfToken interpolation = ds->GetTypedValue(0.0f);
+        return
+            interpolation == HdPrimvarSchemaTokens->constant ||
+            interpolation == HdPrimvarSchemaTokens->uniform;
+    }
+    return false;
+}
+
+// Usd does not have "instance" as interpolation for primvars but that is
+// what is needed for hydra. The USD spec also treats both constant and uniform
+// as constant.
+//
+// The following data source is for locator primvars:FOO and forces the
+// interpolation to be instanced unless it is uniform or constant.
+//
+class _PrimvarDataSource : public HdContainerDataSource
+{
+public:
+    HD_DECLARE_DATASOURCE(_PrimvarDataSource);
+
+    TfTokenVector GetNames() override {
+        return _inputPrimvarDs->GetNames();
+    }
+
+    HdDataSourceBaseHandle Get(const TfToken &name) override {
+        if (name == HdPrimvarSchemaTokens->interpolation) {
+            if (_IsConstantOrUniformPrimvar(_inputPrimvarDs)) {
+                static HdDataSourceBaseHandle const ds =
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        HdPrimvarSchemaTokens->constant);
+                return ds;
+            } else {
+                static HdDataSourceBaseHandle const ds =
+                    HdRetainedTypedSampledDataSource<TfToken>::New(
+                        HdPrimvarSchemaTokens->instance);
+                return ds;
+            }
+        }
+
+        return _inputPrimvarDs->Get(name);
+    }
+
+private:
+    _PrimvarDataSource(HdContainerDataSourceHandle const &inputPrimvarDs)
+      : _inputPrimvarDs(inputPrimvarDs)
+    {
+    }    
+
+    HdContainerDataSourceHandle const _inputPrimvarDs;
+};
+
+HdDataSourceBaseHandle
+_GetPrimvarDataSource(HdDataSourceBaseHandle const &ds)
+{
+    if (HdContainerDataSourceHandle const containerDs =
+            HdContainerDataSource::Cast(ds)) {
+        return _PrimvarDataSource::New(containerDs);
+    } else {
+        return nullptr;
+    }
+}
+
+};
 
 // ----------------------------------------------------------------------------
 
@@ -51,7 +123,7 @@ UsdImagingDataSourcePointInstancerMask::UsdImagingDataSourcePointInstancerMask(
         if (attr.ValueMightBeTimeVarying()) {
             static const HdDataSourceLocator locator =
                 HdInstancerTopologySchema::GetDefaultLocator()
-                .Append(HdInstancerTopologySchemaTokens->mask);
+                    .Append(HdInstancerTopologySchemaTokens->mask);
             _stageGlobals.FlagAsTimeVarying(sceneIndexPath, locator);
         }
     }
@@ -138,9 +210,20 @@ UsdImagingDataSourcePointInstancerTopology::Get(const TfToken &name)
         return UsdImagingDataSourceRelationship::New(
                 _usdPI.GetPrototypesRel(), _stageGlobals);
     } else if (name == HdInstancerTopologySchemaTokens->instanceIndices) {
+        UsdAttribute attr = _usdPI.GetProtoIndicesAttr();
+        if (!attr) {
+            return nullptr;
+        }
+
+        if (attr.ValueMightBeTimeVarying()) {
+            static const HdDataSourceLocator locator =
+                HdInstancerTopologySchema::GetDefaultLocator()
+                    .Append(HdInstancerTopologySchemaTokens->instanceIndices);
+            _stageGlobals.FlagAsTimeVarying(_sceneIndexPath, locator);
+        }
+
         VtIntArray protoIndices;
-        _usdPI.GetProtoIndicesAttr().Get(
-            &protoIndices, _stageGlobals.GetTime());
+        attr.Get(&protoIndices, _stageGlobals.GetTime());
 
         // We need to flip the protoIndices: [0,1,0] -> 0: [0,2], 1: [1].
         std::vector<VtIntArray> instanceIndices;
@@ -200,13 +283,15 @@ UsdImagingDataSourcePointInstancerPrim::Get(const TfToken &name)
         // and angularVelocities.
         return
             HdOverlayContainerDataSource::New(
+                HdMapContainerDataSource::New(
+                    _GetPrimvarDataSource,
+                    HdContainerDataSource::Cast(
+                        UsdImagingDataSourcePrim::Get(name))),
                 UsdImagingDataSourceCustomPrimvars::New(
                     _GetSceneIndexPath(),
                     _GetUsdPrim(),
                     _GetCustomPrimvarMappings(_GetUsdPrim()),
-                    _GetStageGlobals()),
-                HdContainerDataSource::Cast(
-                    UsdImagingDataSourcePrim::Get(name)));
+                    _GetStageGlobals()));
     } else {
         return UsdImagingDataSourcePrim::Get(name);
     }

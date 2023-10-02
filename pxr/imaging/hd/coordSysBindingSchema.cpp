@@ -50,9 +50,9 @@ HdCoordSysBindingSchema::GetCoordSysBinding(TfToken const &name)
 /*static*/
 HdContainerDataSourceHandle
 HdCoordSysBindingSchema::BuildRetained(
-    size_t count,
-    TfToken *names,
-    HdDataSourceBaseHandle *values)
+    const size_t count,
+    const TfToken * const names,
+    const HdDataSourceBaseHandle * const values)
 {
     return HdRetainedContainerDataSource::New(count, names, values);
 }
@@ -74,7 +74,8 @@ const TfToken &
 HdCoordSysBindingSchema::GetSchemaToken()
 {
     return HdCoordSysBindingSchemaTokens->coordSysBinding;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdCoordSysBindingSchema::GetDefaultLocator()

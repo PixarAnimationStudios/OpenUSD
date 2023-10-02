@@ -173,8 +173,8 @@ UsdRenderComputeSpec(
     TfTokenVector const& namespaces)
 {
     UsdRenderSpec renderSpec;
-    UsdPrim prim = settings.GetPrim();
-    UsdStageWeakPtr stage = prim.GetStage();
+    UsdPrim rsPrim = settings.GetPrim();
+    UsdStageWeakPtr stage = rsPrim.GetStage();
     if (!stage) {
         TF_CODING_ERROR("Invalid stage\n");
         return renderSpec;
@@ -183,7 +183,7 @@ UsdRenderComputeSpec(
     // Read shared base settings as a "base product". Note that this excludes
     // namespaced attributes that are gathered under namespacedSettings.
     UsdRenderSpec::Product baseProduct;
-    _ReadSettingsBase(UsdRenderSettingsBase(prim), &baseProduct);
+    _ReadSettingsBase(UsdRenderSettingsBase(rsPrim), &baseProduct);
 
     // Products
     SdfPathVector targets; 
@@ -200,16 +200,20 @@ UsdRenderComputeSpec(
                 false /* only get Authored values*/);
 
             // Read camera aperture and apply aspectRatioConformPolicy.
+            // Use the camera path from the rpSpec if authored, otherwise
+            // the camera path on the render settings prim. 
+            const SdfPath camPath = rpSpec.cameraPath.IsEmpty()
+                ? baseProduct.cameraPath
+                : rpSpec.cameraPath;
             if (UsdGeomCamera cam =
-                    UsdGeomCamera(stage->GetPrimAtPath(baseProduct.cameraPath))) {
-                cam.GetHorizontalApertureAttr().Get(&baseProduct.apertureSize[0]);
-                cam.GetVerticalApertureAttr().Get(&baseProduct.apertureSize[1]);
-                _ApplyAspectRatioPolicy(&baseProduct);
+                    UsdGeomCamera(stage->GetPrimAtPath(camPath))) {
+                cam.GetHorizontalApertureAttr().Get(&rpSpec.apertureSize[0]);
+                cam.GetVerticalApertureAttr().Get(&rpSpec.apertureSize[1]);
+                _ApplyAspectRatioPolicy(&rpSpec);
             } else {
                 TF_RUNTIME_ERROR("UsdRenderSettings: Could not find camera "
-                                 "<%s> for product <%s>\n",
-                                 baseProduct.cameraPath.GetText(), 
-                                 target.GetText());
+                                 "<%s> for the render product <%s>.\n",
+                                 camPath.GetText(), target.GetText());
                 continue;
             }
 
@@ -274,7 +278,7 @@ UsdRenderComputeSpec(
     settings.GetIncludedPurposesAttr().Get(&renderSpec.includedPurposes);
 
     // Store any other custom render settings attributes in namespacedSettings.
-    _ReadNamespacedSettings(prim, namespaces, &renderSpec.namespacedSettings);
+    _ReadNamespacedSettings(rsPrim, namespaces, &renderSpec.namespacedSettings);
 
     return renderSpec;
 }

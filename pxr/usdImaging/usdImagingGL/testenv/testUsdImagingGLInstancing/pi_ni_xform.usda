@@ -1,0 +1,60 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Camera "main_cam"
+{
+    double3 xformOp:translate = (5, 8, 60)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+}
+
+def PointInstancer "Instancer"
+{
+    point3f[] positions = [(0, 0, 0), (10, 0, 0)]
+    int[] protoIndices = [0, 0]
+    rel prototypes = [
+        </Instancer/PiPrototype>
+    ]
+    double3 xformOp:translate = (0, 10, 0)
+    uniform token[] xformOpOrder = ["xformOp:translate"]
+
+    def Xform "PiPrototype" (
+        doc = "Test that xform on point instancing prototype root is making it through, including to native instances."
+    )
+    {
+        def Xform "NiInstance" (
+            active = true
+            references = </NiPrototype>
+        )
+        {
+            float3 xformOp:rotateZYX = (0, 20, 0)
+            double3 xformOp:translate = (0, 0, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX"]
+        }
+
+        def Xform "NiInstance2" (
+            active = true
+            references = </NiPrototype>
+        )
+        {
+            float3 xformOp:rotateZYX = (0, 20, 0)
+            double3 xformOp:translate = (0, 5, 10)
+            uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX"]
+        }
+
+        float3 xformOp:rotateZYX = (20, 0, 0)
+        double3 xformOp:translate = (0, 0, 10)
+        uniform token[] xformOpOrder = ["xformOp:translate", "xformOp:rotateZYX"]
+    }
+}
+
+def Xform "NiPrototype" (
+    active = false
+    instanceable = true
+)
+{
+    def Cube "Cube"
+    {
+    }
+}

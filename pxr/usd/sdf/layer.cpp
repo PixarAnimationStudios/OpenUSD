@@ -1847,6 +1847,30 @@ SdfLayer::ClearCustomLayerData()
     EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->CustomLayerData);
 }
 
+VtDictionary
+SdfLayer::GetExpressionVariables() const
+{
+    return _GetValue<VtDictionary>(SdfFieldKeys->ExpressionVariables);
+}
+
+void
+SdfLayer::SetExpressionVariables(const VtDictionary& dict)
+{
+    _SetValue(SdfFieldKeys->ExpressionVariables, dict);
+}
+
+bool 
+SdfLayer::HasExpressionVariables() const
+{
+    return HasField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
+void 
+SdfLayer::ClearExpressionVariables()
+{
+    EraseField(SdfPath::AbsoluteRootPath(), SdfFieldKeys->ExpressionVariables);
+}
+
 SdfPrimSpecHandle
 SdfLayer::GetPseudoRoot() const
 {
@@ -3304,8 +3328,8 @@ SdfLayer::_OpenLayerAndUnlockRegistry(
     // initialization.  But now that the layer is in the registry, we release
     // the registry lock to avoid blocking progress of threads working with
     // other layers.
-    TF_VERIFY(_layerRegistry->
-              FindByIdentifier(layer->GetIdentifier()) == layer,
+    TF_VERIFY(_layerRegistry->Find(layer->GetIdentifier(),
+                                   layer->GetResolvedPath()) == layer,
               "Could not find %s", layer->GetIdentifier().c_str());
 
     lock.release();
@@ -3947,7 +3971,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
             std::set<SdfPath> paths;
         };
 
-        _SpecsToCreate specsToCreate(*boost::get_pointer(_data));
+        _SpecsToCreate specsToCreate(*get_pointer(_data));
         newData->VisitSpecs(&specsToCreate);
 
         SdfPath unrecognizedSpecTypePaths[SdfNumSpecTypes];
@@ -4096,8 +4120,7 @@ SdfLayer::_SetData(const SdfAbstractDataPtr &newData,
         if (!updater.unrecognizedFields.empty()) {
             vector<string> fieldDescrs;
             fieldDescrs.reserve(updater.unrecognizedFields.size());
-            for (std::pair<TfToken, SdfPath> const &tokenPath:
-                     updater.unrecognizedFields) {
+            for (auto const &tokenPath: updater.unrecognizedFields) {
                 fieldDescrs.push_back(
                     TfStringPrintf("'%s' first seen at <%s>",
                                    tokenPath.first.GetText(),
@@ -4497,7 +4520,7 @@ SdfLayer::_PrimDeleteSpec(const SdfPath &path, bool inert, bool useDelegate)
     Sdf_ChangeManager::Get().DidRemoveSpec(_self, path, inert);
 
     TraversalFunction eraseFunc = 
-        std::bind(&_EraseSpecAtPath, boost::get_pointer(_data), ph::_1);
+        std::bind(&_EraseSpecAtPath, get_pointer(_data), ph::_1);
     Traverse(path, eraseFunc);
 }
 

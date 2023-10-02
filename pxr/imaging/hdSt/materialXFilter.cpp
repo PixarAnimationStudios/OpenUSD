@@ -121,11 +121,11 @@ _CreateHdStMaterialXContext(
 {
 #if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
     MATERIALX_BUILD_VERSION >= 7
-    if(apiName == HgiTokens->Metal) {
+    if (apiName == HgiTokens->Metal) {
         return HdStMaterialXShaderGenMsl::create(mxHdInfo);
     }
 #endif
-    if(apiName == HgiTokens->OpenGL) {
+    if (apiName == HgiTokens->OpenGL) {
         return HdStMaterialXShaderGenGlsl::create(mxHdInfo);
     }
     else {
@@ -978,9 +978,14 @@ HdSt_ApplyMaterialXFilter(
 
             if (glslfxInstance.IsFirstInstance()) {
                 // Generate the MaterialX glslfx ShaderPtr
-                glslfxShader = _GenerateMaterialXShader(
-                    hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                    materialTagToken, apiName, bindlessTexturesEnabled);
+                try {
+                    glslfxShader = _GenerateMaterialXShader(
+                        hdNetwork, materialPath, terminalNode, terminalNodePath,
+                        materialTagToken, apiName, bindlessTexturesEnabled);
+                } catch (mx::Exception& exception) {
+                    TF_CODING_ERROR("Unable to create the Glslfx Shader.\n"
+                        "MxException: %s", exception.what());
+                }
 
                 // Store the mx::ShaderPtr 
                 glslfxInstance.SetValue(glslfxShader);
@@ -1002,28 +1007,35 @@ HdSt_ApplyMaterialXFilter(
         }
         else {
             // Process the network and generate the MaterialX glslfx ShaderPtr
-            glslfxShader = _GenerateMaterialXShader(
-                hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                materialTagToken, apiName, bindlessTexturesEnabled);
+            try {
+                glslfxShader = _GenerateMaterialXShader(
+                    hdNetwork, materialPath, terminalNode, terminalNodePath, 
+                    materialTagToken, apiName, bindlessTexturesEnabled);
+            } catch (mx::Exception& exception) {
+                TF_CODING_ERROR("Unable to create the Glslfx Shader.\n"
+                    "MxException: %s", exception.what());
+            }
 
             // Add material parameters from the glslfxShader
             _AddMaterialXParams(glslfxShader, materialParams);
         }
 
-        // Create a new terminal node with the new glslfxSource
-        const std::string glslfxSourceCode =
-            glslfxShader->getSourceCode(mx::Stage::PIXEL);
-        SdrShaderNodeConstPtr sdrNode = 
-            sdrRegistry.GetShaderNodeFromSourceCode(glslfxSourceCode, 
-                                                    HioGlslfxTokens->glslfx,
-                                                    NdrTokenMap()); // metadata
-        HdMaterialNode2 newTerminalNode;
-        newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
-        newTerminalNode.inputConnections = terminalNode.inputConnections;
-        newTerminalNode.parameters = terminalNode.parameters;
+        // Create a new terminal node with the glslfxShader
+        if (glslfxShader) {
+            const std::string glslfxSourceCode =
+                glslfxShader->getSourceCode(mx::Stage::PIXEL);
+            SdrShaderNodeConstPtr sdrNode = 
+                sdrRegistry.GetShaderNodeFromSourceCode(glslfxSourceCode, 
+                                                        HioGlslfxTokens->glslfx,
+                                                        NdrTokenMap()); // metadata
+            HdMaterialNode2 newTerminalNode;
+            newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
+            newTerminalNode.inputConnections = terminalNode.inputConnections;
+            newTerminalNode.parameters = terminalNode.parameters;
 
-        // Replace the original terminalNode with this newTerminalNode
-        hdNetwork->nodes[terminalNodePath] = newTerminalNode;
+            // Replace the original terminalNode with this newTerminalNode
+            hdNetwork->nodes[terminalNodePath] = newTerminalNode;
+        }
     }
 }
 

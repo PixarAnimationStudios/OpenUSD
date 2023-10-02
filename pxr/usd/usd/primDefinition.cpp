@@ -520,7 +520,7 @@ UsdPrimDefinition::_ComposeOverAndReplaceExistingProperty(
     // get the property spec with the overrides applied. Any fields that
     // are defined in the override spec are stronger so we copy the defined
     // spec fields that aren't already in the override spec.
-    for (const TfToken srcField : defProp.ListMetadataFields()) {
+    for (const TfToken &srcField : defProp.ListMetadataFields()) {
         if (!overLayerAndPath.HasField<VtValue>(srcField, nullptr)) {
             VtValue value;
             if (defLayerAndPath->HasField(srcField, &value)) {

@@ -32,6 +32,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/range2f.h"
 
 #include <vector>
@@ -39,7 +40,7 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 ///
-/// Abstract hydra prim backing render settings scene description.
+/// Hydra prim backing render settings scene description.
 /// While it is a state prim (Sprim) in spirit, it is made to be a Bprim to
 /// ensure that it is sync'd prior to Sprims and Rprims to allow render setting 
 /// opinions to be discovered and inform the sync process of those prims.
@@ -75,12 +76,14 @@ public:
         DirtyIncludedPurposes        = 1 << 4,
         DirtyMaterialBindingPurposes = 1 << 5,
         DirtyRenderingColorSpace     = 1 << 6,
+        DirtyShutterInterval         = 1 << 7,
         AllDirty                     =    DirtyActive
                                         | DirtyNamespacedSettings
                                         | DirtyRenderProducts
                                         | DirtyIncludedPurposes
                                         | DirtyMaterialBindingPurposes
                                         | DirtyRenderingColorSpace
+                                        | DirtyShutterInterval
     };
 
     // Parameters that may be queried and invalidated.
@@ -146,6 +149,9 @@ public:
     bool IsActive() const;
 
     HD_API
+    bool IsValid() const;
+
+    HD_API
     const NamespacedSettings& GetNamespacedSettings() const;
 
     HD_API
@@ -160,7 +166,9 @@ public:
     HD_API
     const TfToken& GetRenderingColorSpace() const;
 
-    // XXX Add API to query AOV bindings.
+    // XXX Using VtValue in a std::optional (C++17) sense.
+    HD_API
+    const VtValue& GetShutterInterval() const;
 
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
@@ -202,6 +210,7 @@ private:
     VtArray<TfToken> _includedPurposes;
     VtArray<TfToken> _materialBindingPurposes;
     TfToken _renderingColorSpace;
+    VtValue _vShutterInterval;
 };
 
 // VtValue requirements

@@ -76,24 +76,19 @@
 /// PRIVATE, you only need to use the DEFINE macro.
 
 #include "pxr/pxr.h"
-#include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/token.h"
 
 #include <vector>
 
-#include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/control/iif.hpp>
 #include <boost/preprocessor/control/expr_iif.hpp>
-#include <boost/preprocessor/logical/and.hpp>
-#include <boost/preprocessor/logical/not.hpp>
 #include <boost/preprocessor/punctuation/comma_if.hpp>
 #include <boost/preprocessor/seq/filter.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
 #include <boost/preprocessor/seq/size.hpp>
-#include <boost/preprocessor/seq/push_back.hpp>
 #include <boost/preprocessor/tuple/elem.hpp>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -115,7 +110,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// Macro to define public tokens. This declares a list of tokens that can be
 /// used globally.  Use in conjunction with TF_DEFINE_PUBLIC_TOKENS.
 /// \hideinitializer
-#define TF_DECLARE_PUBLIC_TOKENS(...) _TF_DECLARE_PUBLIC_TOKENS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_DECLARE_PUBLIC_TOKENS_EXPAND( TF_NUM_ARGS(__VA_ARGS__) ))(__VA_ARGS__) )
+#define TF_DECLARE_PUBLIC_TOKENS(...) _TF_DECLARE_PUBLIC_TOKENS_EXPAND( _TF_DECLARE_PUBLIC_TOKENS_EVAL(_TF_DECLARE_PUBLIC_TOKENS_EXPAND( TF_PP_VARIADIC_SIZE(__VA_ARGS__) ))(__VA_ARGS__) )
 
 /// Macro to define public tokens.  Use in conjunction with
 /// TF_DECLARE_PUBLIC_TOKENS.
@@ -153,14 +148,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Note that this needs to be a unique struct name for each translation unit. 
 //
 #define _TF_TOKENS_STRUCT_NAME_PRIVATE(key) \
-    BOOST_PP_CAT(key, _PrivateStaticTokenType)
+    TF_PP_CAT(key, _PrivateStaticTokenType)
 
 // Private macro to generate struct name from key.  This version is used
 // by the public token declarations, and so key must be unique for the entire
 // namespace.
 //
 #define _TF_TOKENS_STRUCT_NAME(key) \
-    BOOST_PP_CAT(key, _StaticTokenType)
+    TF_PP_CAT(key, _StaticTokenType)
 
 ///////////////////////////////////////////////////////////////////////////////
 // Declaration Macros
@@ -259,11 +254,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 // element of a sequence is an array of tokens or not.
 //
 #define _TF_TOKENS_IS_ARRAY(s, data, elem)                                  \
-    BOOST_PP_AND(TF_PP_IS_TUPLE(elem),                                      \
-                 TF_PP_IS_TUPLE(BOOST_PP_TUPLE_ELEM(2, 1, elem)))
+    _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                        \
+               TF_PP_IS_TUPLE(BOOST_PP_TUPLE_ELEM(2, 1, elem)), 0)
 
 #define _TF_TOKENS_IS_NOT_ARRAY(s, data, elem)                              \
-    BOOST_PP_NOT(_TF_TOKENS_IS_ARRAY(s, data, elem))
+    _TF_PP_IFF(_TF_TOKENS_IS_ARRAY(s, data, elem), 0, 1)
 
 // Private macro to append all array elements to a sequence.
 //

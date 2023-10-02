@@ -29,10 +29,12 @@ pxr_library(usdGeom
         boundableComputeExtent
         camera
         capsule
+        capsule_1
         cone
         cube
         curves
         cylinder
+        cylinder_1
         hermiteCurves
         imageable
         gprim
@@ -74,10 +76,12 @@ pxr_library(usdGeom
         wrapCamera.cpp
         wrapConstraintTarget.cpp
         wrapCapsule.cpp
+        wrapCapsule_1.cpp
         wrapCone.cpp
         wrapCube.cpp
         wrapCurves.cpp
         wrapCylinder.cpp
+        wrapCylinder_1.cpp
         wrapGprim.cpp
         wrapHermiteCurves.cpp
         wrapImageable.cpp

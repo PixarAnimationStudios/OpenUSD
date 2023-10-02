@@ -29,8 +29,13 @@
 #
 # The Parser class is responsible for building up a list of these objects.
 #
+from collections import namedtuple
 
 from .cdUtils import Warn
+
+
+Param = namedtuple("Param", "type name default")
+
 
 class DocElement:
     """
@@ -44,6 +49,9 @@ class DocElement:
     in that list represents an alternative calling signature for the
     same function, i.e., in C++ parlance, the overloaded methods.
     """
+
+    __slots__ = ("name", "kind", "prot", "doc", "location", "children", "const", "virt", "explicit",
+                 "static", "inline", "returnType", "argsString", "definition", "params")
 
     def __init__(self, name, kind, prot, doc, location):
         self.name = name                     # the name of this class/method
@@ -60,7 +68,10 @@ class DocElement:
         self.returnType = None               # return type of a method/function
         self.argsString = None               # arguments for this method/func
         self.definition = None               # full C++ definition for method
-        self.params = None                   # name and type of each parameter
+        self.params = None                   # type, name, and default of each parameter
+
+    def __repr__(self):
+        return "%s(%r, %r, %r, ...)" % (self.__class__.__name__, self.name, self.kind, self.location)
 
     def isFunction(self):
         """Is this doc element a function?"""
@@ -86,6 +97,10 @@ class DocElement:
         """Is this doc element the root of the doxygen XML tree?"""
         return self.kind == 'root'
 
+    def isStatic(self):
+        """Is this doc element static?"""
+        return self.static is not None and self.static == 'yes'
+    
     def addChildren(self, children):
         """Adds the list of nodes as children of this node."""
         for child in children:
@@ -103,7 +118,7 @@ class DocElement:
                 del(self.children[childName])
                 self.__addChild(obj)
                 return
-        Warn('could not find innerclass %s in %s' % (innerClassName,self.name))
+        Warn('%r: could not find innerclass %s in %s' % (self, innerClassName,self.name))
 
     def __addChild(self, child):
         if child.name in self.children:
@@ -120,8 +135,8 @@ class DocElement:
                     # so just ignore it.
                     pass
                 else:
-                    Warn('overload mismatch: expected functions, got %s and %s' % \
-                          (self.children[child.name][0].kind, child.kind))
+                    Warn('%r: overload mismatch: expected functions, got %s and %s' % \
+                         (self, self.children[child.name][0].kind, child.kind))
         else:
             self.children[child.name] = [child]
 

@@ -1268,7 +1268,8 @@ _GetDrawPipeline(
     static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
     uint64_t hash = salt;
     hash = TfHash::Combine(hash, programHandle.Get());
-    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
+    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash(
+        state.geometricShader));
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);
@@ -1307,7 +1308,8 @@ _GetPTCSPipeline(
     static const uint64_t salt = ArchHash64(__FUNCTION__, sizeof(__FUNCTION__));
     uint64_t hash = salt;
     hash = TfHash::Combine(hash, programHandle.Get());
-    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash());
+    hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash(
+        state.geometricShader));
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);

@@ -1,10 +1,18 @@
 name: PyPI_Packaging
 
-# Trigger this build whenever this pipeline file is changed, or when setup.py
-# or other supporting files are updated. This way we will build new pypi
-# packages each time we update the version number, or any other information
-# listed here or in setup.py, like supported python versions.
+# Trigger this build whenever the dev or release branches are updated,
+# or on pull requests that affect PyPI-related files.
+#
+# Ideally we'd run this pipeline for all pull requests, but doing so consumes
+# our limited number of slots on Azure and almost always just duplicates the
+# build done in the main pipeline.
 trigger:
+    branches:
+        include:
+        - dev
+        - release
+
+pr:
     branches:
         include:
         - dev
@@ -14,8 +22,6 @@ trigger:
         - azure-pypi-pipeline.yml
         - build_scripts/pypi/*.py
         - build_scripts/pypi/package_files/*
-        exclude:
-        - /
 
 # Azure does not support an empty string as a default argument, so we use a
 # special 'none' string for post_release_tag.

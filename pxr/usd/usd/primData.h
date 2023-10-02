@@ -40,8 +40,6 @@
 
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/range/iterator_range.hpp>
-#include <boost/iterator/iterator_adaptor.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <atomic>
@@ -127,6 +125,11 @@ public:
     /// false otherwise.  If this prim is a group, it is also necessarily a
     /// model.
     bool IsGroup() const { return _flags[Usd_PrimGroupFlag]; }
+
+    bool IsComponent() const { return _flags[Usd_PrimComponentFlag]; }
+
+    USD_API
+    bool IsSubComponent() const; 
 
     /// Return true if this prim or any of its ancestors is a class.
     bool IsAbstract() const { return _flags[Usd_PrimAbstractFlag]; }
@@ -306,19 +309,11 @@ private:
         _flags[Usd_PrimClipsFlag] = hasClips;
     }
 
-    typedef boost::iterator_range<
-        class Usd_PrimDataSiblingIterator> SiblingRange;
-
     inline class Usd_PrimDataSiblingIterator _ChildrenBegin() const;
     inline class Usd_PrimDataSiblingIterator _ChildrenEnd() const;
-    inline SiblingRange _GetChildrenRange() const;
-
-    typedef boost::iterator_range<
-        class Usd_PrimDataSubtreeIterator> SubtreeRange;
 
     inline class Usd_PrimDataSubtreeIterator _SubtreeBegin() const;
     inline class Usd_PrimDataSubtreeIterator _SubtreeEnd() const;
-    inline SubtreeRange _GetSubtreeRange() const;
 
     // Data members.
     UsdStage *_stage;
@@ -353,44 +348,54 @@ private:
 };
 
 // Sibling iterator class.
-class Usd_PrimDataSiblingIterator : public boost::iterator_adaptor<
-    Usd_PrimDataSiblingIterator,                  // crtp.
-    Usd_PrimData *,                               // base iterator.
-    Usd_PrimData *,                               // value.
-    boost::forward_traversal_tag,                 // traversal.
-    Usd_PrimData *                                // reference.
-    >
-{
+class Usd_PrimDataSiblingIterator {
+    using _UnderylingIterator = Usd_PrimData*;
 public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Usd_PrimData*;
+    using reference = Usd_PrimData*;
+    using pointer = void;
+    using difference_type = std::ptrdiff_t;
+
     // Default ctor.
-    Usd_PrimDataSiblingIterator() {}
+    Usd_PrimDataSiblingIterator() = default;
+
+    reference operator*() const { return _underlyingIterator; }
+
+    // pre-increment
+    Usd_PrimDataSiblingIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    // post-increment
+    Usd_PrimDataSiblingIterator operator++(int) {
+        Usd_PrimDataSiblingIterator result = *this;
+        increment();
+        return result;
+    }
+
+    bool operator==(const Usd_PrimDataSiblingIterator& other) const {
+        return _underlyingIterator == other._underlyingIterator;
+    }
+
+    bool operator!=(const Usd_PrimDataSiblingIterator& other) const {
+        return _underlyingIterator != other._underlyingIterator;
+    }
 
 private:
     friend class Usd_PrimData;
 
     // Constructor used by Prim.
-    Usd_PrimDataSiblingIterator(const base_type &i)
-        : iterator_adaptor_(i) {}
+    Usd_PrimDataSiblingIterator(const _UnderylingIterator &i)
+        : _underlyingIterator(i) {}
 
-    // Core primitives implementation.
-    friend class boost::iterator_core_access;
-    reference dereference() const { return base(); }
     void increment() {
-        base_reference() = base_reference()->GetNextSibling();
+        _underlyingIterator = _underlyingIterator->GetNextSibling();
     }
+
+    _UnderylingIterator _underlyingIterator = nullptr;
 };
-
-// Sibling range.
-typedef boost::iterator_range<
-    class Usd_PrimDataSiblingIterator> Usd_PrimDataSiblingRange;
-
-// Inform TfIterator it should feel free to make copies of the range type.
-template <>
-struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSiblingRange> : boost::true_type {};
-template <>
-struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSiblingRange> : boost::true_type {};
 
 Usd_PrimDataSiblingIterator
 Usd_PrimData::_ChildrenBegin() const
@@ -404,54 +409,58 @@ Usd_PrimData::_ChildrenEnd() const
     return Usd_PrimDataSiblingIterator(0);
 }
 
-Usd_PrimData::SiblingRange
-Usd_PrimData::_GetChildrenRange() const
-{
-    return Usd_PrimData::SiblingRange(_ChildrenBegin(), _ChildrenEnd());
-}
-
-
 // Tree iterator class.
-class Usd_PrimDataSubtreeIterator : public boost::iterator_adaptor<
-    Usd_PrimDataSubtreeIterator,                  // crtp.
-    Usd_PrimData *,                               // base iterator.
-    Usd_PrimData *,                               // value.
-    boost::forward_traversal_tag,                 // traversal.
-    Usd_PrimData *                                // reference.
-    >
-{
+class Usd_PrimDataSubtreeIterator {
+    using _UnderlyingIterator = Usd_PrimData*;
 public:
+    using iterator_category = std::forward_iterator_tag;
+    using value_type = Usd_PrimData*;
+    using reference = Usd_PrimData*;
+    using pointer = void;
+    using difference_type = std::ptrdiff_t;
+
     // Default ctor.
-    Usd_PrimDataSubtreeIterator() {}
+    Usd_PrimDataSubtreeIterator() = default;
+
+    reference operator*() const { return _underlyingIterator; }
+
+    // pre-increment
+    Usd_PrimDataSubtreeIterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    // post-increment
+    Usd_PrimDataSubtreeIterator operator++(int) {
+        Usd_PrimDataSubtreeIterator result = *this;
+        increment();
+        return result;
+    }
+
+    bool operator==(const Usd_PrimDataSubtreeIterator& other) const {
+        return _underlyingIterator == other._underlyingIterator;
+    }
+
+    bool operator!=(const Usd_PrimDataSubtreeIterator& other) const {
+        return _underlyingIterator != other._underlyingIterator;
+    }
 
 private:
     friend class Usd_PrimData;
     friend class UsdPrimSubtreeIterator;
 
     // Constructor used by Prim.
-    Usd_PrimDataSubtreeIterator(const base_type &i)
-        : iterator_adaptor_(i) {}
+    Usd_PrimDataSubtreeIterator(const _UnderlyingIterator &i)
+        : _underlyingIterator(i) {}
 
-    // Core primitives implementation.
-    friend class boost::iterator_core_access;
-    reference dereference() const { return base(); }
     void increment() {
-        base_type &b = base_reference();
-        b = b->GetFirstChild() ? b->GetFirstChild() : b->GetNextPrim();
+        _underlyingIterator = _underlyingIterator->GetFirstChild() ?
+            _underlyingIterator->GetFirstChild() :
+            _underlyingIterator->GetNextPrim();
     }
+
+    _UnderlyingIterator _underlyingIterator = nullptr;
 };
-
-// Tree range.
-typedef boost::iterator_range<
-    class Usd_PrimDataSubtreeIterator> Usd_PrimDataSubtreeRange;
-
-// Inform TfIterator it should feel free to make copies of the range type.
-template <>
-struct Tf_ShouldIterateOverCopy<
-    Usd_PrimDataSubtreeRange> : boost::true_type {};
-template <>
-struct Tf_ShouldIterateOverCopy<
-    const Usd_PrimDataSubtreeRange> : boost::true_type {};
 
 Usd_PrimDataSubtreeIterator
 Usd_PrimData::_SubtreeBegin() const
@@ -464,12 +473,6 @@ Usd_PrimDataSubtreeIterator
 Usd_PrimData::_SubtreeEnd() const
 {
     return Usd_PrimDataSubtreeIterator(GetNextPrim());
-}
-
-Usd_PrimData::SubtreeRange
-Usd_PrimData::_GetSubtreeRange() const
-{
-    return Usd_PrimData::SubtreeRange(_SubtreeBegin(), _SubtreeEnd());
 }
 
 // Helpers for instance proxies.

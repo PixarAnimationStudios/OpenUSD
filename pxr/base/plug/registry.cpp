@@ -136,9 +136,6 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo,
     NewPluginsVec newPlugins;
     {
         Plug_TaskArena taskArena;
-        // Drop the GIL in case we have it since we're taking a lock on _mutex
-        // below, and other python threads could reenter here.
-        TF_PY_ALLOW_THREADS_IN_SCOPE();
         // XXX -- Is this mutex really needed?
         std::lock_guard<std::mutex> lock(_mutex);
         WorkWithScopedParallelism([&]() {
@@ -152,7 +149,19 @@ PlugRegistry::_RegisterPlugins(const std::vector<std::string>& pathsToPlugInfo,
                         &PlugRegistry::_RegisterPlugin<NewPluginsVec>,
                         this, std::placeholders::_1, &newPlugins),
                     &taskArena);
-            });
+        }, /*dropPythonGIL=*/false);
+        // We explicitly do not drop the GIL here because of sad stories like
+        // the following. A shared library loads and during its initialization,
+        // it wants to look up information from plugins, and thus invokes this
+        // code to do first-time plugin registration. The dynamic loader holds
+        // its own lock while it loads the shared library. If this code holds
+        // the GIL (say the library is being loaded due to a python 'import')
+        // and was to drop it during the parallelism, then other Python-based
+        // threads can take the GIL and wind up calling, dlsym() for example.
+        // This will wait on the dynamic loader's lock, but this thread will
+        // never release it since it will wait to reacquire the GIL. This causes
+        // a deadlock between the dynamic loader's lock and the Python GIL.
+        // Retaining the GIL here prevents this scenario.
     }
 
     if (!newPlugins.empty()) {
@@ -275,12 +284,6 @@ PlugPlugin::_RegisterAllPlugins()
 {
     PlugPluginPtrVector result;
 
-    // Drop the GIL here -- the _RegisterPlugins call below will drop the GIL,
-    // meaning that some python caller could arrive here and wait on the
-    // call_once while holding the GIL.  When _RegisterPlugins attempts to
-    // reacquire the GIL, we'll deadlock.
-    TF_PY_ALLOW_THREADS_IN_SCOPE();
-    
     static std::once_flag once;
     std::call_once(once, [&result](){
         PlugRegistry &registry = PlugRegistry::GetInstance();

@@ -150,7 +150,17 @@ _ReadPlugInfoObject(const std::string& pathname, JsObject* result)
 
     // The file may not exist or be readable.
     std::ifstream ifs;
+#if defined(ARCH_OS_WINDOWS)
+    // XXX: This is a MSVC specific overload to std::ifstream::open which
+    // supports std::wstring as an argument.
+    // Other compilers on Windows may fail here since it's not
+    // enforced by the C++ standard. If another compiler for Windows is needed
+    // we could use ArchOpenFile / ArchGetFileLength / ArchPRead instead
+    // of std::ifstream
+    ifs.open(ArchWindowsUtf8ToUtf16(pathname).c_str());
+#else
     ifs.open(pathname.c_str());
+#endif
     if (!ifs.is_open()) {
         TF_DEBUG(PLUG_INFO_SEARCH).
             Msg("Failed to open plugin info %s\n", pathname.c_str());

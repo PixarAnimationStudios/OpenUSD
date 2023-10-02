@@ -35,6 +35,9 @@
 #include "pxr/usd/usd/notice.h"
 #include "pxr/usd/usd/stage.h"
 
+#include <mutex>
+#include <set>
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #define USDIMAGING_STAGE_SCENE_INDEX_TOKENS \
@@ -111,14 +114,25 @@ private:
     public:
         // Datasource-facing API
         void FlagAsTimeVarying(
-            const SdfPath & primPath,
+            const SdfPath & hydraPath,
             const HdDataSourceLocator & locator) const override;
+
+        void FlagAsAssetPathDependent(
+            const SdfPath & usdPath) const override;
 
         UsdTimeCode GetTime() const override;
 
         // Scene index-facing API
         void SetTime(UsdTimeCode time,
                 HdSceneIndexObserver::DirtiedPrimEntries *dirtied);
+
+        void RemoveAssetPathDependentsUnder(const SdfPath &path);
+
+        void InvalidateAssetPathDependentsUnder(
+            const SdfPath &path,
+            std::vector<SdfPath> *primsToInvalidate,
+            std::map<SdfPath, TfTokenVector> *propertiesToInvalidate) const;
+
         void Clear();
 
     private:
@@ -133,6 +147,10 @@ private:
         using _VariabilityMap = tbb::concurrent_hash_map<SdfPath,
                 HdDataSourceLocatorSet, _PathHashCompare>;
         mutable _VariabilityMap _timeVaryingLocators;
+
+        using _AssetPathDependentsSet = std::set<SdfPath>;
+        mutable _AssetPathDependentsSet _assetPathDependents;
+        mutable std::mutex _assetPathDependentsMutex;
 
         UsdTimeCode _time;
     };

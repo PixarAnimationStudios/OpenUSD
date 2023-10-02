@@ -28,9 +28,7 @@
 #include "pxr/usd/usd/api.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/base/tf/declarePtrs.h"
-
-#include <boost/lexical_cast.hpp>
-#include <boost/operators.hpp>
+#include "pxr/base/tf/stringUtils.h"
 
 #include <string>
 #include <memory>
@@ -97,7 +95,7 @@ public:
     /// It never makes sense to use an Id with a stage other than the one it was
     /// obtained from.
     ///
-    struct Id : private boost::totally_ordered<Id> {
+    struct Id {
         /// Default construct an invalid id.
         Id() : _value(-1) {}
 
@@ -108,7 +106,15 @@ public:
         /// Create an Id from a string value.  The supplied \p val must have
         /// been obtained by calling ToString() previously.
         static Id FromString(const std::string &s) {
-            return FromLongInt(boost::lexical_cast<long int>(s));
+            bool overflow = false;
+            const long int result = TfStringToLong(s, &overflow);
+            if (overflow) {
+                TF_CODING_ERROR(
+                    "'%s' overflowed during conversion to int64_t.",
+                    s.c_str()
+                );
+            }
+            return FromLongInt(result);
         }
 
         /// Convert this Id to an integral representation.
@@ -116,7 +122,7 @@ public:
 
         /// Convert this Id to a string representation.
         std::string ToString() const {
-            return boost::lexical_cast<std::string>(ToLongInt());
+            return TfStringify(ToLongInt());
         }
 
         /// Return true if this Id is valid.
@@ -130,9 +136,25 @@ public:
         friend bool operator==(const Id &lhs, const Id &rhs) {
             return lhs.ToLongInt() == rhs.ToLongInt();
         }
+        /// Inequality comparison.
+        friend bool operator!=(const Id &lhs, const Id &rhs) {
+            return !(lhs == rhs);
+        }
         /// Less-than comparison.
         friend bool operator<(const Id &lhs, const Id &rhs) {
             return lhs.ToLongInt() < rhs.ToLongInt();
+        }
+        /// Less-than or equal comparison.
+        friend bool operator<=(const Id &lhs, const Id &rhs) {
+            return !(rhs < lhs);
+        }
+        /// Greater-than comparison.
+        friend bool operator>(const Id &lhs, const Id &rhs) {
+            return rhs < lhs;
+        }
+        /// Greater-than or equal comparison.
+        friend bool operator>=(const Id &lhs, const Id &rhs) {
+            return !(lhs < rhs);
         }
         /// Hash.
         friend size_t hash_value(Id id) {

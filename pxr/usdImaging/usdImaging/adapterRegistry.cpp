@@ -69,7 +69,14 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     PlugRegistry& plugReg = PlugRegistry::GetInstance();
     std::set<TfType> types;
     PlugRegistry::GetAllDerivedTypes(*_adapterBaseType, &types);
-    std::vector<TfToken> includeDerivedPrimTypes;
+    TfTokenVector includeDerivedPrimTypes;
+    // Set of schema families we have an adapter for; the boolean indicates
+    // whether we also need to include types which are derived from another
+    // type in the same family.
+    // Example: UsdGeomCylinder_1 belongs to UsdGeomCylinder schema family and
+    // share the same usdImaging adapter. Any derived type of Cylinder_1 will
+    // also share the same adapter unless explicitly provided.
+    std::vector<std::pair<TfToken,bool>> includeSchemaFamilies;
 
     TF_FOR_ALL(typeIt, types) {
 
@@ -145,6 +152,7 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
         // through additional metadata.
         JsObject::const_iterator includeDerivedIt = 
             metadata.find("includeDerivedPrimTypes");
+        bool includeDerived = false;
         if (includeDerivedIt != metadata.end()) {
             if (!includeDerivedIt->second.Is<bool>()) {
                 TF_RUNTIME_ERROR("[PluginDiscover] includeDerivedPrimTypes "
@@ -154,6 +162,51 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
                 continue;
             } else if (includeDerivedIt->second.Get<bool>()){ 
                 includeDerivedPrimTypes.push_back(primTypeName);
+                includeDerived = true;
+            }
+        }
+
+        // Adapters can opt in to being used as the adapter for any prim
+        // types in the same family
+        JsObject::const_iterator includeFamilyIt =
+            metadata.find("includeSchemaFamily");
+        if (includeFamilyIt != metadata.end()) {
+            if (!includeFamilyIt->second.Is<bool>()) {
+                TF_RUNTIME_ERROR("[PluginDiscover] includeSchemaFamily "
+                        "metadata was corrupted for plugin '%s'; not holding "
+                        "bool\n",
+                        typeIt->GetTypeName().c_str());
+                continue;
+            } else if (includeFamilyIt->second.Get<bool>()){
+                includeSchemaFamilies.push_back(
+                        std::make_pair(primTypeName, includeDerived));
+            }
+        }
+    }
+
+    for (auto const &pair : includeSchemaFamilies) {
+        const TfToken& familyName = std::get<0>(pair);
+        const bool includeDerived = std::get<1>(pair);
+        const TfType adapterType = _typeMap[familyName];
+        // Associate all schemas in the family with this adapter by emplacing it
+        // in the typeMap. Additionally if includeDerived is also specified,
+        // emplace it in the includeDerivedPrimTypes vector, so as to process
+        // any type which are derived from various versions of the schema.
+        for (const UsdSchemaRegistry::SchemaInfo* schemaInfo :
+                UsdSchemaRegistry::FindSchemaInfosInFamily(familyName)) {
+            if (_typeMap.emplace(schemaInfo->identifier, adapterType).second) {
+                const TfToken typeName =
+                    UsdSchemaRegistry::GetSchemaTypeName(schemaInfo->type);
+                TF_DEBUG(USDIMAGING_PLUGINS).Msg(
+                    "[PluginDiscover] Mapping adapter for family '%s' to type "
+                    "'%s'\n", familyName.GetText(), typeName.GetText());
+
+                if (includeDerived) {
+                    // This plugin has requested including both derived types
+                    // and all types in the family. This will include the
+                    // adaptor for any derived types in the family, too.
+                    includeDerivedPrimTypes.push_back(typeName);
+                }
             }
         }
     }
@@ -161,49 +214,50 @@ UsdImagingAdapterRegistry::UsdImagingAdapterRegistry() {
     // Process the types whose derived types can use its adapter after all
     // explicit prim type to adapter mappings have been found.
     auto _ProcessDerivedTypes = [&includeDerivedPrimTypes](_TypeMap *tm) {
-    for (const TfToken &primTypeName : includeDerivedPrimTypes) {
-        const TfType primType = 
-            UsdSchemaRegistry::GetTypeFromSchemaTypeName(primTypeName);
-        if (!primType) {
-            continue;
-        }
-
-        const TfType adapterType = (*tm)[primTypeName];
-
-        // Start with just the directly derived types; we'll continue to
-        // propagate the adapter type through derived prim types that do not 
-        // have their own adapter already.
-        std::vector<TfType> derivedTypesStack =
-            PlugRegistry::GetDirectlyDerivedTypes(primType);
-
-        while (!derivedTypesStack.empty()) {
-            const TfType derivedType = derivedTypesStack.back();
-            derivedTypesStack.pop_back();
-
-            const TfToken typeName = 
-                UsdSchemaRegistry::GetSchemaTypeName(derivedType);
-            if (typeName.IsEmpty()) {
+        for (const TfToken &primTypeName : includeDerivedPrimTypes) {
+            const TfType primType = 
+                UsdSchemaRegistry::GetTypeFromSchemaTypeName(primTypeName);
+            if (!primType) {
                 continue;
             }
 
-            // If the derived type name isn't already in the map, then the 
-            // mapping to the ancestor's adapter is added and we'll continue
-            // propagating to the next depth of derived types. Otherwise, the
-            // derived type's adapter was already set and we skip its derived 
-            // types regardless of whether they have adapters already or not.
-            if (tm->emplace(typeName, adapterType).second) {
-                TF_DEBUG(USDIMAGING_PLUGINS).Msg(
-                    "[PluginDiscover] Mapping adapter for type '%s' to derived "
-                    "type '%s'\n", 
-                    primTypeName.GetText(), typeName.GetText());
+            const TfType adapterType = (*tm)[primTypeName];
 
-                for (const TfType &type : 
-                        PlugRegistry::GetDirectlyDerivedTypes(derivedType)) {
-                    derivedTypesStack.push_back(type);
+            // Start with just the directly derived types; we'll continue to
+            // propagate the adapter type through derived prim types that do not 
+            // have their own adapter already.
+            std::vector<TfType> derivedTypesStack =
+                PlugRegistry::GetDirectlyDerivedTypes(primType);
+
+            while (!derivedTypesStack.empty()) {
+                const TfType derivedType = derivedTypesStack.back();
+                derivedTypesStack.pop_back();
+
+                const TfToken typeName = 
+                    UsdSchemaRegistry::GetSchemaTypeName(derivedType);
+                if (typeName.IsEmpty()) {
+                    continue;
+                }
+
+                // If the derived type name isn't already in the map, then the 
+                // mapping to the ancestor's adapter is added and we'll continue
+                // propagating to the next depth of derived types. Otherwise, the
+                // derived type's adapter was already set and we skip its derived 
+                // types regardless of whether they have adapters already or not.
+                if (tm->emplace(typeName, adapterType).second) {
+                    TF_DEBUG(USDIMAGING_PLUGINS).Msg(
+                        "[PluginDiscover] Mapping adapter for type '%s' to derived "
+                        "type '%s'\n", 
+                        primTypeName.GetText(), typeName.GetText());
+
+                    for (const TfType &type : 
+                            PlugRegistry::GetDirectlyDerivedTypes(derivedType)) {
+                        derivedTypesStack.push_back(type);
+                    }
                 }
             }
         }
-    }};
+    };
 
     _ProcessDerivedTypes(&_typeMap);
 

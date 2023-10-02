@@ -30,8 +30,6 @@
 #include "pxr/usd/sdf/api.h"
 #include "pxr/usd/sdf/path.h"
 
-#include <boost/operators.hpp>
-
 #include <functional>
 #include <iosfwd>
 #include <string>
@@ -44,8 +42,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// A single namespace edit.  It supports renaming, reparenting, reparenting
 /// with a rename, reordering, and removal.
 ///
-struct SdfNamespaceEdit :
-    boost::equality_comparable<SdfNamespaceEdit> {
+struct SdfNamespaceEdit {
 public:
     typedef SdfNamespaceEdit This;
     typedef SdfPath Path;
@@ -114,6 +111,7 @@ public:
     }
 
     SDF_API bool operator==(const This& rhs) const;
+    SDF_API bool operator!=(const This& rhs) const;
 
 public:
     Path currentPath;   ///< Path of the object when this edit starts.
@@ -131,8 +129,7 @@ SDF_API std::ostream& operator<<(std::ostream&, const SdfNamespaceEditVector&);
 ///
 /// Detailed information about a namespace edit.
 ///
-struct SdfNamespaceEditDetail :
-    boost::equality_comparable<SdfNamespaceEditDetail> {
+struct SdfNamespaceEditDetail {
 public:
     /// Validity of an edit.
     enum Result {
@@ -146,6 +143,7 @@ public:
                            const std::string& reason);
 
     SDF_API bool operator==(const SdfNamespaceEditDetail& rhs) const;
+    SDF_API bool operator!=(const SdfNamespaceEditDetail& rhs) const;
 
 public:
     Result result;          ///< Validity.

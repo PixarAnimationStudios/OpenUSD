@@ -146,6 +146,8 @@ HdRenderIndex::HdRenderIndex(
             SdfPath::AbsoluteRootPath());
 
         _tracker._SetTargetSceneIndex(get_pointer(_emulationSceneIndex));
+
+        renderDelegate->SetTerminalSceneIndex(_terminalSceneIndex);
     }
 }
 
@@ -841,7 +843,8 @@ HdRenderIndex::_ConfigureReprs()
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
-                                         /*blendWireframeColor=*/true));
+                                         /*blendWireframeColor=*/true,
+                                         /*forceOpaqueEdges=*/false));
     HdMesh::ConfigureRepr(HdReprTokens->refined,
                           HdMeshReprDesc(HdMeshGeomStyleSurf,
                                          HdCullStyleDontCare,
@@ -859,7 +862,8 @@ HdRenderIndex::_ConfigureReprs()
                                          HdCullStyleDontCare,
                                          HdMeshReprDescTokens->surfaceShader,
                                          /*flatShadingEnabled=*/false,
-                                         /*blendWireframeColor=*/true));
+                                         /*blendWireframeColor=*/true,
+                                         /*forceOpaqueEdges=*/false));
     HdMesh::ConfigureRepr(HdReprTokens->points,
                           HdMeshReprDesc(HdMeshGeomStylePoints,
                                          HdCullStyleNothing,
@@ -1386,6 +1390,20 @@ HdRenderIndex::SyncAll(HdTaskSharedPtrVector *tasks,
                        HdTaskContext *taskContext)
 {
     HD_TRACE_FUNCTION();
+
+    ////////////////////////////////////////////////////////////////////////////
+    //
+    // Render delegates driving prim updates from the scene index will expect
+    // an Update call; run this before legacy Hydra prim sync.
+    //
+
+    if (_IsEnabledSceneIndexEmulation()) {
+        _renderDelegate->Update();
+    }
+
+    //
+    ////////////////////////////////////////////////////////////////////////////
+
 
     HdRenderParam *renderParam = _renderDelegate->GetRenderParam();
 

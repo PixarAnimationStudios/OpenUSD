@@ -823,7 +823,13 @@ void evaluate(float u, float v, REF(thread, vec4) position,
 
     width = evaluateWidths(coeffs.basis, u);
     normal = normalize(evaluateNormal(coeffs.basis, u, vertexData));
-    tangent = normalize(tangent);
+    const float tanLength = length(tangent);
+    if (tanLength > 1e-5) {
+        tangent /= tanLength;
+    } else {
+        // Flipped from what you expect.
+        tangent = normalize(vertexData.Peye[0] - vertexData.Peye[3]);
+    }
 }
 
 --- --------------------------------------------------------------------------

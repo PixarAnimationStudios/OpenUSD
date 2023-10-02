@@ -1,0 +1,25 @@
+#sdf 1.4.32
+(
+    expressionVariables = {
+        string A = "B"
+    }
+)
+
+def "Root1" (
+    references = @./ref1.sdf@</Ref1>
+)
+{
+}
+
+def "Root2" (
+    references = @./ref2.sdf@</Ref2>
+)
+{
+}
+
+def "Root3" (
+    references = @./ref3.sdf@</Ref3>
+)
+{
+}
+        

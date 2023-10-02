@@ -73,6 +73,7 @@ void wrapUsdTokens()
     _AddToken(cls, "collection_MultipleApplyTemplate_ExpansionRule", UsdTokens->collection_MultipleApplyTemplate_ExpansionRule);
     _AddToken(cls, "collection_MultipleApplyTemplate_IncludeRoot", UsdTokens->collection_MultipleApplyTemplate_IncludeRoot);
     _AddToken(cls, "collection_MultipleApplyTemplate_Includes", UsdTokens->collection_MultipleApplyTemplate_Includes);
+    _AddToken(cls, "collection_MultipleApplyTemplate_MembershipExpression", UsdTokens->collection_MultipleApplyTemplate_MembershipExpression);
     _AddToken(cls, "exclude", UsdTokens->exclude);
     _AddToken(cls, "expandPrims", UsdTokens->expandPrims);
     _AddToken(cls, "expandPrimsAndProperties", UsdTokens->expandPrimsAndProperties);

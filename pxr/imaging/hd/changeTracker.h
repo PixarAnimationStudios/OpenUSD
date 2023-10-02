@@ -95,8 +95,6 @@ public:
     // Dirty bits for Tasks
     // XXX: Move this to HdTask
     enum TaskDirtyBits : HdDirtyBits {
-        //Varying               = 1 << 0,
-        DirtyType             = 1 << 1,
         DirtyParams           = 1 << 2,
         DirtyCollection       = 1 << 3,
         DirtyRenderTags       = 1 << 4,

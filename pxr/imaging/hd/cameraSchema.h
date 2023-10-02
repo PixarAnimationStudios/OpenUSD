@@ -33,7 +33,9 @@
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/schema.h" 
+#include "pxr/imaging/hd/splitDiopterSchema.h"
+#include "pxr/imaging/hd/lensDistortionSchema.h"
+
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -49,6 +51,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     (focalLength) \
     (clippingRange) \
     (clippingPlanes) \
+    (fStop) \
+    (focusDistance) \
+    (shutterOpen) \
+    (shutterClose) \
+    (exposure) \
+    (focusOn) \
+    (dofAspect) \
+    (splitDiopter) \
+    (lensDistortion) \
     (perspective) \
     (orthographic) \
 
@@ -81,6 +92,24 @@ public:
     HdVec2fDataSourceHandle GetClippingRange();
     HD_API
     HdVec4dArrayDataSourceHandle GetClippingPlanes();
+    HD_API
+    HdFloatDataSourceHandle GetFStop();
+    HD_API
+    HdFloatDataSourceHandle GetFocusDistance();
+    HD_API
+    HdDoubleDataSourceHandle GetShutterOpen();
+    HD_API
+    HdDoubleDataSourceHandle GetShutterClose();
+    HD_API
+    HdFloatDataSourceHandle GetExposure();
+    HD_API
+    HdBoolDataSourceHandle GetFocusOn();
+    HD_API
+    HdFloatDataSourceHandle GetDofAspect();
+    HD_API
+    HdSplitDiopterSchema GetSplitDiopter();
+    HD_API
+    HdLensDistortionSchema GetLensDistortion();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -99,7 +128,16 @@ public:
         const HdFloatDataSourceHandle &verticalApertureOffset,
         const HdFloatDataSourceHandle &focalLength,
         const HdVec2fDataSourceHandle &clippingRange,
-        const HdVec4dArrayDataSourceHandle &clippingPlanes
+        const HdVec4dArrayDataSourceHandle &clippingPlanes,
+        const HdFloatDataSourceHandle &fStop,
+        const HdFloatDataSourceHandle &focusDistance,
+        const HdDoubleDataSourceHandle &shutterOpen,
+        const HdDoubleDataSourceHandle &shutterClose,
+        const HdFloatDataSourceHandle &exposure,
+        const HdBoolDataSourceHandle &focusOn,
+        const HdFloatDataSourceHandle &dofAspect,
+        const HdContainerDataSourceHandle &splitDiopter,
+        const HdContainerDataSourceHandle &lensDistortion
     );
 
     /// \class HdCameraSchema::Builder
@@ -135,6 +173,33 @@ public:
         HD_API
         Builder &SetClippingPlanes(
             const HdVec4dArrayDataSourceHandle &clippingPlanes);
+        HD_API
+        Builder &SetFStop(
+            const HdFloatDataSourceHandle &fStop);
+        HD_API
+        Builder &SetFocusDistance(
+            const HdFloatDataSourceHandle &focusDistance);
+        HD_API
+        Builder &SetShutterOpen(
+            const HdDoubleDataSourceHandle &shutterOpen);
+        HD_API
+        Builder &SetShutterClose(
+            const HdDoubleDataSourceHandle &shutterClose);
+        HD_API
+        Builder &SetExposure(
+            const HdFloatDataSourceHandle &exposure);
+        HD_API
+        Builder &SetFocusOn(
+            const HdBoolDataSourceHandle &focusOn);
+        HD_API
+        Builder &SetDofAspect(
+            const HdFloatDataSourceHandle &dofAspect);
+        HD_API
+        Builder &SetSplitDiopter(
+            const HdContainerDataSourceHandle &splitDiopter);
+        HD_API
+        Builder &SetLensDistortion(
+            const HdContainerDataSourceHandle &lensDistortion);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -149,6 +214,15 @@ public:
         HdFloatDataSourceHandle _focalLength;
         HdVec2fDataSourceHandle _clippingRange;
         HdVec4dArrayDataSourceHandle _clippingPlanes;
+        HdFloatDataSourceHandle _fStop;
+        HdFloatDataSourceHandle _focusDistance;
+        HdDoubleDataSourceHandle _shutterOpen;
+        HdDoubleDataSourceHandle _shutterClose;
+        HdFloatDataSourceHandle _exposure;
+        HdBoolDataSourceHandle _focusOn;
+        HdFloatDataSourceHandle _dofAspect;
+        HdContainerDataSourceHandle _splitDiopter;
+        HdContainerDataSourceHandle _lensDistortion;
     };
 
     /// Retrieves a container data source with the schema's default name token

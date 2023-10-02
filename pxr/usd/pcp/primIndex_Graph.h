@@ -97,6 +97,11 @@ public:
     size_t 
     GetNodeIndexForNode(const PcpNodeRef &node) const;
 
+    /// Returns the indexes of the nodes that encompass the \p subtreeRootNode
+    /// and all of its descendants in strong-to-weak order.
+    std::pair<size_t, size_t> 
+    GetNodeIndexesForSubtreeRange(const PcpNodeRef &subtreeRootNode) const;
+
     /// Returns a node from the graph that uses the given site and can
     /// contribute specs, if one exists. If multiple nodes in the graph 
     /// use the same site, the one that will be returned by this function 

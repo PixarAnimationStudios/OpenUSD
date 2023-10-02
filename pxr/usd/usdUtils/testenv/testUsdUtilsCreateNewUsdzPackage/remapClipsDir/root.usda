@@ -1,0 +1,16 @@
+#usda 1.0
+(
+    defaultPrim = "Test"
+    metersPerUnit = 1.0
+    upAxis = "Y"
+)
+
+def "Test" (
+    clips = {
+        dictionary default = {
+            string templateAssetPath = "clips/clip.#.###.usda"
+        }
+    }
+)
+{
+}

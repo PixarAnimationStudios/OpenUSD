@@ -24,7 +24,7 @@
 
 #include "pxr/imaging/hdsi/materialBindingResolvingSceneIndex.h"
 
-#include "pxr/imaging/hd/materialBindingSchema.h"
+#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -69,9 +69,9 @@ HdSt_MaterialBindingResolvingSceneIndexPlugin::_AppendSceneIndex(
         inputSceneIndex,
         {
             HdTokens->preview,
-            HdMaterialBindingSchemaTokens->allPurpose,
+            HdMaterialBindingsSchemaTokens->allPurpose,
         },
-        HdMaterialBindingSchemaTokens->allPurpose);
+        HdMaterialBindingsSchemaTokens->allPurpose);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

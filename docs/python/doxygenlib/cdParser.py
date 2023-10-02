@@ -42,12 +42,17 @@ class XMLNode:
     """
     Rrepresent a single node in the XML tree.
     """
+    __slots__ = ("parent", "name", "attrs", "text", "childNodes")
+
     def __init__(self, parent, name, attrs, text):
         self.parent = parent
         self.name = name
         self.attrs = attrs
         self.text = text
         self.childNodes = []
+
+    def __repr__(self) -> str:
+        return "XMLNode(%s, %s, ...)" % (self.name, self.attrs.items())
 
     def addChildNode(self, node):
         """Append the specifed node to the children of this node."""
@@ -221,8 +226,7 @@ class Parser:
                     continue
                 if (kind == "dir"):
                     continue
-                if (kind == "file"):
-                    continue
+                # we need to keep kind == "file" because this holds info on functions
                 refid = compound_element.get('refid')
                 # Individual entity XML generated XML files are <refid>.xml
                 entity_file_name = refid + ".xml"
@@ -357,7 +361,8 @@ class Parser:
             if child.name == 'param':
                 pname = child.getText('declname')
                 ptype = child.getText('type')
-                params.append((ptype, pname))
+                pdefault = child.getText('defval') or None
+                params.append(Param(ptype, pname, pdefault))
         return params
 
     def __createDocElement(self, node):
@@ -382,7 +387,10 @@ class Parser:
             prot = ''
             doc = self.__getAllDocStrings(node, name)
             location = node.getLocation()
-            ret = DocElement(name, kind, prot, doc, location)
+            if location != ('', ''):
+                # These elements shadow class elements of the same name, but they 
+                # lack any valuable information, and thus create empty docstrings.
+                ret = DocElement(name, kind, prot, doc, location)
         elif node.name == 'compounddef':
             kind = node.getKind()
             if kind == 'class' or kind == 'struct':

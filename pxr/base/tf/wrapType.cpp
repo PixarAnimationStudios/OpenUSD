@@ -43,7 +43,6 @@
 #include <boost/python/has_back_reference.hpp>
 #include <boost/python/operators.hpp>
 #include <boost/python/overloads.hpp>
-#include <boost/preprocessor.hpp>
 
 #include <string>
 

@@ -293,6 +293,34 @@ PcpPrimIndex_Graph::GetNodeIndexForNode(const PcpNodeRef &node) const
         : _GetNumNodes();
 }
 
+std::pair<size_t, size_t> 
+PcpPrimIndex_Graph::GetNodeIndexesForSubtreeRange(
+    const PcpNodeRef &subtreeRootNode) const
+{
+    if (subtreeRootNode.GetOwningGraph() != this) {
+        return std::make_pair(_GetNumNodes(), _GetNumNodes());
+    }
+
+    // Range always starts at subtree root node index.
+    const size_t subtreeRootIndex = subtreeRootNode._GetNodeIndex();
+
+    // Find the index of the last node in the subtree.
+    size_t lastSubtreeIndex = subtreeRootIndex;
+    while (true) {
+        const _Node &node = _GetNode(lastSubtreeIndex);
+        // This node is the last node in the subtree if it has no children, 
+        // otherwise the last node in subtree is or is under this node's last 
+        // child.
+        if (node.indexes.lastChildIndex == _Node::_invalidNodeIndex) {
+            break;
+        } else {
+            lastSubtreeIndex = node.indexes.lastChildIndex;
+        }
+    }
+
+    return std::make_pair(subtreeRootIndex, lastSubtreeIndex + 1);
+}
+
 void
 PcpPrimIndex_Graph::Finalize()
 {

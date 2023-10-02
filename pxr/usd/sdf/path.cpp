@@ -378,22 +378,39 @@ SdfPath::GetPrefixes() const {
     return result;
 }
 
+SdfPathVector
+SdfPath::GetPrefixes(size_t numPrefixes) const {
+    SdfPathVector result;
+    GetPrefixes(&result, numPrefixes);
+    return result;
+}
+
 void
 SdfPath::GetPrefixes(SdfPathVector *prefixes) const
+{
+    GetPrefixes(prefixes, 0);
+}
+
+void
+SdfPath::GetPrefixes(SdfPathVector *prefixes, size_t numPrefixes) const
 {
     Sdf_PathNode const *prop = _propPart.get();
     Sdf_PathNode const *prim = _primPart.get();
 
-    size_t elemCount = GetPathElementCount();
-    prefixes->resize(elemCount);
-    
+    const size_t elemCount = GetPathElementCount();
+    if (numPrefixes == 0 || numPrefixes > elemCount) {
+        numPrefixes = elemCount;
+    }
+
+    prefixes->resize(numPrefixes);
+
     SdfPathVector::reverse_iterator iter = prefixes->rbegin();
-    while (prop && elemCount--) {
+    for (; prop && numPrefixes; --numPrefixes) {
         *iter++ = SdfPath(prim, prop);
         prop = prop->GetParentNode();
     }
-    while (prim && elemCount--) {
-        *iter++ = SdfPath(prim, prop);
+    for (; prim && numPrefixes; --numPrefixes) {
+        *iter++ = SdfPath(prim, nullptr);
         prim = prim->GetParentNode();
     }
 }

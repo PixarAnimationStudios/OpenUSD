@@ -46,6 +46,8 @@ class HdRenderPass;
 class HdInstancer;
 class HdDriver;
 
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+
 using HdRenderPassSharedPtr = std::shared_ptr<class HdRenderPass>;
 using HdRenderPassStateSharedPtr = std::shared_ptr<class HdRenderPassState>;
 using HdResourceRegistrySharedPtr = std::shared_ptr<class HdResourceRegistry>;
@@ -483,6 +485,34 @@ public:
     const std::string &GetRendererDisplayName() {
         return _displayName;
     }
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Hydra 2.0 API
+    ///
+    /// \note The following methods aid in migrating existing 1.0 based
+    ///       render delegates to the Hydra 2.0 API.
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+    
+    /// Called after the scene index graph is created during render index
+    /// construction, providing a hook point for the render delegate to
+    /// register an observer of the terminal scene index.
+    ///
+    /// \note Render delegates should not assume that the scene index is fully
+    ///       populated at this point.
+    ///
+    HD_API
+    virtual void SetTerminalSceneIndex(
+        const HdSceneIndexBaseRefPtr &terminalSceneIndex);
+
+    /// Called at the beginning of HdRenderIndex::SyncAll, before render index
+    /// prim sync, to provide the render delegate an opportunity to directly
+    /// process change notices from observing the terminal scene index,
+    /// rather than using the Hydra 1.0 Sync algorithm.
+    ///
+    HD_API
+    virtual void Update();
 
 protected:
     /// This class must be derived from.

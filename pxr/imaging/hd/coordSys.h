@@ -64,8 +64,10 @@ public:
     // Change tracking for HdCoordSys
     enum DirtyBits : HdDirtyBits {
         Clean                 = 0,
-        DirtyTransform        = 1 << 0,
-        AllDirty              = DirtyTransform
+        DirtyName             = 1 << 0,
+        DirtyTransform        = 1 << 1,
+        AllDirty              = (DirtyTransform
+                                |DirtyName)
     };
 
     /// Returns the name bound to this coordinate system.
@@ -73,6 +75,14 @@ public:
     /// There may be multiple coordinate systems with the same
     /// name, but they must associate with disjoint sets of rprims.
     TfToken GetName() const { return _name; }
+
+    HD_API
+    void Sync(HdSceneDelegate *sceneDelegate,
+              HdRenderParam   *renderParam,
+              HdDirtyBits     *dirtyBits) override;
+
+    HD_API
+    HdDirtyBits GetInitialDirtyBitsMask() const override;
 
 private:
     TfToken _name;

@@ -28,10 +28,10 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/pcp/api.h"
+#include "pxr/usd/pcp/expressionVariablesSource.h"
+
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/ar/resolverContext.h"
-
-#include <boost/operators.hpp>
 
 #include <iosfwd>
 
@@ -45,8 +45,7 @@ SDF_DECLARE_HANDLES(SdfLayer);
 ///
 /// Objects of this type are immutable.
 ///
-class PcpLayerStackIdentifier :
-    boost::totally_ordered<PcpLayerStackIdentifier> {
+class PcpLayerStackIdentifier {
 public:
     typedef PcpLayerStackIdentifier This;
 
@@ -57,10 +56,12 @@ public:
     /// Construct with given pointers.  If all arguments are \c TfNullPtr
     /// then the result is identical to the default constructed object.
     PCP_API
-    PcpLayerStackIdentifier(const SdfLayerHandle& rootLayer_,
-                            const SdfLayerHandle& sessionLayer_ = TfNullPtr,
-                            const ArResolverContext& pathResolverContext_ =
-                                ArResolverContext());
+    PcpLayerStackIdentifier(
+        const SdfLayerHandle& rootLayer,
+        const SdfLayerHandle& sessionLayer = TfNullPtr,
+        const ArResolverContext& pathResolverContext = ArResolverContext(),
+        const PcpExpressionVariablesSource& expressionVariablesOverrideSource = 
+            PcpExpressionVariablesSource());
 
     // XXX: Allow assignment because there are clients using this
     //      as a member that themselves want to be assignable.
@@ -68,17 +69,31 @@ public:
     PcpLayerStackIdentifier& operator=(const PcpLayerStackIdentifier&);
 
     // Validity.
-#if !defined(doxygen)
-    typedef const size_t This::*UnspecifiedBoolType;
-#endif
     PCP_API
-    operator UnspecifiedBoolType() const;
+    explicit operator bool() const;
 
     // Comparison.
     PCP_API
     bool operator==(const This &rhs) const;
+    bool operator!=(const This &rhs) const
+    {
+        return !(rhs == *this);
+    }
+
     PCP_API
     bool operator<(const This &rhs) const;
+    bool operator<=(const This& rhs) const
+    {
+        return !(rhs < *this);
+    }
+    bool operator>(const This& rhs) const
+    {
+        return rhs < *this;
+    }
+    bool operator>=(const This& rhs) const
+    {
+        return !(*this < rhs);
+    }
 
     // Hashing.
     struct Hash {
@@ -101,6 +116,10 @@ public:
 
     /// The path resolver context used for resolving asset paths. (optional)
     const ArResolverContext pathResolverContext;
+
+    /// The source for expression variables that compose over the expression 
+    /// variables in this layer stack. (optional)
+    const PcpExpressionVariablesSource expressionVariablesOverrideSource;
 
 private:
     size_t _ComputeHash() const;

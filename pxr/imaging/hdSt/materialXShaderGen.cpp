@@ -1105,7 +1105,6 @@ HdStMaterialXShaderGenMsl::_EmitGlslfxMetalShader(
         "shadowOcclusion", mxStage);
 
     // Add type definitions
-    emitTypeDefinitions(mxContext, mxStage);
     emitConstantBufferDeclarations(mxContext, resourceBindingCtx, mxStage);
 
     // Add all constants

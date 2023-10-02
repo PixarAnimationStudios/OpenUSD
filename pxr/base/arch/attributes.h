@@ -161,6 +161,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 /// \hideinitializer
 #   define ARCH_DESTRUCTOR(_name, _priority, ...)
 
+/// Macro to begin the definition of a class that is using private inheritance
+/// to take advantage of the empty base optimization. Some compilers require
+/// an explicit tag.
+///
+/// In C++20, usage of private inheritance may be able to be retired with the
+/// [[no_unique_address]] tag.
+#   define ARCH_EMPTY_BASES
+
 #elif defined(ARCH_COMPILER_GCC) || defined(ARCH_COMPILER_CLANG)
 
 #   define ARCH_PRINTF_FUNCTION(_fmt, _firstArg) \
@@ -171,6 +179,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_UNUSED_ARG   __attribute__ ((unused))
 #   define ARCH_UNUSED_FUNCTION __attribute__((unused))
 #   define ARCH_USED_FUNCTION __attribute__((used))
+#   define ARCH_EMPTY_BASES
 
 #elif defined(ARCH_COMPILER_MSVC)
 
@@ -180,6 +189,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 #   define ARCH_UNUSED_ARG
 #   define ARCH_UNUSED_FUNCTION
 #   define ARCH_USED_FUNCTION
+#   define ARCH_EMPTY_BASES __declspec(empty_bases)
 
 #else
 

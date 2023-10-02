@@ -26,7 +26,7 @@
 
 #include "pxr/base/tf/functionTraits.h"
 #include "pxr/base/tf/meta.h"
-#include "pxr/base/tf/preprocessorUtils.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 
 #include <string>
 #include <tuple>

@@ -30,6 +30,11 @@ pxr_library(usdUtils
         stitch
         stitchClips
         timeCodeRange
+        usdzPackage
+
+    PRIVATE_CLASSES
+        assetLocalization
+        assetLocalizationDelegate
 
     PUBLIC_HEADERS
         api.h
@@ -162,6 +167,16 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdUtilsCreateNewUsdzPackage
+    DEST testUsdUtilsCreateNewUsdzPackageUdim
+)
+
+pxr_install_test_dir(
+   SRC testenv/testUsdUtilsCreateNewUsdzPackage
+   DEST testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencies
     DEST testUsdUtilsDependencies
 )
@@ -189,6 +204,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdUtilsDependencyExtractor
     DEST testUsdUtilsDependencyExtractor4
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdUtilsDependencyExtractor
+    DEST testUsdUtilsDependencyExtractor5
 )
 
 pxr_install_test_dir(
@@ -441,6 +461,21 @@ pxr_register_test(testUsdUtilsCreateNewUsdzPackageFilterMetadataKeys
     EXPECTED_RETURN_CODE 0
 )
 
+pxr_register_test(testUsdUtilsCreateNewUsdzPackageUdim
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_udim.txt udim.usdz udim/root.usda"
+    DIFF_COMPARE contents_udim.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+# Commented out until completion of USD-8473
+# pxr_register_test(testUsdUtilsCreateNewUsdzPackageRemapClipsDir
+#    PYTHON
+#    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsCreateNewUsdzPackage --check -l contents_remap_clips_dir.txt remapClipsDir.usdz remapClipsDir/root.usda"
+#    DIFF_COMPARE contents_remap_clips_dir.txt
+#    EXPECTED_RETURN_CODE 0
+#)
+
 pxr_register_test(testUsdUtilsDependencies
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencies"
@@ -478,6 +513,13 @@ pxr_register_test(testUsdUtilsDependencyExtractor4
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor crate.usd crate-usd.txt"
     DIFF_COMPARE crate-usd.txt
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdUtilsDependencyExtractor5
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsDependencyExtractor --open-as-anon anon.usda anon.txt"
+    DIFF_COMPARE anon.txt
     EXPECTED_RETURN_CODE 0
 )
 

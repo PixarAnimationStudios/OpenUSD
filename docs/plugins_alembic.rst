@@ -8,10 +8,10 @@ Alembic USD Plugin
 
   The Alembic USD plugin is not built by default. To enable it, 
   the :makevar:`PXR_BUILD_ALEMBIC_PLUGIN` option must be specified when running CMake.
-  Check the `3rd Party Library and Application Versions <https://github.com/PixarAnimationStudios/USD/blob/release/VERSIONS.md>`_
+  Check the `3rd Party Library and Application Versions <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/VERSIONS.md>`_
   document for the Alembic library versions that have been used for testing.
 
-  For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_.
+  For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_.
 
 As shipped, USD supports its own text (usda) and binary (usdc) file
 formats. However, it is possible for USD to support additional formats by

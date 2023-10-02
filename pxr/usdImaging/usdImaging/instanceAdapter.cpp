@@ -1129,6 +1129,9 @@ UsdImagingInstanceAdapter::_ComputeInheritedPrimvar(UsdPrim const& instancer,
     } else if (dv.IsHolding<std::string>()) {
         return _ComputeInheritedPrimvar<std::string>(
                 instancer, primvarName, result, time);
+    } else if (dv.IsHolding<SdfAssetPath>()) {
+        return _ComputeInheritedPrimvar<SdfAssetPath>(
+                instancer, primvarName, result, time);
     } else {
         TF_WARN("Native instancing: unrecognized inherited primvar type '%s' "
                 "for primvar '%s'", 
@@ -1606,6 +1609,12 @@ UsdImagingInstanceAdapter::GetInstancerTransform(UsdPrim const& instancerPrim,
                                                  UsdTimeCode time) const
 {
     TRACE_FUNCTION();
+     UsdImagingInstancerContext instancerContext;
+    _ProtoPrim const *proto;
+    if (_GetProtoPrimForChild(instancerPrim, instancerPath, &proto, &instancerContext)) {
+        return proto->adapter->GetInstancerTransform(
+            _GetPrim(proto->path), instancerPath, time);
+    }
     return GetRootTransform();
 }
 

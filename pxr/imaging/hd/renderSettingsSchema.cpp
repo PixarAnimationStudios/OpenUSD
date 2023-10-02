@@ -83,6 +83,13 @@ HdRenderSettingsSchema::GetRenderingColorSpace()
         HdRenderSettingsSchemaTokens->renderingColorSpace);
 }
 
+HdVec2dDataSourceHandle
+HdRenderSettingsSchema::GetShutterInterval()
+{
+    return _GetTypedDataSource<HdVec2dDataSource>(
+        HdRenderSettingsSchemaTokens->shutterInterval);
+}
+
 /*static*/
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::BuildRetained(
@@ -91,44 +98,50 @@ HdRenderSettingsSchema::BuildRetained(
         const HdVectorDataSourceHandle &renderProducts,
         const HdTokenArrayDataSourceHandle &includedPurposes,
         const HdTokenArrayDataSourceHandle &materialBindingPurposes,
-        const HdTokenDataSourceHandle &renderingColorSpace
+        const HdTokenDataSourceHandle &renderingColorSpace,
+        const HdVec2dDataSourceHandle &shutterInterval
 )
 {
-    TfToken names[6];
-    HdDataSourceBaseHandle values[6];
+    TfToken _names[7];
+    HdDataSourceBaseHandle _values[7];
 
-    size_t count = 0;
+    size_t _count = 0;
     if (namespacedSettings) {
-        names[count] = HdRenderSettingsSchemaTokens->namespacedSettings;
-        values[count++] = namespacedSettings;
+        _names[_count] = HdRenderSettingsSchemaTokens->namespacedSettings;
+        _values[_count++] = namespacedSettings;
     }
 
     if (active) {
-        names[count] = HdRenderSettingsSchemaTokens->active;
-        values[count++] = active;
+        _names[_count] = HdRenderSettingsSchemaTokens->active;
+        _values[_count++] = active;
     }
 
     if (renderProducts) {
-        names[count] = HdRenderSettingsSchemaTokens->renderProducts;
-        values[count++] = renderProducts;
+        _names[_count] = HdRenderSettingsSchemaTokens->renderProducts;
+        _values[_count++] = renderProducts;
     }
 
     if (includedPurposes) {
-        names[count] = HdRenderSettingsSchemaTokens->includedPurposes;
-        values[count++] = includedPurposes;
+        _names[_count] = HdRenderSettingsSchemaTokens->includedPurposes;
+        _values[_count++] = includedPurposes;
     }
 
     if (materialBindingPurposes) {
-        names[count] = HdRenderSettingsSchemaTokens->materialBindingPurposes;
-        values[count++] = materialBindingPurposes;
+        _names[_count] = HdRenderSettingsSchemaTokens->materialBindingPurposes;
+        _values[_count++] = materialBindingPurposes;
     }
 
     if (renderingColorSpace) {
-        names[count] = HdRenderSettingsSchemaTokens->renderingColorSpace;
-        values[count++] = renderingColorSpace;
+        _names[_count] = HdRenderSettingsSchemaTokens->renderingColorSpace;
+        _values[_count++] = renderingColorSpace;
     }
 
-    return HdRetainedContainerDataSource::New(count, names, values);
+    if (shutterInterval) {
+        _names[_count] = HdRenderSettingsSchemaTokens->shutterInterval;
+        _values[_count++] = shutterInterval;
+    }
+
+    return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 /*static*/
@@ -148,7 +161,8 @@ const TfToken &
 HdRenderSettingsSchema::GetSchemaToken()
 {
     return HdRenderSettingsSchemaTokens->renderSettings;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdRenderSettingsSchema::GetDefaultLocator()
@@ -224,6 +238,17 @@ HdRenderSettingsSchema::GetRenderingColorSpaceLocator()
     return locator;
 }
 
+/*static*/
+const HdDataSourceLocator &
+HdRenderSettingsSchema::GetShutterIntervalLocator()
+{
+    static const HdDataSourceLocator locator(
+        HdRenderSettingsSchemaTokens->renderSettings,
+        HdRenderSettingsSchemaTokens->shutterInterval
+    );
+    return locator;
+}
+
 
 HdRenderSettingsSchema::Builder &
 HdRenderSettingsSchema::Builder::SetNamespacedSettings(
@@ -273,6 +298,14 @@ HdRenderSettingsSchema::Builder::SetRenderingColorSpace(
     return *this;
 }
 
+HdRenderSettingsSchema::Builder &
+HdRenderSettingsSchema::Builder::SetShutterInterval(
+    const HdVec2dDataSourceHandle &shutterInterval)
+{
+    _shutterInterval = shutterInterval;
+    return *this;
+}
+
 HdContainerDataSourceHandle
 HdRenderSettingsSchema::Builder::Build()
 {
@@ -282,7 +315,8 @@ HdRenderSettingsSchema::Builder::Build()
         _renderProducts,
         _includedPurposes,
         _materialBindingPurposes,
-        _renderingColorSpace
+        _renderingColorSpace,
+        _shutterInterval
     );
 }
 

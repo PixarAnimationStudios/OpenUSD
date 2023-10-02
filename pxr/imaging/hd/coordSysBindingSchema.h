@@ -57,9 +57,10 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         size_t count,
-        TfToken *names,
-        HdDataSourceBaseHandle *values);
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 
+    HD_API
     HdPathDataSourceHandle GetCoordSysBinding(TfToken const &name);
 
 

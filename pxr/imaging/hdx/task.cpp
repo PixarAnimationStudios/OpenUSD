@@ -70,15 +70,32 @@ HdxTask::_ToggleRenderTarget(HdTaskContext* ctx)
         return;
     }
 
-    HgiTextureHandle aovTexture, aovTextureIntermediate;
-    
     if (_HasTaskContextData(ctx, HdxAovTokens->colorIntermediate)) {
-        _GetTaskContextData(ctx, HdAovTokens->color, &aovTexture);
-        _GetTaskContextData(
-            ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
-        (*ctx)[HdAovTokens->color] = VtValue(aovTextureIntermediate);
-        (*ctx)[HdxAovTokens->colorIntermediate] = VtValue(aovTexture);
+        _SwapTextures(ctx, HdAovTokens->color, HdxAovTokens->colorIntermediate);
     }
+}
+
+void
+HdxTask::_ToggleDepthTarget(HdTaskContext* ctx)
+{
+    if (!_HasTaskContextData(ctx, HdAovTokens->depth)) {
+        return;
+    }
+
+    if (_HasTaskContextData(ctx, HdxAovTokens->depthIntermediate)) {
+        _SwapTextures(ctx, HdAovTokens->depth, HdxAovTokens->depthIntermediate);
+    }
+}
+
+void
+HdxTask::_SwapTextures(
+    HdTaskContext* ctx,
+    const TfToken& textureToken,
+    const TfToken& textureIntermediateToken)
+{
+    VtValue& texture = (*ctx)[textureToken];
+    VtValue& textureIntermediate = (*ctx)[textureIntermediateToken];
+    std::swap(texture, textureIntermediate);
 }
 
 Hgi*

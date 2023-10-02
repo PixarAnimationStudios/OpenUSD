@@ -1,11 +1,16 @@
 #usda 1.0
 
 def Xform "Model" (
+    customData = {
+        dictionary emptyDict = {
+        }
+    }
     payload = None
     references = None
 )
 {
     asset[] bar
+    asset[] emptyArr = []
     asset foo
     asset[] varBar
     asset varFoo
@@ -21,5 +26,9 @@ def Xform "Variants" (
 
         }
     }
+}
+
+def "PrependPayload"
+{
 }
 

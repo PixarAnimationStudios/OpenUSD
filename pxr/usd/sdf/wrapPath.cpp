@@ -50,10 +50,6 @@ PXR_NAMESPACE_USING_DIRECTIVE
 
 namespace {
 
-static vector<SdfPath> GetPrefixesHelper( const SdfPath &path ) {
-    return path.GetPrefixes();
-}
-
 static string
 _Repr(const SdfPath &self) {
     if (self.IsEmpty()) {
@@ -318,15 +314,17 @@ void wrapPath() {
         .def("MakeAbsolutePath", &This::MakeAbsolutePath)
         .def("MakeRelativePath", &This::MakeRelativePath)
 
-        .def("GetPrefixes", GetPrefixesHelper,
-              return_value_policy< TfPySequenceToList >(), 
-            "Returns the prefix paths of this path.")
-
+        .def("GetPrefixes",
+             +[](SdfPath const &self, size_t n) { return self.GetPrefixes(n); },
+             (arg("numPrefixes") = 0),
+             return_value_policy<TfPySequenceToList>())
+        
         .def("GetAncestorsRange", &This::GetAncestorsRange)
 
         .def("GetParentPath", &This::GetParentPath)
         .def("GetPrimPath", &This::GetPrimPath)
-        .def("GetPrimOrPrimVariantSelectionPath", &This::GetPrimOrPrimVariantSelectionPath)
+        .def("GetPrimOrPrimVariantSelectionPath",
+             &This::GetPrimOrPrimVariantSelectionPath)
         .def("GetAbsoluteRootOrPrimPath", &This::GetAbsoluteRootOrPrimPath)
         .def("StripAllVariantSelections", &This::StripAllVariantSelections)
 

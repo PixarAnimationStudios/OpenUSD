@@ -268,31 +268,6 @@ HdStSimpleLightingShader::GetParams() const
     return _lightTextureParams;
 }
 
-void
-HdStSimpleLightingShader::SetLightingStateFromOpenGL()
-{
-    _lightingContext->SetStateFromOpenGL();
-}
-
-void
-HdStSimpleLightingShader::SetLightingState(
-    GlfSimpleLightingContextPtr const &src)
-{
-    if (src) {
-        _useLighting = true;
-        _lightingContext->SetUseLighting(!src->GetLights().empty());
-        _lightingContext->SetLights(src->GetLights());
-        _lightingContext->SetMaterial(src->GetMaterial());
-        _lightingContext->SetSceneAmbient(src->GetSceneAmbient());
-        _lightingContext->SetShadows(src->GetShadows());
-    } else {
-        // XXX:
-        // if src is null, turn off lights (this is temporary used for shadowmap drawing).
-        // see GprimUsdBaseIcBatch::Draw()
-        _useLighting = false;
-    }
-}
-
 static
 const std::string &
 _GetResolvedDomeLightEnvironmentFilePath(

@@ -1,0 +1,58 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def "ImageTexcoord" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/image_texcoord>
+
+    matrix4d xformOp:transform = ( (1, 0, 0, 0),
+                                    (0, 1, 0, 0),
+                                    (0, 0, 1, 0),
+                                    (-10, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def "Texcoord" (
+    references = @texturedSphere.usda@
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/texcoord>
+
+    matrix4d xformOp:transform = ( (1, 0, 0, 0),
+                                   (0, 1, 0, 0),
+                                   (0, 0, 1, 0),
+                                   (10, 0, 0, 1) )
+    uniform token[] xformOpOrder = ["xformOp:transform"]
+}
+
+def Scope "Materials" {
+
+    def Scope "MaterialX" (
+        references = [
+            @./mtlxFiles/texcoord.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+    def DistantLight "DistantLight"
+    {
+        float inputs:angle = 75
+        float inputs:intensity = 10
+        float3 xformOp:rotateXYZ = (90, 0, 0)
+        uniform token[] xformOpOrder = ["xformOp:rotateXYZ"]
+    }
+}

@@ -240,7 +240,12 @@ private:
 public:
     using const_iterator = typename _Locators::const_iterator;
 
+    /// The empty set.
     explicit HdDataSourceLocatorSet() {}
+
+    /// The set containing everything.
+    HD_API
+    static const HdDataSourceLocatorSet &UniversalSet();
 
     HD_API
     HdDataSourceLocatorSet(const HdDataSourceLocator &locator);

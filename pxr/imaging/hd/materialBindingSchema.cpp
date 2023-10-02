@@ -40,61 +40,70 @@ TF_DEFINE_PUBLIC_TOKENS(HdMaterialBindingSchemaTokens,
     HDMATERIALBINDING_SCHEMA_TOKENS);
 
 
-HdPathDataSourceHandle 
-HdMaterialBindingSchema::GetMaterialBinding()
-{
-    return _GetTypedDataSource<HdPathDataSource>(
-            HdMaterialBindingSchemaTokens->allPurpose);
-}
 
 HdPathDataSourceHandle
-HdMaterialBindingSchema::GetMaterialBinding(TfToken const &purpose)
+HdMaterialBindingSchema::GetPath()
 {
-    if (auto b = _GetTypedDataSource<HdPathDataSource>(purpose)) {
-        return b;
-    }
-
-    // If we can't find the purpose-specific binding, return the fallback.
     return _GetTypedDataSource<HdPathDataSource>(
-            HdMaterialBindingSchemaTokens->allPurpose);
+        HdMaterialBindingSchemaTokens->path);
 }
 
+HdTokenDataSourceHandle
+HdMaterialBindingSchema::GetBindingStrength()
+{
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialBindingSchemaTokens->bindingStrength);
+}
 
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialBindingSchema::BuildRetained(
-    size_t count,
-    TfToken *names,
-    HdDataSourceBaseHandle *values)
+        const HdPathDataSourceHandle &path,
+        const HdTokenDataSourceHandle &bindingStrength
+)
 {
+    TfToken names[2];
+    HdDataSourceBaseHandle values[2];
+
+    size_t count = 0;
+    if (path) {
+        names[count] = HdMaterialBindingSchemaTokens->path;
+        values[count++] = path;
+    }
+
+    if (bindingStrength) {
+        names[count] = HdMaterialBindingSchemaTokens->bindingStrength;
+        values[count++] = bindingStrength;
+    }
+
     return HdRetainedContainerDataSource::New(count, names, values);
 }
 
-/*static*/
-HdMaterialBindingSchema
-HdMaterialBindingSchema::GetFromParent(
-        const HdContainerDataSourceHandle &fromParentContainer)
+
+HdMaterialBindingSchema::Builder &
+HdMaterialBindingSchema::Builder::SetPath(
+    const HdPathDataSourceHandle &path)
 {
-    return HdMaterialBindingSchema(
-        fromParentContainer
-        ? HdContainerDataSource::Cast(fromParentContainer->Get(
-                HdMaterialBindingSchemaTokens->materialBinding))
-        : nullptr);
+    _path = path;
+    return *this;
 }
 
-/*static*/
-const TfToken &
-HdMaterialBindingSchema::GetSchemaToken()
+HdMaterialBindingSchema::Builder &
+HdMaterialBindingSchema::Builder::SetBindingStrength(
+    const HdTokenDataSourceHandle &bindingStrength)
 {
-    return HdMaterialBindingSchemaTokens->materialBinding;
-} 
-/*static*/
-const HdDataSourceLocator &
-HdMaterialBindingSchema::GetDefaultLocator()
+    _bindingStrength = bindingStrength;
+    return *this;
+}
+
+HdContainerDataSourceHandle
+HdMaterialBindingSchema::Builder::Build()
 {
-    static const HdDataSourceLocator locator(
-        HdMaterialBindingSchemaTokens->materialBinding
+    return HdMaterialBindingSchema::BuildRetained(
+        _path,
+        _bindingStrength
     );
-    return locator;
-} 
+}
+
+
 PXR_NAMESPACE_CLOSE_SCOPE

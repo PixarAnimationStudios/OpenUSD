@@ -1,0 +1,3 @@
+root.usda
+0/clip.1.001.usda
+0/clip.2.002.usda

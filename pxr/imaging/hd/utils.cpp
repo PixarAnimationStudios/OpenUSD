@@ -60,6 +60,32 @@ HasActiveRenderSettingsPrim(
     return false;
 }
 
+CameraUtilConformWindowPolicy
+ToConformWindowPolicy(const TfToken &token)
+{
+    if (token == HdAspectRatioConformPolicyTokens->adjustApertureWidth) {
+        return CameraUtilMatchVertically;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->adjustApertureHeight) {
+        return CameraUtilMatchHorizontally;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->expandAperture) {
+        return CameraUtilFit;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->cropAperture) {
+        return CameraUtilCrop;
+    }
+    if (token == HdAspectRatioConformPolicyTokens->adjustPixelAspectRatio) {
+        return CameraUtilDontConform;
+    }
+
+    TF_WARN(
+        "Invalid aspectRatioConformPolicy value '%s', "
+        "falling back to expandAperture.", token.GetText());
+    
+    return CameraUtilFit;
+}
+
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -396,7 +396,7 @@ def _GetSchemaDefException(msg, path):
     errorPrefix = ('Invalid schema definition at ' 
                    + '<' + str(path) + '>')
     errorSuffix = ('See '
-                   'https://graphics.pixar.com/usd/docs/api/'
+                   'https://openusd.org/release/api/'
                    '_usd__page__generating_schemas.html '
                    'for more information.\n')
     errorMsg = lambda s: errorPrefix + '\n' + s + '\n' + errorSuffix

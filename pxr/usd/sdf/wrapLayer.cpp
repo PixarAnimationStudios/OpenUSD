@@ -745,6 +745,14 @@ void wrapLayer()
         .def("HasCustomLayerData", &This::HasCustomLayerData)
         .def("ClearCustomLayerData", &This::ClearCustomLayerData)
 
+        .add_property("expressionVariables",
+           &This::GetExpressionVariables,
+           &This::SetExpressionVariables,
+           "The expressionVariables dictionary associated with this layer.")
+
+        .def("HasExpressionVariables", &This::HasExpressionVariables)
+        .def("ClearExpressionVariables", &This::ClearExpressionVariables)
+
         .add_property("startTimeCode",
             &This::GetStartTimeCode,
             &This::SetStartTimeCode,
@@ -977,5 +985,3 @@ void wrapLayer()
         TfPyContainerConversions::variable_capacity_policy>();
 
 }
-
-TF_REFPTR_CONST_VOLATILE_GET(SdfLayer)

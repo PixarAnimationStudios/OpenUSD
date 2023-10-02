@@ -237,6 +237,10 @@ class "CollectionAPI" (
         relationship target the <b>collection:{collectionName}</b> property on
         the owning prim of the collection to be included"""
     )
+    uniform pathExpression collection:__INSTANCE_NAME__:membershipExpression (
+        doc = """Specifies a path expression that determines membership in this
+        collection."""
+    )
 }
 
 class "ClipsAPI" (

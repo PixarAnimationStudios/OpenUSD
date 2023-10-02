@@ -12,6 +12,7 @@
         "Real" : 42.0,
         "BoolTrue" : true,
         "BoolFalse" : false,
-        "Null" : null
+        "Null" : null,
+        "ArrayOfObjects" : [{"String" : "value1"}, {"Real" : 5.0}]
     }
 }
