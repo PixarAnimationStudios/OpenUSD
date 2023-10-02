@@ -216,15 +216,22 @@ if(NOT TBB_FOUND)
   # Find TBB components
   ##################################
 
-  if(TBB_VERSION VERSION_LESS 4.3)
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc tbb)
+  # oneTBB on Windows has interface version in the name.
+  if(WIN32 AND TBB_INTERFACE_VERSION GREATER_EQUAL 12000)
+    set(_tbb_library_name tbb12)
   else()
-    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc tbb)
+    set(_tbb_library_name tbb)
+  endif()
+
+  if(TBB_VERSION VERSION_LESS 4.3)
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc ${_tbb_library_name})
+  else()
+    set(TBB_SEARCH_COMPOMPONENTS tbb_preview tbbmalloc_proxy tbbmalloc ${_tbb_library_name})
   endif()
 
   # Find each component
   foreach(_comp ${TBB_SEARCH_COMPOMPONENTS})
-    if(";${TBB_FIND_COMPONENTS};tbb;" MATCHES ";${_comp};")
+    if(";${TBB_FIND_COMPONENTS};" MATCHES ";${_comp};")
 
       # Search for the libraries
       find_library(TBB_${_comp}_LIBRARY_RELEASE ${_comp}
