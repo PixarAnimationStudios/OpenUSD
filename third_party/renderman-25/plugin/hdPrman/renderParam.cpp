@@ -165,6 +165,8 @@ HdPrman_RenderParam::~HdPrman_RenderParam()
 {
     DeleteRenderThread();
 
+    _DeleteInternalPrims();
+
     _DestroyRiley();
 
     _DestroyStatsSession();
@@ -1906,11 +1908,12 @@ HdPrman_RenderParam::_RenderThreadCallback()
     static RtUString const US_RENDERMODE = RtUString("renderMode");
     static RtUString const US_INTERACTIVE = RtUString("interactive");
 
-    // Note: this is currently hard-coded because hdprman only ever 
-    // create a single camera. When this changes, we will need to make sure 
+    // Note: this is currently hard-coded because hdprman currently 
+    // creates only one single camera (via the camera context).
+    // When this changes, we will need to make sure 
     // the correct name is used here.
-    // Note: why not use us_main_cam defined earlier in the same file?
-    static RtUString const defaultReferenceCamera = RtUString("main_cam");
+    RtUString const &defaultReferenceCamera =
+        GetCameraContext().GetCameraName();
 
     RtParamList renderOptions;
     renderOptions.SetString(US_RENDERMODE, US_INTERACTIVE);
@@ -1986,17 +1989,79 @@ HdPrman_RenderParam::Begin(HdPrmanRenderDelegate *renderDelegate)
     }
 }
 
+// See comment in SetRileyOptions on when this function needs to be called.
 void
 HdPrman_RenderParam::_CreateInternalPrims()
 {
-    // See comment in SetRileyOptions on when this function needs to be called.
-    GetCameraContext().CreateRileyCamera(AcquireRiley());
+    GetCameraContext().CreateRileyCamera(
+        AcquireRiley(), HdPrman_CameraContext::GetDefaultReferenceCameraName());
 
     _CreateFallbackMaterials();
 
     _CreateIntegrator(_renderDelegate);
     _CreateQuickIntegrator(_renderDelegate);
     _activeIntegratorId = GetIntegratorId();
+}
+
+static void
+_DeleteAndResetMaterial(
+    riley::Riley * const riley,
+    riley::MaterialId *id)
+{
+    if (*id != riley::MaterialId::InvalidId()) {
+        riley->DeleteMaterial(*id);
+        *id = riley::MaterialId::InvalidId();
+    }
+}
+
+static void
+_DeleteAndResetIntegrator(
+    riley::Riley * const riley,
+    riley::IntegratorId *id)
+{
+    if (*id != riley::IntegratorId::InvalidId()) {
+        riley->DeleteIntegrator(*id);
+        *id = riley::IntegratorId::InvalidId();
+    }
+}
+
+static void
+_DeleteAndResetSampleFilter(
+    riley::Riley * const riley,
+    riley::SampleFilterId *id)
+{
+    if (*id != riley::SampleFilterId::InvalidId()) {
+        riley->DeleteSampleFilter(*id);
+        *id = riley::SampleFilterId::InvalidId();
+    }
+}
+
+static void
+_DeleteAndResetDisplayFilter(
+    riley::Riley * const riley,
+    riley::DisplayFilterId *id)
+{
+    if (*id != riley::DisplayFilterId::InvalidId()) {
+        riley->DeleteDisplayFilter(*id);
+        *id = riley::DisplayFilterId::InvalidId();
+    }
+}
+
+void
+HdPrman_RenderParam::_DeleteInternalPrims()
+{
+    riley::Riley * const riley = AcquireRiley();
+
+    // Renderview has a handle to the camera, so delete it first.
+    GetRenderViewContext().DeleteRenderView(riley);
+    GetCameraContext().DeleteRileyCameraAndClipPlanes(riley);
+
+    _DeleteAndResetMaterial(riley, &_fallbackMaterialId);
+    _DeleteAndResetMaterial(riley, &_fallbackVolumeMaterialId);
+    _DeleteAndResetIntegrator(riley, &_integratorId);
+    _DeleteAndResetIntegrator(riley, &_quickIntegratorId);
+    _DeleteAndResetSampleFilter(riley, &_sampleFiltersId);
+    _DeleteAndResetDisplayFilter(riley, &_displayFiltersId);
 }
 
 static RtParamList
@@ -2012,7 +2077,8 @@ _Compose(
 }
 
 void
-HdPrman_RenderParam::SetRenderSettingsPrimOptions(RtParamList const &params)
+HdPrman_RenderParam::SetRenderSettingsPrimOptions(
+    RtParamList const &params)
 {
     _renderSettingsPrimOptions = params;
 
@@ -2093,7 +2159,9 @@ void
 HdPrman_RenderParam::StartRender()
 {
     // Last chance to set Ri options before starting riley!
-    // Called from HdPrman_RenderPass::_Execute
+    // Called from HdPrman_RenderPass::_Execute for *interactive* rendering.
+    // NOTE: We don't use a render thread for offline ("batch") rendering. See
+    //       HdPrman_RenderPass::_RenderInMainThread().
 
     // Prepare Riley state for rendering.
     // Pass a valid riley callback pointer during IPR

@@ -374,8 +374,12 @@ private:
         const std::string &xpuVariant,
         const std::vector<std::string>& extraArgs);
 
-    // Creation of riley prims that are not backed by the scene.
+    // Creation of riley prims that are either not backed by the scene 
+    // (e.g., fallback materials) OR those that are
+    // currently managed by render param (such as the camera, render view and
+    // render terminals).
     void _CreateInternalPrims();
+    void _DeleteInternalPrims();
     void _CreateFallbackMaterials();
     void _CreateIntegrator(HdRenderDelegate * renderDelegate);
     void _CreateQuickIntegrator(HdRenderDelegate * renderDelegate);
@@ -462,7 +466,7 @@ private:
     RtParamList _quickIntegratorParams;
 
     // The integrator to use.
-    // Updated from render pass state.
+    // Updated from render pass state OR render settings prim.
     riley::IntegratorId _activeIntegratorId;
 
     // Coordinate system conversion cache.

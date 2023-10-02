@@ -37,7 +37,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-static const RtUString _us_main_cam_projection("main_cam_projection");
+static const RtUString s_projectionNodeName("cam_projection");
 
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
@@ -539,7 +539,7 @@ HdPrman_CameraContext::_UpdateRileyCamera(
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(camera->GetProjection()),
-        _us_main_cam_projection,
+        s_projectionNodeName,
         _ComputeNodeParams(camera)
     };
 
@@ -623,11 +623,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(
     riley::Riley * const riley,
     const HdPrmanCamera * const camera)
 {
-    // Delete clipping planes
-    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
-        riley->DeleteClippingPlane(id);
-    }
-    _clipPlaneIds.clear();
+    _DeleteClipPlanes(riley);
 
     // Create clipping planes
     const std::vector<GfVec4d> &clipPlanes = camera->GetClipPlanes();
@@ -638,7 +634,7 @@ HdPrman_CameraContext::_UpdateClipPlanes(
     using _HdTimeSamples =
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES>;
     using _RtMatrices =
-        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;    
+        TfSmallVector<RtMatrix4x4, HDPRMAN_MAX_TIME_SAMPLES>;
 
     // Use time sampled transforms authored on the scene camera.
     const _HdTimeSamples &sampleXforms = camera->GetTimeSampleXforms();
@@ -656,6 +652,16 @@ HdPrman_CameraContext::_UpdateClipPlanes(
                 riley->CreateClippingPlane(transform, params));
         }
     }
+}
+
+void
+HdPrman_CameraContext::_DeleteClipPlanes(
+    riley::Riley * const riley)
+{
+    for (riley::ClippingPlaneId const& id: _clipPlaneIds) {
+        riley->DeleteClippingPlane(id);
+    }
+    _clipPlaneIds.clear();
 }
     
 // The crop window for RenderMan.
@@ -778,14 +784,11 @@ HdPrman_CameraContext::MarkValid()
 }
 
 void
-HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
+HdPrman_CameraContext::CreateRileyCamera(
+    riley::Riley * const riley,
+    const RtUString &cameraName)
 {
-    // Create camera
-
-    // Note: when changing the name of this camera, we will need to also 
-    // change the 'default dicing camera' name given to Riley::Render().
-    // Note: why not use us_main_cam defined earlier in the same file?
-    const static RtUString name("main_cam");
+    _cameraName = cameraName;
 
     RtParamList nodeParams;
     nodeParams.SetFloat(RixStr.k_fov, 60.0f);
@@ -794,7 +797,7 @@ HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(HdCamera::Perspective),
-        _us_main_cam_projection,
+        s_projectionNodeName,
         nodeParams
     };
 
@@ -809,14 +812,27 @@ HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
         
     _cameraId = riley->CreateCamera(
         riley::UserId(
-            stats::AddDataLocation(name.CStr()).GetValue()),
-        name,
+            stats::AddDataLocation(_cameraName.CStr()).GetValue()),
+        _cameraName,
         node,
         transform,
         params);
 
     // Dicing Camera
+    // XXX This should be moved out if/when we support multiple camera contexts.
     riley->SetDefaultDicingCamera(_cameraId);
+}
+
+void
+HdPrman_CameraContext::DeleteRileyCameraAndClipPlanes(
+    riley::Riley * const riley)
+{
+    if (_cameraId != riley::CameraId::InvalidId()) {
+        riley->DeleteCamera(_cameraId);
+        _cameraId = riley::CameraId::InvalidId();
+    }
+
+    _DeleteClipPlanes(riley);
 }
 
 const HdPrmanCamera *
@@ -834,6 +850,14 @@ const CameraUtilFraming &
 HdPrman_CameraContext::GetFraming() const
 {
     return _framing;
+}
+
+/* static */
+RtUString
+HdPrman_CameraContext::GetDefaultReferenceCameraName()
+{
+    const static RtUString name("main_cam");
+    return name;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
