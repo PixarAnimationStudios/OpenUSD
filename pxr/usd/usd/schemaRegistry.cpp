@@ -1634,6 +1634,10 @@ UsdSchemaRegistry::IsDisallowedField(const TfToken &fieldName)
         const std::vector<TfToken> clipFields = UsdGetClipRelatedFields();
         disallowedFields->insert(clipFields.begin(), clipFields.end());
 
+        // Disallow fallback values for prim "kind" metadata as prim composition
+        // currently intentionally ignores the "kind" fallback value
+        disallowedFields->insert(SdfFieldKeys->Kind);
+
         return disallowedFields;
     }();
 
