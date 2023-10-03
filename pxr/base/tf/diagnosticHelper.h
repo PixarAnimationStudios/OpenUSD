@@ -27,17 +27,29 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/arch/attributes.h"
+#include "pxr/base/arch/defines.h"
 
 // XXX: This include is a hack to avoid build errors due to
 // incompatible macro definitions in pyport.h on macOS.
 #include <locale>
 
-#include <boost/any.hpp>
+#include <any>
 #include <string>
+
+// Follow up changes should more tightly scope these to just where it's needed
+// in pxr.
+#if defined(ARCH_OS_LINUX) || defined(ARCH_OS_DARWIN)
+// Include <unistd.h> to provide _exit for tf/debugger.cpp and dependencies
+// that were previously transitively getting this from boost
+#include <unistd.h>
+// Include <cstring> to provide memset, memcmp, and memcpy for dependencies
+// that were previously transitively getting them from boost
+#include <cstring>
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef boost::any TfDiagnosticInfo;
+typedef std::any TfDiagnosticInfo;
 class TfCallContext;
 enum TfDiagnosticType : int;
 class TfEnum;
