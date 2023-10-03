@@ -304,7 +304,7 @@ HdSt_TestDriverBase<SceneDelegate>::SetCamera(
     for (const HdRenderPassStateSharedPtr &renderPassState: _renderPassStates) {
         renderPassState->SetCamera(camera);
         renderPassState->SetFraming(framing);
-        renderPassState->SetOverrideWindowPolicy({ false, CameraUtilFit });
+        renderPassState->SetOverrideWindowPolicy(std::nullopt);
     }
 }
 

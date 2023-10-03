@@ -265,7 +265,7 @@ Hd_TestDriver::SetCamera(GfMatrix4d const &viewMatrix,
     TF_VERIFY(camera);
     _renderPassState->SetCamera(camera);
     _renderPassState->SetFraming(framing);
-    _renderPassState->SetOverrideWindowPolicy({ false, CameraUtilFit });
+    _renderPassState->SetOverrideWindowPolicy(std::nullopt);
 }
 
 void

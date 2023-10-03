@@ -77,8 +77,11 @@
 // 54 -> 55: Introduce API in HdRenderDelegate to aid in transitioning
 //           render delegates to a Hydra 2.0 world.
 // 55 -> 56: Adds hydra-namespaced internal instancer primvars
+// 56 -> 57: Changing SetOverrideWindowPolicy to std::optional on
+//           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
+//           HdxTaskController and UsdImagingGLEngine.
 
-#define HD_API_VERSION 56
+#define HD_API_VERSION 57
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

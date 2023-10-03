@@ -541,7 +541,7 @@ UsdImagingGLEngine::SetFraming(CameraUtilFraming const& framing)
 
 void
 UsdImagingGLEngine::SetOverrideWindowPolicy(
-    const std::pair<bool, CameraUtilConformWindowPolicy> &policy)
+    const std::optional<CameraUtilConformWindowPolicy> &policy)
 {
     if (ARCH_UNLIKELY(!_renderDelegate)) {
         return;

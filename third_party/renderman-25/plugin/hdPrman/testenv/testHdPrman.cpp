@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/lightSchema.h"
 #include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
+#include "pxr/imaging/hd/version.h"
 
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
@@ -936,8 +937,13 @@ HydraSetupAndRender(
         hdRenderPassState->SetCamera(camera);
         hdRenderPassState->SetFraming(ComputeFraming(*cameraInfo));
         hdRenderPassState->SetOverrideWindowPolicy(
+#if HD_API_VERSION >= 57
+            HdUtils::ToConformWindowPolicy(
+                cameraInfo->aspectRatioConformPolicy));
+#else
             { true, HdUtils::ToConformWindowPolicy(
                                     cameraInfo->aspectRatioConformPolicy) });
+#endif
     }
 
     auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;
