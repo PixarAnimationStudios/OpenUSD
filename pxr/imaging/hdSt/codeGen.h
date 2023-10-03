@@ -212,6 +212,8 @@ private:
     bool _hasCS;
     bool _hasPTCS;
     bool _hasPTVS;
+
+    bool _hasClipPlanes;
 };
 
 

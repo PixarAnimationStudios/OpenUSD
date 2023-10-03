@@ -179,6 +179,7 @@ HdSt_CodeGen::HdSt_CodeGen(HdSt_GeometricShaderPtr const &geometricShader,
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
+    , _hasClipPlanes(false)
 {
     TF_VERIFY(geometricShader);
 }
@@ -194,6 +195,7 @@ HdSt_CodeGen::HdSt_CodeGen(HdStShaderCodeSharedPtrVector const &shaders)
     , _hasCS(false)
     , _hasPTCS(false)
     , _hasPTVS(false)
+    , _hasClipPlanes(false)
 {
 }
 
@@ -1811,6 +1813,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
                                     dbIt->name, dbIt->dataType, dbIt->arraySize,
                                     NULL,  dbIt->concatenateNames);
             }
+
+            if (dbIt->name == HdShaderTokens->clipPlanes) {
+                _hasClipPlanes = true;
+            }
         }
 
         _genDecl << "};\n";
@@ -2610,6 +2616,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                 &vsDesc, "gl_PointSize", "float", pointRole);
         }
 
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &vsDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
         if (!glslProgram->CompileShader(vsDesc)) {
             return nullptr;
         }
@@ -2679,6 +2691,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tcsDesc.shaderCodeDeclarations = declarations.c_str();
         tcsDesc.shaderCode = source.c_str();
         tcsDesc.generatedShaderCodeOut = &_tcsSource;
+        
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &tcsDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
 
         if (!glslProgram->CompileShader(tcsDesc)) {
             return nullptr;
@@ -2703,6 +2721,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tesDesc.shaderCodeDeclarations = declarations.c_str();
         tesDesc.shaderCode = source.c_str();
         tesDesc.generatedShaderCodeOut = &_tesSource;
+
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &tesDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
 
         if (!glslProgram->CompileShader(tesDesc)) {
             return nullptr;
@@ -2798,6 +2822,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             &ptcsDesc, "gl_PointSize", "float",
                 pointRole);
 
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &ptcsDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
         if (!glslProgram->CompileShader(ptcsDesc)) {
             return nullptr;
         }
@@ -2884,6 +2914,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
             &ptvsDesc, "gl_PointSize", "float",
                 pointRole);
 
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &ptvsDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
         if (!glslProgram->CompileShader(ptvsDesc)) {
             return nullptr;
         }
@@ -2913,6 +2949,12 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         gsDesc.shaderCodeDeclarations = declarations.c_str();
         gsDesc.shaderCode = source.c_str();
         gsDesc.generatedShaderCodeOut = &_gsSource;
+
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &gsDesc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
 
         if (!glslProgram->CompileShader(gsDesc)) {
             return nullptr;
