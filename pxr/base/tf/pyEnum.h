@@ -168,8 +168,7 @@ std::string Tf_PyEnumRepr(boost::python::object const &self);
 
 // Private base class for types which are instantiated and exposed to python
 // for each registered enum type.
-struct Tf_PyEnumWrapper
-    : public Tf_PyEnum, boost::totally_ordered<Tf_PyEnumWrapper>
+struct Tf_PyEnumWrapper : public Tf_PyEnum
 {
     typedef Tf_PyEnumWrapper This;
 
@@ -197,6 +196,11 @@ struct Tf_PyEnumWrapper
         return lhs.value == rhs.value;
     }
 
+    friend bool operator !=(Tf_PyEnumWrapper const &lhs,
+                            Tf_PyEnumWrapper const &rhs) {
+        return !(lhs == rhs);
+    }
+
     friend bool operator <(Tf_PyEnumWrapper const &lhs,
                            Tf_PyEnumWrapper const &rhs)
     {
@@ -210,7 +214,25 @@ struct Tf_PyEnumWrapper
         // If types do match, numerically compare values.
         return lhs.GetValue() < rhs.GetValue();
     }
-    
+
+    friend bool operator >(Tf_PyEnumWrapper const& lhs,
+                           Tf_PyEnumWrapper const& rhs)
+    {
+        return rhs < lhs;
+    }
+
+    friend bool operator <=(Tf_PyEnumWrapper const& lhs,
+                            Tf_PyEnumWrapper const& rhs)
+    {
+        return !(lhs > rhs);
+    }
+
+    friend bool operator >=(Tf_PyEnumWrapper const& lhs,
+                            Tf_PyEnumWrapper const& rhs)
+    {
+        return !(lhs < rhs);
+    }
+
     //
     // XXX Bitwise operators for Enums are a temporary measure to support the
     // use of Enums as Bitmasks in libSd.  It should be noted that Enums are
