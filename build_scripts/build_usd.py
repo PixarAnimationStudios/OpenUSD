@@ -2345,9 +2345,10 @@ if PYSIDE in requiredDependencies:
     pyside2Uic = ["pyside2-uic"]
     found_pyside2Uic = any([which(p) for p in pyside2Uic])
     if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
-        PrintError("uic not found -- please install PySide2 or PySide6 and"
-                   " adjust your PATH. (Note that this program may be"
-                   " named {0} depending on your platform)"
+        PrintError("PySide's user interface compiler was not found -- please"
+                   " install PySide2 or PySide6 and adjust your PATH. (Note"
+                   " that this program may be named {0} depending on your"
+                   " platform)"
                    .format(" or ".join(set(pyside2Uic+pyside6Uic))))
         sys.exit(1)
 
