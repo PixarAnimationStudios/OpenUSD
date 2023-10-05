@@ -27,8 +27,12 @@
 #include "pxr/imaging/hgiVulkan/device.h"
 #include "pxr/imaging/hgiVulkan/diagnostic.h"
 
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT, true,
+                      "Use Vulkan multi draw indirect");
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     : supportsTimeStamps(false)
@@ -120,10 +124,14 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME));
     const bool shaderDrawParametersEnabled =
         vkVulkan11Features.shaderDrawParameters;
+    bool multiDrawIndirectEnabled = true;
+
+    if (!TfGetEnvSetting(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT)) {
+        multiDrawIndirectEnabled = false;
+    }
 
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
     _SetFlag(HgiDeviceCapabilitiesBitsStencilReadback, true);
-    _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect, true);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDoublePrecision, true);
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
@@ -131,6 +139,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
         hasBuiltinBarycentrics);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDrawParameters, 
         shaderDrawParametersEnabled);
+     _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
+        multiDrawIndirectEnabled);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;
