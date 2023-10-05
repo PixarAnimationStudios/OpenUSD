@@ -292,7 +292,7 @@ HgiVulkanGraphicsCmds::DrawIndexed(
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
         ibo->GetVulkanBuffer(),
-        indexBufferByteOffset,
+        0,
         VK_INDEX_TYPE_UINT32);
 
     vkCmdDrawIndexed(
@@ -322,7 +322,7 @@ HgiVulkanGraphicsCmds::DrawIndexedIndirect(
     vkCmdBindIndexBuffer(
         _commandBuffer->GetVulkanCommandBuffer(),
         ibo->GetVulkanBuffer(),
-        0, // indexBufferByteOffset
+        0,
         VK_INDEX_TYPE_UINT32);
 
     HgiVulkanBuffer* drawBuf =
