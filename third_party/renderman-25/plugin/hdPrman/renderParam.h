@@ -225,6 +225,11 @@ public:
     }
     void SetLastLegacySettingsVersion(int version);
 
+    // Legacy data flow to resolution from the render pass via render pass
+    // state.
+    GfVec2i const &GetResolution() { return _resolution; }
+    void SetResolution(GfVec2i const & resolution);
+
     // Invalidate texture at path.
     void InvalidateTexture(const std::string &path);
 
@@ -304,8 +309,6 @@ public:
     // For now, the renderPass needs the render target for each view, for
     // resolution edits, so we need to keep track of these too.
     void SetActiveIntegratorId(riley::IntegratorId integratorId);
-
-    GfVec2i resolution;
 
     void UpdateQuickIntegrator(const HdRenderIndex * renderIndex);
 
@@ -505,11 +508,14 @@ private:
     /// ------------------------------------------------------------------------
 
     /// ------------------------------------------------------------------------
-    // Legacy render settings driven state
+    // Legacy render settings and render pass driven state
     //
     // Params from the render settings map.
     RtParamList _legacyOptions;
     int _lastLegacySettingsVersion;
+
+    // Resolution for the render pass via render pass state.
+    GfVec2i _resolution;
 
     RtParamList _integratorParams;
     /// ------------------------------------------------------------------------

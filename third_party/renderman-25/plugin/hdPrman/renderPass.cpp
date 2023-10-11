@@ -550,7 +550,7 @@ HdPrman_RenderPass::_Execute(
     }
 
     // Check if the riley camera and/or legacy options need to be updated.
-    const bool resolutionChanged = _renderParam->resolution != resolution;
+    const bool resolutionChanged = _renderParam->GetResolution() != resolution;
 
     if (camChanged || resolutionChanged) {
 
@@ -559,7 +559,7 @@ HdPrman_RenderPass::_Execute(
         riley::Riley * const riley = _renderParam->AcquireRiley();
 
         if (resolutionChanged) {
-            _renderParam->resolution = resolution;
+            _renderParam->SetResolution(resolution);
             
             _renderParam->GetLegacyOptions().SetIntegerArray(
                 RixStr.k_Ri_FormatResolution,

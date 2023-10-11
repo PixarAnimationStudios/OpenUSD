@@ -135,7 +135,6 @@ HdPrman_RenderParam::HdPrman_RenderParam(
         const std::string &rileyVariant,
         const std::string &xpuVariant,
         const std::vector<std::string>& extraArgs) :
-    resolution(0),
     _rix(nullptr),
     _ri(nullptr),
     _mgr(nullptr),
@@ -146,6 +145,7 @@ HdPrman_RenderParam::HdPrman_RenderParam(
     _sampleFiltersId(riley::SampleFilterId::InvalidId()),
     _displayFiltersId(riley::DisplayFilterId::InvalidId()),
     _lastLegacySettingsVersion(0),
+    _resolution(0),
     _renderDelegate(renderDelegate)
 {
     // Create the stats session
@@ -1789,6 +1789,12 @@ HdPrman_RenderParam::SetLastLegacySettingsVersion(const int version)
 }
 
 void
+HdPrman_RenderParam::SetResolution(GfVec2i const & resolution)
+{
+    _resolution = resolution;
+}
+
+void
 HdPrman_RenderParam::InvalidateTexture(const std::string &path)
 {
     AcquireRiley();
@@ -2791,7 +2797,7 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.integratorId = GetActiveIntegratorId();
     renderViewDesc.sampleFilterList = GetSampleFilterList();
     renderViewDesc.displayFilterList = GetDisplayFilterList();
-    renderViewDesc.resolution = resolution;
+    renderViewDesc.resolution = GetResolution();
 
     GetRenderViewContext().CreateRenderView(renderViewDesc, riley);
 }
@@ -2985,7 +2991,7 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
 
     renderViewDesc.cameraId = GetCameraContext().GetCameraId();
     renderViewDesc.integratorId = GetActiveIntegratorId();
-    renderViewDesc.resolution = resolution;
+    renderViewDesc.resolution = GetResolution();
 
     GetRenderViewContext().CreateRenderView(renderViewDesc, _riley);
 }
