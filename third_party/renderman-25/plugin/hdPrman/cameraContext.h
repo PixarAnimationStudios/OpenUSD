@@ -141,6 +141,11 @@ public:
                          const float shutterCloseTime,
                          const float shutteropeningPoints[8]);
 
+    /// Use hardcoded fallback values for the shutter curve. Ideally, this
+    /// can be removed once we add UsdImaging/Hydra support for PxrCameraAPI.
+    ///
+    void SetFallbackShutterCurve(bool isInteractive);
+
     /// Path of current camera in render index.
     const SdfPath &GetCameraPath() const { return _cameraPath; }
 

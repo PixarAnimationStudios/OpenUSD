@@ -115,6 +115,27 @@ HdPrman_CameraContext::SetShutterCurve(const float shutterOpenTime,
     }
 }
 
+void
+HdPrman_CameraContext::SetFallbackShutterCurve(bool isInteractive)
+{
+    if (isInteractive) {
+        // Open instantaneously, remain fully open for the duration of the
+        // shutter interval (set via the param RixStr.k_Ri_Shutter) and close
+        // instantaneously.
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f
+        };
+        SetShutterCurve(0.0f, 1.0f, pts);
+    } else {
+        // Open instantaneously and start closing immediately, rapidly at first
+        // decelerating until the end of the interval.
+        static const float pts[8] = {
+            0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.3f, 0.0f
+        };
+        SetShutterCurve(0.0f, 0.0f, pts);
+    }
+}
+
 bool
 HdPrman_CameraContext::IsInvalid() const
 {
