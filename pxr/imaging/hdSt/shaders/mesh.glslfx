@@ -1329,6 +1329,14 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
+-- glsl Mesh.Fragment.PatchCoord.NoGS
+
+vec4 GetInterpolatedPatchCoord()
+{
+    return vec4(0);
+}
+
+--- --------------------------------------------------------------------------
 -- layout Mesh.Fragment.PatchCoord.Tess
 
 [
