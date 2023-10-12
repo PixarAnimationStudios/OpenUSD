@@ -634,6 +634,12 @@ UsdGeomSubset::ValidateFamily(
             }
         }
 
+        if (indicesInFamily.empty()) {
+            // Skip the bounds checking below if there are no indices at this
+            // time. This does not invalidate the subset family.
+            continue;
+        }
+
         // Make sure the indices are valid and don't exceed the faceCount.
         if (faceCount > 0 &&
             static_cast<size_t>(*indicesInFamily.rbegin()) >= faceCount) {
