@@ -55,9 +55,9 @@ HdStormRendererPlugin::DeleteRenderDelegate(HdRenderDelegate *renderDelegate)
 }
 
 bool
-HdStormRendererPlugin::IsSupported(bool gpuEnabled) const
+HdStormRendererPlugin::IsSupported(bool gpuEnabled, TfToken hgiToken) const
 {
-    return gpuEnabled ? HdStRenderDelegate::IsSupported() : false;
+    return gpuEnabled ? HdStRenderDelegate::IsSupported(hgiToken) : false;
 }
 
 

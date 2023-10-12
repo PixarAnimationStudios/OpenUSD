@@ -113,6 +113,77 @@ _MakeNewPlatformDefaultHgi()
     return instance;
 }
 
+static Hgi*
+_MakeHgiOfChoice(const TfToken& type)
+{
+    // If a token other than supported type is passed on current platform,
+    // return the defualt HGI device supported by current platform.
+    const char* hgiType = type.data();
+#if defined(ARCH_OS_LINUX)
+    if (std::strcmp(hgiType, "HgiGL") != 0)
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+        if (std::strcmp(hgiType, "HgiVulkan") != 0)
+#else
+        if (std::strcmp(hgiType, "HgiVulkan") == 0)
+        {
+            TF_CODING_ERROR(
+                "Build requires PXR_VULKAN_SUPPORT_ENABLED to support HgiVulkan on this platform. "
+                "Hence the default supported HGI type will be created");
+            return _MakeNewPlatformDefaultHgi();
+        }
+        else
+#endif
+#elif defined(ARCH_OS_DARWIN)
+    if (std::strcmp(hgiType, "HgiMetal") != 0)
+#elif defined(ARCH_OS_WINDOWS)
+    if (std::strcmp(hgiType, "HgiGL") != 0)
+#if defined(PXR_VULKAN_SUPPORT_ENABLED)
+        if (std::strcmp(hgiType, "HgiVulkan") != 0)
+#else   
+        if (std::strcmp(hgiType, "HgiVulkan") == 0) {
+            TF_CODING_ERROR("Build requires PXR_VULKAN_SUPPORT_ENABLED to support HgiVulkan on this platform. Hence the default supported HGI type will be created");
+            return _MakeNewPlatformDefaultHgi();
+        }
+        else
+#endif
+#else
+#error Unknown Platform
+    return nullptr;
+#endif
+    {
+        TF_CODING_ERROR("Build does not support proposed HGI type \"%s\" on this platform. Hence the default supported HGI type will be created", hgiType);
+        return _MakeNewPlatformDefaultHgi();
+    }
+
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+
+    const TfType plugType = plugReg.FindDerivedTypeByName<Hgi>(hgiType);
+
+    PlugPluginPtr plugin = plugReg.GetPluginForType(plugType);
+    if (!plugin || !plugin->Load()) {
+        TF_CODING_ERROR(
+            "[PluginLoad] PlugPlugin could not be loaded for TfType '%s'\n",
+            plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    HgiFactoryBase* factory = plugType.GetFactory<HgiFactoryBase>();
+    if (!factory) {
+        TF_CODING_ERROR("[PluginLoad] Cannot manufacture type '%s' \n",
+            plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    Hgi* instance = factory->New();
+    if (!instance) {
+        TF_CODING_ERROR("[PluginLoad] Cannot construct instance of type '%s'\n",
+            plugType.GetTypeName().c_str());
+        return nullptr;
+    }
+
+    return instance;
+}
+
 Hgi*
 Hgi::GetPlatformDefaultHgi()
 {
@@ -128,12 +199,34 @@ Hgi::CreatePlatformDefaultHgi()
     return HgiUniquePtr(_MakeNewPlatformDefaultHgi());
 }
 
-bool
-Hgi::IsSupported()
+HgiUniquePtr 
+Hgi::CreateHgiOfChoice(const TfToken& token)
 {
-    if (HgiUniquePtr const instance = CreatePlatformDefaultHgi()) {
+    return HgiUniquePtr(_MakeHgiOfChoice(token));
+}
+
+bool
+Hgi::IsSupported(const TfToken& hgiToken)
+{
+    // TODO: By current design, a Hgi instance of default back-end is created
+    // and initialized as a method of confirming support on a platform. Once 
+    // this is done, Hgi is destroyed along with the created API contexts.
+    // This is not the best way to check for support on a platform. Hence, IsSupported
+    // needs to be re-written.
+
+    // As of now, this function is called when initializing a render-delegate but only
+    // for checking support for platform default Hgi back-ends. To be able to check 
+    // support for Hgi back-ends of (non-default) choice, a token can be passed 
+    // Eg: TfToken("HgiVulkan") to this function so that an object of Hgi type of choice 
+    // is created and initialized to confirm support on platform.
+    HgiUniquePtr instance = nullptr;
+    if (!hgiToken.IsEmpty())
+        instance = CreateHgiOfChoice(hgiToken);
+    else
+        instance = CreatePlatformDefaultHgi();
+
+    if(instance)
         return instance->IsBackendSupported();
-    }
 
     return false;
 }
