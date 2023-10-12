@@ -629,7 +629,7 @@ UsdGeomSubset::ValidateFamily(
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s "
-                    "does not match the face count %ld.",
+                    "does not match the face count %ld.\n",
                     TfStringify(t).c_str(), faceCount);
             }
         }
