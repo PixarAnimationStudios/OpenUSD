@@ -641,8 +641,9 @@ UsdGeomSubset::ValidateFamily(
         }
 
         // Make sure the indices are valid and don't exceed the faceCount.
-        if (faceCount > 0 &&
-            static_cast<size_t>(*indicesInFamily.rbegin()) >= faceCount) {
+        const int lastIndex = *indicesInFamily.rbegin();
+        if (faceCount > 0 && lastIndex >= 0 &&
+            static_cast<size_t>(lastIndex) >= faceCount) {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
