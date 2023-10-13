@@ -50,6 +50,29 @@ HgiVulkanGraphicsCmds::HgiVulkanGraphicsCmds(
     // have been created on the main thread, but used on a secondary thread.
     // We need to acquire a command buffer for the thread that is doing the
     // recording so we postpone acquiring cmd buffer until first use of Cmds.
+
+    // Process attachments to get clear values.
+    for (HgiAttachmentDesc const& attachmentDesc :
+        _descriptor.colorAttachmentDescs) {
+        VkClearValue vkClearValue;
+        vkClearValue.color.float32[0] = attachmentDesc.clearValue[0];
+        vkClearValue.color.float32[1] = attachmentDesc.clearValue[1];
+        vkClearValue.color.float32[2] = attachmentDesc.clearValue[2];
+        vkClearValue.color.float32[3] = attachmentDesc.clearValue[3];
+        _vkClearValues.push_back(vkClearValue);
+    }
+
+    bool const hasDepth =
+        _descriptor.depthAttachmentDesc.format != HgiFormatInvalid;
+    if (hasDepth) {
+        HgiAttachmentDesc const& attachmentDesc =
+            _descriptor.depthAttachmentDesc;
+        VkClearValue vkClearValue;
+        vkClearValue.depthStencil.depth = attachmentDesc.clearValue[0];
+        vkClearValue.depthStencil.stencil =
+            static_cast<uint32_t>(attachmentDesc.clearValue[1]);
+        _vkClearValues.push_back(vkClearValue);
+    }
 }
 
 HgiVulkanGraphicsCmds::~HgiVulkanGraphicsCmds()
@@ -388,7 +411,6 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
             static_cast<HgiVulkanGraphicsPipeline*>(_pipeline.Get());
 
         GfVec2i size(0);
-        VkClearValueVector const& clearValues = pso->GetClearValues();
 
         VkRenderPassBeginInfo beginInfo =
             {VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO};
@@ -396,8 +418,9 @@ HgiVulkanGraphicsCmds::_ApplyPendingUpdates()
         beginInfo.framebuffer= pso->AcquireVulkanFramebuffer(_descriptor,&size);
         beginInfo.renderArea.extent.width = size[0];
         beginInfo.renderArea.extent.height = size[1];
-        beginInfo.clearValueCount = (uint32_t) clearValues.size();
-        beginInfo.pClearValues = clearValues.data();
+        beginInfo.clearValueCount =
+            static_cast<uint32_t>(_vkClearValues.size());
+        beginInfo.pClearValues = _vkClearValues.data();
 
         VkSubpassContents contents = VK_SUBPASS_CONTENTS_INLINE;
 

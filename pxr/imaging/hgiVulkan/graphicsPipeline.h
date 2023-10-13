@@ -38,7 +38,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 class HgiVulkanDevice;
 
 using VkDescriptorSetLayoutVector = std::vector<VkDescriptorSetLayout>;
-using VkClearValueVector = std::vector<VkClearValue>;
 
 /// \class HgiVulkanPipeline
 ///
@@ -72,10 +71,6 @@ public:
         HgiGraphicsCmdsDesc const& gfxDesc,
         GfVec2i* dimensions);
 
-    /// Returns the clear values for each color and depth attachment.
-    HGIVULKAN_API
-    VkClearValueVector const& GetClearValues() const;
-
     /// Returns the (writable) inflight bits of when this object was trashed.
     HGIVULKAN_API
     uint64_t & GetInflightBits();
@@ -107,7 +102,6 @@ private:
     VkRenderPass _vkRenderPass;
     VkPipelineLayout _vkPipelineLayout;
     VkDescriptorSetLayoutVector _vkDescriptorSetLayouts;
-    VkClearValueVector _vkClearValues;
 
     std::vector<HgiVulkan_Framebuffer> _framebuffers;
 };

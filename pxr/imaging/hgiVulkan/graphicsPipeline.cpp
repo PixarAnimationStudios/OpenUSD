@@ -550,12 +550,6 @@ HgiVulkanGraphicsPipeline::GetDevice() const
     return _device;
 }
 
-VkClearValueVector const&
-HgiVulkanGraphicsPipeline::GetClearValues() const
-{
-    return _vkClearValues;
-}
-
 uint64_t &
 HgiVulkanGraphicsPipeline::GetInflightBits()
 {
@@ -567,7 +561,6 @@ _ProcessAttachment(
     HgiAttachmentDesc const& attachment,
     uint32_t attachmentIndex,
     HgiSampleCount sampleCount,
-    VkClearValue* vkClearValue,
     VkAttachmentDescription2* vkAttachDesc,
     VkAttachmentReference2* vkRef)
 {
@@ -609,20 +602,6 @@ _ProcessAttachment(
     // XXX Hgi doesn't provide stencil ops, assume it matches depth attachment.
     vkAttachDesc->stencilLoadOp = vkAttachDesc->loadOp;
     vkAttachDesc->stencilStoreOp = vkAttachDesc->storeOp;
-
-    //
-    // Clear value
-    //
-    if (isDepthAttachment) {
-        vkClearValue->depthStencil.depth = attachment.clearValue[0];
-        vkClearValue->depthStencil.stencil =
-            static_cast<uint32_t>(attachment.clearValue[1]);
-    } else {
-        vkClearValue->color.float32[0] = attachment.clearValue[0];
-        vkClearValue->color.float32[1] = attachment.clearValue[1];
-        vkClearValue->color.float32[2] = attachment.clearValue[2];
-        vkClearValue->color.float32[3] = attachment.clearValue[3];
-    }
 }
 
 void
@@ -637,7 +616,6 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     }
 
     // Determine description and reference for each attachment
-    _vkClearValues.clear();
     std::vector<VkAttachmentDescription2> vkDescriptions;
     std::vector<VkAttachmentReference2> vkColorReferences;
     VkAttachmentReference2 vkDepthReference = 
@@ -649,11 +627,9 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     // Process color attachments
     for (HgiAttachmentDesc const& desc : _descriptor.colorAttachmentDescs) {
         uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
         VkAttachmentDescription2 vkDesc;
         VkAttachmentReference2 vkRef;
-        _ProcessAttachment(desc, slot, samples, &vkClear, &vkDesc, &vkRef);
-        _vkClearValues.push_back(vkClear);
+        _ProcessAttachment(desc, slot, samples, &vkDesc, &vkRef);
         vkDescriptions.push_back(vkDesc);
         vkColorReferences.push_back(vkRef);
     }
@@ -664,11 +640,9 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (hasDepth) {
         HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
         uint32_t slot = (uint32_t) vkDescriptions.size();
-        VkClearValue vkClear;
         VkAttachmentDescription2 vkDesc;
         VkAttachmentReference2* vkRef = &vkDepthReference;
-        _ProcessAttachment(desc, slot, samples, &vkClear, &vkDesc, vkRef);
-        _vkClearValues.push_back(vkClear);
+        _ProcessAttachment(desc, slot, samples, &vkDesc, vkRef);
         vkDescriptions.push_back(vkDesc);
     }
 
@@ -676,11 +650,10 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
     if (_descriptor.resolveAttachments) {
         for (HgiAttachmentDesc const& desc:_descriptor.colorAttachmentDescs){
             uint32_t slot = (uint32_t) vkDescriptions.size();
-            VkClearValue vkClear;
             VkAttachmentDescription2 vkDesc;
             VkAttachmentReference2 vkRef;
             _ProcessAttachment(
-                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, &vkRef);
+                desc, slot, HgiSampleCount1, &vkDesc, &vkRef);
              // Don't care about initial contents of resolve attachment.
             vkDesc.loadOp =
                 HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);
@@ -696,11 +669,10 @@ HgiVulkanGraphicsPipeline::_CreateRenderPass()
         if (hasDepth) {
             HgiAttachmentDesc const& desc = _descriptor.depthAttachmentDesc;
             uint32_t slot = (uint32_t) vkDescriptions.size();
-            VkClearValue vkClear;
             VkAttachmentDescription2 vkDesc;
             VkAttachmentReference2* vkRef = &vkDepthResolveReference;
             _ProcessAttachment(
-                desc, slot, HgiSampleCount1, &vkClear, &vkDesc, vkRef);
+                desc, slot, HgiSampleCount1, &vkDesc, vkRef);
             // Don't care about initial contents of resolve attachment.
             vkDesc.loadOp =
                 HgiVulkanConversions::GetLoadOp(HgiAttachmentLoadOpDontCare);
