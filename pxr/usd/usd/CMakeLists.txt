@@ -237,6 +237,7 @@ pxr_test_scripts(
     testenv/testUsdPrimFlagsPredicate.py
     testenv/testUsdPrimRange.py
     testenv/testUsdPrims.py
+    testenv/testUsdReadOutOfBounds.py
     testenv/testUsdReferences.py
     testenv/testUsdRelationships.py
     testenv/testUsdResolveTargetPy.py
@@ -555,6 +556,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdMetadata
     DEST testUsdMetadata
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdReadOutOfBounds
+    DEST testUsdReadOutOfBounds
 )
 
 pxr_install_test_dir(
@@ -1120,6 +1126,12 @@ pxr_register_test(testUsdFlattenLayerStack
 pxr_register_test(testUsdNotices
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNotices"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdReadOutOfBounds
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdReadOutOfBounds"
     EXPECTED_RETURN_CODE 0
 )
 
