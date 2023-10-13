@@ -170,7 +170,6 @@ pxr_build_test(testHdxCameraAndLight
         hd
         sdf
         glf
-        garch
         arch
         tf
     CPPFILES
@@ -182,7 +181,6 @@ pxr_build_test(testHdxDrawTarget
         hd
         sdf
         glf
-        garch
         arch
         tf
     CPPFILES
