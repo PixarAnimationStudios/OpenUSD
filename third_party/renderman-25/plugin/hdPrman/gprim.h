@@ -182,10 +182,12 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     sceneDelegate->SampleTransform(id, &xf);
 
     // If blur is explicitly disabled, use single time 0 sample
-    const bool disableTransformMotionBlur
-        = !param->GetMotionBlur(sceneDelegate, id)
-        || (param->GetNumXformSamples(sceneDelegate, id) < 2);
-    if (disableTransformMotionBlur) {
+    const bool enableMotionBlur =
+        param->IsMotionBlurEnabled() &&
+        HdPrman_IsMotionBlurPrimvarEnabled(sceneDelegate, id) &&
+        HdPrman_GetNumXformSamples(sceneDelegate, id) >= 2;
+
+    if (!enableMotionBlur) {
         xf.values[0] = xf.Resample(0.f);
         xf.times[0] = 0.f;
         xf.Resize(1);

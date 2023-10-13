@@ -81,7 +81,8 @@ HdPrman_Points::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         RtPrimVarList primvars;
 
         const size_t npoints =
-            HdPrman_ConvertPointsPrimvarForPoints(sceneDelegate, id, primvars);
+            HdPrman_ConvertPointsPrimvarForPoints(
+                sceneDelegate, id, renderParam->GetShutterInterval(), primvars);
 
         *primType = RixStr.k_Ri_Points;
 

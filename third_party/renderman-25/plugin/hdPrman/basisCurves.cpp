@@ -153,7 +153,11 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     if( HdPrman_RenderParam::HasSceneIndexPlugin(
             HdPrmanPluginTokens->velocityBlur) ) {
         HdPrman_ConvertPointsPrimvar(
-            sceneDelegate, id, primvars, vertexPrimvarCount);
+            sceneDelegate,
+            id,
+            renderParam->GetShutterInterval(),
+            primvars,
+            vertexPrimvarCount);
     } else {
         primvarTime = renderParam->ConvertPositions(
             sceneDelegate, id, vertexPrimvarCount, primvars);

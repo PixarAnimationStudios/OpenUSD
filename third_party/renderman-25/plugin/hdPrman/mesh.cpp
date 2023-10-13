@@ -171,7 +171,12 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     float primvarTime = 0.0f;
     if( HdPrman_RenderParam::HasSceneIndexPlugin(
             HdPrmanPluginTokens->velocityBlur) ) {
-        HdPrman_ConvertPointsPrimvar(sceneDelegate, id, primvars, npoints);
+        HdPrman_ConvertPointsPrimvar(
+            sceneDelegate,
+            id,
+            renderParam->GetShutterInterval(),
+            primvars,
+            npoints);
     } else {
         primvarTime = renderParam->ConvertPositions(
             sceneDelegate, id, npoints, primvars);

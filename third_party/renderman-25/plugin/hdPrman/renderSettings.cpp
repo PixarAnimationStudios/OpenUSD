@@ -264,15 +264,25 @@ void HdPrman_RenderSettings::_Sync(
         }
     }
 
-    // Set the camera path here so that HdPrmanCamera::Sync can detect
-    // whether it is syncing the current camera
-    // and needs to set the riley shutter interval
-    // which needs to be set before any time-sampled primvars are synced.
-    const HdRenderSettings::RenderProducts &renderProducts =
-        GetRenderProducts();
-    if(!renderProducts.empty()) {
-        SdfPath cameraPath = renderProducts.at(0).cameraPath;
-        param->GetCameraContext().SetCameraPath(cameraPath);
+    if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
+        const bool hasRenderProducts = !GetRenderProducts().empty();
+
+        // Fallback path for apps using an older version of Hydra wherein the
+        // computed "unioned shutter interval" on the render settings prim via
+        // the HdsiRenderSettingsFilteringSceneIndex is not available.
+        // In this scenario, the *legacy* scene options param list is updated
+        // with the camera shutter interval of the first render product
+        // during HdPrmanCamera::Sync. The riley shutter interval needs to
+        // be set before any time-sampled primvars are synced.
+        // 
+        if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
+            // Set the camera path here so that HdPrmanCamera::Sync can detect
+            // whether it is syncing the current camera to set the riley shutter
+            // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
+            // for additional context.
+            const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
+            param->GetCameraContext().SetCameraPath(cameraPath);
+        }
     }
 
     TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
