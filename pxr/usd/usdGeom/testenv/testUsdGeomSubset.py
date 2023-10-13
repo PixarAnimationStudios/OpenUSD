@@ -64,7 +64,7 @@ class testUsdGeomSubset(unittest.TestCase):
 
         invalidFamilies = ['invalidIndices', 'badPartition1', 'badPartition2', 
                            'badPartition3', 'invalidNonOverlapping',
-                           'invalidUnrestricted']
+                           'invalidUnrestricted', 'onlyNegativeIndices']
         for familyName in invalidFamilies:
             (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName=familyName)
@@ -164,7 +164,7 @@ class testUsdGeomSubset(unittest.TestCase):
         # Check total count.
         allGeomSubsets = UsdGeom.Subset.GetAllGeomSubsets(
                 UsdGeom.Imageable(sphere))
-        self.assertEqual(len(allGeomSubsets), 21)
+        self.assertEqual(len(allGeomSubsets), 22)
 
         # Check that invalid negative indices are ignored when getting 
         # unassigned indices.
