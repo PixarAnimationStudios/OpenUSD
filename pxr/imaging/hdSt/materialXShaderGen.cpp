@@ -637,7 +637,7 @@ HdStMaterialXShaderGen<Base>::emitVariableDeclarations(
         if ( (isPublicUniform && !_IsHardcodedPublicUniform(*varType))
             || MxHdVariables.count(variable->getName()) ) {
             Base::emitVariableDeclaration(variable, mx::EMPTY_STRING,
-                                    context, stage, false);
+                                    context, stage, false /* assignValue */);
         }
         // Otherwise assign the value from MaterialX
         else {
@@ -689,12 +689,12 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
     Base::emitLineBreak(mxStage);
     Base::emitTypeDefinitions(mxContext, mxStage);
 
-    // Add all constants
+    // Add all constants and ensure that values are initialized
     const mx::VariableBlock& constants = mxStage.getConstantBlock();
     if (!constants.empty()) {
         emitVariableDeclarations(constants, constQualifier,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, true /* assignValue */);
         Base::emitLineBreak(mxStage);
     }
 
@@ -706,7 +706,8 @@ HdStMaterialXShaderGen<Base>::_EmitConstantsUniformsAndTypeDefs(
         if (!uniforms.empty() && uniforms.getName() != mx::HW::LIGHT_DATA) {
             Base::emitComment("Uniform block: " + uniforms.getName(), mxStage);
             emitVariableDeclarations(uniforms, mx::EMPTY_STRING,
-                                     mx::Syntax::SEMICOLON, mxContext, mxStage);
+                                     mx::Syntax::SEMICOLON, mxContext, 
+                                     mxStage, true /* assignValue */);
             Base::emitLineBreak(mxStage);
         }
     }
@@ -736,7 +737,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         Base::emitScopeBegin(mxStage);
         emitVariableDeclarations(lightData, mx::EMPTY_STRING,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, false /* assignValue */);
         Base::emitScopeEnd(mxStage, true);
         Base::emitLineBreak(mxStage);
         emitLine(lightData.getName() + " "
@@ -758,7 +759,7 @@ HdStMaterialXShaderGen<Base>::_EmitDataStructsAndFunctionDefinitions(
         Base::emitScopeBegin(mxStage);
         emitVariableDeclarations(vertexData, mx::EMPTY_STRING,
                                  mx::Syntax::SEMICOLON,
-                                 mxContext, mxStage, false);
+                                 mxContext, mxStage, false /* assignValue */);
         Base::emitScopeEnd(mxStage, false, false);
         Base::emitString(mx::Syntax::SEMICOLON, mxStage);
         Base::emitLineBreak(mxStage);
