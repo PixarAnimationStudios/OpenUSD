@@ -545,6 +545,39 @@ UsdGeomSubset::ValidateSubsets(
     return valid;
 }
 
+static size_t
+_GetElementCountAtTime(
+    const UsdGeomImageable& geom,
+    const TfToken& elementType,
+    UsdTimeCode time,
+    bool* isCountTimeVarying=nullptr)
+{
+    size_t elementCount = 0u;
+    if (isCountTimeVarying) {
+        *isCountTimeVarying = false;
+    }
+
+    if (elementType == UsdGeomTokens->face) {
+        // XXX: Use UsdGeomMesh schema to get the face count.
+        const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->faceVertexCounts);
+        if (fvcAttr) {
+            VtIntArray faceVertexCounts;
+            if (fvcAttr.Get(&faceVertexCounts, time)) {
+                elementCount = faceVertexCounts.size();
+            }
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
+            }
+        }
+    } else {
+        TF_CODING_ERROR("Unsupported element type '%s'.",
+                        elementType.GetText());
+    }
+
+    return elementCount;
+}
+
 /* static */
 bool
 UsdGeomSubset::ValidateFamily(
@@ -553,28 +586,20 @@ UsdGeomSubset::ValidateFamily(
     const TfToken &familyName,
     std::string * const reason)
 {
-    const std::vector<UsdGeomSubset> familySubsets =
-        UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
-
-    bool valid = true;
-
-    size_t elementCount = 0;
-    if (elementType == UsdGeomTokens->face) {
-        // XXX: Use UsdGeomMesh schema to get the face count.
-        UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
-            UsdGeomTokens->faceVertexCounts);
-        if (fvcAttr) {
-            VtIntArray faceVertexCounts;
-            if (fvcAttr.Get(&faceVertexCounts)) {
-                elementCount = faceVertexCounts.size();
-            }
-        }
-    } else {
+    // XXX: Remove when other element types are supported.
+    if (elementType != UsdGeomTokens->face) {
         TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
         return false;
     }
 
+    const std::vector<UsdGeomSubset> familySubsets =
+        UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
+
+    bool valid = true;
+
+    const size_t elementCount =
+        _GetElementCountAtTime(geom, elementType, UsdTimeCode::Default());
     if (elementCount == 0) {
         valid = false;
         if (reason) {
