@@ -1085,8 +1085,10 @@ _BindingState::GetBindingsForDrawing(
         bindingsDesc, topVisBar, HdTokens->topologyVisibility);
 
     binder.GetBufferArrayBindingDesc(bindingsDesc, indexBar);
-    binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
-    binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
+    if (!geometricShader->IsPrimTypePoints()) {
+        binder.GetBufferArrayBindingDesc(bindingsDesc, elementBar);
+        binder.GetBufferArrayBindingDesc(bindingsDesc, fvarBar);
+    }
     binder.GetBufferArrayBindingDesc(bindingsDesc, varyingBar);
 
     if (tessFactorsBuffer) {
