@@ -614,8 +614,8 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testUsdSchemaGen
-    DEST testUsdSchemaGen
+    SRC testenv/testUsdGenSchema
+    DEST testUsdGenSchema
 )
 
 pxr_install_test_dir(
