@@ -579,7 +579,7 @@ UsdGeomSubset::ValidateFamily(
         valid = false;
         if (reason) {
             *reason += TfStringPrintf("Unable to determine face-count for geom"
-                " <%s>", geom.GetPath().GetText());
+                " <%s>.\n", geom.GetPath().GetText());
         }
     }
 
