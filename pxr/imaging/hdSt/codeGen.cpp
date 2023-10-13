@@ -2692,12 +2692,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         tcsDesc.shaderCode = source.c_str();
         tcsDesc.generatedShaderCodeOut = &_tcsSource;
         
-        if (_hasClipPlanes) {
-            HgiShaderFunctionAddStageOutput(
-                &tcsDesc, "gl_ClipDistance", "float",
-                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
-        }
-
         if (!glslProgram->CompileShader(tcsDesc)) {
             return nullptr;
         }
@@ -2821,12 +2815,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageOutput(
             &ptcsDesc, "gl_PointSize", "float",
                 pointRole);
-
-        if (_hasClipPlanes) {
-            HgiShaderFunctionAddStageOutput(
-                &ptcsDesc, "gl_ClipDistance", "float",
-                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
-        }
 
         if (!glslProgram->CompileShader(ptcsDesc)) {
             return nullptr;
