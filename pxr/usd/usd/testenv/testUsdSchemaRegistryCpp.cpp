@@ -94,17 +94,9 @@ TestPrimMetadata()
     TF_AXIOM(!primDef->GetMetadata(SdfFieldKeys->Hidden, &val));
     TF_AXIOM(val == 0.0);
 
-    // XXX: It's reasonable to expect that calling GetMetadataDictKey using
-    // an output type that doesn't match the type of the value at the key in the 
-    // dictionary would return false. However SdfLayer::HasFieldDictKey (which
-    // GetMetadataDictKey eventually calls) does not return false on a type
-    // mismatch. This may be a bug or it may be intentional so for now at least,
-    // this case will return true, but won't write out to the value.
-    TF_AXIOM(primDef->GetMetadataByDictKey(
+    TF_AXIOM(!primDef->GetMetadataByDictKey(
              TfToken("testDictionaryMetadata"), TfToken("name"), &val));
     TF_AXIOM(val == 0.0);
-    // But calling GetMetaByDictKey on non-dicionary metadata or a non-existent
-    // key in valid dictionary metadata does return false.
     TF_AXIOM(!primDef->GetMetadataByDictKey(
              TfToken("testCustomMetadata"), TfToken("name"), &val));
     TF_AXIOM(val == 0.0);
@@ -253,21 +245,12 @@ TestAttributeMetadata()
     TF_AXIOM(!primDef->GetPropertyMetadata(
         attrNameToken, SdfFieldKeys->AllowedTokens, &val));
     TF_AXIOM(val == 0.0);
-
-    // XXX: It's reasonable to expect that calling GetMetadataDictKey using
-    // an output type that doesn't match the type of the value at the key in the 
-    // dictionary would return false. However SdfLayer::HasFieldDictKey (which
-    // GetMetadataDictKey eventually calls) does not return false on a type
-    // mismatch. This may be a bug or it may be intentional so for now at least,
-    // this case will return true, but won't write out to the value.
-    TF_AXIOM(attrDef.GetMetadataByDictKey(
+    TF_AXIOM(!attrDef.GetMetadataByDictKey(
              TfToken("testDictionaryMetadata"), TfToken("name"), &val));
     TF_AXIOM(val == 0.0);
-    TF_AXIOM(primDef->GetPropertyMetadataByDictKey(attrNameToken,
+    TF_AXIOM(!primDef->GetPropertyMetadataByDictKey(attrNameToken,
              TfToken("testDictionaryMetadata"), TfToken("name"), &val));
     TF_AXIOM(val == 0.0);
-    // But calling GetMetaByDictKey on non-dicionary metadata or a non-existent
-    // key in valid dictionary metadata does return false.
     TF_AXIOM(!attrDef.GetMetadataByDictKey(
              TfToken("testCustomMetadata"), TfToken("name"), &val));
     TF_AXIOM(val == 0.0);
