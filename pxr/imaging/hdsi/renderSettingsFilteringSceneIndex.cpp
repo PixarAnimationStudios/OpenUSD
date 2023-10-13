@@ -47,7 +47,8 @@ namespace
 {
 
 static const SdfPath s_renderScope("/Render");
-static const SdfPath s_fallbackPath("/Render/_FallbackSettings");
+static const SdfPath s_fallbackPath(
+    "/Render/__HdsiRenderSettingsFilteringSceneIndex__FallbackSettings");
 
 // Builds and returns a data source to invalidate the renderSettings.active
 // locator when the sceneGlobals.activeRenderSettingsPrim locator is dirtied.
@@ -580,17 +581,24 @@ SdfPathVector
 HdsiRenderSettingsFilteringSceneIndex::GetChildPrimPaths(
     const SdfPath &primPath) const
 { 
-    // Avoid a copy if possible.
+    // Avoid a copy if possible in the generic case.
     if (ARCH_UNLIKELY(
-            (primPath == GetRenderScope() || primPath.IsAbsoluteRootPath()) &&
-             _addedFallbackPrim)) {
+            primPath.IsAbsoluteRootPath() && _addedFallbackPrim)) {
         
         SdfPathVector paths =
             _GetInputSceneIndex()->GetChildPrimPaths(primPath);
-        paths.push_back(primPath.IsAbsoluteRootPath()
-                        ? GetRenderScope()
-                        : GetFallbackPrimPath());
+        if (!_Contains(paths, GetRenderScope())) {
+            paths.push_back(GetRenderScope());
+        }
+        return paths;
+    }
 
+    if (ARCH_UNLIKELY(
+            primPath == GetRenderScope() && _addedFallbackPrim)) {
+        
+        SdfPathVector paths =
+            _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+        paths.push_back(GetFallbackPrimPath());
         return paths;
     }
 
