@@ -558,7 +558,7 @@ UsdGeomSubset::ValidateFamily(
 
     bool valid = true;
 
-    size_t faceCount = 0;
+    size_t elementCount = 0;
     if (elementType == UsdGeomTokens->face) {
         // XXX: Use UsdGeomMesh schema to get the face count.
         UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
@@ -566,7 +566,7 @@ UsdGeomSubset::ValidateFamily(
         if (fvcAttr) {
             VtIntArray faceVertexCounts;
             if (fvcAttr.Get(&faceVertexCounts)) {
-                faceCount = faceVertexCounts.size();
+                elementCount = faceVertexCounts.size();
             }
         }
     } else {
@@ -575,11 +575,11 @@ UsdGeomSubset::ValidateFamily(
         return false;
     }
 
-    if (faceCount == 0) {
+    if (elementCount == 0) {
         valid = false;
         if (reason) {
-            *reason += TfStringPrintf("Unable to determine face-count for geom"
-                " <%s>.\n", geom.GetPath().GetText());
+            *reason += TfStringPrintf("Unable to determine element count for "
+                "geom <%s>.\n", geom.GetPath().GetText());
         }
     }
 
@@ -624,13 +624,13 @@ UsdGeomSubset::ValidateFamily(
 
         // Make sure every index appears exactly once if it's a partition.
         if (familyType == UsdGeomTokens->partition &&
-            indicesInFamily.size() != faceCount)
+            indicesInFamily.size() != elementCount)
         {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s "
-                    "does not match the face count %ld.\n",
-                    TfStringify(t).c_str(), faceCount);
+                    "does not match the element count %ld.\n",
+                    TfStringify(t).c_str(), elementCount);
             }
         }
 
@@ -640,15 +640,15 @@ UsdGeomSubset::ValidateFamily(
             continue;
         }
 
-        // Make sure the indices are valid and don't exceed the faceCount.
+        // Make sure the indices are valid and don't exceed the elementCount.
         const int lastIndex = *indicesInFamily.rbegin();
-        if (faceCount > 0 && lastIndex >= 0 &&
-            static_cast<size_t>(lastIndex) >= faceCount) {
+        if (elementCount > 0 && lastIndex >= 0 &&
+            static_cast<size_t>(lastIndex) >= elementCount) {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the face-count %ld at time %s.\n",
-                    faceCount, TfStringify(t).c_str());
+                    "greater than the element count %ld at time %s.\n",
+                    elementCount, TfStringify(t).c_str());
             }
         }
 
