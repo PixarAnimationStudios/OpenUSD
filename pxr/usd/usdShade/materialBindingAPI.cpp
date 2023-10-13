@@ -791,6 +791,9 @@ UsdShadeMaterialBindingAPI::ComputeBoundMaterial(
 
                 const UsdCollectionAPI &collection = 
                     collBinding.GetCollection();
+                if (!collection) {
+                    continue;
+                }
                 const SdfPath &collectionPath = collBinding.GetCollectionPath();
 
                 auto collIt = collectionQueryCache->find(collectionPath);
