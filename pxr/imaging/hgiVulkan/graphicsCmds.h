@@ -138,6 +138,7 @@ private:
     HgiVulkanGraphicsCmds & operator=(const HgiVulkanGraphicsCmds&) = delete;
     HgiVulkanGraphicsCmds(const HgiVulkanGraphicsCmds&) = delete;
 
+    void _ClearAttachmentsIfNeeded();
     void _ApplyPendingUpdates();
     void _EndRenderPass();
     void _CreateCommandBuffer();
