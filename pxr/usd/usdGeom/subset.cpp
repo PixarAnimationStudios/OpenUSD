@@ -595,22 +595,22 @@ UsdGeomSubset::ValidateFamily(
 
     const std::vector<UsdGeomSubset> familySubsets =
         UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
+    const TfToken familyType = GetFamilyType(geom, familyName);
+    const bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
     bool valid = true;
 
-    const size_t elementCount =
-        _GetElementCountAtTime(geom, elementType, UsdTimeCode::Default());
-    if (elementCount == 0) {
+    bool isElementCountTimeVarying = false;
+    const size_t earliestTimeElementCount = _GetElementCountAtTime(
+        geom, elementType, UsdTimeCode::EarliestTime(),
+        &isElementCountTimeVarying);
+    if (!isElementCountTimeVarying && earliestTimeElementCount == 0u) {
         valid = false;
         if (reason) {
-            *reason += TfStringPrintf("Unable to determine element count for "
-                "geom <%s>.\n", geom.GetPath().GetText());
+            *reason += TfStringPrintf("Unable to determine element count "
+                "at earliest time for geom <%s>.\n", geom.GetPath().GetText());
         }
     }
-
-    const TfToken familyType = GetFamilyType(geom, familyName);
-
-    const bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
     std::set<double> allTimeSamples;
     for (const auto &subset : familySubsets) {
@@ -624,6 +624,8 @@ UsdGeomSubset::ValidateFamily(
     for (const double t : allTimeSamples) {
         allTimeCodes.emplace_back(t);
     }
+
+    bool hasIndicesAtAnyTime = false;
 
     for (const UsdTimeCode &t : allTimeCodes) {
         std::set<int> indicesInFamily;
@@ -647,6 +649,22 @@ UsdGeomSubset::ValidateFamily(
             }
         }
 
+        // Topologically varying geometry may not have any elements at some
+        // times. In that case, only mark the family invalid if it has indices
+        // but we have no elements for this time.
+        const size_t elementCount = isElementCountTimeVarying ?
+            _GetElementCountAtTime(geom, elementType, t) :
+            earliestTimeElementCount;
+        if (!indicesInFamily.empty() &&
+                isElementCountTimeVarying && elementCount == 0u) {
+            valid = false;
+            if (reason) {
+                *reason += TfStringPrintf("Unable to determine element count "
+                    "at time %s with indices for geom <%s>.\n",
+                    TfStringify(t).c_str(), geom.GetPath().GetText());
+            }
+        }
+
         // Make sure every index appears exactly once if it's a partition.
         if (familyType == UsdGeomTokens->partition &&
             indicesInFamily.size() != elementCount)
@@ -664,6 +682,8 @@ UsdGeomSubset::ValidateFamily(
             // time. This does not invalidate the subset family.
             continue;
         }
+
+        hasIndicesAtAnyTime = true;
 
         // Make sure the indices are valid and don't exceed the elementCount.
         const int lastIndex = *indicesInFamily.rbegin();
@@ -684,6 +704,13 @@ UsdGeomSubset::ValidateFamily(
                 *reason += TfStringPrintf("Found one or more indices that are "
                     "less than 0 at time %s.\n", TfStringify(t).c_str());
             }
+        }
+    }
+
+    if (!hasIndicesAtAnyTime) {
+        valid = false;
+        if (reason) {
+            *reason += TfStringPrintf("No indices in family at any time.\n");
         }
     }
 
