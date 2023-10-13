@@ -140,8 +140,8 @@ private:
     HgiUniquePtr _hgi;
     HdDriver _hgiDriver;
 
-    HdEngine _engine;
     HdStRenderDelegate _renderDelegate;
+    HdEngine _engine;
     HdRenderIndex *_renderIndex;
     SceneDelegate *_sceneDelegate;
 
@@ -156,8 +156,8 @@ HdSt_TestDriverBase<SceneDelegate>::HdSt_TestDriverBase()
  : _collection(TfToken("testCollection"), HdReprSelector())
  , _hgi(Hgi::CreatePlatformDefaultHgi())
  , _hgiDriver{HgiTokens->renderDriver, VtValue(_hgi.get())}
- , _engine()
  , _renderDelegate()
+ , _engine()
  , _renderIndex(nullptr)
  , _sceneDelegate(nullptr)
  , _clearColor(GfVec4f(0, 0, 0, 1))
