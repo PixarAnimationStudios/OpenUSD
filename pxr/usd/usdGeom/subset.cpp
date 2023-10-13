@@ -546,14 +546,14 @@ UsdGeomSubset::ValidateSubsets(
 }
 
 /* static */
-bool 
+bool
 UsdGeomSubset::ValidateFamily(
-    const UsdGeomImageable &geom, 
+    const UsdGeomImageable &geom,
     const TfToken &elementType,
     const TfToken &familyName,
     std::string * const reason)
 {
-    std::vector<UsdGeomSubset> familySubsets =      
+    std::vector<UsdGeomSubset> familySubsets =
         UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
 
     bool valid = true;
@@ -570,7 +570,7 @@ UsdGeomSubset::ValidateFamily(
             }
         }
     } else {
-        TF_CODING_ERROR("Unsupported element type '%s'.", 
+        TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
         return false;
     }
@@ -584,7 +584,7 @@ UsdGeomSubset::ValidateFamily(
     }
 
     TfToken familyType = GetFamilyType(geom, familyName);
-    
+
     bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
     std::set<double> allTimeSamples;
@@ -596,7 +596,7 @@ UsdGeomSubset::ValidateFamily(
 
     std::vector<UsdTimeCode> allTimeCodes(1, UsdTimeCode::Default());
     allTimeCodes.reserve(1 + allTimeSamples.size());
-    for (const double t: allTimeSamples) {
+    for (const double t : allTimeSamples) {
         allTimeCodes.emplace_back(t);
     }
 
@@ -623,24 +623,24 @@ UsdGeomSubset::ValidateFamily(
         }
 
         // Make sure every index appears exactly once if it's a partition.
-        if (familyType == UsdGeomTokens->partition && 
-            indicesInFamily.size() != faceCount) 
+        if (familyType == UsdGeomTokens->partition &&
+            indicesInFamily.size() != faceCount)
         {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Number of unique indices at time %s "
-                    "does not match the face count %ld.", 
+                    "does not match the face count %ld.",
                     TfStringify(t).c_str(), faceCount);
             }
         }
 
         // Make sure the indices are valid and don't exceed the faceCount.
-        if (faceCount > 0 && 
+        if (faceCount > 0 &&
             static_cast<size_t>(*indicesInFamily.rbegin()) >= faceCount) {
             valid = false;
             if (reason) {
                 *reason += TfStringPrintf("Found one or more indices that are "
-                    "greater than the face-count %ld at time %s.\n", 
+                    "greater than the face-count %ld at time %s.\n",
                     faceCount, TfStringify(t).c_str());
             }
         }
