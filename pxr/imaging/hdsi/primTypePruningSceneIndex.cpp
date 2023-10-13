@@ -58,7 +58,8 @@ public:
             // Filter out binding
             names.erase(
                 std::remove(names.begin(), names.end(),
-                            _si->GetBindingToken()));
+                            _si->GetBindingToken()),
+                names.end());
         }
         return names;
     }
