@@ -1681,6 +1681,9 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSpec(
             GetSampleFilterList(),
             GetDisplayFilterList());
 
+    TF_DEBUG(HDPRMAN_RENDER_PASS)
+        .Msg("Create Riley RenderView from the RenderSpec.\n");
+                
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
 
@@ -1706,6 +1709,10 @@ HdPrman_RenderParam::CreateRenderViewFromRenderSettingsPrim(
     // XXX  To drive interactive viewport rendering with the RenderSettings 
     // prim, the created Riley RenderViewDesc needs to use the "hydra" Riley
     // DisplayDriver (analogous to the RenderProduct productType).
+
+    TF_DEBUG(HDPRMAN_RENDER_PASS)
+        .Msg("Create Riley RenderView from render settings prim %s\n",
+             renderSettingsPrim.GetId().GetText());
 
     GetRenderViewContext().CreateRenderView(renderViewDesc, AcquireRiley());
 }
@@ -2115,6 +2122,24 @@ HdPrman_RenderParam::SetRenderSettingsPrimOptions(
         "Updating render settings param list \n %s\n",
         HdPrmanDebugUtil::RtParamListToString(params).c_str()
     );
+}
+
+void
+HdPrman_RenderParam::SetDrivingRenderSettingsPrimPath(
+    SdfPath const &path)
+{
+    if (path != _drivingRenderSettingsPrimPath) {
+        _drivingRenderSettingsPrimPath = path;
+        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+            "Driving render settings prim is %s\n", path.GetText());
+    }
+
+}
+
+SdfPath const&
+HdPrman_RenderParam::GetDrivingRenderSettingsPrimPath() const
+{
+    return _drivingRenderSettingsPrimPath;
 }
 
 void
@@ -2826,11 +2851,13 @@ HdPrman_RenderParam::CreateFramebufferAndRenderViewFromAovs(
     renderViewDesc.displayFilterList = GetDisplayFilterList();
     renderViewDesc.resolution = GetResolution();
 
+    TF_DEBUG(HDPRMAN_RENDER_PASS)
+        .Msg("Create Riley RenderView from AOV bindings.\n");
     GetRenderViewContext().CreateRenderView(renderViewDesc, riley);
 }
 
 void
-HdPrman_RenderParam::CreateRenderViewFromProducts(
+HdPrman_RenderParam::CreateRenderViewFromLegacyProducts(
     const VtArray<HdRenderSettingsMap>& renderProducts, int frame)
 {
     // Display edits are not currently supported in HdPrman
@@ -3020,6 +3047,8 @@ HdPrman_RenderParam::CreateRenderViewFromProducts(
     renderViewDesc.integratorId = GetActiveIntegratorId();
     renderViewDesc.resolution = GetResolution();
 
+    TF_DEBUG(HDPRMAN_RENDER_PASS)
+        .Msg("Create Riley RenderView from the legacy products.\n");
     GetRenderViewContext().CreateRenderView(renderViewDesc, _riley);
 }
 

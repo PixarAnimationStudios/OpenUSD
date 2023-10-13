@@ -70,6 +70,12 @@ private:
         HdPrman_CameraContext *cameraContext,
         GfVec2i *resolution);
 
+    void _UpdateRprimVisibilityFromTaskRenderTags(
+        TfTokenVector const &renderTags);
+
+    HdPrman_RenderSettings*
+    _GetDrivingRenderSettingsPrim() const;
+
     std::shared_ptr<HdPrman_RenderParam> _renderParam;
     bool _converged;
     int _lastRenderedVersion;

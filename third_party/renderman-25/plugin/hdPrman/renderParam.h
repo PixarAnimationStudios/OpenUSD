@@ -293,7 +293,7 @@ public:
     }
 
     // Creates displays in riley based on rendersettings map
-    void CreateRenderViewFromProducts(
+    void CreateRenderViewFromLegacyProducts(
         const VtArray<HdRenderSettingsMap>& renderProducts, int frame);
 
     // Scene version counter.
@@ -362,6 +362,12 @@ public:
 
     // Cache scene options from the render settings prim.
     void SetRenderSettingsPrimOptions(RtParamList const &params);
+
+    // Set path of the driving render settings prim.
+    void SetDrivingRenderSettingsPrimPath(SdfPath const &path);
+
+    // Get path of the driving render settings prim.
+    SdfPath const& GetDrivingRenderSettingsPrimPath() const;
 
     // Set Riley scene options by composing opinion sources.
     void SetRileyOptions();
@@ -491,6 +497,8 @@ private:
     /// ------------------------------------------------------------------------
     // Render settings prim driven state
     //
+
+    SdfPath _drivingRenderSettingsPrimPath;
 
     RtParamList _renderSettingsPrimOptions;
 

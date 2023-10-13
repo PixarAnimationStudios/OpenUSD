@@ -43,9 +43,17 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+// This env var exists only to compare results from driving the render pass 
+// using the task's aov bindings v/s using the render settings prim.
+// This is currently relevant and limited to non-interactive rendering
+// (e.g., in an application like usdrecord).
+//
+// See DriveRenderPass(..) below for more info.
+// 
 TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
                       "Drive the render pass using the first RenderProduct on "
-                      "the render settings prim.");
+                      "the render settings prim when the render pass has "
+                      "AOV bindings.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
@@ -134,22 +142,62 @@ HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
 
 HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
 
-/* static */
 bool
-HdPrman_RenderSettings::DriveRenderPass() 
+HdPrman_RenderSettings::DriveRenderPass(
+    bool interactive,
+    bool renderPassHasAovBindings) const
 {
-    // Currently the ability to drive the RenderPass with the RenderSettings
-    // and RenderProducts is behind this env var.
-    // XXX This should eventually be replaced with an attribute on the 
-    // RenderSettings prim itself.
-    static bool useRenderSettingsPrim =
+    // As of this writing, the scenarios where we use the render settings prim
+    // to drive render pass execution are:
+    // 1. In an application like usdrecord wherein the render delegate is
+    //    not interactive and the render task has AOV bindings by enabling the
+    //    setting HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS.
+    //
+    // 2. The hdPrman test harness where the task does not have AOV bindings.
+    // 
+    // XXX Interactive viewport rendering using hdPrman currently relies on 
+    // AOV bindings from the task and uses the "hydra" Display Driver to write 
+    // rendered pixels into an intermediate framebuffer which is then blit 
+    // into the Hydra AOVs. Using the render settings prim to drive the render 
+    // pass in an interactive viewport setting is not yet supported.
+    //
+
+    static const bool driveRenderPassWithAovBindings =
         TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS);
-    return useRenderSettingsPrim;
+
+    const bool result =
+        IsValid()&&
+        (driveRenderPassWithAovBindings || !renderPassHasAovBindings) &&
+        !interactive;
+
+    TF_DEBUG(HDPRMAN_RENDER_PASS).Msg(
+        "Drive with RenderSettingsPrim = %d\n"
+        " - HD_PRMAN_RENDER_SETTINGS_PRIM_DRIVE_RENDER_PASS = %d\n"
+        " - valid = %d\n"
+        " - interactive renderDelegate %d\n",
+        result, driveRenderPassWithAovBindings, IsValid(), interactive);
+
+    return result;
 }
 
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
+    HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+    if (param->GetDrivingRenderSettingsPrimPath() == GetId()) {
+        // Could set it to the fallback, but it isn't well-formed as of this
+        // writing and serves only to set composed scene options.
+        // i.e.
+        // if (HdPrmanRenderParam::HasSceneIndexPlugin(
+        //         HdPrmanPluginTokens->renderSettings)) {
+        //     renderParam->SetDrivingRenderSettingsPrimPath(
+        //         HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath());
+        // }
+
+        // For now, just reset to an empty path.
+        param->SetDrivingRenderSettingsPrimPath(SdfPath::EmptyPath());
+    }
 }
+
 
 void HdPrman_RenderSettings::_Sync(
     HdSceneDelegate *sceneDelegate,
@@ -216,6 +264,8 @@ void HdPrman_RenderSettings::_Sync(
     
     if (IsActive() || !hasActiveRsp) {
 
+        param->SetDrivingRenderSettingsPrimPath(GetId());
+
         if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
             *dirtyBits & HdRenderSettings::DirtyActive ||
             *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
@@ -262,26 +312,26 @@ void HdPrman_RenderSettings::_Sync(
                 param->SetConnectedDisplayFilterPaths(sceneDelegate, paths);
             }
         }
-    }
 
-    if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
-        const bool hasRenderProducts = !GetRenderProducts().empty();
+        if (*dirtyBits & HdRenderSettings::DirtyRenderProducts) {
+            const bool hasRenderProducts = !GetRenderProducts().empty();
 
-        // Fallback path for apps using an older version of Hydra wherein the
-        // computed "unioned shutter interval" on the render settings prim via
-        // the HdsiRenderSettingsFilteringSceneIndex is not available.
-        // In this scenario, the *legacy* scene options param list is updated
-        // with the camera shutter interval of the first render product
-        // during HdPrmanCamera::Sync. The riley shutter interval needs to
-        // be set before any time-sampled primvars are synced.
-        // 
-        if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
-            // Set the camera path here so that HdPrmanCamera::Sync can detect
-            // whether it is syncing the current camera to set the riley shutter
-            // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
-            // for additional context.
-            const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
-            param->GetCameraContext().SetCameraPath(cameraPath);
+            // Fallback path for apps using an older version of Hydra wherein 
+            // the computed "unioned shutter interval" on the render settings 
+            // prim via HdsiRenderSettingsFilteringSceneIndex is not available.
+            // In this scenario, the *legacy* scene options param list is updated
+            // with the camera shutter interval of the first render product
+            // during HdPrmanCamera::Sync. The riley shutter interval needs to
+            // be set before any time-sampled primvars are synced.
+            // 
+            if (GetShutterInterval().IsEmpty() && hasRenderProducts) {
+                // Set the camera path here so that HdPrmanCamera::Sync can detect
+                // whether it is syncing the current camera to set the riley shutter
+                // interval. See SetRileyShutterIntervalFromCameraContextCameraPath
+                // for additional context.
+                const SdfPath &cameraPath = GetRenderProducts().at(0).cameraPath;
+                param->GetCameraContext().SetCameraPath(cameraPath);
+            }
         }
     }
 

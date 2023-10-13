@@ -38,12 +38,16 @@ public:
 
     ~HdPrman_RenderSettings() override;
 
-    static bool DriveRenderPass();
+    /// Public API.
+    ///
+    /// Returns whether the prim can be used to drive render pass execution.
+    /// If false is returned, the render pass uses a combination of the
+    /// legacy render settings map and render pass state to drive execution.
+    bool DriveRenderPass(
+        bool interactive,
+        bool renderPassHasAovBindings) const;
 
-    const RtParamList& GetOptions() const {
-        return _settingsOptions;
-    }
-
+    /// Virtual API.
     void Finalize(HdRenderParam *renderParam) override;
 
     void _Sync(HdSceneDelegate *sceneDelegate,
