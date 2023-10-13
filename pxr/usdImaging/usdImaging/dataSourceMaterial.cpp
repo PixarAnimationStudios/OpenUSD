@@ -117,10 +117,11 @@ public:
             UsdShadeInput input = _shaderNode.GetInput(TfToken(result.first));
             UsdShadeAttributeType attrType;
             UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
+            const TfToken colorSpace = attr.GetColorSpace();
             if (attrType == UsdShadeAttributeType::Input && 
-                attr.HasColorSpace()) {
-                return HdRetainedSampledDataSource::New(
-                    VtValue(attr.GetColorSpace()));
+                !colorSpace.IsEmpty()) {
+                return
+                    HdRetainedTypedSampledDataSource<TfToken>::New(colorSpace);
             }
         }
 
