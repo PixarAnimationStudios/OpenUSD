@@ -553,7 +553,7 @@ UsdGeomSubset::ValidateFamily(
     const TfToken &familyName,
     std::string * const reason)
 {
-    std::vector<UsdGeomSubset> familySubsets =
+    const std::vector<UsdGeomSubset> familySubsets =
         UsdGeomSubset::GetGeomSubsets(geom, elementType, familyName);
 
     bool valid = true;
@@ -583,9 +583,9 @@ UsdGeomSubset::ValidateFamily(
         }
     }
 
-    TfToken familyType = GetFamilyType(geom, familyName);
+    const TfToken familyType = GetFamilyType(geom, familyName);
 
-    bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
+    const bool familyIsRestricted = (familyType != UsdGeomTokens->unrestricted);
 
     std::set<double> allTimeSamples;
     for (const auto &subset : familySubsets) {
