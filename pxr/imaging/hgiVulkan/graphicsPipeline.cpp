@@ -225,7 +225,7 @@ HgiVulkanGraphicsPipeline::HgiVulkanGraphicsPipeline(
     multisampleState.sampleShadingEnable = VK_FALSE;
     multisampleState.minSampleShading = 0.5f;
     multisampleState.alphaToCoverageEnable = ms.alphaToCoverageEnable;
-    multisampleState.alphaToOneEnable = VK_FALSE;
+    multisampleState.alphaToOneEnable = ms.alphaToOneEnable;
     pipeCreateInfo.pMultisampleState = &multisampleState;
 
     //
