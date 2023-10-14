@@ -79,6 +79,26 @@ class testUsdGeomSubset(unittest.TestCase):
         for familyName in invalidFamilies:
             self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
 
+        varyingMesh = stage.GetPrimAtPath("/Sphere/VaryingMesh")
+        geom = UsdGeom.Imageable(varyingMesh)
+        self.assertTrue(geom)
+
+        validFamilies = ['validPartition']
+        for familyName in validFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, True)
+
+        invalidFamilies = ['invalidNoDefaultTimeElements']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
+
+        nullMesh = stage.GetPrimAtPath("/Sphere/NullMesh")
+        geom = UsdGeom.Imageable(nullMesh)
+        self.assertTrue(geom)
+
+        invalidFamilies = ['emptyIndicesAtAllTimes', 'invalidPartition']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
+
     def test_CreateGeomSubset(self):
         testFile = "Sphere.usda"
         stage = Usd.Stage.Open(testFile)

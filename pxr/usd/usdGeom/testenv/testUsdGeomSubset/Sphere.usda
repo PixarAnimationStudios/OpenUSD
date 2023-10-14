@@ -270,6 +270,80 @@ def Xform "Sphere" (
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
+    def Mesh "VaryingMesh"
+    {
+        uniform token subsetFamily:validPartition:familyType = "partition"
+
+        int[] faceVertexCounts.timeSamples = {
+            1: [4],
+            2: [4, 4],
+            3: [4, 4, 4]
+        }
+
+        def GeomSubset "validPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [],
+                3: [0]
+            }
+        }
+
+        def GeomSubset "validPartition_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 1],
+                3: [1]
+            }
+        }
+
+        def GeomSubset "validPartition_3"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [2]
+            }
+        }
+
+        def GeomSubset "invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNoDefaultTimeElements"
+            int[] indices = [0]
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [1],
+                3: [2]
+            }
+        }
+    }
+
+    def Mesh "NullMesh"
+    {
+        uniform token subsetFamily:invalidPartition:familyType = "partition"
+
+        def GeomSubset "emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "invalidPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidPartition"
+            int[] indices = [0, 1, 2, 3]
+        }
+    }
+
     def Scope "Looks"
     {
         def Look "initialShadingGroup"
