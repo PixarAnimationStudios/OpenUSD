@@ -30,6 +30,19 @@ from pxr import Usd, UsdGeom, Vt, Sdf
 import unittest
 
 class testUsdGeomSubset(unittest.TestCase):
+    def _ValidateFamily(self, geom, elementType, familyName, expectedIsValid):
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(
+            geom, elementType, familyName=familyName)
+        if expectedIsValid:
+            self.assertTrue(valid, "Subset family '%s' was found to be "
+                "invalid: %s" % (familyName, reason))
+            self.assertEqual(len(reason), 0)
+        else:
+            print("Subset family '%s' should be invalid because: %s" % \
+                (familyName, reason))
+            self.assertFalse(valid)
+            self.assertTrue(len(reason) > 0)
+
     def test_SubsetRetrievalAndValidity(self):
         testFile = "Sphere.usda"
         stage = Usd.Stage.Open(testFile)
@@ -57,23 +70,14 @@ class testUsdGeomSubset(unittest.TestCase):
                          'validNonOverlapping', 'validUnrestricted',
                          'emptyIndicesSomeTimes']
         for familyName in validFamilies:
-            (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
-                UsdGeom.Tokens.face, familyName=familyName)
-            self.assertTrue(valid, "FaceSubset family '%s' was found to be "
-                "invalid: %s" % (familyName, reason))
-            self.assertEqual(len(reason), 0)
+            self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, True)
 
-        invalidFamilies = ['invalidIndices', 'badPartition1', 'badPartition2', 
+        invalidFamilies = ['invalidIndices', 'badPartition1', 'badPartition2',
                            'badPartition3', 'invalidNonOverlapping',
                            'invalidUnrestricted', 'onlyNegativeIndices',
                            'emptyIndicesAtAllTimes']
         for familyName in invalidFamilies:
-            (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
-                UsdGeom.Tokens.face, familyName=familyName)
-            print("Face-subset family '%s' should be invalid because: %s" % \
-                (familyName, reason))
-            self.assertFalse(valid)
-            self.assertTrue(len(reason) > 0)
+            self._ValidateFamily(geom, UsdGeom.Tokens.face, familyName, False)
 
     def test_CreateGeomSubset(self):
         testFile = "Sphere.usda"
