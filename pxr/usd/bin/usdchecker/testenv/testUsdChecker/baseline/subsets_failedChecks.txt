@@ -1,0 +1,18 @@
+Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family 'emptyIndicesAtAllTimes': No indices in family at any time.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family 'incompletePartition': Number of unique indices at time DEFAULT does not match the element count 6.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family 'nonOverlappingWithDuplicates': Found duplicate index 3 in GeomSubset at path </SubsetsTest/Geom/Cube/nonOverlappingWithDuplicates_2>.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family 'onlyNegativeIndices': Found one or more indices that are less than 0 at time DEFAULT.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/Cube> has invalid subset family 'outOfRangeIndices': Found one or more indices that are greater than the element count 6 at time DEFAULT.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/Cube> has 'materialBind' subset family with invalid family type 'unrestricted'. Family type should be 'nonOverlapping' or 'partition' instead. (fails 'GeomSubsetsChecker')
+GeomSubset </SubsetsTest/Geom/Cube/materialBindShouldBeFaceElementType> belongs to family 'materialBind' but has non-face element type 'point'. Subsets belonging to family 'materialBind' should be of element type 'face'. (fails 'GeomSubsetsChecker')
+GeomSubset prim </SubsetsTest/Geom/Cube/materialBindMissingFamilyName> with material bindings applied but no authored family name should set familyName to 'materialBind'. (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/NullMesh> has invalid subset family 'noElementsInGeometry': Unable to determine element count at earliest time for geom </SubsetsTest/Geom/NullMesh>.
+ (fails 'GeomSubsetsChecker')
+Imageable prim </SubsetsTest/Geom/VaryingMesh> has invalid subset family 'noDefaultTimeElementsInGeometry': Geometry </SubsetsTest/Geom/VaryingMesh> has no elements at time DEFAULT, but the "noDefaultTimeElementsInGeometry" GeomSubset family contains indices.
+ (fails 'GeomSubsetsChecker')
+GeomSubset </SubsetsTest/Geom/NonImageable/parentIsNotImageable> has direct parent prim </SubsetsTest/Geom/NonImageable> that is not Imageable. (fails 'GeomSubsetsChecker')
