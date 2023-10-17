@@ -1118,7 +1118,8 @@ class ComplianceChecker(object):
         return [ByteAlignmentChecker, CompressionChecker, ShaderPropertyTypeConformanceChecker,
                 MissingReferenceChecker, StageMetadataChecker, TextureChecker, 
                 PrimEncapsulationChecker, NormalMapTextureChecker,
-                MaterialBindingAPIAppliedChecker, SkelBindingAPIAppliedChecker]
+                MaterialBindingAPIAppliedChecker, SkelBindingAPIAppliedChecker,
+                GeomSubsetsChecker]
 
     @staticmethod
     def GetARKitRules(skipARKitRootLayerCheck=False):
