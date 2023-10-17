@@ -745,6 +745,135 @@ class ShaderPropertyTypeConformanceChecker(BaseRuleChecker):
                         "; got '%s'." %
                         (input.GetAttr().GetPath(), sdrSdfType, schemaSdfType))
 
+class GeomSubsetsChecker(BaseRuleChecker):
+    @staticmethod
+    def GetDescription():
+        from pxr import UsdGeom
+        from pxr import UsdShade
+        return (
+"""Validates various aspects of UsdGeomSubsets:
+   - GeomSubsets must be authored as direct children of an Imageable prim
+   - The set of all subset family names is fetched for each subset parent
+     Imageable, and each family is checked for validity
+   - If the "%s" subset family is authored on an Imageable, it is
+     checked to ensure that it is of a restricted type (either "%s"
+     or "%s"), since it is invalid for an element of geometry to be
+     bound to multiple materials.
+   - All subsets belonging to the "%s" family must be of element type "%s",
+     since material bindings may only be applied to geometric faces.
+   - If a subset has authored material bindings but no authored subset
+     family name, it is suggested that the family name should be set to
+     "%s" to ensure that the material bindings are visible to
+     renderers. The material bindings will have no effect otherwise."""
+        ) % (UsdShade.Tokens.materialBind, UsdGeom.Tokens.nonOverlapping,
+             UsdGeom.Tokens.partition, UsdShade.Tokens.materialBind,
+             UsdGeom.Tokens.face, UsdShade.Tokens.materialBind)
+
+    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
+        super(GeomSubsetsChecker, self).__init__(
+            verbose,
+            consumerLevelChecks,
+            assetLevelChecks)
+        self.ResetCaches()
+
+    def _CheckSubsetParent(self, subset):
+        from pxr import UsdGeom
+        from pxr import UsdShade
+
+        parentPrim = subset.GetPrim().GetParent()
+        parentPrimPath = parentPrim.GetPath()
+
+        # Many subsets will share the same parent, so we maintain a cache of
+        # processed subset parents to ensure that we only validate each parent
+        # once.
+        if parentPrimPath in self._subsetParentPrims:
+            return
+
+        self._subsetParentPrims[parentPrimPath] = parentPrim
+
+        imageable = UsdGeom.Imageable(parentPrim)
+        if not imageable:
+            self._AddFailedCheck(
+                "GeomSubset <%s> has direct parent prim <%s> that is not "
+                "Imageable." % (subset.GetPath(), parentPrimPath))
+            return
+
+        # The underlying C++ function returns a set, so sort the names to keep
+        # the ordering consistent.
+        allSubsetFamilyNames = sorted(
+            UsdGeom.Subset.GetAllGeomSubsetFamilyNames(imageable))
+
+        for subsetFamilyName in allSubsetFamilyNames:
+            # XXX: For now, we hard-code the elementType as 'face' until
+            # other element types are supported. A coding error is currently
+            # raised for any other value anyway, including an empty type name.
+            (isValid, reason) = UsdGeom.Subset.ValidateFamily(
+                imageable, elementType=UsdGeom.Tokens.face,
+                familyName=subsetFamilyName)
+            if not isValid:
+                self._AddFailedCheck(
+                    "Imageable prim <%s> has invalid subset family "
+                    "'%s': %s" % (parentPrimPath, subsetFamilyName, reason))
+
+        # The remaining checks are concerned with the "materialBind" family, so
+        # don't bother with them if the family is not authored.
+        if UsdShade.Tokens.materialBind not in allSubsetFamilyNames:
+            return
+
+        # Check to make sure that the "materialBind" family is of a restricted
+        # type, since it is invalid for an element of geometry to be bound to
+        # multiple materials.
+        materialBindFamilyType = UsdGeom.Subset.GetFamilyType(
+            imageable, UsdShade.Tokens.materialBind)
+        if materialBindFamilyType == UsdGeom.Tokens.unrestricted:
+            self._AddFailedCheck(
+                "Imageable prim <%s> has '%s' subset family with "
+                "invalid family type '%s'. Family type should be '%s' or '%s' "
+                "instead."
+            % (parentPrimPath, UsdShade.Tokens.materialBind,
+                materialBindFamilyType, UsdGeom.Tokens.nonOverlapping,
+                UsdGeom.Tokens.partition))
+
+        # Check that all subsets belonging to the "materialBind" family are of
+        # element type "face", since material bindings may only be applied to
+        # geometric faces.
+        materialBindSubsets = UsdGeom.Subset.GetGeomSubsets(
+            imageable, familyName=UsdShade.Tokens.materialBind)
+        for materialBindSubset in materialBindSubsets:
+            elementType = materialBindSubset.GetElementTypeAttr().Get()
+            if elementType != UsdGeom.Tokens.face:
+                self._AddFailedCheck(
+                    "GeomSubset <%s> belongs to family '%s' but has non-%s "
+                    "element type '%s'. Subsets belonging to family '%s' "
+                    "should be of element type '%s'."
+                % (materialBindSubset.GetPath(), UsdShade.Tokens.materialBind,
+                    UsdGeom.Tokens.face, elementType,
+                    UsdShade.Tokens.materialBind, UsdGeom.Tokens.face))
+
+    def CheckPrim(self, prim):
+        from pxr import UsdGeom
+        from pxr import UsdShade
+
+        subset = UsdGeom.Subset(prim)
+        if not subset:
+            return
+
+        self._CheckSubsetParent(subset)
+
+        hasAuthoredFamilyName = subset.GetFamilyNameAttr().HasAuthoredValue()
+
+        numMaterialBindings = len(
+            [rel for rel in prim.GetRelationships()
+             if rel.GetName().startswith(UsdShade.Tokens.materialBinding)])
+        if ((numMaterialBindings > 0) and not hasAuthoredFamilyName):
+            self._AddFailedCheck(
+                "GeomSubset prim <%s> with material bindings applied but no "
+                "authored family name should set familyName to '%s'."
+                % (prim.GetPath(), UsdShade.Tokens.materialBind))
+
+    def ResetCaches(self):
+        self._subsetParentPrims = dict()
+
 class ARKitPackageEncapsulationChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
