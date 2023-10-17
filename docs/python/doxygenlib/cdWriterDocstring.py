@@ -103,14 +103,14 @@ def getAllPxrModules() -> Dict[str, types.ModuleType]:
                         pxrModuleName = basename
             if pxrModuleName:
                 modules[pxrModuleName] = importPxrModule(pxrModuleName)
-    # return a sorted dict
-    return {k: modules[k] for k in sorted(modules)}
+    return modules
 
 pxrModules = getAllPxrModules()
+pxrModuleNames = sorted(pxrModules)
 
 # we use the reversed sorted order of the module names, because this ensures that longer names (ie, UsdGeom) come
 # before shorter ones (Usd), so the more exact matches are preferred
-PXR_MODULES_OR_JOINED = "|".join(re.escape(m) for m in reversed(pxrModules))
+PXR_MODULES_OR_JOINED = "|".join(re.escape(m) for m in reversed(pxrModuleNames))
 PXR_MODULE_PREFIX = re.compile(rf"^\s*(?P<module>{PXR_MODULES_OR_JOINED})(?P<suffix>[A-Za-z0-9_]+)")
 
 
