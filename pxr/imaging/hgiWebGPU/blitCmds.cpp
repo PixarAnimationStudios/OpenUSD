@@ -47,7 +47,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 HgiWebGPUBlitCmds::HgiWebGPUBlitCmds(HgiWebGPU *hgi)
     : _hgi(hgi)
     , _blitEncoder(nullptr)
-    , _mipmapGenerator(hgi->GetPrimaryDevice())
 {
 }
 
@@ -304,7 +303,7 @@ HgiWebGPUBlitCmds::GenerateMipMaps(HgiTextureHandle const& texture)
 {
     auto wgpuTex = static_cast<HgiWebGPUTexture*>(texture.Get());
     HgiTextureDesc const& desc = texture->GetDescriptor();
-    _mipmapGenerator.generateMipmap(wgpuTex->GetTextureHandle(), desc);
+    _hgi->GenerateMipmap(wgpuTex->GetTextureHandle(), desc);
 }
 
 void

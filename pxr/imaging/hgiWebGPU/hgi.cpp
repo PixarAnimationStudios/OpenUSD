@@ -151,12 +151,13 @@ wgpu::Device GetDevice() {
 #endif  // __EMSCRIPTEN__
 
 HgiWebGPU::HgiWebGPU()
-: _currentCmds(nullptr)
+: _device(GetDevice())
+, _currentCmds(nullptr)
+,_depthResolver(_device)
+,_mipmapGenerator(_device)
 , _workToFlush(false)
-{
-    // get the webgpu device
-    _device = GetDevice();
 
+{
     // get the default command queue
     _commandQueue = _device.GetQueue();
 
@@ -436,6 +437,15 @@ HgiWebGPU::_SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait)
     }
 
     return _workToFlush;
+}
+
+wgpu::Texture HgiWebGPU::GenerateMipmap(const wgpu::Texture& texture, const HgiTextureDesc& textureDescriptor) {
+    return _mipmapGenerator.generateMipmap(texture, textureDescriptor);
+}
+
+void HgiWebGPU::ResolveDepth(wgpu::CommandEncoder const &commandEncoder, HgiWebGPUTexture &sourceTexture,
+                  HgiWebGPUTexture &destinationTexture) {
+        _depthResolver.resolveDepth(commandEncoder, sourceTexture, destinationTexture);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

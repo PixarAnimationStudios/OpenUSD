@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,38 +21,29 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-// ported from https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
-
-#ifndef PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
-#define PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
+#ifndef PXR_IMAGING_HGI_WEBGPU_DIAGNOSTIC_H
+#define PXR_IMAGING_HGI_WEBGPU_DIAGNOSTIC_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/texture.h"
-
-#include <unordered_map>
-#if defined(EMSCRIPTEN)
-#include <webgpu/webgpu_cpp.h>
-#else
-#include <dawn/webgpu_cpp.h>
-#endif
+#include "pxr/imaging/hgiWebGPU/api.h"
+#include "webgpu/webgpu.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiWebGPUMipmapGenerator {
-  public:
-    HgiWebGPUMipmapGenerator(wgpu::Device const &device);
-    ~HgiWebGPUMipmapGenerator();
-    wgpu::Texture generateMipmap(wgpu::Texture const &level0Texture, const HgiTextureDesc &level0TextureDesc);
+HGIWEBGPU_API
+bool HgiWebGPUIsDebugEnabled();
 
-  private:
-    wgpu::RenderPipeline _getMipmapPipeline(wgpu::TextureFormat const &format);
+/// Begin a label in a webgpu command encoder
+HGIWEBGPU_API
+void HgiWebGPUBeginLabel(
+        wgpu::CommandEncoder const &ce,
+        const char* label);
 
-    wgpu::Device _device;
-    wgpu::Sampler _sampler;
-    wgpu::ShaderModule _mipmapShaderModule;
-    std::unordered_map<wgpu::TextureFormat, wgpu::RenderPipeline> _pipelines;
-};
+/// End the last pushed label in a webgpu command encoder
+HGIWEBGPU_API
+void HgiWebGPUEndLabel(
+        wgpu::CommandEncoder const &ce);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
+#endif //PXR_IMAGING_HGI_WEBGPU_DIAGNOSTIC_H

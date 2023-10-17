@@ -27,7 +27,6 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiWebGPU/api.h"
 #include "pxr/imaging/hgi/blitCmds.h"
-#include "mipmapGenerator.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -102,7 +101,6 @@ private:
 
     HgiWebGPU* _hgi;
     wgpu::CommandEncoder _blitEncoder;
-    WebGPUMipmapGenerator _mipmapGenerator;
     wgpu::CommandBuffer _commandBuffer;
 
     struct StagingData

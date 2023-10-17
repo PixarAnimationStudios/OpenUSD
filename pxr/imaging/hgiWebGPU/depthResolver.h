@@ -21,38 +21,50 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-// ported from https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
 
-#ifndef PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
-#define PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
+// Ported from https://github.com/playcanvas/engine/blob/main/src/platform/graphics/webgpu/webgpu-resolver.js
+
+#ifndef PXR_IMAGING_HGI_WEBGPU_DEPTH_RESOLVER_H
+#define PXR_IMAGING_HGI_WEBGPU_DEPTH_RESOLVER_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hgi/texture.h"
-
+#include "pxr/imaging/hgiWebGPU/texture.h"
 #include <unordered_map>
+
 #if defined(EMSCRIPTEN)
 #include <webgpu/webgpu_cpp.h>
 #else
+
 #include <dawn/webgpu_cpp.h>
+
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiWebGPUMipmapGenerator {
-  public:
-    HgiWebGPUMipmapGenerator(wgpu::Device const &device);
-    ~HgiWebGPUMipmapGenerator();
-    wgpu::Texture generateMipmap(wgpu::Texture const &level0Texture, const HgiTextureDesc &level0TextureDesc);
+///
+/// \class HgiWebGPUDepthResolver
+///
+/// This class resolves the depth buffer from a multisampled texture to a
+/// non-multisampled texture by taking the first sample.
+/// This is necessary because there is no native support for multisampled
+/// depth texture resolution in WebGPU.
+class HgiWebGPUDepthResolver {
+public:
+    HgiWebGPUDepthResolver(wgpu::Device const &device);
+    ~HgiWebGPUDepthResolver();
 
-  private:
-    wgpu::RenderPipeline _getMipmapPipeline(wgpu::TextureFormat const &format);
+    HGIWEBGPU_API
+    void resolveDepth(wgpu::CommandEncoder const &commandEncoder, HgiWebGPUTexture &sourceTexture,
+                      HgiWebGPUTexture &destinationTexture);
+
+private:
+    wgpu::RenderPipeline _getResolverPipeline(wgpu::TextureFormat const &format);
 
     wgpu::Device _device;
-    wgpu::Sampler _sampler;
-    wgpu::ShaderModule _mipmapShaderModule;
+    wgpu::ShaderModule _resolverShaderModule;
     std::unordered_map<wgpu::TextureFormat, wgpu::RenderPipeline> _pipelines;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
+#endif // PXR_IMAGING_HGI_WEBGPU_DEPTH_RESOLVER_H

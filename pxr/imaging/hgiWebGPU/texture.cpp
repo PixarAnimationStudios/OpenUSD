@@ -36,7 +36,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureDesc const & desc)
     , _isTextureView(false)
 {
     wgpu::TextureDescriptor descriptor;
-    // TODO: setting TextureBinding since renderAttachment texture could be use as binding in a following pass
+    // TODO: setting TextureBinding since renderAttachment texture could be used as binding in a following pass
     descriptor.usage = wgpu::TextureUsage::CopySrc | wgpu::TextureUsage::CopyDst | wgpu::TextureUsage::TextureBinding;
     descriptor.format = HgiWebGPUConversions::GetPixelFormat(desc.format);
     descriptor.label = desc.debugName.c_str();

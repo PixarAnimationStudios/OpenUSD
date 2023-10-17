@@ -67,12 +67,10 @@ void HgiWebGPUShaderFunction::_CreateBuffersBindingGroupLayoutEntries(
         wgpu::BufferBindingLayout bufferLayout;
         bufferLayout.type = HgiWebGPUConversions::GetBufferBindingType(b.binding, b.writable);
 
-        if ((stage & wgpu::ShaderStage::Vertex || stage & wgpu::ShaderStage::Fragment)
-            && b.writable && bufferLayout.type == wgpu::BufferBindingType::Storage) {
+        if (stage & wgpu::ShaderStage::Vertex && b.writable && bufferLayout.type == wgpu::BufferBindingType::Storage) {
             // Even though webgpu supports read-write buffers for Fragment shaders, we need to unify the
             // shader code declaration between the two stages
-            TF_WARN("No support for writable buffers in vertex or fragment stage");
-            bufferLayout.type = wgpu::BufferBindingType::ReadOnlyStorage;
+            TF_WARN("No support for writable buffer named %s in vertex stage", b.nameInShader.c_str());
         }
         entry.binding = b.bindIndex;
         entry.buffer = bufferLayout;

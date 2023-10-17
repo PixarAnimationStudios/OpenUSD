@@ -21,38 +21,36 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-// ported from https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
-
-#ifndef PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
-#define PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H
-
-#include "pxr/pxr.h"
-#include "pxr/imaging/hgi/texture.h"
-
-#include <unordered_map>
-#if defined(EMSCRIPTEN)
-#include <webgpu/webgpu_cpp.h>
-#else
-#include <dawn/webgpu_cpp.h>
-#endif
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/imaging/hgiWebGPU/diagnostic.h"
+#include "webgpu/webgpu.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiWebGPUMipmapGenerator {
-  public:
-    HgiWebGPUMipmapGenerator(wgpu::Device const &device);
-    ~HgiWebGPUMipmapGenerator();
-    wgpu::Texture generateMipmap(wgpu::Texture const &level0Texture, const HgiTextureDesc &level0TextureDesc);
+TF_DEFINE_ENV_SETTING(HGIWEBGPU_DEBUG, 0, "Enable debugging for HgiWebGPU");
 
-  private:
-    wgpu::RenderPipeline _getMipmapPipeline(wgpu::TextureFormat const &format);
+bool
+HgiWebGPUIsDebugEnabled()
+{
+    static bool _v = TfGetEnvSetting(HGIWEBGPU_DEBUG) == 1;
+    return _v;
+}
 
-    wgpu::Device _device;
-    wgpu::Sampler _sampler;
-    wgpu::ShaderModule _mipmapShaderModule;
-    std::unordered_map<wgpu::TextureFormat, wgpu::RenderPipeline> _pipelines;
-};
+void HgiWebGPUBeginLabel(
+        wgpu::CommandEncoder const &ce,
+        const char* label){
+    if (!HgiWebGPUIsDebugEnabled() || !label) {
+        return;
+    }
+    ce.PushDebugGroup(label);
+}
+
+void HgiWebGPUEndLabel(
+        wgpu::CommandEncoder const &ce) {
+    if (!HgiWebGPUIsDebugEnabled()) {
+        return;
+    }
+    ce.PopDebugGroup();
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif  // PXR_IMAGING_HGI_WEBGPU_MIPMAPGENERATOR_H

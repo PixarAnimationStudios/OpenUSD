@@ -686,7 +686,6 @@ HgiWebGPUConversions::GetDepthOrStencilTextureFormat(HgiTextureUsage usage, HgiF
     return wgpu::TextureFormat::Undefined;
 }
 
-
 wgpu::StencilOperation
 HgiWebGPUConversions::GetStencilOp(HgiStencilOp op)
 {
@@ -726,6 +725,19 @@ HgiWebGPUConversions::GetTextureSampleType(HgiFormat const &type)
         TF_CODING_ERROR("Missing texture sample type entry");
     }
     return textureSampleType;
+}
+
+wgpu::ColorWriteMask
+HgiWebGPUConversions::GetColorWriteMask(HgiColorMask const &mask)
+{
+    wgpu::ColorWriteMask wgpuMask;
+
+    wgpuMask = ((mask & HgiColorMaskRed) ? wgpu::ColorWriteMask::Red : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskGreen) ? wgpu::ColorWriteMask::Green : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskBlue) ? wgpu::ColorWriteMask::Blue : wgpu::ColorWriteMask::None)
+              | ((mask & HgiColorMaskAlpha) ? wgpu::ColorWriteMask::Alpha : wgpu::ColorWriteMask::None);
+
+    return wgpuMask;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

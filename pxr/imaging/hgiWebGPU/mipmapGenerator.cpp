@@ -23,7 +23,7 @@
 //
 // ported from https://github.com/toji/web-texture-tool/blob/main/src/webgpu-mipmap-generator.js
 
-#include "mipmapGenerator.h"
+#include "pxr/imaging/hgiWebGPU/mipmapGenerator.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgi/texture.h"
 #include "pxr/imaging/hgiWebGPU/conversions.h"
@@ -33,7 +33,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-WebGPUMipmapGenerator::WebGPUMipmapGenerator(wgpu::Device const &device)
+HgiWebGPUMipmapGenerator::HgiWebGPUMipmapGenerator(wgpu::Device const &device)
     :_device(device),
       _mipmapShaderModule(nullptr)
 {
@@ -42,11 +42,12 @@ WebGPUMipmapGenerator::WebGPUMipmapGenerator(wgpu::Device const &device)
     _sampler = _device.CreateSampler(&samplerDsc);
 }
 
-WebGPUMipmapGenerator::~WebGPUMipmapGenerator()
+    HgiWebGPUMipmapGenerator::~HgiWebGPUMipmapGenerator()
 {
+    _mipmapShaderModule = nullptr;
 }
 
-wgpu::RenderPipeline WebGPUMipmapGenerator::_getMipmapPipeline(wgpu::TextureFormat const &format) {
+wgpu::RenderPipeline HgiWebGPUMipmapGenerator::_getMipmapPipeline(wgpu::TextureFormat const &format) {
     auto pipelineIt = _pipelines.find(format);
     if (pipelineIt == _pipelines.end()) {
         // Shader modules is shared between all pipelines, so only create once.
@@ -125,7 +126,7 @@ wgpu::RenderPipeline WebGPUMipmapGenerator::_getMipmapPipeline(wgpu::TextureForm
     return pipelineIt->second;
 
 }
-wgpu::Texture WebGPUMipmapGenerator::generateMipmap(const wgpu::Texture& texture, const HgiTextureDesc& textureDescriptor) {
+wgpu::Texture HgiWebGPUMipmapGenerator::generateMipmap(const wgpu::Texture& texture, const HgiTextureDesc& textureDescriptor) {
     const wgpu::TextureDimension dimension = HgiWebGPUConversions::GetTextureType(textureDescriptor.type);
 
     if (dimension ==  wgpu::TextureDimension::e3D || dimension == wgpu::TextureDimension::e1D) {

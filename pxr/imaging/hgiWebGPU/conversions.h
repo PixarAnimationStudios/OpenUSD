@@ -112,6 +112,9 @@ public:
     HGIWEBGPU_API
     static wgpu::TextureSampleType GetTextureSampleType(HgiFormat const &type);
 
+    HGIWEBGPU_API
+    static wgpu::ColorWriteMask GetColorWriteMask(HgiColorMask const &mask);
+
 };
 
 

@@ -950,7 +950,8 @@ HdSt_ResourceBinder::ResolveBindings(
                         HdStGLConversions::GetGLSLTypename(
                             nameRes.second->GetTupleType().type),
                         binding,
-                        it->isWritable());
+                        it->isWritable(),
+                        it->GetStageVisibility());
                     metaDataOut->customBindings.push_back(b);
                     _bindingMap[nameRes.first] = binding;
                 }

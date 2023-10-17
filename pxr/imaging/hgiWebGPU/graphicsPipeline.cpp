@@ -218,6 +218,7 @@ HgiWebGPUGraphicsPipeline::HgiWebGPUGraphicsPipeline(
     {
         wgpu::ColorTargetState colorDesc;
         colorDesc.format = HgiWebGPUConversions::GetPixelFormat(ct.format);
+        colorDesc.writeMask =  HgiWebGPUConversions::GetColorWriteMask(ct.colorMask);
 
         if (ct.blendEnabled) {
             wgpu::BlendComponent blendAlphaDesc;
@@ -245,6 +246,7 @@ HgiWebGPUGraphicsPipeline::HgiWebGPUGraphicsPipeline(
 
 	pipelineDesc.vertex = shaderState.vertexState;
 	pipelineDesc.fragment = &shaderState.fragmentState;
+    pipelineDesc.label = desc.debugName.c_str();
     _pipeline = device.CreateRenderPipeline(&pipelineDesc);
 }
 

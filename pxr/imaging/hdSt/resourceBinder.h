@@ -30,6 +30,7 @@
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hgi/capabilities.h"
 #include "pxr/imaging/hgi/handle.h"
+#include "pxr/imaging/hgi/enums.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/staticTokens.h"
@@ -274,16 +275,19 @@ public:
             BindingDeclaration(TfToken const &name,
                                TfToken const &dataType,
                                HdStBinding binding,
-                               bool isWritable = false)
+                               bool isWritable = false,
+                               HgiShaderStage stageVisibility = HgiShaderStageAll)
                 : name(name)
                 , dataType(dataType)
                 , binding(binding)
-                , isWritable(isWritable) { }
+                , isWritable(isWritable)
+                , stageVisibility(stageVisibility) {}
 
             TfToken name;
             TfToken dataType;
             HdStBinding binding;
             bool isWritable;
+            HgiShaderStage stageVisibility;
         };
 
         // -------------------------------------------------------------------

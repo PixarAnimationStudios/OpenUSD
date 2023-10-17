@@ -24,9 +24,10 @@
 #include "pxr/imaging/hgiWebGPU/computeCmds.h"
 #include "pxr/imaging/hgiWebGPU/computePipeline.h"
 #include "pxr/imaging/hgiWebGPU/conversions.h"
+#include "pxr/imaging/hgiWebGPU/api.h"
+#include "pxr/imaging/hgiWebGPU/diagnostic.h"
 #include "pxr/imaging/hgiWebGPU/hgi.h"
 #include "pxr/imaging/hgiWebGPU/resourceBindings.h"
-#include "pxr/imaging/hgiWebGPU/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -57,11 +58,15 @@ HgiWebGPUComputeCmds::~HgiWebGPUComputeCmds()
 void
 HgiWebGPUComputeCmds::PushDebugGroup(const char* label)
 {
+    _CreateCommandEncoder();
+    HgiWebGPUBeginLabel(_commandEncoder, label);
 }
 
 void
 HgiWebGPUComputeCmds::PopDebugGroup()
 {
+    _CreateCommandEncoder();
+    HgiWebGPUEndLabel(_commandEncoder);
 }
 
 void

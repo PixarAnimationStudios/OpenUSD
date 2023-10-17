@@ -24,6 +24,7 @@
 #include "pxr/imaging/hgi/graphicsCmdsDesc.h"
 #include "pxr/imaging/hgiWebGPU/buffer.h"
 #include "pxr/imaging/hgiWebGPU/conversions.h"
+#include "pxr/imaging/hgiWebGPU/diagnostic.h"
 #include "pxr/imaging/hgiWebGPU/graphicsCmds.h"
 #include "pxr/imaging/hgiWebGPU/hgi.h"
 #include "pxr/imaging/hgiWebGPU/graphicsPipeline.h"
@@ -89,24 +90,21 @@ HgiWebGPUGraphicsCmds::HgiWebGPUGraphicsCmds(
             depthStencilDesc.stencilStoreOp = depthStencilDesc.depthStoreOp;
         }
 
-        if (_descriptor.depthResolveTexture) {
-            // TODO: Feature not implemented in WebGPU
-        }
+         // Webgpu doesn't support depth resolution with multisampling. We will do the depth resolution
+         //  from _descriptor.depthResolveTexture after finishing the render pass if applicable
+        depthStencilDesc.view = depthTarget->GetTextureView();
         // depth is a single channel, using first component
         depthStencilDesc.depthClearValue = _descriptor.depthAttachmentDesc.clearValue[0];
-        depthStencilDesc.view = depthTarget->GetTextureView();
+
         renderPass.depthStencilAttachment = &depthStencilDesc;
     }
 
-    wgpu::Device device = _hgi->GetPrimaryDevice();
-    _commandEncoder = device.CreateCommandEncoder();
-    TF_VERIFY(_commandEncoder);
+    _CreateCommandEncoder();
 
     if (_renderPassStarted) {
         _renderPassEncoder = _commandEncoder.BeginRenderPass(&renderPass);
     }
-
-    if (_descriptor.colorTextures.size()>0) {
+    if (!_descriptor.colorTextures.empty()) {
         auto size = _descriptor.colorTextures[0]->GetDescriptor().dimensions;
         if (!_viewportSet) {
             SetViewport(GfVec4i(0, 0, size[0], size[1]));
@@ -118,19 +116,29 @@ HgiWebGPUGraphicsCmds::HgiWebGPUGraphicsCmds(
 }
 
 HgiWebGPUGraphicsCmds::~HgiWebGPUGraphicsCmds()
-
 {
     _commandBuffer = nullptr;
 }
 
+void HgiWebGPUGraphicsCmds::_CreateCommandEncoder() {
+    if (!_commandEncoder) {
+        wgpu::Device device = _hgi->GetPrimaryDevice();
+        _commandEncoder = device.CreateCommandEncoder();
+        TF_VERIFY(_commandEncoder);
+    }
+}
 void
-HgiWebGPUGraphicsCmds::PushDebugGroup(const char*)
+HgiWebGPUGraphicsCmds::PushDebugGroup(const char* label)
 {
+    _CreateCommandEncoder();
+    HgiWebGPUBeginLabel(_commandEncoder, label);
 }
 
 void
 HgiWebGPUGraphicsCmds::PopDebugGroup()
 {
+    _CreateCommandEncoder();
+    HgiWebGPUEndLabel(_commandEncoder);
 }
 
 void
@@ -331,6 +339,15 @@ HgiWebGPUGraphicsCmds::_EndRenderPass()
         // release any resources
         _renderPassEncoder.End();
         _renderPassEncoder = nullptr;
+
+        auto depthTarget = dynamic_cast<HgiWebGPUTexture *>(_descriptor.depthTexture.Get());
+        if (depthTarget) {
+            HgiTextureDesc depthDesc = depthTarget->GetDescriptor();
+            if(depthDesc.sampleCount > 1 && _descriptor.depthResolveTexture) {
+                auto depthResolveTarget = dynamic_cast<HgiWebGPUTexture *>(_descriptor.depthResolveTexture.Get());
+                _hgi->ResolveDepth(_commandEncoder, *depthTarget, *depthResolveTarget);
+            }
+        }
 
         _commandBuffer = _commandEncoder.Finish();
         _commandEncoder = nullptr;

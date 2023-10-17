@@ -248,10 +248,8 @@ HgiWebGPUShaderGenerator::_WriteBuffers(
                 attrs);
         } else {
             bool writable = bufferDescription.writable;
-            if (writable && (_GetShaderStage() & HgiShaderStageFragment || _GetShaderStage() & HgiShaderStageVertex)) {
-                TF_WARN("No support for writable buffers in vertex or fragment stage.");
-                writable = false;
-
+            if (writable && _GetShaderStage() & HgiShaderStageVertex) {
+                TF_WARN("No support for writable buffers in vertex stage.");
             }
             const HgiShaderSectionAttributeVector attrs = {
                 HgiShaderSectionAttribute{"std430", ""},

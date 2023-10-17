@@ -152,6 +152,7 @@ pxr_library(hgiWebGPU
         computeCmds
         computePipeline
         conversions
+        diagnostic
         graphicsCmds
         graphicsPipeline
         hgi
@@ -170,6 +171,7 @@ pxr_library(hgiWebGPU
 
     PRIVATE_CLASSES
         mipmapGenerator
+        depthResolver
         debugCodes
 
     RESOURCE_FILES

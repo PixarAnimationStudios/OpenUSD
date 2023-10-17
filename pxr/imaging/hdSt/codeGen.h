@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hdSt/api.h"
+#include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
@@ -184,6 +185,18 @@ private:
     ElementVector _resPTCS;
     ElementVector _resPTVS;
     ElementVector _resCS;
+
+
+    std::map<TfToken, std::tuple<ElementVector*, std::stringstream*, HgiShaderStage>> _resourceLayoutMap = {
+            { HdShaderTokens->vertexShader, std::make_tuple(&_resVS, &_genVS, HgiShaderStageVertex) },
+            { HdShaderTokens->fragmentShader, std::make_tuple(&_resFS, &_genFS, HgiShaderStageFragment) },
+            { HdShaderTokens->tessControlShader, std::make_tuple(&_resTCS, &_genTCS, HgiShaderStageTessellationControl) },
+            { HdShaderTokens->tessEvalShader, std::make_tuple(&_resTES, &_genTES, HgiShaderStageTessellationEval) },
+            { HdShaderTokens->geometryShader, std::make_tuple(&_resGS, &_genGS, HgiShaderStageGeometry) },
+            { HdShaderTokens->computeShader, std::make_tuple(&_resCS, &_genCS, HgiShaderStageCompute) },
+            { HdShaderTokens->postTessControlShader, std::make_tuple(&_resPTCS, &_genPTCS, HgiShaderStagePostTessellationControl) },
+            { HdShaderTokens->postTessVertexShader, std::make_tuple(&_resPTVS, &_genPTVS, HgiShaderStagePostTessellationVertex) },
+    };
 
     ElementVector _resInterstage;
 

@@ -91,29 +91,42 @@ HdxOitBufferAccessor::AddOitBufferBindings(
                                HdxTokens->oitCounterBufferBar,
                                counterBar,
                                /*interleave = */ false,
-                               /*writable = */ true));
+                               /*writable = */ true,
+                               /*arraySize = */ 0,
+                               /*concatenateNames = */ false,
+                               /*visibility = */ HgiShaderStageFragment));
+
 
         shader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
                                HdxTokens->oitDataBufferBar,
                                dataBar,
                                /*interleave = */ false,
-                               /*writable = */ true));
-        
+                               /*writable = */ true,
+                               /*arraySize = */ 0,
+                               /*concatenateNames = */ false,
+                               /*visibility = */ HgiShaderStageFragment));
+
         shader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
                                HdxTokens->oitDepthBufferBar,
                                depthBar,
                                /*interleave = */ false,
-                               /*writable = */ true));
+                               /*writable = */ true,
+                                /*arraySize = */ 0,
+                                /*concatenateNames = */ false,
+                                /*visibility = */ HgiShaderStageFragment));
         
         shader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::SSBO,
                                HdxTokens->oitIndexBufferBar,
                                indexBar,
                                /*interleave = */ false,
-                               /*writable = */ true));
-        
+                               /*writable = */ true,
+                               /*arraySize = */ 0,
+                               /*concatenateNames = */ false,
+                               /*visibility = */ HgiShaderStageFragment));
+
         shader->AddBufferBinding(
             HdStBindingRequest(HdStBinding::UBO, 
                                HdxTokens->oitUniformBar,

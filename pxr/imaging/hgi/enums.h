@@ -372,6 +372,8 @@ enum HgiShaderStageBits : HgiBits
     HgiShaderStagePostTessellationControl = 1 << 6,
     HgiShaderStagePostTessellationVertex = 1 << 7,
     HgiShaderStageCustomBitsBegin        = 1 << 8,
+    HgiShaderStageAll                    = 0xFFFFFFFF
+
 };
 using HgiShaderStage = HgiBits;
 

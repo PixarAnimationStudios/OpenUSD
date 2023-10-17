@@ -27,6 +27,8 @@
 #include "pxr/pxr.h"
 #include "pxr/imaging/hgiWebGPU/api.h"
 #include "pxr/imaging/hgiWebGPU/capabilities.h"
+#include "pxr/imaging/hgiWebGPU/depthResolver.h"
+#include "pxr/imaging/hgiWebGPU/mipmapGenerator.h"
 #include "pxr/imaging/hgi/hgi.h"
 #include "pxr/imaging/hgi/tokens.h"
 
@@ -154,6 +156,13 @@ public:
     HGIWEBGPU_API
     int GetAPIVersion() const;
 
+    HGIWEBGPU_API
+    wgpu::Texture GenerateMipmap(const wgpu::Texture& texture, const HgiTextureDesc& textureDescriptor);
+
+    HGIWEBGPU_API
+    void ResolveDepth(wgpu::CommandEncoder const &commandEncoder, HgiWebGPUTexture &sourceTexture,
+                                              HgiWebGPUTexture &destinationTexture);
+
 protected:
     HGIWEBGPU_API
     bool _SubmitCmds(HgiCmds* cmds, HgiSubmitWaitType wait) override;
@@ -173,6 +182,8 @@ private:
     wgpu::Device _device;
     wgpu::Queue _commandQueue;
     HgiCmds* _currentCmds;
+    HgiWebGPUDepthResolver _depthResolver;
+    HgiWebGPUMipmapGenerator _mipmapGenerator;
 
     std::unique_ptr<HgiWebGPUCapabilities> _capabilities;
     std::vector<HgiWebGPUCallback> _garbageCollectionHandlers;

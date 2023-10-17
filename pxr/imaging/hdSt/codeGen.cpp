@@ -152,6 +152,34 @@ TF_DEFINE_PRIVATE_TOKENS(
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
                       "Enable Hgi resource generation for codeGen");
 
+static TfTokenVector const shaderStages = {
+        HdShaderTokens->vertexShader,
+        HdShaderTokens->tessControlShader,
+        HdShaderTokens->tessEvalShader,
+        HdShaderTokens->geometryShader,
+        HdShaderTokens->fragmentShader,
+        HdShaderTokens->postTessControlShader,
+        HdShaderTokens->postTessVertexShader,
+        HdShaderTokens->computeShader,
+};
+
+struct StageVisibilityToShaderToken {
+    HgiShaderStage hgiShaderStage;
+    TfToken shaderStageToken;
+};
+
+StageVisibilityToShaderToken static const shaderStageTable[] =
+{
+    {HgiShaderStageVertex, HdShaderTokens->vertexShader},
+    {HgiShaderStageFragment, HdShaderTokens->fragmentShader},
+    {HgiShaderStageCompute, HdShaderTokens->computeShader},
+    {HgiShaderStageTessellationControl, HdShaderTokens->tessControlShader},
+    {HgiShaderStageTessellationEval, HdShaderTokens->tessEvalShader},
+    {HgiShaderStageGeometry, HdShaderTokens->geometryShader},
+    {HgiShaderStagePostTessellationControl, HdShaderTokens->postTessControlShader},
+    {HgiShaderStagePostTessellationVertex, HdShaderTokens->postTessVertexShader},
+};
+
 /* static */
 bool
 HdSt_CodeGen::IsEnabledHgiResourceGeneration(
@@ -235,7 +263,8 @@ static void _EmitDeclaration(HioGlslfxResourceLayout::ElementVector *elements,
                              TfToken const &type,
                              HdStBinding const &binding,
                              bool isWritable=false,
-                             int arraySize=0);
+                             int arraySize=0,
+                             HgiShaderStage const &stageVisibility = HgiShaderStageAll);
 
 static void _EmitStructAccessor(std::stringstream &str,
                                 TfToken const &structName,
@@ -712,6 +741,14 @@ _ResourceGenerator::_GenerateHgiResources(
     using Kind = HioGlslfxResourceLayout::Kind;
 
     for (auto const & element : elements) {
+        auto matchStageVisibility = [&shaderStage, &element](const auto &shaderStageTableEntry) {
+            return ((element.stageVisibility & shaderStageTableEntry.hgiShaderStage) &&
+                    shaderStageTableEntry.shaderStageToken == shaderStage);
+        };
+        if (!std::any_of(std::cbegin(shaderStageTable), std::cend(shaderStageTable),
+                         matchStageVisibility)) {
+            continue;
+        }
         if (element.kind == Kind::VALUE) {
             if (element.inOut == InOut::STAGE_IN) {
                 if (_IsVertexAttribInputStage(shaderStage)) {
@@ -1393,13 +1430,15 @@ _AddBufferElement(
     TfToken const &name,
     TfToken const &dataType,
     int location,
-    int arraySize = 0)
+    int arraySize = 0,
+    HgiShaderStage const &stageVisibility = HgiShaderStageAll)
 {
     elements->emplace_back(
         HioGlslfxResourceLayout::InOut::NONE,
         HioGlslfxResourceLayout::Kind::BUFFER_READ_ONLY,
         dataType, name);
     elements->back().members.emplace_back(dataType, name);
+    elements->back().stageVisibility = stageVisibility;
     if (location >= 0) {
         elements->back().location = static_cast<uint32_t>(location);
     }
@@ -1410,13 +1449,15 @@ _AddWritableBufferElement(
     HioGlslfxResourceLayout::ElementVector *elements,
     TfToken const &name,
     TfToken const &dataType,
-    int location)
+    int location,
+    HgiShaderStage const &stageVisibility = HgiShaderStageAll)
 {
     elements->emplace_back(
         HioGlslfxResourceLayout::InOut::NONE,
         HioGlslfxResourceLayout::Kind::BUFFER_READ_WRITE,
         dataType, name);
     elements->back().members.emplace_back(dataType, name);
+    elements->back().stageVisibility = stageVisibility;
     if (location >= 0) {
         elements->back().location = static_cast<uint32_t>(location);
     }
@@ -1478,43 +1519,12 @@ HdSt_CodeGen::_GetShaderResourceLayouts(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    TfTokenVector const shaderStages = {
-        HdShaderTokens->vertexShader,
-        HdShaderTokens->tessControlShader,
-        HdShaderTokens->tessEvalShader,
-        HdShaderTokens->geometryShader,
-        HdShaderTokens->fragmentShader,
-        HdShaderTokens->postTessControlShader,
-        HdShaderTokens->postTessVertexShader,
-        HdShaderTokens->computeShader,
-    };
-
     for (auto const &shader : shaders) {
         VtDictionary layoutDict = shader->GetLayout(shaderStages);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resVS, HdShaderTokens->vertexShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resTCS, HdShaderTokens->tessControlShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resTES, HdShaderTokens->tessEvalShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resGS, HdShaderTokens->geometryShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resFS, HdShaderTokens->fragmentShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resPTCS, HdShaderTokens->postTessControlShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resPTVS, HdShaderTokens->postTessVertexShader, layoutDict);
-
-        HioGlslfxResourceLayout::ParseLayout(
-                &_resCS, HdShaderTokens->computeShader, layoutDict);
+        for (auto const & shaderResource : _resourceLayoutMap) {
+            HioGlslfxResourceLayout::ParseLayout(
+                    std::get<ElementVector*>(shaderResource.second), shaderResource.first, layoutDict);
+        }
     }
 }
 
@@ -1775,18 +1785,47 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
             continue;
         }
 
-        _EmitDeclaration(&_resCommon,
-                         binDecl->name,
-                         binDecl->dataType,
-                         binDecl->binding,
-                         binDecl->isWritable);
 
-        _EmitAccessor(_genAccessors,
-                      binDecl->name,
-                      binDecl->dataType,
-                      binDecl->binding,
-                      (binDecl->binding.GetType() == HdStBinding::UNIFORM)
-                      ? NULL : "localIndex");
+        if (binDecl->stageVisibility == HgiShaderStageAll) {
+            _EmitDeclaration(&_resCommon,
+                             binDecl->name,
+                             binDecl->dataType,
+                             binDecl->binding,
+                             binDecl->isWritable,
+                             binDecl->stageVisibility);
+
+            _EmitAccessor(_genAccessors,
+                          binDecl->name,
+                          binDecl->dataType,
+                          binDecl->binding,
+                          (binDecl->binding.GetType() == HdStBinding::UNIFORM)
+                          ? NULL : "localIndex");
+        } else {
+            for (auto const &shaderStage : shaderStages) {
+                ElementVector *targetRes = nullptr;
+                std::stringstream *targetAccessors = nullptr;
+                HgiShaderStage stageVisibility;
+                std::tie(targetRes, targetAccessors, stageVisibility) = _resourceLayoutMap[shaderStage];
+
+                if (targetRes && targetAccessors && binDecl->stageVisibility == stageVisibility) {
+                    _EmitDeclaration(targetRes,
+                                     binDecl->name,
+                                     binDecl->dataType,
+                                     binDecl->binding,
+                                     binDecl->isWritable,
+                                     binDecl->stageVisibility);
+
+                    _EmitAccessor(*targetAccessors,
+                                  binDecl->name,
+                                  binDecl->dataType,
+                                  binDecl->binding,
+                                  (binDecl->binding.GetType() == HdStBinding::UNIFORM)
+                                  ? NULL : "localIndex");
+                }
+            }
+        }
+
+
     }
 
     TF_FOR_ALL(it, _metaData.customInterleavedBindings) {
@@ -3024,7 +3063,8 @@ static void _EmitDeclaration(
     TfToken const &type,
     HdStBinding const &binding,
     bool isWritable,
-    int arraySize)
+    int arraySize,
+    HgiShaderStage const &stageVisibility)
 {
     /*
       [vertex attribute]
@@ -3107,12 +3147,14 @@ static void _EmitDeclaration(
                 _AddWritableBufferElement(elements,
                                           /*name=*/name,
                                           /*type=*/_GetPackedType(type, true),
-                                          location);
+                                          location,
+                                          stageVisibility);
             } else {
                 _AddBufferElement(elements,
                                   /*name=*/name,
                                   /*dataType=*/_GetPackedType(type, true),
-                                  location);
+                                  location,
+                                  stageVisibility);
             }
             break;
         case HdStBinding::BINDLESS_SSBO_RANGE:
@@ -3144,7 +3186,8 @@ static void _EmitDeclaration(
                      bindingDeclaration.dataType,
                      bindingDeclaration.binding,
                      bindingDeclaration.isWritable,
-                     arraySize);
+                     arraySize,
+                     bindingDeclaration.stageVisibility);
 }
 
 static void _EmitStageAccessor(std::stringstream &str,

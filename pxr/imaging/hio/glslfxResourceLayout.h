@@ -28,6 +28,8 @@
 
 #include "pxr/imaging/hio/types.h"
 
+#include "pxr/imaging/hgi/enums.h"
+
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/staticTokens.h"
 
@@ -124,7 +126,8 @@ public:
                 TfToken dataType = HioGlslfxResourceLayoutTokens->unknown,
                 TfToken name = HioGlslfxResourceLayoutTokens->unknown,
                 TfToken arraySize = TfToken(),
-                TfToken qualifiers = TfToken())
+                TfToken qualifiers = TfToken(),
+                HgiShaderStage stageVisibility = HgiShaderStageAll)
             : inOut(inOut)
             , kind(kind)
             , location(-1)
@@ -134,6 +137,7 @@ public:
             , arraySize(arraySize)
             , aggregateName()
             , members()
+            , stageVisibility(stageVisibility)
             { }
         InOut inOut;
         Kind kind;
@@ -144,6 +148,7 @@ public:
         TfToken arraySize;
         TfToken aggregateName;
         MemberVector members;
+        HgiShaderStage stageVisibility;
     };
     using ElementVector = std::vector<Element>;
 
