@@ -154,3 +154,15 @@ pxr_register_test(testUsdChecker13
     COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker clean/cleanNormalMapReader.usda"
     EXPECTED_RETURN_CODE 0
 )
+
+pxr_install_test_dir(
+    SRC testenv/testUsdChecker
+    DEST testUsdChecker_GeomSubsets
+)
+
+pxr_register_test(testUsdChecker_GeomSubsets
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/usdchecker bad/subsets.usda -o subsets_failedChecks.txt"
+    DIFF_COMPARE subsets_failedChecks.txt
+    EXPECTED_RETURN_CODE 1
+)
