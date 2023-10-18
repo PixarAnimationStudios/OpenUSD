@@ -45,6 +45,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/vt/array.h"
 #include <MaterialXCore/Util.h>
+#include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
 #include <map>
 #include <type_traits>
@@ -295,6 +296,9 @@ _ReadFromString(mx::DocumentPtr doc, const std::string& s,
         };
 
     mx::readFromXmlString(doc, s, searchPath, &readOptions);
+
+    // Flatten all filenames in document
+    mx::flattenFilenames(doc);
 }
 
 static void
@@ -336,6 +340,10 @@ UsdMtlxReadDocument(const std::string& resolvedPath)
         // whatever backing store it points to.
         if (TfIsFile(resolvedPath)) {
             mx::readFromXmlFile(doc, resolvedPath);
+
+            // Flatten all filenames in document
+            mx::flattenFilenames(doc);
+
             return doc;
         }
         else {
@@ -553,10 +561,11 @@ UsdMtlxGetUsdType(const std::string& mtlxTypeName)
 
 VtValue
 UsdMtlxGetUsdValue(
-    const mx::ConstTypedElementPtr& mtlx,
+    const mx::ConstElementPtr& mtlx,
     bool getDefaultValue)
 {
     static const std::string defaultAttr("default");
+    static const std::string typeAttr = mx::TypedElement::TYPE_ATTRIBUTE;
     static const std::string valueAttr = mx::ValueElement::VALUE_ATTRIBUTE;
 
     // Bail if no element.
@@ -569,24 +578,8 @@ UsdMtlxGetUsdValue(
         getDefaultValue ? mtlx->getAttribute(defaultAttr)
                         : mtlx->getAttribute(valueAttr);
 
-    auto&& type = mtlx->getType();
-
-    if (!mx::StringResolver::isResolvedType(type)) {
-        return _GetUsdValue(valueString, type);
-    }
-
-    auto stringResolver = mtlx->createStringResolver();
-    if (!stringResolver) {
-        TF_RUNTIME_ERROR("Unable to get MaterialX StringResolver for element '%s'",
-                         mtlx->getNamePath().c_str());
-        return VtValue();
-    }
-
-    // resolve so that any prefixes are applied.
-    auto resolvedValue = stringResolver->resolve(valueString, type);
-
     // Get the value.
-    return _GetUsdValue(resolvedValue, type);
+    return _GetUsdValue(valueString, mtlx->getAttribute(typeAttr));
 }
 
 std::vector<VtValue>
