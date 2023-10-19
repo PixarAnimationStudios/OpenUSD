@@ -36,6 +36,7 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/arch/pragmas.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/gf/traits.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyLock.h"
@@ -43,6 +44,7 @@
 #include "pxr/base/tf/pyResultConversions.h"
 #include "pxr/base/tf/pyUtils.h"
 #include "pxr/base/tf/iterator.h"
+#include "pxr/base/tf/meta.h"
 #include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/tf.h"
@@ -272,60 +274,56 @@ setitem_slice(VtArray<T> &self, slice idx, object value)
 template <class T>
 VT_API string GetVtArrayName();
 
+template <class T, class... Ts>
+constexpr bool Vt_IsAnySameImpl(TfMetaList<Ts...>) {
+     return (std::is_same_v<T, Ts> || ...);
+}
 
-// To avoid overhead we stream out certain builtin types directly
-// without calling TfPyRepr().
-template <typename T>
-static void streamValue(std::ostringstream &stream, T const &value) {
-    stream << TfPyRepr(value);
+template <class T, class TypeList>
+constexpr bool Vt_IsAnySame() {
+    return Vt_IsAnySameImpl<T>(TypeList{});
 }
 
 // This is the same types as in VT_INTEGRAL_BUILTIN_VALUE_TYPES with char
 // and bool types removed.
-#define _OPTIMIZED_STREAM_INTEGRAL_TYPES \
-    (short)                              \
-    (unsigned short)                     \
-    (int)                                \
-    (unsigned int)                       \
-    (long)                               \
-    (unsigned long)                      \
-    (long long)                          \
-    (unsigned long long)
-
-#define MAKE_STREAM_FUNC(r, unused, type)                    \
-static inline void                                           \
-streamValue(std::ostringstream &stream, type const &value) { \
-    stream << value;                                         \
-}
-BOOST_PP_SEQ_FOR_EACH(MAKE_STREAM_FUNC, ~, _OPTIMIZED_STREAM_INTEGRAL_TYPES)
-#undef MAKE_STREAM_FUNC
-#undef _OPTIMIZED_STREAM_INTEGRAL_TYPES
+using Vt_OptimizedStreamIntegralTypes =
+    TfMetaList<short, unsigned short,
+               int, unsigned int,
+               long, unsigned long,
+               long long, unsigned long long>;
 
 // Explicitly convert half to float here instead of relying on implicit
 // conversion to float to work around the fact that libc++ only provides
 // implementations of std::isfinite for types where std::is_arithmetic 
 // is true.
 template <typename T>
-static bool _IsFinite(T const &value) {
+inline bool _IsFinite(T const &value) {
     return std::isfinite(value);
 }
-static bool _IsFinite(GfHalf const &value) {
+inline bool _IsFinite(GfHalf const &value) {
     return std::isfinite(static_cast<float>(value));
 }
 
-// For float types we need to be make sure to represent infs and nans correctly.
-#define MAKE_STREAM_FUNC(r, unused, elem)                             \
-static inline void                                                    \
-streamValue(std::ostringstream &stream, VT_TYPE(elem) const &value) { \
-    if (_IsFinite(value)) {                                           \
-        stream << value;                                              \
-    } else {                                                          \
-        stream << TfPyRepr(value);                                    \
-    }                                                                 \
+template <typename T>
+static void streamValue(std::ostringstream &stream, T const &value) {
+    // To avoid overhead we stream out certain builtin types directly
+    // without calling TfPyRepr().
+    if constexpr(Vt_IsAnySame<T, Vt_OptimizedStreamIntegralTypes>()) {
+        stream << value;
+    }
+    // For float types we need to be make sure to represent infs and nans correctly.
+    else if constexpr(GfIsFloatingPoint<T>::value) {
+        if (_IsFinite(value)) {
+            stream << value;
+        }
+        else {
+            stream << TfPyRepr(value);
+        }
+    }
+    else {
+        stream << TfPyRepr(value);
+    }
 }
-BOOST_PP_SEQ_FOR_EACH(
-    MAKE_STREAM_FUNC, ~, VT_FLOATING_POINT_BUILTIN_VALUE_TYPES)
-#undef MAKE_STREAM_FUNC
 
 static unsigned int
 Vt_ComputeEffectiveRankAndLastDimSize(
