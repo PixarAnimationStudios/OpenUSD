@@ -1201,4 +1201,16 @@ TfGetXmlEscapedString(const std::string &in)
     return result;
 }
 
+std::string
+TfStringToLowerAscii(const std::string& source)
+{
+    std::string folded;
+    folded.resize(source.size());
+    std::transform(source.begin(), source.end(), folded.begin(),
+                   [](char ch) {
+                       return ('A' <= ch && ch <= 'Z') ? ch - 'A' + 'a' : ch;
+                   });
+    return folded;
+}
+
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -277,6 +277,20 @@ std::string TfStringToUpper(const std::string& source);
 TF_API
 std::string TfStringCapitalize(const std::string& source);
 
+/// Locale-independent case folding of [A-Z] for ASCII or UTF-8 encoded
+/// \p source strings
+///
+/// This can be used for case insensitive matching where one of the strings
+/// being compared either known to be ASCII only by specification (like a URI
+/// scheme or an explicit token) or where the specification explicitly notes
+/// that only [A-Z] will be matched case insensitively.
+///
+/// \code
+/// TfStringEndsWith(TfStringToLowerAscii("ü.JPG"), ".jpg")
+/// \endcode
+TF_API
+std::string TfStringToLowerAscii(const std::string& source);
+
 /// Trims characters (by default, whitespace) from the left.
 ///
 /// Characters from the beginning of \p s are removed until a character not in
