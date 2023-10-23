@@ -2417,11 +2417,14 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         resourceGen._GenerateGLSLResources(&desc, resDecl,
             HdShaderTokens->vertexShader, _resVS, _metaData);
 
+        std::string const declarations =
+            _genDefines.str();
         std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() +
+            _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genVS.str();
 
         desc.shaderStage = HgiShaderStageVertex;
+        desc.shaderCodeDeclarations = declarations.c_str();
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_vsSource;
 
@@ -2435,6 +2438,12 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
             &desc, "hd_BaseInstance", "uint",
             HgiShaderKeywordTokens->hdBaseInstance);
     
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &desc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
         }
@@ -2510,6 +2519,12 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_tesSource;
 
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &desc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
+
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
         }
@@ -2529,13 +2544,22 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         resourceGen._GenerateGLSLTextureResources(resDecl, 
             HdShaderTokens->geometryShader, _resTextures, _metaData);
 
+        std::string const declarations =
+            _genDefines.str() + _osd.str();
         std::string const source =
-            _genDefines.str() + _genDecl.str() + resDecl.str() + _osd.str() +
+            _genDecl.str() + resDecl.str() +
             _genAccessors.str() + _genGS.str();
 
         desc.shaderStage = HgiShaderStageGeometry;
+        desc.shaderCodeDeclarations = declarations.c_str();
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_gsSource;
+
+        if (_hasClipPlanes) {
+            HgiShaderFunctionAddStageOutput(
+                &desc, "gl_ClipDistance", "float",
+                "clip_distance", /*arraySize*/"HD_NUM_clipPlanes");
+        }
 
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
