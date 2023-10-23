@@ -60,9 +60,6 @@ ARCH_CONSTRUCTOR(Arch_InitConfig, 2, void)
     // point, to alert us to any problems.
     Arch_ValidateAssumptions();
 
-    // Initialize the tick timer.
-    Arch_InitTickTimer();
-
     // Initialize the debugger interface.
     Arch_InitDebuggerAttach();
 }
