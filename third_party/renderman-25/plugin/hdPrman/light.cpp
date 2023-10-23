@@ -175,8 +175,10 @@ _AddLightFilterCombiner(std::vector<riley::ShadingNode>* lightFilterNodes)
 
     // Set the combiner light filter reference array for each mode.
     for (const auto& entry : modeMap) {
-        combiner.params.SetLightFilterReferenceArray(
-            entry.first, &entry.second[0], entry.second.size());
+        if (!entry.second.empty()) {
+            combiner.params.SetLightFilterReferenceArray(
+                entry.first, &entry.second[0], entry.second.size());
+        }
     }
 
     lightFilterNodes->push_back(combiner);
@@ -231,6 +233,10 @@ _PopulateLightFilterNodes(
 
         riley::ShadingNode *filter = &lightFilterNodes->back();
         RtUString filterPathAsString = RtUString(filterPath.GetText());
+
+        // To ensure that multiple light filters within a light get
+        // unique names, use the full filter path for the handle.
+        filter->handle = filterPathAsString;
 
         // Only certain light filters require a coordsys, but we do not
         // know which, here, so we provide it in all cases.
