@@ -222,3 +222,318 @@ pxr_build_test(testHdStBasicDrawing
         testenv/testHdStBasicDrawing.cpp
 )
 endif()
+
+if (X11_FOUND)
+pxr_build_test(testHdStBarAllocationLimit
+    LIBRARIES
+        hdSt
+        hd
+        gf
+        tf
+    CPPFILES
+        testenv/testHdStBarAllocationLimit.cpp
+)
+pxr_build_test(testHdStBufferAggregation
+    LIBRARIES
+        hdSt
+        hd
+        hgi
+        garch
+        glf
+        vt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStBufferAggregation.cpp
+)
+pxr_build_test(testHdStBufferArray
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStBufferArray.cpp
+)
+pxr_build_test(testHdStBufferSource
+    LIBRARIES
+        hd
+        vt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStBufferSource.cpp
+)
+pxr_build_test(testHdStBufferSourceDependency
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStBufferSourceDependency.cpp
+)
+pxr_build_test(testHdStCodeGen
+    LIBRARIES
+        hdSt
+        hd
+        hio
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStCodeGen.cpp
+)
+pxr_build_test(testHdStCurveDrawing
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStCurveDrawing.cpp
+)
+pxr_build_test(testHdStCurvePrimvarInterpolation
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStCurvePrimvarInterpolation.cpp
+)
+pxr_build_test(testHdStCurvesPrimvars
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        sdf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStCurvesPrimvars.cpp
+)
+pxr_build_test(testHdStDisplayStyle
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStDisplayStyle.cpp
+)
+pxr_build_test(testHdStDrawBatching
+    LIBRARIES
+        hdSt
+        hd
+        hio
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStDrawBatching.cpp
+)
+pxr_build_test(testHdStDrawItemIntegrity
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStDrawItemIntegrity.cpp
+)
+pxr_build_test(testHdStDrawItemsCache
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStDrawItemsCache.cpp
+)
+pxr_build_test(testHdStDynamicUvTexture
+    LIBRARIES
+        hdSt
+        tf
+    CPPFILES
+        testenv/testHdStDynamicUvTexture.cpp
+)
+pxr_build_test(testHdStFaceCulling
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStFaceCulling.cpp
+)
+pxr_build_test(testHdStFrustumCulling
+    LIBRARIES
+        hdSt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStFrustumCulling.cpp
+)
+pxr_build_test(testHdStGL
+    LIBRARIES
+        garch
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStGL.cpp
+)
+pxr_build_test(testHdStHWFaceCulling
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStHWFaceCulling.cpp
+)
+pxr_build_test(testHdStIndirectDrawBatchCodeGen
+    LIBRARIES
+        hdSt
+        hd
+        hio
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStIndirectDrawBatchCodeGen.cpp
+)
+pxr_build_test(testHdStIndirectDrawBatchCulling
+    LIBRARIES
+        hdSt
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStIndirectDrawBatchCulling.cpp
+)
+pxr_build_test(testHdStInitRepr
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStInitRepr.cpp
+)
+pxr_build_test(testHdStInstancing
+    LIBRARIES
+        hdSt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStInstancing.cpp
+)
+pxr_build_test(testHdStInstancingUnbalanced
+    LIBRARIES
+        hdSt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStInstancingUnbalanced.cpp
+)
+pxr_build_test(testHdStMeshTopology
+    LIBRARIES
+        hdSt
+        hd
+        sdf
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStMeshTopology.cpp
+)
+pxr_build_test(testHdStMultipleFvarTopologies
+    LIBRARIES
+        hdSt
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStMultipleFvarTopologies.cpp
+)
+pxr_build_test(testHdStPrimGather
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStPrimGather.cpp
+)
+pxr_build_test(testHdStPrimitiveParam
+    LIBRARIES
+        hdSt
+        hd
+        hgi
+        glf
+        sdf
+        tf
+    CPPFILES
+        testenv/testHdStPrimitiveParam.cpp
+)
+pxr_build_test(testHdStPrimvars
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        sdf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStPrimvars.cpp
+)
+pxr_build_test(testHdStQuadrangulation
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStQuadrangulation.cpp
+)
+pxr_build_test(testHdStRenderPass
+    LIBRARIES
+        hdSt
+        hd
+        glf
+        tf
+    CPPFILES
+        testenv/testHdStRenderPass.cpp
+)
+pxr_build_test(testHdStShaders
+    LIBRARIES
+        hdSt
+        hd
+        sdr
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStShaders.cpp
+)
+pxr_build_test(testHdStSubdivision
+    LIBRARIES
+        hdSt
+        hd
+        pxOsd
+        hgi
+        glf
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStSubdivision.cpp
+)
+pxr_build_test(testHdStTransition
+    LIBRARIES
+        hdSt
+        hd
+        tf
+        gf
+    CPPFILES
+        testenv/testHdStTransition.cpp
+)
+endif()
