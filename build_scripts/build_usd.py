@@ -1280,6 +1280,12 @@ def InstallOpenImageIO(context, force, buildArgs):
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
 
+        # OpenImageIO 2.3.5 changed the default postfix for debug library
+        # names from "" to "_d". USD's build system currently does not support
+        # finding the library under this name, so as an interim workaround
+        # we reset it back to its old value.
+        extraArgs.append('-DCMAKE_DEBUG_POSTFIX=""')
+
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -2372,7 +2378,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
-    Documentation               {buildDocs}
+    Documentation               {buildHtmlDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
@@ -2433,7 +2439,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
-    buildDocs=("On" if context.buildDocs else "Off"),
+    buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
