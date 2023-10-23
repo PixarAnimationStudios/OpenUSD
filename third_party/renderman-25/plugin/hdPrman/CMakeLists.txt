@@ -86,7 +86,6 @@ pxr_plugin(${PXR_PACKAGE}
         integrator
         light
         lightFilter
-        lightFilterUtils
         material
         matfiltConvertPreviewMaterial
         matfiltResolveVstructs
