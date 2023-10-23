@@ -34,6 +34,7 @@
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/material.h"
 
 #include "Riley.h"
@@ -248,8 +249,9 @@ public:
 
     void CreateRenderViewFromRenderSpec(const VtDictionary &renderSpec);
 
-    void CreateRenderViewFromRenderSettingsPrim(
-        HdPrman_RenderSettings const &renderSettingsPrim);
+    void CreateRenderViewFromRenderSettingsProduct(
+        HdRenderSettings::RenderProduct const &product,
+        HdPrman_RenderViewContext *renderViewContext);
 
     // Starts the render thread (if needed), and tells the render thread to
     // call into riley and start a render.
