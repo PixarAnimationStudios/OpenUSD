@@ -35,6 +35,8 @@
 
 #include "pxr/base/vt/dictionary.h"
 
+#include <boost/functional/hash.hpp>
+
 #include <string>
 
 PXR_NAMESPACE_OPEN_SCOPE
