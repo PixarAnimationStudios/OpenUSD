@@ -45,6 +45,13 @@ class TestFileUtils(unittest.TestCase):
             self.assertTrue(Tf.TouchFile("touchFile", True))
             self.assertTrue(os.path.isfile("touchFile"))
 
+            print("Test if touch modifies existing file")
+            quote  = "Fish are friends, not food.\n"
+            with open("touchFile","wt") as file:
+                file.write(quote)
+            Tf.TouchFile("touchFile", True)
+            self.assertTrue(open("touchFile").read() == quote)
+
             print("Test if touch updates the mod time")
             
             st = os.stat("touchFile")
