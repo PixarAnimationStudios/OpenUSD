@@ -115,6 +115,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     // Color Space
     ((cs_raw, "raw"))
     ((cs_auto, "auto"))
+    ((cs_srgb, "sRGB"))
+    ((mtlx_srgb, "srgb_texture"))
 );
 
 static bool
@@ -671,20 +673,24 @@ _GetWrapModes(
     }
 }
 
-static void
+static TfToken
 _GetColorSpace(
     HdMaterialNetworkInterface *netInterface,
     TfToken const &hdTextureNodeName,
-    TfToken *colorSpace)
+    HdMaterialNetworkInterface::NodeParamData paramData)
 {
     const TfToken nodeType = netInterface->GetNodeType(hdTextureNodeName);
-    if( nodeType == _tokens->ND_image_vector2 ||
+    if (nodeType == _tokens->ND_image_vector2 ||
         nodeType == _tokens->ND_image_vector3 ||
         nodeType == _tokens->ND_image_vector4 ) {
         // For images not used as color use "raw" (eg. normal maps)
-        *colorSpace = _tokens->cs_raw;
+        return _tokens->cs_raw;
     } else {
-        *colorSpace = _tokens->cs_auto;
+        if (paramData.colorSpace == _tokens->mtlx_srgb) {
+            return _tokens->cs_srgb;
+        } else {
+            return _tokens->cs_auto;
+        }
     }
 }
 
@@ -703,8 +709,9 @@ _UpdateTextureNodes(
             continue;
         }
         
-        VtValue vFile =
-            netInterface->GetNodeParameterValue(textureNodeName, _tokens->file);
+        HdMaterialNetworkInterface::NodeParamData fileParamData =
+            netInterface->GetNodeParameterData(textureNodeName, _tokens->file);
+        const VtValue vFile = fileParamData.value;
         if (vFile.IsEmpty()) {
             TF_WARN("File path missing for texture node '%s'.",
                     textureNodeName.GetText());
@@ -741,8 +748,8 @@ _UpdateTextureNodes(
                 TfToken uWrap, vWrap;
                 _GetWrapModes(netInterface, textureNodeName, &uWrap, &vWrap);
 
-                TfToken colorSpace;
-                _GetColorSpace(netInterface, textureNodeName, &colorSpace);
+                TfToken colorSpace = 
+                    _GetColorSpace(netInterface, textureNodeName, fileParamData);
 
                 std::string const &mxInputValue = TfStringPrintf(
                     "rtxplugin:%s?filename=%s&wrapS=%s&wrapT=%s&sourceColorSpace=%s",

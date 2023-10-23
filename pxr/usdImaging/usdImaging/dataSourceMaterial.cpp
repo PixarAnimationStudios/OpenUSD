@@ -38,6 +38,7 @@
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 
 #include "pxr/base/work/utils.h"
@@ -93,14 +94,6 @@ public:
             UsdAttribute attr(input.GetValueProducingAttribute(&attrType));
             if (attrType == UsdShadeAttributeType::Input) {
                 result.push_back(input.GetBaseName());
-
-                // If the attribute has a colorspace add 'colorSpace:attrName'
-                // to the result
-                if (attr.HasColorSpace()) {
-                    TfToken colorSpaceInputName(SdfPath::JoinIdentifier(
-                        SdfFieldKeys->ColorSpace, input.GetBaseName()));
-                    result.push_back(colorSpaceInputName);
-                }
             }
         }
         return result;
@@ -108,23 +101,6 @@ public:
 
     HdDataSourceBaseHandle Get(const TfToken &name) override
     {
-        // If this is a colorspace attribute the name will be of the form
-        // 'colorSpace:attrName'
-        const std::pair<std::string, bool> result =
-            SdfPath::StripPrefixNamespace(
-                name.GetString(), SdfFieldKeys->ColorSpace.GetString());
-        if (result.second) {
-            UsdShadeInput input = _shaderNode.GetInput(TfToken(result.first));
-            UsdShadeAttributeType attrType;
-            UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
-            const TfToken colorSpace = attr.GetColorSpace();
-            if (attrType == UsdShadeAttributeType::Input && 
-                !colorSpace.IsEmpty()) {
-                return
-                    HdRetainedTypedSampledDataSource<TfToken>::New(colorSpace);
-            }
-        }
-
         UsdShadeInput input = _shaderNode.GetInput(name);
         if (!input.IsDefined()) {
             return nullptr;
@@ -133,11 +109,23 @@ public:
         UsdShadeAttributeType attrType;
         UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
         if (attrType == UsdShadeAttributeType::Input) {
-            return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
-                _sceneIndexPath,
-                    _locatorPrefix.IsEmpty()
-                        ? _locatorPrefix
-                        : _locatorPrefix.Append(name));
+            // XXX This is not a lazy population of colorspace we want to 
+            // replace this with something similar to 
+            // UsdImagingDataSourceAttribute
+            const TfToken colorSpace = attr.GetColorSpace();
+            const TfToken paramLocatorToken(name.GetString() + "Value");
+            return HdMaterialNodeParameterSchema::Builder()
+                .SetValue(
+                    UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
+                        _sceneIndexPath,
+                        _locatorPrefix.IsEmpty()
+                            ? _locatorPrefix
+                            : _locatorPrefix.Append(paramLocatorToken)))
+                .SetColorSpace(colorSpace.IsEmpty()
+                    ? nullptr
+                    : HdRetainedTypedSampledDataSource<TfToken>::New(
+                        colorSpace))
+                .Build();
         }
 
         // fallback case for requested but unauthored inputs on lights or
@@ -149,9 +137,9 @@ public:
             if (attr) {
                 return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
                     _sceneIndexPath,
-                        _locatorPrefix.IsEmpty()
-                            ? _locatorPrefix
-                            : _locatorPrefix.Append(name));
+                    _locatorPrefix.IsEmpty()
+                        ? _locatorPrefix
+                        : _locatorPrefix.Append(name));
             }
         }
 

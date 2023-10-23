@@ -109,6 +109,7 @@ pxr_library(hd
         materialNetworkSchema
         materialNetwork2Interface
         materialNodeSchema
+        materialNodeParameterSchema
         materialSchema
         mergingSceneIndex
         mesh

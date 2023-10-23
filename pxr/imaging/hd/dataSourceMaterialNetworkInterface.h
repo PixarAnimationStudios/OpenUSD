@@ -82,6 +82,11 @@ public:
     VtValue GetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName) const override;
+    
+    HD_API
+    HdMaterialNetworkInterface::NodeParamData GetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName) const override;
 
     HD_API
     TfTokenVector GetNodeInputConnectionNames(
@@ -105,6 +110,12 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) override;
+
+    HD_API
+    void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) override;
 
     HD_API
     void DeleteNodeParameter(

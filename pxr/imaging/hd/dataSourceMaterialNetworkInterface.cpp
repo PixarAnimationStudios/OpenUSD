@@ -25,6 +25,7 @@
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -286,23 +287,87 @@ HdDataSourceMaterialNetworkInterface::GetNodeParameterValue(
 
     const auto it = _existingOverrides.find(locator);
     if (it != _existingOverrides.end()) {
-        if (HdSampledDataSourceHandle sds =
-                HdSampledDataSource::Cast(it->second)) {
-            return sds->GetValue(0.0f);
-        } else {
-            // overridden with nullptr data source means deletion
-            return VtValue();
+        HdContainerDataSourceHandle param =
+            HdContainerDataSource::Cast(it->second);
+        HdMaterialNodeParameterSchema paramSchema(param);
+        if (paramSchema) {
+            HdSampledDataSourceHandle paramValueDS = paramSchema.GetValue();
+            if (paramValueDS) {
+                return paramValueDS->GetValue(0);
+            }
         }
+        // overridden with nullptr data source means deletion
+        return VtValue();
     }
 
     if (HdContainerDataSourceHandle params = _GetNodeParameters(nodeName)) {
-        if (HdSampledDataSourceHandle param =
-                HdSampledDataSource::Cast(params->Get(paramName))) {
-            return param->GetValue(0.0f);
+        HdContainerDataSourceHandle param =
+            HdContainerDataSource::Cast(params->Get(paramName));
+        HdMaterialNodeParameterSchema paramSchema(param);
+        if (paramSchema) {
+            HdSampledDataSourceHandle paramValueDS = paramSchema.GetValue();
+            if (paramValueDS) {
+                return paramValueDS->GetValue(0);
+            }
         }
     }
 
     return VtValue();
+}
+
+HdMaterialNetworkInterface::NodeParamData
+HdDataSourceMaterialNetworkInterface::GetNodeParameterData(
+    const TfToken &nodeName,
+    const TfToken &paramName) const
+{
+    // check overrides for existing value
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->parameters,
+        paramName);
+
+    HdMaterialNetworkInterface::NodeParamData paramData;
+    const auto it = _existingOverrides.find(locator);
+    if (it != _existingOverrides.end()) {
+        HdContainerDataSourceHandle param = 
+            HdContainerDataSource::Cast(it->second);
+        HdMaterialNodeParameterSchema pSchema(param);
+        if (pSchema) {
+            HdSampledDataSourceHandle paramValueDS = pSchema.GetValue();
+            if (paramValueDS) {
+                paramData.value = paramValueDS->GetValue(0);
+            }
+            HdTokenDataSourceHandle colorSpaceDS = pSchema.GetColorSpace();
+            if (colorSpaceDS) {
+                paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
+            }
+            return paramData;
+        }
+        // overridden with nullptr data source means deletion
+        return paramData;
+    }
+
+    if (HdContainerDataSourceHandle params = _GetNodeParameters(nodeName)) {
+        HdContainerDataSourceHandle param =
+            HdContainerDataSource::Cast(params->Get(paramName));
+        HdMaterialNodeParameterSchema pSchema(param);
+        if (pSchema) {
+            // Value
+            HdSampledDataSourceHandle paramValueDS = pSchema.GetValue();
+            if (paramValueDS) {
+                paramData.value = paramValueDS->GetValue(0);
+            }
+            // ColorSpace
+            HdTokenDataSourceHandle colorSpaceDS = pSchema.GetColorSpace();
+            if (colorSpaceDS) {
+                paramData.colorSpace = colorSpaceDS->GetTypedValue(0);
+            }
+            return paramData;
+        }
+    }
+
+    return paramData;
 }
 
 TfTokenVector
@@ -435,7 +500,35 @@ HdDataSourceMaterialNetworkInterface::SetNodeParameterValue(
         HdMaterialNodeSchemaTokens->parameters,
         paramName);
 
-    HdDataSourceBaseHandle ds = HdRetainedSampledDataSource::New(value);
+    HdDataSourceBaseHandle ds = 
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(HdRetainedTypedSampledDataSource<VtValue>::New(value))
+            .Build();
+    _SetOverride(locator, ds);
+}
+
+void
+HdDataSourceMaterialNetworkInterface::SetNodeParameterData(
+    const TfToken &nodeName,
+    const TfToken &paramName,
+    const NodeParamData &paramData)
+{
+    HdDataSourceLocator locator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodeName,
+        HdMaterialNodeSchemaTokens->parameters,
+        paramName);
+
+    HdDataSourceBaseHandle ds = 
+        HdMaterialNodeParameterSchema::Builder()
+            .SetValue(
+                HdRetainedTypedSampledDataSource<VtValue>::New(paramData.value))
+            .SetColorSpace(
+                paramData.colorSpace.IsEmpty()
+                    ? nullptr /* colorSpace */
+                    : HdRetainedTypedSampledDataSource<TfToken>::New(
+                        paramData.colorSpace))
+            .Build();
     _SetOverride(locator, ds);
 }
 

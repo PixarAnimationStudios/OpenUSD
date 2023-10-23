@@ -75,6 +75,7 @@
 #include "pxr/imaging/hd/materialConnectionSchema.h"
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialNodeSchema.h"
+#include "pxr/imaging/hd/materialNodeParameterSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
 #include "pxr/imaging/hd/meshTopologySchema.h"
@@ -901,6 +902,39 @@ HdSceneIndexAdapterSceneDelegate::GetRenderBufferDescriptor(SdfPath const &id)
 }
 
 static
+std::map<TfToken, VtValue>
+_GetHdParamsFromDataSource(HdContainerDataSourceHandle paramsDS)
+{
+    std::map<TfToken, VtValue> hdParams;
+    if (paramsDS) {
+        const TfTokenVector pNames = paramsDS->GetNames();
+        for (const auto & pName : pNames) {
+            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
+            HdMaterialNodeParameterSchema paramSchema(
+                HdContainerDataSource::Cast(paramDS));
+            if (!paramSchema) {
+                continue;
+            }
+
+            // Parameter Value 
+            HdSampledDataSourceHandle paramValueDS = paramSchema.GetValue();
+            if (paramValueDS) {
+                VtValue v = paramValueDS->GetValue(0);
+                hdParams[pName] = v;
+            }
+            // ColorSpace Metadata
+            HdTokenDataSourceHandle colorSpaceDS = paramSchema.GetColorSpace();
+            if (colorSpaceDS) {
+                const TfToken cspName(SdfPath::JoinIdentifier(
+                    HdMaterialNodeParameterSchemaTokens->colorSpace, pName));
+                hdParams[cspName] = VtValue(colorSpaceDS->GetTypedValue(0));
+            }
+        }
+    }
+    return hdParams;
+}
+
+static
 void 
 _Walk(
     const SdfPath & nodePath, 
@@ -951,8 +985,6 @@ _Walk(
     }
 
     HdContainerDataSourceHandle connsDS = nodeSchema.GetInputConnections();
-    HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
-
     if (connsDS) {
         const TfTokenVector connsNames = connsDS->GetNames();
         for (const auto & connName : connsNames) {
@@ -988,24 +1020,10 @@ _Walk(
         }
     }
 
-    std::map<TfToken, VtValue> paramsHd;
-    if (paramsDS) {
-        const TfTokenVector pNames = paramsDS->GetNames();
-        for (const auto & pName : pNames) {
-            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
-            HdSampledDataSourceHandle paramSDS = 
-                HdSampledDataSource::Cast(paramDS);
-            if (paramSDS) {
-                VtValue v = paramSDS->GetValue(0);
-                paramsHd[pName] = v;
-            }
-        }
-    }
-
     HdMaterialNode n;
     n.identifier = nodeId;
     n.path = nodePath;
-    n.parameters = paramsHd;
+    n.parameters = _GetHdParamsFromDataSource(nodeSchema.GetParameters());
     netHd->nodes.push_back(n);
 }
 
@@ -1457,21 +1475,7 @@ _GetRenderTerminalResource(HdSceneIndexPrim prim)
         hdNode2.nodeTypeId = nodeTypeDS->GetTypedValue(0);
     }
 
-    std::map<TfToken, VtValue> hdParams;
-    HdContainerDataSourceHandle paramsDS = nodeSchema.GetParameters();
-    if (paramsDS) {
-        const TfTokenVector pNames = paramsDS->GetNames();
-        for (const auto & pName : pNames) {
-            HdDataSourceBaseHandle paramDS = paramsDS->Get(pName);
-            HdSampledDataSourceHandle paramSDS =
-                HdSampledDataSource::Cast(paramDS);
-            if (paramSDS) {
-                VtValue v = paramSDS->GetValue(0);
-                hdParams[pName] = v;
-            }
-        }
-    }
-    hdNode2.parameters = hdParams;
+    hdNode2.parameters = _GetHdParamsFromDataSource(nodeSchema.GetParameters());
 
     return VtValue(hdNode2);
 }

@@ -75,6 +75,16 @@ public:
     virtual VtValue GetNodeParameterValue(
         const TfToken &nodeName,
         const TfToken &paramName) const = 0;
+    
+    struct NodeParamData
+    {
+        VtValue value;
+        TfToken colorSpace;
+    };
+
+    virtual NodeParamData GetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName) const = 0;
 
     virtual TfTokenVector GetNodeInputConnectionNames(
         const TfToken &nodeName) const = 0;
@@ -100,6 +110,11 @@ public:
         const TfToken &nodeName,
         const TfToken &paramName,
         const VtValue &value) = 0;
+    
+    virtual void SetNodeParameterData(
+        const TfToken &nodeName,
+        const TfToken &paramName,
+        const NodeParamData &paramData) = 0;
 
     virtual void DeleteNodeParameter(
         const TfToken &nodeName,
