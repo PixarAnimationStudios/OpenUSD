@@ -56,7 +56,7 @@ struct HdMeshReprDesc
     HdMeshReprDesc(HdMeshGeomStyle geomStyle = HdMeshGeomStyleInvalid,
                    HdCullStyle cullStyle = HdCullStyleDontCare,
                    TfToken shadingTerminal = HdMeshReprDescTokens->surfaceShader,
-                   bool flatShadingEnabled = true,
+                   bool flatShadingEnabled = false,
                    bool blendWireframeColor = true,
                    bool forceOpaqueEdges = true,
                    bool doubleSided = false,
