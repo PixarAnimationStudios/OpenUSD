@@ -538,7 +538,7 @@ pxr_register_test(testUsdUtilsIntrospection
 pxr_register_test(testUsdUtilsModifyAssetPaths
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdUtilsModifyAssetPaths layer.usda modified.usda"
-    DIFF_COMPARE modified.usda duplicates.usda removal.usda
+    DIFF_COMPARE modified.usda duplicates.usda removal.usda ref_layer_mod.usda ref_unmodified.usda
     EXPECTED_RETURN_CODE 0
 )
 
