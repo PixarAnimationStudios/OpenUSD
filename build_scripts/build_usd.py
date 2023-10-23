@@ -2378,7 +2378,7 @@ summaryMsg += """\
     Python support              {buildPython}
       Python Debug:             {debugPython}
       Python docs:              {buildPythonDocs}
-    Documentation               {buildHtmlDocs}
+    Documentation               {buildDocs}
     Tests                       {buildTests}
     Examples                    {buildExamples}
     Tutorials                   {buildTutorials}
@@ -2439,7 +2439,7 @@ summaryMsg = summaryMsg.format(
     buildPython=("On" if context.buildPython else "Off"),
     debugPython=("On" if context.debugPython else "Off"),
     buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
-    buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
+    buildDocs=("On" if context.buildDocs else "Off"),
     buildTests=("On" if context.buildTests else "Off"),
     buildExamples=("On" if context.buildExamples else "Off"),
     buildTutorials=("On" if context.buildTutorials else "Off"),
