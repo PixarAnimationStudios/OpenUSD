@@ -236,7 +236,30 @@ def Xform "Sphere" (
             }
         }
 
-        
+        def GeomSubset "onlyNegativeIndices"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "onlyNegativeIndices"
+            int[] indices = [-1, -2, -3, -4, -5]
+        }
+
+        def GeomSubset "emptyIndicesSomeTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "emptyIndicesSomeTimes"
+            int[] indices.timeSamples = {
+                0: [],
+                1: [0, 1, 2, 3],
+                2: []
+            }
+        }
+
+        def GeomSubset "emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "emptyIndicesAtAllTimes"
+        }
+
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
         int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
         PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
@@ -245,6 +268,80 @@ def Xform "Sphere" (
         )
         Vec3d xformOp:translate = (0.191260557342787, 0.0415678998936819, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
+    }
+
+    def Mesh "VaryingMesh"
+    {
+        uniform token subsetFamily:validPartition:familyType = "partition"
+
+        int[] faceVertexCounts.timeSamples = {
+            1: [4],
+            2: [4, 4],
+            3: [4, 4, 4]
+        }
+
+        def GeomSubset "validPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [],
+                3: [0]
+            }
+        }
+
+        def GeomSubset "validPartition_2"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 1],
+                3: [1]
+            }
+        }
+
+        def GeomSubset "validPartition_3"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [2]
+            }
+        }
+
+        def GeomSubset "invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidNoDefaultTimeElements"
+            int[] indices = [0]
+            int[] indices.timeSamples = {
+                1: [0],
+                2: [1],
+                3: [2]
+            }
+        }
+    }
+
+    def Mesh "NullMesh"
+    {
+        uniform token subsetFamily:invalidPartition:familyType = "partition"
+
+        def GeomSubset "emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "invalidPartition_1"
+        {
+            uniform token elementType = "face"
+            uniform token familyName = "invalidPartition"
+            int[] indices = [0, 1, 2, 3]
+        }
     }
 
     def Scope "Looks"
