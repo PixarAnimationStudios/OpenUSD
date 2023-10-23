@@ -63,10 +63,14 @@ HgiVulkanSampler::HgiVulkanSampler(
     sampler.minLod = 0.0f;
     sampler.maxLod = FLT_MAX;
 
-    HgiVulkanCapabilities const& caps = device->GetDeviceCapabilities();
-    sampler.anisotropyEnable = caps.vkDeviceFeatures.samplerAnisotropy;
-    sampler.maxAnisotropy = sampler.anisotropyEnable ?
-        caps.vkDeviceProperties.limits.maxSamplerAnisotropy : 1.0f;
+    if ((desc.minFilter != HgiSamplerFilterNearest ||
+         desc.mipFilter == HgiMipFilterLinear) &&
+         desc.magFilter != HgiSamplerFilterNearest) {
+        HgiVulkanCapabilities const& caps = device->GetDeviceCapabilities();
+        sampler.anisotropyEnable = caps.vkDeviceFeatures.samplerAnisotropy;
+        sampler.maxAnisotropy = sampler.anisotropyEnable ?
+            caps.vkDeviceProperties.limits.maxSamplerAnisotropy : 1.0f; 
+    }
 
     TF_VERIFY(
         vkCreateSampler(
