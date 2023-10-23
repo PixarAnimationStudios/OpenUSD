@@ -24,6 +24,7 @@ pxr_library(hdsi
         materialPrimvarTransferSceneIndex
         nurbsApproximatingSceneIndex
         pinnedCurveExpandingSceneIndex
+        primManagingSceneIndexObserver
         primTypePruningSceneIndex
         renderSettingsFilteringSceneIndex
         sceneGlobalsSceneIndex
