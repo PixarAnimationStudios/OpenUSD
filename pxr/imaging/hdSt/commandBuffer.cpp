@@ -364,7 +364,7 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
     }
 
     TF_DEBUG(HDST_DRAW_BATCH).Msg(
-        "   %lu draw batches created for %lu draw items\n", _drawBatches.size(),
+        "   %zu draw batches created for %zu draw items\n", _drawBatches.size(),
         drawItems.size());
 }
 

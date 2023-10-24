@@ -95,12 +95,15 @@ const TfTokenVector HdStRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->imageShader
 };
 
+ARCH_PRAGMA_PUSH
+ARCH_PRAGMA_UNUSED_VARIABLE
 #ifdef PXR_MATERIALX_SUPPORT_ENABLED
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (mtlx)
 );
 #endif
+ARCH_PRAGMA_POP
 
 using HdStResourceRegistryWeakPtr =  std::weak_ptr<HdStResourceRegistry>;
 

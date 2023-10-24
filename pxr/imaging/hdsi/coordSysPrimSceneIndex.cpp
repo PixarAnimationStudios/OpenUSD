@@ -302,7 +302,7 @@ HdsiCoordSysPrimSceneIndex::GetChildPrimPaths(const SdfPath &primPath) const
     if (it == _targetedPrimToNameToRefCount.end()) {
         return result;
     }
-    for (const std::pair<TfToken, size_t> &nameAndRefCount : it->second) {
+    for (const auto &nameAndRefCount : it->second) {
         const TfToken &coordSysName = nameAndRefCount.first;
         result.push_back(_PathForCoordSysPrim(primPath, coordSysName));
     }
