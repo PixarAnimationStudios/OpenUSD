@@ -154,8 +154,21 @@ public:
     // --------------------------------------------------------------------- //
     /// A control to shape the spread of light.  Higher focus
     /// values pull light towards the center and narrow the spread.
-    /// Implemented as an off-axis cosine power exponent.
-    /// TODO: clarify semantics
+    /// 
+    /// This is implemented as a multiplication with the absolute value of the
+    /// dot product between the light's surface normal and the emission
+    /// direction, raised to the power `focus`.  See `inputs:shaping:focusTint`
+    /// for the complete formula - but if we assume a default `focusTint` of
+    /// pure black, then that formula simplifies to:
+    /// 
+    /// <center><b>
+    /// focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+    /// 
+    /// L<sub>Color</sub> = focusFactor ⋅ L<sub>Color</sub>
+    /// </b></center>
+    /// 
+    /// Values < 0 are ignored
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -179,7 +192,22 @@ public:
     // --------------------------------------------------------------------- //
     /// Off-axis color tint.  This tints the emission in the
     /// falloff region.  The default tint is black.
-    /// TODO: clarify semantics
+    /// 
+    /// This is implemented as a linear interpolation between `focusTint` and
+    /// white, by the factor computed from the focus attribute, in other words:
+    /// 
+    /// <center><b>
+    /// focusFactor = ｜emissionDirection • lightNormal｜<sup>focus</sup>
+    /// 
+    /// focusColor = lerp(focusFactor, focusTint, [1, 1, 1])
+    /// 
+    /// L<sub>Color</sub> =
+    /// componentwiseMultiply(focusColor, L<sub>Color</sub>)
+    /// </b></center>
+    /// 
+    /// Note that this implies that a focusTint of pure white will disable
+    /// focus.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -201,8 +229,29 @@ public:
     // --------------------------------------------------------------------- //
     // SHAPING:CONE:ANGLE 
     // --------------------------------------------------------------------- //
-    /// Angular limit off the primary axis to restrict the
-    /// light spread.
+    /// Angular limit off the primary axis to restrict the light
+    /// spread, in degrees.
+    /// 
+    /// Light emissions at angles off the primary axis greater than this are
+    /// guaranteed to be zero, ie:
+    /// 
+    /// 
+    /// <center><b>
+    /// 𝛳<sub>offAxis</sub> = acos(lightAxis • emissionDir)
+    /// 
+    /// 𝛳<sub>cutoff</sub> = toRadians(coneAngle)
+    /// 
+    /// 
+    /// 𝛳<sub>offAxis</sub> > 𝛳<sub>cutoff</sub>
+    /// ⟹ L<sub>Scalar</sub> = 0
+    /// 
+    /// </b></center>
+    /// 
+    /// For angles < coneAngle, behavior is determined by shaping:cone:softness
+    /// - see below.  But at the default of coneSoftness = 0, the luminance is
+    /// unaltered if the emissionOffAxisAngle <= coneAngle, so the coneAngle
+    /// functions as a hard binary "off" toggle for all angles > coneAngle.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -225,7 +274,31 @@ public:
     // SHAPING:CONE:SOFTNESS 
     // --------------------------------------------------------------------- //
     /// Controls the cutoff softness for cone angle.
-    /// TODO: clarify semantics
+    /// 
+    /// At the default of coneSoftness = 0, the luminance is unaltered if the
+    /// emissionOffAxisAngle <= coneAngle, and 0 if
+    /// emissionOffAxisAngle > coneAngle, so in this situation the coneAngle
+    /// functions as a hard binary "off" toggle for all angles > coneAngle.
+    /// 
+    /// For coneSoftness in the range (0, 1], it defines the proportion of the
+    /// non-cutoff angles over which the luminance is smoothly interpolated from
+    /// 0 to 1.  More precisely:
+    /// 
+    /// <center><b>
+    /// 𝛳<sub>offAxis</sub> = acos(lightAxis • emissionDir)
+    /// 
+    /// 𝛳<sub>cutoff</sub> = toRadians(coneAngle)
+    /// 
+    /// 𝛳<sub>smoothStart</sub> = lerp(coneSoftness, 𝛳<sub>cutoff</sub>, 0)
+    /// 
+    /// L<sub>Scalar</sub> = L<sub>Scalar</sub> ⋅
+    /// (1 - smoothStep(𝛳<sub>offAxis</sub>,
+    /// 𝛳<sub>smoothStart</sub>,
+    /// 𝛳<sub>cutoff</sub>)
+    /// </b></center>
+    /// 
+    /// Values outside of the [0, 1] range are clamped to the range.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -249,6 +322,37 @@ public:
     // --------------------------------------------------------------------- //
     /// An IES (Illumination Engineering Society) light
     /// profile describing the angular distribution of light.
+    /// 
+    /// For full details on the .ies file format, see the full specification,
+    /// ANSI/IES LM-63-19:
+    /// 
+    /// https://store.ies.org/product/lm-63-19-approved-method-ies-standard-file-format-for-the-electronic-transfer-of-photometric-data-and-related-information/
+    /// 
+    /// The luminous intensity values in the ies profile are sampled using
+    /// the emission direction in the light's local space (after a possible
+    /// transformtion by a non-zero shaping:ies:angleScale, see below). The
+    /// sampled value is then potentially normalized by the overal power of the
+    /// profile if shaping:ies:normalize is enabled, and then used as a scaling
+    /// factor on the returned luminance:
+    /// 
+    /// 
+    /// <center><b>
+    /// 𝛳<sub>light</sub>, 𝜙 =
+    /// toPolarCoordinates(emissionDirectionInLightSpace)
+    /// 
+    /// 𝛳<sub>ies</sub> = applyAngleScale(𝛳<sub>light</sub>, angleScale)
+    /// 
+    /// iesSample = sampleIES(iesFile, 𝛳<sub>ies</sub>, 𝜙)
+    /// 
+    /// iesNormalize ⟹ iesSample = iesSample ⋅ iesProfilePower(iesFile)
+    /// 
+    /// L<sub>Color</sub> = iesSample ⋅ L<sub>Color</sub>
+    /// </b></center>
+    /// 
+    /// See `inputs:shaping:ies:angleScale` for a description of
+    /// `applyAngleScale`, and `inputs:shaping:ies:normalize` for how
+    /// `iesProfilePower` is calculated.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -271,7 +375,33 @@ public:
     // SHAPING:IES:ANGLESCALE 
     // --------------------------------------------------------------------- //
     /// Rescales the angular distribution of the IES profile.
-    /// TODO: clarify semantics
+    /// 
+    /// Applies a scaling factor to the latitudinal theta/vertical polar
+    /// coordinate before sampling the ies profile, to shift the samples more
+    /// toward the "top" or "bottom" of the profile. The scaling origin is
+    /// centered at theta = pi / 180 degrees, so theta = pi is always unaltered,
+    /// regardless of the angleScale.  The scaling amount is `1 + angleScale`.
+    /// This has the effect that negative values (greater than -1.0) decrease
+    /// the sampled IES theta, while positive values increase the sampled IES
+    /// theta.
+    /// 
+    /// Specifically, this factor is applied:
+    /// 
+    /// <center><b>
+    /// profileScale = 1 + angleScale
+    /// 
+    /// 𝛳<sub>ies</sub> = (𝛳<sub>light</sub> - 𝜋) / profileScale + 𝜋
+    /// 
+    /// 𝛳<sub>ies</sub> = clamp(𝛳<sub>ies</sub>, 0, 𝜋)
+    /// </b></center>
+    /// 
+    /// ...where <i>𝛳<sub>light</sub></i> is the latitudinal theta polar
+    /// coordinate of the emission direction in the light's local space, and
+    /// <em>𝛳<sub>ies</sub></em> is the value that will be used when
+    /// actually sampling the profile.
+    /// 
+    /// Values below -1.0 are clipped to -1.0.
+    /// 
     ///
     /// | ||
     /// | -- | -- |
@@ -295,6 +425,12 @@ public:
     // --------------------------------------------------------------------- //
     /// Normalizes the IES profile so that it affects the shaping
     /// of the light while preserving the overall energy output.
+    /// 
+    /// The sampled luminous intensity is scaled by the overall power of the
+    /// ies profile if this is on, where the total power is calculated by
+    /// integrating the luminous intensity over all solid angle patches
+    /// defined in the profile.
+    /// 
     ///
     /// | ||
     /// | -- | -- |

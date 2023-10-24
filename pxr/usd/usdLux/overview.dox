@@ -101,11 +101,54 @@ constraints, such as to attach lights to moving geometry.  This is
 consistent with USD's policy of storing the computed result of rigging,
 not the rigging itself.
 
+\subsection usdLux_quantities Quantities and Units
+
+Most renderers consuming OpenUSD today are RGB renderers, rather than spectral.
+Units in RGB renderers are tricky to define as each of the red, green and blue
+channels transported by the renderer represents the convolution of a spectral
+exposure distribution, e.g. CIE Illuminant D65, with a sensor response function, e.g.
+CIE 1931 𝓍̅. Thus the main quantity in an RGB renderer is neither radiance nor
+luminance, but "integrated radiance" or "tristimulus weight".
+
+The emision of a default light with `intensity` 1 and `color` [1, 1, 1] is an
+Illuminant D spectral power distribution with chromaticity matching the rendering
+colour space white point, normalized such that a ray normally incident upon the
+sensor with EV0 exposure settings will generate a pixel value of [1, 1, 1] in the
+rendering colour space.
+
+Given the above definition, that means that the luminance of said default light
+will be 1 *nit* and its emission spectral radiance distribution is easily computed by appropriate
+normalization.
+
+Note that some colour spaces, most notably ACES, define their white points by
+chromaticity coordinates that do not exactly line up to any value of a standard illuminant.
+In these cases, a spectral renderer should choose the closest Illuminant D spectrum
+for the lights' emission (the *rendering illuminant)* and perform chromatic
+adaptation to transform the rendered image to the rendering colour space.
+The method of "uplifting" an RGB colour to a spectral distribution is unspecified
+other than that it should round-trip under the rendering illuminant to the limits
+of numerical accuracy.
+
+\subsubsection usdLux_quantities_exposure Exposure
+
+In order to generate an image, a camera effectively integrates irradiance at a patch
+on the sensor over time to get exposure, which is converted to an electrical signal.
+The default behaviour of many renderers is to ignore this, which as we have seen means
+that 1 nit incident on the sensor results in an output signal of 1.0.
+
+1 nit is a tiny amount of light, equivalent by definition to a single candle viewed at a distance. Thus
+using physically plausible values for light brightnesses will result in blown out images
+unless exposure is taken into account. A full physical camera model would be a good
+future addition to OpenUSD, but there is already a means of communicating sensor
+exposure via `UsdGeomCamera::GetExposureAttr()` and it is expected that all renderers
+implementing UsdLux must respect the value of that attribute by scaling the rendered
+image by `pow(2, exposure)`.
+
 \subsection usdLux_Behavior Properties & Behavior
 
 Colors specified in attributes are in energy-linear terms,
-and obey the USD convention for indicating their color space via \c
-colorConfiguration and \c colorSpace metadata.  See
+and obey the USD convention for indicating their color space via
+`colorConfiguration` and `colorSpace` metadata.  See
 UsdStage::SetColorConfiguration() for discussion of colorspace
 management in USD.
 
@@ -114,6 +157,14 @@ distance is a consequence of reduced visible solid angle. Environments
 that do not measure the visible solid angle are expected to provide an
 approximation, such as inverse-square falloff. Further artistic control
 over attenuation can be modelled as light filters.
+
+The behavior of all attributes is in UsdLuxLightAPI is documented on their `Get()`
+methods. All attributes are expected to be supported by all light types, with
+the effect of each attribute applying multiplicatively in sequence.
+
+The example hdEmbree delegate provides a reference implementation, as well as a
+series of unit tests and reference images for renderers to check their own
+implementation against.
 
 More complex behaviors are provided via a set of API classes.
 These behaviors are common and well-defined but may not be supported
