@@ -153,7 +153,7 @@ public:
     // --------------------------------------------------------------------- //
     // ANGLE 
     // --------------------------------------------------------------------- //
-    /// Angular size of the light in degrees.
+    /// Angular diameter of the light in degrees.
     /// As an example, the Sun is approximately 0.53 degrees as seen from Earth.
     /// Higher values broaden the light and therefore soften shadow edges.
     /// 

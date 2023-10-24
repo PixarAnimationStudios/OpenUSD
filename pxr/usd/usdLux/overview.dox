@@ -101,6 +101,34 @@ constraints, such as to attach lights to moving geometry.  This is
 consistent with USD's policy of storing the computed result of rigging,
 not the rigging itself.
 
+\subsection usdLux_quantities Quantities and Units
+
+Most renderers consuming OpenUSD today are RGB renderers, rather than spectral.
+Units in RGB renderers are tricky to define as each of the red, green and blue
+channels transported by the renderer represents the convolution of a spectral
+exposure distribution, e.g. CIE Illuminant D65, with a sensor response function, e.g.
+CIE 1931 x_bar. Thus the main quantity in an RGB renderer is neither radiance nor
+luminance, but "integrated radiance" or "tristimulus weight".
+
+The emision of a default light with \c intensity 1 and \c color [1, 1, 1] is an 
+Illuminant D spectral power distribution with chromaticity matching the rendering 
+colour space white point, normalized such that a ray normally incident upon the 
+sensor with EV0 exposure settings will generate a pixel value of [1, 1, 1] in the 
+rendering colour space.
+
+Given the above definition, that means that the luminance of said default light 
+will be 1 \a nit and its emission spectral radiance distribution is easily computed by appropriate
+normalization.
+
+Note that some colour spaces, most notably ACES, define their white points by 
+chromaticity coordinates that do not exactly line up to any value of a standard illuminant. 
+In these cases, a spectral renderer should choose the closest Illuminant D spectrum
+for the lights' emission (the \a rendering \a illuminant) and perform chromatic 
+adaptation to transform the rendered image to the rendering colour space. 
+The method of "uplifting" an RGB colour to a spectral distribution is unspecified
+other than that it should round-trip under the rendering illuminant to the limits
+of numerical accuracy.
+
 \subsection usdLux_Behavior Properties & Behavior
 
 Colors specified in attributes are in energy-linear terms,
@@ -114,6 +142,14 @@ distance is a consequence of reduced visible solid angle. Environments
 that do not measure the visible solid angle are expected to provide an
 approximation, such as inverse-square falloff. Further artistic control
 over attenuation can be modelled as light filters.
+
+The behavior of all attributes is in UsdLuxLightAPI is documented on their \c Get() 
+methods. All attributes are expected to be supported by all light types, with 
+the effect of each attribute applying multiplicatively in sequence.
+
+The example hdEmbree delegate provides a reference implementation, as well as a 
+series of unit tests and reference images for renderers to check their own 
+implementation against.
 
 More complex behaviors are provided via a set of API classes.
 These behaviors are common and well-defined but may not be supported
