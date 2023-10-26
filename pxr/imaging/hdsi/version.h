@@ -1,5 +1,5 @@
 //
-// Copyright 2022 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,27 +21,12 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#include "hdPrman/tokens.h"
+#ifndef PXR_IMAGING_HDSI_VERSION_H
+#define PXR_IMAGING_HDSI_VERSION_H
 
-PXR_NAMESPACE_OPEN_SCOPE
+// 10 -> 11: Adding HdsiPrimManagingSceneIndexObserver and
+//           HdsiPrimTypeNoticeBatchingSceneIndex
 
-TF_DEFINE_PUBLIC_TOKENS(HdPrmanTokens, HD_PRMAN_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(HdPrmanRileyPrimTypeTokens,
-                        HD_PRMAN_RILEY_PRIM_TYPE_TOKENS);
-TF_DEFINE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
+#define HDSI_API_VERSION 11
 
-TF_MAKE_STATIC_DATA(std::vector<std::string>, _pluginDisplayNameTokens) {
-    _pluginDisplayNameTokens->push_back("Prman");
-    _pluginDisplayNameTokens->push_back("RenderMan RIS");
-    _pluginDisplayNameTokens->push_back("RenderMan XPU");
-    _pluginDisplayNameTokens->push_back("RenderMan XPU - CPU");
-    _pluginDisplayNameTokens->push_back("RenderMan XPU - GPU");
-}
-
-const std::vector<std::string>& HdPrman_GetPluginDisplayNames() {
-    return *_pluginDisplayNameTokens;
-}
-
-
-PXR_NAMESPACE_CLOSE_SCOPE
-
+#endif // PXR_IMAGING_HDSI_VERSION_H

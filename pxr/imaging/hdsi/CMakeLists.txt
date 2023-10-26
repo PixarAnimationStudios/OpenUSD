@@ -32,6 +32,7 @@ pxr_library(hdsi
 
     PUBLIC_HEADERS
         api.h
+        version.h
 )
 
 pxr_build_test(testHdsiPinnedCurveExpandingSceneIndex

@@ -883,6 +883,28 @@ SetParamFromVtValue(
 #endif
 }
 
+RtParamList
+ParamsFromDataSource(
+    HdContainerDataSourceHandle const &containerDs)
+{
+    RtParamList result;
+    if (!containerDs) {
+        return result;
+    }
+    for (const TfToken &name : containerDs->GetNames()) {
+        if (HdSampledDataSourceHandle const ds =
+                HdSampledDataSource::Cast(containerDs->Get(name))) {
+            SetParamFromVtValue(
+                RtUString(name.GetText()),
+                ds->GetValue(0.0f),
+                TfToken(),
+                &result);
+        }
+    }
+
+    return result;
+}
+
 bool
 SetPrimVarFromVtValue(
     RtUString const& name,
