@@ -910,15 +910,15 @@ public:
     /// //.. populate faceIndices here.
     /// //.. 
     /// 
-    /// UsdGeomMaterialBindingAPI meshBindingAPI(mesh.GetPrim());
+    /// UsdShadeMaterialBindingAPI meshBindingAPI(mesh.GetPrim());
     /// UsdGeomSubset plasticSubset = meshBindingAPI.CreateMaterialBindSubset(
     ///                 "plasticSubset", plasticFaces);
     /// UsdGeomSubset metalSubset = meshBindingAPI.CreateMaterialBindSubset( 
     ///                 "metalSubset", metalFaces);
     /// 
     /// // Bind materials to the created geom-subsets.               
-    /// UsdShadeMaterialBindingAPI(pasticSubset.GetPrim()).Bind(plastic)
-    /// UsdShadeMaterialBindingAPI(metalSubset.GetPrim()).Bind(metal)
+    /// UsdShadeMaterialBindingAPI::Apply(plasticSubset.GetPrim()).Bind(plastic)
+    /// UsdShadeMaterialBindingAPI::Apply(metalSubset.GetPrim()).Bind(metal)
     /// 
     /// \endcode
     /// @{
