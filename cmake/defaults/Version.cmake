@@ -23,7 +23,7 @@
 #
 # Versioning information
 set(PXR_MAJOR_VERSION "0")
-set(PXR_MINOR_VERSION "23")
-set(PXR_PATCH_VERSION "11") # NOTE: Must not have leading 0 for single digits
+set(PXR_MINOR_VERSION "24")
+set(PXR_PATCH_VERSION "2") # NOTE: Must not have leading 0 for single digits
 
 math(EXPR PXR_VERSION "${PXR_MAJOR_VERSION} * 10000 + ${PXR_MINOR_VERSION} * 100 + ${PXR_PATCH_VERSION}")
