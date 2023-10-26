@@ -266,7 +266,7 @@ private:
         }
 
         // equals operator
-        const bool operator==(const _FlattenData& rhs) const noexcept
+        bool operator==(const _FlattenData& rhs) const noexcept
         {
             return categories == rhs.categories &&
                 _RtParamListEqualToFunctor()(params, rhs.params);
@@ -349,7 +349,7 @@ private:
     public:
         // Check whether the map contains the given key; check this call before
         // calling get() if you want to avoid get's auto-insertion.
-        const bool has(const Key& key) const
+        bool has(const Key& key) const
         {
             std::shared_lock<std::shared_mutex> lock(_mutex);
             if (_map.size() == 0) { return false; }
@@ -414,7 +414,7 @@ private:
         }
 
         // Gives the count of keys currently in the map
-        const size_t size() const
+        size_t size() const
         {
             std::shared_lock<std::shared_mutex> lock(_mutex);
             return _map.size();
