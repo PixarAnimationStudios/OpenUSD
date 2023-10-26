@@ -1,0 +1,21 @@
+#usda 1.0
+
+over "C" (
+    doc = "Sub1"
+    prepend apiSchemas = ["C_Sub1_API"]
+) {
+    custom double C_Sub1_Attr
+
+    def "C_Sub1_Prim" {
+    }
+
+    def PrimTypeB "B" (
+        doc = "Sub1"
+        prepend apiSchemas = ["B_Sub1_API"]
+    ) {
+        custom double B_Sub1_Attr
+
+        def "B_Sub1_Prim" {
+        }
+    }
+}
