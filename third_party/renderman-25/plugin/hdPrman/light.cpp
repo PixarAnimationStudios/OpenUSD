@@ -261,6 +261,7 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
     static const RtUString us_PxrSphereLight("PxrSphereLight");
     static const RtUString us_PxrDistantLight("PxrDistantLight");
     static const RtUString us_PxrMeshLight("PxrMeshLight");
+    static const RtUString us_PxrPortalLight("PxrPortalLight");
     static const RtUString us_shadowSubset("shadowSubset");
     static const riley::MaterialId invalidMaterial;
 
@@ -703,7 +704,8 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
         GfVec3d geomScale(1.0f);
 
         // Type-specific parameters
-        if (_lightShaderType == us_PxrRectLight) {
+        if (_lightShaderType == us_PxrRectLight ||
+            _lightShaderType == us_PxrPortalLight) {
             // width
             VtValue width = sceneDelegate->GetLightParamValue(id,
                 HdLightTokens->width);
@@ -771,6 +773,12 @@ HdPrmanLight::Sync(HdSceneDelegate *sceneDelegate,
                                 -1.0, 0.0, 0.0, 0.0, 
                                 0.0, 1.0, 0.0, 0.0, 
                                 0.0, 0.0, 0.0, 1.0);
+            // Apply domeOffset if present
+            VtValue domeOffset = sceneDelegate->GetLightParamValue(id,
+                HdLightTokens->domeOffset);
+            if (domeOffset.IsHolding<GfMatrix4d>()) {
+                orientMat = orientMat * domeOffset.UncheckedGet<GfMatrix4d>();
+            }
         } else if (_lightShaderType != us_PxrMeshLight) {
             // Transform lights to match correct orientation
             // Scale -1 Z, Rotate 180 Z

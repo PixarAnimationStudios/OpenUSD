@@ -48,6 +48,11 @@ void wrapRegistry()
         .def("GetBaseKind", &This::GetBaseKind)
         .staticmethod("GetBaseKind")
         .def("IsA", &This::IsA)
+        .def("IsModel", &This::IsModel)
+        .def("IsGroup", &This::IsGroup)
+        .def("IsAssembly", &This::IsAssembly)
+        .def("IsComponent", &This::IsComponent)
+        .def("IsSubComponent", &This::IsSubComponent)
         .staticmethod("IsA")
         ;
 }

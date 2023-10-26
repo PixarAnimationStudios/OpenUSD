@@ -97,6 +97,21 @@ public:
     /// Return an unordered vector of all kinds known to the registry.
     KIND_API static std::vector<TfToken>  GetAllKinds();
 
+    /// Returns true if \p kind IsA model kind
+    KIND_API static bool IsModel(const TfToken& kind);
+
+    /// Returns true if \p kind IsA group kind
+    KIND_API static bool IsGroup(const TfToken& kind);
+
+    /// Return true if \p kind IsA assembly kind
+    KIND_API static bool IsAssembly(const TfToken& kind);
+
+    /// Returns true if \p kind IsA component kind
+    KIND_API static bool IsComponent(const TfToken& kind);
+
+    /// Returns true if \p kind IsA subcomponent kind
+    KIND_API static bool IsSubComponent(const TfToken& kind);
+
 private:
     friend class TfSingleton<KindRegistry>;
 

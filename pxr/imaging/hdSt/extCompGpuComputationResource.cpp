@@ -23,6 +23,7 @@
 //
 #include "pxr/imaging/hdSt/bufferArrayRange.h"
 #include "pxr/imaging/hdSt/codeGen.h"
+#include "pxr/imaging/hdSt/debugCodes.h"
 #include "pxr/imaging/hdSt/extCompGpuComputationResource.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
 #include "pxr/imaging/hd/tokens.h"
@@ -111,6 +112,13 @@ HdStExtCompGpuComputationResource::_Resolve()
                                 _registry->RegisterGLSLProgram(registryID);
 
             if (programInstance.IsFirstInstance()) {
+                TRACE_SCOPE("ExtComp Link");
+
+                TF_DEBUG(HDST_LOG_COMPUTE_SHADER_PROGRAM_MISSES).Msg(
+                    "(MISS) First ext comp program instance for %s "
+                    "(hash = %zu)\n",
+                    _kernel->GetExtComputationId().GetText(), registryID);
+
                 HdStGLSLProgramSharedPtr glslProgram =
                     codeGen.CompileComputeProgram(_registry.get());
                 if (!TF_VERIFY(glslProgram)) {
@@ -131,6 +139,11 @@ HdStExtCompGpuComputationResource::_Resolve()
                 TF_DEBUG(HD_EXT_COMPUTATION_UPDATED).Msg(
                     "Compiled and linked compute program for computation %s\n ",
                     _kernel->GetExtComputationId().GetText());
+            } else {
+                TF_DEBUG(HDST_LOG_COMPUTE_SHADER_PROGRAM_HITS).Msg(
+                    "(HIT) Found ext comp program instance for %s "
+                    "(hash = %zu)\n",
+                    _kernel->GetExtComputationId().GetText(), registryID);
             }
 
             _computeProgram = programInstance.GetValue();

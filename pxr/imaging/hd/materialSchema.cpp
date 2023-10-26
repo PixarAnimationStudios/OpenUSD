@@ -64,9 +64,9 @@ HdMaterialSchema::GetMaterialNetwork(TfToken const &context)
 /*static*/
 HdContainerDataSourceHandle
 HdMaterialSchema::BuildRetained(
-    size_t count,
-    TfToken *names,
-    HdDataSourceBaseHandle *values)
+    const size_t count,
+    const TfToken * const names,
+    const HdDataSourceBaseHandle * const values)
 {
     return HdRetainedContainerDataSource::New(count, names, values);
 }
@@ -88,7 +88,8 @@ const TfToken &
 HdMaterialSchema::GetSchemaToken()
 {
     return HdMaterialSchemaTokens->material;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdMaterialSchema::GetDefaultLocator()

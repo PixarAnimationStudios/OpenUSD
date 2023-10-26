@@ -65,7 +65,7 @@ following file types:
  +=============+================================+
  | USD         | **usda**, **usdc**, **usd**    |
  +-------------+--------------------------------+
- | Image       | **png**, **jpeg**              |
+ | Image       | **png**, **jpeg**, **exr**     |
  +-------------+--------------------------------+
  | Audio       | **M4A**, **MP3**, **WAV**      |
  +-------------+--------------------------------+
@@ -210,8 +210,10 @@ currently. Allowable file types are currently:
       only a single usdc file, but this restriction will be lifted in future 
       OS updates)  
 
-    * **png** and **jpeg** files (any of the multiple common extensions for 
-      jpeg) for images/textures  
+    * **png**, **jpeg** (any of the multiple common extensions for 
+      jpeg), and **OpenEXR** files for images/textures. See 
+      :ref:`Working With Image File Formats<image_file_formats>` for more 
+      details on supported image file formats.
 
     * **M4A, MP3, WAV** files for embedded audio (given in order of preferred 
       format)

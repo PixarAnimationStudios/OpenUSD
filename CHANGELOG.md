@@ -1,5 +1,544 @@
 # Change Log
 
+## [23.11] - 2023-10-26
+
+### Build
+
+- Updated C++ standard version to C++17 per VFX Reference Platform CY2022.
+
+- Various fixes and changes to build_usd.py:
+  - Updated dependency versions to adhere to VFX Reference Platform CY2022.
+  - Fixed a bug where boost would not be rebuilt if it failed to build on an 
+    earlier run.
+  - Updated zlib version used by build_usd.py to 1.2.13 
+    (PR: [#2485](https://github.com/PixarAnimationStudios/OpenUSD/pull/2485))
+
+- Fixed a bug on Windows where loading Python modules would fail if the PATH 
+  environment variable contained a relative path. 
+  (PR: [#2409](https://github.com/PixarAnimationStudios/OpenUSD/pull/2409))
+
+- Numerous changes to remove uses of boost throughout the source tree.
+  (Issue: [#2202](https://github.com/PixarAnimationStudios/OpenUSD/issues/2202),
+   [#2211](https://github.com/PixarAnimationStudios/OpenUSD/issues/2211),
+   [#2226](https://github.com/PixarAnimationStudios/OpenUSD/issues/2226),
+   [#2228](https://github.com/PixarAnimationStudios/OpenUSD/issues/2228),
+   [#2247](https://github.com/PixarAnimationStudios/OpenUSD/issues/2247),
+   [#2250](https://github.com/PixarAnimationStudios/OpenUSD/issues/2250),
+   [#2296](https://github.com/PixarAnimationStudios/OpenUSD/issues/2296),
+   [#2305](https://github.com/PixarAnimationStudios/OpenUSD/issues/2305),
+   [#2311](https://github.com/PixarAnimationStudios/OpenUSD/issues/2311),
+   [#2634](https://github.com/PixarAnimationStudios/OpenUSD/issues/2634),
+   PR: [#2212](https://github.com/PixarAnimationStudios/OpenUSD/pull/2212),
+   [#2227](https://github.com/PixarAnimationStudios/OpenUSD/pull/2227),
+   [#2232](https://github.com/PixarAnimationStudios/OpenUSD/pull/2232),
+   [#2233](https://github.com/PixarAnimationStudios/OpenUSD/pull/2233),
+   [#2234](https://github.com/PixarAnimationStudios/OpenUSD/pull/2234),
+   [#2235](https://github.com/PixarAnimationStudios/OpenUSD/pull/2235),
+   [#2269](https://github.com/PixarAnimationStudios/OpenUSD/pull/2269),
+   [#2280](https://github.com/PixarAnimationStudios/OpenUSD/pull/2280),
+   [#2297](https://github.com/PixarAnimationStudios/OpenUSD/pull/2297),
+   [#2308](https://github.com/PixarAnimationStudios/OpenUSD/pull/2308),
+   [#2312](https://github.com/PixarAnimationStudios/OpenUSD/pull/2312),
+   [#2328](https://github.com/PixarAnimationStudios/OpenUSD/pull/2328),
+   [#2333](https://github.com/PixarAnimationStudios/OpenUSD/pull/2333),
+   [#2349](https://github.com/PixarAnimationStudios/OpenUSD/pull/2349),
+   [#2389](https://github.com/PixarAnimationStudios/OpenUSD/pull/2389),
+   [#2390](https://github.com/PixarAnimationStudios/OpenUSD/pull/2390),
+   [#2496](https://github.com/PixarAnimationStudios/OpenUSD/pull/2496),
+   [#2503](https://github.com/PixarAnimationStudios/OpenUSD/pull/2503),
+   [#2505](https://github.com/PixarAnimationStudios/OpenUSD/pull/2505),
+   [#2506](https://github.com/PixarAnimationStudios/OpenUSD/pull/2506),
+   [#2509](https://github.com/PixarAnimationStudios/OpenUSD/pull/2509),
+   [#2510](https://github.com/PixarAnimationStudios/OpenUSD/pull/2510),
+   [#2522](https://github.com/PixarAnimationStudios/OpenUSD/pull/2522),
+   [#2524](https://github.com/PixarAnimationStudios/OpenUSD/pull/2524),
+   [#2527](https://github.com/PixarAnimationStudios/OpenUSD/pull/2527),
+   [#2528](https://github.com/PixarAnimationStudios/OpenUSD/pull/2528),
+   [#2530](https://github.com/PixarAnimationStudios/OpenUSD/pull/2530),
+   [#2532](https://github.com/PixarAnimationStudios/OpenUSD/pull/2532),
+   [#2532](https://github.com/PixarAnimationStudios/OpenUSD/pull/2532),
+   [#2533](https://github.com/PixarAnimationStudios/OpenUSD/pull/2533),
+   [#2534](https://github.com/PixarAnimationStudios/OpenUSD/pull/2534),
+   [#2535](https://github.com/PixarAnimationStudios/OpenUSD/pull/2535),
+   [#2540](https://github.com/PixarAnimationStudios/OpenUSD/pull/2540),
+   [#2541](https://github.com/PixarAnimationStudios/OpenUSD/pull/2541),
+   [#2542](https://github.com/PixarAnimationStudios/OpenUSD/pull/2542),
+   [#2543](https://github.com/PixarAnimationStudios/OpenUSD/pull/2543),
+   [#2548](https://github.com/PixarAnimationStudios/OpenUSD/pull/2548),
+   [#2549](https://github.com/PixarAnimationStudios/OpenUSD/pull/2549),
+   [#2567](https://github.com/PixarAnimationStudios/OpenUSD/pull/2567),
+   [#2584](https://github.com/PixarAnimationStudios/OpenUSD/pull/2584),
+   [#2585](https://github.com/PixarAnimationStudios/OpenUSD/pull/2585),
+   [#2588](https://github.com/PixarAnimationStudios/OpenUSD/pull/2588),
+   [#2589](https://github.com/PixarAnimationStudios/OpenUSD/pull/2589),
+   [#2590](https://github.com/PixarAnimationStudios/OpenUSD/pull/2590),
+   [#2592](https://github.com/PixarAnimationStudios/OpenUSD/pull/2592),
+   [#2645](https://github.com/PixarAnimationStudios/OpenUSD/pull/2645),
+   [#2652](https://github.com/PixarAnimationStudios/OpenUSD/pull/2652),
+   [#2655](https://github.com/PixarAnimationStudios/OpenUSD/pull/2655),
+   [#2656](https://github.com/PixarAnimationStudios/OpenUSD/pull/2656),
+   [#2657](https://github.com/PixarAnimationStudios/OpenUSD/pull/2657),
+   [#2667](https://github.com/PixarAnimationStudios/OpenUSD/pull/2667),
+   [#2672](https://github.com/PixarAnimationStudios/OpenUSD/pull/2672),
+   [#2685](https://github.com/PixarAnimationStudios/OpenUSD/pull/2685),
+   [#2699](https://github.com/PixarAnimationStudios/OpenUSD/pull/2699),
+   [#2700](https://github.com/PixarAnimationStudios/OpenUSD/pull/2700),
+   [#2703](https://github.com/PixarAnimationStudios/OpenUSD/pull/2703),
+   [#2704](https://github.com/PixarAnimationStudios/OpenUSD/pull/2704),
+   [#2705](https://github.com/PixarAnimationStudios/OpenUSD/pull/2705),
+   [#2706](https://github.com/PixarAnimationStudios/OpenUSD/pull/2706),
+   [#2708](https://github.com/PixarAnimationStudios/OpenUSD/pull/2708),
+   [#2710](https://github.com/PixarAnimationStudios/OpenUSD/pull/2710),
+   [#2713](https://github.com/PixarAnimationStudios/OpenUSD/pull/2713),
+   [#2716](https://github.com/PixarAnimationStudios/OpenUSD/pull/2716))
+
+- Fixed various build errors and warnings.
+  (Issue: [#2183](https://github.com/PixarAnimationStudios/OpenUSD/issues/2183),
+   PR: [#2321](https://github.com/PixarAnimationStudios/OpenUSD/pull/2321), 
+   [#2322](https://github.com/PixarAnimationStudios/OpenUSD/pull/2322), 
+   [#2350](https://github.com/PixarAnimationStudios/OpenUSD/pull/2350), 
+   [#2611](https://github.com/PixarAnimationStudios/OpenUSD/pull/2611),
+   [#2643](https://github.com/PixarAnimationStudios/OpenUSD/pull/2643), 
+   [#2646](https://github.com/PixarAnimationStudios/OpenUSD/pull/2646),
+   
+- Fixed build errors when the path to the source tree or the install location 
+  contains whitespace.
+
+- Improved cmake performance when performing a monolithic build.
+
+### USD
+
+- Fixed VtArray declarations of extern template instantiations. 
+  (PR: [#2415](https://github.com/PixarAnimationStudios/OpenUSD/pull/2415))
+
+- Made change to use correct integer compression working space size when 
+  decompressing. 
+  (PR: [#2435](https://github.com/PixarAnimationStudios/OpenUSD/pull/2435))
+
+- Fixed a bug where crash could occur on Python shutdown.
+
+- The initial deployment of pattern-based collections is now feature complete. 
+  This includes the following feature work on pattern-based collections:
+  SdfPathExpression attribute values, composition support, a new 
+  membershipExpression attribute on UsdCollectionAPI, and 
+  UsdCollectionMembershipQuery support.
+
+- Added VtValue::(Unchecked)Mutate<T>(), which lets callers mutate the held 
+  object.
+
+- Added GetNodeSubtreeRange function to PcpPrimIndex that returns an iterator 
+  range for traversing all nodes in prim index subtree starting at a particular 
+  node.
+
+- Added methods to UsdGeomXformable to retrieve individual UsdGeomXformOps.
+
+- Cleaned up wrapSchemaClass.cpp by specifying args and checking names for 
+  multipleApply classes. Regenerating schemas under this version will update 
+  Python wrappings for multiple-apply API schemas to add named arguments to  
+  constructors.
+
+- Removed the deprecated UsdSkelPackedJointAnimation class.
+
+- Added UsdLuxDomeLight_1 schema, a new version of the UsdLuxDomeLight schema 
+  that introduces a "poleAxis" property that affects the dome's final rendered 
+  orientation.
+
+- Fixed a dangling pointer bug in TfType that could lead to crashes on program 
+  exit.  
+
+- URI schemes used for Ar URI resolvers are restricted to ASCII alphanumeric 
+  characters plus `+`, `.`, and `-` to conform to the URI/IRI specification in 
+  RFC2396. By default, URI resolvers associated with non-compliant schemes are 
+  ignored, but may be enabled by setting the environment variable 
+  `PXR_AR_DISABLE_STRICT_SCHEME_VALIDATION` to `1`.
+  (PR: [#2453](https://github.com/PixarAnimationStudios/OpenUSD/pull/2453), 
+   [#2467](https://github.com/PixarAnimationStudios/OpenUSD/pull/2467))  
+
+- When flattening a stage, asset paths with unresolvable URI schemes will be 
+  treated as absolute paths.
+  (Issue: [#2480](https://github.com/PixarAnimationStudios/OpenUSD/issues/2480))
+
+- Allow loading plugins from file paths that contain Unicode characters. 
+  (PR: [#1987](https://github.com/PixarAnimationStudios/OpenUSD/pull/1987))
+
+- Updated the UsdLuxPortalLight schema to add "width" and "height" and remove 
+  "extent".
+
+- Extended stage variable expression language:
+  - Added support for integer, boolean and list types, and a 'None' sentinel 
+    value.
+  - Added support for functions like "if" and "contains". 
+    See [documentation](https://openusd.org/release/user_guides/variable_expressions.html) 
+    for complete list.
+
+- Added "resolved asset path resyncs" to UsdNotice::ObjectsChanged. This new 
+  category of changes indicates that asset paths in a subtree have been 
+  invalidated and may now resolve to a different location, even though the 
+  authored asset paths have not changed. This may occur due to asset resolver 
+  changes, or expression variable changes.
+
+  Client code that cares about changes to resolved asset paths must be updated 
+  to accommodate this new category of changes. The simplest way to do this is 
+  to treat all resolved asset path resyncs as full object resyncs. This is what 
+  UsdStage had done previously.
+
+- Fixed a bug where calls to ArResolver::RefreshContext that affected the 
+  resolution of sublayer asset paths would not cause affected prims to be 
+  resynced.
+
+- Fixed a bug where UsdNotice::ObjectsChanged::ChangedInfoOnly would incorrectly 
+  indicate that descendants of prims with info changes also had info changes.
+
+- Fixed a bug where UsdStage would not send notices for changes to instancing 
+  prototype in response to instances being loaded or unloaded.
+
+- Fixed a bug that caused crashes when calling UsdObject::GetDescription on 
+  expired UsdPrims.
+
+- Added GetKind and SetKind APIs to UsdPrim.
+
+- Added IsComponent and IsSubComponent APIs to UsdPrim. Note that subcomponent 
+  query is not cached because we only cache model-hierarchy-related information, 
+  and therefore this query will be considerably slower than other kind-based 
+  queries.
+
+- Added APIs to query model, group, assembly, component, and subcomponent to 
+  libKind.
+
+- Fixed TfPathUtils test by using TfNormPath instead of TfRealPath on Windows. 
+  (PR: [#2476](https://github.com/PixarAnimationStudios/OpenUSD/pull/2476))
+
+- Versioned up and introduced UsdGeomCapsule_1 and UsdGeomCylinder_1 schemas to
+  provide top and bottom radii. 
+  (PR: [#2596](https://github.com/PixarAnimationStudios/OpenUSD/pull/2596))
+
+- Fixed SupportedFile error handling in complianceChecker.
+  (PR: [#2429](https://github.com/PixarAnimationStudios/OpenUSD/pull/2429))
+
+### UsdImaging
+
+- A previous release moved HdModelSchema out of UsdImagingModelSchema. This 
+  change has been reverted.
+
+- Fixed missing refresh when editing nodegraph attributes 
+  (PR: [#2168](https://github.com/PixarAnimationStudios/OpenUSD/pull/2168))
+
+- Introduced UsdImagingCreateSceneIndices. Clients are encouraged to use this 
+  new API which abstracts creating the UsdImagingStageSceneIndex and the other 
+  scene indices necessary to resolve various USD behaviors such as instancing. 
+  Using the new API will hopefully isolate clients from future changes to the 
+  topology of filtering scene indices that are necessary to process a USD stage.
+
+- Made various fixes to the scene indices resolving USD native instancing and 
+  draw modes. In particular, draw modes authored on instances are now inherited 
+  and handled correctly and some subtle bugs with xforms authored on the 
+  prototype of a point instancer are fixed.
+
+- Moved code to handle UsdGeomModelAPI (when using scene indices) to its own 
+  API adapter.
+
+- Renamed usdRiImaging to usdRiPxrImaging since the corresponding schemata are 
+  in usdRiPxr (shipping with the Hydra RenderMan plugin).
+
+- Updated fallback purpose to "guide" so a bone mesh will not always 
+  show up when rendering skinned geometry.
+
+- Fixed UsdImaging 2.0 handling of requests to resync "/".  The incorrect 
+  behavior was causing issues when changing the layer stack of a UsdStage, 
+  but behavior should now match UsdImagingDelegate.
+
+- Changed the UsdPreviewSurface spec's UDIM support to advertise handling of 
+  UDIM tiles from [1001,1100], instead of ending at 1099. This allows artists to 
+  use up to a 10x10 grid.  Changed usdImaging/hdStorm UDIM handling to match.
+
+- Fixed an issue where the UsdImaging 2.0 configuration of UsdImagingGLEngine 
+  would lose root transform and visibility overrides on renderer change.
+
+- Bounding boxes representing prims with unloaded payloads are now instanced 
+  correctly. 
+  (PR: [#2408](https://github.com/PixarAnimationStudios/OpenUSD/pull/2408))
+
+- Primvars with type 'asset' are now supported on native instances.
+  (PR: [#2521](https://github.com/PixarAnimationStudios/OpenUSD/pull/2521))
+
+- HdxSelectionTask and HdxColorizeSelectionTask no longer have the 
+  "enableSelection" parameter. This has been replaced with 
+  "enableSelectionHightlight" and "enableLocateHighlight" to allow separate 
+  control of selection and locate (rollover) highlighting with these tasks.
+
+- Added "includeSchemaFamily" option to the usdImaging pluginInfo.json, to allow 
+  one adapter to be used to render multiple different schema versions.
+  (PR: [#2596](https://github.com/PixarAnimationStudios/OpenUSD/pull/2596))
+
+### Storm
+
+- Added error handling for calls to OCIO in HdxColorCorrectionTask. 
+
+- Removed unused SetLightingStateFromOpenGL and SetLightingState methods from 
+  HdStSimpleLightingShader.
+
+- Changed rebuilding of HdxSimpleLightTask buffer sources to happen only when 
+  needed.
+
+- Added scalar accessor for primvar redirects in HdSt_CodeGen even if primvar 
+  shares name with shader parameter.
+
+- Added argument to specify buffer usage when creating standalone buffer 
+  resources, allowing for correct specification of the drawIndirectResult buffer 
+  as a storage buffer. 
+
+- Removed codegen of element primvar data for GPU frustum culling pipeline. 
+
+- Fixed pipeline draw batch GPU frustum culling counting mechanism to wait for 
+  compute work rather than blit work.
+
+- Removed colorResolveAttachmentDescs and depthResolveAttachmentDesc fields from 
+  HgiGraphicsPipelineDesc and replaced them with boolean "resolveAttachments".
+
+- Added relevant geometric shader values to graphics pipeline hash computation. 
+
+- Added OpenSubdiv shader source to geometry shader when using Hgi resource 
+  generation.
+
+- Added explicit default stencil value in 
+  HdStRenderDelegate::GetDefaultAovDescriptor, now used in Hgi backends.
+
+- Only fill color or depthStencil value of VkClearValue union in 
+  HgiVulkanGraphicsPipeline.
+
+- Various small cleanups to Hgi resource destruction.
+
+- HdSt_ResourceLayout has been moved and renamed to HioGlslfxResourceLayout.
+
+- HdStRenderPassState::ComputeImageToHorizontallyNormalizedFilmback is now 
+  accessible via the public API.
+
+- Improved shader program cache hit rate by reducing render pass shader variants 
+  stemming from different numbers of clip planes.
+
+### Hydra
+
+- Added modelPath, kind, and asset{Identifier,Name,Version} to the Hydra 
+  modelSchema, corresponding to UsdModelAPI. 
+
+- Hydra's material network editor interface now provides GetModelAssetName().  
+  For the data source material implementation, this is backed by the Hydra 
+  modelSchema
+
+- Added a Tf scope description to inform the user while the app is waiting for 
+  a renderer to Stop()
+
+- Added HdxEffectsShader, a new base class for HdxFullscreenShader that provides
+  functionality for image shaders creating and managing an HgiGraphicsPipeline
+  instance.
+
+- HdxFullscreenShader's BindBuffers and BindTextures function signatures have 
+  changed, and the method used for determining binding points for buffers and 
+  textures has changed as well.
+
+- HdImageShader is a new prim type that has been added to represent image 
+  shaders in Hydra. 
+
+- The RenderColorWithOccludedSelection render pass now takes non-opaque 
+  colors into account.
+
+- HdxAovInputTask now cleans up the intermediate depth texture it may have 
+  created when it is destroyed.
+
+- Fixed a bug that caused HdxColorCorrectionTask to not work correctly when 
+  using OpenColorIO 2.x with OpenGL on Linux.  
+
+- Fixed race condition in HdGpGenerativeProceduralResolvingSceneIndex.
+
+- Introduced HdMakeStaticCopy used to make a copy of a data source.
+
+- Added built-in support for .exr (OpenEXR) image files in Hio. You no longer 
+  need to compile additional plugins to get OpenEXR support. See 
+  [Working with Image File Formats: OpenEXR](https://openusd.org/release/user_guides/render_user_guide.html#openexr) for more details.
+
+- Fixed scene transport of portal lights.
+
+- Added HdRenderDelegate API SetTerminalSceneIndex and Update to allow a render 
+  delegate to observe the terminal scene index and process change notices 
+  directly, aiding the transition to the Hydra 2.0 OM.
+
+- Added "shutterInterval" as a computed field on the render settings schema. 
+  Extended the render settings filtering scene index to compute and invalidate 
+  it based on the targeted camera and motion blur opinions of the render 
+  products.
+
+- Updated Hydra 2.0 stage scene index to sparsely invalidate in response to 
+  resolved asset path resyncs.
+
+- Added doxygen documentation about the HioImage plugin interface to 
+  help integrators writing their own HioImage plugins for texture loading.
+
+- Fixed Hydra 2.0 handling of transform flattening for non-zero shutter offsets.
+
+- The internal synthesized primvars used by Hydra instancers to communicate 
+  instance transforms to render backends have been renamed. Custom backend 
+  authors should update to the new tokens. An environment variable 
+  (HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES) is provided for the next 2 releases
+  for those who need to continue using backends that have not yet been updated. 
+  Hydra backends for RenderMan, Storm, and Embree have been updated. See the
+  post titled "Hydra synthesized instancer primvars renamed in release 23.11" 
+  in the [Hydra channel in the AOUSD forums](https://forum.aousd.org/c/community/hydra/8) 
+  for more details.
+
+- HdMeshReprSpec adds the parameter 'forceOpaqueEdges' which, when true, signals 
+  that wireframe and hull opacity signals should be ignored.
+
+- Updated HdCyclinderSchema and HdCapsuleSchema in accordance with new 
+  Cylinder_1 and Capsule_1 schemas. Deprecated radius attribute and added 
+  radiusBottom and radiusTop attributes.
+
+### RenderMan Hydra Plugin
+
+- hdPrman for RenderMan 24 is deprecated. Support for hdPrman for RenderMan 24 
+  will be removed in a future release.
+
+- Added support for array-valued inputs on shader nodes.
+  (Issue: [#1710](https://github.com/PixarAnimationStudios/OpenUSD/issues/1710))
+
+- Changed UsdPrimvarReader_float3 OSL shader "fallback" param to be float array 
+  instead of color.
+  (Issue: [#1683](https://github.com/PixarAnimationStudios/OpenUSD/issues/1683))
+
+- Added support during Riley shading node creation for shader parameters holding 
+  a GfVec3f with type SdrPropertyTypes->Float, treating them as a float array.
+  (Issue: [#1683](https://github.com/PixarAnimationStudios/OpenUSD/issues/1683))
+
+- Fixed a bug in MatfiltConvertPreviewMaterial where it could potentially 
+  iterate nodes multiple times, due to HdMaterialNetworkInterface::GetNodeNames 
+  not removing duplicates. Duplicates happen when there are multiple outputs 
+  being used on the material, like surface and displacement for UsdPreviewSurface. 
+
+- We previously added sampleCount XPU rendering pixel information normalized in 
+  the renderer as opposed to normalized by display drivers. To enable backward 
+  compatibility, we've made a change that preserves the previous Rebind() API 
+  and just has a dead parameter, "weightsOffset". We rely on display drivers to 
+  ignore invalid offsets and only do sampleCount normalization when a valid 
+  sampleCount offset is provided.
+
+- Motion blur improvements for legacy motion blur support when scene index 
+  plug-ins aren't available:
+  - Added a fallback code path for velocity motion blur used when the velocity 
+    blur scene index plug-in is not available. 
+  - Added a fallback code path for querying externally computed points for blur 
+    when the extComputationPrimvarPruningSceneIndexPlugin is not available.
+
+- Motion blur improvements for the velocity blur scene index plug-in:
+  - Fixed issue where points were sampled on the frame (at time zero) for 
+    velocity computations, and other primvars were sampled at shutter open in 
+    hdPrman, so any time the shutter didn't open at time zero the blur could 
+    fail. Now, the velocity scene index plug-in deals with sampling all primvars 
+    at the sample time used for velocity blur, rather than just points.
+  - For deforming blur, we now sample non-blurrable primvars at the center of 
+    the shutter interval, which more closely mimics how they would look if they 
+    were blurred.
+
+- The MtlxStandardSurface shader had an incorrect default for fuzzGain (it 
+  should be 0, not 1). Changed the default in the OSL StandardSurfaceParameters 
+  adapter pattern that gets wired up to PxrSurface when MtlxStandardSurface is 
+  being translated.
+
+- Added code pathway to allow HdPrman_RenderPass to use the Render Settings prim 
+  for non-interactive rendering with a valid Render Settings prim. Note that a 
+  Render Settings prim is considered valid if there is at least one Render 
+  Product and a camera relationship.
+
+- Added support for portal lights, including a resolver for managing their dome 
+  light relationship.
+
+- Removed "prmanParams" Sprim in favor of "renderSettings".
+
+- Added various improvements to improve determinism of test runs and reduce run 
+  times.
+
+- Reworked initialization of Riley scene options by composing opinions from 
+  various sources and allowing it to be deferred until render settings prim sync 
+  time to correctly handle immutable scene options.
+
+- The testHdPrman test shim will now produce noisier, but faster and more stable 
+  renders by default.
+
+- In response to a recent change to RenderMan, HdPrman will now enable rendering 
+  of volume aggregates by default when there is no authored integrator in the 
+  scene.
+
+### usdview
+
+- Edited the "Select Camera" menu in usdview to provide a popup dialog box that 
+  displays all cameras if there are more than 15 cameras in the scene.
+
+- Fixed a bug that prevented auto-complete from working correctly in the Python 
+  interpreter when using PySide6.
+
+- When authoring drawMode on a prim, apply UsdGeomModelAPI to the respective 
+  prim. Note that the scene index implementation of UsdImaging ignores the 
+  drawMode on a prim unless the prim has UsdGeomModelAPI.
+
+### usdchecker
+
+- usdchecker now allows .exr (OpenEXR) images in USDZ.
+
+### usdrecord
+
+- Updated usdrecord to use the Render Settings prim to generate image(s) based 
+  on the connected Render Products. To use this the 
+  HD_PRMAN_RENDER_PASS_USE_RENDER_SETTINGS_PRIM environment variable needs to be 
+  set to true.
+
+### MaterialX
+
+- Added change to process authored color spaces by HdMtlx and Storm, making the 
+  default color space 'raw' instead of 'auto'
+  (Issue: [#1523](https://github.com/PixarAnimationStudios/OpenUSD/issues/1523), 
+   [#1878](https://github.com/PixarAnimationStudios/OpenUSD/issues/1878))
+
+- Updated MaterialX imaging tests. 
+
+- Added error handling for MaterialX to avoid crashes when the shader is unable 
+  to be created.
+
+### Documentation
+
+- Updated USD Products entry for NVIDIA Omniverse.
+  (PR: [#2546](https://github.com/PixarAnimationStudios/OpenUSD/pull/2546))
+
+- Added [Rendering with USD user guide](https://openusd.org/release/user_guides/render_user_guide.html). 
+  Use this guide to help build a robust USD pipeline and configure your assets 
+  for rendering.
+
+- Added details on OpenEXR support in USD to the 
+  [USDZ specification](https://openusd.org/release/spec_usdz.html) and the 
+  [Rendering with USD](https://openusd.org/release/user_guides/render_user_guide.html#openexr) 
+  docs.
+
+- Added [Variable Expression guide](https://openusd.org/release/user_guides/variable_expressions.html) 
+  for using the new Variable Expressions feature.
+
+- Various documentation updates:
+  - Added doxygen custom footer with copyright
+  - Added VFX2022 details to VERSIONS.md 
+  - Added link to USD Working Group 
+    [learning content wiki page](https://wiki.aswf.io/display/WGUSD/Learning+Content)
+
+- Various updates to python doc strings generation:
+  - Added docstrings for many additional python objects 
+    (PR: [#2526](https://github.com/PixarAnimationStudios/OpenUSD/pull/2526))
+  - Fixed script to remove `<USD module>_API` type name prefixes
+    (PR: [#2580](https://github.com/PixarAnimationStudios/OpenUSD/pull/2580))
+  - Fixed script to use "classmethod" instead of "static" 
+    (PR: [#2579](https://github.com/PixarAnimationStudios/OpenUSD/pull/2579))
+  - Fixed script to not word-wrap within code blocks
+    (PR: [#2576](https://github.com/PixarAnimationStudios/OpenUSD/pull/2576))
+  - Fixed python docs build to raise CMake error if converting python docstrings 
+    fails
+    (PR: [#2573](https://github.com/PixarAnimationStudios/OpenUSD/pull/2573))
+  - Fixed script to print stack trace on errors if debug mode on
+    (PR: [#2572](https://github.com/PixarAnimationStudios/OpenUSD/pull/2572))
+
 ## [23.08] - 2023-07-21
 
 We anticipate moving to the [VFX Reference Platform CY2022](https://vfxplatform.com/) 

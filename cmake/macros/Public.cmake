@@ -45,7 +45,7 @@ function(pxr_build_documentation)
     # Execute doxygen during the install step. All of the files we want
     # doxygen to process should already have been copied to the docs
     # directory during the build step
-    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile)")
+    install(CODE "execute_process(COMMAND ${DOXYGEN_EXECUTABLE} \"${PROJECT_BINARY_DIR}/Doxyfile\")")
 
     set(INST_DOCS_ROOT  "${CMAKE_INSTALL_PREFIX}/docs")
 
@@ -409,10 +409,14 @@ function (pxr_create_test_module MODULE_NAME)
         return()
     endif()
 
-    cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR" "" ${ARGN})
+    cmake_parse_arguments(tm "" "INSTALL_PREFIX;SOURCE_DIR;DEST_DIR" "" ${ARGN})
 
     if (NOT tm_SOURCE_DIR)
         set(tm_SOURCE_DIR testenv)
+    endif()
+
+    if (NOT tm_DEST_DIR)
+        set(tm_DEST_DIR ${MODULE_NAME})
     endif()
 
     # Look specifically for an __init__.py and a plugInfo.json prefixed by the
@@ -428,7 +432,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 __init__.py
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                tests/${tm_INSTALL_PREFIX}/lib/python/${tm_DEST_DIR}
         )
     endif()
     if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${plugInfoFile}")
@@ -438,7 +442,7 @@ function (pxr_create_test_module MODULE_NAME)
             RENAME 
                 plugInfo.json
             DESTINATION 
-                tests/${tm_INSTALL_PREFIX}/lib/python/${MODULE_NAME}
+                tests/${tm_INSTALL_PREFIX}/lib/python/${tm_DEST_DIR}
         )
     endif()
 endfunction() # pxr_create_test_module
@@ -1270,12 +1274,18 @@ function(pxr_build_python_documentation)
     string(REPLACE ";" "," pxrPythonModulesStr "${pxrPythonModules}")
     # Run convertDoxygen on the module list, setting PYTHONPATH 
     # to the install path for the USD Python modules
-    install(CODE "execute_process(\
-        WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
-        COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
-        --package pxr --module ${pxrPythonModulesStr} \
-        --inputIndex ${BUILT_XML_DOCS}/index.xml \
-        --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
-        --output ${INSTALL_PYTHON_PXR_ROOT})")
+    install(CODE "\
+        execute_process(\
+            WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/cmake \
+            RESULT_VARIABLE convert_doxygen_return_code
+            COMMAND ${PYTHON_EXECUTABLE} ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} \
+                --package pxr --module ${pxrPythonModulesStr} \
+                --inputIndex ${BUILT_XML_DOCS}/index.xml \
+                --pythonPath ${CMAKE_INSTALL_PREFIX}/lib/python \
+                --output ${INSTALL_PYTHON_PXR_ROOT})
+        if (NOT \${convert_doxygen_return_code} EQUAL \"0\")
+            message( FATAL_ERROR \"Error generating python docstrings - ${CONVERT_DOXYGEN_TO_PYTHON_DOCS_SCRIPT} return code: \${convert_doxygen_return_code} \")
+        endif()
+    ")
 
 endfunction() # pxr_build_python_documentation

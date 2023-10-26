@@ -214,12 +214,20 @@ _GenMaterialXShaderCode(
     TF_DEBUG(HDPRMAN_MATERIALS)
         .Msg("Generate a MaterialX Osl shader for '%s' node.\n", 
              mxNodeName.c_str());
-    mx::ShaderPtr mxShader = mx::createShader(shaderName, mxContext, mxNode);
-    if (mxShader) {
-        return mxShader->getSourceCode();
+    mx::ShaderPtr mxShader;
+    try {
+        mxShader = mx::createShader(shaderName, mxContext, mxNode);
+    } catch (mx::Exception& exception) {
+        TF_WARN("Unable to create Osl Shader for node '%s'.\nMxException: %s", 
+                mxNodeName.c_str(), exception.what());
+        return mx::EMPTY_STRING;
     }
-    TF_WARN("Unable to create Shader for node '%s'.", mxNodeName.c_str());
-    return mx::EMPTY_STRING;
+    if (!mxShader) {
+        TF_WARN("Unable to create Osl Shader for node '%s'.", 
+                mxNodeName.c_str());
+        return mx::EMPTY_STRING;
+    }
+    return mxShader->getSourceCode();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

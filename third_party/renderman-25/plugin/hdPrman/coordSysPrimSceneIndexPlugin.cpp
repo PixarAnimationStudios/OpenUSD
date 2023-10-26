@@ -26,6 +26,8 @@
 #include "pxr/imaging/hdsi/coordSysPrimSceneIndex.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 
+#include "pxr/base/tf/envSetting.h"
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -61,7 +63,6 @@ HdPrman_CoordSysPrimSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-//    return inputScene;
     return HdsiCoordSysPrimSceneIndex::New(inputScene);
 }
 

@@ -468,12 +468,15 @@ HdsiCoordSysPrimSceneIndex::_PrimsDirtied(
     SdfPathSet removedCoordSysPrims;
 
     for (const HdSceneIndexObserver::DirtiedPrimEntry &entry : entries) {
-        _RemoveBindingsForPrim(
-            entry.primPath,
-            isObserved ? &removedCoordSysPrims : nullptr);
-        _AddBindingsForPrim(
-            entry.primPath,
-            isObserved ? &addedCoordSysPrims : nullptr);
+        if (entry.dirtyLocators.Intersects(
+                HdCoordSysBindingSchema::GetDefaultLocator())) {
+            _RemoveBindingsForPrim(
+                entry.primPath,
+                isObserved ? &removedCoordSysPrims : nullptr);
+            _AddBindingsForPrim(
+                entry.primPath,
+                isObserved ? &addedCoordSysPrims : nullptr);
+        }
     }
     
     if (!isObserved) {

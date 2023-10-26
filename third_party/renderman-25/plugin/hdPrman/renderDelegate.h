@@ -26,6 +26,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/renderDelegate.h"
+#include "pxr/imaging/hd/version.h"
 #include "hdPrman/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -46,7 +47,6 @@ PXR_NAMESPACE_OPEN_SCOPE
     ((disableMotionBlur,              "disableMotionBlur"))            \
     ((shutterOpen,                    "shutter:open"))                 \
     ((shutterClose,                   "shutter:close"))                \
-    ((experimentalSettingsCameraPath, "experimental:settingsCameraPath"))\
     ((experimentalRenderSpec,         "experimental:renderSpec"))      \
     ((delegateRenderProducts,         "delegateRenderProducts"))       \
     ((batchCommandLine,               "batchCommandLine"))             \
@@ -176,6 +176,9 @@ public:
     TfTokenVector GetRenderSettingsNamespaces() const override;
 #endif
 
+    HDPRMAN_API 
+    void SetRenderSetting(TfToken const &key, VtValue const &value) override;
+
     /// NOTE: RenderMan has no notion of pausing the render threads.
     ///       We don't return true, because otherwise start/stop causes
     ///       the renderer to reset to increment zero, which gives a poor
@@ -198,6 +201,23 @@ public:
     /// Restart background rendering threads.
     HDPRMAN_API 
     bool Restart() override;
+
+#if HD_API_VERSION >= 55
+
+    ////////////////////////////////////////////////////////////////////////////
+    ///
+    /// Hydra 2.0 API
+    ///
+    ////////////////////////////////////////////////////////////////////////////
+
+    HDPRMAN_API
+    void SetTerminalSceneIndex(
+        const HdSceneIndexBaseRefPtr &inputSceneIndex) override;
+
+    HDPRMAN_API
+    void Update() override;
+
+#endif
 
     // ------------------------------------------------------------------------
     // Public (non-virtual) API
@@ -225,6 +245,12 @@ protected:
     static const TfTokenVector SUPPORTED_BPRIM_TYPES;
 
     std::shared_ptr<class HdPrman_RenderParam> _renderParam;
+
+#if HD_API_VERSION >= 55
+    std::unique_ptr<class HdPrman_TerminalSceneIndexObserver>
+        _terminalObserver;
+#endif
+
     HdResourceRegistrySharedPtr _resourceRegistry;
     HdRenderPassSharedPtr _renderPass;
     HdRenderSettingDescriptorList _settingDescriptors;

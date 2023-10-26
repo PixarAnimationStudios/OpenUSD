@@ -174,7 +174,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         expandPnPCollObjects = Usd.CollectionAPI.ComputeIncludedObjects(
                 expandPnPCollMquery, stage)
 
-        self.assertEqual(len(expandPnPCollObjects), 20)
+        self.assertEqual(len(expandPnPCollObjects), 21)
         for obj in expandPnPCollObjects:
             self.assertTrue(expandPnPCollMquery.IsPathIncluded(obj.GetPath()))
 
@@ -199,7 +199,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         for obj in combinedCollIncObjects:
             self.assertTrue(combinedMquery.IsPathIncluded(obj.GetPath()))
 
-        self.assertEqual(len(combinedCollIncObjects), 17)
+        self.assertEqual(len(combinedCollIncObjects), 18)
 
         # now add the collection "expandPrimsColl", which includes "Geom" and 
         # exludes "Shapes", but is weaker than the "expandPrimsAndProperties" 
@@ -344,7 +344,7 @@ class TestUsdCollectionAPI(unittest.TestCase):
         allGeomPropertiesMquery = allGeomProperties.ComputeMembershipQuery()
         self.assertEqual(allGeomPropertiesMquery.GetIncludedCollections(), [])
         self.assertEqual(len(Usd.CollectionAPI.ComputeIncludedObjects(
-                allGeomPropertiesMquery, stage)), 31)
+                allGeomPropertiesMquery, stage)), 33)
 
         hasRels = Usd.CollectionAPI(testPrim, "hasRelationships")
         (valid, reason) = hasRels.Validate()
@@ -641,26 +641,31 @@ class TestUsdCollectionAPI(unittest.TestCase):
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__:membershipExpression',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__:membershipExpression',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, ""),
                          ['collection:__INSTANCE_NAME__:expansionRule', 
                           'collection:__INSTANCE_NAME__:includeRoot',
+                          'collection:__INSTANCE_NAME__:membershipExpression',
                           'collection:__INSTANCE_NAME__'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(False, "foo"),
                          ['collection:foo:expansionRule', 
                           'collection:foo:includeRoot',
+                          'collection:foo:membershipExpression',
                           'collection:foo'])
 
         self.assertEqual(Usd.CollectionAPI.GetSchemaAttributeNames(True, "bar"),
                          ['collection:bar:expansionRule', 
                           'collection:bar:includeRoot',
+                          'collection:bar:membershipExpression',
                           'collection:bar'])
 
     def test_RelativePathIsPathIncluded(self):

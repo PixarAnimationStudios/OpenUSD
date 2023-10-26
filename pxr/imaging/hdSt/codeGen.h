@@ -28,8 +28,8 @@
 #include "pxr/imaging/hdSt/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/imaging/hdSt/resourceBinder.h"
-#include "pxr/imaging/hdSt/resourceLayout.h"
 #include "pxr/imaging/hdSt/glslProgram.h"
+#include "pxr/imaging/hio/glslfxResourceLayout.h"
 
 #include <map>
 #include <vector>
@@ -175,7 +175,7 @@ private:
     std::stringstream _osd;
 
     // resource buckets
-    using ElementVector = HdSt_ResourceLayout::ElementVector;
+    using ElementVector = HioGlslfxResourceLayout::ElementVector;
     ElementVector _resVS;
     ElementVector _resTCS;
     ElementVector _resTES;
@@ -191,7 +191,7 @@ private:
     ElementVector _resAttrib;
     ElementVector _resMaterial;
 
-    using TextureElementVector = HdSt_ResourceLayout::TextureElementVector;
+    using TextureElementVector = HioGlslfxResourceLayout::TextureElementVector;
     TextureElementVector _resTextures;
 
     // generated sources (for diagnostics)
@@ -212,6 +212,8 @@ private:
     bool _hasCS;
     bool _hasPTCS;
     bool _hasPTVS;
+
+    bool _hasClipPlanes;
 };
 
 

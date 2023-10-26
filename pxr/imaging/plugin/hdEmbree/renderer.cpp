@@ -446,9 +446,10 @@ HdEmbreeRenderer::Render(HdRenderThread *renderThread)
 
         // Render by scheduling square tiles of the sample buffer in a parallel
         // for loop.
+        // Always pass the renderThread to _RenderTiles to allow the first frame
+        // to be interrupted.
         WorkParallelForN(numTilesX*numTilesY,
-            std::bind(&HdEmbreeRenderer::_RenderTiles, this,
-                (i == 0) ? nullptr : renderThread,
+            std::bind(&HdEmbreeRenderer::_RenderTiles, this, renderThread,
                 std::placeholders::_1, std::placeholders::_2));
 
         // After the first pass, mark the single-sampled attachments as

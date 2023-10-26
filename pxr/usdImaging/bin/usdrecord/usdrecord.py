@@ -148,6 +148,16 @@ def main():
             'Width of the output image. The height will be computed from this '
             'value and the camera\'s aspect ratio (default=%(default)s)'))
 
+    parser.add_argument('--renderSettingsPrimPath', '-rs', action='store', 
+        type=str, dest='rsPrimPath', 
+        help=(
+            'Specify the Render Settings Prim to use to render the given '
+            'usdFile. '
+            'Note that if a renderSettingsPrimPath has been specified in the '
+            'stage metadata, using this argument will override that opinion. '
+            'Furthermore any properties authored on the RenderSettings will '
+            'override other arguments (imageWidth, camera, outputImagePath)'))
+
     args = parser.parse_args()
 
     UsdAppUtils.framesArgs.ValidateCmdlineArgs(parser, args,
@@ -176,6 +186,10 @@ def main():
     # Get the camera at the given path (or with the given name).
     usdCamera = UsdAppUtils.GetCameraAtPath(usdStage, args.camera)
 
+    # Get the RenderSettings Prim Path from the stage metadata if not specified.
+    if not args.rsPrimPath:
+        args.rsPrimPath = usdStage.GetMetadata('renderSettingsPrimPath')
+
     if args.gpuEnabled:
         # UsdAppUtils.FrameRecorder will expect that an OpenGL context has
         # been created and made current if the GPU is enabled.
@@ -187,7 +201,10 @@ def main():
 
     rendererPluginId = UsdAppUtils.rendererArgs.GetPluginIdFromArgument(
         args.rendererPlugin) or ''
-    frameRecorder = UsdAppUtils.FrameRecorder(rendererPluginId, args.gpuEnabled)
+
+    # Initialize FrameRecorder 
+    frameRecorder = UsdAppUtils.FrameRecorder(
+        rendererPluginId, args.gpuEnabled, args.rsPrimPath)
     frameRecorder.SetImageWidth(args.imageWidth)
     frameRecorder.SetComplexity(args.complexity.value)
     frameRecorder.SetColorCorrectionMode(args.colorCorrectionMode)

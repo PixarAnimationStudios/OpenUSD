@@ -1541,7 +1541,7 @@ HdSt_IndirectDrawBatch::_BeginGPUCountVisibleInstances(
 
         _resultBuffer =
             resourceRegistry->RegisterBufferResource(
-                _tokens->drawIndirectResult, tupleType);
+                _tokens->drawIndirectResult, tupleType, HgiBufferUsageStorage);
     }
 
     // Reset visible item count

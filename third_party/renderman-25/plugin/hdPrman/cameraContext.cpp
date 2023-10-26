@@ -39,18 +39,6 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 static const RtUString _us_main_cam_projection("main_cam_projection");
 
-// PxrPerspective does not support lens distortion (k1, k2, ...).
-//
-// However, neither PxrProjection and PxrCamera are quite ready yet for
-// hdPrman. We eventually want to use PxrCamera but some features still
-// need to be ported to PxrProjection and then back-ported to the PxrCamera
-// in RenderMan 24.
-//
-TF_DEFINE_ENV_SETTING(HD_PRMAN_SUPPORT_LENS_DISTORTION, true,
-                      "Switches camera shader from PxrPerspective to "
-                      "PxrProjection/PxrCamera so that lens distortion "
-                      "parametrers are supported.");
-
 HdPrman_CameraContext::HdPrman_CameraContext()
   : _policy(CameraUtilFit)
   , _shutterOpenTime(0.0f)
@@ -261,15 +249,7 @@ static
 const RtUString&
 _ComputeProjectionShader(const HdCamera::Projection projection)
 {
-    // Switch this to PxrCamera once it is ready in RenderMan.
-    static const RtUString us_PxrCamera(
-        TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)
-#if _PRMANAPI_VERSION_ < 25
-            ? "PxrProjection"
-#else
-            ? "PxrCamera"
-#endif
-            : "PxrPerspective");
+    static const RtUString us_PxrCamera("PxrCamera");
     static const RtUString us_PxrOrthographic("PxrOrthographic");
 
     switch (projection) {
@@ -293,11 +273,9 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     // lensType values in PxrProjection.
     constexpr int lensTypeLensWarp = 2;
 
-    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
-        // Pick a PxrProjection lens type that supports depth of field
-        // and lens distortion.
-        result.SetInteger(us_lensType, lensTypeLensWarp);
-    }
+    // Pick a PxrProjection lens type that supports depth of field
+    // and lens distortion.
+    result.SetInteger(us_lensType, lensTypeLensWarp);
 
     // FOV settings.
     const float focalLength = camera->GetFocalLength();
@@ -334,35 +312,36 @@ _ComputePerspectiveNodeParams(const HdPrmanCamera * const camera)
     // due to changing FOV.
 
     // Some of these names might need to change when switching to PxrCamera.
-    static const RtUString us_lensK1("lensK1");
-    static const RtUString us_lensK2("lensK2");
+    static const RtUString us_radial1("radial1");
+    static const RtUString us_radial2("radial2");
     static const RtUString us_distortionCtr("distortionCtr");
     static const RtUString us_lensSqueeze("lensSqueeze");
-    static const RtUString us_lensAsymmetry("lensAsymmetry");
+    static const RtUString us_lensAsymmetryX("lensAsymmetryX");
+    static const RtUString us_lensAsymmetryY("lensAsymmetryY");
     static const RtUString us_lensScale("lensScale");
 
-    if (TfGetEnvSetting(HD_PRMAN_SUPPORT_LENS_DISTORTION)) {
-        result.SetFloat(
-            us_lensK1,
-            camera->GetLensDistortionK1());
-        result.SetFloat(
-            us_lensK2,
-            camera->GetLensDistortionK2());
-        result.SetFloatArray(
-            us_distortionCtr,
-            camera->GetLensDistortionCenter().data(),
-            2);
-        result.SetFloat(
-            us_lensSqueeze,
-            camera->GetLensDistortionAnaSq());
-        result.SetFloatArray(
-            us_lensAsymmetry,
-            camera->GetLensDistortionAsym().data(),
-            2);
-        result.SetFloat(
-            us_lensScale,
-            camera->GetLensDistortionScale());
-    }
+    result.SetFloat(
+        us_radial1,
+        camera->GetLensDistortionK1());
+    result.SetFloat(
+        us_radial2,
+        camera->GetLensDistortionK2());
+    result.SetFloatArray(
+        us_distortionCtr,
+        camera->GetLensDistortionCenter().data(),
+        2);
+    result.SetFloat(
+        us_lensSqueeze,
+        camera->GetLensDistortionAnaSq());
+    result.SetFloat(
+        us_lensAsymmetryX,
+        camera->GetLensDistortionAsym()[0]);
+    result.SetFloat(
+        us_lensAsymmetryY,
+        camera->GetLensDistortionAsym()[1]);
+    result.SetFloat(
+        us_lensScale,
+        camera->GetLensDistortionScale());
 
     return result;
 }
@@ -552,6 +531,11 @@ HdPrman_CameraContext::_UpdateRileyCamera(
     const GfRange2d &screenWindow,
     const HdPrmanCamera * const camera)
 {
+    // The riley camera should have been created before we get here.
+    if (!TF_VERIFY(_cameraId != riley::CameraId::InvalidId())) {
+        return;
+    }
+
     const riley::ShadingNode node = riley::ShadingNode {
         riley::ShadingNode::Type::k_Projection,
         _ComputeProjectionShader(camera->GetProjection()),
@@ -794,7 +778,7 @@ HdPrman_CameraContext::MarkValid()
 }
 
 void
-HdPrman_CameraContext::Begin(riley::Riley * const riley)
+HdPrman_CameraContext::CreateRileyCamera(riley::Riley * const riley)
 {
     // Create camera
 

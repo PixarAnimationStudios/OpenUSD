@@ -53,17 +53,6 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-// XXX: These should come from Hd or UsdImaging
-TF_DEFINE_PRIVATE_TOKENS(
-    _tokens,
-    (instance)
-    (instancer)
-    (rotate)
-    (scale)
-    (translate)
-);
-
 TF_REGISTRY_FUNCTION(TfType)
 {
     typedef UsdImagingPointInstancerAdapter Adapter;
@@ -550,12 +539,12 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         _IsVarying(prim,
             UsdGeomTokens->invisibleIds,
             HdChangeTracker::DirtyInstanceIndex,
-            _tokens->instancer,
+            HdInstancerTokens->instancer,
             timeVaryingBits,
             false) || _IsVarying(prim,
                 UsdGeomTokens->protoIndices,
                 HdChangeTracker::DirtyInstanceIndex,
-                _tokens->instancer,
+                HdInstancerTokens->instancer,
                 timeVaryingBits,
                 false);
 
@@ -590,31 +579,31 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
         _IsVarying(prim,
                 UsdGeomTokens->positions,
                 HdChangeTracker::DirtyPrimvar,
-                _tokens->instancer,
+                HdInstancerTokens->instancer,
                 timeVaryingBits,
                 false) ||
             _IsVarying(prim,
                     UsdGeomTokens->orientations,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    HdInstancerTokens->instancer,
                     timeVaryingBits,
                     false) ||
             _IsVarying(prim,
                     UsdGeomTokens->scales,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    HdInstancerTokens->instancer,
                     timeVaryingBits,
                     false) ||
             _IsVarying(prim,
                     UsdGeomTokens->velocities,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    HdInstancerTokens->instancer,
                     timeVaryingBits,
                     false) ||
             _IsVarying(prim,
                     UsdGeomTokens->accelerations,
                     HdChangeTracker::DirtyPrimvar,
-                    _tokens->instancer,
+                    HdInstancerTokens->instancer,
                     timeVaryingBits,
                     false);
 
@@ -626,7 +615,7 @@ UsdImagingPointInstancerAdapter::TrackVariability(UsdPrim const& prim,
                     interp != UsdGeomTokens->uniform &&
                     pv.ValueMightBeTimeVarying()) {
                     *timeVaryingBits |= HdChangeTracker::DirtyPrimvar;
-                    HD_PERF_COUNTER_INCR(_tokens->instancer);
+                    HD_PERF_COUNTER_INCR(HdInstancerTokens->instancer);
                     break;
                 }
             }
@@ -680,7 +669,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->translate,
+                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                        ? HdInstancerTokens->translate
+                        : HdInstancerTokens->instanceTranslations),
                     HdInterpolationInstance,
                     HdPrimvarRoleTokens->vector);
             }
@@ -689,7 +680,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->rotate,
+                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                        ? HdInstancerTokens->rotate
+                        : HdInstancerTokens->instanceRotations),
                     HdInterpolationInstance);
             }
 
@@ -697,7 +690,9 @@ UsdImagingPointInstancerAdapter::UpdateForTime(UsdPrim const& prim,
             if (instancer.GetScalesAttr().Get(&scales, time)) {
                 _MergePrimvar(
                     &vPrimvars,
-                    _tokens->scale,
+                    (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                        ? HdInstancerTokens->scale
+                        : HdInstancerTokens->instanceScales),
                     HdInterpolationInstance);
             }
 
@@ -785,11 +780,17 @@ UsdImagingPointInstancerAdapter::ProcessPropertyChange(UsdPrim const& prim,
 
         TfToken primvarName = propertyName;
         if (propertyName == UsdGeomTokens->positions) {
-            primvarName = _tokens->translate;
+            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->translate
+                : HdInstancerTokens->instanceTranslations);
         } else if (propertyName == UsdGeomTokens->orientations) {
-            primvarName = _tokens->rotate;
+            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->rotate
+                : HdInstancerTokens->instanceRotations);
         } else if (propertyName == UsdGeomTokens->scales) {
-            primvarName = _tokens->scale;
+            primvarName = (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->scale
+                : HdInstancerTokens->instanceScales);
         } else if (propertyName == UsdGeomTokens->velocities) {
             primvarName = HdTokens->velocities;
         } else if (propertyName == UsdGeomTokens->accelerations) {
@@ -1794,11 +1795,14 @@ UsdImagingPointInstancerAdapter::SamplePrimvar(
     } else {
         // Map Hydra-PI transform keys to their USD equivalents.
         TfToken usdKey = key;
-        if (key == _tokens->translate) {
+        if (key == HdInstancerTokens->instanceTranslations ||
+            key == HdInstancerTokens->translate) {
             usdKey = UsdGeomTokens->positions;
-        } else if (key == _tokens->scale) {
+        } else if (key == HdInstancerTokens->instanceScales ||
+                   key == HdInstancerTokens->scale) {
             usdKey = UsdGeomTokens->scales;
-        } else if (key == _tokens->rotate) {
+        } else if (key == HdInstancerTokens->instanceRotations ||
+                   key == HdInstancerTokens->rotate) {
             usdKey = UsdGeomTokens->orientations;
         } else if (key == HdTokens->velocities) {
             usdKey = UsdGeomTokens->velocities;
@@ -2050,21 +2054,24 @@ UsdImagingPointInstancerAdapter::Get(UsdPrim const& usdPrim,
                 TfMapLookupPtr(_instancerData, cachePath)) {
         TF_UNUSED(instrData);
 
-        if (key == _tokens->translate) {
+        if (key == HdInstancerTokens->instanceTranslations ||
+            key == HdInstancerTokens->translate) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray positions;
             if (instancer.GetPositionsAttr().Get(&positions, time)) {
                 return VtValue(positions);
             }
 
-        } else if (key == _tokens->rotate) {
+        } else if (key == HdInstancerTokens->instanceRotations ||
+                   key == HdInstancerTokens->rotate) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtQuathArray orientations;
             if (instancer.GetOrientationsAttr().Get(&orientations, time)) {
                 return VtValue(orientations);
             }
 
-        } else if (key == _tokens->scale) {
+        } else if (key == HdInstancerTokens->instanceScales ||
+                   key == HdInstancerTokens->scale) {
             UsdGeomPointInstancer instancer(usdPrim);
             VtVec3fArray scales;
             if (instancer.GetScalesAttr().Get(&scales, time)) {

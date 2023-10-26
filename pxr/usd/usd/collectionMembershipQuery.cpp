@@ -43,6 +43,9 @@ _ComputeIncludedImpl(
     std::set<UsdObject> *includedObjects,
     SdfPathSet *includedPaths)
 {
+    using ExpressionEvaluator =
+        UsdCollectionMembershipQuery::ExpressionEvaluator;
+    
     if (!((bool)includedObjects ^ (bool)includedPaths)) {
         TF_CODING_ERROR("Either includedObjects or includedPaths must be"
                         " valid, but not both");
@@ -175,9 +178,103 @@ _ComputeIncludedImpl(
             }
         }
     }
+
+    // Walk everything according to \p pred, and do incremental search.
+    TfToken expansionRule = query.GetTopExpansionRule();
+    if (query.HasExpression() &&
+        (expansionRule == UsdTokens->expandPrims ||
+         expansionRule == UsdTokens->expandPrimsAndProperties)) {
+
+        bool searchProperties =
+            (expansionRule == UsdTokens->expandPrimsAndProperties);
+
+        ExpressionEvaluator::IncrementalSearcher
+            searcher = query.GetExpressionEvaluator().MakeIncrementalSearcher();
+        
+        UsdPrimRange range = stage->Traverse(pred);
+        
+        for (auto iter = range.begin(),
+                 end = range.end(); iter != end; ++iter) {
+
+            SdfPredicateFunctionResult r = searcher.Next(*iter);
+            bool didProps = false;
+            if (r) {
+                // With a positive result that's constant over descendants, we
+                // can copy everything until the next sibling.
+                if (r.IsConstant()) {
+                    auto subtreeIter = iter;
+                    auto subtreeEnd = subtreeIter;
+                    subtreeEnd.PruneChildren();
+                    ++subtreeEnd;
+                    for (; subtreeIter != subtreeEnd; ++subtreeIter) {
+                        AppendIncludedObject(*subtreeIter);
+                        if (searchProperties) {
+                            didProps = true;
+                            for (UsdProperty const &prop:
+                                     subtreeIter->GetProperties()) {
+                                AppendIncludedObject(prop);
+                            }
+                        }
+                    }
+                }
+                // We have a positive result on this object, but we have to keep
+                // searching descendants, since results may vary.
+                else {
+                    AppendIncludedObject(*iter);
+                }
+            }
+
+            // If we're searching properties and didn't already do properties
+            // above, do them here.  Constancy doesn't matter here since we
+            // don't search descendants of properties.
+            if (searchProperties && !didProps && !(r && !r.IsConstant())) {
+                for (UsdProperty const &prop: iter->GetProperties()) {
+                    if (searcher.Next(prop)) {
+                        AppendIncludedObject(prop);
+                    }
+                }
+            }
+
+            // If we have a constant result (either positive or negative), we
+            // can skip the subtree.
+            if (r.IsConstant()) {
+                iter.PruneChildren();
+            }
+        }
+    }
 }
 
 } // anonymous
+
+UsdCollectionMembershipQuery::ExpressionEvaluator
+::ExpressionEvaluator(UsdStageWeakPtr const &stage,
+                      SdfPathExpression const &expr)
+    : _stage(stage)
+    , _evaluator(SdfMakePathExpressionEval(
+                     expr, UsdGetCollectionPredicateLibrary()))
+{
+}
+
+SdfPredicateFunctionResult
+UsdCollectionMembershipQuery::ExpressionEvaluator
+::Match(UsdObject const &obj) const
+{
+    if (_stage) {
+        return _evaluator.Match(obj, ObjToPath {}, PathToObj { _stage });
+    }
+    return SdfPredicateFunctionResult::MakeConstant(false);
+}
+
+UsdCollectionMembershipQuery::ExpressionEvaluator::IncrementalSearcher
+UsdCollectionMembershipQuery::ExpressionEvaluator
+::MakeIncrementalSearcher() const
+{
+    if (_stage) {
+        return _evaluator
+            .MakeIncrementalSearcher(ObjToPath {}, PathToObj { _stage });
+    }
+    return {};
+}
 
 std::set<UsdObject> UsdComputeIncludedObjectsFromCollection(
     const UsdCollectionMembershipQuery &query,
@@ -202,22 +299,43 @@ SdfPathSet UsdComputeIncludedPathsFromCollection(
 UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
     const PathExpansionRuleMap& pathExpansionRuleMap,
     const SdfPathSet& includedCollections)
-    : _pathExpansionRuleMap(pathExpansionRuleMap)
-    , _includedCollections(includedCollections)
+    : UsdCollectionMembershipQuery(
+        PathExpansionRuleMap {pathExpansionRuleMap},
+        SdfPathSet {includedCollections}, {}, {})
 {
-    for (const auto &pathAndExpansionRule : _pathExpansionRuleMap) {
-        if (pathAndExpansionRule.second == UsdTokens->exclude) {
-            _hasExcludes = true;
-            break;
-        }
-    }
 }
 
 UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
     PathExpansionRuleMap&& pathExpansionRuleMap,
     SdfPathSet&& includedCollections)
-    : _pathExpansionRuleMap(std::move(pathExpansionRuleMap))
+    : UsdCollectionMembershipQuery(
+        std::move(pathExpansionRuleMap),
+        std::move(includedCollections), {}, {})
+{
+}
+
+UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+    const PathExpansionRuleMap& pathExpansionRuleMap,
+    const SdfPathSet& includedCollections,
+    const ExpressionEvaluator &exprEval,
+    const TfToken &topExpansionRule)
+    : UsdCollectionMembershipQuery(
+        PathExpansionRuleMap {pathExpansionRuleMap},
+        SdfPathSet {includedCollections},
+        ExpressionEvaluator {exprEval},
+        topExpansionRule)
+{
+}
+
+UsdCollectionMembershipQuery::UsdCollectionMembershipQuery(
+    PathExpansionRuleMap&& pathExpansionRuleMap,
+    SdfPathSet&& includedCollections,
+    ExpressionEvaluator &&exprEval,
+    TfToken const &topExpansionRule)
+    : _topExpansionRule(topExpansionRule)
+    , _pathExpansionRuleMap(std::move(pathExpansionRuleMap))
     , _includedCollections(std::move(includedCollections))
+    , _exprEval(std::move(exprEval))
 {
     for (const auto &pathAndExpansionRule : _pathExpansionRuleMap) {
         if (pathAndExpansionRule.second == UsdTokens->exclude) {
@@ -286,8 +404,12 @@ UsdCollectionMembershipQuery::IsPathIncluded(
         
     }
 
-    // Any path that's not explicitly mentioned is not included in the 
-    // collection.
+    // Test against the expression if we have one.
+    if (UsdStageWeakPtr const &stage = _exprEval.GetStage()) {
+        if (UsdObject obj = stage->GetObjectAtPath(path)) {
+            return static_cast<bool>(_exprEval.Match(obj));
+        }
+    }
     return false;
 }
 
@@ -338,8 +460,18 @@ UsdCollectionMembershipQuery::IsPathIncluded(
                 (parentExpansionRule == UsdTokens->expandPrimsAndProperties) ?
                 UsdTokens->expandPrimsAndProperties : UsdTokens->exclude;
         }
-        return parentExpansionRule == UsdTokens->expandPrimsAndProperties;
+        if (parentExpansionRule == UsdTokens->expandPrimsAndProperties) {
+            return true;
+        }
     }
+
+    // Test against the expression if we have one.
+    if (UsdStageWeakPtr const &stage = _exprEval.GetStage()) {
+        if (UsdObject obj = stage->GetObjectAtPath(path)) {
+            return static_cast<bool>(_exprEval.Match(obj));
+        }
+    }
+    return false;
 }
 
 size_t
@@ -363,7 +495,7 @@ UsdCollectionMembershipQuery::Hash::operator()(
 
     // Don't hash _hasExcludes because it is derived from
     // the contents of _pathExpansionRuleMap.
-    return TfHash()(entries);
+    return TfHash::Combine(entries, q._topExpansionRule, q._exprEval.IsEmpty());
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -388,8 +388,6 @@ HgiGLShaderGenerator::_WriteInOuts(
         "gl_FragColor",
         "gl_FragDepth",
         "gl_PointSize",
-        "gl_ClipDistance",
-        "gl_CullDistance",
     };
 
     const static std::unordered_map<std::string, std::string> takenInParams {

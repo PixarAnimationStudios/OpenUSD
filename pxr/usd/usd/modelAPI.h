@@ -165,25 +165,17 @@ public:
 
     /// Retrieve the authored \p kind for this prim.
     /// 
-    /// To test whether the returned \p kind matches a particular known
-    /// "clientKind":
-    /// \code
-    /// TfToken kind;
-    ///
-    /// bool isClientKind = UsdModelAPI(prim).GetKind(&kind) and
-    ///                     KindRegistry::IsA(kind, clientKind);
-    /// \endcode
-    ///
     /// \return true if there was an authored kind that was successfully read,
     /// otherwise false.
     ///
-    /// \sa \ref mainpage_kind "The Kind module" for further details on
-    /// how to use Kind for classification, and how to extend the taxonomy.
+    /// \sa UsdPrim::GetKind
     USD_API
     bool GetKind(TfToken* kind) const;
     
     /// Author a \p kind for this prim, at the current UsdEditTarget.
     /// \return true if \p kind was successully authored, otherwise false.
+    ///
+    /// \sa UsdPrim::SetKind
     USD_API
     bool SetKind(const TfToken& kind) const;
 

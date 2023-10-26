@@ -44,6 +44,7 @@
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usd/valueUtils.h"
+#include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -805,8 +806,24 @@ UsdFlattenLayerStackResolveAssetPath(
 {
     // Treat empty asset paths specially, since they cause coding errors in
     // SdfComputeAssetPathRelativeToLayer.
-    return assetPath.empty() ? 
-        assetPath : SdfComputeAssetPathRelativeToLayer(sourceLayer, assetPath);
+
+    if (assetPath.empty()) {
+        return assetPath;
+    }
+
+    // If anchoring has no effect on asset path, return it as-is. For additional
+    // details, please see comments in _MakeResolvedAssetPathsImpl in stage.cpp.
+    const std::string anchoredPath =
+        SdfComputeAssetPathRelativeToLayer(sourceLayer, assetPath);
+
+    const std::string unanchoredPath = ArGetResolver().CreateIdentifier(
+        assetPath);
+
+    if (unanchoredPath == anchoredPath) {
+        return assetPath;
+    }
+
+    return anchoredPath;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

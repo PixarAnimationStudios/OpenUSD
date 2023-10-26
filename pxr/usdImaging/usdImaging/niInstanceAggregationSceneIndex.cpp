@@ -24,19 +24,16 @@
 #include "pxr/usdImaging/usdImaging/niInstanceAggregationSceneIndex.h"
 
 #include "pxr/usdImaging/usdImaging/niPrototypeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
 
+#include "pxr/imaging/hd/dataSourceHash.h"
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
-#include "pxr/imaging/hd/flatteningSceneIndex.h"
 #include "pxr/imaging/hd/instanceSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
-#include "pxr/imaging/hd/materialBindingsSchema.h"
 #include "pxr/imaging/hd/lazyContainerDataSource.h"
-#include "pxr/imaging/hd/purposeSchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/retainedSceneIndex.h"
@@ -358,7 +355,8 @@ private:
     const TfToken _primvarName;
 };
 
-// Data source for locator primvars:instanceTransform:primvarValue for an instancer.
+// Data source for locator primvars:hydra:instanceTransforms:primvarValue for an
+// instancer.
 //
 // Extracts the transforms of the native instances realized by the instancer.
 //
@@ -387,7 +385,16 @@ public:
         
         int i = 0;
         for (const SdfPath &instance : *_instances) {
-            result[i] = _GetPrimTransform(_inputSceneIndex, instance);
+            // If this is for a native instance within a Usd point instancer's
+            // prototype, this transform will include the prototype's
+            // root transform.
+            //
+            // The instancer for this native instance has no transform and thus
+            // does not include the prototype's root transform.
+            //
+            // Thus, prototype's root transform will be applied exactly once.
+            result[i] =
+                _GetPrimTransform(_inputSceneIndex, instance);
             i++;
         }
         return result;
@@ -406,7 +413,7 @@ private:
     std::shared_ptr<SdfPathSet> const _instances;
 };
 
-// Data source for locator primvars:instanceTransform for an instancer.
+// Data source for locator primvars:hydra:instanceTransforms for an instancer.
 //
 // primvarValue: transforms of native instances realized by the instancer.
 // interpolation: instance.
@@ -455,7 +462,7 @@ private:
 
 // Data source for locator primvars for an instancer.
 //
-// Uses above data sources for instanceTransform and for constant
+// Uses above data sources for hydra:instanceTransforms and for constant
 // primvars authored on the native instances realized by the instancer.
 //
 class _PrimvarsDataSource : public HdContainerDataSource
@@ -469,12 +476,16 @@ public:
             result = _GetConstantPrimvarNames(
                 _inputSceneIndex, *(_instances->begin()));
         }
-        result.push_back(HdInstancerTokens->instanceTransform);
+        result.push_back(
+            (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                ? HdInstancerTokens->instanceTransform
+                : HdInstancerTokens->instanceTransforms));
         return result;
     }
 
     HdDataSourceBaseHandle Get(const TfToken &name) override {
-        if (name == HdInstancerTokens->instanceTransform) {
+        if (name == HdInstancerTokens->instanceTransforms ||
+            name == HdInstancerTokens->instanceTransform) {
             return _InstanceTransformPrimvarDataSource::New(
                 _inputSceneIndex, _instances);
         }
@@ -668,7 +679,7 @@ public:
                         .dataSource)) {
                 return schema.GetContainer();
             }
-            if (_forPrototype) {
+            if (_forNativePrototype) {
                 // This instancer is itself within a native prototype which
                 // in turn is instanced by an instancer. Use respective
                 // instancedBy data source.
@@ -695,12 +706,12 @@ private:
         const SdfPath &enclosingPrototypeRoot,
         const SdfPath &prototypePath,
         std::shared_ptr<SdfPathSet> const &instances,
-        const bool forPrototype)
+        const bool forNativePrototype)
       : _inputSceneIndex(inputSceneIndex)
       , _enclosingPrototypeRoot(enclosingPrototypeRoot)
       , _prototypePath(prototypePath)
       , _instances(instances)
-      , _forPrototype(forPrototype)
+      , _forNativePrototype(forNativePrototype)
     {
     }
 
@@ -708,7 +719,7 @@ private:
     const SdfPath _enclosingPrototypeRoot;
     const SdfPath _prototypePath;
     std::shared_ptr<SdfPathSet> const _instances;
-    const bool _forPrototype;
+    const bool _forNativePrototype;
 };
 
 // We can only group together native instances to be realized by the same
@@ -747,74 +758,36 @@ _ComputeConstantPrimvarsRoleHash(HdPrimvarsSchema primvarsSchema)
     return TfStringPrintf("Primvars%zx", TfHash::Combine(nameToRole));
 }
 
-// We should implement a generic data source hash and use it here.
-size_t
-_ComputeMaterialBindingsHashHelper(
-    HdContainerDataSourceHandle const &container)
-{
-    std::vector<std::pair<TfToken, std::pair<SdfPath, TfToken>>> bindings;
-    TfTokenVector names = container->GetNames();
-    bindings.reserve(names.size());
-    for (const TfToken &name : names) {
-        HdMaterialBindingSchema bindingSchema(
-            HdContainerDataSource::Cast(container->Get(name)));
-        if (!bindingSchema) {
-            continue;
-        }
-
-        HdPathDataSourceHandle const pathDs =
-            bindingSchema.GetPath();
-        HdTokenDataSourceHandle const strengthDs =
-            bindingSchema.GetBindingStrength();
-
-        bindings.push_back(
-            { name,
-              { pathDs ? pathDs->GetTypedValue(0.0f) : SdfPath(),
-                strengthDs ? strengthDs->GetTypedValue(0.0f) : TfToken()}});
-    }
-
-    return TfHash::Combine(bindings);
-}
-
-// We can only group together native instances that are using the same
-// materials. Compute hash for material bindings.
-std::string
-_ComputeMaterialBindingsHash(HdMaterialBindingsSchema schema)
-{
-    if (!schema.GetContainer()) {
-        return "NoMaterialBindings";
-    }
-    return TfStringPrintf(
-        "MaterialBindings%zx",
-        _ComputeMaterialBindingsHashHelper(schema.GetContainer()));
-}
-
-std::string
-_ComputePurposeBindingHash(HdPurposeSchema schema)
-{
-    if (HdTokenDataSourceHandle const ds = schema.GetPurpose()) {
-        const TfToken purpose = ds->GetTypedValue(0.0f);
-        if (!purpose.IsEmpty()) {
-            return "_" + purpose.GetString();
-        }
-    }
-
-    return "";
-}
-
+// We can only group together native instances if the same set of constant
+// primvars is authored and if the data sources at the given names have the
+// same data. We construct a key accordingly.
+//
+// instanceDataSourceNames typically includes material binding, purpose and
+// model.
+//
+// Note that instanceDataSourceNames should not include the primvars, xform or
+// visibility as these turn into instance interpolated primvars or
+// the instancer topology's mask.
+//
 TfToken
-_ComputeBindingHash(HdContainerDataSourceHandle const &primSource)
+_ComputeBindingHash(HdContainerDataSourceHandle const &primSource,
+                    const TfTokenVector &instanceDataSourceNames)
 {
-    return TfToken(
-        _ComputeConstantPrimvarsRoleHash(
-            HdPrimvarsSchema::GetFromParent(primSource)) +
-        "_" +
-        _ComputeMaterialBindingsHash(
-            HdMaterialBindingsSchema::GetFromParent(primSource)) +
-        _ComputePurposeBindingHash(
-            HdPurposeSchema::GetFromParent(primSource)));
-}
+    std::string result
+        = _ComputeConstantPrimvarsRoleHash(
+            HdPrimvarsSchema::GetFromParent(primSource));
 
+    for (const TfToken &name : instanceDataSourceNames) {
+        if (HdDataSourceBaseHandle const ds = primSource->Get(name)) {
+            result +=
+                TfStringPrintf("_%s%zx",
+                               name.GetText(),
+                               HdDataSourceHash(ds, 0.0f, 0.0f));
+        }
+    }
+
+    return TfToken(result);
+}
 
 // Gives niPrototypePath from UsdImagingUsdPrimInfoSchema.
 SdfPath
@@ -856,55 +829,28 @@ _GetPrototypeRoot(HdContainerDataSourceHandle const &primSource)
     return result[0];
 }
 
-// We should implement a generic function to deep copy a data source
-// and use it here.
-HdDataSourceBaseHandle
-_MakeCopy(HdDataSourceBaseHandle const &ds)
-{
-    if (!ds) {
-        return nullptr;
-    }
-    if (HdContainerDataSourceHandle const container =
-            HdContainerDataSource::Cast(ds)) {
-        TfTokenVector names = container->GetNames();
-        std::vector<HdDataSourceBaseHandle> items;
-        items.reserve(names.size());
-        for (const TfToken &name : names) {
-            items.push_back(_MakeCopy(container->Get(name)));
-        }
-        return HdRetainedContainerDataSource::New(
-            names.size(), names.data(), items.data());
-    }
-    if (HdPathDataSourceHandle const pathDs =
-           HdPathDataSource::Cast(ds)) {
-        return HdRetainedTypedSampledDataSource<SdfPath>::New(
-            pathDs->GetTypedValue(0.0f));
-    }
-    if (HdTokenDataSourceHandle const tokenDs =
-           HdTokenDataSource::Cast(ds)) {
-        return HdRetainedTypedSampledDataSource<TfToken>::New(
-            tokenDs->GetTypedValue(0.0f));
-    }
-
-    TF_CODING_ERROR("Unknown data source type");
-
-    return nullptr;
-}
-
+// Make a partial copy of the prim data source of a native
+// instance using instanceDataSourceNames.
 HdContainerDataSourceHandle
-_MakeBindingCopy(HdContainerDataSourceHandle const &primSource)
+_MakeBindingCopy(HdContainerDataSourceHandle const &primSource,
+                 const TfTokenVector &instanceDataSourceNames)
 {
-    HdMaterialBindingsSchema materialBindingsSchema =
-        HdMaterialBindingsSchema::GetFromParent(primSource);
-    HdPurposeSchema purposeSchema =
-        HdPurposeSchema::GetFromParent(primSource);
+    TfTokenVector names;
+    names.reserve(instanceDataSourceNames.size());
+    std::vector<HdDataSourceBaseHandle> dataSources;
+    dataSources.reserve(instanceDataSourceNames.size());
+
+    for (const TfToken &name : instanceDataSourceNames) {
+        if (HdDataSourceBaseHandle const ds = primSource->Get(name)) {
+            names.push_back(name);
+            dataSources.push_back(HdMakeStaticCopy(ds));
+        }
+    }
 
     return HdRetainedContainerDataSource::New(
-        HdMaterialBindingsSchema::GetSchemaToken(),
-        _MakeCopy(materialBindingsSchema.GetContainer()),
-        HdPurposeSchema::GetSchemaToken(),
-        _MakeCopy(purposeSchema.GetContainer()));
-
+        names.size(),
+        names.data(),
+        dataSources.data());
 }
 
 struct _InstanceInfo {
@@ -961,7 +907,8 @@ class _InstanceObserver : public HdSceneIndexObserver
 {
 public:
     _InstanceObserver(HdSceneIndexBaseRefPtr const &inputScene,
-                      const bool forPrototype);
+                      const bool forNativePrototype,
+                      const TfTokenVector &instanceDataSourceNames);
 
     HdRetainedSceneIndexRefPtr const &GetRetainedSceneIndex() const {
         return _retainedSceneIndex;
@@ -1067,12 +1014,12 @@ private:
     _PathToIntSharedPtr _ComputeInstanceToIndex(
         const _InstanceInfo &info);
 
-    // This observer wants to observe a *flattened* view of the scene.  This
-    // way, it can access the composed transform values for natively instanced
-    // prims.
-    HdSceneIndexBaseRefPtr const _flattenedInputScene;
+    HdSceneIndexBaseRefPtr const _inputScene;
     HdRetainedSceneIndexRefPtr const _retainedSceneIndex;
-    const bool _forPrototype;
+    const bool _forNativePrototype;
+    const TfTokenVector _instanceDataSourceNames;
+    // If dirtied, we need to re-aggregate the native instance.
+    const HdDataSourceLocatorSet _resyncLocators;
     _CurriedInstanceInfoToInstance _infoToInstance;
     _PathToInstanceInfo _instanceToInfo;
 
@@ -1090,18 +1037,37 @@ private:
     _PathToPathToInt _instancerToInstanceToIndex;
 };
 
+// Compute which dirtied data source locators force us
+// re-aggregating the native instance.
+static
+HdDataSourceLocatorSet
+_ComputeResyncLocators(const TfTokenVector &instanceDataSourceNames)
+{
+    HdDataSourceLocatorSet result;
+    // The enclosing scope of the native instance might have changed.
+    result.insert(
+        HdInstancedBySchema::GetDefaultLocator().Append(
+            HdInstancedBySchemaTokens->prototypeRoots));
+    // A data source used to determine which instances can be
+    // aggregated has changed.
+    for (const TfToken &name : instanceDataSourceNames) {
+        result.insert(HdDataSourceLocator(name));
+    }
+    return result;
+}
+
 _InstanceObserver::_InstanceObserver(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const bool forPrototype)
-  : _flattenedInputScene(
-      HdFlatteningSceneIndex::New(
-          inputScene,
-          UsdImagingFlattenedDataSourceProviders()))
+        const bool forNativePrototype,
+        const TfTokenVector &instanceDataSourceNames)
+  : _inputScene(inputScene)
   , _retainedSceneIndex(HdRetainedSceneIndex::New())
-  , _forPrototype(forPrototype)
+  , _forNativePrototype(forNativePrototype)
+  , _instanceDataSourceNames(instanceDataSourceNames)
+  , _resyncLocators(_ComputeResyncLocators(instanceDataSourceNames))
 {
     _Populate();
-    _flattenedInputScene->AddObserver(HdSceneIndexObserverPtr(this));
+    _inputScene->AddObserver(HdSceneIndexObserverPtr(this));
 }
 
 void
@@ -1150,19 +1116,11 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
         const SdfPath &path = entry.primPath;
         const HdDataSourceLocatorSet &locators = entry.dirtyLocators;
 
-        {
-            static const HdDataSourceLocatorSet resyncLocators{
-                HdInstancedBySchema::GetDefaultLocator().Append(
-                    HdInstancedBySchemaTokens->prototypeRoots),
-                HdMaterialBindingsSchema::GetDefaultLocator(),
-                UsdImagingUsdPrimInfoSchema::GetNiPrototypePathLocator()};
-
-            if (locators.Intersects(resyncLocators)) {
-                _ResyncPrim(path);
-                continue;
-            }
-
+        if (locators.Intersects(_resyncLocators)) {
+            _ResyncPrim(path);
+            continue;
         }
+
         {
             static const HdDataSourceLocatorSet xformLocators{
                 HdXformSchema::GetDefaultLocator()};
@@ -1170,7 +1128,10 @@ _InstanceObserver::PrimsDirtied(const HdSceneIndexBase &sender,
             if (locators.Intersects(xformLocators)) {
                 static const HdDataSourceLocatorSet instanceTransformLocators{
                     HdPrimvarsSchema::GetDefaultLocator()
-                        .Append(HdInstancerTokens->instanceTransform)
+                        .Append((TfGetEnvSetting(
+                                HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)
+                            ? HdInstancerTokens->instanceTransform
+                            : HdInstancerTokens->instanceTransforms))
                         .Append(HdPrimvarSchemaTokens->primvarValue)};
                 _DirtyInstancerForInstance(path, instanceTransformLocators);
             }
@@ -1236,7 +1197,7 @@ void
 _InstanceObserver::_Populate()
 {
     for (const SdfPath &primPath
-             : HdSceneIndexPrimView(_flattenedInputScene,
+             : HdSceneIndexPrimView(_inputScene,
                                     SdfPath::AbsoluteRootPath())) {
         _AddPrim(primPath);
     }
@@ -1254,7 +1215,7 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 
     result.enclosingPrototypeRoot = _GetPrototypeRoot(primSource);
     if (result.enclosingPrototypeRoot.IsEmpty()) {
-        if (_forPrototype) {
+        if (_forNativePrototype) {
             result.enclosingPrototypeRoot =
                 UsdImaging_NiPrototypeSceneIndex::GetPrototypePath();
         } else {
@@ -1262,7 +1223,8 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
                 SdfPath::AbsoluteRootPath();
         }
     }
-    result.bindingHash = _ComputeBindingHash(primSource);
+    result.bindingHash = _ComputeBindingHash(
+        primSource, _instanceDataSourceNames);
 
     return result;
 }
@@ -1270,7 +1232,7 @@ _InstanceObserver::_GetInfo(const HdContainerDataSourceHandle &primSource)
 _InstanceInfo
 _InstanceObserver::_GetInfo(const SdfPath &primPath)
 {
-    return _GetInfo(_flattenedInputScene->GetPrim(primPath).dataSource);
+    return _GetInfo(_inputScene->GetPrim(primPath).dataSource);
 }
 
 void
@@ -1288,7 +1250,8 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
             { { info.GetBindingPrimPath(),
                 TfToken(),
                 _MakeBindingCopy(
-                    _flattenedInputScene->GetPrim(primPath).dataSource) } } );
+                    _inputScene->GetPrim(primPath).dataSource,
+                    _instanceDataSourceNames) } } );
     }
 
     const SdfPath instancerPath =
@@ -1316,11 +1279,11 @@ _InstanceObserver::_AddInstance(const SdfPath &primPath,
               { instancerPath,
                 HdPrimTypeTokens->instancer,
                 _InstancerPrimSource::New(
-                    _flattenedInputScene,
+                    _inputScene,
                     info.enclosingPrototypeRoot,
                     info.GetPrototypePath(),
                     instances,
-                    _forPrototype) } });
+                    _forNativePrototype) } });
     }
 
     instances->insert(primPath);
@@ -1652,9 +1615,11 @@ using namespace UsdImaging_NiInstanceAggregationSceneIndex_Impl;
 UsdImaging_NiInstanceAggregationSceneIndex::
 UsdImaging_NiInstanceAggregationSceneIndex(
         HdSceneIndexBaseRefPtr const &inputScene,
-        const bool forPrototype)
+        const bool forNativePrototype,
+        const TfTokenVector &instanceDataSourceNames)
   : _instanceObserver(
-        std::make_unique<_InstanceObserver>(inputScene, forPrototype))
+        std::make_unique<_InstanceObserver>(
+            inputScene, forNativePrototype, instanceDataSourceNames))
   , _retainedSceneIndexObserver(this)
 {
     _instanceObserver->GetRetainedSceneIndex()->AddObserver(
@@ -1706,6 +1671,14 @@ GetPrototypeNameFromInstancerPath(const SdfPath &primPath)
 
     // Get second last element, e.g., __Prototype_1
     return primPath.GetParentPath().GetNameToken();
+}
+
+/* static */
+SdfPath
+UsdImaging_NiInstanceAggregationSceneIndex::
+GetBindingScopeFromInstancerPath(const SdfPath &primPath)
+{
+    return primPath.GetParentPath().GetParentPath();
 }
 
 UsdImaging_NiInstanceAggregationSceneIndex::

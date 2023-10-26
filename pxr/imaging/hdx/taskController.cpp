@@ -448,7 +448,8 @@ HdxTaskController::_CreateSelectionTask()
     _selectionTaskId = GetControllerId().AppendChild(_tokens->selectionTask);
 
     HdxSelectionTaskParams selectionParams;
-    selectionParams.enableSelection = true;
+    selectionParams.enableSelectionHighlight = true;
+    selectionParams.enableLocateHighlight = true;
     selectionParams.selectionColor = GfVec4f(1,1,0,1);
     selectionParams.locateColor = GfVec4f(0,0,1,1);
 
@@ -467,7 +468,8 @@ HdxTaskController::_CreateColorizeSelectionTask()
         _tokens->colorizeSelectionTask);
 
     HdxColorizeSelectionTaskParams selectionParams;
-    selectionParams.enableSelection = true;
+    selectionParams.enableSelectionHighlight = true;
+    selectionParams.enableLocateHighlight = true;
     selectionParams.selectionColor = GfVec4f(1,1,0,1);
     selectionParams.locateColor = GfVec4f(0,0,1,1);
 
@@ -1564,8 +1566,10 @@ HdxTaskController::SetEnableSelection(bool enable)
             _delegate.GetParameter<HdxSelectionTaskParams>(
                 _selectionTaskId, HdTokens->params);
 
-        if (params.enableSelection != enable) {
-            params.enableSelection = enable;
+        if (params.enableSelectionHighlight != enable || 
+            params.enableLocateHighlight != enable) {
+            params.enableSelectionHighlight = enable;
+            params.enableLocateHighlight = enable;
             _delegate.SetParameter(_selectionTaskId,
                 HdTokens->params, params);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(
@@ -1578,8 +1582,10 @@ HdxTaskController::SetEnableSelection(bool enable)
             _delegate.GetParameter<HdxColorizeSelectionTaskParams>(
                 _colorizeSelectionTaskId, HdTokens->params);
 
-        if (params.enableSelection != enable) {
-            params.enableSelection = enable;
+        if (params.enableSelectionHighlight != enable || 
+            params.enableLocateHighlight != enable) {
+            params.enableSelectionHighlight = enable;
+            params.enableLocateHighlight = enable;
             _delegate.SetParameter(_colorizeSelectionTaskId,
                 HdTokens->params, params);
             GetRenderIndex()->GetChangeTracker().MarkTaskDirty(

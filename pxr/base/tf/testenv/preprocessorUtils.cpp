@@ -193,6 +193,27 @@ TestTF_PP_IS_TUPLE()
     return true;
 }
 
+static bool
+TestTF_PP_TUPLE_ELEM()
+{
+    #define _STR(value) std::string(TF_PP_STRINGIZE(value))
+
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, ())) == "");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, (a))) == "a");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, ((a)))) == "(a)");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, (((a))))) == "((a))");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, (a, b, c))) == "a");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(1, (a, b, c))) == "b");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(0, ((a, b, c)))) == "(a, b, c)");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(1, ((a, b, c)))) == "");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(1, (a, (b), c))) == "(b)");
+    TF_AXIOM(_STR(TF_PP_TUPLE_ELEM(2, (a, b, c))) == "c");
+
+    #undef _STR
+
+    return true;
+}
+
 
 static bool
 Test_TfPreprocessorUtils()
@@ -203,7 +224,8 @@ Test_TfPreprocessorUtils()
         TestTF_PP_IS_TUPLE() &&
         TestTF_PP_VARIADIC_SIZE() &&
         TestTF_PP_VARIADIC_ELEM() &&
-        TestTF_PP_FOR_EACH()
+        TestTF_PP_FOR_EACH() &&
+        TestTF_PP_TUPLE_ELEM()
         ;
 }
 

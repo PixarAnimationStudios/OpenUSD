@@ -374,11 +374,6 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
-    SRC testenv/testSdfParsingOld.testenv
-    DEST testSdfParsingOld/testSdfParsing.testenv
-)
-
-pxr_install_test_dir(
     SRC testenv/testSdfParsing.testenv
     DEST testSdfParsing/testSdfParsing.testenv
 )
@@ -480,11 +475,6 @@ pxr_register_test(testSdfPathExpression_Cpp
 )
 
 pxr_register_test(testSdfParsing
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
-)
-
-pxr_register_test(testSdfParsingOld
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfParsing"
 )

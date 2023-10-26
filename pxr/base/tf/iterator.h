@@ -409,6 +409,150 @@ constexpr size_t TfArraySize(const T (&array)[N]) noexcept
     return N;
 }
 
+/// A reverse iterator adapter for `std::reverse_iterator` that provides
+/// an `operator->` compatible with proxy reference types.
+/// This should only be used when the underlying iterator's reference
+/// is a value type and should become unnecessary in newer compilers and C++20.
+/// This implementation was written for use with random access iterators but
+/// could be extended to bidirectional iterators if necessary.
+template <typename UnderlyingIterator>
+class Tf_ProxyReferenceReverseIterator :
+    private std::reverse_iterator<UnderlyingIterator> {
+    // private API for interacting with an STL reverse_iterator of the
+    // UnderlyingIterator
+    using ReverseIterator = std::reverse_iterator<UnderlyingIterator>;
+    const ReverseIterator& _reverse_iterator() const {  return *this; }
+    ReverseIterator& _reverse_iterator() { return *this; }
+    explicit Tf_ProxyReferenceReverseIterator(const ReverseIterator& it)
+        : ReverseIterator(it) {}
+    explicit Tf_ProxyReferenceReverseIterator(ReverseIterator&& it)
+        : ReverseIterator(it) {}
+public:
+    using iterator_type = typename ReverseIterator::iterator_type;
+    using iterator_category = typename ReverseIterator::iterator_category;
+    using value_type = typename ReverseIterator::value_type;
+    using reference = typename ReverseIterator::reference;
+    using pointer = typename ReverseIterator::pointer;
+    using difference_type = typename ReverseIterator::difference_type;
+
+    static_assert(!std::is_reference<reference>::value,
+                 "Tf_ProxyReferenceReverseIterator should only be used "
+                 "when the underlying iterator's reference type is a "
+                 "proxy (MyTypeRef) and not a true reference (MyType&)."
+                 "Use std::reverse_iterator instead.");
+    static_assert(std::is_same<iterator_category,
+                               std::random_access_iterator_tag>::value,
+                 "Tf_ProxyReferenceReverseIterator must wrap a random "
+                 "access iterator.");
+
+    Tf_ProxyReferenceReverseIterator() = default;
+    explicit Tf_ProxyReferenceReverseIterator(UnderlyingIterator it) :
+        ReverseIterator(it) {
+    }
+
+    // Operators and functions which can just use the underlying STL
+    // implementation
+    using ReverseIterator::base;
+    using ReverseIterator::operator*;
+    using ReverseIterator::operator[];
+
+    /// Customize operator-> to support proxied reference types
+    /// Compatible with the C++20 specification.
+    pointer operator->() const { return std::prev(base()).operator->(); }
+
+    // Many  methods can use the underlying STL implementation but need to
+    // avoid returning a `std::reverse_iterator`
+    Tf_ProxyReferenceReverseIterator& operator++() {
+        ++_reverse_iterator();
+        return *this;
+    }
+
+    Tf_ProxyReferenceReverseIterator operator++(int) {
+        Tf_ProxyReferenceReverseIterator result{_reverse_iterator()};
+        ++_reverse_iterator();
+        return result;
+    }
+
+    Tf_ProxyReferenceReverseIterator& operator--() {
+        --_reverse_iterator();
+        return *this;
+    }
+
+    Tf_ProxyReferenceReverseIterator operator--(int) {
+        Tf_ProxyReferenceReverseIterator result{_reverse_iterator()};
+        --_reverse_iterator();
+        return result;
+    }
+
+    Tf_ProxyReferenceReverseIterator operator+(difference_type increment) const {
+        return Tf_ProxyReferenceReverseIterator(_reverse_iterator() + increment);
+    }
+
+    Tf_ProxyReferenceReverseIterator operator-(difference_type decrement) const {
+        return Tf_ProxyReferenceReverseIterator(_reverse_iterator() - decrement);
+    }
+
+    template <typename OtherIt>
+    difference_type operator-(
+        const Tf_ProxyReferenceReverseIterator<OtherIt>& other) const {
+        return _reverse_iterator() - other._reverse_iterator();
+    }
+
+    Tf_ProxyReferenceReverseIterator& operator+=(difference_type increment) {
+        _reverse_iterator() += increment;
+        return *this;
+    }
+
+    Tf_ProxyReferenceReverseIterator& operator-=(difference_type decrement) {
+        _reverse_iterator() -= decrement;
+        return *this;
+    }
+
+    inline friend Tf_ProxyReferenceReverseIterator
+    operator+(const difference_type increment,
+              const Tf_ProxyReferenceReverseIterator& iterator) {
+        return Tf_ProxyReferenceReverseIterator(
+            increment + iterator._reverse_iterator());
+    }
+
+    // Comparison operators defer to the STL implementation
+    template <typename OtherIt>
+    inline friend bool operator==(const Tf_ProxyReferenceReverseIterator& lhs,
+                                  const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() == rhs._reverse_iterator();
+    }
+
+    template <typename OtherIt>
+    inline friend bool operator!=(const Tf_ProxyReferenceReverseIterator& lhs,
+                                  const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() != rhs._reverse_iterator();
+    }
+
+    template <typename OtherIt>
+    inline friend bool operator<(const Tf_ProxyReferenceReverseIterator& lhs,
+                                 const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() < rhs._reverse_iterator();
+    }
+
+    template <typename OtherIt>
+    inline friend bool operator>(const Tf_ProxyReferenceReverseIterator& lhs,
+                                 const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() > rhs._reverse_iterator();
+    }
+
+    template <typename OtherIt>
+    inline friend bool operator<=(const Tf_ProxyReferenceReverseIterator& lhs,
+                                  const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() <= rhs._reverse_iterator();
+    }
+
+    template <typename OtherIt>
+    inline friend bool operator>=(const Tf_ProxyReferenceReverseIterator& lhs,
+                                  const Tf_ProxyReferenceReverseIterator<OtherIt>& rhs) {
+        return lhs._reverse_iterator() >= rhs._reverse_iterator();
+    }
+};
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif  // PXR_BASE_TF_ITERATOR_H

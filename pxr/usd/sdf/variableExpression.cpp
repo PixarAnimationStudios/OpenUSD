@@ -59,7 +59,11 @@ bool
 SdfVariableExpression::IsValidVariableType(const VtValue& value)
 {
     using namespace Sdf_VariableExpressionImpl;
-    return GetValueType(value) != ValueType::Unknown;
+
+    const VtValue coerced = CoerceIfUnsupportedValueType(value);
+    return 
+        (coerced.IsEmpty() ? GetValueType(value) : GetValueType(coerced)) != 
+        ValueType::Unknown;
 }
 
 SdfVariableExpression::operator bool() const

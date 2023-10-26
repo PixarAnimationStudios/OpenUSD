@@ -53,6 +53,8 @@ class HdPrman_VelocityMotionBlurSceneIndexPlugin : public HdSceneIndexPlugin
 public:
     HdPrman_VelocityMotionBlurSceneIndexPlugin();
 
+    static void SetShutterInterval(float shutterOpen, float shutterClose);
+
 protected:
     HdSceneIndexBaseRefPtr _AppendSceneIndex(
         const HdSceneIndexBaseRefPtr &inputScene,

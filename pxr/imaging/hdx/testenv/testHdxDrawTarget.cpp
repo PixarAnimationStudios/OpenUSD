@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
     {
         HdRenderBufferDescriptor desc;
         desc.dimensions = GfVec3i(512, 512, 1);
-        desc.format = HdFormatFloat32UInt8;
+        desc.format = HdFormatFloat32;
         desc.multiSampled = false;
         delegate->AddRenderBuffer(depthBuffer, desc);
     }

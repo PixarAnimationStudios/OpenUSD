@@ -63,24 +63,24 @@ PXR_NAMESPACE_USING_DIRECTIVE
     TraceCollector::GetInstance().StoreData(name, value);
 
 #define TRACE_FUNCTION_ARGS_INSTANCE(instance, name, prettyName, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, instance)( \
+constexpr static TraceStaticKeyData TF_PP_CAT(TraceKeyData_, instance)( \
     name, prettyName); \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
-        BOOST_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, instance), \
+_TRACE_ARGS_TO_STATIC_VARS(TF_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
+TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
+        TF_PP_CAT(TraceKeyData_, instance), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(TF_PP_CAT(TraceKeyData_, instance), \
             __VA_ARGS__));
 
 #define TRACE_SCOPE_ARGS_INSTANCE(instance, name, ...) \
-constexpr static TraceStaticKeyData BOOST_PP_CAT(TraceKeyData_, instance)(name); \
-_TRACE_ARGS_TO_STATIC_VARS(BOOST_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
-TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
-        BOOST_PP_CAT(TraceKeyData_, instance), \
-        _TRACE_ARGS_TO_FUNC_PARAMS(BOOST_PP_CAT(TraceKeyData_, instance), \
+constexpr static TraceStaticKeyData TF_PP_CAT(TraceKeyData_, instance)(name); \
+_TRACE_ARGS_TO_STATIC_VARS(TF_PP_CAT(TraceKeyData_, instance), __VA_ARGS__); \
+TraceScopeAuto TF_PP_CAT(TraceScopeAuto_, instance)(\
+        TF_PP_CAT(TraceKeyData_, instance), \
+        _TRACE_ARGS_TO_FUNC_PARAMS(TF_PP_CAT(TraceKeyData_, instance), \
             __VA_ARGS__));
 
-#define _TRACE_KEY_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 0, elem)
-#define _TRACE_VALUE_FROM_TUPLE(r, data, elem) BOOST_PP_TUPLE_ELEM(2, 1, elem)
+#define _TRACE_KEY_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(0, elem)
+#define _TRACE_VALUE_FROM_TUPLE(r, data, elem) TF_PP_TUPLE_ELEM(1, elem)
 
 #define _TRACE_ARGS_TO_KEY_SEQ(...) \
     BOOST_PP_SEQ_TRANSFORM(\
@@ -92,14 +92,14 @@ TraceScopeAuto BOOST_PP_CAT(TraceScopeAuto_, instance)(\
         _TRACE_VALUE_FROM_TUPLE, _, BOOST_PP_VARIADIC_TO_SEQ(__VA_ARGS__)\
     )
 #define _TRACE_KEY_KEY_DEF(r, data, i, elem) \
-    constexpr static TraceStaticKeyData BOOST_PP_CAT(data, i)(elem);
+    constexpr static TraceStaticKeyData TF_PP_CAT(data, i)(elem);
 
 #define _TRACE_ARGS_TO_STATIC_VARS(varname,...) \
     BOOST_PP_SEQ_FOR_EACH_I(_TRACE_KEY_KEY_DEF, varname, \
         _TRACE_ARGS_TO_KEY_SEQ(__VA_ARGS__))
 
 #define _TRACE_ARG_FUNC_PARAM( r, data, i, elem) \
-    BOOST_PP_COMMA_IF(i) BOOST_PP_CAT(data, i) BOOST_PP_COMMA() elem
+    BOOST_PP_COMMA_IF(i) TF_PP_CAT(data, i) BOOST_PP_COMMA() elem
 #define _TRACE_ARGS_TO_FUNC_PARAMS(varname, ...) \
     BOOST_PP_SEQ_FOR_EACH_I(\
         _TRACE_ARG_FUNC_PARAM, varname, _TRACE_ARGS_TO_VAL_SEQ(__VA_ARGS__))

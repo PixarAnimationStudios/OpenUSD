@@ -5,7 +5,7 @@ UsdPreviewSurface Specification
 .. include:: rolesAndUtils.rst
 .. include:: <isonum.txt>
 
-Copyright |copy| 2019, Pixar Animation Studios,  *version 2.4*
+Copyright |copy| 2019, Pixar Animation Studios,  *version 2.5*
 
 .. contents:: :local:
 
@@ -347,13 +347,15 @@ Texture Reader
 Node that can be used to read UV textures, including tiled textures such as Mari
 UDIM's.
 
+.. _updateudim:
+
 .. note:: UDIM Tiling Constraints
    
    To keep interchange simple(r) and to aid in efficient processing of UDIM
    textures:
    
    * **We stipulate a maximum of ten tiles in the U direction**
-   * **We stipulate that the tiles must be within the range [1001, 1099]**
+   * **We stipulate that the tiles must be within the range [1001, 1100]**
 
 
 **Node Id**: 
@@ -1054,8 +1056,8 @@ From version 2.2...
       :usda:`UsdPreviewSurface.opacityThreshold` acts as a binary cutoff for
       determining at what :usda:`opacity` values the surface will be rendered.
 
-Version 2.4 - Current Head
-##########################
+Version 2.4
+###########
 
 From version 2.3...
 
@@ -1063,3 +1065,11 @@ From version 2.3...
       Clarifies that the :usda:`ior` input can also be used in the calculation
       of specular components, including the clearcoat when
       :math:`UsdPreviewSurface.clearcoat > 0`.
+
+Version 2.5 - Current Head
+##########################
+
+From version 2.4...
+    * :ref:`Updates UDIM specification to include tile 1100.<updateudim>`
+      Changes the baseline UDIM tile support from 1001-1099, inclusive, to 
+      1001-1100.  This allows for a 10x10 grid of UDIM tiles.

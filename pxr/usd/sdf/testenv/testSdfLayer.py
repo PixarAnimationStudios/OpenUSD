@@ -27,8 +27,9 @@ import os, platform, itertools, sys, unittest
 # Initialize Ar to use Sdf_TestResolver unless a different implementation
 # is specified via the TEST_SDF_LAYER_RESOLVER to allow testing with other
 # filesystem-based resolvers.
+sdfTestResolver = "Sdf_TestResolver"
 preferredResolver = os.environ.get(
-    "TEST_SDF_LAYER_RESOLVER", "Sdf_TestResolver")
+    "TEST_SDF_LAYER_RESOLVER", sdfTestResolver)
 
 from pxr import Ar
 Ar.SetPreferredResolver(preferredResolver)
@@ -183,10 +184,6 @@ class TestSdfLayer(unittest.TestCase):
         l = Sdf.Layer.CreateAnonymous()
         self.assertEqual(l.GetDisplayName(), '')
 
-    @unittest.skipIf(platform.system() == "Windows" and
-                     not hasattr(Ar.Resolver, "CreateIdentifier"),
-                     "This test case currently fails on Windows due to "
-                     "path canonicalization issues except with Ar 2.0.")
     def test_UpdateAssetInfo(self):
         # Test that calling UpdateAssetInfo on a layer whose resolved
         # path hasn't changed doesn't cause notification to be sent.
@@ -426,10 +423,6 @@ def "Root"
         self.assertFalse(anonLayer.Import('bogus.sdf'))
         self.assertEqual(newLayer.ExportToString(), anonLayer.ExportToString())
 
-    @unittest.skipIf(platform.system() == "Windows" and
-                     not hasattr(Ar.Resolver, "CreateIdentifier"),
-                     "This test case currently fails on Windows due to "
-                     "path canonicalization issues except with Ar 2.0.")
     def test_LayersWithEquivalentPaths(self):
         # Test that FindOrOpen and Find return the same layer when
         # given different paths that should point to the same location.
@@ -544,9 +537,9 @@ def "Root"
         _TestWithRelativePath('FindOrOpenRelativeLayer.sdf')
         _TestWithRelativePath('subdir/FindOrOpenRelativeLayer.sdf')
 
-    @unittest.skipIf(preferredResolver != "ArDefaultResolver",
+    @unittest.skipIf(preferredResolver != sdfTestResolver,
                      "Test uses search-path functionality specific to "
-                     "ArDefaultResolver")
+                     "the default test resolver")
     def test_FindOrOpenDefaultResolverSearchPaths(self):
         # Set up test directory structure by exporting layers. We
         # don't use Sdf.Layer.CreateNew here to avoid populating the

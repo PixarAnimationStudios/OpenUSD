@@ -430,6 +430,12 @@ HdStLight::Sync(HdSceneDelegate *sceneDelegate,
         // scene-delegate transform, in favor of the transform passed in by
         // params...
         if (_lightType == HdPrimTypeTokens->domeLight) {
+            // Apply domeOffset if present
+            VtValue domeOffset = sceneDelegate->GetLightParamValue(id,
+                HdLightTokens->domeOffset);
+            if (domeOffset.IsHolding<GfMatrix4d>()) {
+                transform = domeOffset.UncheckedGet<GfMatrix4d>() * transform;
+            }
             GlfSimpleLight light =
                 Get(HdLightTokens->params).GetWithDefault<GlfSimpleLight>();
             light.SetTransform(transform);

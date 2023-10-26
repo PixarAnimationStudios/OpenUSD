@@ -32,7 +32,6 @@
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 
-#include <boost/preprocessor/cat.hpp>
 #include <boost/python/module.hpp>
 
 // Helper macros for module files.  If you implement your wrappers for classes
@@ -59,7 +58,7 @@ void Tf_PyInitWrapModule(void (*wrapModule)(),
                          const char* packageTag2);
 
 ARCH_EXPORT
-void BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
+void TF_PP_CAT(init_module_, MFB_PACKAGE_NAME)() {
 
     Tf_PyInitWrapModule(
         WrapModule,
@@ -83,11 +82,11 @@ PXR_NAMESPACE_CLOSE_SCOPE
 //
 extern "C"
 ARCH_EXPORT
-PyObject* BOOST_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
+PyObject* TF_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
 
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        TF_PP_STRINGIZE(BOOST_PP_CAT(_, MFB_PACKAGE_NAME)), // m_name
+        TF_PP_STRINGIZE(TF_PP_CAT(_, MFB_PACKAGE_NAME)),    // m_name
         0,                                                  // m_doc
         -1,                                                 // m_size
         NULL,                                               // m_methods
@@ -99,7 +98,7 @@ PyObject* BOOST_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
 
     PXR_NAMESPACE_USING_DIRECTIVE
     return boost::python::detail::init_module(moduledef,
-                BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
+                TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
 // We also support the case where both the library contents and the 
@@ -116,11 +115,11 @@ PyObject* BOOST_PP_CAT(PyInit__, MFB_PACKAGE_NAME)() {
 //
 extern "C"
 ARCH_EXPORT
-PyObject* BOOST_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
+PyObject* TF_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
 
     static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
-        TF_PP_STRINGIZE(BOOST_PP_CAT(lib, MFB_PACKAGE_NAME)), // m_name
+        TF_PP_STRINGIZE(TF_PP_CAT(lib, MFB_PACKAGE_NAME)),    // m_name
         0,                                                    // m_doc
         -1,                                                   // m_size
         NULL,                                                 // m_methods
@@ -132,7 +131,7 @@ PyObject* BOOST_PP_CAT(PyInit_lib, MFB_PACKAGE_NAME)() {
 
     PXR_NAMESPACE_USING_DIRECTIVE
     return boost::python::detail::init_module(moduledef, 
-                BOOST_PP_CAT(init_module_, MFB_PACKAGE_NAME));
+                TF_PP_CAT(init_module_, MFB_PACKAGE_NAME));
 }
 
 

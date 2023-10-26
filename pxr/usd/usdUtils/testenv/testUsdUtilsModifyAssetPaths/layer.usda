@@ -35,7 +35,12 @@ def Xform "Model" (
     }
 )
 {
-    asset foo = @foo.usd@
+    asset foo = @foo.usd@ (
+        customData = {
+            asset foo = @foo.usd@
+            asset[] bar = [@foo.usd@, @bar.usd@]
+        }
+    )
     asset[] bar = [
         @foo.usd@,
         @bar.usd@,
@@ -62,4 +67,10 @@ def Xform "Variants" (
             asset foo = @foo.usd@
         }
     }
+}
+
+def "PrependPayload" (
+    prepend payload = @./payload.usda@
+)
+{
 }

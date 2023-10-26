@@ -44,7 +44,6 @@
 #include "pxr/imaging/hd/materialNetworkSchema.h"
 #include "pxr/imaging/hd/materialSchema.h"
 #include "pxr/imaging/hd/meshSchema.h"
-#include "pxr/imaging/hd/modelSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
@@ -53,6 +52,8 @@
 #include "pxr/imaging/hd/visibilitySchema.h"
 #include "pxr/imaging/hd/volumeFieldBindingSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/usd/usdLux/tokens.h"
 
@@ -328,7 +329,8 @@ _BuildLightShaderDataSource(
     }
     
     // interface with the material shader network
-    const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS);
+    const HdDataSourceMaterialNetworkInterface srcMatNI(matPath, matDS,
+                                                        originPrim.dataSource);
     // look up the surface/volume terminal connection
     const auto& terminalConn = srcMatNI.GetTerminalConnection(terminalToken);
     if (!terminalConn.first) {
@@ -354,7 +356,8 @@ _BuildLightShaderDataSource(
     }
 
     // interface with the original light shader network
-    HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS);
+    HdDataSourceMaterialNetworkInterface shaderNI(originPath, originalShaderDS,
+                                                  originPrim.dataSource);
     // look up the light terminal connection
     const auto lightTC = shaderNI.GetTerminalConnection(
         HdMaterialTerminalTokens->light);
@@ -619,7 +622,7 @@ _BuildLightDataSource(
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out model
-    names.push_back(HdModelSchemaTokens->model);
+    names.push_back(UsdImagingModelSchemaTokens->model);
     sources.push_back(HdBlockDataSource::New());
 
     // Knock out mesh

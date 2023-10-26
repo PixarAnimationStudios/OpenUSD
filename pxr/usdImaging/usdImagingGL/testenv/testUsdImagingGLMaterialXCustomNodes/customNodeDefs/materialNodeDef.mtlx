@@ -12,7 +12,7 @@
             <input name="geomprop" type="string" value="st" />
             <input name="default" type="vector2" value="0.5,0.5" />
         </geompropvalue>
-        <tiledimage name="color_image" type="color3" >
+        <tiledimage name="color_image" type="color3" colorspace="srgb_texture">
             <input name="file" type="filename" interfacename="color_file" />
             <input name="uvtiling" type="vector2" value="1.0, 1.0"/>
             <input name="filtertype" type="string" value="linear"/>

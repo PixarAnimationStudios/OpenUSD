@@ -235,6 +235,7 @@ HgiTessellationState::HgiTessellationState()
 
 HgiGraphicsPipelineDesc::HgiGraphicsPipelineDesc()
     : primitiveType(HgiPrimitiveTypeTriangleList)
+    , resolveAttachments(false)
 {
 }
 
@@ -256,9 +257,8 @@ bool operator==(
            lhs.rasterizationState == rhs.rasterizationState &&
            lhs.vertexBuffers == rhs.vertexBuffers &&
            lhs.colorAttachmentDescs == rhs.colorAttachmentDescs &&
-           lhs.colorResolveAttachmentDescs == rhs.colorResolveAttachmentDescs &&
            lhs.depthAttachmentDesc == rhs.depthAttachmentDesc &&
-           lhs.depthResolveAttachmentDesc == rhs.depthResolveAttachmentDesc &&
+           lhs.resolveAttachments == rhs.resolveAttachments &&
            lhs.shaderConstantsDesc == rhs.shaderConstantsDesc;
 }
 

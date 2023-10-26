@@ -93,6 +93,19 @@ if MacOS():
     import apple_utils
 
 def GetLocale():
+    if Windows():
+        # Windows handles encoding a little differently then Linux / Mac
+        # For interactive streams (isatty() == True) it will use the
+        # console codepage, otherwise it will return an ANSI codepage.
+        # To keep things consistent we'll force UTF-8 for non-interactive
+        # streams (which is recommended by Microsoft). See:
+        # https://docs.python.org/3.6/library/sys.html#sys.stdout
+        # https://docs.microsoft.com/en-us/windows/win32/intl/code-page-identifiers
+        if sys.stdout.isatty():
+            return sys.stdout.encoding
+        else:
+            return "UTF-8"
+
     return sys.stdout.encoding or locale.getdefaultlocale()[1] or "UTF-8"
 
 def GetCommandOutput(command):
@@ -667,7 +680,7 @@ def AnyPythonDependencies(deps):
 ############################################################
 # zlib
 
-ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.11.zip"
+ZLIB_URL = "https://github.com/madler/zlib/archive/v1.2.13.zip"
 
 def InstallZlib(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ZLIB_URL, context, force)):
@@ -678,17 +691,36 @@ ZLIB = Dependency("zlib", InstallZlib, "include/zlib.h")
 ############################################################
 # boost
 
-if Windows():
-    BOOST_VERSION_FILE = "include/boost-1_78/boost/version.hpp"
-else:
-    BOOST_VERSION_FILE = "include/boost/version.hpp"
+# The default installation of boost on Windows puts headers in a versioned 
+# subdirectory, which we have to account for here. Specifying "layout=system" 
+# would cause the Windows header install to match Linux/MacOS, but the 
+# "layout=system" flag also changes the naming of the boost dlls in a 
+# manner that causes problems for dependent libraries that rely on boost's
+# trick of automatically linking the boost libraries via pragmas in boost's
+# standard include files. Dependencies that use boost's pragma linking
+# facility in general don't have enough configuration switches to also coerce 
+# the naming of the dlls and so it is best to rely on boost's most default
+# settings for maximum compatibility.
+#
+# On behalf of versions of visual studio prior to vs2022, we still support
+# boost 1.76. We don't completely know if boost 1.78 is in play on Windows, 
+# until we have determined whether Python 3 has been selected as a target. 
+# That isn't known at this point in the script, so we simplify the logic by 
+# checking for any of the possible boost header locations that are possible
+# outcomes from running this script.
+BOOST_VERSION_FILES = [
+    "include/boost/version.hpp",
+    "include/boost-1_76/boost/version.hpp",
+    "include/boost-1_78/boost/version.hpp"
+]
 
 def InstallBoost_Helper(context, force, buildArgs):
-
-    # In general we use boost 1.70.0 to adhere to VFX Reference Platform CY2020.
+    # In general we use boost 1.76.0 to adhere to VFX Reference Platform CY2022.
     # However, there are some cases where a newer version is required.
     # - Building with Python 3.10 requires boost 1.76.0 or newer.
     #   (https://github.com/boostorg/python/commit/cbd2d9)
+    #   XXX: Due to a typo we've been using 1.78.0 in this case for a while.
+    #        We're leaving it that way to minimize potential disruption.
     # - Building with Visual Studio 2022 requires boost 1.78.0 or newer.
     #   (https://github.com/boostorg/build/issues/735)
     # - Building on MacOS requires boost 1.78.0 or newer to resolve Python 3
@@ -702,7 +734,7 @@ def InstallBoost_Helper(context, force, buildArgs):
     elif MacOS():
         BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.zip"
     else:
-        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.70.0/source/boost_1_70_0.zip"
+        BOOST_URL = "https://boostorg.jfrog.io/artifactory/main/release/1.76.0/source/boost_1_76_0.zip"
 
     # Documentation files in the boost archive can have exceptionally
     # long paths. This can lead to errors when extracting boost on Windows,
@@ -882,48 +914,30 @@ def InstallBoost(context, force, buildArgs):
     try:
         InstallBoost_Helper(context, force, buildArgs)
     except:
-        versionHeader = os.path.join(context.instDir, BOOST_VERSION_FILE)
-        if os.path.isfile(versionHeader):
-            try: os.remove(versionHeader)
-            except: pass
+        for versionHeader in [
+            os.path.join(context.instDir, f) for f in BOOST_VERSION_FILES
+        ]:
+            if os.path.isfile(versionHeader):
+                try: os.remove(versionHeader)
+                except: pass
         raise
 
-# The default installation of boost on Windows puts headers in a versioned 
-# subdirectory, which we have to account for here. Specifying "layout=system" 
-# would cause the Windows header install to match Linux/MacOS, but the 
-# "layout=system" flag also changes the naming of the boost dlls in a 
-# manner that causes problems for dependent libraries that rely on boost's
-# trick of automatically linking the boost libraries via pragmas in boost's
-# standard include files. Dependencies that use boost's pragma linking
-# facility in general don't have enough configuration switches to also coerce 
-# the naming of the dlls and so it is best to rely on boost's most default
-# settings for maximum compatibility.
-#
-# On behalf of versions of visual studio prior to vs2022, we still support
-# boost 1.70. We don't completely know if boost 1.78 is in play on Windows, 
-# until we have determined whether Python 3 has been selected as a target. 
-# That isn't known at this point in the script, so we simplify the logic by 
-# checking for any of the possible boost header locations that are possible
-# outcomes from running this script.
-BOOST = Dependency("boost", InstallBoost, 
-                   "include/boost/version.hpp",
-                   "include/boost-1_70/boost/version.hpp",
-                   "include/boost-1_78/boost/version.hpp")
+BOOST = Dependency("boost", InstallBoost, *BOOST_VERSION_FILES)
 
 ############################################################
 # Intel TBB
 
 if Windows():
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/2019_U6/tbb2019_20190410oss_win.zip"
-    TBB_ROOT_DIR_NAME = "tbb2019_20190410oss"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/releases/download/v2020.3/tbb-2020.3-win.zip"
+    TBB_ROOT_DIR_NAME = "tbb"
 elif MacOS():
     # On MacOS Intel systems we experience various crashes in tests during
     # teardown starting with 2018 Update 2. Until we figure that out, we use
     # 2018 Update 1 on this platform.
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
     TBB_INTEL_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2018_U1.zip"
 else:
-    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/2019_U6.zip"
+    TBB_URL = "https://github.com/oneapi-src/oneTBB/archive/refs/tags/v2020.3.zip"
 
 def InstallTBB(context, force, buildArgs):
     if Windows():
@@ -951,9 +965,6 @@ def InstallTBB_Windows(context, force, buildArgs):
 def InstallTBB_MacOS(context, force, buildArgs):
     tbb_url = TBB_URL if apple_utils.IsTargetArm(context) else TBB_INTEL_URL
     with CurrentWorkingDirectory(DownloadURL(tbb_url, context, force)):
-        # Append extra argument controlling libstdc++ ABI if specified.
-        AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
-
         # Ensure that the tbb build system picks the proper architecture.
         PatchFile("build/macos.clang.inc",
                 [("-m64",
@@ -970,26 +981,27 @@ def InstallTBB_MacOS(context, force, buildArgs):
         if (secondaryArch == apple_utils.TARGET_X86):
             secondaryArch = "intel64"
 
-        makeTBBCmdPrimary = 'make -j{procs} arch={arch} {buildArgs}'.format(
-                                arch=primaryArch,
-                                procs=context.numJobs,
-                                buildArgs=" ".join(buildArgs))
-        Run(makeTBBCmdPrimary)
+        # Install both release and debug builds.
+        # See comments in InstallTBB_Linux.
+        def _RunBuild(arch):
+            if not arch:
+                return
+            makeTBBCmd = 'make -j{procs} arch={arch} {buildArgs}'.format(
+                arch=arch, procs=context.numJobs,
+                buildArgs=" ".join(buildArgs))
+            Run(makeTBBCmd)
 
-        makeTBBCmdSecondary = None
-        if secondaryArch:
-            makeTBBCmdSecondary = \
-                'make -j{procs} arch={arch} {buildArgs}'.format(
-                        arch=secondaryArch,
-                        procs=context.numJobs,
-                        buildArgs=" ".join(buildArgs))
-            Run(makeTBBCmdSecondary)
+        _RunBuild(primaryArch)
+        _RunBuild(secondaryArch)
 
-        # Install both release and debug builds. USD requires the debug
-        # libraries when building in debug mode, and installing both
-        # makes it easier for users to install dependencies in some
-        # location that can be shared by both release and debug USD
-        # builds. Plus, the TBB build system builds both versions anyway.
+        # See comments in InstallTBB_Linux about why we patch the Makefile
+        # and rerun builds. This is only required for TBB 2020; 2019 and
+        # earlier build both release and debug, and 2021 has moved to CMake.
+        if "2020" in tbb_url:
+            PatchFile("Makefile", [("release", "debug")])
+            _RunBuild(primaryArch)
+            _RunBuild(secondaryArch)
+
         if context.targetUniversal:
             x86Files = glob.glob(os.getcwd() +
                 "/build/*intel64*_release/libtbb*.*")
@@ -1015,11 +1027,7 @@ def InstallTBB_MacOS(context, force, buildArgs):
                 apple_utils.CreateUniversalBinaries(context, libNames, x86Dir, armDir)
         else:
             CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-            try:
-                CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
-            except:
-                PrintWarning(
-                    "TBB debug libraries are not available on this platform.")
+            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
 
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
@@ -1030,25 +1038,32 @@ def InstallTBB_Linux(context, force, buildArgs):
         AppendCXX11ABIArg("CXXFLAGS", context, buildArgs)
 
         # TBB does not support out-of-source builds in a custom location.
-        Run('make -j{procs} {buildArgs}'
-            .format(procs=context.numJobs, 
-                    buildArgs=" ".join(buildArgs)))
+        makeTBBCmd = 'make -j{procs} {buildArgs}'.format(
+            procs=context.numJobs, 
+            buildArgs=" ".join(buildArgs))
+        Run(makeTBBCmd)
 
         # Install both release and debug builds. USD requires the debug
         # libraries when building in debug mode, and installing both
         # makes it easier for users to install dependencies in some
         # location that can be shared by both release and debug USD
-        # builds. Plus, the TBB build system builds both versions anyway.
-        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
-        
-        # Some platform/configuration combinations, such as mac/arm64
-        # cannot currently be built as debug. The try allows the build to
-        # proceed even when the debug build was not produced.
-        try:
-            CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
-        except:
-            PrintWarning("TBB debug libraries are not available on this platform.")
+        # builds.
+        #
+        # As of TBB 2020 the build no longer produces a debug build along
+        # with the release build. There is also no way to specify a debug
+        # build when running make, even though the internals of the build
+        # still support it.
+        #
+        # To workaround this, we patch the Makefile to change "release" to
+        # "debug" and re-run the build, copying the debug libraries
+        # afterwards. 
+        #
+        # See https://github.com/oneapi-src/oneTBB/issues/207/
+        PatchFile("Makefile", [("release", "debug")])
+        Run(makeTBBCmd)
 
+        CopyFiles(context, "build/*_release/libtbb*.*", "lib")
+        CopyFiles(context, "build/*_debug/libtbb*.*", "lib")
         CopyDirectory(context, "include/serial", "include/serial")
         CopyDirectory(context, "include/tbb", "include/tbb")
 
@@ -1127,21 +1142,19 @@ PNG = Dependency("PNG", InstallPNG, "include/png.h")
 ############################################################
 # IlmBase/OpenEXR
 
-# On Windows we use v2.5.2 as it contains a fix that removes symlink creation
-# on that platform, which is not typically allowed unless the user turns on
-# "Developer Mode". 
-#
-# See https://github.com/AcademySoftwareFoundation/openexr/pull/742.
-if Windows():
-    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.5.2.zip"
-else:
-    OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v2.4.3.zip"
+OPENEXR_URL = "https://github.com/AcademySoftwareFoundation/openexr/archive/refs/tags/v3.1.11.zip"
 
 def InstallOpenEXR(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENEXR_URL, context, force)):
         RunCMake(context, force, 
-                 ['-DPYILMBASE_ENABLE=OFF',
-                  '-DOPENEXR_VIEWERS_ENABLE=OFF',
+                 ['-DOPENEXR_INSTALL_TOOLS=OFF',
+                  '-DOPENEXR_INSTALL_EXAMPLES=OFF',
+
+                  # Force OpenEXR to build and use a separate Imath library
+                  # instead of looking for one externally. This ensures that
+                  # OpenEXR and other dependencies use the Imath library
+                  # built via this script.
+                  '-DOPENEXR_FORCE_INTERNAL_IMATH=ON',
                   '-DBUILD_TESTING=OFF'] + buildArgs)
 
 OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
@@ -1149,63 +1162,20 @@ OPENEXR = Dependency("OpenEXR", InstallOpenEXR, "include/OpenEXR/ImfVersion.h")
 ############################################################
 # Ptex
 
-# v2.3.2 requires PkgConfig, which does not typically exist on Windows and
-# MacOS. This requirement is removed by commit c797af4 which landed after
-# v2.4.1. However, since this fix is not in a versioned release we do not
-# want to use it in our build, and the changes in the fix are just enough
-# to be uncomfortable to patch ourselves. So on those platforms, we use
-# v2.1.33 from the CY2019 VFX Reference Platform.
-if Windows() or MacOS():
-    PTEX_URL = "https://github.com/wdas/ptex/archive/v2.1.33.zip"
-    PTEX_VERSION = "v2.1.33"
-else:
-    PTEX_URL = "https://github.com/wdas/ptex/archive/refs/tags/v2.3.2.zip"
-    PTEX_VERSION = "v2.3.2"
+PTEX_URL = "https://github.com/wdas/ptex/archive/refs/tags/v2.4.2.zip"
+PTEX_VERSION = "v2.4.2"
 
 def InstallPtex(context, force, buildArgs):
-    if Windows():
-        InstallPtex_Windows(context, force, buildArgs)
-    else:
-        InstallPtex_LinuxOrMacOS(context, force, buildArgs)
+    cmakeOptions = [
+        '-DBUILD_TESTING=OFF',
+        '-DPTEX_BUILD_STATIC_LIBS=OFF',
+        # We must tell the Ptex build system what version we're building
+        # otherwise we get errors when running CMake.
+        '-DPTEX_VER={v}'.format(v=PTEX_VERSION)
+    ]
+    cmakeOptions += buildArgs
 
-def InstallPtex_Windows(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(PTEX_URL, context, force)):
-        # Ptex has a bug where the import library for the dynamic library and
-        # the static library both get the same name, Ptex.lib, and as a
-        # result one clobbers the other. We hack the appropriate CMake
-        # file to prevent that. Since we don't need the static library we'll
-        # rename that.
-        #
-        # In addition src\tests\CMakeLists.txt adds -DPTEX_STATIC to the 
-        # compiler but links tests against the dynamic library, causing the 
-        # links to fail. We patch the file to not add the -DPTEX_STATIC
-        PatchFile('src\\ptex\\CMakeLists.txt', 
-                  [("set_target_properties(Ptex_static PROPERTIES OUTPUT_NAME Ptex)",
-                    "set_target_properties(Ptex_static PROPERTIES OUTPUT_NAME Ptexs)")])
-        PatchFile('src\\tests\\CMakeLists.txt',
-                  [("add_definitions(-DPTEX_STATIC)", 
-                    "# add_definitions(-DPTEX_STATIC)")])
-
-        # Patch Ptex::String to export symbol for operator<< 
-        # This is required for newer versions of OIIO, which make use of the
-        # this operator on Windows platform specifically.
-        PatchFile('src\\ptex\\Ptexture.h',
-                  [("std::ostream& operator << (std::ostream& stream, const Ptex::String& str);",
-                    "PTEXAPI std::ostream& operator << (std::ostream& stream, const Ptex::String& str);")])
-
-
-        RunCMake(context, force, buildArgs)
-
-def InstallPtex_LinuxOrMacOS(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(PTEX_URL, context, force)):
-        cmakeOptions = [
-            '-DPTEX_BUILD_STATIC_LIBS=OFF',
-            # We must tell the Ptex build system what version we're building
-            # otherwise we get errors when running CMake.
-            '-DPTEX_VER={v}'.format(v=PTEX_VERSION)
-        ]
-        cmakeOptions += buildArgs
-
         RunCMake(context, force, cmakeOptions)
 
 PTEX = Dependency("Ptex", InstallPtex, "include/PtexVersion.h")
@@ -1231,10 +1201,20 @@ BLOSC = Dependency("Blosc", InstallBLOSC, "include/blosc.h")
 ############################################################
 # OpenVDB
 
-OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v7.1.0.zip"
+OPENVDB_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v9.1.0.zip"
+
+# OpenVDB v9.1.0 requires TBB 2019.0 or above, but this script installs
+# TBB 2018 on macOS Intel systems for reasons documented above. So we
+# keep OpenVDB at the version specified for the VFX Reference Platform
+# CY2021, which is the last version that supported 2018.
+OPENVDB_INTEL_URL = "https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v8.2.0.zip"
 
 def InstallOpenVDB(context, force, buildArgs):
-    with CurrentWorkingDirectory(DownloadURL(OPENVDB_URL, context, force)):
+    openvdb_url = OPENVDB_URL
+    if MacOS() and not apple_utils.IsTargetArm(context):
+        openvdb_url = OPENVDB_INTEL_URL
+
+    with CurrentWorkingDirectory(DownloadURL(openvdb_url, context, force)):
         extraArgs = [
             '-DOPENVDB_BUILD_PYTHON_MODULE=OFF',
             '-DOPENVDB_BUILD_BINARIES=OFF',
@@ -1264,11 +1244,7 @@ OPENVDB = Dependency("OpenVDB", InstallOpenVDB, "include/openvdb/openvdb.h")
 ############################################################
 # OpenImageIO
 
-if MacOS():
-    # OIIO 2.3.15 adds fixes for Apple Silicon cross compilation.
-    OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.15.0.zip"
-else:
-    OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/Release-2.1.16.0.zip"
+OIIO_URL = "https://github.com/OpenImageIO/oiio/archive/refs/tags/v2.3.21.0.zip"
 
 def InstallOpenImageIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OIIO_URL, context, force)):
@@ -1279,6 +1255,7 @@ def InstallOpenImageIO(context, force, buildArgs):
                                   and context.buildTests) else 'OFF'
         extraArgs = ['-DOIIO_BUILD_TOOLS={}'.format(buildOIIOTools),
                      '-DOIIO_BUILD_TESTS=OFF',
+                     '-DBUILD_DOCS=OFF',
                      '-DUSE_PYTHON=OFF',
                      '-DSTOP_ON_WARNING=OFF']
 
@@ -1303,6 +1280,12 @@ def InstallOpenImageIO(context, force, buildArgs):
         extraArgs.append('-DBoost_NO_BOOST_CMAKE=On')
         extraArgs.append('-DBoost_NO_SYSTEM_PATHS=True')
 
+        # OpenImageIO 2.3.5 changed the default postfix for debug library
+        # names from "" to "_d". USD's build system currently does not support
+        # finding the library under this name, so as an interim workaround
+        # we reset it back to its old value.
+        extraArgs.append('-DCMAKE_DEBUG_POSTFIX=""')
+
         # Add on any user-specified extra arguments.
         extraArgs += buildArgs
 
@@ -1314,71 +1297,18 @@ OPENIMAGEIO = Dependency("OpenImageIO", InstallOpenImageIO,
 ############################################################
 # OpenColorIO
 
-OCIO_URL = "https://github.com/imageworks/OpenColorIO/archive/v1.1.0.zip"
+OCIO_URL = "https://github.com/AcademySoftwareFoundation/OpenColorIO/archive/refs/tags/v2.1.3.zip"
 
 def InstallOpenColorIO(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OCIO_URL, context, force)):
-        extraArgs = ['-DOCIO_BUILD_TRUELIGHT=OFF',
-                     '-DOCIO_BUILD_APPS=OFF',
+        extraArgs = ['-DOCIO_BUILD_APPS=OFF',
                      '-DOCIO_BUILD_NUKE=OFF',
                      '-DOCIO_BUILD_DOCS=OFF',
                      '-DOCIO_BUILD_TESTS=OFF',
-                     '-DOCIO_BUILD_PYGLUE=OFF',
-                     '-DOCIO_BUILD_JNIGLUE=OFF',
-                     '-DOCIO_STATIC_JNIGLUE=OFF']
-
-        # OpenImageIO v1.1.0 fails to build on Windows with the RelWithDebInfo
-        # build type because it doesn't set up the correct properties for the
-        # YAML library it relies on. This patch works around that issue.
-        if Windows() and context.buildRelWithDebug:
-            PatchFile("CMakeLists.txt",
-                      [("IMPORTED_LOCATION_RELEASE", 
-                        "IMPORTED_LOCATION_RELWITHDEBINFO")])
-
-        # When building for Apple Silicon we need to make sure that
-        # the correct build architecture is specified for OCIO and
-        # and for TinyXML and YAML.
-        if MacOS():
-            targetArch = apple_utils.GetTargetArch(context)
-
-            PatchFile("CMakeLists.txt",
-                    [('CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}',
-                    'CMAKE_ARGS      ${TINYXML_CMAKE_ARGS}\n' +
-                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
-                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=targetArch)),
-                    ('CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}',
-                    'CMAKE_ARGS      ${YAML_CPP_CMAKE_ARGS}\n' +
-                    '            CMAKE_CACHE_ARGS -DCMAKE_XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH:BOOL=TRUE'
-                    ' -DCMAKE_OSX_ARCHITECTURES:STRING="{arch}"'.format(arch=targetArch)),
-                    ('set(CMAKE_OSX_ARCHITECTURES x86_64 CACHE STRING',
-                     'set(CMAKE_OSX_ARCHITECTURES "{arch}" CACHE STRING'.format(arch=targetArch))])
-
-        # The OCIO build treats all warnings as errors but several come up
-        # on various platforms, including:
-        # - On gcc6, v1.1.0 emits many -Wdeprecated-declaration warnings for
-        #   std::auto_ptr
-        # - On clang, v1.1.0 emits a -Wself-assign-field warning. This is fixed
-        #   in https://github.com/AcademySoftwareFoundation/OpenColorIO/commit/0be465feb9ac2d34bd8171f30909b276c1efa996
-        #
-        # To avoid build failures we force all warnings off for this build.
-        if GetVisualStudioCompilerAndVersion():
-            # This doesn't work because CMake stores default flags for
-            # MSVC in CMAKE_CXX_FLAGS and this would overwrite them.
-            # However, we don't seem to get any warnings on Windows
-            # (at least with VS2015 and 2017).
-            # extraArgs.append('-DCMAKE_CXX_FLAGS=/w') 
-            pass
-        else:
-            extraArgs.append('-DCMAKE_CXX_FLAGS=-w')
+                     '-DOCIO_BUILD_GPU_TESTS=OFF',
+                     '-DOCIO_BUILD_PYTHON=OFF']
 
         if MacOS():
-            PatchFile("src/core/Config.cpp",
-                       [("cacheidnocontext_ = cacheidnocontext_;",
-                         "cacheidnocontext_ = rhs.cacheidnocontext_;")])
-
-            extraArgs.append('-DCMAKE_CXX_FLAGS="-Wno-unused-function'
-                             ' -Wno-unused-const-variable'
-                             ' -Wno-unused-private-field"')
             if apple_utils.IsTargetArm(context):
                 extraArgs.append('-DOCIO_USE_SSE=OFF')
 
@@ -1393,7 +1323,7 @@ OPENCOLORIO = Dependency("OpenColorIO", InstallOpenColorIO,
 ############################################################
 # OpenSubdiv
 
-OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_5_0.zip"
+OPENSUBDIV_URL = "https://github.com/PixarAnimationStudios/OpenSubdiv/archive/v3_5_1.zip"
 
 def InstallOpenSubdiv(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(OPENSUBDIV_URL, context, force)):
@@ -1435,19 +1365,10 @@ def InstallOpenSubdiv(context, force, buildArgs):
         if oldGenerator == "Ninja" and Windows():
             context.cmakeGenerator = None
 
-        # OpenSubdiv 3.3 and later on MacOS occasionally runs into build
-        # failures with multiple build jobs. Workaround this by using
-        # just 1 job for now. See:
-        # https://github.com/PixarAnimationStudios/OpenSubdiv/issues/1194
-        oldNumJobs = context.numJobs
-        if MacOS():
-            context.numJobs = 1
-
         try:
             RunCMake(context, force, extraArgs)
         finally:
             context.cmakeGenerator = oldGenerator
-            context.numJobs = oldNumJobs
 
 OPENSUBDIV = Dependency("OpenSubdiv", InstallOpenSubdiv, 
                         "include/opensubdiv/version.h")
@@ -1516,18 +1437,10 @@ HDF5 = Dependency("HDF5", InstallHDF5, "include/hdf5.h")
 ############################################################
 # Alembic
 
-if MacOS():
-    # ALEMBIC 1.8.3 adds fixes for Apple Silicon cross compilation.
-    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.8.3.zip"
-else:
-    ALEMBIC_URL = "https://github.com/alembic/alembic/archive/1.7.10.zip"
+ALEMBIC_URL = "https://github.com/alembic/alembic/archive/refs/tags/1.8.5.zip"
 
 def InstallAlembic(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(ALEMBIC_URL, context, force)):
-        if MacOS():
-            PatchFile("CMakeLists.txt",
-              [("ADD_DEFINITIONS(-Wall -Werror -Wextra -Wno-unused-parameter)",
-                "ADD_DEFINITIONS(-Wall -Wextra -Wno-unused-parameter)")])
         cmakeOptions = ['-DUSE_BINARIES=OFF', '-DUSE_TESTS=OFF']
         if context.enableHDF5:
             # HDF5 requires the H5_BUILT_AS_DYNAMIC_LIB macro be defined if

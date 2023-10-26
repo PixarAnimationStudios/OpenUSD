@@ -32,6 +32,7 @@
 
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
@@ -43,7 +44,6 @@
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/types.h"
 
-#include <boost/container/flat_map.hpp>
 #include <boost/intrusive_ptr.hpp>
 
 #include <tbb/concurrent_unordered_set.h>
@@ -1046,7 +1046,7 @@ private:
     mutable tbb::spin_rw_mutex _sharedTimesMutex;
 
     // functions to write VtValues to file by type.
-    boost::container::flat_map<
+    pxr_tsl::robin_map<
         std::type_index, std::function<ValueRep (VtValue const &)>>
         _packValueFunctions;
 

@@ -36,15 +36,13 @@
 /// 
 
 #include "pxr/pxr.h"
-#include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/usdUtils/api.h"
+#include "pxr/usd/usdUtils/usdzPackage.h"
 
 #include <string>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
-
-class SdfAssetPath;
 
 /// Parses the file at \p filePath, identifying external references, and
 /// sorting them into separate type-based buckets. Sublayers are returned in
@@ -64,87 +62,6 @@ void UsdUtilsExtractExternalReferences(
     std::vector<std::string>* subLayers,
     std::vector<std::string>* references,
     std::vector<std::string>* payloads);
-
-/// Creates a USDZ package containing the specified asset, identified by its 
-/// \p assetPath. The created package will include a localized version of the 
-/// asset itself and all of its external dependencies. Any anonymous layers that
-/// are encountered during dependency discovery will be serialized into the
-/// resulting package. Due to localization, the packaged layers might be 
-/// modified to have different asset paths.
-///
-/// You can optionally specify a different package-internal name for the first
-/// layer of the asset by specifying \p firstLayerName. By default,
-/// \p firstLayerName is empty, meaning that the original name is preserved.
-/// 
-/// Returns true if the package was created successfully.
-/// 
-/// \note Clients of this function must take care of configuring the asset 
-/// resolver context before invoking the function. To create a default 
-/// resolver context, use \ref CreateDefaultContextForAsset() with the 
-/// asset path.
-/// 
-/// \note If the given asset has a dependency on a directory (i.e. an external 
-/// reference to a directory path), the dependency is ignored and the contents 
-/// of the directory are not included in the created package. 
-/// 
-/// \note This function modifies the layers referenced by \p assetPath 
-/// (including the root layer and all transitive layer dependencies) in-place. 
-/// However, it does not save the layers before copying them into the package 
-/// that is created. It also does not revert the changes it makes to the 
-/// layers. Therefore, it is strongly recommended that you run this function in 
-/// isolation after any source UsdStages have been closed. If you have UsdStages 
-/// open during the function call that reference the layers being modified, you 
-/// may receive warnings or composition errors which may not affect the 
-/// resulting package adversely.
-/// 
-/// \sa UsdUtilsCreateNewARKitUsdzPackage()
-USDUTILS_API
-bool
-UsdUtilsCreateNewUsdzPackage(
-    const SdfAssetPath& assetPath,
-    const std::string& usdzFilePath,
-    const std::string& firstLayerName=std::string());
-
-/// Similar to UsdUtilsCreateNewUsdzPackage, this function packages all of the 
-/// dependencies of the given asset. Assets targeted at the initial usdz 
-/// implementation in ARKit operate under greater constraints than usdz files 
-/// for more general 'in house' uses, and this option attempts to ensure that
-/// these constraints are honored; this may involve more transformations to the 
-/// data, which may cause loss of features such as VariantSets. Any anonymous 
-/// layers that are encountered during dependency discovery will be serialized 
-/// into the resulting package.
-///
-/// If \p firstLayerName is specified, it is modified to have the ".usdc" 
-/// extension, as required by the initial usdz implementation in ARKit.
-/// 
-/// Returns true if the package was created successfully.
-/// 
-/// \note Clients of this function must take care of configuring the asset 
-/// resolver context before invoking the function. To create a default 
-/// resolver context, use \ref CreateDefaultContextForAsset() with the 
-/// asset path.
-/// 
-/// \note If the given asset has a dependency on a directory (i.e. an external 
-/// reference to a directory path), the dependency is ignored and the contents 
-/// of the directory are not included in the created package. 
-/// 
-/// \note This function modifies the layers referenced by \p assetPath 
-/// (including the root layer and all transitive layer dependencies) in-place. 
-/// However, it does not save the layers before copying them into the package 
-/// that is created. It also does not revert the changes it makes to the 
-/// layers. Therefore, it is strongly recommended that you run this function in 
-/// isolation after any source UsdStages have been closed. If you have UsdStages 
-/// open during the function call that reference the layers being modified, you 
-/// may receive warnings or composition errors which may not affect the 
-/// resulting package adversely.  
-/// 
-/// \sa UsdUtilsCreateNewUsdzPackage()
-USDUTILS_API
-bool
-UsdUtilsCreateNewARKitUsdzPackage(
-    const SdfAssetPath &assetPath,
-    const std::string &usdzFilePath,
-    const std::string &firstLayerName=std::string());
 
 /// Recursively computes all the dependencies of the given asset and populates
 /// \p layers with all the dependencies that can be opened as an SdfLayer. 
@@ -182,6 +99,28 @@ USDUTILS_API
 void UsdUtilsModifyAssetPaths(
         const SdfLayerHandle& layer,
         const UsdUtilsModifyAssetPathFn& modifyFn);
+
+// Enum class representing the type of dependency.
+enum class UsdUtilsDependencyType {
+    Reference,
+    SubLayer,
+    Payload
+};
+
+// Signature for user supplied processing function.  Note if the asset path
+// that is returned from this function is the empty string then the asset
+// path will be removed.
+// \param layer The layer containing this dependency
+// \param assetPath The asset path as authored in the layer
+// \param dependencies  All actual dependencies associated with this asset path. 
+// Multiple items may be present in this array if the asset path is, for 
+// example, a udim specifier or a clips 'templateAssetPath'
+// \param dependencyType enumerates the type of this dependency
+using UsdUtilsProcessingFunc = std::function<std::string(
+        const SdfLayerRefPtr &layer, 
+        const std::string &assetPath, 
+        const std::vector<std::string>& dependencies,
+        UsdUtilsDependencyType dependencyType)>;
 
 PXR_NAMESPACE_CLOSE_SCOPE
 

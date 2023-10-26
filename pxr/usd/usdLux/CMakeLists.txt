@@ -18,6 +18,7 @@ pxr_library(usdLux
         diskLight
         distantLight
         domeLight
+        domeLight_1
         geometryLight
         lightAPI
         lightFilter
@@ -52,6 +53,7 @@ pxr_library(usdLux
         wrapDiskLight.cpp
         wrapDistantLight.cpp
         wrapDomeLight.cpp
+        wrapDomeLight_1.cpp
         wrapGeometryLight.cpp
         wrapLightAPI.cpp
         wrapLightFilter.cpp

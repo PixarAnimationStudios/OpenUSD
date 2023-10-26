@@ -55,6 +55,20 @@ HdCapsuleSchema::GetRadius()
         HdCapsuleSchemaTokens->radius);
 }
 
+HdDoubleDataSourceHandle
+HdCapsuleSchema::GetRadiusTop()
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdCapsuleSchemaTokens->radiusTop);
+}
+
+HdDoubleDataSourceHandle
+HdCapsuleSchema::GetRadiusBottom()
+{
+    return _GetTypedDataSource<HdDoubleDataSource>(
+        HdCapsuleSchemaTokens->radiusBottom);
+}
+
 HdTokenDataSourceHandle
 HdCapsuleSchema::GetAxis()
 {
@@ -67,29 +81,41 @@ HdContainerDataSourceHandle
 HdCapsuleSchema::BuildRetained(
         const HdDoubleDataSourceHandle &height,
         const HdDoubleDataSourceHandle &radius,
+        const HdDoubleDataSourceHandle &radiusTop,
+        const HdDoubleDataSourceHandle &radiusBottom,
         const HdTokenDataSourceHandle &axis
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken _names[5];
+    HdDataSourceBaseHandle _values[5];
 
-    size_t count = 0;
+    size_t _count = 0;
     if (height) {
-        names[count] = HdCapsuleSchemaTokens->height;
-        values[count++] = height;
+        _names[_count] = HdCapsuleSchemaTokens->height;
+        _values[_count++] = height;
     }
 
     if (radius) {
-        names[count] = HdCapsuleSchemaTokens->radius;
-        values[count++] = radius;
+        _names[_count] = HdCapsuleSchemaTokens->radius;
+        _values[_count++] = radius;
+    }
+
+    if (radiusTop) {
+        _names[_count] = HdCapsuleSchemaTokens->radiusTop;
+        _values[_count++] = radiusTop;
+    }
+
+    if (radiusBottom) {
+        _names[_count] = HdCapsuleSchemaTokens->radiusBottom;
+        _values[_count++] = radiusBottom;
     }
 
     if (axis) {
-        names[count] = HdCapsuleSchemaTokens->axis;
-        values[count++] = axis;
+        _names[_count] = HdCapsuleSchemaTokens->axis;
+        _values[_count++] = axis;
     }
 
-    return HdRetainedContainerDataSource::New(count, names, values);
+    return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 /*static*/
@@ -109,7 +135,8 @@ const TfToken &
 HdCapsuleSchema::GetSchemaToken()
 {
     return HdCapsuleSchemaTokens->capsule;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdCapsuleSchema::GetDefaultLocator()
@@ -136,6 +163,22 @@ HdCapsuleSchema::Builder::SetRadius(
 }
 
 HdCapsuleSchema::Builder &
+HdCapsuleSchema::Builder::SetRadiusTop(
+    const HdDoubleDataSourceHandle &radiusTop)
+{
+    _radiusTop = radiusTop;
+    return *this;
+}
+
+HdCapsuleSchema::Builder &
+HdCapsuleSchema::Builder::SetRadiusBottom(
+    const HdDoubleDataSourceHandle &radiusBottom)
+{
+    _radiusBottom = radiusBottom;
+    return *this;
+}
+
+HdCapsuleSchema::Builder &
 HdCapsuleSchema::Builder::SetAxis(
     const HdTokenDataSourceHandle &axis)
 {
@@ -149,6 +192,8 @@ HdCapsuleSchema::Builder::Build()
     return HdCapsuleSchema::BuildRetained(
         _height,
         _radius,
+        _radiusTop,
+        _radiusBottom,
         _axis
     );
 }

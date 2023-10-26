@@ -1,0 +1,39 @@
+#usda 1.0
+(
+    upAxis = "Z"
+)
+
+def Sphere "mxSphere" (
+    prepend apiSchemas = ["MaterialBindingAPI"]
+)
+{
+    rel material:binding = </Materials/MaterialX/Materials/Chrome>
+    color3f[] primvars:displayColor = [(0.1, 0.5, 0.8)]
+}
+
+def Scope "Materials" {
+    def "MaterialX" (
+        references = [
+            @./mtlxFiles/standard_surface_nodes.mtlx@</MaterialX>,
+        ]
+    )
+    {
+    }
+}
+
+def Xform "lights" 
+{
+    def DomeLight "DomeLight"
+    {
+        asset inputs:texture:file = @./StinsonBeach.hdr@
+        float xformOp:rotateX:Zup = 90
+        uniform token[] xformOpOrder = ["xformOp:rotateX:Zup"]
+    }
+}
+
+def Camera "FrontCamera"
+{
+    double3 xformOp:translate = (0, 0, 7)
+    float xformOp:rotateX:Zup = 90 # change to Zup
+    uniform token[] xformOpOrder = ["xformOp:rotateX:Zup","xformOp:translate"]
+}

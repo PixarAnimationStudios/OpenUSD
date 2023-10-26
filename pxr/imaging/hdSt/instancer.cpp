@@ -83,7 +83,8 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
         VtValue value = sceneDelegate->Get(instancerId, primvar.name);
         if (!value.IsEmpty()) {
             HdBufferSourceSharedPtr source;
-            if (primvar.name == HdInstancerTokens->instanceTransform &&
+            if ((primvar.name == HdInstancerTokens->instanceTransform ||
+                 primvar.name == HdInstancerTokens->instanceTransforms) &&
                 TF_VERIFY(value.IsHolding<VtArray<GfMatrix4d> >())) {
                 // Explicitly invoke the c'tor taking a
                 // VtArray<GfMatrix4d> to ensure we properly convert to
@@ -92,10 +93,11 @@ HdStInstancer::_SyncPrimvars(HdSceneDelegate *sceneDelegate,
                     resourceRegistry->GetHgi()->GetCapabilities();
                 bool const doublesSupported = capabilities->IsSet(
                     HgiDeviceCapabilitiesBitsShaderDoublePrecision);
-                source.reset(new HdVtBufferSource(primvar.name,
-                            value.UncheckedGet<VtArray<GfMatrix4d>>(),
-                            1,
-                            doublesSupported));
+                source.reset(new HdVtBufferSource(
+                    primvar.name,
+                    value.UncheckedGet<VtArray<GfMatrix4d>>(),
+                    1,
+                    doublesSupported));
             }
             else {
                 source.reset(new HdVtBufferSource(primvar.name, value));

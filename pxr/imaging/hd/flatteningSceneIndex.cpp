@@ -195,18 +195,28 @@ _PrimLevelWrappingDataSource::Get(
             _primPath,
             name,
             _inputDataSource);
-        if (HdDataSourceBaseHandle const flattenedDs =
-                providers[i]->GetFlattenedDataSource(ctx)) {
-            HdDataSourceBase::AtomicStore(dsAtomicHandle, flattenedDs);
-            return flattenedDs;
+        HdDataSourceBaseHandle flattenedDs = 
+            providers[i]->GetFlattenedDataSource(ctx);
+        if (!flattenedDs) {
+            // A nullptr means cache miss. To distinguish a cache miss from
+            // the flattened data source being null, we store a bool
+            // data source.
+            flattenedDs = HdRetainedTypedSampledDataSource<bool>::New(false);
         }
-        // A nullptr means cache miss. To distinguish a cache miss from
-        // the flattened data source being null, we store a bool
-        // data source.
-        HdDataSourceBase::AtomicStore(
-            dsAtomicHandle,
-            HdRetainedTypedSampledDataSource<bool>::New(false));
-        return nullptr;
+
+        HdDataSourceBaseAtomicHandle existingDs;
+        // Make sure that we only set the flattened data source only once.
+        // Flattened data source can cache state and need to be invalidated.
+        //
+        // It would be bad if we return different flattened data sources
+        // on different calls and only invalidate the last one that was
+        // returned.
+        if (HdDataSourceBase::AtomicCompareExchange(
+                dsAtomicHandle, existingDs, flattenedDs)) {
+            return HdContainerDataSource::Cast(flattenedDs);
+        } else {
+            return HdContainerDataSource::Cast(existingDs);
+        }
     }
 
     if (_inputDataSource) {

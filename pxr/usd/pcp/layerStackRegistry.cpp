@@ -35,9 +35,8 @@
 
 #include <tbb/queuing_rw_mutex.h>
 
-#include <boost/unordered_map.hpp>
-
 #include <algorithm>
+#include <unordered_map>
 #include <utility>
 
 using std::pair;
@@ -57,16 +56,16 @@ public:
 
     typedef SdfLayerHandleVector Layers;
     typedef PcpLayerStackPtrVector LayerStacks;
-    typedef boost::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr>
-        IdentifierToLayerStack;
-    typedef boost::unordered_map<SdfLayerHandle, LayerStacks>
+    typedef std::unordered_map<PcpLayerStackIdentifier, PcpLayerStackPtr,
+                               TfHash> IdentifierToLayerStack;
+    typedef std::unordered_map<SdfLayerHandle, LayerStacks, TfHash>
         LayerToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, Layers>
+    typedef std::unordered_map<PcpLayerStackPtr, Layers, TfHash>
         LayerStackToLayers;
 
-    typedef boost::unordered_map<std::string, LayerStacks>
+    typedef std::unordered_map<std::string, LayerStacks, TfHash>
         MutedLayerIdentifierToLayerStacks;
-    typedef boost::unordered_map<PcpLayerStackPtr, std::set<std::string> >
+    typedef std::unordered_map<PcpLayerStackPtr, std::set<std::string>, TfHash>
         LayerStackToMutedLayerIdentifiers;
 
     IdentifierToLayerStack identifierToLayerStack;

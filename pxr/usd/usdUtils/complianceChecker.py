@@ -244,17 +244,12 @@ should always have upAxis set to 'Y'"""
 
 class TextureChecker(BaseRuleChecker):
     # The most basic formats are those published in the USDZ spec
-    _basicUSDZImageFormats = ("jpg", "jpeg", "png")
-
-    # In non-consumer-content (arkit) mode, OIIO can allow us to 
-    # additionaly read other formats from USDZ packages
-    _extraUSDZ_OIIOImageFormats = (".exr")
+    _basicUSDZImageFormats = ("exr", "jpg", "jpeg", "png")
 
     # Include a list of "unsupported" image formats to provide better error
     # messages when we find one of these.  Our builtin image decoder
     # _can_ decode these, but they are not considered portable consumer-level
-    _unsupportedImageFormats = ["bmp", "tga", "hdr", "exr", "tif", "zfile", 
-                                "tx"]
+    _unsupportedImageFormats = ["bmp", "tga", "hdr", "tif", "tx", "zfile"] 
 
     @staticmethod
     def GetDescription():
@@ -274,8 +269,6 @@ class TextureChecker(BaseRuleChecker):
         rootLayer = usdStage.GetRootLayer()
         if rootLayer.GetFileFormat().IsPackage() or self._consumerLevelChecks:
             self._allowedFormats = list(TextureChecker._basicUSDZImageFormats)
-            if not self._consumerLevelChecks:
-                self._allowedFormats.append(TextureChecker._extraUSDZ_OIIOImageFormats)
         else:
             self._Msg("Not performing texture format checks for general "
                       "USD asset")
@@ -1031,7 +1024,7 @@ class ComplianceChecker(object):
     def CheckCompliance(self, inputFile):
         from pxr import Sdf, Usd, UsdUtils
         if not Usd.Stage.IsSupportedFile(inputFile):
-            _AddError("Cannot open file '%s' on a USD stage." % args.inputFile)
+            self._AddError("Cannot open file '%s' on a USD stage." % inputFile)
             return
 
         # Collect all warnings using a diagnostic delegate.

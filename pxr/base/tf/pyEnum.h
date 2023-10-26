@@ -112,8 +112,8 @@ class Tf_PyEnumRegistry {
             // In the case of producing a TfEnum or an integer, any
             // registered enum type is fine.  In all other cases, the
             // enum types must match.
-            if (boost::is_same<T, TfEnum>::value ||
-                (boost::is_integral<T>::value && !boost::is_enum<T>::value))
+            if (std::is_same<T, TfEnum>::value ||
+                (std::is_integral<T>::value && !std::is_enum<T>::value))
                 return i != o2e.end() ? obj : 0;
             else
                 return (i != o2e.end() && i->second.IsA<T>()) ? obj : 0;

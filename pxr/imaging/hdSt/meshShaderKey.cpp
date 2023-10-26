@@ -55,6 +55,9 @@ TF_DEFINE_PRIVATE_TOKENS(
     // wireframe mixins
     ((edgeNoneFS,                  "MeshWire.Fragment.NoEdge"))
 
+    ((edgeOpacityNoForceFS,        "MeshWire.Fragment.FinalEdgeOpacityNoForce"))
+    ((edgeOpacityForceFS,          "MeshWire.Fragment.FinalEdgeOpacityForce"))
+
     ((edgeMaskTriangleFS,          "MeshWire.Fragment.EdgeMaskTriangle"))
     ((edgeMaskQuadFS,              "MeshWire.Fragment.EdgeMaskQuad"))
     ((edgeMaskRefinedQuadFS,       "MeshWire.Fragment.EdgeMaskRefinedQuad"))
@@ -171,7 +174,8 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool hasMirroredTransform,
     bool hasInstancer,
     bool enableScalarOverride,
-    bool pointsShadingEnabled)
+    bool pointsShadingEnabled,
+    bool forceOpaqueEdges)
     : primType(primitiveType)
     , cullStyle(cullStyle)
     , hasMirroredTransform(hasMirroredTransform)
@@ -504,6 +508,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeCommonFS;
         }
         FS[fsIndex++] = _tokens->edgeParamFS;
+
+        if (forceOpaqueEdges) {
+            FS[fsIndex++] = _tokens->edgeOpacityForceFS;
+        } else {
+            FS[fsIndex++] = _tokens->edgeOpacityNoForceFS;
+        }
 
         if (renderWireframe) {
             if (isPrimTypePatches) {

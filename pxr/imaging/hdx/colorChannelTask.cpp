@@ -122,9 +122,7 @@ HdxColorChannelTask::Execute(HdTaskContext* ctx)
         _compositor->SetShaderConstants(byteSize, &_parameterData);
     }
 
-    _compositor->BindTextures(
-        {_tokens->colorIn}, 
-        {aovTexture});
+    _compositor->BindTextures({aovTexture});
 
     _compositor->Draw(aovTexture, /*no depth*/HgiTextureHandle());
 }

@@ -25,6 +25,7 @@
 #include "hdPrman/utils.h"
 #include "hdPrman/debugCodes.h"
 
+#include "pxr/base/arch/env.h"
 #include "pxr/base/arch/library.h"
 #include "pxr/base/gf/matrix4f.h"
 #include "pxr/base/gf/vec2f.h"
@@ -33,13 +34,20 @@
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/vec4d.h"
+#include "pxr/base/plug/registry.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/tf/envSetting.h"
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
-#include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/visitValue.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/base/work/threadLimits.h"
 
 #include "pxr/usd/ar/resolver.h"
+#include "pxr/usd/ndr/declare.h"
 #include "pxr/usd/sdf/assetPath.h"
 
 #include "pxr/imaging/hd/tokens.h"
@@ -53,6 +61,11 @@ TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
     (primvar)
 );
+
+extern TfEnvSetting<bool> HD_PRMAN_DISABLE_HIDER_JITTER;
+extern TfEnvSetting<bool> HD_PRMAN_ENABLE_MOTIONBLUR;
+extern TfEnvSetting<int> HD_PRMAN_NTHREADS;
+extern TfEnvSetting<int> HD_PRMAN_OSL_VERBOSE;
 
 namespace {
 
@@ -463,6 +476,111 @@ _IsNativeRenderManFormat(std::string const &path)
     return (ext == "tex") || (ext == "bkm") || (ext == "ptc") || (ext == "ies");
 }
 
+/// Update the supplied list of options using searchpaths
+/// pulled from envrionment variables:
+///
+/// - RMAN_SHADERPATH
+/// - RMAN_TEXTUREPATH
+/// - RMAN_RIXPLUGINPATH
+/// - RMAN_PROCEDURALPATH
+///
+void
+_UpdateSearchPathsFromEnvironment(RtParamList& options)
+{
+    // searchpath:shader contains OSL (.oso)
+    std::string shaderpath = TfGetenv("RMAN_SHADERPATH");
+    if (!shaderpath.empty()) {
+        // RenderMan expects ':' as path separator, regardless of platform
+        NdrStringVec paths = TfStringSplit(shaderpath, ARCH_PATH_LIST_SEP);
+        shaderpath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_shader,
+                            RtUString(shaderpath.c_str()) );
+    } else {
+        NdrStringVec paths;
+        // Default RenderMan installation under '$RMANTREE/lib/shaders'
+        std::string rmantree = TfGetenv("RMANTREE");
+        if (!rmantree.empty()) {
+            paths.push_back(TfStringCatPaths(rmantree, "lib/shaders"));
+        }
+        // Default hdPrman installation under 'plugins/usd/resources/shaders'
+        PlugPluginPtr plugin =
+            PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
+        if (plugin)
+        {
+            std::string path = TfGetPathName(plugin->GetPath());
+            if (!path.empty()) {
+                paths.push_back(TfStringCatPaths(path, "resources/shaders"));
+            }
+        }
+        shaderpath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_shader,
+                            RtUString(shaderpath.c_str()) );
+    }
+
+    // searchpath:rixplugin contains C++ (.so) plugins
+    std::string rixpluginpath = TfGetenv("RMAN_RIXPLUGINPATH");
+    if (!rixpluginpath.empty()) {
+        // RenderMan expects ':' as path separator, regardless of platform
+        NdrStringVec paths = TfStringSplit(rixpluginpath, ARCH_PATH_LIST_SEP);
+        rixpluginpath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_rixplugin,
+                            RtUString(rixpluginpath.c_str()) );
+    } else {
+        NdrStringVec paths;
+        // Default RenderMan installation under '$RMANTREE/lib/plugins'
+        std::string rmantree = TfGetenv("RMANTREE");
+        if (!rmantree.empty()) {
+            paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
+        }
+        rixpluginpath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_rixplugin,
+                            RtUString(rixpluginpath.c_str()) );
+    }
+
+    // searchpath:texture contains textures (.tex) and Rtx plugins (.so)
+    std::string texturepath = TfGetenv("RMAN_TEXTUREPATH");
+    if (!texturepath.empty()) {
+        // RenderMan expects ':' as path separator, regardless of platform
+        NdrStringVec paths = TfStringSplit(texturepath, ARCH_PATH_LIST_SEP);
+        texturepath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_texture,
+                            RtUString(texturepath.c_str()) );
+    } else {
+        NdrStringVec paths;
+        // Default RenderMan installation under '$RMANTREE/lib/textures'
+        // and '$RMANTREE/lib/plugins'
+        std::string rmantree = TfGetenv("RMANTREE");
+        if (!rmantree.empty()) {
+            paths.push_back(TfStringCatPaths(rmantree, "lib/textures"));
+            paths.push_back(TfStringCatPaths(rmantree, "lib/plugins"));
+        }
+        // Default hdPrman installation under 'plugins/usd'
+        // We need the path to RtxHioImage and we assume that it lives in the
+        // same directory as hdPrmanLoader
+        PlugPluginPtr plugin =
+            PlugRegistry::GetInstance().GetPluginWithName("hdPrmanLoader");
+        if (plugin)
+        {
+            std::string path = TfGetPathName(plugin->GetPath());
+            if (!path.empty()) {
+                paths.push_back(path);
+            }
+        }
+        texturepath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_texture,
+                            RtUString(texturepath.c_str()) );
+    }
+
+    std::string proceduralpath = TfGetenv("RMAN_PROCEDURALPATH");
+    if (!proceduralpath.empty()) {
+        // RenderMan expects ':' as path separator, regardless of platform
+        NdrStringVec paths = TfStringSplit(proceduralpath, ARCH_PATH_LIST_SEP);
+        proceduralpath = TfStringJoin(paths, ":");
+        options.SetString( RixStr.k_searchpath_procedural,
+                            RtUString(proceduralpath.c_str()) );
+    }
+}
+
 }
 
 // -----------------------------------------------------------------------------
@@ -553,6 +671,89 @@ PruneDeprecatedOptions(
     }
 
     return prunedOptions;
+}
+
+RtParamList
+GetDefaultRileyOptions()
+{
+    RtParamList options;
+
+    // Set default thread limit for Renderman. Leave a few threads for app.
+    {
+        const unsigned appThreads = 4;
+        const unsigned nThreads =
+            std::max(WorkGetConcurrencyLimit()-appThreads, 1u);
+        options.SetInteger(RixStr.k_limits_threads, nThreads);
+    }
+
+    // Path tracer default configuration. Values below may be overriden by
+    // those in the legacy render settings map and/or prim.
+    options.SetInteger(RixStr.k_hider_minsamples, 1);
+    options.SetInteger(RixStr.k_hider_maxsamples, 16);
+    options.SetInteger(RixStr.k_hider_incremental, 1);
+    options.SetInteger(RixStr.k_trace_maxdepth, 10);
+    options.SetFloat(RixStr.k_Ri_FormatPixelAspectRatio, 1.0f);
+    options.SetFloat(RixStr.k_Ri_PixelVariance, 0.001f);
+    options.SetString(RixStr.k_bucket_order, RtUString("circle"));
+    
+     // Default shutter settings from studio katana defaults:
+    // - /root.renderSettings.shutter{Open,Close}
+    float shutterInterval[2] = { 0.0f, 0.5f };
+    options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
+
+    return options;
+}
+
+RtParamList
+GetRileyOptionsFromEnvironment()
+{
+    RtParamList options;
+
+    const unsigned nThreadsEnv = TfGetEnvSetting(HD_PRMAN_NTHREADS);
+    if (nThreadsEnv > 0) {
+        options.SetInteger(RixStr.k_limits_threads, nThreadsEnv);
+    }
+
+    if (!TfGetEnvSetting(HD_PRMAN_ENABLE_MOTIONBLUR)) {
+        float shutterInterval[2] = { 0.0f, 0.0f };
+        options.SetFloatArray(RixStr.k_Ri_Shutter, shutterInterval, 2);
+    }
+
+    // OSL verbose
+    const int oslVerbose = TfGetEnvSetting(HD_PRMAN_OSL_VERBOSE);
+    if (oslVerbose > 0) {
+        options.SetInteger(RtUString("user:osl:verbose"), oslVerbose);
+    }
+
+    const bool disableJitter = TfGetEnvSetting(HD_PRMAN_DISABLE_HIDER_JITTER);
+    options.SetInteger(RixStr.k_hider_jitter, !disableJitter);
+
+    if (ArchHasEnv("HD_PRMAN_MAX_SAMPLES")) {
+        const int maxSamples = TfGetenvInt("HD_PRMAN_MAX_SAMPLES", 64);
+        options.SetInteger(RixStr.k_hider_maxsamples, maxSamples);
+    }
+
+    // Searchpaths (TEXTUREPATH, etc)
+    _UpdateSearchPathsFromEnvironment(options);
+
+    return options;
+}
+
+RtParamList
+Compose(
+    RtParamList const &a,
+    RtParamList const &b)
+{
+    if (b.GetNumParams() == 0) {
+        return a;
+    }
+    if (a.GetNumParams() == 0) {
+        return b;
+    }
+
+    RtParamList result = b;
+    result.Update(a);
+    return result;
 }
 
 }

@@ -176,7 +176,7 @@ UsdImagingRenderSettingsAdapter::Populate(
             _tokens->outputsRiDisplayFilters
         };
 
-        for (const auto token : outputTokens) {
+        for (const auto &token : outputTokens) {
             SdfPathVector connections;
             prim.GetAttribute(token).GetConnections(&connections);
             for (auto const& connPath : connections) {

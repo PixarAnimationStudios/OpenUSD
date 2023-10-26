@@ -594,8 +594,12 @@ _FormatParam(
 std::string
 RtParamListToString(const RtParamList& params, const int indent)
 {
-    std::string out;
     unsigned numParams = params.GetNumParams();
+    if (numParams == 0) {
+        return "<empty param list>";
+    }
+
+    std::string out;
     RtParamList::ParamInfo info;
     for (unsigned pi = 0; pi < numParams; ++pi) {
         if (params.GetParamInfo(pi, info)) {

@@ -74,7 +74,7 @@ static std::string
 _Repr(const UsdContrivedMultipleApplyAPI_1 &self)
 {
     std::string primRepr = TfPyRepr(self.GetPrim());
-    std::string instanceName = self.GetName();
+    std::string instanceName = TfPyRepr(self.GetName());
     return TfStringPrintf(
         "UsdContrived.MultipleApplyAPI_1(%s, '%s')",
         primRepr.c_str(), instanceName.c_str());
@@ -108,8 +108,8 @@ void wrapUsdContrivedMultipleApplyAPI_1()
         cls("MultipleApplyAPI_1");
 
     cls
-        .def(init<UsdPrim, TfToken>())
-        .def(init<UsdSchemaBase const&, TfToken>())
+        .def(init<UsdPrim, TfToken>((arg("prim"), arg("name"))))
+        .def(init<UsdSchemaBase const&, TfToken>((arg("schemaObj"), arg("name"))))
         .def(TfTypePythonClass())
 
         .def("Get",

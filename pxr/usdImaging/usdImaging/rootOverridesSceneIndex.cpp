@@ -145,6 +145,12 @@ UsdImagingRootOverridesSceneIndex::SetRootTransform(
     _SendPrimsDirtied(entries);
 }
 
+const GfMatrix4d&
+UsdImagingRootOverridesSceneIndex::GetRootTransform() const
+{
+    return _rootOverlayInfo->transform;
+}
+
 void
 UsdImagingRootOverridesSceneIndex::SetRootVisibility(
     const bool visibility)
@@ -162,6 +168,12 @@ UsdImagingRootOverridesSceneIndex::SetRootVisibility(
                     .Append(HdVisibilitySchemaTokens->visibility)}}};
 
     _SendPrimsDirtied(entries);
+}
+
+const bool
+UsdImagingRootOverridesSceneIndex::GetRootVisibility() const
+{
+    return _rootOverlayInfo->visibility;
 }
 
 HdSceneIndexPrim
