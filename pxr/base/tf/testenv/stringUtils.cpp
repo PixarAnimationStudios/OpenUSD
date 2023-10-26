@@ -268,6 +268,13 @@ TestStrings()
     TF_AXIOM(TfStringCapitalize("@@@@") == "@@@@");
     TF_AXIOM(TfStringCapitalize("") == "");
 
+    TF_AXIOM(TfStringToLowerAscii("PIXAR") == TfStringToLowerAscii("pixar"));
+    TF_AXIOM(TfStringToLowerAscii("PiXaR") == TfStringToLowerAscii("pixar"));
+    // 'Pixar' in capital Greek letters is not case folded
+    TF_AXIOM(TfStringToLowerAscii("ΠΙΞΑΡ") == "ΠΙΞΑΡ");
+    // Mixture of symbols, capital non-ASCII letters, and ASCII letters
+    TF_AXIOM(TfStringToLowerAscii("ΠΙΞΑΡ ≈ PIXAR") == "ΠΙΞΑΡ ≈ pixar");
+
     TF_AXIOM(TfStringGetSuffix("file.ext") == "ext");
     TF_AXIOM(TfStringGetSuffix("here are some words", ' ') == "words");
     TF_AXIOM(TfStringGetSuffix("0words", '0') == "words");
