@@ -51,7 +51,7 @@ namespace
 {
 
 // Strip </prefix> from </prefix/path> to yield <path>
-static SdfPath
+SdfPath
 _RelativePath(const SdfPath &prefix, const SdfPath &path)
 {
     return prefix.IsEmpty() ? path
@@ -61,7 +61,7 @@ _RelativePath(const SdfPath &prefix, const SdfPath &path)
 // Extract the render context from an output name, ex:
 // "outputs:surface" -> ""
 // "outputs:ri:surface" -> "ri"
-static TfToken
+TfToken
 _GetRenderContextForShaderOutput(UsdShadeOutput const& output)
 {
     TfToken ns = output.GetAttr().GetNamespace();
@@ -72,7 +72,7 @@ _GetRenderContextForShaderOutput(UsdShadeOutput const& output)
     return TfToken();
 }
 
-static bool
+bool
 _Contains(const TfTokenVector &v, const TfToken &t)
 {
     return std::find(v.begin(), v.end(), t) != v.end();

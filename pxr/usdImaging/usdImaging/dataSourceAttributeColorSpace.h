@@ -31,7 +31,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// \class UsdImagingDataSourceAttributeColorSpace<T>
+/// \class UsdImagingDataSourceAttributeColorSpace
 ///
 /// A data source that represents the metadata on a USD Attribute
 ///
