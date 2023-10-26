@@ -35,7 +35,7 @@ HDPRMAN_LOADER_CREATE_DELEGATE
 
 HDPRMAN_LOADER_DELETE_DELEGATE
 {
-    // The HdPrman_InteractiveRenderParam is owned by delegate and
+    // The HdPrman_RenderParam is owned by delegate and
     // will be automatically destroyed by ref-counting, shutting
     // down the attached PRMan instance.
     delete renderDelegate;
