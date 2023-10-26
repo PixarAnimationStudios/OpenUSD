@@ -793,7 +793,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         return false;
     }
 
-    char l, r;
+    unsigned char l, r;
 
     while (true) {
         if (lcur == curEnd) {
@@ -802,7 +802,11 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
         }
         l = *lcur, r = *rcur;
         // If they are letters that differ disregarding case, we're done.
-        if (((l & ~0x20) != (r & ~0x20)) & bool(l & r & ~0x3f)) {
+        // but only if they are ASCII (i.e., the high bit is not set)
+        const bool bothAscii = l < 0x80 && r < 0x80;
+        const bool differsIgnoringCase = (l & ~0x20) != (r & ~0x20);
+        const bool inLetterZone = (l >= 0x40) && (r >= 0x40);
+        if (bothAscii && differsIgnoringCase && inLetterZone) {
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
