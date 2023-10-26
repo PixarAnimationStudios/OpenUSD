@@ -911,46 +911,31 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # has no specs on sublayer1.
         subLayer1.SetPermissionToEdit(False)
 
+        def getCwd():
+            drive, tail = os.path.splitdrive(os.getcwd())
+            return drive.lower() + tail.replace('\\', '/')
+
         # Cannot delete or rename /C (there are no valid reparent targets for 
         # /C on this stage currently regardless of layer permission)
-        _VerifyCannotApplyDeletePrim(primC,
-            "The spec @{}/basic/sub_1.usda@</C> cannot be edited because the "
-            "layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyDeletePrimAtPath("/C",
-            "The spec @{}/basic/sub_1.usda@</C> cannot be edited because the "
-            "layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyRenamePrim(primC, "NewC", 
-            "The spec @{}/basic/sub_1.usda@</C> cannot be edited because the "
-            "layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyMovePrimAtPath("/C", "/NewC",
-            "The spec @{}/basic/sub_1.usda@</C> cannot be edited because the "
-            "layer is not editable".format(os.getcwd()))
+        expectedMsg = ("The spec @{}/basic/sub_1.usda@</C> cannot be edited "
+            "because the layer is not editable").format(getCwd())
+        _VerifyCannotApplyDeletePrim(primC, expectedMsg)
+        _VerifyCannotApplyDeletePrimAtPath("/C", expectedMsg)
+        _VerifyCannotApplyRenamePrim(primC, "NewC", expectedMsg)
+        _VerifyCannotApplyMovePrimAtPath("/C", "/NewC", expectedMsg)
 
         # Cannot delete, rename, or reparent /C/B
-        _VerifyCannotApplyDeletePrim(primB, 
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyDeletePrimAtPath("/C/B",
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyRenamePrim(primB, "NewB",
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyMovePrimAtPath("/C/B", "/C/NewB",
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyReparentPrim(primB, stage.GetPseudoRoot(), 
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyMovePrimAtPath("/C/B", "/B", 
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
+        expectedMsg = ("The spec @{}/basic/sub_1.usda@</C/B> cannot be edited "
+            "because the layer is not editable").format(getCwd())
+        _VerifyCannotApplyDeletePrim(primB, expectedMsg)
+        _VerifyCannotApplyDeletePrimAtPath("/C/B", expectedMsg)
+        _VerifyCannotApplyRenamePrim(primB, "NewB", expectedMsg)
+        _VerifyCannotApplyMovePrimAtPath("/C/B", "/C/NewB", expectedMsg)
+        _VerifyCannotApplyReparentPrim(primB, stage.GetPseudoRoot(), expectedMsg)
+        _VerifyCannotApplyMovePrimAtPath("/C/B", "/B", expectedMsg)
         _VerifyCannotApplyReparentAndRenamePrim(primB, stage.GetPseudoRoot(), "NewB", 
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
-        _VerifyCannotApplyMovePrimAtPath("/C/B", "/NewB", 
-            "The spec @{}/basic/sub_1.usda@</C/B> cannot be edited because "
-            "the layer is not editable".format(os.getcwd()))
+            expectedMsg)
+        _VerifyCannotApplyMovePrimAtPath("/C/B", "/NewB", expectedMsg)
 
         # Simple helper for verifying that the edits to primA were performed
         # followed by resetting the stage for the next edit.
