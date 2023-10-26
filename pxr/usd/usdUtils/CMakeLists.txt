@@ -35,6 +35,7 @@ pxr_library(usdUtils
     PRIVATE_CLASSES
         assetLocalization
         assetLocalizationDelegate
+        assetLocalizationPackage
 
     PUBLIC_HEADERS
         api.h
