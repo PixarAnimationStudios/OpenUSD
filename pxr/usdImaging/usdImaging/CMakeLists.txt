@@ -31,6 +31,7 @@ pxr_library(usdImaging
         adapterRegistry
         collectionCache
         dataSourceAttribute
+        dataSourceAttributeColorSpace
         dataSourceBasisCurves
         dataSourceCamera
         dataSourceGprim

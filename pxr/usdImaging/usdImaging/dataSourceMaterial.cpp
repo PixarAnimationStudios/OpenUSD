@@ -24,6 +24,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourceMaterial.h"
 
 #include "pxr/usdImaging/usdImaging/dataSourceAttribute.h"
+#include "pxr/usdImaging/usdImaging/dataSourceAttributeColorSpace.h"
 
 #include "pxr/usd/usdLux/lightAPI.h"
 #include "pxr/usd/usdLux/lightFilter.h"
@@ -109,22 +110,15 @@ public:
         UsdShadeAttributeType attrType;
         UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
         if (attrType == UsdShadeAttributeType::Input) {
-            // XXX This is not a lazy population of colorspace we want to 
-            // replace this with something similar to 
-            // UsdImagingDataSourceAttribute
-            const TfToken colorSpace = attr.GetColorSpace();
-            const TfToken paramLocatorToken(name.GetString() + "Value");
+            const HdDataSourceLocator paramValueLocator(
+                name, HdMaterialNodeParameterSchemaTokens->value);
             return HdMaterialNodeParameterSchema::Builder()
                 .SetValue(
                     UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
                         _sceneIndexPath,
-                        _locatorPrefix.IsEmpty()
-                            ? _locatorPrefix
-                            : _locatorPrefix.Append(paramLocatorToken)))
-                .SetColorSpace(colorSpace.IsEmpty()
-                    ? nullptr
-                    : HdRetainedTypedSampledDataSource<TfToken>::New(
-                        colorSpace))
+                        _locatorPrefix.Append(paramValueLocator)))
+                .SetColorSpace(
+                    UsdImagingDataSourceAttributeColorSpace::New(attr))
                 .Build();
         }
 
@@ -135,11 +129,14 @@ public:
             _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
             attr = input.GetAttr();
             if (attr) {
-                return UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
-                    _sceneIndexPath,
-                    _locatorPrefix.IsEmpty()
-                        ? _locatorPrefix
-                        : _locatorPrefix.Append(name));
+                const HdDataSourceLocator paramValueLocator(
+                    name, HdMaterialNodeParameterSchemaTokens->value);
+                return HdMaterialNodeParameterSchema::Builder()
+                    .SetValue(
+                        UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
+                            _sceneIndexPath,
+                            _locatorPrefix.Append(paramValueLocator)))
+                    .Build();
             }
         }
 
