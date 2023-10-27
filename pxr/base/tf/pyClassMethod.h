@@ -36,6 +36,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 namespace Tf_PyClassMethod {
 
 using namespace boost::python;
+namespace bp = boost::python;
 
 // Visitor for wrapping functions as Python class methods.
 // See typedef below for docs.
@@ -43,7 +44,7 @@ using namespace boost::python;
 // except it uses PyClassMethod_New() instead of PyStaticMethod_New().
 struct _TfPyClassMethod : def_visitor<_TfPyClassMethod>
 {
-    friend class def_visitor_access;
+    friend class bp::def_visitor_access;
 
     _TfPyClassMethod(const std::string &methodName) :
         _methodName(methodName) {}

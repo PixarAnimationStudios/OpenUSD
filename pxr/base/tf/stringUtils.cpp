@@ -806,6 +806,7 @@ TfDictionaryLessThan::_LessImpl(const string& lstr, const string& rstr) const
             // Add 5 mod 32 makes '_' sort before all letters.
             return ((l + 5) & 31) < ((r + 5) & 31);
         }
+        // Intentionally using bitwise operators due to performance critical code path.
         else if (IsDigit(l) | IsDigit(r)) {
             if (IsDigit(l) & IsDigit(r)) {
                 // We backtrack to find the start of each digit string, then we
