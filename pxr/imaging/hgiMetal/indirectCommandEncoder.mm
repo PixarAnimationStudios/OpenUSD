@@ -725,7 +725,7 @@ HgiMetalIndirectCommandEncoder::ExecuteDraw(
         static_cast<HgiMetalResourceBindings*>(metalCommands->resourceBindings.Get());
     resourceBindings->BindResources(_hgi,
                                     encoder,
-                                    mainArgumentBuffer);
+                                    mainArgumentBuffer, false);
     
     // Ensure the the main argument buffer is updated on managed hardware.
     if (mainArgumentBuffer.storageMode != MTLStorageModeShared &&

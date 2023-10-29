@@ -129,7 +129,7 @@ public:
                primType == PrimitiveType::PRIM_BASIS_CURVES_CUBIC_PATCHES ||
                primType == PrimitiveType::PRIM_BASIS_CURVES_LINEAR_PATCHES;
     }
-
+    
     static inline bool IsPrimTypeCompute(PrimitiveType primType) {
         return primType == PrimitiveType::PRIM_COMPUTE;
     }
@@ -153,6 +153,7 @@ public:
                        bool hasMirroredTransform,
                        bool doubleSided,
                        bool useMetalTessellation,
+                       bool useMeshShaders,
                        HdPolygonMode polygonMode,
                        bool cullingPass,
                        FvarPatchType fvarPatchType,
@@ -188,6 +189,11 @@ public:
 
     bool GetUseMetalTessellation() const {
         return _useMetalTessellation;
+    }
+    
+    bool GetUseMeshShaders() const {
+        return _useMeshShaders &&
+            IsPrimTypeTriangles(_primType);
     }
 
     float GetLineWidth() const {
@@ -274,6 +280,7 @@ private:
     bool _hasMirroredTransform;
     bool _doubleSided;
     bool _useMetalTessellation;
+    bool _useMeshShaders;
     HdPolygonMode _polygonMode;
     float _lineWidth;
 

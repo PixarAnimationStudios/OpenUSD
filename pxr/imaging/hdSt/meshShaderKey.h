@@ -57,6 +57,7 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
                        bool doubleSided,
                        bool hasBuiltinBarycentrics,
                        bool hasMetalTessellation,
+                       bool hasMeshShaders,
                        bool hasCustomDisplacement,
                        bool hasPerFaceInterpolation,
                        bool hasTopologicalVisibility,
@@ -87,6 +88,10 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     bool UseMetalTessellation() const override {
         return useMetalTessellation;
     }
+    bool UseMeshShaders() const override {
+        return useMeshShaders &&
+            HdSt_GeometricShader::IsPrimTypeTriangles(primType);
+    }
 
     HdPolygonMode GetPolygonMode() const override { return polygonMode; }
     float GetLineWidth() const override { return lineWidth; }
@@ -99,10 +104,12 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
 
     HdSt_GeometricShader::PrimitiveType primType;
     HdCullStyle cullStyle;
+    bool hasCustomDisplacement;
     bool useHardwareFaceCulling;
     bool hasMirroredTransform;
     bool doubleSided;
     bool useMetalTessellation;
+    bool useMeshShaders;
     HdPolygonMode polygonMode;
     float lineWidth;
     HdSt_GeometricShader::FvarPatchType fvarPatchType;
@@ -113,15 +120,19 @@ struct HdSt_MeshShaderKey : public HdSt_ShaderKey
     TfToken const *GetTES() const override { return TES; }
     TfToken const *GetPTCS()  const override { return PTCS; }
     TfToken const *GetPTVS()  const override { return PTVS; }
+    TfToken const *GetMOS()  const override { return MOS; }
+    TfToken const *GetMS()  const override { return MS; }
     TfToken const *GetGS()  const override { return GS; }
     TfToken const *GetFS()  const override { return FS; }
 
     TfToken glslfx;
-    TfToken VS[7];
+    TfToken VS[8];
     TfToken TCS[3];
     TfToken TES[4];
     TfToken PTCS[5];
-    TfToken PTVS[12];
+    TfToken PTVS[13];
+    TfToken MOS[3];
+    TfToken MS[10];
     TfToken GS[10];
     TfToken FS[22];
 };

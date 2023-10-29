@@ -40,7 +40,8 @@ HgiResourceBindings::GetDescriptor() const
 
 HgiBufferBindDesc::HgiBufferBindDesc()
     : bindingIndex(0)
-    , stageUsage(HgiShaderStageVertex | HgiShaderStagePostTessellationVertex)
+    , stageUsage(HgiShaderStageVertex | HgiShaderStagePostTessellationVertex |
+                 HgiShaderStageMeshObject | HgiShaderStageMeshlet)
     , writable(false)
 {
 }
@@ -68,7 +69,7 @@ bool operator!=(
 HgiTextureBindDesc::HgiTextureBindDesc()
     : resourceType(HgiBindResourceTypeCombinedSamplerImage)
     , bindingIndex(0)
-    , stageUsage(HgiShaderStageFragment)
+    , stageUsage(HgiShaderStageFragment | HgiShaderStagePostTessellationVertex | HgiShaderStageMeshlet)
     , writable(false)
 {
 }

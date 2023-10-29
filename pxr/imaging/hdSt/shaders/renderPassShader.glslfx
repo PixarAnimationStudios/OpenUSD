@@ -44,6 +44,9 @@
                 "source": [ "RenderPass.Camera",
                             "RenderPass.ApplyClipPlanes" ]
             },
+            "meshletShader": {
+                "source": [ "RenderPass.Camera"]
+            },
             "tessControlShader" : {
                 "source": [ "RenderPass.Camera" ]
             },

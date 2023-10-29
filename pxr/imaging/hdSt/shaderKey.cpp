@@ -44,6 +44,8 @@ HdSt_ShaderKey::ComputeHash() const
     TfToken const *VS = GetVS();
     TfToken const *TCS = GetTCS();
     TfToken const *TES = GetTES();
+    TfToken const *MOS = GetMOS();
+    TfToken const *MS = GetMS();
     TfToken const *PTCS = GetPTCS();
     TfToken const *PTVS = GetPTVS();
     TfToken const *GS = GetGS();
@@ -151,6 +153,8 @@ HdSt_ShaderKey::GetGlslfxString() const
     ss << _JoinTokens("tessEvalShader",    GetTES(), &firstStage);
     ss << _JoinTokens("postTessControlShader",  GetPTCS(), &firstStage);
     ss << _JoinTokens("postTessVertexShader",   GetPTVS(), &firstStage);
+    ss << _JoinTokens("meshObjectShader",  GetMOS(), &firstStage);
+    ss << _JoinTokens("meshletShader",   GetMS(), &firstStage);
     ss << _JoinTokens("geometryShader",    GetGS(),  &firstStage);
     ss << _JoinTokens("fragmentShader",    GetFS(),  &firstStage);
     ss << "}}}\n";
@@ -195,6 +199,20 @@ HdSt_ShaderKey::GetPTVS() const
 
 /*virtual*/
 TfToken const*
+HdSt_ShaderKey::GetMOS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
+HdSt_ShaderKey::GetMS() const
+{
+    return nullptr;
+}
+
+/*virtual*/
+TfToken const*
 HdSt_ShaderKey::GetGS() const
 {
     return nullptr;
@@ -206,7 +224,7 @@ HdSt_ShaderKey::GetFS() const
 {
     return nullptr;
 }
-
+    
 /*virtual*/
 TfToken const*
 HdSt_ShaderKey::GetCS() const

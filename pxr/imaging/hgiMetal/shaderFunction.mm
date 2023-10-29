@@ -49,9 +49,12 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
 
         MTLCompileOptions *options = [[MTLCompileOptions alloc] init];
         options.fastMathEnabled = YES;
-
-        if (@available(macOS 10.15, ios 13.0, *)) {
-            options.languageVersion = MTLLanguageVersion2_2;
+        
+        if (@available(macOS 14.0, *)){
+            options.languageVersion = MTLLanguageVersion3_0;
+        }
+        else if (@available(macOS 10.15, ios 13.0, *)) {
+            options.languageVersion = MTLLanguageVersion2_1;
         } else {
             options.languageVersion = MTLLanguageVersion2_1;
         }
@@ -65,6 +68,10 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             [hgi->GetPrimaryDevice() newLibraryWithSource:@(shaderCode)
                                                         options:options
                                                         error:&error];
+        if (error) {
+            NSString *err = [error localizedDescription];
+            _errors = [err UTF8String];
+        }
 
         [options release];
         options = nil;
@@ -86,6 +93,12 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
             case HgiShaderStagePostTessellationVertex:
                 entryPoint = @"vertexEntryPoint";
                 break;
+            case HgiShaderStageMeshObject:
+                entryPoint = @"meshObjectEntryPoint";
+                break;
+            case HgiShaderStageMeshlet:
+                entryPoint = @"meshletEntryPoint";
+                break;
             case HgiShaderStageTessellationControl:
             case HgiShaderStageTessellationEval:
             case HgiShaderStageGeometry:
@@ -101,6 +114,11 @@ HgiMetalShaderFunction::HgiMetalShaderFunction(
         }
         else {
             HGIMETAL_DEBUG_LABEL(_shaderId, _descriptor.debugName.c_str());
+        }
+        
+        if (error) {
+            NSString *err = [error localizedDescription];
+            _errors = [err UTF8String];
         }
         
         [library release];

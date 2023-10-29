@@ -167,7 +167,7 @@ HdStCommandBuffer::ExecuteDraw(
     // Reset per-commandBuffer performance counters, updated by batch execution
     HD_PERF_COUNTER_SET(HdPerfTokens->drawCalls, 0);
     HD_PERF_COUNTER_SET(HdTokens->itemsDrawn, 0);
-
+    
     //
     // draw batches
     //
@@ -425,22 +425,22 @@ HdStCommandBuffer::_FrustumCullCPU(GfMatrix4d const &cullMatrix)
 {
     HD_TRACE_FUNCTION();
 
-    const bool mtCullingDisabled = 
-        TfDebug::IsEnabled(HDST_DISABLE_MULTITHREADED_CULLING) || 
+    const bool mtCullingDisabled =
+        TfDebug::IsEnabled(HDST_DISABLE_MULTITHREADED_CULLING) ||
         _drawItems->size() < 10000;
 
     struct _Worker {
         static
         void cull(std::vector<HdStDrawItemInstance> * drawItemInstances,
                   GfMatrix4d const &cullMatrix,
-                  size_t begin, size_t end) 
+                  size_t begin, size_t end)
         {
             for(size_t i = begin; i < end; i++) {
                 HdStDrawItemInstance& itemInstance = (*drawItemInstances)[i];
                 HdStDrawItem const* item = itemInstance.GetDrawItem();
-                bool visible = item->GetVisible() && 
+                bool visible = item->GetVisible() &&
                     item->IntersectsViewVolume(cullMatrix);
-                if ((itemInstance.IsVisible() != visible) || 
+                if ((itemInstance.IsVisible() != visible) ||
                     (visible && item->HasInstancer())) {
                     itemInstance.SetVisible(visible);
                 }
@@ -449,15 +449,15 @@ HdStCommandBuffer::_FrustumCullCPU(GfMatrix4d const &cullMatrix)
     };
 
     if (!mtCullingDisabled) {
-        WorkParallelForN(_drawItemInstances.size(), 
-                         std::bind(&_Worker::cull, &_drawItemInstances, 
+        WorkParallelForN(_drawItemInstances.size(),
+                         std::bind(&_Worker::cull, &_drawItemInstances,
                                    std::cref(cullMatrix),
                                    std::placeholders::_1,
                                    std::placeholders::_2));
     } else {
-        _Worker::cull(&_drawItemInstances, 
-                      cullMatrix, 
-                      0, 
+        _Worker::cull(&_drawItemInstances,
+                      cullMatrix,
+                      0,
                       _drawItemInstances.size());
     }
 
