@@ -56,9 +56,9 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/gf/vec4h.h"
 
+#include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
 #include "pxr/base/tf/type.h"
-
-#include <boost/unordered_map.hpp>
 
 #include <limits>
 #include <queue>
@@ -953,7 +953,7 @@ struct UsdImagingInstanceAdapter::_IsInstanceTransformVaryingFn
 
     // We keep a simple cache directly on _IsInstanceTransformVaryingFn because
     // we only need it during initialization and resyncs (not in UpdateForTime).
-    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> cache;
+    pxr_tsl::robin_map<UsdPrim, bool, TfHash> cache;
 };
 
 bool 
@@ -2414,7 +2414,7 @@ struct UsdImagingInstanceAdapter::_ComputeInstanceMapVariabilityFn
     // We keep a simple cache of visibility varying states directly on
     // _ComputeInstanceMapVariabilityFn because we only need it for the
     // variability calculation and during resyncs.
-    boost::unordered_map<UsdPrim, bool, boost::hash<UsdPrim>> varyingCache;
+    pxr_tsl::robin_map<UsdPrim, bool, TfHash> varyingCache;
     const UsdImagingInstanceAdapter* adapter;
     std::vector<_InstancerData::Visibility>* visibility;
 };
