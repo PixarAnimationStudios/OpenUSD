@@ -2126,7 +2126,6 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
 
 static void
 _EvalNodeReferences(
-    PcpPrimIndex *index, 
     PcpNodeRef node, 
     Pcp_PrimIndexer *indexer)    
 {
@@ -2167,7 +2166,6 @@ _EvalNodeReferences(
 
 static void
 _EvalNodePayloads(
-    PcpPrimIndex *index, 
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer)
 {
@@ -2207,6 +2205,7 @@ _EvalNodePayloads(
 
     // Mark that this prim index contains a payload.
     // However, only process the payload if it's been requested.
+    PcpPrimIndex* index = &indexer->outputs->primIndex;
     index->GetGraph()->SetHasPayloads(true);
 
     // First thing we check is if this payload arc is being composed because it
@@ -2350,9 +2349,8 @@ _ElideRelocatedSubtrees(
 // source via _AddArc().
 static void
 _EvalNodeRelocations(
-    PcpPrimIndex *index, 
     const PcpNodeRef &node, 
-    Pcp_PrimIndexer *indexer )
+    Pcp_PrimIndexer *indexer)
 {
     PCP_INDEXING_PHASE(
         indexer, node, 
@@ -2530,9 +2528,8 @@ _EvalNodeRelocations(
 
 static void
 _EvalImpliedRelocations(
-    PcpPrimIndex *index, 
     const PcpNodeRef &node, 
-    Pcp_PrimIndexer *indexer )
+    Pcp_PrimIndexer *indexer)
 {
     if (node.GetArcType() != PcpArcTypeRelocate || node.IsDueToAncestor()) {
         return;
@@ -2837,7 +2834,6 @@ _AddClassBasedArc(
 // node in the given prim index.
 static void
 _AddClassBasedArcs(
-    PcpPrimIndex* index,
     const PcpNodeRef& node,
     const SdfPathVector& classArcs,
     PcpArcType arcType,
@@ -2943,7 +2939,6 @@ _GetImpliedClass( const PcpMapExpression & transfer,
 // implied classes to the parent node.
 static void
 _EvalImpliedClassTree(
-    PcpPrimIndex *index, 
     PcpNodeRef destNode,
     PcpNodeRef srcNode,
     const PcpMapExpression & transferFunc,
@@ -2967,7 +2962,7 @@ _EvalImpliedClassTree(
         const PcpMapExpression newTransferFunc = 
             destNode.GetMapToParent().AddRootIdentity().Compose(transferFunc);
         _EvalImpliedClassTree(
-            index, destNode.GetParentNode(), srcNode, newTransferFunc, 
+            destNode.GetParentNode(), srcNode, newTransferFunc, 
             srcNodeIsStartOfTree, indexer);
 
         // Ensure that any ancestral class hierarchies beginning under 
@@ -3123,7 +3118,7 @@ _EvalImpliedClassTree(
                 destClassFunc.Inverse()
                 .Compose(transferFunc.Compose(srcChild.GetMapToParent()));
 
-            _EvalImpliedClassTree(index, destChild, srcChild,
+            _EvalImpliedClassTree(destChild, srcChild,
                                   childTransferFunc, 
                                   /* srcNodeIsStartOfTree = */ false,
                                   indexer);
@@ -3137,7 +3132,6 @@ _IsPropagatedSpecializesNode(
 
 static void
 _EvalImpliedClasses(
-    PcpPrimIndex *index, 
     PcpNodeRef node,
     Pcp_PrimIndexer *indexer)
 {
@@ -3173,10 +3167,9 @@ _EvalImpliedClasses(
     // namespace encapsulation: classes deliberately work this way.
     PcpMapExpression transferFunc = node.GetMapToParent().AddRootIdentity();
 
-    _EvalImpliedClassTree( index, node.GetParentNode(), node,
-                           transferFunc, 
-                           /* srcNodeIsStartOfTree = */ true, 
-                           indexer );
+    _EvalImpliedClassTree(
+        node.GetParentNode(), node, transferFunc, 
+        /* srcNodeIsStartOfTree = */ true, indexer);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3185,7 +3178,6 @@ _EvalImpliedClasses(
 // Evaluate any inherit arcs expressed directly at node.
 static void
 _EvalNodeInherits(
-    PcpPrimIndex *index, 
     PcpNodeRef node, 
     Pcp_PrimIndexer *indexer)
 {
@@ -3202,10 +3194,7 @@ _EvalNodeInherits(
     PcpComposeSiteInherits(node, &inhArcs);
 
     // Add inherits arcs.
-    _AddClassBasedArcs(
-        index, node, inhArcs,
-        PcpArcTypeInherit,
-        indexer);
+    _AddClassBasedArcs(node, inhArcs, PcpArcTypeInherit, indexer);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -3214,7 +3203,6 @@ _EvalNodeInherits(
 // Evaluate any specializes arcs expressed directly at node.
 static void
 _EvalNodeSpecializes(
-    PcpPrimIndex* index,
     const PcpNodeRef& node,
     Pcp_PrimIndexer* indexer)
 {
@@ -3231,10 +3219,7 @@ _EvalNodeSpecializes(
     PcpComposeSiteSpecializes(node, &specArcs);
 
     // Add specializes arcs.
-    _AddClassBasedArcs(
-        index, node, specArcs,
-        PcpArcTypeSpecialize,
-        indexer);
+    _AddClassBasedArcs(node, specArcs, PcpArcTypeSpecialize, indexer);
 }
 
 // Returns true if the given node is a specializes node that
@@ -3342,7 +3327,6 @@ _PropagateNodeToParent(
 
 static void
 _PropagateSpecializesTreeToRoot(
-    PcpPrimIndex* index,
     PcpNodeRef parentNode,
     PcpNodeRef srcNode,
     PcpNodeRef originNode,
@@ -3368,7 +3352,7 @@ _PropagateSpecializesTreeToRoot(
     for (PcpNodeRef childNode : Pcp_GetChildren(srcNode)) {
         if (!PcpIsSpecializeArc(childNode.GetArcType())) {
             _PropagateSpecializesTreeToRoot(
-                index, newNode.first, childNode, newNode.first, 
+                newNode.first, childNode, newNode.first, 
                 childNode.GetMapToParent(), srcTreeRoot, indexer);
         }
     }
@@ -3376,7 +3360,6 @@ _PropagateSpecializesTreeToRoot(
 
 static void
 _FindSpecializesToPropagateToRoot(
-    PcpPrimIndex* index,
     PcpNodeRef node,
     Pcp_PrimIndexer* indexer)
 {
@@ -3415,18 +3398,17 @@ _FindSpecializesToPropagateToRoot(
         node.SetInert(false);
 
         _PropagateSpecializesTreeToRoot(
-            index, index->GetRootNode(), node, node,
+            node.GetRootNode(), node, node,
             node.GetMapToRoot(), node, indexer);
     }
 
     for (PcpNodeRef childNode : Pcp_GetChildren(node)) {
-        _FindSpecializesToPropagateToRoot(index, childNode, indexer);
+        _FindSpecializesToPropagateToRoot(childNode, indexer);
     }
 }
 
 static void
 _PropagateArcsToOrigin(
-    PcpPrimIndex* index,
     PcpNodeRef parentNode,
     PcpNodeRef srcNode,
     const PcpMapExpression& mapToParent,
@@ -3456,14 +3438,13 @@ _PropagateArcsToOrigin(
 
     for (PcpNodeRef childNode : Pcp_GetChildren(srcNode)) {
         _PropagateArcsToOrigin(
-            index, newNode.first, childNode, childNode.GetMapToParent(), 
+            newNode.first, childNode, childNode.GetMapToParent(), 
             srcTreeRoot, indexer);
     }
 }
 
 static void
 _FindArcsToPropagateToOrigin(
-    PcpPrimIndex* index,
     const PcpNodeRef& node,
     Pcp_PrimIndexer* indexer)
 {
@@ -3477,7 +3458,7 @@ _FindArcsToPropagateToOrigin(
             Pcp_FormatSite(node.GetOriginNode().GetSite()).c_str());
 
         _PropagateArcsToOrigin(
-            index, node.GetOriginNode(), childNode, childNode.GetMapToParent(),
+            node.GetOriginNode(), childNode, childNode.GetMapToParent(),
             node, indexer);
     }
 }
@@ -3517,7 +3498,6 @@ _FindArcsToPropagateToOrigin(
 // 
 static void
 _EvalImpliedSpecializes(
-    PcpPrimIndex* index,
     const PcpNodeRef& node,
     Pcp_PrimIndexer* indexer)
 {
@@ -3531,10 +3511,10 @@ _EvalImpliedSpecializes(
         return;
 
     if (_IsPropagatedSpecializesNode(node)) {
-        _FindArcsToPropagateToOrigin(index, node, indexer);
+        _FindArcsToPropagateToOrigin(node, indexer);
     }
     else {
-        _FindSpecializesToPropagateToRoot(index, node, indexer);
+        _FindSpecializesToPropagateToRoot(node, indexer);
     }
 }
 
@@ -3976,7 +3956,6 @@ _AddVariantArc(Pcp_PrimIndexer *indexer,
 
 static void
 _EvalNodeVariantSets(
-    PcpPrimIndex *index, 
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer)
 {
@@ -4000,7 +3979,6 @@ _EvalNodeVariantSets(
 
 static void
 _EvalNodeAuthoredVariant(
-    PcpPrimIndex *index, 
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer,
     const std::string &vset,
@@ -4069,7 +4047,6 @@ _EvalNodeAuthoredVariant(
 
 static void
 _EvalNodeFallbackVariant(
-    PcpPrimIndex *index, 
     const PcpNodeRef& node, 
     Pcp_PrimIndexer *indexer,
     const std::string &vset,
@@ -4738,38 +4715,38 @@ Pcp_BuildPrimIndex(
         Task task = indexer.PopTask();
         switch (task.type) {
         case Task::Type::EvalNodeRelocations:
-            _EvalNodeRelocations(&outputs->primIndex, task.node, &indexer);
+            _EvalNodeRelocations(task.node, &indexer);
             break;
         case Task::Type::EvalImpliedRelocations:
-            _EvalImpliedRelocations(&outputs->primIndex, task.node, &indexer);
+            _EvalImpliedRelocations(task.node, &indexer);
             break;
         case Task::Type::EvalNodeReferences:
-            _EvalNodeReferences(&outputs->primIndex, task.node, &indexer);
+            _EvalNodeReferences(task.node, &indexer);
             break;
         case Task::Type::EvalNodePayload:
-            _EvalNodePayloads(&outputs->primIndex, task.node, &indexer);
+            _EvalNodePayloads(task.node, &indexer);
             break;
         case Task::Type::EvalNodeInherits:
-            _EvalNodeInherits(&outputs->primIndex, task.node, &indexer);
+            _EvalNodeInherits(task.node, &indexer);
             break;
         case Task::Type::EvalImpliedClasses:
-            _EvalImpliedClasses(&outputs->primIndex, task.node, &indexer);
+            _EvalImpliedClasses(task.node, &indexer);
             break;
         case Task::Type::EvalNodeSpecializes:
-            _EvalNodeSpecializes(&outputs->primIndex, task.node, &indexer);
+            _EvalNodeSpecializes(task.node, &indexer);
             break;
         case Task::Type::EvalImpliedSpecializes:
-            _EvalImpliedSpecializes(&outputs->primIndex, task.node, &indexer);
+            _EvalImpliedSpecializes(task.node, &indexer);
             break;
         case Task::Type::EvalNodeVariantSets:
-            _EvalNodeVariantSets(&outputs->primIndex, task.node, &indexer);
+            _EvalNodeVariantSets(task.node, &indexer);
             break;
         case Task::Type::EvalNodeVariantAuthored:
-            _EvalNodeAuthoredVariant(&outputs->primIndex, task.node, &indexer,
+            _EvalNodeAuthoredVariant(task.node, &indexer,
                                      task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantFallback:
-            _EvalNodeFallbackVariant(&outputs->primIndex, task.node, &indexer,
+            _EvalNodeFallbackVariant(task.node, &indexer,
                                      task.vsetName, task.vsetNum);
             break;
         case Task::Type::EvalNodeVariantNoneFound:
