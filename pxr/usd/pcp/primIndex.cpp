@@ -1393,27 +1393,51 @@ _AddCulledDependencies(
     }
 };
 
+namespace
+{
+
+// Parameter object containing various options for _AddArc.
+class _ArcOptions
+{
+public:
+    // If set to false, the new site being added will be marked inert and
+    // restricted from contributing opinions to the prim index. This does not
+    // affect any child sites that may be referenced, etc. by the new site.
+    bool directNodeShouldContributeSpecs = true;
+
+    // If set to true, recursively build and include the ancestral opinions
+    // that would affect the new site.
+    bool includeAncestralOpinions = false;
+
+    // If set to true, a new node will not be added for the specified
+    // site if an equivalent node already exists elsewhere in the prim
+    // index.
+    bool skipDuplicateNodes = false;
+
+    // If set to true, implied specializes tasks will be skipped for
+    // the subtree of new nodes.
+    bool skipImpliedSpecializesCompletedNodes = false;
+
+    // If set to true, tasks for "expressed arcs" will be skipped for
+    // the subtree of new nodes.
+    bool skipTasksForExpressedArcs = false;
+};
+
+} // end anonymous namespace
+
 // Add an arc of the given type from the parent node to the child site,
 // and track any new tasks that result.  Return the new node.
-//
-// If includeAncestralOpinions is specified, recursively build and
-// include the ancestral opinions that would affect the new site.
-//
 static PcpNodeRef
 _AddArc(
-    const PcpArcType arcType,
+    Pcp_PrimIndexer* indexer,
+    PcpArcType const arcType,
     PcpNodeRef parent,
-    PcpNodeRef origin,
-    const PcpLayerStackSite & site,
-    PcpMapExpression mapExpr,
+    PcpNodeRef const& origin,
+    PcpLayerStackSite const& site,
+    PcpMapExpression const& mapExpr,
     int arcSiblingNum,
     int namespaceDepth,
-    bool directNodeShouldContributeSpecs,
-    bool includeAncestralOpinions,
-    bool skipDuplicateNodes,
-    bool skipImpliedSpecializesCompletedNodes,
-    bool skipTasksForExpressedArcs,
-    Pcp_PrimIndexer *indexer )
+    _ArcOptions opts = _ArcOptions())
 {
     PCP_INDEXING_PHASE(
         indexer,
@@ -1436,10 +1460,10 @@ _AddArc(
         origin ? Pcp_FormatSite(origin.GetSite()).c_str() : "<None>",
         arcSiblingNum,
         namespaceDepth,
-        directNodeShouldContributeSpecs ? "true" : "false",
-        includeAncestralOpinions ? "true" : "false",
-        skipDuplicateNodes ? "true" : "false",
-        skipImpliedSpecializesCompletedNodes ? "true" : "false");
+        opts.directNodeShouldContributeSpecs ? "true" : "false",
+        opts.includeAncestralOpinions ? "true" : "false",
+        opts.skipDuplicateNodes ? "true" : "false",
+        opts.skipImpliedSpecializesCompletedNodes ? "true" : "false");
 
     if (!TF_VERIFY(!mapExpr.IsNull())) {
         return PcpNodeRef();
@@ -1460,10 +1484,10 @@ _AddArc(
     // This is tricky -- we need to search the current graph being built as
     // well as those in the previous recursive calls to Pcp_BuildPrimIndex. 
     if (indexer->previousFrame) {
-        skipDuplicateNodes |= indexer->previousFrame->skipDuplicateNodes;
+        opts.skipDuplicateNodes |= indexer->previousFrame->skipDuplicateNodes;
     }
 
-    if (skipDuplicateNodes) {
+    if (opts.skipDuplicateNodes) {
         PcpLayerStackSite siteToAddInCurrentGraph = site;
 
         bool foundDuplicateNode = false;
@@ -1516,13 +1540,13 @@ _AddArc(
     // Optimizations:
     // - We only need to do this for non-root prims because root prims can't
     //   be relocated. This is indicated by the includeAncestralOpinions flag.
-    if (directNodeShouldContributeSpecs && includeAncestralOpinions) {
+    if (opts.directNodeShouldContributeSpecs && opts.includeAncestralOpinions) {
         const SdfRelocatesMap & layerStackRelocates =
             site.layerStack->GetRelocatesSourceToTarget();
         SdfRelocatesMap::const_iterator
             i = layerStackRelocates.lower_bound( site.path );
         if (i != layerStackRelocates.end() && i->first.HasPrefix(site.path)) {
-            directNodeShouldContributeSpecs = false;
+            opts.directNodeShouldContributeSpecs = false;
         }
     }
 
@@ -1538,11 +1562,11 @@ _AddArc(
     // Create the new node.
     PcpNodeRef newNode;
     PcpErrorBasePtr newNodeError;
-    if (!includeAncestralOpinions) {
+    if (!opts.includeAncestralOpinions) {
         // No ancestral opinions.  Just add the single new site.
         newNode = parent.InsertChild(site, newArc, &newNodeError);
         if (newNode) {
-            newNode.SetInert(!directNodeShouldContributeSpecs);
+            newNode.SetInert(!opts.directNodeShouldContributeSpecs);
 
             // Compose the existence of primSpecs and update the HasSpecs field 
             // accordingly.
@@ -1606,7 +1630,7 @@ _AddArc(
         // Provide a linkage across recursive calls to the indexer.
         PcpPrimIndex_StackFrame
             frame(site, parent, &newArc, indexer->previousFrame,
-                  indexer->GetOriginatingIndex(), skipDuplicateNodes);
+                  indexer->GetOriginatingIndex(), opts.skipDuplicateNodes);
 
         PcpPrimIndexOutputs childOutputs;
         Pcp_BuildPrimIndex( site,
@@ -1614,7 +1638,7 @@ _AddArc(
                             indexer->ancestorRecursionDepth,
                             evaluateImpliedSpecializes,
                             evaluateVariants,
-                            directNodeShouldContributeSpecs,
+                            opts.directNodeShouldContributeSpecs,
                             &frame,
                             indexer->inputs,
                             &childOutputs );
@@ -1685,17 +1709,16 @@ _AddArc(
         }
     }
 
-    // Enqueue tasks to evaluate the new nodes.
-    //
     // If we evaluated ancestral opinions, it it means the nested
     // call to Pcp_BuildPrimIndex() has already evaluated refs, payloads,
     // and inherits on this subgraph, so we can skip those tasks in this case 
     // too.
-    skipTasksForExpressedArcs = 
-        skipTasksForExpressedArcs || includeAncestralOpinions;
+    opts.skipTasksForExpressedArcs |= opts.includeAncestralOpinions;
+
+    // Enqueue tasks to evaluate the new nodes.
     indexer->AddTasksForNode(
-        newNode, skipTasksForExpressedArcs, 
-        skipImpliedSpecializesCompletedNodes);
+        newNode, opts.skipTasksForExpressedArcs, 
+        opts.skipImpliedSpecializesCompletedNodes);
 
     // If the arc targets a site that is itself private, issue an error.
     if (newNode.GetPermission() == SdfPermissionPrivate) {
@@ -1733,16 +1756,14 @@ _AddArc(
 
 static PcpNodeRef
 _AddArc(
-    const PcpArcType arcType,
+    Pcp_PrimIndexer* indexer,
+    PcpArcType const arcType,
     PcpNodeRef parent,
-    PcpNodeRef origin,
-    const PcpLayerStackSite & site,
-    PcpMapExpression mapExpr,
+    PcpNodeRef const& origin,
+    PcpLayerStackSite const& site,
+    PcpMapExpression const& mapExpr,
     int arcSiblingNum,
-    bool directNodeShouldContributeSpecs,
-    bool includeAncestralOpinions,
-    bool skipDuplicateNodes,
-    Pcp_PrimIndexer *indexer )
+    _ArcOptions options = _ArcOptions())
 {
     // Strip variant selections when determining namespace depth.
     // Variant selections are (unfortunately) represented as path
@@ -1752,14 +1773,8 @@ _AddArc(
         PcpNode_GetNonVariantPathElementCount( parent.GetPath() );
 
     return _AddArc(
-        arcType, parent, origin, site, mapExpr, 
-        arcSiblingNum, namespaceDepth,
-        directNodeShouldContributeSpecs,
-        includeAncestralOpinions,
-        skipDuplicateNodes,
-        /* skipImpliedSpecializes = */ false,
-        /* skipTasksForExpressedArcs = */ false,
-        indexer);
+        indexer, arcType, parent, origin, site, mapExpr, 
+        arcSiblingNum, namespaceDepth, options);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2077,20 +2092,20 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
             mapExpr = mapExpr.AddRootIdentity();
         }
 
+        _ArcOptions opts;
+        opts.directNodeShouldContributeSpecs = directNodeShouldContributeSpecs;
         // Only need to include ancestral opinions if the prim path is
         // not a root prim.
-        const bool includeAncestralOpinions = !primPath.IsRootPrimPath();
+        opts.includeAncestralOpinions = !primPath.IsRootPrimPath();
 
-        const PcpNodeRef newNode = _AddArc( ARC_TYPE,
-                 /* parent = */ node,
-                 /* origin = */ node,
-                 PcpLayerStackSite( layerStack, primPath ),
-                 mapExpr,
-                 /* arcSiblingNum = */ arcNum,
-                 directNodeShouldContributeSpecs,
-                 includeAncestralOpinions,
-                 /* skipDuplicateNodes = */ false,
-                 indexer );
+        const PcpNodeRef newNode = _AddArc(
+            indexer, ARC_TYPE,
+            /* parent = */ node, 
+            /* origin = */ node,
+            PcpLayerStackSite( layerStack, primPath ),
+            mapExpr,
+            /* arcSiblingNum = */ arcNum,
+            opts);
                  
         // Reference and payload arcs must target a prim that exists in the 
         // referenced layer stack. If there isn't, we report an error. Note that
@@ -2466,21 +2481,21 @@ _EvalNodeRelocations(
     // entry -- so the arc number is always zero.
     const int arcSiblingNum = 0;
 
-    PcpNodeRef newNode =
-        _AddArc( PcpArcTypeRelocate,
-                 /* parent = */ node,
-                 /* origin = */ node,
-                 PcpLayerStackSite( node.GetLayerStack(), relocSource ),
-                 identityMapExpr,
-                 arcSiblingNum,
-                 /* The direct site of a relocation source is not allowed to
-                    contribute opinions.  However, note that it usually
-                    has node-children that do contribute opinions via
-                    ancestral arcs. */
-                 /* directNodeShouldContributeSpecs = */ false,
-                 /* includeAncestralOpinions = */ true,
-                 /* skipDuplicateNodes = */ false,
-                 indexer );
+    // The direct site of a relocation source is not allowed to
+    // contribute opinions.  However, note that it usually
+    // has node-children that do contribute opinions via
+    // ancestral arcs.
+    _ArcOptions opts;
+    opts.directNodeShouldContributeSpecs = false;
+    opts.includeAncestralOpinions = true;
+
+    PcpNodeRef newNode = _AddArc(
+        indexer, PcpArcTypeRelocate,
+        /* parent = */ node,
+        /* origin = */ node,
+        PcpLayerStackSite( node.GetLayerStack(), relocSource ),
+        identityMapExpr,
+        arcSiblingNum, opts);
 
     if (newNode) {
         // Check for the existence of opinions at the relocation
@@ -2564,17 +2579,16 @@ _EvalImpliedRelocations(
                 }
             }
 
-            _AddArc( PcpArcTypeRelocate,
-                     /* parent = */ gp,
-                     /* origin = */ node,
-                     PcpLayerStackSite( gp.GetLayerStack(),
-                                        gpRelocSource ),
-                     PcpMapExpression::Identity(),
-                     /* arcSiblingNum = */ 0,
-                     /* directNodeShouldContributeSpecs = */ false,
-                     /* includeAncestralOpinions = */ false,
-                     /* skipDuplicateNodes = */ false,
-                     indexer );
+            _ArcOptions opts;
+            opts.directNodeShouldContributeSpecs = false;
+
+            _AddArc(indexer, PcpArcTypeRelocate,
+                    /* parent = */ gp,
+                    /* origin = */ node,
+                    PcpLayerStackSite(gp.GetLayerStack(), gpRelocSource),
+                    PcpMapExpression::Identity(),
+                    /* arcSiblingNum = */ 0,
+                    opts);
         }
     }
 }
@@ -2768,6 +2782,8 @@ _AddClassBasedArc(
         return child;
     }
 
+    _ArcOptions opts;
+
     // The class-based arc may map this path un-changed. For example,
     // consider an implied inherit being propagated from under a
     // reference node, that is in turn a child of a relocation node:
@@ -2797,7 +2813,7 @@ _AddClassBasedArc(
     // we use PcpNodes to represent (and propagate) inherits. Overall,
     // it seems like an opportunity to find a cleaner representation.
     //
-    const bool shouldContributeSpecs =
+    opts.directNodeShouldContributeSpecs =
         (inheritPath != parent.GetPath()) &&
         (inheritSite != ignoreIfSameAsSite);
 
@@ -2806,21 +2822,15 @@ _AddClassBasedArc(
     // propagation of implied classes. Otherwise, duplicate nodes should
     // be skipped over to ensure we don't introduce different paths
     // to the same site.
-    const bool skipDuplicateNodes = shouldContributeSpecs;
+    opts.skipDuplicateNodes = opts.directNodeShouldContributeSpecs;
 
     // Only subroot prim classes need to compute ancestral opinions.
-    const bool includeAncestralOpinions =
-        shouldContributeSpecs && !inheritPath.IsRootPrimPath();
+    opts.includeAncestralOpinions =
+        opts.directNodeShouldContributeSpecs && !inheritPath.IsRootPrimPath();
 
-    PcpNodeRef newNode =
-        _AddArc( arcType, parent, origin,
-                 inheritSite, inheritMap, inheritArcNum,
-                 /* directNodeShouldContributeSpecs = */ shouldContributeSpecs,
-                 includeAncestralOpinions,
-                 skipDuplicateNodes,
-                 indexer );
-
-    return newNode;
+    return _AddArc(
+        indexer, arcType, parent, origin,
+        inheritSite, inheritMap, inheritArcNum, opts);
 }
 
 // Helper function for adding a list of class-based arcs under the given
@@ -3293,19 +3303,22 @@ _PropagateNodeToParent(
                     (srcNode == srcTreeRoot || _IsImpliedClassBasedArc(srcNode) ?
                         srcNode : parentNode);
 
-                newNode = _AddArc(srcNode.GetArcType(),
+                _ArcOptions opts;
+                opts.directNodeShouldContributeSpecs = !srcNode.IsInert();
+                opts.skipImpliedSpecializesCompletedNodes = 
+                    skipImpliedSpecializes;
+                opts.skipTasksForExpressedArcs = skipTasksForExpressedArcs;
+
+                newNode = _AddArc(
+                    indexer,
+                    srcNode.GetArcType(),
                     /* parent = */ parentNode,
                     /* origin = */ originNode,
                     srcNode.GetSite(),
                     mapToParent,
                     srcNode.GetSiblingNumAtOrigin(),
                     namespaceDepth,
-                    /* directNodeShouldContributeSpecs = */ !srcNode.IsInert(),
-                    /* includeAncestralOpinions = */ false,
-                    /* skipDuplicateNodes = */ false,
-                    skipImpliedSpecializes,
-                    skipTasksForExpressedArcs,
-                    indexer);
+                    opts);
 
                 createdNewNode = static_cast<bool>(newNode);
             }
@@ -3948,16 +3961,12 @@ _AddVariantArc(Pcp_PrimIndexer *indexer,
     // storage.  For this reason, the source site includes the
     // variant selection but the mapping function is identity.
     SdfPath varPath = node.GetSite().path.AppendVariantSelection(vset, vsel);
-    if (_AddArc(PcpArcTypeVariant,
+    if (_AddArc(indexer, PcpArcTypeVariant,
                 /* parent = */ node,
                 /* origin = */ node,
                 PcpLayerStackSite( node.GetLayerStack(), varPath ),
                 /* mapExpression = */ PcpMapExpression::Identity(),
-                /* arcSiblingNum = */ vsetNum, 
-                /* directNodeShouldContributeSpecs = */ true,
-                /* includeAncestralOpinions = */ false,
-                /* skipDuplicateNodes = */ false,
-                indexer )) {
+                /* arcSiblingNum = */ vsetNum)) {
         // If we expanded a variant set, it may have introduced new
         // authored variant selections, so we must retry any pending
         // variant tasks as authored tasks.
