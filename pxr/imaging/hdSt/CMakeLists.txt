@@ -537,3 +537,1724 @@ pxr_build_test(testHdStTransition
         testenv/testHdStTransition.cpp
 )
 endif()
+
+if (${PXR_HEADLESS_TEST_MODE})
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because PXR_HEADLESS_TEST_MODE is ON")
+    return()
+endif()
+
+if (APPLE)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on macOS")
+    return()
+endif()
+
+if (WIN32)
+    message(STATUS "Skipping ${PXR_PACKAGE} tests because they are currently unsupported on Windows")
+    return()
+endif()
+
+#
+# Install a selection of the test data
+#
+
+pxr_install_test_dir(
+    SRC testenv/testHdStBasicDrawing
+    DEST testHdStBasicDrawing
+)
+
+pxr_install_test_dir(
+    SRC testenv/testHdStBasicDrawing_Adaptive
+    DEST testHdStBasicDrawing_Adaptive
+)
+
+pxr_install_test_dir(
+    SRC testenv/testHdStBasicDrawing_Quadrangulate
+    DEST testHdStBasicDrawing_Quadrangulate
+)
+
+pxr_install_test_dir(
+    SRC testenv/testHdStClipPlanes
+    DEST testHdStClipPlanes
+)
+
+#
+# Register a selection of the tests
+#
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv1_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 1 --write testHdStBasicDrawing_adaptive_lighting_lv1_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv1_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Adaptive_lighting_lv2_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 2 --write testHdStBasicDrawing_adaptive_lighting_lv2_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_adaptive_lighting_lv2_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Adaptive
+    ENV
+        HD_ENABLE_OPENSUBDIV3_ADAPTIVE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_points
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr points --write testHdStBasicDrawing_lv0_points.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --write testHdStBasicDrawing_lv0_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --write testHdStBasicDrawing_lv0_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --write testHdStBasicDrawing_lv0_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --write testHdStBasicDrawing_lv0_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_hull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_smoothHull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_wire_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_wireOnSurf_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_hull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_hull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_smoothHull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_smoothHull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wire_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_wire_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv0_wireOnSurf_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_wireOnSurf_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_points
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr points --refineLevel 1 --write testHdStBasicDrawing_lv1_points.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --refineLevel 1 --write testHdStBasicDrawing_lv1_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --refineLevel 1 --write testHdStBasicDrawing_lv1_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --refineLevel 1 --write testHdStBasicDrawing_lv1_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lv1_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refined --refineLevel 1 --write testHdStBasicDrawing_lv1_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWire --refineLevel 1 --write testHdStBasicDrawing_lv1_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv1_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lv1_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --refineLevel 2 --write testHdStBasicDrawing_lv2_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --refineLevel 2 --write testHdStBasicDrawing_lv2_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --refineLevel 2 --write testHdStBasicDrawing_lv2_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lv2_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refined --refineLevel 2 --write testHdStBasicDrawing_lv2_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWire --refineLevel 2 --write testHdStBasicDrawing_lv2_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lv2_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lv2_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --write testHdStBasicDrawing_lighting_lv0_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --write testHdStBasicDrawing_lighting_lv0_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --write testHdStBasicDrawing_lighting_lv0_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv0_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --write testHdStBasicDrawing_lighting_lv0_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv1_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Immediate_lighting_lv2_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        HGIGL_ENABLE_MULTI_DRAW_INDIRECT=0
+        HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT=0
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_points
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr points --write testHdStBasicDrawing_lv0_points.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --write testHdStBasicDrawing_lv0_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --write testHdStBasicDrawing_lv0_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --write testHdStBasicDrawing_lv0_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --write testHdStBasicDrawing_lv0_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_hull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_smoothHull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_wire_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_lv0_wireOnSurf_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_hull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_hull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_hull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_smoothHull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_smoothHull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_smoothHull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wire_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_wire_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wire_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv0_wireOnSurf_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_lv0_wireOnSurf_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv0_wireOnSurf_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_points
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr points --refineLevel 1 --write testHdStBasicDrawing_lv1_points.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_points.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --refineLevel 1 --write testHdStBasicDrawing_lv1_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --refineLevel 1 --write testHdStBasicDrawing_lv1_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --refineLevel 1 --write testHdStBasicDrawing_lv1_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lv1_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refined --refineLevel 1 --write testHdStBasicDrawing_lv1_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWire --refineLevel 1 --write testHdStBasicDrawing_lv1_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv1_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lv1_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv1_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --refineLevel 2 --write testHdStBasicDrawing_lv2_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --refineLevel 2 --write testHdStBasicDrawing_lv2_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --refineLevel 2 --write testHdStBasicDrawing_lv2_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lv2_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refined --refineLevel 2 --write testHdStBasicDrawing_lv2_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWire --refineLevel 2 --write testHdStBasicDrawing_lv2_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lv2_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr refinedWireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lv2_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lv2_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --write testHdStBasicDrawing_lighting_lv0_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --write testHdStBasicDrawing_lighting_lv0_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --write testHdStBasicDrawing_lighting_lv0_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv0_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --write testHdStBasicDrawing_lighting_lv0_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv0_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv1_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 1 --write testHdStBasicDrawing_lighting_lv1_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv1_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr hull --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr smoothHull --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wire --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr wireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refined
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refined --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refined.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refined.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refinedWire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWire --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refinedWire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refinedWire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_MDI_lighting_lv2_refinedWireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --lighting --repr refinedWireOnSurf --refineLevel 2 --write testHdStBasicDrawing_lighting_lv2_refinedWireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_lighting_lv2_refinedWireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --write testHdStBasicDrawing_quad_hull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_hull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --write testHdStBasicDrawing_quad_smoothHull.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_smoothHull.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --write testHdStBasicDrawing_quad_wire.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wire.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --write testHdStBasicDrawing_quad_wireOnSurf.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wireOnSurf.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_quad_hull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_hull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_quad_smoothHull_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_smoothHull_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_quad_wire_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wire_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf_cullback
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle BackUnlessDoubleSided --write testHdStBasicDrawing_quad_wireOnSurf_cullback.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wireOnSurf_cullback.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_hull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr hull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_quad_hull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_hull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_smoothHull_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr smoothHull --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_quad_smoothHull_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_smoothHull_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wire_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wire --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_quad_wire_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wire_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStBasicDrawing_Quadrangulate_wireOnSurf_cullfront
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --repr wireOnSurf --cullStyle FrontUnlessDoubleSided --write testHdStBasicDrawing_quad_wireOnSurf_cullfront.png"
+    IMAGE_DIFF_COMPARE
+        testHdStBasicDrawing_quad_wireOnSurf_cullfront.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStBasicDrawing_Quadrangulate
+    ENV
+        HD_ENABLE_FORCE_QUADRANGULATE=1
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStClipPlanes1
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --clipPlane -1 0 0 -1.5 --write testHdStClipPlanes1.png"
+    IMAGE_DIFF_COMPARE
+        testHdStClipPlanes1.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStClipPlanes
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
+
+pxr_register_test(testHdStClipPlanes2
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStBasicDrawing --offscreen --clipPlane 1 0 0 1.5 --clipPlane -1 0 0 1.5 --write testHdStClipPlanes2.png"
+    IMAGE_DIFF_COMPARE
+        testHdStClipPlanes2.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testHdStClipPlanes
+    ENV
+        TF_DEBUG=HD_SAFE_MODE
+)
