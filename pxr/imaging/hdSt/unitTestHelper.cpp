@@ -26,7 +26,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
 #include "pxr/imaging/hd/vtBufferSource.h"
-
+#include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/staticTokens.h"
 
 #include <iostream>
@@ -717,4 +717,3 @@ HdSt_TextureTestDriver::_PrintCompileErrors()
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
-

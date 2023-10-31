@@ -13,6 +13,7 @@ set(optionalLibs "")
 set(optionalIncludeDirs "")
 set(optionalPublicClasses "")
 set(optionalPrivateClasses "")
+set(optionalPrivatehgiUnitTestClasses "")
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
     list(APPEND optionalLibs
         MaterialXGenShader
@@ -36,6 +37,9 @@ if (PXR_ENABLE_PTEX_SUPPORT)
     list(APPEND optionalLibs ${PTEX_LIBRARY})
     list(APPEND optionalIncludeDirs ${PTEX_INCLUDE_DIR})
     list(APPEND optionalPublicClasses ptexMipmapTextureLoader)
+endif()
+if (${PXR_ENABLE_VULKAN_SUPPORT})
+    list(APPEND optionalPrivatehgiUnitTestClasses hgiUnitTestHelper)
 endif()
 
 pxr_library(hdSt
@@ -178,6 +182,7 @@ pxr_library(hdSt
         volumeShader
         volumeShaderKey
         ${optionalPrivateClasses}
+		${optionalPrivatehgiUnitTestClasses}
 
     RESOURCE_FILES
         plugInfo.json
@@ -221,4 +226,38 @@ pxr_build_test(testHdStBasicDrawing
     CPPFILES
         testenv/testHdStBasicDrawing.cpp
 )
+endif()
+
+if (${PXR_ENABLE_VULKAN_SUPPORT})
+
+    pxr_install_test_dir(
+        SRC testenv/testHdStCommand
+        DEST testHdStCommand
+    )
+
+    pxr_build_test(testHdStCommand
+       LIBRARIES
+           hdSt
+           hgi
+    
+       CPPFILES
+           testenv/testHdStCommand.cpp
+    )
+    
+    pxr_register_test(testHdStCommand
+        #Valid command line options for this unit test are : 
+        # -write <fileaname> // writes render output to disk
+        # for image based comparison with baseline
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStCommand -write testHdStCommand_triangle.png"
+		IMAGE_DIFF_COMPARE
+			testHdStCommand_triangle.png
+		FAIL 1
+		FAIL_PERCENT 0.001
+		PERCEPTUAL
+		EXPECTED_RETURN_CODE 0
+        ENV
+            HGI_ENABLE_VULKAN=1
+			HGIVULKAN_DEBUG=1
+			HGIVULKAN_DEBUG_VERBOSE=1
+    )
 endif()
