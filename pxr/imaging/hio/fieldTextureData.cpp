@@ -65,7 +65,7 @@ _FieldTextureDataFactoryRegistry::GetFactory(
         std::string const & filePath) const
 {
     TfToken const fileExtension(
-            TfStringToLower(ArGetResolver().GetExtension(filePath)));
+            TfStringToLowerAscii(ArGetResolver().GetExtension(filePath)));
 
     TfType const & pluginType = _typeMap.Find(fileExtension);
     if (!pluginType) {

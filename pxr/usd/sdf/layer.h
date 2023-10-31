@@ -83,6 +83,10 @@ struct Sdf_AssetInfo;
 /// the layer to a different location. You can use the GetIdentifier() method
 /// to get the layer's Id or GetRealPath() to get the resolved, full URI.
 ///
+/// Layer identifiers are UTF-8 encoded strings. A layer's file format is
+/// determined via the identifier's extension (as resolved by Ar) with [A-Z]
+/// (and no other characters) explicitly case folded.
+///
 /// Layers can have a timeCode range (startTimeCode and endTimeCode). This range
 /// represents the suggested playback range, but has no impact on the extent of 
 /// the animation data that may be stored in the layer. The metadatum 

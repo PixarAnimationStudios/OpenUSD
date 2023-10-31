@@ -1159,7 +1159,7 @@ private:
                 // Per RFC 3986 sec 3.1 / RFC 3987 sec 5.3.2.1 schemes are
                 // case-insensitive. Force all schemes to lower-case to support
                 // this.
-                uriScheme = TfStringToLower(uriScheme);
+                uriScheme = TfStringToLowerAscii(uriScheme);
 
                 if (const _ResolverSharedPtr* existingResolver =
                     TfMapLookupPtr(uriResolvers, uriScheme)) {
@@ -1339,7 +1339,7 @@ private:
         // stored in lower-case, so convert our candidate scheme to lower case
         // as well.
         const _ResolverSharedPtr* uriResolver = 
-            TfMapLookupPtr(_uriResolvers, TfStringToLower(scheme));
+            TfMapLookupPtr(_uriResolvers, TfStringToLowerAscii(scheme));
         if (uriResolver) {
             if (info) { 
                 *info = &((*uriResolver)->info);

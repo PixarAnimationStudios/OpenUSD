@@ -65,16 +65,21 @@ size_t hash_value(const HdRenderPassAovBinding &b) {
 bool HdAovHasDepthSemantic(TfToken const& aovName)
 {
     // Expect depth aov's to end with (case-insensitive) "depth".
+    // Because depth contains ASCII only characters, we can compare by only
+    // case folding [A-Z]
     return TfStringEndsWith(
-                TfStringToLower(aovName.GetString()), HdAovTokens->depth);
+                TfStringToLowerAscii(aovName.GetString()),
+                HdAovTokens->depth);
 }
 
 bool HdAovHasDepthStencilSemantic(TfToken const& aovName)
 {
     // Expect depthStencil aov's to end with (case-insensitive) "depthStencil".
+    // Because depthStencil contains ASCII only characters, we can compare by
+    // only case folding [A-Z]
     return TfStringEndsWith(
-                TfStringToLower(aovName.GetString()),
-                TfStringToLower(HdAovTokens->depthStencil));
+                TfStringToLowerAscii(aovName.GetString()),
+                TfStringToLowerAscii(HdAovTokens->depthStencil));
 }
 
 HdParsedAovToken::HdParsedAovToken()
