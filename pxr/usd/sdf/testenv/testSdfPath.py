@@ -63,6 +63,7 @@ class TestSdfPath(unittest.TestCase):
             123test
             /Foo:Bar
             /Foo.bar.mapper[/Targ.attr].arg:name:space
+            /root_utf8_umlaute_ß_3
             '''.split()
         for badPath in badPaths:
             self.assertTrue(Sdf.Path(badPath).isEmpty)
