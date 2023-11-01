@@ -111,20 +111,24 @@ def _write_cpp_files(destination_directory : str):
 
         generated_cpp_file.write("UnicodeXidStartRangeData::UnicodeXidStartRangeData()\n")
         generated_cpp_file.write("{\n")
+        generated_cpp_file.write("    ranges = {\n")
 
         for x in xid_start_range_pairs:
             range_expression = "{" + str(x[0]) + ", " + str(x[1]) + "}"
-            generated_cpp_file.write(f"    this->ranges.push_back({range_expression});\n")
+            generated_cpp_file.write(f"        {range_expression},\n")
 
+        generated_cpp_file.write("    };\n")
         generated_cpp_file.write("}\n\n")
 
         generated_cpp_file.write("UnicodeXidContinueRangeData::UnicodeXidContinueRangeData()\n")
         generated_cpp_file.write("{\n")
+        generated_cpp_file.write("    ranges = {\n")
         
         for x in xid_continue_range_pairs:
             range_expression = "{" + str(x[0]) + ", " + str(x[1]) + "}"
-            generated_cpp_file.write(f"    this->ranges.push_back({range_expression});\n")
+            generated_cpp_file.write(f"        {range_expression},\n")
 
+        generated_cpp_file.write("    };\n")
         generated_cpp_file.write("}\n\n")
 
         generated_cpp_file.write("UnicodeFlagData::UnicodeFlagData()\n")
@@ -133,11 +137,7 @@ def _write_cpp_files(destination_directory : str):
 
         generated_cpp_file.write("UnicodeXidStartFlagData::UnicodeXidStartFlagData()\n")
         generated_cpp_file.write("{\n")
-        generated_cpp_file.write("    // initialize all flags to 0\n")
-        generated_cpp_file.write("    for(size_t i = 0; i < this->flags.size(); i++) {\n")
-        generated_cpp_file.write("        this->flags[i] = false;\n")
-        generated_cpp_file.write("    }\n\n")
-        generated_cpp_file.write("    // now set all of the bits corresponding to the code points in the range\n")
+        generated_cpp_file.write("    // set all of the bits corresponding to the code points in the range\n")
         generated_cpp_file.write("    WorkParallelForEach(xidStartRangeData->ranges.begin(), xidStartRangeData->ranges.end(),\n")
         generated_cpp_file.write("        [this](const std::pair<uint32_t, uint32_t>& entry) {\n")
         generated_cpp_file.write("            for(uint32_t i = entry.first; i <= entry.second; i++) {\n")
@@ -148,11 +148,7 @@ def _write_cpp_files(destination_directory : str):
 
         generated_cpp_file.write("UnicodeXidContinueFlagData::UnicodeXidContinueFlagData()\n")
         generated_cpp_file.write("{\n")
-        generated_cpp_file.write("    // initialize all flags to 0\n")
-        generated_cpp_file.write("    for(size_t i = 0; i < this->flags.size(); i++) {\n")
-        generated_cpp_file.write("        this->flags[i] = false;\n")
-        generated_cpp_file.write("    }\n\n")
-        generated_cpp_file.write("    // now set all of the bits corresponding to the code points in the range\n")
+        generated_cpp_file.write("    // set all of the bits corresponding to the code points in the range\n")
         generated_cpp_file.write("    WorkParallelForEach(xidContinueRangeData->ranges.begin(), xidContinueRangeData->ranges.end(),\n")
         generated_cpp_file.write("        [this](const std::pair<uint32_t, uint32_t>& entry) {\n")
         generated_cpp_file.write("            for(uint32_t i = entry.first; i <= entry.second; i++) {\n")

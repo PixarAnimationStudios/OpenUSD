@@ -1292,20 +1292,20 @@ SdfSchemaBase::IsValidVariantIdentifier(const std::string& identifier)
     std::string::const_iterator first = identifier.begin();
     std::string::const_iterator last = identifier.end();
 
-    // Allow optional leading dot
+    // Allow optional leading dot.
     if (first != last && *first == '.') {
         ++first;
     }
 
-    for(; first != last; ++first) {
+    for (; first != last; ++first) {
         char c = *first;
         if (!(isalnum(c) || (c == '_') || (c == '|') || (c == '-'))) {
             return SdfAllowed(TfStringPrintf(
-                "\"%s\" is not a valid variant "
-                "name due to '%c' at index %d",
-                identifier.c_str(),
-                c,
-                (int)(first - identifier.begin())));
+                    "\"%s\" is not a valid variant "
+                    "name due to '%c' at index %d",
+                    identifier.c_str(),
+                    c,
+                    (int)(first - identifier.begin())));
         }
     }
 

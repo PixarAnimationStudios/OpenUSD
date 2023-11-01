@@ -1846,10 +1846,10 @@ SdfPath::TokenizeIdentifier(const std::string &name)
     std::string::const_iterator first = name.begin();
     std::string::const_iterator last = name.end();
 
-    // Not empty and first characgter is alpha or '_'.
+    // Not empty and first character is alpha or '_'.
     if (first == last || !(isalpha(*first) || (*first == '_')))
         return result;
-    // Last character is not the namespace delimeter.
+    // Last character is not the namespace delimiter.
     if (*(last - 1) == namespaceDelimiter)
         return result;
 
@@ -1875,7 +1875,7 @@ SdfPath::TokenizeIdentifier(const std::string &name)
             }
         }
         else {
-            // Next character
+            // Next character 
             if (!(isalnum(*first) || (*first == '_'))) {
                 TfReset(result);
                 return result;
