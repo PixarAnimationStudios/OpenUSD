@@ -1158,7 +1158,34 @@ TfStringCatPaths( const string &prefix, const string &suffix )
 std::string
 TfMakeValidIdentifier(const std::string &in)
 {
-    return TfUnicodeUtils::MakeValidUTF8Identifier(in);
+    std::string result;
+
+    if (in.empty()) {
+        result.push_back('_');
+        return result;
+    }
+
+    result.reserve(in.size());
+    char const *p = in.c_str();
+    if (!(('a' <= *p && *p <= 'z') || 
+          ('A' <= *p && *p <= 'Z') || 
+          *p == '_')) {
+        result.push_back('_');
+    } else {
+        result.push_back(*p);
+    }
+
+    for (++p; *p; ++p) {
+        if (!(('a' <= *p && *p <= 'z') ||    
+              ('A' <= *p && *p <= 'Z') ||  
+              ('0' <= *p && *p <= '9') ||  
+              *p == '_')) {
+            result.push_back('_');
+        } else {
+            result.push_back(*p);
+        }
+    }
+    return result;
 }
 
 std::string

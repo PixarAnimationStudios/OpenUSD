@@ -67,28 +67,13 @@ namespace Impl {
 
     bool IsUTF8CharXIDStart(uint32_t codePoint)
     {
-        return !(xidStartClass.find(codePoint) == xidStartClass.end() && 
-            std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
-            [codePoint](const auto& range) {
-                return codePoint >= range.first && codePoint <= range.second;
-            }));
+        return xidStartFlagData->flags[codePoint];
     }
 
     bool IsUTF8CharXIDContinue(uint32_t codePoint)
     {
-        bool not_in_start = (xidStartClass.find(codePoint) == xidStartClass.end() && 
-            std::none_of(xidStartRangeClass.cbegin(), xidStartRangeClass.cend(),
-            [codePoint](const auto& range) {
-                return codePoint >= range.first && codePoint <= range.second;
-            }));
-
-        bool not_in_continue = (xidContinueClass.find(codePoint) == xidContinueClass.end() && 
-            std::none_of(xidContinueRangeClass.cbegin(), xidContinueRangeClass.cend(),
-            [codePoint](const auto& range) {
-                return codePoint >= range.first && codePoint <= range.second;
-            }));
-
-        return !(not_in_start && not_in_continue);
+        // XID_Continue is a supserset of XID_Start
+        return xidContinueFlagData->flags[codePoint];
     }
 
     bool IsValidUTF8Identifier(const std::string::const_iterator& sequenceStart, const std::string::const_iterator& end)

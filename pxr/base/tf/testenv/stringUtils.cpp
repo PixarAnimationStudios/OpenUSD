@@ -25,6 +25,7 @@
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/stringUtils.h"
+#include "pxr/base/tf/unicodeUtils.h"
 #include "pxr/base/arch/defines.h"
 
 #include <stdarg.h>
@@ -619,10 +620,163 @@ TestGetXmlEscapedString()
 }
 
 static bool
+TestUnicodeUtils()
+{
+    // a mix of code points that should fall into the following
+    // character classes that make up XID_Start:
+    // Lu | Ll | Lt | Lm | Lo | Nl | '_'
+    std::vector<uint32_t> xidStartCodePoints = {
+        0x0043u,    // Latin captial letter C (Lu)
+        0x006Au,    // Latin small letter j (Ll)
+        0x0254u,    // Latin small letter Open o (Ll)
+        0x01C6u,    // Latin small letter DZ with Caron (Ll)
+        0x01CBu,    // Latin capital letter N with small letter j (Lt)
+        0x02B3u,    // Modifier letter small r (Lm)
+        0x10464u,   // Shavian letter Loll (Lo)
+        0x132B5u,   // Egyptian hieroglpyh R0004 (Lo)
+        0x12421u,   // Cuneiform numeric sign four geshu (Nl)
+        0xFDABu,    // Arabic Ligature seen with Khan with Alef Maksura FInal Form (Lo)
+        0x18966u,   // Tangut Component-359 (Lo)
+        0x10144u,   // Greek acrophonic attick fifty (Nl)
+        0x005Fu,    // Low line (underscore - in Pc but special case for XID_Start)
+        0x037Fu,    // Greek captial letter YOT (Lu) [test singular code point range]
+        0x2F800u,   // CJK Compatibility Ideograph-2F800 (Lo) [test start range]
+        0x3134Au,   // CJK Ideograph Extension G Last (Lo) [test end range]
+    };
+
+
+    // a mix of code points that should fall into the following
+    // character classes that make up XID_Continue
+    // XID_Start | Nd | Mn | Mc | Pc
+    std::vector<uint32_t> xidContinueCodePoints = {
+        0x0032u,    // Digit two (Nd)
+        0x0668u,    // Arabic-Indic Digit Eight (Nd)
+        0x07C0u,    // NKO Digit Zero (Nd)
+        0x1E145u,   // Nyiakeng Puachue Hmong Digit Five (Nd)
+        0x0300u,    // Combining Grave Accent (Mn)
+        0x2CEFu,    // Coptic Combining NI Above (Mn)
+        0x10A02u,   // Kharoshthi Vowel Sign U (Mn)
+        0x16F92u,   // Miao Tone Below (Mn)
+        0x0903u,    // Devanagari Sign Visarga (Mc)
+        0x16F55u,   // Miao Vowel Sign AA (Mc)
+        0x1D172u,   // Musical Symbol Combining Flag-5 (Mc)
+        0x203Fu,    // Undertie (Pc)
+        0xFE4Fu,    // Wavy Low Line (Pc)
+        0x05BFu,    // Hebrew Point Rafe (Mn) [test singular code point range]
+        0x1E2ECu,   // Wancho Tone Tup (Mn) [test start range]
+        0xE01EFu,   // Variation Selector-256 (Mn) [test end range]
+    };
+
+    // code points that shouldn't fall into either XID_Start
+    // or XID_Continue
+    std::vector<uint32_t> invalidCodePoints = {
+        0x002Du,    // Hyphen-Minus (Pd)
+        0x00ABu,    // Left-Pointing Double Angle Quotation Mark (Pi)
+        0x2019u,    // Right Single Quotation Mark (Pf)
+        0x2021u,    // Double Dagger (Po)
+        0x1ECB0u,   // Indic Siyaq Rupee Mark (Sc)
+        0x0020u,    // Space (Zs)
+        0x3000u,    // Ideographic Space (Zs)
+        0x000Bu,    // Line tabulation (Cc)
+        0xF8FEu,    // Private Use (Co)
+    };
+
+    for (size_t i = 0; i < xidStartCodePoints.size(); i++)
+    {
+        TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(xidStartCodePoints[i]));
+
+        // XID_Continue sets contain XID_Start
+        TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(xidStartCodePoints[i]));
+    }
+
+    for (size_t i = 0; i < xidContinueCodePoints.size(); i++)
+    {
+        TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(xidContinueCodePoints[i]));
+    }
+
+    for (size_t i = 0; i < invalidCodePoints.size(); i++)
+    {
+        TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDStart(invalidCodePoints[i]));
+        TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(invalidCodePoints[i]));
+    }
+
+    // now test some strings with some characters from each of these sets
+    // such that we can exercise the iterator converting from UTF-8 char to code point
+    std::string s1 = "ⅈ75_hgòð㤻";
+    std::string s2 = "㤼01৪∫";
+    std::string s3 = "㤻üaf-∫⁇…🔗";
+
+    TfUnicodeUtils::utf8_const_iterator i1(s1.begin(), s1.end());
+    TfUnicodeUtils::utf8_const_iterator i2(s2.begin(), s2.end());
+    TfUnicodeUtils::utf8_const_iterator i3(s3.begin(), s3.begin() + s3.find("-"));
+    TfUnicodeUtils::utf8_const_iterator i4(s3.begin() + s3.find("-"), s3.end());
+
+    // s1 should start with XID_Start and then have XID_Continue
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i1));
+    i1++;
+    TF_AXIOM(i1.Wrapped() == s1.end());
+
+    // s2 should start with XID_Start, have three characters that are XID_Continue, then one that isn't in either
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i2));
+    i2++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i2));
+    i2++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i2));
+    i2++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDContinue(*i2));
+    i2++;
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i2));
+    i2++;
+    TF_AXIOM(i2.Wrapped() == s2.end());
+
+    // s3 should have all XID_Start characters in the first set (before the "-") and all invalid characters after
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i3));
+    i3++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i3));
+    i3++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i3));
+    i3++;
+    TF_AXIOM(TfUnicodeUtils::IsUTF8CharXIDStart(*i3));
+    i3++;
+    TF_AXIOM(i3.Wrapped() == (s3.begin() + s3.find("-")));
+
+    // includes the "-" character
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i4));
+    i4++;
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i4));
+    i4++;
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i4));
+    i4++;
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i4));
+    i4++;
+    TF_AXIOM(!TfUnicodeUtils::IsUTF8CharXIDContinue(*i4));
+    i4++;
+    TF_AXIOM(i4.Wrapped() == s3.end());
+
+    return true;
+}
+
+static bool
 Test_TfStringUtils()
 {
     return TestNumbers() && TestPreds() && TestStrings() && TestTokens() &&
-           TestGetXmlEscapedString();
+           TestGetXmlEscapedString() && TestUnicodeUtils();
 }
 
 TF_ADD_REGTEST(TfStringUtils);

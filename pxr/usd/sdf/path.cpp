@@ -35,7 +35,6 @@
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/tf/unicodeUtils.h"
 
 #include "pxr/base/trace/trace.h"
 
@@ -1816,33 +1815,23 @@ static constexpr bool _IsAlnum(int x) {
 bool
 SdfPath::IsValidNamespacedIdentifier(const std::string &name)
 {
-    // valid namespaced identifiers are valid identifiers separated by 
-    // SDF_PATH_NS_DELIMITER_CHAR the individual identifiers are validated 
-    // according to either UTF-8 rules
+    // A valid C/Python identifier except we also allow the namespace delimiter
+    // and if we tokenize on that delimiter then all tokens are valid C/Python
+    // identifiers.  That means following a delimiter there must be an '_' or
+    // alphabetic character.
     constexpr char delim = SDF_PATH_NS_DELIMITER_CHAR;
-    std::string::const_iterator begin = name.begin();
-    std::string::const_iterator end = name.end();
-    std::string::const_iterator subsequenceStart = begin;
-    for (; begin != end; begin++)
-    {
-        // note this requires that SDF_PATH_NS_DELIMETER_CHAR is capable
-        // of being represented as a single UTF-8 byte (i.e. in the ASCII character set)
-        // otherwise we cannot reliably break the subsequences appropriately here
-        // this uses a special version of TfIsValidIdentifier that looks in sub-sequences
-        // of strings to validate
-        if ((*begin) == delim)
-        {
-            if (!TfUnicodeUtils::IsValidUTF8Identifier(subsequenceStart, begin))
-            {
-                return false;
-            }
-
-            subsequenceStart = begin + 1;
+    for (char const *p = name.c_str(); *p; ++p) {
+        if (!_IsAlpha(*p) && *p != '_') {
+            return false;
+        }
+        for (++p; _IsAlnum(*p) ||*p == '_'; ++p) {
+            /* consume identifier */
+        }
+        if (*p != delim) {
+            return !*p;
         }
     }
-
-    // check the last subsequence
-    return TfUnicodeUtils::IsValidUTF8Identifier(subsequenceStart, end);
+    return false;
 }
 
 std::vector<std::string>
@@ -1854,49 +1843,48 @@ SdfPath::TokenizeIdentifier(const std::string &name)
     const char namespaceDelimiter =
         SdfPathTokens->namespaceDelimiter.GetText()[0];
 
-    std::string::const_iterator begin = name.begin();
-    std::string::const_iterator end = name.end();
+    std::string::const_iterator first = name.begin();
+    std::string::const_iterator last = name.end();
 
-    // make sure the string isn't empty and the first sequence is not the delimiter
-    if (begin == end || (*begin) == namespaceDelimiter)
-    {
+    // Not empty and first characgter is alpha or '_'.
+    if (first == last || !(isalpha(*first) || (*first == '_')))
         return result;
-    }
-
-    // make sure the string doesn't end with the delimiter
-    if (*(end - 1) == namespaceDelimiter)
-    {
+    // Last character is not the namespace delimeter.
+    if (*(last - 1) == namespaceDelimiter)
         return result;
-    }
 
     // Count delimiters and reserve space in result.
-    result.reserve(1 + std::count(begin, end, namespaceDelimiter));
+    result.reserve(1 + std::count(first, last, namespaceDelimiter));
 
-    size_t startPosition = 0;
-    size_t delimPosition = name.find(namespaceDelimiter, startPosition);
+    std::string::const_iterator anchor = first;
+    for (++first; first != last; ++first) {
+        // Allow a namespace delimiter.
+        if (*first == namespaceDelimiter) {
+            // Record token.
+            result.push_back(std::string(anchor, first));
 
-    // continuously look for the next delimiter to tokenize
-    while (delimPosition != std::string::npos)
-    {
-        if (!TfUnicodeUtils::IsValidUTF8Identifier(begin + startPosition, begin + delimPosition))
-        {
-            TfReset(result);
-            return result;
+            // Skip delimiter.  We know we will not go beyond the end of
+            // the string because we checked before the loop that the
+            // last character was not the delimiter.
+            anchor = ++first;
+
+            // First character.
+            if (!(isalpha(*first) || (*first == '_'))) {
+                TfReset(result);
+                return result;
+            }
         }
-
-        result.push_back(std::string(name, startPosition, delimPosition - startPosition));
-        startPosition = delimPosition + 1;
-        delimPosition = name.find(namespaceDelimiter, startPosition);
+        else {
+            // Next character
+            if (!(isalnum(*first) || (*first == '_'))) {
+                TfReset(result);
+                return result;
+            }
+        }
     }
 
-    // get the last one starting at startPosition and going to the end
-    if (!TfUnicodeUtils::IsValidUTF8Identifier(begin + startPosition, end))
-    {
-        TfReset(result);
-        return result;
-    }
-
-    result.push_back(std::string(name, startPosition));
+    // Record the last token.
+    result.push_back(std::string(anchor, first));
 
     return result;
 }
@@ -2285,58 +2273,6 @@ namespace {
 
 using namespace tao::TAO_PEGTL_NAMESPACE;
 
-struct XidStart
-{
-    template <typename ParseInput>
-    static bool match(ParseInput& in)
-    {
-        if (!in.empty())
-        {
-            // peek at the next character in the input
-            // if the size is 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
-            if (utf8_char.size != 0)
-            {
-                // valid utf8_char, data has the code point
-                if (TfUnicodeUtils::IsUTF8CharXIDStart(static_cast<uint32_t>(utf8_char.data)))
-                {
-                    // it has the property we want, consume the input
-                    in.bump(utf8_char.size);
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-};
-
-struct XidContinue
-{
-    template <typename ParseInput>
-    static bool match(ParseInput& in)
-    {
-        if (!in.empty())
-        {
-            // peek at the next character in the input
-            // if the size is 0, it was a valid code point
-            auto utf8_char = tao::TAO_PEGTL_NAMESPACE::internal::peek_utf8::peek(in);
-            if (utf8_char.size != 0)
-            {
-                // valid utf8_char, data has the code point
-                if (TfUnicodeUtils::IsUTF8CharXIDContinue(static_cast<uint32_t>(utf8_char.data)))
-                {
-                    // it has the property we want, consume the input
-                    in.bump(utf8_char.size); 
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-};
-
 struct Slash : one<'/'> {};
 struct Dot : one<'.'> {};
 struct DotDot : two<'.'> {};
@@ -2345,19 +2281,18 @@ struct AbsoluteRoot : Slash {};
 struct ReflexiveRelative : Dot {};
 
 struct DotDots : list<DotDot, Slash> {};
-struct Utf8Identifier : seq<XidStart, star<XidContinue>> {};
 
-struct PrimName : Utf8Identifier {};
+struct PrimName : identifier {};
 
 // XXX This replicates old behavior where '-' chars are allowed in variant set
 // names in SdfPaths, but variant sets in layers cannot have '-' in their names.
 // For now we preserve the behavior. Internal bug USD-8321 tracks removing
 // support for '-' characters in variant set names in SdfPath.
 struct VariantSetName :
-    seq<XidStart, star<sor<XidContinue, one<'-'>>>> {};
+    seq<identifier_first, star<sor<identifier_other, one<'-'>>>> {};
 
 struct VariantName :
-    seq<opt<one<'.'>>, star<sor<XidContinue, one<'|', '-'>>>> {};
+    seq<opt<one<'.'>>, star<sor<identifier_other, one<'|', '-'>>>> {};
 
 struct VarSelOpen : pad<one<'{'>, blank> {};
 struct VarSelClose : pad<one<'}'>, blank> {};
@@ -2377,7 +2312,7 @@ struct PrimElts : seq<
     LookaheadList<PrimName, sor<Slash, VariantSelections>>,
     opt<VariantSelections>> {};
 
-struct PropertyName : list<Utf8Identifier, one<':'>> {};
+struct PropertyName : list<identifier, one<':'>> {};
 
 struct MapperPath;
 struct TargetPath;
@@ -2392,7 +2327,7 @@ struct RelationalAttributeName : PropertyName {};
 
 struct MapperKW : TAO_PEGTL_KEYWORD("mapper") {};
 
-struct MapperArg : Utf8Identifier {};
+struct MapperArg : identifier {};
 
 struct MapperPathSeq : if_must<
     seq<Dot, MapperKW>, BracketPath<MapperPath>, opt<Dot, MapperArg>> {};
