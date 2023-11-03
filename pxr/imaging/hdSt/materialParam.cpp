@@ -25,7 +25,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -65,15 +65,16 @@ HdSt_MaterialParam::ComputeHash(HdSt_MaterialParamVector const &params)
 {
     size_t hash = 0;
     for (HdSt_MaterialParam const& param : params) {
-        boost::hash_combine(hash, param.paramType);
-        boost::hash_combine(hash, param.name.Hash());
-        for (TfToken const& coord : param.samplerCoords) {
-            boost::hash_combine(hash, coord.Hash());
-        }
-        boost::hash_combine(hash, param.textureType);
-        boost::hash_combine(hash, param.swizzle);
-        boost::hash_combine(hash, param.isPremultiplied);
-        boost::hash_combine(hash, param.arrayOfTexturesSize);
+        hash = TfHash::Combine(
+            hash,
+            param.paramType,
+            param.name,
+            param.samplerCoords,
+            param.textureType,
+            param.swizzle,
+            param.isPremultiplied,
+            param.arrayOfTexturesSize
+        );
     }
     return hash;
 }

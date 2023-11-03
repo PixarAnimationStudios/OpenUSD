@@ -43,7 +43,7 @@
 
 #include "pxr/base/tf/getenv.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <mutex>
 
@@ -288,8 +288,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
     // Calculate unique hash to detect if the shader (composed) has changed
     // recently and we need to recompile it.
-    size_t shaderHash = state->GetShaderHash();
-    boost::hash_combine(shaderHash,
+    size_t shaderHash = TfHash::Combine(state->GetShaderHash(),
                         firstDrawItem->GetGeometricShader()->ComputeHash());
 
     HdSt_MaterialNetworkShaderSharedPtr materialNetworkShader =
@@ -302,7 +301,7 @@ HdSt_DrawBatch::_GetDrawingProgram(HdStRenderPassStateSharedPtr const &state,
 
     size_t materialNetworkShaderHash =
         materialNetworkShader ? materialNetworkShader->ComputeHash() : 0;
-    boost::hash_combine(shaderHash, materialNetworkShaderHash);
+    shaderHash = TfHash::Combine(shaderHash, materialNetworkShaderHash);
 
     bool shaderChanged = (_shaderHash != shaderHash);
     
