@@ -278,6 +278,8 @@ PcpCache::RequestLayerMuting(const std::vector<std::string>& layersToMute,
                              std::vector<std::string>* newLayersMuted,
                              std::vector<std::string>* newLayersUnmuted)
 {
+    TRACE_FUNCTION();
+
     ArResolverContextBinder binder(_layerStackIdentifier.pathResolverContext);
 
     std::vector<std::string> finalLayersToMute;

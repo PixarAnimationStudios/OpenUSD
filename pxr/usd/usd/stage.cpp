@@ -3931,6 +3931,7 @@ void
 UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
                               const std::vector<std::string> &unmuteLayers)
 {
+    TRACE_FUNCTION();
     TfAutoMallocTag tag("Usd", _GetMallocTagId());
 
     PcpChanges changes;
@@ -3942,6 +3943,7 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
 
     // Notify for layer muting/unmuting
     if (!newMutedLayers.empty() || !newUnMutedLayers.empty()) {
+        TRACE_FUNCTION_SCOPE("sending UsdNotice::LayerMutingChanged");
         UsdNotice::LayerMutingChanged(self, newMutedLayers, newUnMutedLayers)
             .Send(self);
     }
@@ -3954,8 +3956,14 @@ UsdStage::MuteAndUnmuteLayers(const std::vector<std::string> &muteLayers,
     _PathsToChangesMap resyncChanges;
     _Recompose(changes, &resyncChanges);
 
-    UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
-    UsdNotice::StageContentsChanged(self).Send(self);
+    {
+        TRACE_FUNCTION_SCOPE("sending UsdNotice::ObjectsChanged");
+        UsdNotice::ObjectsChanged(self, &resyncChanges).Send(self);
+    }
+    {
+        TRACE_FUNCTION_SCOPE("sending UsdNotice::StageContentsChanged");
+        UsdNotice::StageContentsChanged(self).Send(self);
+    }
 }
 
 const std::vector<std::string>&
@@ -4656,6 +4664,8 @@ void
 UsdStage::_Recompose(const PcpChanges &changes,
                      T *pathsToRecompose)
 {
+    TRACE_FUNCTION();
+
     // Note: Calling changes.Apply() will result in recomputation of  
     // pcpPrimIndexes for changed prims, these get updated on the respective  
     // prims during _ComposeSubtreeImpl call. Using these outdated primIndexes
