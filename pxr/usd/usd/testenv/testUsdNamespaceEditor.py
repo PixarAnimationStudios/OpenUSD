@@ -660,10 +660,9 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         _TestReparentAndRenamePrim(useMovePrimAtPath=True)
 
     def test_BasicCanEditPrim(self):
-        """Tests the basic usage of the "Can Edit Prim" flavors of functions 
-        in cases where namespace editing should fail. Also tests that try
-        to perform edits where "can edit" returns false will not change any 
-        layer content.
+        """Tests the basic usage of the CanApplyEdits in cases where namespace
+        editing should fail. Also tests that calling ApplyEdits in cases where
+        CanApplyEdits returns false will not change any layer content.
         """
 
         # Load the basic stage and get its layers and prims 
@@ -727,8 +726,11 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         invalidPrimPaths = [
             "/C.C_Root_Attr", # property
             "/C{x=y}", # variant selection
+            "/C{x=y}B", # prim path with ancestor variant selection
             "/", # pseudo-root
             "C", # relative prim path
+            ".", # relative prim path
+            "..", # relative prim path
             "../B", # relative prim path
             ".C_Root_Attr", # relative property path
             "/C/B.B_Rel[/Foo].attr" # target path
@@ -911,14 +913,16 @@ class TestUsdNamespaceEditor(unittest.TestCase):
         # has no specs on sublayer1.
         subLayer1.SetPermissionToEdit(False)
 
-        def getCwd():
+        # Get the current working directory as it would be in the layer 
+        # identifier regardless of platform
+        def getFormattedCwd():
             drive, tail = os.path.splitdrive(os.getcwd())
             return drive.lower() + tail.replace('\\', '/')
 
         # Cannot delete or rename /C (there are no valid reparent targets for 
         # /C on this stage currently regardless of layer permission)
         expectedMsg = ("The spec @{}/basic/sub_1.usda@</C> cannot be edited "
-            "because the layer is not editable").format(getCwd())
+            "because the layer is not editable").format(getFormattedCwd())
         _VerifyCannotApplyDeletePrim(primC, expectedMsg)
         _VerifyCannotApplyDeletePrimAtPath("/C", expectedMsg)
         _VerifyCannotApplyRenamePrim(primC, "NewC", expectedMsg)
@@ -926,7 +930,7 @@ class TestUsdNamespaceEditor(unittest.TestCase):
 
         # Cannot delete, rename, or reparent /C/B
         expectedMsg = ("The spec @{}/basic/sub_1.usda@</C/B> cannot be edited "
-            "because the layer is not editable").format(getCwd())
+            "because the layer is not editable").format(getFormattedCwd())
         _VerifyCannotApplyDeletePrim(primB, expectedMsg)
         _VerifyCannotApplyDeletePrimAtPath("/C/B", expectedMsg)
         _VerifyCannotApplyRenamePrim(primB, "NewB", expectedMsg)

@@ -232,6 +232,7 @@ pxr_test_scripts(
     testenv/testUsdMetadata.py
     testenv/testUsdModel.py
     testenv/testUsdNamespaceEditor.py
+    testenv/testUsdNamespaceEditorProperties.py
     testenv/testUsdNotices.py
     testenv/testUsdOpaqueAttributes.py
     testenv/testUsdPathExpressionAttrs.py
@@ -589,6 +590,11 @@ pxr_install_test_dir(
 pxr_install_test_dir(
     SRC testenv/testUsdNamespaceEditor
     DEST testUsdNamespaceEditor
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdNamespaceEditorProperties
+    DEST testUsdNamespaceEditorProperties
 )
 
 pxr_install_test_dir(
@@ -1140,6 +1146,12 @@ pxr_register_test(testUsdNotices
 pxr_register_test(testUsdNamespaceEditor
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditor"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdNamespaceEditorProperties
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdNamespaceEditorProperties"
     EXPECTED_RETURN_CODE 0
 )
 

@@ -85,6 +85,18 @@ void wrapUsdNamespaceEditor()
             (bool (This::*) (const UsdPrim &, const UsdPrim &, 
                 const TfToken &)) &This::ReparentPrim)
 
+        .def("DeletePropertyAtPath", &This::DeletePropertyAtPath)
+        .def("MovePropertyAtPath", &This::MovePropertyAtPath)
+
+        .def("DeleteProperty", &This::DeleteProperty)
+        .def("RenameProperty", &This::RenameProperty)
+        .def("ReparentProperty", 
+            (bool (This::*) (const UsdProperty &, const UsdPrim &))
+               &This::ReparentProperty)
+        .def("ReparentProperty", 
+            (bool (This::*) (const UsdProperty &, const UsdPrim &, 
+                const TfToken &)) &This::ReparentProperty)
+
         .def("ApplyEdits", &This::ApplyEdits)
         .def("CanApplyEdits", &_CanApplyEdits)
     ;

@@ -108,6 +108,56 @@ UsdNamespaceEditor::ReparentPrim(
 }
 
 bool 
+UsdNamespaceEditor::DeletePropertyAtPath(
+    const SdfPath &path)
+{
+    return _AddPropertyDelete(path);
+}
+
+bool 
+UsdNamespaceEditor::MovePropertyAtPath(
+    const SdfPath &path, 
+    const SdfPath &newPath)
+{
+    return _AddPropertyMove(path, newPath);
+}
+
+bool 
+UsdNamespaceEditor::DeleteProperty(
+    const UsdProperty &property)
+{
+    return _AddPropertyDelete(property.GetPath());
+}
+
+bool
+UsdNamespaceEditor::RenameProperty(
+    const UsdProperty &property, 
+    const TfToken &newName)
+{
+    return _AddPropertyMove(
+        property.GetPath(), property.GetPath().ReplaceName(newName));
+}
+
+bool 
+UsdNamespaceEditor::ReparentProperty(
+    const UsdProperty &property, 
+    const UsdPrim &newParent)
+{
+    return _AddPropertyMove(
+        property.GetPath(), newParent.GetPrimPath().AppendProperty(property.GetName()));
+}
+
+bool 
+UsdNamespaceEditor::ReparentProperty(
+    const UsdProperty &property, 
+    const UsdPrim &newParent,
+    const TfToken &newName)
+{
+    return _AddPropertyMove(
+        property.GetPath(), newParent.GetPrimPath().AppendProperty(newName));
+}
+
+bool 
 UsdNamespaceEditor::ApplyEdits()
 {
     _ProcessEditsIfNeeded();
@@ -141,6 +191,20 @@ UsdNamespaceEditor::CanApplyEdits(std::string *whyNot) const
     return true;
 }
 
+static bool 
+_IsValidPrimEditPath(const SdfPath &path) 
+{
+    return path.IsPrimPath() && path.IsAbsolutePath() && 
+        !path.ContainsPrimVariantSelection();
+}
+
+static bool 
+_IsValidPropertyEditPath(const SdfPath &path) 
+{
+    return path.IsPrimPropertyPath() && path.IsAbsolutePath() && 
+        !path.ContainsPrimVariantSelection();
+}
+
 bool 
 UsdNamespaceEditor::_AddPrimDelete(const SdfPath &oldPath) 
 {
@@ -152,15 +216,14 @@ UsdNamespaceEditor::_AddPrimDelete(const SdfPath &oldPath)
     _editDescription.newPath = SdfPath();
 
     // The path must be an absolute path to a prim.
-    if (!oldPath.IsPrimPath() || !oldPath.IsAbsolutePath()) {
+    if (!_IsValidPrimEditPath(oldPath)) {
         TF_CODING_ERROR("Invalid path '%s' provided as the source for "
-            "a prim namespace edit; the path must be an absolute prim path.", 
-            oldPath.GetText());
+            "a prim namespace edit.", oldPath.GetText());
         _editDescription.editType = _EditType::Invalid;
         return false;
     }
     
-    _editDescription.editType = _EditType::DeletePrim;
+    _editDescription.editType = _EditType::Delete;
     return true;
 }
 
@@ -174,27 +237,82 @@ UsdNamespaceEditor::_AddPrimMove(const SdfPath &oldPath, const SdfPath &newPath)
     _editDescription.newPath = newPath;
 
     // Both paths must be an absolute paths to a prim.
-    if (!oldPath.IsPrimPath() || !oldPath.IsAbsolutePath()) {
+    if (!_IsValidPrimEditPath(oldPath)) {
         TF_CODING_ERROR("Invalid path '%s' provided as the source for "
-            "a prim namespace edit; the path must be an absolute prim path.", 
-            oldPath.GetText());
+            "a prim namespace edit.", oldPath.GetText());
         _editDescription.editType = _EditType::Invalid;
         return false;
     }
 
-    if (!newPath.IsPrimPath() || !newPath.IsAbsolutePath()) {
+    if (!_IsValidPrimEditPath(newPath)) {
         TF_CODING_ERROR("Invalid path '%s' provided as the destination for a "
-            "prim namespace edit; the path must be an absolute prim path.", 
-            newPath.GetText());
+            "prim namespace edit.", newPath.GetText());
         _editDescription.editType = _EditType::Invalid;
         return false;
     }
 
     // Determine whether the paths represent a rename or a reparent.
     if (oldPath.GetParentPath() == newPath.GetParentPath()) {
-        _editDescription.editType = _EditType::RenamePrim;
+        _editDescription.editType = _EditType::Rename;
     } else {
-        _editDescription.editType = _EditType::ReparentPrim;
+        _editDescription.editType = _EditType::Reparent;
+    }
+
+    return true;
+}
+
+bool 
+UsdNamespaceEditor::_AddPropertyDelete(const SdfPath &oldPath) 
+{
+    // We always clear the processed edits when a new edit is added.
+    _ClearProcessedEdits();
+
+    // Property delete is described as moving from the old path to the empty path.
+    _editDescription.oldPath = oldPath;
+    _editDescription.newPath = SdfPath();
+
+    // The path must be an absolute path to a property.
+    if (!_IsValidPropertyEditPath(oldPath)) {
+        TF_CODING_ERROR("Invalid path '%s' provided as the source for "
+            "a property namespace edit.", oldPath.GetText());
+        _editDescription.editType = _EditType::Invalid;
+        return false;
+    }
+    
+    _editDescription.editType = _EditType::Delete;
+    return true;
+}
+
+bool 
+UsdNamespaceEditor::_AddPropertyMove(
+    const SdfPath &oldPath, const SdfPath &newPath) 
+{
+    // We always clear the processed edits when a new edit is added.
+    _ClearProcessedEdits();
+
+    _editDescription.oldPath = oldPath;
+    _editDescription.newPath = newPath;
+
+    // Both paths must be an absolute paths to a property.
+    if (!_IsValidPropertyEditPath(oldPath)) {
+        TF_CODING_ERROR("Invalid path '%s' provided as the source for "
+            "a property namespace edit.", oldPath.GetText());
+        _editDescription.editType = _EditType::Invalid;
+        return false;
+    }
+
+    if (!_IsValidPropertyEditPath(newPath)) {
+        TF_CODING_ERROR("Invalid path '%s' provided as the destination for a "
+            "property namespace edit.", newPath.GetText());
+        _editDescription.editType = _EditType::Invalid;
+        return false;
+    }
+
+    // Determine whether the paths represent a rename or a reparent.
+    if (oldPath.GetPrimPath() == newPath.GetPrimPath()) {
+        _editDescription.editType = _EditType::Rename;
+    } else {
+        _editDescription.editType = _EditType::Reparent;
     }
 
     return true;
@@ -218,6 +336,22 @@ UsdNamespaceEditor::_ProcessEditsIfNeeded() const
     _processedEdit = _ProcessEdit(_editDescription);
 }
 
+UsdNamespaceEditor::_ProcessedEdit 
+UsdNamespaceEditor::_ProcessEdit(
+    const _EditDescription &editDesc) const
+{
+    if (editDesc.editType == _EditType::Invalid) {
+        _ProcessedEdit processedEdit;
+        processedEdit.errors.push_back("There are no valid edits to perform");
+        return processedEdit;
+    }
+
+    if (editDesc.IsPropertyEdit()) {
+        return _ProcessPropertyEdit(editDesc);
+    } else {
+        return _ProcessPrimEdit(editDesc);
+    }
+}
 
 static 
 bool 
@@ -252,13 +386,13 @@ _IsValidPrimToEdit(
 
 static 
 bool 
-_IsValidNewParentPath(
-    const UsdObject &objectToEdit,
-    const SdfPath &newParentPath, 
+_IsValidNewParentPathForPrim(
+    const UsdStageRefPtr &stage,
+    const SdfPath &pathToEdit,
+    const SdfPath &newParentPath,
     std::string *whyNot = nullptr) 
 {
-    const UsdPrim newParentPrim = 
-        objectToEdit.GetStage()->GetPrimAtPath(newParentPath);
+    const UsdPrim newParentPrim = stage->GetPrimAtPath(newParentPath);
 
     // New parent prim must exist
     if (!newParentPrim) {
@@ -282,51 +416,36 @@ _IsValidNewParentPath(
         }
         return false;
     }
-    if (objectToEdit.Is<UsdPrim>()) {
-        // New parent prim must not be instance prim.
-        if (newParentPrim.IsInstance()) {
-            if (whyNot) {
-                *whyNot = "The new parent prim is an instance prim whose "
-                          "children are provided exclusively by its prototype";
-            }
-            return false;
+
+    // New parent prim must not be instance prim.
+    if (newParentPrim.IsInstance()) {
+        if (whyNot) {
+            *whyNot = "The new parent prim is an instance prim whose "
+                        "children are provided exclusively by its prototype";
         }
-        // Prims can't be reparented under themselves.
-        if (newParentPrim == objectToEdit) {
-            if (whyNot) {
-                *whyNot = "The new parent prim is the same as the prim to move";
-            }
-            return false;
+        return false;
+    }
+    // Prims can't be reparented under themselves.
+    if (newParentPath == pathToEdit) {
+        if (whyNot) {
+            *whyNot = "The new parent prim is the same as the prim to move";
         }
-        if (newParentPath.HasPrefix(objectToEdit.GetPrimPath())) {
-            if (whyNot) {
-                *whyNot = "The new parent prim is a descendant of the prim to "
-                          "move";
-            }
-            return false;
+        return false;
+    }
+    if (newParentPath.HasPrefix(pathToEdit)) {
+        if (whyNot) {
+            *whyNot = "The new parent prim is a descendant of the prim to "
+                        "move";
         }
-    } else {
-        if (newParentPrim.IsPseudoRoot()) {
-            if (whyNot) {
-                *whyNot = "The new parent prim for a property cannot be the "
-                          "pseudo-root";
-            }
-            return false;
-        }
+        return false;
     }
     return true;
 }
 
 UsdNamespaceEditor::_ProcessedEdit 
-UsdNamespaceEditor::_ProcessEdit(
-    const _EditDescription &editDesc) const
+UsdNamespaceEditor::_ProcessPrimEdit(const _EditDescription &editDesc) const
 {
     _ProcessedEdit processedEdit;
-
-    if (editDesc.editType == _EditType::Invalid) {
-        processedEdit.errors.push_back("There are no valid edits to perform");
-        return processedEdit;
-    }
 
     // Add the edit to the processed SdfBatchNamespaceEdit.
     processedEdit.edits.Add(editDesc.oldPath, editDesc.newPath);
@@ -350,7 +469,7 @@ UsdNamespaceEditor::_ProcessEdit(
 
     // For prim reparenting we have additional behaviors and validation to 
     // perform.
-    if (editDesc.editType == _EditType::ReparentPrim) {
+    if (editDesc.editType == _EditType::Reparent) {
         // For each layer we edit, we may need to create new overs for the new 
         // parent path and delete inert ancestor overs after moving a prim from
         // its original parent, so add this info to the processed edit.
@@ -361,8 +480,8 @@ UsdNamespaceEditor::_ProcessEdit(
         // Validate that the stage does have a prim at the new parent path to 
         // reparent to.
         std::string whyNot;
-        if (!_IsValidNewParentPath(
-                prim, processedEdit.createParentSpecIfNeededPath, &whyNot)) {
+        if (!_IsValidNewParentPathForPrim(_stage, editDesc.oldPath, 
+                processedEdit.createParentSpecIfNeededPath, &whyNot)) {
             processedEdit.errors.push_back(std::move(whyNot));
             return processedEdit;
         }
@@ -371,34 +490,16 @@ UsdNamespaceEditor::_ProcessEdit(
     // Gather all layers with contributing specs to the old path that will need
     // to be edited when the edits are applied. This will also determine if the
     // edit requires relocates.
-    _GatherLayersToEdit(prim, &processedEdit);
-
-    // Validate whether the necessary spec edits can actually be performed on
-    // each layer that needs to be edited.
-    for (const auto &layer : processedEdit.layersToEdit) {
-        // The layer itself needs to be editable  
-        if (!layer->PermissionToEdit()) {
-            processedEdit.errors.push_back(TfStringPrintf("The spec @%s@<%s> "
-                "cannot be edited because the layer is not editable",
-                layer->GetIdentifier().c_str(),
-                editDesc.oldPath.GetText()));
-        }
-        // If we're moving an object to a new path, the layer cannot have a
-        // spec already at the new path.
-        if (!editDesc.newPath.IsEmpty() && layer->HasSpec(editDesc.newPath)) {
-            processedEdit.errors.push_back(TfStringPrintf("The spec @%s@<%s> "
-                "cannot be moved to <%s> because a spec already exists at "
-                "the new path",
-                layer->GetIdentifier().c_str(),
-                editDesc.oldPath.GetText(),
-                editDesc.newPath.GetText()));
-        }
-    }
+    _GatherLayersToEdit(
+        editDesc, 
+        _stage->GetEditTarget(), 
+        prim.GetPrimIndex(),
+        &processedEdit);
 
     // Relocates support is not implemented yet so it's currently an error if 
     // the edit requires it..
     if (processedEdit.requiresRelocates) {
-        if (editDesc.editType == _EditType::DeletePrim) {
+        if (editDesc.editType == _EditType::Delete) {
             // "Relocates" means deactivating the prim in the deletion case.
             processedEdit.errors.push_back("The prim to delete requires "
                 "deactivation to be deleted because of specs introduced across "
@@ -414,48 +515,170 @@ UsdNamespaceEditor::_ProcessEdit(
     return processedEdit;
 }
 
-/*static*/
-void 
-UsdNamespaceEditor::_GatherLayersToEdit(
-    const UsdPrim &primToEdit,
-    _ProcessedEdit *processedEdit)
+static 
+bool 
+_IsValidPropertyToEdit(
+    const UsdProperty &property, 
+    std::string *whyNot = nullptr) 
 {
-    const PcpPrimIndex &primIndex = primToEdit.GetPrimIndex();
-
-    // XXX: To start, we're only going to perform namespace edit operations 
-    // using the root layer stack. This will be updated to support edit targets
-    // as a later task.
-    const PcpNodeRef nodeForEditTarget = primIndex.GetRootNode();
-    
-    // Get all the layers in the layer stack where the edits will be performed.
-    const SdfLayerRefPtrVector &layers = 
-        nodeForEditTarget.GetLayerStack()->GetLayers();
-
-    // Until we support edit targets, verify that the stage's current edit 
-    // target maps to the prim's local opinions in the root layer stack.
-    const UsdEditTarget &editTarget = primToEdit.GetStage()->GetEditTarget();
-    if (!editTarget.GetMapFunction().IsIdentityPathMapping()) {
-        processedEdit->errors.push_back("Edit targets that map paths across "
-            "composition arcs are not currently supported for namespace "
-            "editing");
-        return;
+    // Property to edit must exist
+    if (!property) {
+        if (whyNot) {
+            *whyNot = "The property to edit is not a valid property";
+        }
+        return false;
     }
-    if (std::find(layers.begin(), layers.end(), editTarget.GetLayer()) 
-            == layers.end()) {
-        processedEdit->errors.push_back("Edit targets with layers outside of "
-            "the root layer stack are not currently supported for namespace "
-            "editing");
-        return;
+    const UsdPrim prim = property.GetPrim();
+    // Property to edit must not belong to a prototype.
+    if (prim.IsInPrototype()) {
+        if (whyNot) {
+            *whyNot = "The property to edit belongs to a prototype prim";
+        }
+        return false;
+    }
+    // Property to edit must not belong to a prototype proxy.
+    if (prim.IsInstanceProxy()) {
+        if (whyNot) {
+            *whyNot = "The property to edit belongs to an instance prototype "
+                "proxy";
+        }
+        return false;
+    }
+    // Property to edit must not be a built-in schema property
+    if (prim.GetPrimDefinition().GetPropertyDefinition(property.GetName())) {
+        if (whyNot) {
+            *whyNot = "The property to edit is a built-in property of its prim";
+        }
+        return false;
+    }
+    return true;
+}
+
+static 
+bool 
+_IsValidNewParentPathForProperty(
+    const UsdStageRefPtr &stage,
+    const SdfPath &newParentPath,
+    std::string *whyNot = nullptr) 
+{
+    const UsdPrim newParentPrim = stage->GetPrimAtPath(newParentPath);
+
+    // New parent prim must exist
+    if (!newParentPrim) {
+        if (whyNot) {
+            *whyNot = "The new parent prim is not a valid prim";
+        }
+        return false;
+    }
+    // New parent prim must not be a prototype.
+    if (newParentPrim.IsInPrototype()) {
+        if (whyNot) {
+            *whyNot = "The new parent prim belongs to a prototype prim";
+        }
+        return false;
+    }
+    // New parent prim must not be a prototype proxy.
+    if (newParentPrim.IsInstanceProxy()) {
+        if (whyNot) {
+            *whyNot = "The new parent prim is a prototype proxy descendant "
+                      "of an instance prim";
+        }
+        return false;
+    }
+    // Properties can't be parented under the pseudo-root.
+    if (newParentPrim.IsPseudoRoot()) {
+        if (whyNot) {
+            *whyNot = "The new parent prim for a property cannot be the "
+                        "pseudo-root";
+        }
+        return false;
+    }
+    return true;
+}
+
+UsdNamespaceEditor::_ProcessedEdit 
+UsdNamespaceEditor::_ProcessPropertyEdit(const _EditDescription &editDesc) const
+{
+    _ProcessedEdit processedEdit;
+
+    if (editDesc.editType == _EditType::Invalid) {
+        processedEdit.errors.push_back("There are no valid edits to perform");
+        return processedEdit;
     }
 
-    // Collect every prim spec that exists for this prim path in the layer 
-    // stack's layers.
-    for (const SdfLayerRefPtr &layer : layers) {
-        if (layer->HasSpec(primToEdit.GetPrimPath())) {
-            processedEdit->layersToEdit.push_back(layer);
+    // Add the edit to the processed SdfBatchNamespaceEdit.
+    processedEdit.edits.Add(editDesc.oldPath, editDesc.newPath);
+
+    // Validate whether the stage has property at the original path that can be 
+    // namespace edited.
+    const UsdProperty property = _stage->GetPropertyAtPath(editDesc.oldPath);
+    std::string error;
+    if (!_IsValidPropertyToEdit(property, &error)) {
+        processedEdit.errors.push_back(std::move(error));
+        return processedEdit;
+    }
+
+    // For move edits we'll have a new path; verify that the stage doesn't 
+    // already have an object at that path.
+    if (!editDesc.newPath.IsEmpty() && 
+            _stage->GetObjectAtPath(editDesc.newPath)) {
+        processedEdit.errors.push_back("An object already exists at the new path");
+        return processedEdit;
+    }
+
+    // For property reparenting we have additional behaviors and validation to 
+    // perform.
+    if (editDesc.editType == _EditType::Reparent) {
+        // For each layer we edit, we may need to create new overs for the new 
+        // parent path and delete inert ancestor overs after moving a property
+        // from its original parent, so add this info to the processed edit.
+        processedEdit.createParentSpecIfNeededPath = 
+            editDesc.newPath.GetParentPath();
+        processedEdit.removeInertAncestorOvers = true;
+
+        // Validate that the stage does have a prim at the new parent path to 
+        // reparent properties to.
+        std::string whyNot;
+        if (!_IsValidNewParentPathForProperty(_stage, 
+                processedEdit.createParentSpecIfNeededPath, &whyNot)) {
+            processedEdit.errors.push_back(std::move(whyNot));
+            return processedEdit;
         }
     }
 
+    // Gather all layers with contributing specs to the old path that will need
+    // to be edited when the edits are applied. This will also determine if the
+    // edit requires relocates.
+    _GatherLayersToEdit(
+        editDesc, 
+        _stage->GetEditTarget(), 
+        property.GetPrim().GetPrimIndex(),
+        &processedEdit);
+
+    // Relocates support is not implemented for properties so it's an error if 
+    // the edit requires it.
+    if (processedEdit.requiresRelocates) {
+        if (editDesc.editType == _EditType::Delete) {
+            // "Relocates" means deactivating the prim in the deletion case.
+            processedEdit.errors.push_back("The property to delete requires "
+                "deactivation to be deleted because of specs introduced across "
+                "a composition arc; deletion via deactivation is "
+                "not supported yet");
+        } else {
+            processedEdit.errors.push_back("The property to move requires "
+                "relocates to be moved because of specs introduced across a "
+                "composition arc; relocates are not supported for properties");
+        }
+    }
+
+    return processedEdit;
+}
+
+static bool
+_GetPrimEditRequiresRelocates(
+    const PcpPrimIndex &primIndex,
+    const PcpNodeRef &nodeForEditTarget)
+{
     // Check to see if there are any contributing specs that would require 
     // relocates. These are specs that would continue to be mapped to the 
     // same path across the edit target's node even after all specs are edited
@@ -478,11 +701,117 @@ UsdNamespaceEditor::_GatherLayersToEdit(
         for (const PcpNodeRef &subtreeNode : subtreeRange) {
             // A node has contributing specs if it has specs and is not inert.
             if (subtreeNode.HasSpecs() && !subtreeNode.IsInert()) {
-                processedEdit->requiresRelocates = true;
-                break;
+                return true;
             }
         }
     }
+
+    return false;
+}
+
+static bool
+_GetPropEditRequiresRelocates(
+    const PcpPrimIndex &primIndex,
+    const PcpNodeRef &nodeForEditTarget,
+    const TfToken &propName)
+{
+    // Check to see if there are any contributing specs that would require 
+    // relocates. These are specs that would continue to be mapped to the 
+    // same path across the edit target's node even after all specs are edited
+    // in its layer stack.
+    //
+    // As opposed to prims, all nodes are essentially "ancestral arcs" for 
+    // properties since properties don't define composition arcs. So we look
+    // for property specs in every node under the edit target node as those 
+    // can't be namespace edited without relocates.
+    PcpNodeRange subtreeRange = primIndex.GetNodeSubtreeRange(nodeForEditTarget);
+
+    // Skip the node itself; we want to check its descendants.
+    ++subtreeRange.first;
+    for (const PcpNodeRef &subtreeNode : subtreeRange) {
+
+        // Skip nodes that don't contribute specs.
+        if (!subtreeNode.HasSpecs() || subtreeNode.IsInert()) {
+            continue;
+        }
+
+        // Map the property path to this node so we can search its layers for 
+        // specs. If the property path can't be mapped, we can skip this node.
+        // Note that we use the node's path and append the property name instead
+        // of using the map function of the node to map the property path. This
+        // is because variant arcs don't include the variant selection in the
+        // map function (but do in the site path) so we won't get the correct
+        // variant property path via the map function.
+        SdfPath mappedPropertyPath = 
+            subtreeNode.GetPath().AppendProperty(propName);
+        if (mappedPropertyPath.IsEmpty()) {
+            continue;
+        }
+
+        // Search the layers in the layer stack to see if any of them have a
+        // property spec for the mapped property.
+        const SdfLayerRefPtrVector &layers = 
+            subtreeNode.GetLayerStack()->GetLayers();
+        const bool hasPropertySpecs = std::any_of(layers.begin(), layers.end(),
+            [&](const auto &layer) { 
+                return layer->HasSpec(mappedPropertyPath);
+            });
+
+        // If we found a property spec, the edit requires relocates.
+        if (hasPropertySpecs) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+/*static*/
+void 
+UsdNamespaceEditor::_GatherLayersToEdit(
+    const _EditDescription &editDesc,
+    const UsdEditTarget &editTarget,
+    const PcpPrimIndex &primIndex,
+    _ProcessedEdit *processedEdit)
+{
+    // XXX: To start, we're only going to perform namespace edit operations 
+    // using the root layer stack. This will be updated to support edit targets
+    // as a later task.
+    const PcpNodeRef nodeForEditTarget = primIndex.GetRootNode();
+    
+    // Get all the layers in the layer stack where the edits will be performed.
+    const SdfLayerRefPtrVector &layers = 
+        nodeForEditTarget.GetLayerStack()->GetLayers();
+
+    // Until we support edit targets, verify that the stage's current edit 
+    // target maps to the prim's local opinions in the root layer stack.
+    if (!editTarget.GetMapFunction().IsIdentityPathMapping()) {
+        processedEdit->errors.push_back("Edit targets that map paths across "
+            "composition arcs are not currently supported for namespace "
+            "editing");
+        return;
+    }
+    if (std::find(layers.begin(), layers.end(), editTarget.GetLayer()) 
+            == layers.end()) {
+        processedEdit->errors.push_back("Edit targets with layers outside of "
+            "the root layer stack are not currently supported for namespace "
+            "editing");
+        return;
+    }
+
+    // Collect every prim spec that exists for this prim path in the layer 
+    // stack's layers.
+    for (const SdfLayerRefPtr &layer : layers) {
+        if (layer->HasSpec(editDesc.oldPath)) {
+            processedEdit->layersToEdit.push_back(layer);
+        }
+    }
+
+    // Determine if editing the path would require relocates.
+    processedEdit->requiresRelocates = editDesc.IsPropertyEdit() ?
+        _GetPropEditRequiresRelocates(
+            primIndex, nodeForEditTarget, editDesc.oldPath.GetNameToken()) :
+        _GetPrimEditRequiresRelocates(primIndex, nodeForEditTarget);
 
     // At the point in which this function is called, the prim must exist on the
     // stage. So if we didn't find any specs to edit, then we must've found 
@@ -490,6 +819,29 @@ UsdNamespaceEditor::_GatherLayersToEdit(
     // as a sanity check.
     if (processedEdit->layersToEdit.empty()) {
         TF_VERIFY(processedEdit->requiresRelocates);
+        return;
+    }
+
+    // Validate whether the necessary spec edits can actually be performed on
+    // each layer that needs to be edited.
+    for (const auto &layer : processedEdit->layersToEdit) {
+        // The layer itself needs to be editable  
+        if (!layer->PermissionToEdit()) {
+            processedEdit->errors.push_back(TfStringPrintf("The spec @%s@<%s> "
+                "cannot be edited because the layer is not editable",
+                layer->GetIdentifier().c_str(),
+                editDesc.oldPath.GetText()));
+        }
+        // If we're moving an object to a new path, the layer cannot have a
+        // spec already at the new path.
+        if (!editDesc.newPath.IsEmpty() && layer->HasSpec(editDesc.newPath)) {
+            processedEdit->errors.push_back(TfStringPrintf("The spec @%s@<%s> "
+                "cannot be moved to <%s> because a spec already exists at "
+                "the new path",
+                layer->GetIdentifier().c_str(),
+                editDesc.oldPath.GetText(),
+                editDesc.newPath.GetText()));
+        }
     }
 }
 

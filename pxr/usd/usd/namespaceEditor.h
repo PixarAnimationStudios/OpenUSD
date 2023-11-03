@@ -65,8 +65,9 @@ public:
         const SdfPath &path, 
         const SdfPath &newPath);
 
-    /// Adds an edit operation to delete the composed prim with the same path
-    /// as \p prim from this namespace editor's stage.
+    /// Adds an edit operation to delete the composed prim at the path of 
+    /// \p prim from this namespace editor's stage. This is equivalent to 
+    /// calling DeletePrimAtPath(prim.GetPath())
     ///
     /// Returns true if the prim provides a valid possible composed prim path; 
     /// returns false and emits a coding error if not.
@@ -74,8 +75,8 @@ public:
     bool DeletePrim(
         const UsdPrim &prim);
 
-    /// Adds an edit operation to rename the composed prim with the same path
-    /// as \p prim on this namespace editor's stage to instead have the name
+    /// Adds an edit operation to rename the composed prim at the path of 
+    /// \p prim on this namespace editor's stage to instead have the name
     /// \p newName.
     ///
     /// Returns true if the prim provides a valid possible composed prim path 
@@ -86,9 +87,9 @@ public:
         const UsdPrim &prim, 
         const TfToken &newName);
 
-    /// Adds an edit operation to reparent the composed prim with the same path
-    /// as \p prim on this namespace editor's stage to instead be a namespace 
-    /// child of a composed prim with the same path as \p newParent.
+    /// Adds an edit operation to reparent the composed prim at the path of
+    /// \p prim on this namespace editor's stage to instead be a namespace 
+    /// child of the composed prim at the path of \p newParent.
     ///
     /// Returns true if the both the prim and the new parent prim provide a 
     /// valid possible composed prim paths; returns false and emits a coding 
@@ -98,10 +99,10 @@ public:
         const UsdPrim &prim, 
         const UsdPrim &newParent);
 
-    /// Adds an edit operation to reparent the composed prim with the same path
-    /// as \p prim on this namespace editor's stage to instead be a prim named
-    /// \p newName that is a namespace child of a composed prim with the same 
-    /// path as \p newParent.
+    /// Adds an edit operation to reparent the composed prim at the path of
+    /// \p prim on this namespace editor's stage to instead be a prim named
+    /// \p newName that is a namespace child of the composed prim at the  
+    /// path of \p newParent.
     ///
     /// Returns true if the both the prim and the new parent prim provide a 
     /// valid possible composed prim paths and the new name is a valid prim 
@@ -109,6 +110,74 @@ public:
     USD_API
     bool ReparentPrim(
         const UsdPrim &prim, 
+        const UsdPrim &newParent,
+        const TfToken &newName);
+
+    /// Adds an edit operation to delete the composed property at the given 
+    /// \p path from this namespace editor's stage.
+    ///
+    /// Returns true if the path is a valid possible composed property path; 
+    /// returns false and emits a coding error if not.
+    USD_API
+    bool DeletePropertyAtPath(
+        const SdfPath &path);
+
+    /// Adds an edit operation to move the composed property at the given 
+    /// \p path on this namespace editor's stage to instead be at the path 
+    /// \p newPath.
+    ///
+    /// Returns true if both paths are valid possible composed property path; 
+    /// returns false and emits a coding error if not.
+    USD_API
+    bool MovePropertyAtPath(
+        const SdfPath &path, 
+        const SdfPath &newPath);
+
+    /// Adds an edit operation to delete the composed property at the path of
+    /// \p property from this namespace editor's stage. This is equivalent to 
+    /// calling DeletePropertyAtPath(property.GetPath())
+    ///
+    /// Returns true if the property provides a valid possible composed property
+    /// path; returns false and emits a coding error if not.
+    USD_API
+    bool DeleteProperty(
+        const UsdProperty &property);
+
+    /// Adds an edit operation to rename the composed property at the path of 
+    /// \p property on this namespace editor's stage to instead have the name 
+    /// \p newName.
+    ///
+    /// Returns true if the property provides a valid possible composed property
+    /// path and the new name is a valid possible property name; returns false 
+    /// and emits a coding error if not.
+    USD_API
+    bool RenameProperty(
+        const UsdProperty &property, 
+        const TfToken &newName);
+
+    /// Adds an edit operation to reparent the composed property at the path of
+    /// \p property on this namespace editor's stage to instead be a namespace 
+    /// child of the composed property at the path of \p newParent.
+    ///
+    /// Returns true if the both the property and the new parent prim provide a 
+    /// valid possible composed paths; returns false and emits a coding 
+    /// error if not.
+    USD_API
+    bool ReparentProperty(
+        const UsdProperty &property, 
+        const UsdPrim &newParent);
+
+    /// Adds an edit operation to reparent the composed property at the path of
+    /// \p property on this namespace editor's stage to instead be a property 
+    /// named \p newName that is a namespace child of the composed prim at the 
+    /// path of \p newParent.
+    ///
+    /// Returns true if the both the property and the new parent prim provide a 
+    /// valid possible composed paths and the new name is a valid property 
+    /// name; returns false and emits a coding error if not.
+    USD_API
+    bool ReparentProperty(
+        const UsdProperty &property, 
         const UsdPrim &newParent,
         const TfToken &newName);
 
@@ -137,9 +206,9 @@ private:
     enum class _EditType {
         Invalid, 
 
-        DeletePrim,
-        RenamePrim,
-        ReparentPrim,
+        Delete,
+        Rename,
+        Reparent
     };
 
     // Description of an edit added to this namespace editor.
@@ -149,8 +218,12 @@ private:
         // New path of the object after the edit is performed. An empty path 
         // indicates that the edit operation will delete the object.
         SdfPath newPath;
+
         // Type of the edit as determined by the oldPath and the newPath.
         _EditType editType = _EditType::Invalid;
+
+        // Whether this describes a property edit or, otherwise, a prim edit.
+        bool IsPropertyEdit() const { return oldPath.IsPrimPropertyPath(); }
     };
 
     // Struct representing the Sdf layer edits necessary to apply an edit 
@@ -189,6 +262,12 @@ private:
     // Adds an edit description for a prim rename or reparent operation.
     bool _AddPrimMove(const SdfPath &oldPath, const SdfPath &newPath);
 
+    // Adds an edit description for a property delete operation.
+    bool _AddPropertyDelete(const SdfPath &oldPath);
+
+    // Adds an edit description for a property rename or reparent operation.
+    bool _AddPropertyMove(const SdfPath &oldPath, const SdfPath &newPath);
+
     // Clears the current procesed edits.
     void _ClearProcessedEdits();
 
@@ -198,11 +277,15 @@ private:
 
     // Creates a processed edit from an edit description.
     _ProcessedEdit _ProcessEdit(const _EditDescription &editDesc) const;
+    _ProcessedEdit _ProcessPrimEdit(const _EditDescription &editDesc) const;
+    _ProcessedEdit _ProcessPropertyEdit(const _EditDescription &editDesc) const;
 
     // Gathers all the layer with specs that need to be edited (deleted or 
-    // moved) in order to perform any namespace edit on the given prim.
+    // moved) in order to perform any namespace edit on the given path.
     static void _GatherLayersToEdit(
-        const UsdPrim &primToEdit,
+        const _EditDescription &editDesc,
+        const UsdEditTarget &editTarget,
+        const PcpPrimIndex &primIndex,
         _ProcessedEdit *processedEdit);
 
     // Applies the processed edit, performing the individual edits necessary to
