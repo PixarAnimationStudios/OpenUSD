@@ -129,6 +129,21 @@ The method of "uplifting" an RGB colour to a spectral distribution is unspecifie
 other than that it should round-trip under the rendering illuminant to the limits
 of numerical accuracy.
 
+\subsubsection usdLux_quantities_exposure Exposure
+
+In order to generate an image, a camera effectively integrates irradiance at a patch 
+on the sensor over time to get exposure, which is converted to an electrical signal.
+The default behaviour of many renderers is to ignore this, which as we have seen means
+that 1 nit incident on the sensor results in an output signal of 1.0. 
+
+1 nit is a tiny amount of light, equivalent by definition to a single candle viewed at a distance. Thus 
+using physically plausible values for light brightnesses will result in blown out images 
+unless exposure is taken into account. A full physical camera model would be a good 
+future addition to OpenUSD, but there is already a means of communicating sensor 
+exposure via UsdGeomCamera::GetExposureAttr() and it is expected that all renderers 
+implementing UsdLux must respect the value of that attribute by scaling the rendered 
+image by \c pow(2, exposure).
+
 \subsection usdLux_Behavior Properties & Behavior
 
 Colors specified in attributes are in energy-linear terms,
