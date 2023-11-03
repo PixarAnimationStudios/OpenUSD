@@ -526,10 +526,7 @@ Sdf_ChangeManager::DidMoveSpec(const SdfLayerHandle &layer,
     } else {
         // Reparent
         if (oldPath.IsPrimPath()) {
-            _GetListFor(changes, layer)
-                .DidRemovePrim(oldPath, /* inert = */ false);
-            _GetListFor(changes, layer)
-                .DidAddPrim(newPath, /* inert = */ false);
+            _GetListFor(changes, layer).DidMovePrim(oldPath, newPath);
         } else if (oldPath.IsPropertyPath()) {
             _GetListFor(changes, layer).DidRemoveProperty(oldPath, 
                 /* hasOnlyRequiredFields = */ false);

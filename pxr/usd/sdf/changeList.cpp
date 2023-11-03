@@ -419,6 +419,17 @@ SdfChangeList::DidRemovePrim(const SdfPath &path, bool inert)
 }
 
 void
+SdfChangeList::DidMovePrim(const SdfPath &oldPath, const SdfPath &newPath)
+{
+    Entry &oldEntry = _GetEntry(oldPath);
+    oldEntry.flags.didRemoveNonInertPrim = true;
+
+    Entry &newEntry = _GetEntry(newPath);
+    newEntry.flags.didAddNonInertPrim = true;
+    newEntry.oldPath = oldPath;
+}
+
+void
 SdfChangeList::DidChangePropertyName(const SdfPath & oldPath,
                                      const SdfPath & newPath)
 {
