@@ -250,6 +250,10 @@ TestBasics()
         TF_AXIOM(!eval.Match(SdfPath("/weaker/c")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar")));
         TF_AXIOM(!eval.Match(SdfPath("/foo/bar/baz")));
+
+        // ResolveReferences() with the empty expression should produce the
+        // empty expression.
+        TF_AXIOM(SdfPathExpression().ResolveReferences(resolveRefs).IsEmpty());
     }
 
     {
