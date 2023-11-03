@@ -156,7 +156,6 @@ UsdImagingDelegate::~UsdImagingDelegate()
     index.RemoveSubtree(GetDelegateID(), this);
 
     _refineLevelMap.clear();
-    _pickablesMap.clear();
     _hdPrimInfoMap.clear();
     _dependencyInfo.clear();
     _adapterMap.clear();
@@ -1738,29 +1737,6 @@ UsdImagingDelegate::_UpdateSingleValue(SdfPath const& cachePath,
         adapter->UpdateForTime(primInfo->usdPrim, cachePath,
                                _time, requestBits);
     }
-}
-
-void
-UsdImagingDelegate::ClearPickabilityMap()
-{
-    _pickablesMap.clear();
-}
-
-void 
-UsdImagingDelegate::SetPickability(SdfPath const& path, bool pickable)
-{
-    // XXX(UsdImagingPaths): SetPickability takes a usdPath but we
-    // use it directly as a cachePath here; should we route that through
-    // a prim adapter?
-    SdfPath const& cachePath = path;
-
-    _pickablesMap[ConvertCachePathToIndexPath(cachePath)] = pickable;
-}
-
-PickabilityMap
-UsdImagingDelegate::GetPickabilityMap() const
-{
-    return _pickablesMap; 
 }
 
 void
