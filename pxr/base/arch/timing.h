@@ -214,7 +214,8 @@ struct ArchIntervalTimer
             :
             // rdtscp writes rcx
             : "rcx");
-        return (uint64_t(stopHigh - _startHigh) << 32) + (stopLow - _startLow);
+        return ((uint64_t(stopHigh) << 32) + stopLow) -
+            ((uint64_t(_startHigh) << 32) + _startLow);
     }
 private:
     bool _started = false;
