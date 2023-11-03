@@ -26,6 +26,7 @@
 #include "pxr/usdImaging/usdImaging/dataSourcePrimvars.h"
 #include "pxr/usdImaging/usdImaging/dataSourceUsdPrimInfo.h"
 #include "pxr/usdImaging/usdImaging/extentsHintSchema.h"
+#include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 #include "pxr/usdImaging/usdImaging/modelSchema.h"
 #include "pxr/usdImaging/usdImaging/tokens.h"
 #include "pxr/usdImaging/usdImaging/usdPrimInfoSchema.h"
@@ -556,7 +557,6 @@ UsdImagingDataSourcePrim_ModelAPI::GetNames()
         UsdImagingModelSchemaTokens->assetIdentifier,
         UsdImagingModelSchemaTokens->assetName,
         UsdImagingModelSchemaTokens->assetVersion,
-        UsdImagingModelSchemaTokens->applyDrawMode,
     };
 }
 
@@ -592,13 +592,6 @@ UsdImagingDataSourcePrim_ModelAPI::Get(const TfToken &name)
         if (_model.GetAssetVersion(&assetVersion)) {
             return HdRetainedTypedSampledDataSource<std::string>
                 ::New(assetVersion);
-        }
-        return nullptr;
-    } else if (name == UsdImagingModelSchemaTokens->applyDrawMode) {
-        // We set applyDrawMode for kind = component prims even if the
-        // prim is not a UsdGeomModelAPI.
-        if (_model.IsKind(KindTokens->component)) {
-            return HdRetainedTypedSampledDataSource<bool>::New(true);
         }
         return nullptr;
     }
