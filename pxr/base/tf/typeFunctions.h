@@ -102,30 +102,6 @@ struct TfTypeFunctions<const T*> {
     static void Class_Object_MUST_Be_Passed_By_Address() { }
 };
 
-/// \class TfCopyIfNotReference
-/// \ingroup group_tf_Internal
-///
-/// \c TfCopyIfNotReference<T>::Apply(v) is used to return a pointer to the
-/// value \p v.  If \c T is a non-reference type, then the value returned
-/// points to newly constructed dynamic space, which the caller must free.
-/// Otherwise, the returned value is the address of \p v.
-///
-template <class T>
-struct TfCopyIfNotReference
-{
-    static T* Apply(T value) {
-        return new T(value);
-    }
-};
-
-template <class T>
-struct TfCopyIfNotReference<T&>
-{
-    static T* Apply(T& value) {
-        return &value;
-    }
-};
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_BASE_TF_TYPE_FUNCTIONS_H
