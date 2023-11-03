@@ -568,20 +568,17 @@ private:
 /// free to use the stream operators in ostreamMethods.h, but are not required
 /// to do so.
 template <typename T>
-typename std::enable_if<!std::is_enum<T>::value, std::string>::type
+std::string
 TfStringify(const T& v)
 {
-    std::ostringstream stream;
-    stream << v;
-    return stream.str();
-}
-
-/// \overload
-template <typename T>
-typename std::enable_if<std::is_enum<T>::value, std::string>::type
-TfStringify(const T& v)
-{
-    return TfEnum::GetName(v);
+    if constexpr (std::is_enum<T>::value) {
+        return TfEnum::GetName(v);
+    }
+    else {
+        std::ostringstream stream;
+        stream << v;
+        return stream.str();
+    }
 }
 
 /// \overload
