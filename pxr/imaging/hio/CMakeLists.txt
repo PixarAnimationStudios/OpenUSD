@@ -50,3 +50,12 @@ pxr_library(hio
         overview.dox
 )
 
+set(TARGET_NAME "hio")
+if(PXR_ENABLE_JS_SUPPORT)
+    set(TARGET_NAME "hio_internal")
+endif()
+
+target_compile_definitions("${TARGET_NAME}" PRIVATE
+    ILMTHREAD_THREADING_ENABLED
+    OPENEXR_C_STANDALONE
+    OPENEXR_EXPORT=static)

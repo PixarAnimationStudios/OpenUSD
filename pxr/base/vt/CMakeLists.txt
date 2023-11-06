@@ -64,8 +64,8 @@ pxr_library(vt
 )
 
 if(PXR_ENABLE_JS_SUPPORT)
-    target_link_options(vt PRIVATE "SHELL: --bind")
-    target_compile_options(vt PRIVATE "SHELL: --bind")
+    target_link_options(vt_internal PRIVATE "SHELL: --bind")
+    target_compile_options(vt_internal PRIVATE "SHELL: --bind")
 endif()
 
 

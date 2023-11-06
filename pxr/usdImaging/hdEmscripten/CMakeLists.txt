@@ -13,7 +13,7 @@ pxr_library(hdEmscripten
       usd
       usdUtils
       sdf
-      -Wl,--whole-archive usdShaders -Wl,--no-whole-archive
+      "$<LINK_LIBRARY:LOAD_PLUGIN,usdShaders>"
 
     PUBLIC_CLASSES
         webRenderDelegate
@@ -22,8 +22,8 @@ pxr_library(hdEmscripten
         webRenderDelegate.h
 )
 
-target_link_options(hdEmscripten PRIVATE "SHELL: --bind")
-target_compile_options(hdEmscripten PRIVATE "SHELL: --bind")
+target_link_options(hdEmscripten_internal PRIVATE "SHELL: --bind")
+target_compile_options(hdEmscripten_internal PRIVATE "SHELL: --bind")
 
 set(RESOURCE_PARAMETERS "")
 function(add_resources target)

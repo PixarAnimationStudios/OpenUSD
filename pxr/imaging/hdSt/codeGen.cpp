@@ -5103,7 +5103,7 @@ HdSt_CodeGen::_GenerateElementPrimvar()
                 << "int GetAggregatedElementID() {\n"
                 << "  return GetElementID()\n"
                 << "  + GetDrawingCoord().elementCoord;\n"
-                << "}\n";
+            xr/imaging/hio/CMake        << "}\n";
         }
         else {
             TF_CODING_ERROR("HdSt_GeometricShader::PrimitiveType %d is "
