@@ -29,10 +29,6 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakPtr.h"
 
-// We're getting rid of our dependency on boost::hash -- this code is left
-// commented for testing purposes, for now (6/2020).
-//#include <boost/functional/hash.hpp>
-
 #include <set>
 #include <string>
 #include <vector>
@@ -155,23 +151,6 @@ _TestStatsTwo(Hasher const &h, char const *label)
     sw.Stop();
     printf("took %f seconds\n", sw.GetSeconds());
 }
-
-/*  See comment at top of file.
-
-struct BoostHasher
-{
-    size_t operator()(uint64_t x) const {
-        return boost::hash<uint64_t>()(x);
-    }
-    
-    size_t operator()(Two t) const {
-        size_t seed = 0;
-        boost::hash_combine(seed, t.x);
-        boost::hash_combine(seed, t.y);
-        return seed;
-    }
-};
-*/
 
 struct TfHasher
 {
@@ -325,12 +304,9 @@ Test_TfHash()
     printf("hash(unique_ptr): %zu\n", h(std::make_unique<int>(7)));
 
     TfHasher tfh;
-    //BoostHasher bh;
 
     _TestStatsOne(tfh, "TfHash");
     _TestStatsTwo(tfh, "TfHash");
-    //_TestStatsOne(bh, "Boost hash");
-    //_TestStatsTwo(bh, "Boost hash");
 
     bool status = true;
     return status;
