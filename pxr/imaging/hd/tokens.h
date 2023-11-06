@@ -102,6 +102,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (primID)                                    \
     (primitiveParam)                            \
     (tessFactors)                               \
+    (meshletRemap)                              \
     (quadInfo)                                  \
     (renderTags)                                \
     (rightHanded)                               \
@@ -249,6 +250,8 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (tessEvalShader)                            \
     (postTessControlShader)                     \
     (postTessVertexShader)                      \
+    (meshObjectShader)                          \
+    (meshletShader)                             \
     (tessLevel)                                 \
     (viewport)                                  \
     (vertexShader)                              \

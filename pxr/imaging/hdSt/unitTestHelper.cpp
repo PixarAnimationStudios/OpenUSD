@@ -398,7 +398,7 @@ HdSt_TextureTestDriver::Draw(HgiTextureHandle const &colorDst,
 
     HgiGraphicsCmdsUniquePtr gfxCmds = _hgi->CreateGraphicsCmds(gfxDesc);
     gfxCmds->PushDebugGroup("Debug HdSt_TextureTestDriver");
-    gfxCmds->BindResources(_resourceBindings);
+    gfxCmds->BindResources(_resourceBindings, false);
     gfxCmds->BindPipeline(_pipeline);
     gfxCmds->BindVertexBuffers({{_vertexBuffer, 0, 0}});
     gfxCmds->SetViewport(viewport);

@@ -145,6 +145,10 @@ _GetShaderType(HgiShaderStage stage)
             return "POST_TESS_CONTROL_SHADER";
         case HgiShaderStagePostTessellationVertex:
             return "POST_TESS_VERTEX_SHADER";
+        case HgiShaderStageMeshObject:
+            return "MESH_OBJECT_SHADER";
+        case HgiShaderStageMeshlet:
+            return "MESHLET_SHADER";
         default:
             return nullptr;
     }

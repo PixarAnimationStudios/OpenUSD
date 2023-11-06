@@ -47,6 +47,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
                                        bool hasMirroredTransform,
                                        bool doubleSided,
                                        bool useMetalTessellation,
+                                       bool useMeshShaders,
                                        HdPolygonMode polygonMode,
                                        bool cullingPass,
                                        FvarPatchType fvarPatchType,
@@ -59,6 +60,7 @@ HdSt_GeometricShader::HdSt_GeometricShader(std::string const &glslfxString,
     , _hasMirroredTransform(hasMirroredTransform)
     , _doubleSided(doubleSided)
     , _useMetalTessellation(useMetalTessellation)
+    , _useMeshShaders(useMeshShaders)
     , _polygonMode(polygonMode)
     , _lineWidth(lineWidth)
     , _frustumCullingPass(cullingPass)
@@ -123,6 +125,9 @@ HdSt_GeometricShader::ResolveCullMode(
         case HdCullStyleFront:
             if (_hasMirroredTransform) {
                 resolvedCullMode = HgiCullModeBack;
+                if (_useMeshShaders) {
+                    resolvedCullMode = HgiCullModeNone;
+                }
             } else {
                 resolvedCullMode = HgiCullModeFront;
             }
@@ -131,6 +136,9 @@ HdSt_GeometricShader::ResolveCullMode(
             if (!_doubleSided) {
                 if (_hasMirroredTransform) {
                     resolvedCullMode = HgiCullModeBack;
+                    if (_useMeshShaders) {
+                        resolvedCullMode = HgiCullModeNone;
+                    }
                 } else {
                     resolvedCullMode = HgiCullModeFront;
                 }
@@ -141,6 +149,9 @@ HdSt_GeometricShader::ResolveCullMode(
                 resolvedCullMode = HgiCullModeFront;
             } else {
                 resolvedCullMode = HgiCullModeBack;
+                if (_useMeshShaders) {
+                    resolvedCullMode = HgiCullModeNone;
+                }
             }
             break;
         case HdCullStyleBackUnlessDoubleSided:
@@ -149,6 +160,9 @@ HdSt_GeometricShader::ResolveCullMode(
                     resolvedCullMode = HgiCullModeFront;
                 } else {
                     resolvedCullMode = HgiCullModeBack;
+                    if (_useMeshShaders) {
+                        resolvedCullMode = HgiCullModeNone;
+                    }
                 }
             }
             break;
@@ -370,6 +384,7 @@ HdSt_GeometricShader::GetHgiPrimitiveType() const
                 shaderKey.HasMirroredTransform(),
                 shaderKey.IsDoubleSided(),
                 shaderKey.UseMetalTessellation(),
+                shaderKey.UseMeshShaders(),
                 shaderKey.GetPolygonMode(),
                 shaderKey.IsFrustumCullingPass(),
                 shaderKey.GetFvarPatchType(),

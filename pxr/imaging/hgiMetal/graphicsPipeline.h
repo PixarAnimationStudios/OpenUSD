@@ -59,6 +59,7 @@ private:
     void _CreateVertexDescriptor();
     void _CreateDepthStencilState(HgiMetal *hgi);
     void _CreateRenderPipelineState(HgiMetal *hgi);
+    void _CreateMeshRenderPipelineState(HgiMetal *hgi);
 
     MTLVertexDescriptor *_vertexDescriptor;
     id<MTLDepthStencilState> _depthStencilState;

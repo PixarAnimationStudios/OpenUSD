@@ -38,6 +38,8 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((normalsScene,                "MeshNormal.Scene"))
     ((normalsScenePatches,         "MeshNormal.Scene.Patches"))
     ((normalsSmooth,               "MeshNormal.Smooth"))
+    ((normalsSmoothUnpackSSBO,     "MeshNormal.Smooth.UnpackSmoothSSBO"))
+    ((normalsSmoothUnpackVBO,      "MeshNormal.Smooth.UnpackSmoothVBO"))
     ((normalsFlat,                 "MeshNormal.Flat"))
     ((normalsPass,                 "MeshNormal.Pass"))
     ((normalsScreenSpaceFS,        "MeshNormal.Fragment.ScreenSpace"))
@@ -122,6 +124,12 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainBSplineQuadPTVS,         "Mesh.PostTessVertex.BSplineQuad"))
     ((mainBoxSplineTrianglePTCS,   "Mesh.PostTessControl.BoxSplineTriangle"))
     ((mainBoxSplineTrianglePTVS,   "Mesh.PostTessVertex.BoxSplineTriangle"))
+    ((mainVaryingInterpPTVS,       "Mesh.PostTessVertex.VaryingInterpolation"))
+    ((mainMOS,                     "Mesh.MeshObject.Main"))
+    ((mainTriangleMS,              "Mesh.Meshlet.Triangle"))
+    ((noCullmainTriangleMS,        "Mesh.Meshlet.TriangleNoCull"))
+    ((cullBackfaceMS,              "Mesh.Meshlet.Triangle.CullBackface"))
+    ((noCullBackfaceMS,            "Mesh.Meshlet.Triangle.NoCullBackface"))
     ((mainTriangleTessGS,          "Mesh.Geometry.TriangleTess"))
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
@@ -168,6 +176,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool doubleSided,
     bool hasBuiltinBarycentrics,
     bool hasMetalTessellation,
+    bool hasMeshShaders,
     bool hasCustomDisplacement,
     bool hasPerFaceInterpolation,
     bool hasTopologicalVisibility,
@@ -182,10 +191,12 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     , hasMirroredTransform(hasMirroredTransform)
     , doubleSided(doubleSided)
     , useMetalTessellation(false)
+    , useMeshShaders(hasMeshShaders)
     , polygonMode(HdPolygonModeFill)
     , lineWidth(lineWidth)
     , fvarPatchType(fvarPatchType)
     , glslfx(_tokens->baseGLSLFX)
+
 {
     if (geomStyle == HdMeshGeomStyleEdgeOnly ||
         geomStyle == HdMeshGeomStyleHullEdgeOnly) {
@@ -255,14 +266,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
         (normalsSource == NormalSourceScene && !vsSceneNormals);
     bool const ptvsGeometricNormals =
         (normalsSource == NormalSourceFlatGeometric);
-
+    
+    if (ptvsGeometricNormals) {
+        useMeshShaders = false;
+    }
     // vertex shader
     uint8_t vsIndex = 0;
     VS[vsIndex++] = _tokens->instancing;
-
-    VS[vsIndex++] = (normalsSource == NormalSourceSmooth) ?
-        _tokens->normalsSmooth :
-        (vsSceneNormals ? _tokens->normalsScene : _tokens->normalsPass);
+    if (normalsSource == NormalSourceSmooth) {
+        VS[vsIndex++] = _tokens->normalsSmoothUnpackVBO;
+        VS[vsIndex++] = _tokens->normalsSmooth;
+    } else if (vsSceneNormals) {
+        VS[vsIndex++] = _tokens->normalsScene;
+    } else {
+        VS[vsIndex++] = _tokens->normalsPass;
+    }
 
     if (isPrimTypePoints) {
         // Add mixins that allow for picking and sel highlighting of points.
@@ -278,20 +296,88 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     VS[vsIndex] = TfToken();
 
     // Determine if PTVS should be used for Metal.
-    bool const usePTVSTechniques =
+    bool usePTVSTechniques =
             isPrimTypePatches ||
             hasCustomDisplacement ||
             ptvsSceneNormals ||
             ptvsGeometricNormals ||
             !hasBuiltinBarycentrics;
+    
+    if (useMeshShaders && !isPrimTypePatches) {
+        usePTVSTechniques = false;
+    }
 
     // Determine if using actually using Metal PTVS.
     useMetalTessellation =
         hasMetalTessellation && !isPrimTypePoints && usePTVSTechniques;
 
+    bool useMeshShading = UseMeshShaders();
+
     // PTVS shaders can provide barycentric coords w/o GS.
     bool const hasFragmentShaderBarycentrics =
-        hasBuiltinBarycentrics || useMetalTessellation;
+        hasBuiltinBarycentrics || useMetalTessellation || useMeshShading;
+
+    uint8_t mosIndex = 0;
+    uint8_t msIndex = 0;
+    
+    bool const faceCullFrontFacing =
+        !useHardwareFaceCulling &&
+            (cullStyle == HdCullStyleFront ||
+             (cullStyle == HdCullStyleFrontUnlessDoubleSided && !doubleSided));
+    bool const faceCullBackFacingMS =
+            (cullStyle == HdCullStyleBack ||
+             (cullStyle == HdCullStyleBackUnlessDoubleSided && !doubleSided));
+    bool const faceCullBackFacing =
+        !useHardwareFaceCulling && faceCullBackFacingMS;
+    
+    if (useMeshShading) {
+        MS[msIndex++] = _tokens->instancing;
+        if (ptvsGeometricNormals) {
+            MS[msIndex++] = _tokens->normalsGeometryFlat;
+        } else {
+            MS[msIndex++] = _tokens->normalsGeometryNoFlat;
+        }
+
+        // Now handle the vs style normals
+        if (normalsSource == NormalSourceFlat) {
+            MS[msIndex++] = _tokens->normalsFlat;
+        }
+        else if (normalsSource == NormalSourceSmooth) {
+            MS[msIndex++] = _tokens->normalsSmoothUnpackSSBO;
+            MS[msIndex++] = _tokens->normalsSmooth;
+        } else if (vsSceneNormals) {
+            MS[msIndex++] = _tokens->normalsScene;
+        } else if (gsSceneNormals && isPrimTypePatches) {
+            MS[msIndex++] = _tokens->normalsScenePatches;
+        } else {
+            MS[msIndex++] = _tokens->normalsPass;
+        }
+        
+        if (hasCustomDisplacement) {
+            MS[msIndex++] = _tokens->customDisplacementGS;
+        } else {
+            MS[msIndex++] = _tokens->noCustomDisplacementGS;
+        }
+        
+        if (faceCullBackFacingMS) {
+            MS[msIndex++] = _tokens->noCullBackfaceMS;
+        } else {
+            MS[msIndex++] = _tokens->cullBackfaceMS;
+        }
+        
+        MOS[mosIndex++] = _tokens->mainMOS;
+        if (isPrimTypeQuads || isPrimTypeTriQuads) {
+            TF_CODING_ERROR("Quad prims not supported yet");
+        } else if (isPrimTypeTris) {
+            if (faceCullBackFacingMS) {
+                MS[msIndex++] = _tokens->mainTriangleMS;
+            } else {
+                MS[msIndex++] = _tokens->noCullmainTriangleMS;
+            }
+        } else {
+            TF_CODING_ERROR("Unsupported meshlet primitive type");
+        }
+    }
 
     // post tess vertex shader vertex steps
     uint8_t ptvsIndex = 0;
@@ -313,6 +399,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             PTVS[ptvsIndex++] = _tokens->normalsFlat;
         }
         else if (normalsSource == NormalSourceSmooth) {
+            PTVS[ptvsIndex++] = _tokens->normalsSmoothUnpackVBO;
             PTVS[ptvsIndex++] = _tokens->normalsSmooth;
         } else if (vsSceneNormals) {
             PTVS[ptvsIndex++] = _tokens->normalsScene;
@@ -420,7 +507,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
 
     // Optimization : See if we can skip the geometry shader.
     bool const canSkipGS =
-            ptvsStageEnabled ||
+            ptvsStageEnabled || UseMeshShaders() ||
             // Whether we can skip executing the displacement shading terminal
             (!hasCustomDisplacement
             && (normalsSource != NormalSourceLimit)
@@ -451,7 +538,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     // fragment shader
     uint8_t fsIndex = 0;
     FS[fsIndex++] = _tokens->instancing;
-
+    
     FS[fsIndex++] =
         (normalsSource == NormalSourceFlatScreenSpace)
             ? _tokens->normalsScreenSpaceFS
@@ -464,20 +551,21 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = doubleSided ?
         _tokens->normalsDoubleSidedFS : _tokens->normalsSingleSidedFS;
 
-    bool const faceCullFrontFacing =
-        !useHardwareFaceCulling &&
-            (cullStyle == HdCullStyleFront ||
-             (cullStyle == HdCullStyleFrontUnlessDoubleSided && !doubleSided));
-    bool const faceCullBackFacing =
-        !useHardwareFaceCulling &&
-            (cullStyle == HdCullStyleBack ||
-             (cullStyle == HdCullStyleBackUnlessDoubleSided && !doubleSided));
-    FS[fsIndex++] =
-        faceCullFrontFacing
-            ? _tokens->faceCullFrontFacingFS
-            : faceCullBackFacing
-                ? _tokens->faceCullBackFacingFS
-                : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
+    if (!useMeshShading) {
+        FS[fsIndex++] =
+            faceCullFrontFacing
+                ? _tokens->faceCullFrontFacingFS
+                : faceCullBackFacing
+                    ? _tokens->faceCullBackFacingFS
+                    : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
+    } else {
+        FS[fsIndex++] =
+            faceCullFrontFacing
+                ? _tokens->faceCullFrontFacingFS
+                    : _tokens->faceCullNoneFS; // DontCare, Nothing, HW
+    }
+    
+        
 
     // Wire (edge) related mixins
     if (renderWireframe || renderEdges) {
@@ -485,7 +573,7 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
             FS[fsIndex++] = _tokens->edgeCoordTessCoordTriangleFS;
         } else if ((isPrimTypeQuads||isPrimTypeTriQuads) && ptvsStageEnabled) {
             FS[fsIndex++] = _tokens->edgeCoordTessCoordFS;
-        } else {
+            } else {
             FS[fsIndex++] = _tokens->edgeCoordBarycentricCoordFS;
         }
 

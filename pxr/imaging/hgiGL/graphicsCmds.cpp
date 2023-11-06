@@ -102,7 +102,7 @@ HgiGLGraphicsCmds::BindPipeline(HgiGraphicsPipelineHandle pipeline)
 }
 
 void
-HgiGLGraphicsCmds::BindResources(HgiResourceBindingsHandle res)
+HgiGLGraphicsCmds::BindResources(HgiResourceBindingsHandle res, bool useMeshShaders)
 {
     _ops.push_back( HgiGLOps::BindResources(res) );
 }

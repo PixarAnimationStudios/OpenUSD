@@ -330,6 +330,7 @@ public:
         BindingDeclaration instanceIndexBaseBinding;
         BindingDeclaration primitiveParamBinding;
         BindingDeclaration tessFactorsBinding;
+        BindingDeclaration meshletRemapBinding;
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
         BindingDeclaration indexBufferBinding;
