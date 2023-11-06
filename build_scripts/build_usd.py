@@ -1096,6 +1096,9 @@ def InstallTBB_Linux(context, force, buildArgs):
 def InstallTBB_Emscripten(context, force, buildArgs):
 
     with CurrentWorkingDirectory(DownloadURL(TBB_EMSCRIPTEN_URL, context, force)):
+        PatchFile("build/linux.emscripten.inc",
+                  [("-DUSE_PTHREAD", "-DUSE_PTHREAD -pthread")],
+                  multiLineMatches=False)
         # By default no config for other platform is available, but the one for linux
         # seems to work fine
         if MacOS():
