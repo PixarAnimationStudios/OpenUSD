@@ -143,6 +143,7 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
         self._defaultMaterialAmbient = self.stateProperty("defaultMaterialAmbient", default=DEFAULT_AMBIENT)
         self._defaultMaterialSpecular = self.stateProperty("defaultMaterialSpecular", default=DEFAULT_SPECULAR)
         self._redrawOnScrub = self.stateProperty("redrawOnScrub", default=True)
+        self._authoredStepsOnly = False
         self._renderMode = self.stateProperty("renderMode", default=RenderModes.SMOOTH_SHADED)
         self._freeCameraFOV = self.stateProperty("freeCameraFOV", default=60.0)
         self._freeCameraAspect = self.stateProperty("freeCameraAspect", default=1.0)
@@ -822,6 +823,14 @@ class ViewSettingsDataModel(StateSource, QtCore.QObject):
     @visibleViewSetting
     def redrawOnScrub(self, value):
         self._redrawOnScrub = value
+
+    @property
+    def authoredStepsOnly(self):
+        return self._authoredStepsOnly
+
+    @authoredStepsOnly.setter
+    def authoredStepsOnly(self, value):
+        self._authoredStepsOnly = value
 
     @property
     def freeCamera(self):

@@ -31,6 +31,7 @@ from __future__ import print_function
 from .qt import QtCore, QtGui, QtWidgets, QtActionWidgets
 
 # Stdlib components
+import bisect
 import re, sys, os, cProfile, pstats, traceback
 from itertools import groupby
 from time import time, sleep
@@ -834,6 +835,8 @@ class AppController(QtCore.QObject):
 
             self._ui.redrawOnScrub.toggled.connect(self._redrawOptionToggled)
 
+            self._ui.authoredStepsOnly.toggled.connect(self._authoredOptionToggled)
+
             if self._stageView:
                 self._ui.actionAuto_Compute_Clipping_Planes.triggered.connect(
                     self._toggleAutoComputeClippingPlanes)
@@ -1353,17 +1356,27 @@ class AppController(QtCore.QObject):
 
 
     def _UpdateTimeSamples(self, resetStageDataOnly=False):
-        if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
-            if self.realStartTimeCode > self.realEndTimeCode:
-                sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'
-                % (self.realStartTimeCode, self.realEndTimeCode))
-                self._timeSamples = []
+        def _setTimeSamplesFromRange():
+            if self.realStartTimeCode is not None and self.realEndTimeCode is not None:
+                if self.realStartTimeCode > self.realEndTimeCode:
+                    sys.stderr.write('Warning: Invalid frame range (%s, %s)\n'
+                                     % (self.realStartTimeCode, self.realEndTimeCode))
+                    self._timeSamples = []
+                else:
+                    self._timeSamples = Drange(self.realStartTimeCode,
+                                               self.realEndTimeCode,
+                                               self.step)
             else:
-                self._timeSamples = Drange(self.realStartTimeCode,
-                                           self.realEndTimeCode,
-                                           self.step)
+                self._timeSamples = []
+
+        if self._dataModel.viewSettings.authoredStepsOnly:
+            samples = self._dataModel.authoredSamples
+            if samples:
+                self._timeSamples = samples
+            else:
+                _setTimeSamplesFromRange()
         else:
-            self._timeSamples = []
+            _setTimeSamplesFromRange()
 
         self._geomCounts = dict()
         self._hasTimeSamples = (len(self._timeSamples) > 0)
@@ -2049,6 +2062,13 @@ class AppController(QtCore.QObject):
         self._ui.frameSlider.setTracking(
             self._dataModel.viewSettings.redrawOnScrub)
 
+    def _authoredOptionToggled(self, checked):
+        self._dataModel.viewSettings.authoredStepsOnly = checked
+        # give an indication when step size is not taken into account:
+        self._ui.stepSize.setVisible(not checked)
+        self._ui.stepSizeLabel.setVisible(not checked)
+        self._UpdateTimeSamples(resetStageDataOnly=False)
+
     # Frame-by-frame/Playback functionality ===================================
 
     def _setPlaybackAvailability(self, enabled = True):
@@ -2070,6 +2090,7 @@ class AppController(QtCore.QObject):
         self._ui.redrawOnScrub.setEnabled(isEnabled)
         self._ui.stepSizeLabel.setEnabled(isEnabled)
         self._ui.stepSize.setEnabled(isEnabled)
+        self._ui.authoredStepsOnly.setEnabled(isEnabled)
 
 
     def _playClicked(self):
@@ -2139,7 +2160,18 @@ class AppController(QtCore.QObject):
             int: The closest matching frame index or 0 if one cannot be
             found.
         """
-        closestIndex = int(round((timeSample - self._timeSamples[0]) / self.step))
+        if self._dataModel.viewSettings.authoredStepsOnly:
+            # Since the authored samples could be unevenly distributed, we need to
+            # search for the closest one. This index's value will be >= timeSample.
+            closestIndex = bisect.bisect(self._timeSamples, timeSample)
+            # if applicable, check if previous sample is closer
+            if (closestIndex > 0 and closestIndex < len(self._timeSamples) and
+                    (abs(timeSample - self._timeSamples[closestIndex - 1]) <
+                     abs(timeSample - self._timeSamples[closestIndex]))):
+                closestIndex = closestIndex -1
+        else:
+            # If we can assume even samples, we can avoid bisect search...
+            closestIndex = int(round((timeSample - self._timeSamples[0]) / self.step))
 
         # Bounds checking
         # 0 <= closestIndex <= number of time samples - 1
@@ -5269,6 +5301,7 @@ class AppController(QtCore.QObject):
         self._refreshRolloverPrimInfoMenu()
         self._refreshSelectionHighlightingMenu()
         self._refreshSelectionHighlightColorMenu()
+        self._refreshAuthoredStepsOnly()
 
     def _refreshRenderModeMenu(self):
         for action in self._renderModeActions:
@@ -5418,6 +5451,10 @@ class AppController(QtCore.QObject):
             action.setChecked(
                 str(action.text())
                 == self._dataModel.viewSettings.highlightColorName)
+
+    def _refreshAuthoredStepsOnly(self):
+        self._ui.authoredStepsOnly.setChecked(
+            self._dataModel.viewSettings.authoredStepsOnly)
 
     def _displayPurposeChanged(self):
         self._updatePropertyView()

@@ -9548,6 +9548,30 @@ UsdStage::SetFramesPerSecond(double framesPerSecond) const
     SetMetadata(SdfFieldKeys->FramesPerSecond, framesPerSecond);
 }
 
+std::vector<double>
+UsdStage::GetTimeSamplesFromPrims()
+{
+    // Since we are doing tons of lookups and relatively small amounts of pushes
+    // a sorted vector and lower_bound is way more efficient
+    // than push_backs and std::finds or std::sets or anything
+    std::vector<double> ret;
+    for (auto prim: Traverse()) {
+        for (const auto& attr: prim.GetAuthoredAttributes()) {
+            static thread_local std::vector<double> samples;
+            attr.GetTimeSamples(&samples);
+            for (const auto& sample: samples) {
+                const auto it = std::lower_bound(ret.begin(), ret.end(), sample);
+                if (it == ret.end() || *it != sample) {
+                    ret.push_back(sample);
+                    std::sort(ret.begin(), ret.end());
+                }
+            }
+        }
+    }
+    return ret;
+}
+
+
 void 
 UsdStage::SetColorConfiguration(const SdfAssetPath &colorConfig) const
 {
