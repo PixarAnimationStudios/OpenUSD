@@ -167,6 +167,7 @@ TF_DECLARE_PUBLIC_TOKENS(HdxAovTokens, HDX_API,
     (shadowToWorldMatrix)          \
     (blur)                         \
     (bias)                         \
+    (normalBias)                   \
     (material)                     \
     (emission)                     \
     (sceneColor)                   \

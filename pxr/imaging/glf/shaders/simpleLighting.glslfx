@@ -41,8 +41,8 @@ struct ShadowMatrix {
     mat4 shadowToEyeMatrix;
     float blur;
     float bias;
-    float padding0;
-    float padding1;
+    float normalBias;
+    float padding;
 };
 
 FORWARD_DECL(mat4 GetWorldToViewMatrix());
@@ -56,6 +56,7 @@ ShadowMatrix GetShadow(int shadowIndex) {
         HdGet_shadow_shadowToWorldMatrix(shadowIndex);
     shadowMat.blur = HdGet_shadow_blur(shadowIndex);
     shadowMat.bias = HdGet_shadow_bias(shadowIndex);
+    shadowMat.normalBias = HdGet_shadow_normalBias(shadowIndex);
     return shadowMat;
 }
 
@@ -136,8 +137,8 @@ struct ShadowMatrix {
     mat4 shadowToEyeMatrix;
     float blur;
     float bias;
-    float padding0;
-    float padding1;
+    float normalBias;
+    float padding;
 };
 
 struct LightingContribution {
@@ -205,6 +206,7 @@ ShadowMatrix GetShadow(int shadowIndex) {
         HdGet_shadow_shadowToWorldMatrix(shadowIndex);
     shadowMat.blur = HdGet_shadow_blur(shadowIndex);
     shadowMat.bias = HdGet_shadow_bias(shadowIndex);
+    shadowMat.normalBias = HdGet_shadow_normalBias(shadowIndex);
     return shadowMat;
 }
 
@@ -284,14 +286,29 @@ shadowFilter(int shadowIndex, vec4 coord, vec4 Peye)
 #endif // NUM_SHADOWS > 0
 
 float
-shadowing(int lightIndex, vec4 Peye)
+shadowing(int lightIndex, vec4 Peye, vec3 Neye)
 {
 #if NUM_SHADOWS > 0
     for (int shadowIndex = GetLightSource(lightIndex).shadowIndexStart;
          shadowIndex <= GetLightSource(lightIndex).shadowIndexEnd;
          ++shadowIndex) {
 
-        vec4 coord = GetShadow(shadowIndex).eyeToShadowMatrix * Peye;
+        vec4 PeyeForShdowing = Peye;
+
+        // Apply normal bias to the eye space position to remove acnes on the surfaces parallel
+        // to the shadow direction.
+        float normalBias = GetShadow(shadowIndex).normalBias;
+        if (normalBias > 0.0) {
+            vec4 shadowDir = GetShadow(shadowIndex).shadowToEyeMatrix * vec4(0.0, 0.0, 1.0, 0.0);
+            vec3 d = normalize(shadowDir.xyz);
+            vec3 n = normalize(Neye);
+
+            float NdotD = clamp(dot(n, d), -1.0, 1.0); 
+            float sinND = sqrt(1.0 - NdotD * NdotD);
+            PeyeForShdowing += vec4(n, 0.0) * normalBias * sinND;
+        }
+
+        vec4 coord = GetShadow(shadowIndex).eyeToShadowMatrix * PeyeForShdowing;
 
         // If the point-to-be-lit isn't covered by this cascade, skip to
         // the next one...
@@ -300,7 +317,7 @@ shadowing(int lightIndex, vec4 Peye)
             continue;
         }
 
-        return shadowFilter(shadowIndex, coord, Peye);
+        return shadowFilter(shadowIndex, coord, PeyeForShdowing);
     }
 #endif // NUM_SHADOWS > 0
     // ... either no shadows, or no coverage.
@@ -459,7 +476,7 @@ integrateLightsDefault(vec4 Peye, vec3 Neye, LightingInterfaceProperties props)
 
 #if USE_SHADOWS
             float shadow = light.hasShadow ?
-                shadowing(/*lightIndex=*/i, Peye) : 1.0;
+                shadowing(/*lightIndex=*/i, Peye, Neye) : 1.0;
 #else
             float shadow = 1.0;
 #endif

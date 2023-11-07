@@ -44,6 +44,7 @@ GlfSimpleLight::GlfSimpleLight(GfVec4f const & position) :
     _hasShadow(false),
     _shadowResolution(512),
     _shadowBias(0.0),
+    _shadowNormalBias(0.0),
     _shadowBlur(0.0),
     _shadowIndexStart(0),
     _shadowIndexEnd(0),
@@ -215,6 +216,18 @@ GlfSimpleLight::SetShadowBias(float bias)
 }
 
 float
+GlfSimpleLight::GetShadowNormalBias() const
+{
+    return _shadowNormalBias;
+}
+
+void
+GlfSimpleLight::SetShadowNormalBias(float bias)
+{
+    _shadowNormalBias = bias;
+}
+
+float
 GlfSimpleLight::GetShadowBlur() const
 {
     return _shadowBlur;
@@ -357,6 +370,7 @@ GlfSimpleLight::operator==(const GlfSimpleLight& other) const
         &&  _hasShadow == other._hasShadow
         &&  _shadowResolution == other._shadowResolution
         &&  _shadowBias == other._shadowBias
+        &&  _shadowNormalBias == other._shadowNormalBias
         &&  _shadowBlur == other._shadowBlur
         &&  _shadowIndexStart == other._shadowIndexStart
         &&  _shadowIndexEnd == other._shadowIndexEnd
@@ -391,6 +405,7 @@ std::ostream& operator<<(std::ostream& out, const GlfSimpleLight& v)
         << v._hasShadow
         << v._shadowResolution
         << v._shadowBias
+        << v._shadowNormalBias
         << v._shadowBlur
         << v._shadowIndexStart
         << v._shadowIndexEnd

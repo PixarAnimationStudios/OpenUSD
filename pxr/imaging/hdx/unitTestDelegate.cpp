@@ -238,6 +238,7 @@ Hdx_UnitTestDelegate::AddLight(SdfPath const &id, GlfSimpleLight const &light)
     shadowParams.shadowMatrix
         = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
     shadowParams.bias = -0.001;
+    shadowParams.normalBias = 0.1;
     shadowParams.blur = 0.1;
 
     cache[HdLightTokens->params] = light;
@@ -260,6 +261,7 @@ Hdx_UnitTestDelegate::SetLight(SdfPath const &id, TfToken const &key,
             = cache[HdLightTokens->shadowParams].Get<HdxShadowParams>();
         shadowParams.shadowMatrix
             = HdxShadowMatrixComputationSharedPtr(new ShadowMatrix(light));
+        shadowParams.normalBias = light.GetShadowNormalBias();
 
         GetRenderIndex().GetChangeTracker().MarkSprimDirty(
             id, HdLight::DirtyParams|HdLight::DirtyShadowParams);

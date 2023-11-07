@@ -322,7 +322,8 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
             float shadowToViewMatrix[16];
             float blur;
             float bias;
-            float padding[2];
+            float normalBias;
+            float padding;
         };
 
         struct Shadow {
@@ -378,6 +379,7 @@ GlfSimpleLightingContext::BindUniformBlocks(GlfBindingMapPtr const &bindingMap)
                         viewToShadowMatrix.GetInverse();
 
                     shadowData->shadow[shadowIndex].bias = light.GetShadowBias();
+                    shadowData->shadow[shadowIndex].normalBias = light.GetShadowNormalBias();
                     shadowData->shadow[shadowIndex].blur = light.GetShadowBlur();
                     
                     setMatrix(
