@@ -288,6 +288,8 @@ by Hydra and are equivalent to those displayed in the viewer in `usdview`_ .
 
    > usdrecord -h
    usage: usdrecord [-h] [--mask PRIMPATH[,PRIMPATH...]] [--camera CAMERA]
+                    [--purposes PURPOSES[,PURPOSE...]] [--disableGpu]
+                    [--renderSettingsPrimPath PRIMPATH]
                     [--defaultTime | --frames FRAMESPEC[,FRAMESPEC...]]
                     [--complexity {low,medium,high,veryhigh}]
                     [--colorCorrectionMode {disabled,sRGB,openColorIO}]
@@ -318,6 +320,25 @@ by Hydra and are equivalent to those displayed in the viewer in `usdview`_ .
                            the prim name is used and more than one camera exists
                            with that name, which one is used will effectively be
                            random (default=main_cam)
+     --purposes PURPOSES[,PURPOSE...]
+                           Specify which UsdGeomImageable purposes should be 
+                           included in the renders.  The "default" purpose is 
+                           automatically included, so you need specify only the 
+                           *additional* purposes. If you want more than one extra 
+                           purpose, either use commas with no spaces or quote the 
+                           argument and separate purposes by commas and/or spaces.
+     --disableGpu          
+                           Indicates if the GPU should not be used for rendering. 
+                           If set this not only restricts renderers to those which 
+                           only run on the CPU, but additionally it will prevent 
+                           any tasks that require the GPU from being invoked.
+     --renderSettingsPrimPath PRIMPATH
+                           Specify the Render Settings Prim to use to render the 
+                           given usdFile. Note that if a renderSettingsPrimPath has 
+                           been specified in the stage metadata, using this argument 
+                           will override that opinion. Furthermore any properties 
+                           authored on the RenderSettings will override other 
+                           arguments (imageWidth, camera, outputImagePath)
      --defaultTime, -d     explicitly operate at the Default time code (the
                            default behavior is to operate at the Earliest time
                            code)
