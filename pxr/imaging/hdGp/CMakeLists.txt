@@ -22,6 +22,9 @@ pxr_library(hdGp
     PUBLIC_HEADERS
         api.h
 
+    PUBLIC_HEADERS
+        api.h
+
     RESOURCE_FILES
         plugInfo.json
 )

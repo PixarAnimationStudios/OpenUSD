@@ -26,6 +26,7 @@
 
 #include "pxr/usdImaging/usdImaging/primAdapter.h"
 #include "pxr/usd/usdProc/tokens.h"
+#include "pxr/usdImaging/usdProcImaging/api.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -46,20 +47,20 @@ public:
     /// \name Scene Index Support
     // ---------------------------------------------------------------------- //
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     TfTokenVector GetImagingSubprims(UsdPrim const& prim) override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     TfToken GetImagingSubprimType(UsdPrim const& prim, TfToken const& subprim)
         override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     HdContainerDataSourceHandle GetImagingSubprimData(
             UsdPrim const& prim,
             TfToken const& subprim,
             const UsdImagingDataSourceStageGlobals &stageGlobals) override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     HdDataSourceLocatorSet InvalidateImagingSubprim(
             UsdPrim const& prim,
             TfToken const& subprim,
@@ -99,23 +100,23 @@ public:
         TfToken const& propertyName) override;
 
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     virtual void MarkDirty(UsdPrim const& prim,
                            SdfPath const& cachePath,
                            HdDirtyBits dirty,
                            UsdImagingIndexProxy* index) override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     virtual void MarkTransformDirty(UsdPrim const& prim,
                                     SdfPath const& cachePath,
                                     UsdImagingIndexProxy* index) override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     virtual void MarkVisibilityDirty(UsdPrim const& prim,
                                      SdfPath const& cachePath,
                                      UsdImagingIndexProxy* index) override;
 
-    USDIMAGING_API
+    USDPROCIMAGING_API
     void TrackVariability(UsdPrim const& prim,
                           SdfPath const& cachePath,
                           HdDirtyBits* timeVaryingBits,
@@ -124,7 +125,7 @@ public:
 
 protected:
     
-    USDIMAGING_API
+    USDPROCIMAGING_API
     virtual void _RemovePrim(SdfPath const& cachePath,
         UsdImagingIndexProxy* index) override;
 
