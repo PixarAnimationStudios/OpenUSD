@@ -197,14 +197,12 @@ class VtValue
     typedef std::aligned_storage<
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
-    // In C++17, std::is_trivially_copy_assignable<T> could be used in place of
-    // std::is_trivially_assignable
     template <class T>
     using _IsTriviallyCopyable = std::integral_constant<bool,
-        std::is_trivially_default_constructible<T>::value &&
-        std::is_trivially_copyable<T>::value &&
-        std::is_trivially_assignable<T&, const T&>::value &&
-        std::is_trivially_destructible<T>::value>;
+        std::is_trivially_default_constructible_v<T> &&
+        std::is_trivially_copyable_v<T> &&
+        std::is_trivially_copy_assignable_v<T> &&
+        std::is_trivially_destructible_v<T>>;
 
     // Metafunction that returns true if T should be stored locally, false if it
     // should be stored remotely.

@@ -44,10 +44,8 @@ struct VtIsArray : public std::false_type {};
 // space but do not have a trivial assignment are not cheap to copy.  E.g. std::
 // containers.  Clients can specialize this template for their own types that
 // aren't trivially assignable but are cheap to copy to enable local storage.
-// In C++17, std::is_trivially_copy_assignable<T> could be used in place of
-// std::is_trivially_assignable
 template <class T>
-struct VtValueTypeHasCheapCopy : std::is_trivially_assignable<T&, const T&> {};
+struct VtValueTypeHasCheapCopy : std::is_trivially_copy_assignable<T> {};
 
 #define VT_TYPE_IS_CHEAP_TO_COPY(T)                                            \
     template <> struct VtValueTypeHasCheapCopy<TF_PP_EAT_PARENS(T)>            \
