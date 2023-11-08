@@ -22,8 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/imaging/garch/glPlatformContextWindows.h"
+#include "pxr/base/tf/hash.h"
 
-#include <boost/functional/hash.hpp>
 #include <Windows.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -63,10 +63,10 @@ GarchWGLContextState::operator==(const GarchWGLContextState& rhs) const
 size_t
 GarchWGLContextState::GetHash() const
 {
-    size_t result = 0;
-    boost::hash_combine(result, _detail->hdc);
-    boost::hash_combine(result, _detail->hglrc);
-    return result;
+    return TfHash::Combine(
+        _detail->hdc,
+        _detail->hglrc
+    );
 }
 
 bool
