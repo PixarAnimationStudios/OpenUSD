@@ -26,8 +26,9 @@
 
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndex.h"
-
 #include "pxr/usd/sdf/pathTable.h"
+#include <thread>
+#include <tbb/concurrent_unordered_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -201,6 +202,14 @@ public:
     // - IsEnabled
 
 private:
+    HdSceneIndexPrim const& _GetInputPrim(SdfPath const& id);
+
+    using _InputPrimCacheEntry = std::pair<SdfPath, HdSceneIndexPrim>;
+
+    // A cache of the last prim accessed, per thread
+    tbb::concurrent_unordered_map<std::thread::id, _InputPrimCacheEntry,
+        std::hash<std::thread::id> > _inputPrimCache;
+
     void _PrimAdded(
         const SdfPath &primPath,
         const TfToken &primType);

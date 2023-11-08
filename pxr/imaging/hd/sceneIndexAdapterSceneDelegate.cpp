@@ -151,6 +151,17 @@ HdSceneIndexAdapterSceneDelegate::~HdSceneIndexAdapterSceneDelegate()
     GetRenderIndex()._RemoveSubtree(GetDelegateID(), this);
 }
 
+HdSceneIndexPrim const&
+HdSceneIndexAdapterSceneDelegate::_GetInputPrim(SdfPath const& id)
+{
+    _InputPrimCacheEntry &entry = _inputPrimCache[std::this_thread::get_id()];
+    if (entry.first != id) {
+        entry.first = id;
+        entry.second = std::move(_inputSceneIndex->GetPrim(id));
+    }
+    return entry.second;
+}
+
 // ----------------------------------------------------------------------------
 // HdSceneIndexObserver interfaces
 
@@ -392,8 +403,7 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
-
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdMeshSchema meshSchema = HdMeshSchema::GetFromParent(prim.dataSource);
 
@@ -515,7 +525,7 @@ HdSceneIndexAdapterSceneDelegate::GetDoubleSided(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdMeshSchema meshSchema = 
         HdMeshSchema::GetFromParent(prim.dataSource);
@@ -539,7 +549,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtent(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdExtentSchema extentSchema =
         HdExtentSchema::GetFromParent(prim.dataSource);
@@ -563,7 +573,7 @@ HdSceneIndexAdapterSceneDelegate::GetVisible(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdVisibilitySchema visibilitySchema =
         HdVisibilitySchema::GetFromParent(prim.dataSource);
@@ -583,7 +593,7 @@ HdSceneIndexAdapterSceneDelegate::GetRenderTag(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdPurposeSchema purposeSchema =
         HdPurposeSchema::GetFromParent(prim.dataSource);
@@ -603,7 +613,7 @@ HdSceneIndexAdapterSceneDelegate::GetSubdivTags(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     PxOsdSubdivTags tags;
 
@@ -665,7 +675,7 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdBasisCurvesSchema basisCurvesSchema =
         HdBasisCurvesSchema::GetFromParent(prim.dataSource);
@@ -768,7 +778,7 @@ HdSceneIndexAdapterSceneDelegate::GetCategories(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     static const VtArray<TfToken> emptyResult;
 
@@ -789,7 +799,7 @@ HdSceneIndexAdapterSceneDelegate::GetVolumeFieldDescriptors(
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(volumeId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(volumeId);
 
     HdVolumeFieldDescriptorVector result;
     HdVolumeFieldBindingSchema bindingSchema =
@@ -828,7 +838,7 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialId(SdfPath const & id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdMaterialBindingsSchema materialBindings =
         HdMaterialBindingsSchema::GetFromParent(
@@ -846,7 +856,7 @@ HdSceneIndexAdapterSceneDelegate::GetCoordSysBindings(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdCoordSysBindingSchema coordSys = HdCoordSysBindingSchema::GetFromParent(
         prim.dataSource);
@@ -874,7 +884,7 @@ HdSceneIndexAdapterSceneDelegate::GetRenderBufferDescriptor(SdfPath const &id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     HdRenderBufferDescriptor desc;
 
     HdRenderBufferSchema rb = HdRenderBufferSchema::GetFromParent(
@@ -1032,7 +1042,7 @@ HdSceneIndexAdapterSceneDelegate::GetMaterialResource(SdfPath const & id)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdMaterialSchema matSchema = HdMaterialSchema::GetFromParent(
             prim.dataSource);
@@ -1154,7 +1164,7 @@ HdSceneIndexAdapterSceneDelegate::GetCameraParamValue(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(cameraId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(cameraId);
     if (!prim.dataSource) {
         return VtValue();
     }
@@ -1240,7 +1250,7 @@ HdSceneIndexAdapterSceneDelegate::GetLightParamValue(
 {
     TRACE_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (!prim.dataSource) {
         return VtValue();
     }
@@ -1383,7 +1393,7 @@ _ToRenderProducts(HdRenderProductVectorSchema products)
 }
 
 VtValue
-_GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
+_GetRenderSettings(HdSceneIndexPrim const& prim, TfToken const &key)
 {
     HdContainerDataSourceHandle renderSettingsDs =
             HdContainerDataSource::Cast(prim.dataSource->Get(
@@ -1454,7 +1464,7 @@ _GetRenderSettings(HdSceneIndexPrim prim, TfToken const &key)
 
 template <typename TerminalSchema>
 VtValue
-_GetRenderTerminalResource(HdSceneIndexPrim prim)
+_GetRenderTerminalResource(HdSceneIndexPrim const& prim)
 {
     TRACE_FUNCTION();
 
@@ -1520,7 +1530,7 @@ HdSceneIndexAdapterSceneDelegate::GetPrimvarDescriptors(
         return it->second.primvarDescriptors[interpolation];
     }
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (!prim.dataSource) {
         it->second.primvarDescriptorsState.store(
             _PrimCacheEntry::ReadStateRead);
@@ -1592,7 +1602,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationPrimvarDescriptors(
         return it->second.extCmpPrimvarDescriptors[interpolation];
     }
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (!prim.dataSource) {
         it->second.extCmpPrimvarDescriptorsState.store(
             _PrimCacheEntry::ReadStateRead);
@@ -1674,7 +1684,7 @@ HdSceneIndexAdapterSceneDelegate::Get(SdfPath const &id, TfToken const &key)
 {
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (!prim.dataSource) {
         return VtValue();
     }
@@ -1875,7 +1885,7 @@ HdSceneIndexAdapterSceneDelegate::_GetPrimvar(SdfPath const &id,
     if (outIndices) {
         outIndices->clear();
     }
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (!prim.dataSource) {
         return VtValue();
     }
@@ -1947,7 +1957,7 @@ HdSceneIndexAdapterSceneDelegate::_SamplePrimvar(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdSampledDataSourceHandle valueSource = nullptr;
     HdIntArrayDataSourceHandle indicesSource = nullptr;
@@ -2057,7 +2067,7 @@ HdSceneIndexAdapterSceneDelegate::GetTransform(SdfPath const & id)
     GfMatrix4d m;
     m.SetIdentity();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     if (HdXformSchema xformSchema = HdXformSchema::GetFromParent(
             prim.dataSource)) {
@@ -2085,7 +2095,7 @@ HdSceneIndexAdapterSceneDelegate::SampleTransform(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     HdXformSchema xformSchema =
         HdXformSchema::GetFromParent(prim.dataSource);
@@ -2148,7 +2158,7 @@ HdSceneIndexAdapterSceneDelegate::GetInstanceCategories(
     HF_MALLOC_TAG_FUNCTION();
     std::vector<VtArray<TfToken>> result;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(instancerId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(instancerId);
 
     if (HdInstanceCategoriesSchema instanceCategories =
             HdInstanceCategoriesSchema::GetFromParent(prim.dataSource)) {
@@ -2186,7 +2196,7 @@ HdSceneIndexAdapterSceneDelegate::GetInstanceIndices(
     HF_MALLOC_TAG_FUNCTION();
     VtIntArray indices;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(instancerId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(instancerId);
 
     if (HdInstancerTopologySchema instancerTopology =
             HdInstancerTopologySchema::GetFromParent(prim.dataSource)) {
@@ -2204,7 +2214,7 @@ HdSceneIndexAdapterSceneDelegate::GetInstancerPrototypes(
     HF_MALLOC_TAG_FUNCTION();
     SdfPathVector prototypes;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(instancerId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(instancerId);
 
     if (HdInstancerTopologySchema instancerTopology =
             HdInstancerTopologySchema::GetFromParent(prim.dataSource)) {
@@ -2227,7 +2237,7 @@ HdSceneIndexAdapterSceneDelegate::GetInstancerId(SdfPath const &id)
 
     SdfPath instancerId;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
 
     if (HdInstancedBySchema instancedBy =
             HdInstancedBySchema::GetFromParent(prim.dataSource)) {
@@ -2259,7 +2269,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationSceneInputNames(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
         if (HdContainerDataSourceHandle inputDs =
@@ -2278,7 +2288,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInput(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
 
@@ -2315,7 +2325,7 @@ HdSceneIndexAdapterSceneDelegate::SampleExtComputationInput(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     HdExtComputationSchema extComputation =
         HdExtComputationSchema::GetFromParent(prim.dataSource);
     if (!extComputation) {
@@ -2375,7 +2385,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationInputDescriptors(
 
     HdExtComputationInputDescriptorVector result;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
         if (HdVectorDataSourceHandle vecDs =
@@ -2419,7 +2429,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationOutputDescriptors(
 
     HdExtComputationOutputDescriptorVector result;
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
         if (HdVectorDataSourceHandle vecDs = extComputation.GetOutputs()) {
@@ -2455,7 +2465,7 @@ HdSceneIndexAdapterSceneDelegate::GetExtComputationKernel(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
         HdStringDataSourceHandle ds = extComputation.GetGlslKernel();
@@ -2473,7 +2483,7 @@ HdSceneIndexAdapterSceneDelegate::InvokeExtComputation(
     TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(computationId);
+    HdSceneIndexPrim const& prim = _GetInputPrim(computationId);
     if (HdExtComputationSchema extComputation =
             HdExtComputationSchema::GetFromParent(prim.dataSource)) {
         HdExtComputationCallbackDataSourceHandle ds =
@@ -2499,7 +2509,7 @@ HdSceneIndexAdapterSceneDelegate::Sync(HdSyncRequestVector* request)
         tbb::concurrent_unordered_set<HdSceneDelegate*> sds;
         _primCache.ParallelForEach(
             [this, &sds](const SdfPath &k, const _PrimCacheEntry &v) {
-                HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(k);
+                HdSceneIndexPrim const& prim = _inputSceneIndex->GetPrim(k);
                 if (!prim.dataSource) {
                     return;
                 }
@@ -2537,6 +2547,9 @@ HdSceneIndexAdapterSceneDelegate::PostSyncCleanup()
             sd->PostSyncCleanup();
         }
     }
+
+    // Drop per-thread scene index input prim cache
+    _inputPrimCache.clear();
 }
 
 // ----------------------------------------------------------------------------
@@ -2548,7 +2561,7 @@ HdSceneIndexAdapterSceneDelegate::GetDisplayStyle(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
 
     HdDisplayStyle result;
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (HdLegacyDisplayStyleSchema styleSchema =
             HdLegacyDisplayStyleSchema::GetFromParent(prim.dataSource)) {
 
@@ -2593,7 +2606,7 @@ HdSceneIndexAdapterSceneDelegate::GetShadingStyle(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
 
     VtValue result;
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (HdLegacyDisplayStyleSchema styleSchema =
             HdLegacyDisplayStyleSchema::GetFromParent(prim.dataSource)) {
 
@@ -2614,7 +2627,7 @@ HdSceneIndexAdapterSceneDelegate::GetReprSelector(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
 
     HdReprSelector result;
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (HdLegacyDisplayStyleSchema styleSchema =
             HdLegacyDisplayStyleSchema::GetFromParent(prim.dataSource)) {
 
@@ -2636,7 +2649,7 @@ HdSceneIndexAdapterSceneDelegate::GetCullStyle(SdfPath const &id)
     HF_MALLOC_TAG_FUNCTION();
 
     HdCullStyle result = HdCullStyleDontCare;
-    HdSceneIndexPrim prim = _inputSceneIndex->GetPrim(id);
+    HdSceneIndexPrim const& prim = _GetInputPrim(id);
     if (HdLegacyDisplayStyleSchema styleSchema =
             HdLegacyDisplayStyleSchema::GetFromParent(prim.dataSource)) {
 
