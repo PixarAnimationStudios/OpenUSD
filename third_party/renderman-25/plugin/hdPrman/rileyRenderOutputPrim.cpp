@@ -26,6 +26,7 @@
 
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
+#include "hdPrman/rileyPrimUtil.h"
 #include "hdPrman/rileyRenderOutputSchema.h"
 #include "hdPrman/utils.h"
 
@@ -88,18 +89,6 @@ _GetFloat(HdFloatDataSourceHandle const &ds)
     }
     return ds->GetTypedValue(0.0f);
 }
-
-template<typename T>
-static
-T * _GetPtr(std::optional<T> &v)
-{
-    if (v) {
-        return &(*v);
-    } else {
-        return nullptr;
-    }
-}
-
 
 static
 riley::RenderOutputId
@@ -192,14 +181,15 @@ HdPrman_RileyRenderOutputPrim::_Dirty(
 
     _AcquireRiley()->ModifyRenderOutput(
         _rileyId,
-        _GetPtr(name),
-        _GetPtr(type),
-        _GetPtr(source),
-        _GetPtr(accumulationRule),
-        _GetPtr(filter),
-        _GetPtr(filterSize),
-        _GetPtr(relativePixelVariance),
-        _GetPtr(params));
+        HdPrman_GetPtr(name),
+        HdPrman_GetPtr(type),
+        HdPrman_GetPtr(source),
+        HdPrman_GetPtr(accumulationRule),
+        HdPrman_GetPtr(filter),
+        HdPrman_GetPtr(filterSize),
+        // Riley::ModifyRenderOutput should take a const float *.
+        const_cast<float*>(HdPrman_GetPtr(relativePixelVariance)),
+        HdPrman_GetPtr(params));
 
 }
 

@@ -27,6 +27,7 @@
 #ifdef HDPRMAN_USE_SCENE_INDEX_OBSERVER
 
 #include "hdPrman/rileyRenderOutputPrim.h"
+#include "hdPrman/rileyRenderTargetPrim.h"
 #include "hdPrman/tokens.h"
 
 #include "pxr/imaging/hd/sceneIndex.h"
@@ -55,6 +56,13 @@ HdPrman_RileyPrimFactory::CreatePrim(
 {
     if (entry.primType == HdPrmanRileyPrimTypeTokens->renderOutput) {
         return std::make_shared<HdPrman_RileyRenderOutputPrim>(
+            _GetPrimSource(observer, entry.primPath),
+            observer,
+            _renderParam);
+    }
+
+    if (entry.primType == HdPrmanRileyPrimTypeTokens->renderTarget) {
+        return std::make_shared<HdPrman_RileyRenderTargetPrim>(
             _GetPrimSource(observer, entry.primPath),
             observer,
             _renderParam);

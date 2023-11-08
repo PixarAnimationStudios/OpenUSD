@@ -137,6 +137,13 @@ public:
     HDSI_API
     const PrimBaseHandle &GetPrim(const SdfPath &primPath) const;
 
+    /// Get managed prim cast to a particular type.
+    template<typename PrimType>
+    std::shared_ptr<PrimType> GetTypedPrim(const SdfPath &primPath) const
+    {
+        return std::dynamic_pointer_cast<PrimType>(GetPrim(primPath));
+    }
+
 protected:
     void PrimsAdded(
         const HdSceneIndexBase &sender,

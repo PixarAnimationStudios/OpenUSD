@@ -37,7 +37,7 @@
 //
 // We can only use for late enough versions of USD.
 //
-#if HDSI_API_VERSION >= 11
+#if HDSI_API_VERSION >= 12
 #define HDPRMAN_USE_SCENE_INDEX_OBSERVER
 #endif
 

@@ -26,7 +26,8 @@
 
 // 10 -> 11: Adding HdsiPrimManagingSceneIndexObserver and
 //           HdsiPrimTypeNoticeBatchingSceneIndex
+// 11 -> 12: Adding HdsiPrimManagingSceneIndexObserver::GetTypedPrim.
 
-#define HDSI_API_VERSION 11
+#define HDSI_API_VERSION 12
 
 #endif // PXR_IMAGING_HDSI_VERSION_H

@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_RENDER_OUTPUT_PRIM_H
-#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_RENDER_OUTPUT_PRIM_H
+#ifndef EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_RENDER_TARGET_PRIM_H
+#define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_RILEY_RENDER_TARGET_PRIM_H
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
@@ -37,23 +37,25 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdPrman_RileyRenderOutputPrimHandle =
     std::shared_ptr<class HdPrman_RileyRenderOutputPrim>;
 
-/// \class HdPrman_RileyRenderOutputPrim
+using HdPrman_RileyRenderTargetPrimHandle =
+    std::shared_ptr<class HdPrman_RileyRenderTargetPrim>;
+
+/// \class HdPrman_RileyRenderTargetPrim
 ///
-/// Wraps a riley render output object, initializing or updating it
-/// using the HdPrmanRileyRenderOutputSchema.
+/// Wraps a riley render target object, initializing or updating it
+/// using the HdPrmanRileyRenderTargetSchema.
 ///
-class HdPrman_RileyRenderOutputPrim : public HdPrman_RileyPrimBase
+class HdPrman_RileyRenderTargetPrim : public HdPrman_RileyPrimBase
 {
 public:
-    HdPrman_RileyRenderOutputPrim(
+    HdPrman_RileyRenderTargetPrim(
         HdContainerDataSourceHandle const &primSource,
         const HdsiPrimManagingSceneIndexObserver *observer,
         HdPrman_RenderParam * renderParam);
 
-    ~HdPrman_RileyRenderOutputPrim() override;
+    ~HdPrman_RileyRenderTargetPrim() override;
 
-    using RileyId = riley::RenderOutputId;
-    using RileyIdList = riley::RenderOutputList;
+    using RileyId = riley::RenderTargetId;
 
     const RileyId &GetRileyId() const { return _rileyId; }
 
@@ -63,7 +65,14 @@ protected:
         const HdsiPrimManagingSceneIndexObserver * observer) override;
 
 private:
-    const RileyId _rileyId;
+    // If there is a riley render target constructed from a riley render
+    // output, the render target needs to be deleted before the render
+    // output is deleted.
+    // To ensure this, we keep handles to the prims wrapping the render
+    // outputs here.
+    std::vector<HdPrman_RileyRenderOutputPrimHandle> _renderOutputPrims;
+
+    RileyId _rileyId;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
