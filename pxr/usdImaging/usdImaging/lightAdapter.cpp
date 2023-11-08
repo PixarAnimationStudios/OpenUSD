@@ -167,7 +167,7 @@ UsdImagingLightAdapter::TrackVariability(UsdPrim const& prim,
     for (UsdAttribute const& attr : attrs) {
         // Don't double-count transform attrs.
         if (UsdGeomXformable::IsTransformationAffectedByAttrNamed(
-                attr.GetBaseName())) {
+                attr.GetName())) {
             continue;
         }
         if (attr.GetNumTimeSamples()>1){
