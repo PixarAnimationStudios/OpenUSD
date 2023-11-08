@@ -60,6 +60,10 @@ pxr_library(arch
         overview.dox
 )
 
+if(M_LIB_DIR)
+    target_link_directories(arch PRIVATE ${M_LIB_DIR})
+endif()
+
 pxr_build_test_shared_lib(testArchAbiPlugin
     CPPFILES
         testenv/testArchAbiPlugin.cpp

@@ -159,8 +159,11 @@ add_definitions(${TBB_DEFINITIONS})
 if(WIN32)
     # Math functions are linked automatically by including math.h on Windows.
     set(M_LIB "")
+    set(M_LIB_DIR "")
 else()
-    find_library(M_LIB m)
+    find_library(M_LIB_ABS_PATH m REQUIRED)
+    set(M_LIB "m")
+    get_filename_component(M_LIB_DIR "${M_LIB_ABS_PATH}" DIRECTORY)
 endif()
 
 if (NOT PXR_MALLOC_LIBRARY)
