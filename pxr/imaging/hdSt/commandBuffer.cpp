@@ -41,7 +41,7 @@
 
 #include "pxr/base/work/loops.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <tbb/enumerable_thread_specific.h>
 
@@ -313,8 +313,6 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
         _drawItemInstances.push_back(HdStDrawItemInstance(drawItem));
         HdStDrawItemInstance* drawItemInstance = &_drawItemInstances.back();
 
-        size_t key = drawItem->GetGeometricShader()->ComputeHash();
-        boost::hash_combine(key, drawItem->GetBufferArraysHash());
         // Geometric, RenderPass and Lighting shaders should never break
         // batches, however materials can. We consider the textures
         // used by the material to be part of the batch key for that
@@ -322,9 +320,12 @@ HdStCommandBuffer::_RebuildDrawBatches(HgiCapabilities const *hgiCapabilities)
         // Since textures can be animated and thus materials can be batched
         // at some times but not other times, we use the texture prim path
         // for the hash which does not vary over time.
-        // 
-        boost::hash_combine(key,
-            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash());
+        size_t key = TfHash::Combine(
+            drawItem->GetGeometricShader()->ComputeHash(),
+            drawItem->GetBufferArraysHash(),
+            drawItem->GetMaterialNetworkShader()->ComputeTextureSourceHash()
+        );
+        
 
         // Do a quick check to see if the draw item can be batched with the
         // previous draw item, before checking the batchMap.

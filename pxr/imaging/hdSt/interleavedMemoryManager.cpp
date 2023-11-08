@@ -44,7 +44,7 @@
 
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <vector>
 
@@ -141,14 +141,12 @@ HdStInterleavedUBOMemoryManager::ComputeAggregationId(
     HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    size_t result = salt;
-    for (HdBufferSpec const &spec : bufferSpecs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-    boost::hash_combine(result, usageHint.value);
 
-    // promote to size_t
-    return (AggregationId)result;
+    return static_cast<AggregationId>(
+        TfHash::Combine(
+            salt, bufferSpecs, usageHint.value
+        )
+    );
 }
 
 // ---------------------------------------------------------------------------
@@ -182,13 +180,12 @@ HdStInterleavedSSBOMemoryManager::ComputeAggregationId(
     HdBufferArrayUsageHint usageHint) const
 {
     static size_t salt = ArchHash(__FUNCTION__, sizeof(__FUNCTION__));
-    size_t result = salt;
-    for (HdBufferSpec const &spec : bufferSpecs) {
-        boost::hash_combine(result, spec.Hash());
-    }
-    boost::hash_combine(result, usageHint.value);
 
-    return result;
+    return static_cast<AggregationId>(
+        TfHash::Combine(
+            salt, bufferSpecs, usageHint.value
+        )
+    );
 }
 
 // ---------------------------------------------------------------------------

@@ -49,7 +49,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 #include <sstream>
 #include <unordered_map>
@@ -205,12 +205,12 @@ HdSt_CodeGen::ComputeHash() const
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    ID hash = _geometricShader ? _geometricShader->ComputeHash() : 0;
-    boost::hash_combine(hash, _metaData.ComputeHash());
-    boost::hash_combine(hash, HdStShaderCode::ComputeHash(_shaders));
-    boost::hash_combine(hash, _materialTag.Hash());
-
-    return hash;
+    return TfHash::Combine(
+        _geometricShader ? _geometricShader->ComputeHash() : 0,
+        _metaData.ComputeHash(),
+        HdStShaderCode::ComputeHash(_shaders),
+        _materialTag.Hash()
+    );
 }
 
 static

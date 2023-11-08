@@ -47,7 +47,7 @@
 
 #include "pxr/base/tf/staticTokens.h"
 
-#include <boost/functional/hash.hpp>
+#include "pxr/base/tf/hash.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -1645,136 +1645,170 @@ HdSt_ResourceBinder::MetaData::ComputeHash() const
 {
     ID hash = 0;
     
-    boost::hash_combine(hash, drawingCoord0Binding.binding.GetValue());
-    boost::hash_combine(hash, drawingCoord0Binding.dataType);
-    boost::hash_combine(hash, drawingCoord1Binding.binding.GetValue());
-    boost::hash_combine(hash, drawingCoord1Binding.dataType);
-    boost::hash_combine(hash, drawingCoord2Binding.binding.GetValue());
-    boost::hash_combine(hash, drawingCoord2Binding.dataType);
-    boost::hash_combine(hash, drawingCoordIBinding.binding.GetValue());
-    boost::hash_combine(hash, drawingCoordIBinding.dataType);
-    boost::hash_combine(hash, instanceIndexArrayBinding.binding.GetValue());
-    boost::hash_combine(hash, instanceIndexArrayBinding.dataType);
-    boost::hash_combine(hash, instanceIndexBaseBinding.binding.GetValue());
-    boost::hash_combine(hash, instanceIndexBaseBinding.dataType);
-    boost::hash_combine(hash, primitiveParamBinding.binding.GetValue());
-    boost::hash_combine(hash, primitiveParamBinding.dataType);
-    boost::hash_combine(hash, tessFactorsBinding.binding.GetValue());
-    boost::hash_combine(hash, edgeIndexBinding.binding.GetValue());
-    boost::hash_combine(hash, edgeIndexBinding.dataType);
-    boost::hash_combine(hash, coarseFaceIndexBinding.binding.GetValue());
-    boost::hash_combine(hash, coarseFaceIndexBinding.dataType);
+    hash = TfHash::Combine(
+        hash,
+        drawingCoord0Binding.binding.GetValue(),
+        drawingCoord0Binding.dataType,
+        drawingCoord1Binding.binding.GetValue(),
+        drawingCoord1Binding.dataType,
+        drawingCoord2Binding.binding.GetValue(),
+        drawingCoord2Binding.dataType,
+        drawingCoordIBinding.binding.GetValue(),
+        drawingCoordIBinding.dataType,
+        instanceIndexArrayBinding.binding.GetValue(),
+        instanceIndexArrayBinding.dataType,
+        instanceIndexBaseBinding.binding.GetValue(),
+        instanceIndexBaseBinding.dataType,
+        primitiveParamBinding.binding.GetValue(),
+        primitiveParamBinding.dataType,
+        tessFactorsBinding.binding.GetValue(),
+        edgeIndexBinding.binding.GetValue(),
+        edgeIndexBinding.dataType,
+        coarseFaceIndexBinding.binding.GetValue(),
+        coarseFaceIndexBinding.dataType
+    );
 
     TF_FOR_ALL(binDecl, fvarIndicesBindings) {
-        boost::hash_combine(hash, binDecl->binding.GetValue());
-        boost::hash_combine(hash, binDecl->dataType);
+        hash = TfHash::Combine(hash, binDecl->binding.GetValue(), binDecl->dataType);
     }
     TF_FOR_ALL(binDecl, fvarPatchParamBindings) {
-        boost::hash_combine(hash, binDecl->binding.GetValue());
-        boost::hash_combine(hash, binDecl->dataType);
+        hash = TfHash::Combine(hash, binDecl->binding.GetValue(), binDecl->dataType);
     }
 
     // separators are inserted to distinguish primvars have a same layout
     // but different interpolation.
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL(binDecl, customBindings) {
-        boost::hash_combine(hash, binDecl->name.Hash());
-        boost::hash_combine(hash, binDecl->dataType);
-        boost::hash_combine(hash, binDecl->binding.GetType());
-        boost::hash_combine(hash, binDecl->binding.GetLocation());
+        hash = TfHash::Combine(
+            hash,
+            binDecl->name.Hash(),
+            binDecl->dataType,
+            binDecl->binding.GetType(),
+            binDecl->binding.GetLocation()
+        );
     }
 
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL(blockIt, customInterleavedBindings) {
-        boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)blockIt->first.GetType()); // binding
         TF_FOR_ALL (it, blockIt->second.entries) {
             StructEntry const &entry = *it;
-            boost::hash_combine(hash, entry.name.Hash());
-            boost::hash_combine(hash, entry.dataType);
-            boost::hash_combine(hash, entry.offset);
-            boost::hash_combine(hash, entry.arraySize);
+            hash = TfHash::Combine(
+                hash,
+                entry.name.Hash(),
+                entry.dataType,
+                entry.offset,
+                entry.arraySize
+            );
         }
     }
 
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (blockIt, constantData) {
-        boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)blockIt->first.GetType()); // binding
         TF_FOR_ALL (it, blockIt->second.entries) {
             StructEntry const &entry = *it;
-            boost::hash_combine(hash, entry.name.Hash());
-            boost::hash_combine(hash, entry.dataType);
-            boost::hash_combine(hash, entry.offset);
-            boost::hash_combine(hash, entry.arraySize);
+            hash = TfHash::Combine(
+                hash,
+                entry.name.Hash(),
+                entry.dataType,
+                entry.offset,
+                entry.arraySize
+            );
         }
     }
 
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (blockIt, topologyVisibilityData) {
-        boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)blockIt->first.GetType()); // binding
         TF_FOR_ALL (it, blockIt->second.entries) {
             StructEntry const &entry = *it;
-            boost::hash_combine(hash, entry.name.Hash());
-            boost::hash_combine(hash, entry.dataType);
-            boost::hash_combine(hash, entry.offset);
-            boost::hash_combine(hash, entry.arraySize);
+            hash = TfHash::Combine(
+                hash,
+                entry.name.Hash(),
+                entry.dataType,
+                entry.offset,
+                entry.arraySize
+            );
         }
     }
 
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, instanceData) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         NestedPrimvar const &primvar = it->second;
-        boost::hash_combine(hash, primvar.name.Hash());
-        boost::hash_combine(hash, primvar.dataType);
-        boost::hash_combine(hash, primvar.level);
+        hash = TfHash::Combine(
+            hash,
+            primvar.name.Hash(),
+            primvar.dataType,
+            primvar.level
+        );
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, vertexData) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         Primvar const &primvar = it->second;
-        boost::hash_combine(hash, primvar.name.Hash());
-        boost::hash_combine(hash, primvar.dataType);
+        hash = TfHash::Combine(
+            hash,
+            primvar.name.Hash(),
+            primvar.dataType
+        );
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, varyingData) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         Primvar const &primvar = it->second;
-        boost::hash_combine(hash, primvar.name.Hash());
-        boost::hash_combine(hash, primvar.dataType);
+        hash = TfHash::Combine(
+            hash,
+            primvar.name.Hash(),
+            primvar.dataType
+        );
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, elementData) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         Primvar const &primvar = it->second;
-        boost::hash_combine(hash, primvar.name.Hash());
-        boost::hash_combine(hash, primvar.dataType);
+        hash = TfHash::Combine(
+            hash,
+            primvar.name.Hash(),
+            primvar.dataType
+        );
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, fvarData) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         FvarPrimvar const &primvar = it->second;
-        boost::hash_combine(hash, primvar.name.Hash());
-        boost::hash_combine(hash, primvar.dataType);
-        boost::hash_combine(hash, primvar.channel);
+        hash = TfHash::Combine(
+            hash,
+            primvar.name.Hash(),
+            primvar.dataType,
+            primvar.channel
+        );
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (blockIt, shaderData) {
-        boost::hash_combine(hash, (int)blockIt->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)blockIt->first.GetType()); // binding
         TF_FOR_ALL (it, blockIt->second.entries) {
             StructEntry const &entry = *it;
-            boost::hash_combine(hash, entry.name.Hash());
-            boost::hash_combine(hash, entry.dataType);
-            boost::hash_combine(hash, entry.offset);
-            boost::hash_combine(hash, entry.arraySize);
+            hash = TfHash::Combine(
+                hash,
+                entry.name.Hash(),
+                entry.dataType,
+                entry.offset,
+                entry.arraySize
+            );
         }
     }
-    boost::hash_combine(hash, 0); // separator
+    hash = TfHash::Combine(hash, 0); // separator
     TF_FOR_ALL (it, shaderParameterBinding) {
-        boost::hash_combine(hash, (int)it->first.GetType()); // binding
+        hash = TfHash::Combine(hash, (int)it->first.GetType()); // binding
         ShaderParameterAccessor const &entry = it->second;
-        boost::hash_combine(hash, entry.name.Hash());
-        boost::hash_combine(hash, entry.dataType);
-        boost::hash_combine(hash, entry.swizzle);
+        hash = TfHash::Combine(
+            hash,
+            entry.name.Hash(),
+            entry.dataType,
+            entry.swizzle
+        );
     }
 
     return hash;
