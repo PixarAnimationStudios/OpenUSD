@@ -460,8 +460,8 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
     HdGeomSubsetsSchema geomSubsets = meshSchema.GetGeomSubsets();
     if (geomSubsets.IsDefined()) {
         HdGeomSubsets geomSubsetsVec;
-        for (const TfToken &id : geomSubsets.GetIds()) {
-            HdGeomSubsetSchema gsSchema = geomSubsets.GetGeomSubset(id);
+        for (const TfToken &name : geomSubsets.GetGeomSubsetNames()) {
+            HdGeomSubsetSchema gsSchema = geomSubsets.GetGeomSubset(name);
             if (!gsSchema.IsDefined()) {
                 continue;
             }
@@ -520,7 +520,7 @@ HdSceneIndexAdapterSceneDelegate::GetMeshTopology(SdfPath const &id)
             }
 
             HdGeomSubset geomSubset = { HdGeomSubset::TypeFaceSet, 
-                SdfPath(id.GetText()), materialId, indices };
+                SdfPath(name.GetText()), materialId, indices };
             geomSubsetsVec.push_back(geomSubset);
         }
         meshTopology.SetGeomSubsets(geomSubsetsVec);
@@ -738,8 +738,8 @@ HdSceneIndexAdapterSceneDelegate::GetBasisCurvesTopology(SdfPath const &id)
     if (geomSubsets.IsDefined()) {
 
         HdGeomSubsets geomSubsetsVec;
-        for (const TfToken &id : geomSubsets.GetIds()) {
-            HdGeomSubsetSchema gsSchema = geomSubsets.GetGeomSubset(id);
+        for (const TfToken &name : geomSubsets.GetGeomSubsetNames()) {
+            HdGeomSubsetSchema gsSchema = geomSubsets.GetGeomSubset(name);
             if (!gsSchema.IsDefined()) {
                 continue;
             }

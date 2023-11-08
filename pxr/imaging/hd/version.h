@@ -81,6 +81,8 @@
 //           HdRenderPassState, HdxPickFromRenderBufferTaskParams,
 //           HdxTaskController and UsdImagingGLEngine.
 // 57 -> 58: Introducing hdsi/version.h
+// 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
+//           HdGeomSubsetsSchema::GetGeomSubsetNames().
 
 #define HD_API_VERSION 58
 

@@ -40,11 +40,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define HDGEOMSUBSETS_SCHEMA_TOKENS \
+#define HD_GEOM_SUBSETS_SCHEMA_TOKENS \
     (geomSubsets) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdGeomSubsetsSchemaTokens, HD_API,
-    HDGEOMSUBSETS_SCHEMA_TOKENS);
+    HD_GEOM_SUBSETS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
@@ -54,8 +54,11 @@ public:
     HdGeomSubsetsSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
-    TfTokenVector GetIds();
-    HdGeomSubsetSchema GetGeomSubset(const TfToken & id);
+    HD_API
+    TfTokenVector GetGeomSubsetNames();
+
+    HD_API
+    HdGeomSubsetSchema GetGeomSubset(const TfToken &name);
 
 
     /// Retrieves a container data source with the schema's default name token
