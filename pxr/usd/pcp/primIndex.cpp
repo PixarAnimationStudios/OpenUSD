@@ -706,6 +706,7 @@ struct Task {
         EvalNodeVariantAuthored,
         EvalNodeVariantFallback,
         EvalNodeVariantNoneFound,
+        EvalUnresolvedPrimPathError,
         None
     };
 
@@ -855,6 +856,7 @@ TF_REGISTRY_FUNCTION(TfEnum) {
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantAuthored);
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantFallback);
     TF_ADD_ENUM_NAME(Task::EvalNodeVariantNoneFound);
+    TF_ADD_ENUM_NAME(Task::EvalUnresolvedPrimPathError);
     TF_ADD_ENUM_NAME(Task::None);
 }
 
@@ -988,6 +990,7 @@ struct Pcp_PrimIndexer
         const PcpNodeRef& n, 
         bool skipTasksForExpressedArcs,
         bool skipCompletedNodesForImpliedSpecializes,
+        bool evaluateUnresolvedPrimPathErrors,
         bool isUsd) 
     {
 #ifdef PCP_DIAGNOSTIC_VALIDATION
@@ -1000,7 +1003,9 @@ struct Pcp_PrimIndexer
             _AddTasksForNodeRecursively(
                 *child, 
                 skipTasksForExpressedArcs, 
-                skipCompletedNodesForImpliedSpecializes, isUsd);
+                skipCompletedNodesForImpliedSpecializes,
+                evaluateUnresolvedPrimPathErrors,
+                isUsd);
         }
 
         // If the node does not have specs or cannot contribute specs,
@@ -1013,6 +1018,14 @@ struct Pcp_PrimIndexer
         // data access locality, since we avoid interleaving tasks that
         // re-visit sites later only to determine there is no work to do.
         const size_t arcMask = contributesSpecs ? _ScanArcs(n) : 0;
+
+        // Only reference and payload arcs require the source prim to provide
+        // opinions, so we only enqueue this task for those arcs.
+        if (evaluateUnresolvedPrimPathErrors &&
+            (n.GetArcType() == PcpArcTypeReference ||
+             n.GetArcType() == PcpArcTypePayload)) {
+            AddTask(Task(Task::Type::EvalUnresolvedPrimPathError, n));
+        }
 
         // If the caller tells us the new node and its children were already
         // indexed, we do not need to re-scan them for certain arcs based on
@@ -1065,6 +1078,7 @@ struct Pcp_PrimIndexer
             rootNode, 
             /*skipTasksForExpressedArcs=*/false,
             /*skipCompletedNodesForImpliedSpecializes=*/false,
+            /*evaluateUnresolvedPrimPathErrors=*/false,
             /*isUsd=*/inputs.usd);
     }
 
@@ -1111,12 +1125,22 @@ struct Pcp_PrimIndexer
             }
         }
 
+        // Only check for unresolved prim path errors if we're not in a
+        // recursive prim indexing call. Combined with the associated task
+        // being lowest in priority, this ensures that all possible
+        // sources of opinions are added to the prim index before this
+        // check occurs.
+        const bool evaluateUnresolvedPrimPathErrors = !previousFrame;
+
         // Recurse over all of the rest of the nodes.  (We assume that any
         // embedded class hierarchies have already been propagated to
         // the top node n, letting us avoid redundant work.)
         _AddTasksForNodeRecursively(
-            n, skipTasksForExpressedArcs, 
-            skipCompletedNodesForImpliedSpecializes, inputs.usd);
+            n, 
+            skipTasksForExpressedArcs, 
+            skipCompletedNodesForImpliedSpecializes,
+            evaluateUnresolvedPrimPathErrors,
+            inputs.usd);
 
         _DebugPrintTasks("After AddTasksForNode");
     }
@@ -1186,25 +1210,6 @@ struct Pcp_PrimIndexer
         primIndex->_localErrors->push_back(err);
     }
 };
-
-// Returns true if there is a prim spec associated with the specified node
-// or any of its descendants.
-static bool
-_PrimSpecExistsUnderNode(
-    const PcpNodeRef &node,
-    Pcp_PrimIndexer *indexer) 
-{
-    // Check for prim specs at this node's site.
-    if (node.HasSpecs())
-        return true;
-    
-    // Recursively check this node's children.
-    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
-        if (_PrimSpecExistsUnderNode(*child, indexer))
-            return true;
-    }
-    return false;
-}
 
 // Mark an entire subtree of nodes as inert.
 static void
@@ -2098,29 +2103,13 @@ _EvalRefOrPayloadArcs(PcpNodeRef node,
         // not a root prim.
         opts.includeAncestralOpinions = !primPath.IsRootPrimPath();
 
-        const PcpNodeRef newNode = _AddArc(
-            indexer, ARC_TYPE,
-            /* parent = */ node, 
-            /* origin = */ node,
-            PcpLayerStackSite( layerStack, primPath ),
-            mapExpr,
-            /* arcSiblingNum = */ arcNum,
-            opts);
-                 
-        // Reference and payload arcs must target a prim that exists in the 
-        // referenced layer stack. If there isn't, we report an error. Note that
-        // the node representing this arc was already added to the graph for
-        // dependency tracking purposes.
-        if (newNode && !_PrimSpecExistsUnderNode(newNode, indexer)) {
-            PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
-            err->rootSite = PcpSite(node.GetRootNode().GetSite());
-            err->site = PcpSite(node.GetSite());
-            err->targetLayer = layer;
-            err->unresolvedPath = newNode.GetSite().path;
-            err->sourceLayer = srcLayer;
-            err->arcType = ARC_TYPE;
-            indexer->RecordError(err);
-        }
+        _AddArc(indexer, ARC_TYPE,
+                /* parent = */ node,
+                /* origin = */ node,
+                PcpLayerStackSite( layerStack, primPath ),
+                mapExpr,
+                /* arcSiblingNum = */ arcNum,
+                opts);
     }
 }
 
@@ -2287,6 +2276,108 @@ _EvalNodePayloads(
 
     _EvalRefOrPayloadArcs<SdfPayload, PcpArcTypePayload>(
         node, indexer, payloadArcs, payloadInfo);
+}
+
+////////////////////////////////////////////////////////////////////////
+// Unresolved Prim Path Error
+
+template <class SpecExistsFn>
+static bool
+_PrimSpecExistsUnderNode(
+    const PcpNodeRef &node,
+    const SpecExistsFn& specExists)
+{
+    if (specExists(node)) {
+        return true;
+    }
+
+    TF_FOR_ALL(child, Pcp_GetChildrenRange(node)) {
+        if (_PrimSpecExistsUnderNode(*child, specExists)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+// Returns true if there is a prim spec associated with the specified node
+// or any of its descendants.
+static bool
+_PrimSpecExistsUnderNodeAtIntroduction(
+    const PcpNodeRef &node,
+    Pcp_PrimIndexer *indexer) 
+{
+    // The cached has-specs bit tells us whether this node has opinions
+    // at its current namespace depth. If this node was introduced at
+    // that depth, we can just rely on that bit. If the node was introduced
+    // ancestrally, we have to manually compute whether there were specs
+    // at that location in namespace.
+    return node.GetDepthBelowIntroduction() == 0 ?
+        _PrimSpecExistsUnderNode(node,
+            [](const PcpNodeRef& node) { return node.HasSpecs(); }) :
+        _PrimSpecExistsUnderNode(node,
+            [](const PcpNodeRef& node) { 
+                return PcpComposeSiteHasPrimSpecs(
+                    node.GetLayerStack(), node.GetPathAtIntroduction());
+            });
+}
+
+static void
+_EvalUnresolvedPrimPathError(
+    const PcpNodeRef& node,
+    Pcp_PrimIndexer* indexer)
+{
+    // Reference and payload arcs must target a prim that exists in the 
+    // referenced layer stack. If there isn't, we report an error. Note that
+    // the node representing this arc was already added to the graph for
+    // dependency tracking purposes.
+    const SdfPath& pathAtIntroduction = node.GetPathAtIntroduction();
+
+    if (!_PrimSpecExistsUnderNodeAtIntroduction(node, indexer)) {
+        const PcpNodeRef parentNode = node.GetParentNode();
+        const SdfPath parentNodePath = 
+            node.GetMapToParent().MapSourceToTarget(pathAtIntroduction);
+
+        PcpErrorUnresolvedPrimPathPtr err = PcpErrorUnresolvedPrimPath::New();
+        err->rootSite = PcpSite(node.GetRootNode().GetSite());
+        err->site = PcpSite(parentNode.GetLayerStack(), parentNodePath);
+        err->targetLayer = node.GetLayerStack()->GetIdentifier().rootLayer;
+        err->unresolvedPath = pathAtIntroduction;
+
+        err->sourceLayer = [&]() {
+            PcpSourceArcInfoVector srcInfo;
+            switch (node.GetArcType()) {
+                case PcpArcTypeReference: {
+                    SdfReferenceVector unused;
+                    PcpComposeSiteReferences(
+                        parentNode.GetLayerStack(), parentNodePath,
+                        &unused, &srcInfo);
+                    break;
+                }
+            
+                case PcpArcTypePayload: {
+                    SdfPayloadVector unused;
+                    PcpComposeSitePayloads(
+                        parentNode.GetLayerStack(), parentNodePath,
+                        &unused, &srcInfo);
+                    break;
+                }
+
+                default: {
+                    TF_VERIFY(false, "Unexpected arc type");
+                    return SdfLayerHandle();
+                }
+            }
+
+            const size_t arcNum =
+                static_cast<size_t>(node.GetSiblingNumAtOrigin());
+            return TF_VERIFY(arcNum < srcInfo.size()) ? 
+                srcInfo[arcNum].layer : SdfLayerHandle();
+        }();
+
+        err->arcType = node.GetArcType();
+        indexer->RecordError(err);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -4751,6 +4842,9 @@ Pcp_BuildPrimIndex(
             break;
         case Task::Type::EvalNodeVariantNoneFound:
             // No-op.  These tasks are just markers for RetryVariantTasks().
+            break;
+        case Task::Type::EvalUnresolvedPrimPathError:
+            _EvalUnresolvedPrimPathError(task.node, &indexer);
             break;
         case Task::Type::None:
             tasksAreLeft = false;
