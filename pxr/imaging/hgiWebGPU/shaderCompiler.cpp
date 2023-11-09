@@ -24,32 +24,31 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/imaging/hgiWebGPU/api.h"
 #include "pxr/imaging/hgiWebGPU/shaderCompiler.h"
-
-#include <shaderc/shaderc.hpp>
+#include "glslang/SPIRV/GlslangToSpv.h"
+#include "glslang/Public/ResourceLimits.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-
-static shaderc_shader_kind
-_GetShaderStage(HgiShaderStage stage)
+static EShLanguage
+GetShaderStage(HgiShaderStage stage)
 {
     switch(stage) {
         case HgiShaderStageVertex:
-            return shaderc_glsl_vertex_shader;
+            return EShLangVertex;
         case HgiShaderStageTessellationControl:
-            return shaderc_glsl_tess_control_shader;
+            return EShLangTessControl;
         case HgiShaderStageTessellationEval:
-            return shaderc_glsl_tess_evaluation_shader;
+            return EShLangTessEvaluation;
         case HgiShaderStageGeometry:
-            return shaderc_glsl_geometry_shader;
+            return EShLangGeometry;
         case HgiShaderStageFragment:
-            return shaderc_glsl_fragment_shader;
+            return EShLangFragment;
         case HgiShaderStageCompute:
-            return shaderc_glsl_compute_shader;
+            return EShLangCompute;
+        default:
+            TF_CODING_ERROR("Unknown stage");
+            return EShLangCount;
     }
-
-    TF_CODING_ERROR("Unknown stage");
-    return shaderc_glsl_infer_from_source;
 }
 
 bool
@@ -73,23 +72,55 @@ HgiWebGPUCompileGLSL(
         source += shaderCodes[i];
     }
 
-    shaderc::CompileOptions options;
-    options.SetTargetEnvironment(shaderc_target_env_vulkan,
-                                 shaderc_env_version_vulkan_1_0);
-    options.SetTargetSpirv(shaderc_spirv_version_1_0);
+    glslang::InitializeProcess();
+    const EShLanguage glslangStage = GetShaderStage(stage);
 
-    shaderc_shader_kind const kind = _GetShaderStage(stage);
+    glslang::TShader shader(glslangStage);
+    const char* shader_strings = source.data();
+    const int shader_lengths = static_cast<int>(source.size());
+    shader.setStringsWithLengthsAndNames(&shader_strings, &shader_lengths,
+                                         &name, 1);
+    shader.setEntryPoint("main");
+    shader.setAutoMapLocations(false);
+    shader.setAutoMapBindings(false);
+    shader.setEnvClient(glslang::EShClientVulkan,
+                        glslang::EShTargetVulkan_1_0);
+    shader.setEnvTarget(glslang::EshTargetSpv,
+                        glslang::EShTargetSpv_1_0);
 
-    shaderc::Compiler compiler;
-    shaderc::SpvCompilationResult result =
-        compiler.CompileGlslToSpv(source, kind, name, options);
+    glslang::TProgram program;
+    program.addShader(&shader);
+    auto controls = static_cast<EShMessages>(EShMsgSpvRules | EShMsgVulkanRules | EShMsgCascadingErrors);
+    const int defaultVersion = 110;
+    const bool forwardCompatible = false;
+    bool success = shader.parse(GetDefaultResources(),  defaultVersion, forwardCompatible ,controls);
 
-    if (result.GetCompilationStatus() != shaderc_compilation_status_success) {
-        *errors = result.GetErrorMessage();
+    if (!success) {
+        errors->append(shader.getInfoLog());
+        errors->append(shader.getInfoDebugLog());
         return false;
     }
 
-    spirvOUT->assign(result.cbegin(), result.cend());
+    glslang::SpvOptions options;
+    options.generateDebugInfo = false;
+    options.disableOptimizer = true;
+    options.optimizeSize = false;
+    success = program.link(EShMsgDefault) && program.mapIO();
+    if (!success) {
+        errors->append(program.getInfoLog());
+        errors->append(program.getInfoDebugLog());
+        return false;
+    }
+
+    spv::SpvBuildLogger logger;
+    glslang::GlslangToSpv(*program.getIntermediate(glslangStage), *spirvOUT, &logger, &options);
+
+    std::string warningErrors = logger.getAllMessages();
+
+    if (!warningErrors.empty()) {
+        errors->append(warningErrors);
+        return false;
+    }
 
     return true;
 }

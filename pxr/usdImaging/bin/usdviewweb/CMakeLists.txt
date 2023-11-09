@@ -45,36 +45,47 @@ if (EMSCRIPTEN)
     list(APPEND RESOURCE_PARAMETERS "--preload-file ${PROJECT_BINARY_DIR}/plugins_plugInfo.json@/usd/plugInfo.json")
     list(APPEND RESOURCE_PARAMETERS "--preload-file ${PROJECT_BINARY_DIR}/plugins_plugInfo.json@/plugin/usd/plugInfo.json")
 
+    set(GLSLANG_LIBS
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glslang${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}glslang-default-resource-limits${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}MachineIndependent${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}SPIRV${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}SPIRV-Tools${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}SPIRV-Tools-opt${CMAKE_STATIC_LIBRARY_SUFFIX}
+        ${CMAKE_INSTALL_PREFIX}/lib/${CMAKE_STATIC_LIBRARY_PREFIX}GenericCodeGen${CMAKE_STATIC_LIBRARY_SUFFIX}
+    )
     # XXX: We manually set the libraries instead of using the LIBRARIES argument pxr_cpp_bin due to
     # problems with the tbb library.
     target_link_libraries(${PXR_PACKAGE}
             ${RESOURCE_PARAMETERS}
-            ${CMAKE_INSTALL_PREFIX}/lib/libshaderc_combined.a
+            ${GLSLANG_LIBS}
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_api.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_api_common.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_ice.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_text.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_program.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_diagnostic.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer_ast_printer.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_generator.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_rtti.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_constant.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_intrinsic_data.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_core_type.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_id.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_result.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_strconv.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_symbol.a
-            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_sem.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_ast_transform.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_program.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_resolver.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_sem.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer_ast_printer.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader_ast_lower.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_spirv_reader_ast_parser.a
             ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_debug.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_lang_wgsl_writer.a
+            ${CMAKE_INSTALL_PREFIX}/lib/libtint_utils_diagnostic.a
             ${TBB_tbb_LIBRARY}
             cameraUtil
             garch

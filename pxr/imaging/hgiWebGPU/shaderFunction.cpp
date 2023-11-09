@@ -163,11 +163,11 @@ HgiWebGPUShaderFunction::HgiWebGPUShaderFunction(
             };
 
             tint::wgsl::writer::Options options{};
-            auto tintResult = tint::wgsl::writer::Generate(&program, options);
+            auto tintResult = tint::wgsl::writer::Generate(program, options);
             if (tintResult) {
                 wgslCode = tintResult->wgsl;
             } else {
-                _errors = tintResult.Failure();
+                _errors = tintResult.Failure().reason.str();
             }
 
             wgslDesc.code = wgslCode.c_str();

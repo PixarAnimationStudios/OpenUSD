@@ -107,7 +107,6 @@ wgpu::Device GetDevice() {
 
     wgpu::Device GetDevice() {
         instance = std::make_unique<dawn::native::Instance>();
-        instance->DiscoverDefaultAdapters();
 
         // Simply pick the first adapter in the sorted list.
         dawn::native::Adapter backendAdapter = instance->EnumerateAdapters()[0];

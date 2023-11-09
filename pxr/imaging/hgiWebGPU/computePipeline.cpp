@@ -27,6 +27,7 @@
 #include "pxr/imaging/hgiWebGPU/hgi.h"
 #include "pxr/imaging/hgiWebGPU/shaderFunction.h"
 #include "pxr/imaging/hgiWebGPU/shaderProgram.h"
+#include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

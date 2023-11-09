@@ -41,7 +41,6 @@ endif()
 
 pxr_cpp_bin(${BINDINGS_NAME}
     LIBRARIES
-      #${BINDINGS_NAME}_LIB
       ${BINDING_DEPENDENCIES}
       ${RESOURCE_PARAMETERS}
 )
