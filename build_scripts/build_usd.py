@@ -1598,8 +1598,10 @@ def InstallGlslang(context, force, buildArgs):
         if not os.path.isdir(srcDir):
             raise RuntimeError("glslang not found at " + srcDir + ". This is probably because dawn or " +
                "tint installation was not executed firts")
-
+            
         with CurrentWorkingDirectory(srcDir):
+            PatchFile("CMakeLists.txt", [('set(CMAKE_DEBUG_POSTFIX "d")','set(CMAKE_DEBUG_POSTFIX "")')])
+                    
             cmakeOptions = [
                 '-DALLOW_EXTERNAL_SPIRV_TOOLS=ON',
                 '-DENABLE_GLSLANG_BINARIES=OFF',
