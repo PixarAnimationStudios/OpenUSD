@@ -1,5 +1,5 @@
 //
-// Copyright 2018 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -36,6 +36,8 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
+
+#include "pxr/base/trace/trace.h"
 
 namespace mx = MaterialX;
 
@@ -77,6 +79,8 @@ TF_DEFINE_ENV_SETTING(USDMTLX_PRIMARY_UV_NAME, "",
 
 static const std::string _GetPrimaryUvSetName()
 {
+    TRACE_FUNCTION();
+
     static const std::string env = TfGetEnvSetting(USDMTLX_PRIMARY_UV_NAME);
     if (env.empty()) {
         return UsdUtilsGetPrimaryUVSetName();
@@ -100,6 +104,8 @@ public:
 
     NdrNodeUniquePtr Build()
     {
+        TRACE_FUNCTION();
+
         if (!*this) {
             return NdrParserPlugin::GetInvalidNode(discoveryResult);
         }
@@ -120,6 +126,8 @@ public:
     void AddPropertyNameRemapping(const std::string& from,
                                   const std::string& to)
     {
+        TRACE_FUNCTION();
+
         if (from != to) {
             _propertyNameRemapping[from] = to;
         }
@@ -151,6 +159,8 @@ ParseMetadata(
     const mx::ConstElementPtr& element,
     const std::string& attribute)
 {
+    TRACE_FUNCTION();
+
     const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
         metadata.emplace(key, value);
@@ -164,6 +174,8 @@ ParseMetadata(
     const TfToken& key,
     const mx::ConstElementPtr& element)
 {
+    TRACE_FUNCTION();
+
     const auto& value = element->getAttribute(key);
     if (!value.empty()) {
         metadata.emplace(key, value);
@@ -177,6 +189,8 @@ ParseOptions(
     const mx::ConstElementPtr& element
 )
 {
+    TRACE_FUNCTION();
+
     const auto& enumLabels = element->getAttribute(_tokens->enum_);
     if (enumLabels.empty()) {
         return;
@@ -228,6 +242,8 @@ ShaderBuilder::AddProperty(
     const mx::ConstTypedElementPtr& element,
     bool isOutput, NdrStringVec *primvars, bool addedTexcoordPrimvar)
 {
+    TRACE_FUNCTION();
+
     TfToken type;
     NdrTokenMap metadata;
     NdrTokenMap hints;
@@ -397,6 +413,8 @@ ParseMetadata(
     const mx::ConstElementPtr& element,
     const std::string& attribute)
 {
+    TRACE_FUNCTION();
+
     const auto& value = element->getAttribute(attribute);
     if (!value.empty()) {
         // Change the 'texture2d' role for stdlib MaterialX Texture nodes
@@ -414,6 +432,8 @@ static
 TfToken
 GetContext(const mx::ConstDocumentPtr& doc, const std::string& type)
 {
+    TRACE_FUNCTION();
+
     if (doc) {
         if (auto mtlxTypeDef = doc->getTypeDef(type)) {
             // Use the context if the type has "shader" semantic.
@@ -429,6 +449,8 @@ static
 void
 ParseElement(ShaderBuilder* builder, const mx::ConstNodeDefPtr& nodeDef)
 {
+    TRACE_FUNCTION();
+
     if (!TF_VERIFY(nodeDef)) {
         return;
     }
@@ -556,6 +578,8 @@ public:
 NdrNodeUniquePtr
 UsdMtlxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 {
+    TRACE_FUNCTION();
+
     MaterialX::ConstDocumentPtr document = nullptr;
     // Get the MaterialX document.
     if (!discoveryResult.resolvedUri.empty()) {
@@ -594,6 +618,8 @@ UsdMtlxParserPlugin::Parse(const NdrNodeDiscoveryResult& discoveryResult)
 const NdrTokenVec&
 UsdMtlxParserPlugin::GetDiscoveryTypes() const
 {
+    TRACE_FUNCTION();
+
     static const NdrTokenVec discoveryTypes = {
         _tokens->discoveryType
     };
@@ -603,6 +629,8 @@ UsdMtlxParserPlugin::GetDiscoveryTypes() const
 const TfToken&
 UsdMtlxParserPlugin::GetSourceType() const
 {
+    TRACE_FUNCTION();
+
     return _tokens->sourceType;
 }
 
