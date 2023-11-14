@@ -647,36 +647,10 @@ pxr_register_test(testUsdImagingGLBasicDrawing_leftHanded
         HGIGL_ENABLE_BINDLESS_TEXTURE=1
 )
 
-pxr_register_test(testUsdImagingGLBasicDrawing_points
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -frameAll -write testUsdImagingGLBasicDrawing_points.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLBasicDrawing_points.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLBasicDrawing
-    ENV
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-)
-
 pxr_register_test(testUsdImagingGLBasicDrawing_clipped
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage basicDrawing/basicDrawing.usda -clipPlane 1 0 0 0 -frameAll -write testUsdImagingGLBasicDrawing_clipped.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLBasicDrawing_clipped.png
-    FAIL 1
-    FAIL_PERCENT 1
-    PERCEPTUAL
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLBasicDrawing
-    ENV
-        HGIGL_ENABLE_BINDLESS_TEXTURE=1
-)
-
-pxr_register_test(testUsdImagingGLBasicDrawing_points_clipped
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -clipPlane -1 0 0 0 -frameAll -write testUsdImagingGLBasicDrawing_points_clipped.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLBasicDrawing_points_clipped.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
@@ -866,7 +840,7 @@ pxr_register_test(testUsdImagingGL_pinnedCurves
 )
 
 pxr_register_test(testUsdImagingGLPoints
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage basicPoints.usda -write testUsdImagingGLPoints.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -stage points.usda -widgetSize 640 480 -write testUsdImagingGLPoints.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLPoints.png
     FAIL 1
@@ -876,16 +850,40 @@ pxr_register_test(testUsdImagingGLPoints
     TESTENV testUsdImagingGLPoints
 )
 
-pxr_register_test(testUsdImagingGLPoints_refined
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -frameAll -complexity 1.1 -stage basicPoints.usda -write testUsdImagingGLPoints_refined.png"
+pxr_register_test(testUsdImagingGLPoints_clipped
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -widgetSize 640 480 -clipPlane -1 0 0 0 -frameAll -write testUsdImagingGLPoints_clipped.png"
     IMAGE_DIFF_COMPARE
-        testUsdImagingGLPoints_refined.png
+        testUsdImagingGLPoints_clipped.png
     FAIL 1
     FAIL_PERCENT 1
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLPoints
 )
+
+# XXX Test cases below are disabled due to a bug in Storm, which will be 
+# addressed soon.
+# pxr_register_test(testUsdImagingGLPoints_zoom
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -320 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom.png"
+#     IMAGE_DIFF_COMPARE
+#         testUsdImagingGLPoints_zoom.png
+#     FAIL 1
+#     FAIL_PERCENT 1
+#     PERCEPTUAL
+#     EXPECTED_RETURN_CODE 0
+#     TESTENV testUsdImagingGLPoints
+# )
+
+# pxr_register_test(testUsdImagingGLPoints_zoom_pan
+#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -620 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom_pan.png"
+#     IMAGE_DIFF_COMPARE
+#     testUsdImagingGLPoints_zoom_pan.png
+#     FAIL 1
+#     FAIL_PERCENT 1
+#     PERCEPTUAL
+#     EXPECTED_RETURN_CODE 0
+#     TESTENV testUsdImagingGLPoints
+# )
 
 pxr_register_test(testUsdImagingGLDomeLight_ZupFront
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -sceneLights -shading smooth -complexity 1.3 -camera /Scene/FrontCamera -stage domeLightZup.usda -write testUsdImagingGLDomeLight_ZupFront.png"
