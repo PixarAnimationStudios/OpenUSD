@@ -34,7 +34,6 @@ import codecs
 import contextlib
 import ctypes
 import datetime
-import distutils
 import fnmatch
 import glob
 import locale
@@ -1098,7 +1097,7 @@ def InstallTBB_Emscripten(context, force, buildArgs):
     with CurrentWorkingDirectory(DownloadURL(TBB_EMSCRIPTEN_URL, context, force)):
         PatchFile("build/linux.emscripten.inc",
                   [("-DUSE_PTHREAD", "-DUSE_PTHREAD -pthread")],
-                  multiLineMatches=False)
+                  multiLineMatches=True)
         # By default no config for other platform is available, but the one for linux
         # seems to work fine
         if MacOS():
@@ -1414,8 +1413,8 @@ def InstallOpenSubdiv(context, force, buildArgs):
         ]
         if context.emscripten:
             extraArgs.append('-DBUILD_SHARED_LIB=OFF')
-            extraArgs.append('-DCMAKE_CXX_FLAGS="-s USE_PTHREADS=1"')
-            extraArgs.append('-DCMAKE_C_FLAGS="-s USE_PTHREADS=1"')
+            extraArgs.append('-DCMAKE_CXX_FLAGS="-pthread"')
+            extraArgs.append('-DCMAKE_C_FLAGS="-pthread"')
             extraArgs.append('-DNO_OPENGL=ON')
             extraArgs.append('-DNO_METAL=ON')
 
@@ -1598,10 +1597,12 @@ def InstallGlslang(context, force, buildArgs):
         if not os.path.isdir(srcDir):
             raise RuntimeError("glslang not found at " + srcDir + ". This is probably because dawn or " +
                "tint installation was not executed firts")
-            
+
         with CurrentWorkingDirectory(srcDir):
-            PatchFile("CMakeLists.txt", [('set(CMAKE_DEBUG_POSTFIX "d")','set(CMAKE_DEBUG_POSTFIX "")')])
-                    
+
+            if context.buildDebug:
+                PatchFile("CMakeLists.txt", [('set(CMAKE_DEBUG_POSTFIX "d")','set(CMAKE_DEBUG_POSTFIX "")')])
+
             cmakeOptions = [
                 '-DALLOW_EXTERNAL_SPIRV_TOOLS=ON',
                 '-DENABLE_GLSLANG_BINARIES=OFF',
@@ -2643,12 +2644,17 @@ for dep in requiredDependencies:
             dependenciesToBuild.append(dep)
 
 # Verify toolchain needed to build required dependencies
-if (not which("g++") and
-    not which("clang") and
-    not GetXcodeDeveloperDirectory() and
-    not GetVisualStudioCompilerAndVersion()):
-    PrintError("C++ compiler not found -- please install a compiler")
-    sys.exit(1)
+if context.emscripten:
+    if not which("emcc"):
+        PrintError(" Emscripten compiler emcc not found -- please install a compiler")
+        sys.exit(1)
+else:
+    if (not which("g++") and
+        not which("clang") and
+        not GetXcodeDeveloperDirectory() and
+        not GetVisualStudioCompilerAndVersion()):
+        PrintError(" C++ compiler not found -- please install a compiler")
+        sys.exit(1)
 
 # Error out if a 64bit version of python interpreter is not being used
 isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)

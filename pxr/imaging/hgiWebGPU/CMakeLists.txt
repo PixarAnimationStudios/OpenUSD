@@ -155,7 +155,7 @@ message(STATUS "Recover compiler flag to /std:c++14")
 
 if (NOT EMSCRIPTEN)
     find_path(GLSLANG_INCLUDE_DIRS glslang/SPIRV/GlslangToSpv.h PATH_SUFFIXES include)
-    # This is required in case we are building with Vulkan support. We want the dawn bought dependencies to be found first.
+    # This is required in case we are building with Vulkan support. We want the dawn brought dependencies to be found first.
     target_include_directories(hgiWebGPU BEFORE PRIVATE ${GLSLANG_INCLUDE_DIRS})
     target_link_directories(hgiWebGPU BEFORE PRIVATE ${CMAKE_INSTALL_PREFIX}/lib)
     message("Restoring PXR_ENABLE_PRECOMPILED_HEADERS:${PXR_ENABLE_PRECOMPILED_HEADERS_PREV}")

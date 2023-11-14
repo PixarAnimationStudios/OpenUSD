@@ -6,7 +6,7 @@ It is a simple application for testing USD Hydra Storm raster renderer with HGI 
 
 ## Get the emscripten SDK
 
-Download and Install emscripten from [HERE](https://emscripten.org/docs/getting_started/downloads.html). (FYI [Official web site](https://emscripten.org))
+Download and Install [emscripten](https://emscripten.org) from [HERE](https://emscripten.org/docs/getting_started/downloads.html).
 
 Set up the environment (i.e. source the required emsdk_env script). Current experiment and testing are based on emsdk v3.1.47.
 
@@ -42,17 +42,19 @@ git clone --recursive https://git.autodesk.com/autodesk-forks/usd/tree/adsk/feat
 # Go into the root of usd source repo, if the folder name is "usd_repo"
 cd usd_repo
 
-# Build USD with the --emscripten flag, for example "./build_dir" is your local build folder
-python3 ./build_scripts/build_usd.py --emscripten ./build_dir
+# Build USD with the --emscripten flag, for example "../build_dir" is your local build folder
+python3 ./build_scripts/build_usd.py --emscripten ../build_dir
 ```
 
-This also builds UsdViewWeb application that you could use to test Hydra Storm with WebGPU backend.
+This also builds the UsdViewWeb application, which you can use to test Hydra Storm with the WebGPU backend.
 
 ## Set up web service
+Start a web server in the build dir with the appropriate flags.
+
+Go into the <build_dir>/bin folder first.
 
 ```
-# Start a web server in the build dir with the appropriate flags, easiest to just use the python script here: scripts/wasm-server.py Go into the TestHgiWebGPU folder first, make sure it is python 3.X
-python3 scripts/wasm-server.py
+python ./wasm-server.py
 ```
 
 ## Browser Requirements
@@ -60,6 +62,6 @@ python3 scripts/wasm-server.py
 - Chrome v114 and upper version
 
 ## Launch Storm in browser
+Launch Chrome browser and navigate to the HdStorm web example: http://localhost:8080/usdviewweb.html. 
 
-Launch Chrome browser and navigate to the test home page for HdStorm pipeline: http://localhost:8080/usdviewweb.html. The html file usdviewweb.html is located in "./build_dir/bin".
 

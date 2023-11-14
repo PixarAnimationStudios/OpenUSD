@@ -16,6 +16,10 @@ pxr_cpp_bin(${PXR_PACKAGE}
     INCLUDE_DIRS
         ${TBB_INCLUDE_DIRS}
 )
+set_target_properties(${PXR_PACKAGE}
+    PROPERTIES
+        SUFFIX ".html"
+)
 
 if (EMSCRIPTEN)
     add_resources(ar)
@@ -118,7 +122,7 @@ if (EMSCRIPTEN)
     set(MODEL "Knife")
     set(MODEL_EXT "usda")
     set(CMAKE_EXE_LINKER_FLAGS_USDVIEWWEB " --tracing --bind ${DEBUG_OPTIONS}  -s DISABLE_EXCEPTION_CATCHING=0 \
-         -s ENVIRONMENT=web,worker -s NODERAWFS=0 -s WASM=1 -sALLOW_MEMORY_GROWTH -sUSE_PTHREADS -s MAXIMUM_MEMORY=4GB \
+         -s ENVIRONMENT=web,worker -s NODERAWFS=0 -s WASM=1 -sALLOW_MEMORY_GROWTH -pthread -s MAXIMUM_MEMORY=4GB \
         -s PTHREAD_POOL_SIZE=8 -s NO_EXIT_RUNTIME=1")
     target_link_options(${PXR_PACKAGE} PRIVATE "SHELL:${CMAKE_EXE_LINKER_FLAGS_USDVIEWWEB} ${ASYNCIFY_REMOVE} -sUSE_GLFW=3 -s USE_WEBGL2=1 -sUSE_WEBGPU=1 -O0")
     target_compile_options(${PXR_PACKAGE} PRIVATE "SHELL:${CMAKE_EXE_LINKER_FLAGS_USDVIEWWEB} -sMODULARIZE=0 -O0")

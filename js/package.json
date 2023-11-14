@@ -28,6 +28,6 @@
   "author": "Pixar",
   "license": "SEE LICENSE IN LICENSE.txt",
   "devDependencies": {
-    "jest": "^27.0.5"
+    "jest": "^29.0.0"
   }
 }

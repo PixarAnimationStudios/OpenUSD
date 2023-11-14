@@ -3,6 +3,13 @@
 import sys
 import socketserver
 from http.server import SimpleHTTPRequestHandler
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--port', type=int, default=8080,
+                    help='port number of the server (default: 8080)')
+args = parser.parse_args()
+PORT = args.port
 
 class WasmHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -18,7 +25,6 @@ if sys.version_info < (3, 7, 5):
 
 
 if __name__ == '__main__':
-    PORT = 8080
     with socketserver.TCPServer(("", PORT), WasmHandler) as httpd:
         print("Listening on port {}. Press Ctrl+C to stop.".format(PORT))
         httpd.serve_forever()

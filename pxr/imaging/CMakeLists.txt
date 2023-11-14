@@ -16,6 +16,7 @@ add_subdirectory(hdar)
 add_subdirectory(hdGp)
 add_subdirectory(hdsi)
 
+
 if (${PXR_ENABLE_MATERIALX_SUPPORT})
     add_subdirectory(hdMtlx)
 endif()

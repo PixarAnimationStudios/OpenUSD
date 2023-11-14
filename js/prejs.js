@@ -25,5 +25,5 @@ Module.uploadJS = async (filePath, fileName) => {
       });
   }
 
-  Module.FS.createDataFile('/', fileName, new Uint8Array(usdFile), true, true, true);
+  Module.FS_createDataFile('/', fileName, new Uint8Array(usdFile), true, true, true);
 }

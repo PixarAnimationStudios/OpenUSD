@@ -57,7 +57,7 @@ describe('USD Tutorials', () => {
 
     const data = fs.readFileSync(path.resolve(__dirname, './test-data/simpleshading.usda'));
 
-    Usd.FS.createDataFile('/', fileName, data, true, true, true);
+    Usd.FS_createDataFile('/', fileName, data, true, true, true);
     const stage = Usd.UsdStage.Open(fileName);
 
     const stReader = Usd.UsdShadeShader.Define(stage, '/TexModel/boardMat/stReader');

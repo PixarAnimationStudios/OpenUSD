@@ -1,0 +1,149 @@
+<html>
+<body>
+  <script src="coi-serviceworker.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.js"></script>
+  <script src="emHdBindings.js" type="text/javascript"></script>
+  <script type="module">
+    import { OrbitControls } from "./OrbitControls.js";
+    import { RenderDelegateInterface } from "./ThreeJsRenderDelegate.js"
+    import { RGBELoader } from 'https://cdn.skypack.dev/three@v0.128.0/examples/jsm/loaders/RGBELoader.js';
+    let scene;
+    let defaultTexture;
+
+    let params = (new URL(document.location)).searchParams;
+    let name = params.get("name");
+
+    let filename = params.get("file") || 'simpleShading.usda';
+
+    // Load the usd file
+    let loadUSDPromise = new Promise( (resolve, reject) => {
+      let req = new XMLHttpRequest();
+      req.open("GET", "/" + filename, true);
+      req.responseType = "arraybuffer";
+
+      req.onload = function (oEvent) {
+        let arrayBuffer = req.response;
+        if (arrayBuffer) {
+          resolve(arrayBuffer);
+        } else {
+          reject();
+        }
+      };
+
+      req.send(null);
+    });
+
+    const initPromise = init();
+
+    Promise.all([loadUSDPromise, getUsdModule(), initPromise]).then(async ([usdFile, Usd]) => {
+
+      let extension = filename.split('.')[1];
+      let inputFile = 'input.' + extension;
+      Usd.FS_createDataFile('/', inputFile, new Uint8Array(usdFile), true, true, true);
+
+      let renderInterface = new RenderDelegateInterface(inputFile);
+      let driver = window.driver = new Usd.HdWebSyncDriver(renderInterface, inputFile);
+
+      driver.Draw();
+
+      const stage = window.driver.GetStage();
+      const endTimeCode = stage.GetEndTimeCode();
+      animate(1000 / stage.GetTimeCodesPerSecond(), endTimeCode);
+    });
+
+    async function init() {
+      const camera = window.camera = new THREE.PerspectiveCamera( 27, window.innerWidth / window.innerHeight, 1, 3500 );
+      camera.position.z = params.get('cameraZ') || 7;;
+      camera.position.y = params.get('cameraY') || 7;
+
+      const scene = window.scene = new THREE.Scene();
+      scene.background = new THREE.Color(0xffffff);
+
+      // const hemisphereLight = new THREE.HemisphereLight();
+      // scene.add( hemisphereLight );
+
+      // const directionalLight = new THREE.DirectionalLight( 0xffffff, 1.0 );
+      // directionalLight.position.z = 50;
+      // directionalLight.position.y = 20;
+      // directionalLight.position.x = -10;
+      // scene.add( directionalLight );
+
+      // const light = new THREE.AmbientLight( 0x202020 ); // soft white light
+      // scene.add( light );
+
+      const renderer = window.renderer = new THREE.WebGLRenderer( { antialias: true } );
+      renderer.setPixelRatio( window.devicePixelRatio );
+      renderer.setSize( window.innerWidth, window.innerHeight );
+      renderer.toneMapping = THREE.CineonToneMapping;
+      renderer.toneMappingExposure = 2;
+
+      const envMapPromise = new Promise(resolve => {
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+				pmremGenerator.compileCubemapShader();
+        new RGBELoader().load('helicopter-landing-pad-vis-4K.hdr', (texture) => {
+          const hdrRenderTarget = pmremGenerator.fromEquirectangular(texture);
+
+          texture.mapping = THREE.EquirectangularReflectionMapping;
+          texture.needsUpdate = true;
+          window.envMap = hdrRenderTarget.texture;
+          //scene.background = texture;
+          resolve();
+        });
+      });
+
+      document.body.appendChild( renderer.domElement );
+      const controls = window._controls = new OrbitControls( camera, renderer.domElement );
+      controls.update();
+
+      window.addEventListener( 'resize', onWindowResize );
+
+      return envMapPromise;
+    }
+
+    // A little helper. Press space to pause/enable rendering. Useful when looking at animated scenes.
+    let stop = false;
+    document.body.onkeyup = function(e){
+      if(e.keyCode == 32){
+        stop = !stop;
+      }
+    }
+
+    async function animate(timeout = 40, endTimecode) {
+
+      if (stop) {
+        requestAnimationFrame( animate.bind(null, timeout, endTimecode) );
+        return;
+      }
+
+      window._controls.update();
+      let secs = new Date().getTime() / 1000;
+      await new Promise(resolve => setTimeout(resolve, 10));
+      const time = secs * (1000 / timeout) % endTimecode;
+      window.driver.SetTime(time);
+      driver.Draw();
+
+      render();
+
+      requestAnimationFrame( animate.bind(null, timeout, endTimecode) );
+    }
+
+    function onWindowResize() {
+
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+
+      renderer.setSize( window.innerWidth, window.innerHeight );
+
+    }
+
+    function render() {
+
+      const time = Date.now() * 0.001;
+
+      window.renderer.render( window.scene, window.camera );
+
+    }
+  </script>
+  <div id="container"></div>
+</body>
+</html>
