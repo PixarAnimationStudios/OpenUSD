@@ -28,8 +28,8 @@ drawCalls = 0
 drawIndirect, 600
 drawIndirectCull, 600
 drawIndirectResult, 20
-drawingShader, 111614
-gpuMemoryUsed, 117546
+drawingShader, 114898
+gpuMemoryUsed, 120830
 nonUniformSize, 1512
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
@@ -68,19 +68,19 @@ drawCalls = 0
 rebuildBatches = 0
 bufferArrayRangeMigrated = 0
 ----- draw flat -----
-computeShader, 14296
+computeShader, 14308
 drawIndirect, 240
 drawIndirectCull, 240
 drawIndirectResult, 4
-drawingShader, 33028
-gpuMemoryUsed, 50048
+drawingShader, 42470
+gpuMemoryUsed, 845934
 nonUniformSize, 960
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 1760
 singleBufferSize, 0
 ssboSize, 1280
-textureMemory, 0
+textureMemory, 786432
 topology, 480
 uboSize, 768
 garbageCollected = 0
@@ -94,15 +94,15 @@ bufferArrayRangeMigrated = 0
 drawIndirect, 480
 drawIndirectCull, 480
 drawIndirectResult, 12
-drawingShader, 86213
-gpuMemoryUsed, 89777
+drawingShader, 105357
+gpuMemoryUsed, 895353
 nonUniformSize, 1312
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
 ssboSize, 1280
-textureMemory, 0
+textureMemory, 786432
 topology, 736
 uboSize, 768
 garbageCollected = 1
@@ -116,15 +116,15 @@ bufferArrayRangeMigrated = 1
 drawIndirect, 720
 drawIndirectCull, 720
 drawIndirectResult, 20
-drawingShader, 104382
-gpuMemoryUsed, 108434
+drawingShader, 133057
+gpuMemoryUsed, 923541
 nonUniformSize, 1312
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
 ssboSize, 1280
-textureMemory, 0
+textureMemory, 786432
 topology, 736
 uboSize, 768
 garbageCollected = 1
@@ -138,15 +138,15 @@ bufferArrayRangeMigrated = 1
 drawIndirect, 480
 drawIndirectCull, 480
 drawIndirectResult, 20
-drawingShader, 104382
-gpuMemoryUsed, 107954
+drawingShader, 133057
+gpuMemoryUsed, 923061
 nonUniformSize, 1312
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 1856
 singleBufferSize, 0
 ssboSize, 1280
-textureMemory, 0
+textureMemory, 786432
 topology, 736
 uboSize, 768
 garbageCollected = 1
@@ -185,8 +185,8 @@ drawCalls = 0
 drawIndirect, 72
 drawIndirectCull, 72
 drawIndirectResult, 4
-drawingShader, 27819
-gpuMemoryUsed, 28303
+drawingShader, 28423
+gpuMemoryUsed, 28907
 nonUniformSize, 16
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0
@@ -202,8 +202,8 @@ drawCalls = 1
 drawIndirect, 72
 drawIndirectCull, 72
 drawIndirectResult, 4
-drawingShader, 27819
-gpuMemoryUsed, 28303
+drawingShader, 28423
+gpuMemoryUsed, 28907
 nonUniformSize, 16
 numberOfTextureHandles, 0
 numberOfTextureObjects, 0

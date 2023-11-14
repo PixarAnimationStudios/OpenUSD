@@ -343,6 +343,7 @@ int main()
     TfErrorMark mark;
 
     HdSt_TestDriver driver;
+    driver.SetupAovs(256, 256);
 
     BasicTest(driver);
 

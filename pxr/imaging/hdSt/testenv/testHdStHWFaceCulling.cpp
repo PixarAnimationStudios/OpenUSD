@@ -94,6 +94,7 @@ FaceCullingTest()
 
     HdSt_TestDriver driver;
     HdUnitTestDelegate &delegate = driver.GetDelegate();
+    driver.SetupAovs(256, 256);
 
     HdStResourceRegistrySharedPtr const& resourceRegistry = 
         std::static_pointer_cast<HdStResourceRegistry>(

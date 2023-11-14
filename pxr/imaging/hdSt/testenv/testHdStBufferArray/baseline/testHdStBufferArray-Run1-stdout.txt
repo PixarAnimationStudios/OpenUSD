@@ -16,18 +16,18 @@ instVertexAdjacency = 0
 instMeshTopologyRange = 0
 instBasisCurvesTopologyRange = 0
 ----- allocated -----
-computeShader, 11223
+computeShader, 11231
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 61967
-gpuMemoryUsed, 131910
+drawingShader, 69937
+gpuMemoryUsed, 926320
 nonUniformSize, 55136
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 16592
 singleBufferSize, 0
 ssboSize, 2624
-textureMemory, 0
+textureMemory, 786432
 topology, 41168
 uboSize, 768
 garbageCollected = 0
@@ -39,18 +39,18 @@ instVertexAdjacency = 4
 instMeshTopologyRange = 4
 instBasisCurvesTopologyRange = 1
 ----- delete a prim -----
-computeShader, 11223
+computeShader, 11231
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 61967
-gpuMemoryUsed, 131910
+drawingShader, 69937
+gpuMemoryUsed, 926320
 nonUniformSize, 55136
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 16592
 singleBufferSize, 0
 ssboSize, 2624
-textureMemory, 0
+textureMemory, 786432
 topology, 41168
 uboSize, 768
 garbageCollected = 0
@@ -64,15 +64,15 @@ instBasisCurvesTopologyRange = 1
 ----- garbage collected -----
 drawIndirect, 900
 drawIndirectCull, 900
-drawingShader, 61967
-gpuMemoryUsed, 121207
+drawingShader, 69937
+gpuMemoryUsed, 915609
 nonUniformSize, 55136
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 16272
 singleBufferSize, 0
 ssboSize, 2304
-textureMemory, 0
+textureMemory, 786432
 topology, 41168
 uboSize, 768
 garbageCollected = 1
@@ -86,15 +86,15 @@ instBasisCurvesTopologyRange = 1
 ----- delete more prims -----
 drawIndirect, 660
 drawIndirectCull, 660
-drawingShader, 61967
-gpuMemoryUsed, 118951
+drawingShader, 69937
+gpuMemoryUsed, 913353
 nonUniformSize, 54352
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 14992
 singleBufferSize, 0
 ssboSize, 1312
-textureMemory, 0
+textureMemory, 786432
 topology, 40672
 uboSize, 768
 garbageCollected = 2
@@ -108,14 +108,14 @@ instBasisCurvesTopologyRange = 1
 ----- clear all -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62447
+drawingShader, 69937
+gpuMemoryUsed, 856849
 nonUniformSize, 0
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 3
 meshTopology = 0
@@ -128,15 +128,15 @@ instBasisCurvesTopologyRange = 0
 ----- 3 points -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62483
+drawingShader, 69937
+gpuMemoryUsed, 856885
 nonUniformSize, 36
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 36
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 0
 meshTopology = 0
@@ -149,15 +149,15 @@ instBasisCurvesTopologyRange = 0
 ----- 5 points -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62507
+drawingShader, 69937
+gpuMemoryUsed, 856909
 nonUniformSize, 60
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 60
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 0
 meshTopology = 0
@@ -170,15 +170,15 @@ instBasisCurvesTopologyRange = 0
 ----- 4 points before GC -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62495
+drawingShader, 69937
+gpuMemoryUsed, 856897
 nonUniformSize, 48
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 48
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 0
 meshTopology = 0
@@ -191,15 +191,15 @@ instBasisCurvesTopologyRange = 0
 ----- 4 points after GC -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62495
+drawingShader, 69937
+gpuMemoryUsed, 856897
 nonUniformSize, 48
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 48
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 1
 meshTopology = 0
@@ -212,15 +212,15 @@ instBasisCurvesTopologyRange = 0
 ----- 0 points after GC -----
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 61967
-gpuMemoryUsed, 62447
+drawingShader, 69937
+gpuMemoryUsed, 856849
 nonUniformSize, 0
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 0
 singleBufferSize, 0
 ssboSize, 0
-textureMemory, 0
+textureMemory, 786432
 uboSize, 768
 garbageCollected = 1
 meshTopology = 0

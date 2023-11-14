@@ -16,15 +16,15 @@ rebuildBatches = 0
 computeShader, 11474
 drawIndirect, 240
 drawIndirectCull, 240
-drawingShader, 34336
-gpuMemoryUsed, 47682
+drawingShader, 37048
+gpuMemoryUsed, 836826
 nonUniformSize, 624
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 896
 singleBufferSize, 0
 ssboSize, 768
-textureMemory, 0
+textureMemory, 786432
 topology, 496
 uboSize, 512
 garbageCollected = 0
@@ -38,15 +38,15 @@ rebuildBatches = 1
 computeShader, 11474
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 34336
-gpuMemoryUsed, 48162
+drawingShader, 37048
+gpuMemoryUsed, 837306
 nonUniformSize, 624
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 896
 singleBufferSize, 0
 ssboSize, 768
-textureMemory, 0
+textureMemory, 786432
 topology, 496
 uboSize, 512
 garbageCollected = 0
@@ -60,15 +60,15 @@ rebuildBatches = 2
 computeShader, 26025
 drawIndirect, 480
 drawIndirectCull, 480
-drawingShader, 72444
-gpuMemoryUsed, 100845
+drawingShader, 77907
+gpuMemoryUsed, 892740
 nonUniformSize, 648
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 920
 singleBufferSize, 0
 ssboSize, 768
-textureMemory, 0
+textureMemory, 786432
 topology, 496
 uboSize, 512
 garbageCollected = 0
@@ -81,15 +81,15 @@ rebuildBatches = 3
 ----- add instancer to cube4 -----
 drawIndirect, 500
 drawIndirectCull, 500
-drawingShader, 123558
-gpuMemoryUsed, 126038
+drawingShader, 131963
+gpuMemoryUsed, 920875
 nonUniformSize, 712
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 960
 singleBufferSize, 0
 ssboSize, 768
-textureMemory, 0
+textureMemory, 786432
 topology, 520
 uboSize, 512
 garbageCollected = 1
@@ -102,15 +102,15 @@ rebuildBatches = 4
 ----- add additional left-handed cube -----
 drawIndirect, 580
 drawIndirectCull, 580
-drawingShader, 123558
-gpuMemoryUsed, 126390
+drawingShader, 186019
+gpuMemoryUsed, 975283
 nonUniformSize, 712
 numberOfTextureHandles, 0
-numberOfTextureObjects, 0
+numberOfTextureObjects, 2
 primvar, 1152
 singleBufferSize, 0
 ssboSize, 960
-textureMemory, 0
+textureMemory, 786432
 topology, 520
 uboSize, 512
 garbageCollected = 1
