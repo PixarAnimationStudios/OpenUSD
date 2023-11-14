@@ -180,6 +180,7 @@ pxr_library(tf
         type
         typeFunctions
         typeNotice
+        unicodeUtils
         warning
         weakBase
         weakPtr
@@ -482,6 +483,7 @@ pxr_build_test(testTf
         testenv/type.cpp
         testenv/typeMultipleInheritance.cpp
         testenv/typeInfoMap.cpp
+        testenv/unicodeUtils.cpp
         testenv/weakPtr.cpp
 )
 
@@ -745,6 +747,9 @@ pxr_register_test(TfTypeInfoMap
 )
 pxr_register_test(TfType_MultipleInheritance
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfType_MultipleInheritance"
+)
+pxr_register_test(TfUnicodeUtils
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfUnicodeUtils"
 )
 pxr_register_test(TfWeakPtr
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testTf TfWeakPtr"
