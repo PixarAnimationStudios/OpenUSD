@@ -420,6 +420,10 @@ HdxTaskController::_SetBlendStateForMaterialTag(TfToken const& materialTag,
         renderParams->blendEnable = false;
         renderParams->depthMaskEnable = true;
         renderParams->enableAlphaToCoverage = true;
+    } else if (materialTag == HdStMaterialTagTokens->volume) {
+        // Disable alpha-to-coverage for the volume render task, as nothing 
+        // (including alpha) gets written to fragments during this task.
+        renderParams->enableAlphaToCoverage = false;
     }
 }
 
