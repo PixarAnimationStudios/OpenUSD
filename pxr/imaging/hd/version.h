@@ -84,7 +84,7 @@
 // 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
 //           HdGeomSubsetsSchema::GetGeomSubsetNames().
 
-#define HD_API_VERSION 58
+#define HD_API_VERSION 59
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2
