@@ -62,7 +62,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (exposure)
     (intensity)
     ((intensityMult,           "ri:light:intensityMult"))
-    ((lightColor,              "ri:light:lightColor"))
     ((portalName,              "ri:light:portalName"))
     ((portalToDome,            "ri:light:portalToDome"))
     ((tint,                    "ri:light:tint"))
@@ -337,7 +336,6 @@ _BuildPortalLightDataSource(
 
     setPortalParamVal(_tokens->domeColorMap, VtValue(domeColorMap));
     setPortalParamVal(_tokens->color,        VtValue(computedPortalColor));
-    setPortalParamVal(_tokens->lightColor,   VtValue(computedPortalColor));
     setPortalParamVal(_tokens->intensity,    VtValue(computedPortalIntensity));
     setPortalParamVal(_tokens->portalToDome, VtValue(computedPortalToDome));
     setPortalParamVal(_tokens->portalName,   VtValue(computedPortalName));
@@ -558,7 +556,7 @@ _PortalLightResolvingSceneIndex::_PrimsDirtied(
     for (const auto& entry: entries) {
         auto domeIt = _domesWithPortals.find(entry.primPath);
         if (domeIt != _domesWithPortals.end()) {
-            // entry.primPath is a known dome with associated portals
+            // entry.primPath is a known dome
             if (entry.dirtyLocators.Contains(lightLocator)) {
                 // The dome's portals may have changed.
                 auto removedPortals =
