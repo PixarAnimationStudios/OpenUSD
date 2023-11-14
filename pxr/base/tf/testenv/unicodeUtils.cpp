@@ -35,13 +35,13 @@ TestUtf8CodePointView()
 {
 
     {
-        TF_AXIOM(TfUnicodeUtils::Utf8CodePointView{}.empty());
+        TF_AXIOM(TfUtf8CodePointView{}.empty());
     }
 
     // Exercise the iterator converting from UTF-8 char to code point
     {
         const std::string_view s1{"ⅈ75_hgòð㤻"};
-        TfUnicodeUtils::Utf8CodePointView u1{s1};
+        TfUtf8CodePointView u1{s1};
         auto i1 = std::cbegin(u1);
         TF_AXIOM(i1.GetBase() == s1.begin());
         TF_AXIOM(*i1 == 8520);
@@ -49,13 +49,13 @@ TestUtf8CodePointView()
         TF_AXIOM(i1 == std::cend(u1));
 
         for (const uint32_t codePoint : u1) {
-            TF_AXIOM(codePoint != TfUnicodeUtils::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
         }
     }
 
     {
         const std::string_view s2{"㤼01৪∫"};
-        TfUnicodeUtils::Utf8CodePointView u2{s2};
+        TfUtf8CodePointView u2{s2};
         auto i2 = std::cbegin(u2);
         TF_AXIOM(i2.GetBase() == s2.begin());
         TF_AXIOM(*i2 == 14652);
@@ -63,13 +63,13 @@ TestUtf8CodePointView()
         TF_AXIOM(i2 == std::cend(u2));
 
         for (const uint32_t codePoint : u2) {
-            TF_AXIOM(codePoint != TfUnicodeUtils::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
         }
     }
 
     {
         const std::string_view s3{"㤻üaf-∫⁇…🔗"};
-        TfUnicodeUtils::Utf8CodePointView u3{s3};
+        TfUtf8CodePointView u3{s3};
         auto i3a = std::cbegin(u3);
         auto i3b = std::cbegin(u3);
 
@@ -94,7 +94,7 @@ TestUtf8CodePointView()
         TF_AXIOM(i3b == std::cend(u3));
 
         for (const uint32_t codePoint : u3) {
-            TF_AXIOM(codePoint != TfUnicodeUtils::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
         }
 
     }

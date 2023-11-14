@@ -27,9 +27,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-namespace TfUnicodeUtils {
-
-uint32_t Utf8CodePointIterator::_GetCodePoint() const
+uint32_t TfUtf8CodePointIterator::_GetCodePoint() const
 {
     // determine what encoding length the character is
     _EncodingLength encodingLength = this->_GetEncodingLength();
@@ -186,6 +184,5 @@ uint32_t Utf8CodePointIterator::_GetCodePoint() const
     }
     return INVALID_CODE_POINT;
 }
-} // end TfUnicodeUtils
 
 PXR_NAMESPACE_CLOSE_SCOPE
