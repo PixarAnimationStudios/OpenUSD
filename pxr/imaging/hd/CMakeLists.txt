@@ -135,6 +135,7 @@ pxr_library(hd
         purposeSchema
         renderBuffer
         renderBufferSchema
+        renderCapabilitiesSchema
         renderDelegate
         rendererPlugin
         rendererPluginHandle

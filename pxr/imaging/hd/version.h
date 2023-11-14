@@ -83,8 +83,9 @@
 // 57 -> 58: Introducing hdsi/version.h
 // 58 -> 59: HdGeomSubsetsSchema::GetIds() renamed to
 //           HdGeomSubsetsSchema::GetGeomSubsetNames().
+// 59 -> 60: Introduced HdRenderDelegate::GetCapabilities().
 
-#define HD_API_VERSION 59
+#define HD_API_VERSION 60
 
 // 1  ->  2: SimpleLighting -> FallbackLighting
 #define HD_SHADER_API 2

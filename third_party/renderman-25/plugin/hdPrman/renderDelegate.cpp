@@ -54,6 +54,10 @@
 #include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/tokens.h"
+#if HD_API_VERSION >= 60
+#include "pxr/imaging/hd/renderCapabilitiesSchema.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#endif
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/getenv.h"
@@ -571,6 +575,19 @@ TfTokenVector
 HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
 {
     return {_tokens->ri, _tokens->outputsRi};
+}
+#endif
+
+#if HD_API_VERSION >= 60
+HdContainerDataSourceHandle
+HdPrmanRenderDelegate::GetCapabilities() const
+{
+    static const HdContainerDataSourceHandle result =
+        HdRenderCapabilitiesSchema::Builder()
+            .SetMotionBlur(
+                HdRetainedTypedSampledDataSource<bool>::New(true))
+            .Build();
+    return result;                       
 }
 #endif
 

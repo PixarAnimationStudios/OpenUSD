@@ -176,6 +176,11 @@ public:
     TfTokenVector GetRenderSettingsNamespaces() const override;
 #endif
 
+#if HD_API_VERSION >= 60
+    HDPRMAN_API
+    HdContainerDataSourceHandle GetCapabilities() const override;
+#endif
+
     HDPRMAN_API 
     void SetRenderSetting(TfToken const &key, VtValue const &value) override;
 

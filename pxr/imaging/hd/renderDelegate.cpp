@@ -191,6 +191,12 @@ HdRenderDelegate::GetRenderStats() const
     return VtDictionary();
 }
 
+HdContainerDataSourceHandle
+HdRenderDelegate::GetCapabilities() const
+{
+    return nullptr;
+}
+
 void
 HdRenderDelegate::_PopulateDefaultSettings(
     HdRenderSettingDescriptorList const& defaultSettings)

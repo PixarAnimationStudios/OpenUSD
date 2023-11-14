@@ -29,6 +29,7 @@
 #include "pxr/imaging/hd/aov.h"
 #include "pxr/imaging/hd/changeTracker.h"
 #include "pxr/imaging/hd/command.h"
+#include "pxr/imaging/hd/dataSource.h"
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/tf/token.h"
 
@@ -183,6 +184,13 @@ public:
     ///
     HD_API
     virtual VtDictionary GetRenderStats() const;
+
+    ///
+    /// Gives capabilities of render delegate as data source
+    /// (conforming to HdRenderCapabilitiesSchema).
+    ///
+    HD_API
+    virtual HdContainerDataSourceHandle GetCapabilities() const;
 
     ////////////////////////////////////////////////////////////////////////////
     ///
