@@ -52,6 +52,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PRIVATE_TOKENS(
     _tokens,
+    (PortalLight)
     (PxrPortalLight)
     ((sceneIndexPluginName, "HdPrman_PortalLightResolvingSceneIndexPlugin"))
 
@@ -127,7 +128,15 @@ _IsPortalLight(const HdSceneIndexPrim& prim, const SdfPath& primPath)
         matInterface.GetTerminalConnection(HdMaterialTerminalTokens->light);
     const auto nodeName = matTerminal.second.upstreamNodeName;
 
-    return (matInterface.GetNodeType(nodeName) == _tokens->PxrPortalLight);
+    const TfToken nodeTypeName = matInterface.GetNodeType(nodeName);
+
+    // We accept either the generic UsdLux "PortalLight" or the
+    // RenderMan-specific "PxrPortalLight" here.  (The former can
+    // occur when using Hydra render index emulation.  In that
+    // setup, the scene index chain runs prior to applying the
+    // renderContextNodeIdentifier to individual nodes.)
+    return (nodeTypeName == _tokens->PxrPortalLight
+        || nodeTypeName == _tokens->PortalLight);
 }
 
 // Helper function to extract a value from a light data source.
