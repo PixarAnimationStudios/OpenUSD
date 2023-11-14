@@ -33,6 +33,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT, true,
                       "Use Vulkan multi draw indirect");
+TF_DEFINE_ENV_SETTING(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS, false,
+                      "Use Vulkan built in barycentric coordinates");
 
 HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     : supportsTimeStamps(false)
@@ -75,7 +77,18 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     // Vertex attribute divisor features ext
     vkVertexAttributeDivisorFeatures.sType =
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_DIVISOR_FEATURES_EXT;
-    vkVertexAttributeDivisorFeatures.pNext = nullptr;
+    
+    // Barycentric features
+    const bool barycentricExtSupported = device->IsSupportedExtension(
+        VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    if (barycentricExtSupported) {
+        vkBarycentricFeatures.sType =
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_FEATURES_KHR;
+        vkBarycentricFeatures.pNext = nullptr;
+        vkVertexAttributeDivisorFeatures.pNext = &vkBarycentricFeatures;
+    } else {
+        vkVertexAttributeDivisorFeatures.pNext = nullptr;
+    }
 
     // Indexing features ext for resource bindings
     vkIndexingFeatures.sType =
@@ -120,14 +133,19 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
 
     const bool conservativeRasterEnabled = (device->IsSupportedExtension(
         VK_EXT_CONSERVATIVE_RASTERIZATION_EXTENSION_NAME));
-    const bool hasBuiltinBarycentrics = (device->IsSupportedExtension(
-        VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME));
     const bool shaderDrawParametersEnabled =
         vkVulkan11Features.shaderDrawParameters;
     bool multiDrawIndirectEnabled = true;
+    bool builtinBarycentricsEnabled =
+        barycentricExtSupported &&
+        vkBarycentricFeatures.fragmentShaderBarycentric;
 
+    // Check Hgi env settings
     if (!TfGetEnvSetting(HGIVULKAN_ENABLE_MULTI_DRAW_INDIRECT)) {
         multiDrawIndirectEnabled = false;
+    }
+    if (!TfGetEnvSetting(HGIVULKAN_ENABLE_BUILTIN_BARYCENTRICS)) {
+        builtinBarycentricsEnabled = false;
     }
 
     _SetFlag(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne, false);
@@ -136,7 +154,7 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
     _SetFlag(HgiDeviceCapabilitiesBitsConservativeRaster, 
         conservativeRasterEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, 
-        hasBuiltinBarycentrics);
+        builtinBarycentricsEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsShaderDrawParameters, 
         shaderDrawParametersEnabled);
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,

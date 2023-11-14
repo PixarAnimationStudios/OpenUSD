@@ -1952,7 +1952,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // Barycentric coordinates
     if (builtinBarycentricsEnabled) {
         _genFS << "vec3 GetBarycentricCoord() {\n"
-                  "  return gl_BaryCoordNoPerspNV;\n"
+                  "  return hd_BaryCoordNoPersp;\n"
                   "}\n";
     } else {
         if (_hasGS) {
@@ -2471,6 +2471,15 @@ HdSt_CodeGen::_CompileWithGeneratedGLSLResources(
         desc.shaderCode = source.c_str();
         desc.generatedShaderCodeOut = &_fsSource;
 
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &desc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+        }
+
         if (!glslProgram->CompileShader(desc)) {
             return nullptr;
         }
@@ -2677,11 +2686,6 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         fsDesc.generatedShaderCodeOut = &_fsSource;
 
         // builtins
-
-        HgiShaderFunctionAddStageInput(
-            &fsDesc, "gl_BaryCoordNoPerspNV", "vec3",
-            HgiShaderKeywordTokens->hdBaryCoordNoPerspNV);
-
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_PrimitiveID", "uint",
             HgiShaderKeywordTokens->hdPrimitiveID);
@@ -2691,6 +2695,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
         HgiShaderFunctionAddStageInput(
             &fsDesc, "gl_FragCoord", "vec4",
             HgiShaderKeywordTokens->hdPosition);
+        const bool builtinBarycentricsEnabled =
+            registry->GetHgi()->GetCapabilities()->IsSet(
+                HgiDeviceCapabilitiesBitsBuiltinBarycentrics);
+        if (builtinBarycentricsEnabled) {
+            HgiShaderFunctionAddStageInput(
+                &fsDesc, "hd_BaryCoordNoPersp", "vec3",
+                HgiShaderKeywordTokens->hdBaryCoordNoPersp);
+        }
 
         if (!glslProgram->CompileShader(fsDesc)) {
             return nullptr;

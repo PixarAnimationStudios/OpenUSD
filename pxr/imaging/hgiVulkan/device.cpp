@@ -225,8 +225,8 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     }
 
     // Allow use of built-in shader barycentrics.
-    if (IsSupportedExtension(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
-        extensions.push_back(VK_NV_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
+    if (IsSupportedExtension(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME)) {
+        extensions.push_back(VK_KHR_FRAGMENT_SHADER_BARYCENTRIC_EXTENSION_NAME);
     }
 
     // Allow use of shader draw parameters.

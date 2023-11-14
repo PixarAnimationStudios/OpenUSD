@@ -59,7 +59,7 @@ TF_DECLARE_PUBLIC_TOKENS(HgiTokens, HGI_API, HGI_TOKENS);
     (hdPositionInPatch) \
     (hdPatchID) \
     (hdGlobalInvocationID) \
-    (hdBaryCoordNoPerspNV)
+    (hdBaryCoordNoPersp)  \
 
 TF_DECLARE_PUBLIC_TOKENS(
     HgiShaderKeywordTokens, HGI_API, HGI_SHADER_KEYWORD_TOKENS);
