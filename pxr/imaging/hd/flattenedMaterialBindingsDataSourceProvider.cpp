@@ -52,8 +52,8 @@ public:
     TfTokenVector GetNames() override {
         TfDenseHashSet<TfToken, TfToken::HashFunctor> allNames;
         {
-            for (const TfTokenVector names : { _primBindings->GetNames(),
-                                               _parentBindings->GetNames() } ) {
+            for (const TfTokenVector &names :
+                    {_primBindings->GetNames(), _parentBindings->GetNames()} ) {
                 allNames.insert(names.begin(), names.end());
             }
         }
