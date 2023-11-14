@@ -31,6 +31,32 @@ verbose = False
 #verbose = True
 
 class TestSdfBatchNamespaceEdit(unittest.TestCase):
+    def CheckFail(self, result, description):
+        """
+        Verify that the returned result of edit.Process(...) returns False with 
+        the given description.
+        """
+        if verbose:
+            if result[0]:
+                print("Unexpected success: %s" % description)
+            else:
+                print("%40s: [%s]" % (description, '.'.join([str(x) for x in result[1]])))
+        self.assertFalse(result[0])
+
+    def AssertCanApply(self, layer, edit):
+        """
+        Assert that layer.CanApply(edit) returns true.
+
+        Simply calling self.assertTrue(layer.CanApply(edit)) doesn't work 
+        because CanApply returns a tuple on failure (bool, reason), which 
+        evaluates to True as a bool.
+        """
+        canApply = layer.CanApply(edit)
+        if isinstance(canApply, bool):
+            self.assertTrue(canApply)
+        else:
+            self.assertTrue(*canApply)
+
     def test_EqualityOperators(self):
         self.assertEqual(Sdf.NamespaceEdit('/A', '/B'), Sdf.NamespaceEdit('/A', '/B'))
         self.assertNotEqual(Sdf.NamespaceEdit('/B', '/A'), Sdf.NamespaceEdit('/A', '/B'))
@@ -148,14 +174,8 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         #
         # Try lots of things that don't work.
         #
-
-        def CheckFail(result, description):
-            if verbose:
-                if result[0]:
-                    print("Unexpected success: %s" % description)
-                else:
-                    print("%40s: [%s]" % (description, '.'.join([str(x) for x in result[1]])))
-            self.assertFalse(result[0])
+        CheckFail = lambda result, description: \
+            self.CheckFail(result, description)
 
         edit = Sdf.BatchNamespaceEdit()
         edit.Add('/Y', '/Z')                    # Unknown object.
@@ -241,11 +261,100 @@ class TestSdfBatchNamespaceEdit(unittest.TestCase):
         edit.Add('/V{v=one}.u', '/V{v=two}.u')      # Variant property reparent/rename
         edit.Add('/V{v=two}.w', Sdf.Path.emptyPath) # Variant property remove
 
-        self.assertTrue(layer.CanApply(edit))
+        self.AssertCanApply(layer, edit)
         layer.Apply(edit)
         self.assertEqual(layer.ExportToString(), final.ExportToString())
 
         print('\nTest SUCCEEDED')
+
+    def test_DescendantMoveDeadspace(self):
+        """
+        Regression test: If a prim has deadspace under it (i.e. a child was 
+        moved), then that deadspace should move with the prim if the prim gets 
+        moved.
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString("""#sdf 1.4.32
+            def Prim "A" {
+                custom double a
+                def Prim "B" {
+                    custom double b
+                }
+            }""")
+
+        edit = Sdf.BatchNamespaceEdit()
+        edit.Add(Sdf.NamespaceEdit("/A/B", "/_B"))
+        edit.Add(Sdf.NamespaceEdit("/A", "/_A"))
+        edit.Add(Sdf.NamespaceEdit("/_B", "/_A/B"))
+
+        self.AssertCanApply(layer, edit)
+        self.assertTrue(layer.Apply(edit))
+
+        # </A> -> </_A>
+        self.assertTrue(layer.GetPropertyAtPath("/_A.a"))
+
+        # </A/B> -> </_B> -> </_A/B>
+        self.assertTrue(layer.GetPropertyAtPath("/_A/B.b"))
+
+    def test_DescendantPreserveDeadspace(self):
+        """
+        Regression test: If a child of a parent was moved or removed, and then 
+        the parent prim was moved but then moved back, then the edit operation
+        should know that the child's former path is still empty ("deadspace").
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString("""#sdf 1.4.32
+            def Prim "A" {
+                custom double a
+                def Prim "B" {
+                    custom double b
+                }
+            }
+            def Prim "C" {
+                custom double c
+            }""")
+
+        edit = Sdf.BatchNamespaceEdit()
+        edit.Add(Sdf.NamespaceEdit("/A/B", "/_B"))
+        edit.Add(Sdf.NamespaceEdit("/A", "/_A"))
+        edit.Add(Sdf.NamespaceEdit("/_A", "/A"))
+        edit.Add(Sdf.NamespaceEdit("/C", "/A/B"))
+
+        self.AssertCanApply(layer, edit)
+        self.assertTrue(layer.Apply(edit))
+
+        # </A/B> -> </_B>
+        self.assertTrue(layer.GetPropertyAtPath("/_B.b"))
+
+        # </A> -> </_A> -> </A>
+        self.assertTrue(layer.GetPropertyAtPath("/A.a"))
+
+        # </C> -> </A/B>
+        self.assertTrue(layer.GetPropertyAtPath("/A/B.c"))
+
+    def test_ParentRemoved(self):
+        """
+        Regression test: Detect that a path is not available if that path was
+        moved followed by an edit to its ancestor. Before, it would (correctly) 
+        fail but with the incorrect reason, "Cannot reparent object under 
+        itself." Instead, it should fail with "New parent was removed."
+        """
+        layer = Sdf.Layer.CreateAnonymous()
+        layer.ImportFromString("""#sdf 1.4.32
+            def Prim "A" {
+                def Prim "B" {}
+            }
+            def Prim "C" {}""")
+
+        edit = Sdf.BatchNamespaceEdit()
+        edit.Add(Sdf.NamespaceEdit("/A/B", "/_B"))
+        edit.Add(Sdf.NamespaceEdit("/A", "/_A"))
+        edit.Add(Sdf.NamespaceEdit("/_B", "/_A/B/C"))
+
+        hasObject = lambda path: bool(layer.GetObjectAtPath(path))
+        canEdit = lambda edit: True
+        self.CheckFail(edit.Process(hasObject, canEdit), 
+            "New parent was removed")
 
 if __name__ == "__main__":
     unittest.main()
