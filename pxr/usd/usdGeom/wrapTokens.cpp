@@ -163,6 +163,7 @@ void wrapUsdGeomTokens()
     _AddToken(cls, "perspective", UsdGeomTokens->perspective);
     _AddToken(cls, "pinned", UsdGeomTokens->pinned);
     _AddToken(cls, "pivot", UsdGeomTokens->pivot);
+    _AddToken(cls, "point", UsdGeomTokens->point);
     _AddToken(cls, "points", UsdGeomTokens->points);
     _AddToken(cls, "pointWeights", UsdGeomTokens->pointWeights);
     _AddToken(cls, "positions", UsdGeomTokens->positions);

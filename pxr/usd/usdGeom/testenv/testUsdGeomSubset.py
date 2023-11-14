@@ -190,7 +190,7 @@ class testUsdGeomSubset(unittest.TestCase):
         # Check total count.
         allGeomSubsets = UsdGeom.Subset.GetAllGeomSubsets(
                 UsdGeom.Imageable(sphere))
-        self.assertEqual(len(allGeomSubsets), 24)
+        self.assertEqual(len(allGeomSubsets), 46)
 
         # Check that invalid negative indices are ignored when getting 
         # unassigned indices.
@@ -228,6 +228,62 @@ class testUsdGeomSubset(unittest.TestCase):
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
             UsdGeom.Tokens.face, familyName='materialBind')
         self.assertTrue(valid)
+    
+    def test_PointSubsetRetrievalAndValidity(self):
+        testFile = "Sphere.usda"
+        stage = Usd.Stage.Open(testFile)
+        sphere = stage.GetPrimAtPath("/Sphere/pSphere1")
+        geom = UsdGeom.Imageable(sphere)
+        self.assertTrue(geom)
+
+        pointSubsets = UsdGeom.Subset.GetGeomSubsets(geom, 
+            elementType=UsdGeom.Tokens.point,
+            familyName='point_physicsAttachment')
+        self.assertEqual(len(pointSubsets), 3)
+        
+        self.assertEqual(UsdGeom.Tokens.partition, 
+            UsdGeom.Subset.GetFamilyType(geom, 'point_physicsAttachment'))
+
+        (valid, reason) = UsdGeom.Subset.ValidateSubsets(pointSubsets, 
+                elementCount=14, familyType=UsdGeom.Tokens.partition)
+        self.assertTrue(valid)
+
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
+                UsdGeom.Tokens.point, familyName='point_physicsAttachment')
+        self.assertTrue(valid)
+        
+        validFamilies = ['point_physicsAttachment', 'point_validPartition', 
+                         'point_validNonOverlapping', 'point_validUnrestricted',
+                         'point_emptyIndicesSomeTimes']
+        for familyName in validFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, True)
+
+        invalidFamilies = ['point_invalidIndices', 'point_badPartition1', 'point_badPartition2',
+                           'point_badPartition3', 'point_invalidNonOverlapping',
+                           'point_invalidUnrestricted', 'point_onlyNegativeIndices',
+                           'point_emptyIndicesAtAllTimes']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, False)
+        
+        varyingMesh = stage.GetPrimAtPath("/Sphere/VaryingMesh")
+        geom = UsdGeom.Imageable(varyingMesh)
+        self.assertTrue(geom)
+
+        validFamilies = ['point_validPartition']
+        for familyName in validFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, True)
+
+        invalidFamilies = ['point_invalidNoDefaultTimeElements']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, False)
+
+        nullMesh = stage.GetPrimAtPath("/Sphere/NullMesh")
+        geom = UsdGeom.Imageable(nullMesh)
+        self.assertTrue(geom)
+
+        invalidFamilies = ['point_emptyIndicesAtAllTimes', 'point_invalidPartition']
+        for familyName in invalidFamilies:
+            self._ValidateFamily(geom, UsdGeom.Tokens.point, familyName, False)
 
 if __name__ == "__main__":
     unittest.main()

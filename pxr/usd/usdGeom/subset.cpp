@@ -523,7 +523,7 @@ UsdGeomSubset::ValidateSubsets(
             }
         }
 
-        // Ensure that the indices are in the range [0, faceCount).
+        // Ensure that the indices are in the range [0, elementCount).
         if (elementCount > 0 && 
             static_cast<size_t>(*indicesInFamily.rbegin()) >= elementCount) {
             valid = false;
@@ -570,6 +570,18 @@ _GetElementCountAtTime(
                 *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
             }
         }
+    } else if (elementType == UsdGeomTokens->point) {
+        const UsdAttribute ptAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->points);
+        if (ptAttr) {
+            VtArray<GfVec3f> points;
+            if (ptAttr.Get(&points, time)) {
+                elementCount = points.size();
+            } 
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = ptAttr.ValueMightBeTimeVarying();
+            }
+        } 
     } else {
         TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
@@ -587,7 +599,7 @@ UsdGeomSubset::ValidateFamily(
     std::string * const reason)
 {
     // XXX: Remove when other element types are supported.
-    if (elementType != UsdGeomTokens->face) {
+    if (elementType != UsdGeomTokens->face && elementType != UsdGeomTokens->point) {
         TF_CODING_ERROR("Unsupported element type '%s'.",
                         elementType.GetText());
         return false;

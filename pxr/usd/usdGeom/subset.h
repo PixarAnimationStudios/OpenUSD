@@ -57,9 +57,9 @@ class SdfAssetPath;
 /// \class UsdGeomSubset
 ///
 /// Encodes a subset of a piece of geometry (i.e. a UsdGeomImageable) 
-/// as a set of indices. Currently only supports encoding of face-subsets, but 
-/// could be extended in the future to support subsets representing edges, 
-/// segments, points etc.
+/// as a set of indices. Currently only supports encoding of face-subsets and
+/// point-subsets, but could be extended in the future to support subsets 
+/// representing edges, segments, tetrahedrons, etc.
 /// 
 /// To apply to a geometric prim, a GeomSubset prim must be the prim's direct 
 /// child in namespace, and possess a concrete defining specifier (i.e. def). 
@@ -180,8 +180,14 @@ public:
     // --------------------------------------------------------------------- //
     // ELEMENTTYPE 
     // --------------------------------------------------------------------- //
-    /// The type of element that the indices target. Currently only 
-    /// allows "face" and defaults to it.
+    /// The type of element that the indices target. "elementType" can
+    /// have one of the following values:
+    /// <ul><li><b>face</b>: for a UsdGeomMesh, each element of the indices 
+    /// attribute would refer to an element of the Mesh's faceCounts 
+    /// attribute</li>
+    /// <li><b>point</b>: for any UsdGeomPointBased, each 
+    /// element of the indices attribute would refer to an element of the 
+    /// Mesh's points attribute</li></ul>
     ///
     /// | ||
     /// | -- | -- |
@@ -189,7 +195,7 @@ public:
     /// | C++ Type | TfToken |
     /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->Token |
     /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
-    /// | \ref UsdGeomTokens "Allowed Values" | face |
+    /// | \ref UsdGeomTokens "Allowed Values" | face, point |
     USDGEOM_API
     UsdAttribute GetElementTypeAttr() const;
 

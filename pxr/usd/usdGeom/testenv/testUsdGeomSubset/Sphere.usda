@@ -9,7 +9,7 @@ def Xform "Sphere" (
     kind = "component"
 )
 {
-    def Mesh "pSphere1"
+    def Mesh "pSphere1" 
     {
         Vec3f[] extent = [(-7.10811, -7.10811, -7.10811), (7.10811, 7.10811, 7.10811)]
 
@@ -26,7 +26,22 @@ def Xform "Sphere" (
         uniform token subsetFamily:validUnrestricted:familyType = "unrestricted"
         uniform token subsetFamily:invalidUnrestricted:familyType = "unrestricted"
 
-        def GeomSubset "green" 
+        uniform token subsetFamily:point_physicsAttachment:familyType = "partition"
+        uniform token subsetFamily:point_validPartition:familyType = "partition"
+
+        uniform token subsetFamily:point_badPartition1:familyType = "partition"
+        uniform token subsetFamily:point_badPartition2:familyType = "partition"
+        uniform token subsetFamily:point_badPartition3:familyType = "partition"
+
+        uniform token subsetFamily:point_validNonOverlapping:familyType = "nonOverlapping"
+        uniform token subsetFamily:point_invalidNonOverlapping:familyType = "nonOverlapping"
+
+        uniform token subsetFamily:point_validUnrestricted:familyType = "unrestricted"
+        uniform token subsetFamily:point_invalidUnrestricted:familyType = "unrestricted"
+
+        def GeomSubset "green" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
@@ -40,7 +55,9 @@ def Xform "Sphere" (
         }
 
 
-        def GeomSubset "blue" 
+        def GeomSubset "blue" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
@@ -54,7 +71,9 @@ def Xform "Sphere" (
         }
 
 
-        def GeomSubset "red" 
+        def GeomSubset "red" (
+            prepend apiSchemas = ["MaterialBindingAPI"]
+        )
         {
             uniform token elementType = "face"
             uniform token familyName = "materialBind"
@@ -260,6 +279,232 @@ def Xform "Sphere" (
             uniform token familyName = "emptyIndicesAtAllTimes"
         }
 
+        def GeomSubset "point_green"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_physicsAttachment"
+            int[] indices = [10, 11, 12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [10, 11, 12, 13],
+                3: [0, 1, 2, 3]
+            }
+        }
+
+        def GeomSubset "point_blue"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_physicsAttachment"
+            int[] indices = [0, 1, 2, 3, 8, 9]
+            int[] indices.timeSamples = {
+                1: [4, 5, 6, 7, 8, 9],
+                2: [0, 1, 2, 3, 8, 9],
+                3: [4, 5, 6, 7, 8, 9]
+            }
+        }
+
+        def GeomSubset "point_red"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_physicsAttachment"
+            int[] indices = [4, 5, 6, 7]
+            int[] indices.timeSamples = {
+                1: [10, 11, 12, 13],
+                2: [4, 5, 6, 7],
+                3: [10, 11, 12, 13]
+            }
+        }
+
+        def GeomSubset "point_invalidIndices" 
+        # Indices 14 at frame 1 and -1 at frame 3 are invalid.
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidIndices"
+            int[] indices = [4, 5, 6, 7]
+            int[] indices.timeSamples = {
+                1: [12, 13, 14],
+                2: [4, 5, 6, 7],
+                3: [-1, 12, 13]
+            }
+        }
+
+        def GeomSubset "point_validNonOverlapping_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "point_validNonOverlapping_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "point_invalidNonOverlapping_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidNonOverlapping"
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]            
+            int[] indices.timeSamples = {
+                1: [1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "point_invalidNonOverlapping_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidNonOverlapping"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "point_validUnrestricted_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validUnrestricted"
+            # index 0 is overlapping
+            int[] indices = [0, 2, 4, 6, 8, 10, 12]
+            int[] indices.timeSamples = {
+                # index 15 is not included in timeSamples.
+                1: [0, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "point_validUnrestricted_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "point_invalidUnrestricted_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidUnrestricted"
+            # out of bound index - 14
+            int[] indices = [0, 2, 4, 6, 8, 10, 12, 14]            
+            int[] indices.timeSamples = {
+                # negative index
+                1: [-1, 1, 3, 5, 7, 9, 11, 13]
+            }
+        }
+
+        def GeomSubset "point_invalidUnrestricted_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidUnrestricted"
+            int[] indices = [1, 3, 5, 7, 9, 11, 13]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 4, 6, 8, 10, 12]
+            }
+        }
+
+        def GeomSubset "point_badPartition1_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_badPartition1"
+            int[] indices = [4, 5, 6, 7]            
+            int[] indices.timeSamples = {
+                1: [12, 13]
+            }
+        }
+
+        def GeomSubset "point_badPartition1_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_badPartition1"
+            int[] indices = [0, 1, 2, 3, 8, 9, 10, 11, 12, 13, 14]
+            int[] indices.timeSamples = {
+                2: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "point_badParition2_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_badPartition2"
+            # mising indices 8-15
+            int[] indices = [0, 1, 2, 3, 4, 5, 6, 7]
+        }
+
+        def GeomSubset "point_badParition3_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_badPartition3"
+            int[] indices = [0, 1, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 5]
+        }
+
+        def GeomSubset "point_validPartition_1"
+        {       
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices = [0, 1, 2, 3, 4, 5]
+            int[] indices.timeSamples = {
+                1: [11, 12, 13],
+                3: [0, 1, 2, 3, 4, 5]
+            }
+        }
+
+        def GeomSubset "point_validPartition_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices = [6, 7, 8, 9, 10]
+            int[] indices.timeSamples = {
+                1: [6, 7, 8, 9, 10],
+                2: [0, 1, 2, 3, 4, 5],
+                3: [11, 12, 13]
+            }
+        }
+
+        def GeomSubset "point_validPartition_3"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices = [11, 12, 13]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3, 4, 5],
+                2: [6, 7, 8, 9, 10]
+            }
+        }
+
+        def GeomSubset "point_onlyNegativeIndices"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_onlyNegativeIndices"
+            int[] indices = [-1, -2, -3, -4, -5]
+        }
+
+        def GeomSubset "point_emptyIndicesSomeTimes"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_emptyIndicesSomeTimes"
+            int[] indices.timeSamples = {
+                0: [],
+                1: [0, 1, 2, 3],
+                2: []
+            }
+        }
+
+        def GeomSubset "point_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_emptyIndicesAtAllTimes"
+        }
+
         int[] faceVertexCounts = [4, 4, 4, 4, 4, 4, 4, 4, 3, 3, 3, 3, 3, 3, 3, 3]
         int[] faceVertexIndices = [0, 1, 5, 4, 1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7, 4, 5, 9, 8, 5, 6, 10, 9, 6, 7, 11, 10, 7, 4, 8, 11, 1, 0, 12, 2, 1, 12, 3, 2, 12, 0, 3, 12, 8, 9, 13, 9, 10, 13, 10, 11, 13, 11, 8, 13]
         PointFloat[] points = [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619), (0, -1.57832e-15, -7.10811), (0, 1.57832e-15, 7.10811)]
@@ -278,6 +523,12 @@ def Xform "Sphere" (
             1: [4],
             2: [4, 4],
             3: [4, 4, 4]
+        }
+
+        PointFloat[] points.timeSamples = {
+            1: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619)],
+            2: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0)],
+            3: [(6.59105e-07, 5.02619, -5.02619), (-5.02619, 4.39403e-07, -5.02619), (-2.19702e-07, -5.02619, -5.02619), (5.02619, -1.11604e-15, -5.02619), (9.32115e-07, 7.10811, -1.57832e-15), (-7.10811, 6.2141e-07, -1.37981e-22), (-3.10705e-07, -7.10811, 1.57832e-15), (7.10811, 0, 0), (6.59105e-07, 5.02619, 5.02619), (-5.02619, 4.39403e-07, 5.02619), (-2.19702e-07, -5.02619, 5.02619), (5.02619, 1.11604e-15, 5.02619)]
         }
 
         def GeomSubset "validPartition_1"
@@ -324,6 +575,51 @@ def Xform "Sphere" (
                 3: [2]
             }
         }
+
+        def GeomSubset "point_validPartition_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [],
+                3: [0, 1, 2, 3]
+            }
+        }
+
+        def GeomSubset "point_validPartition_2"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [0, 1, 2, 3, 4, 5, 6, 7],
+                3: [4, 5, 6, 7]
+            }
+        }
+
+        def GeomSubset "point_validPartition_3"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_validPartition"
+            int[] indices.timeSamples = {
+                1: [],
+                2: [],
+                3: [8, 9, 10, 11]
+            }
+        }
+
+        def GeomSubset "point_invalidNoDefaultTimeElements"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidNoDefaultTimeElements"
+            int[] indices = [0]
+            int[] indices.timeSamples = {
+                1: [0, 1, 2, 3],
+                2: [0, 1, 2, 3, 4, 5, 6, 7],
+                3: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+            }
+        }
     }
 
     def Mesh "NullMesh"
@@ -340,6 +636,19 @@ def Xform "Sphere" (
         {
             uniform token elementType = "face"
             uniform token familyName = "invalidPartition"
+            int[] indices = [0, 1, 2, 3]
+        }
+
+        def GeomSubset "point_emptyIndicesAtAllTimes"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_emptyIndicesAtAllTimes"
+        }
+
+        def GeomSubset "point_invalidPartition_1"
+        {
+            uniform token elementType = "point"
+            uniform token familyName = "point_invalidPartition"
             int[] indices = [0, 1, 2, 3]
         }
     }
