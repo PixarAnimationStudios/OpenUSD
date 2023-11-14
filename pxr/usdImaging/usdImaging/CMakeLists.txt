@@ -82,7 +82,7 @@ pxr_library(usdImaging
         domeLight_1Adapter
         fieldAdapter
         flattenedDataSourceProviders
-        flattenedModelDataSourceProvider
+        flattenedGeomModelDataSourceProvider
         geometryLightAdapter
         geomModelAPIAdapter
         gprimAdapter

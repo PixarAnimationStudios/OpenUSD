@@ -21,7 +21,7 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#include "pxr/usdImaging/usdImaging/flattenedModelDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/flattenedGeomModelDataSourceProvider.h"
 
 #include "pxr/usdImaging/usdImaging/geomModelSchema.h"
 
@@ -101,10 +101,10 @@ private:
 
 }
 
-UsdImagingFlattenedModelDataSourceProvider::~UsdImagingFlattenedModelDataSourceProvider() = default;
+UsdImagingFlattenedGeomModelDataSourceProvider::~UsdImagingFlattenedGeomModelDataSourceProvider() = default;
 
 HdContainerDataSourceHandle
-UsdImagingFlattenedModelDataSourceProvider::GetFlattenedDataSource(
+UsdImagingFlattenedGeomModelDataSourceProvider::GetFlattenedDataSource(
     const Context &ctx) const
 {
     return
@@ -114,7 +114,7 @@ UsdImagingFlattenedModelDataSourceProvider::GetFlattenedDataSource(
 }
 
 void
-UsdImagingFlattenedModelDataSourceProvider::ComputeDirtyLocatorsForDescendants(
+UsdImagingFlattenedGeomModelDataSourceProvider::ComputeDirtyLocatorsForDescendants(
     HdDataSourceLocatorSet * const locators) const
 {
     static const HdDataSourceLocator drawModeLocator(

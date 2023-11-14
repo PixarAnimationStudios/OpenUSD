@@ -37,7 +37,8 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens,
-    USDIMAGINGMODEL_SCHEMA_TOKENS);
+    USD_IMAGING_MODEL_SCHEMA_TOKENS);
+
 
 
 
@@ -46,13 +47,6 @@ UsdImagingModelSchema::GetModelPath()
 {
     return _GetTypedDataSource<HdPathDataSource>(
         UsdImagingModelSchemaTokens->modelPath);
-}
-
-HdTokenDataSourceHandle
-UsdImagingModelSchema::GetKind()
-{
-    return _GetTypedDataSource<HdTokenDataSource>(
-        UsdImagingModelSchemaTokens->kind);
 }
 
 HdAssetPathDataSourceHandle
@@ -80,24 +74,18 @@ UsdImagingModelSchema::GetAssetVersion()
 HdContainerDataSourceHandle
 UsdImagingModelSchema::BuildRetained(
         const HdPathDataSourceHandle &modelPath,
-        const HdTokenDataSourceHandle &kind,
         const HdAssetPathDataSourceHandle &assetIdentifier,
         const HdStringDataSourceHandle &assetName,
         const HdStringDataSourceHandle &assetVersion
 )
 {
-    TfToken _names[5];
-    HdDataSourceBaseHandle _values[5];
+    TfToken _names[4];
+    HdDataSourceBaseHandle _values[4];
 
     size_t _count = 0;
     if (modelPath) {
         _names[_count] = UsdImagingModelSchemaTokens->modelPath;
         _values[_count++] = modelPath;
-    }
-
-    if (kind) {
-        _names[_count] = UsdImagingModelSchemaTokens->kind;
-        _values[_count++] = kind;
     }
 
     if (assetIdentifier) {
@@ -155,14 +143,6 @@ UsdImagingModelSchema::Builder::SetModelPath(
 }
 
 UsdImagingModelSchema::Builder &
-UsdImagingModelSchema::Builder::SetKind(
-    const HdTokenDataSourceHandle &kind)
-{
-    _kind = kind;
-    return *this;
-}
-
-UsdImagingModelSchema::Builder &
 UsdImagingModelSchema::Builder::SetAssetIdentifier(
     const HdAssetPathDataSourceHandle &assetIdentifier)
 {
@@ -191,7 +171,6 @@ UsdImagingModelSchema::Builder::Build()
 {
     return UsdImagingModelSchema::BuildRetained(
         _modelPath,
-        _kind,
         _assetIdentifier,
         _assetName,
         _assetVersion

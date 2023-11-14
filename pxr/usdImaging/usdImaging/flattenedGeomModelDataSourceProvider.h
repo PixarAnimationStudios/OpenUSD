@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 
-#ifndef PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
-#define PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
+#ifndef PXR_USD_IMAGING_USD_IMAGING_FLATTENED_GEOM_MODEL_DATA_SOURCE_PROVIDER_H
+#define PXR_USD_IMAGING_USD_IMAGING_FLATTENED_GEOM_MODEL_DATA_SOURCE_PROVIDER_H
 
 #include "pxr/usdImaging/usdImaging/api.h"
 
@@ -30,7 +30,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class UsdImagingFlattenedModelDataSourceProvider
+class UsdImagingFlattenedGeomModelDataSourceProvider
                         : public HdFlattenedDataSourceProvider
 {
     USDIMAGING_API
@@ -44,10 +44,10 @@ class UsdImagingFlattenedModelDataSourceProvider
 public:
 
     USDIMAGING_API
-    virtual ~UsdImagingFlattenedModelDataSourceProvider();
+    virtual ~UsdImagingFlattenedGeomModelDataSourceProvider();
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_USD_IMAGING_USD_IMAGING_FLATTENED_MODEL_DATA_SOURCE_PROVIDER_H
+#endif // PXR_USD_IMAGING_USD_IMAGING_FLATTENED_GEOM_MODEL_DATA_SOURCE_PROVIDER_H
 

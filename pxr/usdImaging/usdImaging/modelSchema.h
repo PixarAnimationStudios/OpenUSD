@@ -39,16 +39,15 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-#define USDIMAGINGMODEL_SCHEMA_TOKENS \
+#define USD_IMAGING_MODEL_SCHEMA_TOKENS \
     (model) \
     (modelPath) \
-    (kind) \
     (assetIdentifier) \
     (assetName) \
     (assetVersion) \
 
 TF_DECLARE_PUBLIC_TOKENS(UsdImagingModelSchemaTokens, USDIMAGING_API,
-    USDIMAGINGMODEL_SCHEMA_TOKENS);
+    USD_IMAGING_MODEL_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
@@ -62,8 +61,6 @@ public:
 
     USDIMAGING_API
     HdPathDataSourceHandle GetModelPath();
-    USDIMAGING_API
-    HdTokenDataSourceHandle GetKind();
     USDIMAGING_API
     HdAssetPathDataSourceHandle GetAssetIdentifier();
     USDIMAGING_API
@@ -82,7 +79,6 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         const HdPathDataSourceHandle &modelPath,
-        const HdTokenDataSourceHandle &kind,
         const HdAssetPathDataSourceHandle &assetIdentifier,
         const HdStringDataSourceHandle &assetName,
         const HdStringDataSourceHandle &assetVersion
@@ -101,9 +97,6 @@ public:
         Builder &SetModelPath(
             const HdPathDataSourceHandle &modelPath);
         USDIMAGING_API
-        Builder &SetKind(
-            const HdTokenDataSourceHandle &kind);
-        USDIMAGING_API
         Builder &SetAssetIdentifier(
             const HdAssetPathDataSourceHandle &assetIdentifier);
         USDIMAGING_API
@@ -119,7 +112,6 @@ public:
 
     private:
         HdPathDataSourceHandle _modelPath;
-        HdTokenDataSourceHandle _kind;
         HdAssetPathDataSourceHandle _assetIdentifier;
         HdStringDataSourceHandle _assetName;
         HdStringDataSourceHandle _assetVersion;

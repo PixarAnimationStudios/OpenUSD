@@ -40,7 +40,6 @@
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/tokens.h"
 
-#include "pxr/usd/kind/registry.h"
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usdGeom/primvarsAPI.h"
 #include "pxr/usd/usdGeom/modelAPI.h"
@@ -553,7 +552,6 @@ UsdImagingDataSourcePrim_ModelAPI::GetNames()
 {
     return {
         UsdImagingModelSchemaTokens->modelPath,
-        UsdImagingModelSchemaTokens->kind,
         UsdImagingModelSchemaTokens->assetIdentifier,
         UsdImagingModelSchemaTokens->assetName,
         UsdImagingModelSchemaTokens->assetVersion,
@@ -567,12 +565,6 @@ UsdImagingDataSourcePrim_ModelAPI::Get(const TfToken &name)
     if (name == UsdImagingModelSchemaTokens->modelPath) {
         return HdRetainedTypedSampledDataSource<SdfPath>::New(
             _model.GetPrim().GetPath());
-    } else if (name == UsdImagingModelSchemaTokens->kind) {
-        TfToken kind;
-        if (_model.GetKind(&kind)) {
-            return HdRetainedTypedSampledDataSource<TfToken>::New(kind);
-        }
-        return nullptr;
     } else if (name == UsdImagingModelSchemaTokens->assetIdentifier) {
         SdfAssetPath assetIdentifier;
         if (_model.GetAssetIdentifier(&assetIdentifier)) {
