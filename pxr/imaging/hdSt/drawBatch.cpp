@@ -192,6 +192,8 @@ HdSt_DrawBatch::_IsAggregated(HdStDrawItem const *drawItem0,
     if (drawItem0->GetGeometricShader() == drawItem1->GetGeometricShader()
         && drawItem0->GetInstancePrimvarNumLevels() ==
             drawItem1->GetInstancePrimvarNumLevels()
+        && isAggregated(drawItem0->GetMeshletsRange(),
+                        drawItem1->GetMeshletsRange())
         && isAggregated(drawItem0->GetTopologyRange(),
                          drawItem1->GetTopologyRange())
         && isAggregated(drawItem0->GetTopologyVisibilityRange(),

@@ -82,6 +82,12 @@ public:
         return _GetSharedData()->barContainer.Get(
             _GetDrawingCoord().GetInstanceIndexIndex());
     }
+    
+    /// Returns constant primvar BAR.
+    HdBufferArrayRangeSharedPtr const &GetMeshletsRange() const {
+        return _GetSharedData()->barContainer.Get(
+            _GetDrawingCoord().GetMeshletsIndex());
+    }
 
     /// Returns constant primvar BAR.
     HdBufferArrayRangeSharedPtr const &GetConstantPrimvarRange() const {

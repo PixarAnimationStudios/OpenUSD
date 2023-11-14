@@ -63,6 +63,7 @@ size_t
 HdStDrawItem::GetBufferArraysHash() const
 {
     size_t hash = TfHash::Combine(
+        _GetVersion(GetMeshletsRange()),
         _GetVersion(GetConstantPrimvarRange()),
         _GetVersion(GetElementPrimvarRange()),
         _GetVersion(GetVertexPrimvarRange()),
@@ -86,6 +87,7 @@ size_t
 HdStDrawItem::GetElementOffsetsHash() const
 {
     size_t hash = TfHash::Combine(
+        _GetElementOffset(GetMeshletsRange()),
         _GetElementOffset(GetConstantPrimvarRange()),
         _GetElementOffset(GetElementPrimvarRange()),
         _GetElementOffset(GetVertexPrimvarRange()),

@@ -99,6 +99,8 @@ public:
         _varyingPrimvar(7) {
     }
 
+    int GetMeshletsIndex() const           { return _meshlets; }
+    void SetMeshletsIndex(int slot)        { _meshlets = slot; }
     int GetConstantPrimvarIndex() const    { return _constantPrimvar; }
     void SetConstantPrimvarIndex(int slot) { _constantPrimvar = slot; }
     int GetVertexPrimvarIndex() const      { return _vertexPrimvar; }
@@ -126,6 +128,7 @@ public:
 private:
     int16_t _topology;
     int16_t _instancePrimvar;
+    int8_t _meshlets;
     int8_t _constantPrimvar;
     int8_t _vertexPrimvar;
     int8_t _elementPrimvar;

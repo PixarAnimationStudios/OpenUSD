@@ -527,7 +527,9 @@ _GetShaderBar(HdSt_MaterialNetworkShaderSharedPtr const & shader)
 struct _DrawItemState
 {
     explicit _DrawItemState(HdStDrawItem const * drawItem)
-        : constantBar(std::static_pointer_cast<HdStBufferArrayRange>(
+        : meshletBar(std::static_pointer_cast<HdStBufferArrayRange>(
+                drawItem->GetMeshletsRange()))
+        , constantBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetConstantPrimvarRange()))
         , indexBar(std::static_pointer_cast<HdStBufferArrayRange>(
                     drawItem->GetTopologyRange()))
@@ -554,6 +556,7 @@ struct _DrawItemState
         }
     }
 
+    HdStBufferArrayRangeSharedPtr meshletBar;
     HdStBufferArrayRangeSharedPtr constantBar;
     HdStBufferArrayRangeSharedPtr indexBar;
     HdStBufferArrayRangeSharedPtr topVisBar;
@@ -885,6 +888,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
             _DrawItemState const dc(drawItem);
             
             // drawing coordinates.
+            uint32_t const meshletDC       = _GetElementOffset(dc.meshletBar);
             uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
             uint32_t const primitiveDC     = _GetElementOffset(dc.indexBar);
             
@@ -933,6 +937,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         }
         // drawing coordinates.
         uint32_t const modelDC         = 0; // reserved for future extension
+        uint32_t const meshletDC       = _GetElementOffset(dc.meshletBar);
         uint32_t const constantDC      = _GetElementOffset(dc.constantBar);
         uint32_t const vertexDC        = _GetElementOffset(dc.vertexBar);
         uint32_t const topVisDC        = _GetElementOffset(dc.topVisBar);
@@ -1380,6 +1385,8 @@ _BindingState::GetBindingsForDrawing(
     
     if (geometricShader->GetUseMeshShaders()) {
         binder.GetBufferArrayBindingDesc(bindingsDesc, vertexBar);
+        binder.GetBufferArrayBindingDesc(bindingsDesc, meshletBar);
+        //TODO remove meshletremap
         binder.GetBufferBindingDesc(bindingsDesc,
                                     HdTokens->meshletRemap,
                                     meshletRemapBuffer,
