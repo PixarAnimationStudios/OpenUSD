@@ -1,6 +1,5 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hgiWebGPU)
-set(CMAKE_CXX_STANDARD 17)
 
 if (NOT ${PXR_BUILD_GPU_SUPPORT} OR NOT ${PXR_ENABLE_WEBGPU_SUPPORT})
     message(STATUS
@@ -149,9 +148,6 @@ pxr_library(hgiWebGPU
     RESOURCE_FILES
         plugInfo.json
 )
-
-set(CMAKE_CXX_STANDARD 14)
-message(STATUS "Recover compiler flag to /std:c++14")
 
 if (NOT EMSCRIPTEN)
     find_path(GLSLANG_INCLUDE_DIRS glslang/SPIRV/GlslangToSpv.h PATH_SUFFIXES include)

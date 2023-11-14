@@ -210,6 +210,7 @@ HgiGLCapabilities::_LoadCapabilities()
         true);
     _SetFlag(HgiDeviceCapabilitiesBitsOSDSupport, true);
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, true);
 
     if (TfDebug::IsEnabled(HGI_DEBUG_DEVICE_CAPABILITIES)) {
         std::cout

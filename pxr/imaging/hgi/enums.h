@@ -103,6 +103,7 @@ enum HgiDeviceCapabilitiesBits : HgiBits
     HgiDeviceCapabilitiesBitsIndirectCommandBuffers  = 1 << 17,
     HgiDeviceCapabilitiesBitsGeometricStage          = 1 << 18,
     HgiDeviceCapabilitiesBitsOSDSupport              = 1 << 19,
+    HgiDeviceCapabilitiesBitsClipDistanceSupport     = 1 << 20,
 };
 
 using HgiDeviceCapabilities = HgiBits;

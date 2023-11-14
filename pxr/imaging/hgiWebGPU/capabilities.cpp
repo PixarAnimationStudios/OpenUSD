@@ -39,6 +39,7 @@ HgiWebGPUCapabilities::HgiWebGPUCapabilities(wgpu::Device)
     _SetFlag(HgiDeviceCapabilitiesBitsCppShaderPadding, false);
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, false);
     _SetFlag(HgiDeviceCapabilitiesBitsOSDSupport, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, false);
 
 }
 

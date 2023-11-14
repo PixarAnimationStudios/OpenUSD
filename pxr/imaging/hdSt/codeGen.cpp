@@ -1683,6 +1683,8 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         capabilities->IsSet(HgiDeviceCapabilitiesBitsShaderDoublePrecision);
     const bool minusOneToOneDepth =
         capabilities->IsSet(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
+    const bool clipPlanesEnabled =
+            capabilities->IsSet(HgiDeviceCapabilitiesBitsClipDistanceSupport);
 
     bool const useHgiResourceGeneration =
         IsEnabledHgiResourceGeneration(capabilities);
@@ -1841,6 +1843,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _genDecl << "struct " << typeName << " {\n";
         // dbIt is StructEntry { name, dataType, offset, numElements }
         TF_FOR_ALL (dbIt, it->second.entries) {
+            if (dbIt->name == HdShaderTokens->clipPlanes && !clipPlanesEnabled) {
+                // We want to skip any code that is not supported
+                continue;
+            }
             _genDefines << "#define HD_HAS_" << dbIt->name << " 1\n";
             _genDecl << "  " << _GetPackedType(_ConvertBoolType(dbIt->dataType), false)
                      << " " << dbIt->name;

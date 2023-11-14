@@ -102,6 +102,8 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
 
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, true);
 
+    _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, true);
+
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset
     // to be included incorrectly in the primitive ID. Our workaround

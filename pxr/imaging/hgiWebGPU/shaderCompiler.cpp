@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/imaging/hgiWebGPU/api.h"
 #include "pxr/imaging/hgiWebGPU/shaderCompiler.h"
 #include "glslang/SPIRV/GlslangToSpv.h"
 #include "glslang/Public/ResourceLimits.h"
