@@ -48,9 +48,9 @@
 #ifdef ARCH_COMPILER_MSVC
 
 /// Expand to the number of arguments passed.  For example,
-/// TF_PP_VARIADIC_SIZE(foo, bar, baz) expands to 3.  Supports up to 64
+/// TF_PP_VARIADIC_SIZE(foo, bar, baz) expands to 3.  Supports up to 100
 /// arguments.
-#define TF_PP_VARIADIC_SIZE(...) TF_PP_CAT(TF_PP_VARIADIC_SIZE_IMPL(__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,),)
+#define TF_PP_VARIADIC_SIZE(...) TF_PP_CAT(TF_PP_VARIADIC_SIZE_IMPL(__VA_ARGS__, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,),)
 
 /// Expand to the \p n'th argument of the arguments following \p n,
 /// zero-indexed.  For example, TF_PP_VARIADIC_ELEM(0, a, b, c) expands to a,
@@ -61,9 +61,9 @@
 #else // NOT MSVC
 
 /// Expand to the number of arguments passed.  For example,
-/// TF_PP_VARIADIC_SIZE(foo, bar, baz) expands to 3.  Supports up to 64
+/// TF_PP_VARIADIC_SIZE(foo, bar, baz) expands to 3.  Supports up to 100
 /// arguments.  Does not work for zero arguments, which is trickier.
-#define TF_PP_VARIADIC_SIZE(...) TF_PP_VARIADIC_SIZE_IMPL(__VA_ARGS__, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,)
+#define TF_PP_VARIADIC_SIZE(...) TF_PP_VARIADIC_SIZE_IMPL(__VA_ARGS__, 100, 99, 98, 97, 96, 95, 94, 93, 92, 91, 90, 89, 88, 87, 86, 85, 84, 83, 82, 81, 80, 79, 78, 77, 76, 75, 74, 73, 72, 71, 70, 69, 68, 67, 66, 65, 64, 63, 62, 61, 60, 59, 58, 57, 56, 55, 54, 53, 52, 51, 50, 49, 48, 47, 46, 45, 44, 43, 42, 41, 40, 39, 38, 37, 36, 35, 34, 33, 32, 31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1,)
 
 /// Expand to the \p n'th argument of the arguments following \p n,
 /// zero-indexed.  For example, TF_PP_VARIADIC_ELEM(0, a, b, c) expands to a,
@@ -72,7 +72,7 @@
 
 #endif // ARCH_COMPILER_MSVC
 
-#define TF_PP_VARIADIC_SIZE_IMPL(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, size, ...) size
+#define TF_PP_VARIADIC_SIZE_IMPL(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, size, ...) size
 
 #define TF_PP_VAE_0(a0, ...) a0
 #define TF_PP_VAE_1(a0, a1, ...) a1
@@ -138,6 +138,42 @@
 #define TF_PP_VAE_61(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, ...) a61
 #define TF_PP_VAE_62(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, ...) a62
 #define TF_PP_VAE_63(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, ...) a63
+#define TF_PP_VAE_64(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, ...) a64
+#define TF_PP_VAE_65(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, ...) a65
+#define TF_PP_VAE_66(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, ...) a66
+#define TF_PP_VAE_67(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, ...) a67
+#define TF_PP_VAE_68(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, ...) a68
+#define TF_PP_VAE_69(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, ...) a69
+#define TF_PP_VAE_70(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, ...) a70
+#define TF_PP_VAE_71(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, ...) a71
+#define TF_PP_VAE_72(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, ...) a72
+#define TF_PP_VAE_73(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, ...) a73
+#define TF_PP_VAE_74(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, ...) a74
+#define TF_PP_VAE_75(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, ...) a75
+#define TF_PP_VAE_76(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, ...) a76
+#define TF_PP_VAE_77(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, ...) a77
+#define TF_PP_VAE_78(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, ...) a78
+#define TF_PP_VAE_79(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, ...) a79
+#define TF_PP_VAE_80(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, ...) a80
+#define TF_PP_VAE_81(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, ...) a81
+#define TF_PP_VAE_82(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, ...) a82
+#define TF_PP_VAE_83(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, ...) a83
+#define TF_PP_VAE_84(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, ...) a84
+#define TF_PP_VAE_85(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, ...) a85
+#define TF_PP_VAE_86(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, ...) a86
+#define TF_PP_VAE_87(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, ...) a87
+#define TF_PP_VAE_88(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, ...) a88
+#define TF_PP_VAE_89(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, ...) a89
+#define TF_PP_VAE_90(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, ...) a90
+#define TF_PP_VAE_91(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, ...) a91
+#define TF_PP_VAE_92(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, ...) a92
+#define TF_PP_VAE_93(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, ...) a93
+#define TF_PP_VAE_94(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, ...) a94
+#define TF_PP_VAE_95(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, ...) a95
+#define TF_PP_VAE_96(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, ...) a96
+#define TF_PP_VAE_97(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, ...) a97
+#define TF_PP_VAE_98(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, ...) a98
+#define TF_PP_VAE_99(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, a20, a21, a22, a23, a24, a25, a26, a27, a28, a29, a30, a31, a32, a33, a34, a35, a36, a37, a38, a39, a40, a41, a42, a43, a44, a45, a46, a47, a48, a49, a50, a51, a52, a53, a54, a55, a56, a57, a58, a59, a60, a61, a62, a63, a64, a65, a66, a67, a68, a69, a70, a71, a72, a73, a74, a75, a76, a77, a78, a79, a80, a81, a82, a83, a84, a85, a86, a87, a88, a89, a90, a91, a92, a93, a94, a95, a96, a97, a98, a99, ...) a99
 
 #ifdef ARCH_COMPILER_MSVC
 
@@ -205,6 +241,42 @@
 #define TF_PP_FE_61(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_60,(_macro, __VA_ARGS__))
 #define TF_PP_FE_62(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_61,(_macro, __VA_ARGS__))
 #define TF_PP_FE_63(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_62,(_macro, __VA_ARGS__))
+#define TF_PP_FE_64(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_63,(_macro, __VA_ARGS__))
+#define TF_PP_FE_65(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_64,(_macro, __VA_ARGS__))
+#define TF_PP_FE_66(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_65,(_macro, __VA_ARGS__))
+#define TF_PP_FE_67(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_66,(_macro, __VA_ARGS__))
+#define TF_PP_FE_68(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_67,(_macro, __VA_ARGS__))
+#define TF_PP_FE_69(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_68,(_macro, __VA_ARGS__))
+#define TF_PP_FE_70(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_69,(_macro, __VA_ARGS__))
+#define TF_PP_FE_71(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_70,(_macro, __VA_ARGS__))
+#define TF_PP_FE_72(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_71,(_macro, __VA_ARGS__))
+#define TF_PP_FE_73(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_72,(_macro, __VA_ARGS__))
+#define TF_PP_FE_74(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_73,(_macro, __VA_ARGS__))
+#define TF_PP_FE_75(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_74,(_macro, __VA_ARGS__))
+#define TF_PP_FE_76(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_75,(_macro, __VA_ARGS__))
+#define TF_PP_FE_77(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_76,(_macro, __VA_ARGS__))
+#define TF_PP_FE_78(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_77,(_macro, __VA_ARGS__))
+#define TF_PP_FE_79(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_78,(_macro, __VA_ARGS__))
+#define TF_PP_FE_80(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_79,(_macro, __VA_ARGS__))
+#define TF_PP_FE_81(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_80,(_macro, __VA_ARGS__))
+#define TF_PP_FE_82(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_81,(_macro, __VA_ARGS__))
+#define TF_PP_FE_83(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_82,(_macro, __VA_ARGS__))
+#define TF_PP_FE_84(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_83,(_macro, __VA_ARGS__))
+#define TF_PP_FE_85(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_84,(_macro, __VA_ARGS__))
+#define TF_PP_FE_86(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_85,(_macro, __VA_ARGS__))
+#define TF_PP_FE_87(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_86,(_macro, __VA_ARGS__))
+#define TF_PP_FE_88(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_87,(_macro, __VA_ARGS__))
+#define TF_PP_FE_89(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_88,(_macro, __VA_ARGS__))
+#define TF_PP_FE_90(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_89,(_macro, __VA_ARGS__))
+#define TF_PP_FE_91(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_90,(_macro, __VA_ARGS__))
+#define TF_PP_FE_92(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_91,(_macro, __VA_ARGS__))
+#define TF_PP_FE_93(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_92,(_macro, __VA_ARGS__))
+#define TF_PP_FE_94(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_93,(_macro, __VA_ARGS__))
+#define TF_PP_FE_95(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_94,(_macro, __VA_ARGS__))
+#define TF_PP_FE_96(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_95,(_macro, __VA_ARGS__))
+#define TF_PP_FE_97(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_96,(_macro, __VA_ARGS__))
+#define TF_PP_FE_98(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_97,(_macro, __VA_ARGS__))
+#define TF_PP_FE_99(_macro, a, ...) _macro(a) TF_PP_CAT(TF_PP_FE_98,(_macro, __VA_ARGS__))
 
 #else // not MSVC
 
@@ -272,6 +344,42 @@
 #define TF_PP_FE_61(_macro, a, ...) _macro(a) TF_PP_FE_60(_macro, __VA_ARGS__)
 #define TF_PP_FE_62(_macro, a, ...) _macro(a) TF_PP_FE_61(_macro, __VA_ARGS__)
 #define TF_PP_FE_63(_macro, a, ...) _macro(a) TF_PP_FE_62(_macro, __VA_ARGS__)
+#define TF_PP_FE_64(_macro, a, ...) _macro(a) TF_PP_FE_63(_macro, __VA_ARGS__)
+#define TF_PP_FE_65(_macro, a, ...) _macro(a) TF_PP_FE_64(_macro, __VA_ARGS__)
+#define TF_PP_FE_66(_macro, a, ...) _macro(a) TF_PP_FE_65(_macro, __VA_ARGS__)
+#define TF_PP_FE_67(_macro, a, ...) _macro(a) TF_PP_FE_66(_macro, __VA_ARGS__)
+#define TF_PP_FE_68(_macro, a, ...) _macro(a) TF_PP_FE_67(_macro, __VA_ARGS__)
+#define TF_PP_FE_69(_macro, a, ...) _macro(a) TF_PP_FE_68(_macro, __VA_ARGS__)
+#define TF_PP_FE_70(_macro, a, ...) _macro(a) TF_PP_FE_69(_macro, __VA_ARGS__)
+#define TF_PP_FE_71(_macro, a, ...) _macro(a) TF_PP_FE_70(_macro, __VA_ARGS__)
+#define TF_PP_FE_72(_macro, a, ...) _macro(a) TF_PP_FE_71(_macro, __VA_ARGS__)
+#define TF_PP_FE_73(_macro, a, ...) _macro(a) TF_PP_FE_72(_macro, __VA_ARGS__)
+#define TF_PP_FE_74(_macro, a, ...) _macro(a) TF_PP_FE_73(_macro, __VA_ARGS__)
+#define TF_PP_FE_75(_macro, a, ...) _macro(a) TF_PP_FE_74(_macro, __VA_ARGS__)
+#define TF_PP_FE_76(_macro, a, ...) _macro(a) TF_PP_FE_75(_macro, __VA_ARGS__)
+#define TF_PP_FE_77(_macro, a, ...) _macro(a) TF_PP_FE_76(_macro, __VA_ARGS__)
+#define TF_PP_FE_78(_macro, a, ...) _macro(a) TF_PP_FE_77(_macro, __VA_ARGS__)
+#define TF_PP_FE_79(_macro, a, ...) _macro(a) TF_PP_FE_78(_macro, __VA_ARGS__)
+#define TF_PP_FE_80(_macro, a, ...) _macro(a) TF_PP_FE_79(_macro, __VA_ARGS__)
+#define TF_PP_FE_81(_macro, a, ...) _macro(a) TF_PP_FE_80(_macro, __VA_ARGS__)
+#define TF_PP_FE_82(_macro, a, ...) _macro(a) TF_PP_FE_81(_macro, __VA_ARGS__)
+#define TF_PP_FE_83(_macro, a, ...) _macro(a) TF_PP_FE_82(_macro, __VA_ARGS__)
+#define TF_PP_FE_84(_macro, a, ...) _macro(a) TF_PP_FE_83(_macro, __VA_ARGS__)
+#define TF_PP_FE_85(_macro, a, ...) _macro(a) TF_PP_FE_84(_macro, __VA_ARGS__)
+#define TF_PP_FE_86(_macro, a, ...) _macro(a) TF_PP_FE_85(_macro, __VA_ARGS__)
+#define TF_PP_FE_87(_macro, a, ...) _macro(a) TF_PP_FE_86(_macro, __VA_ARGS__)
+#define TF_PP_FE_88(_macro, a, ...) _macro(a) TF_PP_FE_87(_macro, __VA_ARGS__)
+#define TF_PP_FE_89(_macro, a, ...) _macro(a) TF_PP_FE_88(_macro, __VA_ARGS__)
+#define TF_PP_FE_90(_macro, a, ...) _macro(a) TF_PP_FE_89(_macro, __VA_ARGS__)
+#define TF_PP_FE_91(_macro, a, ...) _macro(a) TF_PP_FE_90(_macro, __VA_ARGS__)
+#define TF_PP_FE_92(_macro, a, ...) _macro(a) TF_PP_FE_91(_macro, __VA_ARGS__)
+#define TF_PP_FE_93(_macro, a, ...) _macro(a) TF_PP_FE_92(_macro, __VA_ARGS__)
+#define TF_PP_FE_94(_macro, a, ...) _macro(a) TF_PP_FE_93(_macro, __VA_ARGS__)
+#define TF_PP_FE_95(_macro, a, ...) _macro(a) TF_PP_FE_94(_macro, __VA_ARGS__)
+#define TF_PP_FE_96(_macro, a, ...) _macro(a) TF_PP_FE_95(_macro, __VA_ARGS__)
+#define TF_PP_FE_97(_macro, a, ...) _macro(a) TF_PP_FE_96(_macro, __VA_ARGS__)
+#define TF_PP_FE_98(_macro, a, ...) _macro(a) TF_PP_FE_97(_macro, __VA_ARGS__)
+#define TF_PP_FE_99(_macro, a, ...) _macro(a) TF_PP_FE_98(_macro, __VA_ARGS__)
 
 #endif
 
@@ -279,7 +387,7 @@
 
 /// Expand the macro \p x on every variadic argument.  For example
 /// TF_PP_FOR_EACH(MACRO, foo, bar, baz) expands to MACRO(foo) MACRO(bar)
-/// MACRO(baz).  Supports up to 64 variadic arguments.
+/// MACRO(baz).  Supports up to 100 variadic arguments.
 #define TF_PP_FOR_EACH(x, ...) \
     TF_PP_CAT(TF_PP_VARIADIC_ELEM(TF_PP_VARIADIC_SIZE(__VA_ARGS__),  \
     TF_PP_FE_0, TF_PP_FE_1, TF_PP_FE_2, TF_PP_FE_3, TF_PP_FE_4,      \
@@ -294,13 +402,20 @@
     TF_PP_FE_45, TF_PP_FE_46, TF_PP_FE_47, TF_PP_FE_48, TF_PP_FE_49, \
     TF_PP_FE_50, TF_PP_FE_51, TF_PP_FE_52, TF_PP_FE_53, TF_PP_FE_54, \
     TF_PP_FE_55, TF_PP_FE_56, TF_PP_FE_57, TF_PP_FE_58, TF_PP_FE_59, \
-    TF_PP_FE_60, TF_PP_FE_61, TF_PP_FE_62, TF_PP_FE_63)(x, ##__VA_ARGS__),)
+    TF_PP_FE_60, TF_PP_FE_61, TF_PP_FE_62, TF_PP_FE_63, TF_PP_FE_64, \
+    TF_PP_FE_65, TF_PP_FE_66, TF_PP_FE_67, TF_PP_FE_68, TF_PP_FE_69, \
+    TF_PP_FE_70, TF_PP_FE_71, TF_PP_FE_72, TF_PP_FE_73, TF_PP_FE_74, \
+    TF_PP_FE_75, TF_PP_FE_76, TF_PP_FE_77, TF_PP_FE_78, TF_PP_FE_79, \
+    TF_PP_FE_80, TF_PP_FE_81, TF_PP_FE_82, TF_PP_FE_83, TF_PP_FE_84, \
+    TF_PP_FE_85, TF_PP_FE_86, TF_PP_FE_87, TF_PP_FE_88, TF_PP_FE_89, \
+    TF_PP_FE_90, TF_PP_FE_91, TF_PP_FE_92, TF_PP_FE_93, TF_PP_FE_94, \
+    TF_PP_FE_95, TF_PP_FE_96, TF_PP_FE_97, TF_PP_FE_98, TF_PP_FE_99)(x, ##__VA_ARGS__),)
 
 #else // Not MSVC.
 
 /// Expand the macro \p x on every variadic argument.  For example
 /// TF_PP_FOR_EACH(MACRO, foo, bar, baz) expands to MACRO(foo) MACRO(bar)
-/// MACRO(baz).  Supports up to 64 variadic arguments.
+/// MACRO(baz).  Supports up to 100 variadic arguments.
 #define TF_PP_FOR_EACH(x, ...) \
     TF_PP_VARIADIC_ELEM(TF_PP_VARIADIC_SIZE(__VA_ARGS__),  \
     TF_PP_FE_0, TF_PP_FE_1, TF_PP_FE_2, TF_PP_FE_3, TF_PP_FE_4,      \
@@ -315,7 +430,14 @@
     TF_PP_FE_45, TF_PP_FE_46, TF_PP_FE_47, TF_PP_FE_48, TF_PP_FE_49, \
     TF_PP_FE_50, TF_PP_FE_51, TF_PP_FE_52, TF_PP_FE_53, TF_PP_FE_54, \
     TF_PP_FE_55, TF_PP_FE_56, TF_PP_FE_57, TF_PP_FE_58, TF_PP_FE_59, \
-    TF_PP_FE_60, TF_PP_FE_61, TF_PP_FE_62, TF_PP_FE_63)(x, ##__VA_ARGS__)
+    TF_PP_FE_60, TF_PP_FE_61, TF_PP_FE_62, TF_PP_FE_63, TF_PP_FE_64, \
+    TF_PP_FE_65, TF_PP_FE_66, TF_PP_FE_67, TF_PP_FE_68, TF_PP_FE_69, \
+    TF_PP_FE_70, TF_PP_FE_71, TF_PP_FE_72, TF_PP_FE_73, TF_PP_FE_74, \
+    TF_PP_FE_75, TF_PP_FE_76, TF_PP_FE_77, TF_PP_FE_78, TF_PP_FE_79, \
+    TF_PP_FE_80, TF_PP_FE_81, TF_PP_FE_82, TF_PP_FE_83, TF_PP_FE_84, \
+    TF_PP_FE_85, TF_PP_FE_86, TF_PP_FE_87, TF_PP_FE_88, TF_PP_FE_89, \
+    TF_PP_FE_90, TF_PP_FE_91, TF_PP_FE_92, TF_PP_FE_93, TF_PP_FE_94, \
+    TF_PP_FE_95, TF_PP_FE_96, TF_PP_FE_97, TF_PP_FE_98, TF_PP_FE_99)(x, ##__VA_ARGS__)
 
 #endif
 
