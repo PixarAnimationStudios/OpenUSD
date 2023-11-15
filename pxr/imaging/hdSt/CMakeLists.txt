@@ -163,6 +163,7 @@ pxr_library(hdSt
         materialPrimvarTransferSceneIndexPlugin
         materialParam
         meshShaderKey
+	    meshletSplit
         meshTopology 
         nodeIdentifierResolvingSceneIndex
         nodeIdentifierResolvingSceneIndexPlugin

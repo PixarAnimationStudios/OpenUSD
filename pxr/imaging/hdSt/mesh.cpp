@@ -784,6 +784,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 // if not exists, update actual topology buffer to range.
                 // Allocate new one if necessary.
                 HdBufferSourceSharedPtrVector sources;
+                HdBufferSourceSharedPtrVector sourcesMeshs;
                 HdBufferSourceSharedPtr source;
 
                 if (desc.geomStyle == HdMeshGeomStylePoints) {
@@ -816,34 +817,71 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                 } else {
                     // create triangle indices, primitiveParam and edgeIndices
                     source = _topology->GetTriangleIndexBuilderComputation(GetId());
-                    sources.push_back(source);  
+                    sources.push_back(source);
+                    //if use mesh shaders
+                    bool hasMeshShaders =
+                        resourceRegistry->GetHgi()->GetCapabilities()->
+                            IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+                    //get a better check
+                    if (hasMeshShaders) {
+                        source = _topology->GetMeshletSplitBuilderComputation(GetId(), source);
+                        sourcesMeshs.push_back(source);
+                    }
                 }
-                
-                // initialize buffer array
-                //   * indices
-                //   * primitiveParam
-                //   * fvarIndices (optional)
-                //   * fvarPatchParam (optional)
-                HdBufferSpecVector bufferSpecs;
-                HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
-                // Set up the usage hints to mark topology as varying if
-                // there is a previously set range
-                HdBufferArrayUsageHint usageHint;
-                usageHint.value = 0;
-                usageHint.bits.sizeVarying = 
-                    drawItem->GetTopologyRange() ? 1 : 0;
+                {
+                    // initialize buffer array
+                    //   * indices
+                    //   * primitiveParam
+                    //   * fvarIndices (optional)
+                    //   * fvarPatchParam (optional)
+                    HdBufferSpecVector bufferSpecs;
+                    HdBufferSpec::GetBufferSpecs(sources, &bufferSpecs);
 
-                // allocate new range
-                HdBufferArrayRangeSharedPtr range =
-                    resourceRegistry->AllocateNonUniformBufferArrayRange(
-                        HdTokens->topology, bufferSpecs, usageHint);
+                    // Set up the usage hints to mark topology as varying if
+                    // there is a previously set range
+                    HdBufferArrayUsageHint usageHint;
+                    usageHint.value = 0;
+                    usageHint.bits.sizeVarying =
+                            drawItem->GetTopologyRange() ? 1 : 0;
 
-                // add sources to update queue
-                resourceRegistry->AddSources(range, std::move(sources));
+                    // allocate new range
+                    HdBufferArrayRangeSharedPtr range =
+                            resourceRegistry->AllocateNonUniformBufferArrayRange(
+                                    HdTokens->topology, bufferSpecs, usageHint);
 
-                // save new range to registry
-                rangeInstance.SetValue(range);
+                    // add sources to update queue
+                    resourceRegistry->AddSources(range, std::move(sources));
+
+                    // save new range to registry
+                    rangeInstance.SetValue(range);
+                }
+                bool hasMeshShaders =
+                    resourceRegistry->GetHgi()->GetCapabilities()->
+                        IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+                if (hasMeshShaders){
+                    // initialize buffer array
+                    //   * indices
+                    HdBufferSpecVector bufferSpecs;
+                    HdBufferSpec::GetBufferSpecs(sourcesMeshs, &bufferSpecs);
+
+                    // Set up the usage hints to mark topology as varying if
+                    // there is a previously set range
+                    HdBufferArrayUsageHint usageHint;
+                    usageHint.value = 0;
+                    usageHint.bits.sizeVarying = 0;
+
+                    // allocate new range
+                    HdBufferArrayRangeSharedPtr range =
+                            resourceRegistry->AllocateNonUniformBufferArrayRange(
+                                    HdTokens->meshletRemap, bufferSpecs, usageHint);
+
+                    // add sources to update queue
+                    resourceRegistry->AddSources(range, std::move(sourcesMeshs));
+
+                    // save new range to registry
+                    rangeInstance.SetValue(range);
+                }
             }
 
             // If we are updating an existing topology, notify downstream

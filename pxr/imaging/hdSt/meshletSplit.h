@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,8 +21,8 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_ST_TRIANGULATE_H
-#define PXR_IMAGING_HD_ST_TRIANGULATE_H
+#ifndef PXR_IMAGING_HD_ST_MESHLETSPLIT_H
+#define PXR_IMAGING_HD_ST_MESHLETSPLIT_H
 
 #include "pxr/pxr.h"
 #include "pxr/imaging/hd/version.h"
@@ -54,10 +54,11 @@ class HdSt_MeshTopology;
 // ... |   m0   |   m1   | ...   primitive param buffer (coarse face index)
 // ----+--------+--------+------
 
-class HdSt_TriangleIndexBuilderComputation : public HdComputedBufferSource {
+class HdSt_MeshletSplitBuilderComputation : public HdComputedBufferSource {
 public:
-    HdSt_TriangleIndexBuilderComputation(HdSt_MeshTopology *topology,
-                                         SdfPath const &id);
+    HdSt_MeshletSplitBuilderComputation(HdSt_MeshTopology *topology,
+                                         SdfPath const &id,
+                                         HdBufferSourceSharedPtr indexBufferSource);
     virtual void GetBufferSpecs(HdBufferSpecVector *specs) const override;
     virtual bool Resolve() override;
 
@@ -70,20 +71,22 @@ protected:
 private:
     SdfPath const _id;
     HdSt_MeshTopology *_topology;
-    HdBufferSourceSharedPtr _primitiveParam;
-    HdBufferSourceSharedPtr _trianglesEdgeIndices;
+    HdBufferSourceSharedPtr _indices;
+    //HdBufferSourceSharedPtr _primitiveParam;
+    //HdBufferSourceSharedPtr _trianglesEdgeIndices;
+    HdBufferSourceSharedPtr _indexBufferSource;
 };
 
 //
 
-/// \class HdSt_TriangulateFaceVaryingComputation
+/// \class HdSt_MeshletSplitComputation
 ///
 /// CPU face-varying triangulation.
 ///
-
-class HdSt_TriangulateFaceVaryingComputation : public HdComputedBufferSource {
+/*
+class HdSt_MeshletSplitComputation : public HdComputedBufferSource {
 public:
-    HdSt_TriangulateFaceVaryingComputation(HdSt_MeshTopology *topolgoy,
+    HdSt_MeshletSplitComputation(HdSt_MeshTopology *topolgoy,
                                          HdBufferSourceSharedPtr const &source,
                                          SdfPath const &id);
 
@@ -98,8 +101,8 @@ private:
     HdSt_MeshTopology *_topology;
     HdBufferSourceSharedPtr _source;
 };
-
+*/
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif  // HdSt_TRIANGULATE_H
+#endif  // PXR_IMAGING_HD_ST_MESHLETSPLIT_H

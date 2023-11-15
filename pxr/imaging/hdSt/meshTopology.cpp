@@ -28,6 +28,7 @@
 #include "pxr/imaging/hdSt/subdivision.h"
 #include "pxr/imaging/hdSt/tokens.h"
 #include "pxr/imaging/hdSt/triangulate.h"
+#include "pxr/imaging/hdSt/meshletSplit.h"
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 
 #include "pxr/imaging/hd/bufferArrayRange.h"
@@ -183,6 +184,12 @@ HdBufferSourceSharedPtr
 HdSt_MeshTopology::GetTriangleIndexBuilderComputation(SdfPath const &id)
 {
     return std::make_shared<HdSt_TriangleIndexBuilderComputation>(this, id);
+}
+
+HdBufferSourceSharedPtr
+HdSt_MeshTopology::GetMeshletSplitBuilderComputation(SdfPath const &id, HdBufferSourceSharedPtr indices)
+{
+    return std::make_shared<HdSt_MeshletSplitBuilderComputation>(this, id, indices);
 }
 
 HdSt_QuadInfoBuilderComputationSharedPtr

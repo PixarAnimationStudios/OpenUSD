@@ -109,6 +109,11 @@ public:
     HdBufferSourceSharedPtr GetTriangulateFaceVaryingComputation(
         HdBufferSourceSharedPtr const &source,
         SdfPath const &id);
+    
+    /// Returns the CPU meshlet split computation
+    HdBufferSourceSharedPtr GetMeshletSplitBuilderComputation(
+        SdfPath const &id,
+        HdBufferSourceSharedPtr indices);
 
     /// @}
 
