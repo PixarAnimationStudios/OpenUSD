@@ -359,8 +359,9 @@ HdSt_ResourceBinder::ResolveBindings(
     
     // meshlet remap (per-object)
     // always assigned to device space.
-    if (HdBufferArrayRangeSharedPtr meshletBar_ =
-        drawItem->GetMeshletsRange()) {
+    HdBufferArrayRangeSharedPtr meshletBar_ =
+    drawItem->GetMeshletsRange();
+    if (meshletBar_ && useMeshShaders) {
         
         HdStBufferArrayRangeSharedPtr meshletBar =
         std::static_pointer_cast<HdStBufferArrayRange>(meshletBar_);
@@ -380,7 +381,7 @@ HdSt_ResourceBinder::ResolveBindings(
                                                            /*name=*/name,
                                                            /*type=*/glType,
                                                            /*binding=*/meshletBinding);
-            metaDataOut->indexBufferBinding = bindingDecl;
+            metaDataOut->meshletBinding = bindingDecl;
         }
     }
 

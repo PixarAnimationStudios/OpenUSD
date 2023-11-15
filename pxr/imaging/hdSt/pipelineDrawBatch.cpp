@@ -242,6 +242,7 @@ struct _DrawingCoord
     // drawingCoord2 (ivec2 for drawing)
     uint32_t topVisDC;
     uint32_t varyingDC;
+    uint32_t meshletDC;
 
     // drawingCoordI (int32[] for drawing and culling)
     // uint32_t instanceDC[numInstanceLevels];
@@ -1082,6 +1083,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
         // drawingCoord2
         *cmdIt++ = topVisDC;
         *cmdIt++ = varyingDC;
+        *cmdIt++ = meshletDC;
 
         // drawingCoordI
         for (size_t i = 0; i < dc.instancePrimvarBars.size(); ++i) {

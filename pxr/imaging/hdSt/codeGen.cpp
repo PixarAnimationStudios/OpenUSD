@@ -4207,33 +4207,6 @@ _GetDrawingCoord(std::stringstream &ss,
        << "}\n";
 }
 
-static void
-_GetDrawingCoordMS(std::stringstream &ss,
-                 std::vector<std::string> const &drawingCoordParams,
-                 int const instanceIndexWidth,
-                 char const *inputPrefix,
-                 char const *inArraySize)
-{
-    ss << "hd_drawingCoord GetDrawingCoord() { \n"
-       << "  hd_drawingCoord dc; \n";
-        for (std::string const & param : drawingCoordParams) {
-            ss << "  dc." << param
-            << " = vertexOut." << inputPrefix << param << inArraySize << ";\n";
-        }
-        for(int i = 0; i < instanceIndexWidth; ++i) {
-            ss << "  dc.instanceIndex[" << std::to_string(i) << "]"
-            << " = vertexOut." << inputPrefix
-            << "instanceIndexI" << std::to_string(i) << inArraySize << ";\n";
-        }
-        for(int i = 0; i < instanceIndexWidth-1; ++i) {
-            ss << "  dc.instanceCoords[" << std::to_string(i) << "]"
-            << " = vertexOut." << inputPrefix
-            << "instanceCoordsI" << std::to_string(i) << inArraySize << ";\n";
-        }
-    ss << "  return dc; \n"
-       << "}\n";
-}
-
 // Helper function to generate drawingCoord interstage processing.
 static void
 _ProcessDrawingCoord(std::stringstream &ss,
@@ -4393,6 +4366,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
 
      */
 
+    //TODO maybe only do this if HGI ( meshlet coord )
     static const std::vector<std::string> drawingCoordParams {
         "modelCoord",
         "constantCoord",
@@ -4402,7 +4376,8 @@ HdSt_CodeGen::_GenerateDrawingCoord(
         "shaderCoord",
         "vertexCoord",
         "topologyVisibilityCoord",
-        "varyingCoord"
+        "varyingCoord",
+        "meshletCoord"
     };
 
     // common
@@ -5006,6 +4981,7 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << "  dc.vertexCoord             = GetDrawingCoordField(7);\n"
                  << "  dc.topologyVisibilityCoord = GetDrawingCoordField(8);\n"
                  << "  dc.varyingCoord            = GetDrawingCoordField(9);\n"
+                 << "  dc.meshletCoord            = GetDrawingCoordField(10);\n"
                  << "  hd_instanceIndex r = GetInstanceIndex();\n";
     if (_hasMS) {
         _genFS   << "// Compute shaders read the drawCommands buffer directly.\n"
@@ -5982,6 +5958,14 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                             indexBufferBinding.name,
                             indexBufferBinding.dataType,
             "patch_id * VERTEX_CONTROL_POINTS_PER_PATCH + localIndex");
+    }
+    
+    if (_hasMS && _metaData.meshletBinding.binding.IsValid()) {
+        _EmitDeclaration(&_resMS,
+                         _metaData.meshletBinding.name,
+                         _metaData.meshletBinding.dataType,
+                         _metaData.meshletBinding.binding);
+        _EmitDeclaration(&_resMS, _metaData.meshletBinding);
     }
 
     TF_FOR_ALL (it, _metaData.varyingData) {
