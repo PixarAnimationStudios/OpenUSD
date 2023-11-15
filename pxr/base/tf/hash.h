@@ -33,6 +33,7 @@
 
 #include <cstring>
 #include <string>
+#include <optional>
 #include <map>
 #include <memory>
 #include <set>
@@ -107,6 +108,20 @@ inline void
 TfHashAppend(HashState &h, std::vector<bool> const &vec)
 {
     h.Append(std::hash<std::vector<bool>>{}(vec));
+}
+
+// Support std::optional.
+// Transparently hashes if valued
+// (ie. TfHash{}(possibleValue) == TfHash{}(possibleValue.value()))
+template <class HashState, class T>
+inline void
+TfHashAppend(HashState &h, std::optional<T> const &possibleValue)
+{
+    if (possibleValue.has_value()) {
+        h.Append(possibleValue.value());
+    } else {
+        h.Append(std::type_index(typeid(T)));
+    }
 }
 
 // Support std::set.
