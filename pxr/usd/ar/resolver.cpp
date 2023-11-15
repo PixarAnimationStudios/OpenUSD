@@ -165,7 +165,7 @@ _ValidateResourceIdentifierScheme(const std::string& caseFoldedScheme) {
         }
         else {
             return std::make_pair(
--               false, TfStringPrintf("Character '%c' not allowed in scheme. "
+                false, TfStringPrintf("Character '%c' not allowed in scheme. "
                                       "Must be ASCII 'a-z', '-', '+', or '.'",
                                       *it));
         }
