@@ -826,6 +826,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                     if (hasMeshShaders) {
                         source = _topology->GetMeshletSplitBuilderComputation(GetId(), source);
                         sourcesMeshs.push_back(source);
+                        
+                        HdBufferSpecVector bufferSpecs;
+                        HdBufferSpec::GetBufferSpecs(sourcesMeshs, &bufferSpecs);
+                        HdBufferArrayRangeSharedPtr meshletRange =
+                        resourceRegistry->AllocateNonUniformBufferArrayRange(
+                                HdTokens->meshlets, bufferSpecs, HdBufferArrayUsageHint());
+                        _sharedData.barContainer.Set(
+                            drawItem->GetDrawingCoord()->GetMeshletsIndex(),
+                                meshletRange);
                     }
                 }
 
@@ -855,32 +864,15 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
 
                     // save new range to registry
                     rangeInstance.SetValue(range);
-                }
-                bool hasMeshShaders =
-                    resourceRegistry->GetHgi()->GetCapabilities()->
-                        IsSet(HgiDeviceCapabilitiesBitsMeshShading);
-                if (hasMeshShaders){
-                    // initialize buffer array
-                    //   * indices
-                    HdBufferSpecVector bufferSpecs;
-                    HdBufferSpec::GetBufferSpecs(sourcesMeshs, &bufferSpecs);
-
-                    // Set up the usage hints to mark topology as varying if
-                    // there is a previously set range
-                    HdBufferArrayUsageHint usageHint;
-                    usageHint.value = 0;
-                    usageHint.bits.sizeVarying = 0;
-
-                    // allocate new range
-                    HdBufferArrayRangeSharedPtr range =
-                            resourceRegistry->AllocateNonUniformBufferArrayRange(
-                                    HdTokens->meshletRemap, bufferSpecs, usageHint);
-
-                    // add sources to update queue
-                    resourceRegistry->AddSources(range, std::move(sourcesMeshs));
-
-                    // save new range to registry
-                    rangeInstance.SetValue(range);
+                    
+                    bool hasMeshShaders =
+                        resourceRegistry->GetHgi()->GetCapabilities()->
+                            IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+                    //get a better check
+                    if (hasMeshShaders && !sourcesMeshs.empty()) {
+                        resourceRegistry->AddSources(drawItem->GetMeshletsRange(),
+                                                     std::move(sourcesMeshs));
+                    }
                 }
             }
 

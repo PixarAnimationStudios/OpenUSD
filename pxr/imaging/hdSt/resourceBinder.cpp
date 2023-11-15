@@ -356,6 +356,33 @@ HdSt_ResourceBinder::ResolveBindings(
                                   /*type=*/glType);
         }
     }
+    
+    // meshlet remap (per-object)
+    // always assigned to device space.
+    if (HdBufferArrayRangeSharedPtr meshletBar_ =
+        drawItem->GetMeshletsRange()) {
+        
+        HdStBufferArrayRangeSharedPtr meshletBar =
+        std::static_pointer_cast<HdStBufferArrayRange>(meshletBar_);
+        
+        TF_FOR_ALL (it, meshletBar->GetResources()) {
+            TfToken const& name = it->first;
+            TfToken glName =  HdStGLConversions::GetGLSLIdentifier(name);
+            HdStBinding meshletBinding =
+            locator.GetBinding(HdStBinding::SSBO, name);
+            _bindingMap[name] = meshletBinding;
+            
+            HdTupleType valueType = it->second->GetTupleType();
+            // Special case: VBOs have intrinsic support for packed types,
+            // so expand them out to their target type for the shader binding.
+            TfToken glType = HdStGLConversions::GetGLSLTypename(valueType.type);
+            MetaData::BindingDeclaration const bindingDecl(
+                                                           /*name=*/name,
+                                                           /*type=*/glType,
+                                                           /*binding=*/meshletBinding);
+            metaDataOut->indexBufferBinding = bindingDecl;
+        }
+    }
 
     // varying primvar
     if (HdBufferArrayRangeSharedPtr varyingBar_ =

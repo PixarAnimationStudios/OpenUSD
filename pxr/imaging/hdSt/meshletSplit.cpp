@@ -46,12 +46,12 @@ void
 HdSt_MeshletSplitBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    specs->emplace_back(HdTokens->indices, HdTupleType{HdTypeInt32Vec3, 1});
+    //specs->emplace_back(HdTokens->indices, HdTupleType{HdTypeInt32Vec3, 1});
     // triangles don't support ptex indexing (at least for now).
-    specs->emplace_back(HdTokens->primitiveParam,
-                        HdTupleType{HdTypeInt32, 1});
+    //specs->emplace_back(HdTokens->primitiveParam,
+    //                    HdTupleType{HdTypeInt32, 1});
     // 1 edge index per triangle
-    specs->emplace_back(HdTokens->edgeIndices,
+    specs->emplace_back(HdTokens->meshlets,
                         HdTupleType{HdTypeInt32, 1});
 }
 
@@ -64,7 +64,19 @@ HdSt_MeshletSplitBuilderComputation::Resolve()
     if (!_indexBufferSource->IsResolved()) return false;
     HD_TRACE_FUNCTION();
 
-    VtVec3iArray trianglesFaceVertexIndices;
+    VtIntArray meshletData;
+    meshletData.resize(20);
+    for(int i = 0; i < 20; i++) {
+        meshletData[i] = 1;
+    }
+    const int* data = reinterpret_cast<const int*>(_indexBufferSource->GetData());
+    size_t numElements = _indexBufferSource->GetNumElements();
+    for (int i = 0; i < numElements; i++) {
+        int currIndex = data[i];
+        int a = currIndex;
+    }
+    //20 size for time being
+    
     //VtIntArray primitiveParam;
     //VtIntArray trianglesEdgeIndices;
 /*
@@ -75,8 +87,8 @@ HdSt_MeshletSplitBuilderComputation::Resolve()
             &trianglesEdgeIndices);
 */
     _SetResult(std::make_shared<HdVtBufferSource>(
-                       HdTokens->indices,
-                       VtValue(trianglesFaceVertexIndices)));
+                       HdTokens->meshlets,
+                       VtValue(meshletData)));
 /*
     _primitiveParam.reset(new HdVtBufferSource(
                               HdTokens->primitiveParam,

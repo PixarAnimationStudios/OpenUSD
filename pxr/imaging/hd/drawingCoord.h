@@ -82,7 +82,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 ///
 class HdDrawingCoord {
 public:
-    static const int CustomSlotsBegin = 8;
+    static const int CustomSlotsBegin = 9;
     static const int DefaultNumSlots = 3; /* Constant, Vertex, Topology */
     static const int Unassigned = -1;
 
@@ -96,7 +96,8 @@ public:
         _instanceIndex(4),
         _faceVaryingPrimvar(5),
         _topologyVisibility(6),
-        _varyingPrimvar(7) {
+        _varyingPrimvar(7),
+        _meshlets(8){
     }
 
     int GetMeshletsIndex() const           { return _meshlets; }
@@ -128,7 +129,6 @@ public:
 private:
     int16_t _topology;
     int16_t _instancePrimvar;
-    int8_t _meshlets;
     int8_t _constantPrimvar;
     int8_t _vertexPrimvar;
     int8_t _elementPrimvar;
@@ -136,6 +136,7 @@ private:
     int8_t _faceVaryingPrimvar;
     int8_t _topologyVisibility;
     int8_t _varyingPrimvar;
+    int8_t _meshlets;
 };
 
 

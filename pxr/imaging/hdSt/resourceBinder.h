@@ -334,6 +334,7 @@ public:
         BindingDeclaration edgeIndexBinding;
         BindingDeclaration coarseFaceIndexBinding;
         BindingDeclaration indexBufferBinding;
+        BindingDeclaration meshletBinding;
         std::vector<BindingDeclaration> fvarPatchParamBindings;
         std::vector<BindingDeclaration> fvarIndicesBindings;
 
