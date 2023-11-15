@@ -203,6 +203,7 @@ extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
     (instExtComputationDataRange)               \
     (instMeshTopology)                          \
     (instMeshTopologyRange)                     \
+    (instMeshletRange)                          \
     (instPrimvarRange)                          \
     (instVertexAdjacency)                       \
     (meshTopology)                              \

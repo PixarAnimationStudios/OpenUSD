@@ -216,7 +216,7 @@ HdSt_MeshletSplitBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
     specs->emplace_back(HdTokens->meshlets,
-                        HdTupleType{HdTypeInt32, 1});
+                        HdTupleType{HdTypeUInt32, 1});
 }
 
 bool

@@ -383,6 +383,12 @@ public:
     HdInstance<HdBufferArrayRangeSharedPtr>
     RegisterMeshIndexRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
+    
+    /// Meshlet buffer array range instancing
+    HDST_API
+    HdInstance<HdBufferArrayRangeSharedPtr>
+    RegisterMeshletIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name);
 
     HDST_API
     HdInstance<HdBufferArrayRangeSharedPtr>
@@ -646,8 +652,9 @@ private:
                                            _TopologyIndexRangeInstanceRegistry,
                                            TfToken::HashFunctor >
         _TopologyIndexRangeInstanceRegMap;
-
+    
     _TopologyIndexRangeInstanceRegMap _meshTopologyIndexRangeRegistry;
+    _TopologyIndexRangeInstanceRegMap _meshletRangeRegistry;
     _TopologyIndexRangeInstanceRegMap _basisCurvesTopologyIndexRangeRegistry;
 
     // Register shared primvar buffers.

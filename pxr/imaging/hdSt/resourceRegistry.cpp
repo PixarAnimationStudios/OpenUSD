@@ -618,6 +618,14 @@ HdStResourceRegistry::RegisterMeshIndexRange(
 }
 
 HdInstance<HdBufferArrayRangeSharedPtr>
+HdStResourceRegistry::RegisterMeshletIndexRange(
+        HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
+{
+    return _Register(id, _meshletRangeRegistry[name],
+                     HdPerfTokens->instMeshletRange);
+}
+
+HdInstance<HdBufferArrayRangeSharedPtr>
 HdStResourceRegistry::RegisterBasisCurvesIndexRange(
         HdInstance<HdBufferArrayRangeSharedPtr>::ID id, TfToken const &name)
 {
@@ -1070,6 +1078,14 @@ HdStResourceRegistry::_GarbageCollect()
             count += it.second.GarbageCollect();
         }
         HD_PERF_COUNTER_SET(HdPerfTokens->instMeshTopologyRange, count);
+    }
+    
+    {
+        size_t count = 0;
+        for (auto & it: _meshletRangeRegistry) {
+            count += it.second.GarbageCollect();
+        }
+        HD_PERF_COUNTER_SET(HdPerfTokens->instMeshletRange, count);
     }
 
     {
