@@ -359,8 +359,7 @@ HdSt_ResourceBinder::ResolveBindings(
     
     // meshlet remap (per-object)
     // always assigned to device space.
-    HdBufferArrayRangeSharedPtr meshletBar_ =
-    drawItem->GetMeshletsRange();
+    HdBufferArrayRangeSharedPtr meshletBar_ = drawItem->GetMeshletsRange();
     if (meshletBar_ && useMeshShaders) {
         
         HdStBufferArrayRangeSharedPtr meshletBar =

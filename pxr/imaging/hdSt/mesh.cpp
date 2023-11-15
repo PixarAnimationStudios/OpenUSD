@@ -824,6 +824,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                             IsSet(HgiDeviceCapabilitiesBitsMeshShading);
                     //get a better check
                     if (hasMeshShaders) {
+                        //TODO rename source
                         source = _topology->GetMeshletSplitBuilderComputation(GetId(), source);
                         sourcesMeshs.push_back(source);
                         

@@ -70,6 +70,9 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, const std::vector<std::
     for(int i = 0; i < meshlets.size(); i++) {
         int localOffset = 0;
         const std::vector<Meshlet> &meshletsInMesh = meshlets[i];
+        flattenInto.push_back(meshletsInMesh.size());
+        currentOffset++;
+        localOffset++;
         for(int l = 0; l < meshletsInMesh.size(); l++) {
             flattenInto.push_back(meshletsInMesh.size());
             currentOffset++;
@@ -212,11 +215,6 @@ void
 HdSt_MeshletSplitBuilderComputation::GetBufferSpecs(
     HdBufferSpecVector *specs) const
 {
-    //specs->emplace_back(HdTokens->indices, HdTupleType{HdTypeInt32Vec3, 1});
-    // triangles don't support ptex indexing (at least for now).
-    //specs->emplace_back(HdTokens->primitiveParam,
-    //                    HdTupleType{HdTypeInt32, 1});
-    // 1 edge index per triangle
     specs->emplace_back(HdTokens->meshlets,
                         HdTupleType{HdTypeInt32, 1});
 }
