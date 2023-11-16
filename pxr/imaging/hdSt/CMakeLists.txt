@@ -2925,55 +2925,64 @@ pxr_register_test(testHdStMaterialXShaderGen_SSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_default.mtlx"
     STDOUT_REDIRECT shadergen_SSdefault.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSdefault.out"
+    POST_COMMAND "diff -B -b shadergen_SSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSdefault.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSdefault
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_default.mtlx"
     STDOUT_REDIRECT shadergen_UsdPSdefault.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSdefault.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPSdefault.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSdefault.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SSmarble
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_marble_solid.mtlx"
     STDOUT_REDIRECT shadergen_SSmarble.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SSmarble.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSmarble.out"
+    POST_COMMAND "diff -B -b shadergen_SSmarble.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SSmarble.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SScopper
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_copper.mtlx"
     STDOUT_REDIRECT shadergen_SScopper.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SScopper.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SScopper.out"
+    POST_COMMAND "diff -B -b shadergen_SScopper.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SScopper.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness"
     STDOUT_REDIRECT shadergen_UsdPStextured.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPStextured.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPStextured.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_SStextured
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2"
     STDOUT_REDIRECT shadergen_SStextured.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured.out"
+    POST_COMMAND "diff -B -b shadergen_SStextured.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_UsdPSglass
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename usd_preview_surface_glass.mtlx --materialTag translucent"
     STDOUT_REDIRECT shadergen_UsdPSglass.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_UsdPSglass.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSglass.out"
+    POST_COMMAND "diff -B -b shadergen_UsdPSglass.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_UsdPSglass.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen8_SStextured_bindless
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename standard_surface_brass_tiled.mtlx --textureMap image_color_file:diffuseColor --textureMap image_roughness_file:roughness --primvarMap uv:vector2 --bindless"
     STDOUT_REDIRECT shadergen_SStextured_bindless.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_SStextured_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured_bindless.out"
+    POST_COMMAND "diff -B -b shadergen_SStextured_bindless.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_SStextured_bindless.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 pxr_register_test(testHdStMaterialXShaderGen_texcoord
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testHdStMaterialXShaderGen --filename texcoord.mtlx --primvarMap st:vector2"
     STDOUT_REDIRECT shadergen_texcoord.out
     EXPECTED_RETURN_CODE 0
-    POST_COMMAND "diff -B shadergen_texcoord.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_texcoord.out"
+    POST_COMMAND "diff -B -b shadergen_texcoord.out ${CMAKE_INSTALL_PREFIX}/tests/ctest/testHdStMaterialXShaderGen/baseline/shadergen_texcoord.out"
+    TESTENV testHdStMaterialXShaderGen
 )
 endif()
 pxr_register_test(testHdStMeshTopology

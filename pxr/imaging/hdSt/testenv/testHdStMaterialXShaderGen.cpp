@@ -48,7 +48,14 @@ void TestShaderGen(
     // Read the mtlx file
     mx::DocumentPtr mxDoc = mx::createDocument();
     fprintf(stderr, "reading the mtlx file: \n - %s\n", mtlxFilename.asString().c_str());
-    mx::readFromXmlFile(mxDoc, mtlxFilename, searchPath);
+
+    try {
+        mx::readFromXmlFile(mxDoc, mtlxFilename, searchPath);
+    } catch (const mx::Exception& e) {
+        TF_WARN("mx::readFromXmlFile threw an exception: %s", e.what());
+        return;
+    }
+
     mxDoc->importLibrary(stdLibraries);
 
     // Validate the document.
