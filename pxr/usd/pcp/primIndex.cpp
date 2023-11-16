@@ -664,22 +664,23 @@ _ScanArcs(PcpNodeRef const& node)
     size_t arcs = 0;
     SdfPath const& path = node.GetPath();
     for (SdfLayerRefPtr const& layer: node.GetLayerStack()->GetLayers()) {
-        if (!layer->HasSpec(path)) {
+        SdfLayer const *layerPtr = get_pointer(layer);
+        if (!layerPtr->HasSpec(path)) {
             continue;
         }
-        if (layer->HasField(path, SdfFieldKeys->InheritPaths)) {
+        if (layerPtr->HasField(path, SdfFieldKeys->InheritPaths)) {
             arcs |= _ArcFlagInherits;
         }
-        if (layer->HasField(path, SdfFieldKeys->VariantSetNames)) {
+        if (layerPtr->HasField(path, SdfFieldKeys->VariantSetNames)) {
             arcs |= _ArcFlagVariants;
         }
-        if (layer->HasField(path, SdfFieldKeys->References)) {
+        if (layerPtr->HasField(path, SdfFieldKeys->References)) {
             arcs |= _ArcFlagReferences;
         }
-        if (layer->HasField(path, SdfFieldKeys->Payload)) {
+        if (layerPtr->HasField(path, SdfFieldKeys->Payload)) {
             arcs |= _ArcFlagPayloads;
         }
-        if (layer->HasField(path, SdfFieldKeys->Specializes)) {
+        if (layerPtr->HasField(path, SdfFieldKeys->Specializes)) {
             arcs |= _ArcFlagSpecializes;
         }
     }
