@@ -611,12 +611,12 @@ void wrapUsdPrim()
 
         .def("FindAllAttributeConnectionPaths",
              &_FindAllAttributeConnectionPathsDefault,
-             (arg("traversalPredicate"),
-              arg("predicate")=object(), arg("recurseOnSources")=false))
+             (arg("predicate")=object(), arg("recurseOnSources")=false))
         
         .def("FindAllAttributeConnectionPaths",
              &_FindAllAttributeConnectionPaths,
-             (arg("predicate")=object(), arg("recurseOnSources")=false))
+             (arg("traversalPredicate"),
+              arg("predicate")=object(), arg("recurseOnSources")=false))
 
         .def("CreateRelationship",
              (UsdRelationship (UsdPrim::*)(const TfToken &, bool) const)
