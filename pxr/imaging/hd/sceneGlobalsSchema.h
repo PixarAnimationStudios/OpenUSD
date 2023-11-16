@@ -39,9 +39,10 @@
 
 #include "pxr/imaging/hd/schema.h" 
 
-
+// --(BEGIN CUSTOM CODE: Includes)--
 #include "pxr/usd/sdf/path.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 

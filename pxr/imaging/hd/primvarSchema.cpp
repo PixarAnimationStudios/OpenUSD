@@ -37,9 +37,10 @@
 
 #include "pxr/base/trace/trace.h"
 
+// --(BEGIN CUSTOM CODE: Includes)--
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
-
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 

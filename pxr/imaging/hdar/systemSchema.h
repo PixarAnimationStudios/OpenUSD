@@ -39,7 +39,9 @@
 
 #include "pxr/imaging/hd/schema.h" 
 
+// --(BEGIN CUSTOM CODE: Includes)--
 #include "pxr/base/tf/declarePtrs.h"
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
