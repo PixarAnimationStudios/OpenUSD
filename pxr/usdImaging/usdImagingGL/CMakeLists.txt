@@ -861,29 +861,27 @@ pxr_register_test(testUsdImagingGLPoints_clipped
     TESTENV testUsdImagingGLPoints
 )
 
-# XXX Test cases below are disabled due to a bug in Storm, which will be 
-# addressed soon.
-# pxr_register_test(testUsdImagingGLPoints_zoom
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -320 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom.png"
-#     IMAGE_DIFF_COMPARE
-#         testUsdImagingGLPoints_zoom.png
-#     FAIL 1
-#     FAIL_PERCENT 1
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-#     TESTENV testUsdImagingGLPoints
-# )
+pxr_register_test(testUsdImagingGLPoints_zoom
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -320 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLPoints_zoom.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPoints
+)
 
-# pxr_register_test(testUsdImagingGLPoints_zoom_pan
-#     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -620 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom_pan.png"
-#     IMAGE_DIFF_COMPARE
-#     testUsdImagingGLPoints_zoom_pan.png
-#     FAIL 1
-#     FAIL_PERCENT 1
-#     PERCEPTUAL
-#     EXPECTED_RETURN_CODE 0
-#     TESTENV testUsdImagingGLPoints
-# )
+pxr_register_test(testUsdImagingGLPoints_zoom_pan
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -stage points.usda -dataWindow 0 0 639 479 -displayWindow -620 -240 1280 960 -frameAll -write testUsdImagingGLPoints_zoom_pan.png"
+    IMAGE_DIFF_COMPARE
+    testUsdImagingGLPoints_zoom_pan.png
+    FAIL 1
+    FAIL_PERCENT 1
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLPoints
+)
 
 pxr_register_test(testUsdImagingGLDomeLight_ZupFront
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -frameAll -offscreen -lighting -sceneLights -shading smooth -complexity 1.3 -camera /Scene/FrontCamera -stage domeLightZup.usda -write testUsdImagingGLDomeLight_ZupFront.png"
