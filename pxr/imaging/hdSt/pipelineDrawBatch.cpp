@@ -1052,8 +1052,7 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                             
                         } else {
                             *cmdIt++ = 0;
-                            uint32_t meshletCount = *(cpuMeshletBuffer + meshletDC);
-                            *cmdIt++ = meshletCount;
+                            *cmdIt++ = 0;
                         }
                         *cmdIt++ = 0;
                         *cmdIt++ = 0;
