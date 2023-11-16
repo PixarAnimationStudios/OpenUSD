@@ -2614,20 +2614,24 @@ UsdStage::SetPopulationMask(UsdStagePopulationMask const &mask)
 
 void
 UsdStage::ExpandPopulationMask(
+    Usd_PrimFlagsPredicate const &traversal,
     std::function<bool (UsdRelationship const &)> const &relPred,
     std::function<bool (UsdAttribute const &)> const &attrPred)
 {
-    if (GetPopulationMask().IncludesSubtree(SdfPath::AbsoluteRootPath()))
+    if (GetPopulationMask().IncludesSubtree(SdfPath::AbsoluteRootPath())) {
         return;
-
-    // Walk everything, calling UsdPrim::FindAllRelationshipTargetPaths() and
+    }
+    
+    // Walk everything, calling
+    // UsdPrim::FindAllRelationshipTarget/AttributeConnectionPaths() and
     // include them in the mask.  If the mask changes, call SetPopulationMask()
-    // and redo.  Continue until the mask ceases expansion.  
+    // and redo.  Continue until the mask ceases expansion.
     while (true) {
         auto root = GetPseudoRoot();
-        SdfPathVector
-            tgtPaths = root.FindAllRelationshipTargetPaths(relPred, false),
-            connPaths = root.FindAllAttributeConnectionPaths(attrPred, false);
+        SdfPathVector tgtPaths =
+            root.FindAllRelationshipTargetPaths(traversal, relPred, false);
+        SdfPathVector connPaths =
+            root.FindAllAttributeConnectionPaths(traversal, attrPred, false);
         
         tgtPaths.erase(remove_if(tgtPaths.begin(), tgtPaths.end(),
                                  [this](SdfPath const &path) {
@@ -2640,8 +2644,9 @@ UsdStage::ExpandPopulationMask(
                                  }),
                        connPaths.end());
         
-        if (tgtPaths.empty() && connPaths.empty())
+        if (tgtPaths.empty() && connPaths.empty()) {
             break;
+        }
 
         auto popMask = GetPopulationMask();
         for (auto const &path: tgtPaths) {
@@ -2652,6 +2657,14 @@ UsdStage::ExpandPopulationMask(
         }
         SetPopulationMask(popMask);
     }
+}
+
+void
+UsdStage::ExpandPopulationMask(
+    std::function<bool (UsdRelationship const &)> const &relPred,
+    std::function<bool (UsdAttribute const &)> const &attrPred)
+{
+    return ExpandPopulationMask(UsdPrimDefaultPredicate, relPred, attrPred);
 }
 
 // ------------------------------------------------------------------------- //
