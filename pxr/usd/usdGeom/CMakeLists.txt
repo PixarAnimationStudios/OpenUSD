@@ -122,6 +122,7 @@ pxr_library(usdGeom
         images/USDCurveBasisMatrix.png
         images/USDCurveHydra.png
         images/USDCurvePrimvars.png
+        examples_usdGeom.cpp
 )
 
 pxr_test_scripts(
