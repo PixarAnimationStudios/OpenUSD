@@ -37,7 +37,11 @@
 PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DEFINE_PUBLIC_TOKENS(HdInstanceSchemaTokens,
-    HDINSTANCE_SCHEMA_TOKENS);
+    HD_INSTANCE_SCHEMA_TOKENS);
+
+// --(BEGIN CUSTOM CODE: Schema Methods)--
+// --(END CUSTOM CODE: Schema Methods)--
+
 
 
 
@@ -70,26 +74,26 @@ HdInstanceSchema::BuildRetained(
         const HdIntDataSourceHandle &instanceIndex
 )
 {
-    TfToken names[3];
-    HdDataSourceBaseHandle values[3];
+    TfToken _names[3];
+    HdDataSourceBaseHandle _values[3];
 
-    size_t count = 0;
+    size_t _count = 0;
     if (instancer) {
-        names[count] = HdInstanceSchemaTokens->instancer;
-        values[count++] = instancer;
+        _names[_count] = HdInstanceSchemaTokens->instancer;
+        _values[_count++] = instancer;
     }
 
     if (prototypeIndex) {
-        names[count] = HdInstanceSchemaTokens->prototypeIndex;
-        values[count++] = prototypeIndex;
+        _names[_count] = HdInstanceSchemaTokens->prototypeIndex;
+        _values[_count++] = prototypeIndex;
     }
 
     if (instanceIndex) {
-        names[count] = HdInstanceSchemaTokens->instanceIndex;
-        values[count++] = instanceIndex;
+        _names[_count] = HdInstanceSchemaTokens->instanceIndex;
+        _values[_count++] = instanceIndex;
     }
 
-    return HdRetainedContainerDataSource::New(count, names, values);
+    return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 /*static*/
@@ -109,7 +113,8 @@ const TfToken &
 HdInstanceSchema::GetSchemaToken()
 {
     return HdInstanceSchemaTokens->instance;
-} 
+}
+
 /*static*/
 const HdDataSourceLocator &
 HdInstanceSchema::GetDefaultLocator()
