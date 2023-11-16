@@ -50,7 +50,7 @@ from .cdUtils import *
 API_RE_FIND = re.compile(r"""\b[A-Z]+_API(?:\s+|$)""")
 API_RE_REPLACE = ""
 
-WORDBREAK_RE = re.compile(r"\b")
+NONWORD_RE = re.compile(r"(\W+)")
 
 MULTIPLE_WHITESPACE_RE = re.compile(r'\s+')
 MULTIPLE_WHITESPACE_REPLACE = ' '
@@ -549,7 +549,7 @@ class Writer:
         ret = CHAR_STAR_RE.sub(CHAR_STAR_REPLACE, ret)
         ret = VECTOR_SUFFIX_RE.sub(VECTOR_SUFFIX_REPLACE, ret)
 
-        tokens = [self.__convertTypeNameToken(x) for x in WORDBREAK_RE.split(ret) if x]
+        tokens = [self.__convertTypeNameToken(x) for x in NONWORD_RE.split(ret) if x]
         ret = ''.join(tokens).strip()
 
         # post token conversion cleanup
