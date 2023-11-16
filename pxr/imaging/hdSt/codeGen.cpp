@@ -1586,6 +1586,23 @@ _GetOSDCommonShaderSource()
     // forward declarations needed by the OpenSubdiv shaders.
     std::stringstream ss;
 
+#if OPENSUBDIV_VERSION_NUMBER >= 30600
+#if defined(__APPLE__)
+    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchDrawingShaderSource();
+#else
+    ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
+          "FORWARD_DECL(float GetTessLevel());\n"
+          "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
+          "mat4 OsdProjectionMatrix() { return mat4(GetProjectionMatrix()); }\n"
+          "float OsdTessLevel() { return GetTessLevel(); }\n"
+          "\n";
+
+    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchDrawingShaderSource();
+#endif
+
+#else // OPENSUBDIV_VERSION_NUMBER
+    // Additional declarations are needed for older OpenSubdiv versions.
+
 #if defined(__APPLE__)
     ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
        << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
@@ -1616,6 +1633,7 @@ _GetOSDCommonShaderSource()
 
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
 #endif
+#endif // OPENSUBDIV_VERSION_NUMBER
 
     return ss.str();
 }
