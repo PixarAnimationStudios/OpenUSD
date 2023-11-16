@@ -3097,6 +3097,14 @@ HdSt_CodeGen::_CompileWithGeneratedHgiResources(
                              binding,
                              true);
         }
+        
+        if (_hasMS && _metaData.meshletBinding.binding.IsValid()) {
+            _EmitDeclaration(&_resMS,
+                             _metaData.meshletBinding.name,
+                             _metaData.meshletBinding.dataType,
+                             _metaData.meshletBinding.binding);
+            //_EmitDeclaration(&_resMS, _metaData.meshletBinding);
+        }
 
         AddMeshShaderPayload(&msDesc);
         resourceGen._GenerateHgiResources(&msDesc,
@@ -5958,14 +5966,6 @@ HdSt_CodeGen::_GenerateVertexAndFaceVaryingPrimvar()
                             indexBufferBinding.name,
                             indexBufferBinding.dataType,
             "patch_id * VERTEX_CONTROL_POINTS_PER_PATCH + localIndex");
-    }
-    
-    if (_hasMS && _metaData.meshletBinding.binding.IsValid()) {
-        _EmitDeclaration(&_resMS,
-                         _metaData.meshletBinding.name,
-                         _metaData.meshletBinding.dataType,
-                         _metaData.meshletBinding.binding);
-        _EmitDeclaration(&_resMS, _metaData.meshletBinding);
     }
 
     TF_FOR_ALL (it, _metaData.varyingData) {

@@ -683,9 +683,12 @@ uint32_t baseIndex;
 
 hd_drawingCoord dcMemb;
 void main(void) {
-    const device uint *meshletStart = meshletRemap + payload.meshletCoord;
-    const uint thisMeshCoordOff = *(meshletStart + hd_LocalInvocationID.y);
-    const device uint *thisMeshCoord = (meshletStart + thisMeshCoordOff);
+    dcMemb = GetDrawingCoordFull();
+    constexpr uint one = 1;
+    const uint meshletC = uint(GetDrawingCoord().meshletCoord);
+    const device uint *meshletStart = meshlets + meshletC;
+    const uint thisMeshCoordOff = *(meshletStart + hd_LocalInvocationID.y + one);
+    const device uint *thisMeshCoord = (meshletStart + thisMeshCoordOff );
 
     const uint meshletVertexCount = *(thisMeshCoord);
     const uint meshletPrimitiveCount = *(thisMeshCoord + 1);
@@ -724,7 +727,6 @@ void main(void) {
 
         VertexOut vertexOut;
         const uint vertIndirection = *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
-        dcMemb = GetDrawingCoordFull();
         ProcessPrimvarsIn(vertIndirection);
         float4 point = float4(HdGet_points(vertIndirection), 1.0f);
 

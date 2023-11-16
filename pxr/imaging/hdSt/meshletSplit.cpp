@@ -74,7 +74,7 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, const std::vector<std::
         currentOffset++;
         localOffset++;
         for(int l = 0; l < meshletsInMesh.size(); l++) {
-            flattenInto.push_back(meshletsInMesh.size());
+            flattenInto.push_back(localOffset+1);
             currentOffset++;
             localOffset++;
         }
@@ -107,7 +107,7 @@ void flattenMeshlets(std::vector<uint32_t> &flattenInto, const std::vector<std::
 }
 
 //process mesh at a time
-std::vector<Meshlet> processIndices(const uint32_t* indices, int indexCount, uint32_t meshStartLocation = 0, uint32_t meshEndLocation = 0) {
+std::vector<Meshlet> processIndices(const int32_t* indices, int indexCount, uint32_t meshStartLocation = 0, uint32_t meshEndLocation = 0) {
     int numPrimsProcessed = 0;
     int numVerticesProcessed = 0;
     std::unordered_map<uint32_t, std::vector<uint32_t>> m;
@@ -119,7 +119,7 @@ std::vector<Meshlet> processIndices(const uint32_t* indices, int indexCount, uin
     int startPrimitive = meshStartLocation / 3;
     int endPrimitive = meshStartLocation / 3;
     uint primId = 0;
-    for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
+    for(uint32_t i = meshStartLocation; i < meshEndLocation + 3; i += 3) {
         if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
             endPrimitive = numPrimsProcessed + startPrimitive;
             int count = 0;
@@ -227,15 +227,22 @@ HdSt_MeshletSplitBuilderComputation::Resolve()
     //Should be triangle index builder computation
     if (!_indexBufferSource->IsResolved()) return false;
     HD_TRACE_FUNCTION();
-    const uint32_t* data = reinterpret_cast<const uint32_t*>(_indexBufferSource->GetData());
-    auto meshlets = processIndices(data, _indexBufferSource->GetNumElements());
+    const int32_t* data = reinterpret_cast<const int32_t*>(_indexBufferSource->GetData());
+    //TODO the indexcount might be removable
+    const uint32_t intsPerElem = 3; // expected tupletype int32vec3
+    
+    const uint32_t numElements = _indexBufferSource->GetNumElements() * 3;
+    auto meshlets = processIndices(data, numElements, 0, numElements);
     std::vector<uint32_t> flattenInto;
     flattenMeshlets(flattenInto, {meshlets});
-    VtIntArray meshletData;
+    VtUIntArray meshletData;
     meshletData.resize(flattenInto.size());
     for (int i = 0; i < flattenInto.size(); i++) {
-        meshletData[i] = flattenInto[i];
+        meshletData[i] = (flattenInto[i]);
     }
+    _SetResult(std::make_shared<HdVtBufferSource>(
+                       HdTokens->meshlets,
+                       VtValue(meshletData)));
     _SetResolved();
     return true;
 }

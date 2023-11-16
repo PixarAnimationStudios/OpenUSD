@@ -923,6 +923,16 @@ HdSt_PipelineDrawBatch::_CompileBatch(
 
     TF_DEBUG(HDST_DRAW).Msg(" - Processing Items:\n");
     _barElementOffsetsHash = 0;
+    auto meshletBar =
+    std::static_pointer_cast<HdStBufferArrayRange>(
+        _drawItemInstances.front()->GetDrawItem()->GetMeshletsRange());
+    uint32_t* cpuMeshletBuffer = nullptr;
+    if (meshletBar) {
+        auto meshletBuffer = meshletBar->GetResource(HdTokens->meshlets);
+        cpuMeshletBuffer = ((uint32_t*)meshletBuffer->GetHandle()->GetCPUStagingAddress());
+    }
+    
+    
     for (size_t item = 0; item < numDrawItemInstances; ++item) {
         HdStDrawItemInstance const *drawItemInstance = _drawItemInstances[item];
         HdStDrawItem const *drawItem = drawItemInstance->GetDrawItem();
@@ -1035,8 +1045,16 @@ HdSt_PipelineDrawBatch::_CompileBatch(
                     *cmdIt++ = baseVertex;
                     *cmdIt++ = baseInstance;
                     if (isMeshShader) {
-                        *cmdIt++ = coord.meshlet_coord;
-                        *cmdIt++ = coord.numMeshlets;
+                        if (cpuMeshletBuffer) {
+                            *cmdIt++ = 0;
+                            uint32_t meshletCount = *(cpuMeshletBuffer + meshletDC);
+                            *cmdIt++ = meshletCount;
+                            
+                        } else {
+                            *cmdIt++ = 0;
+                            uint32_t meshletCount = *(cpuMeshletBuffer + meshletDC);
+                            *cmdIt++ = meshletCount;
+                        }
                         *cmdIt++ = 0;
                         *cmdIt++ = 0;
                     } else {
