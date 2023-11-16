@@ -91,10 +91,16 @@ public:
             _shaderNode.GetInputs();
         result.reserve(shadeNodeInputs.size());
         for (UsdShadeInput const & input: shadeNodeInputs) {
-            UsdShadeAttributeType attrType;
-            UsdAttribute attr(input.GetValueProducingAttribute(&attrType));
-            if (attrType == UsdShadeAttributeType::Input) {
-                result.push_back(input.GetBaseName());
+            for (UsdAttribute const& attr:
+                 input.GetValueProducingAttributes()) {
+                UsdShadeAttributeType attrType =
+                    UsdShadeUtils::GetType(attr.GetName());
+                if (attrType == UsdShadeAttributeType::Input) {
+                    // Found at least one
+                    result.push_back(input.GetBaseName());
+                    // Proceed to next input
+                    break;
+                }
             }
         }
         return result;
@@ -107,28 +113,11 @@ public:
             return nullptr;
         }
 
-        UsdShadeAttributeType attrType;
-        UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
-        if (attrType == UsdShadeAttributeType::Input) {
-            const HdDataSourceLocator paramValueLocator(
-                name, HdMaterialNodeParameterSchemaTokens->value);
-            return HdMaterialNodeParameterSchema::Builder()
-                .SetValue(
-                    UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
-                        _sceneIndexPath,
-                        _locatorPrefix.Append(paramValueLocator)))
-                .SetColorSpace(
-                    UsdImagingDataSourceAttributeColorSpace::New(attr))
-                .Build();
-        }
-
-        // fallback case for requested but unauthored inputs on lights or
-        // light filters -- which will not return a value for
-        // GetValueProducingAttribute but can still provide an attr
-        if (_shaderNode.GetPrim().HasAPI<UsdLuxLightAPI>() ||
-            _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
-            attr = input.GetAttr();
-            if (attr) {
+        for (UsdAttribute const& attr:
+             input.GetValueProducingAttributes()) {
+            UsdShadeAttributeType attrType =
+                UsdShadeUtils::GetType(attr.GetName());
+            if (attrType == UsdShadeAttributeType::Input) {
                 const HdDataSourceLocator paramValueLocator(
                     name, HdMaterialNodeParameterSchemaTokens->value);
                 return HdMaterialNodeParameterSchema::Builder()
@@ -136,8 +125,25 @@ public:
                         UsdImagingDataSourceAttributeNew(attr, _stageGlobals,
                             _sceneIndexPath,
                             _locatorPrefix.Append(paramValueLocator)))
+                    .SetColorSpace(
+                        UsdImagingDataSourceAttributeColorSpace::New(attr))
                     .Build();
             }
+        }
+
+        // fallback case for requested but unauthored inputs on lights or
+        // light filters -- which will not return a value for
+        // GetValueProducingAttributes() but can still provide an attr
+        if (_shaderNode.GetPrim().HasAPI<UsdLuxLightAPI>() ||
+            _shaderNode.GetPrim().IsA<UsdLuxLightFilter>()) {
+            const HdDataSourceLocator paramValueLocator(
+                name, HdMaterialNodeParameterSchemaTokens->value);
+            return HdMaterialNodeParameterSchema::Builder()
+                .SetValue(
+                    UsdImagingDataSourceAttributeNew(input, _stageGlobals,
+                        _sceneIndexPath,
+                        _locatorPrefix.Append(paramValueLocator)))
+                .Build();
         }
 
         return nullptr;
@@ -173,10 +179,16 @@ public:
             _shaderNode.GetInputs();
         result.reserve(shadeNodeInputs.size());
         for (UsdShadeInput const & input: shadeNodeInputs) {
-            UsdShadeAttributeType attrType;
-            UsdAttribute attr = input.GetValueProducingAttribute(&attrType);
-            if (attrType == UsdShadeAttributeType::Output) {
-                result.push_back(input.GetBaseName());
+            for (UsdAttribute const& attr:
+                 input.GetValueProducingAttributes()) {
+                UsdShadeAttributeType attrType =
+                    UsdShadeUtils::GetType(attr.GetName());
+                if (attrType == UsdShadeAttributeType::Output) {
+                    // Found at least one connection on this input
+                    result.push_back(input.GetBaseName());
+                    // Proceed to next input
+                    break;
+                }
             }
         }
         return result;
