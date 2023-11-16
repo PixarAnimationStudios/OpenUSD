@@ -11,9 +11,14 @@ endif()
 # Add a test that WindowsImportWrapper adds entries on the PATH in the correct order, to ensure
 # that the correct dlls needed by python modules are loaded
 function(add_py_dll_link_test)
-    # Skip this this for static builds (BUILD_SHARED_LIBS set to False), as
-    # python modules/plugins require a shared library.
-    if (NOT (PXR_ENABLE_PYTHON_SUPPORT AND PXR_BUILD_TESTS AND WIN32 AND BUILD_SHARED_LIBS))
+    # early return if we are not building tests or if we are not on windows.
+    if (NOT (PXR_BUILD_TESTS AND WIN32))
+        return()
+    endif()
+
+    # early return if python target is not built! (No python build enabled or
+    # doing a static build, etc)
+    if (NOT TARGET python)
         return()
     endif()
 
