@@ -35,7 +35,9 @@
 
 import importlib
 import os
+import pickle
 import sys
+import traceback
 
 sys.path.insert(0, os.path.dirname(__file__))
 from doxygenlib.cdParser import *
@@ -51,6 +53,7 @@ output_file   = GetArgValue(['--output', '-o'])
 output_format = GetArgValue(['--format', '-f'], "Docstring")
 python_path = GetArgValue(['--pythonPath'])
 dll_path = GetArgValue(['--dllPath'])
+use_cached_parsing = GetArg(['--cacheParsing', '-c'])
 
 SetDebugMode(GetArg(['--debug', '-d']))
 
@@ -86,16 +89,32 @@ print("Converting Doxygen comments to %s format..." % output_format)
 #
 parser = Parser()
 
+docList = None
+
+if xml_index_file != None:
+    pickle_path = xml_index_file + ".pickle"
+else:
+    pickle_path = xml_file + ".pickle"
 #
 # Parse the XML file, generate the doc structures (the writer
 # plugin formats the docs)
 #
-if xml_index_file != None:
-    if not parser.parseDoxygenIndexFile(xml_index_file):
-        Error("Could not parse XML index file: %s" % xml_index_file)
-else:
-    if not parser.parse(xml_file):
-        Error("Could not parse XML file: %s" % xml_file)
+if use_cached_parsing and os.path.isfile(pickle_path):
+    try:
+        with open(pickle_path, "rb") as picklefile:
+            docList = pickle.load(picklefile)
+        Debug("Read pre-parsed file: '%s'" % pickle_path)
+    except Exception:
+        Debug("Error reading pre-parsed file: '%s'" % pickle_path)
+        Debug(traceback.format_exc())
+
+if docList is None:
+    if xml_index_file != None:
+        if not parser.parseDoxygenIndexFile(xml_index_file):
+            Error("Could not parse XML index file: %s" % xml_index_file)
+    else:
+        if not parser.parse(xml_file):
+            Error("Could not parse XML file: %s" % xml_file)
 
 #
 # Traverse the list of DocElements from the parsed XML,
@@ -108,7 +127,6 @@ if not packageName:
     Error("Required option --package not specified")
 if not modules:
     Error("Required option --module not specified")
-docList = None
 
 moduleList = modules.split(",")
 for moduleName in moduleList:
@@ -125,6 +143,9 @@ for moduleName in moduleList:
     if (docList is None):
         docList = parser.traverse(writer)
         Debug("Processed %d DocElements from doxygen XML" % len(docList))
+        if use_cached_parsing:
+            with open(pickle_path, "wb") as picklefile:
+                pickle.dump(docList, picklefile)
     if len(moduleList) == 1 and output_file.endswith(".py"):
         module_output_file = output_file
     else:
