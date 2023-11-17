@@ -60,6 +60,32 @@ SetDebugMode(GetArg(['--debug', '-d']))
 if not (xml_file or xml_index_file) or not output_file or GetArg(['--help', '-h']):
     Usage()
 
+packageName = GetArgValue(['--package', '-p'])
+modules = GetArgValue(['--module', '-m'])
+if not packageName:
+    Error("Required option --package not specified")
+if not modules:
+    Error("Required option --module not specified")
+
+
+module_list = [x for x in modules.split(",") if x]
+output_files = []
+for moduleName in module_list:
+    if len(module_list) == 1 and output_file.endswith(".py"):
+        module_output_file = output_file
+    else:
+        # For multiple-module use-case (or if output_file doesn't end with .py),
+        # assume output_file is really an output path for the parent dir
+        # (e.g. lib/python/pxr)
+        module_output_dir = os.path.join(output_file, moduleName)
+        module_output_file = os.path.join(module_output_dir, "__DOC.py")
+    output_files.append(module_output_file)
+assert len(output_files) == len(module_list)
+
+for module_output_file in output_files:
+    if os.path.isfile(module_output_file):
+        os.remove(module_output_file)
+
 #
 # If caller specified an additional path for python libs (for loading USD
 # modules, for example) add the path to sys.path
@@ -121,19 +147,10 @@ if docList is None:
 # load provided python module(s) and find matching python
 # entities, and write matches to python docs output
 #
-packageName = GetArgValue(['--package', '-p'])
-modules = GetArgValue(['--module', '-m'])
-if not packageName:
-    Error("Required option --package not specified")
-if not modules:
-    Error("Required option --module not specified")
-
-moduleList = modules.split(",")
-for moduleName in moduleList:
+for moduleName, module_output_file in zip(module_list, output_files):
     # Loop through module list and create a Writer for each module to
     # load and generate the doc strings for the specific module
-    if not moduleName:
-        continue
+
     # Writer's constructor will verify provided package + module can be loaded
     writer = Writer(packageName, moduleName)
     Debug("Processing module %s" % moduleName)
@@ -146,13 +163,5 @@ for moduleName in moduleList:
         if use_cached_parsing:
             with open(pickle_path, "wb") as picklefile:
                 pickle.dump(docList, picklefile)
-    if len(moduleList) == 1 and output_file.endswith(".py"):
-        module_output_file = output_file
-    else:
-        # For multiple-module use-case (or if output_file doesn't end with .py),
-        # assume output_file is really an output path for the parent dir
-        # (e.g. lib/python/pxr)
-        module_output_dir = os.path.join(output_file, moduleName)
-        module_output_file = os.path.join(module_output_dir, "__DOC.py")
     writer.generate(module_output_file, docList)
 
