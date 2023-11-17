@@ -33,6 +33,7 @@
 # getDocString() and generate(). See cdWriterDocstring.py for an example.
 #
 
+import importlib
 import os
 import sys
 
@@ -71,8 +72,12 @@ if dll_path != None and os.name == "nt":
 #
 # Try to import the plugin module that creates the desired output
 #
-if not Import("from doxygenlib.cdWriter"+output_format+" import Writer as Writer"):
+try:
+    cdWriterModule = importlib.import_module(".cdWriter" + output_format, package="doxygenlib")
+except ImportError:
     Error("No writer plugin exists for format '%s'" % output_format)
+else:
+    Writer = cdWriterModule.Writer
 
 print("Converting Doxygen comments to %s format..." % output_format)
 

@@ -63,32 +63,6 @@ def SetDebugMode(debugOn):
     global __debugMode
     __debugMode = debugOn
 
-def Import(cmd):
-    """Perform an import, inserting into the calling module's global scope."""
-
-    # find the global frame for the calling module
-    frame = inspect.currentframe()
-    module = frame.f_code.co_filename
-    modcount = 0
-    while frame and frame.f_back:
-        parent_module = frame.f_back.f_code.co_filename
-        if parent_module != module:
-            module = parent_module
-            modcount += 1
-            if modcount > 1:
-                break
-        frame = frame.f_back
-
-    # try to execute the import command (really, any command)
-    try:
-        globals = frame.f_globals
-        locals = frame.f_locals
-        exec(compile(cmd, '<string>', 'single'), globals, locals)
-        return True
-    except Exception as e:
-        print("Error: %s" % e)
-        return False
-
 def GetArg(optnames, default=False):
     """Return True if any of the args exist in sys.argv."""
     if not isinstance(optnames, type([])):
