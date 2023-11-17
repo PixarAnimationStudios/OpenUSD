@@ -109,36 +109,29 @@ if not packageName:
 if not modules:
     Error("Required option --module not specified")
 docList = None
-# Check if a comma-separated list of modules was provided
-if ',' in modules:
-    # Processing multiple modules. Writer's constructor will verify
-    # provided package and modules can be loaded
-    moduleList = modules.split(",")
+
+moduleList = modules.split(",")
+for moduleName in moduleList:
     # Loop through module list and create a Writer for each module to
     # load and generate the doc strings for the specific module
-    for moduleName in moduleList:
-        if not moduleName:
-            continue
-        writer = Writer(packageName, moduleName)
-        # Parser.traverse builds the docElement tree for all the
-        # doxygen XML files, so we only need to call it once if we're
-        # processing multiple modules
-        if (docList is None):
-            docList = parser.traverse(writer)
-            Debug("Processed %d DocElements from doxygen XML" % len(docList))
-        Debug("Processing module %s" % moduleName)
-        # For multiple-module use-case, assume output_file is really an
-        # output path for the parent dir (e.g. lib/python/pxr)
+    if not moduleName:
+        continue
+    # Writer's constructor will verify provided package + module can be loaded
+    writer = Writer(packageName, moduleName)
+    Debug("Processing module %s" % moduleName)
+    # Parser.traverse builds the docElement tree for all the
+    # doxygen XML files, so we only need to call it once if we're
+    # processing multiple modules
+    if (docList is None):
+        docList = parser.traverse(writer)
+        Debug("Processed %d DocElements from doxygen XML" % len(docList))
+    if len(moduleList) == 1 and output_file.endswith(".py"):
+        module_output_file = output_file
+    else:
+        # For multiple-module use-case (or if output_file doesn't end with .py),
+        # assume output_file is really an output path for the parent dir
+        # (e.g. lib/python/pxr)
         module_output_dir = os.path.join(output_file, moduleName)
         module_output_file = os.path.join(module_output_dir, "__DOC.py")
-        writer.generate(module_output_file, docList)
-else:
-    moduleName = modules
-    # Processing a single module. Writer's constructor will sanity
-    # check module and verify it can be loaded
-    if not output_file.endswith(".py"):
-        module_output_dir = os.path.join(output_file, moduleName)
-        output_file = os.path.join(module_output_dir, "__DOC.py")
-    writer = Writer(packageName, moduleName)
-    docList = parser.traverse(writer)
-    writer.generate(output_file, docList)
+    writer.generate(module_output_file, docList)
+
