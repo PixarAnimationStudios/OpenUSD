@@ -1,10 +1,9 @@
 set(PXR_PREFIX pxr/usd)
 set(PXR_PACKAGE usd)
 
-pxr_python_bin(usdchecker
-    DEPENDENCIES
-        usd
-        usdGeom
+pxr_cpp_bin(usdchecker
+        LIBRARIES
+        usdUtils
 )
 
 pxr_install_test_dir(

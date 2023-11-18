@@ -10,6 +10,7 @@ pxr_library(usdUtils
         usd
         usdGeom
         usdShade
+        usdSkel
         ${Boost_PYTHON_LIBRARY}
 
     INCLUDE_DIRS
@@ -18,6 +19,7 @@ pxr_library(usdUtils
     PUBLIC_CLASSES
         authoring
         coalescingDiagnosticDelegate
+        complianceChecker
         conditionalAbortDiagnosticDelegate
         debugCodes
         dependencies
@@ -61,7 +63,6 @@ pxr_library(usdUtils
 
     PYMODULE_FILES
         __init__.py
-        complianceChecker.py
         constantsGroup.py
         fixBrokenPixarSchemas.py
         toolPaths.py
