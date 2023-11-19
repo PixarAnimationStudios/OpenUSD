@@ -30,6 +30,11 @@ set(_PXR_CXX_FLAGS "${_PXR_GCC_CLANG_SHARED_CXX_FLAGS}")
 # due to multiplication+additions being converted to FMA
 if (APPLE)
     set(_PXR_CXX_FLAGS "${_PXR_CXX_FLAGS} -ffp-contract=off")
+    _disable_warning("comma")
+    _disable_warning("deprecated-register")
+    _disable_warning("documentation")
+    _disable_warning("deprecated-declarations")
+    _disable_warning("documentation-deprecated-sync")
 endif()
 
 # clang annoyingly warns about the -pthread option if it's only linking.

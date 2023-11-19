@@ -40,14 +40,17 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         _SetFlag(HgiDeviceCapabilitiesBitsConcurrentDispatch, true);
     }
 
-    bool const hasIntelGPU = [device isLowPower];
-
+    bool hasIntelGPU = false;
+#if defined(ARCH_OS_OSX)
+    hasIntelGPU = [device isLowPower];
+#endif
     defaultStorageMode = MTLResourceStorageModeShared;
     bool unifiedMemory = false;
     bool barycentrics = false;
     bool hasAppleSilicon = false;
     bool icbSupported = false;
-    if (@available(macOS 100.100, ios 12.0, *)) {
+    bool hasIos = false;
+    if (@available(macOS 100.100, *)) {
         unifiedMemory = true;
     } else if (@available(macOS 10.15, ios 13.0, *)) {
 #if defined(ARCH_OS_IOS) || (defined(__MAC_10_15) && __MAC_OS_X_VERSION_MAX_ALLOWED >= __MAC_10_15)
@@ -62,10 +65,16 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
                     || [device areBarycentricCoordsSupported])
                     && !hasIntelGPU;
         
+#if defined(ARCH_OS_OSX)
         hasAppleSilicon = [device hasUnifiedMemory] && ![device isLowPower];
-        
+#endif
     }
-    
+
+
+#if defined(ARCH_OS_IOS)
+    hasIos = true;
+#endif
+
     if (hasAppleSilicon) {
         // Indirect command buffers supported only on
         // Apple Silicon GPUs with macOS 12.3 or later.
@@ -75,6 +84,9 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
         }
     } else if (hasIntelGPU) {
         // Indirect command buffers not currently supported on Intel GPUs.
+        icbSupported = false;
+    }
+    if (hasIos) {
         icbSupported = false;
     }
 
@@ -106,7 +118,7 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     // if we are on MacOS 14 or less
     //bool isMacOs13OrLess = NSProcessInfo.processInfo.operatingSystemVersion.majorVersion <= 13
     //bool requireBasePrimitiveOffset = hasAppleSilicon && isMacOs13OrLess;
-    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU;
+    bool requiresBasePrimitiveOffset = hasAppleSilicon || hasIntelGPU || hasIos;
     _SetFlag(HgiDeviceCapabilitiesBitsBasePrimitiveOffset,
              requiresBasePrimitiveOffset);
 
@@ -114,10 +126,14 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     if (hasIntelGPU) {
         _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     }
-
+    if (hasIos && !barycentrics) {
+        _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
+    }
+#if defined(ARCH_OS_OSX)
     if (!unifiedMemory) {
         defaultStorageMode = MTLResourceStorageModeManaged;
     }
+#endif
 
     _maxUniformBlockSize          = 64 * 1024;
     _maxShaderStorageBlockSize    = 1 * 1024 * 1024 * 1024;

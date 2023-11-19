@@ -1,7 +1,7 @@
 set(PXR_PREFIX pxr/imaging)
 set(PXR_PACKAGE hgiGL)
 
-if (NOT ${PXR_ENABLE_GL_SUPPORT})
+if (NOT ${PXR_ENABLE_GL_SUPPORT} AND NOT APPLEIOS)
     message(STATUS
         "Skipping ${PXR_PACKAGE} because PXR_ENABLE_GL_SUPPORT is OFF")
     return()

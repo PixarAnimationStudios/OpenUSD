@@ -9,6 +9,7 @@ pxr_library(usdMtlx
     LIBRARIES
         arch
         gf
+        plug
         ndr
         sdf
         sdr

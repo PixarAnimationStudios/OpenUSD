@@ -22,6 +22,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
+#include "pxr/base/plug/plugin.h"
+#include "pxr/base/plug/registry.h"
 #include "pxr/usd/usdMtlx/utils.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/packageUtils.h"
@@ -190,13 +192,34 @@ _ComputeStdlibSearchPaths()
     // Get the MaterialX/libraries path(s)
     // This is used to indicate the location of the MaterialX/libraries folder 
     // if moved/changed from the path initialized in PXR_MATERIALX_STDLIB_DIR.
-    NdrStringVec stdlibSearchPaths =
-        _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
+    NdrStringVec stdlibSearchPaths;
+    #ifndef ARCH_OS_IOS
+    stdlibSearchPaths = _GetSearchPathsFromEnvVar("PXR_MTLX_STDLIB_SEARCH_PATHS");
 
     // Add path to the MaterialX standard library discovered at build time.
-#ifdef PXR_MATERIALX_STDLIB_DIR
-    stdlibSearchPaths =
-        _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
+    #ifdef PXR_MATERIALX_STDLIB_DIR
+        stdlibSearchPaths =
+             _MergeSearchPaths(stdlibSearchPaths, { PXR_MATERIALX_STDLIB_DIR });
+    #endif
+    #else
+    // Extract path to resources directory from plugins.
+    std::string path;
+    PlugRegistry& plugReg = PlugRegistry::GetInstance();
+    PlugPluginPtrVector plugins = plugReg.GetAllPlugins();
+    for (PlugPluginPtr const& plugin : plugins) {
+        std::string packageName = plugin->GetName();
+        JsObject metadata = plugin->GetMetadata();
+        path = plugin->GetResourcePath();
+        break;
+    }
+
+    std::vector<std::string> pathVec = TfStringSplit(path, ARCH_PATH_SEP);
+    // Use the path 4 directories before resources directory.
+    for (uint i = 0; i < 4; i++) {
+        pathVec.pop_back();
+    }
+    std::string newPath = TfStringJoin(pathVec, ARCH_PATH_SEP);
+    stdlibSearchPaths = { newPath };
 #endif
     return stdlibSearchPaths;
 }
