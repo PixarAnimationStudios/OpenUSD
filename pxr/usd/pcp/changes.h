@@ -229,17 +229,6 @@ public:
     PCP_API 
     void DidUnmuteLayer(const PcpCache* cache, const std::string& layerId);
 
-    /// The sublayer tree changed.  This often, but doesn't always, imply that
-    /// anything and everything may have changed.  If clients want to indicate
-    /// that anything and everything may have changed they should call this
-    /// method and \c DidChangePrimGraph() with the absolute root path.
-    PCP_API
-    void DidChangeLayers(const PcpCache* cache);
-
-    /// The sublayer offsets changed.
-    PCP_API
-    void DidChangeLayerOffsets(const PcpCache* cache);
-
     /// The object at \p path changed significantly enough to require
     /// recomputing the entire prim or property index.  A significant change
     /// implies changes to every namespace descendant's index, specs, and
@@ -267,11 +256,6 @@ public:
     PCP_API 
     void DidChangeTargets(const PcpCache* cache, const SdfPath& path,
                           PcpCacheChanges::TargetType targetType);
-
-    /// The relocates that affect prims and properties at and below
-    /// the given cache path have changed.
-    PCP_API 
-    void DidChangeRelocates(const PcpCache* cache, const SdfPath& path);
 
     /// The composed object at \p oldPath was moved to \p newPath.  This
     /// implies every corresponding Sd change.  This object will subsume
@@ -328,9 +312,6 @@ private:
     // Internal data types for namespace edits from Sd.
     typedef std::map<SdfPath, SdfPath> _PathEditMap;
     typedef std::map<PcpCache*, _PathEditMap> _RenameChanges;
-
-    // Returns the PcpLayerStackChanges for the given cache's layer stack.
-    PcpLayerStackChanges& _GetLayerStackChanges(const PcpCache* cache);
 
     // Returns the PcpLayerStackChanges for the given layer stack.
     PcpLayerStackChanges& _GetLayerStackChanges(const PcpLayerStackPtr&);

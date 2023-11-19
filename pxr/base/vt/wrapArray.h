@@ -444,7 +444,7 @@ ARCH_PRAGMA_POP
 template <typename T>
 static std::string _VtStr(T const &self)
 {
-    return boost::lexical_cast<std::string>(self);
+    return TfStringify(self);
 }
 
 template <typename T>

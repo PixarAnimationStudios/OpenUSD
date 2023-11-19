@@ -399,6 +399,68 @@ class TestUsdFlatten(unittest.TestCase):
             resultLayer.QueryTimeSample(resultSubAttrSpec.path, 12.0), 200.0)
         self.assertEqual(
             resultLayer.QueryTimeSample(resultSubAttrSpec.path, 24.0), 201.0)
+        
+    def test_FlattenPathsWithMissungUriResolvers(self):
+        """Tests that when flattening, asset paths that contain URI schemes
+        for which there is no registered resolver are left unmodified
+        """
+
+        rootLayer = Sdf.Layer.CreateAnonymous(".usda")
+        rootLayer.ImportFromString("""
+        #usda 1.0
+
+        def "TestPrim"(
+            assetInfo = {
+                asset identifier = @test123://1.2.3.4/file3.txt@
+                asset[] assetRefArr = [@test123://1.2.3.4/file6.txt@]
+            }
+        )
+        {
+            asset uriAssetRef = @test123://1.2.3.4/file1.txt@
+            asset[] uriAssetRefArray = [@test123://1.2.3.4/file2.txt@]
+
+            asset uriAssetRef.timeSamples = {
+                0: @test123://1.2.3.4/file4.txt@,
+                1: @test123://1.2.3.4/file5.txt@,
+            }
+                                   
+            asset[] uriAssetRefArray.timeSamples = {
+                0: [@test123://1.2.3.4/file6.txt@],
+                1: [@test123://1.2.3.4/file7.txt@],               
+            }
+        }
+        """.strip())
+        
+        stage = Usd.Stage.Open(rootLayer)
+        flatStage = Usd.Stage.Open(stage.Flatten())
+
+        propPath = "/TestPrim.uriAssetRef"
+        stageProp = stage.GetPropertyAtPath(propPath)
+        flatStageProp = flatStage.GetPropertyAtPath(propPath)
+        self.assertEqual(stageProp.Get(), flatStageProp.Get())
+        
+        self.assertEqual(stageProp.GetTimeSamples(), flatStageProp.GetTimeSamples())
+        for timeSample in stageProp.GetTimeSamples():
+            self.assertEqual(stageProp.Get(timeSample), flatStageProp.Get(timeSample))
+
+        arrayPath = "/TestPrim.uriAssetRefArray"
+        arrayProp = stage.GetPropertyAtPath(arrayPath)
+        flatArrayProp = flatStage.GetPropertyAtPath(arrayPath)
+        self.assertEqual(arrayProp.Get(), flatArrayProp.Get())
+            
+        self.assertEqual(arrayProp.GetTimeSamples(), flatArrayProp.GetTimeSamples())
+    
+        for timeSample in arrayProp.GetTimeSamples():
+            self.assertEqual(arrayProp.Get(timeSample), flatArrayProp.Get(timeSample))
+
+        primPath = "/TestPrim"
+        self.assertEqual(
+            stage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("identifier"), 
+            flatStage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("identifier"))
+        
+        self.assertEqual(
+            stage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("assetRefArr"), 
+            flatStage.GetPrimAtPath(primPath).GetMetadata("assetInfo").get("assetRefArr"))
 
 if __name__ == "__main__":
     unittest.main()

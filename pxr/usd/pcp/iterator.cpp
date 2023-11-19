@@ -34,12 +34,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 ////////////////////////////////////////////////////////////
 
-PcpPrimIterator::PcpPrimIterator()
-    : _primIndex(NULL)
-    , _pos(PCP_INVALID_INDEX)
-{
-    // Do nothing
-}
+PcpPrimIterator::PcpPrimIterator() = default;
 
 PcpPrimIterator::PcpPrimIterator(
     const PcpPrimIndex* primIndex, size_t pos)
@@ -125,11 +120,7 @@ PcpPrimIterator::_GetSiteRef() const
 
 ////////////////////////////////////////////////////////////
 
-PcpPropertyIterator::PcpPropertyIterator()
-    : _propertyIndex(NULL)
-    , _pos(0)
-{
-}
+PcpPropertyIterator::PcpPropertyIterator() = default;
 
 PcpPropertyIterator::PcpPropertyIterator(
     const PcpPropertyIndex& index, size_t pos)

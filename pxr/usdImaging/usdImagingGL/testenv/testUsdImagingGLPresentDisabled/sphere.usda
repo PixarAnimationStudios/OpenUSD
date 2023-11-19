@@ -5,10 +5,10 @@
     upAxis = "Z"
 )
 
-def Sphere "SphereWithFloatRadius" 
+def Sphere "Sphere" 
 { 
-    float radius = 10 
-    float radius.timeSamples = { 
+    double radius = 10 
+    double radius.timeSamples = { 
         1: 1, 
         10: 10, 
     }

@@ -4,8 +4,33 @@
 \mainpage  Hio: Hydra Resource I/O
 \endif
 
-Utility classes for loading resources used by Hydra.
+This library contains utility classes for loading resources used by Hydra.
 
-This library provides access to Pixar's shader container format,
-glslfx, as well as support for loading image data and volume field data.
+HioGlslfx provides interpretation of the "glslfx" file format, which is Pixar's
+GPU shader container format. It supports composition of shader snippets as well
+as specification of metadata that can be used for code generation purposes.
+
+HioImage provides a plugin-based image/texture-reading abstraction, and is used
+by hdStorm for all image I/O.  Hydra provides two implementations: HioStb_Image
+and HioOIIO_Image.  Stb is compiled by default, whereas the OIIO plugin is only
+compiled when USD is built against OpenImageIO.
+
+Hydra integrations can include support for other image libraries by defining new
+HioImage subclasses and adding appropriate plugin metadata to plugInfo.json;
+hio/plugInfo.json contains the general idea.  When Hydra is asked to load a
+certain file format (image.FOO), it will return the HioImage base class for
+which:
+(1) FOO is listed in the "imageTypes" array; and
+(2) in the case of multiple matches, the highest numerical value of precedence.
+
+Note that Stb has a higher precedence than OpenImageIO, meaning that for image
+types that both plugins support, the Stb version will be used. Integration 
+authors will want to choose their own precedence values accordingly.
+
+HioFieldTextureData provides a similar plugin-based abstraction for adding
+volume field readers, but does not include a precedence.
+
+For details on how Hydra handles OpenEXR data, see 
+<a href="https://openusd.org/release/user_guides/render_user_guide.html#working-with-image-file-formats">Working With Image File Formats</a>
+
 */

@@ -79,6 +79,7 @@
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/path.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathTable.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
@@ -337,21 +338,22 @@ using std::unordered_map;
 using std::vector;
 
 // Version history:
-// 0.9.0: Added support for the timecode and timecode[] value types.
-// 0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
-//        layer offsets.
-// 0.7.0: Array sizes written as 64 bit ints.
-// 0.6.0: Compressed (scalar) floating point arrays that are either all ints or
-//        can be represented efficiently with a lookup table.
-// 0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
-// 0.4.0: Compressed structural sections.
-// 0.3.0: (broken, unused)
-// 0.2.0: Added support for prepend and append fields of SdfListOp.
-// 0.1.0: Fixed structure layout issue encountered in Windows port.
-//        See _PathItemHeader_0_0_1.
-// 0.0.1: Initial release.
+// 0.10.0: Added support for the pathExpression value type.
+//  0.9.0: Added support for the timecode and timecode[] value types.
+//  0.8.0: Added support for SdfPayloadListOp values and SdfPayload values with
+//         layer offsets.
+//  0.7.0: Array sizes written as 64 bit ints.
+//  0.6.0: Compressed (scalar) floating point arrays that are either all ints or
+//         can be represented efficiently with a lookup table.
+//  0.5.0: Compressed (u)int & (u)int64 arrays, arrays no longer store '1' rank.
+//  0.4.0: Compressed structural sections.
+//  0.3.0: (broken, unused)
+//  0.2.0: Added support for prepend and append fields of SdfListOp.
+//  0.1.0: Fixed structure layout issue encountered in Windows port.
+//         See _PathItemHeader_0_0_1.
+//  0.0.1: Initial release.
 constexpr uint8_t USDC_MAJOR = 0;
-constexpr uint8_t USDC_MINOR = 9;
+constexpr uint8_t USDC_MINOR = 10;
 constexpr uint8_t USDC_PATCH = 0;
 
 CrateFile::Version
@@ -1165,6 +1167,9 @@ public:
         return SdfAssetPath(Read<string>());
     }
     SdfTimeCode Read(SdfTimeCode *) { return SdfTimeCode(Read<double>()); }
+    SdfPathExpression Read(SdfPathExpression *) {
+        return SdfPathExpression(Read<std::string>());
+    }
     SdfUnregisteredValue Read(SdfUnregisteredValue *) {
         VtValue val = Read<VtValue>();
         if (val.IsHolding<string>())
@@ -1422,9 +1427,16 @@ public:
     void Write(SdfTimeCode const &tc) { 
         crate->_packCtx->RequestWriteVersionUpgrade(
             Version(0, 9, 0),
-            "A timecode or timecode[] value type was detected, which requires "
+            "A timecode or timecode[] value type was detected which requires "
             "crate version 0.9.0.");
         Write(tc.GetValue()); 
+    }
+    void Write(SdfPathExpression const &pathExpr) {
+        crate->_packCtx->RequestWriteVersionUpgrade(
+            Version(0,10,0),
+            "A pathExpression value type was detected which requires crate "
+            "version 0.10.0.");
+        Write(pathExpr.GetText());
     }
     void Write(SdfUnregisteredValue const &urv) { Write(urv.GetValue()); }
     void Write(SdfVariantSelectionMap const &vsmap) { WriteMap(vsmap); }
@@ -2629,7 +2641,7 @@ CrateFile::_AddDeferredSpecs()
 {
     // A map from sample time to VtValues within TimeSamples instances in
     // _deferredSpecs.
-    boost::container::flat_map<double, vector<VtValue *>> allValuesAtAllTimes;
+    pxr_tsl::robin_map<double, vector<VtValue *>> allValuesAtAllTimes;
 
     // Search for the TimeSamples, add to the allValuesAtAllTimes.
     for (auto &spec: _deferredSpecs) {
@@ -2643,12 +2655,22 @@ CrateFile::_AddDeferredSpecs()
         }
     }
 
+    // Create a sorted view of the underlying map keys.
+    std::vector<double> orderedTimes(allValuesAtAllTimes.size());
+    std::transform(std::cbegin(allValuesAtAllTimes),
+                   std::cend(allValuesAtAllTimes),
+                   std::begin(orderedTimes),
+                   [](const auto& element) { return element.first; });
+    std::sort(orderedTimes.begin(), orderedTimes.end());
+
     // Now walk through allValuesAtAllTimes in order and pack all the values,
     // swapping them out with the resulting reps.  This ensures that when we
     // pack the specs, which will re-pack the values, they'll be noops since
     // they are just holding value reps that point into the file.
-    for (auto const &p: allValuesAtAllTimes) {
-        for (VtValue *val: p.second)
+    for (auto const &t: orderedTimes) {
+        auto it = allValuesAtAllTimes.find(t);
+        TF_DEV_AXIOM(it != allValuesAtAllTimes.end());
+        for (VtValue *val: it->second)
             *val = _PackValue(*val);
     }
 

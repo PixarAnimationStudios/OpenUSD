@@ -37,6 +37,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanTokens, HDPRMAN_API, HD_PRMAN_TOKENS);
 
+#define HD_PRMAN_PLUGIN_TOKENS \
+    ((velocityBlur,     "HdPrman_VelocityMotionBlurSceneIndexPlugin")) \
+    ((extComp,          "HdPrman_ExtComputationPrimvarPruningSceneIndexPlugin"))
+
+TF_DECLARE_PUBLIC_TOKENS(HdPrmanPluginTokens, HD_PRMAN_PLUGIN_TOKENS);
+
+const std::vector<std::string>& HdPrman_GetPluginDisplayNames();
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif //EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_TOKENS_H

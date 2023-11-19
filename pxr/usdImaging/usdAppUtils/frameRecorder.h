@@ -62,10 +62,13 @@ public:
     /// plugin will be chosen depending on the value of \p gpuEnabled.
     /// The \p gpuEnabled argument determines if the UsdAppUtilsFrameRecorder
     /// instance will allow Hydra to use the GPU to produce images.
+    /// The \p renderSettingsPrimPath argument is used to set the active 
+    /// render settings prim path in Hydra.
     USDAPPUTILS_API
     UsdAppUtilsFrameRecorder(
         const TfToken& rendererPluginId = TfToken(),
-        bool gpuEnabled = true);
+        bool gpuEnabled = true,
+        const SdfPath& renderSettingsPrimPath = SdfPath());
 
     /// Gets the ID of the Hydra renderer plugin that will be used for
     /// recording.
@@ -130,6 +133,12 @@ public:
     /// If \p usdCamera is not a valid camera, a camera will be computed
     /// to automatically frame the stage geometry.
     ///
+    /// When we are using a RenderSettings prim, the generated image will be 
+    /// written to the file indicated on the connected RenderProducts, 
+    /// instead of the given \p outputImagePath. Note that in this case the
+    /// given \p usdCamera will later be overridden by the one authored on the 
+    /// RenderSettings Prim. 
+    ///
     /// Returns true if the image was generated and written successfully, or
     /// false otherwise.
     USDAPPUTILS_API
@@ -145,6 +154,7 @@ private:
     float _complexity;
     TfToken _colorCorrectionMode;
     TfTokenVector _purposes;
+    SdfPath _renderSettingsPrimPath;
 };
 
 

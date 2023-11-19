@@ -1501,6 +1501,16 @@ static void testValue() {
         t = v.UncheckedRemove<string>();
         TF_AXIOM(t == "hello world!");
         TF_AXIOM(v.IsEmpty());
+
+        // Held value mutation.
+        v = t;
+        TF_AXIOM(v.Mutate<string>([](std::string &str) { str += "!"; }));
+        TF_AXIOM(v.Get<string>() == "hello world!!");
+        v.UncheckedMutate<string>([](std::string &str) { str += "!"; });
+        TF_AXIOM(v.Get<string>() == "hello world!!!");
+
+        TF_AXIOM(!v.Mutate<int>([](int &i) { ++i; }));
+        TF_AXIOM(v.Get<string>() == "hello world!!!");
     }
 
     // Test calling Get with incorrect type.  Should issue an error and produce
@@ -1854,6 +1864,16 @@ testKnownValueTypeIndex()
     TF_AXIOM(!VtIsKnownValueType<TypeNotKnownToVt>());
 }
 
+static void testVtCheapToCopy() {
+    static_assert(VtValueTypeHasCheapCopy<float>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<int>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<GfVec3d>::value, "");
+    static_assert(VtValueTypeHasCheapCopy<TfToken>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<std::string>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<float>>::value, "");
+    static_assert(!VtValueTypeHasCheapCopy<VtArray<TfToken>>::value, "");
+}
+
 int main(int argc, char *argv[])
 {
     testArray();
@@ -1874,6 +1894,7 @@ int main(int argc, char *argv[])
 
     testVisitValue();
     testKnownValueTypeIndex();
+    testVtCheapToCopy();
 
     printf("Test SUCCEEDED\n");
 

@@ -153,9 +153,12 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
         }
     }
 
-    // If the skydome is not camera visible or there is no
+    const bool haveColorAOV = !gfxCmdsDesc.colorTextures.empty();
+
+    // If the skydome is not camera visible in a colorAOV or there is no
     // domelight/skydomeTexture, clear the AOVs
-    if (!_skydomeVisibility || !haveDomeLight || !_GetSkydomeTexture(ctx)) {
+    if (!_skydomeVisibility || !haveColorAOV ||
+        !haveDomeLight || !_GetSkydomeTexture(ctx)) {
         _GetHgi()->SubmitCmds(_GetHgi()->CreateGraphicsCmds(gfxCmdsDesc).get());
         return;
     }
@@ -176,7 +179,7 @@ HdxSkydomeTask::Execute(HdTaskContext* ctx)
     }
     
     // Bind the skydome texture 
-    _compositor->BindTextures( {_tokens->skydomeTexture}, {_skydomeTexture} );
+    _compositor->BindTextures({_skydomeTexture});
 
     // Get the viewport size
     GfVec4i viewport = hdStRenderPassState->ComputeViewport();

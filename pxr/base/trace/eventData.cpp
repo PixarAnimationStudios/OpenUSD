@@ -31,8 +31,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace {
 
-// Boost variant visitor to convert TraceEventData to JsValue
-class JsValue_visitor : public boost::static_visitor<void>
+// Variant visitor to convert TraceEventData to JsValue
+class JsValue_visitor
 {
 public:
     JsValue_visitor(JsWriter& writer)
@@ -67,8 +67,8 @@ private:
     JsWriter& _writer;
 };
 
-// Boost variant visitor to convert TraceEventData to TraceEvent::DataType
-class Type_visitor : public boost::static_visitor<TraceEvent::DataType>
+// Variant visitor to convert TraceEventData to TraceEvent::DataType
+class Type_visitor
 {
 public:
     TraceEvent::DataType operator()(int64_t i) const {
@@ -101,42 +101,42 @@ public:
 
 TraceEvent::DataType TraceEventData::GetType() const
 {
-    return boost::apply_visitor(Type_visitor(), _data);
+    return std::visit(Type_visitor(), _data);
 }
 
 const int64_t* TraceEventData::GetInt() const
 {
     return GetType() == TraceEvent::DataType::Int ?
-        &boost::get<int64_t>(_data) : nullptr;
+        &std::get<int64_t>(_data) : nullptr;
 }
 
 const uint64_t* TraceEventData::GetUInt() const
 {
     return GetType() == TraceEvent::DataType::UInt ?
-        &boost::get<uint64_t>(_data) : nullptr;
+        &std::get<uint64_t>(_data) : nullptr;
 }
 
 const double* TraceEventData::GetFloat() const
 {
     return GetType() == TraceEvent::DataType::Float ?
-        &boost::get<double>(_data) : nullptr;
+        &std::get<double>(_data) : nullptr;
 }
 
 const bool* TraceEventData::GetBool() const
 {
     return GetType() == TraceEvent::DataType::Boolean ?
-        &boost::get<bool>(_data) : nullptr;
+        &std::get<bool>(_data) : nullptr;
 }
 
 const std::string* TraceEventData::GetString() const
 {
     return GetType() == TraceEvent::DataType::String ?
-        &boost::get<std::string>(_data) : nullptr;
+        &std::get<std::string>(_data) : nullptr;
 }
 
 void TraceEventData::WriteJson(JsWriter& writer) const
 {
-    boost::apply_visitor(JsValue_visitor(writer), _data);
+    std::visit(JsValue_visitor(writer), _data);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

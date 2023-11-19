@@ -19,6 +19,7 @@ pxr_library(hio
         fieldTextureData
         glslfx
         glslfxConfig
+        glslfxResourceLayout
         image
         imageRegistry
         types
@@ -31,12 +32,14 @@ pxr_library(hio
         api.h
 
     PRIVATE_HEADERS
+        OpenEXR/openexr-c.h
         rankedTypeMap.h
         stb/stb_image.h
         stb/stb_image_resize.h
         stb/stb_image_write.h
 
     CPPFILES
+        OpenEXRImage.cpp
         stbImage.cpp
         OpenEXR/openexr-c.c
 
@@ -47,7 +50,3 @@ pxr_library(hio
         overview.dox
 )
 
-target_compile_definitions(hio PRIVATE
-    ILMTHREAD_THREADING_ENABLED
-    OPENEXR_C_STANDALONE
-    OPENEXR_EXPORT=static)

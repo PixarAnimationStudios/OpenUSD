@@ -41,9 +41,9 @@
 #include "hdPrman/lightFilter.h"
 #include "hdPrman/material.h"
 #include "hdPrman/mesh.h"
-#include "hdPrman/paramsSetter.h"
 #include "hdPrman/points.h"
 #include "hdPrman/resourceRegistry.h"
+#include "hdPrman/terminalSceneIndexObserver.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/volume.h"
 
@@ -51,6 +51,7 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/rprim.h"
+#include "pxr/imaging/hd/sceneIndex.h"
 #include "pxr/imaging/hd/sprim.h"
 #include "pxr/imaging/hd/tokens.h"
 
@@ -68,8 +69,7 @@ TF_DEFINE_PRIVATE_TOKENS(
     (ri)
     ((outputsRi, "outputs:ri"))
     ((mtlxRenderContext, "mtlx"))
-    (prmanParams) /* XXX currently duplicated whereever used as to not yet */
-                 /* establish a formal convention */
+    (renderCameraPath)
 );
 
 TF_DEFINE_PUBLIC_TOKENS(HdPrmanRenderSettingsTokens,
@@ -122,7 +122,6 @@ const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_SPRIM_TYPES =
     HdPrimTypeTokens->integrator,
     HdPrimTypeTokens->sampleFilter,
     HdPrimTypeTokens->displayFilter,
-    _tokens->prmanParams,
 };
 
 const TfTokenVector HdPrmanRenderDelegate::SUPPORTED_BPRIM_TYPES =
@@ -204,11 +203,9 @@ HdPrmanRenderDelegate::_Initialize()
     if (!integratorEnv.empty()) {
         integrator = integratorEnv;
     }
-
-    // 64 samples is RenderMan default
-    int maxSamples = TfGetenvInt("HD_PRMAN_MAX_SAMPLES", 64);
-
-    float pixelVariance = 0.001f;
+ 
+    const int maxSamples = 64; // 64 samples is RenderMan default
+    const float pixelVariance = 0.001f;
 
     // Prepare list of render settings descriptors
     _settingDescriptors.reserve(5);
@@ -413,9 +410,6 @@ HdPrmanRenderDelegate::CreateSprim(TfToken const& typeId,
         }
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         sprim = new HdExtComputation(sprimId);
-    
-    } else if (typeId == _tokens->prmanParams) {
-        sprim = new HdPrmanParamsSetter(sprimId);
     } else if (typeId == HdPrimTypeTokens->integrator) {
         sprim = new HdPrman_Integrator(sprimId);
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
@@ -454,8 +448,6 @@ HdPrmanRenderDelegate::CreateFallbackSprim(TfToken const& typeId)
         return new HdPrmanLight(SdfPath::EmptyPath(), typeId);
     } else if (typeId == HdPrimTypeTokens->extComputation) {
         return new HdExtComputation(SdfPath::EmptyPath());
-    } else if (typeId == _tokens->prmanParams) {
-        return new HdPrmanParamsSetter(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->integrator) {
         return new HdPrman_Integrator(SdfPath::EmptyPath());
     } else if (typeId == HdPrimTypeTokens->sampleFilter) {
@@ -582,6 +574,31 @@ HdPrmanRenderDelegate::GetRenderSettingsNamespaces() const
 }
 #endif
 
+void
+HdPrmanRenderDelegate::SetRenderSetting(TfToken const &key, 
+                                        VtValue const &value)
+{
+    HdRenderDelegate::SetRenderSetting(key, value);
+
+    if(key == _tokens->renderCameraPath)
+    {
+        // Need to know the name of the render camera as soon as possible
+        // so that as cameras are processed (directly after render settings),
+        // the shutter of the active camera can be passed to riley,
+        // prior to handling any geometry.
+        SdfPath camPath = value.UncheckedGet<SdfPath>();
+        _renderParam->GetCameraContext().SetCameraPath(camPath);
+        _renderParam->GetCameraContext().MarkCameraInvalid(camPath);
+        HdRenderIndex *renderIndex = GetRenderIndex();
+        if(renderIndex) {
+            renderIndex->GetChangeTracker().MarkSprimDirty(
+                camPath, HdChangeTracker::DirtyParams);
+            renderIndex->GetChangeTracker().MarkAllRprimsDirty(
+                HdChangeTracker::DirtyPoints);
+        }
+    }
+}
+
 bool
 HdPrmanRenderDelegate::IsStopSupported() const
 {
@@ -629,5 +646,37 @@ HdPrmanRenderDelegate::GetRenderIndex() const
     }
     return nullptr;
 }
+
+#if HD_API_VERSION >= 55
+
+////////////////////////////////////////////////////////////////////////////
+///
+/// Hydra 2.0 API
+///
+////////////////////////////////////////////////////////////////////////////
+
+void
+HdPrmanRenderDelegate::SetTerminalSceneIndex(
+    const HdSceneIndexBaseRefPtr &terminalSceneIndex)
+{
+    if (!_terminalObserver) {
+        _terminalObserver =
+            std::make_unique<HdPrman_TerminalSceneIndexObserver>(
+                _renderParam, terminalSceneIndex);
+    }
+}
+
+void
+HdPrmanRenderDelegate::Update()
+{
+    if (!_terminalObserver) {
+        TF_CODING_ERROR("Invalid terminal scene index observer.");
+        return;
+    }
+
+    _terminalObserver->Update();
+}
+
+#endif
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -143,9 +143,15 @@ private:
 
     // Utility to query OCIO for required resources
     static void
-    _CreateOpenColorIOResources(Hgi *hgi,
-                                HdxColorCorrectionTaskParams const& params,
-                                _OCIOResources *result);
+    _CreateOpenColorIOResources(
+        Hgi *hgi,
+        HdxColorCorrectionTaskParams const& params,
+        _OCIOResources *result);
+    static void
+    _CreateOpenColorIOResourcesImpl(
+        Hgi *hgi,
+        HdxColorCorrectionTaskParams const& params,
+        _OCIOResources *result);
 
     // Utility to check if OCIO should be used
     bool _GetUseOcio() const;

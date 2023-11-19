@@ -38,7 +38,6 @@ TF_WRAP_MODULE
     TF_WRAP(UsdSkelBlendShapeQuery);
     TF_WRAP(UsdSkelCache);
     TF_WRAP(UsdSkelInbetweenShape);
-    TF_WRAP(UsdSkelPackedJointAnimation);
     TF_WRAP(UsdSkelSkeleton);
     TF_WRAP(UsdSkelSkeletonQuery);
     TF_WRAP(UsdSkelSkinningQuery);

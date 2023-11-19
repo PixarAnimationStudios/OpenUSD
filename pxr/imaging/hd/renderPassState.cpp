@@ -101,9 +101,6 @@ HdRenderPassState::Prepare(HdResourceRegistrySharedPtr const &resourceRegistry)
 void
 HdRenderPassState::SetCamera(const HdCamera * const camera)
 {
-    if (!camera) {
-        TF_CODING_ERROR("Received null camera\n");
-    }
     _camera = camera;
 }
 

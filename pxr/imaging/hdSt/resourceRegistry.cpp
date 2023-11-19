@@ -535,7 +535,8 @@ HdStResourceRegistry::RegisterDispatchBuffer(
 HdStBufferResourceSharedPtr
 HdStResourceRegistry::RegisterBufferResource(
     TfToken const &role, 
-    HdTupleType tupleType)
+    HdTupleType tupleType,
+    HgiBufferUsage bufferUsage)
 {
     HdStBufferResourceSharedPtr const result =
         std::make_shared<HdStBufferResource>(
@@ -544,8 +545,8 @@ HdStResourceRegistry::RegisterBufferResource(
     size_t byteSize = HdDataSizeOfTupleType(tupleType);
 
     HgiBufferDesc bufDesc;
-    bufDesc.usage= HgiBufferUsageUniform;
-    bufDesc.byteSize= byteSize;
+    bufDesc.usage = bufferUsage;
+    bufDesc.byteSize = byteSize;
     HgiBufferHandle buffer = _hgi->CreateBuffer(bufDesc);
 
     result->SetAllocation(buffer, byteSize);

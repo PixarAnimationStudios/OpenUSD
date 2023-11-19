@@ -1565,29 +1565,6 @@ PcpChanges::DidMaybeFixAsset(
 }
 
 void
-PcpChanges::DidChangeLayers(const PcpCache* cache)
-{
-    TF_DEBUG(PCP_CHANGES).Msg("PcpChanges::DidChangeLayers: @%s@\n",
-                              cache->GetLayerStackIdentifier().rootLayer->
-                                  GetIdentifier().c_str());
-
-    PcpLayerStackChanges& changes = _GetLayerStackChanges(cache);
-    if (!changes.didChangeLayers) {
-        changes.didChangeLayers       = true;
-        changes.didChangeLayerOffsets = false;
-    }
-}
-
-void
-PcpChanges::DidChangeLayerOffsets(const PcpCache* cache)
-{
-    PcpLayerStackChanges& changes = _GetLayerStackChanges(cache);
-    if (!changes.didChangeLayers) {
-        changes.didChangeLayerOffsets = true;
-    }
-}
-
-void
 PcpChanges::DidChangeSignificantly(const PcpCache* cache, const SdfPath& path)
 {
     _GetCacheChanges(cache).didChangeSignificantly.insert(path);
@@ -1683,16 +1660,6 @@ PcpChanges::DidChangeTargets(const PcpCache* cache, const SdfPath& path,
 }
 
 void
-PcpChanges::DidChangeRelocates(const PcpCache* cache, const SdfPath& path)
-{
-    // XXX For now we resync the prim entirely.  This is both because
-    // we do not yet have a way to incrementally update the mappings,
-    // as well as to ensure that we provide a change entry that will
-    // cause Csd to pull on the cache and keep its contents alive.
-    _GetCacheChanges(cache).didChangeSignificantly.insert(path);
-}
-
-void
 PcpChanges::DidChangePaths(
     const PcpCache* cache,
     const SdfPath& oldPath,
@@ -1729,23 +1696,16 @@ PcpChanges::DidChangeAssetResolver(const PcpCache* cache)
     std::string summary;
     std::string* debugSummary = TfDebug::IsEnabled(PCP_CHANGES) ? &summary : 0;
 
-    const ArResolverContextBinder binder(
-        cache->GetLayerStackIdentifier().pathResolverContext);
-
-    cache->ForEachPrimIndex(
-        [this, cache, debugSummary](const PcpPrimIndex& primIndex) {
-            if (Pcp_NeedToRecomputeDueToAssetPathChange(primIndex)) {
-                DidChangeSignificantly(cache, primIndex.GetPath());
-                PCP_APPEND_DEBUG("    %s\n", primIndex.GetPath().GetText());
-            }
-        }
-    );
-
     cache->ForEachLayerStack(
         [this, &cache, debugSummary](const PcpLayerStackPtr& layerStack) {
             // This matches logic in _DidChange when processing changes
             // to a layer's resolved path.
-            if (Pcp_NeedToRecomputeDueToAssetPathChange(layerStack)) {
+            const bool needToRecompute =
+                Pcp_NeedToRecomputeDueToAssetPathChange(layerStack);
+
+            _DidChangeLayerStackResolvedPath(
+                cache, layerStack, needToRecompute, debugSummary);
+            if (needToRecompute) {
                 _DidChangeLayerStack(
                     cache, layerStack, 
                     /* requiresLayerStackChange = */ true, 
@@ -1824,12 +1784,6 @@ PcpChanges::Apply() const
     TF_FOR_ALL(i, _cacheChanges) {
         i->first->Apply(i->second, &_lifeboat);
     }
-}
-
-PcpLayerStackChanges&
-PcpChanges::_GetLayerStackChanges(const PcpCache* cache)
-{
-    return _layerStackChanges[cache->GetLayerStack()];
 }
 
 PcpLayerStackChanges&

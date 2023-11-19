@@ -19,6 +19,13 @@ def "World"
             }
         }
 
+        def Shader "exrTex"
+        {
+            uniform token info:id = "UsdUVTexture"
+            asset inputs:file = @mat_exr.exr@
+            color3f outputs:rgb
+        }
+
         def Shader "pngTex"
         {
             uniform token info:id = "UsdUVTexture"

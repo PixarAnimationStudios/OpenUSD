@@ -2851,7 +2851,7 @@ class "PxrDistantLightAPI" (
 
 class "PxrDomeLightAPI" (
     customData = {
-        token[] apiSchemaAutoApplyTo = ["DomeLight"]
+        token[] apiSchemaAutoApplyTo = ["DomeLight", "DomeLight_1"]
         string apiSchemaType = "singleApply"
         string className = "DomeLightAPI"
     }

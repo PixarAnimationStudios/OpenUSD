@@ -65,6 +65,7 @@ void HdSt_ApplyMaterialXFilter(
 // Generates the glsfx shader for the given MaterialX Document
 MaterialX::ShaderPtr HdSt_GenMaterialXShader(
     MaterialX::DocumentPtr const& mxDoc,
+    MaterialX::DocumentPtr const& stdLibraries,
     MaterialX::FileSearchPath const& searchPath,
     HdSt_MxShaderGenInfo const& mxHdInfo=HdSt_MxShaderGenInfo(),
     TfToken const& apiName=TfToken());

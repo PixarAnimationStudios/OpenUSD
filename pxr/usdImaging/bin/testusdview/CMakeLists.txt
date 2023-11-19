@@ -353,6 +353,15 @@ pxr_install_test_dir(
     DEST testUsdviewPointInstancerVariant
 )
 
+pxr_install_test_dir(
+    SRC testenv/testUsdviewExpressionVariableEdits
+    DEST testUsdviewExpressionVariableEdits
+)
+
+pxr_install_test_dir(
+    SRC testenv/testUsdviewExpressionVariableEdits
+    DEST testUsdviewExpressionVariableEdits_Delegate
+)
 
 pxr_register_test(testUsdviewAlive
     PRE_COMMAND "${PYTHON_EXECUTABLE} testUsdviewAliveSetup.py"
@@ -1047,6 +1056,36 @@ pxr_register_test(testUsdviewPointInstancerVariant
     FAIL_PERCENT 0.03
     PERCEPTUAL
     EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testUsdviewExpressionVariableEdits_Delegate
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
+    IMAGE_DIFF_COMPARE
+        start.png
+        step_1.png
+        step_2.png
+    FAIL 0.05
+    FAIL_PERCENT 0.03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=0
+)
+
+pxr_register_test(testUsdviewExpressionVariableEdits
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testUsdviewExpressionVariableEdits.py test.usda"
+    IMAGE_DIFF_COMPARE
+        start.png
+        step_1.png
+        step_2.png
+    FAIL 0.05
+    FAIL_PERCENT 0.03
+    PERCEPTUAL
+    EXPECTED_RETURN_CODE 0
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=1
 )
 
 if(OPENCOLORIO_FOUND AND ${PXR_BUILD_OPENCOLORIO_PLUGIN})

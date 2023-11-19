@@ -22,6 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#include "pxr/pxr.h"
 #include "pxr/base/arch/pragmas.h"
 
 ARCH_PRAGMA_PUSH

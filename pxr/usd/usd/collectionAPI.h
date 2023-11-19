@@ -36,6 +36,7 @@
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 #include "pxr/usd/usd/primFlags.h"
 #include "pxr/usd/usd/tokens.h"
+#include "pxr/usd/sdf/pathExpression.h"
 
 
 #include "pxr/base/vt/value.h"
@@ -370,6 +371,30 @@ public:
 
 public:
     // --------------------------------------------------------------------- //
+    // MEMBERSHIPEXPRESSION 
+    // --------------------------------------------------------------------- //
+    /// Specifies a path expression that determines membership in this
+    /// collection.
+    ///
+    /// | ||
+    /// | -- | -- |
+    /// | Declaration | `uniform pathExpression membershipExpression` |
+    /// | C++ Type | SdfPathExpression |
+    /// | \ref Usd_Datatypes "Usd Type" | SdfValueTypeNames->PathExpression |
+    /// | \ref SdfVariability "Variability" | SdfVariabilityUniform |
+    USD_API
+    UsdAttribute GetMembershipExpressionAttr() const;
+
+    /// See GetMembershipExpressionAttr(), and also 
+    /// \ref Usd_Create_Or_Get_Property for when to use Get vs Create.
+    /// If specified, author \p defaultValue as the attribute's default,
+    /// sparsely (when it makes sense to do so) if \p writeSparsely is \c true -
+    /// the default for \p writeSparsely is \c false.
+    USD_API
+    UsdAttribute CreateMembershipExpressionAttr(VtValue const &defaultValue = VtValue(), bool writeSparsely=false) const;
+
+public:
+    // --------------------------------------------------------------------- //
     // COLLECTION 
     // --------------------------------------------------------------------- //
     /// This property represents the collection for the purpose of 
@@ -487,6 +512,22 @@ public:
         const UsdPrim &prim, 
         const TfToken &collectionName);
 
+    USD_API
+    static SdfPathExpression
+    ResolveCompleteMembershipExpression(SdfPathExpression pathExpr,
+                                        UsdPrim const &prim);
+
+    /// Obtain a complete SdfPathExpression from this collection's
+    /// membershipExpression.  First, UsdAttribute::Get() the value of
+    /// GetMembershipExpressionAttr(), then resolve any contained references.
+    /// Replace any remaining "weaker" references (%_) with
+    /// SdfPathExpression::Nothing().  Replace other references by recursively
+    /// resolving the expressions from the collections on the referenced prims.
+    /// If no such prims or no such collections exist, replace those references
+    /// with SdfPathExpression::Nothing() as well.
+    USD_API
+    SdfPathExpression ResolveCompleteMembershipExpression() const;
+    
     // Convenient alias for UsdCollectionMembershipQuery object
     using MembershipQuery = UsdCollectionMembershipQuery;
 

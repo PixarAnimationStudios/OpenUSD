@@ -33,8 +33,6 @@
 #include <memory>
 #include <vector>
 
-#include <boost/iterator/iterator_facade.hpp>
-
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// \class TfDenseHashSet
@@ -54,12 +52,7 @@ template <
     class    EqualElement  = std::equal_to<Element>,
     unsigned Threshold = 128
 >
-class ARCH_EMPTY_BASES TfDenseHashSet :
-    // Since sizeof(EqualElement) == 0 and sizeof(HashFn) == 0 in many cases
-    // we use the empty base optimization to not pay a size penalty.
-    // In C++20, explore using [[no_unique_address]] as an alternative
-    // way to get this optimization.
-    private HashFn, private EqualElement
+class TfDenseHashSet
 {
 public:
 
@@ -96,17 +89,20 @@ public:
     ///
     explicit TfDenseHashSet(
         const HashFn       &hashFn       = HashFn(),
-        const EqualElement &equalElement = EqualElement()) :
-        HashFn(hashFn),
-        EqualElement(equalElement) {}
+        const EqualElement &equalElement = EqualElement())
+    {
+        _hash() = hashFn;
+        _equ()  = equalElement;
+    }
 
     /// Copy Ctor.
     ///
     TfDenseHashSet(const TfDenseHashSet &rhs)
-    :   HashFn(rhs),
-        EqualElement(rhs),
-        _vector(rhs._vector),
-        _h(rhs._h ? std::make_unique<_HashMap>(*rhs._h) : nullptr) {}
+    :   _storage(rhs._storage) {
+        if (rhs._h) {
+            _h = std::make_unique<_HashMap>(*rhs._h);
+        }
+    }
 
     /// Move Ctor.
     ///
@@ -179,10 +175,7 @@ public:
     /// Swaps the contents of two sets.
     ///
     void swap(TfDenseHashSet &rhs) {
-        using std::swap;
-        swap(_hash(), rhs._hash());
-        swap(_equ(), rhs._equ());
-        _vector.swap(rhs._vector);
+        _storage.swap(rhs._storage);
         _h.swap(rhs._h);
     }
 
@@ -393,32 +386,32 @@ private:
 
     // Helper to access the storage vector.
     _Vector &_vec() {
-        return _vector;
+        return _storage.vector;
     }
 
     // Helper to access the hash functor.
     HashFn &_hash() {
-        return *this;
+        return _storage;
     }
 
     // Helper to access the equality functor.
     EqualElement &_equ() {
-        return *this;
+        return _storage;
     }
 
     // Helper to access the storage vector.
     const _Vector &_vec() const {
-        return _vector;
+        return _storage.vector;
     }
 
     // Helper to access the hash functor.
     const HashFn &_hash() const {
-        return *this;
+        return _storage;
     }
 
     // Helper to access the equality functor.
     const EqualElement &_equ() const {
-        return *this;
+        return _storage;
     }
 
     // Helper to create the acceleration table if size dictates.
@@ -438,8 +431,29 @@ private:
         }
     }
 
-    // Vector holding all elements
-    _Vector _vector;
+    // Since sizeof(EqualElement) == 0 and sizeof(HashFn) == 0 in many cases
+    // we use the empty base optimization to not pay a size penalty.
+    // In C++20, explore using [[no_unique_address]] as an alternative
+    // way to get this optimization.
+    struct ARCH_EMPTY_BASES _CompressedStorage :
+        private EqualElement, private HashFn {
+        static_assert(!std::is_same<EqualElement, HashFn>::value,
+                      "EqualElement and HashFn must be distinct types.");
+        _CompressedStorage() = default;
+        _CompressedStorage(const EqualElement& equal, const HashFn& hashFn)
+            : EqualElement(equal), HashFn(hashFn) {}
+
+        void swap(_CompressedStorage& other) {
+            using std::swap;
+            vector.swap(other.vector);
+            swap(static_cast<EqualElement&>(*this),
+                 static_cast<EqualElement&>(other));
+            swap(static_cast<HashFn&>(*this), static_cast<HashFn&>(other));
+        }
+        _Vector vector;
+        friend class TfDenseHashSet;
+    };
+    _CompressedStorage _storage;
 
     // Optional hash map that maps from keys to vector indices.
     std::unique_ptr<_HashMap> _h;

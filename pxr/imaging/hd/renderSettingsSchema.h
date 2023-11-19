@@ -47,6 +47,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (includedPurposes) \
     (materialBindingPurposes) \
     (renderingColorSpace) \
+    (shutterInterval) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsSchemaTokens, HD_API,
     HDRENDERSETTINGS_SCHEMA_TOKENS);
@@ -74,6 +75,16 @@ public:
     HD_API
     HdTokenDataSourceHandle GetRenderingColorSpace();
 
+    // Frame-relative time interval representing the sampling window for data
+    // relevant to motion blur. Renderers can use this interval when querying
+    // time-sampled data (e.g., xforms, points, velocities, ...) to simulate
+    // motion blur effects. Note: This closely relates to the (frame-
+    // relative) shutter interval of a camera specified via shutter open and
+    // close times and is expected to span the union of the shutter intervals
+    // of cameras used in generating the render artifacts.
+    HD_API
+    HdVec2dDataSourceHandle GetShutterInterval();
+
     // RETRIEVING AND CONSTRUCTING
 
     /// Builds a container data source which includes the provided child data
@@ -89,7 +100,8 @@ public:
         const HdVectorDataSourceHandle &renderProducts,
         const HdTokenArrayDataSourceHandle &includedPurposes,
         const HdTokenArrayDataSourceHandle &materialBindingPurposes,
-        const HdTokenDataSourceHandle &renderingColorSpace
+        const HdTokenDataSourceHandle &renderingColorSpace,
+        const HdVec2dDataSourceHandle &shutterInterval
     );
 
     /// \class HdRenderSettingsSchema::Builder
@@ -119,6 +131,9 @@ public:
         HD_API
         Builder &SetRenderingColorSpace(
             const HdTokenDataSourceHandle &renderingColorSpace);
+        HD_API
+        Builder &SetShutterInterval(
+            const HdVec2dDataSourceHandle &shutterInterval);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
@@ -131,6 +146,7 @@ public:
         HdTokenArrayDataSourceHandle _includedPurposes;
         HdTokenArrayDataSourceHandle _materialBindingPurposes;
         HdTokenDataSourceHandle _renderingColorSpace;
+        HdVec2dDataSourceHandle _shutterInterval;
     };
 
     /// Retrieves a container data source with the schema's default name token
@@ -194,6 +210,13 @@ public:
     /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
     HD_API
     static const HdDataSourceLocator &GetRenderingColorSpaceLocator();
+
+    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
+    /// where the shutterinterval data source can be found.
+    /// This is often useful for checking intersection against the
+    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+    HD_API
+    static const HdDataSourceLocator &GetShutterIntervalLocator();
 
 };
 

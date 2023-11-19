@@ -12,7 +12,7 @@ pxr_library(usdBakeMtlx
         usdImaging
         MaterialXCore
         MaterialXFormat
-        MaterialXRenderGlsl
+        MaterialXRenderMsl
 
     INCLUDE_DIRS
         ${Boost_INCLUDE_DIRS}

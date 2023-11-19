@@ -117,8 +117,8 @@ PXR_NAMESPACE_OPEN_SCOPE
 ((SdfChildrenKeys->VariantChildren,            std::vector<TfToken>))    \
 ((SdfChildrenKeys->VariantSetChildren,         std::vector<TfToken>))
 
-#define _SDF_FIELDS_NAME(tup) BOOST_PP_TUPLE_ELEM(2, 0, tup)
-#define _SDF_FIELDS_TYPE(tup) BOOST_PP_TUPLE_ELEM(2, 1, tup)
+#define _SDF_FIELDS_NAME(tup) TF_PP_TUPLE_ELEM(0, tup)
+#define _SDF_FIELDS_TYPE(tup) TF_PP_TUPLE_ELEM(1, tup)
 
 /// Registers each built-in Sd field along with its C++ value type with
 /// \p reg. \p reg can be any type that has a member function:

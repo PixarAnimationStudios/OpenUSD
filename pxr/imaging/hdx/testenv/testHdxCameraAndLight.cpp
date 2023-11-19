@@ -35,9 +35,9 @@
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hdSt/light.h"
 #include "pxr/imaging/hdSt/renderDelegate.h"
-#include "pxr/imaging/hdSt/renderPass.h"
-#include "pxr/imaging/hdSt/renderPassState.h"
 
+#include "pxr/imaging/hdx/renderSetupTask.h"
+#include "pxr/imaging/hdx/renderTask.h"
 #include "pxr/imaging/hdx/unitTestDelegate.h"
 
 #include "pxr/imaging/hgi/hgi.h"
@@ -55,40 +55,6 @@
                     perfLog.GetCounter(token));
 
 PXR_NAMESPACE_USING_DIRECTIVE
-
-class Hd_TestTask final : public HdTask
-{
-public:
-    Hd_TestTask(HdRenderPassSharedPtr const &renderPass,
-                HdRenderPassStateSharedPtr const &renderPassState)
-    : HdTask(SdfPath::EmptyPath())
-    , _renderPass(renderPass)
-    , _renderPassState(renderPassState)
-    {
-    }
-
-    virtual void Sync(HdSceneDelegate*,
-                      HdTaskContext*,
-                      HdDirtyBits*) override
-    {
-        _renderPass->Sync();
-    }
-
-    virtual void Prepare(HdTaskContext* ctx,
-                         HdRenderIndex* renderIndex) override
-    {
-        _renderPassState->Prepare(renderIndex->GetResourceRegistry());
-    }
-
-    virtual void Execute(HdTaskContext* ctx) override
-    {
-        _renderPass->Execute(_renderPassState, GetRenderTags());
-    }
-
-private:
-    HdRenderPassSharedPtr _renderPass;
-    HdRenderPassStateSharedPtr _renderPassState;
-};
 
 static void CameraAndLightTest()
 {
@@ -109,15 +75,72 @@ static void CameraAndLightTest()
     perfLog.Enable();
     HdRprimCollection collection(HdTokens->geometry, 
         HdReprSelector(HdReprTokens->hull));
-    HdRenderPassStateSharedPtr renderPassState(new HdStRenderPassState());
-    HdRenderPassSharedPtr renderPass(
-        new HdSt_RenderPass(index.get(), collection));
     HdEngine engine;
+    
+    // --------------------------------------------------------------------
 
-    HdTaskSharedPtr drawTask = std::make_shared<Hd_TestTask>(renderPass,
-                                                             renderPassState);
-    HdTaskSharedPtrVector tasks = { drawTask };
+    // prep tasks
+    SdfPath renderSetupTask("/renderSetupTask");
+    SdfPath renderTask("/renderTask");
+    delegate->AddRenderSetupTask(renderSetupTask);
+    delegate->AddRenderTask(renderTask);
+    HdTaskSharedPtrVector tasks;
+    tasks.push_back(index->GetTask(renderSetupTask));
+    tasks.push_back(index->GetTask(renderTask));
+    
+    // Setup AOVs
+    const SdfPath colorAovId = SdfPath("/aov_color");
+    const SdfPath depthAovId = SdfPath("/aov_depth");
+    HdRenderPassAovBindingVector aovBindings;
 
+    // Color AOV
+    {
+        HdRenderPassAovBinding colorAovBinding;
+        const HdAovDescriptor colorAovDesc = 
+            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->color);
+        colorAovBinding.aovName = HdAovTokens->color;
+        colorAovBinding.clearValue = VtValue(GfVec4f(0.1f, 0.1f, 0.1f, 1.0f));
+        colorAovBinding.renderBufferId = colorAovId;
+        colorAovBinding.aovSettings = colorAovDesc.aovSettings;
+        aovBindings.push_back(std::move(colorAovBinding));
+
+        HdRenderBufferDescriptor colorRbDesc;
+        colorRbDesc.dimensions = GfVec3i(512, 512, 1);
+        colorRbDesc.format = colorAovDesc.format;
+        colorRbDesc.multiSampled = false;
+        delegate->AddRenderBuffer(colorAovId, colorRbDesc);
+    }
+
+    // Depth AOV
+    {
+        HdRenderPassAovBinding depthAovBinding;
+        const HdAovDescriptor depthAovDesc = 
+            renderDelegate.GetDefaultAovDescriptor(HdAovTokens->depth);
+        depthAovBinding.aovName = HdAovTokens->depth;
+        depthAovBinding.clearValue = VtValue(1.f);
+        depthAovBinding.renderBufferId = depthAovId;
+        depthAovBinding.aovSettings = depthAovDesc.aovSettings;
+        aovBindings.push_back(std::move(depthAovBinding));
+
+        HdRenderBufferDescriptor depthRbDesc;
+        depthRbDesc.dimensions = GfVec3i(512, 512, 1);
+        depthRbDesc.format = depthAovDesc.format;
+        depthRbDesc.multiSampled = false;
+        delegate->AddRenderBuffer(depthAovId, depthRbDesc);
+    }
+    
+    // Set render task param
+    delegate->SetTaskParam(
+        renderTask, HdTokens->collection, VtValue(collection));
+
+    // Set render setup param
+    VtValue vParam = delegate->GetTaskParam(renderSetupTask, HdTokens->params);
+    HdxRenderTaskParams param = vParam.Get<HdxRenderTaskParams>();
+    param.enableLighting = true;
+    param.aovBindings = aovBindings;
+    delegate->SetTaskParam(renderSetupTask, HdTokens->params, VtValue(param));
+    
+    // Set up scene
     GfMatrix4d tx(1.0f);
     tx.SetRow(3, GfVec4f(5, 0, 5, 1.0));
     SdfPath cube("/geometry");
@@ -132,6 +155,7 @@ static void CameraAndLightTest()
                       VtValue(HdRprimCollection(HdTokens->geometry,
                                         HdReprSelector(HdReprTokens->hull))));
 
+    // Draw
     engine.Execute(index.get(), &tasks);
 
     VERIFY_PERF_COUNT(HdPerfTokens->rebuildBatches, 1);

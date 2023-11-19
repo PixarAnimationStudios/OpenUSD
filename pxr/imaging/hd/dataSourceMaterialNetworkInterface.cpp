@@ -29,6 +29,30 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+TF_DEFINE_PRIVATE_TOKENS(
+    _tokens,
+    // See note in GetModelAssetName()
+    (model)
+    (assetName)
+    );
+
+std::string
+HdDataSourceMaterialNetworkInterface::GetModelAssetName() const
+{
+    // XXX If the model schema moves from UsdImaging back to HdModelSchema
+    // in the future, we could use that here.
+    if (_primContainer) {
+        if (HdContainerDataSourceHandle modelDs =
+            HdContainerDataSource::Cast(_primContainer->Get(_tokens->model))) {
+            if (HdStringDataSourceHandle assetNameDs =
+                HdStringDataSource::Cast(modelDs->Get(_tokens->assetName))) {
+                return assetNameDs->GetTypedValue(0.0f);
+            }
+        }
+    }
+    return std::string();
+}
+
 HdContainerDataSourceHandle
 HdDataSourceMaterialNetworkInterface::_GetNode(
     const TfToken &nodeName) const
@@ -101,7 +125,7 @@ HdDataSourceMaterialNetworkInterface::_SetOverride(
     const HdDataSourceLocator &loc,
     const HdDataSourceBaseHandle &ds)
 {
-    _containerEditor.Set(loc, ds);
+    _networkEditor.Set(loc, ds);
     _existingOverrides[loc] = ds;
 
     static const HdDataSourceLocator nodesLocator(
@@ -379,7 +403,7 @@ HdDataSourceMaterialNetworkInterface::DeleteNode(const TfToken &nodeName)
         HdMaterialNetworkSchemaTokens->nodes,
         nodeName);
 
-    _containerEditor.Set(locator, nullptr);
+    _networkEditor.Set(locator, nullptr);
     _deletedNodes.insert(nodeName);
 }
 
@@ -600,7 +624,7 @@ HdDataSourceMaterialNetworkInterface::Finish()
         return _networkContainer;
     }
 
-    return _containerEditor.Finish();
+    return _networkEditor.Finish();
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

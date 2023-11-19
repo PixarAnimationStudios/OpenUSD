@@ -33,12 +33,11 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/token.h"
 
-#include <boost/preprocessor/cat.hpp>
 #include <boost/preprocessor/seq/for_each.hpp>
 #include <boost/preprocessor/seq/for_each_i.hpp>
-#include <boost/preprocessor/tuple/elem.hpp>
 
 #include <cstddef>
 #include <cstring>
@@ -142,9 +141,9 @@ VT_TYPE_IS_CHEAP_TO_COPY(TfToken);
 
 // Helper macros for extracting bits from a type tuple.
 #define VT_TYPE(elem) \
-BOOST_PP_TUPLE_ELEM(2, 0, elem)
+TF_PP_TUPLE_ELEM(0, elem)
 #define VT_TYPE_NAME(elem) \
-BOOST_PP_TUPLE_ELEM(2, 1, elem)   
+TF_PP_TUPLE_ELEM(1, elem)
 
 
 // Composite groups of types.
@@ -173,14 +172,14 @@ VT_SCALAR_CLASS_VALUE_TYPES VT_BUILTIN_VALUE_TYPES
 template<typename T> class VtArray;
 #define VT_ARRAY_TYPEDEF(r, unused, elem) \
 typedef VtArray< VT_TYPE(elem) > \
-BOOST_PP_CAT(Vt, BOOST_PP_CAT(VT_TYPE_NAME(elem), Array)) ;
+TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) ;
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_TYPEDEF, ~, VT_SCALAR_VALUE_TYPES)
 
 // The following preprocessor code generates the boost pp sequence for
 // all array value types (VT_ARRAY_VALUE_TYPES)
 #define VT_ARRAY_TYPE_TUPLE(r, unused, elem) \
-(( BOOST_PP_CAT(Vt, BOOST_PP_CAT(VT_TYPE_NAME(elem), Array)) , \
-   BOOST_PP_CAT(VT_TYPE_NAME(elem), Array) ))
+(( TF_PP_CAT(Vt, TF_PP_CAT(VT_TYPE_NAME(elem), Array)) , \
+   TF_PP_CAT(VT_TYPE_NAME(elem), Array) ))
 #define VT_ARRAY_VALUE_TYPES \
 BOOST_PP_SEQ_FOR_EACH(VT_ARRAY_TYPE_TUPLE, ~, VT_SCALAR_VALUE_TYPES)
 

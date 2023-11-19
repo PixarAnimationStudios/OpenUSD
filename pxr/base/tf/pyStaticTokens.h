@@ -103,7 +103,7 @@ private:
 
 #define _TF_PY_TOKEN_GET_ELEM(elem)                                         \
     BOOST_PP_IIF(TF_PP_IS_TUPLE(elem),                                      \
-        BOOST_PP_TUPLE_ELEM(2, 0, elem), elem)
+        TF_PP_TUPLE_ELEM(0, elem), elem)
 
 // Private macros to wrap a sequence.
 #define _TF_PY_TOKENS_WRAP_SEQ(key, seq)                                    \

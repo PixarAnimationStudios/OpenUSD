@@ -56,13 +56,14 @@ class SdfAssetPath;
 
 /// \class UsdShadeMaterial
 ///
-/// A Material provides a container into which multiple "render targets"
-/// can add data that defines a "shading material" for a renderer.  Typically
-/// this consists of one or more UsdRelationship properties that target
-/// other prims of type \em Shader - though a target/client is free to add
-/// any data that is suitable.  We <b>strongly advise</b> that all targets
+/// A Material provides a container into which multiple "render contexts"
+/// can add data that defines a "shading material" for a renderer. Typically 
+/// this consists of one or more UsdShadeOutput properties connected to outputs 
+/// of nested Shader prims - though a context/client is free to add
+/// any data that is suitable. We <b>strongly advise</b> that all contexts
 /// adopt the convention that all properties be prefixed with a namespace
-/// that identifies the target, e.g. "rel ri:surface = </Shaders/mySurf>".
+/// that identifies the context e.g. "token outputs:ri:surface.connect = 
+/// </MyselfMaterial/previewSurface.outputs:surface". 
 /// 
 /// ## Binding Materials
 /// 

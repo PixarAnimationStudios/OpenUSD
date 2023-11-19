@@ -113,6 +113,12 @@ HdPrmanCamera::Sync(HdSceneDelegate *sceneDelegate,
                 .GetWithDefault<float>(1.0f);
 #endif
 
+        // NOTE: This workaround is necessary only when a well-formed render
+        //       settings prim isn't present. UpdateRileyShutterInterval(..)
+        //       sets the riley global shutter param on the legacy options
+        //       param list, which has a weaker strength than the param list
+        //       from the render settings prim.
+        //
         if (id == param->GetCameraContext().GetCameraPath()) {
             // Motion blur in Riley only works correctly if the
             // shutter interval is set before any rprims are synced

@@ -24,9 +24,9 @@
 #include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/usdImaging/usdImaging/flattenedModelDataSourceProvider.h"
+#include "pxr/usdImaging/usdImaging/modelSchema.h"
 
 #include "pxr/imaging/hd/flattenedDataSourceProviders.h"
-#include "pxr/imaging/hd/modelSchema.h"
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
@@ -40,7 +40,7 @@ UsdImagingFlattenedDataSourceProviders()
     static HdContainerDataSourceHandle const result =
         HdOverlayContainerDataSource::New(
         HdRetainedContainerDataSource::New(
-            HdModelSchema::GetSchemaToken(),
+            UsdImagingModelSchema::GetSchemaToken(),
             Make<UsdImagingFlattenedModelDataSourceProvider>()),
         HdFlattenedDataSourceProviders());
     return result;

@@ -30,8 +30,9 @@
 #include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/extComputation.h"
 #include "pxr/imaging/hd/field.h"
-#include "pxr/imaging/hd/material.h"
+#include "pxr/imaging/hd/imageShader.h"
 #include "pxr/imaging/hd/light.h"
+#include "pxr/imaging/hd/material.h"
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderSettings.h"
 
@@ -53,6 +54,7 @@
 #include "pxr/imaging/hd/extentSchema.h"
 #include "pxr/imaging/hd/geomSubsetSchema.h"
 #include "pxr/imaging/hd/geomSubsetsSchema.h"
+#include "pxr/imaging/hd/imageShaderSchema.h"
 #include "pxr/imaging/hd/instanceCategoriesSchema.h"
 #include "pxr/imaging/hd/instancedBySchema.h"
 #include "pxr/imaging/hd/instancerTopologySchema.h"
@@ -345,6 +347,19 @@ HdDirtyBitsTranslator::SprimDirtyBitsToLocatorSet(TfToken const& primType,
         if (bits & HdChangeTracker::DirtyVisibility) {
             set->append(HdVisibilitySchema::GetDefaultLocator());
         }
+    } else if (primType == HdPrimTypeTokens->imageShader) {
+        if (bits & HdImageShader::DirtyEnabled) {
+            set->append(HdImageShaderSchema::GetEnabledLocator());
+        }
+        if (bits & HdImageShader::DirtyPriority) {
+            set->append(HdImageShaderSchema::GetPriorityLocator());
+        }
+        if (bits & HdImageShader::DirtyFilePath) {
+            set->append(HdImageShaderSchema::GetFilePathLocator());
+        }
+        if (bits & HdImageShader::DirtyConstants) {
+            set->append(HdImageShaderSchema::GetConstantsLocator());
+        }
     } else {
         const auto fncIt = Hd_SPrimBToSFncs->find(primType);
         if (fncIt == Hd_SPrimBToSFncs->end()) {
@@ -428,6 +443,9 @@ HdDirtyBitsTranslator::BprimDirtyBitsToLocatorSet(TfToken const& primType,
         }
         if (bits & HdRenderSettings::DirtyRenderingColorSpace) {
             set->append(HdRenderSettingsSchema::GetRenderingColorSpaceLocator());
+        }
+        if (bits & HdRenderSettings::DirtyShutterInterval) {
+            set->append(HdRenderSettingsSchema::GetShutterIntervalLocator());
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (bits & HdField::DirtyParams) {
@@ -858,6 +876,34 @@ HdDirtyBitsTranslator::SprimLocatorSetToDirtyBits(
         if (_FindLocator(HdVisibilitySchema::GetDefaultLocator(), end, &it)) {
             bits |= HdChangeTracker::DirtyVisibility;
         }
+    } else if (primType == HdPrimTypeTokens->imageShader) {
+        if (_FindLocator(HdImageShaderSchema::GetDefaultLocator(),
+                end, &it, false)) {
+            if (HdImageShaderSchema::GetDefaultLocator().HasPrefix(*it)) {
+                bits |= HdImageShader::AllDirty;
+            } else {
+                do {
+                    if (it->HasPrefix(
+                        HdImageShaderSchema::GetEnabledLocator())) {
+                        bits |= HdImageShader::DirtyEnabled;
+                    }
+                    if (it->HasPrefix(
+                        HdImageShaderSchema::GetPriorityLocator())) {
+                        bits |= HdImageShader::DirtyPriority;
+                    }
+                    if (it->HasPrefix(
+                        HdImageShaderSchema::GetFilePathLocator())) {
+                        bits |= HdImageShader::DirtyFilePath;
+                    }
+                    if (it->HasPrefix(
+                        HdImageShaderSchema::GetConstantsLocator())) {
+                        bits |= HdImageShader::DirtyConstants;
+                    }
+                    ++it;
+                } while(it != end && it->Intersects(
+                            HdImageShaderSchema::GetDefaultLocator()));
+            }
+        }
     } else {
         const auto fncIt = Hd_SPrimSToBFncs->find(primType);
         if (fncIt == Hd_SPrimSToBFncs->end()) {
@@ -964,6 +1010,11 @@ HdDirtyBitsTranslator::BprimLocatorSetToDirtyBits(
                 HdRenderSettingsSchema::GetRenderingColorSpaceLocator(),
                 end, &it)) {
             bits |= HdRenderSettings::DirtyRenderingColorSpace;
+        }
+        if (_FindLocator(
+                HdRenderSettingsSchema::GetShutterIntervalLocator(),
+                end, &it)) {
+            bits |= HdRenderSettings::DirtyShutterInterval;
         }
     } else if (HdLegacyPrimTypeIsVolumeField(primType)) {
         if (_FindLocator(HdVolumeFieldSchema::GetDefaultLocator(), end, &it)) {

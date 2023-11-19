@@ -176,25 +176,6 @@ UsdProperty::FlattenTo(const UsdProperty &property) const
         *this, property.GetPrim(), property.GetName());
 }
 
-// Map from path to replacement for remapping target paths during flattening.
-using _PathMap = std::vector<std::pair<SdfPath, SdfPath>>;
-
-// Apply path remappings to a list of target paths.
-static SdfPath
-_MapPath(_PathMap const &map, SdfPath const &path)
-{
-    if (map.empty()) {
-        return path;
-    }
-
-    auto it = SdfPathFindLongestPrefix(
-        map.begin(), map.end(), path, TfGet<0>());
-    if (it != map.end()) {
-        return path.ReplacePrefix(it->first, it->second);
-    }
-    return path;
-}
-
 bool
 UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
                          bool *foundErrors) const
@@ -229,38 +210,11 @@ UsdProperty::_GetTargets(SdfSpecType specType, SdfPathVector *out,
     }
 
     if (!targetIndex.paths.empty() && _Prim()->IsInPrototype()) {
-
-        // Walk up to the root while we're in (nested) instance-land.  When we
-        // hit an instance or a prototype, add a mapping for the prototype
-        // source prim index path to this particular instance (proxy) path.
-        _PathMap pathMap;
-
-        // This prim might be an instance proxy inside a prototype, if so use
-        // its prototype, but be sure to skip up to the parent if *this* prim is
-        // an instance.  Target paths on *this* prim are in the "space" of its
-        // next ancestral prototype, just as how attribute & metadata values
-        // come from the instance itself, not its prototype.
-        UsdPrim prim = GetPrim();
-        if (prim.IsInstance()) {
-            prim = prim.GetParent();
-        }
-        for (; prim; prim = prim.GetParent()) {
-            UsdPrim prototype;
-            if (prim.IsInstance()) {
-                prototype = prim.GetPrototype();
-            } else if (prim.IsPrototype()) {
-                prototype = prim;
-            }
-            if (prototype) {
-                pathMap.emplace_back(prototype._GetSourcePrimIndex().GetPath(),
-                                     prim.GetPath());
-            }
-        };
-        std::sort(pathMap.begin(), pathMap.end());
-
+        UsdPrim::_ProtoToInstancePathMap pathMap =
+            GetPrim()._GetProtoToInstancePathMap();
         // Now map the targets.
         for (SdfPath const &target : targetIndex.paths) {
-            out->push_back(_MapPath(pathMap, target));
+            out->push_back(pathMap.MapProtoToInstance(target));
             if (out->back().IsEmpty()) {
                 out->pop_back();
             }

@@ -64,11 +64,20 @@ HdInstancer::GetInstancerNumLevels(HdRenderIndex& index,
 TfTokenVector const &
 HdInstancer::GetBuiltinPrimvarNames()
 {
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        static const TfTokenVector primvarNames = {
+            HdInstancerTokens->instanceTransform,
+            HdInstancerTokens->rotate,
+            HdInstancerTokens->scale,
+            HdInstancerTokens->translate
+        };
+        return primvarNames;
+    }
     static const TfTokenVector primvarNames = {
-        HdInstancerTokens->instanceTransform,
-        HdInstancerTokens->rotate,
-        HdInstancerTokens->scale,
-        HdInstancerTokens->translate
+        HdInstancerTokens->instanceTransforms,
+        HdInstancerTokens->instanceRotations,
+        HdInstancerTokens->instanceScales,
+        HdInstancerTokens->instanceTranslations
     };
     return primvarNames;
 }

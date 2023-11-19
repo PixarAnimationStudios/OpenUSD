@@ -32,6 +32,7 @@
 #include "pxr/base/vt/dictionary.h"
 #include "pxr/base/gf/vec2i.h"
 #include "pxr/base/gf/vec2f.h"
+#include "pxr/base/gf/vec2d.h"
 #include "pxr/base/gf/range2f.h"
 
 #include <vector>
@@ -75,12 +76,14 @@ public:
         DirtyIncludedPurposes        = 1 << 4,
         DirtyMaterialBindingPurposes = 1 << 5,
         DirtyRenderingColorSpace     = 1 << 6,
+        DirtyShutterInterval         = 1 << 7,
         AllDirty                     =    DirtyActive
                                         | DirtyNamespacedSettings
                                         | DirtyRenderProducts
                                         | DirtyIncludedPurposes
                                         | DirtyMaterialBindingPurposes
                                         | DirtyRenderingColorSpace
+                                        | DirtyShutterInterval
     };
 
     // Parameters that may be queried and invalidated.
@@ -146,10 +149,10 @@ public:
     bool IsActive() const;
 
     HD_API
-    const NamespacedSettings& GetNamespacedSettings() const;
+    bool IsValid() const;
 
     HD_API
-    unsigned int GetSettingsVersion() const;
+    const NamespacedSettings& GetNamespacedSettings() const;
 
     HD_API
     const RenderProducts& GetRenderProducts() const;
@@ -163,7 +166,9 @@ public:
     HD_API
     const TfToken& GetRenderingColorSpace() const;
 
-    // XXX Add API to query AOV bindings.
+    // XXX Using VtValue in a std::optional (C++17) sense.
+    HD_API
+    const VtValue& GetShutterInterval() const;
 
     // ------------------------------------------------------------------------
     // Satisfying HdBprim
@@ -201,11 +206,11 @@ private:
 
     bool _active;
     NamespacedSettings _namespacedSettings;
-    unsigned int _settingsVersion;
     RenderProducts _products;
     VtArray<TfToken> _includedPurposes;
     VtArray<TfToken> _materialBindingPurposes;
     TfToken _renderingColorSpace;
+    VtValue _vShutterInterval;
 };
 
 // VtValue requirements

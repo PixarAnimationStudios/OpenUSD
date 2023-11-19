@@ -31,7 +31,7 @@ Generating New Schema Classes
               - This is a path list which Python uses to find modules.
               - $PYTHONPATH:**USD_INSTALL_ROOT/lib/python/**
 
-   For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/USD/blob/release/BUILDING.md>`_ .
+   For more information see our page on `Advanced Build Configuration <https://github.com/PixarAnimationStudios/OpenUSD/blob/release/BUILDING.md>`_ .
 
 The files used in this tutorial are available in
 USD/extras/usd/examples/usdSchemaExamples/. The objective of this tutorial is 

@@ -102,6 +102,7 @@ class TestSdfParsing(unittest.TestCase):
         182_bad_variant_in_relationship.sdf
         181_bad_variant_in_connection.sdf
         180_asset_paths.sdf
+        179_bad_shaped_attr_dimensions1_oldtypes.sdf
         179_bad_shaped_attr_dimensions1.sdf
         178_invalid_typeName.sdf
         177_bad_empty_lists.sdf
@@ -138,6 +139,7 @@ class TestSdfParsing(unittest.TestCase):
         115_symmetricPeer_metadata.sdf
         114_bad_prefix_metadata.sdf
         113_displayName_metadata.sdf
+        112_nested_dictionaries_oldtypes.sdf
         112_nested_dictionaries.sdf
         111_string_arrays.sdf
         108_bad_inheritPath.sdf
@@ -147,6 +149,7 @@ class TestSdfParsing(unittest.TestCase):
         99_bad_typeNameChange.sdf
         98_bad_valueType.sdf
         97_bad_valueType.sdf
+        96_bad_valueType_oldtypes.sdf
         96_bad_valueType.sdf
         95_bad_hiddenRel.sdf
         94_bad_hiddenAttr.sdf
@@ -157,9 +160,13 @@ class TestSdfParsing(unittest.TestCase):
         89_bad_attribute_displayUnit.sdf
         88_attribute_displayUnit.sdf
         86_bad_tuple_dimensions5.sdf
+        85_bad_tuple_dimensions4_oldtypes.sdf
         85_bad_tuple_dimensions4.sdf
+        84_bad_tuple_dimensions3_oldtypes.sdf
         84_bad_tuple_dimensions3.sdf
+        83_bad_tuple_dimensions2_oldtypes.sdf
         83_bad_tuple_dimensions2.sdf
+        82_bad_tuple_dimensions1_oldtypes.sdf
         82_bad_tuple_dimensions1.sdf
         81_namespace_reorder.sdf
         80_bad_hidden.sdf
@@ -176,7 +183,9 @@ class TestSdfParsing(unittest.TestCase):
         59_bad_connectListEditing.sdf
         58_bad_relListEditing.sdf
         57_bad_relListEditing.sdf
+        56_bad_value_oldtypes.sdf
         56_bad_value.sdf
+        55_bad_value_oldtypes.sdf
         55_bad_value.sdf
         54_bad_value.sdf
         53_bad_typeName.sdf
@@ -196,6 +205,7 @@ class TestSdfParsing(unittest.TestCase):
         36_tasks.sdf
         33_bad_relationship_duplicate_target.sdf
         32_relationship_syntax.sdf
+        31_attribute_values_oldtypes.sdf
         31_attribute_values.sdf
         30_bad_specifier.sdf
         29_bad_newline9.sdf
@@ -219,6 +229,7 @@ class TestSdfParsing(unittest.TestCase):
         08_bad_file.sdf
         06_largevalue.sdf
         05_bad_file.sdf
+        04_general_oldtypes.sdf
         04_general.sdf
         03_bad_file.sdf
         02_simple.sdf

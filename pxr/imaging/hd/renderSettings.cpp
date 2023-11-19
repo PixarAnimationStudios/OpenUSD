@@ -73,7 +73,6 @@ HdRenderSettings::HdRenderSettings(
     SdfPath const& id)
     : HdBprim(id)
     , _active(false)
-    , _settingsVersion(1)
 {
 }
 
@@ -85,16 +84,18 @@ HdRenderSettings::IsActive() const
     return _active;
 }
 
+bool
+HdRenderSettings::IsValid() const
+{
+    // The RenderSettings prim is considered valid if there is at least one 
+    // RenderProduct, and we have a camera path specified.
+    return !_products.empty() && !_products[0].cameraPath.IsEmpty();
+}
+
 const HdRenderSettings::NamespacedSettings&
 HdRenderSettings::GetNamespacedSettings() const
 {
     return _namespacedSettings;
-}
-
-unsigned int
-HdRenderSettings::GetSettingsVersion() const
- {
-    return _settingsVersion;
 }
 
 const HdRenderSettings::RenderProducts&
@@ -121,6 +122,12 @@ HdRenderSettings::GetRenderingColorSpace() const
     return _renderingColorSpace;
 }
 
+const VtValue&
+HdRenderSettings::GetShutterInterval() const
+{
+    return _vShutterInterval;
+}
+
 void
 HdRenderSettings::Sync(
     HdSceneDelegate *sceneDelegate,
@@ -142,7 +149,6 @@ HdRenderSettings::Sync(
             GetId(), HdRenderSettingsPrimTokens->namespacedSettings);
         if (vSettings.IsHolding<VtDictionary>()) {
             _namespacedSettings = vSettings.UncheckedGet<VtDictionary>();
-            _settingsVersion++;
         }
     }
 
@@ -181,6 +187,11 @@ HdRenderSettings::Sync(
         if (vColorSpace.IsHolding<TfToken>()) {
             _renderingColorSpace = vColorSpace.UncheckedGet<TfToken>();
         }
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+        _vShutterInterval = sceneDelegate->Get(
+            GetId(), HdRenderSettingsPrimTokens->shutterInterval);
     }
 
     // Allow subclasses to do any additional processing if necessary.

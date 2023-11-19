@@ -58,10 +58,13 @@ public:
     static HdContainerDataSourceHandle
     BuildRetained(
         size_t count,
-        TfToken *names,
-        HdDataSourceBaseHandle *values);
+        const TfToken *names,
+        const HdDataSourceBaseHandle *values);
 
+    HD_API
     HdContainerDataSourceHandle GetMaterialNetwork();
+
+    HD_API
     HdContainerDataSourceHandle GetMaterialNetwork(TfToken const &context);
 
 

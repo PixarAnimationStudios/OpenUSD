@@ -27,31 +27,31 @@
 
 #include <boost/python/def.hpp>
 #include <boost/python/object.hpp>
-#include <boost/variant.hpp>
 
 #include <string>
+#include <variant>
 
 #include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-extern boost::variant<int, bool, std::string> const *
+extern std::variant<int, bool, std::string> const *
 Tf_GetEnvSettingByName(std::string const&);
 
 static boost::python::object
 _GetEnvSettingByName(std::string const& name) {
-    boost::variant<int, bool, std::string> const *
+    std::variant<int, bool, std::string> const *
         variantValue = Tf_GetEnvSettingByName(name);
 
     if (!variantValue) {
         return boost::python::object();
     } 
 
-    if (std::string const *value = boost::get<std::string>(variantValue)) {
+    if (std::string const *value = std::get_if<std::string>(variantValue)) {
         return boost::python::object(*value);
-    } else if (bool const *value = boost::get<bool>(variantValue)) {
+    } else if (bool const *value = std::get_if<bool>(variantValue)) {
         return boost::python::object(*value);
-    } else if (int const *value = boost::get<int>(variantValue)) {
+    } else if (int const *value = std::get_if<int>(variantValue)) {
         return boost::python::object(*value); 
     } 
             

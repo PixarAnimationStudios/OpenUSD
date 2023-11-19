@@ -422,6 +422,27 @@ void HdPrmanInstancer::_SyncPrimvars(
     HdSceneDelegate* delegate = GetDelegate();
     SdfPath const& id = GetId();
 
+    // XXX: When removing these in 24.05, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens.
+#if HD_API_VERSION < 56
+    TfToken instanceTranslationsToken = HdInstancerTokens->translate;
+    TfToken instanceRotationsToken = HdInstancerTokens->rotate;
+    TfToken instanceScalesToken = HdInstancerTokens->scale;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransform;
+#else
+    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
+    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
+    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
+
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        instanceTranslationsToken = HdInstancerTokens->translate;
+        instanceRotationsToken = HdInstancerTokens->rotate;
+        instanceScalesToken = HdInstancerTokens->scale;
+        instanceTransformsToken = HdInstancerTokens->instanceTransform;
+    }
+#endif
+
     if (HdChangeTracker::IsAnyPrimvarDirty(*dirtyBits, id)) {
         // Get list of USD primvar names for each interp mode and cache each one
         for (HdInterpolation i = HdInterpolationVarying;
@@ -431,10 +452,10 @@ void HdPrmanInstancer::_SyncPrimvars(
                 // Skip primvars that have special handling elsewhere.
                 // The transform primvars are all handled in
                 // _SyncTransforms.
-                if (primvar.name == HdInstancerTokens->instanceTransform ||
-                    primvar.name == HdInstancerTokens->rotate ||
-                    primvar.name == HdInstancerTokens->scale ||
-                    primvar.name == HdInstancerTokens->translate) {
+                if (primvar.name == instanceTransformsToken ||
+                    primvar.name == instanceRotationsToken ||
+                    primvar.name == instanceScalesToken ||
+                    primvar.name == instanceTranslationsToken) {
                     continue;
                 }
                 if (HdChangeTracker::IsPrimvarDirty(*dirtyBits, id, primvar.name)) {
@@ -457,6 +478,28 @@ HdPrmanInstancer::_SyncTransforms(
     HdSceneDelegate* delegate = GetDelegate();
     const SdfPath& id = GetId();
 
+    // XXX: When removing these in 24.05, eliminate the variables. Replace
+    // their usages with the appropriate HdInstancerTokens. Don't forget to
+    // reformat the "not ... expected type" warning messages, too!
+#if HD_API_VERSION < 56
+    TfToken instanceTranslationsToken = HdInstancerTokens->translate;
+    TfToken instanceRotationsToken = HdInstancerTokens->rotate;
+    TfToken instanceScalesToken = HdInstancerTokens->scale;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransform;
+#else
+    TfToken instanceTranslationsToken = HdInstancerTokens->instanceTranslations;
+    TfToken instanceRotationsToken = HdInstancerTokens->instanceRotations;
+    TfToken instanceScalesToken = HdInstancerTokens->instanceScales;
+    TfToken instanceTransformsToken = HdInstancerTokens->instanceTransforms;
+
+    if (TfGetEnvSetting(HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES)) {
+        instanceTranslationsToken = HdInstancerTokens->translate;
+        instanceRotationsToken = HdInstancerTokens->rotate;
+        instanceScalesToken = HdInstancerTokens->scale;
+        instanceTransformsToken = HdInstancerTokens->instanceTransform;
+    }
+#endif
+
     // Only include this instancer's own transform if it has no parent. When
     // there is a parent instancer, the parent instancer will apply this
     // instancer's transform to the instances it creates of this instancer's
@@ -465,51 +508,53 @@ HdPrmanInstancer::_SyncTransforms(
 
     if (HdChangeTracker::IsTransformDirty(*dirtyBits, id) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->instanceTransform) ||
+            instanceTransformsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->translate) ||
+            instanceTranslationsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->rotate) ||
+            instanceRotationsToken) ||
         HdChangeTracker::IsPrimvarDirty(*dirtyBits, id,
-            HdInstancerTokens->scale)) {
+            instanceScalesToken)) {
 
         HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> instancerXform;
-        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedInstanceXforms;
+        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
+            boxedInstanceXforms;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedTranslates;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedRotates;
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedScales;
         if (includeInstancerXform) {
             delegate->SampleInstancerTransform(id, &instancerXform);
         }
-        delegate->SamplePrimvar(id, HdInstancerTokens->instanceTransform,
+        delegate->SamplePrimvar(id, instanceTransformsToken,
                                 &boxedInstanceXforms);
-        delegate->SamplePrimvar(id, HdInstancerTokens->translate,
+        delegate->SamplePrimvar(id, instanceTranslationsToken,
                                 &boxedTranslates);
-        delegate->SamplePrimvar(id, HdInstancerTokens->scale,
+        delegate->SamplePrimvar(id, instanceScalesToken,
                                 &boxedScales);
-        delegate->SamplePrimvar(id, HdInstancerTokens->rotate,
+        delegate->SamplePrimvar(id, instanceRotationsToken,
                                 &boxedRotates);
 
         // Unbox samples held as VtValues
-        HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES> instanceXforms;
+        HdTimeSampleArray<VtMatrix4dArray, HDPRMAN_MAX_TIME_SAMPLES>
+            instanceXforms;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> translates;
         HdTimeSampleArray<VtQuathArray, HDPRMAN_MAX_TIME_SAMPLES> rotates;
         HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> scales;
         if (!instanceXforms.UnboxFrom(boxedInstanceXforms)) {
-            TF_WARN("<%s> instanceTransform did not have expected type matrix4d[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type matrix4d[]",
+                instanceTransformsToken.GetText(), id.GetText());
         }
         if (!translates.UnboxFrom(boxedTranslates)) {
-            TF_WARN("<%s> translate did not have expected type vec3f[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type vec3f[]",
+                instanceTranslationsToken.GetText(), id.GetText());
         }
         if (!rotates.UnboxFrom(boxedRotates)) {
-            TF_WARN("<%s> rotate did not have expected type quath[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type quath[]",
+                instanceRotationsToken.GetText(), id.GetText());
         }
         if (!scales.UnboxFrom(boxedScales)) {
-            TF_WARN("<%s> scale did not have expected type vec3f[]",
-                    id.GetText());
+            TF_WARN("<%s> %s did not have expected type vec3f[]",
+                instanceScalesToken.GetText(), id.GetText());
         }
 
         // As a simple resampling strategy, find the input with the max #

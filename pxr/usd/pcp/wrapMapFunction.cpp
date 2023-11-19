@@ -123,10 +123,20 @@ void wrapMapFunction()
         .add_property("isIdentityPathMapping", &This::IsIdentityPathMapping)
         .add_property("isNull", &This::IsNull)
 
-        .def("MapSourceToTarget", &This::MapSourceToTarget,
-            (arg("path")))
-        .def("MapTargetToSource", &This::MapTargetToSource,
-            (arg("path")))
+        .def("MapSourceToTarget",
+             +[](This const &self, SdfPathExpression const &pathExpr) {
+                 return self.MapSourceToTarget(pathExpr);
+             }, arg("pathExpr"))
+        .def("MapTargetToSource",
+             +[](This const &self, SdfPathExpression const &pathExpr) {
+                 return self.MapTargetToSource(pathExpr);
+             }, arg("pathExpr"))
+
+        .def("MapSourceToTarget", (SdfPath (This::*)(const SdfPath &) const)
+             &This::MapSourceToTarget, (arg("path")))
+        .def("MapTargetToSource", (SdfPath (This::*)(const SdfPath &) const)
+             &This::MapTargetToSource, (arg("path")))
+
         .def("Compose", &This::Compose)
         .def("ComposeOffset", &This::ComposeOffset, arg("offset"))
         .def("GetInverse", &This::GetInverse)

@@ -27,6 +27,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/parserValueContext.h"
+#include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/sdf/schemaTypeRegistration.h"
@@ -461,6 +462,7 @@ _AddStandardTypesToRegistry(Sdf_ValueTypeRegistry* r)
     r->AddType(T("opaque", SdfOpaqueValue()).NoArrays());
     r->AddType(T("group",  SdfOpaqueValue())
                .NoArrays().Role(SdfValueRoleNames->Group));
+    r->AddType(T("pathExpression", SdfPathExpression()));
 
     // Compound types.
     r->AddType(T("double2",  GfVec2d(0.0)).Dimensions(2));
@@ -1194,6 +1196,17 @@ SdfSchemaBase::IsValidValue(const VtValue& value) const
             }
         }
     }
+    else if (value.IsHolding<SdfPathExpression>()) {
+        // Path expressions must be absolute, following requirements for other
+        // SdfPaths written to files (rel targets, attr connections, inherit
+        // paths, etc.)
+        SdfPathExpression const &pathExpr =
+            value.UncheckedGet<SdfPathExpression>();
+        if (!pathExpr.IsAbsolute()) {
+            return SdfAllowed("pathExpression paths must be absolute paths "
+                              "(\"" + pathExpr.GetText() + "\")");
+        }
+    }
     else if (!FindType(value)) {
         return SdfAllowed(
             "Value does not have a valid scene description type "
@@ -1340,7 +1353,7 @@ SdfSchemaBase::IsValidInheritPath(const SdfPath& path)
                           "variant selections");
     }
     if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Inherit paths must be an absolute prim path");
+        return SdfAllowed("Inherit paths must be absolute prim paths");
     }
     return true;
 }
@@ -1353,7 +1366,7 @@ SdfSchemaBase::IsValidSpecializesPath(const SdfPath& path)
                           "variant selections");
     }
     if (!(path.IsAbsolutePath() && path.IsPrimPath())) {
-        return SdfAllowed("Specializes paths must be absolute prim path");
+        return SdfAllowed("Specializes paths must be absolute prim paths");
     }
     return true;
 }
@@ -1865,109 +1878,111 @@ Sdf_InitializeValueTypeNames()
     const Sdf_ValueTypeRegistry& r = registry.registry;
     Sdf_ValueTypeNamesType* n = new Sdf_ValueTypeNamesType;
 
-    n->Bool          = r.FindType("bool");
-    n->UChar         = r.FindType("uchar");
-    n->Int           = r.FindType("int");
-    n->UInt          = r.FindType("uint");
-    n->Int64         = r.FindType("int64");
-    n->UInt64        = r.FindType("uint64");
-    n->Half          = r.FindType("half");
-    n->Float         = r.FindType("float");
-    n->Double        = r.FindType("double");
-    n->TimeCode      = r.FindType("timecode");
-    n->String        = r.FindType("string");
-    n->Token         = r.FindType("token");
-    n->Asset         = r.FindType("asset");
-    n->Opaque        = r.FindType("opaque");
-    n->Group         = r.FindType("group");
-    n->Int2          = r.FindType("int2");
-    n->Int3          = r.FindType("int3");
-    n->Int4          = r.FindType("int4");
-    n->Half2         = r.FindType("half2");
-    n->Half3         = r.FindType("half3");
-    n->Half4         = r.FindType("half4");
-    n->Float2        = r.FindType("float2");
-    n->Float3        = r.FindType("float3");
-    n->Float4        = r.FindType("float4");
-    n->Double2       = r.FindType("double2");
-    n->Double3       = r.FindType("double3");
-    n->Double4       = r.FindType("double4");
-    n->Point3h       = r.FindType("point3h");
-    n->Point3f       = r.FindType("point3f");
-    n->Point3d       = r.FindType("point3d");
-    n->Vector3h      = r.FindType("vector3h");
-    n->Vector3f      = r.FindType("vector3f");
-    n->Vector3d      = r.FindType("vector3d");
-    n->Normal3h      = r.FindType("normal3h");
-    n->Normal3f      = r.FindType("normal3f");
-    n->Normal3d      = r.FindType("normal3d");
-    n->Color3h       = r.FindType("color3h");
-    n->Color3f       = r.FindType("color3f");
-    n->Color3d       = r.FindType("color3d");
-    n->Color4h       = r.FindType("color4h");
-    n->Color4f       = r.FindType("color4f");
-    n->Color4d       = r.FindType("color4d");
-    n->Quath         = r.FindType("quath");
-    n->Quatf         = r.FindType("quatf");
-    n->Quatd         = r.FindType("quatd");
-    n->Matrix2d      = r.FindType("matrix2d");
-    n->Matrix3d      = r.FindType("matrix3d");
-    n->Matrix4d      = r.FindType("matrix4d");
-    n->Frame4d       = r.FindType("frame4d");
-    n->TexCoord2f    = r.FindType("texCoord2f");
-    n->TexCoord2d    = r.FindType("texCoord2d");
-    n->TexCoord2h    = r.FindType("texCoord2h");
-    n->TexCoord3f    = r.FindType("texCoord3f");
-    n->TexCoord3d    = r.FindType("texCoord3d");
-    n->TexCoord3h    = r.FindType("texCoord3h");
+    n->Bool            = r.FindType("bool");
+    n->UChar           = r.FindType("uchar");
+    n->Int             = r.FindType("int");
+    n->UInt            = r.FindType("uint");
+    n->Int64           = r.FindType("int64");
+    n->UInt64          = r.FindType("uint64");
+    n->Half            = r.FindType("half");
+    n->Float           = r.FindType("float");
+    n->Double          = r.FindType("double");
+    n->TimeCode        = r.FindType("timecode");
+    n->String          = r.FindType("string");
+    n->Token           = r.FindType("token");
+    n->Asset           = r.FindType("asset");
+    n->Opaque          = r.FindType("opaque");
+    n->Group           = r.FindType("group");
+    n->PathExpression  = r.FindType("pathExpression");
+    n->Int2            = r.FindType("int2");
+    n->Int3            = r.FindType("int3");
+    n->Int4            = r.FindType("int4");
+    n->Half2           = r.FindType("half2");
+    n->Half3           = r.FindType("half3");
+    n->Half4           = r.FindType("half4");
+    n->Float2          = r.FindType("float2");
+    n->Float3          = r.FindType("float3");
+    n->Float4          = r.FindType("float4");
+    n->Double2         = r.FindType("double2");
+    n->Double3         = r.FindType("double3");
+    n->Double4         = r.FindType("double4");
+    n->Point3h         = r.FindType("point3h");
+    n->Point3f         = r.FindType("point3f");
+    n->Point3d         = r.FindType("point3d");
+    n->Vector3h        = r.FindType("vector3h");
+    n->Vector3f        = r.FindType("vector3f");
+    n->Vector3d        = r.FindType("vector3d");
+    n->Normal3h        = r.FindType("normal3h");
+    n->Normal3f        = r.FindType("normal3f");
+    n->Normal3d        = r.FindType("normal3d");
+    n->Color3h         = r.FindType("color3h");
+    n->Color3f         = r.FindType("color3f");
+    n->Color3d         = r.FindType("color3d");
+    n->Color4h         = r.FindType("color4h");
+    n->Color4f         = r.FindType("color4f");
+    n->Color4d         = r.FindType("color4d");
+    n->Quath           = r.FindType("quath");
+    n->Quatf           = r.FindType("quatf");
+    n->Quatd           = r.FindType("quatd");
+    n->Matrix2d        = r.FindType("matrix2d");
+    n->Matrix3d        = r.FindType("matrix3d");
+    n->Matrix4d        = r.FindType("matrix4d");
+    n->Frame4d         = r.FindType("frame4d");
+    n->TexCoord2f      = r.FindType("texCoord2f");
+    n->TexCoord2d      = r.FindType("texCoord2d");
+    n->TexCoord2h      = r.FindType("texCoord2h");
+    n->TexCoord3f      = r.FindType("texCoord3f");
+    n->TexCoord3d      = r.FindType("texCoord3d");
+    n->TexCoord3h      = r.FindType("texCoord3h");
 
-    n->BoolArray     = r.FindType("bool[]");
-    n->UCharArray    = r.FindType("uchar[]");
-    n->IntArray      = r.FindType("int[]");
-    n->UIntArray     = r.FindType("uint[]");
-    n->Int64Array    = r.FindType("int64[]");
-    n->UInt64Array   = r.FindType("uint64[]");
-    n->HalfArray     = r.FindType("half[]");
-    n->FloatArray    = r.FindType("float[]");
-    n->DoubleArray   = r.FindType("double[]");
-    n->TimeCodeArray = r.FindType("timecode[]");
-    n->StringArray   = r.FindType("string[]");
-    n->TokenArray    = r.FindType("token[]");
-    n->AssetArray    = r.FindType("asset[]");
-    n->Int2Array     = r.FindType("int2[]");
-    n->Int3Array     = r.FindType("int3[]");
-    n->Int4Array     = r.FindType("int4[]");
-    n->Half2Array    = r.FindType("half2[]");
-    n->Half3Array    = r.FindType("half3[]");
-    n->Half4Array    = r.FindType("half4[]");
-    n->Float2Array   = r.FindType("float2[]");
-    n->Float3Array   = r.FindType("float3[]");
-    n->Float4Array   = r.FindType("float4[]");
-    n->Double2Array  = r.FindType("double2[]");
-    n->Double3Array  = r.FindType("double3[]");
-    n->Double4Array  = r.FindType("double4[]");
-    n->Point3hArray  = r.FindType("point3h[]");
-    n->Point3fArray  = r.FindType("point3f[]");
-    n->Point3dArray  = r.FindType("point3d[]");
-    n->Vector3hArray = r.FindType("vector3h[]");
-    n->Vector3fArray = r.FindType("vector3f[]");
-    n->Vector3dArray = r.FindType("vector3d[]");
-    n->Normal3hArray = r.FindType("normal3h[]");
-    n->Normal3fArray = r.FindType("normal3f[]");
-    n->Normal3dArray = r.FindType("normal3d[]");
-    n->Color3hArray  = r.FindType("color3h[]");
-    n->Color3fArray  = r.FindType("color3f[]");
-    n->Color3dArray  = r.FindType("color3d[]");
-    n->Color4hArray  = r.FindType("color4h[]");
-    n->Color4fArray  = r.FindType("color4f[]");
-    n->Color4dArray  = r.FindType("color4d[]");
-    n->QuathArray    = r.FindType("quath[]");
-    n->QuatfArray    = r.FindType("quatf[]");
-    n->QuatdArray    = r.FindType("quatd[]");
-    n->Matrix2dArray = r.FindType("matrix2d[]");
-    n->Matrix3dArray = r.FindType("matrix3d[]");
-    n->Matrix4dArray = r.FindType("matrix4d[]");
-    n->Frame4dArray  = r.FindType("frame4d[]");
+    n->BoolArray       = r.FindType("bool[]");
+    n->UCharArray      = r.FindType("uchar[]");
+    n->IntArray        = r.FindType("int[]");
+    n->UIntArray       = r.FindType("uint[]");
+    n->Int64Array      = r.FindType("int64[]");
+    n->UInt64Array     = r.FindType("uint64[]");
+    n->HalfArray       = r.FindType("half[]");
+    n->FloatArray      = r.FindType("float[]");
+    n->DoubleArray     = r.FindType("double[]");
+    n->TimeCodeArray   = r.FindType("timecode[]");
+    n->StringArray     = r.FindType("string[]");
+    n->TokenArray      = r.FindType("token[]");
+    n->AssetArray      = r.FindType("asset[]");
+    n->PathExpressionArray = r.FindType("pathExpression[]");
+    n->Int2Array       = r.FindType("int2[]");
+    n->Int3Array       = r.FindType("int3[]");
+    n->Int4Array       = r.FindType("int4[]");
+    n->Half2Array      = r.FindType("half2[]");
+    n->Half3Array      = r.FindType("half3[]");
+    n->Half4Array      = r.FindType("half4[]");
+    n->Float2Array     = r.FindType("float2[]");
+    n->Float3Array     = r.FindType("float3[]");
+    n->Float4Array     = r.FindType("float4[]");
+    n->Double2Array    = r.FindType("double2[]");
+    n->Double3Array    = r.FindType("double3[]");
+    n->Double4Array    = r.FindType("double4[]");
+    n->Point3hArray    = r.FindType("point3h[]");
+    n->Point3fArray    = r.FindType("point3f[]");
+    n->Point3dArray    = r.FindType("point3d[]");
+    n->Vector3hArray   = r.FindType("vector3h[]");
+    n->Vector3fArray   = r.FindType("vector3f[]");
+    n->Vector3dArray   = r.FindType("vector3d[]");
+    n->Normal3hArray   = r.FindType("normal3h[]");
+    n->Normal3fArray   = r.FindType("normal3f[]");
+    n->Normal3dArray   = r.FindType("normal3d[]");
+    n->Color3hArray    = r.FindType("color3h[]");
+    n->Color3fArray    = r.FindType("color3f[]");
+    n->Color3dArray    = r.FindType("color3d[]");
+    n->Color4hArray    = r.FindType("color4h[]");
+    n->Color4fArray    = r.FindType("color4f[]");
+    n->Color4dArray    = r.FindType("color4d[]");
+    n->QuathArray      = r.FindType("quath[]");
+    n->QuatfArray      = r.FindType("quatf[]");
+    n->QuatdArray      = r.FindType("quatd[]");
+    n->Matrix2dArray   = r.FindType("matrix2d[]");
+    n->Matrix3dArray   = r.FindType("matrix3d[]");
+    n->Matrix4dArray   = r.FindType("matrix4d[]");
+    n->Frame4dArray    = r.FindType("frame4d[]");
     n->TexCoord2fArray = r.FindType("texCoord2f[]");
     n->TexCoord2dArray = r.FindType("texCoord2d[]");
     n->TexCoord2hArray = r.FindType("texCoord2h[]");

@@ -374,7 +374,7 @@ UsdUsdFileFormat::WriteToStream(
     size_t indent) const
 {
     return _GetUnderlyingFileFormatForLayer(
-        *boost::get_pointer(spec->GetLayer()))->WriteToStream(
+        *get_pointer(spec->GetLayer()))->WriteToStream(
             spec, out, indent);
 }
 

@@ -41,7 +41,7 @@
 #include <MaterialXCore/Node.h>
 #include <MaterialXFormat/Util.h>
 #include <MaterialXFormat/XmlIo.h>
-#include <MaterialXRenderGlsl/TextureBaker.h>
+#include <MaterialXRender/TextureBaker.h>
 
 
 #include <fstream>
@@ -140,6 +140,7 @@ void _BakeMtlxDocument(
     bool bakeHdr,
     bool bakeAverage)
 {
+#ifndef ARCH_OS_IOS
     mx::Image::BaseType baseType = bakeHdr 
         ? mx::Image::BaseType::FLOAT 
         : mx::Image::BaseType::UINT8;
@@ -163,6 +164,7 @@ void _BakeMtlxDocument(
     catch (std::exception& e) {
         TF_RUNTIME_ERROR("Error in texture baking: %s", e.what());
     }
+#endif
 }
 
 

@@ -40,6 +40,7 @@
 #include "pxr/base/tf/diagnostic.h"
 
 #include <MaterialXGenShader/Util.h>
+#include <MaterialXGenShader/DefaultColorManagementSystem.h>
 #include <MaterialXRender/Util.h>
 #include <MaterialXRender/LightHandler.h> 
 
@@ -68,6 +69,10 @@ TF_DEFINE_PRIVATE_TOKENS(
     (domeLightFallback)
     (ND_image_color3)
     (file)
+
+    // Colorspace Tokens
+    (colorSpace)
+    (sourceColorSpace)
 );
 
 
@@ -121,11 +126,11 @@ _CreateHdStMaterialXContext(
 {
 #if MATERIALX_MAJOR_VERSION >= 1 && MATERIALX_MINOR_VERSION >= 38 && \
     MATERIALX_BUILD_VERSION >= 7
-    if(apiName == HgiTokens->Metal) {
+    if (apiName == HgiTokens->Metal) {
         return HdStMaterialXShaderGenMsl::create(mxHdInfo);
     }
 #endif
-    if(apiName == HgiTokens->OpenGL) {
+    if (apiName == HgiTokens->OpenGL) {
         return HdStMaterialXShaderGenGlsl::create(mxHdInfo);
     }
     else {
@@ -141,6 +146,7 @@ _CreateHdStMaterialXContext(
 mx::ShaderPtr
 HdSt_GenMaterialXShader(
     mx::DocumentPtr const& mxDoc,
+    mx::DocumentPtr const& stdLibraries,
     mx::FileSearchPath const& searchPath,
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
@@ -164,6 +170,18 @@ HdSt_GenMaterialXShader(
     }
     mxContext.registerSourceCodeSearchPath(libSearchPaths);
 #endif
+
+    // Initialize the color management system
+    mx::DefaultColorManagementSystemPtr cms =
+        mx::DefaultColorManagementSystem::create(
+            mxContext.getShaderGenerator().getTarget());
+    cms->loadLibrary(stdLibraries);
+    mxContext.getShaderGenerator().setColorManagementSystem(cms);
+
+    // Set the colorspace
+    // XXX: This is the equivalent of the default source colorSpace, which does
+    // not yet have a schema and is therefore not yet accessable here 
+    mxDoc->setColorSpace("lin_rec709");
 
     // Add the Direct Light mtlx file to the mxDoc 
     mx::DocumentPtr lightDoc = mx::createDocument();
@@ -270,8 +288,7 @@ _GetHdTextureParameters(
 }
 
 static void
-_AddDefaultMtlxTextureValues(
-    std::map<TfToken, VtValue>* hdTextureParams)
+_AddDefaultMtlxTextureValues(std::map<TfToken, VtValue>* hdTextureParams)
 {
     // MaterialX uses repeat/periodic for the default wrap values, without
     // this the texture will use the Hydra default useMetadata. 
@@ -280,6 +297,10 @@ _AddDefaultMtlxTextureValues(
         VtValue(HdStTextureTokens->repeat);
     (*hdTextureParams)[HdStTextureTokens->wrapT] = 
         VtValue(HdStTextureTokens->repeat);
+
+    // Set the default colorSpace to be 'raw'. This allows MaterialX to handle
+    // colorspace transforms.
+    (*hdTextureParams) [_tokens->sourceColorSpace] = VtValue(HdStTokens->raw);
 }
 
 // Find the HdNode and its corresponding NodePath in the given HdNetwork 
@@ -938,7 +959,8 @@ _GenerateMaterialXShader(
     mxHdInfo.bindlessTexturesEnabled = bindlessTexturesEnabled;
     
     // Generate the glslfx source code from the mtlxDoc
-    return HdSt_GenMaterialXShader(mtlxDoc, searchPath, mxHdInfo, apiName);
+    return HdSt_GenMaterialXShader(
+        mtlxDoc, stdLibraries, searchPath, mxHdInfo, apiName);
 }
 
 void
@@ -972,15 +994,27 @@ HdSt_ApplyMaterialXFilter(
             Tf_HashState terminalNodeHash;
             TfHashAppend(terminalNodeHash, terminalNode.nodeTypeId);
             TfHashAppend(terminalNodeHash, materialTagToken);
+            for (auto param : terminalNode.parameters) {
+                auto result = SdfPath::StripPrefixNamespace(
+                        param.first.GetString(), _tokens->colorSpace);
+                if (result.second) {
+                    TfHashAppend(terminalNodeHash, param);
+                }
+            }
             HdInstance<mx::ShaderPtr> glslfxInstance = 
                 resourceRegistry->RegisterMaterialXShader(
                     terminalNodeHash.GetCode());
 
             if (glslfxInstance.IsFirstInstance()) {
                 // Generate the MaterialX glslfx ShaderPtr
-                glslfxShader = _GenerateMaterialXShader(
-                    hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                    materialTagToken, apiName, bindlessTexturesEnabled);
+                try {
+                    glslfxShader = _GenerateMaterialXShader(
+                        hdNetwork, materialPath, terminalNode, terminalNodePath,
+                        materialTagToken, apiName, bindlessTexturesEnabled);
+                } catch (mx::Exception& exception) {
+                    TF_CODING_ERROR("Unable to create the Glslfx Shader.\n"
+                        "MxException: %s", exception.what());
+                }
 
                 // Store the mx::ShaderPtr 
                 glslfxInstance.SetValue(glslfxShader);
@@ -1002,28 +1036,35 @@ HdSt_ApplyMaterialXFilter(
         }
         else {
             // Process the network and generate the MaterialX glslfx ShaderPtr
-            glslfxShader = _GenerateMaterialXShader(
-                hdNetwork, materialPath, terminalNode, terminalNodePath, 
-                materialTagToken, apiName, bindlessTexturesEnabled);
+            try {
+                glslfxShader = _GenerateMaterialXShader(
+                    hdNetwork, materialPath, terminalNode, terminalNodePath, 
+                    materialTagToken, apiName, bindlessTexturesEnabled);
+            } catch (mx::Exception& exception) {
+                TF_CODING_ERROR("Unable to create the Glslfx Shader.\n"
+                    "MxException: %s", exception.what());
+            }
 
             // Add material parameters from the glslfxShader
             _AddMaterialXParams(glslfxShader, materialParams);
         }
 
-        // Create a new terminal node with the new glslfxSource
-        const std::string glslfxSourceCode =
-            glslfxShader->getSourceCode(mx::Stage::PIXEL);
-        SdrShaderNodeConstPtr sdrNode = 
-            sdrRegistry.GetShaderNodeFromSourceCode(glslfxSourceCode, 
-                                                    HioGlslfxTokens->glslfx,
-                                                    NdrTokenMap()); // metadata
-        HdMaterialNode2 newTerminalNode;
-        newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
-        newTerminalNode.inputConnections = terminalNode.inputConnections;
-        newTerminalNode.parameters = terminalNode.parameters;
+        // Create a new terminal node with the glslfxShader
+        if (glslfxShader) {
+            const std::string glslfxSourceCode =
+                glslfxShader->getSourceCode(mx::Stage::PIXEL);
+            SdrShaderNodeConstPtr sdrNode = 
+                sdrRegistry.GetShaderNodeFromSourceCode(glslfxSourceCode, 
+                                                        HioGlslfxTokens->glslfx,
+                                                        NdrTokenMap()); // metadata
+            HdMaterialNode2 newTerminalNode;
+            newTerminalNode.nodeTypeId = sdrNode->GetIdentifier();
+            newTerminalNode.inputConnections = terminalNode.inputConnections;
+            newTerminalNode.parameters = terminalNode.parameters;
 
-        // Replace the original terminalNode with this newTerminalNode
-        hdNetwork->nodes[terminalNodePath] = newTerminalNode;
+            // Replace the original terminalNode with this newTerminalNode
+            hdNetwork->nodes[terminalNodePath] = newTerminalNode;
+        }
     }
 }
 

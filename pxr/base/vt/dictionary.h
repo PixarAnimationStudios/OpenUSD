@@ -34,8 +34,6 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"
 
-#include <boost/iterator/iterator_adaptor.hpp>
-
 #include <initializer_list>
 #include <iosfwd>
 #include <map>
@@ -74,43 +72,84 @@ public:
     // VtDictionary is empty, or the Iterator is at the end of a VtDictionary
     // that contains values).
     template<class UnderlyingMapPtr, class UnderlyingIterator>
-    class Iterator : public boost::iterator_adaptor<Iterator<UnderlyingMapPtr,
-        UnderlyingIterator>, UnderlyingIterator> {
+    class Iterator {
     public:
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type = typename UnderlyingIterator::value_type;
+        using reference = typename UnderlyingIterator::reference;
+        using pointer = typename UnderlyingIterator::pointer;
+        using difference_type = typename UnderlyingIterator::difference_type;
+
+
         // Default constructor creates an Iterator equivalent to end() (i.e.
         // UnderlyingMapPtr is null)
-        Iterator()
-            : Iterator::iterator_adaptor_(UnderlyingIterator())
-            , _underlyingMap(0) {}
+        Iterator() = default;
 
         // Copy constructor (also allows for converting non-const to const).
         template <class OtherUnderlyingMapPtr, class OtherUnderlyingIterator>
         Iterator(Iterator<OtherUnderlyingMapPtr,
                           OtherUnderlyingIterator> const &other)
-            : Iterator::iterator_adaptor_(other.base())
-            , _underlyingMap(other._underlyingMap) {}
+            : _underlyingIterator(other._underlyingIterator),
+              _underlyingMap(other._underlyingMap) {}
+
+        reference operator*() const { return *_underlyingIterator; }
+        pointer operator->() const { return _underlyingIterator.operator->(); }
+
+        Iterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator result = *this;
+            increment();
+            return result;
+        }
+
+        Iterator& operator--() {
+            --_underlyingIterator;
+            return *this;
+        }
+
+        Iterator operator--(int) {
+            Iterator result = *this;
+            --_underlyingIterator;
+            return result;
+        }
+
+        template <class OtherUnderlyingMapPtr, class OtherUnderlyingIterator>
+        bool operator==(const Iterator<OtherUnderlyingMapPtr,
+                                       OtherUnderlyingIterator>& other) const {
+            return equal(other);
+        }
+
+        template <class OtherUnderlyingMapPtr, class OtherUnderlyingIterator>
+        bool operator!=(const Iterator<OtherUnderlyingMapPtr,
+                                       OtherUnderlyingIterator>& other) const {
+            return !equal(other);
+        }
 
     private:
+
         // Private constructor allowing the find, begin and insert methods
         // to create and return the proper Iterator.
         Iterator(UnderlyingMapPtr m, UnderlyingIterator i)
-            : Iterator::iterator_adaptor_(i)
-            , _underlyingMap(m) {
+            : _underlyingIterator(i),
+              _underlyingMap(m) {
                 if (m && i == m->end())
-                    _underlyingMap = 0;
+                    _underlyingMap = nullptr;
             }
        
-        friend class boost::iterator_core_access;
         friend class VtDictionary;
 
         UnderlyingIterator GetUnderlyingIterator(UnderlyingMapPtr map)
         const {
             TF_AXIOM(!_underlyingMap || _underlyingMap == map);
-            return (!_underlyingMap) ? map->end() : this->base();
+            return (!_underlyingMap) ? map->end() : _underlyingIterator;
         }
 
         // Fundamental functionality to implement the iterator.
-        // boost::iterator_adaptor will invoke these as necessary to implement
+        // These will be invoked these as necessary to implement
         // the full iterator public interface.
 
         // Increments the underlying iterator, and sets the underlying map to
@@ -121,8 +160,8 @@ public:
                     "VtDictionary iterator");
                 return;
             }
-            if (++this->base_reference() == _underlyingMap->end()) {
-                _underlyingMap = 0;
+            if (++_underlyingIterator == _underlyingMap->end()) {
+                _underlyingMap = nullptr;
             }
         }
 
@@ -131,18 +170,20 @@ public:
         // 2) They both point to the end() of a VtDictionary
         // - or-
         // 3) They both point to the same VtDictionary and their
-        //    boost::iterator_adaptors' base() iterators are the same
+        //    underlying iterators are the same
         // In cases 1 and 2 above, _underlyingMap will be null
         template <class OtherUnderlyingMapPtr, class OtherUnderlyingIterator>
         bool equal(Iterator<OtherUnderlyingMapPtr,
-                OtherUnderlyingIterator> const& i) const {
-            if (_underlyingMap == i._underlyingMap)
-                if (!_underlyingMap || this->base() == i.base())
+                            OtherUnderlyingIterator> const& other) const {
+            if (_underlyingMap == other._underlyingMap)
+                if (!_underlyingMap ||
+                    (_underlyingIterator == other._underlyingIterator))
                     return true;
             return false;
         }
 
-        UnderlyingMapPtr _underlyingMap;
+        UnderlyingIterator _underlyingIterator;
+        UnderlyingMapPtr _underlyingMap = nullptr;
     };
 
     TF_MALLOC_TAG_NEW("Vt", "VtDictionary");

@@ -49,10 +49,6 @@
 #include "pxr/base/vt/types.h"
 
 #include <boost/intrusive_ptr.hpp>
-#include <boost/type_traits/has_trivial_assign.hpp>
-#include <boost/type_traits/has_trivial_constructor.hpp>
-#include <boost/type_traits/has_trivial_copy.hpp>
-#include <boost/type_traits/has_trivial_destructor.hpp>
 
 #include <iosfwd>
 #include <typeinfo>
@@ -201,12 +197,14 @@ class VtValue
     typedef std::aligned_storage<
         /* size */_MaxLocalSize, /* alignment */_MaxLocalSize>::type _Storage;
 
+    // In C++17, std::is_trivially_copy_assignable<T> could be used in place of
+    // std::is_trivially_assignable
     template <class T>
     using _IsTriviallyCopyable = std::integral_constant<bool,
-        boost::has_trivial_constructor<T>::value &&
-        boost::has_trivial_copy<T>::value &&
-        boost::has_trivial_assign<T>::value &&
-        boost::has_trivial_destructor<T>::value>;
+        std::is_trivially_default_constructible<T>::value &&
+        std::is_trivially_copyable<T>::value &&
+        std::is_trivially_assignable<T&, const T&>::value &&
+        std::is_trivially_destructible<T>::value>;
 
     // Metafunction that returns true if T should be stored locally, false if it
     // should be stored remotely.
@@ -1046,6 +1044,36 @@ public:
         UncheckedSwap(result);
         _Clear();
         return result;
+    }
+
+    /// If this value holds an object of type \p T, invoke \p mutateFn, passing
+    /// it a non-const reference to the held object and return true.  Otherwise
+    /// do nothing and return false.
+    template <class T, class Fn>
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value, bool>
+    Mutate(Fn &&mutateFn) {
+        if (!IsHolding<T>()) {
+            return false;
+        }
+        UncheckedMutate<T>(std::forward<Fn>(mutateFn));
+        return true;
+    }
+
+    /// Invoke \p mutateFn, it a non-const reference to the held object which
+    /// must be of type \p T.  If the held object is not of type \p T, this
+    /// function invokes undefined behavior.
+    template <class T, class Fn>
+    std::enable_if_t<
+        std::is_same<T, typename Vt_ValueGetStored<T>::Type>::value>
+    UncheckedMutate(Fn &&mutateFn) {
+        // We move to a temporary, mutate the temporary, then move back.  This
+        // prevents callers from escaping a mutable reference to the held object
+        // via a side-effect of mutateFn.
+        T &stored =_GetMutable<T>();
+        T tmp = std::move(stored);
+        std::forward<Fn>(mutateFn)(tmp);
+        stored = std::move(tmp);
     }
 
     /// Return true if this value is holding an object of type \p T, false

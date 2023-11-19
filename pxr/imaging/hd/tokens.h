@@ -28,8 +28,11 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/version.h"
 #include "pxr/base/tf/staticTokens.h"
+#include "pxr/base/tf/envSetting.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+extern HD_API TfEnvSetting<bool> HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES;
 
 #define HD_TOKENS                               \
     (accelerations)                             \
@@ -91,6 +94,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pinned)                                    \
     (points)                                    \
     (pointsIndices)                             \
+    (portals)                                   \
     (power)                                     \
     (preview)                                   \
     (pointsVisibility)                          \
@@ -125,16 +129,26 @@ PXR_NAMESPACE_OPEN_SCOPE
     /* capital letters. */                      \
     ((bSpline, "bspline"))
 
-#define HD_INSTANCER_TOKENS                     \
-    (culledInstanceIndices)                     \
-    (instancer)                                 \
-    (instancerTransform)                        \
-    (instancerTransformInverse)                 \
-    (instanceIndices)                           \
-    (instanceIndexBase)                         \
-    (instanceTransform)                         \
-    (rotate)                                    \
-    (scale)                                     \
+#define HD_INSTANCER_TOKENS                                \
+    (culledInstanceIndices)                                \
+    (instancer)                                            \
+    (instancerTransform)                                   \
+    (instancerTransformInverse)                            \
+    (instanceIndices)                                      \
+    (instanceIndexBase)                                    \
+                                                           \
+    /* New instance xform tokens */                        \
+    ((instanceTransforms,   "hydra:instanceTransforms"))   \
+    ((instanceRotations,    "hydra:instanceRotations"))    \
+    ((instanceScales,       "hydra:instanceScales"))       \
+    ((instanceTranslations, "hydra:instanceTranslations")) \
+                                                           \
+    /* Deprecated versions of the above */                 \
+    /* To be removed in 2024, along with the */            \
+    /* HD_USE_DEPRECATED_INSTANCER_PRIMVAR_NAMES env var*/ \
+    (instanceTransform)                                    \
+    (rotate)                                               \
+    (scale)                                                \
     (translate)
 
 #define HD_REPR_TOKENS                          \
@@ -207,6 +221,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (uboSize)                                   \
     (vboRelocated)
 
+// XXX Move to hdSt.
 #define HD_SHADER_TOKENS                        \
     (alphaThreshold)                            \
     (clipPlanes)                                \
@@ -229,6 +244,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (pointSize)                                 \
     (pointSelectedSize)                         \
     (materialTag)                               \
+    (numClipPlanes)                             \
     (tessControlShader)                         \
     (tessEvalShader)                            \
     (postTessControlShader)                     \
@@ -272,9 +288,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define HD_RPRIMTYPE_TOKENS                     \
     /* Rprims */                                \
     (capsule)                                   \
+    (capsule_1)                                 \
     (cone)                                      \
     (cube)                                      \
     (cylinder)                                  \
+    (cylinder_1)                                \
     (mesh)                                      \
     (nurbsPatch)                                \
     (basisCurves)                               \
@@ -295,6 +313,7 @@ PXR_NAMESPACE_OPEN_SCOPE
     (integrator)                                \
     (sampleFilter)                              \
     (displayFilter)                             \
+    (imageShader)                               \
     /* Sprims Lights */                         \
     (simpleLight)                               \
     (cylinderLight)                             \
@@ -437,7 +456,17 @@ TfToken HdAovTokensMakeShader(TfToken const& shader);
     (renderProducts)                                  \
     (includedPurposes)                                \
     (materialBindingPurposes)                         \
-    (renderingColorSpace)
+    (renderingColorSpace)                             \
+    (shutterInterval)
+
+/* Aspect Ratio Conform Policy Tokens used on render settings prims 
+ * Note that these mirror the conform policy tokens in UsdRenderTokens */
+#define HD_ASPECT_RATIO_CONFORM_POLICY                \
+    (adjustApertureWidth)                             \
+    (adjustApertureHeight)                            \
+    (expandAperture)                                  \
+    (cropAperture)                                    \
+    (adjustPixelAspectRatio)                          \
 
 #define HD_RESOURCE_TYPE_TOKENS                       \
     (texture)                                         \
@@ -469,6 +498,8 @@ TF_DECLARE_PUBLIC_TOKENS(HdAovTokens, HD_API, HD_AOV_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsTokens, HD_API, HD_RENDER_SETTINGS_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdRenderSettingsPrimTokens, HD_API,
                          HD_RENDER_SETTINGS_PRIM_TOKENS);
+TF_DECLARE_PUBLIC_TOKENS(HdAspectRatioConformPolicyTokens, HD_API, 
+                         HD_ASPECT_RATIO_CONFORM_POLICY);
 TF_DECLARE_PUBLIC_TOKENS(HdResourceTypeTokens, HD_API, HD_RESOURCE_TYPE_TOKENS);
 TF_DECLARE_PUBLIC_TOKENS(HdSceneIndexEmulationTokens, HD_API, 
                          HD_SCENE_INDEX_EMULATION_TOKENS);

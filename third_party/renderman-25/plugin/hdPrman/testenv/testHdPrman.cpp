@@ -35,6 +35,12 @@
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
 #include "pxr/imaging/hd/camera.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hd/overlayContainerDataSource.h"
+#include "pxr/imaging/hd/retainedDataSource.h"
+#include "pxr/imaging/hd/materialNetworkSchema.h"
+#include "pxr/imaging/hd/materialSchema.h"
+#include "pxr/imaging/hd/lightSchema.h"
+#include "pxr/imaging/hd/dataSourceMaterialNetworkInterface.h"
 
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
 #include "pxr/imaging/hdsi/sceneGlobalsSceneIndex.h"
@@ -49,14 +55,8 @@
 #include "pxr/usd/usdRender/var.h"
 
 #include "pxr/usdImaging/usdImaging/delegate.h"
-#include "pxr/usdImaging/usdImaging/drawModeSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/niPrototypePropagatingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/piPrototypePropagatingSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/renderSettingsFlatteningSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/rootOverridesSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/selectionSceneIndex.h"
+#include "pxr/usdImaging/usdImaging/sceneIndices.h"
 #include "pxr/usdImaging/usdImaging/stageSceneIndex.h"
-#include "pxr/usdImaging/usdImaging/flattenedDataSourceProviders.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"
@@ -80,6 +80,14 @@ TF_DEFINE_PRIVATE_TOKENS(
 
     // Collection Names
     (testCollection)
+
+    ((renderContext, "ri"))
+    ((fixedSampleCount, "ri:light:fixedSampleCount"))
+    ((threads, "ri:limits:threads"))
+    ((jitter, "ri:hider:jitter"))
+    ((minSamples, "ri:hider:minsamples"))
+    ((maxSamples, "ri:hider:maxsamples"))
+    ((pixelVariance, "ri:Ri:PixelVariance"))
 );
 
 TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_ENABLE_SCENE_INDEX, false,
@@ -89,6 +97,125 @@ TF_DEFINE_ENV_SETTING(TEST_HD_PRMAN_USE_RENDER_SETTINGS_PRIM, true,
                       "Use the Render Settings Prim instead of the "
                       "UsdRenderSpec for testHdPrman.");
 
+TF_DECLARE_REF_PTRS(_FixedLightSamplesSceneIndex);
+/// \class _FixedLightSamplesSceneIndex
+///
+/// Scene index for setting fixed sample count on all lights that do not have
+/// an authored value. This helps eliminate variability between test runs.
+///
+class _FixedLightSamplesSceneIndex: public HdSingleInputFilteringSceneIndexBase
+{
+public:
+    static _FixedLightSamplesSceneIndexRefPtr New(
+        const HdSceneIndexBaseRefPtr& inputSceneIndex)
+    {
+        return TfCreateRefPtr(
+            new _FixedLightSamplesSceneIndex(inputSceneIndex));
+    }
+    HdSceneIndexPrim GetPrim(const SdfPath& primPath) const override
+    {
+        const HdSceneIndexPrim& prim = _GetInputSceneIndex()->GetPrim(primPath);
+        
+        // XXX: Conditions are in the negative to save indent space
+
+        // Return unmodified if not a light
+        if (!HdPrimTypeIsLight(prim.primType) && !_IsMeshLight(prim)) { 
+            return prim;
+        }
+
+        // Get the light shader network
+        const HdContainerDataSourceHandle& shaderDS = 
+            HdMaterialSchema::GetFromParent(prim.dataSource)
+            .GetMaterialNetwork(_tokens->renderContext);
+        
+        // Return unmodified if no light shader network
+        if (!shaderDS) {
+            return prim;
+        }
+
+        // Interface with the light shader network
+        HdDataSourceMaterialNetworkInterface shaderNI(
+            primPath, shaderDS, prim.dataSource);
+        
+        // look up the light terminal connection
+        const auto lightTC = shaderNI.GetTerminalConnection(
+            HdMaterialTerminalTokens->light);
+        
+        // Return unmodified if no light terminal connection
+        if (!lightTC.first) { 
+            return prim;
+        }
+
+        // Get authored names
+        const TfTokenVector authoredNames = shaderNI
+            .GetAuthoredNodeParameterNames(lightTC.second.upstreamNodeName);
+        
+        // Return unmodified if authored
+        if (std::find(authoredNames.begin(), authoredNames.end(),
+            _tokens->fixedSampleCount) != authoredNames.end()) {
+            return prim;
+        }
+
+        // We have a valid light shader network with no authored value for
+        // inputs:ri:light:fixedSampleCount. Set it to 1.
+        shaderNI.SetNodeParameterValue(
+            lightTC.second.upstreamNodeName,
+            _tokens->fixedSampleCount,
+            VtValue(1));
+
+        // return the overlay
+        return {
+            prim.primType,
+            HdOverlayContainerDataSource::New(
+                HdRetainedContainerDataSource::New(
+                    HdMaterialSchemaTokens->material,
+                    HdRetainedContainerDataSource::New(
+                        _tokens->renderContext,
+                        shaderNI.Finish())),
+                prim.dataSource)
+        };
+    }
+    SdfPathVector GetChildPrimPaths(const SdfPath& primPath) const override
+    {
+        return _GetInputSceneIndex()->GetChildPrimPaths(primPath);
+    }
+protected:
+    _FixedLightSamplesSceneIndex(const HdSceneIndexBaseRefPtr& inputSceneIndex)
+        : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
+    { }
+    void _PrimsAdded(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::AddedPrimEntries& entries) override
+    {
+        _SendPrimsAdded(entries);
+    }
+    void _PrimsRemoved(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::RemovedPrimEntries& entries) override
+    {
+        _SendPrimsRemoved(entries);
+    }
+    void _PrimsDirtied(
+        const HdSceneIndexBase& sender,
+        const HdSceneIndexObserver::DirtiedPrimEntries& entries) override
+    {
+        _SendPrimsDirtied(entries);
+    }
+private:
+    static bool _IsMeshLight(const HdSceneIndexPrim& prim)
+    {
+        if ((prim.primType == HdPrimTypeTokens->mesh) ||
+            (prim.primType == HdPrimTypeTokens->volume)) {
+            if (auto lightS = HdLightSchema::GetFromParent(prim.dataSource)) {
+                if (auto isLightDS = HdBoolDataSource::Cast(
+                    lightS.GetContainer()->Get(HdTokens->isLight))) {
+                    return isLightDS->GetTypedValue(0.0f);
+                }
+            }
+        }
+        return false;
+    }
+};
 
 static TfStopwatch s_timer_prmanRender;
 static const GfVec2i s_fallbackResolution(512, 512);
@@ -102,6 +229,7 @@ static const TfToken s_fallbackConformPolicy(
 //
 struct _AppSceneIndices {
     HdsiSceneGlobalsSceneIndexRefPtr sceneGlobalsSceneIndex;
+    _FixedLightSamplesSceneIndexRefPtr fixedLightSamplesSceneIndex;
 };
 
 using _AppSceneIndicesSharedPtr = std::shared_ptr<_AppSceneIndices>;
@@ -178,6 +306,7 @@ UseRenderSettingsPrim()
     return useRenderSettingsPrim;
 }
 
+// This function also exists in HdPrman_RenderPass
 GfVec2i
 MultiplyAndRound(const GfVec2f &a, const GfVec2i &b)
 {
@@ -206,32 +335,6 @@ ComputeFraming(const HydraSetupCameraInfo &cameraInfo)
 
     return CameraUtilFraming(
         displayWindow, dataWindow, cameraInfo.pixelAspectRatio);
-}
-
-CameraUtilConformWindowPolicy
-_RenderSettingsTokenToConformWindowPolicy(const TfToken &usdToken)
-{
-    if (usdToken == UsdRenderTokens->adjustApertureWidth) {
-        return CameraUtilMatchVertically;
-    }
-    if (usdToken == UsdRenderTokens->adjustApertureHeight) {
-        return CameraUtilMatchHorizontally;
-    }
-    if (usdToken == UsdRenderTokens->expandAperture) {
-        return CameraUtilFit;
-    }
-    if (usdToken == UsdRenderTokens->cropAperture) {
-        return CameraUtilCrop;
-    }
-    if (usdToken == UsdRenderTokens->adjustPixelAspectRatio) {
-        return CameraUtilDontConform;
-    }
-
-    TF_WARN(
-        "Invalid aspectRatioConformPolicy value '%s', "
-        "falling back to expandAperture.", usdToken.GetText());
-    
-    return CameraUtilFit;
 }
 
 void
@@ -346,12 +449,10 @@ PopulateFallbackRenderSettings(
     // authored. This should match the list in AddNamespacedSettings.
     {
         UsdPrim prim = settings->GetPrim();
-        _SetFallbackValueIfUnauthored(TfToken("ri:trace:maxdepth"), prim, 10);
-        _SetFallbackValueIfUnauthored(TfToken("ri:hider:jitter"), prim, 1);
-        _SetFallbackValueIfUnauthored(TfToken("ri:hider:minsamples"), prim, 32);
-        _SetFallbackValueIfUnauthored(TfToken("ri:hider:maxsamples"), prim, 64);
-        _SetFallbackValueIfUnauthored(
-            TfToken("ri:Ri:PixelVariance"), prim, 0.01);
+        _SetFallbackValueIfUnauthored(_tokens->jitter, prim, false);
+        _SetFallbackValueIfUnauthored(_tokens->minSamples, prim, 4);
+        _SetFallbackValueIfUnauthored(_tokens->maxSamples, prim, 4);
+        _SetFallbackValueIfUnauthored(_tokens->pixelVariance, prim, 0.f);
     }
 
 
@@ -539,12 +640,10 @@ AddNamespacedSettings(
     VtDictionary const &namespacedSettings, HdRenderSettingsMap *settingsMap)
 {
     // Add fallback settings specific to testHdPrman 
-    // Note: 'ri:trace:maxdepth' cannot be found in the applied schemas 
-    (*settingsMap)[TfToken("ri:trace:maxdepth")] = 10; 
-    (*settingsMap)[TfToken("ri:hider:jitter")] = 1;
-    (*settingsMap)[TfToken("ri:hider:minsamples")] = 32;
-    (*settingsMap)[TfToken("ri:hider:maxsamples")] = 64;
-    (*settingsMap)[TfToken("ri:Ri:PixelVariance")] = 0.01;
+    (*settingsMap)[_tokens->jitter] = false;
+    (*settingsMap)[_tokens->minSamples] = 4;
+    (*settingsMap)[_tokens->maxSamples] = 4;
+    (*settingsMap)[_tokens->pixelVariance] = 0.f;
 
     // Set namespaced settings 
     for (const auto &item : namespacedSettings) {
@@ -552,10 +651,10 @@ AddNamespacedSettings(
     }
 }
 
-// Get the Camera information from the Render Spec and the command line, and
-// apply those command line overrides to the product itself. 
+// Apply Command line overrides to the RenderSpec's product since it will 
+// be used to create the Riley RenderView in HdPrman_RenderPass.
 HydraSetupCameraInfo
-GetCameraInfoAndUpdateProduct(
+ApplyCommandLineArgsToProduct(
     SdfPath const &sceneCamPath,
     float const sceneCamAspect,
     UsdRenderSpec::Product *product)
@@ -580,46 +679,49 @@ GetCameraInfoAndUpdateProduct(
     return camInfo;
 }
 
-
-// Get the Camera info from the RenderSettings prim and the command line. 
-HydraSetupCameraInfo
-GetCameraInfo(
+// Apply Command line overrides to the RenderProduct since it will be used to 
+// create the Riley RenderView in HdPrman_RenderPass.
+SdfPath
+ApplyCommandLineArgsToProduct(
     SdfPath const &sceneCamPath,
     float const sceneCamAspect,
+    UsdStageRefPtr const &stage,
     UsdRenderSettings const &settings)
 {
-    // XXX These attributes are populated from the Render Settings Prim, and  
-    // they should eventually come from the Render Product instead.
-    HydraSetupCameraInfo camInfo;
-    if (sceneCamPath.IsEmpty()) {
-        SdfPathVector targets; 
-        settings.GetCameraRel().GetForwardedTargets(&targets);
-        if (!targets.empty()) {
-            camInfo.cameraPath = targets[0];
+    SdfPath cameraPath;
+
+    // Override the values on the first RenderProduct 
+    // Note that at this point there should always be at least one RenderProduct
+    SdfPathVector productPaths;
+    settings.GetProductsRel().GetForwardedTargets(&productPaths);
+    if (!productPaths.empty()) {
+        UsdRenderProduct product(stage->GetPrimAtPath(productPaths[0]));
+
+        // Update the Product's CameraRel and store the cameraPath
+        if (!sceneCamPath.IsEmpty()) {
+            cameraPath = sceneCamPath;
+            product.GetCameraRel().SetTargets({sceneCamPath});
+        } else {
+            SdfPathVector cameraPaths;
+            product.GetCameraRel().GetForwardedTargets(&cameraPaths);
+            if (!cameraPaths.empty()) {
+                cameraPath = cameraPaths[0];
+            }
+        }
+        // Update the Product's Resolution
+        if (sceneCamAspect > 0.0) {
+            GfVec2i resolution;
+            if (product.GetResolutionAttr().IsAuthored()) {
+                product.GetResolutionAttr().Get(&resolution);
+            } else {
+                resolution = s_fallbackResolution;
+            }
+            resolution[1] = (int)(resolution[0]/sceneCamAspect);
+            product.CreateResolutionAttr(VtValue(resolution));
         }
     }
-    settings.GetResolutionAttr().Get(&camInfo.resolution);
-    settings.GetPixelAspectRatioAttr().Get(&camInfo.pixelAspectRatio);
-    settings.GetAspectRatioConformPolicyAttr().Get(&camInfo.aspectRatioConformPolicy);
 
-    // Convert dataWindowNDC from vec4 to range2.
-    GfVec4f dataWindowNDCVec;
-    if (settings.GetDataWindowNDCAttr().Get(&dataWindowNDCVec)) {
-        camInfo.dataWindowNDC = GfRange2f(
-            GfVec2f(dataWindowNDCVec[0], dataWindowNDCVec[1]),
-            GfVec2f(dataWindowNDCVec[2], dataWindowNDCVec[3]));
-    }
-
-    // Apply Command line overrides.
-    if (!sceneCamPath.IsEmpty()) {
-        camInfo.cameraPath = sceneCamPath;
-    }
-    if (sceneCamAspect > 0.0) {
-        camInfo.resolution[1] = (int)(camInfo.resolution[0]/sceneCamAspect);
-        // camInfo.apertureSize[1] = camInfo.apertureSize[0]/sceneCamAspect;
-    }
-
-    return camInfo;
+    return cameraPath;
 }
 
 HdSceneIndexBaseRefPtr
@@ -640,6 +742,26 @@ _AppendSceneGlobalsSceneIndexCallback(
 
     TF_CODING_ERROR("Did not find appSceneIndices instance for %s,",
                     renderInstanceId.c_str());
+    return inputScene;
+}
+
+HdSceneIndexBaseRefPtr
+_AppendFixedLightSamplesSceneIndexCallback(
+    const std::string& renderInstanceId,
+    const HdSceneIndexBaseRefPtr& inputScene,
+    const HdContainerDataSourceHandle& inputArgs)
+{
+    _AppSceneIndicesSharedPtr appSceneIndices =
+        s_renderInstanceTracker->GetInstance(renderInstanceId);
+    
+    if (appSceneIndices) {
+        auto& flssi = appSceneIndices->fixedLightSamplesSceneIndex;
+        flssi = _FixedLightSamplesSceneIndex::New(inputScene);
+        flssi->SetDisplayName("Fixed Light Samples Scene Index");
+        return flssi;
+    }
+    TF_CODING_ERROR("Did not find appSceneIndices instance for %s",
+        renderInstanceId.c_str());
     return inputScene;
 }
 
@@ -666,13 +788,27 @@ _RegisterApplicationSceneIndices()
             HdSceneIndexPluginRegistry::InsertionOrderAtStart
         );
     }
+
+    // FLSSI
+    {
+        // After mesh light resolving scene index
+        const HdSceneIndexPluginRegistry::InsertionPhase insertionPhase = 115;
+        HdSceneIndexPluginRegistry::GetInstance().RegisterSceneIndexForRenderer(
+            std::string(),
+            _AppendFixedLightSamplesSceneIndexCallback,
+            /* inputArgs = */ nullptr,
+            insertionPhase,
+            HdSceneIndexPluginRegistry::InsertionOrderAtEnd
+        );
+    }
 }
 
 void
 HydraSetupAndRender(
     HdRenderSettingsMap const &settingsMap,
     SdfPath const &renderSettingsPrimPath,
-    HydraSetupCameraInfo const &cameraInfo,
+    const HydraSetupCameraInfo * const cameraInfo,
+    SdfPath const &cameraPath,
     const std::string &cullStyle,
     UsdStageRefPtr const &stage,
     const int frameNum, 
@@ -730,27 +866,13 @@ HydraSetupAndRender(
     std::unique_ptr<UsdImagingDelegate> hdUsdFrontend;
 
     if (TfGetEnvSetting(TEST_HD_PRMAN_ENABLE_SCENE_INDEX)) {
-        UsdImagingStageSceneIndexRefPtr usdStageSceneIndex;
-        usdStageSceneIndex = UsdImagingStageSceneIndex::New();
-        usdStageSceneIndex->SetStage(stage);
-        usdStageSceneIndex->SetTime(frameNum);
-
-        // Chain scene indices; Note that this mirrors UsdImagingGLEngine
-        HdSceneIndexBaseRefPtr siChainHead = usdStageSceneIndex;
-        siChainHead = UsdImagingRootOverridesSceneIndex::New(siChainHead);
-        siChainHead = UsdImagingPiPrototypePropagatingSceneIndex::New(siChainHead);
-        siChainHead = UsdImagingNiPrototypePropagatingSceneIndex::New(siChainHead);
-        siChainHead = UsdImagingSelectionSceneIndex::New(siChainHead);
-        siChainHead = UsdImagingRenderSettingsFlatteningSceneIndex::New(siChainHead);
-        siChainHead = HdFlatteningSceneIndex::New(
-            siChainHead, UsdImagingFlattenedDataSourceProviders());
-        siChainHead = UsdImagingDrawModeSceneIndex::New(siChainHead, nullptr);
-        siChainHead = HdsiLegacyDisplayStyleOverrideSceneIndex::New(siChainHead);
-
-        // Insert scene index chain into the render index.
+        UsdImagingCreateSceneIndicesInfo createInfo;
+        createInfo.stage = stage;
+        UsdImagingSceneIndices sceneIndices =
+            UsdImagingCreateSceneIndices(createInfo);
+        sceneIndices.stageSceneIndex->SetTime(frameNum);
         hdRenderIndex->InsertSceneIndex(
-            siChainHead, SdfPath::AbsoluteRootPath());
-
+            sceneIndices.finalSceneIndex, SdfPath::AbsoluteRootPath());
     } else {
         hdUsdFrontend = std::make_unique<UsdImagingDelegate>(
             hdRenderIndex.get(),
@@ -758,8 +880,8 @@ HydraSetupAndRender(
         hdUsdFrontend->Populate(stage->GetPseudoRoot());
         hdUsdFrontend->SetTime(frameNum);
         hdUsdFrontend->SetRefineLevelFallback(8); // max refinement
-        if (!cameraInfo.cameraPath.IsEmpty()) {
-            hdUsdFrontend->SetCameraForSampling(cameraInfo.cameraPath);
+        if (!cameraPath.IsEmpty()) {
+            hdUsdFrontend->SetCameraForSampling(cameraPath);
         }
         if (!cullStyle.empty()) {
             if (cullStyle == "none") {
@@ -785,8 +907,6 @@ HydraSetupAndRender(
     //   RenderSettings prim.
     // - "rprim collection" should be replaced with the Usd Collection opinion
     //   on the driving RenderPass prim.
-    // - Any overrides to the camera and framing should edit the active
-    //   RenderSettings prim instead of using renderPassState.
 
     const TfTokenVector renderTags{HdRenderTagTokens->geometry};
     // The collection of scene contents to render
@@ -804,19 +924,25 @@ HydraSetupAndRender(
     HdRenderPassStateSharedPtr const hdRenderPassState =
         renderDelegate->CreateRenderPassState();
 
-    const HdCamera * const camera = 
-        dynamic_cast<const HdCamera*>(
-            hdRenderIndex->GetSprim(HdTokens->camera, cameraInfo.cameraPath));
+    // The camera/framing information only needs to be set for the RenderSpec 
+    // pathway, when using RenderSettings, HdPrman_RenderPass will get the 
+    // camera information directly from the RenderProducts.
+    if (cameraInfo) {
+        const HdCamera * const camera = 
+            dynamic_cast<const HdCamera*>(
+                hdRenderIndex->GetSprim(
+                    HdTokens->camera, cameraInfo->cameraPath));
 
-    hdRenderPassState->SetCamera(camera);
-    hdRenderPassState->SetFraming(ComputeFraming(cameraInfo));
-    hdRenderPassState->SetOverrideWindowPolicy(
-        { true, _RenderSettingsTokenToConformWindowPolicy(
-                                cameraInfo.aspectRatioConformPolicy) });
+        hdRenderPassState->SetCamera(camera);
+        hdRenderPassState->SetFraming(ComputeFraming(*cameraInfo));
+        hdRenderPassState->SetOverrideWindowPolicy(
+            { true, HdUtils::ToConformWindowPolicy(
+                                    cameraInfo->aspectRatioConformPolicy) });
+    }
 
     auto sgsi = appSceneIndices->sceneGlobalsSceneIndex;
     TF_VERIFY(sgsi);
-    fprintf(stdout, "Setting the active render settings prim path to %s.\n",
+    fprintf(stdout, "Setting the active render settings prim path to <%s>.\n",
             renderSettingsPrimPath.GetText());
     sgsi->SetActiveRenderSettingsPrimPath(renderSettingsPrimPath);
 
@@ -1000,28 +1126,18 @@ int main(int argc, char *argv[])
         printf("Rendering using the render settings prim <%s>...\n",
                settings.GetPath().GetText());
 
-        HydraSetupCameraInfo camInfo =
-            GetCameraInfo(sceneCamPath, sceneCamAspect, settings);
+        SdfPath cameraPath = ApplyCommandLineArgsToProduct(
+            sceneCamPath, sceneCamAspect, stage, settings);
 
         // Create HdRenderSettingsMap for the RenderDelegate
         HdRenderSettingsMap settingsMap;
 
-        // XXX This can be removed once hdPrman is updated to use the camera and
-        //     shutter from the render settings prim.
-        // Add the camera Path to the Settings Map as well so that the Render
-        // Delegate can have it before syncing for shutter interval
-        settingsMap[HdPrmanRenderSettingsTokens->experimentalSettingsCameraPath] =
-            camInfo.cameraPath;
-
-        AddNamespacedSettings(
-            UsdRenderComputeNamespacedSettings(
-                settings.GetPrim(), prmanNamespaces),
-            &settingsMap);
         settingsMap[HdRenderSettingsTokens->enableInteractive] = false;
 
         HydraSetupAndRender(
             settingsMap, settings.GetPath(),
-            camInfo, cullStyle, stage, frameNum, &timer_hydra);
+            nullptr /* camInfo */, cameraPath, cullStyle, stage, 
+            frameNum, &timer_hydra);
 
         printf("Rendered <%s>\n", settings.GetPath().GetText());
     }
@@ -1035,7 +1151,7 @@ int main(int argc, char *argv[])
         for (auto product: renderSpec.products) {
             printf("Rendering product %s...\n", product.name.GetText());
 
-            HydraSetupCameraInfo camInfo = GetCameraInfoAndUpdateProduct(
+            HydraSetupCameraInfo camInfo = ApplyCommandLineArgsToProduct(
                 sceneCamPath, sceneCamAspect, &product);
 
             // Create HdRenderSettingsMap for the RenderDelegate
@@ -1054,7 +1170,8 @@ int main(int argc, char *argv[])
 
             HydraSetupAndRender(
                 settingsMap, /* renderSettingsPrimPath */ SdfPath::EmptyPath(),
-                camInfo, cullStyle, stage, frameNum, &timer_hydra);
+                &camInfo, camInfo.cameraPath, cullStyle, stage, 
+                frameNum, &timer_hydra);
 
             printf("Rendered %s\n", product.name.GetText());
         }

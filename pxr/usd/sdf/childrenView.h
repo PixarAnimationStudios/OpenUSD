@@ -31,9 +31,6 @@
 #include "pxr/usd/sdf/children.h"
 #include "pxr/base/tf/iterator.h"
 
-#include <boost/iterator/filter_iterator.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include <boost/iterator/reverse_iterator.hpp>
 #include <algorithm>
 #include <vector>
 
@@ -76,27 +73,82 @@ template <typename _Owner, typename _InnerIterator, typename _DummyPredicate>
 class Sdf_ChildrenViewTraits {
 private:
 
-    // Internal predicate object which will be passed to the filter
-    // iterator. This just calls through to the owner's predicate.
-    class _Predicate {
+    // Owner's predicate object will be used by the filter iterator.
+    // In C++20, consider using the ranges library to simplify this
+    class _FilterIterator {
     public:
-        typedef typename _Owner::value_type value_type;
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = typename _InnerIterator::value_type;
+        using reference = typename _InnerIterator::reference;
+        using pointer = typename _InnerIterator::pointer;
+        using difference_type = typename _InnerIterator::difference_type;
 
-        _Predicate() : _owner(NULL) { }
-        _Predicate(const _Owner* owner) : _owner(owner) { }
+        _FilterIterator() = default;
+        _FilterIterator(const _Owner* owner,
+                        const _InnerIterator& underlyingIterator,
+                        const _InnerIterator& end) :
+                            _owner(owner),
+                            _underlyingIterator(underlyingIterator),
+                            _end(end) {
+            _Filter();
+        }
 
-        bool operator()(const value_type& x) const
+        reference operator*() const {
+            return *_underlyingIterator;
+        }
+
+        pointer operator->() const {
+            return _underlyingIterator.operator->();
+        }
+
+        _FilterIterator& operator++() {
+            TF_DEV_AXIOM(_underlyingIterator != _end);
+            ++_underlyingIterator;
+            _Filter();
+            return *this;
+        }
+
+        _FilterIterator operator++(int) {
+            TF_DEV_AXIOM(_underlyingIterator != _end);
+            _FilterIterator result(*this);
+            ++_underlyingIterator;
+            _Filter();
+            return result;
+        }
+
+        bool operator==(const _FilterIterator& other) const {
+            return _underlyingIterator == other._underlyingIterator;
+        }
+
+        bool operator!=(const _FilterIterator& other) const {
+            return _underlyingIterator != other._underlyingIterator;
+        }
+
+        const _InnerIterator& GetBase() const { return _underlyingIterator; }
+
+    private:
+        // Skip any iterators that don't satisfy the predicate
+        bool _ShouldFilter(const value_type& x) const
         {
-            return _owner->GetPredicate()(
+            return !_owner->GetPredicate()(
                 _Owner::Adapter::Convert(x));
         }
 
-    private:
-        const _Owner* _owner;
+        void _Filter()
+        {
+            while (_underlyingIterator != _end &&
+                   _ShouldFilter(*_underlyingIterator)) {
+                ++_underlyingIterator;
+            }
+        }
+
+        const _Owner* _owner = nullptr;
+        _InnerIterator _underlyingIterator;
+        _InnerIterator _end;
     };
 
 public:
-    typedef boost::filter_iterator<_Predicate, _InnerIterator> const_iterator;
+    using const_iterator = _FilterIterator;
 
     // Convert from a private _InnerIterator to a public const_iterator.
     // filter_iterator requires an end iterator, which is constructed using
@@ -106,13 +158,13 @@ public:
                                       size_t size)
     {
         _InnerIterator end(owner,size);
-        return const_iterator(_Predicate(owner), i, end);
+        return const_iterator(owner, i, end);
     }
 
     // Convert from a public const_iterator to a private _InnerIterator.
     static const _InnerIterator& GetBase(const const_iterator& i)
     {
-        return i.base();
+        return i.GetBase();
     }
 };
 
@@ -187,23 +239,112 @@ private:
     // the owner's storage. That allows the iterator to operate without
     // knowing anything about the specific data storage that's used,
     // which is important for providing both Gd and Lsd backed storage.
-    class _InnerIterator :
-        public boost::iterator_facade<_InnerIterator,
-                                      value_type,
-                                      std::random_access_iterator_tag,
-                                      value_type> {
+    class _InnerIterator {
+        class _PtrProxy {
+        public:
+            SdfChildrenView::value_type* operator->() { return &_value; }
+        private:
+            friend class SdfChildrenView;
+            explicit _PtrProxy(const SdfChildrenView::value_type& value)
+                : _value(value) {}
+            SdfChildrenView::value_type _value;
+        };
     public:
-        typedef value_type reference;
-        typedef size_t size_type;
-        typedef ptrdiff_t difference_type;
+        using iterator_category = std::random_access_iterator_tag;
+        using value_type = SdfChildrenView::value_type;
+        using reference = value_type;
+        using pointer = _PtrProxy;
+        using difference_type = std::ptrdiff_t;
 
-        _InnerIterator() :
-            _owner(NULL), _pos(0) { }
+        _InnerIterator() = default;
         _InnerIterator(const This* owner, const size_t& pos) :
             _owner(owner), _pos(pos) { }
 
+        reference operator*() const { return dereference(); }
+        pointer operator->() const { return pointer(dereference()); }
+        reference operator[](const difference_type index) const {
+            _InnerIterator advanced(*this);
+            advanced.advance(index);
+            return advanced.dereference();
+        }
+
+        difference_type operator-(const _InnerIterator& other) const {
+            return -distance_to(other);
+        }
+
+        _InnerIterator& operator++() {
+            increment();
+            return *this;
+        }
+
+        _InnerIterator& operator--() {
+            decrement();
+            return *this;
+        }
+
+        _InnerIterator operator++(int) {
+            _InnerIterator result(*this);
+            increment();
+            return result;
+        }
+
+        _InnerIterator operator--(int) {
+            _InnerIterator result(*this);
+            decrement();
+            return result;
+        }
+
+        _InnerIterator operator+(const difference_type increment) const {
+            _InnerIterator result(*this);
+            result.advance(increment);
+            return result;
+        }
+
+        _InnerIterator operator-(const difference_type decrement) const {
+            _InnerIterator result(*this);
+            result.advance(-decrement);
+            return result;
+        }
+
+        _InnerIterator& operator+=(const difference_type increment) {
+            advance(increment);
+            return *this;
+        }
+
+        _InnerIterator& operator-=(const difference_type decrement) {
+            advance(-decrement);
+            return *this;
+        }
+
+        bool operator==(const _InnerIterator& other) const {
+            return equal(other);
+        }
+
+        bool operator!=(const _InnerIterator& other) const {
+            return !equal(other);
+        }
+
+        bool operator<(const _InnerIterator& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _pos < other._pos;
+        }
+
+        bool operator<=(const _InnerIterator& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _pos <= other._pos;
+        }
+
+        bool operator>(const _InnerIterator& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _pos > other._pos;
+        }
+
+        bool operator>=(const _InnerIterator& other) const {
+            TF_DEV_AXIOM(_owner == other._owner);
+            return _pos >= other._pos;
+        }
+
     private:
-        friend class boost::iterator_core_access;
 
         reference dereference() const
         {
@@ -232,14 +373,14 @@ private:
         }
 
     private:
-        const This* _owner;
-        size_t _pos;
+        const This* _owner = nullptr;
+        size_t _pos = 0;
     };
 
 public:
     typedef Sdf_ChildrenViewTraits<This, _InnerIterator, Predicate> _Traits;
     typedef typename _Traits::const_iterator const_iterator;
-    typedef boost::reverse_iterator<const_iterator> const_reverse_iterator;
+    typedef Tf_ProxyReferenceReverseIterator<const_iterator> const_reverse_iterator;
     typedef size_t size_type;
     typedef ptrdiff_t difference_type;
 

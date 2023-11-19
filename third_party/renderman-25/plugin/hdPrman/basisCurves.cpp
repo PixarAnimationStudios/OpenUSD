@@ -38,8 +38,14 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+#if PXR_VERSION > 2011
 HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id)
     : BASE(id)
+#else
+HdPrman_BasisCurves::HdPrman_BasisCurves(SdfPath const& id,
+                                         SdfPath const& instancerId)
+    : BASE(id, instancerId)
+#endif
 {
 }
 
@@ -143,8 +149,15 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                RtDetailType::k_uniform);
 
     // Points
-    HdPrman_ConvertPointsPrimvar(
-        sceneDelegate, id, primvars, vertexPrimvarCount);
+    float primvarTime = 0.0f;
+    if( HdPrman_RenderParam::HasSceneIndexPlugin(
+            HdPrmanPluginTokens->velocityBlur) ) {
+        HdPrman_ConvertPointsPrimvar(
+            sceneDelegate, id, primvars, vertexPrimvarCount);
+    } else {
+        primvarTime = renderParam->ConvertPositions(
+            sceneDelegate, id, vertexPrimvarCount, primvars);
+    }
 
     // Set element ID.  Overloaded use of "__faceIndex" to support picking...
     std::vector<int32_t> elementId(numCurves);
@@ -152,8 +165,9 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     primvars.SetIntegerDetail(RixStr.k_faceindex, elementId.data(),
                                RtDetailType::k_uniform);
 
-    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, numCurves,
-        vertexPrimvarCount, varyingPrimvarCount, facevaryingPrimvarCount);
+    HdPrman_ConvertPrimvars(
+        sceneDelegate, id, primvars, numCurves, vertexPrimvarCount,
+        varyingPrimvarCount, facevaryingPrimvarCount, primvarTime);
 
     return primvars;
 }

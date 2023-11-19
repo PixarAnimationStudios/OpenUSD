@@ -224,7 +224,8 @@ HgiMetalGraphicsCmds::HgiMetalGraphicsCmds(
                 _renderPassDescriptor.stencilAttachment;
             stencilAttachment.loadAction = metalDepthAttachment.loadAction;
             stencilAttachment.storeAction = metalDepthAttachment.storeAction;
-            stencilAttachment.clearStencil = hgiDepthAttachment.clearValue[0];
+            stencilAttachment.clearStencil =
+                static_cast<uint32_t>(hgiDepthAttachment.clearValue[1]);
             stencilAttachment.texture = metalDepthAttachment.texture;
             
             if (desc.depthResolveTexture) {

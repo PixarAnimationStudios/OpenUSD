@@ -52,7 +52,7 @@ UsdPrimRange::Stage(const UsdStagePtr &stage,
 void
 UsdPrimRange::iterator::PruneChildren()
 {
-    if (base() == _range->_end) {
+    if (_underlyingIterator == _range->_end) {
         TF_CODING_ERROR("Iterator past-the-end");
         return;
     }
@@ -68,33 +68,35 @@ UsdPrimRange::iterator::PruneChildren()
 void
 UsdPrimRange::iterator::increment()
 {
-    base_type &base = base_reference();
-    base_type end = _range->_end;
+    _UnderlyingIterator end = _range->_end;
     if (ARCH_UNLIKELY(_isPost)) {
         _isPost = false;
-        if (Usd_MoveToNextSiblingOrParent(
-                base, _proxyPrimPath, end, _range->_predicate)) {
+        if (Usd_MoveToNextSiblingOrParent(_underlyingIterator, _proxyPrimPath,
+                                          end, _range->_predicate)) {
             if (_depth) {
                 --_depth;
                 _isPost = true;
             } else {
-                base = end;
+                _underlyingIterator = end;
                 _proxyPrimPath = SdfPath();
             }
         }
     } else if (!_pruneChildrenFlag &&
-               Usd_MoveToChild(base, _proxyPrimPath, end, _range->_predicate)) {
+               Usd_MoveToChild(_underlyingIterator, _proxyPrimPath, end,
+                               _range->_predicate)) {
         ++_depth;
     } else {
         if (_range->_postOrder) {
             _isPost = true;
         } else {
-            while (Usd_MoveToNextSiblingOrParent(
-                       base, _proxyPrimPath, end, _range->_predicate)) {
+            while (Usd_MoveToNextSiblingOrParent(_underlyingIterator,
+                                                 _proxyPrimPath,
+                                                 end,
+                                                 _range->_predicate)) {
                 if (_depth) {
                     --_depth;
                 } else {
-                    base = end;
+                    _underlyingIterator = end;
                     _proxyPrimPath = SdfPath();
                     break;
                 }

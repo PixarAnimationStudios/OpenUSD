@@ -325,6 +325,46 @@ struct TestCase<VtArray<SdfAssetPath> >
     }
 };
 
+template <> 
+struct TestCase<SdfPathExpression>
+{
+    static void AddTestCase(const UsdPrim& prim)
+    {
+        UsdAttribute attr =
+            prim.CreateAttribute(TfToken("testPathExpr"),
+                                 SdfValueTypeNames->PathExpression);
+        TF_VERIFY(attr.Set(SdfPathExpression("p1"), UsdTimeCode(0.0)));
+        TF_VERIFY(attr.Set(SdfPathExpression("p2"), UsdTimeCode(2.0)));
+    }
+    
+    static void TestLinearInterpolation(const UsdPrim& prim)
+    {
+        // pathExpression does not linearly interpolate
+        TestHeldInterpolation(prim);
+    }
+
+    static void TestHeldInterpolation(const UsdPrim& prim)
+    {
+        UsdAttribute attr = prim.GetAttribute(TfToken("testPathExpr"));
+        VerifyAttributeValue(attr, UsdTimeCode(0.0),
+                             SdfPathExpression("/TestPrim/p1"));
+        VerifyAttributeValue(attr, UsdTimeCode(1.0),
+                             SdfPathExpression("/TestPrim/p1"));
+        VerifyAttributeValue(attr, UsdTimeCode(2.0),
+                             SdfPathExpression("/TestPrim/p2"));
+    }
+};
+
+template <> 
+struct TestCase<VtArray<SdfPathExpression> >
+{
+    // We do not support shaped pathExpression values.
+    static void AddTestCase(const UsdPrim& prim) {}
+    static void TestLinearInterpolation(const UsdPrim& prim) {}
+    static void TestHeldInterpolation(const UsdPrim& prim) {}
+};
+
+
 template <>
 struct TestCase<GfHalf>
 {
@@ -1946,7 +1986,7 @@ TestInterpolation(const string &layerIdent)
     // value type is added without a corresponding TestCase<T> added,
     // this test won't compile. If a value type is removed, this
     // check will fail at runtime.
-    static const size_t numTestCasesExpected = 32;
+    static const size_t numTestCasesExpected = 33;
     const size_t numTestCasesAdded = AddTestCasesToPrim(testPrim);
     TF_VERIFY(numTestCasesAdded == numTestCasesExpected,
               "Expected %zd cases, got %zu.",

@@ -151,11 +151,6 @@ ArchRegex::_Impl::Match(const char* query) const
 
 #endif // defined(ARCH_OS_WINDOWS)
 
-ArchRegex::ArchRegex()
-{
-    // Do nothing.
-}
-
 ArchRegex::ArchRegex(const std::string& pattern, unsigned int flags) :
     _flags(flags)
 {
@@ -163,11 +158,10 @@ ArchRegex::ArchRegex(const std::string& pattern, unsigned int flags) :
         if (pattern.empty()) {
             _error = "empty pattern";
         }
-        else if (flags & GLOB) {
-            _impl.reset(new _Impl(_GlobToRegex(pattern), _flags, &_error));
-        }
         else {
-            _impl.reset(new _Impl(pattern, _flags, &_error));
+            _impl = std::make_shared<_Impl>(
+                (flags & GLOB) ? _GlobToRegex(pattern) : pattern,
+                _flags, &_error);
         }
     }
     catch (...) {
@@ -175,23 +169,6 @@ ArchRegex::ArchRegex(const std::string& pattern, unsigned int flags) :
             _error = "unknown reason";
         }
     }
-}
-
-ArchRegex::ArchRegex(ArchRegex&& rhs) noexcept :
-    _flags(std::move(rhs._flags)),
-    _error(std::move(rhs._error)),
-    _impl (std::move(rhs._impl))
-{
-    // Do nothing
-}
-
-ArchRegex&
-ArchRegex::operator=(ArchRegex&& rhs) noexcept
-{
-    _flags = std::move(rhs._flags);
-    _error = std::move(rhs._error);
-    _impl  = std::move(rhs._impl);
-    return *this;
 }
 
 ArchRegex::~ArchRegex()

@@ -212,12 +212,21 @@ def _GetCodeSignStringFromTerminal():
 
 def GetCodeSignID():
     codeSignIDs = _GetCodeSignStringFromTerminal()
-    codeSignID = "-"
     if os.environ.get('CODE_SIGN_ID'):
         codeSignID = os.environ.get('CODE_SIGN_ID')
     else:
         try:
-            codeSignID = codeSignIDs.decode("utf-8").split()[1]
+            codeSignIDs = codeSignIDs.decode("utf-8").splitlines()
+            for codeSignID in codeSignIDs:
+                if "CSSMERR_TP_CERT_REVOKED" in codeSignID:
+                    continue
+                if ")" not in codeSignID:
+                    continue
+
+                codeSignID = codeSignID.split()[1]
+                break
+            else:
+                raise RuntimeError("Could not find a valid codesigning ID")
         except:
             raise Exception("Unable to parse codesign ID")
     return codeSignID

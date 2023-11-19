@@ -139,7 +139,7 @@ HdxColorCorrectionTask::_GetUseOcio() const
 #if OCIO_VERSION_HEX < 0x02000000
 
 void
-HdxColorCorrectionTask::_CreateOpenColorIOResources(
+HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
     Hgi *hgi,
     HdxColorCorrectionTaskParams const& params,
     HdxColorCorrectionTask::_OCIOResources *result)
@@ -289,7 +289,7 @@ struct HdxColorCorrectionTask_UboBuilder {
 };
 
 void
-HdxColorCorrectionTask::_CreateOpenColorIOResources(
+HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
     Hgi *hgi,
     HdxColorCorrectionTaskParams const& params,
     HdxColorCorrectionTask::_OCIOResources *result)
@@ -389,6 +389,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOResources(
 
         // Sampler description
         HgiSamplerDesc sampDesc;
+        sampDesc.debugName = samplerName;
         sampDesc.magFilter = HgiSamplerFilterLinear;
         sampDesc.minFilter = HgiSamplerFilterLinear;
         sampDesc.addressModeU = HgiSamplerAddressModeClampToEdge;
@@ -557,22 +558,28 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
             // binding and layout. Therefore we subsitute sampler
             // name in the shader code in all its use-cases with the
             // one Hgi provides.
-            size_t samplerNameLength = texInfo.samplerName.length();
-            size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
-            if (offset != std::string::npos)
-            {
-                offset += samplerNameLength;
-                    // ignore first occurance that is variable definition
-                offset = ocioGpuShaderText.find(texInfo.samplerName, offset);
-                while (offset != std::string::npos)
-                {
-                    size_t texNameLength = texInfo.texName.length();
-                    ocioGpuShaderText.replace(
-                        offset, samplerNameLength,
-                        texInfo.texName.c_str(), texNameLength);
+            if (TF_VERIFY(!texInfo.texName.empty() &&
+                          !texInfo.samplerName.empty())) {
+                const size_t texNameLength = texInfo.texName.length();
+                const size_t samplerNameLength = texInfo.samplerName.length();
 
-                    offset += texNameLength;
-                    offset = ocioGpuShaderText.find(texInfo.samplerName, offset);
+                size_t offset = ocioGpuShaderText.find(texInfo.samplerName);
+                if (offset != std::string::npos)
+                {
+                    offset += samplerNameLength;
+                        // ignore first occurance that is variable definition
+                    offset = ocioGpuShaderText.find(
+                                    texInfo.samplerName, offset);
+                    while (offset != std::string::npos)
+                    {
+                        ocioGpuShaderText.replace(
+                            offset, samplerNameLength,
+                            texInfo.texName.c_str(), texNameLength);
+
+                        offset += texNameLength;
+                        offset = ocioGpuShaderText.find(
+                                    texInfo.samplerName, offset);
+                    }
                 }
             }
         }
@@ -626,7 +633,7 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
 #else // PXR_OCIO_PLUGIN_ENABLED
 
 void
-HdxColorCorrectionTask::_CreateOpenColorIOResources(
+HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
     Hgi *hgi,
     HdxColorCorrectionTaskParams const& params,
     HdxColorCorrectionTask::_OCIOResources *result)
@@ -646,8 +653,22 @@ HdxColorCorrectionTask::_CreateOpenColorIOShaderCode(
 
 #endif // PXR_OCIO_PLUGIN_ENABLED
 
-
-
+void
+HdxColorCorrectionTask::_CreateOpenColorIOResources(
+    Hgi *hgi,
+    HdxColorCorrectionTaskParams const& params,
+    _OCIOResources *result)
+{
+    // Put any calls to OCIO within a try-catch.
+    try {
+        _CreateOpenColorIOResourcesImpl(hgi, params, result);
+    } catch (const std::exception& e) {
+        TF_WARN("_CreateOpenColorIOResourcesImpl threw a C++ exception: %s",
+            e.what());
+    } catch (...) {
+        TF_WARN("_CreateOpenColorIOResourcesImpl threw a C++ exception.");
+    }
+}
 
 void
 HdxColorCorrectionTask::_CreateOpenColorIOLUTBindings(
@@ -718,7 +739,14 @@ HdxColorCorrectionTask::_CreateShaderResources()
         return true;
     }
 
-    const bool useOCIO =_GetUseOcio();
+    bool useOCIO =_GetUseOcio();
+    if (useOCIO) {
+        // Ensure the OICO resource prep task has completed.
+        _workDispatcher.Wait();
+        // Don't use OCIO if we weren't able to fill _ocioResources.
+        useOCIO = !_ocioResources.gpuShaderText.empty();
+    }
+
     const HioGlslfx glslfx(
             HdxPackageColorCorrectionShader(), HioGlslfxTokens->defVal);
 
@@ -763,9 +791,6 @@ HdxColorCorrectionTask::_CreateShaderResources()
         // Our current version of OCIO outputs 130 glsl and texture3D is
         // removed from glsl in 140.
         fsCode += "#define texture3D texture\n";
-
-        // Ensure the OICO resource prep task has completed.
-        _workDispatcher.Wait();
 
         // Discard prior GPU resources.
         for (TextureSamplerInfo &textureLut : _textureLUTs) {

@@ -52,12 +52,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((vstructPluginName,    "HdPrman_VirtualStructResolvingSceneIndexPlugin"))
 );
 
-TF_DEFINE_PRIVATE_TOKENS(
-    _materialContextTokens,
-    (ri)
-    (mtlx)
-);
-
 /// Ordering of the matfilt operations. This is necessary when using scene
 /// index plugins instead of a filter chain which is populated in the required
 /// order.

@@ -32,12 +32,20 @@
 #include "pxr/imaging/hd/dataSourceTypeDefs.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/sceneIndex.h"
+#include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/utils.h"
+#include "pxr/imaging/hdsi/renderSettingsFilteringSceneIndex.h"
+
+#include "pxr/base/tf/getenv.h"
+#include "pxr/base/tf/envSetting.h"
 
 #include <string>
-#include <iostream> // XXX
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+TF_DEFINE_ENV_SETTING(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS, false,
+                      "Drive the render pass using the first RenderProduct on "
+                      "the render settings prim.");
 
 TF_DEFINE_PRIVATE_TOKENS(
     _renderTerminalTokens, // properties in PxrRenderTerminalsAPI
@@ -95,6 +103,27 @@ _GenerateParamList(VtDictionary const &settings)
     return options;
 }
 
+bool
+_HasNonFallbackRenderSettingsPrim(const HdSceneIndexBaseRefPtr &si)
+{
+    if (!si) {
+        return false;
+    }
+    
+    const SdfPath &renderScope =
+        HdsiRenderSettingsFilteringSceneIndex::GetRenderScope();
+    const SdfPath &fallbackPrimPath =
+        HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath();
+
+    for (const SdfPath &path : HdSceneIndexPrimView(si, renderScope)) {
+        if (path != fallbackPrimPath &&
+            si->GetPrim(path).primType == HdPrimTypeTokens->renderSettings) {
+            return true;
+        }
+    }
+    return false;
+}
+
 }
 
 
@@ -105,6 +134,19 @@ HdPrman_RenderSettings::HdPrman_RenderSettings(SdfPath const& id)
 
 HdPrman_RenderSettings::~HdPrman_RenderSettings() = default;
 
+/* static */
+bool
+HdPrman_RenderSettings::DriveRenderPass() 
+{
+    // Currently the ability to drive the RenderPass with the RenderSettings
+    // and RenderProducts is behind this env var.
+    // XXX This should eventually be replaced with an attribute on the 
+    // RenderSettings prim itself.
+    static bool useRenderSettingsPrim =
+        TfGetEnvSetting(HD_PRMAN_RENDER_SETTINGS_DRIVE_RENDER_PASS);
+    return useRenderSettingsPrim;
+}
+
 void HdPrman_RenderSettings::Finalize(HdRenderParam *renderParam)
 {
 }
@@ -114,39 +156,80 @@ void HdPrman_RenderSettings::_Sync(
     HdRenderParam *renderParam,
     const HdDirtyBits *dirtyBits)
 {
+    TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+        "Syncing render settings prim %s (dirty bits = %x)...\n{",
+        GetId().GetText(), *dirtyBits);
+        
     HdPrman_RenderParam *param = static_cast<HdPrman_RenderParam*>(renderParam);
+
+    HdSceneIndexBaseRefPtr terminalSi =
+        sceneDelegate->GetRenderIndex().GetTerminalSceneIndex();
+
+    // We defer the first SetOptions call to correctly handle immutable scene 
+    // options authored on a render settings prim to below (SetRileyOptions).
+    // To accommodate scenes without a render settings prim, a fallback
+    // prim is always inserted via a scene index plugin.
+    // However, due to the non-deterministic nature of Sync, we need to guard
+    // against the fallback prim's opinion being committed on the first
+    // SetOptions when an authored prim is present.
+    //
+    if (GetId() == HdsiRenderSettingsFilteringSceneIndex::GetFallbackPrimPath()
+        && _HasNonFallbackRenderSettingsPrim(terminalSi)) {
+
+        TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+            "Short-circuiting sync for fallback render settings prim %s because"
+            "an authored render setting prim is present.\n", GetId().GetText());
+        
+        return;
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        // Note: We don't get fine-grained invalidation per-setting, so we
+        //       recompute all settings. Since this resets the param list, we
+        //       readd the shutter interval param explicitly below.
+        _settingsOptions = _GenerateParamList(GetNamespacedSettings());
+    }
+
+    if (*dirtyBits & HdRenderSettings::DirtyShutterInterval ||
+        *dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
+        if (GetShutterInterval().IsHolding<GfVec2d>()) {
+            HdPrman_Utils::SetParamFromVtValue(
+                RixStr.k_Ri_Shutter,
+                GetShutterInterval(),
+                /* role = */ TfToken(),
+                &_settingsOptions);
+        }
+    }
 
     // XXX Preserve existing data flow for clients that don't populate the
     //     sceneGlobals.activeRenderSettingsPrim locator at the root prim of the
-    //     scene index. In this scenario, integrator, sample and display
-    //     filters connected to the render settings prim are used. This works
-    //     only when a single render settings prim is present in the scene.
-    //     When multiple render settings prims are present in the scene, because
-    //     the Sync order is non-deterministic, the last sync'd prim's opinions
-    //     would be used.
+    //     scene index. In this scenario, scene options and render terminals
+    //     connected to the render settings prim are used. This works
+    //     only when a single render settings prim is present in the scene
+    //     (not including the fallback prim inserted via the scene index).
     //
-
-    const bool hasActiveRsp = HdUtils::HasActiveRenderSettingsPrim(
-        sceneDelegate->GetRenderIndex().GetTerminalSceneIndex());
-     
+    //     When multiple render settings prims are present in the scene, because
+    //     the Sync order is non-deterministic, the last sync'd prim's mutable
+    //     opinions and the first sync'd prim's immutable opinions would win.
+    //
+    const bool hasActiveRsp = HdUtils::HasActiveRenderSettingsPrim(terminalSi);
+    
     if (IsActive() || !hasActiveRsp) {
-        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings) {
-            // NamespacedSettings contains all the Prman-specific render
-            // settings opinions.
-            const VtDictionary& namespacedSettings = GetNamespacedSettings();
-        
+
+        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
+            *dirtyBits & HdRenderSettings::DirtyActive ||
+            *dirtyBits & HdRenderSettings::DirtyShutterInterval) {
+            
             // Handle attributes ...
-            // Note: We don't get fine-grained invalidation per-setting, so we
-            //       recompute all settings.
-            _settingsOptions = _GenerateParamList(namespacedSettings);
+            param->SetRenderSettingsPrimOptions(_settingsOptions);
+            param->SetRileyOptions();
+        }
 
-            TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
-                "Processed dirty namespaced settings for %s and generated the "
-                "param list %s", GetId().GetText(),
-                HdPrmanDebugUtil::RtParamListToString(_settingsOptions).c_str()
-            );
+        // ... and connections.
+        if (*dirtyBits & HdRenderSettings::DirtyNamespacedSettings ||
+            *dirtyBits & HdRenderSettings::DirtyActive) {
 
-            // ... and connections.
+            const VtDictionary& namespacedSettings = GetNamespacedSettings();
             // Set the integrator connected to this Render Settings prim
             {
                 // XXX Should use SdfPath rather than a vector.
@@ -180,6 +263,21 @@ void HdPrman_RenderSettings::_Sync(
             }
         }
     }
+
+    // Set the camera path here so that HdPrmanCamera::Sync can detect
+    // whether it is syncing the current camera
+    // and needs to set the riley shutter interval
+    // which needs to be set before any time-sampled primvars are synced.
+    const HdRenderSettings::RenderProducts &renderProducts =
+        GetRenderProducts();
+    if(!renderProducts.empty()) {
+        SdfPath cameraPath = renderProducts.at(0).cameraPath;
+        param->GetCameraContext().SetCameraPath(cameraPath);
+    }
+
+    TF_DEBUG(HDPRMAN_RENDER_SETTINGS).Msg(
+        "}\nDone syncing render settings prim %s.\n", GetId().GetText());
+        
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

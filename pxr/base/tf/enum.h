@@ -31,7 +31,6 @@
 #include "pxr/base/arch/defines.h"
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/preprocessorUtils.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/safeTypeCompare.h"
 #include "pxr/base/tf/api.h"
