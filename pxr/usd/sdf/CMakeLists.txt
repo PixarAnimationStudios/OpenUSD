@@ -113,6 +113,7 @@ pxr_library(sdf
         listOpListEditor
         parserHelpers
         parserValueContext
+        pathParser
         subLayerListEditor
         textParserContext
         valueTypeRegistry
