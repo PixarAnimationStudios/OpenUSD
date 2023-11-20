@@ -338,10 +338,27 @@ private:
         class _Impl {
             friend class _FileMapping;
 
+            class tbb_hash
+            {
+            public:
+                tbb_hash() {}
+
+                template<typename Key>
+                std::size_t operator () (const Key& z) const
+                {
+                   return TfHash::Combine(
+                        reinterpret_cast<uintptr_t>(z.GetAddr()),
+                        z.GetNumBytes()
+                    );
+                }
+            };
+
             // This is a foreign data source for VtArray that refers into a
             // memory-mapped region, and shares in the lifetime of the mapping.
             struct ZeroCopySource : public Vt_ArrayForeignDataSource {
-                explicit ZeroCopySource(_Impl *m,
+                ZeroCopySource() = default;
+
+                ZeroCopySource(_Impl *m,
                                         void const *addr,
                                         size_t numBytes);
                 
@@ -422,7 +439,7 @@ private:
             ArchConstFileMapping _mapping;
             char const *_start;
             int64_t _length;
-            tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
+            tbb::concurrent_unordered_set<ZeroCopySource, tbb_hash> _outstandingRanges;
         };
 
     public:
@@ -664,6 +681,67 @@ public:
         PathIndex pathIndex;
         FieldSetIndex fieldSetIndex;
         SdfSpecType specType;
+    };
+
+    template<typename Header, typename Reader>
+    struct TaskReadPath {
+        TaskReadPath(CrateFile* owner, Reader *reader, int64_t offset, WorkDispatcher* dispatcher, SdfPath path)
+            :m_owner(owner),
+            m_reader(reader),
+            m_offset(offset),
+            m_dispatcher(dispatcher),
+            m_path(path)
+        {
+
+        }
+
+        void operator()() const{
+            TfAutoMallocTag tag(
+                "Usd", "Usd_CrateDataImpl::Open",
+                "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
+                m_reader->Seek(m_offset);
+                m_owner->_ReadPathsImpl<Header>(*m_reader, *m_dispatcher, m_path);
+        }
+
+    private:
+        CrateFile     *m_owner = nullptr;
+        Reader        *m_reader;
+        int64_t        m_offset = 0;
+        WorkDispatcher *m_dispatcher = nullptr;
+        SdfPath        m_path;
+    };
+
+    struct TaskBuildDecompressedpath {
+        TaskBuildDecompressedpath(CrateFile* owner, vector<uint32_t> const &pathIndexes,  vector<int32_t> const &elementTokenIndexes, vector<int32_t> const &jumps, 
+                int64_t offset, WorkDispatcher* dispatcher, SdfPath path)
+            :m_owner(owner),
+            m_pathIndexes(pathIndexes),
+            m_elementTokenIndexes(elementTokenIndexes),
+            m_jumps(jumps),
+            m_offset(offset),
+            m_dispatcher(dispatcher),
+            m_path(path)
+        {
+
+        }
+
+        void operator()() const{
+            TfAutoMallocTag tag(
+                            "Usd", "Usd_CrateDataImpl::Open",
+                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
+            m_owner->_BuildDecompressedPathsImpl(
+                            m_pathIndexes, m_elementTokenIndexes, m_jumps,
+                            m_offset, m_path, *m_dispatcher);
+        }
+
+    private:
+        CrateFile         *m_owner = nullptr;
+        vector<uint32_t>  m_pathIndexes;
+        vector<int32_t>   m_elementTokenIndexes;
+        vector<int32_t>   m_jumps;
+        int64_t           m_offset = 0;
+        WorkDispatcher    *m_dispatcher = nullptr;
+        SdfPath           m_path;
     };
 
     ~CrateFile();

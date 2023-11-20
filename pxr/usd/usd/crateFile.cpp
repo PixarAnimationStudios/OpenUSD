@@ -3700,16 +3700,8 @@ CrateFile::_ReadPathsImpl(Reader reader,
             if (hasSibling) {
                 // Branch off a parallel task for the sibling subtree.
                 auto siblingOffset = reader.template Read<int64_t>();
-                dispatcher.Run(
-                    [this, reader,
-                     siblingOffset, &dispatcher, parentPath]() mutable {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Usd", "Usd_CrateDataImpl::Open",
-                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        reader.Seek(siblingOffset);
-                        _ReadPathsImpl<Header>(reader, dispatcher, parentPath);
-                    });
+                TaskReadPath<Header, Reader> task(this, &reader, siblingOffset, &dispatcher, parentPath);
+                dispatcher.Run(task);
             }
             // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[h.index.value];
@@ -3836,17 +3828,8 @@ CrateFile::_BuildDecompressedPathsImpl(
                     return;
                 }
 #endif
-                dispatcher.Run(
-                    [this, &pathIndexes, &elementTokenIndexes, &jumps,
-                     siblingIndex, &dispatcher, parentPath]() mutable {
-                        // XXX Remove these tags when bug #132031 is addressed
-                        TfAutoMallocTag tag(
-                            "Usd", "Usd_CrateDataImpl::Open",
-                            "Usd_CrateFile::CrateFile::Open", "_ReadPaths");
-                        _BuildDecompressedPathsImpl(
-                            pathIndexes, elementTokenIndexes, jumps,
-                            siblingIndex, parentPath, dispatcher);
-                    });
+                TaskBuildDecompressedpath task(this, pathIndexes, elementTokenIndexes, jumps, siblingIndex, &dispatcher, parentPath);
+                dispatcher.Run(task);
             }
             // Have a child (may have also had a sibling). Reset parent path.
             parentPath = _paths[pathIndexes[thisIndex]];

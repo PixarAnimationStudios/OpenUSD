@@ -99,9 +99,9 @@ public:
     explicit operator bool() const {
         return _owner;
     }
-    void operator()() {
+    void operator()() const{
         // Do not save state here; all state should be accumulated externally.
-        _owner->_ResolvePrim(this, _primContext, _inverseComponentCtm);
+        _owner->_ResolvePrim(const_cast<_BBoxTask*>(this), _primContext, _inverseComponentCtm);
     }
     _ThreadXformCache* GetXformCaches() { return _xfCaches; }
 };
@@ -126,9 +126,15 @@ private:
     {
         _PrototypeTask() : numDependencies(0) { }
 
+        _PrototypeTask(const _PrototypeTask& other)
+        {
+            dependentPrototypes = other.dependentPrototypes;
+            numDependencies.store(other.numDependencies.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        }
+
         // Number of dependencies -- prototype prims that must be resolved
         // before this prototype can be resolved.
-        tbb::atomic<size_t> numDependencies;
+        std::atomic<size_t> numDependencies;
 
         // List of prototype prims that depend on this prototype.
         std::vector<_PrimContext> dependentPrototypes;
@@ -172,9 +178,11 @@ private:
     void _PopulateTasksForPrototype(const _PrimContext& prototypePrim,
                                  _PrototypeTaskMap* prototypeTasks)
     {
+        const std::pair<const _PrimContext, _PrototypeTask> pair = std::make_pair(
+            std::ref(prototypePrim), _PrototypeTask()
+        );
         std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
-            prototypeTasks->insert(std::make_pair(
-                    prototypePrim, _PrototypeTask()));
+            prototypeTasks->insert(pair);
         if (!prototypeTaskStatus.second) {
             return;
         }
@@ -220,7 +228,7 @@ private:
             _PrototypeTask& dependentPrototypeData =
                 prototypeTasks->find(dependentPrototype)->second;
             if (dependentPrototypeData.numDependencies
-                .fetch_and_decrement() == 1){
+                .fetch_add(1, std::memory_order_relaxed) == 1){
                 dispatcher->Run(
                     &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
                     this, dependentPrototype, prototypeTasks, xfCaches,
