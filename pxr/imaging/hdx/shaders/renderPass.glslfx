@@ -198,21 +198,21 @@ compareOrSet(
 
         // Potentially available slot, store the values and return true if successful.
         int expected = -9;
-        primIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[primIdOffset], expected, primId);
+        primIdValue = ATOMIC_COMP_SWAP(PickBuffer[primIdOffset], expected, primId);
 
         // Exit if the slot was unavailable.
         if (primIdValue != -9 && primIdValue != primId)
             return false;
 
         expected = -9;
-        instanceIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[instanceIdOffset], expected, instanceId);
+        instanceIdValue = ATOMIC_COMP_SWAP(PickBuffer[instanceIdOffset], expected, instanceId);
 
         // Exit if the slot was unavailable.
         if (instanceIdValue != -9 && instanceIdValue != instanceId)
             return false;
 
         expected = -9;
-        partIdValue = ATOMIC_COMPARE_SWAP(PickBuffer[partIdOffset], expected, partId);
+        partIdValue = ATOMIC_COMP_SWAP(PickBuffer[partIdOffset], expected, partId);
 
         // Exit if the slot was unavailable.
         if (partIdValue != -9 && partIdValue != partId)
@@ -284,7 +284,7 @@ void RenderOutput(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
         {
             // see if we need to add a new entry
             if (entryNumber == ATOMIC_LOAD(PickBuffer[sizeOffset])) {
-                ATOMIC_COMPARE_SWAP(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
+                ATOMIC_COMP_SWAP(PickBuffer[sizeOffset], entryNumber, entryNumber + 1);
             }
 
             // if either the item equals to the current entry or we managed to 

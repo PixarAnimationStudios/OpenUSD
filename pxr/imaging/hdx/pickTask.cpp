@@ -144,8 +144,7 @@ HdxPickTask::_InitIfNeeded()
 
         _pickBuffer = hdStResourceRegistry->AllocateSingleBufferArrayRange(
                         _HdxPickTokens->Picking, 
-                        bufferSpecs, 
-                        HdBufferArrayUsageHint());
+                        bufferSpecs, HdBufferArrayUsageHintBitsStorage);
     }
 
     if (_pickableAovBuffers.empty()) {
@@ -637,8 +636,8 @@ HdxPickTask::Prepare(HdTaskContext* ctx,
     if (renderPassShader) {
         if (_pickBuffer) {
             renderPassShader->AddBufferBinding(
-                HdBindingRequest(
-                    HdBinding::SSBO,
+                HdStBindingRequest(
+                    HdStBinding::SSBO,
                     _HdxPickTokens->PickBufferBinding, 
                     _pickBuffer, 
                     /*interleaved*/ false,
