@@ -439,7 +439,12 @@ bool IESFile::process() {
     return true;
 }
 
-float IESFile::eval(float theta, float phi) const {
+static float Clamp(float x, float mn=0.0f, float mx=1.0f) {
+    return std::max(mn, std::min(x, mx));
+}
+
+
+float IESFile::eval(float theta, float phi, float angleScale) const {
     int hi = -1;
     int vi = -1;
     float dh = 0;
@@ -459,9 +464,15 @@ float IESFile::eval(float theta, float phi) const {
         }
     }
 
+    float v = theta / M_PI;
+    const float temp1 = (1.0f - (v / angleScale));
+    const float temp2 = Clamp(temp1 * 0.5f);
+    theta = v * M_PI;
+
     if (theta < 0) {
-        vi = 0;
-        dv = 0;
+        // vi = 0;
+        // dv = 0;
+        return 0.0f;
     } else if (theta >= M_PI) {
         vi = _v_angles.size()-2;
         dv = 1;

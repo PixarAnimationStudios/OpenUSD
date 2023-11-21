@@ -1300,15 +1300,15 @@ float EvalIES(Light const& light, GfVec3f const& wI) {
     float phi = Phi(wE);
 
     // apply angle scale to theta, matching Karma
-    if (ies.angleScale > 0) {
-        theta = Clamp(theta / (1 - ies.angleScale), 0, M_PI);
-    } else if (ies.angleScale < 0) {
-        theta = Clamp(theta / (1 / (1 + ies.angleScale)), 0, M_PI);
-    }
+    // if (ies.angleScale > 0) {
+    //     theta = Clamp(theta / (1 - ies.angleScale), 0, M_PI);
+    // } else if (ies.angleScale < 0) {
+    //     theta = Clamp(theta / (1 / (1 + ies.angleScale)), 0, M_PI);
+    // }
 
     float norm = ies.normalize ? ies.iesFile.power() : 1.0f;
 
-    return ies.iesFile.eval(theta, phi) / norm;
+    return ies.iesFile.eval(theta, phi, ies.angleScale) / norm;
 }
 
 GfVec3f SampleLightTexture(LightTexture const& texture, float s, float t)

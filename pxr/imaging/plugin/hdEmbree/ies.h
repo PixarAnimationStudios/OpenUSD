@@ -25,7 +25,7 @@ public:
     }
 
     // evaluate the IES file for the given spherical coordinates
-    float eval(float theta, float phi) const;
+    float eval(float theta, float phi, float angleScale) const;
 
     float peakIntensity() const {
         return _peakIntensity;
