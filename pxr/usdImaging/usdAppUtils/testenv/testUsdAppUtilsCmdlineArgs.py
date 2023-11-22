@@ -253,7 +253,13 @@ class TestUsdAppUtilsCmdlineArgs(unittest.TestCase):
         self.assertEqual(args.rendererPlugin, None)
 
         # Storm is named 'Metal' on Apple platforms and 'GL' otherwise.
-        if platform.system() == 'Darwin':
+        if os.environ.get('HGI_ENABLE_WEBGPU'):
+            args = self._parser.parse_args(['--renderer', 'WebGPU'])
+            self.assertEqual(args.rendererPlugin, 'WebGPU')
+
+            args = self._parser.parse_args(['-r', 'WebGPU'])
+            self.assertEqual(args.rendererPlugin, 'WebGPU')
+        elif platform.system() == 'Darwin':
             args = self._parser.parse_args(['--renderer', 'Metal'])
             self.assertEqual(args.rendererPlugin, 'Metal')
 

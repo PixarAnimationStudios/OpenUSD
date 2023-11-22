@@ -215,7 +215,7 @@ void Tf_InitializeEnvSetting(TfEnvSetting<T> *setting)
                                          _Str(value).c_str(),
                                          _Str(setting->_default).c_str());
             string line(text.length(), '#');
-            fprintf(stderr, "%s\n%s\n%s\n",
+            fprintf(stdout, "%s\n%s\n%s\n",
                     line.c_str(), text.c_str(), line.c_str());
         }
     }
