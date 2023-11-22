@@ -201,6 +201,7 @@ private:
         std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
             prototypeTasks->insert(pair);
 #else 
+        std::pair<_PrototypeTaskMap::iterator, bool> prototypeTaskStatus =
          prototypeTasks->insert(std::make_pair(
                     prototypePrim, _PrototypeTask()));
 #endif 
