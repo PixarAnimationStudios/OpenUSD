@@ -393,7 +393,7 @@ void
 intrusive_ptr_release(PcpMapExpression::_Node* p)
 {
 #ifndef PXR_ONETBB_SUPPORT_ENABLED
-    if (p->_refCount.fetch_add_decrement(1, std::memory_order_relaxed) == 1)
+    if (p->_refCount.fetch_and_decrement() == 1)
 #else 
     if (p->_refCount.fetch_sub(1, std::memory_order_relaxed) == 1)
 #endif 
