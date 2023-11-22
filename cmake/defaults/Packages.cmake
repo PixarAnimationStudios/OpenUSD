@@ -152,8 +152,12 @@ endif()
 
 
 # --TBB
+option(OneTBB_CMAKE_ENABLE "Disable cmake build for oneTbb defaultly" OFF)
 find_package(TBB REQUIRED COMPONENTS tbb)
 add_definitions(${TBB_DEFINITIONS})
+if(OneTBB_CMAKE_ENABLE)
+    add_definitions(-DPXR_ONETBB_SUPPORT_ENABLED)
+endif()
 
 # --math
 if(WIN32)

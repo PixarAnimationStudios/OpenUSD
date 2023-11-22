@@ -338,6 +338,7 @@ private:
         class _Impl {
             friend class _FileMapping;
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
             class tbb_hash
             {
             public:
@@ -352,6 +353,7 @@ private:
                     );
                 }
             };
+#endif 
 
             // This is a foreign data source for VtArray that refers into a
             // memory-mapped region, and shares in the lifetime of the mapping.
@@ -439,7 +441,11 @@ private:
             ArchConstFileMapping _mapping;
             char const *_start;
             int64_t _length;
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
             tbb::concurrent_unordered_set<ZeroCopySource, tbb_hash> _outstandingRanges;
+#else 
+            tbb::concurrent_unordered_set<ZeroCopySource> _outstandingRanges;
+#endif 
         };
 
     public:
@@ -683,6 +689,7 @@ public:
         SdfSpecType specType;
     };
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
     template<typename Header, typename Reader>
     struct TaskReadPath {
         TaskReadPath(CrateFile* owner, Reader *reader, int64_t offset, WorkDispatcher* dispatcher, SdfPath path)
@@ -743,6 +750,7 @@ public:
         WorkDispatcher    *m_dispatcher = nullptr;
         SdfPath           m_path;
     };
+#endif 
 
     ~CrateFile();
 

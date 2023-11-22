@@ -803,10 +803,12 @@ private:
             TfAutoMallocTag tag("field data");
             auto &fieldValuePairs =
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
-            
+#ifdef PXR_ONETBB_SUPPORT_ENABLED 
             TaskOpenFieldData task(this, _crateFile.get(), fsBegin, fsEnd, fields, fieldValuePairs);
+#endif 
             dispatcher.Run(
-                /*[this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
+#ifndef PXR_ONETBB_SUPPORT_ENABLED
+                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
                     try{
                         // XXX Won't need first two tags when bug #132031 is
                         // addressed
@@ -827,7 +829,11 @@ private:
                     } catch (...) {
                         TF_RUNTIME_ERROR("Encountered unknown exception");
                     }
-                }*/task);
+                }
+#else 
+                task
+#endif 
+                );
         }
                 
         dispatcher.Wait();
@@ -1059,6 +1065,7 @@ private:
         SdfSpecType specType;
     };
 
+#ifdef PXR_ONETBB_SUPPORT_ENABLED
     struct TaskOpenFieldData {
         typedef std::pair<TfToken, VtValue> FieldValuePair;
         typedef Usd_Shared<_FieldValuePairVector> SharedFieldValuePairVector;
@@ -1106,6 +1113,7 @@ private:
         vector<CrateFile::Field>        m_fields;
         SharedFieldValuePairVector      m_fieldValuePairs;
     };
+#endif 
 
     using _HashMap = pxr_tsl::robin_map<
         SdfPath, _SpecData, SdfPath::Hash, std::equal_to<SdfPath>,

@@ -62,8 +62,6 @@ TestDemangle(const std::string& typeName)
     const std::type_info& typeInfo = typeid(T);
     std::string mangledName = typeInfo.name();
     std::string toBeDemangledName = typeInfo.name();
-    printf("Test Demangle %s, mangledName %s, toBeDemangledName %s\n", typeName.c_str(), 
-        mangledName.c_str(), toBeDemangledName.c_str());
 
     ARCH_AXIOM(ArchDemangle(&toBeDemangledName));
 
@@ -100,9 +98,7 @@ int main()
 
     TestDemangle<unsigned long>("unsigned long");
     TestDemangle<MangledAlso<int> >("MangledAlso<int>");
-    printf("Test Demangle MangledAlso<MangledAlso<int>>\n");
     TestDemangle<MangledAlso<MangledAlso<int> > >("MangledAlso<MangledAlso<int> >");
-    printf("Test Demangle MangledAlso<MangledAlso<int>> done\n");
 
     const char* const badType = "type_that_doesnt_exist";
 #if defined(ARCH_OS_WINDOWS)
