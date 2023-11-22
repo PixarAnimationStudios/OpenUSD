@@ -163,6 +163,15 @@ private:
         Fn _fn;
         _ErrorTransports *_errors;
     };
+
+    // Make an _InvokerTask instance, letting the function template deduce Fn.
+    template <class Fn>
+    _InvokerTask<typename std::remove_reference<Fn>::type>&
+    _MakeInvokerTask(Fn &&fn) { 
+        return *new( _rootTask->allocate_additional_child_of(*_rootTask) )
+            _InvokerTask<typename std::remove_reference<Fn>::type>(
+                std::forward<Fn>(fn), &_errors);
+    }
 #endif 
 
     // Helper function that removes errors from \p m and stores them in a new
