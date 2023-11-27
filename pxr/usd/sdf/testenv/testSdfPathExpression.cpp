@@ -55,9 +55,9 @@ struct MatchEval {
         : _eval(SdfMakePathExpressionEval(expr, GetBasicPredicateLib())) {}
     explicit MatchEval(std::string const &exprStr) :
         MatchEval(SdfPathExpression(exprStr)) {}
-    bool Match(SdfPath const &p) {
-        return static_cast<bool>(
-            _eval.Match(p, PathIdentity {}, PathIdentity {}));
+    SdfPredicateFunctionResult
+    Match(SdfPath const &p) {
+        return _eval.Match(p, PathIdentity {}, PathIdentity {});
     }
     SdfPathExpressionEval<SdfPath const &> _eval;
 };
@@ -287,6 +287,18 @@ TestBasics()
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/qux")));
             TF_AXIOM(eval.Match(SdfPath("/Home/test/baz/a/b/c/qux")));
         }
+    }
+
+    {
+        // Check constancy wrt prefix relations.
+        auto eval = MatchEval { SdfPathExpression("/prefix/path//") };
+
+        TF_AXIOM(!eval.Match(SdfPath("/prefix")));
+        TF_AXIOM(!eval.Match(SdfPath("/prefix")).IsConstant());
+        TF_AXIOM(eval.Match(SdfPath("/prefix/path")));
+        TF_AXIOM(eval.Match(SdfPath("/prefix/path")).IsConstant());
+        TF_AXIOM(!eval.Match(SdfPath("/prefix/wrong")));
+        TF_AXIOM(eval.Match(SdfPath("/prefix/wrong")).IsConstant());
     }
 }
 

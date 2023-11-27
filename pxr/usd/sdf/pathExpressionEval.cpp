@@ -196,7 +196,10 @@ _PatternImplBase::_Match(
     // then we can early-out if the path in question is not a property path.
     // Otherwise this path may or may not match properties.
     if (!path.HasPrefix(_prefix)) {
-        Result result = Result::MakeConstant(false);
+        // If the given path is a prefix of _prefix, then this is a varying
+        // false, since descendants could match. Otherwise a constant false.
+        Result result = _prefix.HasPrefix(path) ?
+            Result::MakeVarying(false) : Result::MakeConstant(false);
         DEBUG_MSG("<%s> lacks prefix <%s> -> %s\n",
                   path.GetAsString().c_str(),
                   _prefix.GetAsString().c_str(),
