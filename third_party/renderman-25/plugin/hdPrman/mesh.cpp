@@ -25,25 +25,14 @@
 #include "hdPrman/mesh.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/coordSys.h"
-#include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/rixStrings.h"
-#include "pxr/base/gf/matrix4d.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/vec2f.h"
-#include "pxr/base/gf/vec3f.h"
-#include "pxr/base/gf/vec4f.h"
-#include "pxr/imaging/hd/coordSys.h"
 #include "pxr/imaging/hd/meshTopology.h"
-#include "pxr/imaging/hd/meshUtil.h"
 #include "pxr/imaging/pxOsd/subdivTags.h"
 #include "pxr/imaging/pxOsd/tokens.h"
 #include "pxr/usd/usdRi/rmanUtilities.h"
 
-#include "Riley.h"
 #include "RiTypesHelper.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 #include <algorithm>
 
@@ -169,18 +158,12 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
     // Point positions (P)
     //
     float primvarTime = 0.0f;
-    if( HdPrman_RenderParam::HasSceneIndexPlugin(
-            HdPrmanPluginTokens->velocityBlur) ) {
-        HdPrman_ConvertPointsPrimvar(
-            sceneDelegate,
-            id,
-            renderParam->GetShutterInterval(),
-            primvars,
-            npoints);
-    } else {
-        primvarTime = renderParam->ConvertPositions(
-            sceneDelegate, id, npoints, primvars);
-    }
+    HdPrman_ConvertPointsPrimvar(
+        sceneDelegate,
+        id,
+        renderParam->GetShutterInterval(),
+        primvars,
+        npoints);
     // Topology.
     primvars.SetIntegerDetail(RixStr.k_Ri_nvertices, nverts.cdata(),
                               RtDetailType::k_uniform);

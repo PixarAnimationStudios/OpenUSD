@@ -125,7 +125,7 @@ pxr_plugin(${PXR_PACKAGE}
         rileyRenderTargetPrim
         terminalSceneIndexObserver
         utils
-        velocityMotionBlurSceneIndexPlugin
+        motionBlurSceneIndexPlugin
         virtualStructResolvingSceneIndex
 
     PUBLIC_HEADERS

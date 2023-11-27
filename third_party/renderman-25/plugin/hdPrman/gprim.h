@@ -25,7 +25,6 @@
 #define EXT_RMANPKG_25_0_PLUGIN_RENDERMAN_PLUGIN_HD_PRMAN_GPRIM_H
 
 #include "pxr/pxr.h"
-#include "pxr/imaging/hd/enums.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/base/gf/matrix4d.h"
 
@@ -37,8 +36,6 @@
 #include "hdPrman/utils.h"
 
 #include "Riley.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -180,18 +177,6 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     // Sample transform
     HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> xf;
     sceneDelegate->SampleTransform(id, &xf);
-
-    // If blur is explicitly disabled, use single time 0 sample
-    const bool enableMotionBlur =
-        param->IsMotionBlurEnabled() &&
-        HdPrman_IsMotionBlurPrimvarEnabled(sceneDelegate, id) &&
-        HdPrman_GetNumXformSamples(sceneDelegate, id) >= 2;
-
-    if (!enableMotionBlur) {
-        xf.values[0] = xf.Resample(0.f);
-        xf.times[0] = 0.f;
-        xf.Resize(1);
-    }
 
     // Update visibility so thet rprim->IsVisible() will work in render pass
     if (HdChangeTracker::IsVisibilityDirty(*dirtyBits, id)) {

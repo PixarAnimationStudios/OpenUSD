@@ -22,7 +22,6 @@
 // language governing permissions and limitations under the Apache License.
 
 #include "hdPrman/renderTerminalOutputInvalidatingSceneIndexPlugin.h"
-#include "hdPrman/debugCodes.h"
 
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 #include "pxr/imaging/hd/perfLog.h"
@@ -112,24 +111,24 @@ _GetConnectedOutputs(const HdSceneIndexPrim &prim)
     return connectedOutputs;
 }
 
-TF_DECLARE_REF_PTRS(_HdPrmanRenderTerminalOutputFnvalidatingSceneIndex);
+TF_DECLARE_REF_PTRS(_HdPrmanRenderTerminalOutputInvalidatingSceneIndex);
 
 ////////////////////////////////////////////////////////////////////////////////
-/// \class _HdPrmanRenderTerminalOutputFnvalidatingSceneIndex
+/// \class _HdPrmanRenderTerminalOutputInvalidatingSceneIndex
 ///
 /// The scene index feeding into HdDependencyForwardingSceneIndex and
 /// constructed by the HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin.
 ///
 
-class _HdPrmanRenderTerminalOutputFnvalidatingSceneIndex
+class _HdPrmanRenderTerminalOutputInvalidatingSceneIndex
     : public HdSingleInputFilteringSceneIndexBase
 {
 public:
-    static _HdPrmanRenderTerminalOutputFnvalidatingSceneIndexRefPtr
+    static _HdPrmanRenderTerminalOutputInvalidatingSceneIndexRefPtr
         New(const HdSceneIndexBaseRefPtr &inputSceneIndex)
     {
         return TfCreateRefPtr(
-            new _HdPrmanRenderTerminalOutputFnvalidatingSceneIndex(
+            new _HdPrmanRenderTerminalOutputInvalidatingSceneIndex(
                 inputSceneIndex));
     }
 
@@ -144,7 +143,7 @@ public:
     }
 
 protected:
-    _HdPrmanRenderTerminalOutputFnvalidatingSceneIndex(
+    _HdPrmanRenderTerminalOutputInvalidatingSceneIndex(
         const HdSceneIndexBaseRefPtr &inputSceneIndex)
       : HdSingleInputFilteringSceneIndexBase(inputSceneIndex)
     {
@@ -165,6 +164,9 @@ protected:
             if (entry.primType == HdPrimTypeTokens->renderSettings) {
                 const HdSceneIndexPrim prim =
                     _GetInputSceneIndex()->GetPrim(entry.primPath);
+                if (!prim.dataSource) {
+                    continue;
+                }
                 for (auto const& path : _GetConnectedOutputs(prim)) {
                     const TfToken outputType = 
                         _GetInputSceneIndex()->GetPrim(path).primType;
@@ -215,6 +217,9 @@ protected:
                     HdRenderSettingsSchema::GetNamespacedSettingsLocator())) {
                 const HdSceneIndexPrim prim =
                     _GetInputSceneIndex()->GetPrim(entry.primPath);
+                if (!prim.dataSource) {
+                    continue;
+                }
                 for (auto const& path : _GetConnectedOutputs(prim)) {
                     const HdSceneIndexPrim prim =
                         _GetInputSceneIndex()->GetPrim(path);
@@ -244,7 +249,7 @@ HdPrman_RenderTerminalOutputInvalidatingSceneIndexPlugin::_AppendSceneIndex(
     const HdSceneIndexBaseRefPtr &inputScene,
     const HdContainerDataSourceHandle &inputArgs)
 {
-    return _HdPrmanRenderTerminalOutputFnvalidatingSceneIndex::New(inputScene);
+    return _HdPrmanRenderTerminalOutputInvalidatingSceneIndex::New(inputScene);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

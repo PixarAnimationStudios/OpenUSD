@@ -28,13 +28,8 @@
 #include "hdPrman/material.h"
 #include "hdPrman/rixStrings.h"
 #include "pxr/imaging/hd/basisCurvesTopology.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/matrix4d.h"
 
-#include "Riley.h"
 #include "RiTypesHelper.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -150,18 +145,12 @@ HdPrman_BasisCurves::_ConvertGeometry(HdPrman_RenderParam *renderParam,
 
     // Points
     float primvarTime = 0.0f;
-    if( HdPrman_RenderParam::HasSceneIndexPlugin(
-            HdPrmanPluginTokens->velocityBlur) ) {
-        HdPrman_ConvertPointsPrimvar(
-            sceneDelegate,
-            id,
-            renderParam->GetShutterInterval(),
-            primvars,
-            vertexPrimvarCount);
-    } else {
-        primvarTime = renderParam->ConvertPositions(
-            sceneDelegate, id, vertexPrimvarCount, primvars);
-    }
+    HdPrman_ConvertPointsPrimvar(
+        sceneDelegate,
+        id,
+        renderParam->GetShutterInterval(),
+        primvars,
+        vertexPrimvarCount);
 
     // Set element ID.  Overloaded use of "__faceIndex" to support picking...
     std::vector<int32_t> elementId(numCurves);

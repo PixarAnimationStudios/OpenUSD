@@ -24,16 +24,10 @@
 #include "hdPrman/points.h"
 
 #include "hdPrman/renderParam.h"
-#include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
 #include "hdPrman/rixStrings.h"
-#include "pxr/base/gf/matrix4f.h"
-#include "pxr/base/gf/matrix4d.h"
 
-#include "Riley.h"
 #include "RiTypesHelper.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -75,46 +69,18 @@ HdPrman_Points::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                                   RtUString *primType,
                                   std::vector<HdGeomSubset> *geomSubsets)
 {
-    if( HdPrman_RenderParam::HasSceneIndexPlugin(
-            HdPrmanPluginTokens->velocityBlur) ) {
+    RtPrimVarList primvars;
 
-        RtPrimVarList primvars;
+    const size_t npoints =
+        HdPrman_ConvertPointsPrimvarForPoints(
+            sceneDelegate, id, renderParam->GetShutterInterval(), primvars);
 
-        const size_t npoints =
-            HdPrman_ConvertPointsPrimvarForPoints(
-                sceneDelegate, id, renderParam->GetShutterInterval(), primvars);
+    *primType = RixStr.k_Ri_Points;
 
-        *primType = RixStr.k_Ri_Points;
+    HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
+                            npoints, npoints, npoints);
 
-        HdPrman_ConvertPrimvars(sceneDelegate, id, primvars, 1,
-                                npoints, npoints, npoints);
-
-        return primvars;
-    } else {
-        // There does not seem to be an equivalent GetMeshTopology() or
-        // GetBasisCurvesTopology() we can use for points.
-        // Instead get the point count from the points attribute itself.
-        VtValue pointsVal = sceneDelegate->Get(id, HdTokens->points);
-        const int pointsSize = pointsVal.GetArraySize();
-
-        RtPrimVarList primvars(
-            1, /* uniform */
-            pointsSize, /* vertex */
-            pointsSize, /* varying */
-            pointsSize /* facevarying */);
-
-        // Points
-        const float primvarTime = renderParam->ConvertPositions(
-            sceneDelegate, id, pointsSize, primvars);
-
-        *primType = RixStr.k_Ri_Points;
-
-        HdPrman_ConvertPrimvars(
-            sceneDelegate, id, primvars, 1, pointsSize, pointsSize, pointsSize,
-            primvarTime);
-
-        return primvars;
-    }
+    return primvars;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

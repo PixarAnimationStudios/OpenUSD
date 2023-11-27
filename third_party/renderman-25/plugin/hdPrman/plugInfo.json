@@ -3,11 +3,11 @@
         {
             "Info": {
                 "Types": {
-                    "HdPrman_VelocityMotionBlurSceneIndexPlugin" : {
+                    "HdPrman_MotionBlurSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],
                         "loadWithRenderer": "Prman",
                         "priority": 0,
-                        "displayName": "Prman Velocity Motion Blur Scene Index"
+                        "displayName": "Prman Motion Blur Scene Index"
                     },
                     "HdPrman_PreviewMaterialFilteringSceneIndexPlugin" : {
                         "bases": ["HdSceneIndexPlugin"],

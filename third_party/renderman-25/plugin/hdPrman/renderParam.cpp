@@ -31,49 +31,32 @@
 #include "hdPrman/framebuffer.h"
 #include "hdPrman/instancer.h"
 #include "hdPrman/material.h"
+#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/renderDelegate.h"
 #include "hdPrman/renderSettings.h"
 #include "hdPrman/rixStrings.h"
 #include "hdPrman/tokens.h"
 #include "hdPrman/utils.h"
-
-#if PXR_VERSION >= 2205
-#include "hdPrman/velocityMotionBlurSceneIndexPlugin.h"
-#endif
+#include "hdPrman/motionBlurSceneIndexPlugin.h"
 
 #include "pxr/base/arch/library.h"
 #include "pxr/base/plug/registry.h"
 #include "pxr/base/plug/plugin.h"
 #include "pxr/base/tf/debug.h"
-#include "pxr/base/tf/getenv.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/pathUtils.h"  // Extract extension from tf token
 #include "pxr/base/tf/scopeDescription.h"
 #include "pxr/usd/sdf/path.h"
-#include "pxr/usd/sdr/registry.h"
-#include "pxr/imaging/hio/imageRegistry.h"
 #include "pxr/imaging/hd/extComputationUtils.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
-#if PXR_VERSION >= 2205
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
-#endif
 #include "pxr/imaging/hd/renderBuffer.h"
 #include "pxr/imaging/hd/renderThread.h"
 
-// XXX: Statistics depend on a header that is only included in v24.4+
-#if (_PRMANAPI_VERSION_MAJOR_ > 24 || (_PRMANAPI_VERSION_MAJOR_ == 24 && _PRMANAPI_VERSION_MINOR_ >= 4))
-#define _ENABLE_STATS
-#endif
-
-#ifdef _ENABLE_STATS
 #include "stats/Session.h"
-#endif
-
 #include "Riley.h"
 #include "RiTypesHelper.h"
 #include "RixRiCtl.h"
-#include "RixShadingUtils.h"
-#include "RixPredefinedStrings.hpp"
 
 #include <thread>
 
@@ -86,13 +69,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     (sourceName)
     (sourceType)
     (lpe)
-    (nonlinearSampleCount)
-    ((mblur,                "ri:object:mblur"))
-    ((vblur,                "ri:object:vblur"))
-    ((vblur_on,             "Velocity Blur"))
-    ((ablur_on,             "Acceleration Blur"))
-    ((geosamples,           "ri:object:geosamples"))
-    ((xformsamples,         "ri:object:xformsamples"))
 );
 
 TF_DEFINE_PRIVATE_TOKENS(
@@ -220,13 +196,6 @@ HdPrman_RenderParam::IsLightFilterUsed(TfToken const& name)
     return _lightFilterRefs.find(name) != _lightFilterRefs.end();
 }
 
-// See related note in HdPrman_RenderParam::IsMotionBlurEnabled below.
-static bool
-_IsMotionBlurEnabled(GfVec2f const& shutterInterval)
-{
-    return shutterInterval[0] != shutterInterval[1];
-}
-
 static size_t
 _ConvertPointsPrimvar(
     HdSceneDelegate *sceneDelegate,
@@ -257,9 +226,7 @@ _ConvertPointsPrimvar(
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPoints;
         if (compPrimvar.empty()) {
             sceneDelegate->SamplePrimvar(id, HdTokens->points, &boxedPoints);
-        }
-        else {
-#if PXR_VERSION > 2102
+        } else {
             HdExtComputationUtils::SampledValueStore<HDPRMAN_MAX_TIME_SAMPLES>
                 compSamples;
             HdExtComputationUtils::SampleComputedPrimvarValues<
@@ -267,29 +234,11 @@ _ConvertPointsPrimvar(
                     compPrimvar, sceneDelegate, HDPRMAN_MAX_TIME_SAMPLES,
                     &compSamples);
             boxedPoints = compSamples[HdTokens->points];
-#endif
         }
-#if PXR_VERSION <= 2111
-        points.UnboxFrom(boxedPointsSamples);
-#else
         if (!points.UnboxFrom(boxedPoints)) {
             TF_WARN("<%s> points did not have expected type vec3f[]",
                     id.GetText());
         }
-#endif
-    }
-
-    // This motion blur check is for legacy purposes;
-    // it's only relevant for externally computed points
-    // that didn't result from scene index plug-in
-    if (!compPrimvar.empty() &&
-        !(_IsMotionBlurEnabled(shutterInterval) &&
-          HdPrman_IsMotionBlurPrimvarEnabled(sceneDelegate, id))) {
-        VtVec3fArray pointsVal = points.Resample(0.f);
-        primvars.SetPointDetail(
-            RixStr.k_P, (RtPoint3 const*)pointsVal.cdata(),
-            RtDetailType::k_vertex);
-        return pointsVal.size();
     }
 
     size_t npoints = 0;
@@ -426,12 +375,8 @@ _GetComputedPrimvars(HdSceneDelegate* sceneDelegate,
     compPrimvars = sceneDelegate->GetExtComputationPrimvarDescriptors
                                     (id,interp);
     for (auto const& pv : compPrimvars) {
-#if PXR_VERSION > 2102
         if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)
             && pv.name != HdTokens->points) {
-#else
-        if (HdChangeTracker::IsPrimvarDirty(dirtyBits, id, pv.name)) {
-#endif
             dirtyCompPrimvars.emplace_back(pv);
         }
     }
@@ -687,22 +632,18 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         } else {
             name = _GetPrmanPrimvarName(primvar.name, detail);
         }
-#if PXR_VERSION >= 2108
-        // XXX HdPrman does not yet support time-sampled primvars,
-        // instead we find the sample at the requested time.
+
         HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> samples;
         sceneDelegate->SamplePrimvar(id, primvar.name, &samples);
+        // XXX: The motion blur scene index plugin ensures that only a single
+        // sample at offset 0 is returned for any primvar on which Prman does
+        // not support motion samples. Currently, that's all primvars except P.
+        // We call Resample() here because HdPrman also does not yet support
+        // time-sampled primvars other than P: _SetPrimVarValue expects a single
+        // VtValue and no mechanism exists to ensure all primvars are sampled
+        // at the same set of times, which would be a Prman requirement since
+        // times are a property of the whole RtPrimVarList.
         VtValue val = samples.Resample(time);
-#else
-        // XXX HdPrman does not yet support time-sampled primvars,
-        // but we want to exercise the SamplePrimvar() API, so use it
-        // to request a single sample.
-        const size_t maxNumTimeSamples = 1;
-        float times[1];
-        VtValue val;
-        sceneDelegate->SamplePrimvar(id, primvar.name, maxNumTimeSamples,
-                                     times, &val);
-#endif
 
         TF_DEBUG(HDPRMAN_PRIMVARS)
             .Msg("HdPrman: <%s> %s %s \"%s\" (%s) = \"%s\"\n",
@@ -883,8 +824,8 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
             sceneDelegate->GetDoubleSided(id) ? 1 : 0
         );
     }
-        
-    return attrs;
+    
+    return std::move(attrs);
 }
 
 void
@@ -1286,17 +1227,12 @@ HdPrman_RenderParam::RegisterIntegratorCallbackForCamera(
 bool
 HdPrman_RenderParam::HasSceneIndexPlugin(const TfToken &id)
 {
-#if PXR_VERSION >= 2205
     return HdSceneIndexPluginRegistry::GetInstance().IsRegisteredPlugin(id);
-#else
-    return false;
-#endif
 }
 
 void
 HdPrman_RenderParam::_CreateStatsSession(void)
 {
-#ifdef _ENABLE_STATS
     // Set log level for diagnostics relating to initialization. If we succeed in loading a
     // config file then the log level specified in the config file will take precedence.
     stats::Logger::LogLevel statsDebugLevel = stats::GlobalLogger()->DefaultLogLevel();
@@ -1341,7 +1277,6 @@ HdPrman_RenderParam::_CreateStatsSession(void)
     // Validate and inform
     _statsSession->LogInfo("HDPRMan", "Created Roz stats session '" +
                                       _statsSession->GetName() + "'.");
-#endif
 }
 
 void
@@ -1369,10 +1304,8 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
     sArgs.push_back("hdPrman");
     sArgs.push_back("-woff");
     sArgs.push_back("R56008,R56009");
-#ifdef _ENABLE_STATS
     sArgs.push_back("-statssession");
     sArgs.push_back(_statsSession->GetName());
-#endif
     sArgs.insert(std::end(sArgs), std::begin(extraArgs), std::end(extraArgs));
 
     std::vector<const char*> cArgs;
@@ -1734,13 +1667,11 @@ HdPrman_RenderParam::_DestroyRiley()
 void
 HdPrman_RenderParam::_DestroyStatsSession(void)
 {
-#ifdef _ENABLE_STATS
     if (_statsSession)
     {
         stats::RemoveSession(*_statsSession);
         _statsSession = nullptr;
     }
-#endif
 }
 
 static
@@ -2214,13 +2145,11 @@ HdPrman_RenderParam::StartRender()
         _renderThread->StartThread();
     }
 
-#ifdef _ENABLE_STATS
     // Clear out old stats values
     if (_statsSession)
     {
         _statsSession->RemoveOldMetricData();
     }
-#endif
 
     _renderThread->StartRender();
 }
@@ -2262,13 +2191,11 @@ HdPrman_RenderParam::StopRender(bool blocking)
         std::this_thread::sleep_for(100us);
     }
 
-#ifdef _ENABLE_STATS
     // Clear out old stats values. TODO: should we be calling this here? 
     if (_statsSession)
     {
         _statsSession->RemoveOldMetricData();
     }
-#endif
 }
 
 bool
@@ -3074,17 +3001,11 @@ HdPrman_RenderParam::_UpdateShutterInterval(const RtParamList &composedParams)
         _shutterInterval = GfVec2f(val[0], val[1]);
     }
 
-    if (HdPrman_RenderParam::HasSceneIndexPlugin(
-        HdPrmanPluginTokens->velocityBlur) ) {
-
-#if PXR_VERSION >= 2205
-        // When there's only one sample available the velocity blur plug-in 
-        // doesn't have access to the correct shutter interval, so this is 
-        // a workaround to provide it.
-        HdPrman_VelocityMotionBlurSceneIndexPlugin::SetShutterInterval(
-            _shutterInterval[0], _shutterInterval[1]);
-#endif
-    }
+    // When there's only one sample available the motion blur plug-in 
+    // doesn't have access to the correct shutter interval, so this is 
+    // a workaround to provide it.
+    HdPrman_MotionBlurSceneIndexPlugin::SetShutterInterval(
+        _shutterInterval[0], _shutterInterval[1]);
 }
 
 riley::ShadingNode
@@ -3512,332 +3433,5 @@ HdPrman_RenderParam::GetInstancer(const SdfPath& id)
     }
     return nullptr;
 }
-
-// Motion blur can be disabled in the following ways:
-// 1. Environment (HD_PRMAN_ENABLE_MOTIONBLUR env setting)
-// 2. Render settings prim (if _all_ products have it disabled)
-// 3. Legacy render settings map (disableMotionBlur setting)
-//
-// Riley concerns itself only with the Ri:Shutter param. Having composed
-// the above opinions when setting the Riley scene options, we use the resolved 
-// shutter interval to decipher whether motion blur is enabled.
-bool
-HdPrman_RenderParam::IsMotionBlurEnabled() const
-{
-    return _IsMotionBlurEnabled(_shutterInterval);
-}
-
-bool
-HdPrman_IsMotionBlurPrimvarEnabled(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id)
-{
-    // Then see if disabled locally
-    bool blur = true;
-    float t[1];
-    VtValue val;
-    sceneDelegate->SamplePrimvar(id, _tokens->mblur, 1, t, &val);
-    if (val.IsHolding<VtArray<bool>>()) {
-        blur = val.UncheckedGet<VtArray<bool>>()[0];
-    }
-    return blur;
-}
-
-static bool
-_GetVelocityBlur(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id)
-{
-    bool vblur = true;
-    float t[1];
-    VtValue val;
-    sceneDelegate->SamplePrimvar(id, _tokens->vblur, 1, t, &val);
-    if(val == _tokens->vblur_on)
-    {
-        vblur = true;
-    }
-
-    return vblur;
-}
-
-static bool
-_GetAccelerationBlur(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id)
-{
-    bool ablur = true;
-    float t[1];
-    VtValue val;
-    sceneDelegate->SamplePrimvar(id, _tokens->vblur, 1, t, &val);
-    if(val == _tokens->ablur_on)
-    {
-        ablur = true;
-    }
-
-    return ablur;
-}
-
-static int
-_GetNumGeoSamples(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id)
-{
-    int nsamples = 2;
-    float t[1];
-    VtValue val;
-    sceneDelegate->SamplePrimvar(
-        id, _tokens->nonlinearSampleCount, 1, t, &val);
-    if (val.IsHolding<int>()) {
-        nsamples = val.UncheckedGet<int>();
-        return nsamples;
-    }
-    sceneDelegate->SamplePrimvar(id, _tokens->geosamples, 1, t, &val);
-    if (val.IsHolding<VtArray<int>>()) {
-        nsamples = val.UncheckedGet<VtArray<int>>()[0];
-    }
-
-    return nsamples;
-}
-
-int
-HdPrman_GetNumXformSamples(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath &id)
-{
-    int nsamples = 2;
-    float t[1];
-    VtValue val;
-    sceneDelegate->SamplePrimvar(id, _tokens->xformsamples, 1, t, &val);
-    if (val.IsHolding<VtArray<int>>()) {
-        nsamples = val.UncheckedGet<VtArray<int>>()[0];
-    }
-    return nsamples;
-}
-
-
-
-// This method duplicates functionality in velocityMotionBlurSceneIndexPlugin,
-// and is for backward compatibility when scene index plug-ins aren't available.
-float
-HdPrman_RenderParam::ConvertPositions(
-    HdSceneDelegate* sceneDelegate,
-    const SdfPath& id,
-    int vertexPrimvarCount,
-    RtPrimVarList& primvars)
-{
-    int numSamples = 1;
-    float fps = 24.f; // TODO: get this from render settings?
-    float ifps = 1.f / fps;
-
-    // Check if points is a ext computed primvar
-    HdExtComputationPrimvarDescriptorVector compPrimvar;
-    {
-        HdExtComputationPrimvarDescriptorVector compPrimvars
-            = sceneDelegate->GetExtComputationPrimvarDescriptors(
-                id, HdInterpolationVertex);
-        for (auto const& pv : compPrimvars) {
-            if (pv.name == HdTokens->points) {
-                compPrimvar.emplace_back(pv);
-            }
-        }
-    }
-
-    // Get points time samples
-    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES> pointsSamples;
-    {
-        HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES> boxedPointsSamples;
-        if (compPrimvar.empty()) {
-            sceneDelegate->SamplePrimvar(
-                id, HdTokens->points, &boxedPointsSamples);
-        }
-        else {
-#if PXR_VERSION > 2102
-            HdExtComputationUtils::SampledValueStore<HDPRMAN_MAX_TIME_SAMPLES>
-                compSamples;
-            HdExtComputationUtils::SampleComputedPrimvarValues<
-                HDPRMAN_MAX_TIME_SAMPLES>(
-                compPrimvar, sceneDelegate, HDPRMAN_MAX_TIME_SAMPLES,
-                &compSamples);
-            boxedPointsSamples = compSamples[HdTokens->points];
-#endif
-        }
-#if PXR_VERSION <= 2111
-        pointsSamples.UnboxFrom(boxedPointsSamples);
-#else
-        if (!pointsSamples.UnboxFrom(boxedPointsSamples)) {
-            TF_WARN(
-                "<%s> points did not have expected type vec3f[]", id.GetText());
-        }
-#endif
-    }
-
-    // Get motion blur settings
-    bool blur =
-        IsMotionBlurEnabled() &&
-        HdPrman_IsMotionBlurPrimvarEnabled(sceneDelegate, id);
-    float shutterOpen = 0.0f;
-    float shutterClose = 0.5f;
-    const HdPrman_CameraContext& camCtx = GetCameraContext();
-    const HdPrmanCamera* cam
-        = camCtx.GetCamera(&(sceneDelegate->GetRenderIndex()));
-    if (cam) {
-        shutterOpen = cam->GetShutterOpen();
-        shutterClose = cam->GetShutterClose();
-    }
-
-    // Do deformation blur unless velocity blur is requested
-    // or necessary due to changing numbers of P values
-    bool velocityBlur = false;
-    bool accelerationBlur = false;
-    if (blur) {
-        accelerationBlur = _GetAccelerationBlur(sceneDelegate, id);
-        velocityBlur =
-            _GetVelocityBlur(sceneDelegate, id) || accelerationBlur;
-        numSamples = _GetNumGeoSamples(sceneDelegate, id);
-    }
-    // Attempt motion blur
-    if (blur && numSamples > 1 && (shutterOpen != shutterClose)) {
-        // Attempt velocity blur
-        if (velocityBlur) {
-            // Get velocities
-            VtVec3fArray velocities;
-            {
-                HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
-                    boxedVelocitiesSamples;
-                sceneDelegate->SamplePrimvar(
-                    id, HdTokens->velocities, &boxedVelocitiesSamples);
-                HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES>
-                    velocitiesSamples;
-                velocitiesSamples.UnboxFrom(boxedVelocitiesSamples);
-                velocities = velocitiesSamples.Resample(0.f);
-            }
-
-            // Can't do velocity blur if velocities aren't present
-            if (!velocities.empty()) {
-                VtVec3fArray accelerations;
-                if (accelerationBlur) {
-                    HdTimeSampleArray<VtValue, HDPRMAN_MAX_TIME_SAMPLES>
-                        boxedAccelerationsSamples;
-                    sceneDelegate->SamplePrimvar(
-                        id, HdTokens->accelerations,
-                        &boxedAccelerationsSamples);
-                    HdTimeSampleArray<VtVec3fArray, HDPRMAN_MAX_TIME_SAMPLES>
-                        accelerationsSamples;
-                    accelerationsSamples.UnboxFrom(boxedAccelerationsSamples);
-                    // Get acceleration at time zero
-                    accelerations = accelerationsSamples.Resample(0.f);
-                    // Check acceleration is present
-                    accelerationBlur = !accelerations.empty();
-                }
-
-                // Only 2 samples are useful without acceleration
-                if (!accelerationBlur) {
-                    numSamples = 2;
-                }
-
-                // Shutter open
-                std::vector<float> shutterTimes;
-                shutterTimes.push_back(shutterOpen);
-
-                // Inbetween shutter samples
-                for (int i = 0; i < numSamples - 2; ++i) {
-                    shutterTimes.push_back(
-                        shutterOpen
-                        + (i + 1)
-                            * ((shutterClose - shutterOpen)
-                               / static_cast<float>(numSamples - 1)));
-                }
-                // Shutter close
-                shutterTimes.push_back(shutterClose);
-                primvars.SetTimes(shutterTimes.size(), shutterTimes.data());
-
-                VtVec3fArray points = pointsSamples.Resample(0.f);
-                // Sanity check that the number of points here matches the
-                // number that will be requested for other primvars.
-                if (points.size() == static_cast<size_t>(vertexPrimvarCount)) {
-                    for (size_t i = 0; i < shutterTimes.size(); ++i) {
-                        VtVec3fArray offsetPoints;
-                        offsetPoints.resize(points.size());
-                        // Velocity is per second.
-                        // Need to account for fps to convert from shutter time.
-                        const float time = shutterTimes[i] * ifps;
-                        for (size_t p = 0; p < points.size(); ++p) {
-                            offsetPoints[p]
-                                = points[p] + (velocities[p] * time);
-                            if (accelerationBlur) {
-                                offsetPoints[p]
-                                    += accelerations[p] * time * time * 0.5f;
-                            }
-                        }
-                        primvars.SetPointDetail(
-                            RixStr.k_P, (RtPoint3 const*)offsetPoints.cdata(),
-                            RtDetailType::k_vertex, i);
-                    }
-                }
-                else {
-                    TF_WARN(
-                        "<%s> primvar 'points' size (%zu) did not match expected (%zu)",
-                        id.GetText(), points.size(), 
-                        static_cast<size_t>(vertexPrimvarCount));
-                }
-
-                // Velocity blur success
-                return 0.f;
-            }
-        }
-
-        // Attempt deformation blur
-        {
-            // Get all possible sample shutter times.
-            std::vector<float> shutterTimes;
-            for (size_t i = 0; i < pointsSamples.count; ++i) {
-                if (pointsSamples.values[i].empty()) {
-                    continue;
-                }
-                if (pointsSamples.values[i].size() != 
-                        static_cast<size_t>(vertexPrimvarCount)) {
-                    // If any of the points arrays are different sizes, can't use for deforming blur
-                    TF_WARN(
-                        "<%s> primvar 'points' sample sizes differ: %zu %zu. Try velocity blur.",
-                        id.GetText(), static_cast<size_t>(vertexPrimvarCount),
-                        pointsSamples.values[i].size());
-                    continue;
-                }
-                shutterTimes.push_back(pointsSamples.times[i]);
-            }
-            // Check we have enough samples to do deformation motion blur.
-            if (shutterTimes.size() > 1) {
-                // TODO: Should we prune pointsSamples to match user requested numSamples?
-                primvars.SetTimes(shutterTimes.size(), shutterTimes.data());
-                size_t s = 0;
-                for (size_t i = 0; i < pointsSamples.count && s < shutterTimes.size(); ++i) {
-                    if (pointsSamples.times[i] == shutterTimes[s]) {
-                        primvars.SetPointDetail(
-                            RixStr.k_P, (RtPoint3 const*)pointsSamples.values[i].cdata(),
-                            RtDetailType::k_vertex, s);
-                        s++;
-                    }
-                }
-
-                // Deformation motion blur success
-                return shutterOpen + (shutterClose - shutterOpen) * 0.5f;
-            }
-        }
-
-    }
-
-    // No motion blur, just use time zero.
-    VtVec3fArray points = pointsSamples.Resample(0.f);
-    primvars.SetPointDetail(
-        RixStr.k_P, (RtPoint3 const*)points.cdata(),
-        RtDetailType::k_vertex);
-    if (points.size() != static_cast<size_t>(vertexPrimvarCount)) {
-        TF_WARN(
-            "<%s> primvar 'points' size (%zu) did not match expected (%zu)",
-            id.GetText(), points.size(), static_cast<size_t>(vertexPrimvarCount));
-    }
-    return 0.f;
-}
-
 
 PXR_NAMESPACE_CLOSE_SCOPE

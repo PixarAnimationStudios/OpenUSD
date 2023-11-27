@@ -26,11 +26,9 @@
 
 #include "pxr/pxr.h"
 #include "hdPrman/api.h"
-#include "hdPrman/prmanArchDefs.h"
 #include "hdPrman/xcpt.h"
 #include "hdPrman/cameraContext.h"
 #include "hdPrman/renderViewContext.h"
-#include "hdPrman/tokens.h"
 #include "pxr/base/gf/vec2f.h"
 #include "pxr/imaging/hd/sceneDelegate.h"
 #include "pxr/imaging/hd/renderDelegate.h"
@@ -180,15 +178,6 @@ public:
     // Get RIX vs XPU
     bool IsXpu() const { return _xpu; }
 
-    // Convert P values including applying motion blur (deforming or velocity).
-    // Returns a time to sample other primvars.
-    HDPRMAN_API
-    float ConvertPositions(
-        HdSceneDelegate* sceneDelegate,
-        const SdfPath& id,
-        int vertexPrimvarCount,
-        RtPrimVarList& primvars);
-
     // Request edit access to the Riley scene and return it.
     HDPRMAN_API
     riley::Riley * AcquireRiley();
@@ -198,11 +187,6 @@ public:
     const GfVec2f& GetShutterInterval() {
         return _shutterInterval;
     }
-
-    // Returns whether motion blur is enabled based on the cached riley shutter
-    // interval.
-    // Note: This function should be called after SetRileyOptions.
-    bool IsMotionBlurEnabled() const;
 
     // Provides external access to resources used to set parameters for
     // options and the active integrator.
@@ -544,10 +528,6 @@ private:
 };
 
 /// Convert Hydra points to Riley point primvar.
-/// This method is invoked when the velocityBlur scene index plugin
-/// is present. In this scenario, deformation or velocity motion blur has been
-/// pre-applied.
-/// \sa Compare to ConvertPositions(..) above.
 ///
 void
 HdPrman_ConvertPointsPrimvar(
@@ -559,10 +539,6 @@ HdPrman_ConvertPointsPrimvar(
 
 /// Count hydra points to set element count on primvars and then
 /// convert them to Riley point primvar.
-/// This method is invoked when the velocityBlur scene index plugin
-/// is present. In this scenario, deformation or velocity motion blur has been
-/// pre-applied.
-/// \sa Compare to ConvertPositions(..) above.
 /// 
 size_t
 HdPrman_ConvertPointsPrimvarForPoints(
@@ -598,20 +574,6 @@ HdPrman_ResolveMaterial(
     riley::Riley *riley,
     riley::MaterialId *materialId,
     riley::DisplacementId *dispId);
-
-/// Returns the value of the 'mblur' primvar on the prim if present.
-/// Returns true otherwise.
-bool
-HdPrman_IsMotionBlurPrimvarEnabled(
-    HdSceneDelegate *sceneDelegate,
-    const SdfPath& id);
-
-/// Returns the value of the 'xformsamples' primvar on the prim if present.
-/// It provides a way to disable xform motion blur on a prim.
-/// Returns 2 otherwise indicating that motion blur is enabled.
-int
-HdPrman_GetNumXformSamples(
-    HdSceneDelegate *sceneDelegate, const SdfPath& id);
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
