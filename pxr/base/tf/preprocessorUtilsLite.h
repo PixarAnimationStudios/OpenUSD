@@ -417,8 +417,8 @@
 #define _TF_PP_SEQ_FE_0(_macro, ...)
 #ifdef ARCH_COMPILER_MSVC
 #define _TF_PP_SEQ_FE_1(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),)
-// # Generates _TF_PP_SEQ_FE_{2:239} (MSVC)
-// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_FE_{i}(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_{i-1}(_macro, data, _TF_PP_SEQ_TAIL(seq)),)" for i in range(2, 240)))'
+// # Generates _TF_PP_SEQ_FE_{2:229} (MSVC)
+// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_FE_{i}(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_{i-1}(_macro, data, _TF_PP_SEQ_TAIL(seq)),)" for i in range(2, 230)))'
 #define _TF_PP_SEQ_FE_2(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_1(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
 #define _TF_PP_SEQ_FE_3(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_2(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
 #define _TF_PP_SEQ_FE_4(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_3(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
@@ -647,20 +647,10 @@
 #define _TF_PP_SEQ_FE_227(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_226(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
 #define _TF_PP_SEQ_FE_228(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_227(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
 #define _TF_PP_SEQ_FE_229(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_228(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_230(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_229(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_231(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_230(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_232(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_231(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_233(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_232(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_234(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_233(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_235(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_234(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_236(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_235(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_237(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_236(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_238(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_237(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
-#define _TF_PP_SEQ_FE_239(_macro, data, seq) TF_PP_CAT(_macro(data, _TF_PP_SEQ_HEAD(seq)),) TF_PP_CAT(_TF_PP_SEQ_FE_238(_macro, data, _TF_PP_SEQ_TAIL(seq)),)
 #else // not MSVC
 #define _TF_PP_SEQ_FE_1(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq))
-// # Generates _TF_PP_SEQ_FE{2:239} (GCC/CLANG)
-// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_FE_{i}(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_{i-1}(_macro, data, _TF_PP_SEQ_TAIL(seq))" for i in range(2, 240)))'
+// # Generates _TF_PP_SEQ_FE{2:229} (GCC/CLANG)
+// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_FE_{i}(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_{i-1}(_macro, data, _TF_PP_SEQ_TAIL(seq))" for i in range(2, 230)))'
 #define _TF_PP_SEQ_FE_2(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_1(_macro, data, _TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_FE_3(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_2(_macro, data, _TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_FE_4(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_3(_macro, data, _TF_PP_SEQ_TAIL(seq))
@@ -889,16 +879,6 @@
 #define _TF_PP_SEQ_FE_227(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_226(_macro, data, _TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_FE_228(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_227(_macro, data, _TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_FE_229(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_228(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_230(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_229(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_231(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_230(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_232(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_231(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_233(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_232(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_234(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_233(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_235(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_234(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_236(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_235(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_237(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_236(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_238(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_237(_macro, data, _TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_FE_239(_macro, data, seq) _macro(data, _TF_PP_SEQ_HEAD(seq)) _TF_PP_SEQ_FE_238(_macro, data, _TF_PP_SEQ_TAIL(seq))
 #endif
 
 /// Apply a macro to each element in the sequence of the form (x)(y)(z)(w)
@@ -908,7 +888,7 @@
 /// TF_PP_SEQ_FOR_EACH(_PRINT, ~, ("x")("y")("z")("w"))
 /// #undef _PRINT
 /// \endcode
-/// Limited to sequences of up to 199 elements
+/// Limited to sequences of up to 299 elements
 #ifdef ARCH_COMPILER_MSVC
 #define _TF_PP_SEQ_FOR_EACH_IMPL(_macro, size, data, seq)                   \
     TF_PP_CAT(TF_PP_CAT(_TF_PP_SEQ_FE_, size),(_macro, data, seq))
@@ -920,8 +900,8 @@
 #endif
 
 #define _TF_PP_SEQ_SIZE_0(seq) _TF_PP_SEQ_HEAD(seq)
-// # Generates the _TF_PP_SEQ_SIZE_{1:239}
-// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_SIZE_{i}(seq) _TF_PP_SEQ_SIZE_{i-1}(_TF_PP_SEQ_TAIL(seq))" for i in range(1, 240)))'
+// # Generates the _TF_PP_SEQ_SIZE_{1:229}
+// python3 -c 'print("\n".join(f"#define _TF_PP_SEQ_SIZE_{i}(seq) _TF_PP_SEQ_SIZE_{i-1}(_TF_PP_SEQ_TAIL(seq))" for i in range(1, 230)))'
 #define _TF_PP_SEQ_SIZE_1(seq) _TF_PP_SEQ_SIZE_0(_TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_SIZE_2(seq) _TF_PP_SEQ_SIZE_1(_TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_SIZE_3(seq) _TF_PP_SEQ_SIZE_2(_TF_PP_SEQ_TAIL(seq))
@@ -1151,26 +1131,16 @@
 #define _TF_PP_SEQ_SIZE_227(seq) _TF_PP_SEQ_SIZE_226(_TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_SIZE_228(seq) _TF_PP_SEQ_SIZE_227(_TF_PP_SEQ_TAIL(seq))
 #define _TF_PP_SEQ_SIZE_229(seq) _TF_PP_SEQ_SIZE_228(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_230(seq) _TF_PP_SEQ_SIZE_229(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_231(seq) _TF_PP_SEQ_SIZE_230(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_232(seq) _TF_PP_SEQ_SIZE_231(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_233(seq) _TF_PP_SEQ_SIZE_232(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_234(seq) _TF_PP_SEQ_SIZE_233(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_235(seq) _TF_PP_SEQ_SIZE_234(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_236(seq) _TF_PP_SEQ_SIZE_235(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_237(seq) _TF_PP_SEQ_SIZE_236(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_238(seq) _TF_PP_SEQ_SIZE_237(_TF_PP_SEQ_TAIL(seq))
-#define _TF_PP_SEQ_SIZE_239(seq) _TF_PP_SEQ_SIZE_238(_TF_PP_SEQ_TAIL(seq))
-// # Generates _TF_PP_SEQ_SIZE_IMPL for up to 199 elements
-// python3 -c 'print("#define _TF_PP_SEQ_SIZE_IMPL(seq) _TF_PP_SEQ_SIZE_239(seq{})".format("".join(f"({i})" for i in reversed(range(0, 240)))))'
-#define _TF_PP_SEQ_SIZE_IMPL(seq) _TF_PP_SEQ_SIZE_239(seq(239)(238)(237)(236)(235)(234)(233)(232)(231)(230)(229)(228)(227)(226)(225)(224)(223)(222)(221)(220)(219)(218)(217)(216)(215)(214)(213)(212)(211)(210)(209)(208)(207)(206)(205)(204)(203)(202)(201)(200)(199)(198)(197)(196)(195)(194)(193)(192)(191)(190)(189)(188)(187)(186)(185)(184)(183)(182)(181)(180)(179)(178)(177)(176)(175)(174)(173)(172)(171)(170)(169)(168)(167)(166)(165)(164)(163)(162)(161)(160)(159)(158)(157)(156)(155)(154)(153)(152)(151)(150)(149)(148)(147)(146)(145)(144)(143)(142)(141)(140)(139)(138)(137)(136)(135)(134)(133)(132)(131)(130)(129)(128)(127)(126)(125)(124)(123)(122)(121)(120)(119)(118)(117)(116)(115)(114)(113)(112)(111)(110)(109)(108)(107)(106)(105)(104)(103)(102)(101)(100)(99)(98)(97)(96)(95)(94)(93)(92)(91)(90)(89)(88)(87)(86)(85)(84)(83)(82)(81)(80)(79)(78)(77)(76)(75)(74)(73)(72)(71)(70)(69)(68)(67)(66)(65)(64)(63)(62)(61)(60)(59)(58)(57)(56)(55)(54)(53)(52)(51)(50)(49)(48)(47)(46)(45)(44)(43)(42)(41)(40)(39)(38)(37)(36)(35)(34)(33)(32)(31)(30)(29)(28)(27)(26)(25)(24)(23)(22)(21)(20)(19)(18)(17)(16)(15)(14)(13)(12)(11)(10)(9)(8)(7)(6)(5)(4)(3)(2)(1)(0))
+// # Generates _TF_PP_SEQ_SIZE_IMPL for up to 229 elements
+// python3 -c 'print("#define _TF_PP_SEQ_SIZE_IMPL(seq) _TF_PP_SEQ_SIZE_229(seq{})".format("".join(f"({i})" for i in reversed(range(0, 230)))))'
+#define _TF_PP_SEQ_SIZE_IMPL(seq) _TF_PP_SEQ_SIZE_229(seq(229)(228)(227)(226)(225)(224)(223)(222)(221)(220)(219)(218)(217)(216)(215)(214)(213)(212)(211)(210)(209)(208)(207)(206)(205)(204)(203)(202)(201)(200)(199)(198)(197)(196)(195)(194)(193)(192)(191)(190)(189)(188)(187)(186)(185)(184)(183)(182)(181)(180)(179)(178)(177)(176)(175)(174)(173)(172)(171)(170)(169)(168)(167)(166)(165)(164)(163)(162)(161)(160)(159)(158)(157)(156)(155)(154)(153)(152)(151)(150)(149)(148)(147)(146)(145)(144)(143)(142)(141)(140)(139)(138)(137)(136)(135)(134)(133)(132)(131)(130)(129)(128)(127)(126)(125)(124)(123)(122)(121)(120)(119)(118)(117)(116)(115)(114)(113)(112)(111)(110)(109)(108)(107)(106)(105)(104)(103)(102)(101)(100)(99)(98)(97)(96)(95)(94)(93)(92)(91)(90)(89)(88)(87)(86)(85)(84)(83)(82)(81)(80)(79)(78)(77)(76)(75)(74)(73)(72)(71)(70)(69)(68)(67)(66)(65)(64)(63)(62)(61)(60)(59)(58)(57)(56)(55)(54)(53)(52)(51)(50)(49)(48)(47)(46)(45)(44)(43)(42)(41)(40)(39)(38)(37)(36)(35)(34)(33)(32)(31)(30)(29)(28)(27)(26)(25)(24)(23)(22)(21)(20)(19)(18)(17)(16)(15)(14)(13)(12)(11)(10)(9)(8)(7)(6)(5)(4)(3)(2)(1)(0))
 
 /// Compute the size of a sequence of the form (x)(y)(z)(w)
 /// \code{cpp}
 /// // The macro should evaluate to 4
 /// TF_PP_SEQ_SIZE((x)(y)(z)(w))
 /// \endcode
-/// Limited to sequences of up to 199 elements
+/// Limited to sequences of up to 229 elements
 #define TF_PP_SEQ_SIZE(seq) _TF_PP_SEQ_SIZE_IMPL(seq)
 
 #endif // PXR_BASE_TF_PREPROCESSOR_UTILS_LITE_H
