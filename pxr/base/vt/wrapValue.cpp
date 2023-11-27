@@ -33,6 +33,7 @@
 
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/inttypes.h"
+#include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/pyContainerConversions.h"
 #include "pxr/base/tf/pyFunction.h"
 #include "pxr/base/tf/pyResultConversions.h"
@@ -41,7 +42,6 @@
 #include "pxr/base/tf/type.h"
 
 #include <boost/numeric/conversion/cast.hpp>
-#include <boost/preprocessor.hpp>
 
 #include <boost/python/class.hpp>
 #include <boost/python/copy_const_reference.hpp>
@@ -305,15 +305,15 @@ void wrapValue()
     // register conversion types in reverse order, because the extractor
     // iterates through the registered list backwards
     // Repetitively register conversions for each known class value type.
-#define REGISTER_VALUE_FROM_PYTHON(r, unused, elem) \
+#define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPythonLValue< VT_TYPE(elem) >();
-    BOOST_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~, VT_ARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
-#define REGISTER_VALUE_FROM_PYTHON(r, unused, elem) \
+#define REGISTER_VALUE_FROM_PYTHON(unused, elem) \
     VtValueFromPython< VT_TYPE(elem) >();
-    BOOST_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
-                          VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES)
+    TF_PP_SEQ_FOR_EACH(REGISTER_VALUE_FROM_PYTHON, ~,
+                       VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES)
 #undef REGISTER_VALUE_FROM_PYTHON
 
     VtValueFromPython<string>();

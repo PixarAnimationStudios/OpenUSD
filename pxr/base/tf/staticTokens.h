@@ -148,14 +148,14 @@ PXR_NAMESPACE_OPEN_SCOPE
 // Private macro used to generate TfToken member variables.  elem can either
 // be a tuple on the form (name, value) or just a name.
 //
-#define _TF_TOKENS_DECLARE_MEMBER(r, unused, elem)                          \
+#define _TF_TOKENS_DECLARE_MEMBER(unused, elem)                             \
     TfToken _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                \
         TF_PP_TUPLE_ELEM(0, elem), elem){                                   \
             _TF_PP_IFF(TF_PP_IS_TUPLE(elem),                                \
                 TF_PP_TUPLE_ELEM(1, elem), TF_PP_STRINGIZE(elem)),          \
             TfToken::Immortal};
 #define _TF_TOKENS_DECLARE_TOKEN_MEMBERS(seq)                               \
-    BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_MEMBER, ~, seq)
+    TF_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_MEMBER, ~, seq)
 
 #define _TF_TOKENS_FORWARD_ARRAY(elem) TF_PP_TUPLE_ELEM(0, elem),
 #define _TF_TOKENS_DECLARE_ARRAY_MEMBER_IMPL(identifier, ...)               \
@@ -168,10 +168,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 #define _TF_TOKENS_DECLARE_ARRAY_MEMBERS(seq)                               \
     BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_DECLARE_ARRAY_MEMBER, ~, seq)
 
-#define _TF_TOKENS_FORWARD_TOKEN(r, unused, elem) TF_PP_TUPLE_ELEM(0, elem),
+#define _TF_TOKENS_FORWARD_TOKEN(unused, elem) TF_PP_TUPLE_ELEM(0, elem),
 #define _TF_TOKENS_DECLARE_ALL_TOKENS(seq)                                  \
     std::vector<TfToken> allTokens =                                        \
-        {BOOST_PP_SEQ_FOR_EACH(_TF_TOKENS_FORWARD_TOKEN, ~, seq)};
+        {TF_PP_SEQ_FOR_EACH(_TF_TOKENS_FORWARD_TOKEN, ~, seq)};
 
 // Private macro used to declare the list of members as TfTokens
 //
