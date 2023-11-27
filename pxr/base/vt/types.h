@@ -33,11 +33,11 @@
 #include "pxr/base/arch/inttypes.h"
 #include "pxr/base/gf/declare.h"
 #include "pxr/base/gf/half.h"
+#include "pxr/base/tf/meta.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/token.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
-#include <boost/preprocessor/seq/for_each_i.hpp>
 
 #include <cstddef>
 #include <cstring>
@@ -189,33 +189,54 @@ VT_ARRAY_VALUE_TYPES VT_SCALAR_CLASS_VALUE_TYPES VT_NONARRAY_VALUE_TYPES
 #define VT_VALUE_TYPES \
     VT_BUILTIN_VALUE_TYPES VT_CLASS_VALUE_TYPES
 
+#define _VT_MAP_TYPE_LIST(r, unused, elem) , VT_TYPE(elem)
+
+// Populate a type list from the preprocessor sequence.
+// void is prepended to match the comma for the first type
+// and then dropped by TfMetaTail.
+using Vt_ValueTypeList =
+    TfMetaApply<TfMetaTail, TfMetaList<
+        void BOOST_PP_SEQ_FOR_EACH(_VT_MAP_TYPE_LIST, ~, VT_VALUE_TYPES)>>;
+
 namespace Vt_KnownValueTypeDetail
 {
 
 // Implement compile-time value type indexes.
-//
 // Base case -- unknown types get index -1.
-template <class T>
+template <typename T>
 constexpr int
-GetIndex() {
+GetIndexImpl(TfMetaList<>) {
     return -1;
 }
 
-// Set indexes for known types.
-#define VT_SET_VALUE_TYPE_INDEX(r, unused, i, elem)                       \
-    template <> constexpr int                                             \
-    GetIndex< VT_TYPE(elem) >() {                                         \
-        return i;                                                         \
+template <typename T, typename Typelist>
+constexpr int
+GetIndexImpl(Typelist) {
+    if (std::is_same_v<T, TfMetaApply<TfMetaHead, Typelist>>) {
+        return 0;
     }
-BOOST_PP_SEQ_FOR_EACH_I(VT_SET_VALUE_TYPE_INDEX, ~, VT_VALUE_TYPES)
-#undef VT_SET_VALUE_TYPE_INDEX
+    else if (const int indexOfTail =
+             GetIndexImpl<T>(TfMetaApply<TfMetaTail, Typelist>{});
+             indexOfTail >= 0) {
+        return 1 + indexOfTail;
+    }
+    else {
+        return -1;
+    }
+}
+
+template <typename T>
+constexpr int
+GetIndex() {
+    return GetIndexImpl<T>(Vt_ValueTypeList{});
+}
 
 } // Vt_KnownValueTypeDetail
 
 // Total number of 'known' value types.
 constexpr int
 VtGetNumKnownValueTypes() {
-    return BOOST_PP_SEQ_SIZE(VT_VALUE_TYPES);
+    return TfMetaApply<TfMetaLength, Vt_ValueTypeList>::value;
 }
 
 /// Provide compile-time value type indexes for types that are "known" to Vt --
