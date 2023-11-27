@@ -26,7 +26,6 @@
 
 #include "pxr/pxr.h"
 
-#include "hdPrman/debugCodes.h"
 #include "hdPrman/renderParam.h"
 #include "hdPrman/rixStrings.h"
 
@@ -39,7 +38,7 @@
 #include "pxr/base/vt/value.h"
 
 #include "tbb/concurrent_unordered_map.h"
-#include <shared_mutex>
+#include "tbb/spin_rw_mutex.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -351,7 +350,7 @@ private:
         // calling get() if you want to avoid get's auto-insertion.
         bool has(const Key& key) const
         {
-            std::shared_lock<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
             if (_map.size() == 0) { return false; }
             return _map.find(key) != _map.end();
         }
@@ -364,7 +363,7 @@ private:
             static_assert(std::is_default_constructible<T>::value, 
                           "T must be default constructible");
 
-            std::shared_lock<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
             auto it = _map.find(key);
             if (it == _map.end()) {
                 it = _map.emplace(
@@ -382,7 +381,7 @@ private:
             static_assert(std::is_copy_assignable<T>::value, 
                           "T must be copy-assignable");
 
-            std::shared_lock<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
             if (_map.size() > 0) {
                 auto it = _map.find(key);
                 if (it != _map.end()) {
@@ -398,7 +397,7 @@ private:
         void iterate(std::function<void(const Key&, T&)> fn)
         {
             // exclusive lock
-            std::lock_guard<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
             for (std::pair<const Key, T>& p : _map) {
                 fn(p.first, p.second);
             }
@@ -407,7 +406,7 @@ private:
         // Iterate the map with a const value reference under shared lock
         void citerate(std::function<void(const Key&, const T&)> fn) const
         {
-            std::shared_lock<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
             for (const std::pair<const Key, const T>& p : _map) {
                 fn(p.first, p.second);
             }
@@ -416,7 +415,7 @@ private:
         // Gives the count of keys currently in the map
         size_t size() const
         {
-            std::shared_lock<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, false);
             return _map.size();
         }
 
@@ -424,7 +423,7 @@ private:
         void erase(const Key& key)
         {
             // exclusive lock
-            std::lock_guard<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
             _map.unsafe_erase(key);
         }
 
@@ -432,12 +431,12 @@ private:
         void clear()
         {
             // exclusive lock
-            std::lock_guard<std::shared_mutex> lock(_mutex);
+            tbb::spin_rw_mutex::scoped_lock lock(_mutex, true);
             _map.clear();
         }
     private:
         tbb::concurrent_unordered_map<Key, T, Hash, KeyEqual> _map;
-        mutable std::shared_mutex _mutex;
+        mutable tbb::spin_rw_mutex _mutex;
     };
 
     using _LockingFlattenGroupMap = _LockingMap<
@@ -500,7 +499,7 @@ private:
     // will multiply those by any supplied subInstances
     void _ComposeInstances(
         const SdfPath& protoId,
-        const std::vector<_InstanceData> subInstances,
+        const std::vector<_InstanceData>& subInstances,
         std::vector<_InstanceData>& instances);
 
     // Generates FlattenData from a set of instance params by looking for
@@ -547,6 +546,26 @@ private:
     // child instancers represented by riley geometry prototype groups. In
     // either case, the caller owns the riley prototypes.
     void _PopulateInstances(
+        HdRenderParam* renderParam,
+        HdDirtyBits* dirtyBits,
+        const SdfPath& hydraPrototypeId,
+        const SdfPath& prototypePrimPath,
+        const std::vector<riley::GeometryPrototypeId>& rileyPrototypeIds,
+        const riley::CoordinateSystemList& coordSysList,
+        const RtParamList protoParams,
+        const HdTimeSampleArray<GfMatrix4d, HDPRMAN_MAX_TIME_SAMPLES> protoXform,
+        const std::vector<riley::MaterialId>& rileyMaterialIds,
+        const SdfPathVector& prototypePaths,
+        const riley::LightShaderId& lightShaderId,
+        const std::vector<_InstanceData>& subInstances,
+        const std::vector<_FlattenData>& prototypeFlats);
+
+    // Locks before calling _PopulateInstances() to prevent duplicated Riley
+    // calls that may arise when Populate() has been called from multiple
+    // threads producing identical population requests from the same child
+    // instancer. Locks are segregated by prototypePrimPath to avoid
+    // over-locking.
+    void _PopulateInstancesFromChild(
         HdRenderParam* renderParam,
         HdDirtyBits* dirtyBits,
         const SdfPath& hydraPrototypeId,
@@ -647,7 +666,7 @@ private:
     // riley geometry prototype groups are created during Populate; these must
     // be serialized to prevent creating two different groups for the same set
     // of flatten data.
-    std::mutex _groupIdAcquisitionLock;
+    tbb::spin_rw_mutex _groupIdAcquisitionLock;
     
     // Main storage for tracking riley instances owned by this instancer.
     // Instance ids are paired with their containing group id (RileyInstanceId),
@@ -659,6 +678,12 @@ private:
     // Deeper levels are only ever written to from within a single call to
     // Populate, so they do not have gated access.
     _LockingProtoMap _protoMap;
+
+    // Locks used by _PopulateInstancesFromChild() to serialize (and dedupe)
+    // parallel calls from the same child instancer, which occur when the child
+    // has multiple prototype prims and would otherwise lead to duplicated
+    // Riley calls to Create or Remove instances, both of which are problematic.
+    _LockingMap<SdfPath, tbb::spin_rw_mutex, SdfPath::Hash> _childPopulateLocks;
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE
