@@ -162,10 +162,40 @@ private:
 
 }
 
+HdSampledDataSourceHandle
+HdPrimvarSchema::GetFlattenedPrimvarValue()
+{
+    if (!_container) {
+        return nullptr;
+    }
+
+    if (HdSampledDataSourceHandle sds =
+        _GetTypedDataSource<HdSampledDataSource>(
+            HdPrimvarSchemaTokens->primvarValue)) {
+        // Non-indexed case.
+        return sds;
+    } else {
+        // Indexed case, we need to flatten.
+
+        HdSampledDataSourceHandle ivds =
+            _GetTypedDataSource<HdSampledDataSource>(
+                HdPrimvarSchemaTokens->indexedPrimvarValue);
+        if (!ivds) {
+            return nullptr;
+        }
+
+        HdTypedSampledDataSource<VtIntArray>::Handle ids = 
+            _GetTypedDataSource<HdTypedSampledDataSource<VtIntArray>>(
+                HdPrimvarSchemaTokens->indices);
+        if (!ids) {
+            return nullptr;
+        }
+
+        return _HdDataSourceFlattenedPrimvarValue::New(ivds, ids);
+    }
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
-
-
-
 
 HdSampledDataSourceHandle
 HdPrimvarSchema::GetPrimvarValue()
