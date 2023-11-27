@@ -353,7 +353,10 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
     //
     
     // Resolve attributes.
-    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true);
+    bool sceneVisibility = true;
+    RtParamList attrs = param->ConvertAttributes(sceneDelegate, id, true,
+                                                 &sceneVisibility);
+    _sceneVisibility = sceneVisibility;
 
     // Add "identifier:id" with the prim id.
     attrs.SetInteger(RixStr.k_identifier_id, primId);

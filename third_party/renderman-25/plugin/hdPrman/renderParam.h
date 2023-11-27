@@ -81,10 +81,12 @@ public:
     void Begin(HdPrmanRenderDelegate *renderDelegate); 
 
     // Convert any Hydra primvars that should be Riley instance attributes.
+    // Stores visibility state in *visible (if provided) in addition to
+    // representing it as attributes in the returned RtParamList.
     HDPRMAN_API
     RtParamList
     ConvertAttributes(HdSceneDelegate *sceneDelegate,
-        SdfPath const& id, bool isGeometry);
+        SdfPath const& id, bool isGeometry, bool *visible=nullptr);
 
     // A vector of Riley coordinate system id's.
     using RileyCoordSysIdVec = std::vector<riley::CoordinateSystemId>;

@@ -797,7 +797,8 @@ HdPrman_TransferMaterialPrimvarOpinions(HdSceneDelegate *sceneDelegate,
 
 RtParamList
 HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
-                                   SdfPath const& id, bool isGeometry)
+                                   SdfPath const& id, bool isGeometry,
+                                   bool *visible)
 {
     RtPrimVarList attrs;
 
@@ -814,7 +815,11 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
     attrs.SetString(RixStr.k_identifier_name, RtUString(id.GetText()));
 
     // Hydra visibility -> Riley Rix::k_visibility
-    if (!sceneDelegate->GetVisible(id)) {
+    bool vis = sceneDelegate->GetVisible(id);
+    if (visible) {
+        *visible = vis;
+    }
+    if (!vis) {
         attrs.SetInteger(RixStr.k_visibility_camera, 0);
         attrs.SetInteger(RixStr.k_visibility_indirect, 0);
         attrs.SetInteger(RixStr.k_visibility_transmission, 0);
