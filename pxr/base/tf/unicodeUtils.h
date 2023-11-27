@@ -30,6 +30,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/unicodeCharacterClasses.h"
 
 #include <optional>
 #include <string>
@@ -299,6 +300,36 @@ inline TfUtf8CodePointView::const_iterator TfUtf8CodePointView::begin() const
 inline TfUtf8CodePointView::const_iterator TfUtf8CodePointView::cbegin() const
 {
     return begin();
+}
+
+/// Determines whether the given Unicode \a codePoint is in the XID_Start
+/// character class.
+///
+/// The XID_Start class of characters are derived from the Unicode 
+/// General_Category of uppercase letters, lowercase letters, titlecase
+/// letters, modifier letters, other letters, letters numbers, plus
+/// Other_ID_Start, minus Pattern_Syntax and Pattern_White_Space code points.
+/// That is, the character must have a category of Lu | Ll | Lt | Lm | Lo | Nl
+///
+TF_API
+inline bool TfIsUtf8CodePointXidStart(uint32_t codePoint)
+{
+    return TfUnicodeGetXidStartFlagData().IsXidStartCodePoint(codePoint);
+}
+
+/// Determines whether the given Unicode \a codePoint is in the XID_Continue
+/// character class.
+///
+/// The XID_Continue class of characters include those in XID_Start plus
+/// characters having the Unicode General Category of nonspacing marks,
+/// spacing combining marks, decimal number, and connector punctuation.
+/// That is, the character must have a category of 
+/// XID_Start | Nd | Mn | Mc | Pc
+///
+TF_API
+inline bool TfIsUtf8CodePointXidContinue(uint32_t codePoint)
+{
+    return TfUnicodeGetXidContinueFlagData().IsXidContinueCodePoint(codePoint);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
