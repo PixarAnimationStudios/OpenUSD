@@ -40,6 +40,9 @@
 #include "pxr/imaging/hd/dependencySchema.h"
 
 
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
@@ -66,6 +69,7 @@ public:
     EntryVector GetEntries();
 
 // --(END CUSTOM CODE: Schema Methods)--
+
 
     /// Retrieves a container data source with the schema's default name token
     /// "__dependencies" from the parent container and constructs a

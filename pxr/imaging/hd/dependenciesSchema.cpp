@@ -37,6 +37,8 @@
 
 #include "pxr/base/trace/trace.h"
 
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
@@ -69,6 +71,7 @@ HdDependenciesSchema::GetEntries()
 
 
 
+
 /*static*/
 HdDependenciesSchema
 HdDependenciesSchema::GetFromParent(
@@ -92,9 +95,7 @@ HdDependenciesSchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdDependenciesSchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdDependenciesSchemaTokens->__dependencies
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
 PXR_NAMESPACE_CLOSE_SCOPE
