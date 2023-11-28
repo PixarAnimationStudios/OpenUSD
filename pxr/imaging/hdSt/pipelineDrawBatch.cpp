@@ -1320,9 +1320,6 @@ _GetPTCSPipeline(
     if (pipelineInstance.IsFirstInstance()) {
         HgiGraphicsPipelineDesc pipeDesc;
 
-        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
-                                                  state.geometricShader);
-
         pipeDesc.rasterizationState.rasterizerEnabled = false;
         pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
         pipeDesc.multiSampleState.alphaToCoverageEnable = false;
@@ -1331,6 +1328,9 @@ _GetPTCSPipeline(
         pipeDesc.depthState.stencilTestEnabled = false;
         pipeDesc.primitiveType = HgiPrimitiveTypePatchList;
         pipeDesc.multiSampleState.multiSampleEnable = false;
+        
+        renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
+                                                  state.geometricShader);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
