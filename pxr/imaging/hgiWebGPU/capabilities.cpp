@@ -38,8 +38,9 @@ HgiWebGPUCapabilities::HgiWebGPUCapabilities(wgpu::Device)
     _SetFlag(HgiDeviceCapabilitiesBitsPrimitiveIdEmulation, true);
     _SetFlag(HgiDeviceCapabilitiesBitsCppShaderPadding, false);
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, false);
-    _SetFlag(HgiDeviceCapabilitiesBitsOSDSupport, false);
     _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsBuiltinBarycentrics, false);
+    _SetFlag(HgiDeviceCapabilitiesBitsTriangulatedQuads, true);
 
 }
 

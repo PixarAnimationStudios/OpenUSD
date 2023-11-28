@@ -435,18 +435,6 @@ struct {
 };
 
 struct {
-    HgiPrimitiveType hgiPrimitiveType;
-    wgpu::PrimitiveTopology webGPUPT;
-} static const _primitiveTypeTable[HgiPrimitiveTypeCount] =
-{
-    {HgiPrimitiveTypePointList,    wgpu::PrimitiveTopology::PointList},
-    {HgiPrimitiveTypeLineList,     wgpu::PrimitiveTopology::LineList},
-    {HgiPrimitiveTypeLineStrip,    wgpu::PrimitiveTopology::LineStrip},
-    {HgiPrimitiveTypeTriangleList, wgpu::PrimitiveTopology::TriangleList},
-    {HgiPrimitiveTypePatchList,    wgpu::PrimitiveTopology::TriangleList} // Unsupported
-};
-
-struct {
     HgiStencilOp hgiStencilOp;
     wgpu::StencilOperation webGPUStencilOp;
 } static const _stencilOpTable[HgiStencilOpCount] =
@@ -474,7 +462,7 @@ struct {
         {HgiPrimitiveTypeLineStrip,                 wgpu::PrimitiveTopology::LineStrip},
         {HgiPrimitiveTypeTriangleList,              wgpu::PrimitiveTopology::TriangleList},
         {HgiPrimitiveTypePatchList,                 wgpu::PrimitiveTopology::TriangleList}, // TODO: Not the correct conversion
-        {HgiPrimitiveTypeLineListWithAdjacency,     wgpu::PrimitiveTopology::TriangleList}  // TODO: Not the correct conversion
+        {HgiPrimitiveTypeLineListWithAdjacency,     wgpu::PrimitiveTopology::LineStrip}  // TODO: Not the correct conversion
 };
 
 static_assert(TfArraySize(_primitiveTopologyTable) == HgiPrimitiveTypeCount,
@@ -584,12 +572,6 @@ wgpu::MipmapFilterMode
 HgiWebGPUConversions::GetMipFilter(HgiMipFilter mf)
 {
     return _mipFilterTable[mf].webGPUMF;
-}
-
-wgpu::PrimitiveTopology
-HgiWebGPUConversions::GetPrimitiveType(HgiPrimitiveType pt)
-{
-    return _primitiveTypeTable[pt].webGPUPT;
 }
 
 wgpu::BufferUsage

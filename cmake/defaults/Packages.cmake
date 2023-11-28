@@ -233,6 +233,7 @@ if (PXR_BUILD_IMAGING)
     endif()
     # --OpenGL
     if (PXR_ENABLE_GL_SUPPORT)
+        add_definitions(-DPXR_GL_SUPPORT_ENABLED)
         # Prefer legacy GL library over GLVND libraries if both
         # are installed.
         if (POLICY CMP0072)

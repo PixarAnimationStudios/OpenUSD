@@ -98,11 +98,11 @@ HgiMetalCapabilities::HgiMetalCapabilities(id<MTLDevice> device)
     
     _SetFlag(HgiDeviceCapabilitiesBitsIndirectCommandBuffers, icbSupported);
 
-    _SetFlag(HgiDeviceCapabilitiesBitsOSDSupport, true);
-
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, true);
 
     _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, true);
+
+    _SetFlag(HgiDeviceCapabilitiesBitsTriangulatedQuads, false);
 
     // This is done to decide whether to use a workaround for post tess
     // patch primitive ID lookup. The bug causes the firstPatch offset

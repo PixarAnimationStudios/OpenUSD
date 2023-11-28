@@ -54,12 +54,12 @@
 #include <sstream>
 #include <unordered_map>
 
-#if !defined(EMSCRIPTEN)
-#if defined(__APPLE__)
+#if defined(PXR_METAL_SUPPORT_ENABLED)
 #include <opensubdiv/osd/mtlPatchShaderSource.h>
-#else
-#include <opensubdiv/osd/glslPatchShaderSource.h>
 #endif
+
+#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
+#include <opensubdiv/osd/glslPatchShaderSource.h>
 #endif
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -1595,33 +1595,37 @@ HdSt_CodeGen::_PlumbInterstageElements(
 
 static
 std::string
-_GetOSDCommonShaderSource()
+_GetOSDCommonShaderSource(TfToken const &apiName)
 {
     // Prepare OpenSubdiv common shader source for use in the shader
     // code declarations section and define some accessor methods and
     // forward declarations needed by the OpenSubdiv shaders.
     std::stringstream ss;
-#if !defined(EMSCRIPTEN)
-#if defined(__APPLE__)
-    ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
-       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
-       << "#define OSD_PERPATCHVERTEX_BUFFER_INDEX 0\n"
-       << "#define OSD_PERPATCHTESSFACTORS_BUFFER_INDEX 0\n"
-       << "#define OSD_KERNELLIMIT_BUFFER_INDEX 0\n"
-       << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
-       << "#define VERTEX_BUFFER_INDEX 0\n"
+    if (apiName == HgiTokens->Metal) {
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+        ss << "#define CONTROL_INDICES_BUFFER_INDEX 0\n"
+           << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+           << "#define OSD_PERPATCHVERTEX_BUFFER_INDEX 0\n"
+           << "#define OSD_PERPATCHTESSFACTORS_BUFFER_INDEX 0\n"
+           << "#define OSD_KERNELLIMIT_BUFFER_INDEX 0\n"
+           << "#define OSD_PATCHPARAM_BUFFER_INDEX 0\n"
+           << "#define VERTEX_BUFFER_INDEX 0\n"
 
-       // The ifdef for this in OSD is AFTER the first usage.
-       << "#define OSD_MAX_VALENCE 4\n"
+           // The ifdef for this in OSD is AFTER the first usage.
+           << "#define OSD_MAX_VALENCE 4\n"
 
-       << "\n"
-       << "struct OsdInputVertexType {\n"
-       << "    vec3 position;\n"
-       << "};\n"
-       << "\n";
+           << "\n"
+           << "struct OsdInputVertexType {\n"
+           << "    vec3 position;\n"
+           << "};\n"
+           << "\n";
 
-    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
-#else
+        ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetCommonShaderSource();
+#endif
+    } else if (HgiTokens->Vulkan == apiName ||
+               HgiTokens->OpenGL == apiName ||
+               HgiTokens->WebGPU == apiName) {
+#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
     ss << "FORWARD_DECL(MAT4 GetProjectionMatrix());\n"
        << "FORWARD_DECL(float GetTessLevel());\n"
        << "mat4 OsdModelViewMatrix() { return mat4(1); }\n"
@@ -1632,25 +1636,32 @@ _GetOSDCommonShaderSource()
 
     ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetCommonShaderSource();
 #endif
-#endif
-
+    } else {
+        TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
+    }
     return ss.str();
 }
 
 static
 std::string
-_GetOSDPatchBasisShaderSource()
+_GetOSDPatchBasisShaderSource(const TfToken &apiName)
 {
     std::stringstream ss;
-#if !defined(EMSCRIPTEN)
-#if defined(__APPLE__)
-    ss << "#define OSD_PATCH_BASIS_METAL\n";
-    ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
-#else
-    ss << "#define OSD_PATCH_BASIS_GLSL\n";
-    ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
+    if (apiName == HgiTokens->Metal) {
+#if defined(PXR_METAL_SUPPORT_ENABLED)
+            ss << "#define OSD_PATCH_BASIS_METAL\n";
+            ss << OpenSubdiv::Osd::MTLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
+    } else if (HgiTokens->Vulkan == apiName ||
+               HgiTokens->OpenGL == apiName ||
+               HgiTokens->WebGPU == apiName) {
+#if defined(PXR_VULKAN_SUPPORT_ENABLED) || defined(PXR_GL_SUPPORT_ENABLED) || defined(PXR_WEBGPU_SUPPORT_ENABLED)
+            ss << "#define OSD_PATCH_BASIS_GLSL\n";
+            ss << OpenSubdiv::Osd::GLSLPatchShaderSource::GetPatchBasisShaderSource();
 #endif
+    } else {
+        TF_CODING_ERROR("Unsupported OSD API: %s", apiName.GetText());
+    }
     return ss.str();
 }
 
@@ -1685,6 +1696,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         capabilities->IsSet(HgiDeviceCapabilitiesBitsDepthRangeMinusOnetoOne);
     const bool clipPlanesEnabled =
             capabilities->IsSet(HgiDeviceCapabilitiesBitsClipDistanceSupport);
+    TfToken const apiName = registry->GetHgi()->GetAPIName();
 
     bool const useHgiResourceGeneration =
         IsEnabledHgiResourceGeneration(capabilities);
@@ -1984,10 +1996,10 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     if (_geometricShader->IsPrimTypeMesh() &&
         _geometricShader->IsPrimTypePatches()) {
         if (_hasPTCS) {
-            _genPTCS << _GetOSDPatchBasisShaderSource();
+            _genPTCS << _GetOSDPatchBasisShaderSource(apiName);
         }
         if (_hasPTVS) {
-            _genPTVS << _GetOSDPatchBasisShaderSource();
+            _genPTVS << _GetOSDPatchBasisShaderSource(apiName);
         }
     }
 
@@ -1997,9 +2009,9 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
         _geometricShader->GetFvarPatchType() == 
         HdSt_GeometricShader::FvarPatchType::PATCH_BOXSPLINETRIANGLE) {
         if (_hasGS) {
-            _genGS << _GetOSDPatchBasisShaderSource();
+            _genGS << _GetOSDPatchBasisShaderSource(apiName);
         } else {
-            _genFS << _GetOSDPatchBasisShaderSource();
+            _genFS << _GetOSDPatchBasisShaderSource(apiName);
         }
     }
 
@@ -2245,7 +2257,7 @@ HdSt_CodeGen::Compile(HdStResourceRegistry*const registry)
     // method of patch coord interpolation.
     if (_geometricShader->IsPrimTypeRefinedMesh()) {
         // Include OpenSubdiv shader source and use full patch interpolation.
-        _osd << _GetOSDCommonShaderSource();
+        _osd << _GetOSDCommonShaderSource(apiName);
         _osd <<
             "vec4 InterpolatePatchCoord(vec2 uv, ivec3 patchParam)\n"
             "{\n"

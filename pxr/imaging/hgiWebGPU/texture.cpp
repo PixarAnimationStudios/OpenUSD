@@ -60,7 +60,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureDesc const & desc)
     descriptor.size.width = desc.dimensions[0];
     descriptor.size.height = desc.dimensions[1];
     descriptor.size.depthOrArrayLayers = desc.dimensions[2];
-    descriptor.dimension = desc.dimensions[1] > 1 ? ( desc.dimensions[2] > 1 ? wgpu::TextureDimension::e3D : wgpu::TextureDimension::e2D) : wgpu::TextureDimension::e1D;
+    descriptor.dimension = desc.dimensions[1] > 0 ? ( desc.dimensions[2] > 1 ? wgpu::TextureDimension::e3D : wgpu::TextureDimension::e2D) : wgpu::TextureDimension::e1D;
     descriptor.sampleCount = desc.sampleCount;
     descriptor.mipLevelCount = desc.mipLevels;
 
@@ -118,7 +118,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureDesc const & desc)
     // create the texture view
     wgpu::TextureViewDescriptor textureViewDesc;
     textureViewDesc.format = _pixelFormat;
-    textureViewDesc.dimension = _descriptor.dimensions[1] > 1 ? ( _descriptor.dimensions[2] > 1 ? wgpu::TextureViewDimension::e3D : wgpu::TextureViewDimension::e2D) : wgpu::TextureViewDimension::e1D;
+    textureViewDesc.dimension = _descriptor.dimensions[1] > 0 ? ( _descriptor.dimensions[2] > 1 ? wgpu::TextureViewDimension::e3D : wgpu::TextureViewDimension::e2D) : wgpu::TextureViewDimension::e1D;
     textureViewDesc.mipLevelCount = desc.mipLevels;
     textureViewDesc.arrayLayerCount = desc.layerCount;
 	_textureView = _textureHandle.CreateView(&textureViewDesc);
@@ -142,7 +142,7 @@ HgiWebGPUTexture::HgiWebGPUTexture(HgiWebGPU *hgi, HgiTextureViewDesc const & de
     // create the texture view
     wgpu::TextureViewDescriptor textureViewDesc;
     textureViewDesc.format = srcTexture->_pixelFormat;
-    textureViewDesc.dimension = _descriptor.dimensions[1] > 1 ? ( _descriptor.dimensions[2] > 1 ? wgpu::TextureViewDimension::e3D : wgpu::TextureViewDimension::e2D) : wgpu::TextureViewDimension::e1D;
+    textureViewDesc.dimension = _descriptor.dimensions[1] > 0 ? ( _descriptor.dimensions[2] > 1 ? wgpu::TextureViewDimension::e3D : wgpu::TextureViewDimension::e2D) : wgpu::TextureViewDimension::e1D;
     textureViewDesc.baseMipLevel = desc.sourceFirstMip;
 	textureViewDesc.mipLevelCount = desc.mipLevels;
     textureViewDesc.baseArrayLayer = desc.sourceFirstLayer;

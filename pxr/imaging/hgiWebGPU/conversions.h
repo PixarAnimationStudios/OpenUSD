@@ -83,9 +83,6 @@ public:
     static wgpu::MipmapFilterMode GetMipFilter(HgiMipFilter mf);
 
     HGIWEBGPU_API
-    static wgpu::PrimitiveTopology GetPrimitiveType(HgiPrimitiveType pt);
-
-    HGIWEBGPU_API
     static wgpu::BufferUsage GetBufferUsage(HgiBufferUsage usage);
 
     HGIWEBGPU_API

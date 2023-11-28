@@ -126,7 +126,6 @@ TF_DEFINE_PRIVATE_TOKENS(
     ((mainTriangleGS,              "Mesh.Geometry.Triangle"))
     ((mainTriQuadGS,               "Mesh.Geometry.TriQuad"))
     ((mainQuadGS,                  "Mesh.Geometry.Quad"))
-    ((mainPatchCoordFallbackFS,    "Mesh.Fragment.PatchCoord.Fallback"))
     ((mainPatchCoordFS,            "Mesh.Fragment.PatchCoord"))
     ((mainPatchCoordNoGSFS,        "Mesh.Fragment.PatchCoord.NoGS"))
     ((mainPatchCoordTessFS,        "Mesh.Fragment.PatchCoord.Tess"))
@@ -170,7 +169,6 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     bool hasBuiltinBarycentrics,
     bool hasMetalTessellation,
     bool hasGeometricStage,
-    bool hasOSD,
     bool hasCustomDisplacement,
     bool hasPerFaceInterpolation,
     bool hasTopologicalVisibility,
@@ -608,36 +606,30 @@ HdSt_MeshShaderKey::HdSt_MeshShaderKey(
     FS[fsIndex++] = hasTopologicalVisibility? _tokens->topVisFS :
                                               _tokens->topVisFallbackFS;
 
-    if (hasOSD) {
-        // Triangles
-        if (isPrimTypeTris && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordTrianglePTVSFS;
-        } else if (isPrimTypeTris && !gsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
+    // Triangles
+    if (isPrimTypeTris && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTrianglePTVSFS;
+    } else if (isPrimTypeTris && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriangleFS;
 
-        // Quads
-        } else if (isPrimTypeQuads && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordQuadPTVSFS;
-        } else if (isPrimTypeQuads && !gsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
-
-        // TriQuads
-        } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordTriQuadPTVSFS;
-        } else if (isPrimTypeTriQuads) {
-            FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
-        // Patches
-        } else if (isPrimTypePatches && ptvsStageEnabled) {
-            FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
-            // Points/No GS
-        } else if (isPrimTypePoints || canSkipGS) {
-            FS[fsIndex++] = _tokens->mainPatchCoordNoGSFS;
-
-        } else {
-            FS[fsIndex++] = _tokens->mainPatchCoordFS;
-        }
+    // Quads
+    } else if (isPrimTypeQuads && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordQuadPTVSFS;
+    } else if (isPrimTypeQuads && !gsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordQuadFS;
+    // TriQuads
+    } else if (isPrimTypeTriQuads && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadPTVSFS;
+    } else if (isPrimTypeTriQuads) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTriQuadFS;
+    // Patches
+    } else if (isPrimTypePatches && ptvsStageEnabled) {
+        FS[fsIndex++] = _tokens->mainPatchCoordTessFS;
+    // Points/No GS
+    } else if (isPrimTypePoints || canSkipGS) {
+        FS[fsIndex++] = _tokens->mainPatchCoordNoGSFS;
     } else {
-        FS[fsIndex++] = _tokens->mainPatchCoordFallbackFS;
+        FS[fsIndex++] = _tokens->mainPatchCoordFS;
     }
 
     FS[fsIndex++] = _tokens->mainFS;

@@ -1352,14 +1352,6 @@ vec4 GetInterpolatedPatchCoord()
 }
 
 --- --------------------------------------------------------------------------
--- glsl Mesh.Fragment.PatchCoord.Fallback
-
-vec4 GetInterpolatedPatchCoord()
-{
-    return vec4(1.0, 1.0, 1.0, 1.0);
-}
-
---- --------------------------------------------------------------------------
 -- glsl Mesh.Fragment.PatchCoord.Triangle
 
 vec2 GetPatchCoordLocalST()

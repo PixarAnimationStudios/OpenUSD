@@ -142,8 +142,8 @@ HgiVulkanCapabilities::HgiVulkanCapabilities(HgiVulkanDevice* device)
      _SetFlag(HgiDeviceCapabilitiesBitsMultiDrawIndirect,
         multiDrawIndirectEnabled);
     _SetFlag(HgiDeviceCapabilitiesBitsGeometricStage, true);
-    _SetFlag(HgiDeviceCapabilitiesBitsOSDSupport, false);
     _SetFlag(HgiDeviceCapabilitiesBitsClipDistanceSupport, true);
+    _SetFlag(HgiDeviceCapabilitiesBitsTriangulatedQuads, false);
 }
 
 HgiVulkanCapabilities::~HgiVulkanCapabilities() = default;
