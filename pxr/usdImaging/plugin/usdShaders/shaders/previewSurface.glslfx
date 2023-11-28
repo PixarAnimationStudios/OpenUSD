@@ -24,6 +24,8 @@
 // language governing permissions and limitations under the Apache License.
 //
 
+#import $TOOLS/hdSt/shaders/surfaceHelpers.glslfx
+
 -- configuration
 {
     "techniques": {
@@ -33,8 +35,10 @@
             },
             "surfaceShader": {
                 "source": [ "Preview.LightStructures",
+                            "SurfaceHelpers.Lighting", 
                             "Preview.Lighting",
                             "Preview.LightIntegration",
+                            "SurfaceHelpers.TangentSpace",
                             "Preview.NormalMapping",
                             "Preview.Surface" ]
             }
@@ -123,7 +127,6 @@ struct LightingContributions
 
 -- glsl Preview.Lighting
 
-#define PI 3.1415
 #define EPSILON 0.001
 
 
@@ -266,15 +269,6 @@ evaluateLight(
 
 -- glsl Preview.LightIntegration
 
-vec2 projectToLatLong(vec3 sample3D)
-{
-    // project spherical coord onto latitude-longitude map with
-    // latitude: +y == pi/2 and longitude: +z == 0, +x == pi/2
-    vec2 coord = vec2((atan(sample3D.z, sample3D.x) + 0.5 * PI) / (2.0 * PI),
-                      acos(sample3D.y) / PI);
-    return coord;
-}
-
 mat4 GetDomeLightTransform(mat4 worldToLightTransform)
 {
     // transform from view space to light space
@@ -326,7 +320,7 @@ evaluateIndirectLighting(
 
     // Diffuse Component
     vec3 dir = normalize((transformationMatrix * vec4(Neye,0.0)).xyz);
-    vec2 coord = projectToLatLong(dir);
+    vec2 coord = ProjectToLatLong(dir);
     vec3 diffuse = HdGet_domeLightIrradiance(coord).rgb;
 
     // Specular Component 
@@ -334,7 +328,7 @@ evaluateIndirectLighting(
         textureQueryLevels(HdGetSampler_domeLightPrefilter());
     float lod = roughness * MAX_REFLECTION_LOD;
     vec3 Rdir = normalize((transformationMatrix * vec4(Reye,0.0)).xyz);
-    vec2 Rcoord = projectToLatLong(Rdir);
+    vec2 Rcoord = ProjectToLatLong(Rdir);
     vec3 prefilter = HdTextureLod_domeLightPrefilter(Rcoord, lod).rgb;
 
     vec2 brdf = HdGet_domeLightBRDF(vec2(NdotE, roughness)).rg;
@@ -468,43 +462,9 @@ vec3
 perturbFragmentNormal(vec3 P, vec3 N)
 {
 #ifdef HD_HAS_COORD_normal
-    // Calculation of TBN matrix and terminology based on "Surface 
-    // Gradient-Based Bump Mapping Framework" (2020)
     vec3 Nt = normalize(HdGet_normal().xyz);
     vec2 st = HdGetCoord_normal().xy;
-
-    // Get screen space derivatives of position
-    vec3 dPdx = dFdx(P);
-    vec3 dPdy = dFdy(P);
-
-    // Ensure position derivatives are perpendicular to N
-    vec3 sigmaX = dPdx - dot(dPdx, N) * N;
-    vec3 sigmaY = dPdy - dot(dPdy, N) * N;
-
-    float flipSign = dot(dPdy, cross(N, dPdx)) < 0 ? -1 : 1;
-
-    // Get screen space derivatives of st
-    vec2 dSTdx = dFdx(st);
-    vec2 dSTdy = dFdy(st);
-
-    // Get determinant and determinant sign of st matrix
-    float det = dot(dSTdx, vec2(dSTdy.y, -dSTdy.x));
-    float signDet = det < 0 ? -1 : 1;
-
-    // Get first column of inv st matrix
-    // Don't divide by det, but scale by its sign
-    vec2 invC0 = signDet * vec2(dSTdy.y, -dSTdx.y);
-
-    vec3 T = sigmaX * invC0.x + sigmaY * invC0.y;
-
-    if (abs(det) > 0) {
-        T = normalize(T);
-    }
-
-    vec3 B = (signDet * flipSign) * cross(N, T);
-
-    mat3 TBN = mat3(T, B, N);
-    return normalize(TBN * Nt);
+    return PerturbNormal(P, N, st, Nt);
 #endif
     return N;
 }
