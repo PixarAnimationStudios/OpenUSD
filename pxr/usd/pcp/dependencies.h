@@ -295,22 +295,29 @@ private:
     ConcurrentPopulationContext *_concurrentPopulationContext;
 };
 
-static inline bool
+inline bool
 Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
                                const SdfLayerHandle& layer )
 {
     return node.GetLayerStack()->HasLayer(layer);
 }
 
-static inline bool
+inline bool
 Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
                                const PcpLayerStackRefPtr& layerStack )
 {
     return node.GetLayerStack() == layerStack;
 }
 
+inline bool
+Pcp_NodeUsesLayerOrLayerStack( const PcpNodeRef& node,
+                               const PcpLayerStackPtr& layerStack )
+{
+    return node.GetLayerStack() == layerStack;
+}
+
 template <class FN, class LayerOrLayerStack>
-static bool
+bool
 Pcp_ForEachDependentNodeImpl( const SdfPath &sitePath,
                               const LayerOrLayerStack &layerOrLayerStack,
                               const SdfPath &depIndexPath,
@@ -354,7 +361,7 @@ Pcp_ForEachDependentNodeImpl( const SdfPath &sitePath,
 /// The \p nodeFn callback will be called with \p depIndexPath and the
 /// PcpNodeRef for each dependent node in the prim index.
 template <class FN, class LayerOrLayerStack>
-static void
+void
 Pcp_ForEachDependentNode( const SdfPath &sitePath,
                           const LayerOrLayerStack &layerOrLayerStack,
                           const SdfPath &depIndexPath,
@@ -385,7 +392,7 @@ Pcp_ForEachDependentNode( const SdfPath &sitePath,
 /// The \p culledDepFn will be called with \p depIndexPath and the
 /// PcpCulledDependency for each culled dependent node in the prim index.
 template <class NodeFn, class CulledDepFn>
-static void
+void
 Pcp_ForEachDependentNode( const SdfPath &sitePath,
                           const PcpLayerStackRefPtr &layerStack,
                           const SdfPath &depIndexPath,
