@@ -493,6 +493,21 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs2.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs2
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs3.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs3_allpayloads
+)
+
+pxr_install_test_dir(
+    SRC testenv/testPcpMuseum_PayloadsAndAncestralArcs3.testenv
+    DEST testPcpMuseum_PayloadsAndAncestralArcs3_refpayloadsonly
+)
+
+pxr_install_test_dir(
     SRC testenv/testPcpMuseum_ReferenceListOpsWithOffsets.testenv
     DEST testPcpMuseum_ReferenceListOpsWithOffsets
 )
@@ -1187,6 +1202,27 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads ^(?!/Root/UnloadedInheritedPayload) PayloadsAndAncestralArcs/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs2
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs2.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs2.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_allpayloads
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt 
+)
+
+pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_refpayloadsonly
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads '.*Reference.*' PayloadsAndAncestralArcs/root.sdf" 
+    STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt
+    DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt 
 )
 
 pxr_register_test(testPcpMuseum_ReferenceListOpsWithOffsets
