@@ -3973,6 +3973,18 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
         EXPECTED_RETURN_CODE 0
         TESTENV testUsdImagingGLMaterialXBasic
     )
+
+    pxr_register_test(testUsdImagingGLMaterialXBasic_normalMap
+        COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -frameAll -stage mxNormalMap.usda -write mxNormalMap.png"
+        IMAGE_DIFF_COMPARE
+            mxNormalMap.png
+        FAIL 0.5
+        FAIL_PERCENT 0.005
+        WARN 0.05
+        WARN_PERCENT 0.02
+        EXPECTED_RETURN_CODE 0
+        TESTENV testUsdImagingGLMaterialXBasic
+    )
     
     # MaterialX materials using texture, texture coordinates, and geompropvalues.
     pxr_install_test_dir(
@@ -4172,6 +4184,18 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     #     TESTENV testUsdImagingGLMaterialXvsNative
     # )
 
+    # pxr_register_test(testUsdImagingGLMaterialXvsNative_nativeNormalMap
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage nativeNormalMap.usda -write normalMapped.png"
+    #     IMAGE_DIFF_COMPARE
+    #         normalMapped.png
+    #     FAIL 0.5
+    #     FAIL_PERCENT 0.005
+    #     WARN 0.05
+    #     WARN_PERCENT 0.2
+    #     EXPECTED_RETURN_CODE 0
+    #     TESTENV testUsdImagingGLMaterialXvsNative
+    # )
+
 # MaterialX UsdPreviewSurface Materials: 
     # pxr_install_test_dir(
     #     SRC testenv/testUsdImagingGLMaterialXvsNative
@@ -4179,7 +4203,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
     
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXdefault
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXdefault.usda -write default.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXdefault.usda -write materialXdefault.png"
     #     IMAGE_DIFF_COMPARE
     #         default.png
     #     FAIL 0.5
@@ -4191,7 +4215,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
 
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXmetallic
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXmetallic.usda -write metallic.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXmetallic.usda -write materialXmetallic.png"
     #     IMAGE_DIFF_COMPARE
     #         metallic.png
     #     FAIL 0.5
@@ -4203,7 +4227,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
 
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXworkflow
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXworkflow.usda -write workflow.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXworkflow.usda -write materialXworkflow.png"
     #     IMAGE_DIFF_COMPARE
     #         workflow.png
     #     FAIL 0.5
@@ -4215,7 +4239,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
 
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXopacity
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXopacity.usda -write opacity.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXopacity.usda -write materialXopacity.png"
     #     IMAGE_DIFF_COMPARE
     #         opacity.png
     #     FAIL 0.5
@@ -4227,7 +4251,7 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
 
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXclearcoat
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXclearcoat.usda -write clearcoat.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXclearcoat.usda -write materialXclearcoat.png"
     #     IMAGE_DIFF_COMPARE
     #         clearcoat.png
     #     FAIL 0.5
@@ -4239,9 +4263,21 @@ if (MaterialX_FOUND AND ${PXR_ENABLE_MATERIALX_SUPPORT})
     # )
 
     # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXemissive
-    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXemissive.usda -write emissive.png"
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXemissive.usda -write materialXemissive.png"
     #     IMAGE_DIFF_COMPARE
     #         emissive.png
+    #     FAIL 0.5
+    #     FAIL_PERCENT 0.005
+    #     WARN 0.05
+    #     WARN_PERCENT 0.2
+    #     EXPECTED_RETURN_CODE 0
+    #     TESTENV testUsdImagingGLMaterialXvsNative
+    # )
+
+    # pxr_register_test(testUsdImagingGLMaterialXvsNative_materialXnormalMap
+    #     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -lighting -sceneLights -shading smooth -complexity 1.3 -offscreen -camera /Camera -stage materialXnormalMap.usda -write materialXnormalMap.png"
+    #     IMAGE_DIFF_COMPARE
+    #         normalMapped.png
     #     FAIL 0.5
     #     FAIL_PERCENT 0.005
     #     WARN 0.05

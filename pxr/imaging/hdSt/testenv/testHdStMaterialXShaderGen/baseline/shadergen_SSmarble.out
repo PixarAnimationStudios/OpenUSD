@@ -2,6 +2,8 @@
 
 // File Generated with HdStMaterialXShaderGen.
 
+#import $TOOLS/hdSt/shaders/surfaceHelpers.glslfx
+
 -- configuration
 {
     "metadata": {
@@ -10,7 +12,8 @@
     "techniques": {
         "default": {
             "surfaceShader": { 
-                "source": [ "MaterialX.Surface" ]
+                "source": [ "SurfaceHelpers.TangentSpace",
+                            "MaterialX.Surface" ]
             }
         }
     }
@@ -149,13 +152,21 @@ void mxInit(vec4 Peye, vec3 Neye)
     // Convert HdData to MxData
     u_viewPosition = vec3(HdGet_worldToViewInverseMatrix() * vec4(0.0, 0.0, 0.0, 1.0));
 
-    // Calculate a worldspace tangent vector
+    // Calculate the worldspace position and normal vectors
+    vec3 positionWorld = vec3(HdGet_worldToViewInverseMatrix() * Peye);
     vec3 normalWorld = vec3(HdGet_worldToViewInverseMatrix() * vec4(Neye, 0.0));
+
+    // Calculate the worldspace tangent vector 
+#ifdef HD_HAS_st
+    vec3 tangentWorld = ComputeTangentVector(positionWorld, normalWorld, HdGet_st());
+#else 
     vec3 tangentWorld = cross(normalWorld, vec3(0, 1, 0));
     if (length(tangentWorld) < M_FLOAT_EPS) {
         tangentWorld = cross(normalWorld, vec3(1, 0, 0));
     }
-    vd = mxVertexData(normalWorld,tangentWorld,HdGet_points(),vec3(HdGet_worldToViewInverseMatrix() * Peye));
+#endif
+
+    vd = mxVertexData(normalWorld,tangentWorld,HdGet_points(),positionWorld);
 
     // Initialize Material Parameters
     base = HdGet_base();
