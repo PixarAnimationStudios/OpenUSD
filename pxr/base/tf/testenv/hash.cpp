@@ -29,8 +29,10 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/weakPtr.h"
 
+#include <optional>
 #include <set>
 #include <string>
+#include <variant>
 #include <vector>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -302,6 +304,17 @@ Test_TfHash()
 
     // Validate support for std::unique_ptr
     printf("hash(unique_ptr): %zu\n", h(std::make_unique<int>(7)));
+
+    // Validate support for std::optional
+    printf("hash(optional): %zu\n", h(std::make_optional<std::string>("xyz")));
+    TF_AXIOM(h(std::optional<std::string>("xyz")) ==
+             h(std::optional<std::string>("xyz")));
+
+    // Validate support for std::variant
+    printf("hash(variant): %zu\n",
+           h(std::variant<std::string, int, double>("abc")));
+    TF_AXIOM(h(std::variant<std::string, int, double>("abc")) ==
+             h(std::variant<std::string, int, double>("abc")));
 
     TfHasher tfh;
 
