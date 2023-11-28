@@ -24,8 +24,8 @@
 #
 # convertDoxygen.py
 #
-# A utility to convert Doxygen XML files into another format, such as 
-# Python docstrings. 
+# A utility to convert Doxygen XML files into another format, such as
+# Python docstrings.
 #
 # This utility is designed to make it easy to plug in new output
 # formats. This is done by creating new cdWriterXXX.py modules. A
@@ -49,6 +49,7 @@ xml_index_file  = GetArgValue(['--inputIndex'])
 output_file   = GetArgValue(['--output', '-o'])
 output_format = GetArgValue(['--format', '-f'], "Docstring")
 python_path = GetArgValue(['--pythonPath'])
+dll_path = GetArgValue(['--dllPath'])
 
 SetDebugMode(GetArg(['--debug', '-d']))
 
@@ -56,12 +57,17 @@ if not (xml_file or xml_index_file) or not output_file or GetArg(['--help', '-h'
     Usage()
 
 #
-# If caller specified an additional path for python libs (for loading USD 
+# If caller specified an additional path for python libs (for loading USD
 # modules, for example) add the path to sys.path
 #
 if (python_path != None):
     sys.path.append(python_path)
 
+if dll_path != None and os.name == "nt":
+    dll_paths = dll_path.replace("/", os.sep).split(";")
+    for path in dll_paths:
+        if os.path.isdir(path):
+            os.add_dll_directory(path)
 #
 # Try to import the plugin module that creates the desired output
 #
@@ -88,7 +94,7 @@ else:
 
 #
 # Traverse the list of DocElements from the parsed XML,
-# load provided python module(s) and find matching python 
+# load provided python module(s) and find matching python
 # entities, and write matches to python docs output
 #
 packageName = GetArgValue(['--package', '-p'])
@@ -103,13 +109,13 @@ if ',' in modules:
     # Processing multiple modules. Writer's constructor will verify
     # provided package and modules can be loaded
     moduleList = modules.split(",")
-    # Loop through module list and create a Writer for each module to 
+    # Loop through module list and create a Writer for each module to
     # load and generate the doc strings for the specific module
     for moduleName in moduleList:
         if not moduleName:
             continue
         writer = Writer(packageName, moduleName)
-        # Parser.traverse builds the docElement tree for all the 
+        # Parser.traverse builds the docElement tree for all the
         # doxygen XML files, so we only need to call it once if we're
         # processing multiple modules
         if (docList is None):

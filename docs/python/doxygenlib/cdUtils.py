@@ -134,13 +134,16 @@ Global options:
   --debug or -d   = turn on debugging mode
   --help or -h    = display this program usage statement
   --pythonPath    = optional path to add to python lib paths
+  --dllPath       = optional ;-separated paths to add to Window's list of
+                    directories you may load .dll libraries from. Ignored if not
+                    on Windows.
 
 Docstring format:
   Write Python doc strings from Doyxgen C++ comments. Writes
   output to file or directory as specified by --output option.
 
   --package or -p = the package name, e.g. pxr
-  --module or -m  = the module name, e.g. UsdGeom, or a list of 
+  --module or -m  = the module name, e.g. UsdGeom, or a list of
                     comma-separated modules, e.g. Usd,UsdGeom,UsdShade
     """ % (progname, progname)
     print(usageMsg)
