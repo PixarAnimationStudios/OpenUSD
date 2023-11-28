@@ -929,7 +929,10 @@ HdSt_PipelineDrawBatch::_CompileBatch(
     uint32_t* cpuMeshletBuffer = nullptr;
     if (meshletBar) {
         auto meshletBuffer = meshletBar->GetResource(HdTokens->meshlets);
-        cpuMeshletBuffer = ((uint32_t*)meshletBuffer->GetHandle()->GetCPUStagingAddress());
+        auto buf = meshletBuffer->GetHandle();
+        if (buf) {
+            cpuMeshletBuffer = (uint32_t*)(buf->GetCPUStagingAddress());
+        }
     }
     
     

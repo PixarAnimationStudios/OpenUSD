@@ -782,7 +782,7 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
             
             HdInstance<HdBufferArrayRangeSharedPtr> rangeInstanceMeshl =
                 resourceRegistry->RegisterMeshletIndexRange(_topologyId, indexToken);
-
+            bool meshShadersUsed = false;
             if (rangeInstance.IsFirstInstance()) {
                 // if not exists, update actual topology buffer to range.
                 // Allocate new one if necessary.
@@ -905,11 +905,11 @@ HdStMesh::_PopulateTopology(HdSceneDelegate *sceneDelegate,
                                       renderParam,
                                       &changeTracker);
             }
-            {
-                // If we are updating an existing topology, notify downstream
-                // systems of the change
-                HdBufferArrayRangeSharedPtr const& orgRange =
-                drawItem->GetMeshletsRange();
+            bool hasMeshShaders =
+                resourceRegistry->GetHgi()->GetCapabilities()->
+                    IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+            //get a better check
+            if (hasMeshShaders) {
                 HdBufferArrayRangeSharedPtr newRange = rangeInstanceMeshl.GetValue();
                 HdStUpdateDrawItemBAR(
                                       newRange,
@@ -1021,11 +1021,15 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
     // ask registry if there's a shareable buffer range for the topology
     HdInstance<HdBufferArrayRangeSharedPtr> rangeInstance =
         resourceRegistry->RegisterMeshIndexRange(subsetTopologyId, indexToken);
+    
+    HdInstance<HdBufferArrayRangeSharedPtr> rangeInstanceMeshl =
+        resourceRegistry->RegisterMeshletIndexRange(_topologyId, indexToken);
 
     if (rangeInstance.IsFirstInstance()) {
         // if not exists, update actual topology buffer to range.
         // Allocate new one if necessary.
         HdBufferSourceSharedPtrVector sources;
+        HdBufferSourceSharedPtrVector sourcesMeshs;
 
         HdBufferSourceSharedPtr geomSubsetFaceIndicesSource = 
             _topology->GetGeomSubsetFaceIndexBuilderComputation(
@@ -1050,8 +1054,17 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
                 _topology->GetIndexSubsetComputation(
                     indicesSource, geomSubsetFaceIndicesSource);
             sources.push_back(subsetSource);
-
-            // This source also becomes the face index for coarse 
+            
+            bool hasMeshShaders =
+                resourceRegistry->GetHgi()->GetCapabilities()->
+                    IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+            //get a better check
+            if (hasMeshShaders) {
+                //TODO rename source
+                HdBufferSourceSharedPtr source = _topology->GetMeshletSplitBuilderComputation(GetId(), subsetSource);
+                sourcesMeshs.push_back(source);
+            }
+            // This source also becomes the face index for coarse
             // triangles/quads (instead of gl_PrimitiveId).
             sources.push_back(geomSubsetFaceIndicesSource);
         }
@@ -1080,28 +1093,62 @@ void HdStMesh::_CreateTopologyRangeForGeomSubset(
 
         // save new range to registry
         rangeInstance.SetValue(range);
-    } 
+        
+        bool hasMeshShaders =
+            resourceRegistry->GetHgi()->GetCapabilities()->
+                IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+        //get a better check
+        if (hasMeshShaders && !sourcesMeshs.empty()) {
+            HdBufferSpecVector bufferSpecs;
+            HdBufferSpec::GetBufferSpecs(sourcesMeshs, &bufferSpecs);
+            
+            // allocate new range
+            HdBufferArrayRangeSharedPtr range =
+                    resourceRegistry->AllocateNonUniformBufferArrayRange(
+                            HdTokens->meshlets, bufferSpecs, HdBufferArrayUsageHint());
 
-    // If we are updating an existing topology, notify downstream systems of the
-    // change
-    HdBufferArrayRangeSharedPtr const& orgRange = drawItem->GetTopologyRange();
-    HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+            // add sources to update queue
+            resourceRegistry->AddSources(range, std::move(sourcesMeshs));
 
-    if (HdStIsValidBAR(orgRange) && (newRange != orgRange)) {
-        TF_DEBUG(HD_RPRIM_UPDATED).Msg("%s has varying topology"
-            " (topology index = %d).\n", GetId().GetText(),
-                drawItem->GetDrawingCoord()->GetTopologyIndex());
-                    
-        // Setup a flag to say this mesh's topology is varying
-        _hasVaryingTopology = true;
+            // save new range to registry
+            rangeInstanceMeshl.SetValue(range);
+        }
     }
-
-    HdStUpdateDrawItemBAR(
-        newRange,
-        drawItem->GetDrawingCoord()->GetTopologyIndex(),
-        &_sharedData,
-        renderParam,
-        &changeTracker);
+    {
+        // If we are updating an existing topology, notify downstream systems of the
+        // change
+        HdBufferArrayRangeSharedPtr const& orgRange = drawItem->GetTopologyRange();
+        HdBufferArrayRangeSharedPtr newRange = rangeInstance.GetValue();
+        
+        if (HdStIsValidBAR(orgRange) && (newRange != orgRange)) {
+            TF_DEBUG(HD_RPRIM_UPDATED).Msg("%s has varying topology"
+                                           " (topology index = %d).\n", GetId().GetText(),
+                                           drawItem->GetDrawingCoord()->GetTopologyIndex());
+            
+            // Setup a flag to say this mesh's topology is varying
+            _hasVaryingTopology = true;
+        }
+        
+        HdStUpdateDrawItemBAR(
+                              newRange,
+                              drawItem->GetDrawingCoord()->GetTopologyIndex(),
+                              &_sharedData,
+                              renderParam,
+                              &changeTracker);
+    }
+    bool hasMeshShaders =
+        resourceRegistry->GetHgi()->GetCapabilities()->
+            IsSet(HgiDeviceCapabilitiesBitsMeshShading);
+    //get a better check
+    if (hasMeshShaders) {
+        HdBufferArrayRangeSharedPtr newRange = rangeInstanceMeshl.GetValue();
+        HdStUpdateDrawItemBAR(
+                              newRange,
+                              drawItem->GetDrawingCoord()->GetMeshletsIndex(),
+                              &_sharedData,
+                              renderParam,
+                              &changeTracker);
+    }
 }
 
 void

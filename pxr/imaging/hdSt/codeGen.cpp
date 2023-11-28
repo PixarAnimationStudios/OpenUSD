@@ -5057,10 +5057,10 @@ HdSt_CodeGen::_GenerateDrawingCoord(
                  << " = drawingCoordI" << index << ""
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genCS   << "  dc.instanceCoords[" << index << "]"
-                 << " = GetDrawingCoordField(10 +" << index <<")"
+                 << " = GetDrawingCoordField(11 +" << index <<")"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
         _genMS   << "  dc.instanceCoords[" << index << "]"
-                 << " = GetDrawingCoordField(10 +" << index <<")"
+                 << " = GetDrawingCoordField(11 +" << index <<")"
                  << " + dc.instanceIndex[" << std::to_string(i+1) << "];\n";
     }
 

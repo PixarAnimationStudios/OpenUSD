@@ -119,7 +119,7 @@ std::vector<Meshlet> processIndices(const int32_t* indices, int indexCount, uint
     int startPrimitive = meshStartLocation / 3;
     int endPrimitive = meshStartLocation / 3;
     uint primId = 0;
-    for(uint32_t i = meshStartLocation; i < meshEndLocation + 3; i += 3) {
+    for(uint32_t i = meshStartLocation; i < meshEndLocation + 1; i += 3) {
         if (maxVertsReached || maxPrimsReached || i >= meshEndLocation) {
             endPrimitive = numPrimsProcessed + startPrimitive;
             int count = 0;
@@ -134,6 +134,18 @@ std::vector<Meshlet> processIndices(const int32_t* indices, int indexCount, uint
             }
             
             for(uint32_t n = startPrimitive; n < (endPrimitive); n++) {
+                auto it = globalToLocalVertex.find(indices[n*3]);
+                auto it2 = globalToLocalVertex.find(indices[n*3+1]);
+                auto it3 = globalToLocalVertex.find(indices[n*3+2]);
+                if (it == globalToLocalVertex.end()) {
+                    int a = 0;
+                }
+                if (it2 == globalToLocalVertex.end()) {
+                    int a = 0;
+                }
+                if (it3 == globalToLocalVertex.end()) {
+                    int a = 0;
+                }
                 uint ind0 = globalToLocalVertex[indices[n*3]];
                 uint ind1 = globalToLocalVertex[indices[n*3+1]];
                 uint ind2 = globalToLocalVertex[indices[n*3+2]];
@@ -162,16 +174,16 @@ std::vector<Meshlet> processIndices(const int32_t* indices, int indexCount, uint
         }
         
         //TODO see if we can be smarter
-        auto it1 = m.find(i);
-        auto it2 = m.find(i+1);
-        auto it3 = m.find(i+2);
+        auto it1 = m.find(indices[i]);
+        auto it2 = m.find(indices[i+1]);
+        auto it3 = m.find(indices[i+2]);
         if((m.size() + 4) > max_vertices) {
             int space = max_vertices - m.size();
             int wantedSpace = 0;
             wantedSpace += it1 == m.end();
             wantedSpace += it2 == m.end();
             wantedSpace += it3 == m.end();
-            if (space < wantedSpace) {
+            if (space >= wantedSpace || space < 1) {
                 maxVertsReached = true;
                 i = i-3;
                 continue;
@@ -229,9 +241,21 @@ HdSt_MeshletSplitBuilderComputation::Resolve()
     HD_TRACE_FUNCTION();
     const int32_t* data = reinterpret_cast<const int32_t*>(_indexBufferSource->GetData());
     //TODO the indexcount might be removable
-    const uint32_t intsPerElem = 3; // expected tupletype int32vec3
-    
-    const uint32_t numElements = _indexBufferSource->GetNumElements() * 3;
+    uint32_t intsPerElem = 3; // expected tupletype int32vec3
+    switch (_indexBufferSource->GetTupleType().type) {
+        case HdTypeInt32Vec3:
+            intsPerElem = 3;
+            break;
+        case HdTypeInt32Vec2:
+            intsPerElem = 2;
+            break;
+        case HdTypeInt32:
+            intsPerElem = 1;
+            break;
+        default:
+            break;
+    }
+    const uint32_t numElements = _indexBufferSource->GetNumElements() * intsPerElem;
     auto meshlets = processIndices(data, numElements, 0, numElements);
     std::vector<uint32_t> flattenInto;
     flattenMeshlets(flattenInto, {meshlets});

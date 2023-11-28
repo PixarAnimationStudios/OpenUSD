@@ -493,6 +493,12 @@ void main(void) {
     if(hd_LocalIndexID == 191){
         atomic_store_explicit(&accumulator,0,memory_order_relaxed);
     }
+    baseVertex = payload.baseVertex;
+    baseIndex = payload.baseIndex;
+    gl_BaseInstance = payload.baseInstance;
+    gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
+    hd_VertexID = hd_LocalIndexID;
+    dcMemb = GetDrawingCoordFull();
     const device uint *meshletStart = meshletRemap + payload.meshletCoord;
     const uint thisMeshCoordOff = *(meshletStart + hd_LocalInvocationID.y);
     const device uint *thisMeshCoord = (meshletStart + thisMeshCoordOff);
@@ -510,15 +516,6 @@ void main(void) {
         return;
     }
 
-    if (hd_LocalIndexID < endIndex)
-    {
-        baseVertex = payload.baseVertex;
-        baseIndex = payload.baseIndex;
-        gl_BaseInstance = payload.baseInstance;
-        gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
-        hd_VertexID = hd_LocalIndexID;
-    }
-
     if( hd_LocalIndexID < meshletVertexCount )
     {
         primitive_id = ((hd_LocalInvocationID.y * MAX_PRIMITIVES) + hd_LocalIndexID)/3;
@@ -527,7 +524,6 @@ void main(void) {
         VertexOut vertexOut;
         const uint vertIndirection =
             *(meshletVerticesStart + hd_LocalIndexID * numUintsPerVertex);
-        dcMemb = GetDrawingCoordFull();
         ProcessPrimvarsIn(vertIndirection);
         float4 point = float4(HdGet_points(vertIndirection), 1.0f);
 
@@ -683,6 +679,13 @@ uint32_t baseIndex;
 
 hd_drawingCoord dcMemb;
 void main(void) {
+    //TODO probably not needed
+    baseVertex = payload.baseVertex;
+    //TODO probably not needed
+    baseIndex = payload.baseIndex;
+    gl_BaseInstance = payload.baseInstance;
+    gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
+    hd_VertexID = hd_LocalIndexID;
     dcMemb = GetDrawingCoordFull();
     constexpr uint one = 1;
     const uint meshletC = uint(GetDrawingCoord().meshletCoord);
@@ -703,18 +706,6 @@ void main(void) {
     const uint endIndex  = meshletPrimitiveCount * 3;
     if(endIndex < 1) {
         return;
-    }
-
-    if (hd_LocalIndexID < endIndex)
-    {
-        //TODO can we simply try to not use registers for this
-        //TODO probably not needed
-        baseVertex = payload.baseVertex;
-        //TODO probably not needed
-        baseIndex = payload.baseIndex;
-        gl_BaseInstance = payload.baseInstance;
-        gl_InstanceID = hd_LocalInvocationID.x + payload.baseInstance + 1;
-        hd_VertexID = hd_LocalIndexID;
     }
 
     if( hd_LocalIndexID < meshletVertexCount )
