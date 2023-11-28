@@ -88,9 +88,6 @@ public:
     /// if its aspect ratio is not matching the display window/viewport.
     /// If first value is false, the HdCamera's window policy is used.
     ///
-    /// Note: using std::pair<bool, ...> here instead of std::optional<...>
-    /// since the latter is only available in C++17 or later.
-    /// 
     HD_API
     void SetOverrideWindowPolicy(
         const std::optional<CameraUtilConformWindowPolicy> &
