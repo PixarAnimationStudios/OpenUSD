@@ -25,7 +25,7 @@
 import os
 os.environ['PXR_MTLX_PLUGIN_SEARCH_PATHS'] = os.getcwd()
 
-from pxr import Tf, Ndr, Sdr
+from pxr import Ndr, Sdr, Gf
 import unittest
 
 class TestDiscovery(unittest.TestCase):
@@ -42,6 +42,7 @@ class TestDiscovery(unittest.TestCase):
             ['pxr_nd_boolean',
              'pxr_nd_float',
              'pxr_nd_integer',
+             'pxr_nd_matrix33',
              'pxr_nd_string',
              'pxr_nd_vector',
              'pxr_nd_vector_2',
@@ -54,6 +55,7 @@ class TestDiscovery(unittest.TestCase):
             ['pxr_nd_boolean',
              'pxr_nd_float',
              'pxr_nd_integer',
+             'pxr_nd_matrix33',
              'pxr_nd_string',
              'pxr_nd_vector'])
 
@@ -68,6 +70,7 @@ class TestDiscovery(unittest.TestCase):
             ['pxr_nd_boolean',
              'pxr_nd_float',
              'pxr_nd_integer',
+             'pxr_nd_matrix33',
              'pxr_nd_string',
              'pxr_nd_vector_2',
              'pxr_nd_vector_noversion'])
@@ -88,6 +91,7 @@ class TestDiscovery(unittest.TestCase):
              Ndr.Version(),
              Ndr.Version(),
              Ndr.Version(),
+             Ndr.Version(),
              Ndr.Version(1),
              Ndr.Version(2, 0),
              Ndr.Version(2, 1),
@@ -103,6 +107,7 @@ class TestDiscovery(unittest.TestCase):
              'pxr_nd_booleanDefaults',
              'pxr_nd_float',
              'pxr_nd_integer',
+             'pxr_nd_matrix33',
              'pxr_nd_string',
              'pxr_nd_vector_2',
              'pxr_nd_vector_noversion'])
@@ -110,6 +115,7 @@ class TestDiscovery(unittest.TestCase):
         versions = [node.GetVersion() for node in nodes]
         self.assertEqual(versions,
             [Ndr.Version(),
+             Ndr.Version(),
              Ndr.Version(),
              Ndr.Version(),
              Ndr.Version(),
@@ -126,6 +132,16 @@ class TestDiscovery(unittest.TestCase):
         falseInput = node.GetInput("inFalse")
         self.assertFalse(falseInput.GetDefaultValue())
         self.assertFalse(falseInput.GetDefaultValueAsSdfType())
+
+        # Check default values of matrix33 inputs:
+        node = registry.GetNodeByIdentifier("pxr_nd_matrix33")
+        self.assertTrue(node)
+        matrixInput = node.GetInput("in")
+        self.assertEqual(
+            matrixInput.GetDefaultValue(), Gf.Matrix3d(1,2,3,4,5,6,7,8,9))
+        self.assertEqual(
+            matrixInput.GetDefaultValueAsSdfType(),
+            Gf.Matrix3d(1,2,3,4,5,6,7,8,9))
 
 
 if __name__ == '__main__':
