@@ -47,6 +47,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
+// --(BEGIN CUSTOM CODE: Declares)--
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+// --(END CUSTOM CODE: Declares)--
+
+//-----------------------------------------------------------------------------
+
 #define HDAR_SYSTEM_SCHEMA_TOKENS \
     (assetResolution) \
     (resolverContext) \
@@ -55,11 +61,9 @@ TF_DECLARE_PUBLIC_TOKENS(HdarSystemSchemaTokens, HDAR_API,
     HDAR_SYSTEM_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
-TF_DECLARE_REF_PTRS(HdSceneIndexBase);
-
-/// The SystemSchema specifies a container that will hold "system"
-/// data that is relevant to asset resolution.
+// The HdarSystemSchema specifies a container that will hold "system" data
+// that is relevant to asset resolution.
+//
 class HdarSystemSchema : public HdSchema
 {
 public:

@@ -48,6 +48,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
+
+//-----------------------------------------------------------------------------
+
 #define HD_SCENE_GLOBALS_SCHEMA_TOKENS \
     (sceneGlobals) \
     (activeRenderSettingsPrim) \
@@ -56,18 +61,16 @@ TF_DECLARE_PUBLIC_TOKENS(HdSceneGlobalsSchemaTokens, HD_API,
     HD_SCENE_GLOBALS_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
-/// The SceneGlobalsSchema encapsulates "global" state to orchestrate a
-/// render. It currently houses the active render settings prim path that
-/// describes the information necessary to generate images from a single
-/// invocation of a renderer.
-///
-/// We shall use the convention of a container data source at the root prim
-/// of the scene index that is populated with this global state.
-/// The renderer and downstream scene indices can query it to configure their
-/// behavior as necessary.
-///
-
+// The HdSceneGlobalsSchema encapsulates "global" state to orchestrate a
+// render. It currently houses the active render settings prim path that
+// describes the information necessary to generate images from a single
+// invocation of a renderer.
+//
+// We shall use the convention of a container data source at the root prim of
+// the scene index that is populated with this global state. The renderer and
+// downstream scene indices can query it to configure their behavior as
+// necessary.
+//
 class HdSceneGlobalsSchema : public HdSchema
 {
 public:
@@ -97,6 +100,7 @@ public:
 // --(END CUSTOM CODE: Schema Methods)--
 
     //ACCESSORS
+
 
     HD_API
     HdPathDataSourceHandle GetActiveRenderSettingsPrim();

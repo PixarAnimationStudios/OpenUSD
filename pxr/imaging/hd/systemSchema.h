@@ -47,6 +47,12 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
+// --(BEGIN CUSTOM CODE: Declares)--
+TF_DECLARE_REF_PTRS(HdSceneIndexBase);
+// --(END CUSTOM CODE: Declares)--
+
+//-----------------------------------------------------------------------------
+
 #define HD_SYSTEM_SCHEMA_TOKENS \
     (system) \
 
@@ -54,14 +60,11 @@ TF_DECLARE_PUBLIC_TOKENS(HdSystemSchemaTokens, HD_API,
     HD_SYSTEM_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
-TF_DECLARE_REF_PTRS(HdSceneIndexBase);
-
-/// The SystemSchema specifies a container that will hold "system"
-/// data.  Each piece of system data is identified by a key within the
-/// container.  A piece of system data is evaluated at a given location by
-/// walking up the namespace looking for a system container that contains the
-/// corresponding key.
+// The HdSystemSchema specifies a container that will hold "system" data. Each
+// piece of system data is identified by a key within the container. A piece
+// of system data is evaluated at a given location by walking up the namespace
+// looking for a system container that contains the corresponding key.
+//
 class HdSystemSchema : public HdSchema
 {
 public:

@@ -37,6 +37,8 @@
 
 #include "pxr/base/trace/trace.h"
 
+// --(BEGIN CUSTOM CODE: Includes)--
+// --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
