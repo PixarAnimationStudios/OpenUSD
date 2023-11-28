@@ -35,16 +35,83 @@
 #      This is called once the entire file has been traversed.
 #
 
+import importlib
+import os
+import re
 import sys
 import textwrap
 import types
-import re
+
+from typing import Dict
 
 from .cdUtils import *
 
 
 API_RE_FIND = re.compile(r"""\b[A-Z]+_API(?:\s+|$)""")
 API_RE_REPLACE = ""
+
+NONWORD_RE = re.compile(r"(\W+)")
+
+MULTIPLE_WHITESPACE_RE = re.compile(r'\s+')
+MULTIPLE_WHITESPACE_REPLACE = ' '
+
+SQUARE_BRACKET_WITH_SPACE_RE = re.compile(r" *(\[|\]) *")
+SQUARE_BRACKET_WITH_SPACE_REPLACE = r"\1"
+
+COMMA_WITH_SPACE_RE = re.compile(r" *, *")
+COMMA_WITH_SPACE_REPLACE = ", "
+
+CHAR_STAR_RE = re.compile(r"\*\s*char|char\s*\*")
+CHAR_STAR_REPLACE = "str"
+
+PTR_NAME_SUFFIXES_RE = re.compile(r"(Handle|ConstPtr|RefPtr|Ptr)$")
+PTR_NAME_SUFFIXES_REPLACE = ""
+
+SMART_PTR_TEMPLATE_RE = re.compile(r"(?:shared|unique)_ptr\s*<(.*)>")
+SMART_PTR_TEMPLATE_REPLACE = r"\1"
+
+VECTOR_SUFFIX_RE = re.compile(r"\b(\w+)Vector\b")
+VECTOR_SUFFIX_REPLACE = r"list[\1]"
+
+
+def importPxrModule(moduleName: str) -> types.ModuleType:
+    """Import a single pxr submodule
+
+    moduleName is the package that follows pxr, ie, pxr.{moduleName}
+    """
+    return importlib.import_module(f"pxr.{moduleName}")
+
+def getAllPxrModules() -> Dict[str, types.ModuleType]:
+    """Find and import all pxr.* modules
+
+    Returns a dictionary mapping from submodule name to module object
+    """
+    pxrModule = importlib.import_module("pxr")
+    modules = {}
+
+    for folder in pxrModule.__path__:
+        for entry in os.scandir(folder):
+            pxrModuleName = ""
+            if entry.is_dir():
+                init_file = os.path.join(entry.path, "__init__.py")
+                if os.path.isfile(init_file):
+                    pxrModuleName = entry.name
+            elif entry.is_file():
+                if entry.name.endswith(".py"):
+                    basename = entry.name[:-len(".py")]
+                    if basename != "__init__":
+                        pxrModuleName = basename
+            if pxrModuleName:
+                modules[pxrModuleName] = importPxrModule(pxrModuleName)
+    return modules
+
+pxrModules = getAllPxrModules()
+pxrModuleNames = sorted(pxrModules)
+
+# we use the reversed sorted order of the module names, because this ensures that longer names (ie, UsdGeom) come
+# before shorter ones (Usd), so the more exact matches are preferred
+PXR_MODULES_OR_JOINED = "|".join(re.escape(m) for m in reversed(pxrModuleNames))
+PXR_MODULE_PREFIX = re.compile(rf"^\s*(?P<module>{PXR_MODULES_OR_JOINED})(?P<suffix>[A-Za-z0-9_]+)")
 
 
 class Writer:
@@ -59,11 +126,13 @@ class Writer:
 
     def __init__(self, packageName, moduleName):
 
-        # Import the python module 
-        if not Import("from " +packageName+ " import " +moduleName+ " as " +moduleName):
-            Error("Could not import %s" % (moduleName))
-
-        self.module = eval(moduleName)
+        # Import the python module...
+        if packageName == "pxr":
+            self.module = pxrModules[moduleName]
+        else:
+            if not Import("from " +packageName+ " import " +moduleName+ " as " +moduleName):
+                Error("Could not import %s" % (moduleName))
+            self.module = eval(moduleName)
         self.prefix = self.module.__name__.split('.')[-1]
         self.seenPaths = {}
         self.propertyTable = {}
@@ -88,7 +157,7 @@ class Writer:
         docstring = self.__wordWrapDocString(docstring.split('\n'))
 
         if docstring:
-            summary = re.sub(r'\s+', ' ', docstring[:40].strip())
+            summary = MULTIPLE_WHITESPACE_RE.sub(MULTIPLE_WHITESPACE_REPLACE, docstring[:40].strip())
             Debug("Returning docstring: %s..." % summary)
 
         return docstring
@@ -386,9 +455,11 @@ class Writer:
                         pname2 = name[0].lower() + name[1:]
                         pret2 = ret[:]
                         pret2.append(pname2)
-            
+
             if name.startswith(self.prefix) and name != self.prefix:
-                name = name[len(self.prefix):]
+                shortName = name[len(self.prefix):]
+                if hasattr(self.module, shortName):
+                    name = shortName
             ret.append(name)
 
         return (ret, pret, pret2)
@@ -465,20 +536,76 @@ class Writer:
     def __convertTypeName(self, cppName):
         """Convert a C++ type name into a Python type name."""
         # get rid of const, volatile, &, *.
-        ret = cppName
-        ret = ret.replace('const', '')
-        ret = ret.replace('volatile ', '')
-        ret = ret.replace('&', '')
-        ret = ret.replace('*', '')
+        ret = cppName.strip()
+
+        # replacements that need multiple tokens, or that would change tokenization
         ret = ret.replace('std::', '')
         ret = ret.replace('boost::', '')
-        ret = ret.replace('vector', 'sequence')
+        ret = ret.replace('unsigned char', 'int')
+        ret = ret.replace('unsigned int', 'int')
+        ret = ret.replace('unsigned long', 'int')
+
+        ret = SMART_PTR_TEMPLATE_RE.sub(SMART_PTR_TEMPLATE_REPLACE, ret)
+        ret = CHAR_STAR_RE.sub(CHAR_STAR_REPLACE, ret)
+        ret = VECTOR_SUFFIX_RE.sub(VECTOR_SUFFIX_REPLACE, ret)
+
+        tokens = [self.__convertTypeNameToken(x) for x in NONWORD_RE.split(ret) if x]
+        ret = ''.join(tokens).strip()
+
+        # post token conversion cleanup
+
+        # space cleanup
+        ret = SQUARE_BRACKET_WITH_SPACE_RE.sub(SQUARE_BRACKET_WITH_SPACE_REPLACE, ret)
+        ret = COMMA_WITH_SPACE_RE.sub(COMMA_WITH_SPACE_REPLACE, ret)
+        ret = MULTIPLE_WHITESPACE_RE.sub(MULTIPLE_WHITESPACE_REPLACE, ret)
+
+        if ret == 'unsigned':
+            ret = 'int'
+        return ret
+
+    def __convertTypeNameToken(self, cppName):
+        ret = cppName
+
+        # words are guaranteed to come in by themselves
+        if ret in ('const', 'constexpr', 'expr', 'volatile', 'class', 'typename'):
+            return ''
+
+        # word replacements
+        replacement = {
+            'TfToken': 'str',
+            'double': 'float',
+            'int64_t': 'int',
+            'pair': 'tuple',
+            'sequence': 'list',
+            'size_t': 'int',
+            'string': 'str',
+            'vector': 'list',
+            'void': 'None',
+        }.get(ret)
+        if replacement is not None:
+            return replacement
+
+        ret = PTR_NAME_SUFFIXES_RE.sub(PTR_NAME_SUFFIXES_REPLACE, ret)
+
+        # see if it's a name that starts with a module, like ArResolver, or UsdPrim...
+        match = PXR_MODULE_PREFIX.match(ret)
+        if match:
+            moduleName = match.group("module")
+            objName = match.group("suffix")
+            module = pxrModules.get(moduleName)
+            if module and hasattr(module, objName):
+                ret = objName
+
+        # non-words may be mixed with other things, need to replace pieces at a time
+        ret = ret.replace('&', '')
+        ret = ret.replace('*', '')
         ret = ret.replace('::', '.')
         ret = API_RE_FIND.sub(API_RE_REPLACE, ret)
-        ret = ret.strip()
-        if ret.startswith(self.prefix):
-            ret = ret[len(self.prefix):]
-        return ret.strip()
+
+        ret = ret.replace('<', '[')
+        ret = ret.replace('>', ']')
+
+        return ret
 
     def __convertCppSyntax(self, line):
         """Convert C++ terminology into Python terminology."""
