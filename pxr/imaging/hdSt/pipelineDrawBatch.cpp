@@ -989,7 +989,8 @@ HdSt_PipelineDrawBatch::PrepareDraw(
 void
 HdSt_PipelineDrawBatch::EncodeDraw(
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool firstDrawBatch)
 {
     if (_HasNothingToDraw()) return;
 
@@ -1005,7 +1006,8 @@ HdSt_PipelineDrawBatch::EncodeDraw(
 
     _indirectCommands.reset();
     if (drawICB) {
-        _PrepareIndirectCommandBuffer(renderPassState, resourceRegistry);
+        _PrepareIndirectCommandBuffer(renderPassState, resourceRegistry,
+            firstDrawBatch);
     }
 }
 
@@ -1261,7 +1263,8 @@ HgiGraphicsPipelineSharedPtr
 _GetDrawPipeline(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    _BindingState const & state)
+    _BindingState const & state,
+    bool firstDrawBatch)
 {
     // Drawing pipeline is compatible as long as the shader and
     // pipeline state are the same.
@@ -1272,7 +1275,7 @@ _GetDrawPipeline(
     uint64_t hash = salt;
     hash = TfHash::Combine(hash, programHandle.Get());
     hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash(
-        state.geometricShader));
+        state.geometricShader, firstDrawBatch));
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);
@@ -1281,7 +1284,8 @@ _GetDrawPipeline(
         HgiGraphicsPipelineDesc pipeDesc;
 
         renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
-                                                  state.geometricShader);
+                                                  state.geometricShader,
+                                                  firstDrawBatch);
 
         pipeDesc.shaderProgram = state.glslProgram->GetProgram();
         pipeDesc.vertexBuffers = _GetVertexBuffersForDrawing(state);
@@ -1301,7 +1305,8 @@ HgiGraphicsPipelineSharedPtr
 _GetPTCSPipeline(
     HdStRenderPassStateSharedPtr const & renderPassState,
     HdStResourceRegistrySharedPtr const & resourceRegistry,
-    _BindingState const & state)
+    _BindingState const & state,
+    bool firstDrawBatch)
 {
     // PTCS pipeline is compatible as long as the shader and
     // pipeline state are the same.
@@ -1312,7 +1317,7 @@ _GetPTCSPipeline(
     uint64_t hash = salt;
     hash = TfHash::Combine(hash, programHandle.Get());
     hash = TfHash::Combine(hash, renderPassState->GetGraphicsPipelineHash(
-        state.geometricShader));
+        state.geometricShader, firstDrawBatch));
 
     HdInstance<HgiGraphicsPipelineSharedPtr> pipelineInstance =
         resourceRegistry->RegisterGraphicsPipeline(hash);
@@ -1321,7 +1326,8 @@ _GetPTCSPipeline(
         HgiGraphicsPipelineDesc pipeDesc;
 
         renderPassState->InitGraphicsPipelineDesc(&pipeDesc,
-                                                  state.geometricShader);
+                                                  state.geometricShader,
+                                                  firstDrawBatch);
 
         pipeDesc.rasterizationState.rasterizerEnabled = false;
         pipeDesc.multiSampleState.sampleCount = HgiSampleCount1;
@@ -1351,7 +1357,8 @@ void
 HdSt_PipelineDrawBatch::ExecuteDraw(
     HgiGraphicsCmds * gfxCmds,
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool firstDrawBatch)
 {
     TRACE_FUNCTION();
 
@@ -1366,8 +1373,8 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
 
     if (_tessFactorsBuffer) {
         // Metal tessellation tessFactors are computed by PTCS.
-        _ExecutePTCS(gfxCmds, renderPassState, resourceRegistry);
-
+        _ExecutePTCS(gfxCmds, renderPassState, resourceRegistry,
+            firstDrawBatch);
         // Finish computing tessFactors before drawing.
         gfxCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
     }
@@ -1400,8 +1407,9 @@ HdSt_PipelineDrawBatch::ExecuteDraw(
             _GetDrawPipeline(
                 renderPassState,
                 resourceRegistry,
-                state);
-        
+                state,
+                firstDrawBatch);
+
         HgiGraphicsPipelineHandle psoHandle = *pso.get();
         gfxCmds->BindPipeline(psoHandle);
 
@@ -1574,7 +1582,8 @@ _GetCullPipeline(
 void
 HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
     HdStRenderPassStateSharedPtr const & renderPassState,
-    HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool firstDrawBatch)
 {
     Hgi *hgi = resourceRegistry->GetHgi();
     _DrawingProgram & program = _GetDrawingProgram(renderPassState,
@@ -1593,7 +1602,8 @@ HdSt_PipelineDrawBatch::_PrepareIndirectCommandBuffer(
         _GetDrawPipeline(
             renderPassState,
             resourceRegistry,
-            state);
+            state,
+            firstDrawBatch);
     
     HgiGraphicsPipelineHandle psoHandle = *pso.get();
 
@@ -1767,9 +1777,10 @@ HdSt_PipelineDrawBatch::_ExecuteFrustumCull(
 
 void
 HdSt_PipelineDrawBatch::_ExecutePTCS(
-        HgiGraphicsCmds *ptcsGfxCmds,
-        HdStRenderPassStateSharedPtr const & renderPassState,
-        HdStResourceRegistrySharedPtr const & resourceRegistry)
+    HgiGraphicsCmds *ptcsGfxCmds,
+    HdStRenderPassStateSharedPtr const & renderPassState,
+    HdStResourceRegistrySharedPtr const & resourceRegistry,
+    bool firstDrawBatch)
 {
     TRACE_FUNCTION();
 
@@ -1804,7 +1815,8 @@ HdSt_PipelineDrawBatch::_ExecutePTCS(
     HgiGraphicsPipelineSharedPtr const & psoTess =
         _GetPTCSPipeline(renderPassState,
                          resourceRegistry,
-                         state);
+                         state,
+                         firstDrawBatch);
 
     HgiGraphicsPipelineHandle psoTessHandle = *psoTess.get();
     ptcsGfxCmds->BindPipeline(psoTessHandle);

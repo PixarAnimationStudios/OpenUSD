@@ -494,7 +494,8 @@ IndirectDrawBatchTest()
         (*batchIt)->PrepareDraw(nullptr, renderPassState, registry);
     }
     TF_FOR_ALL(batchIt, drawBatches) {
-        (*batchIt)->ExecuteDraw(nullptr, renderPassState, registry);
+        (*batchIt)->ExecuteDraw(nullptr, renderPassState, registry,
+            /*firstDrawBatch*/*batchIt == *drawBatches.begin());
     }
     dict = registry->GetResourceAllocation();
     Dump("----- executed -----\n", dict, perfLog);
@@ -754,7 +755,8 @@ EmptyDrawBatchTest()
     HdStRenderPassStateSharedPtr const renderPassState =
         std::make_shared<HdStRenderPassState>();
     batch->PrepareDraw(nullptr, renderPassState, registry);
-    batch->ExecuteDraw(nullptr, renderPassState, registry);
+    batch->ExecuteDraw(nullptr, renderPassState, registry,
+        /*firstDrawBatch*/true);
 
     // ---------------------------------------------------
 

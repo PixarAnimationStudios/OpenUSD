@@ -180,7 +180,8 @@ HdSt_ImageShaderRenderPass::_Execute(
     // Camera state needs to be updated once per pass (not per batch).
     stRenderPassState->ApplyStateFromCamera();
 
-    _drawBatch->ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry);
+    _drawBatch->ExecuteDraw(gfxCmds.get(), stRenderPassState, resourceRegistry,
+        /*firstDrawBatch*/true);
 
     gfxCmds->PopDebugGroup();
     _hgi->SubmitCmds(gfxCmds.get());

@@ -140,7 +140,8 @@ HdStCommandBuffer::PrepareDraw(
     computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
 
     for (auto const& batch : _drawBatches) {
-        batch->EncodeDraw(renderPassState, resourceRegistry);
+        batch->EncodeDraw(renderPassState, resourceRegistry,
+            /*firstDrawBatch*/batch == *_drawBatches.begin());
     }
 
     computeCmds->InsertMemoryBarrier(HgiMemoryBarrierAll);
@@ -172,7 +173,8 @@ HdStCommandBuffer::ExecuteDraw(
     // draw batches
     //
     for (auto const& batch : _drawBatches) {
-        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry);
+        batch->ExecuteDraw(gfxCmds, renderPassState, resourceRegistry,
+            /*firstDrawBatch*/batch == *_drawBatches.begin());
     }
 
     HD_PERF_COUNTER_SET(HdPerfTokens->drawBatches, _drawBatches.size());

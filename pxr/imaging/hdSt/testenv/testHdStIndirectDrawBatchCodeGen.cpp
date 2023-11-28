@@ -180,7 +180,8 @@ HdIndirectDrawBatchTest()
     {
         TfErrorMark mark;
 
-        batch->ExecuteDraw(nullptr, passState, registry);
+        batch->ExecuteDraw(nullptr, passState, registry,
+            /*firstDrawBatch*/true);
 
         if (mark.IsClean()) {
             std::cout << "Did not get expected shader compilation error\n";
