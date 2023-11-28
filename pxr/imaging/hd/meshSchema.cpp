@@ -155,8 +155,7 @@ HdMeshSchema::GetDefaultLocator()
     return locator;
 } 
 
-
-/*static*/
+/* static */
 const HdDataSourceLocator &
 HdMeshSchema::GetTopologyLocator()
 {
@@ -166,7 +165,7 @@ HdMeshSchema::GetTopologyLocator()
     return locator;
 }
 
-/*static*/
+/* static */
 const HdDataSourceLocator &
 HdMeshSchema::GetSubdivisionSchemeLocator()
 {
@@ -176,7 +175,7 @@ HdMeshSchema::GetSubdivisionSchemeLocator()
     return locator;
 }
 
-/*static*/
+/* static */
 const HdDataSourceLocator &
 HdMeshSchema::GetSubdivisionTagsLocator()
 {
@@ -186,7 +185,7 @@ HdMeshSchema::GetSubdivisionTagsLocator()
     return locator;
 }
 
-/*static*/
+/* static */
 const HdDataSourceLocator &
 HdMeshSchema::GetGeomSubsetsLocator()
 {
@@ -196,7 +195,7 @@ HdMeshSchema::GetGeomSubsetsLocator()
     return locator;
 }
 
-/*static*/
+/* static */
 const HdDataSourceLocator &
 HdMeshSchema::GetDoubleSidedLocator()
 {
@@ -205,7 +204,6 @@ HdMeshSchema::GetDoubleSidedLocator()
             HdMeshSchemaTokens->doubleSided);
     return locator;
 }
-
 HdMeshSchema::Builder &
 HdMeshSchema::Builder::SetTopology(
     const HdContainerDataSourceHandle &topology)

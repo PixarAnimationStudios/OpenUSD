@@ -73,14 +73,19 @@ public:
 
     //ACCESSORS
 
+
     HD_API
     HdMeshTopologySchema GetTopology();
+
     HD_API
     HdTokenDataSourceHandle GetSubdivisionScheme();
+
     HD_API
     HdSubdivisionTagsSchema GetSubdivisionTags();
+
     HD_API
     HdGeomSubsetsSchema GetGeomSubsets();
+
     HD_API
     HdBoolDataSourceHandle GetDoubleSided();
 
@@ -164,7 +169,7 @@ public:
     //
     // This is often useful for checking intersection against the
     // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
-    
+
 
     /// Prim-level relative data source locator to locate topology.
     HD_API
