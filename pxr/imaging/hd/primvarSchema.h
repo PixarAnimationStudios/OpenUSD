@@ -108,18 +108,24 @@ public:
     //ACCESSORS
 
 
+
     // If the primvar does not have indices, GetPrimvarValue() and
     // GetIndexedPrimvarValue() will return the same thing. If the primvar
     // does has indices, GetPrimvarValue() will return the flattened value,
     // while GetIndexedPrimvarValue() will return the unflattened value.
+
     HD_API
     HdSampledDataSourceHandle GetPrimvarValue();
+
     HD_API
     HdSampledDataSourceHandle GetIndexedPrimvarValue();
+
     HD_API
     HdIntArrayDataSourceHandle GetIndices();
+
     HD_API
     HdTokenDataSourceHandle GetInterpolation();
+
     HD_API
     HdTokenDataSourceHandle GetRole();
 
