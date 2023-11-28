@@ -34,6 +34,7 @@
 
 #include "pxr/base/tf/declarePtrs.h"
 #include "pxr/base/tf/hash.h"
+#include "pxr/base/tf/staticTokens.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathExpression.h"
 #include "pxr/usd/sdf/pathExpressionEval.h"
@@ -41,6 +42,14 @@
 #include <unordered_map>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+#define USD_COLLECTION_MEMBERSHIP_QUERY_TOKENS \
+    (IncludedByMembershipExpression)           \
+    (ExcludedByMembershipExpression)
+
+TF_DECLARE_PUBLIC_TOKENS(UsdCollectionMembershipQueryTokens,
+                         USD_API, USD_COLLECTION_MEMBERSHIP_QUERY_TOKENS);
+
 
 class Usd_CollectionMembershipQueryBase
 {
@@ -135,13 +144,18 @@ protected:
     }
 
     USD_API
-    bool _IsPathIncluded(const SdfPath &path,
-                         TfToken *expansionRule=nullptr) const;
+    bool _IsPathIncludedByRuleMap(const SdfPath &path,
+                                  TfToken *expansionRule=nullptr) const;
 
     USD_API
-    bool _IsPathIncluded(const SdfPath &path,
-                         const TfToken &parentExpansionRule,
-                         TfToken *expansionRule=nullptr) const;
+    bool _IsPathIncludedByRuleMap(const SdfPath &path,
+                                  const TfToken &parentExpansionRule,
+                                  TfToken *expansionRule=nullptr) const;
+
+    // Return true if the _pathExpansionRuleMap is empty, meaning that we would
+    // use an expression in the derived class, for example.
+    USD_API
+    bool _HasEmptyRuleMap() const;
 
     TfToken _topExpansionRule;
     
@@ -181,10 +195,15 @@ public:
     /// use \ref UsdComputeIncludedObjectsFromCollection or \ref
     /// UsdComputeIncludedPathsFromCollection.
     ///
-    /// If \p expansionRule is not nullptr, it is set to the expansion-
-    /// rule value that caused the path to be included in or excluded from
-    /// the collection. If \p path is not included in the collection,
-    /// \p expansionRule is set to UsdTokens->exclude.
+    /// If \p expansionRule is not nullptr, it is set to the expansion- rule
+    /// value that caused the path to be included in or excluded from the
+    /// collection. If \p path is not included in the collection, \p
+    /// expansionRule is set to UsdTokens->exclude.  If this query is not using
+    /// an expansion rule map and is instead using a pattern-based membership
+    /// expression, then expansionRule is set to one of the special
+    /// UsdCollectionMembershipQueryTokens values,
+    /// IncludedByMembershipExpression or ExcludedByMembershipExpression as
+    /// appropriate.
     ///
     /// It is useful to specify this parameter and use this overload of
     /// IsPathIncluded(), when you're interested in traversing a subtree
@@ -193,11 +212,26 @@ public:
     /// please use the other overload of IsPathIncluded(), that takes both
     /// a path and the parent expansionRule.
     ///
-    /// The python version of this method only returns the boolean result.
-    /// It does not return \p expansionRule.
-    bool IsPathIncluded(const SdfPath &path,
-                        TfToken *expansionRule=nullptr) const {
-        return _IsPathIncluded(path, expansionRule) || _exprEval.Match(path);
+    /// The python version of this method only returns the boolean result.  It
+    /// does not return an SdfPredicateFunctionResult or set \p expansionRule.
+    SdfPredicateFunctionResult
+    IsPathIncluded(const SdfPath &path,
+                   TfToken *expansionRule=nullptr) const {
+        // If we have a rule map, go that way.  Otherwise try the expression.
+        if (UsesPathExpansionRuleMap()) {
+            return SdfPredicateFunctionResult::MakeVarying(
+                _IsPathIncludedByRuleMap(path, expansionRule));
+        }
+        const SdfPredicateFunctionResult
+            res = GetExpressionEvaluator().Match(path);
+        if (expansionRule) {
+            *expansionRule = res ?
+                UsdCollectionMembershipQueryTokens->
+                    IncludedByMembershipExpression : 
+                UsdCollectionMembershipQueryTokens->
+                    ExcludedByMembershipExpression;
+        }
+        return res;
     }
 
     /// \overload
@@ -206,18 +240,45 @@ public:
     /// computed, given the parent-path's inherited expansion rule,
     /// \p parentExpansionRule.
     ///
-    /// If \p expansionRule is not nullptr, it is set to the expansion-
-    /// rule value that caused the path to be included in or excluded from
-    /// the collection. If \p path is not included in the collection,
-    /// \p expansionRule is set to UsdTokens->exclude.
+    /// If \p expansionRule is not nullptr, it is set to the expansion- rule
+    /// value that caused the path to be included in or excluded from the
+    /// collection. If \p path is not included in the collection, \p
+    /// expansionRule is set to UsdTokens->exclude.  If this query is not using
+    /// an expansion rule map and is instead using a pattern-based membership
+    /// expression, then expansionRule is set to one of the special
+    /// UsdCollectionMembershipQueryTokens values,
+    /// IncludedByMembershipExpression or ExcludedByMembershipExpression as
+    /// appropriate.
     ///
     /// The python version of this method only returns the boolean result.
     /// It does not return \p expansionRule.
-    bool IsPathIncluded(const SdfPath &path,
-                        const TfToken &parentExpansionRule,
-                        TfToken *expansionRule=nullptr) const {
-        return _IsPathIncluded(
-            path, parentExpansionRule, expansionRule) || _exprEval.Match(path);
+    SdfPredicateFunctionResult
+    IsPathIncluded(const SdfPath &path,
+                   const TfToken &parentExpansionRule,
+                   TfToken *expansionRule=nullptr) const {
+        // If we have a rule map, go that way.  Otherwise try the expression.
+        if (UsesPathExpansionRuleMap()) {
+            return SdfPredicateFunctionResult::MakeVarying(
+                _IsPathIncludedByRuleMap(
+                    path, parentExpansionRule, expansionRule));
+        }
+        const SdfPredicateFunctionResult
+            res = GetExpressionEvaluator().Match(path);
+        if (expansionRule) {
+            *expansionRule = res ?
+                UsdCollectionMembershipQueryTokens->
+                    IncludedByMembershipExpression : 
+                UsdCollectionMembershipQueryTokens->
+                    ExcludedByMembershipExpression;
+        }
+        return res;
+    }
+
+    /// Return true if this query uses the explicit path-expansion rule method
+    /// to determine collection membership.  Otherwise, return false if it uses
+    /// the pattern-based membership expression to determine membership.
+    bool UsesPathExpansionRuleMap() const {
+        return !_HasEmptyRuleMap();
     }
 
     void
@@ -313,7 +374,7 @@ public:
     /// construct them directly if one wishes.  Consider calling
     /// UsdCollectionAPI::ResolveCompleteMembershipExpression() to produce
     /// an approprate expression.
-    SDF_API
+    USD_API
     UsdObjectCollectionExpressionEvaluator(UsdStageWeakPtr const &stage,
                                            SdfPathExpression const &expr);
 
@@ -328,12 +389,12 @@ public:
     UsdStageWeakPtr const &GetStage() const { return _stage; }
 
     /// Return the result of evaluating the expression against \p object.
-    SDF_API
+    USD_API
     SdfPredicateFunctionResult
     Match(SdfPath const &path) const;
 
     /// Return the result of evaluating the expression against \p object.
-    SDF_API
+    USD_API
     SdfPredicateFunctionResult
     Match(UsdObject const &object) const;
 
@@ -344,7 +405,7 @@ public:
     /// this UsdObjectCollectionExpressionEvaluator object.  This means that the
     /// IncrementalSearcher must not be used after this
     /// UsdObjectCollectionExpressionEvaluator object's lifetime ends.
-    SDF_API
+    USD_API
     IncrementalSearcher MakeIncrementalSearcher() const;
     
 private:

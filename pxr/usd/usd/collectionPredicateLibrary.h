@@ -90,7 +90,7 @@ using UsdObjectPredicateLibrary = SdfPredicateLibrary<UsdObject>;
 ///     UsdVariantSets::GetVariantSelection().  If the given object is not a
 ///     prim, return false.
 ///
-SDF_API
+USD_API
 UsdObjectPredicateLibrary const &
 UsdGetCollectionPredicateLibrary();
 
