@@ -1206,21 +1206,21 @@ pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs2
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs2/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs2.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs2.txt 
 )
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_allpayloads
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults PayloadsAndAncestralArcs3/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_allpayloads.txt 
 )
 
 pxr_register_test(testPcpMuseum_PayloadsAndAncestralArcs3_refpayloadsonly
     PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads '.*Reference.*' PayloadsAndAncestralArcs/root.sdf" 
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpCompositionResults --payloads '.*Reference.*' PayloadsAndAncestralArcs3/root.sdf" 
     STDOUT_REDIRECT compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt
     DIFF_COMPARE compositionResults_PayloadsAndAncestralArcs3_refpayloadsonly.txt 
 )
