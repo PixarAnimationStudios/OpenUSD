@@ -59,7 +59,7 @@ public:
     : _delegate(std::bind(
             &UsdUtils_AssetLocalizationPackage::_ProcessDependency, this, 
             std::placeholders::_1, std::placeholders::_2, 
-            std::placeholders::_3, std::placeholders::_4))
+            std::placeholders::_3))
     {}
 
     // Sets the original file path for this asset.
@@ -81,6 +81,14 @@ public:
     // Refer to UsdUtils_WritableLocalizationDelegate::SetEditLayersInPlace
     inline void SetEditLayersInPlace(bool editLayersInPlace) {
         _delegate.SetEditLayersInPlace(editLayersInPlace);
+    }
+
+    // Sets the optional user processing function that will be invoked before
+    // any directory remapping will take place
+    inline void SetUserProcessingFunc(
+        std::function<UsdUtilsProcessingFunc> processingFunc)
+    {
+        _userProcessingFunc = processingFunc;
     }
 
     virtual bool Build(
@@ -123,25 +131,23 @@ private:
         const std::string &srcPath,
         const std::string &destPath);
 
-    std::string _ProcessDependency( 
+    UsdUtilsDependencyInfo _ProcessDependency( 
         const SdfLayerRefPtr &layer, 
-        const std::string &assetPath,
-        const std::vector<std::string> &dependencies,
-        UsdUtilsDependencyType dependencyType);
+        const UsdUtilsDependencyInfo &dependencyInfo,
+        UsdUtils_DependencyType dependencyType);
 
-    std::string 
-    _AddDependenciesToPackage( 
+    UsdUtilsDependencyInfo _AddDependenciesToPackage( 
         const SdfLayerRefPtr &layer, 
-        const std::string &assetPath,
-        const std::vector<std::string> &dependencies);
+        const UsdUtilsDependencyInfo &depInfo);
 
-    void
-    _AddDependencyToPackage(
+    void _AddDependencyToPackage(
         const SdfLayerRefPtr &layer, 
-        const std::string dependency,
-        const std::string destDirectory);
+        const std::string &dependency,
+        const std::string &destDirectory);
 
     SdfLayerRefPtr _rootLayer;
+
+    std::function<UsdUtilsProcessingFunc> _userProcessingFunc;
     
     // The resolved path of the root usd layer
     std::string _rootFilePath;

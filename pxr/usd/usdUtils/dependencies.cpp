@@ -24,16 +24,19 @@
 ///
 /// \file usdUtils/dependencies.cpp
 #include "pxr/pxr.h"
+#include "pxr/usd/ar/packageUtils.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/usd/stage.h"
 #include "pxr/usd/usdUtils/assetLocalization.h"
 #include "pxr/usd/usdUtils/dependencies.h"
 #include "pxr/usd/usdUtils/debugCodes.h"
 #include "pxr/usd/sdf/assetPath.h"
+#include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layerUtils.h"
 
 #include "pxr/base/trace/trace.h"
 
+#include <functional>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE
@@ -54,6 +57,71 @@ UsdUtilsExtractExternalReferences(
         subLayers, references, payloads);
 }
 
+struct UsdUtils_ComputeAllDependenciesClient
+{
+    void 
+    Process( 
+        const SdfLayerRefPtr &layer, 
+        const std::string & assetPath,
+        const std::vector<std::string> &dependencies,
+        UsdUtils_DependencyType dependencyType)
+    {
+        if (dependencies.empty()) {
+            PlaceAsset(layer, assetPath, dependencyType);
+        }
+        else {
+            for (const auto & dependency : dependencies) {
+                PlaceAsset(layer, dependency, dependencyType);
+            }
+        }
+    }
+
+    bool 
+    PathShouldResolve(
+        const SdfLayerRefPtr &layer, 
+        const std::string& resolvedPath,
+        UsdUtils_DependencyType dependencyType)
+    {
+        // XXX: We do not currently support resolving clip template asset paths
+        // from packages in the asset localization code (refer to 
+        // UsdUtils_LocalizationContext::_GetTemplatedClips).  In this case we
+        // do not want to treat these paths as unresolved.
+        if (dependencyType != UsdUtils_DependencyType::ClipTemplateAssetPath) {
+            return true;
+        }
+        else {
+            return !ArIsPackageRelativePath(layer->GetRealPath()) &&
+                   !layer->GetFileFormat()->IsPackage();
+        }
+    }
+
+    void 
+    PlaceAsset(
+        const SdfLayerRefPtr &layer, 
+        const std::string& dependency,
+        UsdUtils_DependencyType dependencyType)
+    {
+        const std::string anchoredPath = 
+            SdfComputeAssetPathRelativeToLayer(layer, dependency);
+        const std::string resolvedPath = ArGetResolver().Resolve(anchoredPath);
+
+        if (resolvedPath.empty()) {
+            if (PathShouldResolve(layer, resolvedPath, dependencyType)) {
+                unresolvedPaths.emplace_back(anchoredPath);
+            }
+        }
+        else if (UsdStage::IsSupportedFile(anchoredPath)) {
+            layers.push_back(SdfLayer::FindOrOpen(anchoredPath));
+        }
+        else {
+            assets.push_back(resolvedPath);
+        }
+    }
+
+    std::vector<SdfLayerRefPtr> layers;
+    std::vector<std::string> assets, unresolvedPaths;
+};
+
 bool
 UsdUtilsComputeAllDependencies(
     const SdfAssetPath &assetPath,
@@ -61,56 +129,34 @@ UsdUtilsComputeAllDependencies(
     std::vector<std::string> *outAssets,
     std::vector<std::string> *outUnresolvedPaths)
 {
-    std::vector<SdfLayerRefPtr> layers;
-    std::vector<std::string> assets, unresolvedPaths;
-
-    const auto processFunc = [&layers, &assets, &unresolvedPaths]( 
-        const SdfLayerRefPtr &layer, 
-        const std::string &,
-        const std::vector<std::string> &dependencies,
-        UsdUtilsDependencyType)
-    {
-        for (const auto & dependency : dependencies) {
-            const std::string anchoredPath = 
-                SdfComputeAssetPathRelativeToLayer(layer, dependency);
-            const std::string resolvedPath = ArGetResolver().Resolve(anchoredPath);
-
-            if (resolvedPath.empty()) {
-                unresolvedPaths.emplace_back(anchoredPath);
-            }
-            else if (UsdStage::IsSupportedFile(anchoredPath)) {
-                layers.push_back(SdfLayer::FindOrOpen(anchoredPath));
-            }
-            else {
-                assets.push_back(resolvedPath);
-            }
-        }
-    };
-
-    UsdUtils_ReadOnlyLocalizationDelegate delegate(processFunc);
-    UsdUtils_LocalizationContext context(&delegate);
-    context.SetMetadataFilteringEnabled(true);
-
     SdfLayerRefPtr rootLayer = SdfLayer::FindOrOpen(assetPath.GetAssetPath());
 
     if (!rootLayer) {
         return false;
     }
 
-    layers.emplace_back(rootLayer);
+    UsdUtils_ComputeAllDependenciesClient client;
+    UsdUtils_ReadOnlyLocalizationDelegate delegate(
+        std::bind(&UsdUtils_ComputeAllDependenciesClient::Process, &client,
+            std::placeholders::_1, std::placeholders::_2, 
+            std::placeholders::_3, std::placeholders::_4));
+    UsdUtils_LocalizationContext context(&delegate);
+    context.SetMetadataFilteringEnabled(true);
+
+    client.layers.emplace_back(rootLayer);
 
     if (!context.Process(rootLayer)) {
         return false;
     }
 
     if (outLayers) {
-        *outLayers = std::move(layers);
+        *outLayers = std::move(client.layers);
     }
     if (outAssets) {
-        *outAssets = std::move(assets);
+        *outAssets = std::move(client.assets);
     }
     if (outUnresolvedPaths) {
-        *outUnresolvedPaths = std::move(unresolvedPaths);
+        *outUnresolvedPaths = std::move(client.unresolvedPaths);
     }
 
     return true;
@@ -121,13 +167,13 @@ UsdUtilsModifyAssetPaths(
     const SdfLayerHandle& layer,
     const UsdUtilsModifyAssetPathFn& modifyFn)
 {
-    using DependencyType = UsdUtilsDependencyType;
-
     auto processingFunc = 
-        [&modifyFn](const SdfLayerRefPtr&, const std::string& assetPath, 
-            const std::vector<std::string>& additionalPaths, DependencyType)
+        [&modifyFn](const SdfLayerRefPtr&, 
+            const UsdUtilsDependencyInfo &dependencyInfo,
+            UsdUtils_DependencyType)
         {
-            return modifyFn(assetPath);
+            return UsdUtilsDependencyInfo(
+                modifyFn(dependencyInfo.GetAssetPath()));
         };
 
     UsdUtils_WritableLocalizationDelegate delegate(processingFunc);

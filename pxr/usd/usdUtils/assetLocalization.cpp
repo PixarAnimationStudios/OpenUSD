@@ -42,6 +42,7 @@
 #include "pxr/usd/usd/tokens.h"
 #include "pxr/usd/usdShade/udimUtils.h"
 
+#include "pxr/base/arch/regex.h"
 #include "pxr/base/tf/fileUtils.h"
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -85,6 +86,16 @@ UsdUtils_LocalizationContext::Process(
     }
 
     return true;
+}
+
+void
+UsdUtils_LocalizationContext::_EnqueueDependencies(
+    const SdfLayerRefPtr layer,
+    const std::vector<std::string> &dependencies)
+{
+    for (const auto &dependency : dependencies) {
+        _EnqueueDependency(layer, dependency);
+    }
 }
 
 void 
@@ -170,9 +181,58 @@ UsdUtils_LocalizationContext::_ProcessSublayers(
     for (const auto& sublayerPath : sublayers) {
         _EnqueueDependency(layer, sublayerPath);
     }
-    _delegate->ProcessSublayers(layer);
+    
+    const std::vector<std::string> processedDeps = 
+        _delegate->ProcessSublayers(layer);
+    _EnqueueDependencies(layer, processedDeps);
 
 }
+
+static 
+std::vector<std::string> 
+_GetClipSets(
+    const SdfPrimSpecHandle &primSpec)
+{
+    std::vector<std::string> clipSets;
+    VtValue clipsValue = primSpec->GetInfo(UsdTokens->clips);
+
+    if (clipsValue.IsEmpty() || !clipsValue.IsHolding<VtDictionary>()) {
+        return clipSets;
+    }
+
+    const VtDictionary& clipsDict = clipsValue.UncheckedGet<VtDictionary>();
+
+    for (auto &clipSet : clipsDict) {
+        if (clipSet.second.IsHolding<VtDictionary>()) {
+            clipSets.emplace_back(clipSet.first);
+        }
+    }
+
+    return clipSets;
+}
+
+static
+std::string
+_GetTemplateAssetPathForClipSet(
+    const SdfPrimSpecHandle &primSpec,
+    const std::string &clipSetName)
+{
+    const VtDictionary clipsDict = 
+        primSpec->GetInfo(UsdTokens->clips).UncheckedGet<VtDictionary>();
+
+    const std::string keyPath = 
+        clipSetName + ":" + UsdClipsAPIInfoKeys->templateAssetPath.GetString();
+
+    VtValue const * value = clipsDict.GetValueAtPath(keyPath);
+
+    if (value){
+        return value->UncheckedGet<std::string>();
+    }
+    else {
+        return {};
+    }
+}
+
 
 void
 UsdUtils_LocalizationContext::_ProcessMetadata(
@@ -188,51 +248,41 @@ UsdUtils_LocalizationContext::_ProcessMetadata(
             }
 
             _delegate->BeginProcessValue(layer, value);
+
             _ProcessAssetValue(layer, infoKey, value, 
                 /*processingMetadata*/ true);
-            _delegate->EndProcessValue(layer, primSpec->GetPath(), infoKey, value);
+            _delegate->EndProcessValue(
+                layer, primSpec->GetPath(), infoKey, value);
         }
     }
 
     // Process clips["templateAssetPath"], which is a string value 
     // containing one or more #'s. See 
-    // UsdClipsAPI::GetClipTemplateAssetPath for details. 
-    VtValue clipsValue = primSpec->GetInfo(UsdTokens->clips);
-    if (!clipsValue.IsEmpty() && clipsValue.IsHolding<VtDictionary>()) {
-        const VtDictionary origClipsDict = 
-                clipsValue.UncheckedGet<VtDictionary>();
+    // UsdClipsAPI::GetClipTemplateAssetPath for details.
+    auto clipSets = _GetClipSets(primSpec);
 
-        for (auto &clipSetNameAndDict : origClipsDict) {
-            if (clipSetNameAndDict.second.IsHolding<VtDictionary>()) {
-                VtDictionary clipDict = 
-                    clipSetNameAndDict.second.UncheckedGet<VtDictionary>();
+    for (const auto& clipSet : clipSets) {
+        std::string templatePath = 
+            _GetTemplateAssetPathForClipSet(primSpec, clipSet);
 
-                if (VtDictionaryIsHolding<std::string>(clipDict, 
-                        UsdClipsAPIInfoKeys->templateAssetPath.GetString())) {
-                    const std::string &templateAssetPath = 
-                            VtDictionaryGet<std::string>(clipDict, 
-                                UsdClipsAPIInfoKeys->templateAssetPath
-                                    .GetString());
-
-                    if (templateAssetPath.empty()) {
-                        continue;
-                    }
-
-                    const std::vector<std::string> clipFiles = 
-                        _GetTemplatedClips(layer, templateAssetPath);
-                    if (clipFiles.size() > 0) {
-                        _delegate->ProcessClipTemplateAssetPath(
-                            layer, primSpec, clipSetNameAndDict.first, 
-                                templateAssetPath, clipFiles);
-                    }
-                }
-            }
+        if (templatePath.empty()) {
+            continue;
         }
+
+        const std::vector<std::string> clipFiles = 
+            _GetTemplatedClips(layer, templatePath);
+
+        const std::vector<std::string> dependencies =
+            _delegate->ProcessClipTemplateAssetPath(layer, primSpec, clipSet, 
+                templatePath, clipFiles);
+
+        _EnqueueDependencies(layer, dependencies);
     }
 }
 
 
-
+// XXX: In the future it may be worth investigating if _DeriveClipInfo from
+// clipSetDefinition may be leveraged here for a more robust approach.
 std::vector<std::string> 
 UsdUtils_LocalizationContext::_GetTemplatedClips(
     const SdfLayerRefPtr& layer,
@@ -248,9 +298,7 @@ UsdUtils_LocalizationContext::_GetTemplatedClips(
     const std::string clipsDirAssetPath = 
         SdfComputeAssetPathRelativeToLayer(layer, clipsDir);
 
-    // XXX: This also acts as a guard against non-filesystem based resolvers
-    // In the future it may be worth investigating if _DeriveClipInfo from
-    // clipSetDefinition may be leveraged here for a more robust approach.
+    // This acts as a guard against non-filesystem based resolvers
     if (!TfIsDir(clipsDirAssetPath)) {
         TF_WARN("Clips directory '%s' is not a valid directory "
             "on the filesystem.", clipsDirAssetPath.c_str());
@@ -259,9 +307,12 @@ UsdUtils_LocalizationContext::_GetTemplatedClips(
 
     std::string clipsBaseName = TfGetBaseName(templateAssetPath);
     std::string globPattern = TfStringCatPaths(
-            clipsDirAssetPath, 
-            TfStringReplace(clipsBaseName, "#", "*"));
+            clipsDirAssetPath, TfStringReplace(clipsBaseName, "#", "*"));
     std::vector<std::string> clipAssetRefs = TfGlob(globPattern);
+
+    if (clipAssetRefs.size() == 1 && clipAssetRefs[0] == globPattern) {
+        clipAssetRefs.clear();
+    }
 
     const auto fixupRefFunc = 
         [&clipsDirAssetPath, &clipsDir](const std::string & clipAsset) {
@@ -296,7 +347,9 @@ UsdUtils_LocalizationContext::_ProcessPayloads(
         }
     }
 
-    _delegate->ProcessPayloads(layer, primSpec);
+    const std::vector<std::string> processedDeps = 
+        _delegate->ProcessPayloads(layer, primSpec);
+    _EnqueueDependencies(layer, processedDeps);
 }
 
 void
@@ -315,7 +368,9 @@ UsdUtils_LocalizationContext::_ProcessReferences(
         }
     }
 
-    _delegate->ProcessReferences(layer, primSpec);
+    const std::vector<std::string> processedDeps = 
+        _delegate->ProcessReferences(layer, primSpec);
+    _EnqueueDependencies(layer, processedDeps);
 }
 
 void
@@ -430,10 +485,12 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
             const std::vector<std::string> dependencies = 
                 _GetDependencies(layer, rawAssetPath);
 
-            _delegate->ProcessValuePath(
-                    layer, keyPath, rawAssetPath, dependencies);
+            const std::vector<std::string> processedDeps = 
+                _delegate->ProcessValuePath(
+                        layer, keyPath, rawAssetPath, dependencies);
             
             _EnqueueDependency(layer, rawAssetPath);
+            _EnqueueDependencies(layer, processedDeps);
         }
     } else if (val.IsHolding<VtArray<SdfAssetPath>>()) {
         const VtArray<SdfAssetPath>& originalArray = 
@@ -450,10 +507,12 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
                 const std::vector<std::string> dependencies = 
                     _GetDependencies(layer, rawAssetPath);
 
-                _delegate->ProcessValuePathArrayElement(
-                        layer, keyPath, rawAssetPath, dependencies);
+                const std::vector<std::string> processedDeps = 
+                    _delegate->ProcessValuePathArrayElement(
+                            layer, keyPath, rawAssetPath, dependencies);
                 
                 _EnqueueDependency(layer, rawAssetPath);
+                _EnqueueDependencies(layer, processedDeps);
             }
         }
 
@@ -476,18 +535,14 @@ UsdUtils_LocalizationContext::_ProcessAssetValue(
     }
 }
 
+// XXX: If we are going to add support for automatically processing additional
+// dependencies, they should be added here.
 std::vector<std::string> 
 UsdUtils_LocalizationContext::_GetDependencies(
     const SdfLayerRefPtr& layer,
     const std::string &assetPath)
 {
-    std::vector<std::string> dependencies = _GetUdimTiles(layer, assetPath);
-
-    if (dependencies.empty()) {
-        dependencies.emplace_back(assetPath);
-    }
-
-    return dependencies;
+    return _GetUdimTiles(layer, assetPath);
 }
 
 std::vector<std::string> 
@@ -541,6 +596,60 @@ UsdUtils_LocalizationContext::_ValueTypeIsRelevant(
             val.IsHolding<VtDictionary>();
 }
 
+struct UsdUtils_ExtractExternalReferencesClient {
+    void 
+    Process (
+        const SdfLayerRefPtr &, 
+        const std::string &assetPath,
+        const std::vector<std::string> &dependencies,
+        UsdUtils_DependencyType dependencyType
+    )
+    {
+        if (dependencies.empty()) {
+            PlaceAsset(assetPath, dependencyType);
+        }
+        else {
+            for (const auto& dependency : dependencies) {
+                PlaceAsset(dependency, dependencyType);
+            }
+        }
+    }
+
+    void PlaceAsset(
+        const std::string &dependency, 
+        UsdUtils_DependencyType dependencyType)
+    {
+        switch(dependencyType) {
+            case UsdUtils_DependencyType::Sublayer:
+                sublayers.emplace_back(dependency);
+                break;
+            case UsdUtils_DependencyType::Reference:
+            case UsdUtils_DependencyType::ClipTemplateAssetPath:
+                references.emplace_back(dependency);
+                break;
+            case UsdUtils_DependencyType::Payload:
+                payloads.emplace_back(dependency);
+                break;
+        }
+    }
+
+    void SortAndRemoveDuplicates() {
+        std::sort(sublayers.begin(), sublayers.end());
+        sublayers.erase(std::unique(sublayers.begin(), sublayers.end()),
+            sublayers.end());
+        
+        std::sort(references.begin(), references.end());
+        references.erase(std::unique(references.begin(), references.end()),
+            references.end());
+
+        std::sort(payloads.begin(), payloads.end());
+        payloads.erase(std::unique(payloads.begin(), payloads.end()),
+            payloads.end());
+    }
+
+    std::vector<std::string> sublayers, references, payloads;
+};
+
 void UsdUtils_ExtractExternalReferences(
     const std::string& filePath,
     const UsdUtils_LocalizationContext::ReferenceType refTypesToInclude,
@@ -550,61 +659,26 @@ void UsdUtils_ExtractExternalReferences(
 {
     TRACE_FUNCTION();
 
-    std::vector<std::string> sublayers, references, payloads;
-
-    const auto processFunc = [&sublayers, &references, &payloads]( 
-        const SdfLayerRefPtr &, 
-        const std::string &,
-        const std::vector<std::string> &dependencies,
-        UsdUtilsDependencyType dependencyType)
-    {
-        switch(dependencyType) {
-            case UsdUtilsDependencyType::Sublayer:
-                for (const auto& dependency : dependencies) {
-                    sublayers.emplace_back(dependency);
-                }
-                break;
-            case UsdUtilsDependencyType::Reference:
-                for (const auto& dependency : dependencies) {
-                    references.emplace_back(dependency);
-                }
-                break;
-            case UsdUtilsDependencyType::Payload:
-                for (const auto& dependency : dependencies) {
-                    payloads.emplace_back(dependency);
-                }
-                break;
-        }
-    };
-
-    UsdUtils_ReadOnlyLocalizationDelegate delegate(processFunc);
+    UsdUtils_ExtractExternalReferencesClient client;
+    UsdUtils_ReadOnlyLocalizationDelegate delegate(
+        std::bind(&UsdUtils_ExtractExternalReferencesClient::Process, &client,
+        std::placeholders::_1, std::placeholders::_2, 
+        std::placeholders::_3, std::placeholders::_4));
     UsdUtils_LocalizationContext context(&delegate);
     context.SetRefTypesToInclude(refTypesToInclude);
     context.SetRecurseLayerDependencies(false);
 
     context.Process(SdfLayer::FindOrOpen(filePath));
-
-    // Sort and remove duplicates
-    std::sort(sublayers.begin(), sublayers.end());
-    sublayers.erase(std::unique(sublayers.begin(), sublayers.end()),
-        sublayers.end());
-    
-    std::sort(references.begin(), references.end());
-    references.erase(std::unique(references.begin(), references.end()),
-        references.end());
-
-    std::sort(payloads.begin(), payloads.end());
-    payloads.erase(std::unique(payloads.begin(), payloads.end()),
-        payloads.end());
+    client.SortAndRemoveDuplicates();
 
     if (outSublayers) {
-        *outSublayers = std::move(sublayers);
+        *outSublayers = std::move(client.sublayers);
     }
     if (outReferences) {
-        *outReferences = std::move(references);
+        *outReferences = std::move(client.references);
     }
     if (outPayloads) {
-        *outPayloads = std::move(payloads);
+        *outPayloads = std::move(client.payloads);
     }
 }
 

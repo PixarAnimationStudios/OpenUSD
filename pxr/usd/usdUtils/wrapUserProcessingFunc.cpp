@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2023 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,26 +21,34 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
+
 #include "pxr/pxr.h"
-#include "pxr/base/tf/pyModule.h"
+
+#include "pxr/base/tf/pyResultConversions.h"
+#include "pxr/base/tf/pyFunction.h"
+
+#include <boost/python/class.hpp>
+#include <boost/python/def.hpp>
+
+#include "pxr/usd/usdUtils/userProcessingFunc.h"
+
+using namespace boost::python;
 
 PXR_NAMESPACE_USING_DIRECTIVE
 
-TF_WRAP_MODULE
+void wrapUserProcessingFunc()
 {
-    TF_WRAP( Authoring );
-    TF_WRAP( CoalescingDiagnosticDelegate );
-    TF_WRAP( ConditionalAbortDiagnosticDelegate );
-    TF_WRAP( Dependencies );
-    TF_WRAP( FlattenLayerStack );
-    TF_WRAP( Introspection );
-    TF_WRAP( Pipeline );
-    TF_WRAP( RegisteredVariantSet );
-    TF_WRAP( SparseValueWriter );
-    TF_WRAP( StageCache );
-    TF_WRAP( Stitch );
-    TF_WRAP( StitchClips );
-    TF_WRAP( TimeCodeRange );
-    TF_WRAP( UserProcessingFunc );
-    TF_WRAP( LocalizeAsset );
+    TfPyFunctionFromPython<UsdUtilsProcessingFunc>();
+    
+    typedef UsdUtilsDependencyInfo This;
+
+    class_<This>("DependencyInfo", init<>())
+        .def(init<const This&>())
+        .def(init<const std::string &>())
+        .def(init<const std::string &, const std::vector<std::string>>())
+        .add_property("assetPath", make_function(&This::GetAssetPath,
+            return_value_policy<return_by_value>()))
+        .add_property("dependencies", make_function(&This::GetDependencies,
+            return_value_policy<TfPySequenceToList>()))
+    ;
 }

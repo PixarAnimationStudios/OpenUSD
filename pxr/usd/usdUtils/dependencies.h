@@ -100,28 +100,6 @@ void UsdUtilsModifyAssetPaths(
         const SdfLayerHandle& layer,
         const UsdUtilsModifyAssetPathFn& modifyFn);
 
-// Enum class representing the type of dependency.
-enum class UsdUtilsDependencyType {
-    Reference,
-    Sublayer,
-    Payload
-};
-
-// Signature for user supplied processing function.  Note if the asset path
-// that is returned from this function is the empty string then the asset
-// path will be removed.
-// \param layer The layer containing this dependency
-// \param assetPath The asset path as authored in the layer
-// \param dependencies  All actual dependencies associated with this asset path. 
-// Multiple items may be present in this array if the asset path is, for 
-// example, a udim specifier or a clips 'templateAssetPath'
-// \param dependencyType enumerates the type of this dependency
-using UsdUtilsProcessingFunc = std::function<std::string(
-        const SdfLayerRefPtr &layer, 
-        const std::string &assetPath, 
-        const std::vector<std::string>& dependencies,
-        UsdUtilsDependencyType dependencyType)>;
-
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_USD_UTILS_DEPENDENCIES_H

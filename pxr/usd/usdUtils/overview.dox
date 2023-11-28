@@ -48,4 +48,212 @@ creating USD assets. The high-level grouping of classes and functions is as foll
 \li complianceChecker.py provides a set of Python classes and methods used for 
     checking the compliance of a given USD asset or USDZ package.
 
+\section usdUtils_userProcessingFunctions User Processing Functions
+
+Localization routines can be customized by supplying your own processing 
+function which will be invoked as asset paths are discovered during dependency 
+traversal.
+
+Processing functions are able to perform a number of tasks which have an effect 
+on the resulting output:
+
+\li Modify the asset path that is written back into the layer
+\li Add additional dependencies to be included in the output
+\li Remove an asset path and/or dependencies altogether from the output
+
+Creating a processing function allows you to create customized output without 
+having to write dependency discovery and traversal code.
+
+When writing a processing function it is important to keep in mind that the
+intention is to modify the current asset path only.  Modifying the layer
+containing the path during processing may result in assets that behave
+unexpectedly or fail to load.
+
+\subsection usdUtils_defineProcessingFunc Defining A Procession Function
+
+A user processing function is called for each asset path that is discovered 
+during recursive traversal of a root asset layer.  For each path, the function 
+will be passed the following parameters:
+
+<table>
+<tr>
+    <th>Name</th>
+    <th>Type</th>
+    <th>Description</th>
+</tr>
+<tr>
+    <td>layer</td>
+    <td>SdfLayerHandle</td>
+    <td>The layer containing the discovered asset path. In the case that 
+        the localization method was called with \c editInPlace=false this will 
+        be the original, unmodified layer.
+    </td>
+</tr>
+<tr>
+    <td>dependencyInfo</td>
+    <td>UsdUtilsDependencyInfo</td>
+    <td>Contains authored and additional path information for this dependency </td>
+</table>
+
+The return value of the processing function communicates back to the system 
+any changes that need to be made to the asset path.  In C++ your function will 
+return an UsdUtilsDependencyInfo struct.  In Python, your function will return a
+UsdUtils.DependencyInfo object.
+
+Here's an example "identity" processing function that just returns the 
+unmodified input in C++:
+
+\code{.cpp}
+UsdUtilsDependencyInfo 
+ProcessingFunc(
+    const SdfLayerHandle &layer, 
+    UsdUtilsDependencyInfo &dependencyInfo)
+{
+    return dependencyInfo;
+}
+\endcode
+
+and in Python:
+
+\code{.py}
+def ProcessingFunc(layer, dependencyInfo):
+    return dependencyInfo
+
+\endcode
+
+After a processing function has been called, the system looks at the returned
+asset path.  If it is empty, then the reference to that that path is removed,
+otherwise the new value is placed in the layer. Additionally, each item in the 
+dependencies array is added to the resulting package and enqueued for 
+recursive traversal.
+
+\subsection usdUtils_modifyAssetPathsAndDeps Modifying AssetPaths and Dependencies
+
+A common use for a processing function is to perform a transformation on
+an asset path and its related dependencies. For example, a processing function
+could be used to convert JPG files to PNG files.
+
+USD:
+\code
+def "Example"
+{
+    asset imageFile = @./image.jpg@
+}
+\endcode
+
+C++:
+
+\code{.cpp}
+UsdUtilsDependencyInfo 
+ProcessingFunc(
+    const SdfLayerHandle &layer, 
+    UsdUtilsDependencyInfo &dependencyInfo)
+{
+    std::filesystem::path path(dependencyInfo.assetPath);
+    
+    if (path.extension() == ".jpg") {
+        path.replace_extension(".png");
+        ConvertToPng(dependencyInfo.assetPath, path);
+        return UsdUtilsDependencyInfo(path);
+    }
+    
+    return dependencyInfo;
+}
+\endcode
+
+Python:
+
+\code{.py}
+def ProcessingFunc(layer, dependencyInfo):
+    root, ext = os.path.splitext(dependencyInfo.assetPath)
+    if ext is ".jpg":
+        pngPath = root + ".png"
+        ConvertToPng(assetPath, pngPath)
+        return UsdUtils.DependencyInfo(pngPath)
+
+    return dependencyInfo
+
+\endcode
+
+Another useful application of processing functions is to support transient
+dependencies. Using the OBJ file format as an example, a processing function
+which naively includes .mtl files with a corresponding base name to their .obj
+counterparts could be written as:
+
+USD:
+\code
+def "Obj"
+{
+    asset teapot = @./teapot.obj@
+}
+\endcode
+
+C++:
+
+\code{.cpp}
+UsdUtilsDependencyInfo 
+ProcessingFunc(
+    const SdfLayerHandle &layer, 
+    UsdUtilsDependencyInfo &dependencyInfo)
+{
+    std::filesystem::path path(assetPath);
+
+    if (path.extension() == ".obj") {
+        path.replace_extension(".mtl");
+        return UsdUtilsDependencyInfo(dependencyInfo.assetPath, {path});
+    }
+
+    return dependencyInfo;
+}
+\endcode
+
+Python:
+\code{.py}
+def ProcessingFunc(layer, dependencyInfo):
+    root, ext = os.path.splitext(dependencyInfo.assetPath)
+    if ext is ".obj":
+        return UsdUtils.DependencyInfo(dependencyInfo.assetPath, [root + ".mtl"])
+
+    return dependencyInfo
+
+\endcode
+
+\subsection usdUtils_removingAssetPaths Removing Asset paths
+
+In some cases it may be desireable to exclude assets from localization. This can
+be accomplished by ensuring that the assetPath of the UsdUtilsDependencyInfo
+object returned from the processing function is the empty string.
+
+For example, the following function would exclude all assets with a file
+extension of ".txt":
+
+C++:
+
+\code{.cpp}
+UsdUtilsDependencyInfo 
+ProcessingFunc(
+    const SdfLayerHandle &layer, 
+    UsdUtilsDependencyInfo &dependencyInfo)
+{    
+    std::filesystem::path path(dependencyInfo.assetPath);
+    
+    if (path.extension() == ".txt") {
+        return UsdUtilsDependencyInfo();
+    }
+
+    return dependencyInfo;
+}
+\endcode
+
+Python:
+\code{.py}
+def ProcessingFunc(layer, dependencyInfo):
+    root, ext = os.path.splitext(dependencyInfo.assetPath)
+    if ext is ".txt":
+        UsdUtils.DependencyInfo()
+
+    return dependencyInfo
+
+\endcode
+
 */

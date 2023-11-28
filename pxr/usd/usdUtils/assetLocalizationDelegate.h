@@ -30,6 +30,7 @@
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/reference.h"
 #include "pxr/usd/usdUtils/dependencies.h"
+#include "pxr/usd/usdUtils/userProcessingFunc.h"
 
 #include <vector>
 #include <string>
@@ -37,20 +38,32 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
+/// Enum representing the type of dependency.
+enum class UsdUtils_DependencyType {
+    Reference,
+    Sublayer,
+    Payload,
+    ClipTemplateAssetPath
+};
+
 // This class defines the interface between the UsdUtils_LocalizationContext and
 // localization clients.
+// Methods which directly process asset paths return a vector of std::string.
+// The return value for these functions indicates additional asset paths
+// that should be enqueued for traversal and processing by the localization
+// context.
 struct UsdUtils_LocalizationDelegate
 {
-    virtual void ProcessSublayers(
-        const SdfLayerRefPtr &layer) {}
+    virtual std::vector<std::string> ProcessSublayers(
+        const SdfLayerRefPtr &layer) { return {}; }
 
-    virtual void ProcessPayloads(
+    virtual std::vector<std::string> ProcessPayloads(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec) {}
+        const SdfPrimSpecHandle &primSpec) { return {}; }
 
-    virtual void ProcessReferences(
+    virtual std::vector<std::string> ProcessReferences(
         const SdfLayerRefPtr &layer,
-        const SdfPrimSpecHandle &primSpec) {}
+        const SdfPrimSpecHandle &primSpec) { return {}; }
 
     // Signals the start of a new value.  This will only be triggered if the 
     // value is relevant for localization.  Therefore it will be either a
@@ -59,17 +72,17 @@ struct UsdUtils_LocalizationDelegate
         const SdfLayerRefPtr &layer,
         const VtValue &val) {}
 
-    virtual void ProcessValuePath(
+    virtual std::vector<std::string> ProcessValuePath(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
-        const std::vector<std::string> &dependencies) {}
+        const std::vector<std::string> &dependencies) { return {}; }
 
-    virtual void ProcessValuePathArrayElement(
+    virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
-        const std::vector<std::string> &dependencies) {}
+        const std::vector<std::string> &dependencies) { return {}; }
 
     // Signals that an asset path array value has been processed.  It is safe
     // to modify the array in this callback.
@@ -89,12 +102,12 @@ struct UsdUtils_LocalizationDelegate
         const TfToken &key,
         const VtValue &val) {};
 
-    virtual void ProcessClipTemplateAssetPath(
+    virtual std::vector<std::string> ProcessClipTemplateAssetPath(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec,
         const std::string &clipSetName,
         const std::string &templateAssetPath,
-        std::vector<std::string> dependencies) {}
+        std::vector<std::string> dependencies) { return {}; }
 };
 
 // A Delegate which allows for modification and optional removal of
@@ -102,21 +115,27 @@ struct UsdUtils_LocalizationDelegate
 // on every asset path it encounters.  It will update the path with the returned
 // value.  If this value is empty, it will remove the asset path from the layer.
 class UsdUtils_WritableLocalizationDelegate
-    :public UsdUtils_LocalizationDelegate
+    : public UsdUtils_LocalizationDelegate
 {
 public:
-    UsdUtils_WritableLocalizationDelegate(UsdUtilsProcessingFunc processingFunc)
+    using ProcessingFunc = std::function<UsdUtilsDependencyInfo(
+        const SdfLayerRefPtr &layer, 
+        const UsdUtilsDependencyInfo &dependencyInfo,
+        UsdUtils_DependencyType dependencyType)>;
+
+    UsdUtils_WritableLocalizationDelegate(
+        ProcessingFunc processingFunc)
         :_processingFunc(processingFunc)
     {}
 
-    virtual void ProcessSublayers(
+    virtual std::vector<std::string> ProcessSublayers(
         const SdfLayerRefPtr &layer) override;
 
-    virtual void ProcessPayloads(
+    virtual std::vector<std::string> ProcessPayloads(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec) override;
 
-    virtual void ProcessReferences(
+    virtual std::vector<std::string> ProcessReferences(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec) override;
 
@@ -124,13 +143,13 @@ public:
         const SdfLayerRefPtr &layer,
         const VtValue &val) override;
 
-    virtual void ProcessValuePath(
+    virtual std::vector<std::string> ProcessValuePath(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
         const std::vector<std::string> &dependencies) override;
 
-    virtual void ProcessValuePathArrayElement(
+    virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
@@ -152,7 +171,7 @@ public:
         double t,
         const VtValue &val) override;
 
-    virtual void ProcessClipTemplateAssetPath(
+    virtual std::vector<std::string> ProcessClipTemplateAssetPath(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec,
         const std::string &clipSetName,
@@ -178,16 +197,17 @@ public:
     void ClearLayerUsedForWriting(const SdfLayerRefPtr& layer);
     
 private:
-    template <class ListOpType, UsdUtilsDependencyType DEP_TYPE>
-    void _ProcessReferencesOrPayloads(
+    template <class ListOpType, UsdUtils_DependencyType DEP_TYPE>
+    std::vector<std::string> _ProcessReferencesOrPayloads(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec,
         const TfToken &listOpToken);
 
-    template <class RefOrPayloadType, UsdUtilsDependencyType DEP_TYPE>
+    template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
     boost::optional<RefOrPayloadType> _ProcessRefOrPayload(
         const SdfLayerRefPtr &layer,
-        const RefOrPayloadType& refOrPayload);
+        const RefOrPayloadType& refOrPayload,
+        std::vector<std::string>* dependencies);
 
     VtValue _GetUpdatedValue(const VtValue &val);
 
@@ -198,8 +218,11 @@ private:
 
     static std::string _GetRelativeKeyPath(const std::string& fullPath);
         
+    static std::vector<std::string> _AllDependenciesForInfo(
+        const UsdUtilsDependencyInfo &depInfo);
+
     // the user supplied processing function that will be invoked on every path.
-    UsdUtilsProcessingFunc _processingFunc;
+    ProcessingFunc _processingFunc;
 
     SdfAssetPath _currentValuePath;
     VtArray<SdfAssetPath> _currentValuePathArray;
@@ -226,37 +249,37 @@ class UsdUtils_ReadOnlyLocalizationDelegate
 public:
     using ProcessingFunc = std::function<void(
             const SdfLayerRefPtr &layer, 
-            const std::string assetPath, 
-            const std::vector<std::string>& additionalPaths,
-            UsdUtilsDependencyType dependencyType)>;
+            const std::string &assetPath,
+            const std::vector<std::string> &dependencies,
+            UsdUtils_DependencyType dependencyType)>;
 
     UsdUtils_ReadOnlyLocalizationDelegate(ProcessingFunc processingFunc)
         : _processingFunc(processingFunc) {}
 
-    virtual void ProcessSublayers(
+    virtual std::vector<std::string> ProcessSublayers(
         const SdfLayerRefPtr &layer) override;
 
-    virtual void ProcessPayloads(
+    virtual std::vector<std::string> ProcessPayloads(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec);
 
-    virtual void ProcessReferences(
+    virtual std::vector<std::string> ProcessReferences(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec) override;
 
-    virtual void ProcessValuePath(
+    virtual std::vector<std::string> ProcessValuePath(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
         const std::vector<std::string> &dependencies) override;
 
-    virtual void ProcessValuePathArrayElement(
+    virtual std::vector<std::string> ProcessValuePathArrayElement(
         const SdfLayerRefPtr &layer,
         const std::string &keyPath,
         const std::string &authoredPath,
         const std::vector<std::string> &dependencies) override;
 
-    virtual void ProcessClipTemplateAssetPath(
+    virtual std::vector<std::string> ProcessClipTemplateAssetPath(
         const SdfLayerRefPtr &layer,
         const SdfPrimSpecHandle &primSpec,
         const std::string &clipSetName,
@@ -264,7 +287,7 @@ public:
         std::vector<std::string> dependencies) override;
 
 private:
-    template <class RefOrPayloadType, UsdUtilsDependencyType DEP_TYPE>
+    template <class RefOrPayloadType, UsdUtils_DependencyType DEP_TYPE>
     void _ProcessRefOrPayload(
         const SdfLayerRefPtr &layer,
         const RefOrPayloadType& refOrPayload);
