@@ -72,6 +72,22 @@ HdMtlxSearchPaths()
     return searchPaths;
 }
 
+static mx::DocumentPtr
+_ComputeStdLibraries()
+{
+    mx::FilePathVec libraryFolders;
+    mx::DocumentPtr stdLibraries = mx::createDocument();
+    mx::loadLibraries(libraryFolders, HdMtlxSearchPaths(), stdLibraries);
+    return stdLibraries;
+}
+
+const mx::DocumentPtr&
+HdMtlxStdLibraries()
+{
+    static const mx::DocumentPtr stdLibraries = _ComputeStdLibraries();
+    return stdLibraries;
+}
+
 // Return the MaterialX Node string with the namespace prepended when present
 static std::string
 _GetMxNodeString(mx::NodeDefPtr const& mxNodeDef)

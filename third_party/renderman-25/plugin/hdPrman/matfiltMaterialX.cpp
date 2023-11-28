@@ -946,12 +946,10 @@ MatfiltMaterialX(
             static std::mutex materialXMutex;
             std::lock_guard<std::mutex> lock(materialXMutex);
 
-            // Load Standard Libraries/setup SearchPaths (for mxDoc and
+            // Get Standard Libraries and SearchPaths (for mxDoc and 
             // mxShaderGen)
-            mx::FilePathVec libraryFolders;
+            mx::DocumentPtr stdLibraries = HdMtlxStdLibraries();
             mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-            mx::DocumentPtr stdLibraries = mx::createDocument();
-            mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
 
             // Create the MaterialX Document from the material network
             HdMtlxTexturePrimvarData hdMtlxData;

@@ -147,7 +147,7 @@ mx::ShaderPtr
 HdSt_GenMaterialXShader(
     mx::DocumentPtr const& mxDoc,
     mx::DocumentPtr const& stdLibraries,
-    mx::FileSearchPath const& searchPath,
+    mx::FileSearchPath const& searchPaths,
     HdSt_MxShaderGenInfo const& mxHdInfo,
     TfToken const& apiName)
 {
@@ -156,11 +156,11 @@ HdSt_GenMaterialXShader(
 
 #if MATERIALX_MAJOR_VERSION == 1 && MATERIALX_MINOR_VERSION == 38 && \
     MATERIALX_BUILD_VERSION == 3
-    mxContext.registerSourceCodeSearchPath(searchPath);
+    mxContext.registerSourceCodeSearchPath(searchPaths);
 #else
     // Starting from MaterialX 1.38.4 at PR 877, we must remove the "libraries" part:
     mx::FileSearchPath libSearchPaths;
-    for (const mx::FilePath &path : searchPath) {
+    for (const mx::FilePath &path : searchPaths) {
         if (path.getBaseName() == "libraries") {
             libSearchPaths.append(path.getParentPath());
         }
@@ -923,11 +923,9 @@ _GenerateMaterialXShader(
     TfToken const& apiName,
     bool const bindlessTexturesEnabled)
 {
-    // Load Standard Libraries/setup SearchPaths (for mxDoc and mxShaderGen)
-    mx::FilePathVec libraryFolders;
-    mx::FileSearchPath searchPath = HdMtlxSearchPaths();
-    mx::DocumentPtr stdLibraries = mx::createDocument();
-    mx::loadLibraries(libraryFolders, searchPath, stdLibraries);
+    // Get Standard Libraries and SearchPaths (for mxDoc and mxShaderGen)
+    const mx::DocumentPtr& stdLibraries = HdMtlxStdLibraries();
+    const mx::FileSearchPath& searchPaths = HdMtlxSearchPaths();
 
     // Create the MaterialX Document from the HdMaterialNetwork
     HdSt_MxShaderGenInfo mxHdInfo;
@@ -960,7 +958,7 @@ _GenerateMaterialXShader(
     
     // Generate the glslfx source code from the mtlxDoc
     return HdSt_GenMaterialXShader(
-        mtlxDoc, stdLibraries, searchPath, mxHdInfo, apiName);
+        mtlxDoc, stdLibraries, searchPaths, mxHdInfo, apiName);
 }
 
 void
