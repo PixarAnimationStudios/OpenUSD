@@ -32,7 +32,7 @@ namespace Sdf_TextFileFormatParser {
     {                                                            \
         const SdfAllowed allow = allowed;                        \
         if (!allow) {                                            \
-            Sdf_TextFileFormatParser_Err(context, "%s",          \
+            SDF_TEXTFILEFORMATPARSER_ERR(context, "%s",          \
             allow.GetWhyNot().c_str());                          \
             return;                                              \
         }                                                        \
