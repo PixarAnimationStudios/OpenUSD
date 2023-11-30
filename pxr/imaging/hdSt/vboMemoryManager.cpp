@@ -37,6 +37,7 @@
 #include "pxr/imaging/hgi/blitCmds.h"
 #include "pxr/imaging/hgi/blitCmdsOps.h"
 #include "pxr/imaging/hgi/buffer.h"
+#include "pxr/imaging/hgi/tokens.h"
 
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
@@ -322,6 +323,7 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
     _totalCapacity = totalNumElements;
     
     Hgi* hgi = _resourceRegistry->GetHgi();
+    bool const isVulkanEnabled = (hgi->GetAPIName() == HgiTokens->Vulkan);
     HgiBlitCmds* blitCmds = _resourceRegistry->GetGlobalBlitCmds();
     blitCmds->PushDebugGroup(__ARCH_PRETTY_FUNCTION__);
 
@@ -346,7 +348,38 @@ HdStVBOMemoryManager::_StripedBufferArray::Reallocate(
         // Skip buffers of zero size
         if (bufferSize > 0) {
             HgiBufferDesc bufDesc;
-            bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+            bufDesc.usage = HgiBufferUsageUniform;
+
+            // Vulkan Validation layer raised multiple errors here because
+            // a usage flag of Vertex was applied to index and storage resources. 
+            // The following code patches those issues.
+            // However, applying this generically raised a hgiGL error because a lot of these buffers
+            // are treated as vertex buffers in HgiGl back-end. Hence for now, pushing 
+            // this hack for separate usage flags based on OpenGL and Vulkan
+            if (isVulkanEnabled)
+            {
+                if (resources[bresIdx].first == HdTokens->indices)
+                {
+                    bufDesc.usage |= HgiBufferUsageIndex32;
+                }
+                else if (resources[bresIdx].first == HdTokens->points
+                    || resources[bresIdx].first == HdTokens->displayColor
+                    || resources[bresIdx].first == HdTokens->normals
+                    || resources[bresIdx].first == HdStTokens->packedSmoothNormals
+                    || resources[bresIdx].first == "st")
+                {
+                    bufDesc.usage |= HgiBufferUsageVertex;
+                }
+                else
+                {
+                    bufDesc.usage |= HgiBufferUsageStorage;
+                }
+            }
+            else
+            {
+                bufDesc.usage |= HgiBufferUsageVertex;
+            }
+
             bufDesc.byteSize = bufferSize;
             bufDesc.vertexStride = bytesPerElement;
             bufDesc.debugName = resources[bresIdx].first.GetText();

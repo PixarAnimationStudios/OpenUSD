@@ -292,7 +292,9 @@ HdStVBOSimpleMemoryManager::_SimpleBufferArray::Reallocate(
 
         HgiBufferDesc bufDesc;
         bufDesc.byteSize = bufferSize;
-        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageVertex;
+        // Vulkan Validation layer is raising an error here because
+        // a usage flag of Uniform is applied to a buffer bound as storage
+        bufDesc.usage = HgiBufferUsageUniform | HgiBufferUsageStorage;
         bufDesc.vertexStride = bytesPerElement;
         bufDesc.debugName = bresIt->first.GetText();
         newBuf = hgi->CreateBuffer(bufDesc);

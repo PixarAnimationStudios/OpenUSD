@@ -147,8 +147,14 @@ TF_DEFINE_PRIVATE_TOKENS(
     (early_fragment_tests)
 );
 
+// For now, looks like for Vulkan path, we require HGI Resource Generation path enabled
+#ifdef PXR_VULKAN_SUPPORT_ENABLED
+TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, true,
+    "Enable Hgi resource generation for codeGen");
+#else
 TF_DEFINE_ENV_SETTING(HDST_ENABLE_HGI_RESOURCE_GENERATION, false,
-                      "Enable Hgi resource generation for codeGen");
+    "Enable Hgi resource generation for codeGen");
+#endif
 
 /* static */
 bool

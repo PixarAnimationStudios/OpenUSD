@@ -102,9 +102,17 @@ HgiVulkanTexture::HgiVulkanTexture(
     // XXX STORAGE_IMAGE requires VK_IMAGE_USAGE_STORAGE_BIT, but Hgi
     // doesn't tell us if a texture will be used as image load/store.
     if ((desc.usage & HgiTextureUsageBitsShaderRead) ||
-            (desc.usage & HgiTextureUsageBitsShaderWrite)) {
-        imageCreateInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+            (desc.usage & HgiTextureUsageBitsShaderWrite)){
+        // Vulkan does not allow image views of this format to be of type storage.
+        // They are used for sampling or presentation
+        if (imageCreateInfo.format == VK_FORMAT_R8G8B8A8_SRGB){
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
         }
+        else{ 
+            imageCreateInfo.usage |= VK_IMAGE_USAGE_STORAGE_BIT;
+        }
+        
+    }
 
     VkFormatFeatureFlags formatValidationFlags =
         HgiVulkanConversions::GetFormatFeature(desc.usage);
@@ -514,6 +522,73 @@ HgiVulkanTexture::CopyBufferToTexture(
         VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT); // Consumer stage
 }
 
+void 
+HgiVulkanTexture::SubmitLayoutChange(HgiTextureUsage newLayout)
+{
+    VkImageLayout newVkLayout = 
+        HgiVulkanTexture::GetDefaultImageLayout(newLayout);
+
+    HgiVulkanCommandQueue* queue = _device->GetCommandQueue();
+    HgiVulkanCommandBuffer* cb = queue->AcquireResourceCommandBuffer();
+
+    VkAccessFlags srcAccessMask, dstAccessMask;
+
+    // The following cases are based on few initial assumptions to provide
+    // an infrastructure for access mask selection based on layouts.
+    // Feel free to update depending on need and use cases.
+    switch (GetImageLayout()) {
+    case VK_IMAGE_LAYOUT_PREINITIALIZED:
+        srcAccessMask =
+            VK_ACCESS_HOST_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    }
+
+    switch (newVkLayout) {
+    case VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL:
+        dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL:
+        srcAccessMask |= VK_ACCESS_TRANSFER_READ_BIT;
+        dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL:
+        dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL:
+        dstAccessMask |=
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        break;
+    case VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL:
+        srcAccessMask =
+            VK_ACCESS_SHADER_READ_BIT;
+        dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        break;
+    }
+
+    TransitionImageBarrier(
+        cb,
+        this,
+        GetImageLayout(),
+        newVkLayout,                            // Transition tex to this layout
+        srcAccessMask,                          // No pending writes
+        dstAccessMask,                          // Write access to image
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,     // Producer stage
+        VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT);    // Consumer stage
+}
+
 void
 HgiVulkanTexture::TransitionImageBarrier(
     HgiVulkanCommandBuffer* cb,
@@ -570,7 +645,13 @@ HgiVulkanTexture::GetDefaultImageLayout(HgiTextureUsage usage)
         // Assume the ShaderWrite means its a storage image.
         return VK_IMAGE_LAYOUT_GENERAL;
     } else if (usage & HgiTextureUsageBitsShaderRead) {
-        return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        // Also check if image is going to be used as a color 
+        // attachment as well. if yes, then explicitly give 
+        // it a color attachment layout
+        if(usage & HgiTextureUsageBitsColorTarget)
+            return VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        else
+            return VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     } else if (usage & HgiTextureUsageBitsDepthTarget) {
         return VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     } else if (usage & HgiTextureUsageBitsColorTarget) {

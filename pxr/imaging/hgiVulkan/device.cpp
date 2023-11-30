@@ -84,6 +84,7 @@ _SupportsPresentation(
 
 HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
     : _vkPhysicalDevice(nullptr)
+    , _hgiVkInstance(instance)
     , _vkDevice(nullptr)
     , _vmaAllocator(nullptr)
     , _commandQueue(nullptr)
@@ -253,7 +254,7 @@ HgiVulkanDevice::HgiVulkanDevice(HgiVulkanInstance* instance)
 
     VkPhysicalDeviceFeatures2 features =
         {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
-    features.pNext = &vulkan11Features;
+    features.pNext = (instance->GetVulkanVersion() >= VK_API_VERSION_1_2) ? &vulkan11Features : nullptr;
 
     features.features.multiDrawIndirect =
         _capabilities->vkDeviceFeatures.multiDrawIndirect;
@@ -367,6 +368,12 @@ VkDevice
 HgiVulkanDevice::GetVulkanDevice() const
 {
     return _vkDevice;
+}
+
+const HgiVulkanInstance* 
+HgiVulkanDevice::GetInstance() const
+{
+    return _hgiVkInstance;
 }
 
 VmaAllocator

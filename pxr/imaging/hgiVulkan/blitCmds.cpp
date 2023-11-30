@@ -97,11 +97,27 @@ HgiVulkanBlitCmds::CopyTextureGpuToCpu(
     size.depth = texDesc.dimensions[2] - depthOffset;
 
     VkImageSubresourceLayers imageSub;
-    imageSub.aspectMask =
-        HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
     imageSub.baseArrayLayer = isTexArray ? copyOp.sourceTexelOffset[2] : 0;
     imageSub.layerCount = 1;
     imageSub.mipLevel = copyOp.mipLevel;
+
+    // Vulkan Validation demands that only one flag at a time be used 
+    // during the copy operation. Both Depth and Stencil flags cannot
+    // be simultaneously passed as aspects to copy.
+    // So, we are making an assumption that a stencil flag is considered
+    // when both depth and stencil are passes. If need arises, then
+    // this part of the implementation needs to be re-written such that 
+    // a aspect flag is passed to this copy operation to resolve for
+    // discrepancy.
+    VkImageAspectFlags aspectFlags = HgiVulkanConversions::GetImageAspectFlag(texDesc.usage);
+    if (aspectFlags & VK_IMAGE_ASPECT_COLOR_BIT)
+    {
+        imageSub.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+    else if (aspectFlags & VK_IMAGE_ASPECT_STENCIL_BIT)
+    {
+        imageSub.aspectMask = VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
 
     // See vulkan docs: Copying Data Between Buffers and Images
     VkBufferImageCopy region;

@@ -56,6 +56,10 @@ public:
     HGIVULKAN_API
     VkDevice GetVulkanDevice() const;
 
+    /// Returns the hgi vulkan instance.
+    HGIVULKAN_API
+    const HgiVulkanInstance* GetInstance() const;
+
     /// Returns the vulkan memory allocator.
     HGIVULKAN_API
     VmaAllocator GetVulkanMemoryAllocator() const;
@@ -104,6 +108,7 @@ private:
     HgiVulkanDevice(const HgiVulkanDevice&) = delete;
 
     // Vulkan device objects
+    HgiVulkanInstance* _hgiVkInstance;
     VkPhysicalDevice _vkPhysicalDevice;
     VkDevice _vkDevice;
     std::vector<VkExtensionProperties> _vkExtensions;

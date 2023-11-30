@@ -44,7 +44,11 @@ HgiTextureUsage _GetTextureUsage(HdFormat format, TfToken const &name)
                HgiTextureUsageBitsStencilTarget;
     }
 
-    return HgiTextureUsageBitsColorTarget;
+    // We are assuming at some point in a render buffer's life time it
+    // could be used to read from. So just providing that ability to
+    // the render buffer. This is specially useful when using hgiVulkan
+    // back-end
+    return HgiTextureUsageBitsColorTarget | HgiTextureUsageBitsShaderRead;
 }
 
 HdStRenderBuffer::HdStRenderBuffer(

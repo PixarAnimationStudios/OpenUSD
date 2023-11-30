@@ -54,7 +54,11 @@ public:
     PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT = 0;
     PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT = 0;
 
+    ///  Returns the Vulkan version used to create the instance
+    uint32_t GetVulkanVersion();
+
 private:
+    uint32_t _vkVersion;
     VkInstance _vkInstance;
 };
 

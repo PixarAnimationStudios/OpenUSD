@@ -55,6 +55,11 @@ public:
     /// Returns the handle to the Metal texture.
     HGIMETAL_API
     id<MTLTexture> GetTextureId() const;
+    
+    /// At the moment there is no need for explicit layout transition
+    /// for this render API backend. Hence this funciton returns void. 
+    HGIMETAL_API
+    virtual void SubmitLayoutChange(HgiTextureUsage newLayout);
 
 protected:
     friend class HgiMetal;

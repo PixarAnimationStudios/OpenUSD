@@ -877,10 +877,18 @@ HdxColorCorrectionTask::_CreateBufferResources()
     }
 
     // A larger-than screen triangle made to fit the screen.
-    constexpr float vertData[][6] =
+    float vertData[][6] =
             { { -1,  3, 0, 1,     0, 2 },
               { -1, -1, 0, 1,     0, 0 },
               {  3, -1, 0, 1,     2, 0 } };
+
+    // Vulkan back-end needs the UVs inverted along the y axis
+    if (_GetHgi()->GetAPIName() == HgiTokens->Vulkan)
+    {
+        vertData[0][5] = 1.0f - vertData[0][5];
+        vertData[1][5] = 1.0f - vertData[1][5];
+        vertData[2][5] = 1.0f - vertData[2][5];
+    }
 
     HgiBufferDesc vboDesc;
     vboDesc.debugName = "HdxColorCorrectionTask VertexBuffer";
@@ -1131,6 +1139,15 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     _GetTaskContextData(
         ctx, HdxAovTokens->colorIntermediate, &aovTextureIntermediate);
 
+    // We need to ensure the incoming color buffer is set to the correct layout
+    // ie: Shader Read Only Optimal
+    // since we are going to be sampling from this buffer and writing to a color
+    // corrected - intermediate buffer.
+    // However, the intermediate color corrected buffer is in the correct layout
+    // ie: Color Attachment Optimal.
+    // So, no layout transition there.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsShaderRead);
+
     if (!TF_VERIFY(_CreateBufferResources())) {
         return;
     }
@@ -1148,6 +1165,12 @@ HdxColorCorrectionTask::Execute(HdTaskContext* ctx)
     }
 
     _ApplyColorCorrection(aovTextureIntermediate);
+
+    // Before we ping-pong the buffers, we are going to ensure -
+    // The color buffer is converted to a Color Attachment Optimal layout.
+    // Hence, preserving the state atomicity of this pass.
+    // Otherwise, its business as usual.
+    aovTexture->SubmitLayoutChange(HgiTextureUsageBitsColorTarget);
 
     // Toggle color and colorIntermediate
     _ToggleRenderTarget(ctx);

@@ -63,6 +63,13 @@ public:
     HGIGL_API
     uint64_t GetBindlessHandle();
 
+    /// This function does not do anything. There is no support for explicit 
+    /// layout transition in non-explicit APIs like OpenGL. Hence
+    /// this function simply returns void
+    HGIGL_API
+    virtual
+    void SubmitLayoutChange(HgiTextureUsage newLayout);
+
 protected:
     friend class HgiGL;
 
