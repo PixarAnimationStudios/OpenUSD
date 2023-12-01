@@ -25,10 +25,12 @@
 #ifndef PXR_USD_SDF_TEXT_PARSER_HELPERS_H
 #define PXR_USD_SDF_TEXT_PARSER_HELPERS_H
 
+#include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 #include "pxr/base/vt/value.h"
+#include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/listOp.h"
 #include "pxr/usd/sdf/parserHelpers.h"
 #include "pxr/usd/sdf/path.h"
@@ -43,76 +45,110 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 namespace Sdf_TextFileFormatParser {
 
-#define SDF_TEXTFILEFORMATPARSER_ERR(context, ...) \
-    _RaiseError(context, TfStringPrintf(__VA_ARGS__).c_str())
+#define Sdf_TextFileFormatParser_Err(context, input, position, ...) \
+    _RaiseError(context, input, position, TfStringPrintf(__VA_ARGS__).c_str())
 
 //--------------------------------------------------------------------
 // Helpers
 //--------------------------------------------------------------------
 
-bool _SetupValue(const std::string& typeName, Sdf_TextParserContext* context);
+bool _SetupValue(const std::string& typeName, 
+    Sdf_TextParserContext& context);
 void _MatchMagicIdentifier(const Sdf_ParserHelpers::Value& arg1, 
-    Sdf_TextParserContext *context);
-SdfPermission _GetPermissionFromString(const std::string & str,
-    Sdf_TextParserContext *context);
-TfEnum _GetDisplayUnitFromString(const std::string & name,
-    Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _GetPermissionFromString(const std::string & str,
+    SdfPermission& permission);
+bool _GetDisplayUnitFromString(const std::string & name,
+    TfEnum& value);
 void _ValueAppendAtomic(const Sdf_ParserHelpers::Value& arg1, 
-    Sdf_TextParserContext *context);
-void _ValueSetAtomic(Sdf_TextParserContext *context);
-void _PrimSetInheritListItems(SdfListOpType opType, Sdf_TextParserContext *context);
-void _InheritAppendPath(Sdf_TextParserContext *context);
-void _PrimSetSpecializesListItems(SdfListOpType opType,
-    Sdf_TextParserContext *context);
-void _SpecializesAppendPath(Sdf_TextParserContext *context);
-void _PrimSetReferenceListItems(SdfListOpType opType,
-    Sdf_TextParserContext *context);
-void _PrimSetPayloadListItems(SdfListOpType opType, Sdf_TextParserContext *context);
-void _PrimSetVariantSetNamesListItems(SdfListOpType opType,
-    Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _ValueSetAtomic(Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _PrimSetInheritListItems(SdfListOpType opType,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+void _InheritAppendPath(Sdf_TextParserContext& context);
+bool _PrimSetSpecializesListItems(SdfListOpType opType,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+void _SpecializesAppendPath(Sdf_TextParserContext& context);
+bool _PrimSetReferenceListItems(SdfListOpType opType,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _PrimSetPayloadListItems(SdfListOpType opType, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _PrimSetVariantSetNamesListItems(SdfListOpType opType,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
 void _RelationshipInitTarget(const SdfPath& targetPath,
-    Sdf_TextParserContext *context);
-void _RelationshipSetTargetsList(SdfListOpType opType, 
-    Sdf_TextParserContext *context);
-void _PrimSetVariantSelection(Sdf_TextParserContext *context);
-void _RelocatesAdd(const Sdf_ParserHelpers::Value& arg1,
-    const Sdf_ParserHelpers::Value& arg2, Sdf_TextParserContext *context);
-void _AttributeSetConnectionTargetsList(SdfListOpType opType, 
-    Sdf_TextParserContext *context);
-void _AttributeAppendConnectionPath(Sdf_TextParserContext *context);
-void _PrimInitAttribute(const Sdf_ParserHelpers::Value &arg1,
-    Sdf_TextParserContext *context);
-void _DictionaryBegin(Sdf_TextParserContext *context);
-void _DictionaryEnd(Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _RelationshipSetTargetsList(SdfListOpType opType, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _PrimSetVariantSelection(Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _RelocatesAdd(const Sdf_ParserHelpers::Value& arg1,
+    const Sdf_ParserHelpers::Value& arg2, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _AttributeSetConnectionTargetsList(SdfListOpType opType, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+void _AttributeAppendConnectionPath(Sdf_TextParserContext& context,
+    size_t lineNumber);
+bool _PrimInitAttribute(const Sdf_ParserHelpers::Value &arg1,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+void _DictionaryBegin(Sdf_TextParserContext& context);
+void _DictionaryEnd(Sdf_TextParserContext& context);
 void _DictionaryInsertValue(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
 void _DictionaryInsertDictionary(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _DictionaryInitScalarFactory(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _DictionaryInitShapedFactory(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _ValueSetTuple(Sdf_TextParserContext *context);
-void _ValueSetList(Sdf_TextParserContext *context);
-void _ValueSetShaped(Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _DictionaryInitScalarFactory(const Sdf_ParserHelpers::Value& arg1,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _DictionaryInitShapedFactory(const Sdf_ParserHelpers::Value& arg1,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _ValueSetTuple(Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _ValueSetList(Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _ValueSetShaped(Sdf_TextParserContext& context,
+    std::string& errorMessage);
 void _ValueSetCurrentToSdfPath(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _PrimInitRelationship(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _PrimEndRelationship(Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _PrimInitRelationship(const Sdf_ParserHelpers::Value& arg1,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+void _PrimEndRelationship(Sdf_TextParserContext& context);
 void _RelationshipAppendTargetPath(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
-void _PathSetPrim(const Sdf_ParserHelpers::Value& arg1, Sdf_TextParserContext *context);
-void _PathSetPrimOrPropertyScenePath(const Sdf_ParserHelpers::Value& arg1,
-    Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
+bool _PathSetPrim(const Sdf_ParserHelpers::Value& arg1, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+bool _PathSetPrimOrPropertyScenePath(const Sdf_ParserHelpers::Value& arg1,
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
 void _SetGenericMetadataListOpItems(const TfType& fieldType, 
-    Sdf_TextParserContext *context);
+    Sdf_TextParserContext& context);
 bool _IsGenericMetadataListOpType(const TfType& type,
     TfType* itemArrayType = nullptr);
-void _GenericMetadataStart(const Sdf_ParserHelpers::Value &name, SdfSpecType specType,
-    Sdf_TextParserContext *context);
-void _GenericMetadataEnd(SdfSpecType specType, Sdf_TextParserContext *context);
-void _RaiseError(Sdf_TextParserContext *context, const char *msg);
+void _GenericMetadataStart(const Sdf_ParserHelpers::Value &name, 
+    SdfSpecType specType,
+    Sdf_TextParserContext& context);
+bool _GenericMetadataEnd(SdfSpecType specType, 
+    Sdf_TextParserContext& context,
+    std::string& errorMessage);
+std::string _UnpadNamespacedName(const std::string& in);
+Sdf_ParserHelpers::Value _GetValueFromString(const std::string& in,
+    size_t lineNumber,
+    Sdf_TextParserContext& context);
+std::string _GetAssetRefFromString(const std::string& in);
+std::string _GetEvaluatedStringFromString(const std::string& in,
+    Sdf_TextParserContext& context);
 
 template <class T>
 bool
@@ -174,9 +210,10 @@ std::vector<T> _ToItemVector(const VtArray<T>& v)
 // Set a single ListOp vector in the list op for the current
 // path and specified key.
 template <class T>
-void
+bool
 _SetListOpItems(const TfToken &key, SdfListOpType type,
-                const T &itemList, Sdf_TextParserContext *context)
+                const T &itemList, Sdf_TextParserContext& context,
+                std::string& errorMessage)
 {
     typedef SdfListOp<typename T::value_type> ListOpType;
     typedef typename ListOpType::ItemVector ItemVector;
@@ -184,33 +221,36 @@ _SetListOpItems(const TfToken &key, SdfListOpType type,
     const ItemVector& items = _ToItemVector(itemList);
 
     if (_HasDuplicates(items)) {
-        SDF_TEXTFILEFORMATPARSER_ERR(context, 
-            "Duplicate items exist for field '%s' at '%s'",
-            key.GetText(), context->path.GetText());
+        errorMessage = "Duplicate items exist for field '" + 
+            key.GetString() + "' at '" + context.path.GetAsString() + "'";
+        
+        return false;
     }
 
-    ListOpType op = context->data->GetAs<ListOpType>(context->path, key);
+    ListOpType op = context.data->GetAs<ListOpType>(context.path, key);
     op.SetItems(items, type);
 
-    context->data->Set(context->path, key, VtValue::Take(op));
+    context.data->Set(context.path, key, VtValue::Take(op));
+
+    return true;
 }
 
 // Append a single item to the vector for the current path and specified key.
 template <class T>
 void
 _AppendVectorItem(const TfToken& key, const T& item,
-                  Sdf_TextParserContext *context)
+                  Sdf_TextParserContext& context)
 {
     std::vector<T> vec =
-        context->data->GetAs<std::vector<T> >(context->path, key);
+        context.data->GetAs<std::vector<T> >(context.path, key);
     vec.push_back(item);
 
-    context->data->Set(context->path, key, VtValue(vec));
+    context.data->Set(context.path, key, VtValue(vec));
 }
 
 inline void
 _SetDefault(const SdfPath& path, VtValue val,
-            Sdf_TextParserContext *context)
+            Sdf_TextParserContext& context)
 {
     // If is holding SdfPathExpression (or array of same), make absolute with
     // path.GetPrimPath() as anchor.
@@ -235,40 +275,41 @@ _SetDefault(const SdfPath& path, VtValue val,
         val.UncheckedSwap(valPath);
     }
     */
-    context->data->Set(path, SdfFieldKeys->Default, val);
+    context.data->Set(path, SdfFieldKeys->Default, val);
 }        
 
 template <class T>
 inline void
 _SetField(const SdfPath& path, const TfToken& key, const T& item,
-          Sdf_TextParserContext *context)
+          Sdf_TextParserContext& context)
 {
-    context->data->Set(path, key, VtValue(item));
+    context.data->Set(path, key, VtValue(item));
 }
 
 inline bool
 _HasField(const SdfPath& path, const TfToken& key, VtValue* value, 
-          Sdf_TextParserContext *context)
+          Sdf_TextParserContext& context)
 {
-    return context->data->Has(path, key, value);
+    return context.data->Has(path, key, value);
 }
 
 inline bool
-_HasSpec(const SdfPath& path, Sdf_TextParserContext *context)
+_HasSpec(const SdfPath& path, Sdf_TextParserContext& context)
 {
-    return context->data->HasSpec(path);
+    return context.data->HasSpec(path);
 }
 
 inline void
 _CreateSpec(const SdfPath& path, SdfSpecType specType, 
-            Sdf_TextParserContext *context)
+            Sdf_TextParserContext& context)
 {
-    context->data->CreateSpec(path, specType);
+    context.data->CreateSpec(path, specType);
 }
 
 template <class ListOpType>
 bool
-_SetItemsIfListOp(const TfType& type, Sdf_TextParserContext *context)
+_SetItemsIfListOp(const TfType& type, Sdf_TextParserContext& context,
+    std::string& errorMessage)
 {
     if (!type.IsA<ListOpType>()) {
         return false;
@@ -276,19 +317,19 @@ _SetItemsIfListOp(const TfType& type, Sdf_TextParserContext *context)
 
     typedef VtArray<typename ListOpType::value_type> ArrayType;
 
-    if (!TF_VERIFY(context->currentValue.IsHolding<ArrayType>() ||
-                   context->currentValue.IsEmpty())) {
+    if (!TF_VERIFY(context.currentValue.IsHolding<ArrayType>() ||
+                   context.currentValue.IsEmpty())) {
         return true;
     }
 
     ArrayType vtArray;
-    if (context->currentValue.IsHolding<ArrayType>()) {
-        vtArray = context->currentValue.UncheckedGet<ArrayType>();
+    if (context.currentValue.IsHolding<ArrayType>()) {
+        vtArray = context.currentValue.UncheckedGet<ArrayType>();
     }
 
-    _SetListOpItems(
-        context->genericMetadataKey, context->listOpType, vtArray, context);
-    return true;
+    return _SetListOpItems(
+        context.genericMetadataKey, context.listOpType, 
+        vtArray, context, errorMessage);
 }
 
 template <class ListOpType>
@@ -298,6 +339,49 @@ _GetListOpAndArrayTfTypes() {
         TfType::Find<ListOpType>(),
         TfType::Find<VtArray<typename ListOpType::value_type>>()
     };
+}
+
+template <class Input, class Position>
+void
+_RaiseError(Sdf_TextParserContext& context, const Input& in, 
+    const Position& pos, const char *msg)
+{
+    // to get the position of interest, we need
+    // the current position of the input iterator
+    // which we can get via in.at - but this gives
+    // only a character pointer, so the best end
+    // we have is the end of that line
+    std::string inputAtError =
+        std::string(in.at(pos), in.end_of_line(pos));
+    std::string s = TfStringPrintf(
+        "%s%s in <%s>",
+        msg,
+        (" at '" + inputAtError + "'").c_str(),
+        context.path.GetText());
+
+    s += "\n";
+
+    // Return the line number in the error info.
+    TfDiagnosticInfo info(pos.line);
+
+    TF_ERROR(info, TF_DIAGNOSTIC_RUNTIME_ERROR_TYPE, s);
+
+    TF_DEBUG(SDF_TEXT_FILE_FORMAT_RULES).Msg("%s\n", s.c_str());
+}
+
+template <class Input>
+void
+_ReportParseError(Sdf_TextParserContext& context, const Input& in, 
+    const std::string& text)
+{
+    if (!context.values.IsRecordingString())
+    {
+        // in this case, we don't have good information on the
+        // exact position this occurred at because the
+        // input here is the original content, not the
+        // action input
+        _RaiseError(context, in, in.position(), text.c_str());
+    }
 }
 
 } // end namespace Sdf_TextFileFormatParser

@@ -428,16 +428,29 @@ pxr_register_test(testUsdviewFileArguments4
         PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
 )
 
-pxr_register_test(testUsdviewFileArguments5
-    PYTHON
-    COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda"
-    CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
-    STDERR_REDIRECT invalidSyntax_test_out
-    DIFF_COMPARE invalidSyntax_test_out
-    EXPECTED_RETURN_CODE 1
-    ENV
-        PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
-)
+if(${PXR_ENABLE_LEGACY_TEXT_FILE_FORMAT_PARSER})
+    pxr_register_test(testUsdviewFileArguments5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda"
+        CLEAN_OUTPUT "(?:[A-Za-z]:)?/(?!refSphere2).*/"
+        STDERR_REDIRECT invalidSyntax_test_out_legacy
+        DIFF_COMPARE invalidSyntax_test_out_legacy
+        EXPECTED_RETURN_CODE 1
+        ENV
+            PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
+    )
+else()
+    pxr_register_test(testUsdviewFileArguments5
+        PYTHON
+        COMMAND "${CMAKE_INSTALL_PREFIX}/bin/testusdview --testScript testInvalidFileArg.py invalidSyntax.usda"
+        CLEAN_OUTPUT "(?:[A-Za-z]:)?/.*(?=invalidSyntax)"
+        STDERR_REDIRECT invalidSyntax_test_out
+        DIFF_COMPARE invalidSyntax_test_out
+        EXPECTED_RETURN_CODE 1
+        ENV
+            PXR_USDVIEW_SUPPRESS_STATE_SAVING=1
+    )
+endif()
 
 pxr_register_test(testUsdviewFileArguments6
     PYTHON

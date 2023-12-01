@@ -69,6 +69,7 @@ pxr_library(sdf
         spec
         specType
         textFileFormat
+        textFileFormatParser
         timeCode
         tokens
         types
@@ -350,6 +351,14 @@ pxr_build_test(testSdfPredicateExpression_Cpp
         testenv/testSdfPredicateExpression.cpp
 )
 
+pxr_build_test(testSdfTextFileFormatParsing
+    LIBRARIES
+        sdf
+        tf
+    CPPFILES
+        testenv/testSdfTextFileFormatParsing.cpp
+)
+
 pxr_install_test_dir(
     SRC testenv/testSdfBatchNamespaceEdit.testenv
     DEST testSdfBatchNamespaceEdit/testSdfBatchNamespaceEdit.testenv
@@ -509,6 +518,10 @@ pxr_register_test(testSdfPathThreading
 
 pxr_register_test(testSdfPredicateExpression_Cpp
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfPredicateExpression_Cpp"
+)
+
+pxr_register_test(testSdfTextFileFormatParsing
+   COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testSdfTextFileFormatParsing"
 )
 
 pxr_register_test(testSdfPayload

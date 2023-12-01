@@ -55,6 +55,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 class Sdf_TextParserContext {
 public:
     // Constructor.
+    SDF_API
     Sdf_TextParserContext();
     
     std::string magicIdentifierToken;

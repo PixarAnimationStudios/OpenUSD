@@ -51,6 +51,8 @@ option(PXR_ENABLE_NAMESPACES "Enable C++ namespaces." ON)
 option(PXR_PREFER_SAFETY_OVER_SPEED
        "Enable certain checks designed to avoid crashes or out-of-bounds memory reads with malformed input files.  These checks may negatively impact performance."
         ON)
+option(PXR_ENABLE_LEGACY_TEXT_FILE_FORMAT_PARSER
+    "Enables the legacy yacc parser and disables the new pegtl parser" OFF)
 
 # Determine GFX api
 # Metal only valid on Apple platforms
@@ -214,4 +216,11 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
             "PXR_ENABLE_PYTHON_SUPPORT=OFF")
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
+endif()
+
+# enable the yacc legacy parser if the option is on
+if(${PXR_ENABLE_LEGACY_TEXT_FILE_FORMAT_PARSER})
+    message(STATUS
+        "Using legacy yacc text file format parser")
+    add_definitions(-DPXR_SDF_TEXT_FILE_FORMAT_LEGACY_PARSER)
 endif()

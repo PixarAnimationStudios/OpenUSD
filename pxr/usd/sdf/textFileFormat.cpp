@@ -56,6 +56,8 @@ TF_DEFINE_ENV_SETTING(
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
+#ifdef PXR_SDF_TEXT_FILE_FORMAT_LEGACY_PARSER
+
 // Our interface to the YACC layer parser for parsing to SdfData.
 extern bool Sdf_ParseLayer(
     const string& context, 
@@ -72,6 +74,37 @@ extern bool Sdf_ParseLayerFromString(
     const string& version,
     PXR_NS::SdfDataRefPtr data,
     PXR_NS::SdfLayerHints *hints);
+
+#else
+
+PXR_NAMESPACE_OPEN_SCOPE
+
+// Our interface to the PEGTL layer parser for parsing to SdfData.
+namespace Sdf_TextFileFormatParser {
+
+extern bool Sdf_ParseLayer(
+    const string& context, 
+    const std::shared_ptr<PXR_NS::ArAsset>& asset,
+    const string& token,
+    const string& version,
+    bool metadataOnly,
+    PXR_NS::SdfDataRefPtr data,
+    PXR_NS::SdfLayerHints *hints);
+
+extern bool Sdf_ParseLayerFromString(
+    const std::string & layerString,
+    const string& token,
+    const string& version,
+    PXR_NS::SdfDataRefPtr data,
+    PXR_NS::SdfLayerHints *hints);
+
+}
+
+PXR_NAMESPACE_CLOSE_SCOPE
+
+using namespace PXR_NS::Sdf_TextFileFormatParser;
+
+#endif
 
 PXR_NAMESPACE_OPEN_SCOPE
 
