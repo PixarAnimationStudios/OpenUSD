@@ -208,7 +208,7 @@ AddImage(const struct mach_header* mh, intptr_t slide)
 
     // Execute in priority order.
     for (size_t i = 0, n = entries.size(); i != n; ++i) {
-        if (entries[i].function && entries[i].version == 0u) {
+        if (entries[i].function && entries[i].version == PXR_MACHO_CTR_VERSION) {
             entries[i].function();
         }
     }
@@ -223,7 +223,7 @@ RemoveImage(const struct mach_header* mh, intptr_t slide)
 
     // Execute in reverse priority order.
     for (size_t i = entries.size(); i-- != 0; ) {
-        if (entries[i].function && entries[i].version == 0u) {
+        if (entries[i].function && entries[i].version == PXR_MACHO_CTR_VERSION) {
             entries[i].function();
         }
     }
