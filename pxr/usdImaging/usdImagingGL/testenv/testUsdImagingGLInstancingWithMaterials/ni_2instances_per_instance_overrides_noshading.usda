@@ -3,6 +3,12 @@
     upAxis = "Z"
 )
 
+# Override the material binding on each of the instances to blue and green
+# respectively.
+# The prototype cube has no material binding and will thus inherit the
+# binding up-namespace.
+# We should see one blue and one green cube.
+#
 def Xform "Scene"
 {
 
@@ -12,7 +18,7 @@ def Xform "Scene"
     )
     {
         rel material:binding = </Scene/Blue>
-        float3 xformOp:translate = (-10, 0, 0)
+        float3 xformOp:translate = (-3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 
@@ -22,7 +28,7 @@ def Xform "Scene"
     )
     {
         rel material:binding = </Scene/Green>
-        float3 xformOp:translate = (10, 0, 0)
+        float3 xformOp:translate = (3, 0, 0)
         uniform token[] xformOpOrder = ["xformOp:translate"]
     }
 

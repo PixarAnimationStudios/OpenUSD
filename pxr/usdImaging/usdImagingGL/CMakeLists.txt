@@ -446,6 +446,11 @@ pxr_install_test_dir(
 )
 
 pxr_install_test_dir(
+    SRC testenv/testUsdImagingGLInstancingWithMaterials
+    DEST testUsdImagingGLInstancingWithMaterials_SceneIndex
+)
+
+pxr_install_test_dir(
     SRC testenv/testUsdImagingGLFaceVarying
     DEST testUsdImagingGLFaceVarying
 )
@@ -3293,7 +3298,7 @@ pxr_register_test(testUsdImagingGLPremultiplyAlpha_udims
 )
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage ni_2instances.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancingWithMaterials_ni_2instances.png
     FAIL 0.01
@@ -3306,7 +3311,7 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances
 
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage ni_2instances_per_instance_overrides_noshading.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_per_instance_overrides_noshading.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading.png
     FAIL 0.01
@@ -3319,7 +3324,7 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_per_inst
 
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage ni_2instances_shaded.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_shaded.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded.png
     FAIL 0.01
@@ -3332,7 +3337,7 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded
 
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage ni_2instances_shaded_overrides.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_shaded_overrides.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides.png
     FAIL 0.01
@@ -3343,21 +3348,8 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_o
     TESTENV testUsdImagingGLInstancingWithMaterials
 )
 
-
-pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides_noshading
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -frameAll -stage ni_2instances_shaded_overrides_noshading.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides_noshading.png"
-    IMAGE_DIFF_COMPARE
-        testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides_noshading.png
-    FAIL 0.01
-    FAIL_PERCENT 0.005
-    WARN 0.02
-    WARN_PERCENT 0.0025
-    EXPECTED_RETURN_CODE 0
-    TESTENV testUsdImagingGLInstancingWithMaterials
-)
-
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -shading smooth -camera /camera -stage ni_ni_material_outside_prototype.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -camera /main_cam -stage ni_ni_material_outside_prototype.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png"
     IMAGE_DIFF_COMPARE
         testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png
     FAIL 0.01
@@ -3366,6 +3358,93 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside
     WARN_PERCENT 0.0025
     EXPECTED_RETURN_CODE 0
     TESTENV testUsdImagingGLInstancingWithMaterials
+)
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instances
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_2instances.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instances_per_instance_overrides_noshading
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_per_instance_overrides_noshading.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_2instances_per_instance_overrides_noshading.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instances_shaded
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_shaded.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_2instances_shaded_overrides
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -camlight -shading wireOnSurface -frameAll -stage ni_2instances_shaded_overrides.usda -write testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_2instances_shaded_overrides.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_material_outside_prototype
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -camera /main_cam -stage ni_ni_material_outside_prototype.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png"
+    IMAGE_DIFF_COMPARE
+        testUsdImagingGLInstancingWithMaterials_ni_ni_material_outside_prototype.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
+)
+
+pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_material_binding_resolution
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -camera /main_cam -stage ni_ni_material_binding_resolution.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_binding_resolution.png"
+    IMAGE_DIFF_COMPARE
+    testUsdImagingGLInstancingWithMaterials_ni_ni_material_binding_resolution.png
+    FAIL 0.01
+    FAIL_PERCENT 0.005
+    WARN 0.02
+    WARN_PERCENT 0.0025
+    EXPECTED_RETURN_CODE 0
+    TESTENV testUsdImagingGLInstancingWithMaterials_SceneIndex
+    ENV
+        USDIMAGINGGL_ENGINE_ENABLE_SCENE_INDEX=true
 )
 
 pxr_register_test(testUsdImagingGLFaceVarying_Uniform_Low

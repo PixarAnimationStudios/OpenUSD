@@ -1,5 +1,7 @@
 #usda 1.0
 
+# A cube with a direct (allPurpose) material binding to make it appear red.
+#
 def Xform "Group" (
     prepend apiSchemas = ["MaterialBindingAPI"]
 )
