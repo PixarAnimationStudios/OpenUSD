@@ -32,108 +32,109 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#include "pxr/imaging/hd/materialNetworkSchema.h"
+#include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
 #include "pxr/base/trace/trace.h"
 
 // --(BEGIN CUSTOM CODE: Includes)--
+#include "pxr/imaging/hd/materialNetworkSchema.h"
+#include "pxr/imaging/hd/materialNodeSchema.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-TF_DEFINE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens,
-    HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
+TF_DEFINE_PUBLIC_TOKENS(HdMaterialInterfaceMappingSchemaTokens,
+    HD_MATERIAL_INTERFACE_MAPPING_SCHEMA_TOKENS);
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+
+HdDataSourceLocator
+HdMaterialInterfaceMappingSchema::BuildNetworkRelativeLocator()
+{
+    HdTokenDataSourceHandle nodePathDs = GetNodePath();
+    if (!nodePathDs) {
+        return HdDataSourceLocator();
+    }
+
+    HdTokenDataSourceHandle inputNameDs = GetInputName();
+    if (!inputNameDs) {
+        return HdDataSourceLocator();
+    }
+
+    return HdDataSourceLocator(
+        HdMaterialNetworkSchemaTokens->nodes,
+        nodePathDs->GetTypedValue(0.0f),
+        HdMaterialNodeSchemaTokens->parameters,
+        inputNameDs->GetTypedValue(0.0f));
+}
+
 // --(END CUSTOM CODE: Schema Methods)--
 
 
 
 
-HdContainerDataSourceHandle
-HdMaterialNetworkSchema::GetNodes()
+HdTokenDataSourceHandle
+HdMaterialInterfaceMappingSchema::GetNodePath()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->nodes);
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialInterfaceMappingSchemaTokens->nodePath);
 }
 
-HdContainerDataSourceHandle
-HdMaterialNetworkSchema::GetTerminals()
+HdTokenDataSourceHandle
+HdMaterialInterfaceMappingSchema::GetInputName()
 {
-    return _GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->terminals);
-}
-
-HdMaterialInterfaceMappingsContainerSchema
-HdMaterialNetworkSchema::GetInterfaceMappings()
-{
-    return HdMaterialInterfaceMappingsContainerSchema(_GetTypedDataSource<HdContainerDataSource>(
-        HdMaterialNetworkSchemaTokens->interfaceMappings));
+    return _GetTypedDataSource<HdTokenDataSource>(
+        HdMaterialInterfaceMappingSchemaTokens->inputName);
 }
 
 /*static*/
 HdContainerDataSourceHandle
-HdMaterialNetworkSchema::BuildRetained(
-        const HdContainerDataSourceHandle &nodes,
-        const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings
+HdMaterialInterfaceMappingSchema::BuildRetained(
+        const HdTokenDataSourceHandle &nodePath,
+        const HdTokenDataSourceHandle &inputName
 )
 {
-    TfToken _names[3];
-    HdDataSourceBaseHandle _values[3];
+    TfToken _names[2];
+    HdDataSourceBaseHandle _values[2];
 
     size_t _count = 0;
-    if (nodes) {
-        _names[_count] = HdMaterialNetworkSchemaTokens->nodes;
-        _values[_count++] = nodes;
+    if (nodePath) {
+        _names[_count] = HdMaterialInterfaceMappingSchemaTokens->nodePath;
+        _values[_count++] = nodePath;
     }
 
-    if (terminals) {
-        _names[_count] = HdMaterialNetworkSchemaTokens->terminals;
-        _values[_count++] = terminals;
-    }
-
-    if (interfaceMappings) {
-        _names[_count] = HdMaterialNetworkSchemaTokens->interfaceMappings;
-        _values[_count++] = interfaceMappings;
+    if (inputName) {
+        _names[_count] = HdMaterialInterfaceMappingSchemaTokens->inputName;
+        _values[_count++] = inputName;
     }
 
     return HdRetainedContainerDataSource::New(_count, _names, _values);
 }
 
 
-HdMaterialNetworkSchema::Builder &
-HdMaterialNetworkSchema::Builder::SetNodes(
-    const HdContainerDataSourceHandle &nodes)
+HdMaterialInterfaceMappingSchema::Builder &
+HdMaterialInterfaceMappingSchema::Builder::SetNodePath(
+    const HdTokenDataSourceHandle &nodePath)
 {
-    _nodes = nodes;
+    _nodePath = nodePath;
     return *this;
 }
 
-HdMaterialNetworkSchema::Builder &
-HdMaterialNetworkSchema::Builder::SetTerminals(
-    const HdContainerDataSourceHandle &terminals)
+HdMaterialInterfaceMappingSchema::Builder &
+HdMaterialInterfaceMappingSchema::Builder::SetInputName(
+    const HdTokenDataSourceHandle &inputName)
 {
-    _terminals = terminals;
-    return *this;
-}
-
-HdMaterialNetworkSchema::Builder &
-HdMaterialNetworkSchema::Builder::SetInterfaceMappings(
-    const HdContainerDataSourceHandle &interfaceMappings)
-{
-    _interfaceMappings = interfaceMappings;
+    _inputName = inputName;
     return *this;
 }
 
 HdContainerDataSourceHandle
-HdMaterialNetworkSchema::Builder::Build()
+HdMaterialInterfaceMappingSchema::Builder::Build()
 {
-    return HdMaterialNetworkSchema::BuildRetained(
-        _nodes,
-        _terminals,
-        _interfaceMappings
+    return HdMaterialInterfaceMappingSchema::BuildRetained(
+        _nodePath,
+        _inputName
     );
 }
 

@@ -27,6 +27,7 @@
 #include "pxr/imaging/hd/meshTopologySchema.h"
 #include "pxr/imaging/hd/primvarsSchema.h"
 #include "pxr/imaging/hd/xformSchema.h"
+#include "pxr/imaging/hd/materialNetworkSchema.h"
 
 #include "pxr/imaging/hd/tokens.h"
 
@@ -479,6 +480,63 @@ bool TestSpecializedNew()
 
 //-----------------------------------------------------------------------------
 
+bool TestContainerSchemas()
+{
+    HdContainerDataSourceHandle c1 = HdRetainedContainerDataSource::New(
+        TfToken("a"), HdRetainedTypedSampledDataSource<int>::New(1),
+        TfToken("b"), HdRetainedTypedSampledDataSource<int>::New(2),
+        TfToken("c"), HdRetainedTypedSampledDataSource<float>::New(3.0f));
+
+    HdTypedContainerSchema<HdIntDataSource> s1(c1);
+
+    if (!s1.Get(TfToken("a")) || !s1.Get(TfToken("b"))) {
+        std::cerr << "expected int data source result" << std::endl;
+        return false;
+    }
+
+    if (s1.Get(TfToken("c"))) {
+        std::cerr << "unexpected data source result from float" << std::endl;
+        return false;
+    }
+
+    auto _TDS = [](const char *v) {
+        return HdRetainedTypedSampledDataSource<TfToken>::New(TfToken(v));
+    };
+
+    HdDataSourceBaseHandle h1[] = {
+        HdMaterialInterfaceMappingSchema::Builder()
+            .SetNodePath(_TDS("A"))
+            .SetInputName(_TDS("x"))
+            .Build(),
+        HdMaterialInterfaceMappingSchema::Builder()
+            .SetNodePath(_TDS("B"))
+            .SetInputName(_TDS("y"))
+            .Build(),
+    };
+
+    HdContainerDataSourceHandle c2 = HdRetainedContainerDataSource::New(
+        TfToken("Q"), HdRetainedSmallVectorDataSource::New(2, h1));
+
+    HdMaterialInterfaceMappingsContainerSchema mappings(c2);
+    HdTokenDataSourceHandle t =
+        mappings.Get(TfToken("Q")).GetElement(1).GetNodePath();
+
+    if (!t) {
+        std::cerr << "expected token data source for mapping node path"
+            << std::endl;
+        return false;
+    }
+
+    if (t->GetTypedValue(0.0f) != TfToken("B")) {
+        std::cerr << "unexpected value for mapping node path" << std::endl;
+        return false;
+    }
+
+    return true;
+}
+
+//-----------------------------------------------------------------------------
+
 #define xstr(s) str(s)
 #define str(s) #s
 #define TEST(X) std::cout << (++i) << ") " <<  str(X) << "..." << std::endl; \
@@ -499,6 +557,7 @@ int main(int argc, char**argv)
     TEST(TestXformSchema);
     TEST(TestPrimvarSchema);
     TEST(TestSpecializedNew);
+    TEST(TestContainerSchemas);
 
     // ------------------------------------------------------------------------
     std::cout << "DONE testHdValue: SUCCESS" << std::endl;

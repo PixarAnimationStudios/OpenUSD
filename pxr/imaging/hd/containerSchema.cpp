@@ -1,5 +1,5 @@
 //
-// Copyright 2023 Pixar
+// Copyright 2022 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,33 +21,18 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_IMAGING_HD_VECTOR_SCHEMA_TYPE_DEFS_H
-#define PXR_IMAGING_HD_VECTOR_SCHEMA_TYPE_DEFS_H
 
-#include "pxr/pxr.h"
-
-#include "pxr/imaging/hd/vectorSchema.h"
-
-#include "pxr/base/vt/array.h"
+#include "pxr/imaging/hd/containerSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-// Numeric
-using HdIntArrayVectorSchema = HdTypedVectorSchema<VtIntArray>;
-
-// Schema types
-
-// TODO: these two should be using HdSchemaBasedVectorSchema
-using HdRenderProductVectorSchema =
-    HdTypedVectorSchema<class HdRenderProductSchema>;
-using HdRenderVarVectorSchema =
-    HdTypedVectorSchema<class HdRenderVarSchema>;
-
-using HdInstanceIndicesVectorSchema =
-    HdSchemaBasedVectorSchema<class HdInstanceIndicesSchema>;
-using HdMaterialInterfaceMappingVectorSchema =
-    HdSchemaBasedVectorSchema<class HdMaterialInterfaceMappingSchema>;
+TfTokenVector
+HdContainerSchema::GetNames() const
+{
+    if (_container) {
+        return _container->GetNames();
+    }
+    return {};
+}
 
 PXR_NAMESPACE_CLOSE_SCOPE
-
-#endif

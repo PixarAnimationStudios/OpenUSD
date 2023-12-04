@@ -83,6 +83,8 @@ template<typename T>
 class HdTypedVectorSchema : public HdVectorSchema
 {
 public:
+    // TODO: To match HdTypedContainerSchema, we will want DataSource = T
+    //       This affects existing use cases which may not work anyway yet.
     using DataSource = HdTypedSampledDataSource<T>;
     using DataSourceHandle = typename DataSource::Handle;
 

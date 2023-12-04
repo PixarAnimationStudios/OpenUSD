@@ -2696,9 +2696,10 @@ _ConvertHdMaterialNetworkToHdDataSources(
             terminalsValues.data());
 
     // Create the material network, potentially one per network selector
-    HdDataSourceBaseHandle network = HdMaterialNetworkSchema::BuildRetained(
-        nodesDefaultContext,
-        terminalsDefaultContext);
+    HdDataSourceBaseHandle network = HdMaterialNetworkSchema::Builder()
+        .SetNodes(nodesDefaultContext)
+        .SetTerminals(terminalsDefaultContext)
+        .Build();
         
     TfToken defaultContext = HdMaterialSchemaTokens->universalRenderContext;
     *result = HdMaterialSchema::BuildRetained(

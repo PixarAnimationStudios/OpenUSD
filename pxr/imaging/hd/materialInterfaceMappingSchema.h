@@ -32,59 +32,45 @@
 /* **                                                                      ** */
 /* ************************************************************************** */
 
-#ifndef PXR_IMAGING_HD_MATERIAL_NETWORK_SCHEMA_H
-#define PXR_IMAGING_HD_MATERIAL_NETWORK_SCHEMA_H
+#ifndef PXR_IMAGING_HD_MATERIAL_INTERFACE_MAPPING_SCHEMA_H
+#define PXR_IMAGING_HD_MATERIAL_INTERFACE_MAPPING_SCHEMA_H
 
 #include "pxr/imaging/hd/api.h"
 
-#include "pxr/imaging/hd/materialInterfaceMappingSchema.h"
-
+#include "pxr/imaging/hd/schema.h" 
 
 // --(BEGIN CUSTOM CODE: Includes)--
-#include "pxr/imaging/hd/containerSchema.h"
 // --(END CUSTOM CODE: Includes)--
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
-// --(BEGIN CUSTOM CODE: Declares)--
-using HdMaterialInterfaceMappingsContainerSchema =
-    HdVectorSchemaBasedContainerSchema<
-        HdMaterialInterfaceMappingVectorSchema>;
-// --(END CUSTOM CODE: Declares)--
+#define HD_MATERIAL_INTERFACE_MAPPING_SCHEMA_TOKENS \
+    (nodePath) \
+    (inputName) \
+
+TF_DECLARE_PUBLIC_TOKENS(HdMaterialInterfaceMappingSchemaTokens, HD_API,
+    HD_MATERIAL_INTERFACE_MAPPING_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
 
-#define HD_MATERIAL_NETWORK_SCHEMA_TOKENS \
-    (nodes) \
-    (terminals) \
-    (interfaceMappings) \
-
-TF_DECLARE_PUBLIC_TOKENS(HdMaterialNetworkSchemaTokens, HD_API,
-    HD_MATERIAL_NETWORK_SCHEMA_TOKENS);
-
-//-----------------------------------------------------------------------------
-class HdMaterialNetworkSchema : public HdSchema
+class HdMaterialInterfaceMappingSchema : public HdSchema
 {
 public:
-    HdMaterialNetworkSchema(HdContainerDataSourceHandle container)
+    HdMaterialInterfaceMappingSchema(HdContainerDataSourceHandle container)
     : HdSchema(container) {}
 
 // --(BEGIN CUSTOM CODE: Schema Methods)--
+    HdDataSourceLocator BuildNetworkRelativeLocator();
 // --(END CUSTOM CODE: Schema Methods)--
 
     //ACCESSORS
 
-
     HD_API
-    HdContainerDataSourceHandle GetNodes();
-
+    HdTokenDataSourceHandle GetNodePath();
     HD_API
-    HdContainerDataSourceHandle GetTerminals();
-
-    HD_API
-    HdMaterialInterfaceMappingsContainerSchema GetInterfaceMappings();
+    HdTokenDataSourceHandle GetInputName();
 
     // RETRIEVING AND CONSTRUCTING
 
@@ -96,12 +82,11 @@ public:
     HD_API
     static HdContainerDataSourceHandle
     BuildRetained(
-        const HdContainerDataSourceHandle &nodes,
-        const HdContainerDataSourceHandle &terminals,
-        const HdContainerDataSourceHandle &interfaceMappings
+        const HdTokenDataSourceHandle &nodePath,
+        const HdTokenDataSourceHandle &inputName
     );
 
-    /// \class HdMaterialNetworkSchema::Builder
+    /// \class HdMaterialInterfaceMappingSchema::Builder
     /// 
     /// Utility class for setting sparse sets of child data source fields to be
     /// filled as arguments into BuildRetained. Because all setter methods
@@ -111,23 +96,19 @@ public:
     {
     public:
         HD_API
-        Builder &SetNodes(
-            const HdContainerDataSourceHandle &nodes);
+        Builder &SetNodePath(
+            const HdTokenDataSourceHandle &nodePath);
         HD_API
-        Builder &SetTerminals(
-            const HdContainerDataSourceHandle &terminals);
-        HD_API
-        Builder &SetInterfaceMappings(
-            const HdContainerDataSourceHandle &interfaceMappings);
+        Builder &SetInputName(
+            const HdTokenDataSourceHandle &inputName);
 
         /// Returns a container data source containing the members set thus far.
         HD_API
         HdContainerDataSourceHandle Build();
 
     private:
-        HdContainerDataSourceHandle _nodes;
-        HdContainerDataSourceHandle _terminals;
-        HdContainerDataSourceHandle _interfaceMappings;
+        HdTokenDataSourceHandle _nodePath;
+        HdTokenDataSourceHandle _inputName;
     };
 
 };
