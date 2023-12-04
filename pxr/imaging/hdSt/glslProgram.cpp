@@ -31,6 +31,7 @@
 #include "pxr/imaging/hdSt/resourceRegistry.h"
 #include "pxr/base/arch/hash.h"
 #include "pxr/base/tf/diagnostic.h"
+#include "pxr/base/tf/scopeDescription.h"
 
 #include <climits>
 #include <cstdlib>
@@ -236,6 +237,16 @@ _ValidateCompilation(
     return true;
 }
 
+static std::string
+_GetScopeDescriptionLabel(HgiShaderProgramDesc const &desc)
+{
+    if (desc.debugName.empty()) {
+        return {};
+    } else {
+        return TfStringPrintf(" (%s)", desc.debugName.c_str());
+    }
+}
+
 HdStGLSLProgram::HdStGLSLProgram(
     TfToken const &role,
     HdStResourceRegistry *const registry)
@@ -295,6 +306,9 @@ HdStGLSLProgram::CompileShader(
         return false;
     }
 
+    TF_DESCRIBE_SCOPE(
+        "Compiling GLSL shader" + _GetScopeDescriptionLabel(_programDesc));
+
     if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCE)) {
         _DumpShaderSource(shaderType, shaderSource);
     }
@@ -341,6 +355,9 @@ HdStGLSLProgram::CompileShader(HgiShaderFunctionDesc const &desc)
         TF_CODING_ERROR("Invalid shader type %d\n", desc.shaderStage);
         return false;
     }
+
+    TF_DESCRIBE_SCOPE(
+        "Compiling GLSL shader" + _GetScopeDescriptionLabel(_programDesc));
 
     if (TfDebug::IsEnabled(HDST_DUMP_SHADER_SOURCE)) {
         _DumpShaderSource(desc);
@@ -402,6 +419,9 @@ HdStGLSLProgram::Link()
         TF_CODING_ERROR("At least one shader has to be compiled before linking.");
         return false;
     }
+
+    TF_DESCRIBE_SCOPE(
+        "Linking GLSL shader" + _GetScopeDescriptionLabel(_programDesc));
 
     Hgi *const hgi = _registry->GetHgi();
 
