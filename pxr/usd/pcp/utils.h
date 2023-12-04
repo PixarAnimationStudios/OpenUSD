@@ -193,6 +193,17 @@ Pcp_GetArgumentsForFileFormatTarget(
 std::pair<PcpNodeRef, PcpNodeRef>
 Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n);
 
+// Translate the given path (which must be a prim or prim variant selection
+// path) from the namespace of the given node to the namespace of the root node
+// of the prim index that node belongs to. If that translation succeeds, returns
+// the translated path and the root node. If that translation fails, translate
+// the path to the ancestor node closest to the root node where the mapping is
+// successful and return the translated path and the ancestor node.
+std::pair<SdfPath, PcpNodeRef>
+Pcp_TranslatePathFromNodeToRootOrClosestNode(
+    const PcpNodeRef& node,
+    const SdfPath& path);
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_PCP_UTILS_H

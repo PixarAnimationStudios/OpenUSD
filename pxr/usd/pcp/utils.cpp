@@ -28,6 +28,7 @@
 #include "pxr/usd/pcp/utils.h"
 
 #include "pxr/usd/pcp/expressionVariables.h"
+#include "pxr/usd/pcp/mapExpression.h"
 #include "pxr/usd/sdf/fileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/variableExpression.h"
@@ -163,6 +164,60 @@ Pcp_FindStartingNodeOfClassHierarchy(const PcpNodeRef& n)
     }
 
     return std::make_pair(instanceNode, classNode);
+}
+
+std::pair<SdfPath, PcpNodeRef>
+Pcp_TranslatePathFromNodeToRootOrClosestNode(
+    const PcpNodeRef& node,
+    const SdfPath& path)
+{
+    if (node.IsRootNode()) {
+        // If the given node is already the root node, nothing to do.
+        return std::make_pair(path, node);
+    }
+
+    // Start at the given node and path. We strip all variant selections
+    // from the path because namespace mappings never include them.
+    PcpNodeRef curNode = node;
+    SdfPath curPath = path.StripAllVariantSelections();
+
+    // First, try translating directly to the root node. If that fails,
+    // walk up from the given node to the root node, translating at each
+    // step until the translation fails.
+    if (SdfPath pathInRootNode = node.GetMapToRoot().MapSourceToTarget(path); 
+        !pathInRootNode.IsEmpty()) {
+        curNode = node.GetRootNode();
+        curPath = std::move(pathInRootNode);
+    }
+    else {
+        while (!curNode.IsRootNode()) {
+            SdfPath pathInParentNode = curNode.GetMapToParent()
+                .MapSourceToTarget(curPath);
+            if (pathInParentNode.IsEmpty()) {
+                break;
+            }
+
+            curNode = curNode.GetParentNode();
+            curPath = std::move(pathInParentNode);
+        }
+    }
+
+    // If curNode's path contains a variant selection, do a prefix
+    // replacement to apply that selection to the translated path.
+    //
+    // We don't check curNode.GetArcType() == PcpArcTypeVariant
+    // because curNode may be the root node of a prim index that
+    // is being recursively computed to pick up ancestral opinions.
+    // In that case, curNode's "real" arc type once it's added to
+    // main prim index being computed isn't available here.
+    if (const SdfPath pathAtIntro = curNode.GetPathAtIntroduction();
+        pathAtIntro.ContainsPrimVariantSelection()) {
+
+        curPath = curPath.ReplacePrefix(
+            pathAtIntro.StripAllVariantSelections(), pathAtIntro);
+    }
+
+    return std::make_pair(curPath, curNode);
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE

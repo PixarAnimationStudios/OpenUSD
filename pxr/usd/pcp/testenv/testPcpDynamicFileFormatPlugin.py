@@ -333,6 +333,133 @@ class TestPcpDynamicFileFormatPlugin(unittest.TestCase):
 
         print("test_BasicRead Success!\n")
 
+    def test_Variants(self):
+        # Test dynamic payloads and arguments authored in variants.
+
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # /Variant overrides the TestPcp_depth and TestPcp_num values that are
+        # originally defined in params.sdf.
+        payloads = self._GeneratePrimIndexPaths("/Variant", 5, 4, 341)
+        cache.RequestPayloads(payloads, [])
+
+        self._ComputeAndVerifyDynamicPayloads(cache, payloads, 
+             ["TestPcp_depth", "TestPcp_height", "TestPcp_num", "TestPcp_radius"])
+
+    def test_AncestralPayloads(self):
+        # Test that loading a dynamic payload when composing ancestral
+        # opinions picks up the right arguments.
+
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Request payload for /RootCone.
+        # 
+        # XXX:
+        # This is a bug. This is currently needed for the payload to be loaded
+        # when we compose /SubrootReference below. However, /RootCone is an
+        # ancestral payload to /SubrootReference and should be automatically
+        # included.
+        cache.RequestPayloads([Sdf.Path("/RootCone")], [])
+
+        # Compute the prim index for /SubrootReference, which references
+        # /RootCone/Xform__3_2. When composing that prim index to incorporate
+        # ancestral opinions, Pcp should ignore the parameters authored on
+        # /SubrootReference because they do not map to the payload on
+        # /RootCone. If those parameters were *not* ignored, the prim being
+        # referenced would not be found leading to incorrect unresolved prim
+        # path errors.
+        pi, err = cache.ComputePrimIndex("/SubrootReference")
+        self.assertFalse(err)
+        self.assertTrue(
+            (Sdf.Layer.Find("cone.testpcpdynamic", 
+                            args={ "TestPcp_depth" : "4",
+                                   "TestPcp_num" : "3",
+                                   "TestPcp_radius" : "50" })
+             .GetPrimAtPath("/Root/Xform__3_2"))
+            in pi.primStack)
+
+    def test_AncestralPayloads2(self):
+        # Similar to test_AncestralPayloads but adds a non-internal reference
+        # arc to further exercise path translation logic during argument
+        # composition.
+
+        rootLayer = Sdf.Layer.CreateAnonymous()
+        rootLayer.ImportFromString("""
+        #sdf 1.4.32
+
+        def "Root" (
+            TestPcp_depth = 1
+            TestPcp_num = 1
+            references = @./root.sdf@</SubrootReference>
+        )
+        {
+            int TestPcp_depth = 1
+            int TestPcp_num = 1
+        }
+        """.strip())
+
+        primSpec = Sdf.CreatePrimInLayer(rootLayer, "/Root")
+        primSpec.referenceList.explicitItems = [ 
+            Sdf.Reference("root.sdf", "/SubrootReference") 
+        ]
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Compute the prim index for /Root. We should not see any composition
+        # errors for the same reasons mentioned in test_AncestralPayloads.
+        # 
+        # XXX: Note that requesting the payload for /Root is not necessary
+        # since this case does not run into the same bug mentioned above.
+        pi, err = cache.ComputePrimIndex("/Root")
+        self.assertFalse(err)
+        self.assertTrue(
+            (Sdf.Layer.Find("cone.testpcpdynamic", 
+                            args={ "TestPcp_depth" : "4",
+                                   "TestPcp_num" : "3",
+                                   "TestPcp_radius" : "50" })
+             .GetPrimAtPath("/Root/Xform__3_2"))
+            in pi.primStack)
+
+    def test_AncestralPayloadsAndVariants(self):
+        # Test that loading a dynamic payload when composing ancestral
+        # opinions within variants picks up the right arguments.
+
+        rootLayerFile = 'root.sdf'
+        rootLayer = Sdf.Layer.FindOrOpen(rootLayerFile)
+        self.assertTrue(rootLayer)
+        cache = self._CreatePcpCache(rootLayer)
+
+        # Request payload for /Variant.
+        # 
+        # XXX:
+        # This is a bug. This is currently needed for the payload to be loaded
+        # when we compose /SubrootReference below. However, /Variant is an
+        # ancestral payload to /SubrootReferenceAndVariant and should be
+        # automatically included.
+        cache.RequestPayloads([Sdf.Path("/Variant")], [])
+
+        # Compute the prim index for /SubrootReferenceAndVariant, which
+        # references /Variant/Xform__4_3. When composing that prim index to
+        # incorporate ancestral opinions, Pcp should ignore the parameters
+        # authored on /SubrootReferenceAndVariant because they do not map to the
+        # payload on /Variant. If those parameters were *not* ignored, the prim
+        # being referenced would not be found leading to incorrect unresolved
+        # prim path errors.
+        pi, err = cache.ComputePrimIndex("/SubrootReferenceAndVariant")
+        self.assertFalse(err)
+        self.assertTrue(
+            (Sdf.Layer.Find("cone.testpcpdynamic", 
+                            args={ "TestPcp_depth" : "5",
+                                   "TestPcp_num" : "4",
+                                   "TestPcp_radius" : "50" })
+             .GetPrimAtPath("/Root/Xform__4_3"))
+            in pi.primStack)
+
     def test_Changes(self):
         # Change processing behavior can be different for Pcp caches in USD mode
         # vs not (especially in regards to property change processing). Run the
