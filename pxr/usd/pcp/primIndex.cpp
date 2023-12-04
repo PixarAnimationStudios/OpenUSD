@@ -1486,7 +1486,7 @@ _AddArc(
         "namespaceDepth: %d\n"
         "directNodeShouldContributeSpecs: %s\n"
         "includeAncestralOpinions: %s\n"
-        "skipDuplicateNodes: %s\n"
+        "skipDuplicateNodes: %s%s\n"
         "skipImpliedSpecializesCompletedNodes: %s\n\n",
         origin ? Pcp_FormatSite(origin.GetSite()).c_str() : "<None>",
         arcSiblingNum,
@@ -1494,6 +1494,11 @@ _AddArc(
         opts.directNodeShouldContributeSpecs ? "true" : "false",
         opts.includeAncestralOpinions ? "true" : "false",
         opts.skipDuplicateNodes ? "true" : "false",
+        indexer->previousFrame ? 
+            TfStringPrintf(
+                " (prev. frame: %s)", 
+                indexer->previousFrame->skipDuplicateNodes ? "true" : "false")
+            .c_str() : "",
         opts.skipImpliedSpecializesCompletedNodes ? "true" : "false");
 
     if (!TF_VERIFY(!mapExpr.IsNull())) {
@@ -1561,6 +1566,8 @@ _AddArc(
         }
 
         if (foundDuplicateNode) {
+            PCP_INDEXING_MSG(
+                indexer, parent, "Skipping because duplicate node exists.");
             return PcpNodeRef();
         }
     }

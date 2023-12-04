@@ -280,11 +280,18 @@ _WriteGraph(
     if (nodesToHighlight.count(node) != 0) {
         nodeStyle += ", filled";
     }
-    
+
+    std::string nodeSite = [&]() {
+        std::ostringstream stream;
+        stream << PcpIdentifierFormatBaseName << node.GetLayerStack()
+               << "\\n" << "<" << node.GetPath() << ">";
+        return stream.str();
+    }();
+        
     out << TfStringPrintf(
         "\t%zu [label=\"%s (%i)\\n%s\", shape=\"box\", style=\"%s\"];\n",
         size_t(node.GetUniqueIdentifier()),
-        Pcp_FormatSite(node.GetSite()).c_str(),
+        nodeSite.c_str(),
         count,
         nodeDesc.c_str(),
         nodeStyle.c_str());
