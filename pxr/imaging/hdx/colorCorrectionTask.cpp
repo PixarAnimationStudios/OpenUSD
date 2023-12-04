@@ -412,8 +412,16 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
         uint32_t width, height;
         OCIO::GpuShaderCreator::TextureType channel;
         OCIO::Interpolation interpolation;
+
+#if OCIO_VERSION_HEX >= 0x02030000
+        OCIO::GpuShaderCreator::TextureDimensions dimensions;
+        shaderDesc->getTexture(i, textureName, samplerName, width, height,
+                                channel, dimensions, interpolation);
+#else
         shaderDesc->getTexture(i, textureName, samplerName, width, height,
                                 channel, interpolation);
+#endif // OCIO_VERSION_HEX >= 0x02030000
+
         shaderDesc->getTextureValues(i, lutValues);
 
         int channelPerPix =
@@ -435,7 +443,14 @@ HdxColorCorrectionTask::_CreateOpenColorIOResourcesImpl(
         // Texture description
         HgiTextureDesc texDesc;
         texDesc.debugName = textureName;
-        texDesc.type = height == 1 ? HgiTextureType1D : HgiTextureType2D;
+        texDesc.type =
+#if OCIO_VERSION_HEX >= 0x02030000
+            dimensions == OCIO::GpuShaderCreator::TextureDimensions::TEXTURE_1D
+                ? HgiTextureType1D
+                : HgiTextureType2D;
+#else
+            height == 1 ? HgiTextureType1D : HgiTextureType2D;
+#endif // OCIO_VERSION_HEX >= 0x02030000
         texDesc.dimensions = GfVec3i(width, height, 1);
         texDesc.format = fmt;
         texDesc.layerCount = 1;
