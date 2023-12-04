@@ -435,11 +435,28 @@ TestSearch()
 }
 
 
+static void
+TestErrors()
+{
+    fprintf(stderr, "=== Expected errors =======\n");
+
+    {
+        // Parse error
+        SdfPathExpression badExpr("/foo///");
+        TF_AXIOM(badExpr.IsEmpty());
+        TF_AXIOM(!badExpr.GetParseError().empty());
+    }
+
+    fprintf(stderr, "=== End expected errors ===\n");
+}
+
+
 int
 main(int argc, char **argv)
 {
     TestBasics();
     TestSearch();
+    TestErrors();
     
     printf(">>> Test SUCCEEDED\n");
     return 0;

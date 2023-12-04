@@ -75,8 +75,8 @@ SdfPathExpression::SdfPathExpression(std::string const &inputStr,
     std::string errMsg;
     if (!inputStr.empty() &&
         !ParsePathExpression(inputStr, parseContext, this, &errMsg)) {
-        _parseError = errMsg;
         *this = {};
+        _parseError = errMsg;
         TF_RUNTIME_ERROR(errMsg);
     }
 }
