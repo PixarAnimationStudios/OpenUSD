@@ -408,7 +408,11 @@ Sdf_PathExpressionEvalBase
     
     // If we're constant, return the constant value.
     if (search._constantDepth != -1) {
-        return Result::MakeConstant(search._constantValue);
+        Result res = Result::MakeConstant(search._constantValue);
+        DEBUG_MSG("_Next(<%s>) has constant value at depth %d -> %s\n",
+                  path.GetAsString().c_str(), search._constantDepth,
+                  Stringify(res));
+        return res;
     }
     
     // Only support prim and prim property paths.
@@ -421,30 +425,45 @@ Sdf_PathExpressionEvalBase
         return Result::MakeConstant(false);
     }
 
+    const size_t pathElemCount = path.GetPathElementCount();
+    const size_t prefixElemCount = _prefix.GetPathElementCount();
+
     // Check prefix if we aren't into matching segments yet.  If we are into
     // segments, we have already checked the prefix.
     if (search._segmentMatchDepths.empty() && !path.HasPrefix(_prefix)) {
-        search._constantDepth = 0;
-        search._constantValue = false;
-        return Result::MakeConstant(false);
+        // If this path is not a prefix of _prefix, then we can never match.
+        if (!_prefix.HasPrefix(path)) {
+            DEBUG_MSG("_Next(<%s>) outside of prefix <%s> -> constant false\n",
+                      path.GetAsString().c_str(),
+                      _prefix.GetAsString().c_str());
+            search._constantDepth = prefixElemCount;
+            search._constantValue = false;
+            return Result::MakeConstant(false);
+        }
+        // Otherwise we might match once we traverse to _prefix.
+        DEBUG_MSG("_Next(<%s>) not yet within prefix <%s> -> varying false\n",
+                  path.GetAsString().c_str(),
+                  _prefix.GetAsString().c_str());
+        return Result::MakeVarying(false);
     }
 
     // If this pattern demands a property path then we can early-out if the path
     // in question is not a property path.  Otherwise this path may or may not
     // match properties.
     if (_isProperty && !path.IsPrimPropertyPath()) {
+        DEBUG_MSG("_Next(<%s>) isn't a property path -> varying false\n",
+                  path.GetAsString().c_str());
         return Result::MakeVarying(false);
     }
-
-    const size_t pathElemCount = path.GetPathElementCount();
-    const size_t prefixElemCount = _prefix.GetPathElementCount();
 
     // If this pattern has no components, it matches if there's a stretch or if
     // it is the same length as the prefix (which means it is identical to the
     // prefix, since we've already done the has-prefix check above).
     if (_components.empty()) {
         if (_stretchBegin || _stretchEnd) {
-            // The pattern allows arbitrary elements following the prefix.
+            // The pattern allows arbitrary elements following the prefix. 
+            DEBUG_MSG("_Next(<%s>) covered by stretch -> constant true\n",
+                      path.GetAsString().c_str());
             search._constantDepth = 0;
             search._constantValue = true;
             return Result::MakeConstant(search._constantValue);
@@ -452,11 +471,18 @@ Sdf_PathExpressionEvalBase
         else if (pathElemCount > prefixElemCount) {
             // The given path is descendant to the prefix, but the pattern
             // requires an exact match.
+            DEBUG_MSG("_Next(<%s>) must match prefix <%s> exactly -> "
+                      "constant false\n",
+                      path.GetAsString().c_str(),
+                      _prefix.GetAsString().c_str());
             search._constantDepth = 0;
             search._constantValue = false;
             return Result::MakeConstant(search._constantValue);
         }
         // The path is exactly _prefix.
+        DEBUG_MSG("_Next(<%s>) matches prefix <%s> -> varying true\n",
+                  path.GetAsString().c_str(),
+                  _prefix.GetAsString().c_str());
         return Result::MakeVarying(true);
     }
 
@@ -481,15 +507,16 @@ Sdf_PathExpressionEvalBase
     
     // If we are attempting to match the first segment, ensure we have enough
     // components (or exactly the right number if there is no stretch begin).
-    
     const size_t numMatchComponents = pathElemCount - (
-        prevSegPtr ?
-        search._segmentMatchDepths.back() + prevSegPtr->GetSize() :
-        prefixElemCount);
+        prevSegPtr ? search._segmentMatchDepths.back() : prefixElemCount);
 
     if (numMatchComponents < curSeg.GetSize()) {
         // Not enough path components yet, but we could match once we
         // descend to a long enough path.
+        DEBUG_MSG("_Next(<%s>) lacks enough matching components (%zu) for "
+                  "current segment (%zu) -> varying false\n",
+                  path.GetAsString().c_str(),
+                  numMatchComponents, curSeg.GetSize());
         return Result::MakeVarying(false);
     }
 
@@ -500,6 +527,10 @@ Sdf_PathExpressionEvalBase
         // Too many components; we cannot match this or any descendant path.
         search._constantDepth = pathElemCount;
         search._constantValue = false;
+        DEBUG_MSG("_Next(<%s>) matching components (%zu) exceeds "
+                  "required number (%zu) -> constant false\n",
+                  path.GetAsString().c_str(), numMatchComponents,
+                  curSeg.GetSize());
         return Result::MakeConstant(false);
     }
 
@@ -519,6 +550,10 @@ Sdf_PathExpressionEvalBase
             // names.
             std::string const &name = _explicitNames[compIter->patternIndex];
             if (!name.empty() && name != workingPath.GetName()) {
+                DEBUG_MSG("_Next(<%s>) component '%s' != '%s' -> "
+                          "varying false\n", path.GetAsString().c_str(),
+                          workingPath.GetName().c_str(),
+                          name.c_str());
                 return Result::MakeVarying(false);
             }
             // Invoke predicate if this component has one.
@@ -530,6 +565,10 @@ Sdf_PathExpressionEvalBase
                         search._constantDepth = pathElemCount;
                         search._constantValue = false;
                     }
+                    DEBUG_MSG("_Next(<%s>) failed predicate at <%s> -> "
+                              "%s\n", path.GetAsString().c_str(),
+                              workingPath.GetAsString().c_str(),
+                              Stringify(predResult));
                     return predResult;
                 }
             }
@@ -543,6 +582,9 @@ Sdf_PathExpressionEvalBase
         if (compIter->type == _PatternImplBase::Regex) {
             if (!_regexes[compIter->patternIndex].Match(
                     workingPath.GetName())) {
+                DEBUG_MSG("_Next(<%s>) component '%s' does not match wildcard "
+                          "-> varying false\n", path.GetAsString().c_str(),
+                          workingPath.GetName().c_str());
                 return Result::MakeVarying(false);
             }
             // Invoke predicate if this component has one.
@@ -554,6 +596,10 @@ Sdf_PathExpressionEvalBase
                         search._constantDepth = pathElemCount;
                         search._constantValue = false;
                     }
+                    DEBUG_MSG("_Next(<%s>) failed predicate at <%s> -> "
+                              "%s\n", path.GetAsString().c_str(),
+                              workingPath.GetAsString().c_str(),
+                              Stringify(predResult));
                     return predResult;
                 }
             }
@@ -569,12 +615,19 @@ Sdf_PathExpressionEvalBase
         if (_stretchEnd) {
             search._constantDepth = pathElemCount;
             search._constantValue = true;
+            DEBUG_MSG("_Next(<%s>) matches with trailing stretch -> "
+                      "constant true\n", path.GetAsString().c_str());
             return Result::MakeConstant(true);
         }
+        DEBUG_MSG("_Next(<%s>) matches -> varying true\n",
+                  path.GetAsString().c_str());
         return Result::MakeVarying(true);
     }
 
     // We have taken the next step, but we have more matching to do.
+    DEBUG_MSG("_Next(<%s>) partial yet incomplete match -> varying false\n",
+              path.GetAsString().c_str());
+    
     return Result::MakeVarying(false);
 }
 

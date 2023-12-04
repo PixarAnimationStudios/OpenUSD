@@ -351,14 +351,47 @@ TestSearch()
 
     {
         auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/World"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        int count = 0;
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(p == SdfPath("/World"));
+                ++count;
+            }
+        }
+        TF_AXIOM(count == 1);
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/Foo/g*m/foo/bar"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(p == SdfPath("/Foo/geom/foo/bar"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 1);
+    }
+
+    {
+        auto eval = SdfMakePathExpressionEval(
+            SdfPathExpression("/Foo/g*m/foo/bar"), predLib);
+        auto search = eval.MakeIncrementalSearcher(
+            PathIdentity {}, PathIdentity {});
+        int count = 0;
+        for (SdfPath const &p: paths) {
+            if (search.Next(p)) {
+                TF_AXIOM(p == SdfPath("/Foo/geom/foo/bar"));
+                ++count;
+            }
+        }
+        TF_AXIOM(count == 1);
     }
 
     {
@@ -366,13 +399,16 @@ TestSearch()
             SdfPathExpression("/Foo/g*m//foo/bar/foo"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/Foo/geom/foo/bar/foo") ||
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 2);
     }
 
     {
@@ -380,12 +416,15 @@ TestSearch()
             SdfPathExpression("/Foo/g*m//foo//foo/bar/foo"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 1);
     }
 
     {
@@ -393,13 +432,16 @@ TestSearch()
             SdfPathExpression("/Foo/g*m/foo//foo/bar"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 2);
     }
 
     {
@@ -407,14 +449,17 @@ TestSearch()
             SdfPathExpression("//Foo//foo/bar"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/Foo/geom/foo/bar") ||
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar") ||
                     p == SdfPath("/Foo/geom/foo/bar/foo/bar/foo/bar"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 3);
     }
 
     {
@@ -422,13 +467,16 @@ TestSearch()
             SdfPathExpression("//geom/body_sbdv"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
                     p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 2);
     }
 
     {
@@ -461,14 +509,17 @@ TestSearch()
                               "//Bed"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
                     p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv") ||
                     p == SdfPath("/World/anim/sets/Bedroom/Furniture/Bed"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 3);
     }
 
     {
@@ -476,26 +527,32 @@ TestSearch()
             SdfPathExpression("//*sbdv"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
                     p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 2);
     }
     {
         auto eval = SdfMakePathExpressionEval(
             SdfPathExpression("/World//chars//geom/*sbdv"), predLib);
         auto search = eval.MakeIncrementalSearcher(
             PathIdentity {}, PathIdentity {});
+        int count = 0;
         for (SdfPath const &p: paths) {
             if (search.Next(p)) {
                 TF_AXIOM(
                     p == SdfPath("/World/anim/chars/Mike/geom/body_sbdv") ||
                     p == SdfPath("/World/anim/chars/Sully/geom/body_sbdv"));
+                ++count;
             }
         }
+        TF_AXIOM(count == 2);
     }
 }
 
