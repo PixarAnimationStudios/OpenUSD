@@ -1295,41 +1295,45 @@ _ToDictionary(HdContainerDataSourceHandle const &cds)
 }
 
 using _RenderVar = HdRenderSettings::RenderProduct::RenderVar;
+
+_RenderVar
+_ToRenderVar(HdRenderVarSchema varSchema)
+{
+    _RenderVar var;
+    if (auto h = varSchema.GetPath()) {
+        var.varPath = h->GetTypedValue(0);
+    }
+    if (auto h = varSchema.GetDataType()) {
+        var.dataType = h->GetTypedValue(0);
+    }
+    if (auto h = varSchema.GetSourceName()) {
+        var.sourceName = h->GetTypedValue(0);
+    }
+    if (auto h = varSchema.GetSourceType()) {
+        var.sourceType = h->GetTypedValue(0);
+    }
+    if (auto h = varSchema.GetNamespacedSettings()) {
+        var.namespacedSettings = _ToDictionary(h);
+    }
+    return var;
+}
+
 using _RenderVars = std::vector<_RenderVar>;
 _RenderVars
-_ToRenderVars(HdRenderVarVectorSchema vars)
+_ToRenderVars(HdRenderVarVectorSchema varsSchema)
 {
-    _RenderVars hdVars;
-    const HdVectorDataSourceHandle vds = vars.GetVector();
-    const size_t numVars = vds->GetNumElements();
-    hdVars.reserve(numVars);
+    const size_t numVars = varsSchema.GetNumElements();
+
+    _RenderVars vars;
+    vars.reserve(numVars);
 
     for (size_t idx = 0; idx < numVars; idx++) {
-        HdRenderVarSchema rvSchema(HdContainerDataSource::Cast(
-            vds->GetElement(idx)));
-        
-        if (rvSchema) {
-            _RenderVar hdVar;
-            if (auto h = rvSchema.GetPath()) {
-                hdVar.varPath = h->GetTypedValue(0);
-            }
-            if (auto h = rvSchema.GetDataType()) {
-                hdVar.dataType = h->GetTypedValue(0);
-            }
-            if (auto h = rvSchema.GetSourceName()) {
-                hdVar.sourceName = h->GetTypedValue(0);
-            }
-            if (auto h = rvSchema.GetSourceType()) {
-                hdVar.sourceType = h->GetTypedValue(0);
-            }
-            if (auto h = rvSchema.GetNamespacedSettings()) {
-                hdVar.namespacedSettings = _ToDictionary(h);
-            }
-            hdVars.push_back(std::move(hdVar));
+        if (HdRenderVarSchema varSchema = varsSchema.GetElement(idx)) {
+            vars.push_back(_ToRenderVar(varSchema));
         }
     }
 
-    return hdVars;
+    return vars;
 }
 
 GfRange2f
@@ -1338,67 +1342,66 @@ _ToRange2f(GfVec4f const &v)
     return GfRange2f(GfVec2f(v[0], v[1]), GfVec2f(v[2],v[3]));
 }
 
-HdRenderSettings::RenderProducts
-_ToRenderProducts(HdRenderProductVectorSchema products)
+HdRenderSettings::RenderProduct
+_ToRenderProduct(HdRenderProductSchema productSchema)
 {
-    const HdVectorDataSourceHandle vds = products.GetVector();
-    if (!vds) {
-        return HdRenderSettings::RenderProducts();
-    }
+    HdRenderSettings::RenderProduct prod;
 
-    const size_t numProducts = vds->GetNumElements();
-    HdRenderSettings::RenderProducts hdProducts;
-    hdProducts.reserve(numProducts);
+    if (auto h = productSchema.GetPath()) {
+        prod.productPath = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetType()) {
+        prod.type = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetName()) {
+        prod.name = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetResolution()) {
+        prod.resolution = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetRenderVars()) {
+        prod.renderVars = _ToRenderVars(h);
+    }
+    if (auto h = productSchema.GetCameraPrim()) {
+        prod.cameraPath = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetPixelAspectRatio()) {
+        prod.pixelAspectRatio = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetAspectRatioConformPolicy()) {
+        prod.aspectRatioConformPolicy = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetApertureSize()) {
+        prod.apertureSize = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetDataWindowNDC()) {
+        prod.dataWindowNDC = _ToRange2f(h->GetTypedValue(0));
+    }
+    if (auto h = productSchema.GetDisableMotionBlur()) {
+        prod.disableMotionBlur = h->GetTypedValue(0);
+    }
+    if (auto h = productSchema.GetNamespacedSettings()) {
+        prod.namespacedSettings = _ToDictionary(h);
+    }
+    return prod;
+}
+
+HdRenderSettings::RenderProducts
+_ToRenderProducts(HdRenderProductVectorSchema productsSchema)
+{
+    const size_t numProducts = productsSchema.GetNumElements();
+
+    HdRenderSettings::RenderProducts products;
+    products.reserve(numProducts);
 
     for (size_t idx = 0; idx < numProducts; idx++) {
-        
-        HdRenderProductSchema rpSchema(HdContainerDataSource::Cast(
-            vds->GetElement(idx)));
-        
-        if (rpSchema) {
-            HdRenderSettings::RenderProduct hdProd;
-            if (auto h = rpSchema.GetPath()) {
-                hdProd.productPath = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetType()) {
-                hdProd.type = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetName()) {
-                hdProd.name = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetResolution()) {
-                hdProd.resolution = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetRenderVars()) {
-                hdProd.renderVars = _ToRenderVars(h);
-            }
-            if (auto h = rpSchema.GetCameraPrim()) {
-                hdProd.cameraPath = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetPixelAspectRatio()) {
-                hdProd.pixelAspectRatio = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetAspectRatioConformPolicy()) {
-                hdProd.aspectRatioConformPolicy = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetApertureSize()) {
-                hdProd.apertureSize = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetDataWindowNDC()) {
-                hdProd.dataWindowNDC = _ToRange2f(h->GetTypedValue(0));
-            }
-            if (auto h = rpSchema.GetDisableMotionBlur()) {
-                hdProd.disableMotionBlur = h->GetTypedValue(0);
-            }
-            if (auto h = rpSchema.GetNamespacedSettings()) {
-                hdProd.namespacedSettings = _ToDictionary(h);
-            }
-
-            hdProducts.push_back(std::move(hdProd));
+        if (HdRenderProductSchema productSchema =
+                                productsSchema.GetElement(idx)) {
+            products.push_back(_ToRenderProduct(productSchema));
         }
     }
 
-    return hdProducts;
+    return products;
 }
 
 VtValue

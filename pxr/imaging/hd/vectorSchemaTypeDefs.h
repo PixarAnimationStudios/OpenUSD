@@ -36,13 +36,10 @@ PXR_NAMESPACE_OPEN_SCOPE
 using HdIntArrayVectorSchema = HdTypedVectorSchema<VtIntArray>;
 
 // Schema types
-
-// TODO: these two should be using HdSchemaBasedVectorSchema
 using HdRenderProductVectorSchema =
-    HdTypedVectorSchema<class HdRenderProductSchema>;
+    HdSchemaBasedVectorSchema<class HdRenderProductSchema>;
 using HdRenderVarVectorSchema =
-    HdTypedVectorSchema<class HdRenderVarSchema>;
-
+    HdSchemaBasedVectorSchema<class HdRenderVarSchema>;
 using HdInstanceIndicesVectorSchema =
     HdSchemaBasedVectorSchema<class HdInstanceIndicesSchema>;
 using HdMaterialInterfaceMappingVectorSchema =
