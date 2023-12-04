@@ -130,9 +130,10 @@ class Writer:
         if packageName == "pxr":
             self.module = pxrModules[moduleName]
         else:
-            if not Import("from " +packageName+ " import " +moduleName+ " as " +moduleName):
-                Error("Could not import %s" % (moduleName))
-            self.module = eval(moduleName)
+            try:
+                self.module = importlib.import_module("." + moduleName, package=packageName)
+            except ImportError:
+                Error("Could not import %s.%s" % (packageName, moduleName))
         self.prefix = self.module.__name__.split('.')[-1]
         self.seenPaths = {}
         self.propertyTable = {}
