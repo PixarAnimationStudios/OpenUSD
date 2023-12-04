@@ -153,7 +153,8 @@ _PatternImplBase::_Init(
         }
         // A glob pattern (we translate to regex).
         else {
-            _regexes.emplace_back(component.text, ArchRegex::GLOB);
+            // Must match the whole component.
+            _regexes.emplace_back("^" + component.text + "$", ArchRegex::GLOB);
             _components.push_back({ Regex,
                     static_cast<int>(_regexes.size()-1), -1 });
         }

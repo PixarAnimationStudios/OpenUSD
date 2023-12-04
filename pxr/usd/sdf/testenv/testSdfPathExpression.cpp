@@ -428,6 +428,10 @@ TestSearch()
                { "/World/anim/chars/Mike/geom/body_sbdv",
                  "/World/anim/chars/Sully/geom/body_sbdv" });
 
+    testSearch("//*e",
+               { "/World/anim/chars/Mike",
+                 "/World/anim/sets/Bedroom/Furniture" });
+
 }
 
 
