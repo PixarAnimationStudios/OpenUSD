@@ -161,7 +161,6 @@ pxr_library(tf
         pyObjWrapper
         pyTracing
         refBase
-        refCount
         refPtr
         refPtrTracker
         regTest
