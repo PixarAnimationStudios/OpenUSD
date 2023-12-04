@@ -24,13 +24,13 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/usd/sdf/pathNode.h"
+#include "pxr/usd/sdf/pathParser.h"
 
 #include "pxr/base/vt/value.h"
 
 #include "pxr/base/arch/hints.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"
-#include "pxr/base/tf/pxrPEGTL/pegtl.h"
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
@@ -131,14 +131,11 @@ TF_REGISTRY_FUNCTION(TfType)
         .Alias(TfType::GetRoot(), "vector<SdfPath>");    
 }
 
-static bool
-ParsePath(std::string const &pathStr, SdfPath *path, std::string *errMsg);
-
 SdfPath::SdfPath(const std::string &path) {
     TfAutoMallocTag2 tag("Sdf", "SdfPath::SdfPath(string)");
     TRACE_FUNCTION();
     std::string errMsg;
-    if (!ParsePath(path, this, &errMsg)) {
+    if (!Sdf_ParsePath(path, this, &errMsg)) {
 #ifdef PARSE_ERRORS_ARE_ERRORS
         TF_RUNTIME_ERROR(errMsg);
 #else
@@ -2007,7 +2004,7 @@ bool
 SdfPath::IsValidPathString(const std::string &pathString,
                            std::string *errMsg)
 {
-    return ParsePath(pathString, /*path=*/nullptr, errMsg);
+    return Sdf_ParsePath(pathString, /*path=*/nullptr, errMsg);
 }
 
 // Caller ensures both absolute or both relative.  We need to crawl up the
@@ -2263,313 +2260,6 @@ Sdf_PathGetDebuggerPathText(SdfPath const &path)
     }
 
     return "";
-}
-
-
-////////////////////////////////////////////////////////////////////////
-// SdfPath grammar:
-
-namespace {
-
-using namespace tao::TAO_PEGTL_NAMESPACE;
-
-struct Slash : one<'/'> {};
-struct Dot : one<'.'> {};
-struct DotDot : two<'.'> {};
-
-struct AbsoluteRoot : Slash {};
-struct ReflexiveRelative : Dot {};
-
-struct DotDots : list<DotDot, Slash> {};
-
-struct PrimName : identifier {};
-
-// XXX This replicates old behavior where '-' chars are allowed in variant set
-// names in SdfPaths, but variant sets in layers cannot have '-' in their names.
-// For now we preserve the behavior. Internal bug USD-8321 tracks removing
-// support for '-' characters in variant set names in SdfPath.
-struct VariantSetName :
-    seq<identifier_first, star<sor<identifier_other, one<'-'>>>> {};
-
-struct VariantName :
-    seq<opt<one<'.'>>, star<sor<identifier_other, one<'|', '-'>>>> {};
-
-struct VarSelOpen : pad<one<'{'>, blank> {};
-struct VarSelClose : pad<one<'}'>, blank> {};
-
-struct VariantSelection : if_must<
-    VarSelOpen,
-    VariantSetName, pad<one<'='>, blank>, opt<VariantName>,
-    VarSelClose>
-{};
-
-struct VariantSelections : plus<VariantSelection> {};
-
-template <class Rule, class Sep>
-struct LookaheadList : seq<Rule, star<at<Sep, Rule>, Sep, Rule>> {};
-
-struct PrimElts : seq<
-    LookaheadList<PrimName, sor<Slash, VariantSelections>>,
-    opt<VariantSelections>> {};
-
-struct PropertyName : list<identifier, one<':'>> {};
-
-struct MapperPath;
-struct TargetPath;
-
-struct TargetPathOpen : one<'['> {};
-struct TargetPathClose : one<']'> {};
-
-template <class TargPath>
-struct BracketPath : if_must<TargetPathOpen, TargPath, TargetPathClose> {};
-
-struct RelationalAttributeName : PropertyName {};
-
-struct MapperKW : TAO_PEGTL_KEYWORD("mapper") {};
-
-struct MapperArg : identifier {};
-
-struct MapperPathSeq : if_must<
-    seq<Dot, MapperKW>, BracketPath<MapperPath>, opt<Dot, MapperArg>> {};
-
-struct Expression : TAO_PEGTL_KEYWORD("expression") {};
-
-struct RelAttrSeq : if_must<
-    one<'.'>, RelationalAttributeName,
-    opt<sor<BracketPath<TargetPath>,
-            MapperPathSeq,
-            if_must<Dot, Expression>>>> {};
-
-struct TargetPathSeq : seq<BracketPath<TargetPath>, opt<RelAttrSeq>> {};
-
-struct PropElts :
-    seq<one<'.'>, PropertyName,
-        opt<sor<TargetPathSeq, MapperPathSeq, if_must<Dot, Expression>>>
-    >
-{};
-
-struct PathElts : if_then_else<PrimElts, opt<PropElts>, PropElts> {};
-
-struct PrimFirstPathElts : seq<PrimElts, opt<PropElts>> {};
-
-struct Path : sor<
-    seq<AbsoluteRoot, opt<PrimFirstPathElts>>,
-    seq<DotDots, opt<seq<Slash, PathElts>>>,
-    PathElts,
-    ReflexiveRelative
-    > {};
-
-struct TargetPath : Path {};
-struct MapperPath : Path {};
-
-////////////////////////////////////////////////////////////////////////
-// Actions.
-
-struct PPContext {
-    std::vector<SdfPath> paths { 1 };
-    enum { IsTargetPath, IsMapperPath } targetType;
-    std::string varSetName;
-    std::string varName;
-};
-
-template <class Input>
-static TfToken GetToken(Input const &in) {
-    constexpr int BufSz = 32;
-    char buf[BufSz];
-    size_t strSize = std::distance(in.begin(), in.end());
-    TfToken tok;
-    if (strSize < BufSz) {
-        // copy & null-terminate.
-        std::copy(in.begin(), in.end(), buf);
-        buf[strSize] = '\0';
-        tok = TfToken(buf);
-    }
-    else {
-        // fall back to string path.
-        tok = TfToken(in.string());
-    }
-    return tok;
-}
-
-template <class Rule>
-struct Action : nothing<Rule> {};
-
-template <>
-struct Action<ReflexiveRelative> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() = SdfPath::ReflexiveRelativePath();
-    }
-};
-
-template <>
-struct Action<AbsoluteRoot> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() = SdfPath::AbsoluteRootPath();
-    }
-};
-
-template <>
-struct Action<DotDot> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        if (pp.paths.back().IsEmpty()) {
-            pp.paths.back() = SdfPath::ReflexiveRelativePath();
-        }
-        pp.paths.back() = pp.paths.back().GetParentPath();
-    }
-};
-
-template <>
-struct Action<PrimName> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        if (pp.paths.back().IsEmpty()) {
-            pp.paths.back() = SdfPath::ReflexiveRelativePath();
-        }
-        pp.paths.back() = pp.paths.back().AppendChild(GetToken(in));
-    }
-};
-
-template <>
-struct Action<VariantSetName> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.varSetName = in.string();
-    }
-};
-
-template <>
-struct Action<VariantName> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.varName = in.string();
-    }
-};
-
-template <>
-struct Action<VariantSelection> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() =
-            pp.paths.back().AppendVariantSelection(pp.varSetName, pp.varName);
-        pp.varSetName.clear();
-        pp.varName.clear();
-    }
-};
-
-template <>
-struct Action<PropertyName> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        if (pp.paths.back().IsEmpty()) {
-            pp.paths.back() = SdfPath::ReflexiveRelativePath();
-        }
-        pp.paths.back() = pp.paths.back().AppendProperty(GetToken(in));
-    }
-};
-
-template <>
-struct Action<RelationalAttributeName> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() =
-            pp.paths.back().AppendRelationalAttribute(GetToken(in));
-    }
-};
-
-template <>
-struct Action<TargetPathOpen> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.emplace_back();
-    }
-};
-
-template <>
-struct Action<TargetPath> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.targetType = PPContext::IsTargetPath;
-    }
-};
-
-template <>
-struct Action<MapperPath> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.targetType = PPContext::IsMapperPath;
-    }
-};
-
-template <>
-struct Action<MapperArg> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() = pp.paths.back().AppendMapperArg(GetToken(in));
-    }
-};
-
-template <>
-struct Action<TargetPathClose> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        SdfPath targetPath = std::move(pp.paths.back());
-        pp.paths.pop_back();
-        if (pp.targetType == PPContext::IsTargetPath) {
-            pp.paths.back() =
-                pp.paths.back().AppendTarget(std::move(targetPath));
-        }
-        else {
-            pp.paths.back() =
-                pp.paths.back().AppendMapper(std::move(targetPath));
-        }
-    }
-};
-
-template <>
-struct Action<Expression> {
-    template <class Input>
-    static void apply(Input const &in, PPContext &pp) {
-        pp.paths.back() = pp.paths.back().AppendExpression();
-    }
-};
-
-} // anon
-
-static bool
-ParsePath(std::string const &pathStr, SdfPath *path, std::string *errMsg)
-{
-    PPContext context;
-    try {
-        if (!parse<must<Path, eolf>, Action>(
-                string_input<> { pathStr, "" }, context)) {
-            if (errMsg) {
-                *errMsg = TfStringPrintf(
-                    "Ill-formed SdfPath with no exception parsing <%s>",
-                    pathStr.c_str());
-            }
-            if (path) {
-                *path = SdfPath();
-            }
-            return false;
-        }
-    }
-    catch (parse_error const &err) {
-        if (errMsg) {
-            *errMsg = TfStringPrintf(
-                "Ill-formed SdfPath <%s>: %s", pathStr.c_str(), err.what());
-        }
-        if (path) {
-            *path = SdfPath();
-        }
-        return false;
-    }
-    if (path) {
-        *path = std::move(context.paths.back());
-    }
-    return true;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
