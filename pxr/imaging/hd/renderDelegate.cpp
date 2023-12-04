@@ -233,6 +233,15 @@ HdRenderDelegate::Pause()
     return false;
 }
 
+bool HdRenderDelegate::IsParallelSyncEnabled(
+    TfToken primType) const
+{
+    if (primType == HdPrimTypeTokens->extComputation) {
+        return true;
+    }
+    return false;
+}
+
 bool
 HdRenderDelegate::Resume()
 {
