@@ -141,6 +141,17 @@ public:
     HGI_API
     static HgiUniquePtr CreatePlatformDefaultHgi();
 
+    /// Helper function to return a Hgi object of choice supported by current platform.
+    /// For example on Linux this may allow HgiGL only while on macOS HgiMetal.
+    /// If the HGI device specified is not available on the current platform the default 
+    /// HGI type (HgiGL on windows and linux, HgiMetal on mac) will be created.
+    /// Caller, usually the application, owns the lifetime of the Hgi object and
+    /// the object is destroyed when the caller drops the unique ptr.
+    /// Thread safety: Not thread safe.
+    /// Supported TfToken values are HgiGL, HgiMetal, HgiVulkan
+    HGI_API
+    static HgiUniquePtr CreateHgiOfChoice(const TfToken& type);
+
     /// Determine if Hgi instance can run on current hardware.
     /// Thread safety: This call is thread safe.
     HGI_API
@@ -150,7 +161,7 @@ public:
     /// the object's IsBackendSupported() function.
     /// Thread safety: Not thread safe.
     HGI_API
-    static bool IsSupported();
+    static bool IsSupported(const TfToken& token = TfToken(""));
 
     /// Returns a GraphicsCmds object (for temporary use) that is ready to
     /// record draw commands. GraphicsCmds is a lightweight object that

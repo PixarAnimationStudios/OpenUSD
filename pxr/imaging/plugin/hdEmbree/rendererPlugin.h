@@ -66,7 +66,7 @@ public:
 
     /// Checks to see if the embree plugin is supported on the running system
     ///
-    bool IsSupported(bool gpuEnabled = true) const override;
+    bool IsSupported(bool gpuEnabled = true, TfToken hgiToken = TfToken("")) const override;
 
 private:
     // This class does not support copying.
