@@ -76,16 +76,20 @@ name and order joints in vectorized data. For example:
 
 \code
 def SkelAnimation "Anim" {
-    uniform token[] = ["A/B", "A"]
+    uniform token[] joints = ["A/B", "A"]
 }
 def Skeleton "Skel" {
-    uniform token[] = ["A", "A/B"]
+    uniform token[] joints = ["A", "A/B"]
 }
 \endcode
 
 Note that in both example primitives above, the given paths do not reference
 any real primitives. Also note that each primitive has its own joint ordering,
-and that those orders need not be identical.
+and that those orders need not be identical. _Skeleton_ has a strict rule that
+the targets of the _joints_ attribute are required to be authored such that all 
+parent joints come before any of their children in the array. See \ref UsdSkel_JointHierarchy 
+"Skeleton Schema: Joint Hierarchy" for more information. _SkelAnimation_ does 
+not have this ancestral order restriction.
 
 The purpose of encoding orderings in this manner is to allow for the creation
 of **self-contained** assets. For example, it is possible to construct
@@ -207,8 +211,11 @@ converting transforms to and from this component form.
 
 Joint data is stored in arrays, using the \ref UsdSkel_JointOrder
 "joint order" specified by the _joints_ attribute. This ordering may be
-different from the Skeletons that the animation maps to, and may also
-only identify a sparse subset of the joints in a skeleton. When an animation
+different from the Skeletons that the animation maps to, may also
+only identify a sparse subset of the joints in a skeleton, and is not 
+required to follow a strict \ref UsdSkel_JointHierarchy 
+"ancestral ordering" like the _joints_ attribute of the 
+Skeleton schema (i.e. child joints can be listed before parent joints). When an animation
 provides sparse data, fallback values are taken from the rest pose on the
 UsdSkelSkeleton primitive to which they apply.
 

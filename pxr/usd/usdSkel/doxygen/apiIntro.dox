@@ -1078,14 +1078,14 @@ not be a descendant of the Skeleton.
 - C++:
 \code{.cpp}
     UsdSkelBindingAPI binding = UsdSkelBindingAPI::Apply(skel.GetPrim());
-    binding.CreateSkeletonRel().SetTargets(
+    binding.CreateAnimationSourceRel().SetTargets(
         SdfPathVector({anim.GetPrim().GetPath()}));
 \endcode
 
 - Python:
 \code{.py}
     binding = UsdSkel.BindingAPI.Apply(skel.GetPrim())
-    binding.CreateSkeletonRel().SetTargets([anim.GetPrim().GetPath()])
+    binding.CreateAnimationSourceRel().SetTargets([anim.GetPrim().GetPath()])
 \endcode
 
 Here we apply the UsdSkelBindingAPI to the Skeleton, and use it to bind the
