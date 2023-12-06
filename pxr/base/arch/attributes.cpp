@@ -204,7 +204,7 @@ AddImage(const struct mach_header* mh, intptr_t slide)
         return;
     }
 
-    const auto entries = GetConstructorEntries(mh, slide, "__DATA", "pxrctor");
+    const auto entries = GetConstructorEntries(mh, slide, "__DATA", CONSTRUCTOR_SECTION_NAME);
 
     // Execute in priority order.
     for (size_t i = 0, n = entries.size(); i != n; ++i) {
@@ -219,7 +219,7 @@ static
 void
 RemoveImage(const struct mach_header* mh, intptr_t slide)
 {
-    const auto entries = GetConstructorEntries(mh, slide, "__DATA", "pxrdtor");
+    const auto entries = GetConstructorEntries(mh, slide, "__DATA", DESTRUCTOR_SECTION_NAME);
 
     // Execute in reverse priority order.
     for (size_t i = entries.size(); i-- != 0; ) {
@@ -365,7 +365,7 @@ RunConstructors(HMODULE hModule)
     // Do each HMODULE at most once.
     if (visited->insert(hModule).second) {
         // Execute in priority order.
-        const auto entries = GetConstructorEntries(hModule, ".pxrctor");
+        const auto entries = GetConstructorEntries(hModule, CONSTRUCTOR_SECTION_NAME);
         for (size_t i = 0, n = entries.size(); i != n; ++i) {
             if (entries[i].function && entries[i].version == 0u) {
                 entries[i].function();
@@ -384,7 +384,7 @@ RunDestructors(HMODULE hModule)
     // Do each HMODULE at most once.
     if (visited->insert(hModule).second) {
         // Execute in reverse priority order.
-        const auto entries = GetConstructorEntries(hModule, ".pxrdtor");
+        const auto entries = GetConstructorEntries(hModule, DESTRUCTOR_SECTION_NAME);
         for (size_t i = entries.size(); i-- != 0; ) {
             if (entries[i].function && entries[i].version == 0u) {
                 entries[i].function();
