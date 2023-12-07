@@ -435,7 +435,7 @@ _ComputeHeader(id<MTLDevice> device, HgiShaderStage stage)
     header  << _GetPackedTypeDefinitions();
 
     header << "#define in /*in*/\n"
-              "#define discard discard_fragment();\n"
+              "#define discard discard_fragment(); discarded_fragment = true;\n"
               "#define radians(d) (d * 0.01745329252)\n"
               "#define noperspective /*center_no_perspective MTL_FIXME*/\n"
               "#define dFdx    dfdx\n"
@@ -1414,6 +1414,9 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
         section->VisitScopeStructs(ss);
     }
     ss << "\n// //////// Scope Member Declarations ////////\n";
+    if (this->_GetShaderStage() == HgiShaderStageFragment) {
+        ss << "bool discarded_fragment;\n";
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         section->VisitScopeMemberDeclarations(ss);
     }
@@ -1527,11 +1530,26 @@ void HgiMetalShaderGenerator::_Execute(std::ostream &ss)
 
     // Execute all code that hooks into the entry point function
     ss << "\n// //////// Entry Point Function Executions ////////\n";
+    if (this->_GetShaderStage() == HgiShaderStageFragment) {
+        ss << _generatorShaderSections->GetScopeInstanceName() 
+           << ".discarded_fragment = false;\n";
+    }
     for (const HgiMetalShaderSectionUniquePtr &section : *shaderSections) {
         if (section->VisitEntryPointFunctionExecutions(
                 ss, _generatorShaderSections->GetScopeInstanceName())) {
             ss << "\n";
         }
+    }
+    if (this->_GetShaderStage() == HgiShaderStageFragment) {
+        ss << "if (" << _generatorShaderSections->GetScopeInstanceName() 
+           << ".discarded_fragment)\n";
+        ss << "{\n";
+        if (outputs) {
+            ss << "    return {};\n";
+        } else {
+            ss << "    return;\n";
+        }
+        ss << "}\n";
     }
     //return the instance of the shader entrypoint output type
     if (outputs &&

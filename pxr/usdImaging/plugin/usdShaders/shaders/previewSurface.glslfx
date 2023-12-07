@@ -82,6 +82,7 @@ surfaceShader(vec4 Peye, vec3 Neye, vec4 color, vec4 patchCoord)
 #ifdef HD_MATERIAL_TAG_MASKED   
     if (opacity < opacityThreshold) {
         discard;
+        return vec4(1.0);
     } 
     opacity = 1.0;
 #endif            

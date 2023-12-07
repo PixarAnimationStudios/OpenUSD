@@ -2759,6 +2759,7 @@ void main(void)
 #ifdef HD_MATERIAL_TAG_MASKED
     if (ShouldDiscardByAlpha(color)) {
         discard;
+        return;
     }
 #endif
 
@@ -5559,6 +5560,7 @@ void main(void)
 #ifdef HD_MATERIAL_TAG_MASKED
     if (ShouldDiscardByAlpha(color)) {
         discard;
+        return;
     }
 #endif
 
