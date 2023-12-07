@@ -58,9 +58,6 @@ class testUsdGeomSubset(unittest.TestCase):
         self.assertEqual(UsdGeom.Tokens.partition, 
             UsdGeom.Subset.GetFamilyType(geom, 'materialBind'))
 
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(materialBindSubsets, 
-                elementCount=16, familyType=UsdGeom.Tokens.partition)
-
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.face, familyName='materialBind')
         self.assertTrue(valid)
@@ -109,14 +106,6 @@ class testUsdGeomSubset(unittest.TestCase):
         newSubset = UsdGeom.Subset.CreateGeomSubset(geom, 'testSubset', 
             UsdGeom.Tokens.face, indices=Vt.IntArray())
 
-        # Indices are empty when unassigned.
-        self.assertEqual(newSubset.GetIndicesAttr().Get(), Vt.IntArray())
-        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([newSubset], 16), 
-                         Vt.IntArray(range(0,16)))
-        indices = [1, 2, 3, 4, 5]
-        newSubset.GetIndicesAttr().Set(indices)
-        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
-
         # Check elementType
         self.assertEqual(newSubset.GetElementTypeAttr().Get(), 
                          UsdGeom.Tokens.face)
@@ -125,6 +114,15 @@ class testUsdGeomSubset(unittest.TestCase):
         self.assertEqual(newSubset.GetFamilyNameAttr().Get(), '')
         newSubset.GetFamilyNameAttr().Set('testFamily')
         self.assertEqual(newSubset.GetFamilyNameAttr().Get(), 'testFamily')
+
+        # Indices are empty when unassigned.
+        self.assertEqual(newSubset.GetIndicesAttr().Get(), Vt.IntArray())
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom, 
+                         UsdGeom.Tokens.face, "testFamily"), 
+                         Vt.IntArray(range(0,16)))
+        indices = [1, 2, 3, 4, 5]
+        newSubset.GetIndicesAttr().Set(indices)
+        self.assertEqual(list(newSubset.GetIndicesAttr().Get()), indices)
 
         # By default, a family of subsets is not tagged as a partition.
         self.assertEqual(UsdGeom.Subset.GetFamilyType(geom, 'testFamily'), 
@@ -154,37 +152,45 @@ class testUsdGeomSubset(unittest.TestCase):
         self.assertEqual(UsdGeom.Subset.GetFamilyType(geom, 'testFamily'), 
                          UsdGeom.Tokens.partition)
 
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(testSubsets, 
-                elementCount=16,
-                familyType=UsdGeom.Tokens.partition)
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
+                UsdGeom.Tokens.face, 'testFamily')
         self.assertFalse(valid)
         
-        # CreateUniqueGeomSubset will create a new subset always!
-        unassignedIndices = UsdGeom.Subset.GetUnassignedIndices(testSubsets, 16)
+        unassignedIndices = UsdGeom.Subset.GetUnassignedIndices(geom,
+                                    UsdGeom.Tokens.face, 'testFamily')
         self.assertEqual(unassignedIndices, Vt.IntArray(range(3, 16)))
+
+        # Confirm GetUnassignedIndices still works with invalid indices 16-19
         anotherSubset = UsdGeom.Subset.CreateUniqueGeomSubset(geom, "testSubset", 
-            UsdGeom.Tokens.face, unassignedIndices, familyName='testFamily', 
+            UsdGeom.Tokens.face, Vt.IntArray(range(3, 20)), familyName='testFamily', 
             familyType=UsdGeom.Tokens.partition)
 
+        # CreateUniqueGeomSubset will create a new subset always!
+        self.assertEqual(anotherSubset.GetPrim().GetName(), "testSubset_1")
         self.assertNotEqual(anotherSubset.GetPrim().GetName(), 
                             newSubset.GetPrim().GetName())
-        self.assertEqual(unassignedIndices, 
+        self.assertEqual(Vt.IntArray(range(3, 20)), 
                          anotherSubset.GetIndicesAttr().Get())
-        # Verify that GetAssignedIndices still works if the provided element 
-        # count is less than the number of assigned indices (as per bug USD-5599)
-        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([anotherSubset], 5), 
-                         Vt.IntArray([0,1,2]))
-        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([anotherSubset], 2), 
-                         Vt.IntArray([0,1]))
+    
+        # Verify that GetAssignedIndices still works if the element count
+        # is less than the number of assigned indices (as per bug USD-5599)
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom,
+                         UsdGeom.Tokens.face, 'testFamily'), 
+                         Vt.IntArray([]))
 
         testSubsets = UsdGeom.Subset.GetGeomSubsets(geom, UsdGeom.Tokens.face,
                                                     familyName='testFamily')
         # Count is now two after the call to CreateUniqueGeomSubset.
         self.assertEqual(len(testSubsets), 2)
 
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(testSubsets, 
-                elementCount=16,
-                familyType=UsdGeom.Tokens.partition)
+        # Update anotherSubset to contain valid indices 
+        anotherSubset = UsdGeom.Subset.CreateGeomSubset(geom, "testSubset_1", 
+            UsdGeom.Tokens.face, unassignedIndices, familyName='testFamily', 
+            familyType=UsdGeom.Tokens.partition)
+        self.assertEqual(len(testSubsets), 2)
+
+        (valid, reason) = UsdGeom.Subset.ValidateFamily(geom,
+            UsdGeom.Tokens.face, familyName='testFamily')
         self.assertTrue(valid)
         
         # Check total count.
@@ -196,12 +202,12 @@ class testUsdGeomSubset(unittest.TestCase):
         # unassigned indices.
         invalidIndices = Vt.IntArray([-3, -2, 0, 1, 2])
         invalidSubset = UsdGeom.Subset.CreateUniqueGeomSubset(geom, "testSubset", 
-            UsdGeom.Tokens.face, invalidIndices, familyName='testFamily', 
+            UsdGeom.Tokens.face, invalidIndices, familyName='testInvalid', 
             familyType=UsdGeom.Tokens.partition)
         invalidSubset.GetIndicesAttr().Set(invalidIndices)
         self.assertTrue(invalidSubset)
-        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices([invalidSubset], 5), 
-                         Vt.IntArray([3,4]))
+        self.assertEqual(UsdGeom.Subset.GetUnassignedIndices(geom,
+            UsdGeom.Tokens.face, 'testInvalid'), Vt.IntArray(range(3, 16)))
 
     # Test gathering of prim's geom subsets when prim's parent tree includes 
     # a not-defined parent prim e.g. PointInstancer with Prototype prim using
@@ -222,9 +228,6 @@ class testUsdGeomSubset(unittest.TestCase):
         self.assertEqual(UsdGeom.Tokens.partition, 
             UsdGeom.Subset.GetFamilyType(geom, 'materialBind'))
 
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(materialBindSubsets, 
-            elementCount=16, familyType=UsdGeom.Tokens.partition)
-
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
             UsdGeom.Tokens.face, familyName='materialBind')
         self.assertTrue(valid)
@@ -243,10 +246,6 @@ class testUsdGeomSubset(unittest.TestCase):
         
         self.assertEqual(UsdGeom.Tokens.partition, 
             UsdGeom.Subset.GetFamilyType(geom, 'point_physicsAttachment'))
-
-        (valid, reason) = UsdGeom.Subset.ValidateSubsets(pointSubsets, 
-                elementCount=14, familyType=UsdGeom.Tokens.partition)
-        self.assertTrue(valid)
 
         (valid, reason) = UsdGeom.Subset.ValidateFamily(geom, 
                 UsdGeom.Tokens.point, familyName='point_physicsAttachment')

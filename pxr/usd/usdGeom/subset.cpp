@@ -398,6 +398,109 @@ UsdGeomSubset::GetFamilyType(
     return familyType.IsEmpty() ? UsdGeomTokens->unrestricted : familyType;
 }
 
+static size_t
+_GetElementCountAtTime(
+    const UsdGeomImageable& geom,
+    const TfToken& elementType,
+    UsdTimeCode time,
+    bool* isCountTimeVarying=nullptr)
+{
+    size_t elementCount = 0u;
+    if (isCountTimeVarying) {
+        *isCountTimeVarying = false;
+    }
+
+    if (elementType == UsdGeomTokens->face) {
+        // XXX: Use UsdGeomMesh schema to get the face count.
+        const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->faceVertexCounts);
+        if (fvcAttr) {
+            VtIntArray faceVertexCounts;
+            if (fvcAttr.Get(&faceVertexCounts, time)) {
+                elementCount = faceVertexCounts.size();
+            }
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
+            }
+        }
+    } else if (elementType == UsdGeomTokens->point) {
+        const UsdAttribute ptAttr = geom.GetPrim().GetAttribute(
+            UsdGeomTokens->points);
+        if (ptAttr) {
+            VtArray<GfVec3f> points;
+            if (ptAttr.Get(&points, time)) {
+                elementCount = points.size();
+            } 
+            if (isCountTimeVarying) {
+                *isCountTimeVarying = ptAttr.ValueMightBeTimeVarying();
+            }
+        } 
+    } else {
+        TF_CODING_ERROR("Unsupported element type '%s'.",
+                        elementType.GetText());
+    }
+
+    return elementCount;
+}
+
+/* static */
+VtIntArray
+UsdGeomSubset::GetUnassignedIndices(
+    const UsdGeomImageable &geom, 
+    const TfToken &elementType,
+    const TfToken &familyName,
+    const UsdTimeCode &time /* UsdTimeCode::EarliestTime() */)
+{
+    std::vector<UsdGeomSubset> subsets = UsdGeomSubset::GetGeomSubsets(
+            geom, elementType, familyName);
+    
+    std::set<int> assignedIndices;
+    for (const auto &subset : subsets) {
+        VtIntArray indices;
+        subset.GetIndicesAttr().Get(&indices, time);
+        assignedIndices.insert(indices.begin(), indices.end());
+    }
+
+    // This is protection against the possibility that any of the subsets can
+    // erroneously contain negative valued indices. Even though negative indices
+    // are invalid, their presence breaks the assumption in the rest of this 
+    // function that all indices are nonnegative. This can lead to crashes.
+    // 
+    // Negative indices should be extremely rare which is why it's better to 
+    // check and remove them after the collection of assigned indices rather 
+    // than during.
+    while (!assignedIndices.empty() && *assignedIndices.begin() < 0) {
+        assignedIndices.erase(assignedIndices.begin());
+    }
+
+    const size_t elementCount = _GetElementCountAtTime(geom, elementType, time);
+
+    VtIntArray result;
+    if (assignedIndices.empty()) {
+        result.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            result.push_back(idx);
+    } else {
+        std::vector<int> allIndices;
+        allIndices.reserve(elementCount);
+        for (size_t idx = 0 ; idx < elementCount ; ++idx) 
+            allIndices.push_back(idx);
+
+        const unsigned int lastAssigned = *assignedIndices.rbegin();
+        if (elementCount > lastAssigned) {
+            result.reserve(elementCount - assignedIndices.size());
+        } else {
+            result.reserve(std::min(
+                elementCount, (lastAssigned + 1) - assignedIndices.size()));
+        }
+        std::set_difference(allIndices.begin(), allIndices.end(), 
+            assignedIndices.begin(), assignedIndices.end(), 
+            std::back_inserter(result));
+    }
+
+    return result;
+}
+
 /* static */
 VtIntArray
 UsdGeomSubset::GetUnassignedIndices(
@@ -545,51 +648,6 @@ UsdGeomSubset::ValidateSubsets(
     return valid;
 }
 
-static size_t
-_GetElementCountAtTime(
-    const UsdGeomImageable& geom,
-    const TfToken& elementType,
-    UsdTimeCode time,
-    bool* isCountTimeVarying=nullptr)
-{
-    size_t elementCount = 0u;
-    if (isCountTimeVarying) {
-        *isCountTimeVarying = false;
-    }
-
-    if (elementType == UsdGeomTokens->face) {
-        // XXX: Use UsdGeomMesh schema to get the face count.
-        const UsdAttribute fvcAttr = geom.GetPrim().GetAttribute(
-            UsdGeomTokens->faceVertexCounts);
-        if (fvcAttr) {
-            VtIntArray faceVertexCounts;
-            if (fvcAttr.Get(&faceVertexCounts, time)) {
-                elementCount = faceVertexCounts.size();
-            }
-            if (isCountTimeVarying) {
-                *isCountTimeVarying = fvcAttr.ValueMightBeTimeVarying();
-            }
-        }
-    } else if (elementType == UsdGeomTokens->point) {
-        const UsdAttribute ptAttr = geom.GetPrim().GetAttribute(
-            UsdGeomTokens->points);
-        if (ptAttr) {
-            VtArray<GfVec3f> points;
-            if (ptAttr.Get(&points, time)) {
-                elementCount = points.size();
-            } 
-            if (isCountTimeVarying) {
-                *isCountTimeVarying = ptAttr.ValueMightBeTimeVarying();
-            }
-        } 
-    } else {
-        TF_CODING_ERROR("Unsupported element type '%s'.",
-                        elementType.GetText());
-    }
-
-    return elementCount;
-}
-
 /* static */
 bool
 UsdGeomSubset::ValidateFamily(
@@ -626,6 +684,19 @@ UsdGeomSubset::ValidateFamily(
 
     std::set<double> allTimeSamples;
     for (const auto &subset : familySubsets) {
+        TfToken subsetElementType;
+        subset.GetElementTypeAttr().Get(&subsetElementType);
+        if (subsetElementType != elementType) {
+            if (reason) {
+                *reason = TfStringPrintf("Subset at path <%s> has elementType "
+                    "%s, which does not match '%s'.",
+                    subset.GetPath().GetText(), subsetElementType.GetText(),
+                    elementType.GetText());
+            }
+            // Return early if all the subsets don't have the same element type.
+            return false;
+        }
+
         std::vector<double> subsetTimeSamples;
         subset.GetIndicesAttr().GetTimeSamples(&subsetTimeSamples);
         allTimeSamples.insert(subsetTimeSamples.begin(), subsetTimeSamples.end());
@@ -653,8 +724,8 @@ UsdGeomSubset::ValidateFamily(
                         valid = false;
                         if (reason) {
                             *reason += TfStringPrintf("Found duplicate index %d "
-                                "in GeomSubset at path <%s>.\n", index,
-                                subset.GetPath().GetText());
+                                "in GeomSubset at path <%s> at time %s.\n", index,
+                                subset.GetPath().GetText(), TfStringify(t).c_str());
                         }
                     }
                 }

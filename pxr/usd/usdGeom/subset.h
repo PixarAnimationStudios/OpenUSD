@@ -212,7 +212,9 @@ public:
     // INDICES 
     // --------------------------------------------------------------------- //
     /// The set of indices included in this subset. The indices need not 
-    /// be sorted, but the same index should not appear more than once.
+    /// be sorted, but the same index should not appear more than once. Indices 
+    /// are invalid if outside the range [0, elementCount) for the given time on 
+    /// the parent geometric prim.
     ///
     /// | ||
     /// | -- | -- |
@@ -382,6 +384,19 @@ public:
         const TfToken &familyName);
 
     /// Utility for getting the list of indices that are not assigned to any of 
+    /// the GeomSubsets in the \p familyName family on the given \p geom at the 
+    /// timeCode, \p time, given the element count (total number of indices in 
+    /// the array being subdivided), \p elementCount.
+    USDGEOM_API
+    static VtIntArray GetUnassignedIndices(
+        const UsdGeomImageable &geom, 
+        const TfToken &elementType,
+        const TfToken &familyName,
+        const UsdTimeCode &time=UsdTimeCode::EarliestTime());
+
+    /// \deprecated Please use GetUnassignedIndices(geom, elementType,
+    /// familyName, time) instead.
+    /// Utility for getting the list of indices that are not assigned to any of 
     /// the GeomSubsets in \p subsets at the timeCode, \p time, given the 
     /// element count (total number of indices in the array being subdivided), 
     /// \p elementCount.
@@ -391,6 +406,7 @@ public:
         const size_t elementCount,
         const UsdTimeCode &time=UsdTimeCode::EarliestTime());
 
+    /// \deprecated Please use UsdGeomSubset::ValidateFamily instead.
     /// Validates the data in the given set of GeomSubsets, \p subsets, given 
     /// the total number of elements in the array being subdivided,
     /// \p elementCount and the \p familyType that the subsets belong to.  

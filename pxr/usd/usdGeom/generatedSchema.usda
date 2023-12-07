@@ -2294,7 +2294,9 @@ class GeomSubset "GeomSubset" (
     )
     int[] indices = [] (
         doc = """The set of indices included in this subset. The indices need not 
-        be sorted, but the same index should not appear more than once."""
+        be sorted, but the same index should not appear more than once. Indices 
+        are invalid if outside the range [0, elementCount) for the given time on 
+        the parent geometric prim."""
     )
 }
 
