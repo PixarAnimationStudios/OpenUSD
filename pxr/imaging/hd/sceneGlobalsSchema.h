@@ -158,13 +158,19 @@ public:
     HD_API
     static const HdDataSourceLocator &GetDefaultLocator();
 
+    // DATA SOURCE LOCATORS FOR MEMBERS
+    //
+    // The following methods return an HdDataSourceLocator (relative to the
+    // prim-level data source) where the data source for a member can be found.
+    //
+    // This is often useful for checking intersection against the
+    // HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
 
-    /// Returns an HdDataSourceLocator (relative to the prim-level data source)
-    /// where the activerendersettingsprim data source can be found.
-    /// This is often useful for checking intersection against the
-    /// HdDataSourceLocatorSet sent with HdDataSourceObserver::PrimsDirtied.
+
+    /// Prim-level relative data source locator to locate activeRenderSettingsPrim.
     HD_API
     static const HdDataSourceLocator &GetActiveRenderSettingsPrimLocator();
+
 
 };
 

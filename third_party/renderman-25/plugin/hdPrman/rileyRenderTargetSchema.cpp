@@ -151,9 +151,7 @@ HdPrmanRileyRenderTargetSchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdPrmanRileyRenderTargetSchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdPrmanRileyRenderTargetSchemaTokens->rileyRenderTarget
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
 
@@ -206,6 +204,27 @@ HdPrmanRileyRenderTargetSchema::GetParamsLocator()
             HdPrmanRileyRenderTargetSchemaTokens->params);
     return locator;
 }
+
+/*static*/
+HdTokenDataSourceHandle
+HdPrmanRileyRenderTargetSchema::BuildFiltermodeDataSource(
+    const TfToken &filtermode)
+{
+    if (filtermode == HdPrmanRileyRenderTargetSchemaTokens->importance) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(filtermode);
+        return ds;
+    }
+    if (filtermode == HdPrmanRileyRenderTargetSchemaTokens->weighted) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(filtermode);
+        return ds;
+    }
+
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(filtermode);
+}
+
 HdPrmanRileyRenderTargetSchema::Builder &
 HdPrmanRileyRenderTargetSchema::Builder::SetRenderOutputs(
     const HdPathArrayDataSourceHandle &renderOutputs)

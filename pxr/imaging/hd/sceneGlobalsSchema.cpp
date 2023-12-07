@@ -114,23 +114,19 @@ HdSceneGlobalsSchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdSceneGlobalsSchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdSceneGlobalsSchemaTokens->sceneGlobals
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
-/*static*/
+
+/* static */
 const HdDataSourceLocator &
 HdSceneGlobalsSchema::GetActiveRenderSettingsPrimLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdSceneGlobalsSchemaTokens->sceneGlobals,
-        HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim
-    );
+    static const HdDataSourceLocator locator =
+        GetDefaultLocator().Append(
+            HdSceneGlobalsSchemaTokens->activeRenderSettingsPrim);
     return locator;
 }
-
-
 HdSceneGlobalsSchema::Builder &
 HdSceneGlobalsSchema::Builder::SetActiveRenderSettingsPrim(
     const HdPathDataSourceHandle &activeRenderSettingsPrim)

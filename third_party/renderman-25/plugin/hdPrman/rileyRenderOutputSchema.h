@@ -46,6 +46,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
+
+//-----------------------------------------------------------------------------
+
 #define HD_PRMAN_RILEY_RENDER_OUTPUT_SCHEMA_TOKENS \
     (rileyRenderOutput) \
     (name) \
@@ -56,16 +61,15 @@ PXR_NAMESPACE_OPEN_SCOPE
     (filterSize) \
     (relativePixelVariance) \
     (params) \
-    ((typeFloat, "float")) \
-    ((typeInteger, "integer")) \
-    ((typeColor, "color")) \
-    ((typeVector, "vector")) \
+    ((float_, "float")) \
+    (integer) \
+    (color) \
+    (vector) \
 
 TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyRenderOutputSchemaTokens, HDPRMAN_API,
     HD_PRMAN_RILEY_RENDER_OUTPUT_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
 class HdPrmanRileyRenderOutputSchema : public HdSchema
 {
 public:
@@ -231,6 +235,17 @@ public:
     HDPRMAN_API
     static const HdDataSourceLocator &GetParamsLocator();
 
+
+    /// Returns token data source for use as type value.
+    /// Values of...
+    /// - HdPrmanRileyRenderOutputSchemaTokens->float_
+    /// - HdPrmanRileyRenderOutputSchemaTokens->integer
+    /// - HdPrmanRileyRenderOutputSchemaTokens->color
+    /// - HdPrmanRileyRenderOutputSchemaTokens->vector
+    ///     ...will be stored statically and reused for future calls.
+    HDPRMAN_API
+    static HdTokenDataSourceHandle BuildTypeDataSource(
+        const TfToken &type);
 
 };
 

@@ -46,6 +46,11 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 //-----------------------------------------------------------------------------
 
+// --(BEGIN CUSTOM CODE: Declares)--
+// --(END CUSTOM CODE: Declares)--
+
+//-----------------------------------------------------------------------------
+
 #define HD_PRMAN_RILEY_RENDER_TARGET_SCHEMA_TOKENS \
     (rileyRenderTarget) \
     (renderOutputs) \
@@ -60,7 +65,6 @@ TF_DECLARE_PUBLIC_TOKENS(HdPrmanRileyRenderTargetSchemaTokens, HDPRMAN_API,
     HD_PRMAN_RILEY_RENDER_TARGET_SCHEMA_TOKENS);
 
 //-----------------------------------------------------------------------------
-
 class HdPrmanRileyRenderTargetSchema : public HdSchema
 {
 public:
@@ -190,6 +194,15 @@ public:
     HDPRMAN_API
     static const HdDataSourceLocator &GetParamsLocator();
 
+
+    /// Returns token data source for use as filtermode value.
+    /// Values of...
+    /// - HdPrmanRileyRenderTargetSchemaTokens->importance
+    /// - HdPrmanRileyRenderTargetSchemaTokens->weighted
+    ///     ...will be stored statically and reused for future calls.
+    HDPRMAN_API
+    static HdTokenDataSourceHandle BuildFiltermodeDataSource(
+        const TfToken &filtermode);
 
 };
 

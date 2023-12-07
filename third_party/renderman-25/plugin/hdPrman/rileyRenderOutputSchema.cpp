@@ -190,9 +190,7 @@ HdPrmanRileyRenderOutputSchema::GetSchemaToken()
 const HdDataSourceLocator &
 HdPrmanRileyRenderOutputSchema::GetDefaultLocator()
 {
-    static const HdDataSourceLocator locator(
-        HdPrmanRileyRenderOutputSchemaTokens->rileyRenderOutput
-    );
+    static const HdDataSourceLocator locator(GetSchemaToken());
     return locator;
 } 
 
@@ -275,6 +273,37 @@ HdPrmanRileyRenderOutputSchema::GetParamsLocator()
             HdPrmanRileyRenderOutputSchemaTokens->params);
     return locator;
 }
+
+/*static*/
+HdTokenDataSourceHandle
+HdPrmanRileyRenderOutputSchema::BuildTypeDataSource(
+    const TfToken &type)
+{
+
+    if (type == HdPrmanRileyRenderOutputSchemaTokens->float_) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(type);
+        return ds;
+    }
+    if (type == HdPrmanRileyRenderOutputSchemaTokens->integer) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(type);
+        return ds;
+    }
+    if (type == HdPrmanRileyRenderOutputSchemaTokens->color) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(type);
+        return ds;
+    }
+    if (type == HdPrmanRileyRenderOutputSchemaTokens->vector) {
+        static const HdRetainedTypedSampledDataSource<TfToken>::Handle ds =
+            HdRetainedTypedSampledDataSource<TfToken>::New(type);
+        return ds;
+    }
+    // fallback for unknown token
+    return HdRetainedTypedSampledDataSource<TfToken>::New(type);
+}
+
 HdPrmanRileyRenderOutputSchema::Builder &
 HdPrmanRileyRenderOutputSchema::Builder::SetName(
     const HdTokenDataSourceHandle &name)

@@ -44,16 +44,16 @@ _GetRenderOutputType(HdTokenDataSourceHandle const &ds)
         return riley::RenderOutputType::k_Float;
     }
     const TfToken t = ds->GetTypedValue(0.0f);
-    if (t == HdPrmanRileyRenderOutputSchemaTokens->typeFloat) {
+    if (t == HdPrmanRileyRenderOutputSchemaTokens->float_) {
         return riley::RenderOutputType::k_Float;
     }
-    if (t == HdPrmanRileyRenderOutputSchemaTokens->typeInteger) {
+    if (t == HdPrmanRileyRenderOutputSchemaTokens->integer) {
         return riley::RenderOutputType::k_Integer;
     }
-    if (t == HdPrmanRileyRenderOutputSchemaTokens->typeColor) {
+    if (t == HdPrmanRileyRenderOutputSchemaTokens->color) {
         return riley::RenderOutputType::k_Color;
     }
-    if (t == HdPrmanRileyRenderOutputSchemaTokens->typeVector) {
+    if (t == HdPrmanRileyRenderOutputSchemaTokens->vector) {
         return riley::RenderOutputType::k_Vector;
     }
     return riley::RenderOutputType::k_Float;
