@@ -5,6 +5,7 @@
 
 #include "openexr_base.h"
 #include "openexr_errors.h"
+#include "openexr_version.h"
 
 /**************************************/
 

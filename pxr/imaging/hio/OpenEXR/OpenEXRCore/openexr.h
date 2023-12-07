@@ -6,7 +6,7 @@
 #ifndef OPENEXR_CORE_H
 #define OPENEXR_CORE_H
 
-#include "openexr_conf.h"
+#include "openexr_config.h"
 
 #include "openexr_base.h"
 #include "openexr_errors.h"
