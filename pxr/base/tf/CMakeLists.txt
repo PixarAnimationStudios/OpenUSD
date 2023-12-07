@@ -171,6 +171,7 @@ pxr_library(tf
         setenv
         singleton
         smallVector
+        spinMutex
         spinRWMutex
         stackTrace
         stacked
