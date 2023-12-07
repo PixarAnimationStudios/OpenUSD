@@ -107,6 +107,12 @@ HdLegacyPrimTypeIsVolumeField(TfToken const &primType)
 
 namespace {
 
+// Returns contributing sample times for the interval from startTime to endTime.
+//
+// If there is no time sample at startTime, this will include the sample time
+// of the sample just before startTime if it exists.
+// Similarly for endTime.
+//
 template<typename TimeSampleArray>
 static
 void _FillSampleTimes(
@@ -120,12 +126,29 @@ void _FillSampleTimes(
     }
     for (size_t i = 0; i < timeSamples.count; ++i) {
         const float t = timeSamples.times[i];
-        if (startTime <= t && t <= endTime) {
-            outSampleTimes->push_back(t);
+        if (outSampleTimes->empty()) {
+            if (t > startTime && i > 0) {
+                // Include sample just before the start time.
+                outSampleTimes->push_back(timeSamples.times[i - 1]);
+            }
+            if (t >= startTime) {
+                // Include sample at start time or the first sample
+                // after the start time.
+                outSampleTimes->push_back(timeSamples.times[i]);
+            }
+        } else {
+            outSampleTimes->push_back(timeSamples.times[i]);
+        }
+        if (t >= endTime) {
+            // We have sound the sample at the end time or beyond
+            // the end time. We are done.
+            break;
         }
     }
+    if (outSampleTimes->empty() && timeSamples.count > 0) {
+        outSampleTimes->push_back(timeSamples.times[0]);
+    }
 }
-
 
 class Hd_DataSourceLegacyPrimvarValue : public HdSampledDataSource
 {
