@@ -355,11 +355,8 @@ private:
             // Not counted, do nothing.
             return;
         }
-        // We believe this rep is refCounted.
-        if (!_rep->DecrementAndCheckCounted()) {
-            // Our belief is wrong, update our cache of countedness.
-            _rep.SetBits(false);
-        }
+        // Decrement the refcount.
+        _rep->Decrement();
     }
 
     struct _Rep {
@@ -410,10 +407,10 @@ private:
             return _refCount.fetch_add(2, std::memory_order_relaxed) & 1;
         }
 
-        inline bool DecrementAndCheckCounted() const {
+        inline void Decrement() const {
             // Refcounts are manipulated by add/sub 2, since the lowest-order
             // bit indicates whether or not the rep is counted.
-            return _refCount.fetch_sub(2, std::memory_order_release) & 1;
+            _refCount.fetch_sub(2, std::memory_order_release);
         }
 
         mutable std::atomic_uint _refCount;
