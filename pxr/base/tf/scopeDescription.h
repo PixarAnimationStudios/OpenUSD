@@ -30,8 +30,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/api.h"
 
-#include <boost/optional.hpp>
-
+#include <optional>
 #include <vector>
 #include <string>
 
@@ -109,7 +108,7 @@ private:
     inline void _Push();
     inline void _Pop() const;
     
-    boost::optional<std::string> _ownedString;
+    std::optional<std::string> _ownedString;
     char const *_description;
     TfCallContext _context;
     void *_localStack;
