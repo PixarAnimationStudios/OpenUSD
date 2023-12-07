@@ -393,6 +393,7 @@ class AppController(QtCore.QObject):
             self._mallocTags = parserData.mallocTagStats
 
             self._allowViewUpdates = True
+            self._allowAsync = parserData.allowAsync
 
             # When viewer mode is active, the panel sizes are cached so they can
             # be restored later.
@@ -532,6 +533,14 @@ class AppController(QtCore.QObject):
             # to slow down rendering to self.framesPerSecond fps.
             self._qtimer.setInterval(0)
             self._lastFrameTime = time()
+
+            if self._allowAsync:
+                self._asyncTimer = QtCore.QTimer(self)
+                self._asyncTimer.setInterval(100)
+                self._asyncTimer.timeout.connect(self._updateAsyncTimer)
+                self._asyncTimer.start()
+            else:
+                self._asyncTimer = None
 
             # Initialize the upper HUD info
             self._upperHUDInfo = dict()
@@ -1842,6 +1851,8 @@ class AppController(QtCore.QObject):
                     parent=self._mainWindow,
                     dataModel=self._dataModel,
                     makeTimer=self._makeTimer)
+
+                self._stageView.allowAsync = self._allowAsync
 
                 self._stageView.fpsHUDInfo = self._fpsHUDInfo
                 self._stageView.fpsHUDKeys = self._fpsHUDKeys
@@ -5436,3 +5447,9 @@ class AppController(QtCore.QObject):
         from .rootDataModel import ChangeNotice
         self._updateForStageChanges(
             hasPrimResync=(primsChange==ChangeNotice.RESYNC))
+
+    def _updateAsyncTimer(self):
+        if not self._stageView:
+            return
+        if self._stageView.PollForAsynchronousUpdates():
+            self._usdviewApi.UpdateViewport()

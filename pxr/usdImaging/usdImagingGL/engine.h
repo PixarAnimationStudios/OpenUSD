@@ -116,6 +116,10 @@ public:
         /// \p displayUnloadedPrimsWithBounds draws bounding boxes for unloaded
         /// prims if they have extents/extentsHint authored.
         bool displayUnloadedPrimsWithBounds = false;
+        /// \p allowAsynchronousSceneProcessing indicates to constructed hydra
+        /// scene indices that asynchronous processing is allowow. Applications
+        /// should perodically call PollForAsynchronousUpdates on the engine.
+        bool allowAsynchronousSceneProcessing = false;
     };
 
     // ---------------------------------------------------------------------
@@ -148,7 +152,8 @@ public:
                        const HdDriver& driver = HdDriver(),
                        const TfToken& rendererPluginId = TfToken(),
                        bool gpuEnabled = true,
-                       bool displayUnloadedPrimsWithBounds = false);
+                       bool displayUnloadedPrimsWithBounds = false,
+                       bool allowAsynchronousSceneProcessing = false);
 
     // Disallow copies
     UsdImagingGLEngine(const UsdImagingGLEngine&) = delete;
@@ -580,7 +585,23 @@ public:
     Hgi* GetHgi();
 
     /// @}
+
+    // ---------------------------------------------------------------------
+    /// \name Asynchronous
+    /// @{
+    // ---------------------------------------------------------------------
     
+    /// If \p allowAsynchronousSceneProcessing is true within the Parameters
+    /// provided to the UsdImagingGLEngine constructor, an application can
+    /// periodically call this from the main thread.
+    ///
+    /// A return value of true indicates that the scene has changed and the
+    /// render should be updated.
+    USDIMAGINGGL_API
+    bool PollForAsynchronousUpdates() const;
+
+    /// @}
+
 protected:
 
     /// Open some protected methods for whitebox testing.
@@ -738,6 +759,8 @@ private:
     std::unique_ptr<UsdImagingDelegate> _sceneDelegate;
 
     std::unique_ptr<HdEngine> _engine;
+
+    bool _allowAsynchronousSceneProcessing = false;
 };
 
 

@@ -41,6 +41,7 @@
 #include "pxr/imaging/hd/rendererPluginRegistry.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPluginRegistry.h"
+#include "pxr/imaging/hd/systemMessages.h"
 #include "pxr/imaging/hd/utils.h"
 #include "pxr/imaging/hdsi/primTypePruningSceneIndex.h"
 #include "pxr/imaging/hdsi/legacyDisplayStyleOverrideSceneIndex.h"
@@ -148,7 +149,8 @@ UsdImagingGLEngine::UsdImagingGLEngine(
       params.driver,
       params.rendererPluginId,
       params.gpuEnabled,
-      params.displayUnloadedPrimsWithBounds)
+      params.displayUnloadedPrimsWithBounds,
+      params.allowAsynchronousSceneProcessing)
 {
 }
 
@@ -174,7 +176,8 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     const HdDriver& driver,
     const TfToken& rendererPluginId,
     const bool gpuEnabled,
-    const bool displayUnloadedPrimsWithBounds)
+    const bool displayUnloadedPrimsWithBounds,
+    const bool allowAsynchronousSceneProcessing)
     : _hgi()
     , _hgiDriver(driver)
     , _displayUnloadedPrimsWithBounds(displayUnloadedPrimsWithBounds)
@@ -187,6 +190,7 @@ UsdImagingGLEngine::UsdImagingGLEngine(
     , _excludedPrimPaths(excludedPaths)
     , _invisedPrimPaths(invisedPaths)
     , _isPopulated(false)
+    , _allowAsynchronousSceneProcessing(allowAsynchronousSceneProcessing)
 {
     if (!_gpuEnabled && _hgiDriver.name == HgiTokens->renderDriver &&
         _hgiDriver.driver.IsHolding<Hgi*>()) {
@@ -1197,6 +1201,12 @@ UsdImagingGLEngine::_SetRenderDelegate(
             _displayUnloadedPrimsWithBounds);
     }
 
+    if (_allowAsynchronousSceneProcessing) {
+        if (HdSceneIndexBaseRefPtr si = _renderIndex->GetTerminalSceneIndex()) {
+            si->SystemMessage(HdSystemMessageTokens->asyncAllow, nullptr);
+        }
+    }
+
     _taskController = std::make_unique<HdxTaskController>(
         _renderIndex.get(),
         _ComputeControllerPath(_renderDelegate),
@@ -1861,6 +1871,60 @@ HdxTaskController *
 UsdImagingGLEngine::_GetTaskController() const
 {
     return _taskController.get();
+}
+
+bool
+UsdImagingGLEngine::PollForAsynchronousUpdates() const
+{
+    class _Observer : public HdSceneIndexObserver
+    {
+    public:
+
+        void PrimsAdded(
+                const HdSceneIndexBase &sender,
+                const AddedPrimEntries &entries) override
+        {
+
+            _changed = true;
+        }
+
+        void PrimsRemoved(
+            const HdSceneIndexBase &sender,
+            const RemovedPrimEntries &entries) override
+        {
+            _changed = true;
+        }
+
+        void PrimsDirtied(
+            const HdSceneIndexBase &sender,
+            const DirtiedPrimEntries &entries) override
+        {
+            _changed = true;
+        }
+
+        void PrimsRenamed(
+            const HdSceneIndexBase &sender,
+            const RenamedPrimEntries &entries) override
+        {
+            _changed = true;
+        }
+
+        bool IsChanged() { return _changed; }
+    private:
+        bool _changed = false;
+    };
+
+    if (_allowAsynchronousSceneProcessing && _renderIndex) {
+        if (HdSceneIndexBaseRefPtr si = _renderIndex->GetTerminalSceneIndex()) {
+            _Observer ob;
+            si->AddObserver(HdSceneIndexObserverPtr(&ob));
+            si->SystemMessage(HdSystemMessageTokens->asyncPoll, nullptr);
+            si->RemoveObserver(HdSceneIndexObserverPtr(&ob));
+            return ob.IsChanged();
+        }
+    }
+
+    return false;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
