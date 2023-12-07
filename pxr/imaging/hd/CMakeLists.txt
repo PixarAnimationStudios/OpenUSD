@@ -176,6 +176,7 @@ pxr_library(hd
         splitDiopterSchema
         sprim
         subdivisionTagsSchema
+        systemMessages
         systemSchema
         task
         timeSampleArray
