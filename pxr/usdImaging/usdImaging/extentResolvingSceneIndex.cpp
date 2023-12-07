@@ -48,7 +48,7 @@ _GetPurposes(HdContainerDataSourceHandle const &inputArgs)
         return defaultSet;
     }
 
-    HdTypedVectorSchema<TfToken> vecSchema(
+    HdTypedVectorSchema<HdTokenDataSource> vecSchema(
         HdVectorDataSource::Cast(
             inputArgs->Get(
                 UsdImagingExtentResolvingSceneIndexTokens->purposes)));

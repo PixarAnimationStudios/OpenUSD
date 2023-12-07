@@ -50,7 +50,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // --(BEGIN CUSTOM CODE: Declares)--
 using HdMaterialInterfaceMappingsContainerSchema =
-    HdVectorSchemaBasedContainerSchema<
+    HdSchemaBasedContainerSchema<
         HdMaterialInterfaceMappingVectorSchema>;
 // --(END CUSTOM CODE: Declares)--
 

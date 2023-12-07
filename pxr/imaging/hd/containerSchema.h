@@ -26,12 +26,11 @@
 #define PXR_IMAGING_HD_CONTAINER_SCHEMA_H
 
 #include "pxr/imaging/hd/schema.h"
-#include "pxr/imaging/hd/vectorSchema.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 
 /// Base class for a schema backed by a container whose children have
-/// arbitrary names
+/// arbitrary names.
 ///
 class HdContainerSchema : public HdSchema
 {
@@ -44,8 +43,8 @@ public:
     TfTokenVector GetNames() const;
 };
 
-/// Base class for a schema backed by a container whose children have
-/// arbitrary names but an expected data source type
+/// Template class for a schema backed by a container whose children have
+/// arbitrary names but an expected data source type.
 ///
 template<typename T>
 class HdTypedContainerSchema : public HdContainerSchema
@@ -62,7 +61,7 @@ public:
 };
 
 /// Template class for a schema backed by a container whose children have
-/// arbitrary names but an expected schema type
+/// arbitrary names but an expected schema type.
 ///
 template<typename Schema>
 class HdSchemaBasedContainerSchema : public HdContainerSchema
@@ -74,32 +73,9 @@ public:
     {}
 
     Schema Get(const TfToken &name) {
-        return Schema(_GetTypedDataSource<HdContainerDataSource>(name));
+        using DataSource = typename Schema::UnderlyingDataSource;
+        return Schema(_GetTypedDataSource<DataSource>(name));
     }
-};
-
-/// Template class for a schema backed by a container whose children have
-/// arbitrary names but an expected vector schema type
-///
-template<typename Schema>
-class HdVectorSchemaBasedContainerSchema : public HdContainerSchema
-{
-public:
-
-    HdVectorSchemaBasedContainerSchema(HdContainerDataSourceHandle container)
-    : HdContainerSchema(container)
-    {}
-
-    Schema Get(const TfToken &name) {
-        HdVectorDataSourceHandle child;
-
-        if (_container) {
-            child = HdVectorDataSource::Cast(_container->Get(name));
-        }
-        
-        return Schema(child);
-    }
-
 };
 
 PXR_NAMESPACE_CLOSE_SCOPE

@@ -33,8 +33,7 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // ----------------------------------------------------------------------------
 
-/// Vector schema classes represent a view of a vector data source
-/// which is returning untyped data sources.
+/// Base class wrapping a vector data source.
 ///
 class HdVectorSchema
 {
@@ -76,29 +75,23 @@ protected:
     HdVectorDataSourceHandle _vector;
 };
 
-/// Base class for vector schema classes that represent a view of
-/// a vector data source containing data source of a given type.
+/// Template class wrapping a vector data source whose children are
+/// data source of an expected type.
 ///
 template<typename T>
 class HdTypedVectorSchema : public HdVectorSchema
 {
 public:
-    // TODO: To match HdTypedContainerSchema, we will want DataSource = T
-    //       This affects existing use cases which may not work anyway yet.
-    using DataSource = HdTypedSampledDataSource<T>;
-    using DataSourceHandle = typename DataSource::Handle;
-
     HdTypedVectorSchema(HdVectorDataSourceHandle const &vector)
       : HdVectorSchema(vector) {}
 
-    DataSourceHandle GetElement(const size_t element) const {
-        return _GetTyped<DataSource>(element);
+    typename T::Handle GetElement(const size_t element) const {
+        return _GetTyped<T>(element);
     }
 };
 
-/// Base class for vector schema classes that represent a view of
-/// a vector data source containing container data sources conforming
-/// to a given HdSchema.
+/// Template class wrapping a vector data source whose children are
+/// container data source conforming to an expected schema.
 ///
 template<typename Schema>
 class HdSchemaBasedVectorSchema : public HdVectorSchema
