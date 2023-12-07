@@ -115,7 +115,8 @@ HdPrman_DisplayFilter::Sync(
         // Only Create the DisplayFilter if connected to the RenderSettings
         // Note that this works because the RenderSettings, being a Bprim,
         // always gets synced before the DisplayFilter Sprim.
-        SdfPathVector connectedFilters = param->GetConnectedDisplayFilterPaths();
+        const SdfPathVector& connectedFilters =
+            param->GetConnectedDisplayFilterPaths();
         if (std::find(connectedFilters.begin(), connectedFilters.end(), id)
             != connectedFilters.end()) {
             const VtValue displayFilterResourceValue =

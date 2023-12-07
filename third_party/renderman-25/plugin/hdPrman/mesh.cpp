@@ -225,12 +225,12 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
                               holeIndices.begin(), holeIndices.end());
         }
 
-        PxOsdSubdivTags osdTags = GetSubdivTags(sceneDelegate);
+        const PxOsdSubdivTags osdTags = GetSubdivTags(sceneDelegate);
 
         // Creases
-        VtIntArray creaseLengths = osdTags.GetCreaseLengths();
-        VtIntArray creaseIndices = osdTags.GetCreaseIndices();
-        VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
+        const VtIntArray creaseLengths = osdTags.GetCreaseLengths();
+        const VtIntArray creaseIndices = osdTags.GetCreaseIndices();
+        const VtFloatArray creaseWeights = osdTags.GetCreaseWeights();
         if (!creaseIndices.empty()) {
             const bool weightPerCrease = 
                 creaseWeights.size() == creaseLengths.size();
@@ -253,8 +253,8 @@ HdPrman_Mesh::_ConvertGeometry(HdPrman_RenderParam *renderParam,
         }
 
         // Corners
-        VtIntArray cornerIndices = osdTags.GetCornerIndices();
-        VtFloatArray cornerWeights = osdTags.GetCornerWeights();
+        const VtIntArray cornerIndices = osdTags.GetCornerIndices();
+        const VtFloatArray cornerWeights = osdTags.GetCornerWeights();
         if (cornerIndices.size()) {
             tagNames.push_back(RixStr.k_corner);
             tagArgCounts.push_back(cornerIndices.size()); // num int args

@@ -193,7 +193,7 @@ private:
         }
         // Copy constructor
         _FlattenData(const _FlattenData& other) 
-        : categories(other.categories.begin(), other.categories.end())
+        : categories(other.categories.cbegin(), other.categories.cend())
         {
             params.Update(other.params);
         }
@@ -202,7 +202,7 @@ private:
         // categories will be merged
         void Inherit(const _FlattenData& rhs)
         {
-            categories.insert(rhs.categories.begin(), rhs.categories.end());
+            categories.insert(rhs.categories.cbegin(), rhs.categories.cend());
             params.Inherit(rhs.params);
         }
 
@@ -210,7 +210,7 @@ private:
         // categories will be merged
         void Update(const _FlattenData& rhs)
         {
-            categories.insert(rhs.categories.begin(), rhs.categories.end());
+            categories.insert(rhs.categories.cbegin(), rhs.categories.cend());
             params.Update(rhs.params);
         }
 

@@ -128,7 +128,7 @@ _MarkBindingsAsConverged(
     HdRenderPassAovBindingVector const &aovBindings,
     const HdRenderIndex * const renderIndex)
 {
-    for (const HdRenderPassAovBinding aovBinding : aovBindings) {
+    for (const HdRenderPassAovBinding& aovBinding : aovBindings) {
         HdPrmanRenderBuffer * const rb =
             static_cast<HdPrmanRenderBuffer*>(
                 renderIndex->GetBprim(

@@ -287,8 +287,8 @@ HdPrman_Gprim<BASE>::Sync(HdSceneDelegate* sceneDelegate,
                 HdGeomSubset &subset = geomSubsets[j];
 
                 // Convert indices to int32_t and set as k_shade_faceset.
-                std::vector<int32_t> int32Indices(subset.indices.begin(),
-                                                  subset.indices.end());
+                std::vector<int32_t> int32Indices(subset.indices.cbegin(),
+                                                  subset.indices.cend());
                 primvars.SetIntegerArray(RixStr.k_shade_faceset,
                                          int32Indices.data(),
                                          int32Indices.size());

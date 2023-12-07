@@ -164,8 +164,8 @@ _GetSamplingInterval(
     }
 
     const auto iteratorPair =
-        std::minmax_element(sampleTimes.begin(),
-                            sampleTimes.end());
+        std::minmax_element(sampleTimes.cbegin(),
+                            sampleTimes.cend());
     return { *iteratorPair.first, *iteratorPair.second };
 }
 

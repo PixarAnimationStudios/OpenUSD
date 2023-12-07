@@ -448,23 +448,27 @@ _IsPrototypeAttribute(TfToken const& primvarName)
     return prototypeAttributes.count(primvarName) > 0;
 }
 
-
-enum _ParamType {
-    _ParamTypePrimvar,
-    _ParamTypeAttribute,
-};
-
+template <typename T>
 static void
 _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
-         HdInterpolation hdInterp, RtPrimVarList& params,
-         _ParamType paramType, int expectedSize, float time = 0.f)
+         HdInterpolation hdInterp, T& params, int expectedSize,
+         float time = 0.f)
 {
+    static_assert(std::disjunction<
+        std::is_same<RtParamList, T>,
+        std::is_same<RtPrimVarList, T>>::value,
+        "params must be RtParamList or RtPrimVarList");
+        
     // XXX:TODO: To support array-valued types, we need more
     // shaping information.  Currently we assume arrays are
     // simply N scalar values, according to the detail.
-
-    const char* label =
-        (paramType == _ParamTypePrimvar) ? "primvar" : "attribute";
+    
+    std::string label;
+    if constexpr (std::is_same<RtPrimVarList, T>()) {
+        label = "primvar";
+    } else {
+        label = "attribute";
+    }
 
     const RtDetailType detail = _RixDetailForHdInterpolation(hdInterp);
 
@@ -472,10 +476,10 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         .Msg("HdPrman: _Convert called -- <%s> %s %s\n",
              id.GetText(),
              TfEnum::GetName(hdInterp).c_str(),
-             label);
+             label.c_str());
 
     // Computed primvars
-    if (paramType == _ParamTypePrimvar) {
+    if constexpr (std::is_same<RtPrimVarList, T>()) {
         // XXX: Prman doesn't seem to check dirtyness before pulling a value.
         // Passing AllDirty until we plumb/respect change tracking.
         HdExtComputationPrimvarDescriptorVector  computedPrimvars =
@@ -501,19 +505,18 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                 RtUString name = _GetPrmanPrimvarName(compPrimvar.name, detail);
 
                 TF_DEBUG(HDPRMAN_PRIMVARS)
-                    .Msg("HdPrman: <%s> %s %s "
+                    .Msg("HdPrman: <%s> %s primvar "
                          "Computed Primvar \"%s\" (%s) = \"%s\"\n",
                          id.GetText(),
                          TfEnum::GetName(hdInterp).c_str(),
-                         label,
                          compPrimvar.name.GetText(),
                          name.CStr(),
                          TfStringify(val).c_str());
 
                 if (val.IsArrayValued() && 
                     val.GetArraySize() != static_cast<size_t>(expectedSize)) {
-                    TF_WARN("<%s> %s '%s' size (%zu) did not match "
-                            "expected (%d)", id.GetText(), label,
+                    TF_WARN("<%s> primvar '%s' size (%zu) did not match "
+                            "expected (%d)", id.GetText(),
                             compPrimvar.name.GetText(), val.GetArraySize(),
                             expectedSize);
                     continue;
@@ -521,8 +524,8 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
 
                 if (!_SetPrimVarValue(name, val, detail,
                                     compPrimvar.role, params)) {
-                    TF_WARN("Ignoring unhandled %s of type %s for %s.%s\n",
-                        label, val.GetTypeName().c_str(), id.GetText(),
+                    TF_WARN("Ignoring unhandled primvar of type %s for %s.%s\n",
+                        val.GetTypeName().c_str(), id.GetText(),
                         compPrimvar.name.GetText());
                 }
             }
@@ -538,7 +541,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
                  "primvar \"%s\"\n",
                  id.GetText(),
                  TfEnum::GetName(hdInterp).c_str(),
-                 label,
+                 label.c_str(),
                  primvar.name.GetText());
 
         // Skip params with special handling.
@@ -578,7 +581,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             }
 
             bool skipPrimvar = false;
-            if (paramType == _ParamTypeAttribute) {
+            if constexpr (std::is_same<RtParamList, T>()) {
                 // When we're looking for attributes on geometry instances,
                 // they need to have either 'user:' or 'ri:attributes:' as a
                 // prefix.
@@ -649,7 +652,7 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
             .Msg("HdPrman: <%s> %s %s \"%s\" (%s) = \"%s\"\n",
                  id.GetText(),
                  TfEnum::GetName(hdInterp).c_str(),
-                 label,
+                 label.c_str(),
                  primvar.name.GetText(),
                  name.CStr(),
                  TfStringify(val).c_str());
@@ -662,15 +665,22 @@ _Convert(HdSceneDelegate *sceneDelegate, SdfPath const& id,
         if (val.IsArrayValued() && 
             val.GetArraySize() != static_cast<size_t>(expectedSize)) {
             TF_WARN("<%s> %s '%s' size (%zu) did not match "
-                    "expected (%d)", id.GetText(), label,
+                    "expected (%d)", id.GetText(), label.c_str(),
                     primvar.name.GetText(), val.GetArraySize(), expectedSize);
             continue;
         }
-
-        if (!_SetPrimVarValue(name, val, detail, primvar.role, params)) {
-            TF_WARN("Ignoring unhandled %s of type %s for %s.%s\n",
-                label, val.GetTypeName().c_str(), id.GetText(),
-                primvar.name.GetText());
+        if constexpr(std::is_same<RtPrimVarList, T>()) {
+            if (!_SetPrimVarValue(name, val, detail, primvar.role, params)) {
+                TF_WARN("Ignoring unhandled primvar of type %s for %s.%s\n",
+                    val.GetTypeName().c_str(), id.GetText(),
+                    primvar.name.GetText());
+            }
+        } else {
+            if (!_SetParamValue(name, val, primvar.role, params)) {
+                TF_WARN("Ignoring unhandled attribute of type %s for %s.%s\n",
+                    val.GetTypeName().c_str(), id.GetText(),
+                    primvar.name.GetText());
+            }
         }
     }
 }
@@ -699,7 +709,7 @@ HdPrman_ConvertPrimvars(HdSceneDelegate *sceneDelegate, SdfPath const& id,
     const int modeCount = 5;
     for (size_t i = 0; i < modeCount; ++i) {
         _Convert(sceneDelegate, id, hdInterpValues[i], primvars,
-                 _ParamTypePrimvar, primvarSizes[i], time);
+                 primvarSizes[i], time);
     }
 }
 
@@ -741,7 +751,7 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
                                    SdfPath const& id, bool isGeometry,
                                    bool *visible)
 {
-    RtPrimVarList attrs;
+    RtParamList attrs;
 
     // Convert Hydra instance-rate primvars, and "user:" prefixed
     // constant  primvars, to Riley attributes.
@@ -749,7 +759,7 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         HdInterpolationConstant,
     };
     for (HdInterpolation hdInterp: hdInterpValues) {
-        _Convert(sceneDelegate, id, hdInterp, attrs, _ParamTypeAttribute, 1);
+        _Convert(sceneDelegate, id, hdInterp, attrs, 1);
     }
 
     // Hydra id -> Riley Rix::k_identifier_name
@@ -825,7 +835,7 @@ HdPrman_RenderParam::ConvertAttributes(HdSceneDelegate *sceneDelegate,
         );
     }
     
-    return std::move(attrs);
+    return attrs;
 }
 
 void
@@ -1312,7 +1322,7 @@ HdPrman_RenderParam::_CreateRiley(const std::string &rileyVariant,
 
     // PRManBegin expects array of char* rather than std::string
     cArgs.reserve(sArgs.size());
-    std::transform(sArgs.begin(), sArgs.end(), std::back_inserter(cArgs),
+    std::transform(sArgs.cbegin(), sArgs.cend(), std::back_inserter(cArgs),
                    [](const std::string& str) { return str.c_str();} );
 
     _ri->PRManBegin(cArgs.size(), const_cast<char **>(cArgs.data()));

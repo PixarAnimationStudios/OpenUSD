@@ -716,7 +716,7 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
         _instanceCategories = delegate->GetInstanceCategories(id);
         if (_instanceCategories.size() == 0) {
             // Point instancing; use instancer's categories
-            VtTokenArray cats = delegate->GetCategories(id);
+            const VtTokenArray cats = delegate->GetCategories(id);
             _instancerFlat.categories.insert(cats.begin(), cats.end());
         } else {
             // Native instancing; move common categories to instancer
@@ -734,8 +734,8 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
                     newIntersection = instCats;
                 } else {
                     std::set_intersection(
-                        intersection.begin(), intersection.end(),
-                        instCats.begin(), instCats.end(),
+                        intersection.cbegin(), intersection.cend(),
+                        instCats.cbegin(), instCats.cend(),
                         std::back_inserter(newIntersection));
                 }
                 if (newIntersection.size() == 0) {
@@ -750,13 +750,13 @@ HdPrmanInstancer::_SyncCategories(HdDirtyBits* dirtyBits)
                     // already sorted above
                     VtTokenArray newCats;
                     std::set_difference(
-                        instCats.begin(), instCats.end(),
-                        intersection.begin(), intersection.end(),
+                        instCats.cbegin(), instCats.cend(),
+                        intersection.cbegin(), intersection.cend(),
                         std::back_inserter(newCats));
                     instCats = newCats;
                 }
-                _instancerFlat.categories.insert(intersection.begin(), 
-                    intersection.end());
+                _instancerFlat.categories.insert(intersection.cbegin(), 
+                    intersection.cend());
             }
         }
     }
@@ -1139,7 +1139,7 @@ HdPrmanInstancer::_PopulateInstances(
                     // light linking categories.
                     param->ConvertCategoriesToAttributes(
                         instancerId,
-                        { flats.categories.begin(), flats.categories.end() },
+                        { flats.categories.cbegin(), flats.categories.cend() },
                         params);
                 }
 
@@ -1401,7 +1401,7 @@ HdPrmanInstancer::_RemoveDeadInstances(
     // otherwise the call to get() will insert it.
     if (!_protoMap.has(prototypePrimPath)) { return false; }
     using ProtoMapPair = std::pair<riley::GeometryPrototypeId, _InstanceIdVec>;
-    _ProtoInstMap& protoMap = _protoMap.get(prototypePrimPath).map;
+    const _ProtoInstMap& protoMap = _protoMap.get(prototypePrimPath).map;
     std::vector<riley::GeometryPrototypeId> oldProtoIds;
     std::transform(
         protoMap.begin(), protoMap.end(),
@@ -1415,8 +1415,8 @@ HdPrmanInstancer::_RemoveDeadInstances(
 
     std::vector<riley::GeometryPrototypeId> toRemove;
     std::set_difference(
-        oldProtoIds.begin(), oldProtoIds.end(),
-        newProtoIds.begin(), newProtoIds.end(),
+        oldProtoIds.cbegin(), oldProtoIds.cend(),
+        newProtoIds.cbegin(), newProtoIds.cend(),
         std::back_inserter(toRemove));
     if (toRemove.size() > 0) {
         _ResizeProtoMap(riley, prototypePrimPath, toRemove, 0);
@@ -1425,8 +1425,8 @@ HdPrmanInstancer::_RemoveDeadInstances(
     // returns true if there are new geometry prototype ids for this prototype
     std::vector<riley::GeometryPrototypeId> toAdd;
     std::set_difference(
-        protoIds.begin(), protoIds.end(),
-        oldProtoIds.begin(), oldProtoIds.end(),
+        protoIds.cbegin(), protoIds.cend(),
+        oldProtoIds.cbegin(), oldProtoIds.cend(),
         std::back_inserter(toAdd));
     return toAdd.size() > 0;
 }
@@ -1567,7 +1567,8 @@ HdPrmanInstancer::_CleanDisusedGroupIds(HdPrman_RenderParam* param)
     if (toDestroy.size() > 0) {
         HdPrmanInstancer* parent = _GetParentInstancer();
         if (parent) {
-            parent->Depopulate(param, GetId(), { active.begin(), active.end() });
+            parent->Depopulate(param, GetId(),
+                { active.cbegin(), active.cend() });
         }
     }
     // Destroy the disused prototype groups
