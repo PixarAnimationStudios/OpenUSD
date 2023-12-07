@@ -29,6 +29,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/usd/sdf/textParserContext.h"
 #include "pxr/usd/sdf/parserHelpers.h"
+#include "pxr/usd/sdf/schema.h"
 
 // Token table from yacc file
 #include "textFileFormat.tab.h"
@@ -60,6 +61,36 @@ PXR_NAMESPACE_USING_DIRECTIVE
 %option nounput
 %option reentrant
 %option bison-bridge
+
+/* character classes
+  * defines UTF-8 encoded byte values for standard ASCII
+  * and multi-byte UTF-8 character sets
+  * valid multi-byte UTF-8 sequences are as follows:
+  * For an n-byte encoded UTF-8 character, the last n-1 bytes range [\x80-\xbf]
+  * 2-byte UTF-8 characters, first byte in range [\xc2-\xdf]
+  * 3-byte UTF-8 characters, first byte in range [\xe0-\xef]
+  * 4-byte UTF-8 characters, first byte in range [\xf0-\xf4]
+  * ASCII characters span [\x41-\x5a] (upper case) [\x61-\x7a] (lower case) [\x30-39] (digits)
+  */
+ALPHA1      [\x41-\x5a]
+ALPHA2      [\x61-\x7a]
+DIGIT       [\x30-\x39]
+UEND        [\x80-\xbf]
+U2PRE       [\xc2-\xdf]
+U3PRE       [\xe0-\xef]
+U4PRE       [\xf0-\xf4]
+UNDER       [_]
+DASH        [\-]
+BAR         [\|]
+ALPHA       {ALPHA1}|{ALPHA2}
+ALPHANUM    {ALPHA}|{DIGIT}
+UTF8X       {U2PRE}{UEND}|{U3PRE}{UEND}{UEND}|{U4PRE}{UEND}{UEND}{UEND}
+UTF8        {ALPHANUM}|{UTF8X}
+UTF8NODIG   {ALPHA}|{UTF8X}
+UTF8U       {UTF8}|{UNDER}
+UTF8NODIGU  {UTF8NODIG}|{UNDER}
+UTF8UD      {UTF8U}|{DASH}
+UTF8UDB     {UTF8UD}|{BAR}
 
 /* States */
 %x SLASHTERIX_COMMENT
@@ -134,24 +165,58 @@ PXR_NAMESPACE_USING_DIRECTIVE
 "variants"            { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARIANTS; }
 "varying"             { (*yylval_param) = std::string(yytext, yyleng); return TOK_VARYING; }
 
-    /* unquoted C/Python identifier */
-[[:alpha:]_][[:alnum:]_]* {
-        (*yylval_param) = std::string(yytext, yyleng);
-        return TOK_IDENTIFIER;
-    }
-
-    /* unquoted C++ namespaced identifier -- see bug 10775 */
+ /* unquoted C++ namespaced identifier -- see bug 10775 */
 [[:alpha:]_][[:alnum:]_]*(::[[:alpha:]_][[:alnum:]_]*)+ {
         (*yylval_param) = std::string(yytext, yyleng);
         return TOK_CXX_NAMESPACED_IDENTIFIER;
     }
 
-    /* unquoted namespaced identifier.  matches any number of colon
-     * delimited C/Python identifiers */
-[[:alpha:]_][[:alnum:]_]*(:[[:alpha:]_][[:alnum:]_]*)+ {
-        (*yylval_param) = std::string(yytext, yyleng);
-        return TOK_NAMESPACED_IDENTIFIER;
+ /* In a Unicode enabled scheme, 'identifiers' are generally
+  * categorized as something that begins with something in the
+  * XID_Start category followed by zero or more things in the
+  * XID_Continue category.  Since the number of characters in
+  * these classes are large, we can't explicitly validate them
+  * here easily, so the lex rule is pretty permissive with some
+  * further validation done in code prior to calling what was
+  * read an 'identifier'.  Note this rule will also match
+  * standard ASCII strings because the UTF-8 encoded byte 
+  * representation is the same for these characters.
+  * However, unlike the path lexer, we can guarantee that 
+  * prim names aren't something special to be called out here
+  * so we can be a little more specific about the kinds of strings
+  * we match, particularly to not collide with the pure digit match rule
+  * below
+  */
+{UTF8NODIGU}{UTF8U}* {
+    std::string matched = std::string(yytext, yyleng);
+
+    // we perform an extra validation step here
+    // to make sure what we matched is actually a valid
+    // identifier because we can overmatch UTF-8 characters
+    // based on this definition
+    if (!SdfSchema::IsValidIdentifier(matched)) {
+        return TOK_SYNTAX_ERROR;
     }
+
+    (*yylval_param) = matched;
+    return TOK_IDENTIFIER;
+}
+
+ /* unquoted namespaced identifiers match any number of colon 
+  * delimited identifiers
+  */
+{UTF8NODIGU}{UTF8U}*(:{UTF8NODIGU}{UTF8U}*)+ {
+    std::string matched = std::string(yytext, yyleng);
+
+    // like for regular identifiers, we do a validation
+    // check here to prevent overmatching UTF-8 characters
+    if (!SdfSchema::IsValidNamespacedIdentifier(matched)) {
+        return TOK_SYNTAX_ERROR;
+    }
+
+    (*yylval_param) = matched;
+    return TOK_NAMESPACED_IDENTIFIER;
+}
 
     /* scene paths */
 \<[^\<\>\r\n]*\> {

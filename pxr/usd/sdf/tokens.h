@@ -79,6 +79,10 @@ TF_DECLARE_PUBLIC_TOKENS(SdfMetadataDisplayGroupTokens,
                          SDF_API,
                          SDF_METADATA_DISPLAYGROUP_TOKENS);
 
+// constants for identifier validation
+constexpr uint32_t SDF_NAMESPACE_DELIMITER_CODE_POINT = 0x003Au;
+constexpr uint32_t SDF_UNDERSCORE_CODE_POINT = 0x005Fu;
+
 PXR_NAMESPACE_CLOSE_SCOPE
 
 #endif // PXR_USD_SDF_TOKENS_H
