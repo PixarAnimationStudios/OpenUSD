@@ -25,73 +25,38 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/unicodeCharacterClasses.h"
 
-#include <vector>
+#include <array>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// @brief 
-/// Provides static initialization of the character class data
-/// contained within the XID_Start set of Unicode character classes.
-///
-struct Tf_UnicodeXidStartRangeData
-{
-public:
+static constexpr
+std::array<std::pair<uint32_t, uint32_t>, {xid_start_ranges_size}>
+_xidStartRanges = {{
+{xid_start_ranges}
+}};
 
-    Tf_UnicodeXidStartRangeData();
-
-    std::vector<std::pair<uint32_t, uint32_t>> ranges;
-};
-
-/// @brief 
-/// Provides static initialization of the character class data
-/// contained within the XID_Continue set of Unicode character classes.
-///
-struct Tf_UnicodeXidContinueRangeData
-{
-public:
-
-    Tf_UnicodeXidContinueRangeData();
-
-    std::vector<std::pair<uint32_t, uint32_t>> ranges;
-};
-
-// holds the compacted ranges of XID_Start and XID_Continue
-// character classes
-static TfStaticData<Tf_UnicodeXidStartRangeData> _xidStartRangeData;
-static TfStaticData<Tf_UnicodeXidContinueRangeData> _xidContinueRangeData;
-
-Tf_UnicodeXidStartRangeData::Tf_UnicodeXidStartRangeData()
-{
-    {xid_start_ranges}
-}
-
-Tf_UnicodeXidContinueRangeData::Tf_UnicodeXidContinueRangeData()
-{
-    {xid_continue_ranges}
-}
+static constexpr
+std::array<std::pair<uint32_t, uint32_t>, {xid_continue_ranges_size}>
+_xidContinueRanges = {{
+{xid_continue_ranges}
+}};
 
 TfUnicodeXidStartFlagData::TfUnicodeXidStartFlagData()
 {
     // set all of the bits corresponding to the code points in the range
-    for (const auto& pair : _xidStartRangeData->ranges)
+    for (const auto& pair : _xidStartRanges)
     {
         for (uint32_t i = pair.first; i <= pair.second; i++)
         {
             this->_flags[static_cast<size_t>(i)] = true;
         }
     }
-}
-
-bool
-TfUnicodeXidStartFlagData::IsXidStartCodePoint(uint32_t codePoint) const
-{
-    return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
 }
 
 TfUnicodeXidContinueFlagData::TfUnicodeXidContinueFlagData()
 {
     // set all of the bits corresponding to the code points in the range
-    for (const auto& pair : _xidContinueRangeData->ranges)
+    for (const auto& pair : _xidContinueRanges)
     {
         for (uint32_t i = pair.first; i <= pair.second; i++)
         {
@@ -100,25 +65,19 @@ TfUnicodeXidContinueFlagData::TfUnicodeXidContinueFlagData()
     }
 }
 
-bool
-TfUnicodeXidContinueFlagData::IsXidContinueCodePoint(uint32_t codePoint) const
-{
-    return (codePoint < TF_MAX_CODE_POINT) ? _flags[codePoint] : false;
-}
-
-static TfStaticData<TfUnicodeXidStartFlagData> xidStartFlagData;
-static TfStaticData<TfUnicodeXidContinueFlagData> xidContinueFlagData;
+static TfStaticData<TfUnicodeXidStartFlagData> _xidStartFlagData;
+static TfStaticData<TfUnicodeXidContinueFlagData> _xidContinueFlagData;
 
 const TfUnicodeXidStartFlagData&
 TfUnicodeGetXidStartFlagData()
 {
-    return *xidStartFlagData;
+    return *_xidStartFlagData;
 }
 
 const TfUnicodeXidContinueFlagData&
 TfUnicodeGetXidContinueFlagData()
 {
-    return *xidContinueFlagData;
+    return *_xidContinueFlagData;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
