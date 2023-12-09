@@ -26,6 +26,8 @@
 #include "pxr/base/tf/regTest.h"
 #include "pxr/base/tf/unicodeUtils.h"
 
+#include <algorithm>
+#include <array>
 #include <string_view>
 
 PXR_NAMESPACE_USING_DIRECTIVE
@@ -36,6 +38,8 @@ TestUtf8CodePointView()
 
     {
         TF_AXIOM(TfUtf8CodePointView{}.empty());
+        TF_AXIOM(TfUtf8CodePointView{}.cbegin() == TfUtf8CodePointView{}.EndAsIterator());
+        TF_AXIOM(std::cbegin(TfUtf8CodePointView{}) == std::cend(TfUtf8CodePointView{}));
     }
 
     // Exercise the iterator converting from UTF-8 char to code point
@@ -97,6 +101,38 @@ TestUtf8CodePointView()
             TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
         }
 
+    }
+    {
+        // Unexpected continuations (\x80 and \x81) should be decoded as
+        // invalid code points.
+        const std::string_view sv{"\x80\x61\x62\x81\x63"};
+        const TfUtf8CodePointView uv{sv};
+        TF_AXIOM(std::next(std::begin(uv), 5) == std::end(uv));
+        TF_AXIOM(std::next(std::begin(uv), 5).GetBase() == std::end(sv));
+
+        std::array<uint32_t, 5> codePoints{0};
+        const std::array<uint32_t, 5> expectedCodePoints{{
+            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x61, 0x62,
+            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x63}};
+        std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
+        TF_AXIOM(codePoints == expectedCodePoints);
+    }
+    {
+        // Incomplete UTF-8 sequences should not consume valid character
+        // sequences
+        const std::string_view sv{"\xc0\x61\xe0\x85\x62\xf0\x83\x84\x63\xf1"};
+        const TfUtf8CodePointView uv{sv};
+        TF_AXIOM(std::next(std::begin(uv), 7) == std::end(uv));
+        TF_AXIOM(std::next(std::begin(uv), 7).GetBase() == std::end(sv));
+
+        std::array<uint32_t, 7> codePoints{0};
+        const std::array<uint32_t, 7> expectedCodePoints{{
+            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x61,
+            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x62,
+            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x63,
+            TfUtf8CodePointIterator::INVALID_CODE_POINT}};
+        std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
+        TF_AXIOM(codePoints == expectedCodePoints);
     }
     return true;
 }
