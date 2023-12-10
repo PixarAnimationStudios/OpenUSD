@@ -76,16 +76,20 @@ name and order joints in vectorized data. For example:
 
 \code
 def SkelAnimation "Anim" {
-    uniform token[] = ["A", "A/B"]
+    uniform token[] joints = ["A/B", "A"]
 }
 def Skeleton "Skel" {
-    uniform token[] = ["A/B", "A"]
+    uniform token[] joints = ["A", "A/B"]
 }
 \endcode
 
 Note that in both example primitives above, the given paths do not reference
 any real primitives. Also note that each primitive has its own joint ordering,
-and that those orders need not be identical.
+and that those orders need not be identical. _Skeleton_ has a strict rule that
+the targets of the _joints_ attribute are required to be authored such that all 
+parent joints come before any of their children in the array. See \ref UsdSkel_JointHierarchy 
+"Skeleton Schema: Joint Hierarchy" for more information. _SkelAnimation_ does 
+not have this ancestral order restriction.
 
 The purpose of encoding orderings in this manner is to allow for the creation
 of **self-contained** assets. For example, it is possible to construct
@@ -207,8 +211,11 @@ converting transforms to and from this component form.
 
 Joint data is stored in arrays, using the \ref UsdSkel_JointOrder
 "joint order" specified by the _joints_ attribute. This ordering may be
-different from the Skeletons that the animation maps to, and may also
-only identify a sparse subset of the joints in a skeleton. When an animation
+different from the Skeletons that the animation maps to, may also
+only identify a sparse subset of the joints in a skeleton, and is not 
+required to follow a strict \ref UsdSkel_JointHierarchy 
+"ancestral ordering" like the _joints_ attribute of the 
+Skeleton schema (i.e. child joints can be listed before parent joints). When an animation
 provides sparse data, fallback values are taken from the rest pose on the
 UsdSkelSkeleton primitive to which they apply.
 
@@ -218,11 +225,17 @@ as the authored _joints_ array. The effect of a skel animation prim may
 also be directly nullified by either deactivating the primitive, or by blocking
 the component attributes.
 
+\subsection UsdSkel_SkelAnimation_Blendshapes Skel Animation Schema: Blend Shape Animation
+
 In addition to providing joint animations, a SkelAnimation may also provide
 blend shape weight animations. Blend shape weights are specified in a vectorized
-form using the _blendShapeWeights_ attribute. The _blendShapes_ attribute holds
-a token array which, for every element authored in _blendShapeWeights_,
-identifies which blend shape each weight value applies to.
+form using the _blendShapeWeights_ attribute. By creating timesampled
+data for the _blendShapeWeights_ attribute, you can create blend shape animations. 
+The _blendShapes_ attribute holds a token array which, for every element authored in _blendShapeWeights_,
+identifies which blend shape each weight value applies to. Note that the 
+_blendShapes_ attribute should only encode a default value (i.e. timesampled data
+will not be respected). It defines a single array of blend shape tokens for all the blend 
+shapes that partake in that SkelAnimation.
 
 The point of this encoding is to decouple the blendshape weight animation from
 the description of how that animation maps to different skinnable shapes.
@@ -230,7 +243,7 @@ Refer to the \ref UsdSkel_BindingAPI_BlendShapes 'BindingAPI: Blend Shapes'
 documentation for information on how these weights are mapped to skinnable
 primitives.
 
-\section UsdSkel_SkelAnimation_Binding Skel Animation Schema: Binding to Skeletons
+\subsection UsdSkel_SkelAnimation_Binding Skel Animation Schema: Binding to Skeletons
 
 A _SkelAnimation_ is made to affect a _Skeleton_ by *binding* the animation
 to the skeleton, using the _skel:animationSource_ property of UsdSkelBindingAPI
@@ -530,12 +543,51 @@ using the UsdSkelBindingAPI. The _jointIndices_ primvar provides an array giving
 the joint index of an influence, while the _jointWeights_ primvar provides a
 weight value corresponding to each of those indices.
 
+For example:
+
+\code
+def Skeleton "Skel" {
+    uniform token[] joints = ["A", "A/B",  "A/B/C"]
+}
+def "MeshA" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    int[] primvars:skel:jointIndices = [1, 0] (
+        elementSize = 1
+        interpolation = "vertex"
+    )
+    float[] primvars:skel:jointWeights = [1, 1] (
+        elementSize = 1
+        interpolation = "vertex"
+    )
+}
+
+def "MeshB" (
+    prepend apiSchemas = ["SkelBindingAPI"]
+)
+{
+    uniform token[] joints = ["A/B/C",  "A/B"]
+    int[] primvars:skel:jointIndices = [0,1] (
+        elementSize = 1
+        interpolation = "vertex"
+    )
+    float[] primvars:skel:jointWeights = [1,1] (
+        elementSize = 1
+        interpolation = "vertex"
+    )
+}
+\endcode
+
 Above, since `</MeshA>` does not specify a _skel:joints_ ordering of its own,
 the joint indices refer to the ordering of the bound Skeleton, and so the joint
 indices refer to joints `A/B` and `A`, respectively. However, `</MeshB>`
 specifies a `skel:joints` property that gives an alternate joint ordering.
 Using that, the indices of `</MeshB>` refer to joints `A/B/C` and `A/B`,
-in that order.
+in that order. Note that the joints specified for _skel:joints_ on the bound 
+prims can be a subset of the joints defined on the bound Skeleton. Also, 
+_skel:joints_ does not need to adhere to the parents before children ordering 
+mentioned in \ref UsdSkel_JointHierarchy "joint hierarchy."
 
 In the common case, the joint influence primvars are configured with _vertex_
 interpolation, and define a fixed number of contiguous influences per point.
@@ -737,5 +789,9 @@ the `</Mesh.blendShapeTargets>` rel identifies which UsdSkelBlendShape primitive
 that token maps to. So `B = </Mesh/Foo>` and `A = </Mesh/Bar>`. From this,
 we find that we our final blend shapes and weights, as pairs, are
 `[(</Mesh/Foo>, 0.75), (</Mesh/Bar>, 1.0)`.
+
+For more information about animating blend shapes, please refer to the 
+\ref UsdSkel_SkelAnimation_Blendshapes "Skel Animation Schema: Blend Shape Animation" and 
+\ref UsdSkel_BlendShape "Blend Shape Schema" documentation.
 
 */
