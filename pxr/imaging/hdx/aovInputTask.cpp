@@ -206,6 +206,35 @@ HdxAovInputTask::Execute(HdTaskContext* ctx)
     }
 }
 
+namespace {
+void
+_ConvertRGBtoRGBA(const float* rgbValues,
+                  size_t numRgbValues,
+                  std::vector<float>* rgbaValues)
+{
+    if (numRgbValues % 3 != 0) {
+        TF_WARN("Value count should be divisible by 3.");
+        return;
+    }
+
+    const size_t numRgbaValues = numRgbValues * 4 / 3;
+
+    if (rgbValues != nullptr && rgbaValues != nullptr) {
+        const float *rgbValuesIt = rgbValues;
+        rgbaValues->resize(numRgbaValues);
+        float *rgbaValuesIt = rgbaValues->data();
+        const float * const end = rgbaValuesIt + numRgbaValues;
+
+        while (rgbaValuesIt != end) {
+            *rgbaValuesIt++ = *rgbValuesIt++;
+            *rgbaValuesIt++ = *rgbValuesIt++;
+            *rgbaValuesIt++ = *rgbValuesIt++;
+            *rgbaValuesIt++ = 1.0f;
+        }
+    }
+}
+} // anonymous namespace
+
 void
 HdxAovInputTask::_UpdateTexture(
     HdTaskContext* ctx,
@@ -216,21 +245,34 @@ HdxAovInputTask::_UpdateTexture(
     HD_TRACE_FUNCTION();
     HF_MALLOC_TAG_FUNCTION();
 
-    GfVec3i dim(
+    const GfVec3i dim(
         buffer->GetWidth(),
         buffer->GetHeight(),
         buffer->GetDepth());
 
-    HgiFormat bufFormat = HdxHgiConversions::GetHgiFormat(buffer->GetFormat());
-    size_t pixelByteSize = HdDataSizeOfFormat(buffer->GetFormat());
-    size_t dataByteSize = dim[0] * dim[1] * dim[2] * pixelByteSize;
+    const void* pixelData = buffer->Map();
+
+    HdFormat hdFormat = buffer->GetFormat();
+    // HgiFormatFloat32Vec3 not a supported texture format for Vulkan. Convert
+    // data to vec4 format.
+    if (hdFormat == HdFormatFloat32Vec3) {
+        hdFormat = HdFormatFloat32Vec4;
+        const size_t numValues = 3 * dim[0] * dim[1] * dim[2];
+        std::vector<float> float4Data;
+        _ConvertRGBtoRGBA(
+            reinterpret_cast<const float*>(pixelData), numValues, &float4Data);
+        pixelData = reinterpret_cast<const void*>(float4Data.data());
+    }
+
+    const HgiFormat bufFormat = HdxHgiConversions::GetHgiFormat(hdFormat);
+    const size_t pixelByteSize = HdDataSizeOfFormat(hdFormat);
+    const size_t dataByteSize = dim[0] * dim[1] * dim[2] * pixelByteSize;
 
     // Update the existing texture if specs are compatible. This is more
     // efficient than re-creating, because the underlying framebuffer that
     // had the old texture attached would also need to be re-created.
     if (texture && texture->GetDescriptor().dimensions == dim &&
             texture->GetDescriptor().format == bufFormat) {
-        const void* pixelData = buffer->Map();
         HgiTextureCpuToGpuOp copyOp;
         copyOp.bufferByteSize = dataByteSize;
         copyOp.cpuSourceBuffer = pixelData;
@@ -240,7 +282,6 @@ HdxAovInputTask::_UpdateTexture(
         blitCmds->CopyTextureCpuToGpu(copyOp);
         blitCmds->PopDebugGroup();
         _GetHgi()->SubmitCmds(blitCmds.get());
-        buffer->Unmap();
     } else {
         // Destroy old texture
         if(texture) {
@@ -250,9 +291,6 @@ HdxAovInputTask::_UpdateTexture(
         HgiTextureDesc texDesc;
         texDesc.debugName = "AovInput Texture";
         texDesc.dimensions = dim;
-
-        const void* pixelData = buffer->Map();
-
         texDesc.format = bufFormat;
         texDesc.initialData = pixelData;
         texDesc.layerCount = 1;
@@ -262,9 +300,8 @@ HdxAovInputTask::_UpdateTexture(
         texDesc.usage = usage | HgiTextureUsageBitsShaderRead;
 
         texture = _GetHgi()->CreateTexture(texDesc);
-
-        buffer->Unmap();
     }
+    buffer->Unmap();
 }
 
 void
@@ -273,12 +310,20 @@ HdxAovInputTask::_UpdateIntermediateTexture(
     HdRenderBuffer* buffer,
     HgiTextureUsageBits usage)
 {
-    GfVec3i dim(
+    const GfVec3i dim(
         buffer->GetWidth(),
         buffer->GetHeight(),
         buffer->GetDepth());
+    
+    // HgiFormatFloat32Vec3 not a supported texture format for Vulkan. Use vec4 
+    // format instead.
+    HdFormat hdFormat = buffer->GetFormat();
+    if (hdFormat == HdFormatFloat32Vec3) {
+        hdFormat = HdFormatFloat32Vec4;
+    }
+
     HgiFormat hgiFormat =
-        HdxHgiConversions::GetHgiFormat(buffer->GetFormat());
+        HdxHgiConversions::GetHgiFormat(hdFormat);
 
     if (texture) {
         HgiTextureDesc const& desc =
