@@ -260,6 +260,7 @@ pxr_library(tf
         atomicRenameUtil
         debugCodes
         noticeRegistry
+        unicodeCharacterClasses
 
     PYTHON_PRIVATE_CLASSES
         pyErrorInternal
