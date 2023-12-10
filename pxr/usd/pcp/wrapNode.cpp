@@ -107,6 +107,8 @@ wrapNode()
         .def("GetPathAtIntroduction", &This::GetPathAtIntroduction)
 
         .def("CanContributeSpecs", &This::CanContributeSpecs)
+        .def("GetSpecContributionRestrictedDepth",
+            &This::GetSpecContributionRestrictedDepth)
 
         .def(self == self)
         .def(self != self)

@@ -3431,12 +3431,42 @@ _PropagateNodeToParent(
         }
 
         if (newNode) {
+            const size_t newNodeRestrictedDepth =
+                newNode.GetSpecContributionRestrictedDepth();
+
             newNode.SetInert(srcNode.IsInert());
             newNode.SetHasSymmetry(srcNode.HasSymmetry());
             newNode.SetPermission(srcNode.GetPermission());
             newNode.SetRestricted(srcNode.IsRestricted());
 
+            // If we're propagating nodes to the origin, newNode may be a
+            // previously-existing node that was created during an ancestral
+            // round of implied specializes propagation. If that's the case,
+            // its restriction depth will be non-zero because it was marked
+            // inert at that time. However, the above calls may have now
+            // made that node not inert, resetting its restriction depth
+            // back to 0. When we propagate this node back to the root, we
+            // want to restore its restriction depth back to its original 
+            // value.
+            //
+            // To do this, we just record the original depth in srcNode.
+            // When we propagate this node to the origin, this saves the
+            // value away so it can be restored when we propagate the
+            // node back to the root.
+            //
+            // This is tested in the /Root/Child/Child test case of
+            // test_ContributionRestrictedDepth_Specializes in
+            // testPcpPrimIndex.py.
+            //
+            // XXX: 
+            // This is way too complicated but I think the only way to
+            // avoid this is to rethink the whole node propagation scheme
+            // for specializes.
             srcNode.SetInert(true);
+            if (newNodeRestrictedDepth != 0) {
+                srcNode.SetSpecContributionRestrictedDepth(
+                    newNodeRestrictedDepth);
+            }
         }
         else {
             _InertSubtree(srcNode);
@@ -3516,11 +3546,26 @@ _FindSpecializesToPropagateToRoot(
         // up the implied specializes in _PropagateArcsToOrigin,
         // it's much simpler if we just deal with that here by forcing
         // the specializes node to inert=false.
-        node.SetInert(false);
+        //
+        // The subsequent call to _PropagateSpecializesTreeToRoot will
+        // set this node back to inert=true, which will update its
+        // restriction depth. However, if this node was originally
+        // inert, we want to keep its original restriction depth.
+        // This is tested in the /Root/Child test case of
+        // test_ContributionRestrictedDepth_Specializes in testPcpPrimIndex.py.
+        const bool wasInert = node.IsInert();
+        const size_t oldDepth = node.GetSpecContributionRestrictedDepth();
+        if (wasInert) {
+            node.SetInert(false);
+        }
 
         _PropagateSpecializesTreeToRoot(
             node.GetRootNode(), node, node,
             node.GetMapToRoot(), node, indexer);
+
+        if (wasInert) {
+            node.SetSpecContributionRestrictedDepth(oldDepth);
+        }
     }
 
     for (PcpNodeRef childNode : Pcp_GetChildren(node)) {

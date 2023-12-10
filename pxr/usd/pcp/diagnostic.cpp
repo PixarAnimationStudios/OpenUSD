@@ -132,6 +132,8 @@ std::string Pcp_Dump(
         _GetString(node.IsInert()));
     s += TfStringPrintf("    Contribute specs:         %s\n",
         _GetString(node.CanContributeSpecs()));
+    s += TfStringPrintf("        Restricted at depth:  %zu\n",
+        node.GetSpecContributionRestrictedDepth());
     s += TfStringPrintf("    Has specs:                %s\n",
         _GetString(node.HasSpecs()));
     s += TfStringPrintf("    Has symmetry:             %s\n",

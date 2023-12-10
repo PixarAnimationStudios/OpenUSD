@@ -104,6 +104,7 @@ pxr_test_scripts(
     testenv/testPcpLayerMuting.py
     testenv/testPcpDependencies.py
     testenv/testPcpPathTranslation.py
+    testenv/testPcpPrimIndex.py
     testenv/testPcpDynamicFileFormatPlugin.py
     testenv/testPcpMapFunction.py
     testenv/testPcpOwner.py
@@ -1929,6 +1930,12 @@ pxr_register_test(testPcpMapFunction
 pxr_register_test(testPcpPathTranslation
     PYTHON
     COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPathTranslation"
+    EXPECTED_RETURN_CODE 0
+)
+
+pxr_register_test(testPcpPrimIndex
+    PYTHON
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testPcpPrimIndex"
     EXPECTED_RETURN_CODE 0
 )
 
