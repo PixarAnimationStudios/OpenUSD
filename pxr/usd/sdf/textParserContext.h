@@ -39,8 +39,6 @@
 
 #include "pxr/base/tf/token.h"
 
-#include <boost/optional.hpp>
-
 #include <string>
 #include <vector>
 
@@ -85,7 +83,7 @@ public:
     bool relParsingAllowTargetData;
     // relationship target paths that will be saved in a list op
     // (use a boost::optional to track whether we have seen an opinion at all.)
-    boost::optional<SdfPathVector> relParsingTargetPaths;
+    std::optional<SdfPathVector> relParsingTargetPaths;
     // relationship target paths that will be appended to the relationship's
     // list of target children.
     SdfPathVector relParsingNewTargetChildren;
