@@ -720,7 +720,9 @@ class ARKitPrimTypeChecker(BaseRuleChecker):
                             'Mesh', 'Sphere', 'Cube', 'Cylinder', 'Cone',
                             'Capsule', 'GeomSubset', 'Points', 
                             'SkelRoot', 'Skeleton', 'SkelAnimation', 
-                            'BlendShape', 'SpatialAudio')
+                            'BlendShape', 'SpatialAudio', 'PhysicsScene',
+                            'Preliminary_ReferenceImage', 'Preliminary_Text',
+                            'Preliminary_Trigger')
 
     @staticmethod
     def GetDescription():
@@ -735,8 +737,10 @@ class ARKitPrimTypeChecker(BaseRuleChecker):
 
     def CheckPrim(self, prim):
         self._Msg("Checking prim <%s>." % prim.GetPath())
-        if prim.GetTypeName() not in \
-            ARKitPrimTypeChecker._allowedPrimTypeNames:
+        if (
+            (prim.GetTypeName() not in ARKitPrimTypeChecker._allowedPrimTypeNames) and
+            (not prim.GetTypeName().startswith("RealityKit"))
+        ):
             self._AddFailedCheck("Prim <%s> has unsupported type '%s'." % 
                                     (prim.GetPath(), prim.GetTypeName()))
 
