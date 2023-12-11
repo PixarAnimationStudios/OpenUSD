@@ -24,13 +24,59 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnosticLite.h"
 #include "pxr/base/tf/regTest.h"
+#include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/unicodeUtils.h"
 
 #include <algorithm>
 #include <array>
+#include <limits>
 #include <string_view>
 
 PXR_NAMESPACE_USING_DIRECTIVE
+
+static bool
+TestUtf8CodePoint()
+{
+    {
+        // Test default behavior
+        TF_AXIOM(TfUtf8CodePoint{} == TfUtf8InvalidCodePoint);
+    }
+    {
+        // Test boundary conditions
+        TF_AXIOM(TfUtf8CodePoint{0}.AsUInt32() == 0);
+        TF_AXIOM(TfUtf8CodePoint{TfUtf8CodePoint::MaximumValue}.AsUInt32() ==
+                 TfUtf8CodePoint::MaximumValue);
+        TF_AXIOM(TfUtf8CodePoint{TfUtf8CodePoint::MaximumValue + 1} ==
+                 TfUtf8InvalidCodePoint);
+        TF_AXIOM(
+            TfUtf8CodePoint{std::numeric_limits<uint32_t>::max()} ==
+            TfUtf8InvalidCodePoint);
+        TF_AXIOM(TfUtf8CodePoint{
+                    TfUtf8CodePoint::SurrogateRange.first - 1}.AsUInt32() ==
+                 TfUtf8CodePoint::SurrogateRange.first - 1);
+        TF_AXIOM(TfUtf8CodePoint{
+                    TfUtf8CodePoint::SurrogateRange.second + 1}.AsUInt32() ==
+                 TfUtf8CodePoint::SurrogateRange.second + 1);
+        TF_AXIOM(TfUtf8CodePoint{TfUtf8CodePoint::SurrogateRange.first} ==
+                 TfUtf8InvalidCodePoint);
+        TF_AXIOM(TfUtf8CodePoint{TfUtf8CodePoint::SurrogateRange.second} ==
+                 TfUtf8InvalidCodePoint);
+        TF_AXIOM(TfUtf8CodePoint{
+                    (TfUtf8CodePoint::SurrogateRange.second +
+                     TfUtf8CodePoint::SurrogateRange.first) / 2} ==
+                 TfUtf8InvalidCodePoint);
+    }
+    {
+        // Test TfStringify
+        TF_AXIOM(TfStringify(TfUtf8CodePoint(97)) == "a");
+        TF_AXIOM(TfStringify(TfUtf8CodePoint(8747)) == "∫");
+        TF_AXIOM(TfStringify(TfUtf8InvalidCodePoint) == "�");
+        TF_AXIOM(TfStringify(TfUtf8CodePoint{}) ==
+                 TfStringify(TfUtf8InvalidCodePoint));
+
+    }
+    return true;
+}
 
 static bool
 TestUtf8CodePointView()
@@ -53,7 +99,7 @@ TestUtf8CodePointView()
         TF_AXIOM(i1 == std::cend(u1));
 
         for (const uint32_t codePoint : u1) {
-            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
         }
     }
 
@@ -67,7 +113,7 @@ TestUtf8CodePointView()
         TF_AXIOM(i2 == std::cend(u2));
 
         for (const uint32_t codePoint : u2) {
-            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
         }
     }
 
@@ -98,7 +144,7 @@ TestUtf8CodePointView()
         TF_AXIOM(i3b == std::cend(u3));
 
         for (const uint32_t codePoint : u3) {
-            TF_AXIOM(codePoint != TfUtf8CodePointIterator::INVALID_CODE_POINT);
+            TF_AXIOM(codePoint != TfUtf8InvalidCodePoint.AsUInt32());
         }
 
     }
@@ -112,8 +158,8 @@ TestUtf8CodePointView()
 
         std::array<uint32_t, 5> codePoints{0};
         const std::array<uint32_t, 5> expectedCodePoints{{
-            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x61, 0x62,
-            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x63}};
+            TfUtf8InvalidCodePoint.AsUInt32(), 0x61, 0x62,
+            TfUtf8InvalidCodePoint.AsUInt32(), 0x63}};
         std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
         TF_AXIOM(codePoints == expectedCodePoints);
     }
@@ -127,12 +173,46 @@ TestUtf8CodePointView()
 
         std::array<uint32_t, 7> codePoints{0};
         const std::array<uint32_t, 7> expectedCodePoints{{
-            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x61,
-            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x62,
-            TfUtf8CodePointIterator::INVALID_CODE_POINT, 0x63,
-            TfUtf8CodePointIterator::INVALID_CODE_POINT}};
+            TfUtf8InvalidCodePoint.AsUInt32(), 0x61,
+            TfUtf8InvalidCodePoint.AsUInt32(), 0x62,
+            TfUtf8InvalidCodePoint.AsUInt32(), 0x63,
+            TfUtf8InvalidCodePoint.AsUInt32()}};
         std::copy(std::cbegin(uv), uv.EndAsIterator(), std::begin(codePoints));
         TF_AXIOM(codePoints == expectedCodePoints);
+    }
+    return true;
+}
+
+/// Ensure that every code point can be serialized into a string and converted
+/// back to a code point.
+static bool
+TestUtf8CodePointReflection()
+{
+    for (uint32_t value = 0; value <= TfUtf8CodePoint::MaximumValue; value++) {
+        if ((value < TfUtf8CodePoint::SurrogateRange.first) ||
+            (value > TfUtf8CodePoint::SurrogateRange.second)) {
+            const TfUtf8CodePoint codePoint{value};
+            TF_AXIOM(codePoint.AsUInt32() == value);
+            const std::string text{TfStringify(codePoint)};
+            const auto view = TfUtf8CodePointView{text};
+            TF_AXIOM(std::cbegin(view) != std::cend(view));
+            TF_AXIOM(*std::cbegin(view) == codePoint.AsUInt32());
+            TF_AXIOM(++std::cbegin(view) == std::cend(view));
+        }
+    }
+    return true;
+}
+
+/// Ensure that the surrogate range is replaced with the invalid character
+static bool
+TestUtf8CodePointSurrogateRange()
+{
+    for (uint32_t value = TfUtf8CodePoint::SurrogateRange.first;
+         value <= TfUtf8CodePoint::SurrogateRange.second; value++) {
+        const TfUtf8CodePoint surrogateCodePoint{value};
+        TF_AXIOM(surrogateCodePoint == TfUtf8InvalidCodePoint);
+        TF_AXIOM(TfStringify(surrogateCodePoint) ==
+                 TfStringify(TfUtf8InvalidCodePoint));
     }
     return true;
 }
@@ -301,7 +381,11 @@ TestCharacterClasses()
 static bool
 Test_TfUnicodeUtils()
 {
-    return TestUtf8CodePointView() && TestCharacterClasses();
+    return TestUtf8CodePoint() &&
+           TestUtf8CodePointView() &&
+           TestCharacterClasses() &&
+           TestUtf8CodePointReflection() &&
+           TestUtf8CodePointSurrogateRange();
 }
 
 TF_ADD_REGTEST(TfUnicodeUtils);

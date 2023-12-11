@@ -32,10 +32,60 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/unicodeCharacterClasses.h"
 
+#include <ostream>
 #include <string>
 #include <string_view>
 
 PXR_NAMESPACE_OPEN_SCOPE
+
+/// Wrapper for a code point value that can be encoded as UTF-8
+class TfUtf8CodePoint {
+public:
+    /// Code points that cannot be decoded or outside of the valid range are
+    /// may be replaced with this value.
+    static constexpr uint32_t ReplacementValue = 0xFFFD;
+
+    /// Values higher than this will be replaced with the replacement
+    /// code point.
+    static constexpr uint32_t MaximumValue = 0x10FFFF;
+
+    /// Values in this range (inclusive) cannot be constructed and will be
+    /// replaced by the replacement code point.
+    static constexpr std::pair<uint32_t, uint32_t>
+    SurrogateRange = {0xD800, 0xDFFF};
+
+    /// Construct a code point initialized to the replacement value
+    constexpr TfUtf8CodePoint() = default;
+
+    /// Construct a UTF-8 valued code point, constrained by the maximum value
+    /// and surrogate range.
+    constexpr explicit TfUtf8CodePoint(uint32_t value) :
+        _value(((value <= MaximumValue) &&
+                ((value < SurrogateRange.first) ||
+                 (value > SurrogateRange.second))) ?
+               value : ReplacementValue) {}
+
+    constexpr uint32_t AsUInt32() const { return _value; }
+
+    friend constexpr bool operator==(const TfUtf8CodePoint left,
+                                     const TfUtf8CodePoint right) {
+        return left._value == right._value;
+    }
+    friend constexpr bool operator!=(const TfUtf8CodePoint left,
+                                     const TfUtf8CodePoint right) {
+        return left._value != right._value;
+    }
+
+private:
+    uint32_t _value{ReplacementValue};
+};
+
+TF_API std::ostream& operator<<(std::ostream&, const TfUtf8CodePoint);
+
+/// The replacement code point can be used to signal that a code point could
+/// not be decoded and needed to be replaced.
+constexpr TfUtf8CodePoint TfUtf8InvalidCodePoint{
+    TfUtf8CodePoint::ReplacementValue};
 
 class TfUtf8CodePointIterator;
 
@@ -49,7 +99,7 @@ class TfUtf8CodePointIterator;
 /// std::string value{"∫dx"};
 /// TfUtf8CodePointView view{value};
 /// for (const uint32_t codePoint : view) {
-///     if (codePoint == TfTfUtf8CodePointIterator::INVALID_CODE_POINT) {
+///     if (codePoint == TfUtf8InvalidCodePoint.AsUInt32()) {
 ///         TF_WARN("String cannot be decoded.");
 ///     }
 /// }
@@ -125,11 +175,9 @@ public:
     using pointer = void;
     using reference = uint32_t;
 
-    static constexpr uint32_t INVALID_CODE_POINT = 0xFFFD;
-
     /// Retrieves the next UTF-8 character in the sequence as its Unicode
-    /// code point value. Returns INVALID_CODE_POINT when the byte sequence
-    /// pointed to by the iterator cannot be decoded.
+    /// code point value. Returns TfUtf8InvalidCodePoint.AsUInt32() when the
+    /// byte sequence pointed to by the iterator cannot be decoded.
     ///
     /// If during read of the UTF-8 character sequence the underlying
     /// string iterator would go beyond \a end defined at construction
