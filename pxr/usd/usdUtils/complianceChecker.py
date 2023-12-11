@@ -742,7 +742,7 @@ class ARKitShaderChecker(BaseRuleChecker):
     @staticmethod
     def GetDescription():
         return "Shader nodes must have \"id\" as the implementationSource, "  \
-               "with id values that begin with \"Usd*\". Also, shader inputs "\
+               "with id values that begin with \"Usd*|ND_*\". Also, shader inputs "\
                "with connections must each have a single, valid connection "  \
                "source."
 
@@ -773,7 +773,8 @@ class ARKitShaderChecker(BaseRuleChecker):
            not (shaderId in [NodeTypes.UsdPreviewSurface, 
                              NodeTypes.UsdUVTexture, 
                              NodeTypes.UsdTransform2d] or
-                shaderId.startswith(NodeTypes.UsdPrimvarReader)) :
+                shaderId.startswith(NodeTypes.UsdPrimvarReader) or
+                shaderId.startswith("ND_")) :
             self._AddFailedCheck("Shader <%s> has unsupported info:id '%s'." 
                     % (prim.GetPath(), shaderId))
 
