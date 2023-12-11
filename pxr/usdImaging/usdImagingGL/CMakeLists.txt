@@ -3434,7 +3434,7 @@ pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_mater
 )
 
 pxr_register_test(testUsdImagingGLInstancingWithMaterials_SceneIndex_ni_ni_material_binding_resolution
-    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -camera /main_cam -stage ni_ni_material_binding_resolution.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_binding_resolution.png"
+    COMMAND "${CMAKE_INSTALL_PREFIX}/tests/testUsdImagingGLBasicDrawing -offscreen -lighting -sceneLights -shading wireOnSurface -frameAll -stage ni_ni_material_binding_resolution.usda -write testUsdImagingGLInstancingWithMaterials_ni_ni_material_binding_resolution.png"
     IMAGE_DIFF_COMPARE
     testUsdImagingGLInstancingWithMaterials_ni_ni_material_binding_resolution.png
     FAIL 0.01
