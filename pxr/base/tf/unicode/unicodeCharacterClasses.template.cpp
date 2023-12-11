@@ -29,7 +29,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-/// @brief 
+/// \brief 
 /// Provides static initialization of the character class data
 /// contained within the XID_Start set of Unicode character classes.
 ///
@@ -42,7 +42,7 @@ public:
     std::vector<std::pair<uint32_t, uint32_t>> ranges;
 };
 
-/// @brief 
+/// \brief 
 /// Provides static initialization of the character class data
 /// contained within the XID_Continue set of Unicode character classes.
 ///
