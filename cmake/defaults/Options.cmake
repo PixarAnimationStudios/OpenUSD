@@ -214,3 +214,18 @@ if (${PXR_BUILD_PYTHON_DOCUMENTATION})
         set(PXR_BUILD_PYTHON_DOCUMENTATION "OFF" CACHE BOOL "" FORCE)
     endif()
 endif()
+
+# Adobe fix
+# On MacOS there are issues with multiple versions of usd in the same
+# process related to globally registering constructors and destructors
+# in the macho header. This is a value which is injected into the version
+# field of the Arch_ConstructorEntry which means the two different usd
+# instances can distinguish entries from different builds.
+# If linking multiple versions of usd you
+# need to make sure each version uses a unique value for each build.
+set(PXR_MACHO_CTR_VERSION "0u"
+    CACHE
+    STRING
+    "Value to make contructor/destructor unique per usd build on Macos"
+)
+# End Adobe fix

@@ -60,6 +60,8 @@ pxr_library(arch
         overview.dox
 )
 
+target_compile_definitions(arch PUBLIC PXR_MACHO_CTR_VERSION=${PXR_MACHO_CTR_VERSION})
+
 pxr_build_test_shared_lib(testArchAbiPlugin
     CPPFILES
         testenv/testArchAbiPlugin.cpp

@@ -33,6 +33,10 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/export.h"
 
+#ifndef PXR_MACHO_CTR_VERSION
+#define PXR_MACHO_CTR_VERSION 0u
+#endif // PXR_MACHO_CTR_VERSION
+
 PXR_NAMESPACE_OPEN_SCOPE
 
 #if defined(doxygen)
@@ -248,7 +252,7 @@ struct Arch_ConstructorEntry {
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_ctor_, _name)   \
         __attribute__((used, section("__DATA,pxrctor"))) = {                   \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        PXR_MACHO_CTR_VERSION,                                                 \
         _priority                                                              \
     };                                                                         \
     static void _name(__VA_ARGS__)
@@ -259,7 +263,7 @@ struct Arch_ConstructorEntry {
     static const Arch_ConstructorEntry _ARCH_CAT_NOEXPAND(arch_dtor_, _name)   \
         __attribute__((used, section("__DATA,pxrdtor"))) = {                   \
         reinterpret_cast<Arch_ConstructorEntry::Type>(&_name),                 \
-        0u,                                                                    \
+        PXR_MACHO_CTR_VERSION,                                                 \
         _priority                                                              \
     };                                                                         \
     static void _name(__VA_ARGS__)
