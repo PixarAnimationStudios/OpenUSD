@@ -24,6 +24,8 @@
 
 from __future__ import print_function
 
+import warnings
+
 from pxr import Ar
 
 from pxr.UsdUtils.constantsGroup import ConstantsGroup
@@ -864,44 +866,6 @@ class ARKitFileExtensionChecker(BaseRuleChecker):
                     "unknown or unsupported extension '%s'." % 
                     (fileName, packagePath, fileExt))
 
-class ARKitRootLayerChecker(BaseRuleChecker):
-    @staticmethod
-    def GetDescription():
-        return "The root layer of the package must be a usdc file and " \
-            "must not include any external dependencies that participate in "\
-            "stage composition."
-
-    def __init__(self, verbose, consumerLevelChecks, assetLevelChecks):
-        super(ARKitRootLayerChecker, self).__init__(verbose, 
-                                                    consumerLevelChecks, 
-                                                    assetLevelChecks)
-
-    def CheckStage(self, usdStage):
-        usedLayers = usdStage.GetUsedLayers()
-        # This list excludes any session layers.
-        usedLayersOnDisk = [i for i in usedLayers if i.realPath]
-        if len(usedLayersOnDisk) > 1:
-            self._AddFailedCheck("The stage uses %s layers. It should "
-                "contain a single usdc layer to be compatible with ARKit's "
-                "implementation of usdz." % len(usedLayersOnDisk))
-        
-        rootLayerRealPath = usdStage.GetRootLayer().realPath
-        if rootLayerRealPath.endswith(".usdz"):
-            # Check if the root layer in the package is a usdc.
-            from pxr import Usd
-            zipFile = Usd.ZipFile.Open(rootLayerRealPath)
-            if not zipFile:
-                self._AddError("Could not open package at path '%s'." % 
-                        resolvedPath)
-                return
-            fileNames = zipFile.GetFileNames()
-            if not fileNames[0].endswith(".usdc"):
-                self._AddFailedCheck("First file (%s) in usdz package '%s' "
-                    "does not have the .usdc extension." % (fileNames[0], 
-                    rootLayerRealPath))
-        elif not rootLayerRealPath.endswith(".usdc"):
-            self._AddFailedCheck("Root layer of the stage '%s' does not "
-                "have the '.usdc' extension." % (rootLayerRealPath))
 
 class ComplianceChecker(object):
     """ A utility class for checking compliance of a given USD asset or a USDZ 
@@ -939,7 +903,8 @@ class ComplianceChecker(object):
                       ARKitFileExtensionChecker, 
                       ARKitPackageEncapsulationChecker]
         if not skipARKitRootLayerCheck:
-            arkitRules.append(ARKitRootLayerChecker)
+            warnings.warn("skipARKitRootLayerCheck is no longer supported. It will be removed in a future version",
+                          PendingDeprecationWarning)
         return arkitRules
 
     @staticmethod
