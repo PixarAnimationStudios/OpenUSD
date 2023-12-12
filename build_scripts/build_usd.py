@@ -283,8 +283,8 @@ def Run(cmd, logCommandOutput = True):
         if verbosity < 3:
             with open("log.txt", "r") as logfile:
                 Print(logfile.read())
-        raise RuntimeError("Failed to run '{cmd}'\nSee {log} for more details."
-                           .format(cmd=cmd, log=os.path.abspath("log.txt")))
+        raise RuntimeError("Failed to run '{cmd}' in {path} .\nSee {log} for more details."
+                           .format(cmd=cmd, path=os.getcwd(),log=os.path.abspath("log.txt")))
 
 @contextlib.contextmanager
 def CurrentWorkingDirectory(dir):
@@ -780,7 +780,7 @@ def InstallBoost_Helper(context, force, buildArgs):
                         primaryArch, secondaryArch)
 
             if macOSArch:
-                bootstrapCmd += " cxxflags=\"{0}\" " \
+                bootstrapCmd += " cxxflags=\"{0} -std=c++17 -stdlib=libc++\" " \
                                 " cflags=\"{0}\" " \
                                 " linkflags=\"{0}\"".format(macOSArch)
             bootstrapCmd += " --with-toolset=clang"
@@ -889,7 +889,7 @@ def InstallBoost_Helper(context, force, buildArgs):
             b2_settings.append("toolset=clang")
 
             if macOSArch:
-                b2_settings.append("cxxflags=\"{0}\"".format(macOSArch))
+                b2_settings.append("cxxflags=\"{0} -std=c++17 -stdlib=libc++\"".format(macOSArch))
                 b2_settings.append("cflags=\"{0}\"".format(macOSArch))
                 b2_settings.append("linkflags=\"{0}\"".format(macOSArch))
 
@@ -903,8 +903,8 @@ def InstallBoost_Helper(context, force, buildArgs):
         AppendCXX11ABIArg("cxxflags", context, b2_settings)
 
         b2 = "b2" if Windows() else "./b2"
-        Run('{b2} {options} install'
-            .format(b2=b2, options=" ".join(b2_settings)))
+        b2_command = '{b2} {options} install'.format(b2=b2, options=" ".join(b2_settings))
+        Run(b2_command)
 
 def InstallBoost(context, force, buildArgs):
     # Boost's build system will install the version.hpp header before
