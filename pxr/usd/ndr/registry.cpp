@@ -27,7 +27,7 @@
 #include "pxr/base/tf/pathUtils.h"
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/withScopedParallelism.h"
 #include "pxr/usd/ar/resolver.h"

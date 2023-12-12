@@ -25,7 +25,7 @@ Instrumentation is done by adding TRACE macros to code.
 For example:
 
 \code{.cpp}
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 // Typical usage.
 void Foo()

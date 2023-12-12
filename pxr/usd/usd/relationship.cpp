@@ -35,7 +35,7 @@
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/sdf/relationshipSpec.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <algorithm>
 #include <set>

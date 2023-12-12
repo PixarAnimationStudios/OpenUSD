@@ -33,7 +33,7 @@
 #include "pxr/imaging/hd/renderSettings.h"
 #include "pxr/imaging/hd/tokens.h"
 #include "pxr/imaging/pxOsd/tokens.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/arch/vsnprintf.h"
 

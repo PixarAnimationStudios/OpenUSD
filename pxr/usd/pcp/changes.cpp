@@ -37,7 +37,7 @@
 #include "pxr/usd/sdf/changeList.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

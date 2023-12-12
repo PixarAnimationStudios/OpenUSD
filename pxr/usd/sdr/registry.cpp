@@ -24,7 +24,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/usd/sdr/registry.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <algorithm>
 

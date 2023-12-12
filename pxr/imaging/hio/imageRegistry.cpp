@@ -37,7 +37,7 @@
 #include "pxr/base/tf/token.h"
 #include "pxr/base/tf/type.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <set>
 #include <string>

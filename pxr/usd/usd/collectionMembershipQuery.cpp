@@ -23,7 +23,7 @@
 //
 #include "pxr/usd/usd/collectionMembershipQuery.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/usd/sdf/types.h"
 #include "pxr/usd/usd/primRange.h"
 #include "pxr/usd/usd/property.h"

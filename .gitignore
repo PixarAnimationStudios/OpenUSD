@@ -2,3 +2,11 @@
 .DS_Store
 .AppleDouble
 
+# swift
+/.build
+/Packages
+xcuserdata/
+DerivedData/
+.swiftpm/configuration/registries.json
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+.netrc

@@ -25,7 +25,7 @@
 
 #include "pxr/base/gf/matrix4d.h"
 #include "pxr/base/gf/vec2f.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"

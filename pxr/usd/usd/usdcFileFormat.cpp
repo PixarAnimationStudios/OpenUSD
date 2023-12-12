@@ -31,7 +31,7 @@
 #include "pxr/usd/sdf/textFileFormat.h"
 #include "pxr/usd/sdf/layer.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/tf/registryManager.h"
 

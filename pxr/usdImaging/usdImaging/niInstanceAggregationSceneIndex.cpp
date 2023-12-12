@@ -44,7 +44,7 @@
 #include "pxr/base/vt/typeHeaders.h"
 #include "pxr/base/vt/visitValue.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

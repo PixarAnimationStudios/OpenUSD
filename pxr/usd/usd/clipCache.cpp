@@ -36,7 +36,7 @@
 
 #include "pxr/base/vt/array.h"
 #include "pxr/base/gf/vec2d.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/mallocTag.h"

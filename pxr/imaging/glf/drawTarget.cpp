@@ -37,7 +37,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/envSetting.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

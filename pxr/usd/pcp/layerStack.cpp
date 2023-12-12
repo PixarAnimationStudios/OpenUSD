@@ -33,7 +33,7 @@
 #include "pxr/usd/sdf/layerUtils.h"
 #include "pxr/usd/sdf/primSpec.h"
 #include "pxr/usd/ar/resolverContextBinder.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/mallocTag.h"
 #include "pxr/base/work/dispatcher.h"

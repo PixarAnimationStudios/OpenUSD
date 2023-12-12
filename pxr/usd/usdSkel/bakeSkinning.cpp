@@ -27,7 +27,7 @@
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/work/loops.h"
 

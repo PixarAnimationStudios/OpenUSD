@@ -42,7 +42,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <ostream>
 #include <utility>

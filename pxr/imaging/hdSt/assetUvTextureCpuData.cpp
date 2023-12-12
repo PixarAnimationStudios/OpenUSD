@@ -24,7 +24,7 @@
 #include "pxr/imaging/hdSt/assetUvTextureCpuData.h"
 #include "pxr/imaging/hdSt/textureUtils.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/loops.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/systemSchema.h"
 #include "pxr/imaging/hd/retainedDataSource.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/imaging/hd/overlayContainerDataSource.h"
 #include "pxr/imaging/hd/sceneIndex.h"

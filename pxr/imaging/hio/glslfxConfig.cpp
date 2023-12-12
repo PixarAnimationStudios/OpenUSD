@@ -29,7 +29,7 @@
 #include "pxr/base/tf/staticTokens.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/type.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

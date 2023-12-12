@@ -1,0 +1,32 @@
+{
+  "pins" : [
+    {
+      "identity" : "metaversekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wabiverse/MetaverseKit.git",
+      "state" : {
+        "revision" : "0078eaa426bbd4ec30720ddb8e20fa272e0b9467",
+        "version" : "1.3.4"
+      }
+    },
+    {
+      "identity" : "metaversepythonframework",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/wabiverse/MetaversePythonFramework",
+      "state" : {
+        "revision" : "7e0507f8c9bd4aa18e23b62f896b0ee766d696c1",
+        "version" : "3.11.4"
+      }
+    },
+    {
+      "identity" : "pythonkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/pvieito/PythonKit.git",
+      "state" : {
+        "revision" : "41dd1e76bb31661f59efbc1784e8f60ccc32a9d5",
+        "version" : "0.4.1"
+      }
+    }
+  ],
+  "version" : 2
+}

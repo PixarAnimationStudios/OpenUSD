@@ -34,7 +34,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/typeInfoMap.h"
 #include "pxr/base/tf/pxrTslRobinMap/robin_map.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"

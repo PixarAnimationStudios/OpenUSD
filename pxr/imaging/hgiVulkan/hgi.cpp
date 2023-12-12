@@ -40,7 +40,7 @@
 #include "pxr/imaging/hgiVulkan/shaderProgram.h"
 #include "pxr/imaging/hgiVulkan/texture.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"

@@ -28,7 +28,7 @@
 #include "pxr/imaging/hdSt/textureObject.h"
 #include "pxr/imaging/hdSt/udimTextureObject.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

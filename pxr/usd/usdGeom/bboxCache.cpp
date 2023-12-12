@@ -35,7 +35,7 @@
 #include "pxr/usd/usd/modelAPI.h"
 #include "pxr/usd/usd/primRange.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/work/withScopedParallelism.h"
 

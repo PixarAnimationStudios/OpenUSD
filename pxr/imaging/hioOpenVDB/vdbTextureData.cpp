@@ -31,7 +31,7 @@
 
 #include "pxr/base/tf/type.h"
 #include "pxr/base/tf/fileUtils.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "openvdb/openvdb.h"
 #include "openvdb/tools/Dense.h"

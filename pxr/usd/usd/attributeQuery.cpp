@@ -28,7 +28,7 @@
 #include "pxr/usd/usd/valueUtils.h"
 
 #include "pxr/usd/sdf/types.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <boost/preprocessor/seq/for_each.hpp>
 

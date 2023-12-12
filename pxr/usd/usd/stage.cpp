@@ -66,7 +66,7 @@
 #include "pxr/usd/sdf/types.h" 
 #include "pxr/usd/sdf/variableExpression.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/usd/ar/resolver.h"
 #include "pxr/usd/ar/resolverContext.h"
 #include "pxr/usd/ar/resolverContextBinder.h"

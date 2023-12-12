@@ -28,7 +28,7 @@
 #include "pxr/imaging/hio/types.h"
 #include "pxr/base/gf/gamma.h"
 #include "pxr/base/gf/half.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <mutex>
 

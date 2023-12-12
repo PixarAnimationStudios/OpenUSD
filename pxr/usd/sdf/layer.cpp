@@ -55,7 +55,7 @@
 #include "pxr/usd/ar/resolverScopedCache.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/arch/errno.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/tf/debug.h"
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/fileUtils.h"

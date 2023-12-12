@@ -1,5 +1,5 @@
 //
-// Copyright 2016 Pixar
+// Copyright 2020 Pixar
 //
 // Licensed under the Apache License, Version 2.0 (the "Apache License")
 // with the following modification; you may not use this file except in
@@ -21,44 +21,34 @@
 // KIND, either express or implied. See the Apache License for the specific
 // language governing permissions and limitations under the Apache License.
 //
-#ifndef PXR_BASE_TF_PY_WEAK_OBJECT_H
-#define PXR_BASE_TF_PY_WEAK_OBJECT_H
+#ifndef PXR_USD_AR_PY_RESOLVER_CONTEXT_H
+#define PXR_USD_AR_PY_RESOLVER_CONTEXT_H
 
-#include "pxr/pxr.h"
+/// \file Ar/pyResolverContext.h
+/// Macros for creating Python bindings for objects used with
+/// ArResolverContext.
 
-#include "pxr/base/tf/api.h"
-#include "pxr/base/tf/pyIdentity.h"
+#include <boost/python/implicit.hpp>
 
-#include "pxr/base/tf/hash.h"
-#include "pxr/base/tf/singleton.h"
-#include "pxr/base/tf/weakBase.h"
-#include "pxr/base/tf/weakPtr.h"
-
-#include <boost/python/handle.hpp>
-#include <boost/python/object.hpp>
-
-#include "pxr/base/tf/hashmap.h"
+#include <Ar/resolverContext.h>
+#include <pxr/pxrns.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-typedef TfWeakPtr<struct Tf_PyWeakObject> Tf_PyWeakObjectPtr;
+/// Register the specified type as a context object that may be converted from
+/// Python into a ArResolverContext object in C++.  This typically would be
+/// called in the source file where the Python wrapping for the context object
+/// is defined.
+template <class Context> void ArWrapResolverContextForPython();
 
-// A weak pointable weak reference to a python object.
-struct Tf_PyWeakObject : public TfWeakBase
-{
-public:
-    typedef Tf_PyWeakObject This;
+#ifndef doxygen
 
-    static Tf_PyWeakObjectPtr GetOrCreate(boost::python::object const &obj);
-    boost::python::object GetObject() const;
-    void Delete();
-    
-private:
-    explicit Tf_PyWeakObject(boost::python::object const &obj);
-    
-    boost::python::handle<> _weakRef;
+template <class Context> void ArWrapResolverContextForPython() {
+  boost::python::implicitly_convertible<Context, ArResolverContext>();
 };
+
+#endif // doxygen
 
 PXR_NAMESPACE_CLOSE_SCOPE
 
-#endif // PXR_BASE_TF_PY_WEAK_OBJECT_H
+#endif

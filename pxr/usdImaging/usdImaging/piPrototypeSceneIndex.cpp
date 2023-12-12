@@ -31,7 +31,7 @@
 #include "pxr/imaging/hd/retainedDataSource.h"
 #include "pxr/imaging/hd/sceneIndexPrimView.h"
 #include "pxr/imaging/hd/xformSchema.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/loops.h"
 
 #include <tbb/enumerable_thread_specific.h>

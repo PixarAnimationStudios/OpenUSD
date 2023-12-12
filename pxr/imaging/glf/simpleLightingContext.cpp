@@ -42,7 +42,7 @@
 #include "pxr/base/tf/staticData.h"
 #include "pxr/base/tf/staticTokens.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include <algorithm>
 #include <iostream>

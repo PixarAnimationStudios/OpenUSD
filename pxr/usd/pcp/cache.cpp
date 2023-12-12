@@ -44,7 +44,7 @@
 #include "pxr/usd/ar/resolverContextBinder.h"
 #include "pxr/usd/sdf/layer.h"
 #include "pxr/usd/sdf/schema.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/utils.h"

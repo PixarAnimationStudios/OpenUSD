@@ -28,7 +28,7 @@
 #include "pxr/base/trace/collection.h"
 #include "pxr/base/trace/collectionNotice.h"
 #include "pxr/base/trace/reporter.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/base/arch/stackTrace.h"
 #include "pxr/base/arch/timing.h"

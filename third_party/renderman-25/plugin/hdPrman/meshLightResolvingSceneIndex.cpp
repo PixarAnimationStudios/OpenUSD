@@ -58,7 +58,7 @@
 #include "pxr/usd/usdLux/tokens.h"
 
 #include "pxr/base/tf/debug.h"
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

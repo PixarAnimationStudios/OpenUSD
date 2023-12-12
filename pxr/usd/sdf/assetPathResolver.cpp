@@ -29,7 +29,7 @@
 #include "pxr/usd/sdf/debugCodes.h"
 #include "pxr/usd/sdf/fileFormat.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/packageUtils.h"

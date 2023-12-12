@@ -1,0 +1,4 @@
+module Work {
+ header "../work/work.h"
+ export *
+}

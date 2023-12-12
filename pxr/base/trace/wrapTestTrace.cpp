@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 
-#include "pxr/base/trace/trace.h"
+#include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/trace/reporter.h"
 #include "pxr/base/trace/collector.h"
 
