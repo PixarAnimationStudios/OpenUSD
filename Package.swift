@@ -208,7 +208,6 @@ let package = Package(
         "cmake",
         "docs",
         "extras",
-        "pxr",
         "swift",
         "third_party",
         "pxr/imaging",
@@ -995,7 +994,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/tf/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Tf"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Tf"),
@@ -1066,7 +1065,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/gf/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Gf"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Gf"),
@@ -1091,7 +1090,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/trace/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Trace"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Trace"),
@@ -1125,7 +1124,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/vt/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Vt"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Vt"),
@@ -1147,7 +1146,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/work/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Work"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Work"),
@@ -1172,7 +1171,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "base/plug/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Plug"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Plug"),
@@ -1205,7 +1204,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "usd/ar/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Ar"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Ar"),
@@ -1228,7 +1227,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "usd/kind/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Kind"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Kind"),
@@ -1280,7 +1279,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "usd/sdf/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Sdf"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Sdf"),
@@ -1319,7 +1318,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "usd/pcp/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Pcp"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Pcp"),
@@ -1384,7 +1383,7 @@ let package = Package(
       resources: [
         // .process("Resources"),
       ],
-      publicHeadersPath: "include",
+      publicHeadersPath: "usd/usd/include",
       cxxSettings: [
         .define("MFB_PACKAGE_NAME", to: "Usd"),
         .define("MFB_ALT_PACKAGE_NAME", to: "Usd"),
