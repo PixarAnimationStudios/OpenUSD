@@ -1305,7 +1305,7 @@ private:
 
         if (!_resolver)
         {
-            TF_FATAL_CODING_ERROR("Resolver is uninitialized.");
+            TF_WARN("Resolver is uninitialized.");
         }
         
         if (info) {
