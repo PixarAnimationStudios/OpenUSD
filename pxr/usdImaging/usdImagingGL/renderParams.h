@@ -112,6 +112,8 @@ public:
     BBoxVector bboxes;
     GfVec4f bboxLineColor;
     float bboxLineDashSize;
+    // Visualization control
+    bool enableVisualization;
 
     inline UsdImagingGLRenderParams();
 
@@ -149,7 +151,8 @@ UsdImagingGLRenderParams::UsdImagingGLRenderParams() :
     clearColor(0,0,0,1),
     lut3dSizeOCIO(65),
     bboxLineColor(1),
-    bboxLineDashSize(3)
+    bboxLineDashSize(3),
+    enableVisualization(true)
 {
 }
 
@@ -188,7 +191,8 @@ UsdImagingGLRenderParams::operator==(const UsdImagingGLRenderParams &other)
         && lut3dSizeOCIO               == other.lut3dSizeOCIO
         && bboxes                      == other.bboxes
         && bboxLineColor               == other.bboxLineColor
-        && bboxLineDashSize            == other.bboxLineDashSize;
+        && bboxLineDashSize            == other.bboxLineDashSize
+        && enableVisualization         == other.enableVisualization;
 }
 
 PXR_NAMESPACE_CLOSE_SCOPE
