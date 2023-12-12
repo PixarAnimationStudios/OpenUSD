@@ -2014,8 +2014,6 @@ subgroup.add_argument("--materialx", dest="build_materialx", action="store_true"
 subgroup.add_argument("--no-materialx", dest="build_materialx", action="store_false",
                       help="Disable MaterialX support")
 
-args = parser.parse_args()
-
 class InstallContext:
     def __init__(self, args):
         # Assume the USD source directory is in the parent directory
@@ -2168,192 +2166,195 @@ class InstallContext:
             return False
         return self.forceBuildAll or dep.name.lower() in self.forceBuild
 
-try:
-    context = InstallContext(args)
-except Exception as e:
-    PrintError(str(e))
-    sys.exit(1)
+def main(argv=sys.argv[1:]):
+    args = parser.parse_args()
 
-verbosity = args.verbosity
-
-# Augment PATH on Windows so that 3rd-party dependencies can find libraries
-# they depend on. In particular, this is needed for building IlmBase/OpenEXR.
-extraPaths = []
-extraPythonPaths = []
-if Windows():
-    extraPaths.append(os.path.join(context.instDir, "lib"))
-    extraPaths.append(os.path.join(context.instDir, "bin"))
-
-if extraPaths:
-    paths = os.environ.get('PATH', '').split(os.pathsep) + extraPaths
-    os.environ['PATH'] = os.pathsep.join(paths)
-
-if extraPythonPaths:
-    paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
-    os.environ['PYTHONPATH'] = os.pathsep.join(paths)
-
-# Determine list of dependencies that are required based on options
-# user has selected.
-requiredDependencies = [ZLIB, BOOST, TBB]
-
-if context.buildAlembic:
-    if context.enableHDF5:
-        requiredDependencies += [HDF5]
-    requiredDependencies += [OPENEXR, ALEMBIC]
-
-if context.buildDraco:
-    requiredDependencies += [DRACO]
-
-if context.buildMaterialX:
-    requiredDependencies += [MATERIALX]
-
-if context.buildImaging:
-    if context.enablePtex:
-        requiredDependencies += [PTEX]
-
-    requiredDependencies += [OPENSUBDIV]
-
-    if context.enableOpenVDB:
-        requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
-    
-    if context.buildOIIO:
-        requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
-
-    if context.buildOCIO:
-        requiredDependencies += [OPENCOLORIO]
-
-    if context.buildEmbree:
-        requiredDependencies += [TBB, EMBREE]
-                             
-if context.buildUsdview:
-    requiredDependencies += [PYOPENGL, PYSIDE]
-
-# Assume zlib already exists on Linux platforms and don't build
-# our own. This avoids potential issues where a host application
-# loads an older version of zlib than the one we'd build and link
-# our libraries against.
-if Linux():
-    requiredDependencies.remove(ZLIB)
-
-# Error out if user is building monolithic library on windows with draco plugin
-# enabled. This currently results in missing symbols.
-if context.buildDraco and context.buildMonolithic and Windows():
-    PrintError("Draco plugin can not be enabled for monolithic build on Windows")
-    sys.exit(1)
-
-# Error out if user explicitly specified building usdview without required
-# components. Otherwise, usdview will be silently disabled. This lets users
-# specify "--no-python" without explicitly having to specify "--no-usdview",
-# for instance.
-if "--usdview" in sys.argv:
-    if not context.buildUsdImaging:
-        PrintError("Cannot build usdview when usdImaging is disabled.")
-        sys.exit(1)
-    if not context.buildPython:
-        PrintError("Cannot build usdview when Python support is disabled.")
+    try:
+        context = InstallContext(args)
+    except Exception as e:
+        PrintError(str(e))
         sys.exit(1)
 
-dependenciesToBuild = []
-for dep in requiredDependencies:
-    if context.ForceBuildDependency(dep) or not dep.Exists(context):
-        if dep not in dependenciesToBuild:
-            dependenciesToBuild.append(dep)
+    verbosity = args.verbosity
 
-# Verify toolchain needed to build required dependencies
-if (not which("g++") and
-    not which("clang") and
-    not GetXcodeDeveloperDirectory() and
-    not GetVisualStudioCompilerAndVersion()):
-    PrintError("C++ compiler not found -- please install a compiler")
-    sys.exit(1)
+    # Augment PATH on Windows so that 3rd-party dependencies can find libraries
+    # they depend on. In particular, this is needed for building IlmBase/OpenEXR.
+    extraPaths = []
+    extraPythonPaths = []
+    if Windows():
+        extraPaths.append(os.path.join(context.instDir, "lib"))
+        extraPaths.append(os.path.join(context.instDir, "bin"))
 
-# Error out if a 64bit version of python interpreter is not being used
-isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
-if not isPython64Bit:
-    PrintError("64bit python not found -- please install it and adjust your"
-               "PATH")
-    sys.exit(1)
+    if extraPaths:
+        paths = os.environ.get('PATH', '').split(os.pathsep) + extraPaths
+        os.environ['PATH'] = os.pathsep.join(paths)
 
-if which("cmake"):
-    # Check cmake minimum version requirements
-    pyInfo = GetPythonInfo(context)
-    pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
-    if context.buildPython and pyVer >= (3, 10):
-        # Python 3.10 is not supported prior to 3.24
-        cmake_required_version = (3, 24)
-    elif IsVisualStudio2022OrGreater():
-        # Visual Studio 2022 is not supported prior to 3.24
-        cmake_required_version = (3, 24)
-    elif Windows():
-        # Visual Studio 2017 and 2019 are verified to work correctly with 3.14
-        cmake_required_version = (3, 14)
-    elif MacOS():
-        # Apple Silicon is not supported prior to 3.19
-        cmake_required_version = (3, 19)
+    if extraPythonPaths:
+        paths = os.environ.get('PYTHONPATH', '').split(os.pathsep) + extraPythonPaths
+        os.environ['PYTHONPATH'] = os.pathsep.join(paths)
+
+    # Determine list of dependencies that are required based on options
+    # user has selected.
+    requiredDependencies = [ZLIB, BOOST, TBB]
+
+    if context.buildAlembic:
+        if context.enableHDF5:
+            requiredDependencies += [HDF5]
+        requiredDependencies += [OPENEXR, ALEMBIC]
+
+    if context.buildDraco:
+        requiredDependencies += [DRACO]
+
+    if context.buildMaterialX:
+        requiredDependencies += [MATERIALX]
+
+    if context.buildImaging:
+        if context.enablePtex:
+            requiredDependencies += [PTEX]
+
+        requiredDependencies += [OPENSUBDIV]
+
+        if context.enableOpenVDB:
+            requiredDependencies += [BLOSC, BOOST, OPENEXR, OPENVDB, TBB]
+        
+        if context.buildOIIO:
+            requiredDependencies += [BOOST, JPEG, TIFF, PNG, OPENEXR, OPENIMAGEIO]
+
+        if context.buildOCIO:
+            requiredDependencies += [OPENCOLORIO]
+
+        if context.buildEmbree:
+            requiredDependencies += [TBB, EMBREE]
+                                
+    if context.buildUsdview:
+        requiredDependencies += [PYOPENGL, PYSIDE]
+
+    # Assume zlib already exists on Linux platforms and don't build
+    # our own. This avoids potential issues where a host application
+    # loads an older version of zlib than the one we'd build and link
+    # our libraries against.
+    if Linux():
+        requiredDependencies.remove(ZLIB)
+
+    # Error out if user is building monolithic library on windows with draco plugin
+    # enabled. This currently results in missing symbols.
+    if context.buildDraco and context.buildMonolithic and Windows():
+        PrintError("Draco plugin can not be enabled for monolithic build on Windows")
+        sys.exit(1)
+
+    # Error out if user explicitly specified building usdview without required
+    # components. Otherwise, usdview will be silently disabled. This lets users
+    # specify "--no-python" without explicitly having to specify "--no-usdview",
+    # for instance.
+    if "--usdview" in sys.argv:
+        if not context.buildUsdImaging:
+            PrintError("Cannot build usdview when usdImaging is disabled.")
+            sys.exit(1)
+        if not context.buildPython:
+            PrintError("Cannot build usdview when Python support is disabled.")
+            sys.exit(1)
+
+    dependenciesToBuild = []
+    for dep in requiredDependencies:
+        if context.ForceBuildDependency(dep) or not dep.Exists(context):
+            if dep not in dependenciesToBuild:
+                dependenciesToBuild.append(dep)
+
+    # Verify toolchain needed to build required dependencies
+    if (not which("g++") and
+        not which("clang") and
+        not GetXcodeDeveloperDirectory() and
+        not GetVisualStudioCompilerAndVersion()):
+        PrintError("C++ compiler not found -- please install a compiler")
+        sys.exit(1)
+
+    # Error out if a 64bit version of python interpreter is not being used
+    isPython64Bit = (ctypes.sizeof(ctypes.c_voidp) == 8)
+    if not isPython64Bit:
+        PrintError("64bit python not found -- please install it and adjust your"
+                "PATH")
+        sys.exit(1)
+
+    if which("cmake"):
+        # Check cmake minimum version requirements
+        pyInfo = GetPythonInfo(context)
+        pyVer = (int(pyInfo[3].split('.')[0]), int(pyInfo[3].split('.')[1]))
+        if context.buildPython and pyVer >= (3, 10):
+            # Python 3.10 is not supported prior to 3.24
+            cmake_required_version = (3, 24)
+        elif IsVisualStudio2022OrGreater():
+            # Visual Studio 2022 is not supported prior to 3.24
+            cmake_required_version = (3, 24)
+        elif Windows():
+            # Visual Studio 2017 and 2019 are verified to work correctly with 3.14
+            cmake_required_version = (3, 14)
+        elif MacOS():
+            # Apple Silicon is not supported prior to 3.19
+            cmake_required_version = (3, 19)
+        else:
+            # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
+            cmake_required_version = (3, 14)
+
+        cmake_version = GetCMakeVersion()
+        if not cmake_version:
+            PrintError("Failed to determine CMake version")
+            sys.exit(1)
+
+        if cmake_version < cmake_required_version:
+            def _JoinVersion(v):
+                return ".".join(str(n) for n in v)
+            PrintError("CMake version {req} or later required to build USD, "
+                    "but version found was {found}".format(
+                        req=_JoinVersion(cmake_required_version),
+                        found=_JoinVersion(cmake_version)))
+            sys.exit(1)
     else:
-        # Linux, and vfx platform CY2020, are verified to work correctly with 3.14
-        cmake_required_version = (3, 14)
-
-    cmake_version = GetCMakeVersion()
-    if not cmake_version:
-        PrintError("Failed to determine CMake version")
+        PrintError("CMake not found -- please install it and adjust your PATH")
         sys.exit(1)
 
-    if cmake_version < cmake_required_version:
-        def _JoinVersion(v):
-            return ".".join(str(n) for n in v)
-        PrintError("CMake version {req} or later required to build USD, "
-                   "but version found was {found}".format(
-                       req=_JoinVersion(cmake_required_version),
-                       found=_JoinVersion(cmake_version)))
-        sys.exit(1)
-else:
-    PrintError("CMake not found -- please install it and adjust your PATH")
-    sys.exit(1)
+    if context.buildDocs:
+        if not which("doxygen"):
+            PrintError("doxygen not found -- please install it and adjust your PATH")
+            sys.exit(1)
 
-if context.buildDocs:
-    if not which("doxygen"):
-        PrintError("doxygen not found -- please install it and adjust your PATH")
-        sys.exit(1)
+    if context.buildHtmlDocs:
+        if not which("dot"):
+            PrintError("dot not found -- please install graphviz and adjust your "
+                    "PATH")
+            sys.exit(1)
 
-if context.buildHtmlDocs:
-    if not which("dot"):
-        PrintError("dot not found -- please install graphviz and adjust your "
-                   "PATH")
-        sys.exit(1)
+    # Require having built both Python support and Doxygen docs before we can 
+    # build Python docs
+    if context.buildPythonDocs:
+        if not context.buildDocs:
+            PrintError("Cannot build Python docs when doxygen docs are disabled.")
+            sys.exit(1)
+        if not context.buildPython:
+            PrintError("Cannot build Python docs when Python support is disabled.")
+            sys.exit(1)        
 
-# Require having built both Python support and Doxygen docs before we can 
-# build Python docs
-if context.buildPythonDocs:
-    if not context.buildDocs:
-        PrintError("Cannot build Python docs when doxygen docs are disabled.")
-        sys.exit(1)
-    if not context.buildPython:
-        PrintError("Cannot build Python docs when Python support is disabled.")
-        sys.exit(1)        
+    if PYSIDE in requiredDependencies:
+        # Special case - we are given the PYSIDEUICBINARY as cmake arg.
+        usdBuildArgs = context.GetBuildArguments(USD)
+        given_pysideUic = 'PYSIDEUICBINARY' in " ".join(usdBuildArgs)
 
-if PYSIDE in requiredDependencies:
-    # Special case - we are given the PYSIDEUICBINARY as cmake arg.
-    usdBuildArgs = context.GetBuildArguments(USD)
-    given_pysideUic = 'PYSIDEUICBINARY' in " ".join(usdBuildArgs)
+        # The USD build will skip building usdview if pyside6-uic or pyside2-uic is
+        # not found, so check for it here to avoid confusing users. This list of 
+        # PySide executable names comes from cmake/modules/FindPySide.cmake
+        pyside6Uic = ["pyside6-uic"]
+        found_pyside6Uic = any([which(p) for p in pyside6Uic])
+        pyside2Uic = ["pyside2-uic"]
+        found_pyside2Uic = any([which(p) for p in pyside2Uic])
+        if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
+            PrintError("PySide's user interface compiler was not found -- please"
+                    " install PySide2 or PySide6 and adjust your PATH. (Note"
+                    " that this program may be named {0} depending on your"
+                    " platform)"
+                    .format(" or ".join(set(pyside2Uic+pyside6Uic))))
+            sys.exit(1)
 
-    # The USD build will skip building usdview if pyside6-uic or pyside2-uic is
-    # not found, so check for it here to avoid confusing users. This list of 
-    # PySide executable names comes from cmake/modules/FindPySide.cmake
-    pyside6Uic = ["pyside6-uic"]
-    found_pyside6Uic = any([which(p) for p in pyside6Uic])
-    pyside2Uic = ["pyside2-uic"]
-    found_pyside2Uic = any([which(p) for p in pyside2Uic])
-    if not given_pysideUic and not found_pyside2Uic and not found_pyside6Uic:
-        PrintError("PySide's user interface compiler was not found -- please"
-                   " install PySide2 or PySide6 and adjust your PATH. (Note"
-                   " that this program may be named {0} depending on your"
-                   " platform)"
-                   .format(" or ".join(set(pyside2Uic+pyside6Uic))))
-        sys.exit(1)
-
-# Summarize
-summaryMsg = """
+    # Summarize
+    summaryMsg = """
 Building with settings:
   USD source directory          {usdSrcDir}
   USD install directory         {usdInstDir}
@@ -2367,12 +2368,12 @@ Building with settings:
   Building                      {buildType}
 """ 
 
-if context.useCXX11ABI is not None:
-    summaryMsg += """\
+    if context.useCXX11ABI is not None:
+        summaryMsg += """\
     Use C++11 ABI               {useCXX11ABI}
 """
 
-summaryMsg += """\
+    summaryMsg += """\
     Variant                     {buildVariant}
     Target                      {buildTarget}
     Imaging                     {buildImaging}
@@ -2398,142 +2399,145 @@ summaryMsg += """\
 
   Dependencies                  {dependencies}"""
 
-if context.buildArgs:
-    summaryMsg += """
+    if context.buildArgs:
+        summaryMsg += """
   Build arguments               {buildArgs}"""
 
-def FormatBuildArguments(buildArgs):
-    s = ""
-    for depName in sorted(buildArgs.keys()):
-        args = buildArgs[depName]
-        s += """
-                                {name}: {args}""".format(
-            name=AllDependenciesByName[depName].name,
-            args=" ".join(args))
-    return s.lstrip()
+    def FormatBuildArguments(buildArgs):
+        s = ""
+        for depName in sorted(buildArgs.keys()):
+            args = buildArgs[depName]
+            s += """
+                                    {name}: {args}""".format(
+                name=AllDependenciesByName[depName].name,
+                args=" ".join(args))
+        return s.lstrip()
 
-summaryMsg = summaryMsg.format(
-    usdSrcDir=context.usdSrcDir,
-    usdInstDir=context.usdInstDir,
-    srcDir=context.srcDir,
-    buildDir=context.buildDir,
-    instDir=context.instDir,
-    cmakeGenerator=("Default" if not context.cmakeGenerator
-                    else context.cmakeGenerator),
-    cmakeToolset=("Default" if not context.cmakeToolset
-                  else context.cmakeToolset),
-    downloader=(context.downloaderName),
-    dependencies=("None" if not dependenciesToBuild else 
-                  ", ".join([d.name for d in dependenciesToBuild])),
-    buildArgs=FormatBuildArguments(context.buildArgs),
-    useCXX11ABI=("On" if context.useCXX11ABI else "Off"),
-    buildType=("Shared libraries" if context.buildShared
-               else "Monolithic shared library" if context.buildMonolithic
-               else ""),
-    buildVariant=("Release" if context.buildRelease
-                  else "Debug" if context.buildDebug
-                  else "Release w/ Debug Info" if context.buildRelWithDebug
-                  else ""),
-    buildTarget=(apple_utils.GetTargetName(context) if context.buildTarget
-                 else ""),
-    buildImaging=("On" if context.buildImaging else "Off"),
-    enablePtex=("On" if context.enablePtex else "Off"),
-    enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
-    buildOIIO=("On" if context.buildOIIO else "Off"),
-    buildOCIO=("On" if context.buildOCIO else "Off"),
-    buildPrman=("On" if context.buildPrman else "Off"),
-    buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
-    buildUsdview=("On" if context.buildUsdview else "Off"),
-    buildPython=("On" if context.buildPython else "Off"),
-    debugPython=("On" if context.debugPython else "Off"),
-    buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
-    buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
-    buildTests=("On" if context.buildTests else "Off"),
-    buildExamples=("On" if context.buildExamples else "Off"),
-    buildTutorials=("On" if context.buildTutorials else "Off"),
-    buildTools=("On" if context.buildTools else "Off"),
-    buildAlembic=("On" if context.buildAlembic else "Off"),
-    buildDraco=("On" if context.buildDraco else "Off"),
-    buildMaterialX=("On" if context.buildMaterialX else "Off"),
-    enableHDF5=("On" if context.enableHDF5 else "Off"))
+    summaryMsg = summaryMsg.format(
+        usdSrcDir=context.usdSrcDir,
+        usdInstDir=context.usdInstDir,
+        srcDir=context.srcDir,
+        buildDir=context.buildDir,
+        instDir=context.instDir,
+        cmakeGenerator=("Default" if not context.cmakeGenerator
+                        else context.cmakeGenerator),
+        cmakeToolset=("Default" if not context.cmakeToolset
+                    else context.cmakeToolset),
+        downloader=(context.downloaderName),
+        dependencies=("None" if not dependenciesToBuild else 
+                    ", ".join([d.name for d in dependenciesToBuild])),
+        buildArgs=FormatBuildArguments(context.buildArgs),
+        useCXX11ABI=("On" if context.useCXX11ABI else "Off"),
+        buildType=("Shared libraries" if context.buildShared
+                else "Monolithic shared library" if context.buildMonolithic
+                else ""),
+        buildVariant=("Release" if context.buildRelease
+                    else "Debug" if context.buildDebug
+                    else "Release w/ Debug Info" if context.buildRelWithDebug
+                    else ""),
+        buildTarget=(apple_utils.GetTargetName(context) if context.buildTarget
+                    else ""),
+        buildImaging=("On" if context.buildImaging else "Off"),
+        enablePtex=("On" if context.enablePtex else "Off"),
+        enableOpenVDB=("On" if context.enableOpenVDB else "Off"),
+        buildOIIO=("On" if context.buildOIIO else "Off"),
+        buildOCIO=("On" if context.buildOCIO else "Off"),
+        buildPrman=("On" if context.buildPrman else "Off"),
+        buildUsdImaging=("On" if context.buildUsdImaging else "Off"),
+        buildUsdview=("On" if context.buildUsdview else "Off"),
+        buildPython=("On" if context.buildPython else "Off"),
+        debugPython=("On" if context.debugPython else "Off"),
+        buildPythonDocs=("On" if context.buildPythonDocs else "Off"),
+        buildHtmlDocs=("On" if context.buildHtmlDocs else "Off"),
+        buildTests=("On" if context.buildTests else "Off"),
+        buildExamples=("On" if context.buildExamples else "Off"),
+        buildTutorials=("On" if context.buildTutorials else "Off"),
+        buildTools=("On" if context.buildTools else "Off"),
+        buildAlembic=("On" if context.buildAlembic else "Off"),
+        buildDraco=("On" if context.buildDraco else "Off"),
+        buildMaterialX=("On" if context.buildMaterialX else "Off"),
+        enableHDF5=("On" if context.enableHDF5 else "Off"))
 
-Print(summaryMsg)
+    Print(summaryMsg)
 
-if args.dry_run:
-    sys.exit(0)
+    if args.dry_run:
+        sys.exit(0)
 
-# Scan for any dependencies that the user is required to install themselves
-# and print those instructions first.
-pythonDependencies = \
-    [dep for dep in dependenciesToBuild if type(dep) is PythonDependency]
-if pythonDependencies:
-    for dep in pythonDependencies:
-        Print(dep.getInstructions())
-    sys.exit(1)
-
-# Ensure directory structure is created and is writable.
-for dir in [context.usdInstDir, context.instDir, context.srcDir, 
-            context.buildDir]:
-    try:
-        if os.path.isdir(dir):
-            testFile = os.path.join(dir, "canwrite")
-            open(testFile, "w").close()
-            os.remove(testFile)
-        else:
-            os.makedirs(dir)
-    except Exception as e:
-        PrintError("Could not write to directory {dir}. Change permissions "
-                   "or choose a different location to install to."
-                   .format(dir=dir))
+    # Scan for any dependencies that the user is required to install themselves
+    # and print those instructions first.
+    pythonDependencies = \
+        [dep for dep in dependenciesToBuild if type(dep) is PythonDependency]
+    if pythonDependencies:
+        for dep in pythonDependencies:
+            Print(dep.getInstructions())
         sys.exit(1)
 
-try:
-    # Download and install 3rd-party dependencies, followed by USD.
-    for dep in dependenciesToBuild + [USD]:
-        PrintStatus("Installing {dep}...".format(dep=dep.name))
-        dep.installer(context, 
-                      buildArgs=context.GetBuildArguments(dep),
-                      force=context.ForceBuildDependency(dep))
-except Exception as e:
-    PrintError(str(e))
-    sys.exit(1)
+    # Ensure directory structure is created and is writable.
+    for dir in [context.usdInstDir, context.instDir, context.srcDir, 
+                context.buildDir]:
+        try:
+            if os.path.isdir(dir):
+                testFile = os.path.join(dir, "canwrite")
+                open(testFile, "w").close()
+                os.remove(testFile)
+            else:
+                os.makedirs(dir)
+        except Exception as e:
+            PrintError("Could not write to directory {dir}. Change permissions "
+                    "or choose a different location to install to."
+                    .format(dir=dir))
+            sys.exit(1)
 
-# Done. Print out a final status message.
-requiredInPythonPath = set([
-    os.path.join(context.usdInstDir, "lib", "python")
-])
-requiredInPythonPath.update(extraPythonPaths)
+    try:
+        # Download and install 3rd-party dependencies, followed by USD.
+        for dep in dependenciesToBuild + [USD]:
+            PrintStatus("Installing {dep}...".format(dep=dep.name))
+            dep.installer(context, 
+                        buildArgs=context.GetBuildArguments(dep),
+                        force=context.ForceBuildDependency(dep))
+    except Exception as e:
+        PrintError(str(e))
+        sys.exit(1)
 
-requiredInPath = set([
-    os.path.join(context.usdInstDir, "bin")
-])
-requiredInPath.update(extraPaths)
-
-if Windows():
-    requiredInPath.update([
-        os.path.join(context.usdInstDir, "lib"),
-        os.path.join(context.instDir, "bin"),
-        os.path.join(context.instDir, "lib")
+    # Done. Print out a final status message.
+    requiredInPythonPath = set([
+        os.path.join(context.usdInstDir, "lib", "python")
     ])
+    requiredInPythonPath.update(extraPythonPaths)
 
-if MacOS():
-    if context.macOSCodesign:
-        apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+    requiredInPath = set([
+        os.path.join(context.usdInstDir, "bin")
+    ])
+    requiredInPath.update(extraPaths)
 
-Print("""
+    if Windows():
+        requiredInPath.update([
+            os.path.join(context.usdInstDir, "lib"),
+            os.path.join(context.instDir, "bin"),
+            os.path.join(context.instDir, "lib")
+        ])
+
+    if MacOS():
+        if context.macOSCodesign:
+            apple_utils.Codesign(context.usdInstDir, verbosity > 1)
+
+    Print("""
 Success! To use USD, please ensure that you have:""")
 
-if context.buildPython:
-    Print("""
+    if context.buildPython:
+        Print("""
     The following in your PYTHONPATH environment variable:
     {requiredInPythonPath}""".format(
         requiredInPythonPath="\n    ".join(sorted(requiredInPythonPath))))
 
-Print("""
+    Print("""
     The following in your PATH environment variable:
     {requiredInPath}
 """.format(requiredInPath="\n    ".join(sorted(requiredInPath))))
     
-if context.buildPrman:
-    Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
-          "for setting up the RenderMan plugin.\n")
+    if context.buildPrman:
+        Print("See documentation at http://openusd.org/docs/RenderMan-USD-Imaging-Plugin.html "
+            "for setting up the RenderMan plugin.\n")
+
+if __name__ == "__main__":
+    main()
