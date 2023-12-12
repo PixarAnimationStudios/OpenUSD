@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
 #include "pxr/usd/sdf/pathTable.h"
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

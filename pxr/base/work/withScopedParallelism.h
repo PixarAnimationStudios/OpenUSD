@@ -31,7 +31,7 @@
 #include "pxr/base/work/dispatcher.h"
 #include "pxr/base/tf/pyLock.h"
 
-#include <tbb/task_arena.h>
+#include <OneTBB/tbb/task_arena.h>
 
 #include <utility>
 

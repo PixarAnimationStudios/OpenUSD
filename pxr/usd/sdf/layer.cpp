@@ -69,7 +69,7 @@
 #include "pxr/base/tf/stackTrace.h"
 #include "pxr/base/work/withScopedParallelism.h"
 
-#include <tbb/queuing_rw_mutex.h>
+#include <OneTBB/tbb/queuing_rw_mutex.h>
 
 #include <atomic>
 #include <fstream>

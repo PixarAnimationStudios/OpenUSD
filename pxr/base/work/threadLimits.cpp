@@ -29,8 +29,10 @@
 
 #include "pxr/base/tf/envSetting.h"
 
-#include <tbb/task_scheduler_init.h>
-#include <tbb/task_arena.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/tbb/task_scheduler_init.h>
+#endif /* WITH_TBB_LEGACY */
+#include <OneTBB/tbb/task_arena.h>
 
 #include <algorithm>
 #include <atomic>
@@ -60,18 +62,26 @@ PXR_NAMESPACE_OPEN_SCOPE
 
 // We create a task_scheduler_init instance at static initialization time if
 // PXR_WORK_THREAD_LIMIT is set to a nonzero value.  Otherwise this stays NULL.
-static tbb::task_scheduler_init *_tbbTaskSchedInit;
+#if WITH_TBB_LEGACY
+static tbb::task_scheduler_init *m_tbbTaskArena;
+#else /* WITH_TBB_LEGACY */
+static tbb::task_arena *m_tbbTaskArena;
+#endif
 
-unsigned
-WorkGetPhysicalConcurrencyLimit()
+unsigned 
+WorkGetPhysicalConcurrencyLimit() 
 {
     // Use TBB here, since it pays attention to the affinity mask on Linux and
     // Windows.
+#if WITH_TBB_LEGACY
     return tbb::task_scheduler_init::default_num_threads();
+#else /* WITH_TBB_LEGACY */
+    return tbb::this_task_arena::max_concurrency();
+#endif
 }
 
 // This function always returns an actual thread count >= 1.
-static unsigned
+static unsigned 
 Work_NormalizeThreadCount(const int n)
 {
     // Zero means "no change", and n >= 1 means exactly n threads, so simply
@@ -84,16 +94,16 @@ Work_NormalizeThreadCount(const int n)
 
 // Returns the normalized thread limit value from the environment setting. Note
 // that 0 means "no change", i.e. the environment setting does not apply.
-static unsigned
-Work_GetConcurrencyLimitSetting()
+static unsigned 
+Work_GetConcurrencyLimitSetting() 
 {
     return Work_NormalizeThreadCount(TfGetEnvSetting(PXR_WORK_THREAD_LIMIT));
 }
 
 // Overrides weakValue with strongValue if strongValue is non-zero, and returns
 // the resulting thread limit.
-static unsigned
-Work_OverrideConcurrencyLimit(unsigned weakValue, unsigned strongValue)
+static unsigned 
+Work_OverrideConcurrencyLimit(unsigned weakValue, unsigned strongValue) 
 {
     // If the new limit is 0, i.e. "no change", simply pass the weakValue
     // through unchanged. Otherwise, the new value wins.
@@ -101,7 +111,7 @@ Work_OverrideConcurrencyLimit(unsigned weakValue, unsigned strongValue)
 }
 
 static void 
-Work_InitializeThreading()
+Work_InitializeThreading() 
 {
     // Get the thread limit from the environment setting. Note that this value
     // can be 0, i.e. the environment setting does not apply.
@@ -123,13 +133,17 @@ Work_InitializeThreading()
     // previously initialized by the hosting environment (e.g. if we are running
     // as a plugin to another application.)
     if (settingVal) {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+#if WITH_TBB_LEGACY
+        m_tbbTaskArena = new tbb::task_scheduler_init(threadLimit);
+#else /* WITH_TBB_LEGACY */
+        m_tbbTaskArena = new tbb::task_arena(threadLimit);
+#endif
     }
 }
 static int _forceInitialization = (Work_InitializeThreading(), 0);
 
-void
-WorkSetConcurrencyLimit(unsigned n)
+void 
+WorkSetConcurrencyLimit(unsigned n) 
 {
     // We only assign a new concurrency limit if n is non-zero, since 0 means
     // "no change". Note that we need to re-initialize the TBB
@@ -147,7 +161,7 @@ WorkSetConcurrencyLimit(unsigned n)
         // setting always wins over the specified value n, but only if the
         // setting has been set to a non-zero value.
         threadLimit = Work_OverrideConcurrencyLimit(n, settingVal);
-    }
+    } 
     else {
         // Use the current thread limit.
         threadLimit = WorkGetConcurrencyLimit();
@@ -156,40 +170,44 @@ WorkSetConcurrencyLimit(unsigned n)
     // Note that we need to do some performance testing and decide if it's
     // better here to simply delete the task_scheduler_init object instead
     // of re-initializing it.  If we decide that it's better to re-initialize
-    // it, then we have to make sure that when this library is opened in 
-    // an application (e.g., Maya) that already has initialized its own 
+    // it, then we have to make sure that when this library is opened in
+    // an application (e.g., Maya) that already has initialized its own
     // task_scheduler_init object, that the limits of those are respected.
     // According to the documentation that should be the case, but we should
-    // make sure.  If we do decide to delete it, we have to make sure to 
+    // make sure.  If we do decide to delete it, we have to make sure to
     // note that it has already been initialized.
-    if (_tbbTaskSchedInit) {
-        _tbbTaskSchedInit->terminate();
-        _tbbTaskSchedInit->initialize(threadLimit);
+    if (m_tbbTaskArena) {
+        m_tbbTaskArena->terminate();
+        m_tbbTaskArena->initialize(threadLimit);
     } else {
-        _tbbTaskSchedInit = new tbb::task_scheduler_init(threadLimit);
+  #if WITH_TBB_LEGACY
+        m_tbbTaskArena = new tbb::task_scheduler_init(threadLimit);
+  #else /* WITH_TBB_LEGACY */
+        m_tbbTaskArena = new tbb::task_arena(threadLimit);
+  #endif
     }
 }
 
 void 
-WorkSetMaximumConcurrencyLimit()
+WorkSetMaximumConcurrencyLimit() 
 {
     WorkSetConcurrencyLimit(WorkGetPhysicalConcurrencyLimit());
 }
 
-void
+void 
 WorkSetConcurrencyLimitArgument(int n)
 {
     WorkSetConcurrencyLimit(Work_NormalizeThreadCount(n));
 }
 
 unsigned
-WorkGetConcurrencyLimit()
+WorkGetConcurrencyLimit() 
 {
     return tbb::this_task_arena::max_concurrency();
 }
 
-bool
-WorkHasConcurrency()
+bool 
+WorkHasConcurrency() 
 {
     return WorkGetConcurrencyLimit() > 1;
 }

@@ -39,7 +39,7 @@
 #include "pxr/imaging/hd/instanceRegistry.h"
 #include "pxr/imaging/hd/resourceRegistry.h"
 
-#include <tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_vector.h>
 
 #include <atomic>
 #include <map>

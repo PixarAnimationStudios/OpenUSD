@@ -29,7 +29,7 @@
 
 #include "pxr/base/arch/functionLite.h"
 
-#include <tbb/tbb_thread.h>
+#include <OneTBB/tbb/tbb_thread.h>
 
 #define FILENAME   "error.cpp"
 

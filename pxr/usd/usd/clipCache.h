@@ -30,7 +30,7 @@
 #include "pxr/usd/usd/clipSet.h"
 #include "pxr/usd/sdf/pathTable.h"
 
-#include <tbb/mutex.h>
+#include <OneTBB/tbb/mutex.h>
 #include <vector>
 
 PXR_NAMESPACE_OPEN_SCOPE

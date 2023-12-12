@@ -42,7 +42,7 @@
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/stringUtils.h"
 
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 #include <fstream>
 #include <mutex>
 #include <sstream>

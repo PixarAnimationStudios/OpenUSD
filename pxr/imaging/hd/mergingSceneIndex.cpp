@@ -26,7 +26,7 @@
 #include "pxr/base/tf/denseHashSet.h"
 #include "pxr/base/trace/traceImpl.h"
 #include "pxr/base/work/dispatcher.h"
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

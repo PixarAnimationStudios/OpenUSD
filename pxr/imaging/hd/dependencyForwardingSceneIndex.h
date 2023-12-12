@@ -29,8 +29,8 @@
 #include "pxr/imaging/hd/api.h"
 #include "pxr/imaging/hd/filteringSceneIndex.h"
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_unordered_set.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_set.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -37,7 +37,7 @@
 #include "pxr/base/work/utils.h"
 
 #include <boost/functional/hash.hpp>
-#include <tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
 #include <functional>
 
 PXR_NAMESPACE_OPEN_SCOPE

@@ -154,15 +154,15 @@
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_geometry.h>
 #include <embree3/rtcore_ray.h>
-#include <tbb/atomic.h>
-#include <tbb/blocked_range.h>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_queue.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/task.h>
+#include <OneTBB/tbb/atomic.h>
+#include <OneTBB/tbb/blocked_range.h>
+#include <OneTBB/tbb/cache_aligned_allocator.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_for_each.h>
+#include <OneTBB/tbb/spin_mutex.h>
+#include <OneTBB/tbb/task.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

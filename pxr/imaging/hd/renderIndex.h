@@ -47,7 +47,7 @@
 #include "pxr/base/gf/vec4i.h"
 #include "pxr/base/tf/hashmap.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 
 #include <vector>
 #include <unordered_map>

@@ -44,8 +44,8 @@
 #include "pxr/usd/sdf/payload.h"
 #include "pxr/usd/sdf/schema.h"
 
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_sort.h>
+#include <OneTBB/tbb/parallel_for.h>
+#include <OneTBB/tbb/parallel_sort.h>
 
 #include <algorithm>
 #include <functional>

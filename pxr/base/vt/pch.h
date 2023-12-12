@@ -171,12 +171,12 @@
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <tbb/atomic.h>
-#include <tbb/cache_aligned_allocator.h>
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_mutex.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/atomic.h>
+#include <OneTBB/tbb/cache_aligned_allocator.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

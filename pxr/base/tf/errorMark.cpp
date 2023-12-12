@@ -30,7 +30,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/arch/stackTrace.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <sstream>
 #include <string>

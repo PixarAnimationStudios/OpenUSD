@@ -44,7 +44,7 @@
 #include "pxr/base/tf/stringUtils.h"
 #include "pxr/base/tf/token.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 #include <algorithm>
 
 PXR_NAMESPACE_OPEN_SCOPE

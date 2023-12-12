@@ -53,8 +53,8 @@
 #include "pxr/base/tf/envSetting.h"
 #include "pxr/base/tf/registryManager.h"
 
-#include <tbb/concurrent_queue.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/concurrent_queue.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <algorithm>
 #include <iostream>

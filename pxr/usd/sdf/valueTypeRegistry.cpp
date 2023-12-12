@@ -32,7 +32,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/type.h"
 
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

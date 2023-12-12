@@ -119,8 +119,8 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
-#include <tbb/atomic.h>
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/atomic.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pySafePython.h"
 #endif // PXR_PYTHON_SUPPORT_ENABLED

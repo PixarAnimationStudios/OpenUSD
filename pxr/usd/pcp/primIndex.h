@@ -40,7 +40,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/hashset.h"
 
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <functional>
 #include <map>

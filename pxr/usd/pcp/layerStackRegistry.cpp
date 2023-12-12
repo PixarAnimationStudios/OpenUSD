@@ -33,7 +33,7 @@
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/tf/staticData.h"
 
-#include <tbb/queuing_rw_mutex.h>
+#include <OneTBB/tbb/queuing_rw_mutex.h>
 
 #include <algorithm>
 #include <unordered_map>

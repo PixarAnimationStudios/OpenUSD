@@ -30,7 +30,7 @@
 #include "pxr/imaging/hd/perfLog.h"
 #include "pxr/imaging/hf/perfLog.h"
 
-#include <tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
 
 #include <memory>
 #include <mutex>

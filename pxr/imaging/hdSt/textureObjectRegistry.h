@@ -29,7 +29,7 @@
 #include "pxr/imaging/hd/enums.h"
 #include "pxr/imaging/hd/instanceRegistry.h"
 
-#include <tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_vector.h>
 #include <vector>
 #include <atomic>
 

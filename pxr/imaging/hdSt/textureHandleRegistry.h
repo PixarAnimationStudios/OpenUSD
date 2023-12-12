@@ -31,7 +31,7 @@
 
 #include "pxr/imaging/hd/enums.h"
 
-#include <tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_vector.h>
 
 #include <set>
 #include <memory>

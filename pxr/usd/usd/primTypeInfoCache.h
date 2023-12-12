@@ -29,7 +29,7 @@
 #include "pxr/usd/usd/primTypeInfo.h"
 #include "pxr/base/tf/token.h"
 
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

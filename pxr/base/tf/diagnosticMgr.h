@@ -43,8 +43,8 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/functionLite.h"
 
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <atomic>
 #include <cstdarg>

@@ -98,8 +98,8 @@
 
 #include <boost/optional.hpp>
 
-#include <tbb/spin_rw_mutex.h>
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 
 #include <algorithm>
 #include <functional>

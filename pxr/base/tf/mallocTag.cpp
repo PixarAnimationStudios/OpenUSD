@@ -44,7 +44,7 @@
 #include "pxr/base/arch/mallocHook.h"
 #include "pxr/base/arch/stackTrace.h"
 
-#include <tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
 
 #include <algorithm>
 #include <atomic>

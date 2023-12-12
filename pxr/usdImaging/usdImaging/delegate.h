@@ -61,7 +61,7 @@
 #include "pxr/base/tf/denseHashSet.h"
 
 #include <boost/container/flat_map.hpp>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 #include <map>
 #include <string>
 

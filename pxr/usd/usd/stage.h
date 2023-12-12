@@ -53,10 +53,10 @@
 
 #include <boost/optional.hpp>
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/concurrent_unordered_set.h>
-#include <tbb/concurrent_hash_map.h>
-#include <tbb/spin_rw_mutex.h>
+#include <OneTBB/tbb/concurrent_vector.h>
+#include <OneTBB/tbb/concurrent_unordered_set.h>
+#include <OneTBB/tbb/concurrent_hash_map.h>
+#include <OneTBB/tbb/spin_rw_mutex.h>
 
 #include <functional>
 #include <string>

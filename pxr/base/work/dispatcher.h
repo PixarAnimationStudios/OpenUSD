@@ -33,8 +33,8 @@
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/base/tf/errorTransport.h"
 
-#include <tbb/concurrent_vector.h>
-#include <tbb/task.h>
+#include <OneTBB/tbb/concurrent_vector.h>
+#include <OneTBB/tbb/task.h>
 
 #include <functional>
 #include <type_traits>

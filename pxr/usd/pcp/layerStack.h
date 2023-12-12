@@ -34,7 +34,7 @@
 #include "pxr/usd/sdf/layerTree.h"
 #include "pxr/base/tf/declarePtrs.h"
 
-#include <tbb/spin_mutex.h>
+#include <OneTBB/tbb/spin_mutex.h>
 #include <iosfwd>
 #include <memory>
 #include <string>

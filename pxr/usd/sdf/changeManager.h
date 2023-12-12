@@ -32,7 +32,7 @@
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/base/tf/singleton.h"
 
-#include <tbb/enumerable_thread_specific.h>
+#include <OneTBB/tbb/enumerable_thread_specific.h>
 #include <string>
 #include <vector>
 

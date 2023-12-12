@@ -35,8 +35,8 @@
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/token.h"
 
-#include <tbb/concurrent_unordered_map.h>
-#include <tbb/concurrent_queue.h>
+#include <OneTBB/tbb/concurrent_unordered_map.h>
+#include <OneTBB/tbb/concurrent_queue.h>
 
 PXR_NAMESPACE_OPEN_SCOPE
 

@@ -34,7 +34,7 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stackTrace.h"
 
-#include <tbb/atomic.h>
+#include <OneTBB/tbb/atomic.h>
 
 using std::string;
 using std::vector;
