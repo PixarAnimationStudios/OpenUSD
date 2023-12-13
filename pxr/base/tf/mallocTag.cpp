@@ -40,7 +40,7 @@
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/debugger.h"
 #include "pxr/base/arch/hash.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/arch/mallocHook.h"
 #include "pxr/base/arch/stackTrace.h"
 

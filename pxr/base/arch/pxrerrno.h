@@ -24,7 +24,7 @@
 #ifndef PXR_BASE_ARCH_ERRNO_H
 #define PXR_BASE_ARCH_ERRNO_H
 
-/// \file arch/errno.h
+/// \file arch/pxrerrno.h
 /// \ingroup group_arch_SystemFunctions
 /// Functions for dealing with system errors.
 

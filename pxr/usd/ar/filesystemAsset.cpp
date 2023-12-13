@@ -26,7 +26,7 @@
 #include "pxr/usd/ar/resolvedPath.h"
 
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
 
 PXR_NAMESPACE_OPEN_SCOPE

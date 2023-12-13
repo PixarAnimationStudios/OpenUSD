@@ -38,7 +38,7 @@
 #include "pxr/usd/sdf/valueTypeName.h"
 
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/gf/half.h"
 #include "pxr/base/gf/matrix2d.h"
 #include "pxr/base/gf/matrix3d.h"

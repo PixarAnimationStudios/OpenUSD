@@ -26,7 +26,7 @@
 #include "pxr/base/arch/env.h"
 #include "pxr/base/tf/setenv.h"
 #include "pxr/base/tf/diagnostic.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 
 #ifdef PXR_PYTHON_SUPPORT_ENABLED
 #include "pxr/base/tf/pyUtils.h"

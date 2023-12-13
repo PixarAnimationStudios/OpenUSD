@@ -52,8 +52,8 @@
 #include "pxr/pxr.h"
 
 #include "pxr/base/arch/buildMode.h"
-#include "pxr/base/arch/math.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrmath.h"
+#include "pxr/base/arch/pxrinttypes.h"
 
 #include <math.h>
 #include <utility>

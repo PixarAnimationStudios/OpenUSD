@@ -28,7 +28,7 @@
 #include "pxr/base/arch/demangle.h"
 #include "pxr/base/arch/error.h"
 #include "pxr/base/arch/export.h"
-#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/pxrmath.h"
 
 #include <cstdio>
 #include <cstdint>

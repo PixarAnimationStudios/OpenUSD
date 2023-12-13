@@ -2,6 +2,9 @@
 .DS_Store
 .AppleDouble
 
+# vscode
+.vscode
+
 # swift
 /.build
 /Packages

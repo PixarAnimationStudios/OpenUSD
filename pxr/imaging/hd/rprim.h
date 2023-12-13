@@ -33,7 +33,7 @@
 #include "pxr/imaging/hd/types.h"
 #include "pxr/usd/sdf/path.h"
 #include "pxr/base/gf/range3d.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 
 #include <memory>
 #include <vector>

@@ -25,7 +25,7 @@
 %{
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/dictionary.h"
@@ -44,7 +44,7 @@
 
 #include "pxr/base/trace/traceImpl.h"
 
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/ostreamMethods.h"

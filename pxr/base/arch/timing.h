@@ -31,7 +31,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/arch/api.h"
 #include "pxr/base/arch/defines.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 
 /// \addtogroup group_arch_SystemFunctions
 ///@{

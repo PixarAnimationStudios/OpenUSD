@@ -27,9 +27,9 @@
 #include "integerCoding.h"
 
 #include "pxr/base/arch/demangle.h"
-#include "pxr/base/arch/errno.h"
+#include "pxr/base/arch/pxrerrno.h"
 #include "pxr/base/arch/fileSystem.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 #include "pxr/base/arch/systemInfo.h"
 #include "pxr/base/arch/virtualMemory.h"
 #include "pxr/base/gf/half.h"

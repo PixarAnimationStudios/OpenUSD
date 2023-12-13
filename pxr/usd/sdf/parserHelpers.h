@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/assetPath.h"
 #include "pxr/usd/sdf/valueTypeName.h"
-#include "pxr/base/arch/inttypes.h"
+#include "pxr/base/arch/pxrinttypes.h"
 #include "pxr/base/vt/value.h"
 
 #include <boost/numeric/conversion/cast.hpp>

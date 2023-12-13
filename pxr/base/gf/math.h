@@ -29,7 +29,7 @@
 /// Assorted mathematical utility functions.
 
 #include "pxr/pxr.h"
-#include "pxr/base/arch/math.h"
+#include "pxr/base/arch/pxrmath.h"
 #include "pxr/base/gf/api.h"
 #include "pxr/base/gf/traits.h"
 

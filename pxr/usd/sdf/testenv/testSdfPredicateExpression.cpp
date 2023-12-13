@@ -22,7 +22,7 @@
 // language governing permissions and limitations under the Apache License.
 //
 #include "pxr/pxr.h"
-#include "pxr/base/arch/regex.h"
+#include "pxr/base/arch/pxrregex.h"
 #include "pxr/base/tf/errorMark.h"
 #include "pxr/usd/sdf/predicateExpression.h"
 #include "pxr/usd/sdf/predicateLibrary.h"

@@ -24,7 +24,7 @@
 #ifndef PXR_BASE_ARCH_INTTYPES_H
 #define PXR_BASE_ARCH_INTTYPES_H
 
-/// \file arch/inttypes.h
+/// \file arch/pxrinttypes.h
 /// \ingroup group_arch_Bits
 /// Define integral types.
 ///
