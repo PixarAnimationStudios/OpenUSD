@@ -99,7 +99,7 @@ public:
     explicit operator bool() const {
         return _owner;
     }
-    void operator()() {
+    void operator()() const {
         // Do not save state here; all state should be accumulated externally.
         _owner->_ResolvePrim(this, _primContext, _inverseComponentCtm);
     }
