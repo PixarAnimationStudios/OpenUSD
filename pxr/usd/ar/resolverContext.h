@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
-#include "pxr/usd/ar/api.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/safeTypeCompare.h"

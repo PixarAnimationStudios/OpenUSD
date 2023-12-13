@@ -28,7 +28,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
-#include "pxr/usd/ar/api.h"
 
 #include <cstdio>
 #include <memory>
