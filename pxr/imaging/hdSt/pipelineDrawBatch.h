@@ -34,7 +34,7 @@
 
 PXR_NAMESPACE_OPEN_SCOPE
 
-class HgiCapabilities;
+class Hgi;
 struct HgiIndirectCommands;
 using HdStBindingRequestVector = std::vector<class HdStBindingRequest>;
 
@@ -92,7 +92,7 @@ public:
 
     /// Returns whether pipeline draw batching is enabled.
     HDST_API
-    static bool IsEnabled(HgiCapabilities const *hgiCapabilities);
+    static bool IsEnabled(Hgi const *hgi);
 
     /// Returns whether to do frustum culling on the GPU
     HDST_API

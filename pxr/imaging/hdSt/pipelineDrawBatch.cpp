@@ -160,10 +160,10 @@ HdSt_PipelineDrawBatch::SetEnableTinyPrimCulling(bool tinyPrimCulling)
 
 /* static */
 bool
-HdSt_PipelineDrawBatch::IsEnabled(HgiCapabilities const *hgiCapabilities)
+HdSt_PipelineDrawBatch::IsEnabled(Hgi const *hgi)
 {
     // We require Hgi resource generation.
-    return HdSt_CodeGen::IsEnabledHgiResourceGeneration(hgiCapabilities);
+    return HdSt_CodeGen::IsEnabledHgiResourceGeneration(hgi);
 }
 
 /* static */
@@ -1122,7 +1122,7 @@ _BindingState::GetBindingsForDrawing(
             binder.GetBindingRequestBindingDesc(bindingsDesc, req);
         }
         HdSt_TextureBinder::GetBindingDescs(
-                binder, bindingsDesc, shader->GetNamedTextureHandles());
+            binder, bindingsDesc, shader->GetNamedTextureHandles());
     }
 }
 
