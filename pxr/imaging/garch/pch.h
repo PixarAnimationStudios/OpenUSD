@@ -145,7 +145,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/enumerable_thread_specific.h>
 #include <OneTBB/tbb/spin_rw_mutex.h>
 #ifdef PXR_PYTHON_SUPPORT_ENABLED

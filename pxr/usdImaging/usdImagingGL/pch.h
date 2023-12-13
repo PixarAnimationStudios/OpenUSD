@@ -186,7 +186,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/variant.hpp>
 #include <boost/weak_ptr.hpp>
-#include <OneTBB/tbb/atomic.h>
+#if WITH_TBB_LEGACY
+#include <OneTBB/.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/cache_aligned_allocator.h>
 #include <OneTBB/tbb/concurrent_queue.h>
 #include <OneTBB/tbb/concurrent_unordered_map.h>

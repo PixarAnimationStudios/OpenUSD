@@ -34,7 +34,9 @@
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/stackTrace.h"
 
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 
 using std::string;
 using std::vector;

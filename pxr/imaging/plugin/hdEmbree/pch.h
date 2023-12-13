@@ -154,7 +154,9 @@
 #include <embree3/rtcore.h>
 #include <embree3/rtcore_geometry.h>
 #include <embree3/rtcore_ray.h>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/blocked_range.h>
 #include <OneTBB/tbb/cache_aligned_allocator.h>
 #include <OneTBB/tbb/concurrent_queue.h>

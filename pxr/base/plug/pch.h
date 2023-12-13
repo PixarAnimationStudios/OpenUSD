@@ -183,7 +183,9 @@
 #include <boost/type_traits/remove_reference.hpp>
 #include <boost/utility.hpp>
 #include <boost/utility/enable_if.hpp>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/cache_aligned_allocator.h>
 #include <OneTBB/tbb/concurrent_vector.h>
 #include <OneTBB/tbb/enumerable_thread_specific.h>

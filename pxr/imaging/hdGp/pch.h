@@ -120,7 +120,9 @@
 #include <boost/utility/enable_if.hpp>
 #include <boost/vmd/is_empty.hpp>
 #include <boost/vmd/is_tuple.hpp>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/blocked_range.h>
 #include <OneTBB/tbb/concurrent_queue.h>
 #include <OneTBB/tbb/concurrent_unordered_map.h>

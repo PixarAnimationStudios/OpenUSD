@@ -242,7 +242,9 @@
 #include <boost/variant.hpp>
 #include <boost/variant/get.hpp>
 #include <boost/variant/variant.hpp>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/enumerable_thread_specific.h>
 #include <OneTBB/tbb/spin_mutex.h>
 #include <OneTBB/tbb/spin_rw_mutex.h>

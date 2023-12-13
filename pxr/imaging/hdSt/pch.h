@@ -170,7 +170,9 @@
 #include <opensubdiv/osd/cpuVertexBuffer.h>
 #include <opensubdiv/osd/mesh.h>
 #include <opensubdiv/version.h>
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/blocked_range.h>
 #include <OneTBB/tbb/cache_aligned_allocator.h>
 #include <OneTBB/tbb/concurrent_queue.h>

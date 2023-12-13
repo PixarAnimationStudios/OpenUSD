@@ -30,7 +30,9 @@
 
 #include <boost/intrusive_ptr.hpp>
 
+#if WITH_TBB_LEGACY
 #include <OneTBB/tbb/atomic.h>
+#endif // WITH_TBB_LEGACY
 #include <OneTBB/tbb/spin_mutex.h>
 
 #include <atomic>
