@@ -27,28 +27,28 @@
 #define AR_VERSION 2
 
 // ar
-#include <Ar/api.h>
-#include <Ar/asset.h>
-#include <Ar/assetInfo.h>
-#include <Ar/debugCodes.h>
-#include <Ar/defaultResolver.h>
-#include <Ar/defaultResolverContext.h>
-#include <Ar/definePackageResolver.h>
-#include <Ar/defineResolver.h>
-#include <Ar/defineResolverContext.h>
-#include <Ar/filesystemAsset.h>
-#include <Ar/filesystemWritableAsset.h>
-#include <Ar/inMemoryAsset.h>
-#include <Ar/notice.h>
-#include <Ar/packageResolver.h>
-#include <Ar/packageUtils.h>
-#include <Ar/resolvedPath.h>
-#include <Ar/resolver.h>
-#include <Ar/resolverContext.h>
-#include <Ar/resolverContextBinder.h>
-#include <Ar/resolverScopedCache.h>
-#include <Ar/threadLocalScopedCache.h>
-#include <Ar/timestamp.h>
-#include <Ar/writableAsset.h>
+#include <pxr/usd/ar/api.h>
+#include <pxr/usd/ar/asset.h>
+#include <pxr/usd/ar/assetInfo.h>
+#include <pxr/usd/ar/debugCodes.h>
+#include <pxr/usd/ar/defaultResolver.h>
+#include <pxr/usd/ar/defaultResolverContext.h>
+#include <pxr/usd/ar/definePackageResolver.h>
+#include <pxr/usd/ar/defineResolver.h>
+#include <pxr/usd/ar/defineResolverContext.h>
+#include <pxr/usd/ar/filesystemAsset.h>
+#include <pxr/usd/ar/filesystemWritableAsset.h>
+#include <pxr/usd/ar/inMemoryAsset.h>
+#include <pxr/usd/ar/notice.h>
+#include <pxr/usd/ar/packageResolver.h>
+#include <pxr/usd/ar/packageUtils.h>
+#include <pxr/usd/ar/resolvedPath.h>
+#include <pxr/usd/ar/resolver.h>
+#include <pxr/usd/ar/resolverContext.h>
+#include <pxr/usd/ar/resolverContextBinder.h>
+#include <pxr/usd/ar/resolverScopedCache.h>
+#include <pxr/usd/ar/threadLocalScopedCache.h>
+#include <pxr/usd/ar/timestamp.h>
+#include <pxr/usd/ar/writableAsset.h>
 
 #endif // PXR_USD_AR_AR_H
