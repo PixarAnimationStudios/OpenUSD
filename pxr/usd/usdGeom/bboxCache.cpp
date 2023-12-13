@@ -124,11 +124,25 @@ private:
 
     struct _PrototypeTask
     {
-        _PrototypeTask() : numDependencies(0) { }
+        _PrototypeTask() 
+            : numDependencies(0) 
+        { }
+
+        _PrototypeTask(const _PrototypeTask &other) 
+            : dependentPrototypes(other.dependentPrototypes)
+        {
+            numDependencies.store(other.numDependencies.load());
+        }
+
+        _PrototypeTask(_PrototypeTask &&other)
+            : dependentPrototypes(std::move(other.dependentPrototypes))
+        {
+          numDependencies.store(other.numDependencies.load());
+        }
 
         // Number of dependencies -- prototype prims that must be resolved
         // before this prototype can be resolved.
-        tbb::atomic<size_t> numDependencies;
+        std::atomic<std::size_t> numDependencies;
 
         // List of prototype prims that depend on this prototype.
         std::vector<_PrimContext> dependentPrototypes;
@@ -220,7 +234,7 @@ private:
             _PrototypeTask& dependentPrototypeData =
                 prototypeTasks->find(dependentPrototype)->second;
             if (dependentPrototypeData.numDependencies
-                .fetch_and_decrement() == 1){
+                .fetch_sub(1) == 1){
                 dispatcher->Run(
                     &_PrototypeBBoxResolver::_ExecuteTaskForPrototype,
                     this, dependentPrototype, prototypeTasks, xfCaches,

@@ -908,6 +908,7 @@ let package = Package(
         "usd/usd/wrapVariantSets.cpp",
         "usd/usd/wrapVersion.cpp",
         "usd/usd/wrapZipFile.cpp",
+        "usd/usd/examples.cpp",
         "usd/ar",
         "usd/bin",
         "usd/kind",
