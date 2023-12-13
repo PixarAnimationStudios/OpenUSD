@@ -1,0 +1,4 @@
+module Kind {
+ header "../kind/kind.h"
+ export *
+}

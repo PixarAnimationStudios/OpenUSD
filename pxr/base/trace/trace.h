@@ -28,52 +28,52 @@
 /// \file Trace/Trace.h
 
 // trace
-#include <Trace/api.h>
-// #include <Trace/collector.h>
+#include <pxr/base/trace/api.h>
+// #include <pxr/base/trace/collector.h>
 
-// #include <Trace/traceImpl.h>
+// #include <pxr/base/trace/traceImpl.h>
 
-#include <Trace/concurrentList.h>
+#include <pxr/base/trace/concurrentList.h>
 
-#include <Trace/stringHash.h>
-#include <Trace/category.h>
-#include <Trace/staticKeyData.h>
-#include <Trace/key.h>
+#include <pxr/base/trace/stringHash.h>
+#include <pxr/base/trace/category.h>
+#include <pxr/base/trace/staticKeyData.h>
+#include <pxr/base/trace/key.h>
 
-// #include <Trace/dataBuffer.h>
-#include <Trace/dynamicKey.h>
+// #include <pxr/base/trace/dataBuffer.h>
+#include <pxr/base/trace/dynamicKey.h>
 
-// #include <Trace/event.h>
-// #include <Trace/eventContainer.h>
+// #include <pxr/base/trace/event.h>
+// #include <pxr/base/trace/eventContainer.h>
 
-// #include <Trace/eventData.h>
-// #include <Trace/eventNode.h>
+// #include <pxr/base/trace/eventData.h>
+// #include <pxr/base/trace/eventNode.h>
 
-// #include <Trace/eventList.h>
-#include <Trace/threads.h>
+// #include <pxr/base/trace/eventList.h>
+#include <pxr/base/trace/threads.h>
 
-// #include <Trace/aggregateNode.h>
+// #include <pxr/base/trace/aggregateNode.h>
 
-// #include <Trace/eventTree.h>
+// #include <pxr/base/trace/eventTree.h>
 
-#include <Trace/collection.h>
-#include <Trace/serialization.h>
-#include <Trace/collectionNotice.h>
-#include <Trace/reporterDataSourceBase.h>
+#include <pxr/base/trace/collection.h>
+#include <pxr/base/trace/serialization.h>
+#include <pxr/base/trace/collectionNotice.h>
+#include <pxr/base/trace/reporterDataSourceBase.h>
 
-// #include <Trace/reporterBase.h>
+// #include <pxr/base/trace/reporterBase.h>
 
-// #include <Trace/aggregateTree.h>
-// #include <Trace/aggregateTreeBuilder.h>
+// #include <pxr/base/trace/aggregateTree.h>
+// #include <pxr/base/trace/aggregateTreeBuilder.h>
 
-#include <Trace/counterAccumulator.h>
+#include <pxr/base/trace/counterAccumulator.h>
 
-// #include <Trace/eventTreeBuilder.h>
-#include <Trace/jsonSerialization.h>
+// #include <pxr/base/trace/eventTreeBuilder.h>
+#include <pxr/base/trace/jsonSerialization.h>
 
-// #include <Trace/reporter.h>
+// #include <pxr/base/trace/reporter.h>
 
-#include <Trace/reporterDataSourceCollection.h>
-// #include <Trace/reporterDataSourceCollector.h>
+#include <pxr/base/trace/reporterDataSourceCollection.h>
+// #include <pxr/base/trace/reporterDataSourceCollector.h>
 
 #endif // __PXR_BASE_TRACE_H__

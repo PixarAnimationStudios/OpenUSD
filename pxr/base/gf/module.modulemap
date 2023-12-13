@@ -1,4 +1,4 @@
 module Gf {
- header "gf.h"
+ header "../gf/gf.h"
  export *
 }
