@@ -23,7 +23,7 @@
 //
 #include "pxr/pxr.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/usd/usd/timeCode.h"
 #include "pxr/usd/usdUtils/timeCodeRange.h"

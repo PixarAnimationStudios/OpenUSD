@@ -28,7 +28,7 @@
 #include "pxr/base/gf/range3d.h"
 #include "pxr/base/gf/range3f.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 

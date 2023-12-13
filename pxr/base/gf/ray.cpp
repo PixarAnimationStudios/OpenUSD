@@ -27,7 +27,7 @@
 #include "pxr/base/gf/bbox3d.h"
 #include "pxr/base/gf/line.h"
 #include "pxr/base/gf/lineSeg.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/gf/plane.h"
 #include "pxr/base/gf/range3d.h"

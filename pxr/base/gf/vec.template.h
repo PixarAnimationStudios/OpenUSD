@@ -34,10 +34,10 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
-#include "pxr/base/gf/limits.h"
+#include "pxr/base/gf/pxrlimits.h"
 #include "pxr/base/gf/traits.h"
 {% if IS_FLOATING_POINT(SCL) -%}
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 {% if SCL == 'GfHalf' -%}
 #include "pxr/base/gf/half.h"
 {% endif %}

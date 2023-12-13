@@ -27,7 +27,7 @@
 #include "pxr/pxr.h"
 #include "pxr/usd/sdf/layerOffset.h"
 #include "pxr/usd/sdf/timeCode.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/type.h"

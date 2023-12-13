@@ -38,8 +38,8 @@
 #include "pxr/base/gf/vec4f.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/gf/homogeneous.h"
-#include "pxr/base/gf/limits.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/pxrlimits.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/tf/hash.h"
 

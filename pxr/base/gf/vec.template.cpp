@@ -28,7 +28,7 @@
 #include "pxr/base/gf/vec{{ SUFFIX }}.h"
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/ostreamHelpers.h"
 #include "pxr/base/tf/type.h"
 

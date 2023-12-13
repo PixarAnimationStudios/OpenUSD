@@ -23,7 +23,7 @@
 //
 #include "pxr/usd/usdSkel/blendShapeQuery.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/work/loops.h"
 #include "pxr/base/work/reduce.h"
 

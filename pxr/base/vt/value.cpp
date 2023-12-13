@@ -29,7 +29,7 @@
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/dictionary.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/tf/instantiateSingleton.h"
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/mallocTag.h"

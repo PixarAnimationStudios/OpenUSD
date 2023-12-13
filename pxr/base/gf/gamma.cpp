@@ -25,7 +25,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/gf/gamma.h"
 
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/gf/vec3d.h"
 #include "pxr/base/gf/vec3f.h"
 #include "pxr/base/gf/vec4d.h"

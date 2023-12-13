@@ -34,7 +34,7 @@
 #include "pxr/pxr.h"
 #include "pxr/base/tf/diagnostic.h"
 #include "pxr/base/gf/api.h"
-#include "pxr/base/gf/limits.h"
+#include "pxr/base/gf/pxrlimits.h"
 #include "pxr/base/gf/traits.h"
 #include "pxr/base/tf/hash.h"
 

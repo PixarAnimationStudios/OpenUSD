@@ -23,7 +23,7 @@
 //
 
 #include "pxr/pxr.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 
 PXR_NAMESPACE_OPEN_SCOPE
 

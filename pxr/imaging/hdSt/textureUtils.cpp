@@ -25,7 +25,7 @@
 #include "pxr/imaging/hdSt/textureUtils.h"
 
 #include "pxr/base/gf/half.h"
-#include "pxr/base/gf/math.h"
+#include "pxr/base/gf/gfmath.h"
 #include "pxr/base/trace/traceImpl.h"
 
 #include "pxr/imaging/hgi/hgi.h"
