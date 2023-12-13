@@ -98,7 +98,7 @@ class SdfLayer
 public:
     /// Destructor
     SDF_API
-    virtual ~SdfLayer(); 
+    ~SdfLayer() noexcept override;
 
     /// Noncopyable
     SdfLayer(const SdfLayer&) = delete;
