@@ -35,7 +35,7 @@
 #include "pxr/base/tf/pxrTslRobinMap/robin_set.h"
 #include "pxr/base/tf/stl.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 
 #include "pxr/base/arch/attributes.h"
 #include "pxr/base/arch/debugger.h"

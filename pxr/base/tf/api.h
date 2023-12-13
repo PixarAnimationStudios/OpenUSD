@@ -44,7 +44,7 @@
 #   define TF_LOCAL ARCH_HIDDEN
 #endif
 
-/// \file tf/tf.h
+/// \file tf/api.h
 /// A file containing basic constants and definitions.
 
 #if defined(__cplusplus) || defined(doxygen)

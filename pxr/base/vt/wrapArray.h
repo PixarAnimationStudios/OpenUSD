@@ -45,7 +45,7 @@
 #include "pxr/base/tf/iterator.h"
 #include "pxr/base/tf/span.h"
 #include "pxr/base/tf/stringUtils.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 #include "pxr/base/tf/wrapTypeHelpers.h"
 
 #include <boost/preprocessor/punctuation/comma_if.hpp>

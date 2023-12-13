@@ -30,7 +30,6 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/tf/api.h"
-#include "pxr/base/tf/tf.h"
 #include "pxr/base/tf/enum.h"
 #include "pxr/base/tf/preprocessorUtilsLite.h"
 #include "pxr/base/tf/registryManager.h"

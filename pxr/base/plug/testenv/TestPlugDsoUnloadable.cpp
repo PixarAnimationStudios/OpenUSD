@@ -24,7 +24,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/base/plug/testPlugBase.h"
-#include "pxr/base/tf/tf.h"
+#include "pxr/base/tf/api.h"
 
 // This plugin depends on an undefined external function and so will be
 // unloadable.  That's the whole point of this test.
