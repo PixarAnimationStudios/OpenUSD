@@ -41,7 +41,7 @@
 #include "pxr/base/tf/hashmap.h"
 #include "pxr/base/tf/weakBase.h"
 
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/notice.h"
 #include "pxr/usd/sdf/declareHandles.h"
 #include "pxr/usd/sdf/notice.h"

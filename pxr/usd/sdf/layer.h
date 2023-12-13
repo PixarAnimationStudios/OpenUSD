@@ -38,7 +38,7 @@
 #include "pxr/usd/sdf/proxyTypes.h"
 #include "pxr/usd/sdf/spec.h"
 #include "pxr/usd/sdf/types.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/assetInfo.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/base/tf/declarePtrs.h"

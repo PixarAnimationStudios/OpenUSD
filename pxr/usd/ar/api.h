@@ -44,4 +44,6 @@
 #   define AR_LOCAL ARCH_HIDDEN
 #endif
 
+#define AR_VERSION 2
+
 #endif

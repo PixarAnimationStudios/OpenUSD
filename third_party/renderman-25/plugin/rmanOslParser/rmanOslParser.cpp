@@ -35,7 +35,7 @@
 #include "pxr/base/tf/weakPtr.h"
 #include "pxr/base/vt/types.h"
 #include "pxr/base/vt/array.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/resolvedPath.h"
 #include "pxr/usd/ar/resolver.h"

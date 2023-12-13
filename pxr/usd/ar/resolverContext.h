@@ -28,7 +28,7 @@
 
 #include "pxr/pxr.h"
 #include "pxr/usd/ar/api.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 
 #include "pxr/base/tf/hash.h"
 #include "pxr/base/tf/safeTypeCompare.h"
@@ -75,10 +75,9 @@ template <class ...Objects> struct Ar_AllValidForContext;
 template <class Object, class ...Other>
 struct Ar_AllValidForContext<Object, Other...>
 {
-    static const bool value = 
-        (std::is_same<Object, ArResolverContext>::value ||
-         ArIsContextObject<Object>::value) &&
-        Ar_AllValidForContext<Other...>::value;
+    static const bool value = (std::is_same<Object, ArResolverContext>::value ||
+                               ArIsContextObject<Object>::value) &&
+                              Ar_AllValidForContext<Other...>::value;
 };
 
 template <>

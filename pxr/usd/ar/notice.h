@@ -84,10 +84,8 @@ public:
         /// Create a notice indicating that the results of asset resolution when
         /// any ArResolverContext containing \p contextObj is bound might have
         /// changed.
-        template <
-            class ContextObj,
-            typename std::enable_if<ArIsContextObject<ContextObj>::value>::type*
-                = nullptr>
+        template <class ContextObj, typename std::enable_if<ArIsContextObject<
+                                        ContextObj>::value>::type* = nullptr>
         ResolverChanged(
             const ContextObj& contextObj)
             // XXX: Ideally this would just use a lambda and forward it to

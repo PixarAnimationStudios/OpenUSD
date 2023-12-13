@@ -37,7 +37,7 @@
 #include "pxr/base/vt/array.h"
 #include "pxr/base/vt/value.h"
 #include "pxr/base/work/dispatcher.h"
-#include "pxr/usd/ar/ar.h"
+#include "pxr/usd/ar/api.h"
 #include "pxr/usd/ar/asset.h"
 #include "pxr/usd/ar/writableAsset.h"
 #include "pxr/usd/sdf/assetPath.h"

@@ -24,8 +24,6 @@
 #ifndef PXR_USD_AR_AR_H
 #define PXR_USD_AR_AR_H
 
-#define AR_VERSION 2
-
 // ar
 #include <pxr/usd/ar/api.h>
 #include <pxr/usd/ar/asset.h>
