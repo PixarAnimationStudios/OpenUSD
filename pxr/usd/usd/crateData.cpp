@@ -803,7 +803,7 @@ private:
                 liveFieldSets[FieldSetIndex(fsBegin-fieldSets.begin())];
                     
             dispatcher.Run(
-                [this, fsBegin, fsEnd, &fields, &fieldValuePairs]() mutable {
+                [this, &fsBegin, fsEnd, &fields, &fieldValuePairs]() {
                     // XXX Won't need first two tags when bug #132031 is
                     // addressed
                     TfAutoMallocTag tag(
